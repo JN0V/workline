@@ -34,8 +34,9 @@ acts:
   order: {mode: off, max: 10}
   effort: {mode: off, max: 10}
   kind: {mode: act, max: 10}                # bug, feature or task (the kind)
+  size: {mode: act, max: 3}                 # the tier large, ×2 an issue's size targets (ADR-0064)
   close-obsolete: {mode: off, max: 3, days: 7, exempt: [pinned, security]}
-  split: {mode: off, max: 2}
+  split: {mode: off, max: 2}               # on past an issue's size, `too-big: true`, unless the project set it off (ADR-0064)
   rename: {mode: off, max: 5}
   depend: {mode: off, max: 5}
 ```
@@ -77,6 +78,7 @@ The other levels change these (role.yaml, `levels`):
 | ready (the engine's check: four sections, no draft, or drafts past `wait`) | propose | act 5 | act 10 |
 | close-duplicate | propose | act 3 | act 5 |
 | kind ([the kind](../../../roles/product-owner/docs/kind.md)) | propose | act 10 | act 20 |
+| size ([granting a size](refine.md#granting-a-size)) | propose | act 3 | act 5 |
 | effort (off by default; its cap once on) | 10 | 10 | 20 |
 | undepend | propose; a closed blocker's: the engine's, done | the same | the same |
 | open (import) | act 30 | act 30 | act 30 |

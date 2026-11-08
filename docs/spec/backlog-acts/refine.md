@@ -363,8 +363,45 @@ from.
   ([ADR-0064, step 3](../../adr/0064-size-is-a-target-not-a-wall.md#2-two-checkpoints)):
   woken at once (`size`, the role). To narrow it, a `refine` rewrites the
   Scope whole, fewer files, then `unblock` to its state; sent back as it
-  is, the next crossing waits for a person. Else `blocked`,
-  `person: true`, why it cannot be narrowed.
+  is, the next crossing waits for a person. Its need atomic, at the
+  normal size: `size` with `tier: large`, then `unblock`
+  ([ADR-0064, step 4](../../adr/0064-size-is-a-target-not-a-wall.md#3-the-product-owner-decides-once-a-state-an-issue)).
+  Parts that pass apart, the issue no part itself: a `split`,
+  `too-big: true` ([split on size](split.md#split-on-size)), then
+  `blocked`, `person: true`: a person accepts it from its parts. Else
+  `blocked`, `person: true`, why it cannot be narrowed.
+
+## Its size at ready
+
+On the line's refine step, the task asks the product owner to predict
+the issue's size before `ready`
+([ADR-0064, §2](../../adr/0064-size-is-a-target-not-a-wall.md#2-two-checkpoints)),
+in the same call:
+
+- **Against its normal**: the fresh tokens an issue of its kind spends
+  here, the project's 85th percentile kept by `workline size`, else the
+  seed (400k, doubled at the highest effort); times its tier.
+- **From** its Scope's files, its scenarios and its effort.
+- **Well past it**: a `split`, `too-big: true`, and no `ready`; or, its
+  need atomic, `size` with `tier: large`, then `ready`. A part of a
+  split is offered no split, an issue with a tier no grant.
+
+## Granting a size
+
+```yaml
+- size: {issue: 12, tier: large, why: "one parser: no part of it passes its tests alone"}
+```
+
+- **What it does**: puts `workline:size/large` on the issue; every size
+  target of the runs on it doubles (its context budget, token cap, code
+  and change given at once). Said on the issue, kept in its state
+  (`size: large`), counted and sampled by the auditor.
+- **Checked**: `large` alone; `x-large` is a person's (`size-person`);
+  an issue with a tier already is never granted (`size-kept`); one the
+  role granted once, never again: a person who took the label off
+  decided (`size-once`).
+- **Mode**: `act` at `normal` and `enterprising`, `propose` at
+  `cautious` ([autonomy](autonomy.md)).
 
 ## A body's footer
 

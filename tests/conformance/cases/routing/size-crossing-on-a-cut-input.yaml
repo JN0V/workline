@@ -1,0 +1,38 @@
+case: routing/size-crossing-on-a-cut-input
+about: >
+  A run that blocks on what it read cut crossed its size (ADR-0064, §2;
+  #1171): on #3, waiting for its tests, the tester is given `lib.sh` cut
+  past its code-lines-max of 1, said; its test for "By zero" passes on
+  the base, so the run blocks. Its block may be the cut's: the run ends
+  needs-input(product-owner: size), not a refusal for a person, and the
+  line blocks #3 for the product owner, the cut said.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 1}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-green-on-base"}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: input-cut, level: warn, message: "cut past code-lines-max (1 lines)"}
+    - {rule: test-green-on-base, where: tests.test_mul_by_zero}
+    - {rule: size-crossed, level: warn, where: "#3", message: "the tester's run on it is too big for its context"}
+  no-findings: [{rule: state-retry}, {rule: state-waits}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["the line asks the product owner on its size at once"]

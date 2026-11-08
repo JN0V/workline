@@ -1,0 +1,35 @@
+case: routing/size-large-doubles-every-target
+about: >
+  A granted tier doubles every size target of the runs on its issue, and
+  no more (ADR-0064, step 4; #1171): #3 carries `workline:size/large`,
+  and names one line of 100,000 characters, over the tester's context
+  budget of 60,000 at the normal size. The tester's run on it is told
+  the tier, given a budget of 120,000, which its prompt fits, its token
+  cap 600,000 and its code-lines-max 3,000: twice the role's, under the
+  issue's backstop of four times its normal (1.6M at the seed). Its
+  liveness caps, ai-max-seconds and ai-max-turns, stay as they are.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests", "workline:size/large"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: size-tier, level: info, message: "its issue's size tier is large (`workline:size/large`): every size target of this run ×2"}
+  no-findings: [{rule: prompt-over-budget}, {rule: size-crossed}]
+  run-files:
+    in/settings.json: {contains: ["\"ai-max-tokens\": 600000", "\"code-lines-max\": 3000", "\"ai-max-seconds\": 1200", "\"ai-max-turns\": 40"], not-contains: ["\"ai-max-seconds\": 2400", "\"ai-max-turns\": 80"]}
+    in/input/size-tier: {contains: ["large"]}

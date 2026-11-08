@@ -342,6 +342,40 @@ func (a *applier) kind(c backlog.Proposal) error {
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 
+// size grants an issue a size tier and records it in its state
+// (ADR-0064, §3): read again first, a tier put since is a person's,
+// kept, said; the label created where the project has none.
+func (a *applier) size(c backlog.Proposal) error {
+	f := a.forge
+	is, err := f.Issue(c.Issue)
+	if err != nil {
+		return err
+	}
+	if tier := backlog.SizeTier(is.Labels); tier != "" {
+		a.findings = append(a.findings, verdict.Finding{Rule: "size-kept", Level: "warn", Where: fmt.Sprintf("#%d", c.Issue),
+			Message: fmt.Sprintf("its label `%s` says its tier since the run read it: a person's, kept (found when applying)", backlog.TierLabel(tier))})
+		return nil
+	}
+	b := f.(forge.Backlog)
+	if err := backlog.EnsureTierLabel(b, c.Tier); err != nil {
+		return err
+	}
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	if err := f.Label(t, []string{backlog.TierLabel(c.Tier)}, nil); err != nil {
+		return err
+	}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	st, _, err := backlog.ReadState(comments, a.role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	st.Size = c.Tier
+	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
+}
+
 // rename sets an issue's title and records it in its state: a title other
 // than the one recorded is a person's (ADR-0022).
 func rename(f forge.Forge, role string, c backlog.Proposal) error {
@@ -965,6 +999,14 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	// where an unblock may send it besides refine (ADR-0059, amended).
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "input", RevisitFromInput)); err == nil {
 		cfg.RevisitFrom = strings.TrimSpace(string(data))
+	}
+	// The issue the event names, and whether the line asked on its size:
+	// where a split may say it too big (ADR-0064, §2).
+	if st.Target != nil && st.Target.Kind == "issue" {
+		cfg.Sized = st.Target.ID
+	}
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "input", SizeInput)); err == nil {
+		cfg.SizeAsked = strings.TrimSpace(string(data)) != ""
 	}
 	// A run again for the code its agent said it lacked (ADR-0063, §6):
 	// the files it named given this time (#1146).

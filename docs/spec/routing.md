@@ -482,15 +482,30 @@ whose result moves the issue to the next. The table is the routing's
     The record keeps the role (`size-of`) and the state (`sized`).
   - **The product owner reads it** at the next run, no news needed
     (`state-revisit`), told the size: it narrows the Scope and sends it
-    back, or keeps it blocked, `person: true`.
-  - **Once a state**: a second crossing from a state in `sized`, the
-    product owner's own crossing, or a project whose product owner
-    reads no blocked issue, waits for a person at once
-    (`size-crossed-again`, `size-crossed-own`).
+    back; grants it `workline:size/large` and sends it back; splits it,
+    `split` on for it, and keeps it blocked for a person to accept from
+    its parts
+    ([ADR-0064, step 4](../adr/0064-size-is-a-target-not-a-wall.md#3-the-product-owner-decides-once-a-state-an-issue);
+    [#1171](https://github.com/JN0V/workline/issues/1171),
+    [#1172](https://github.com/JN0V/workline/issues/1172)); or keeps it
+    blocked, `person: true`. Its run failing, or its answer not read,
+    keeps the question, asked again within the machine-error budget.
+  - **Once a state, per issue**: a second crossing from a state in
+    `sized`, the product owner's own crossing, or a project whose
+    product owner reads no blocked issue, waits for a person at once
+    (`size-crossed-again`, `size-crossed-own`); so does a crossing at
+    `workline:size/x-large`, the top tier (`size-crossed-top`).
   - **The work is kept**: only the state's label moves; a run whose role
     moved the issue keeps that move.
   - A record from before, its machine error of kind `size` or `budget`,
     is spent at once, for a person (`machine-error-spent`).
+- **An issue's size tier** ([ADR-0064, §3](../adr/0064-size-is-a-target-not-a-wall.md#3-the-product-owner-decides-once-a-state-an-issue)):
+  `workline:size/large` (×2), the product owner's grant, or
+  `workline:size/x-large` (×4), a person's label only. Every step on the
+  issue is given it (input `size-tier`, `size-tier` said), and every size
+  target of its run multiplied: `context.budget`, `ai-max-tokens`,
+  `code-lines-max`, `code-bytes-max`, `diff-lines-max`; `workline size`
+  measures the issue against its normal times the tier.
 - **The code a role lacks is given**: the product owner naming the
   code an issue is about (`sources`) that its task did not give
   ([the code picker](code-picker.md)), its Scope left for that code, or

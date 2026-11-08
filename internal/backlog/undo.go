@@ -320,6 +320,9 @@ func closedParents(open map[int]forge.Issue, done []Done) []int {
 	return slices.Compact(out)
 }
 
+// PartOf is the parent a split's part names, 0 for none (partOf).
+func PartOf(body string) int { return partOf(body) }
+
 // partOf is the parent a split's part names: the marker it was opened
 // with (SplitKey), else the line the engine writes first (ChildBody); 0
 // for none.

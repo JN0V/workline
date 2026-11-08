@@ -68,7 +68,9 @@ hold:
   (`kinds/*.md`), a finding blind, never on a model that acted, false
   only with a quote found again, within the week's tokens
   ([#205](https://github.com/JN0V/workline/issues/205)): auditor's
-  `verdict-*`.
+  `verdict-*`. A grant of a size, `kinds/size.md`: false where a split
+  was possible
+  ([ADR-0064, §6](../../../docs/adr/0064-size-is-a-target-not-a-wall.md#6-every-grant-observed)).
 - **Its verdicts kept and counted**
   ([#276](https://github.com/JN0V/workline/issues/276)): a dispute
   settled by three judges, `panel-settles-a-dispute`; the week's rows

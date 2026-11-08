@@ -87,13 +87,19 @@ goes ready, a hidden record that does not read: in
 - `size-crossed`: a role's run on an issue was too big for it: its task
   over the context budget, its token cap reached, or what it read cut
   before it blocked. Never run again on the same input: the issue goes to
-  Blocked, and the product owner reads it at once, to narrow its Scope
-  or leave it to you
+  Blocked, and the product owner reads it at once, to narrow its Scope,
+  grant it `workline:size/large`, or leave it to you
   ([routing](spec/routing.md#the-line-of-states)).
-- `size-crossed-again`, `size-crossed-own`: the same, the product owner
-  already asked from that state, or its own run too big. Narrow the
-  issue or split it, or raise the setting the line names, then move it
-  back by its label.
+- `size-crossed-again`, `size-crossed-own`, `size-crossed-top`: the
+  same, the product owner already asked from that state, its own run too
+  big, or the issue at `workline:size/x-large` already. Narrow the issue
+  or split it, put `workline:size/x-large` on it (every size target ×4),
+  or raise the setting the line names, then move it back by its label.
+- `size-tier` (info): every size target of the run multiplied by its
+  issue's tier label; take it off to undo. `size-person`, `size-kept`,
+  `size-once`, `split-depth`, `split-off`, `too-big-unasked`: a grant or
+  a split on size dropped
+  ([why](spec/backlog-acts/refine.md#granting-a-size)).
 - `ai-max-seconds` (committer): the rewrite took more than the 30 s it
   may; the message is refused with its reasons, as with no agent.
 - `personal-setting-ignored`: your own config sets what a role does not

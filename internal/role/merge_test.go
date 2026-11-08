@@ -171,6 +171,10 @@ acts:
 			level := got[ByLevel]
 			delete(got, ByLevel)
 			delete(got, LevelFrom)
+			if own, want := got[ProjectSet], settings(t, tc.over); !reflect.DeepEqual(own, want) && len(want) > 0 {
+				t.Errorf("project-set: got %v, want %v", own, want)
+			}
+			delete(got, ProjectSet)
 			if want := settings(t, tc.want); !reflect.DeepEqual(got, want) {
 				t.Errorf("got %v, want %v", got, want)
 			}

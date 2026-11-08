@@ -1,0 +1,39 @@
+case: routing/size-split-off-by-the-project
+about: >
+  A project that set `split` off itself keeps it off, even past an
+  issue's size (ADR-0064, §3; the panel of 2026-11-08; #1172): the
+  tester's prompt on #3 is over its context budget, and the product
+  owner is asked on its size. Its task says this project allows no
+  splits: it may grant `large`, or leave #3 to a person. It splits all
+  the same: the split is dropped (`split-off`), naming the grant, and #3
+  waits for a person, nothing opened.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}"}}
+      product-owner: {settings: {acts: {split: {mode: off}}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply and divide two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply and divide.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-split.sh 3 big blocked", then: again}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "the tester's run on it crossed its size"}
+    - {rule: split-off, where: "#3", message: "this project set `split` off itself: no split, even past its size; grant #3 `size` `large`, or leave it to a person"}
+  run-files:
+    in/task.md: {contains: ["this project allows no splits", "`size` with `tier: large`"], not-contains: ["`split` with `too-big: true`"]}
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked"], comment-lacks: ["split: [4, 5]"]}
+      - {id: 4, absent: true}

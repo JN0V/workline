@@ -144,6 +144,9 @@ type State struct {
 	// Kind is the kind label the role set, once (ADR-0039 (c)): another
 	// kind on the issue, or none, is a person's, never set again.
 	Kind string `yaml:"kind,omitempty"`
+	// Size is the tier the role granted, once (ADR-0064, §3): its label
+	// taken off is a person's, never granted again.
+	Size string `yaml:"size,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -226,9 +229,10 @@ func FormatState(s State) string {
 		AssumedAt string            `yaml:"assumed-at,omitempty"`
 		Told      int               `yaml:"told,omitempty"`
 		Kind      string            `yaml:"kind,omitempty"`
+		Size      string            `yaml:"size,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Revised, s.Plain, s.Deleted,
 		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Silent, s.Unread,
-		s.Assumed, s.AssumedAt, s.Told, s.Kind})
+		s.Assumed, s.AssumedAt, s.Told, s.Kind, s.Size})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
 	// role tells them, never its record.
@@ -591,6 +595,12 @@ type Proposal struct {
 	// KindLabel, the engine's, the project's label it sets for it.
 	IssueKind string `yaml:"kind,omitempty"`
 	KindLabel string `yaml:"kind-label,omitempty"`
+	// Tier: the size tier granted, large alone (ADR-0064, §3). TooBig,
+	// on a split: the issue past its size, measured by a run that
+	// crossed it or predicted at ready; split then turns on, off as it
+	// is by default, and a part is never split again (§3, §4).
+	Tier   string `yaml:"tier,omitempty"`
+	TooBig bool   `yaml:"too-big,omitempty"`
 	// Obsolete (ADR-0024): Announced, on the engine's closing, the day of
 	// the announcement it follows; Announce and Until, the engine's, that
 	// this act announces rather than closes, and the day from which it may
@@ -650,7 +660,7 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "effort", "kind", "refine", "ready", "unready", "unblock", "blocked", "ask", "assume", "split", "rename", "depend", "undepend"}
+var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "effort", "kind", "size", "refine", "ready", "unready", "unblock", "blocked", "ask", "assume", "split", "rename", "depend", "undepend"}
 
 // theirs are the acts an outsider's issue is proposed for, not done: it is
 // theirs (ADR-0018).
@@ -915,7 +925,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				continue
 			}
 		}
-		if (c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "assume" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
+		if (c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "assume" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "size" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
 			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c}) // the engine's own and the agent's: one
 			if c.Do == "split" || c.Do == "rename" {
 				// Both checked against the state before either is applied:
@@ -975,6 +985,14 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			s, ok := settings[c.Kind()]
 			if !ok {
 				s = Setting{Mode: Propose}
+			}
+			if c.Do == "split" && c.TooBig && s.Mode == Off && !p.config.SplitOff() {
+				// Past the issue's size, split turns on (ADR-0064, §3):
+				// done at normal and enterprising, proposed at cautious.
+				s = Setting{Mode: Act, Max: max(s.Max, 1)}
+				if p.config.Level == "cautious" {
+					s.Mode = Propose
+				}
 			}
 			if c.Do == "keep" {
 				s = Setting{Mode: Act} // keeping an issue open is never held back
@@ -1629,6 +1647,10 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		if rule, why := p.checkKind(f, c, nil); rule != "" {
 			return rule, why
 		}
+	} else if c.Do == "size" {
+		if rule, why := p.checkSize(c, nil); rule != "" {
+			return rule, why
+		}
 	} else if c.Do == "sources" {
 		if rule, why := checkSources(repo, *c); rule != "" {
 			return rule, why
@@ -1690,6 +1712,11 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 			return rule, why
 		}
 	}
+	if c.Do == "size" {
+		if rule, why := p.checkSize(c, st); rule != "" {
+			return rule, why
+		}
+	}
 	if c.Do == "ready" && p.config.SpecReview {
 		// The reviewer reads the spec first (#128): held while it has not
 		// read the body as it is, or an important finding is open.
@@ -1722,7 +1749,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "keep" {
 		return p.checkKeep(f, repo, role, st, c)
 	}
-	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "assume" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
+	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "size" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "assume" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Do == "sources" && (c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "") {
@@ -2274,6 +2301,21 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 			return "title-same", "it has this title already"
 		}
 		return "", ""
+	}
+	if c.TooBig && (c.Issue != p.config.Sized || !p.config.SizeAsked && !slices.Contains(is.Labels, LabelToRefine)) {
+		// Past its size only where the run was told to judge it (ADR-0064,
+		// §2): the issue the event names, asked on its size or in refine.
+		return "too-big-unasked", fmt.Sprintf("#%d's size was not asked in this run: `too-big` holds only on the issue the line woke the role on, asked on its size or predicted in refine; `split` keeps its mode", c.Issue)
+	}
+	if c.TooBig && p.config.SplitOff() {
+		// The project turned split off itself: never on for a size
+		// (ADR-0064, §3, the panel of 2026-11-08).
+		return "split-off", fmt.Sprintf("this project set `split` off itself: no split, even past its size; grant #%d `size` `%s`, or leave it to a person", c.Issue, TierLarge)
+	}
+	if parent := partOf(is.Body); c.TooBig && parent > 0 {
+		// Split depth 1 (ADR-0064, §4): a part may be granted a size,
+		// never split again for it.
+		return "split-depth", fmt.Sprintf("it is a part of #%d already: a part is never split for its size; grant it `size` `%s`, or leave it to a person", parent, TierLarge)
 	}
 	if len(c.Into) < 2 || len(c.Into) > maxChildren {
 		return "split-size", fmt.Sprintf("a split makes 2 to %d issues", maxChildren)
@@ -3223,6 +3265,8 @@ func describe(c Proposal, verb string) string {
 		return fmt.Sprintf("Settle #%d with its reporter, written to %d times already: answer them, refine it, or close it. The product owner %s", c.Issue, c.Round-1, what)
 	}
 	switch c.Do {
+	case "size":
+		return fmt.Sprintf("%s #%d `%s`: %s Every size target of its runs ×%d. Wrong? Take the label off; the role does not grant it again.", map[bool]string{true: "Granted", false: "Grant"}[done], c.Issue, TierLabel(c.Tier), strings.TrimSuffix(strings.TrimSpace(c.Why), ".")+".", TierFactor(c.Tier))
 	case "kind":
 		return fmt.Sprintf("%s #%d `%s`, a %s: %s Wrong? Change the label; the role does not set it again.", map[bool]string{true: "Labelled", false: "Label"}[done], c.Issue, c.KindLabel, c.IssueKind, strings.TrimSpace(c.Why))
 	case "rename":

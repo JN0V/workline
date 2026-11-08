@@ -1,0 +1,36 @@
+case: routing/size-crossing-at-the-top-tier-waits-for-a-person
+about: >
+  Nothing is above the top tier (ADR-0064, §4; #1171): a person gave #3
+  `workline:size/x-large`, every size target ×4, but its Scope names one
+  line of 1,000,000 characters, over even four times the tester's
+  context budget. The line blocks #3 for a person at once, the tier
+  said, and never asks the product owner on it.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 20000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests", "workline:size/x-large"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/blocked-for-size.sh", then: again}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: size-tier, message: "its issue's size tier is x-large (`workline:size/x-large`): every size target of this run ×4"}
+    - {rule: prompt-over-budget, message: "over the role's budget of 240000"}
+    - {rule: size-crossed-top, level: warn, where: "#3", message: "at the top size tier (`workline:size/x-large`): a person narrows or splits it: moved to blocked"}
+  no-findings: [{rule: state-revisit}, {rule: size-crossed}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:size/x-large", "workline:blocked"]
+        comment-contains: ["at the top size tier"]

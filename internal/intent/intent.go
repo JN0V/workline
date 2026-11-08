@@ -30,6 +30,7 @@ var Catalogue = map[string]bool{
 	"order":          true, // an issue's priority set, one label of four (docs/spec/backlog-acts.md), an effort beside it
 	"effort":         true, // an issue's effort set, split from an order by the engine (ADR-0040)
 	"kind":           true, // an issue's kind label set, bug, feature or task, where none is; a person's kept (ADR-0039)
+	"size":           true, // an issue granted the size tier large, ×2 its runs' size targets (ADR-0064)
 	"sources":        true, // the code an issue is about, named, its evidence quoted (docs/spec/backlog-acts.md)
 	"close":          true, // an issue closed as a duplicate or obsolete, its evidence quoted (docs/spec/backlog-acts.md)
 	"keep":           true, // an issue announced obsolete kept open (docs/spec/backlog-acts.md, ADR-0024)
@@ -215,7 +216,7 @@ func Marshal(in []Intention) ([]byte, error) {
 // applyOrder is the order intentions are applied in, whatever order they were
 // proposed in: files first, then what depends on them, then what only informs.
 var applyOrder = map[string]int{
-	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "keep": 6, "milestone": 7, "order": 8, "effort": 8, "kind": 8, "refine": 9, "ready": 10, "unready": 10, "unblock": 10, "blocked": 10, "ask": 11, "assume": 11, "split": 12, "rename": 13, "depend": 13, "undepend": 13, "issue": 14, "handoff": 15, "note": 16,
+	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "keep": 6, "milestone": 7, "order": 8, "effort": 8, "kind": 8, "size": 9, "refine": 9, "ready": 10, "unready": 10, "unblock": 10, "blocked": 10, "ask": 11, "assume": 11, "split": 12, "rename": 13, "depend": 13, "undepend": 13, "issue": 14, "handoff": 15, "note": 16,
 }
 
 // SortForApply puts intentions in apply order, keeping the proposed order within a kind.

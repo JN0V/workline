@@ -129,5 +129,5 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 	}
 	now.Claim, now.Ran = key, clock().UTC().Format(time.RFC3339)
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes", Level: "info", Where: where, Message: why})
-	return &stateStep{role: developerRole, write: StateWrite{Issue: is.ID, Record: now}, from: s, since: at, rec: rec}, nil, true, nil
+	return &stateStep{role: developerRole, write: StateWrite{Issue: is.ID, Record: now}, from: s, since: at, rec: rec, tier: backlog.SizeTier(is.Labels)}, nil, true, nil
 }

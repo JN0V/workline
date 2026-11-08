@@ -1,0 +1,39 @@
+case: routing/size-granted-and-sent-back
+about: >
+  The product owner grants a larger size (ADR-0064, step 4; #1171): on
+  #3, waiting for its tests, the Scope names one line of 100,000
+  characters, and the tester's prompt is over its context budget. The
+  line asks the product owner on its size; told it may grant `large`, it
+  finds the need atomic, grants it and sends #3 back to its tests. #3
+  carries `workline:size/large`, the grant said on it and kept in its
+  state, for the auditor to count and sample.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-granted.sh", then: again}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: size-crossed, level: warn, where: "#3", message: "the product owner reads it at once: moved to blocked"}
+    - {rule: state-revisit, level: info, where: "#3", message: "blocked, read again by the product-owner: the tester's run on it crossed its size"}
+  no-findings: [{rule: size-person}, {rule: size-kept}, {rule: size-crossed-again}]
+  run-files:
+    in/task.md: {contains: ["`size` with `tier: large`", "every size target of its runs ×2"]}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:size/large", "workline:needs-tests"]
+        comment-contains: ["Granted #3 `workline:size/large`", "size: large"]

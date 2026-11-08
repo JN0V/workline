@@ -2,6 +2,9 @@
 
 - **Status:** accepted — built (amended below, five times on 2026-10-09, once each on 2026-10-10, 10-11, 10-17 and 10-27)
 - **Date:** 2026-10-08
+- **Amended by:** [ADR-0064](0064-size-is-a-target-not-a-wall.md#3-the-product-owner-decides-once-a-state-an-issue)
+  (`split`, off by default, turns on past an issue's size, never where
+  the project set it off)
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
   [ADR-0025](0025-a-persons-tick-is-done-ignored-runs-pause.md) (ticks,

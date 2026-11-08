@@ -374,6 +374,12 @@ const (
 // project set is what differs from it.
 const ByLevel = "by-level"
 
+// ProjectSet is the setting a role with levels gets beside its own: the
+// project's settings for it as written, so a value the project set equal
+// to the level's is still told the project's (ADR-0064: a `split` the
+// project turned off stays off).
+const ProjectSet = "project-set"
+
 // MergedSettings returns the role's defaults overridden by the project's
 // settings, as docs/spec/role-contract.md says: maps merged key by key, at
 // every depth; a list or a scalar replaced whole; a null removes the key.
@@ -414,6 +420,7 @@ func (r *Role) MergedSettings(c *ProjectConfig) map[string]any {
 		out[name] = v
 	}
 	out[ByLevel] = MergeSettings(base, nil)
+	out[ProjectSet] = MergeSettings(nil, project)
 	out[LevelFrom] = from
 	return out
 }

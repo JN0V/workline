@@ -55,6 +55,33 @@ An issue too big to be one need is broken into its parts (ADR-0022):
   nothing: it is not counted in the moved share; the children, never read
   yet, are read and ordered at the next run.
 
+## Split on size
+
+```yaml
+- split: {issue: 12, too-big: true, into: [...], why: "export and import each pass their own tests"}
+```
+
+An issue past its size
+([ADR-0064, §3](../../adr/0064-size-is-a-target-not-a-wall.md#3-the-product-owner-decides-once-a-state-an-issue)):
+a run on it crossed its size, or the product owner predicts it at ready
+([its size at ready](refine.md#its-size-at-ready)).
+
+- **On where `split` is off by default, never where the project set it
+  off** (`split-off`, naming the grant): `act` at `normal` and
+  `enterprising`, `propose` at `cautious`, within `split`'s `max`.
+- **Only where the run judged the size**: the issue the line woke the
+  role on, asked on its size or in refine; else dropped
+  (`too-big-unasked`), `split` keeping its mode.
+- **Depth 1**: a part of a split (`Part of #N.`) is never split for its
+  size (`split-depth`); it may be granted `size` `large`.
+- **The rest as any split**: the checks above, the parent kept open
+  until a person accepts it from its parts
+  ([ADR-0029](../../adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md)),
+  each part with fresh budgets: a new issue, a new record.
+- **Not proven by the engine**: the product owner's prediction is its
+  judgement; the auditor samples splits, a split whose parts cannot
+  pass apart a false act.
+
 ## Renaming
 
 ```yaml

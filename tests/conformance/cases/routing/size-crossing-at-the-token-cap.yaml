@@ -1,0 +1,36 @@
+case: routing/size-crossing-at-the-token-cap
+about: >
+  A run that blocks at its token cap crossed its size (ADR-0064, §2;
+  #1171): on #3, waiting for its tests, the tester's agent spends 4,500
+  tokens, past the tester's ai-max-tokens of 1,000, and its answer does
+  not read; asked again, it is asked nothing more. The run ends
+  needs-input(product-owner: size), never a machine error run again on
+  the same input: the line blocks #3 for the product owner, the cap said.
+given:
+  repo: go-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", ai-max-tokens: 1000}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA Go test.\n\n## Scope\n\n- A `Mul` function beside `Add` in `calc/calc.go`.\n"
+run: {route: reconcile, open-merge-request: true, ai: 'cmd:cat > /dev/null; printf "tokens-in: 4500\ntokens-out: 200\n" > "$WORKLINE_CALL"; echo "not: [read"'}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: ai-max-tokens, level: warn, message: "4700 tokens spent, the run allows 1000"}
+    - {rule: size-crossed, level: warn, where: "#3", message: "the tester's run on it is too big for its context: 4700 tokens spent, the run allows 1000"}
+  no-findings: [{rule: state-retry}, {rule: state-waits}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["the line asks the product owner on its size at once"]

@@ -287,11 +287,13 @@ func Size(o SizeOptions) (*engine.Result, *Sizes) {
 		sizes.Kinds = append(sizes.Kinds, kn)
 	}
 	// effort scales the seed alone, an issue's and a run's (ADR-0064, §1)
+	// and a size tier every target, measured or not (§3)
 	limit := func(n Normal, is forge.Issue) int {
+		tier := backlog.TierFactor(backlog.SizeTier(is.Labels))
 		if !n.Measured && backlog.Effort(is) == high {
-			return 2 * n.Tokens
+			return 2 * n.Tokens * tier
 		}
-		return n.Tokens
+		return n.Tokens * tier
 	}
 	for _, r := range openRead {
 		k := kindOf(r.is)
@@ -515,4 +517,51 @@ func sizeComment(s *Sizes, roles []string) string {
 	data, _ := json.Marshal(s)
 	b.WriteString("\n<!-- workline:" + sizeMark + " " + string(data) + " -->")
 	return b.String()
+}
+
+// IssueNormal is the normal of an issue like is, in fresh tokens (ADR-0064,
+// §1), for the product owner's prediction at ready (§2): its kind's
+// measured normal, kept on the open issue SizeTitle (open lists them),
+// else the seed, doubled at the highest effort; times its size tier.
+// measured says which.
+func IssueNormal(b forge.Backlog, open []forge.Issue, is forge.Issue) (tokens int, measured bool) {
+	kind, _ := backlog.KindOf(is.Labels)
+	if kind == "" {
+		kind = noKind
+	}
+	n := Normal{Tokens: issueSeed}
+	for _, o := range open {
+		if o.Title != SizeTitle {
+			continue
+		}
+		if comments, err := b.Comments(forge.Target{Kind: "issue", ID: o.ID}); err == nil {
+			for _, k := range readSizes(comments).Kinds {
+				if k.Kind == kind {
+					n = k.Issue
+				}
+			}
+		}
+		break
+	}
+	t := n.Tokens
+	if !n.Measured && backlog.Effort(is) == effortHigh() {
+		t *= 2
+	}
+	return t * backlog.TierFactor(backlog.SizeTier(is.Labels)), n.Measured
+}
+
+// readSizes is what the size comment among comments keeps: no kinds when
+// none reads.
+func readSizes(comments []string) Sizes {
+	var s Sizes
+	for _, c := range comments {
+		_, rest, ok := strings.Cut(c, "<!-- workline:"+sizeMark+" ")
+		if !ok {
+			continue
+		}
+		if data, _, ok := strings.Cut(rest, " -->"); ok && json.Unmarshal([]byte(data), &s) == nil {
+			return s
+		}
+	}
+	return Sizes{}
 }

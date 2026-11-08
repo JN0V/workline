@@ -1,0 +1,36 @@
+case: routing/size-split-never-of-a-part
+about: >
+  A part of a split is never split again for its size (ADR-0064, §4;
+  #1172): #3 says "Part of #1.", and the tester's prompt on it is over
+  its context budget. Asked on its size, the product owner is not told it
+  may split it; answering a split `too-big: true` all the same, the split
+  is dropped, said: a part may be granted a size, or left to a person.
+  Nothing is opened.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply and divide two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "Part of #1.\n\n## Need\n\nI want to multiply and divide.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-split.sh 3 big blocked", then: again}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "the tester's run on it crossed its size"}
+    - {rule: split-depth, where: "#3", message: "it is a part of #1 already: a part is never split for its size"}
+  run-files:
+    in/task.md: {contains: ["`size` with `tier: large`"], not-contains: ["`split` with `too-big: true`"]}
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked"], comment-lacks: ["split: [4, 5]"]}
+      - {id: 4, absent: true}
