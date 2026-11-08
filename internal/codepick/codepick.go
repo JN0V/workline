@@ -143,7 +143,7 @@ type Pick struct {
 	Short   bool     // something named was cut or left out, past the budget
 
 	byLines, byBytes bool // which bound cut it: Ask.Budget's lines, Ask.Bytes
-	Ask     Ask
+	Ask              Ask
 }
 
 // Paths are the files given, here or above, in order, the test aside.
@@ -219,6 +219,8 @@ type Picker struct {
 	lines     map[string][]string
 	hits      map[string][]hit
 	given     map[string][]Piece
+	notNames  map[string]bool     // the words never searched, by the commit's languages
+	byDir     map[string][]string // the commit's files by folder
 }
 
 type hit struct {
@@ -278,19 +280,38 @@ var (
 	pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`)
 )
 
-// notNames are words a text writes as code that name no definition worth
-// searching: keywords and the language's own types.
-var notNames = map[string]bool{}
+// commonWords are words a text writes as code that name no definition
+// worth searching in most languages; each language's own are in its row
+// of codenav.Languages (#1109).
+var commonWords = strings.Fields(`if else while for foreach switch case return break continue
+	null true false new this super class enum public private protected static const var
+	int long float double char byte string String import package`)
 
-func init() {
-	for _, w := range strings.Fields(`if else elif while for foreach switch case return break continue
-		nil null None true false True False undefined var let const val auto func function def fn fun
-		new delete this self super int bool float double char long short byte void string String std
-		static inline virtual override public private protected class struct enum namespace template
-		typename unsigned signed size_t uint8_t uint16_t uint32_t uint64_t int8_t int16_t int32_t int64_t
-		include import from package async await`) {
-		notNames[w] = true
+// notName says whether a word written as code names nothing worth a
+// search: a common word, or a keyword or type of a language the commit
+// holds (`open` is searched in Python, not in Kotlin). A commit of no
+// known language: every language's.
+func (p *Picker) notName(w string) bool {
+	if p.notNames == nil {
+		p.notNames = map[string]bool{}
+		for _, c := range commonWords {
+			p.notNames[c] = true
+		}
+		langs := map[*codenav.Language]bool{}
+		for _, f := range p.files {
+			if l := codenav.Of(f); l != nil {
+				langs[l] = true
+			}
+		}
+		for i := range codenav.Languages {
+			if l := &codenav.Languages[i]; langs[l] || len(langs) == 0 {
+				for _, k := range strings.Fields(l.Keywords) {
+					p.notNames[k] = true
+				}
+			}
+		}
 	}
+	return p.notNames[w]
 }
 
 var (
@@ -341,11 +362,11 @@ func (p *Picker) namedFiles(a Ask) []string {
 // codeNames are the names a text writes as code worth a search: an
 // acronym (`CSV`, `MQTT`) names a format or a protocol as often as code,
 // a constant holds an underscore.
-func codeNames(text string) []string {
+func (p *Picker) codeNames(text string) []string {
 	code, _, _ := NamedIn(text)
 	var names []string
 	for _, n := range code {
-		if !notNames[n] && len(n) > 2 && identRe.MatchString(n) && (strings.ToUpper(n) != n || strings.Contains(n, "_")) {
+		if !p.notName(n) && len(n) > 2 && identRe.MatchString(n) && (strings.ToUpper(n) != n || strings.Contains(n, "_")) {
 			names = append(names, n)
 		}
 	}
@@ -376,7 +397,7 @@ func (p *Picker) defines(h hit, name string, pats map[*codenav.Language]*regexp.
 func (p *Picker) Where(a Ask) []string {
 	a = clean(a)
 	out := p.namedFiles(a)
-	names := codeNames(a.Text)
+	names := p.codeNames(a.Text)
 	hits := p.grep(names)
 	for _, n := range names {
 		pats := map[*codenav.Language]*regexp.Regexp{}
@@ -466,7 +487,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		}
 	}
 	// 2. The names, by their hits.
-	names := codeNames(a.Text)
+	names := p.codeNames(a.Text)
 	pk.Names = names
 	hits := p.grep(names)
 	type found struct {
@@ -989,7 +1010,16 @@ func top(f string) string {
 // examples, tools.
 func aside(f string) bool { return asideFolder.MatchString(f) }
 
-var asideFolder = regexp.MustCompile(`(?i)(^|/)(tests?|examples?|tools|mocks?|testdata|spec)/`)
+// asideFolders are the folders beside a project's own code, by the
+// conventions of its ecosystem (#1109), one a row.
+var asideFolders = []string{
+	`(?i:(^|/)(tests?|examples?|tools|mocks?|testdata|spec)/)`, // most: tests/, test/ (Gradle's src/test/ too), spec/, Go's testdata/
+	`(^|/)src/(test\w+|\w+Test\w*)/`,                           // Gradle's other source sets: src/androidTest/, src/testFixtures/, src/commonTest/
+	`(^|/)__(tests|mocks)__/`,                                  // Jest's
+	`(^|/)[\w.]+\.(Unit|Integration)?Tests?/`,                  // a .NET test project: Shop.Tests/, Shop.UnitTests/
+}
+
+var asideFolder = regexp.MustCompile(strings.Join(asideFolders, "|"))
 
 // covered says whether pieces hold every line from to.
 func covered(ps []Piece, from, to int) bool {

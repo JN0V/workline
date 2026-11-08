@@ -1,0 +1,30 @@
+case: product-owner/picker-kotlin-same-package-one-step-away
+about: >
+  The code picker on a Kotlin project, Gradle's layout (#1109), on
+  TraceGlass's own files, reduced, as its trial will have them. A
+  Kotlin file uses its package's types with no import:
+  `TracingViewModel` builds a `TracingUiState`, in its package, and
+  that file is one step away, as an imported one is. The fakes in
+  `src/test/` are copies beside the code: `clear()` is given in the
+  code first (an interface's, with no body, is a place naming it),
+  two of its fakes, the third counted.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/traceglass/." .
+      git add . && git commit -qm 'feat: TraceGlass, reduced, from the Kotlin trial'
+  forge:
+    issues:
+      - {id: 12, title: "A new time-lapse picks up the frames of the previous one", body: "## Need\n\nA person recording a second time-lapse needs its video to hold that recording only, so frames of an old drawing don't play at its end.\n\n## Example\n\nRecord 3 snapshots, stop; tap outside the \"video ready\" dialog instead of Save or Discard. Start a new time-lapse, 1 snapshot, stop: the video plays B0, then A1, A2 of the first drawing (`snapshot_0000.jpg` overwritten, 0001 and 0002 kept).\n\n## Scope\n\n`feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt`, `startTimelapse()`: on a fresh start, `snapshotStorage.clear()`. `onDismissPostCompilationDialog` leaves the files today.\n", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 12}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      contains:
+        - "`feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingUiState.kt` (in its package)"
+        - "`clear` (4 definitions, 1 of them not given, most in tests, examples or tools)"
+        - "timelapseDir.listFiles()?.forEach { it.delete() }"

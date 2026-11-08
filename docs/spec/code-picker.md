@@ -34,7 +34,11 @@ flowchart LR
 - **Names**: the words written as code, as the reviewer's judge reads
   them: in backticks, called (`f(`), or shaped as a name (`load_all`,
   `answerItems`). Not an acronym (`CSV`, `MQTT`): a format as often as
-  code. Not a keyword nor a language's own type.
+  code. Not a keyword nor a type of a language the project holds, one
+  row a language in
+  [codenav.go](../../internal/codenav/codenav.go)
+  ([#1109](https://github.com/JN0V/workline/issues/1109)): `open` is
+  searched in Python, not in Kotlin; `suspend` never in Kotlin.
 - **The component the issue is about**
   ([#1152](https://github.com/JN0V/workline/issues/1152)):
   - a file of the project's own code named as a word of the title, its
@@ -76,7 +80,11 @@ Under the role's budget, each piece once a task:
      first: a file defining another name the issue writes, then the
      component's folder, then the rest, while the budget lasts.
    - Copies in tests, examples and tools last, 2 a name, the nearest
-     first, the rest counted.
+     first, the rest counted. Beside the code by the folder's
+     convention: `tests/`, `test/` (Gradle's `src/test/` too), `spec/`,
+     `examples/`, `tools/`, `mocks/`, `testdata/`, Gradle's other source
+     sets (`src/androidTest/`, `src/testFixtures/`), Jest's
+     `__tests__/`, a .NET test project (`Shop.Tests/`).
 3. **The lines naming a name in a file named**: the function around
    each, 40 lines at most, else 3 lines either side.
 4. **A file named, whole** when what it adds fits; else, nothing of it
@@ -138,6 +146,10 @@ A binary file gives nothing: no line, and `logo.png` names neither
   [imports.go](../../internal/codepick/imports.go): C and C++, Python,
   JavaScript and TypeScript, Go, the JVM's, Rust, Ruby, PHP, Lua,
   shell), and those defining the types the code derives from.
+- **In its package**: in Java, Kotlin, Scala, a file uses its
+  package's types with no import; the files of its package it names
+  (`TracingUiState.kt` by `TracingUiState`), in any source set, count
+  as imported ([#1109](https://github.com/JN0V/workline/issues/1109)).
 - **Given above**: a file given for an earlier issue of the same task.
 
 ## Read again only for code not given

@@ -1,0 +1,25 @@
+case: product-owner/picker-kotlin-keywords-not-searched
+about: >
+  The code picker reads the words of the project's own languages
+  (#1109): on a Kotlin project, a text writing `suspend fun clear()`
+  has `clear` searched, never `suspend`, a keyword of Kotlin's, which
+  would bring every coroutine of the project as a place naming it.
+  TraceGlass's own files, reduced.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/traceglass/." .
+      git add . && git commit -qm 'feat: TraceGlass, reduced, from the Kotlin trial'
+  forge:
+    issues:
+      - {id: 14, title: "Discarding a session leaves it saved", body: "## Need\n\nA person who discards a tracing session needs it gone, so the app does not offer to resume it at the next start.\n\n## Scope\n\n`SessionRepository`'s `suspend fun clear()` is never called on discard.\n", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: issue, target: {issue: 14}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/task.md:
+      contains: ["_sessionData.value = SessionData()"]
+      not-contains: ["naming `suspend`"]
