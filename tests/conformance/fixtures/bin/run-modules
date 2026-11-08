@@ -1,0 +1,30 @@
+#!/bin/sh
+# run-modules <report> <folder>...: the `tested` fixture's runner on some
+# build modules alone, as `./gradlew :<module>:test` or `mvn -pl <module>`
+# run: each test_*.sh at any depth under a <folder> a test, its folder the
+# classname; a JUnit XML report to <report>; exit 1 if one fails, 2 if a
+# folder is not there.
+report=$1 failed=0
+shift
+mkdir -p "$(dirname "$report")"
+{
+  echo '<?xml version="1.0" encoding="UTF-8"?>'
+  echo '<testsuites>'
+  for d in "$@"; do
+    [ -d "$d" ] || { echo "run-modules: no folder $d" >&2; exit 2; }
+    echo "<testsuite name=\"${d#./}\">"
+    for t in $(find "$d" -name 'test_*.sh' | sort); do
+      dir=$(dirname "${t#./}")
+      name=$(basename "$t" .sh)
+      if sh "$t" >/dev/null 2>&1; then
+        echo "<testcase classname=\"$dir\" name=\"$name\" time=\"0.01\"/>"
+      else
+        failed=1
+        echo "<testcase classname=\"$dir\" name=\"$name\" time=\"0.01\"><failure message=\"$t failed\"/></testcase>"
+      fi
+    done
+    echo '</testsuite>'
+  done
+  echo '</testsuites>'
+} > "$report" || exit 2
+exit $failed

@@ -613,7 +613,7 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 	// base and with the tests, rather than the whole suite twice (#979).
 	var pkgs []string
 	if strings.Contains(s.DraftCommand, "{packages}") {
-		if pkgs = Packages(tree, files, s.Paths); len(pkgs) > 0 {
+		if pkgs = Packages(tree, files, s.Paths, s.ModuleFiles); len(pkgs) > 0 {
 			s.Command, s.packages = s.DraftCommand, pkgs
 		}
 	}
