@@ -8,12 +8,13 @@ about: >
   src/test beside a Scope file under its src/main is a test's helper.
   A file the Scope does not name stays outside: `SettingsUiState.kt`,
   the module's `build.gradle.kts`, an existing fake and a golden file
-  in src/test, which a frozen test may read.
+  in src/test, which a frozen test may read, and a new one that shadows
+  a production class of its name.
 given:
   repo: tested-draft
   setup:
     - "git checkout -q main && for f in core/session/build.gradle.kts core/session/src/main/kotlin/tg/session/SettingsRepository.kt core/session/src/main/kotlin/tg/session/SettingsData.kt core/overlay/build.gradle.kts core/overlay/src/main/kotlin/tg/overlay/MatrixUtils.kt feature/tracing/build.gradle.kts feature/tracing/src/main/kotlin/tg/tracing/TracingViewModel.kt feature/tracing/src/main/kotlin/tg/tracing/settings/SettingsUiState.kt feature/tracing/src/test/kotlin/tg/tracing/settings/FakeSettingsRepository.kt feature/tracing/src/test/resources/golden.json; do mkdir -p $(dirname $f) && echo '// v1' > $f; done && git add -A && git commit -qm 'chore: kotlin modules'"
-    - "git checkout -q -b workline/developer/3 && for f in core/session/src/main/kotlin/tg/session/SettingsRepository.kt feature/tracing/src/main/kotlin/tg/tracing/TracingViewModel.kt core/overlay/src/main/kotlin/tg/overlay/CompositionGrid.kt feature/tracing/src/test/kotlin/tg/tracing/settings/FakeSettingsRepository.kt feature/tracing/src/main/kotlin/tg/tracing/settings/SettingsUiState.kt core/session/build.gradle.kts feature/tracing/src/test/resources/golden.json feature/tracing/src/test/kotlin/tg/tracing/settings/FakeGridRepository.kt; do echo '// grid' >> $f; done && git add -A && git commit -qm 'feat: grid for #3' -m 'Workline-Role: developer' && git checkout -q main"
+    - "git checkout -q -b workline/developer/3 && for f in core/session/src/main/kotlin/tg/session/SettingsRepository.kt feature/tracing/src/main/kotlin/tg/tracing/TracingViewModel.kt core/overlay/src/main/kotlin/tg/overlay/CompositionGrid.kt feature/tracing/src/test/kotlin/tg/tracing/settings/FakeSettingsRepository.kt feature/tracing/src/main/kotlin/tg/tracing/settings/SettingsUiState.kt core/session/build.gradle.kts feature/tracing/src/test/resources/golden.json feature/tracing/src/test/kotlin/tg/tracing/settings/FakeGridRepository.kt feature/tracing/src/test/kotlin/tg/tracing/settings/SettingsUiState.kt; do echo '// grid' >> $f; done && git add -A && git commit -qm 'feat: grid for #3' -m 'Workline-Role: developer' && git checkout -q main"
   forge:
     issues:
       - id: 3
@@ -39,6 +40,7 @@ expect:
     - {rule: outside-scope, where: core/session/build.gradle.kts}
     - {rule: outside-scope, where: feature/tracing/src/test/kotlin/tg/tracing/settings/FakeSettingsRepository.kt}
     - {rule: outside-scope, where: feature/tracing/src/test/resources/golden.json}
+    - {rule: outside-scope, where: feature/tracing/src/test/kotlin/tg/tracing/settings/SettingsUiState.kt}
   no-findings:
     - {rule: outside-scope, where: core/session/src/main/kotlin/tg/session/SettingsRepository.kt}
     - {rule: outside-scope, where: feature/tracing/src/main/kotlin/tg/tracing/TracingViewModel.kt}

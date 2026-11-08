@@ -91,7 +91,12 @@ first rule that matches refuses the whole patch:
     developer asks to widen the Scope;
   - a root Scope file opens no root `tests/`; a package named `test`
     under `src/main/` is no test folder.
-  - kept, listed and folded in as a new test file is, above.
+  - never the name of a class its module's `src/main/` holds, whatever
+    the extension, nor such a new test file: it would replace that
+    class on the test run's classpath;
+  - kept, listed and folded in as a new test file is, above; the
+    reviewer checks a listed helper that sets up the test runner
+    (Kotest's `ProjectConfig`): it changes how every test runs.
 
 **Never in bounds:**
 

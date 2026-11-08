@@ -476,7 +476,7 @@ func besideKept(repo string, b Bounds, patches []intent.Intention) []string {
 // the commit the rules are read at, and its home (testHome) a Scope
 // path's folder, in one, or holding one. Written by rule, no ask.
 func (c checker) newTestBeside(p string) bool {
-	if !pathglob.Any(c.b.TestPaths, p) || kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) {
+	if !pathglob.Any(c.b.TestPaths, p) || kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) || c.shadows(p) {
 		return false
 	}
 	return testBeside(p, c.b.Scope, c.isDir)
@@ -489,7 +489,9 @@ func (c checker) newTestBeside(p string) bool {
 // or kept by an earlier round. An existing helper, a fixture or a data
 // file a frozen test may read is never one: the developer asks to widen
 // the Scope. A root Scope file opens no root tests/, a Scope folder no
-// module's helpers, a production package named test nothing.
+// module's helpers, a production package named test nothing. A class
+// name its src/main/ holds already, whatever the extension, is never one:
+// a test class shadows the production one on the test run's classpath.
 func (c checker) newHelper(p string) bool {
 	if testName(p) || !slices.Contains(classExt, path.Ext(p)) ||
 		kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) {
@@ -505,9 +507,52 @@ func (c checker) newHelper(p string) bool {
 		}
 	}
 	mainDir := strings.TrimPrefix(module+"/src/main", "/")
-	return slices.ContainsFunc(c.b.Scope, func(s string) bool {
+	if !slices.ContainsFunc(c.b.Scope, func(s string) bool {
 		return !work.Pattern(s) && strings.HasPrefix(path.Clean(s), mainDir+"/")
+	}) {
+		return false
+	}
+	return !c.shadows(p)
+}
+
+// shadows says whether p, a new file under a module's src/test/, has
+// the name of a class its src/main/ holds, whatever the extension: on
+// the test run's classpath it comes first and replaces the production
+// class, and the frozen tests run against it (#1207).
+func (c checker) shadows(p string) bool {
+	module, _, ok := strings.Cut("/"+p, "/src/test/")
+	if !ok || kindAt(c.repo, c.at, p) != "" {
+		return false
+	}
+	stem := func(f string) string { return strings.TrimSuffix(path.Base(f), path.Ext(f)) }
+	return slices.ContainsFunc(filesAt(c.repo, c.at, strings.TrimPrefix(module+"/src/main", "/")), func(f string) bool { return stem(f) == stem(p) })
+}
+
+// filesAt are the files under dir at rev, a commit, or in the checkout
+// when rev is "": their paths from the repository's root.
+func filesAt(repo, rev, dir string) []string {
+	var out []string
+	if rev != "" {
+		list, err := gitOut(repo, "ls-tree", "-r", "-z", "--name-only", rev, "--", dir+"/")
+		if err != nil {
+			return nil
+		}
+		for _, f := range strings.Split(list, "\x00") {
+			if f != "" {
+				out = append(out, f)
+			}
+		}
+		return out
+	}
+	_ = filepath.WalkDir(filepath.Join(repo, filepath.FromSlash(dir)), func(f string, d os.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			if rel, err := filepath.Rel(repo, f); err == nil {
+				out = append(out, filepath.ToSlash(rel))
+			}
+		}
+		return nil
 	})
+	return out
 }
 
 // testBeside says whether the test file p's home (testHome) is a Scope
