@@ -351,6 +351,16 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: where, Message: personWaits})
 		return nil, nil, nil
 	}
+	if !ok && s.Name == refineState && name == backlog.Keeper {
+		// A parent in refine, split for its size, nothing else due: told
+		// as its parts close, as with no state (parent.go, #1208).
+		before := len(res.Findings)
+		st, _, err := parentStep(res, cfg, b, is, s, open)
+		if err != nil || st != nil {
+			return st, nil, err
+		}
+		res.Findings = res.Findings[:before] // waiting on its parts: acted, said below
+	}
 	if !ok {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-acted", Level: "info", Where: where,
 			Message: fmt.Sprintf("its state, %s, woke the %s already, on the same body and labelling: nothing more to run", s.Name, name)})
@@ -689,6 +699,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	st.write.Record.Spent = spend(st.write.Record.Spent, res.Steps[first:])
 	passed(res, f, cfg, &st) // its run took the issue to its backstop: a person's (ADR-0064, §5)
 	st.write.After = true    // its body and labels as its run left them (ADR-0063, §3)
+	st.write.Parent = st.parent
 	keepState(res, cfg, f, spec, o, st.write, st.role)
 }
 

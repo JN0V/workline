@@ -208,6 +208,10 @@ type StateWrite struct {
 	// of the issue as it stands when written, the role's own writes in
 	// (afterWrite), so its own edit is no new input for it (ADR-0063, §3).
 	After bool `json:"after,omitempty"`
+	// Parent: the step told a parent its parts (parent.go): its record
+	// as read, a person's edit made meanwhile kept as news, never taken
+	// for the role's own write.
+	Parent bool `json:"parent,omitempty"`
 }
 
 // recordV is the version every record is written with (Record.V).
@@ -479,7 +483,9 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 		if err != nil {
 			return err
 		}
-		afterWrite(&w.Record, *is)
+		if !w.Parent {
+			afterWrite(&w.Record, *is)
+		}
 		after = is
 	}
 	body := recordBody(w.Record, role)

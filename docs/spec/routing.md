@@ -755,8 +755,9 @@ only then.
 a split's parent bears no state once a person lifts its block, or stays
 blocked; its parts close in their own runs.
 
-- **Read where its state wakes nobody**: no state label, or Blocked.
-  Only where the project routes the product owner on `issue`.
+- **Read where its state wakes nobody**: no state label, or Blocked;
+  in refine too, when its own step is not due. Only where the project
+  routes the product owner on `issue`.
 - **Its parts**: the forge's relation, read from the open issues'
   listing, and its `## Sub-issues` task list
   ([a parent and its parts](backlog-acts/parent.md)). A part not open
@@ -768,6 +769,8 @@ blocked; its parts close in their own runs.
 - **Nothing new**: it waits, said in the job's summary
   (`state-parent-waits`): on its open parts, or on a person to accept
   it. A blocked parent is then read again as any blocked issue.
+- **In CI**, a part closing starts no run on its parent: it is told at
+  the next hourly reconcile.
 
 ### Room in the next state
 

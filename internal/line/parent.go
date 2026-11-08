@@ -74,7 +74,7 @@ func parentStep(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issu
 		}
 	}
 	where := fmt.Sprintf("#%d", is.ID)
-	rec, _, _, _, _, err := readRecordAll(b, is.ID)
+	rec, _, _, _, err := readRecordSpec(b, is.ID)
 	if err != nil {
 		return nil, false, err
 	}

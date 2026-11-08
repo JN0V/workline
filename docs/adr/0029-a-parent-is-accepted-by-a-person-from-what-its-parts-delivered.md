@@ -127,11 +127,25 @@ wants every open issue due, waiting or done, said.
 - **Still a person's**: the role never closes a parent alone. The
   closing carries no quote: the comment on its parts is the evidence a
   person reads.
+- **The mark is checked**, at the proposal and again at the yes: the
+  issue was split (its parts in the forge, its task list or the role's
+  split), and every part is closed now. An agent claiming the mark on
+  another issue is dropped (`parent-not-split`); a part open again
+  drops the yes (`parent-part-open`).
+- **In refine too**: a parent left in refine after a split for its
+  size is told the same way, when its own step is not due.
 
-Not chosen: closing a bug's parent alone once all its parts delivered
-and every item is proved, as
-[ADR-0060 §4](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)
-lets a bug fix merge. The parts merged already under that rule; the
-parent's own acceptance stays the one place a person reads the whole.
-Left: a parent whose parts a person linked by hand, read alone on an
-issue's own run, is told only by the reconciler's listing.
+### A bug's parent
+
+Decided by a panel (3 of 3): the middle path. The line may close a
+bug's parent alone only when the parent's own reproduction test, the
+reporter's symptom, passes on the default branch. A part's tests prove
+the part, not the symptom the reporter saw. The engine keeps no such
+test for a parent today, so this amendment always asks a person;
+[#1212](https://github.com/JN0V/workline/issues/1212) builds the middle
+path.
+
+### Left
+
+In CI, a part closing starts no run on its parent: the parent is told
+at the next hourly reconcile, up to an hour late.

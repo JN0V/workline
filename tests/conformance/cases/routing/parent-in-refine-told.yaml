@@ -1,0 +1,37 @@
+case: routing/parent-in-refine-told
+about: >
+  A parent left in refine after a split for its size: its state's step
+  ran on this body already, nothing else due. Its parts closing is new
+  input (#1208): the product owner is woken on it with no agent, the
+  closing proposed. One part still open, it was acted on, and waits.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    sub-issues: true
+    issues:
+      - id: 4
+        title: "Time-lapse counts"
+        labels: [workline:to-refine]
+        author: ann
+        insider: true
+        body: "## Need\n\nThe time-lapse counter is right.\n\n## Verification\n\n- Counts only frames saved."
+        comments:
+          - "```yaml\nsources: [src/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [6, 7]\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** last woke the product owner.\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"7cbc981adecb\",\"hops\":1,\"v\":1,\"labels\":\"-\",\"parts\":\"6\"} -->\n<!-- workline:sticky=line/state -->"
+      - {id: 6, title: "Count only frames saved", body: "Part of #4.", labels: [], parent: 4, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#13", text: "fix: count frames saved"}]}
+      - {id: 7, title: "Number restored frames", body: "Part of #4.", labels: [], parent: 4, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#14", text: "fix: number restored frames"}]}
+run: {route: reconcile, open-merge-request: true, ai: "fake:blocked-three"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-parent, level: info, where: "#4", message: "a parent, 2 of its 2 parts closed"}
+    - {rule: parent-to-accept, where: "#4"}
+  forge:
+    issues:
+      - id: 4
+        closed: false
+        labels: [workline:to-refine, workline:proposed]
+        comment-contains: ["\"parts\":\"6,7\"", "\"state\":\"refine\""]
