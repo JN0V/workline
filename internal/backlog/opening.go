@@ -197,6 +197,14 @@ func ByPerson(is forge.Issue) bool {
 	return !openedKey.MatchString(is.Body) && !Bot(is.Author)
 }
 
+// Outsider says whether an issue is its reporter's, someone without
+// write access (ADR-0018): neither a person of the project's, nor a
+// role's finding, nor a bot's — the project's, nobody there to ask
+// (#429), a split's children the line's own App opened among them.
+func Outsider(is forge.Issue) bool {
+	return !is.Insider && OpenedBy(is.Body) == "" && !Bot(is.Author)
+}
+
 // Bot says whether an author is a bot: a GitHub app's `[bot]` login, a
 // GitLab project or group bot. Nobody there answers a question (#429).
 func Bot(author string) bool {

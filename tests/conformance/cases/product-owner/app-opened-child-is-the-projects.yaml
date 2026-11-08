@@ -1,0 +1,17 @@
+case: product-owner/app-opened-child-is-the-projects
+about: >
+  An issue a bot opened — a split's child the line's own GitHub App
+  opened, which GitHub gives no member's association — is the project's,
+  never an outsider's (#1195, #429): its move to ready is done, not
+  proposed to a person.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 11, title: "Rows lost, its first part", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: "workline-jn0v[bot]", insider: false, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-three}
+expect:
+  no-findings: [{rule: reporter-outside}]
+  forge:
+    issues:
+      - {id: 11, labels: [workline:ready]}
