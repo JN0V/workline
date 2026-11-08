@@ -164,6 +164,34 @@ func TestStaleReportsRemovedTrackedKept(t *testing.T) {
 	}
 }
 
+// A folder in the tree linked outside it, committed or made by the
+// build, never leads the removal out: the files out there stay.
+func TestStaleReportsNotRemovedThroughLink(t *testing.T) {
+	outside := t.TempDir()
+	files := []string{"a.xml", "sub/x/b.xml", "sub/y/c.xml"}
+	for _, f := range files {
+		p := filepath.Join(outside, filepath.FromSlash(f))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("<testsuite/>"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, pattern := range []string{"out/*.xml", "out/sub/**/*.xml"} {
+		tree := reportTree(t, []string{"pom.xml"}, nil)
+		if err := os.Symlink(outside, filepath.Join(tree, "out")); err != nil {
+			t.Fatal(err)
+		}
+		_, _ = runIn(tree, Settings{Report: pattern, Command: "true"}, "here")
+		for _, f := range files {
+			if _, err := os.Stat(filepath.Join(outside, filepath.FromSlash(f))); err != nil {
+				t.Errorf("test-report %q removed %s outside the tree through a link: %v", pattern, f, err)
+			}
+		}
+	}
+}
+
 // A tracked report the command writes again is this run's: read.
 func TestTrackedReportRewrittenRead(t *testing.T) {
 	tree := reportTree(t, []string{"junit.xml"}, nil)

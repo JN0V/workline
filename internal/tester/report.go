@@ -95,21 +95,39 @@ func clearReports(tree, pattern string) (map[string]keptFile, error) {
 	if len(found) == 0 {
 		return nil, nil
 	}
-	out, err := git(tree, "ls-files", "-z") // paths from tree, as the run's tree is a checkout's root
-	if err != nil {
-		return nil, fmt.Errorf("the files git tracks, kept from the stale reports' removal, could not be listed: %v", err)
-	}
-	tracked := map[string]bool{}
-	for _, f := range strings.Split(out, "\x00") {
-		tracked[f] = f != ""
-	}
-	kept := map[string]keptFile{}
-	for _, f := range found {
+	rels := make([]string, len(found))
+	for i, f := range found {
 		rel, err := filepath.Rel(tree, f)
 		if err != nil {
 			return nil, err
 		}
-		if tracked[filepath.ToSlash(rel)] || inNestedRepo(tree, rel) {
+		rels[i] = filepath.ToSlash(rel)
+	}
+	tracked := map[string]bool{}
+	for start := 0; start < len(rels); start += 500 { // the files found alone, a command line short enough
+		args := append([]string{"--literal-pathspecs", "ls-files", "-z", "--"}, rels[start:min(start+500, len(rels))]...)
+		out, err := git(tree, args...) // paths from tree, as the run's tree is a checkout's root
+		if err != nil {
+			return nil, fmt.Errorf("the files git tracks, kept from the stale reports' removal, could not be listed: %v", err)
+		}
+		for _, f := range strings.Split(out, "\x00") {
+			tracked[f] = f != ""
+		}
+	}
+	// Removed through a root that refuses any path leaving tree: a folder
+	// linked outside, committed or made by the build, leads nowhere.
+	root, err := os.OpenRoot(tree)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = root.Close() }()
+	kept := map[string]keptFile{}
+	for i, f := range found {
+		rel := filepath.FromSlash(rels[i])
+		if _, err := root.Lstat(rel); err != nil {
+			continue // outside tree through a link: not the run's to remove, nor to read
+		}
+		if tracked[rels[i]] || inNestedRepo(tree, rel) {
 			info, err := os.Stat(f)
 			if err != nil {
 				return nil, err
@@ -121,7 +139,7 @@ func clearReports(tree, pattern string) (map[string]keptFile, error) {
 			kept[f] = keptFile{mod: info.ModTime(), data: data}
 			continue
 		}
-		if err := os.Remove(f); err != nil {
+		if err := root.Remove(rel); err != nil {
 			return nil, err
 		}
 	}
@@ -129,11 +147,24 @@ func clearReports(tree, pattern string) (map[string]keptFile, error) {
 }
 
 // freshReports are the files test-report names in tree after the run,
-// but a kept file the run left as it was, or rewrote into no JUnit
-// report (a build bumping `pom.xml`'s version).
+// but one reached through a link leaving tree, and a kept file the run
+// left as it was, or rewrote into no JUnit report (a build bumping
+// `pom.xml`'s version).
 func freshReports(tree, pattern string, kept map[string]keptFile) []string {
+	root, err := os.OpenRoot(tree)
+	if err != nil {
+		return nil
+	}
+	defer func() { _ = root.Close() }()
 	var out []string
 	for _, f := range reportFiles(tree, pattern) {
+		rel, err := filepath.Rel(tree, f)
+		if err != nil {
+			continue
+		}
+		if _, err := root.Lstat(rel); err != nil {
+			continue // outside tree through a link: not this run's report
+		}
 		if k, ok := kept[f]; ok {
 			info, err := os.Stat(f)
 			data, rerr := os.ReadFile(f)
