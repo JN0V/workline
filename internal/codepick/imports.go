@@ -33,6 +33,11 @@ type importRule struct {
 	manifestRe *regexp.Regexp
 	// why is said of a file it finds: "included or imported".
 	why string
+	// pkg is the line naming a file's package (`package a.b`): the files
+	// of that package, its folders `a/b` in any source set and the
+	// file's own, are used with no import (#1109), each linked when the
+	// file writes its name (`TracingUiState.kt` by `TracingUiState`).
+	pkg *regexp.Regexp
 }
 
 var (
@@ -52,7 +57,8 @@ var importRules = []importRule{
 	{exts: jsExts, re: regexp.MustCompile(`\b(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)`), relative: true, tries: jsTry, why: "included or imported"},
 	{exts: []string{".go"}, re: regexp.MustCompile(`^\s*(?:import\s+)?(?:[\w.]+\s+)?"([\w.~-]+(?:/[\w.~-]+)+)"\s*$`), folder: true,
 		manifest: "go.mod", manifestRe: regexp.MustCompile(`(?m)^module\s+(\S+)`), why: "imported"},
-	{exts: jvm, re: regexp.MustCompile(`^\s*import\s+(?:static\s+)?([\w.]+?)(?:\.\*)?\s*;?\s*$`), dots: true, tries: jvm, why: "imported"},
+	{exts: jvm, re: regexp.MustCompile(`^\s*import\s+(?:static\s+)?([\w.]+?)(?:\.\*)?\s*;?\s*$`), dots: true, tries: jvm, why: "imported",
+		pkg: regexp.MustCompile(`^\s*package\s+([\w.]+)`)},
 	{exts: []string{".rs"}, re: regexp.MustCompile(`^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+(\w+)\s*;`), tries: []string{".rs", "/mod.rs"}, why: "imported"},
 	{exts: []string{".rb"}, re: regexp.MustCompile(`^\s*require(?:_relative)?\s*\(?\s*['"]([^'"]+)['"]`), tries: []string{".rb", ""}, why: "required"},
 	{exts: []string{".php"}, re: regexp.MustCompile(`\b(?:require|include)(?:_once)?\s*\(?\s*['"]([^'"]+)['"]`), tries: []string{""}, why: "included"},
@@ -88,6 +94,73 @@ func (p *Picker) imports(from string, tests []string) []link {
 			}
 		}
 	}
+	for _, r := range importRules {
+		if r.pkg == nil || !slices.Contains(r.exts, ext) {
+			continue
+		}
+		for _, f := range p.samePackage(from, r) {
+			if !seen[f] {
+				seen[f] = true
+				out = append(out, link{f, "in its package"})
+			}
+		}
+	}
+	return out
+}
+
+// identWord is a word of code.
+var identWord = regexp.MustCompile(`[A-Za-z_]\w*`)
+
+// samePackage are the files of a file's package that it names, in the
+// order it first names them: those of its own folder and of the folders
+// its package's path ends (`src/main/kotlin/a/b`, `src/test/kotlin/a/b`
+// for `package a.b`), of its family, one named by its name less its
+// extension. Its import and package lines name no file of its package.
+func (p *Picker) samePackage(from string, r importRule) []string {
+	first := map[string]int{}
+	pkg := ""
+	n := 0
+	for _, l := range p.Lines(from) {
+		if m := r.pkg.FindStringSubmatch(l); m != nil && pkg == "" {
+			pkg = strings.ReplaceAll(m[1], ".", "/")
+			continue
+		}
+		if r.re.MatchString(l) {
+			continue
+		}
+		for _, w := range identWord.FindAllString(l, -1) {
+			if _, ok := first[w]; !ok {
+				first[w] = n
+				n++
+			}
+		}
+	}
+	if p.byDir == nil {
+		p.byDir = map[string][]string{}
+		for _, f := range p.files {
+			d := path.Dir(f)
+			p.byDir[d] = append(p.byDir[d], f)
+		}
+	}
+	var out []string
+	for d, fs := range p.byDir {
+		if d != path.Dir(from) && (pkg == "" || d != pkg && !strings.HasSuffix(d, "/"+pkg)) {
+			continue
+		}
+		for _, f := range fs {
+			stem := strings.TrimSuffix(path.Base(f), path.Ext(f))
+			if _, used := first[stem]; used && f != from && slices.Contains(r.exts, strings.ToLower(path.Ext(f))) {
+				out = append(out, f)
+			}
+		}
+	}
+	slices.SortFunc(out, func(a, b string) int {
+		sa, sb := strings.TrimSuffix(path.Base(a), path.Ext(a)), strings.TrimSuffix(path.Base(b), path.Ext(b))
+		if c := first[sa] - first[sb]; c != 0 {
+			return c
+		}
+		return strings.Compare(a, b)
+	})
 	return out
 }
 

@@ -57,6 +57,12 @@ type Language struct {
 	// BareCalls: a function is called with no parenthesis, any word may
 	// be one.
 	BareCalls bool
+	// Keywords are the language's words that name no definition worth a
+	// search when a text writes them as code: its keywords and its own
+	// types (`override`, `suspend`, `Unit` in Kotlin), space-separated.
+	// The code picker leaves out those of the languages a project holds
+	// (#1109): `open` is Python's function, Kotlin's keyword.
+	Keywords string
 
 	ignoreRe, containerRe, basesRe *regexp.Regexp
 }
@@ -74,40 +80,55 @@ const (
 var Languages = []Language{
 	{Name: "Go", Exts: []string{".go"}, def: `^func\s+(?:\([^)]*\)\s*)?(NAME)\s*[\[(]`, Body: "go",
 		Outline: "braces", Containers: []string{"type", "struct", "interface"}, LineEnds: true,
-		Bases: `^\s+\*?([A-Z]\w*)\s*(?://.*)?$`},
+		Bases:    `^\s+\*?([A-Z]\w*)\s*(?://.*)?$`,
+		Keywords: "func nil package import var const type struct interface map chan go defer select range fallthrough goto bool string byte rune uint8 uint16 uint32 uint64 int8 int16 int32 int64 float32 float64"},
 	{Name: "shell", Exts: []string{".sh", ".bash", ".zsh", ".ksh"}, def: `^\s*(?:function\s+(NAME)\b|(NAME)\s*\(\s*\))`, Body: "braces",
-		ShellQuotes: true, HashComments: true, BareCalls: true},
+		ShellQuotes: true, HashComments: true, BareCalls: true,
+		Keywords: "function local then elif fi done esac echo export source"},
 	{Name: "Python", Exts: []string{".py"}, def: `^\s*(?:async\s+)?def\s+(NAME)\s*\(`, Body: "indent",
 		Outline: "indent", Containers: []string{"class"}, Bodies: []string{"def", "async"}, HashComments: true,
-		Bases: `^\s*class\s+\w+\(\s*(?:[\w.]+\.)?([A-Z]\w*)`},
-	{Name: "Ruby", Exts: []string{".rb"}, def: `^\s*def\s+(?:self\.)?(NAME)\b`, Body: "end", HashComments: true, BareCalls: true},
-	{Name: "Lua", Exts: []string{".lua"}, def: `^\s*(?:local\s+)?function\s+(?:[\w.:]*[.:])?(NAME)\s*\(`, Body: "end"},
+		Bases:    `^\s*class\s+\w+\(\s*(?:[\w.]+\.)?([A-Z]\w*)`,
+		Keywords: "def elif None True False self cls lambda pass from import async await with yield global nonlocal raise except finally assert del str"},
+	{Name: "Ruby", Exts: []string{".rb"}, def: `^\s*def\s+(?:self\.)?(NAME)\b`, Body: "end", HashComments: true, BareCalls: true,
+		Keywords: "def end nil self elsif unless until module require yield"},
+	{Name: "Lua", Exts: []string{".lua"}, def: `^\s*(?:local\s+)?function\s+(?:[\w.:]*[.:])?(NAME)\s*\(`, Body: "end",
+		Keywords: "function local nil end then elseif"},
 	{Name: "C and C++", Exts: []string{".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".hxx", ".ino", ".m", ".mm"}, def: cLike, Body: "braces",
 		Outline: "braces", Containers: []string{"class", "struct", "union", "namespace", "enum", "extern", "interface", "protocol", "implementation"},
 		Ignore:  `\[\[[^\]]*\]\]|__attribute__\s*\(\([^)]*\)\)|__declspec\s*\([^)]*\)|alignas\s*\([^)]*\)|template\s*<(?:[^<>]|<[^<>]*>)*>|@\w+`,
-		Preproc: true, Bases: `\b(?:public|protected|private)\s+(?:virtual\s+)?([A-Z]\w*)|^\s*(?:class|struct)\s+\w+\s*:\s*(?:virtual\s+)?([A-Z]\w*)`},
+		Preproc: true, Bases: `\b(?:public|protected|private)\s+(?:virtual\s+)?([A-Z]\w*)|^\s*(?:class|struct)\s+\w+\s*:\s*(?:virtual\s+)?([A-Z]\w*)`,
+		Keywords: "std auto inline virtual override template typename unsigned signed namespace delete include define ifdef ifndef endif pragma union typedef extern sizeof nullptr struct bool void char short long size_t uint8_t uint16_t uint32_t uint64_t int8_t int16_t int32_t int64_t String self super"},
 	{Name: "Java", Exts: []string{".java", ".groovy"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "interface", "enum", "record", "trait"}, Ignore: annotations, Bases: extendsBase, ParamHeaders: true},
+		Outline: "braces", Containers: []string{"class", "interface", "enum", "record", "trait"}, Ignore: annotations, Bases: extendsBase, ParamHeaders: true,
+		Keywords: "extends implements final abstract synchronized throws instanceof interface record boolean String Integer Object Override"},
 	{Name: "Kotlin", Exts: []string{".kt", ".kts"}, def: cLike, Body: "braces",
 		Outline: "braces", Containers: []string{"class", "interface", "object"}, Ignore: annotations, LineEnds: true, ParamHeaders: true,
-		Bases: `\b(?:class|object|interface)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)`},
+		Bases:    `\b(?:class|object|interface)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)`,
+		Keywords: "fun val var override companion object data sealed suspend lateinit internal open inline when typealias Unit Int Long Boolean String Any Float Double"},
 	{Name: "Scala", Exts: []string{".scala"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "object", "trait", "enum"}, Ignore: annotations, LineEnds: true, Bases: extendsBase, ParamHeaders: true},
+		Outline: "braces", Containers: []string{"class", "object", "trait", "enum"}, Ignore: annotations, LineEnds: true, Bases: extendsBase, ParamHeaders: true,
+		Keywords: "def val var object trait override implicit lazy sealed Unit Int String"},
 	{Name: "Swift", Exts: []string{".swift"}, def: cLike, Body: "braces",
 		Outline: "braces", Containers: []string{"class", "struct", "enum", "protocol", "extension", "actor"}, Ignore: annotations, LineEnds: true,
-		Bases: `\b(?:class|struct|enum|protocol|extension|actor)\s+\w+(?:<[^>]*>)?\s*:\s*([A-Z]\w*)`},
+		Bases:    `\b(?:class|struct|enum|protocol|extension|actor)\s+\w+(?:<[^>]*>)?\s*:\s*([A-Z]\w*)`,
+		Keywords: "func let var self Self nil guard extension protocol struct override mutating Int String Bool"},
 	{Name: "C#", Exts: []string{".cs"}, def: cLike, Body: "braces",
 		Outline: "braces", Containers: []string{"class", "struct", "interface", "enum", "record", "namespace"}, Ignore: `\[[^\]]*\]`, Preproc: true, ParamHeaders: true,
-		Bases: `\b(?:class|struct|interface|record)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)`},
+		Bases:    `\b(?:class|struct|interface|record)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)`,
+		Keywords: "using namespace var string bool void override virtual async await sealed readonly"},
 	{Name: "JavaScript and TypeScript", Exts: []string{".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "interface", "namespace", "module", "enum", "type"}, Ignore: annotations, Bases: extendsBase, ParamHeaders: true},
+		Outline: "braces", Containers: []string{"class", "interface", "namespace", "module", "enum", "type"}, Ignore: annotations, Bases: extendsBase, ParamHeaders: true,
+		Keywords: "function undefined let async await typeof instanceof export default yield extends implements interface readonly"},
 	{Name: "Rust", Exts: []string{".rs"}, def: cLike, Body: "braces",
 		Outline: "braces", Containers: []string{"struct", "enum", "trait", "impl", "mod", "union"}, Ignore: `#!?\[[^\]]*\]`,
-		Bases: `\bimpl(?:<[^>]*>)?\s+([A-Z]\w*)(?:<[^>]*>)?\s+for\b`},
+		Bases:    `\bimpl(?:<[^>]*>)?\s+([A-Z]\w*)(?:<[^>]*>)?\s+for\b`,
+		Keywords: "fn let mut impl trait pub self Self crate mod use struct dyn Some None Ok Err Vec String usize isize u8 u16 u32 u64 i8 i16 i32 i64 f32 f64"},
 	{Name: "PHP", Exts: []string{".php"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "interface", "trait", "enum", "namespace"}, Ignore: `#\[[^\]]*\]`, Bases: extendsBase},
+		Outline: "braces", Containers: []string{"class", "interface", "trait", "enum", "namespace"}, Ignore: `#\[[^\]]*\]`, Bases: extendsBase,
+		Keywords: "function echo null array namespace use"},
 	{Name: "Dart", Exts: []string{".dart"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "mixin", "extension", "enum"}, Ignore: annotations, Bases: extendsBase},
+		Outline: "braces", Containers: []string{"class", "mixin", "extension", "enum"}, Ignore: annotations, Bases: extendsBase,
+		Keywords: "void final var dynamic late required"},
 }
 
 func init() {
