@@ -77,6 +77,9 @@ In [role.yaml](../role.yaml), each tried on a real build:
   twoByThree()`, named without the backquotes.
 - **javac's name** is on a later line (`symbol: method mul(int,int)`):
   not read, so the issue's text is not checked for it.
+- **JUnit 5 on Gradle** reports `two by three()`: the `()` is dropped,
+  the name as its file writes it
+  ([#1178](https://github.com/JN0V/workline/issues/1178)).
 
 ## Other languages
 

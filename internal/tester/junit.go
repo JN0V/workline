@@ -3,6 +3,7 @@ package tester
 import (
 	"encoding/xml"
 	"os"
+	"strings"
 )
 
 // result is how a test ended in a report.
@@ -33,7 +34,8 @@ type testcase struct {
 }
 
 // readJUnit adds the tests of a JUnit XML report to results, by id —
-// classname.name, or the name alone — and, when suites is not nil, the
+// classname.name, or the name alone, as its file writes it: the `()`
+// JUnit 5 on Gradle puts after a method's name dropped (#1178) — and, when suites is not nil, the
 // name of the testsuite holding each one (a Go package, a pytest run), or
 // its classname when the suite has none. A test run more than once (a
 // parameter, a retry) is red when one of its runs is. classless, when not
@@ -50,9 +52,10 @@ func readJUnit(file string, results map[string]result, suites map[string]string,
 	var walk func(s suite)
 	walk = func(s suite) {
 		for _, c := range s.Cases {
-			id := c.Name
+			name := strings.TrimSuffix(c.Name, "()")
+			id := name
 			if c.Class != "" {
-				id = c.Class + "." + c.Name
+				id = c.Class + "." + name
 			} else if classless != nil {
 				classless[id] = true
 			}
