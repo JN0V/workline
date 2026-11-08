@@ -92,10 +92,12 @@ const DraftInput = "draft"
 
 // Inputs the line gives the product owner it wakes on a blocked issue
 // (ADR-0059, amended): what is new on it, and the state it was blocked
-// from ("" unknown).
+// from ("" unknown); with SizeInput, the role whose run was too big for
+// it, the product owner asked on the issue's size (ADR-0064, step 3).
 const (
 	RevisitInput     = "revisit"
 	RevisitFromInput = "revisit-from"
+	SizeInput        = "size"
 )
 
 // FailedInput is the input the line gives a step it runs again after a

@@ -300,8 +300,11 @@ func Size(o SizeOptions) (*engine.Result, *Sizes) {
 			found = append(found, Past{Issue: r.is.ID, Kind: k, Spent: r.rec.Fresh(), Normal: l})
 		}
 		for _, name := range slices.Sorted(maps.Keys(r.rec.Spent)) {
-			l := limit(byKind[k].Runs[name], r.is)
-			if top := slices.Max(r.rec.Spent[name]); l > 0 && top > l {
+			runs, l := r.rec.Spent[name], limit(byKind[k].Runs[name], r.is)
+			if len(runs) == 0 {
+				continue // a list emptied by hand: no run to say
+			}
+			if top := slices.Max(runs); l > 0 && top > l {
 				found = append(found, Past{Issue: r.is.ID, Kind: k, Role: name, Spent: top, Normal: l})
 			}
 		}

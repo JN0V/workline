@@ -132,7 +132,7 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		// First seen blocked: what it is now is the base news is told
 		// against, written once, no agent.
 		seen := Record{State: BlockedState, Body: bodyHash(is.Body), Hops: rec.Hops, Reached: rec.Reached, From: rec.From, Why: rec.Why,
-			Since: now.Format(time.RFC3339), Talk: talkHash(comments), Closed: closed, Spent: rec.Spent, Counted: rec.Counted}
+			Since: now.Format(time.RFC3339), Talk: talkHash(comments), Closed: closed, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized}
 		if had && rec.State != BlockedState {
 			seen.From = rec.State // a role blocked it: the line last acted on it there
 		}
@@ -153,6 +153,13 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 			backlog.Keeper, days)
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-blocked-seen", Level: "info", Where: where, Message: said})
 		return nil, &StateWrite{Issue: is.ID, Record: seen, Seen: said}, nil
+	}
+	if rec.SizeOf != "" {
+		// A run too big for its role asked it on the issue's size
+		// (crossed.go): it answers now, not on news.
+		asked := rec
+		asked.Body, asked.Talk, asked.Closed = bodyHash(is.Body), talkHash(comments), closed
+		return sizeAsked(res, asked, is.ID), nil, nil
 	}
 	var news []string
 	if bodyHash(is.Body) != rec.Body {
@@ -240,6 +247,11 @@ func blockedBody(cfg *routing.Config, r Record) string {
 	if ok, _ := revisits(cfg); ok {
 		next = fmt.Sprintf("the %s reads it again when someone comments, its body changes or an issue it waits on closes, else in %d days, and sends it back or says why it stays; a person may move it back by its label at any time, as the board's Blocked column shows",
 			strings.ReplaceAll(backlog.Keeper, "-", " "), cfg.RevisitDays())
+	}
+	if r.SizeOf != "" {
+		// Asked on its size (crossed.go): read at once, not on news.
+		next = fmt.Sprintf("the line asks the %s on its size at once: it narrows the issue's %s and sends it back, or leaves it blocked for a person, who may split it or raise the setting named; a person may move it back by its label at any time",
+			roleSaid(backlog.Keeper), work.Name(work.Scope))
 	}
 	if r.Revisited != "" {
 		next += fmt.Sprintf(" (last read again on %s; the %s's comment says what it decided)", r.Revisited[:min(len(r.Revisited), 10)], strings.ReplaceAll(backlog.Keeper, "-", " "))

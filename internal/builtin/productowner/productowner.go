@@ -1984,6 +1984,13 @@ func blockedSaid(runDir string, comments []string) string {
 	if len(to) > 1 {
 		where = fmt.Sprintf("`to: %s`, the state it was blocked from, or `to: refine` when its need must be read again", to[1])
 	}
+	if role := input(engine.SizeInput); role != "" {
+		// A run too big for its role (ADR-0064, step 3): the same input
+		// crosses the same, so the Scope is the product owner's to narrow,
+		// or the issue a person's.
+		return fmt.Sprintf("Blocked (%s): %s. Read again because %s. The %s's run on it is too big for that role, and a run again on the same input crosses the same: sent back as it is, the issue waits for a person. Decide one, its `why` one plain line: narrow its %s — `refine` with `scope`, the %[5]s rewritten whole to the fewer files its need needs, and `sources` — then `unblock` it, %[6]s; or `blocked`, why its need cannot be narrowed, `person: true`: a person splits it or raises the setting the line names. Never `ready` on it.\n",
+			backlog.LabelBlocked, why, news, strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where)
+	}
 	if files := backlog.ScopeAsked(comments); len(files) > 0 && slices.Contains(to, "ready") {
 		// The developer asks for files outside the Scope (#921): its
 		// Scope is the product owner's to widen, or to keep as it is.

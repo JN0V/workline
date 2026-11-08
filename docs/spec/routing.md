@@ -365,7 +365,7 @@ whose result moves the issue to the next. The table is the routing's
 
 | State | Label | Wakes | Its result moves it to |
 |---|---|---|---|
-| blocked | `workline:blocked` | nobody: its reason on the issue; the product owner reads it again on news ([below](#blocked-read-again)) | — |
+| blocked | `workline:blocked` | nobody: its reason on the issue; the product owner reads it again on news ([below](#blocked-read-again)), at once for a developer's Scope ask or a run too big for its role | — |
 | doing | `workline:developing` | nobody: the developer's claim; one with no pull request wakes the developer to let it go, past `claim-hours` or on a change to its body, the day said until then ([#1084](https://github.com/JN0V/workline/issues/1084)); one whose agent wrote no code on the body it still has is blocked for a person past `claim-hours`, never run again on that input (`no-code-spent`, [#1120](https://github.com/JN0V/workline/issues/1120)) | — |
 | ready | `workline:ready` | the developer | doing |
 | tests | `workline:needs-tests` | the tester | ready |
@@ -467,16 +467,30 @@ whose result moves the issue to the next. The table is the routing's
   agent objects to a frozen test beside it: the tester answers that.
   The tester's comment then says the line runs it again, never that it
   blocks it.
-- **A task too big for the context is never run again**
-  ([#1160](https://github.com/JN0V/workline/issues/1160)): a run that
-  blocked, its agent not asked for its prompt's size
-  (`prompt-over-budget`), is a machine error of kind size. The same
-  input gives the same prompt, so the step itself moves the issue to
-  `workline:blocked`, the size, the budget and what to change said
-  (`machine-error-size`); a record from before, its kind `budget`, the
-  same at the next run. The tester's comment says so. Blocked is a
-  stopgap, until [ADR-0064 step 3](../adr/0064-size-is-a-target-not-a-wall.md#build-plan)
-  hands it to the product owner.
+- **A run too big for its role asks the product owner first**
+  ([ADR-0064, step 3](../adr/0064-size-is-a-target-not-a-wall.md#2-two-checkpoints);
+  [#1168](https://github.com/JN0V/workline/issues/1168)): its outcome is
+  `needs-input(product-owner: size)`, never a machine error, never run
+  again on the same input, which crosses the same
+  ([#1160](https://github.com/JN0V/workline/issues/1160)).
+  - **When**: its agent not asked for its prompt's size
+    (`prompt-over-budget`, passed or not); blocked at its token cap
+    (`ai-max-tokens`); or blocked, no machine error nor code named, on
+    what it read cut (`input-cut`).
+  - **Then**: the step moves the issue to `workline:blocked`, the size
+    said, and that the product owner reads it at once (`size-crossed`).
+    The record keeps the role (`size-of`) and the state (`sized`).
+  - **The product owner reads it** at the next run, no news needed
+    (`state-revisit`), told the size: it narrows the Scope and sends it
+    back, or keeps it blocked, `person: true`.
+  - **Once a state**: a second crossing from a state in `sized`, the
+    product owner's own crossing, or a project whose product owner
+    reads no blocked issue, waits for a person at once
+    (`size-crossed-again`, `size-crossed-own`).
+  - **The work is kept**: only the state's label moves; a run whose role
+    moved the issue keeps that move.
+  - A record from before, its machine error of kind `size` or `budget`,
+    is spent at once, for a person (`machine-error-spent`).
 - **The code a role lacks is given**: the product owner naming the
   code an issue is about (`sources`) that its task did not give
   ([the code picker](code-picker.md)), its Scope left for that code, or
@@ -644,6 +658,10 @@ only then.
   comment blocking it holding the developer's `workline:scope-ask`
   mark, the product owner is woken at once (`state-revisit`), told the
   files ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)).
+- **A run too big for its role**: the record's `size-of` names it; the
+  product owner is woken at once (`state-revisit`), told the role, the
+  record then written without it, so once
+  ([the line of states](#the-line-of-states)).
 - **The developer's first step with code only outside the Scope** goes
   back to refine, not Blocked: the product owner is due on its own
   state, told the files; the same files asked again, whatever the

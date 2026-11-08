@@ -1,0 +1,38 @@
+case: routing/size-crossing-twice-waits-for-a-person
+about: >
+  One size question to the product owner a state (ADR-0064, §4; #1168):
+  #3's record says the tester's state already asked it once, and the
+  product owner sent #3 back to its tests. The tester's run is too big
+  again: the line blocks #3 for a person, saying the product owner was
+  asked already, and never wakes the product owner on it again.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+        comments:
+          - "**workline's line** last woke the product owner.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"0a1b2c3d4e5f\",\"hops\":1,\"from\":\"tests\",\"sized\":[\"tests\"],\"since\":\"2026-11-05T07:00:00Z\",\"revisited\":\"2026-11-05T07:10:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/blocked-for-size.sh", then: again}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: prompt-over-budget}
+    - {rule: size-crossed-again, level: warn, where: "#3", message: "the tester's run on it is too big for its context"}
+    - {rule: size-crossed-again, level: warn, where: "#3", message: "the product owner was asked on its size from tests already: a person narrows or splits it, or raises the setting named: moved to blocked"}
+  no-findings: [{rule: state-revisit}, {rule: size-crossed}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["the product owner was asked on its size from tests already"]
