@@ -524,10 +524,14 @@ whose result moves the issue to the next. The table is the routing's
   - **A person's, with no time-out**: no product owner reads it again,
     news or a week (`backstop-waits`). A person puts `x-large` and moves
     it back by its label, or splits it: each new issue counts its own.
+  - **A review round stops there too** (the panel of 2026-11-08): due
+    on an issue at its backstop, the round is not run, by the line nor
+    by `workline develop --merge-request`; the issue is blocked, the
+    pull request kept open (`backstop-crossed` on the pull request).
   - **The liveness caps stay**: `max-hops`, `ai-max-turns`,
-    `ai-max-seconds`, the machine-error budget. A developer's review
-    round on its pull request is not stopped by it: counted, and capped
-    by its own `rounds`.
+    `ai-max-seconds`, the machine-error budget, the rounds' `rounds`.
+  - **At `x-large`'s 16×, nothing lifts it** (the same panel): a
+    person splits the issue or finishes it by hand.
 - **The code a role lacks is given**: the product owner naming the
   code an issue is about (`sources`) that its task did not give
   ([the code picker](code-picker.md)), its Scope left for that code, or

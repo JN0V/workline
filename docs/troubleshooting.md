@@ -97,7 +97,8 @@ goes ready, a hidden record that does not read: in
   or raise the setting the line names, then move it back by its label.
 - `backstop-crossed`: the issue's runs, all roles, spent 4× its normal
   (1.6M fresh tokens at the seed); `large` never raises it. It waits for
-  you, no product owner asked (`backstop-waits` on news). Put
+  you, no product owner asked (`backstop-waits` on news), no review
+  round run on its pull request. Put
   `workline:size/x-large` on it (16× its normal) and move it back by its
   label, or split it into new issues
   ([routing](spec/routing.md#the-line-of-states)).

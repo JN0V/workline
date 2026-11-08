@@ -430,7 +430,7 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		return res
 	}
 	if mr, ok := t.rounds[o.Target.ID]; ok && step == nil && block == nil {
-		byRound(res, f, o, event, o.Target.ID, mr)
+		byRound(res, cfg, f, spec, o, event, o.Target.ID, mr)
 		return res
 	}
 	switch {
@@ -767,7 +767,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		}
 	}
 	issued := started
-	rounds := roundsDue(res, cfg, f, o, &issued)
+	rounds := roundsDue(res, cfg, f, spec, o, &issued)
 	switch {
 	case list:
 		res.Summary = fmt.Sprintf("%s: %d %s due:", ReconcileEvent, len(res.Due), plural(len(res.Due), "issue", "issues"))
@@ -800,7 +800,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 // with the issues' steps (started). In CI (list), its job starts each
 // round's own run; on a machine, each is said with its command: a round
 // works on its branch, checked out.
-func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, o engine.Options, started *int) []Review {
+func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o engine.Options, started *int) []Review {
 	if !cfg.Runs("developer") {
 		return nil
 	}
@@ -816,6 +816,17 @@ func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, o engine.Options
 			continue
 		}
 		if !roundDue(res, f, o.Repo, mr) {
+			continue
+		}
+		if stop, w := roundStopped(res, f, cfg, o.Repo, mr); stop {
+			// Its issue at its backstop (ADR-0064, §5): no round, the
+			// issue blocked — by its own run, in CI, with no agent.
+			switch {
+			case w != nil && o.Inputs[ReconcileInput] == "list":
+				res.Due = append(res.Due, w.Issue)
+			case w != nil:
+				keepState(res, cfg, f, spec, o, *w, "")
+			}
 			continue
 		}
 		if *started >= cfg.ReconcileMax {

@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
@@ -192,6 +193,78 @@ func passed(res *Result, f forge.Forge, cfg *routing.Config, st *stateStep) {
 	st.write.Record = blocking(st.write.Record, from, bs.reason(spent), comments)
 	st.write.Record.SizeOf, st.write.Record.Backstop = "", bs.Tokens
 	st.write.Blocked, st.write.Failed = bs.said(spent), false
+}
+
+// issueBackstop reads issue id's record, its comments and its backstop,
+// as a step reads them, for a run outside the line's steps: a review
+// round on its pull request. spent: its runs' fresh tokens so far.
+func issueBackstop(f forge.Forge, b forge.Backlog, repo string, id int) (is *forge.Issue, rec Record, comments []string, bs backstop, spent int, err error) {
+	if is, err = f.Issue(id); err != nil {
+		return nil, Record{}, nil, backstop{}, 0, err
+	}
+	if comments, err = b.Comments(forge.Target{Kind: "issue", ID: id}); err != nil {
+		return nil, Record{}, nil, backstop{}, 0, err
+	}
+	rec, _ = recordIn(comments)
+	if spent = rec.Fresh(); spent == 0 {
+		return is, rec, comments, backstop{}, 0, nil
+	}
+	open, err := b.Issues()
+	if err != nil {
+		return nil, Record{}, nil, backstop{}, 0, err
+	}
+	effortScheme(repo, b, open) // a scheme not read leaves the seed undoubled, said by the line's own steps
+	return is, rec, comments, backstopOf(b, open, *is), spent, nil
+}
+
+// BackstopSaid says why issue id's runs reached its backstop, and what
+// a person does about it; "" when they did not, or when f lists no
+// comments. The developer's review round reads it (developer.Backstop).
+func BackstopSaid(f forge.Forge, repo string, id int) (string, error) {
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return "", nil
+	}
+	_, _, _, bs, spent, err := issueBackstop(f, b, repo, id)
+	if err != nil || bs.Tokens == 0 || spent < bs.Tokens {
+		return "", err
+	}
+	return bs.said(spent), nil
+}
+
+// roundStopped says whether the review round due on mr is stopped, its
+// issue's runs at their backstop (ADR-0064, §5, the panel of
+// 2026-11-08): said on the pull request, kept open, and the write that
+// blocks its issue, nil when the line blocked it at its backstop already.
+// One not read is said, and runs: the round's own check reads it again.
+func roundStopped(res *Result, f forge.Forge, cfg *routing.Config, repo string, mr forge.MergeRequest) (bool, *StateWrite) {
+	id := developer.BranchIssue(mr.Branch)
+	b, ok := f.(forge.Backlog)
+	if id == 0 || !ok {
+		return false, nil
+	}
+	where := fmt.Sprintf("merge request %d", mr.ID)
+	is, rec, comments, bs, spent, err := issueBackstop(f, b, repo, id)
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "backstop-unread", Level: "warn", Where: where,
+			Message: fmt.Sprintf("#%d's backstop was not read: its round's own check reads it again, %s", id, forge.Said(err))})
+		return false, nil
+	}
+	if bs.Tokens == 0 || spent < bs.Tokens {
+		return false, nil
+	}
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "backstop-crossed", Level: "warn", Where: where,
+		Message: fmt.Sprintf("%s: no review round runs; #%d moved to %s, this pull request kept open", bs.said(spent), id, BlockedState)})
+	if rec.State == BlockedState && rec.Backstop == bs.Tokens {
+		return true, nil
+	}
+	from := rec.State
+	if s, ok := cfg.StateOf(is.Labels); ok {
+		from = s.Name
+	}
+	r := blocking(rec, from, bs.reason(spent), comments)
+	r.Backstop = bs.Tokens
+	return true, &StateWrite{Issue: id, Record: r, Blocked: bs.said(spent)}
 }
 
 // backstopNext is what a person does on an issue blocked at its
