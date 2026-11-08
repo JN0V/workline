@@ -1,6 +1,6 @@
 ---
-sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, roles/tester/role.yaml]
-checked: a871936d
+sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, internal/tester/junit.go, roles/tester/role.yaml]
+checked: ea7af9ef
 verified: agent:claude-code
 ---
 # A missing name, told from a broken build
@@ -51,33 +51,56 @@ flowchart LR
 
 | Key | |
 |---|---|
-| `error` | a regular expression matching one error line of the test command's output, with groups `file` (from the repository's root) and `message` |
+| `error` | a regular expression matching one error line of the test command's output, with groups `file` and `message` |
 | `missing-name` | the messages naming what the code lacks; the name in a group `name`, else the message's first quoted word (`‘lostCount’`) |
-| `test-name` | finds the tests a test file declares; its first group is the name |
+| `test-name` | finds the tests a test file declares; its first group that matched is the name; empty, the row names no tests |
 
-Go's is the default, in [role.yaml](../role.yaml). A wrong pattern
-blocks before any run (`setting-invalid`).
+- **The file, from the repository's root**: an absolute path or a
+  `file://` URI under the folder the tests ran in is read from there,
+  as Gradle prints Kotlin's and javac's errors
+  ([#1177](https://github.com/JN0V/workline/issues/1177)).
+- **A wrong pattern** blocks before any run (`setting-invalid`).
+- **Set in a project**, the list replaces the defaults whole.
+
+## The defaults
+
+In [role.yaml](../role.yaml), each tried on a real build:
+
+| Ecosystem | Error line | Missing name |
+|---|---|---|
+| Go | `calc/mul_test.go:6:5: undefined: Mul` | `undefined`, `has no field or method`, `unknown field` |
+| Kotlin, by Gradle | `e: file:///…/MulTest.kt:10:25 Unresolved reference 'mul'.`; Kotlin 1's `e: /…/MulTest.kt: (10, 25): …` | `Unresolved reference`, `No parameter with name` |
+| Java (`javac`) | `/…/MulTest.java:9: error: cannot find symbol` | `cannot find symbol` |
+| Gradle build files | `Build file '/…/build.gradle' line: 3` | none: it blocks |
+
+- **Kotlin's tests**: `@Test fun `two by three`()` or `@Test fun
+  twoByThree()`, named without the backquotes.
+- **javac's name** is on a later line (`symbol: method mul(int,int)`):
+  not read, so the issue's text is not checked for it.
+- **JUnit 5 on Gradle** reports `two by three()`: the `()` is dropped,
+  the name as its file writes it
+  ([#1178](https://github.com/JN0V/workline/issues/1178)).
 
 ## Other languages
 
-The same rule; their error shapes, from each compiler's documentation.
-Only Go's is built and tested.
+The same rule; their error shapes, from each compiler's documentation,
+not tried yet.
 
 | Language | Missing name | Shape |
 |---|---|---|
 | TypeScript (`tsc`) | `TS2304 Cannot find name`, `TS2339 Property … does not exist on type` | one line: `file(line,col): error TS2304: …` |
 | C# | `CS0103` (a name), `CS1061` (a member) | one line: `file(line,col): error CS0103: …` |
 | Rust | `E0425` (a value), `E0599` (a method), `E0433` (a path) | two lines: `error[E0425]: …`, then ` --> file:line:col` |
-| Java (`javac`) | `cannot find symbol` | the file first, the symbol on later lines |
+| Java by Maven | `cannot find symbol` | one line: `[ERROR] /…/X.java:[9,25] cannot find symbol` |
 
-- **One-line shapes** (TypeScript, C#): set `build-errors` with their
-  patterns. A message whose first quoted word is the missing name
+- **One-line shapes** (TypeScript, C#, Maven): set `build-errors` with
+  their patterns. A message whose first quoted word is the missing name
   (`Cannot find name 'lostCount'`) needs no group `name`.
 - **Something else quoted first** needs a group `name`. C#'s CS1061,
   `'Stats' does not contain a definition for 'lostCount'`, quotes the
   type first: match it with `definition for '(?P<name>\w+)'`.
-- **Several lines** (Rust, Java): one line does not hold both the file
-  and the message, so these are not read yet. `cargo
+- **Several lines** (Rust): one line does not hold both the file and
+  the message, so these are not read yet. `cargo
   --message-format=json` would give both in one record.
 
 ## The lint

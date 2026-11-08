@@ -1,0 +1,21 @@
+case: tester/kotlin-test-named-with-parens-counted-once
+about: >
+  The tests alone, in two Kotlin modules: one test does not build, a
+  missing name; the other builds and fails by its assertion, JUnit 5 on
+  Gradle naming it `loud()`. Its name read from its file, `loud`, is the
+  one the report holds: each test counted once, two, not three (#1178).
+given:
+  repo: kotlin-tested
+  setup:
+    - git checkout -q -b workline/issue-8
+    - |
+      printf 'package calc\n\nimport org.junit.jupiter.api.Test\n\nclass MulTest {\n    @Test\n    fun `two by three`() {\n        check(mul(2, 3) == 6)\n    }\n}\n' > calc/src/test/kotlin/calc/MulTest.kt
+    - |
+      printf 'package text\n\nimport org.junit.jupiter.api.Test\n\nclass LoudTest {\n    @Test\n    fun `loud`() {\n        fail("not yet")\n    }\n}\n' > text/src/test/kotlin/text/LoudTest.kt && git add . && git commit -qm "test: multiply, shout"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "2 new tests, red on the base (1 not built there, a missing name)"
+  no-findings: [{rule: tests-not-built, where: junit.xml}]

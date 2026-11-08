@@ -2,7 +2,9 @@ package tester
 
 import (
 	"fmt"
+	"net/url"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -12,15 +14,17 @@ import (
 // code lacks: a test of code not written yet, red for the right reason
 // (ADR-0055, the proof).
 type BuildErrors struct {
-	// Error matches one error line; its groups `file` (from the
-	// repository's root) and `message`.
+	// Error matches one error line; its groups `file` and `message`. A
+	// file absolute, or a file:// URI, under the folder the tests ran in
+	// is read from the repository's root (#1177).
 	Error string `json:"error"`
 	// MissingName matches a message naming what the code lacks; the
 	// name itself in its group `name`, else the first quoted word of the
 	// message (#1111).
 	MissingName []string `json:"missing-name"`
-	// TestName finds the tests a test file declares, its first group the
-	// name: their ids while the file does not build.
+	// TestName finds the tests a test file declares, the first of its
+	// groups that matched the name: their ids while the file does not
+	// build. Empty, a row naming no tests (a build file's errors).
 	TestName string `json:"test-name"`
 }
 
@@ -50,6 +54,10 @@ func compileBuildErrors(list []BuildErrors) ([]buildRules, error) {
 			}
 			r.missing = append(r.missing, re)
 		}
+		if b.TestName == "" {
+			out = append(out, r)
+			continue
+		}
 		if r.testName, err = regexp.Compile(b.TestName); err != nil || r.testName.NumSubexp() < 1 {
 			if err == nil {
 				err = fmt.Errorf("a group holding the name is needed")
@@ -71,8 +79,10 @@ type buildError struct {
 
 // buildErrorsIn reads the error lines of output by each ecosystem's
 // pattern. Each is a missing name only when it lies in one of tests (the
-// change's test files) and its message names what the code lacks.
-func buildErrorsIn(output string, tests []string, rules []buildRules) []buildError {
+// change's test files) and its message names what the code lacks. A
+// file under one of roots, the folder the command ran in, is read from
+// there.
+func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...string) []buildError {
 	inTests := map[string]bool{}
 	for _, t := range tests {
 		inTests[t] = true
@@ -85,7 +95,7 @@ func buildErrorsIn(output string, tests []string, rules []buildRules) []buildErr
 			if m == nil {
 				continue
 			}
-			file := path.Clean(strings.TrimPrefix(m[r.error.SubexpIndex("file")], "./"))
+			file := fromRoot(m[r.error.SubexpIndex("file")], roots)
 			msg := m[r.error.SubexpIndex("message")]
 			e := buildError{file: file, line: line, rules: i}
 			if inTests[file] {
@@ -103,11 +113,53 @@ func buildErrorsIn(output string, tests []string, rules []buildRules) []buildErr
 	return errs
 }
 
-// testNames is the tests content declares, by the rules' test-name.
+// fromRoot is a file an error line names, from the repository's root: a
+// file:// URI as its path, one under a root as the path below it. Any
+// other is kept, cleaned.
+func fromRoot(file string, roots []string) string {
+	if rest, ok := strings.CutPrefix(file, "file://"); ok {
+		if p, err := url.PathUnescape(rest); err == nil {
+			rest = p
+		}
+		file = rest
+	}
+	if path.IsAbs(file) {
+		for _, r := range roots {
+			r = strings.TrimSuffix(filepath.ToSlash(r), "/")
+			if rel, ok := strings.CutPrefix(file, r+"/"); r != "" && ok {
+				return path.Clean(rel)
+			}
+		}
+	}
+	return path.Clean(strings.TrimPrefix(file, "./"))
+}
+
+// rootsOf is the roots of a command run in dir: dir, and dir with its
+// links resolved, as a compiler may print it (macOS's /var is
+// /private/var).
+func rootsOf(dir string) []string {
+	roots := []string{dir}
+	if r, err := filepath.EvalSymlinks(dir); err == nil && r != dir {
+		roots = append(roots, r)
+	}
+	return roots
+}
+
+// testNames is the tests content declares, by the rules' test-name: the
+// first group of each match that matched, as a Kotlin name in
+// backquotes or not.
 func testNames(content string, r buildRules) []string {
+	if r.testName == nil {
+		return nil
+	}
 	var names []string
 	for _, m := range r.testName.FindAllStringSubmatch(content, -1) {
-		names = append(names, m[1])
+		for _, g := range m[1:] {
+			if g != "" {
+				names = append(names, g)
+				break
+			}
+		}
 	}
 	return names
 }
