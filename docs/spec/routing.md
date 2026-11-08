@@ -442,14 +442,17 @@ whose result moves the issue to the next. The table is the routing's
 - **A person's labels are input, the role's own writes are not**
   ([ADR-0063, §3](../adr/0063-every-open-issue-is-due-waiting-or-done.md#3-the-input-of-a-step)):
   the record also keeps `workline:accepted` and the size tiers
-  (`labels`). After a step's run, the body and those labels are
-  recorded as the run left them: the role's own edit does not wake it
-  again; a label a person puts on afterwards does. A record from before
-  reads them against the labels' dates and its last run (`ran`).
+  (`labels`). After a step's run, the body and the size tiers are
+  recorded as the run left them, `workline:accepted` as the step
+  started on it: the role's own edit does not wake it again; a label a
+  person puts on afterwards does. A record from before takes its size
+  tiers as seen, and `workline:accepted` as new only when put on after
+  its last run (`ran`).
 - **A clean review takes no agent**: refine's step woken by the
   reviewer's review alone, nothing important open, every section and
   scenario there, runs the product owner with no agent: its move to
-  ready is a rule (`state-ready-clean`).
+  ready is a rule (`state-ready-clean`). Left undone, the line says so
+  (`state-ready-held`) and the agent reads the review at the next run.
 - **A refusal is not acted**: an issue in the tester's state whose last
   tester run wrote no tests, said in the tester's comment, is never
   left waiting there: the line moves it to `workline:blocked`, the

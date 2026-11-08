@@ -161,6 +161,9 @@ type Record struct {
 	// input; the role's own is not. "-" for none; "" in a record from
 	// before, read against the labels' dates (labelsBefore).
 	Labels string `json:"labels,omitempty"`
+	// Clean: the review's hash (Spec) a step with no agent ran on, its
+	// move to ready left undone (cleanReview): the agent reads it next.
+	Clean string `json:"clean,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -333,36 +336,44 @@ func inputLabels(labels []string) string {
 	return strings.Join(slices.Compact(in), ",")
 }
 
-// labelsBefore is the input labels a record from before Labels saw:
-// those of is put on before the line last ran a step on it (rec.Ran), as
-// the forge dates each; a label it cannot date, or a record with no run
-// dated, counts as seen — never a wake on every issue at once.
-func labelsBefore(b forge.Backlog, is forge.Issue, rec Record) (string, error) {
+// labelsBefore is the input labels a record from before Labels saw,
+// read from the trail its step already asked (no call more): a size tier
+// on the issue was seen — the line or the product owner puts it on, in
+// that last run as often as not —; a person's yes was seen unless the
+// forge dates it after the line's last run on the issue (rec.Ran). A yes
+// it cannot date, or a record with no run dated, was seen: never a wake
+// on every issue at once.
+func labelsBefore(is forge.Issue, rec Record, t forge.Trail) string {
+	fresh := rec.Ran != "" && t.Accepted != "" && later(t.Accepted, rec.Ran)
 	var seen []string
 	for _, l := range is.Labels {
-		if inputLabels([]string{l}) == "-" {
-			continue
-		}
-		if rec.Ran != "" {
-			t, err := b.Trail(is.ID, l)
-			if err != nil {
-				return "", err
-			}
-			if later(t.Labeled, rec.Ran) {
-				continue // put on since its last run: new input
-			}
+		if fresh && backlog.Accepted(forge.Issue{Labels: []string{l}}) {
+			continue // put on since its last run: new input
 		}
 		seen = append(seen, l)
 	}
-	return inputLabels(seen), nil
+	return inputLabels(seen)
 }
 
 // afterWrite records in r the issue as it stands once the step's run
-// wrote (is): its body and input labels. The marks the step kept on the
-// body it was woken on follow it, so the role's own edit wakes neither
-// it nor them (ADR-0063, §3).
+// wrote (is): its body and size tiers. A person's yes is kept as the step
+// started on it (r.Labels): no role puts it on, and one put on while the
+// run's writes wait for their apply job is new input. The marks the step
+// kept on the body it was woken on follow it, so the role's own edit
+// wakes neither it nor them (ADR-0063, §3).
 func afterWrite(r *Record, is forge.Issue) {
-	r.Labels = inputLabels(is.Labels)
+	var in []string
+	for _, l := range strings.Split(r.Labels, ",") {
+		if backlog.Accepted(forge.Issue{Labels: []string{l}}) {
+			in = append(in, l)
+		}
+	}
+	for _, l := range is.Labels {
+		if backlog.SizeTier([]string{l}) != "" {
+			in = append(in, l)
+		}
+	}
+	r.Labels = inputLabels(in)
 	was, now := r.Body, bodyHash(is.Body)
 	if was == now {
 		return

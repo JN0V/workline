@@ -1046,5 +1046,11 @@ func (f *Fake) Trail(id int, label string) (Trail, error) {
 	if err != nil {
 		return Trail{}, err
 	}
-	return Trail{Labeled: it.Labeled[label], Links: it.Links}, nil
+	t := Trail{Labeled: it.Labeled[label], Links: it.Links}
+	for _, l := range AcceptedLabels {
+		if at := it.Labeled[l]; at != "" && slices.Contains(it.Labels, l) {
+			t.Accepted = at
+		}
+	}
+	return t, nil
 }

@@ -18,9 +18,11 @@
   product owner, the tester and the reviewer, where the agent has them);
   [routing.md](../spec/routing.md#once-a-state-the-record)
 - **Research:** [line-liveness.md](../research/line-liveness.md)
-- **Amended:** [2026-11-05](#amendment-2026-11-05-the-testers-read-tools-first),
-  the tester's read tools before step 9, the token ceiling measured; [2026-11-08](#amendment-2026-11-08-a-persons-labels-are-input-a-roles-own-write-is-not),
-  §3's input: a person's labels in, the role's own write out
+- **Amended:**
+  - [2026-11-05](#amendment-2026-11-05-the-testers-read-tools-first):
+    the tester's read tools before step 9, the token ceiling measured;
+  - [2026-11-08](#amendment-2026-11-08-a-persons-labels-are-input-a-roles-own-write-is-not):
+    §3's input, a person's labels in, the role's own write out
 
 ## Context
 
@@ -853,6 +855,7 @@ from the runs' `calls.jsonl`):
   ([#1110](https://github.com/JN0V/workline/pull/1110#tried)). Under
   the ceiling.
 
+[ADR-0018]: 0018-the-product-owner.md
 [ADR-0026]: 0026-the-product-owners-autonomy-is-a-level.md
 [ADR-0042]: 0042-the-engine-merges-by-the-projects-policy.md
 [ADR-0046]: 0046-the-auditor-re-checks-every-roles-acts.md
@@ -873,14 +876,24 @@ label, so a person's `workline:accepted` woke nothing
 
 - **§3, the input of a step, adds**: a person's labels that are not a
   state's, `workline:accepted` and the size tiers.
-- **A role's own write is not new input for it**: the body and those
-  labels are recorded as they stand after the step's run, its writes
-  in. No lookup of who wrote what.
+- **A role's own write is not new input for it**: the body and the size
+  tiers are recorded as they stand after the step's run, its writes in.
+  No lookup of who wrote what. `workline:accepted` is recorded as the
+  step started on it: no role puts it on, and one put on while CI's
+  apply job waits is new input.
+- **Records from before**, with no `labels`: a size tier on the issue
+  was seen; `workline:accepted` was seen unless the forge dates it after
+  the record's last run (`ran`), read from the trail the step already
+  asks. No issue wakes for the migration alone.
 - **A bot's issue is the project's**: a split's children the line's App
   opened are never an outsider's
-  ([#1195](https://github.com/JN0V/workline/issues/1195)).
+  ([#1195](https://github.com/JN0V/workline/issues/1195)). This widens
+  [ADR-0018]'s outsider rule, which read only the author's association.
+  A role's marker counts only with a bot as its author; GitHub Actions'
+  own bot only with that marker, a role's finding.
 - **A move to ready after a clean spec review takes no agent**
-  (principle 4).
+  (principle 4). If it does not happen, the line says so
+  (`state-ready-held`) and the agent reads the review at the next run.
 
 Built on `due`, the record of today, ahead of steps 6–8: the
 record's `labels` field is what the step log's input digest will take

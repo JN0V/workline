@@ -199,7 +199,13 @@ const Eyes = "eyes"
 type Trail struct {
 	Labeled string `json:"labeled,omitempty"` // when it last got the label, RFC 3339 or YYYY-MM-DD; "" when the forge does not say
 	Links   []Link `json:"links,omitempty"`
+	// Accepted: when it last got a person's yes, workline:accepted, read
+	// in the same call; "" when it has none, or the forge does not say.
+	Accepted string `json:"accepted,omitempty"`
 }
+
+// AcceptedLabels are a person's yes, in both spellings (the backlog's).
+var AcceptedLabels = []string{"workline:accepted", "workline::accepted"}
 
 // Link is a pull or merge request, or a commit, naming an issue.
 type Link struct {

@@ -177,11 +177,9 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		spec = "" // a review is read in refine alone: no other state woken by it
 	}
 	if had && rec.Labels == "" {
-		// A record from before Labels: a person's label put on since its
+		// A record from before Labels: a person's yes put on since its
 		// last run is new input (ADR-0063, §3), the others seen.
-		if rec.Labels, err = labelsBefore(b, is, rec); err != nil {
-			return nil, nil, err
-		}
+		rec.Labels = labelsBefore(is, rec, trail)
 	}
 	now, ok := due(cfg, s, is, trail.Labeled, spec, rec, had)
 	changed := ok // due on a new state, label, body or review: not a retry (typedDue)
@@ -401,7 +399,7 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 // owner's run makes with no agent (#128).
 func cleanReview(is forge.Issue, notes []forge.Note, rec, now Record, had bool) bool {
 	if !had || rec.State != now.State || rec.Body != now.Body || rec.Labeled != now.Labeled ||
-		!sameLabels(rec, now) || rec.Spec == now.Spec || now.Timeout != rec.Timeout {
+		!sameLabels(rec, now) || rec.Spec == now.Spec || now.Timeout != rec.Timeout || rec.Clean == now.Spec {
 		return false
 	}
 	comments := forge.Bodies(notes)
@@ -670,6 +668,14 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			return
 		}
 	}
+	if st.ai == "none" && status == verdict.Pass && !movedToReady(res.Findings[before:], st.write.Issue) {
+		// Its move to ready, with no agent, left undone (a check of the
+		// product owner's held it): said, the review left unread, and the
+		// agent reads it at the next run — never a silent park.
+		st.write.Record.Spec, st.write.Record.Clean = st.rec.Spec, st.write.Record.Spec
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-ready-held", Level: "warn", Where: fmt.Sprintf("#%d", st.write.Issue),
+			Message: "the move to ready with no agent did not happen: the product owner's agent reads the review at the next run"})
+	}
 	st.write.Record.Spent = spend(st.write.Record.Spent, res.Steps[first:])
 	passed(res, f, cfg, &st) // its run took the issue to its backstop: a person's (ADR-0064, §5)
 	st.write.After = true    // its body and labels as its run left them (ADR-0063, §3)
@@ -909,4 +915,13 @@ func lateSaid(res *Result, last string, now time.Time) {
 		int(gap.Hours()), int(gap.Minutes())%60, t.UTC().Format("2006-01-02 15:04 UTC"), int(ReconcileLate.Hours()))
 	res.Summary += "; late: " + said
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-late", Level: "warn", Message: said})
+}
+
+// movedToReady says whether a step's findings say it moved issue id to
+// ready.
+func movedToReady(findings []verdict.Finding, id int) bool {
+	where := fmt.Sprintf("#%d", id)
+	return slices.ContainsFunc(findings, func(f verdict.Finding) bool {
+		return f.Where == where && strings.HasPrefix(f.Rule, "done") && strings.Contains(f.Message, "to ready")
+	})
 }
