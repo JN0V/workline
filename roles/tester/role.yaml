@@ -84,7 +84,8 @@ settings:
   # path, or a pattern, `**` spanning folders, each file it names read:
   # a report per module (`**/build/test-results/**/*.xml`, Gradle;
   # `**/target/surefire-reports/*.xml`, Maven), removed before each run.
-  # A file git tracks, or one in a nested repository, is never removed,
+  # A file git tracks, one in a nested repository, or one through a folder
+  # linked outside the root (`bazel-testlogs/*/*/test.xml`) is never removed,
   # and read only if the run rewrites it into a JUnit report (`pom.xml`
   # under `**/*.xml`); a pattern leaving the root (`../`, `/`) is refused.
   test-report: junit.xml
