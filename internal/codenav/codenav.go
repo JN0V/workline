@@ -84,7 +84,7 @@ var Languages = []Language{
 		Keywords: "func nil package import var const type struct interface map chan go defer select range fallthrough goto bool string byte rune uint8 uint16 uint32 uint64 int8 int16 int32 int64 float32 float64"},
 	{Name: "shell", Exts: []string{".sh", ".bash", ".zsh", ".ksh"}, def: `^\s*(?:function\s+(NAME)\b|(NAME)\s*\(\s*\))`, Body: "braces",
 		ShellQuotes: true, HashComments: true, BareCalls: true,
-		Keywords: "function local then elif fi done esac echo export source"},
+		Keywords: "function local then elif fi done esac"}, // echo, export, source: commands, searched as a function is (#1189)
 	{Name: "Python", Exts: []string{".py"}, def: `^\s*(?:async\s+)?def\s+(NAME)\s*\(`, Body: "indent",
 		Outline: "indent", Containers: []string{"class"}, Bodies: []string{"def", "async"}, HashComments: true,
 		Bases:    `^\s*class\s+\w+\(\s*(?:[\w.]+\.)?([A-Z]\w*)`,

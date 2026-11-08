@@ -1014,7 +1014,12 @@ func aside(f string) bool { return asideFolder.MatchString(f) }
 // conventions of its ecosystem (#1109), one a row.
 var asideFolders = []string{
 	`(?i:(^|/)(tests?|examples?|tools|mocks?|testdata|spec)/)`, // most: tests/, test/ (Gradle's src/test/ too), spec/, Go's testdata/
-	`(^|/)src/(test\w+|\w+Test\w*)/`,                           // Gradle's other source sets: src/androidTest/, src/testFixtures/, src/commonTest/
+	// Gradle's other source sets, by how they are named: a target's or a
+	// suite's ending in `Test` (commonTest, iosX64Test, androidUnitTest,
+	// integrationTest), testFixtures, a build variant's (testFreeDebug,
+	// androidTestDebug). A project's own src/testing/ or src/testutil/ is
+	// code (#1189).
+	`(^|/)src/([a-z][a-zA-Z0-9]*Test|testFixtures|(test|androidTest)([A-Z][a-zA-Z0-9]*)?(Debug|Release))/`,
 	`(^|/)__(tests|mocks)__/`,                                  // Jest's
 	`(^|/)[\w.]+\.(Unit|Integration)?Tests?/`,                  // a .NET test project: Shop.Tests/, Shop.UnitTests/
 }

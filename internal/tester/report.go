@@ -28,8 +28,10 @@ func reportInTree(pattern string) string {
 // a pattern one folder deep (`target/surefire-reports/*.xml`), or one
 // with `**` spanning folders, as Gradle writes a report per module,
 // `**/build/test-results/**/*.xml` (#1175). A `**` pattern walks from
-// the folder its fixed part names, the root's `.git` left out. A
-// pattern leaving tree names nothing.
+// the folder its fixed part names, the root's `.git` left out; that
+// folder a link (Bazel's `bazel-testlogs`), it walks where it leads, the
+// files named by their path through the link (#1189). A pattern leaving
+// tree names nothing.
 func reportFiles(tree, pattern string) []string {
 	if reportInTree(pattern) != "" {
 		return nil
@@ -45,11 +47,20 @@ func reportFiles(tree, pattern string) []string {
 		fixed++
 	}
 	root := filepath.Join(tree, filepath.FromSlash(path.Join(parts[:fixed]...)))
+	walked := root // WalkDir never follows a link, its root's neither
+	if info, err := os.Lstat(root); err == nil && info.Mode()&fs.ModeSymlink != 0 {
+		if real, err := filepath.EvalSymlinks(root); err == nil {
+			walked = real
+		}
+	}
 	dotGit := filepath.Join(tree, ".git")
 	var found []string
-	_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+	_ = filepath.WalkDir(walked, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // a folder unread holds no report to read
+		}
+		if r, err := filepath.Rel(walked, p); err == nil {
+			p = filepath.Join(root, r) // its path through the link
 		}
 		if d.IsDir() {
 			if p == dotGit {
@@ -87,21 +98,39 @@ func inNestedRepo(tree, rel string) bool {
 
 // clearReports removes the files test-report names in tree that git
 // does not track, a past run's reports (#1185). A tracked one, as
-// `pom.xml` under `**/*.xml` or a report committed, or one in a nested
-// repository, is never removed: it is kept, its state returned, so
-// that, unchanged by the run, it is not read as this run's.
+// `pom.xml` under `**/*.xml` or a report committed, one in a nested
+// repository, or one reached through a folder linked outside tree
+// (#1189), is never removed: it is kept, its state returned, so that,
+// unchanged by the run, it is not read as this run's.
 func clearReports(tree, pattern string) (map[string]keptFile, error) {
 	found := reportFiles(tree, pattern)
 	if len(found) == 0 {
 		return nil, nil
 	}
-	rels := make([]string, len(found))
-	for i, f := range found {
+	// Removed through a root that refuses any path leaving tree: a folder
+	// linked outside, committed or made by the build, leads nowhere.
+	root, err := os.OpenRoot(tree)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = root.Close() }()
+	kept := map[string]keptFile{}
+	var inside, rels []string
+	for _, f := range found {
 		rel, err := filepath.Rel(tree, f)
 		if err != nil {
 			return nil, err
 		}
-		rels[i] = filepath.ToSlash(rel)
+		if _, err := root.Lstat(rel); err != nil {
+			// Outside tree through a link: not the run's to remove; read
+			// after the run only if the run rewrote it.
+			if k, err := snapshot(f); err == nil {
+				kept[f] = k
+			}
+			continue
+		}
+		inside = append(inside, f)
+		rels = append(rels, filepath.ToSlash(rel))
 	}
 	tracked := map[string]bool{}
 	for start := 0; start < len(rels); start += 500 { // the files found alone, a command line short enough
@@ -114,29 +143,14 @@ func clearReports(tree, pattern string) (map[string]keptFile, error) {
 			tracked[f] = f != ""
 		}
 	}
-	// Removed through a root that refuses any path leaving tree: a folder
-	// linked outside, committed or made by the build, leads nowhere.
-	root, err := os.OpenRoot(tree)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = root.Close() }()
-	kept := map[string]keptFile{}
-	for i, f := range found {
+	for i, f := range inside {
 		rel := filepath.FromSlash(rels[i])
-		if _, err := root.Lstat(rel); err != nil {
-			continue // outside tree through a link: not the run's to remove, nor to read
-		}
 		if tracked[rels[i]] || inNestedRepo(tree, rel) {
-			info, err := os.Stat(f)
+			k, err := snapshot(f)
 			if err != nil {
 				return nil, err
 			}
-			data, err := os.ReadFile(f)
-			if err != nil {
-				return nil, err
-			}
-			kept[f] = keptFile{mod: info.ModTime(), data: data}
+			kept[f] = k
 			continue
 		}
 		if err := root.Remove(rel); err != nil {
@@ -146,30 +160,35 @@ func clearReports(tree, pattern string) (map[string]keptFile, error) {
 	return kept, nil
 }
 
-// freshReports are the files test-report names in tree after the run,
-// but one reached through a link leaving tree, and a kept file the run
-// left as it was, or rewrote into no JUnit report (a build bumping
-// `pom.xml`'s version).
-func freshReports(tree, pattern string, kept map[string]keptFile) []string {
-	root, err := os.OpenRoot(tree)
+// snapshot is a kept file's state before the run. Read through any link,
+// as each report is: reading changes nothing, and a build tool may put
+// its results outside the tree and link them in (Bazel's
+// `bazel-testlogs`). Removing is not: through a link, it would delete
+// files the run does not own, so clearReports removes through
+// os.OpenRoot alone.
+func snapshot(f string) (keptFile, error) {
+	info, err := os.Stat(f)
 	if err != nil {
-		return nil
+		return keptFile{}, err
 	}
-	defer func() { _ = root.Close() }()
+	data, err := os.ReadFile(f)
+	if err != nil {
+		return keptFile{}, err
+	}
+	return keptFile{mod: info.ModTime(), data: data}, nil
+}
+
+// freshReports are the files test-report names in tree after the run,
+// read through links as snapshot says, but a kept file the run left as
+// it was, or rewrote into no JUnit report (a build bumping `pom.xml`'s
+// version): a past run's report out through a link is not this run's.
+func freshReports(tree, pattern string, kept map[string]keptFile) []string {
 	var out []string
 	for _, f := range reportFiles(tree, pattern) {
-		rel, err := filepath.Rel(tree, f)
-		if err != nil {
-			continue
-		}
-		if _, err := root.Lstat(rel); err != nil {
-			continue // outside tree through a link: not this run's report
-		}
 		if k, ok := kept[f]; ok {
-			info, err := os.Stat(f)
-			data, rerr := os.ReadFile(f)
-			if err != nil || rerr != nil || !bytes.Contains(data, []byte("<testsuite")) ||
-				(info.ModTime().Equal(k.mod) && bytes.Equal(data, k.data)) {
+			now, err := snapshot(f)
+			if err != nil || !bytes.Contains(now.data, []byte("<testsuite")) ||
+				(now.mod.Equal(k.mod) && bytes.Equal(now.data, k.data)) {
 				continue
 			}
 		}

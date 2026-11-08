@@ -226,3 +226,36 @@ func TestTimedRunReadsThisRunsReports(t *testing.T) {
 		t.Errorf("no report written: %+v, want report-missing", f)
 	}
 }
+
+// A results folder linked outside the tree, as Bazel's `bazel-testlogs`
+// (#1189), is read through the link: the reports the run wrote there are
+// this run's. Nothing out there is removed, and a past run's report the
+// run left as it was is not read as this run's.
+func TestReportsReadThroughLinkedFolder(t *testing.T) {
+	for _, pattern := range []string{"out/*/test.xml", "out/**/test.xml"} {
+		outside := t.TempDir()
+		stale := filepath.Join(outside, "old", "test.xml")
+		if err := os.MkdirAll(filepath.Dir(stale), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(stale, []byte(`<testsuite name="o"><testcase classname="o" name="TestOld"><failure/></testcase></testsuite>`), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		tree := reportTree(t, []string{"pom.xml"}, nil)
+		if err := os.Symlink(outside, filepath.Join(tree, "out")); err != nil {
+			t.Fatal(err)
+		}
+		s := Settings{Report: pattern,
+			Command: `mkdir -p out/new && printf '<testsuite name="a"><testcase classname="a" name="TestNew"/></testsuite>' > out/new/test.xml`}
+		r, f := runIn(tree, s, "here")
+		if f != nil {
+			t.Fatalf("%s: runIn: %+v", pattern, f)
+		}
+		if len(r.results) != 1 || r.results["a.TestNew"] != passed {
+			t.Errorf("%s: results = %v, want only a.TestNew passed", pattern, r.results)
+		}
+		if _, err := os.Stat(stale); err != nil {
+			t.Errorf("%s: a report outside the tree was removed through the link: %v", pattern, err)
+		}
+	}
+}
