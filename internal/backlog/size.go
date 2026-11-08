@@ -25,7 +25,8 @@ const (
 const (
 	LabelSizeLarge  = "workline:size/large"
 	LabelSizeXLarge = "workline:size/x-large"
-	sizeColor       = "c5def5"
+	// SizeColor is the tiers' labels' colour.
+	SizeColor = "c5def5"
 )
 
 // SizeTier is the tier an issue's labels give it, the top one when both
@@ -65,7 +66,12 @@ func TierLabel(tier string) string {
 
 // EnsureTierLabel creates a tier's label where the project has none.
 func EnsureTierLabel(f forge.Backlog, tier string) error {
-	return f.EnsureLabel(TierLabel(tier), sizeColor, fmt.Sprintf("Every size target of the runs on this issue ×%d (ADR-0064); take it off to undo", TierFactor(tier)))
+	return f.EnsureLabel(TierLabel(tier), SizeColor, TierSays(tier))
+}
+
+// TierSays is a tier label's description in the forge's list.
+func TierSays(tier string) string {
+	return fmt.Sprintf("Every size target of the runs on this issue ×%d (ADR-0064); take it off to undo", TierFactor(tier))
 }
 
 // checkSize checks a size act: before the issue's state is read (st
@@ -92,4 +98,11 @@ func (p *Plan) checkSize(c *Proposal, st *State) (rule, why string) {
 		return "size-kept", fmt.Sprintf("its label `%s` says its tier already: a tier only goes up, and past `%s` a person's", TierLabel(SizeTier(is.Labels)), TierLarge)
 	}
 	return "", ""
+}
+
+// SplitOff says whether the project turned `split` off itself, not by the
+// role's default: no split then, even past an issue's size (ADR-0064, §3).
+func (c Config) SplitOff() bool {
+	s, ok := c.Acts["split"]
+	return ok && s.Mode == Off && (c.Origins["split"] == FromSetting || slices.Contains(c.ModeSet, "split"))
 }

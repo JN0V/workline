@@ -2,8 +2,9 @@ package productowner
 
 // An issue's size, the product owner's to judge (ADR-0064, step 4): at
 // ready, predicted against its normal; on a run too big for its role,
-// asked. Past it, the issue is split — `split` turns on, off as it is by
-// default, a part never split again — or granted the tier large.
+// asked. Past it, the issue is split — `split` turns on where it is off
+// by the role's default, never where the project set it off — or granted
+// the tier large.
 
 import (
 	"fmt"
@@ -14,25 +15,40 @@ import (
 	"github.com/JN0V/workline/internal/work"
 )
 
-// splitSaid is the split a size question offers on is: none for a part
-// of a split (depth 1, §4).
-func splitSaid(is forge.Issue) string {
-	if backlog.PartOf(is.Body) > 0 {
-		return ""
+// noSplit says why is is offered no split for its size, "" when it is:
+// a part of a split (depth 1, §4), or a project that set split off.
+func noSplit(is forge.Issue, off bool) string {
+	switch {
+	case off:
+		return "this project allows no splits (`split` off in its settings): grant it, or leave it to a person"
+	case backlog.PartOf(is.Body) > 0:
+		return "a part of a split is never split again"
+	}
+	return ""
+}
+
+// splitSaid is the split a size question offers on is, or why none.
+func splitSaid(is forge.Issue, off bool) string {
+	if why := noSplit(is, off); why != "" {
+		return " (no `split`: " + why + ")"
 	}
 	return "; or split it, when its parts each pass their own " + work.Name(work.Verification) + " apart: `split` with `too-big: true`, 2 to 6 parts, then `blocked`, `person: true`: a person accepts it from what its parts deliver"
 }
 
 // predictSaid asks for is's size at ready, against its normal (§2): split
-// or granted before any token is spent on it.
-func predictSaid(b forge.Backlog, open []forge.Issue, is forge.Issue) string {
+// or granted before any token is spent on it. None for a parent split
+// already: its parts carry its size.
+func predictSaid(b forge.Backlog, open []forge.Issue, is forge.Issue, st *backlog.State, off bool) string {
+	if len(backlog.SplitInto(is, st)) > 0 {
+		return ""
+	}
 	n, measured := line.IssueNormal(b, open, is)
 	from := "the seed, until about 10 issues of its kind are done here"
 	if measured {
 		from = "this project's own, its 85th percentile"
 	}
 	var past []string
-	if backlog.PartOf(is.Body) == 0 {
+	if noSplit(is, off) == "" {
 		past = append(past, "`split` it with `too-big: true`, 2 to 6 parts each passing its own "+work.Name(work.Verification)+" apart, and no `ready` on it")
 	}
 	if backlog.SizeTier(is.Labels) == "" {
@@ -44,6 +60,9 @@ func predictSaid(b forge.Backlog, open []forge.Issue, is forge.Issue) string {
 	said := past[0]
 	if len(past) > 1 {
 		said += "; or, " + past[1]
+	}
+	if why := noSplit(is, off); off && why != "" {
+		said += " (" + why + ")"
 	}
 	return fmt.Sprintf("Its size, before `ready`: predict what the line's runs on it will spend, from its %s's files, its scenarios and its effort, against its normal here: %s fresh tokens an issue of its kind (%s). Well past it: %s. Within it, nothing more.\n",
 		work.Name(work.Scope), line.Tokens(n), from, said)

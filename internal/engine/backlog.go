@@ -1000,6 +1000,14 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "input", RevisitFromInput)); err == nil {
 		cfg.RevisitFrom = strings.TrimSpace(string(data))
 	}
+	// The issue the event names, and whether the line asked on its size:
+	// where a split may say it too big (ADR-0064, §2).
+	if st.Target != nil && st.Target.Kind == "issue" {
+		cfg.Sized = st.Target.ID
+	}
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "input", SizeInput)); err == nil {
+		cfg.SizeAsked = strings.TrimSpace(string(data)) != ""
+	}
 	// A run again for the code its agent said it lacked (ADR-0063, §6):
 	// the files it named given this time (#1146).
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "input", NeedsInput)); err == nil {

@@ -874,10 +874,10 @@ func Pre(runDir, repo string) int {
 			if d.is.ID == issueEvent() && slices.Contains(d.is.Labels, backlog.LabelToRefine) {
 				// The line's refine step on it: its size predicted at
 				// ready (ADR-0064, §2), no call of its own.
-				review += predictSaid(b, open, d.is)
+				review += predictSaid(b, open, d.is, d.st, cfg.SplitOff())
 			}
 			if slices.Contains(d.is.Labels, backlog.LabelBlocked) && d.is.ID == issueEvent() {
-				review += blockedSaid(runDir, d.is, d.comments)
+				review += blockedSaid(runDir, d.is, d.comments, cfg.SplitOff())
 			} else if files := backlog.ScopeAsked(d.comments); len(files) > 0 && slices.Contains(d.is.Labels, backlog.LabelToRefine) {
 				// The developer's first step sent it back to ask for files
 				// outside the Scope (ADR-0063, §9): widened, or ready as it is.
@@ -1963,7 +1963,7 @@ var blockWhy = regexp.MustCompile(`(?m)^- \*\*Why\*\*: (.+)$`)
 // why it was blocked, what is new, and what it may decide (ADR-0059,
 // amended): back to the state it came from or to refine, or kept
 // blocked, its reason said afresh.
-func blockedSaid(runDir string, is forge.Issue, comments []string) string {
+func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool) string {
 	input := func(name string) string {
 		data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", name))
 		return strings.TrimSpace(string(data))
@@ -2001,7 +2001,7 @@ func blockedSaid(runDir string, is forge.Issue, comments []string) string {
 			grant = fmt.Sprintf(" (its size tier is %s already, `%s`: a tier only goes up, and past %s it is a person's, so no `size`)", tier, backlog.TierLabel(tier), backlog.TierLarge)
 		}
 		return fmt.Sprintf("Blocked (%s): %s. Read again because %s. The %s's run on it is too big for that role, and a run again on the same input crosses the same: sent back as it is, the issue waits for a person. Decide one, its `why` one plain line: narrow its %s — `refine` with `scope`, the %[5]s rewritten whole to the fewer files its need needs, and `sources` — then `unblock` it, %[6]s%[7]s%[9]s; or `blocked`, why its need cannot be narrowed, `person: true`: a person splits it, grants it `%[8]s`, or raises the setting the line names. Never `ready` on it.\n",
-			backlog.LabelBlocked, why, news, strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where, grant, backlog.LabelSizeXLarge, splitSaid(is))
+			backlog.LabelBlocked, why, news, strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where, grant, backlog.LabelSizeXLarge, splitSaid(is, splitOff))
 	}
 	if files := backlog.ScopeAsked(comments); len(files) > 0 && slices.Contains(to, "ready") {
 		// The developer asks for files outside the Scope (#921): its

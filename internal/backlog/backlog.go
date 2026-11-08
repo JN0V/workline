@@ -986,7 +986,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if !ok {
 				s = Setting{Mode: Propose}
 			}
-			if c.Do == "split" && c.TooBig && s.Mode == Off {
+			if c.Do == "split" && c.TooBig && s.Mode == Off && !p.config.SplitOff() {
 				// Past the issue's size, split turns on (ADR-0064, §3):
 				// done at normal and enterprising, proposed at cautious.
 				s = Setting{Mode: Act, Max: max(s.Max, 1)}
@@ -2301,6 +2301,16 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 			return "title-same", "it has this title already"
 		}
 		return "", ""
+	}
+	if c.TooBig && (c.Issue != p.config.Sized || !p.config.SizeAsked && !slices.Contains(is.Labels, LabelToRefine)) {
+		// Past its size only where the run was told to judge it (ADR-0064,
+		// §2): the issue the event names, asked on its size or in refine.
+		return "too-big-unasked", fmt.Sprintf("#%d's size was not asked in this run: `too-big` holds only on the issue the line woke the role on, asked on its size or predicted in refine; `split` keeps its mode", c.Issue)
+	}
+	if c.TooBig && p.config.SplitOff() {
+		// The project turned split off itself: never on for a size
+		// (ADR-0064, §3, the panel of 2026-11-08).
+		return "split-off", fmt.Sprintf("this project set `split` off itself: no split, even past its size; grant #%d `size` `%s`, or leave it to a person", c.Issue, TierLarge)
 	}
 	if parent := partOf(is.Body); c.TooBig && parent > 0 {
 		// Split depth 1 (ADR-0064, §4): a part may be granted a size,

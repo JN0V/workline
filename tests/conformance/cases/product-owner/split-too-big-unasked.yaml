@@ -1,0 +1,25 @@
+case: product-owner/split-too-big-unasked
+about: >
+  `too-big` holds only where the run was told to judge the size (ADR-0064,
+  §2; #1172): on a scheduled run, no issue named, no size asked, the
+  agent splits #3 saying it too big. `split` is off, as by default: the
+  split is dropped, said, and nothing is opened.
+given:
+  repo: tested
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply and divide two numbers"
+        labels: ["workline:to-refine"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply and divide.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n\n---\n\n## Verification\n\nA shell test a scenario.\n\n## Scope\n\n- `lib.sh`: `mul` and `div` beside `add`.\n"
+        comments: ["```yaml\nsources: [lib.sh]\nconfirmed: 5fb03df\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: "cmd:sh $FIXTURES/agents/size-split.sh 3 big"}
+expect:
+  findings:
+    - {rule: too-big-unasked, where: "#3", message: "#3's size was not asked in this run"}
+  forge:
+    issues:
+      - {id: 3, comment-lacks: ["split: [4, 5]"]}
+      - {id: 4, absent: true}
