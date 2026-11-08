@@ -1,0 +1,12 @@
+case: routing/post-proposes-on-an-empty-answer
+about: >
+  An agent that proposed nothing may leave post proposing all the same,
+  as the tester moves its issue back to refine: what post writes is
+  applied, never dropped with the empty answer (#1194).
+given:
+  repo: released
+run: {role: moves-on-silence, event: merge, ai: "fake:proposes-nothing"}
+expect:
+  status: pass
+  applied: [note]
+  notes: ["post: the agent proposed nothing"]

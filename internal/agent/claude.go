@@ -156,8 +156,8 @@ func (c claude) Propose(req Request) (Call, error) {
 		}
 	}
 	answer, parsed := claudeAnswer(stdout, &call)
-	// Its turns spent is a cap reached, not a failure: what it did so far
-	// is its answer (ADR-0056). Only its whole JSON says so: a stdout cut
+	// Its turns spent is a cap reached, not a failure: in a worktree, what
+	// it did so far is its answer (ADR-0056); out of one, its text is. Only its whole JSON says so: a stdout cut
 	// short, or a run killed, is a failure.
 	maxed := parsed && answer.Subtype == "error_max_turns" && ctx.Err() == nil && exitedItself(runErr)
 	if !maxed && (runErr != nil || (parsed && answer.IsError)) {
@@ -184,8 +184,10 @@ func (c claude) Propose(req Request) (Call, error) {
 	} else {
 		proposals, call.Mended, err = proposalsFrom(answer.Result, req.Role.Intentions...)
 		if err != nil && maxed {
-			// Stopped mid-way, its answer is not written yet: none.
-			proposals, err = []byte("[]\n"), nil
+			// A role that answers in text and stopped at its turn cap
+			// before writing it did no work: an answer unread, asked
+			// again with its cap said, never "nothing to propose" (#1194).
+			err = fmt.Errorf("it stopped at its turn cap (%d turns, ai-max-turns %d) before it wrote its answer: read fewer files, and answer within your turns", call.Turns, req.MaxTurns)
 		}
 	}
 	if err != nil {

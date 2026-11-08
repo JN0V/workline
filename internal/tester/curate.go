@@ -584,7 +584,7 @@ func (p *proof) measure(tree string, s Settings, where string) (side, *verdict.F
 		line := strings.NewReplacer("{package}", dirs[i], "{report}", report).Replace(p.mutation)
 		res, late, runErr := shell(tree, line, s.deadline)
 		if late {
-			return side{}, overTime(where)
+			return side{}, overTime(where, s.budget)
 		}
 		data, err := os.ReadFile(report)
 		if err != nil {

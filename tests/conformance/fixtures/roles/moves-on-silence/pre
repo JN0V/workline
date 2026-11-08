@@ -1,0 +1,3 @@
+#!/bin/sh
+# Always a question for the agent.
+echo "Say what you see." > "$WORKLINE_RUN_DIR/in/task.md"

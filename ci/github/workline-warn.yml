@@ -39,6 +39,7 @@ jobs:
   warn:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     # One review apart at a time per pull request, with workline-apply.yml's
     # apply of this workflow's runs, neither cancelling the other: a push
     # waits while the run before it is applied, then reads its record.

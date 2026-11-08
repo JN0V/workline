@@ -23,3 +23,8 @@ func killGroup(cmd *exec.Cmd) error {
 	}
 	return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 }
+
+// InGroup starts cmd in a process group of its own, killed whole when its
+// context ends: the processes a test command started with it (#1197). A
+// daemon that detaches into a session of its own, as Gradle's, is not.
+func InGroup(cmd *exec.Cmd) { inGroup(cmd) }

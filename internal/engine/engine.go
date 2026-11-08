@@ -1265,6 +1265,8 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 		return errTimeSpent
 	}
 	req.Role, req.MaxTurns = bounded, res.maxTurns
+	limit, _ := req.Role.Model.AnswerTimeout()
+	phase(req.Role.Name, "asks its agent, "+limit.String()+" at most")
 	start := time.Now()
 	call, err := ag.Propose(req)
 	if errors.Is(err, agent.ErrOverBudget) {
@@ -2391,8 +2393,10 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	// is what is applied, held to the same catalogue and bounds. A release
 	// held for what the run did not settle keeps them as a pass does (#543).
 	// An agent that edited a worktree may answer nothing: its diff is its
-	// proposal, post's to write (ADR-0056).
-	if v.Status == verdict.Pass && (len(intents) > 0 || agent.Worktree(runDir) != "") {
+	// proposal, post's to write (ADR-0056). One that proposed nothing may
+	// leave post moving its issue all the same: the tester's "no test
+	// possible", its label and comment, are applied (#1194).
+	if v.Status == verdict.Pass {
 		if a.intents, err = narrowedByPost(r, o, runDir, line, settings); err != nil {
 			return nil, err
 		}
@@ -3314,12 +3318,21 @@ func scriptEnv(runDir, roleName string, o Options) []string {
 	return env
 }
 
+// phase says in CI's job log which step of a role's run starts: a run
+// that hangs says where it was (#1197). Outside CI, nothing.
+func phase(role, step string) {
+	if forge.InCI() != "" {
+		fmt.Fprintf(os.Stderr, "workline: %s: %s (%s UTC)\n", role, step, time.Now().UTC().Format("15:04:05"))
+	}
+}
+
 // script runs roles/<name>/<step> in the repository and returns its exit code.
 func script(r *role.Role, step, repo string, env []string) (int, error) {
 	path := filepath.Join(r.Dir, step)
 	if _, err := os.Stat(path); err != nil {
 		return 0, fmt.Errorf("role %q has no %s script", r.Name, step)
 	}
+	phase(r.Name, step)
 	cmd := exec.Command(path)
 	cmd.Dir, cmd.Env = repo, env
 	cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr

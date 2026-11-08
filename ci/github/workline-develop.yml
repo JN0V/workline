@@ -74,6 +74,7 @@ jobs:
       group: workline-issue-${{ github.event.issue.number || inputs.issue || 'first' }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
+    timeout-minutes: 120   # above the developer's caps (75 min) and the tester's, ai-max-seconds and 3 × suite-max-seconds (50 min)
     permissions: {contents: read, pull-requests: read, issues: read}
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
     outputs:
@@ -163,6 +164,7 @@ jobs:
     needs: judge
     if: always() && needs.judge.outputs.proposed == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     # actions: the next step started, by workflow_dispatch (ADR-0059).
     permissions: {contents: write, pull-requests: write, issues: write, actions: write}
@@ -265,6 +267,7 @@ jobs:
       group: workline-heartbeat-${{ github.ref_name }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions: {}
     steps:
       - run: echo "the heartbeat's wait timer passed; the reconciler runs"
@@ -283,6 +286,7 @@ jobs:
       group: workline-reconcile-due
       cancel-in-progress: false
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions: {actions: write}
     steps:
       - name: Due, 55 minutes after the last
@@ -330,6 +334,7 @@ jobs:
       group: workline-reconcile
       cancel-in-progress: false
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     permissions: {contents: read, issues: read, pull-requests: read, checks: read, actions: write}
     steps:
       - uses: actions/checkout@v4
@@ -420,6 +425,7 @@ jobs:
       (github.event_name == 'workflow_run' && !startsWith(github.event.workflow_run.name, 'workline') &&
         github.event.workflow_run.pull_requests[0] != null)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # actions: a project's runs on the head, read when one ends.
     permissions: {pull-requests: read, actions: read}
     outputs:
@@ -464,6 +470,7 @@ jobs:
       group: workline-develop-review-${{ github.event.issue.number || inputs['pull-request'] || github.event.workflow_run.pull_requests[0].number }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
+    timeout-minutes: 120   # a review round has the developer's caps, ai-max-seconds and proof-seconds: 75 min
     # checks, actions: the project's checks red at its head, and their
     # failed steps' log, the round's input (#917).
     permissions: {contents: read, pull-requests: read, issues: read, checks: read, actions: read}
@@ -533,6 +540,7 @@ jobs:
     needs: review
     if: always() && needs.review.outputs.run != ''
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     # actions: its issue's next step started, by workflow_dispatch (#1013).
     permissions: {contents: write, pull-requests: write, issues: write, actions: write}

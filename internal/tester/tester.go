@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/verdict"
@@ -80,8 +81,11 @@ type Settings struct {
 	// that hold them alone ({packages}), base and tests; unset, or naming
 	// no {packages}: test-command, the whole suite, twice (#979).
 	DraftCommand string `json:"draft-command"`
-	// deadline, when set, stops a test command past it (the proof's budget).
+	// deadline, when set, stops a test command past it (the proof's
+	// budget); budget names the setting it comes of, when not
+	// curator-proof-seconds.
 	deadline time.Time
+	budget   string
 	// packages, when set, are the folders a run of Command takes in its
 	// {packages}: those of them its tree holds.
 	packages []string
@@ -526,9 +530,17 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 	if err != nil {
 		return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
 	}
+	if forge.InCI() != "" {
+		// A phase line in the job's log: a run that hangs says where (#1197).
+		stops := ""
+		if !s.deadline.IsZero() {
+			stops = ", stopped at " + s.deadline.UTC().Format("15:04:05") + " UTC"
+		}
+		fmt.Fprintf(os.Stderr, "workline: tester: running the tests %s (%s UTC%s)\n", where, time.Now().UTC().Format("15:04:05"), stops)
+	}
 	out, late, runErr := shell(tree, strings.ReplaceAll(s.Command, "{report}", report), s.deadline)
 	if late {
-		return ran{}, overTime(where)
+		return ran{}, overTime(where, s.budget)
 	}
 	found := freshReports(tree, s.Report, kept)
 	if len(found) == 0 {
@@ -565,6 +577,9 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 		defer cancel()
 	}
 	cmd := exec.CommandContext(ctx, "sh", "-c", line)
+	if !deadline.IsZero() {
+		agent.InGroup(cmd) // stopped with what it started; a detached daemon lives on (#1197)
+	}
 	cmd.Dir = dir
 	cmd.Env = uncached(forge.ProjectEnv(os.Environ()))
 	cmd.Stdout, cmd.Stderr = &out, &out
@@ -574,8 +589,11 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 }
 
 // overTime is the finding of a command stopped past the proof's budget.
-func overTime(where string) *verdict.Finding {
-	return &verdict.Finding{Rule: "proof-over-time", Where: "curator-proof-seconds",
+func overTime(where, budget string) *verdict.Finding {
+	if budget == "" {
+		budget = "curator-proof-seconds"
+	}
+	return &verdict.Finding{Rule: "proof-over-time", Where: budget,
 		Message: "the proof ran past its time budget " + where + ": stopped; no proof, nothing proposed"}
 }
 

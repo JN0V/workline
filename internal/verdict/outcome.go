@@ -71,6 +71,7 @@ var machineKinds = map[string]string{
 	"build-broken":         "build",  // tests or code that do not build
 	"no-new-test":          "report", // the test report names none of the tests written
 	"report-missing":       "report", // the test command wrote no report: its errors said (#1192)
+	"proof-over-time":      "time",   // a test command stopped at its time: a hang, retried (#1197); the curator's too, run on no issue
 }
 
 // NeedsCode is the finding a role leaves when its agent named code it

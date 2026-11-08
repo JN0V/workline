@@ -83,6 +83,7 @@ jobs:
     # with that workflow's job, its record its own comment's (ADR-0050).
     concurrency: {group: "workline-${{ github.event.workflow_run.name == 'workline warn' && 'warn-review' || 'review' }}-${{ github.event.workflow_run.pull_requests[0].number }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: workline-app
     # actions: read, the artifacts of the pull request's run; checks:
     # write, the checks holding the documentalist's findings and the gates'.
@@ -158,6 +159,7 @@ jobs:
     # Never a fork's: its run is the fork's to write, no verdict of it.
     if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: workline-app
     permissions: {actions: read, contents: read}
     steps:
@@ -213,6 +215,7 @@ jobs:
     # the queue's to weigh.
     if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'merge_group' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: workline-app
     permissions: {contents: read}
     steps:
@@ -264,6 +267,7 @@ jobs:
     # One at a time: each run reads the issue the one before left.
     concurrency: {group: "workline-main-issue", cancel-in-progress: false}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: workline-app
     permissions: {actions: read, contents: read, issues: write}
     steps:
@@ -309,6 +313,7 @@ jobs:
     # what the one before set.
     concurrency: {group: "workline-follow-${{ github.event.workflow_run.pull_requests[0].base.ref || github.ref_name }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: workline-app
     permissions: {contents: write, pull-requests: write, issues: write}
     steps:

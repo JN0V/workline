@@ -1,0 +1,6 @@
+#!/bin/sh
+# The agent proposed nothing: post writes its own note, to be applied.
+echo "status: pass" > "$WORKLINE_RUN_DIR/out/verdict.yaml"
+if ! grep -q '^- ' "$WORKLINE_RUN_DIR/out/intentions.yaml" 2>/dev/null; then
+  echo '- note: "post: the agent proposed nothing"' > "$WORKLINE_RUN_DIR/out/intentions.yaml"
+fi

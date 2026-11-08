@@ -18,6 +18,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"go.yaml.in/yaml/v3"
@@ -418,13 +419,10 @@ func Post(runDir, repo string) int {
 			msg = "the agent's answer could not be read, asked again once with the error: " + why
 		} else if why := os.Getenv("WORKLINE_AGENT_REFUSED"); why != "" {
 			msg = "the agent's answer was refused whole: " + why
-		} else if os.Getenv("WORKLINE_AGENT_ANSWERED") == "true" {
+		} else if reason := strings.Join(notes, " "); os.Getenv("WORKLINE_AGENT_ANSWERED") == "true" && strings.TrimSpace(reason) != "" {
 			// Read, and no test written nor kind named: no test possible,
-			// its notes the reason, back to the product owner (#794).
-			reason := strings.Join(notes, " ")
-			if strings.TrimSpace(reason) == "" {
-				reason = msg
-			}
+			// its notes the reason, back to the product owner (#794). An
+			// answer with no reason is no work: retried (#1194).
 			return proved(runDir, repo, t, intents, Proof{Kind: KindNone, Reason: reason})
 		}
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "no test written",
@@ -621,6 +619,12 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 		if pkgs = Packages(tree, files, s.Paths, s.ModuleFiles); len(pkgs) > 0 {
 			s.Command, s.packages = s.DraftCommand, pkgs
 		}
+	}
+	// The proof's runs, base, head and the tests on the base, stopped
+	// together past a suite's time each: a test command that hangs ends
+	// the run, said, rather than its job's own timeout (#1197).
+	if s.SuiteMaxSeconds > 0 && s.deadline.IsZero() {
+		s.deadline, s.budget = time.Now().Add(3*time.Duration(s.SuiteMaxSeconds)*time.Second), "suite-max-seconds"
 	}
 	v, newTests := Prove(tree, base, s)
 	if len(pkgs) > 0 && v.Status == verdict.Pass {

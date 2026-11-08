@@ -1,0 +1,12 @@
+contract: 1
+name: moves-on-silence
+mission: A role of the tests only — its post proposes a note when its agent proposed nothing — so what post writes on an empty answer is shown applied, as the tester's move of its issue is.
+
+events: [merge]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: []
+intentions: [note]
+without-ai: pass

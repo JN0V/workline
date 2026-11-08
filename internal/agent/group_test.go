@@ -82,21 +82,21 @@ func fakeClaude(t *testing.T, script string) Request {
 }
 
 // claude, worktree or not, is killed whole once it answered; stopped at
-// its --max-turns with no answer written, it is a cap reached, its
-// answer none.
+// its --max-turns with no answer written, out of a worktree, its answer
+// is unread, its cap said: never an answer proposing nothing (#1194).
 func TestClaudeMaxTurnsKilledWhole(t *testing.T) {
 	pid := filepath.Join(t.TempDir(), "pid")
 	req := fakeClaude(t, `cat >/dev/null; sleep 30 >/dev/null 2>&1 & echo $! > `+pid+`
 echo '{"subtype":"error_max_turns","is_error":true,"num_turns":12,"result":""}'; exit 1`)
 	call, err := claude{}.Propose(req)
-	if err != nil {
-		t.Fatalf("err = %v, want a cap reached, not a failure", err)
+	if !errors.Is(err, ErrInvalidOutput) || !strings.Contains(err.Error(), "turn cap (12 turns, ai-max-turns 12)") {
+		t.Fatalf("err = %v, want an answer unread at its turn cap", err)
 	}
 	if call.Turns != 12 {
 		t.Errorf("turns = %d, want 12", call.Turns)
 	}
-	if got, _ := os.ReadFile(filepath.Join(req.RunDir, "out", "intentions.yaml")); strings.TrimSpace(string(got)) != "[]" {
-		t.Errorf("intentions = %q, want none", got)
+	if _, err := os.Stat(filepath.Join(req.RunDir, "out", "intentions.yaml")); err == nil {
+		t.Error("intentions written, want none: nothing was answered")
 	}
 	data, err := os.ReadFile(pid)
 	if err != nil {

@@ -91,6 +91,7 @@ jobs:
   # `main`: the gates and the whole repository's checks, once.
   gates:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions: {contents: read}
     outputs: {ran: "${{ steps.gates.outputs.ran }}"}
     steps:
@@ -168,6 +169,7 @@ jobs:
     needs: gates
     if: "!cancelled() && github.event_name != 'push'"
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     # One review at a time per pull request (#375), with workline-apply.yml's
     # apply, neither cancelling the other: a push waits while the run
     # before it is applied, then reads its record and reviews only what is

@@ -721,6 +721,7 @@ workline:reconcile:
 workline:develop:judge:
   extends: .workline:develop
   stage: test
+  timeout: 2h   # above the developer's caps, ai-max-seconds and proof-seconds (75 min), and the tester's (50 min)
   script:
     - *claude
     - !reference [.workline:setup, script]
@@ -792,6 +793,7 @@ workline:review:head:
 workline:review:judge:
   extends: .workline:review
   stage: test
+  timeout: 2h   # a review round has the developer's caps: 75 min
   needs: [workline:review:head]
   script:
     - *claude
