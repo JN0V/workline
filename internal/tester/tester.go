@@ -578,7 +578,7 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 	}
 	cmd := exec.CommandContext(ctx, "sh", "-c", line)
 	if !deadline.IsZero() {
-		agent.InGroup(cmd) // stopped whole: a build daemon's workers too (#1197)
+		agent.InGroup(cmd) // stopped with what it started; a detached daemon lives on (#1197)
 	}
 	cmd.Dir = dir
 	cmd.Env = uncached(forge.ProjectEnv(os.Environ()))

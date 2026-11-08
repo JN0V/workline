@@ -25,5 +25,6 @@ func killGroup(cmd *exec.Cmd) error {
 }
 
 // InGroup starts cmd in a process group of its own, killed whole when its
-// context ends: a test command's build daemon or workers with it (#1197).
+// context ends: the processes a test command started with it (#1197). A
+// daemon that detaches into a session of its own, as Gradle's, is not.
 func InGroup(cmd *exec.Cmd) { inGroup(cmd) }
