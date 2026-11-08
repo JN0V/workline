@@ -1,0 +1,33 @@
+case: tester/kotlin-wrong-call-no-report-blocks
+about: >
+  The tests alone, in Kotlin, calling a function the base lacks and the
+  base's `add` with too many arguments, no issue giving it a new
+  signature: Gradle writes no report. The wrong call on what the base
+  has is a build broken otherwise, and the reason quotes the compiler's
+  line, not the build tool's last lines (#1192).
+given:
+  repo: kotlin-tested
+  setup:
+    - git checkout -q -b workline/issue-7
+    - |
+      cat > calc/src/test/kotlin/calc/MulTest.kt <<'KT'
+      package calc
+
+      import org.junit.jupiter.api.Test
+
+      // gradle: e: {file}:10:15 Unresolved reference 'mul'.
+      // gradle: e: {file}:10:35 Too many arguments for 'fun add(a: Int, b: Int): Int'.
+      class MulTest {
+          @Test
+          fun `two by three`() {
+              check(mul(2, 3) == add(3, 3, 0))
+          }
+      }
+      KT
+      git add . && git commit -qm "test: multiply"
+  config:
+    roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: block
+  findings: [{rule: build-broken, where: calc/src/test/kotlin/calc/MulTest.kt, message: "Too many arguments for 'fun add(a: Int, b: Int): Int'"}]

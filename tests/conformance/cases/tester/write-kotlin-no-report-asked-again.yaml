@@ -1,0 +1,29 @@
+case: tester/write-kotlin-no-report-asked-again
+about: >
+  The tester's Kotlin test does not compile for an error no build-errors
+  row reads, and Gradle writes no report. The run is not refused as final
+  on the build tool's last lines (`BUILD FAILED`): the agent is asked
+  once more, its feedback quoting the compiler's error line. Its second
+  test compiles but for the signature the issue gives: the Draft opens
+  (#1192).
+given:
+  repo: kotlin-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Add three numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total three prices, I want to add them in one call, so I need not chain two.\n\n## Validation\n\n- **Three numbers:** Given the library, When I add 2, 3 and 4, Then I get 9.\n\n---\n\n## Verification\n\nA Kotlin test.\n\n## Scope\n\n- `calc/src/main/kotlin/calc/Calc.kt`: `add(a, b, c)` takes a third number.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-kotlin-unread-once.sh"}
+expect:
+  status: pass
+  agent-calls: 2
+  run-files:
+    out/feedback.md: {contains: ["report-missing", "e: kapt: an annotation processor failed: AddProcessor"]}
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, draft: true}

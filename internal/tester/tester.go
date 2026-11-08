@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -126,33 +127,55 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 	if f != nil {
 		return refuse("the red-first check did not run", *f), nil
 	}
+	// A run that wrote no report is read by its compiler's lines when it
+	// is the one where the change's tests were laid on the base: a build
+	// that stops at the tests' compiling writes none (Gradle's), and that
+	// is no proof yet either way (#1192).
+	onHead := len(ch.other) > 0
 	headRun, f := run(repo, ch.head, nil, "", s, "on the head "+short(ch.head))
-	if f != nil {
+	var noReport *verdict.Finding
+	switch {
+	case f != nil && !onHead && f.Rule == "report-missing":
+		noReport = f
+	case f != nil:
 		return refuse("the red-first check did not run", *f), nil
 	}
 	// Tests alone changed: the head is the base with its tests, and red
 	// there is all a change holding no code yet can prove.
-	redRun, onHead := headRun, len(ch.other) > 0
+	redRun := headRun
 	if onHead {
 		if redRun, f = run(repo, ch.base, ch.tests, ch.head, s, "on the base "+short(ch.base)+" with the change's tests"); f != nil {
-			return refuse("the red-first check did not run", *f), nil
+			if f.Rule != "report-missing" {
+				return refuse("the red-first check did not run", *f), nil
+			}
+			noReport = f
 		}
 	}
 	// The build where the change's tests were laid on the base: an error
-	// it printed in a test of the change, naming what the base lacks, is
-	// a missing name, red for the right reason; any other error is a
-	// build broken otherwise, never a proof (build-errors).
+	// it printed in a test of the change red for the right reason (a name
+	// the base lacks, or a signature the issue gives anew) is a proof, the
+	// errors that follow from it in its file too; any other is a build
+	// broken otherwise, never a proof (build-errors, redfirst.go).
 	rules, _ := compileBuildErrors(s.BuildErrors) // unset said a bad one
 	errs := buildErrorsIn(redRun.output, ch.tests, rules, redRun.roots...)
-	var broken, unnamed []buildError
-	for _, e := range errs {
-		switch {
-		case !e.missing:
-			broken = append(broken, e)
-		case s.issue != "" && e.name != "" && !namedIn(e.name, s.issue):
-			unnamed = append(unnamed, e)
-		}
+	if noReport != nil && len(errs) == 0 {
+		// No report and no error a row reads: the tests' own to mend,
+		// asked again with what the command said, never final.
+		return &verdict.Verdict{Status: verdict.Block, Summary: "the test command wrote no report with the change's tests, and no error a build-errors row reads",
+			Findings: []verdict.Finding{*noReport}}, nil
 	}
+	sorter := &redFirst{repo: repo, base: ch.base, issue: s.issue,
+		code: onceString(func() string {
+			if !onHead {
+				return ""
+			}
+			// The code's diff alone: a name the tests write is not one
+			// the change's code touches.
+			out, _ := git(repo, append([]string{"--literal-pathspecs", "diff", "--no-color", "-U0", ch.base, ch.head, "--"}, ch.other...)...)
+			return out
+		}),
+		test: testFiles(repo, ch.head)}
+	broken, unnamed := sorter.sort(errs)
 	if len(broken) > 0 || len(unnamed) > 0 {
 		var lines, names []string
 		for _, e := range broken {
@@ -167,16 +190,16 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 		where := slices.Concat(broken, unnamed)[0].file
 		var msgs []string
 		if len(broken) > 0 {
-			msgs = append(msgs, fmt.Sprintf("%d build error%s not a name the base lacks in a test of the change", len(broken), plural(len(broken))))
+			msgs = append(msgs, fmt.Sprintf("%d build error%s not red for the right reason in a test of the change", len(broken), plural(len(broken))))
 		}
 		if len(unnamed) > 0 {
 			msgs = append(msgs, fmt.Sprintf("%d missing name%s the issue never names (%s): a test calls what the base has or what the issue names, never a helper it made up",
 				len(unnamed), plural(len(unnamed)), strings.Join(names, ", ")))
 		}
-		return &verdict.Verdict{Status: verdict.Block, Summary: "the build broke on the base with the change's tests, not by a missing name the issue names",
+		return &verdict.Verdict{Status: verdict.Block, Summary: "the build broke on the base with the change's tests, not by what the issue adds",
 			Findings: []verdict.Finding{{Rule: "build-broken", Where: where,
-				Message: fmt.Sprintf("%s (%s): a test must fail by its assertion or a missing name, "+
-					"never a syntax error, a wrong import or code that does not build", strings.Join(msgs, "; "), sample(lines))}}}, nil
+				Message: fmt.Sprintf("%s (%s): a test must fail by its assertion, a missing name or a signature the issue gives, "+
+					"never a syntax error, a wrong import or a wrong call on what the base has", strings.Join(msgs, "; "), sample(lines))}}}, nil
 	}
 	byName := len(errs) > 0
 	// A base test the red run lacks was not built there. Beside code, the
@@ -509,8 +532,10 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 		if runErr != nil {
 			said = runErr.Error()
 		}
-		return ran{}, &verdict.Finding{Rule: "report-missing", Where: s.Report,
-			Message: fmt.Sprintf("the test command wrote no report %s (%s); its output ends: %s", where, said, tail(out.String(), 10))}
+		// Its output kept: the compiler's lines may say why (#1192).
+		return ran{output: out.String(), failure: said, results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}},
+			&verdict.Finding{Rule: "report-missing", Where: s.Report,
+				Message: fmt.Sprintf("the test command wrote no report %s (%s); %s", where, said, errorLines(out.String(), s.BuildErrors))}
 	}
 	rep := ran{output: out.String(), results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}, reports: found}
 	if runErr != nil {
@@ -599,6 +624,68 @@ func sample(l []string) string {
 		return strings.Join(l, ", ")
 	}
 	return strings.Join(l[:3], ", ") + fmt.Sprintf(", and %d more", len(l)-3)
+}
+
+// errorLine is a line a build tool or compiler says an error on.
+var errorLine = regexp.MustCompile(`(?i)^(?:e: |error[: ]|.*\berror\b)`)
+
+// errorLines is what a command's output says went wrong, as a reason
+// quotes it: the error lines the build-errors rows read, else the lines
+// saying an error, else its last lines (#1192: Gradle's last lines say
+// only BUILD FAILED, the compiler's above them say why).
+func errorLines(out string, list []BuildErrors) string {
+	rules, _ := compileBuildErrors(list)
+	var read, said []string
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		for _, r := range rules {
+			if r.error.MatchString(line) {
+				read = append(read, line)
+				break
+			}
+		}
+		if errorLine.MatchString(line) {
+			said = append(said, line)
+		}
+	}
+	quote := func(l []string) string {
+		if len(l) > 5 {
+			return strings.Join(l[:5], " / ") + fmt.Sprintf(" / and %d more", len(l)-5)
+		}
+		return strings.Join(l, " / ")
+	}
+	switch {
+	case len(read) > 0:
+		return "its errors: " + quote(read)
+	case len(said) > 0:
+		return "its error lines: " + quote(said)
+	}
+	return "its output ends: " + tail(out, 10)
+}
+
+// testFiles reads a test file of the change as head holds it, each once.
+func testFiles(repo, head string) func(string) string {
+	read := map[string]string{}
+	return func(file string) string {
+		if c, ok := read[file]; ok {
+			return c
+		}
+		c, _ := git(repo, "show", head+":"+file)
+		read[file] = c
+		return c
+	}
+}
+
+// onceString is f, run the first time alone.
+func onceString(f func() string) func() string {
+	var done bool
+	var v string
+	return func() string {
+		if !done {
+			v, done = f(), true
+		}
+		return v
+	}
 }
 
 // tail is the last n lines of s, on one line.

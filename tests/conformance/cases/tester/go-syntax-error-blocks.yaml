@@ -14,5 +14,5 @@ given:
 run: {test: [check, --base, main]}
 expect:
   status: block
-  summary: "not by a missing name"
+  summary: "not by what the issue adds"
   findings: [{rule: build-broken, where: calc/mul_test.go}]

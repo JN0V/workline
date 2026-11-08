@@ -86,6 +86,8 @@ func compileBuildErrors(list []BuildErrors) ([]buildRules, error) {
 // buildError is one error line of a broken build.
 type buildError struct {
 	file, line string
+	msg        string // its message, as the row's group `message` read it
+	inTest     bool   // in a test file of the change
 	missing    bool   // in a test file of the change, naming what the code lacks
 	name       string // the name it lacks, when the message gives it
 	rules      int    // the ecosystem it was read by
@@ -113,8 +115,8 @@ func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...s
 			}
 			file := fromRoot(m[r.error.SubexpIndex("file")], roots)
 			msg := m[r.error.SubexpIndex("message")]
-			e := buildError{file: file, line: line, rules: i}
-			if inTests[file] {
+			e := buildError{file: file, line: line, msg: msg, inTest: inTests[file], rules: i}
+			if e.inTest {
 				for _, re := range r.missing {
 					if m := re.FindStringSubmatch(msg); m != nil {
 						e.missing, e.name = true, nameIn(re, m, msg)

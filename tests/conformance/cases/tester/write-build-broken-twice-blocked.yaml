@@ -28,4 +28,4 @@ expect:
       - {id: 1, absent: true}
     issues:
       - id: 3
-        comment-contains: ["**The tester** wrote no tests for this issue this run", "not a name the base lacks"]
+        comment-contains: ["**The tester** wrote no tests for this issue this run", "not red for the right reason"]
