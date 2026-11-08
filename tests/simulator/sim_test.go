@@ -52,6 +52,8 @@ type trace struct {
 	// replay: the trial's own answers are given first, from
 	// traces/answers/<file>/, a role's in the order it gave them.
 	replay bool
+	// tokens: the fresh tokens each call of the fake says it spent.
+	tokens int
 }
 
 // traces are the trial's issues as round 3 left them on 2026-11-04 (#757),
@@ -114,6 +116,11 @@ var traces = func() []trace {
 		// #1061: the developer's new test file beside its Scope, alone,
 		// as the trial's round wrote it: kept by the write fence, no ask.
 		trace{name: "trial-35-test-beside", file: "trial-35", fresh: true, end: "done", by: one("developer", testBeside)},
+		// ADR-0064, step 5: every run crosses its target, 600k fresh
+		// tokens a call, past the tester's cap of 300k and the
+		// developer's of 500k: the issue reaches its backstop, 1.6M, and
+		// waits for a person, within the hard caps.
+		trace{name: "trial-35-every-run-crosses", file: "trial-35", fresh: true, end: "waiting:", tokens: 600000},
 	)
 	for _, n := range trial {
 		f := fmt.Sprintf("trial-%d", n)
@@ -254,7 +261,7 @@ func newWorld(t *testing.T, tr trace, a *simAgent) *world {
 	if err := os.WriteFile(forge.ReadsLog(f), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	a.by = tr.by
+	a.by, a.tokens = tr.by, tr.tokens
 	if tr.replay {
 		a.answers = answers(t, tr.file)
 	}

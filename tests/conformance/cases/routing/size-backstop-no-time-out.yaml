@@ -1,0 +1,34 @@
+case: routing/size-backstop-no-time-out
+about: >
+  An issue blocked at its backstop waits for a person: no product owner
+  reads it again, and no delay answers for them (ADR-0064, §5; #1174).
+  Bug #9 is blocked at its backstop of 1.6M; someone comments on it,
+  news that would wake the product owner on another blocked issue. Here
+  no agent is called, nothing written: the line says #9 waits for a
+  person.
+given:
+  repo: backlog
+  env: {WORKLINE_CLOCK: "2026-11-12T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:blocked, bug]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a05ec2b42f7\",\"hops\":2,\"from\":\"ready\",\"since\":\"2026-11-01T00:00:00Z\",\"backstop\":1600000,\"spent\":{\"product-owner\":[500000],\"tester\":[500000],\"developer\":[700000]}} -->\n<!-- workline:sticky=line/state -->"
+          - "Any news on this one?"
+run: {route: reconcile, ai: "cmd:sh $FIXTURES/agents/costly.sh 1000", then: again}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: backstop-waits, level: info, where: "#9", message: "blocked, past its backstop: it waits for a person, the product owner not woken"}
+  no-findings: [{rule: state-revisit, where: "#9"}]
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:blocked, bug]

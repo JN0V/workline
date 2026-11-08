@@ -506,6 +506,28 @@ whose result moves the issue to the next. The table is the routing's
   target of its run multiplied: `context.budget`, `ai-max-tokens`,
   `code-lines-max`, `code-bytes-max`, `diff-lines-max`; `workline size`
   measures the issue against its normal times the tier.
+- **The per-issue backstop**
+  ([ADR-0064, §5](../adr/0064-size-is-a-target-not-a-wall.md#5-the-hard-backstop);
+  [#1174](https://github.com/JN0V/workline/issues/1174)): the fresh
+  tokens of every run on the issue (`spent`), all roles, its merge
+  requests' runs included, against 4× its normal, the tier left out.
+  - **Its normal**: its kind's, kept by `workline size`, else the seed
+    (400k, 800k at effort High): a backstop of 1.6M, or 3.2M.
+  - **`large` never raises it**; a person's `workline:size/x-large`
+    lifts it to 16× the normal (6.4M at the seed). Nothing above it.
+  - **Before a step**: reached, the step is not run; the issue moves to
+    `workline:blocked`, the total and the backstop said
+    (`backstop-crossed`; `backstop` in the record).
+  - **After a run**: one that takes it there blocks it in the same step,
+    wherever its role moved it on the line, over a size question to the
+    product owner; its work, a pull request, is kept.
+  - **A person's, with no time-out**: no product owner reads it again,
+    news or a week (`backstop-waits`). A person puts `x-large` and moves
+    it back by its label, or splits it: each new issue counts its own.
+  - **The liveness caps stay**: `max-hops`, `ai-max-turns`,
+    `ai-max-seconds`, the machine-error budget. A developer's review
+    round on its pull request is not stopped by it: counted, and capped
+    by its own `rounds`.
 - **The code a role lacks is given**: the product owner naming the
   code an issue is about (`sources`) that its task did not give
   ([the code picker](code-picker.md)), its Scope left for that code, or
@@ -627,8 +649,8 @@ whose result moves the issue to the next. The table is the routing's
   guard and answers, the developer's review rounds) is counted on the
   issue it closes, when applied: once a run, its id kept (`counted`); an
   issue with no record counts none. `workline size` derives the project's normals from them
-  ([commands](../commands.md#workline-size)). Reported only: nothing
-  stops on them yet.
+  ([commands](../commands.md#workline-size)). The issue's total is held
+  to its backstop (below).
 - **Judged with no write token** (`--no-apply`), the records are left in
   the line's result (`states`) and written by `workline apply --line`,
   after its runs applied.

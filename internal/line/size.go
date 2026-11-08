@@ -3,8 +3,9 @@ package line
 // The normal size of an issue, measured per project (ADR-0064, step 2):
 // each step's fresh tokens counted in the line's record on its issue
 // (Record.Spent), and, each night, the normals derived from the records
-// of the issues done, kept in one comment on one issue. Reported only:
-// nothing stops or escalates on them yet (ADR-0064, steps 3 to 5).
+// of the issues done, kept in one comment on one issue. An issue's
+// normal sets its backstop (backstop.go, ADR-0064 §5); a run's is
+// reported only.
 
 import (
 	"encoding/json"
@@ -48,7 +49,7 @@ const (
 // once the project's scheme is in use.
 func effortHigh() int { return len(scale.Effort.Names) }
 
-const sizeIntro = `workline's line keeps here the normal size of an issue in this project (ADR-0064): the fresh tokens its runs spent, measured from the line's record on each issue done. Its comment is written again each night, in place. Nothing stops on it yet: it is reported only.
+const sizeIntro = `workline's line keeps here the normal size of an issue in this project (ADR-0064): the fresh tokens its runs spent, measured from the line's record on each issue done. Its comment is written again each night, in place. An issue's normal sets its backstop, 4× it: past it, the line blocks the issue for a person. A run's normal is reported only.
 
 Kept up to date by the line, not by hand.`
 
@@ -312,7 +313,7 @@ func Size(o SizeOptions) (*engine.Result, *Sizes) {
 		}
 		for _, p := range found {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "size-past-normal", Level: "info", Where: fmt.Sprintf("#%d", p.Issue),
-				Message: p.said() + "; reported only, nothing stops on it yet"})
+				Message: p.said() + "; reported only: the line stops an issue at its backstop, 4× its normal"})
 		}
 		sizes.Past = append(sizes.Past, found...)
 	}
@@ -492,7 +493,7 @@ func sizeComment(s *Sizes, roles []string) string {
 	var b strings.Builder
 	b.WriteString("**workline's line** measured the normal size of an issue here (ADR-0064): the fresh tokens its runs spent, ")
 	fmt.Fprintf(&b, "the 85th percentile (p85) of the last %d issues done, per kind; a seed until %d of a kind are done. ", sizeWindow, sizeMeasured)
-	b.WriteString("Reported only: nothing stops on it yet.\n\n| Kind | Done | An issue |")
+	fmt.Fprintf(&b, "An issue's normal sets its backstop, %d× it: past it, the line blocks the issue for a person; a run's is reported only.\n\n| Kind | Done | An issue |", backstopTimes)
 	for _, r := range roles {
 		fmt.Fprintf(&b, " %s, a run |", r)
 	}
@@ -525,6 +526,13 @@ func sizeComment(s *Sizes, roles []string) string {
 // else the seed, doubled at the highest effort; times its size tier.
 // measured says which.
 func IssueNormal(b forge.Backlog, open []forge.Issue, is forge.Issue) (tokens int, measured bool) {
+	t, measured := baseNormal(b, open, is)
+	return t * backlog.TierFactor(backlog.SizeTier(is.Labels)), measured
+}
+
+// baseNormal is IssueNormal, its tier left out: what the backstop is
+// counted from (backstop.go).
+func baseNormal(b forge.Backlog, open []forge.Issue, is forge.Issue) (tokens int, measured bool) {
 	kind, _ := backlog.KindOf(is.Labels)
 	if kind == "" {
 		kind = noKind
@@ -547,7 +555,7 @@ func IssueNormal(b forge.Backlog, open []forge.Issue, is forge.Issue) (tokens in
 	if !n.Measured && backlog.Effort(is) == effortHigh() {
 		t *= 2
 	}
-	return t * backlog.TierFactor(backlog.SizeTier(is.Labels)), n.Measured
+	return t, n.Measured
 }
 
 // readSizes is what the size comment among comments keeps: no kinds when

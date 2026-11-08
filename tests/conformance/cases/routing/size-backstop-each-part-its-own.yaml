@@ -1,0 +1,40 @@
+case: routing/size-backstop-each-part-its-own
+about: >
+  Each part of a split has its own backstop (ADR-0064, §3 and §5;
+  #1174): its runs are counted on its own issue. Parent #9 is past its
+  backstop, 1.7M fresh tokens, in refine; its part #10, split from it,
+  has spent nothing. The reconciler blocks #9 for a person, no agent
+  called on it, and runs #10's step.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost, and a comma splits a cell"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, bug]
+        body: "## Need\n\nA user exporting rows loses the last one, and a comma splits a cell.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "**workline's line** last woke the developer on this issue.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":2,\"spent\":{\"product-owner\":[500000],\"tester\":[500000],\"developer\":[700000]}} -->\n<!-- workline:sticky=line/state -->"
+      - id: 10
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, bug]
+        body: "Part of #9.\n\n## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+run: {route: reconcile, ai: "cmd:sh $FIXTURES/agents/costly.sh 1000"}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: backstop-crossed, level: warn, where: "#9"}
+    - {rule: state-wakes, where: "#10"}
+  no-findings: [{rule: backstop-crossed, where: "#10"}]
+  forge:
+    issues:
+      - id: 9
+        labels: [bug, workline:blocked]
+      - id: 10
+        comment-contains: ["\"product-owner\":[1000]"]

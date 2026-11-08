@@ -1,0 +1,29 @@
+case: routing/size-backstop-doubled-at-effort-high
+about: >
+  Effort High doubles an issue's seed, so its backstop too (ADR-0064,
+  §1 and §5; #1174): 800k, a backstop of 3.2M. Bug #9, `effort/high`,
+  its runs at 1.7M fresh tokens, past the 1.6M of an issue of effort
+  Medium: its step runs.
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {effort: auto}}}
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, bug, effort/high]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "**workline's line** last woke the developer on this issue.\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"0a1b2c3d4e5f\",\"hops\":2,\"spent\":{\"product-owner\":[500000],\"tester\":[500000],\"developer\":[700000]}} -->\n<!-- workline:sticky=line/state -->"
+run: {route: issue, target: {issue: 9}, ai: "cmd:sh $FIXTURES/agents/costly.sh 1000"}
+expect:
+  agent-calls: 1
+  no-findings: [{rule: backstop-crossed, where: "#9"}, {rule: size-effort-unread}]
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine, bug, effort/high]

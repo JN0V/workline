@@ -69,6 +69,9 @@ type simAgent struct {
 	answers map[string][]string
 	calls   []call
 	work    string // the run's folder, a volatile part of every task
+	// tokens: the fresh tokens each call says it spent, none when 0: a
+	// trace whose every run crosses its target (ADR-0064, §5).
+	tokens int
 }
 
 // next is the outcome of the role's next call, and the trial's answer
@@ -115,7 +118,7 @@ func (c call) String() string {
 var tick int
 
 func (a *simAgent) Propose(r agent.Request) (agent.Call, error) {
-	c := agent.Call{Agent: "fake", Model: "sim", Tier: r.Role.Model.Tier}
+	c := agent.Call{Agent: "fake", Model: "sim", Tier: r.Role.Model.Tier, TokensIn: a.tokens}
 	task, _ := os.ReadFile(filepath.Join(r.RunDir, "in", "task.md"))
 	if d := os.Getenv("SIM_DUMP"); d != "" {
 		_ = os.WriteFile(filepath.Join(d, fmt.Sprintf("%d-%s.md", len(a.calls), r.Role.Name)), task, 0o644)

@@ -95,6 +95,12 @@ goes ready, a hidden record that does not read: in
   big, or the issue at `workline:size/x-large` already. Narrow the issue
   or split it, put `workline:size/x-large` on it (every size target ×4),
   or raise the setting the line names, then move it back by its label.
+- `backstop-crossed`: the issue's runs, all roles, spent 4× its normal
+  (1.6M fresh tokens at the seed); `large` never raises it. It waits for
+  you, no product owner asked (`backstop-waits` on news). Put
+  `workline:size/x-large` on it (16× its normal) and move it back by its
+  label, or split it into new issues
+  ([routing](spec/routing.md#the-line-of-states)).
 - `size-tier` (info): every size target of the run multiplied by its
   issue's tier label; take it off to undo. `size-person`, `size-kept`,
   `size-once`, `split-depth`, `split-off`, `too-big-unasked`: a grant or
