@@ -53,8 +53,9 @@ first rule that matches refuses the whole patch:
   (`core:session`, a folder): a class, `TracingViewModel`, as its source
   file (`.kt`, `.java`, `.h`…, never a `.md` or `.json`);
   a name several files have as the one in the module; a new file's
-  name, `CompositionGrid.kt`, as that name anywhere in the module, or
-  anywhere with no module. Several files and no module: none;
+  name, `CompositionGrid.kt`, as that name anywhere in the module, or,
+  with no module and no file of that name, anywhere not guarded: a
+  module narrows it. Several files and no module: none;
 - the paths in plain words in the Scope that the repository holds, a
   file or a folder (`docs/ci.md, internal/doctor`);
 - the product owner's `sources` for the issue;
@@ -63,8 +64,6 @@ first rule that matches refuses the whole patch:
   Scope file's folder or under a Scope folder, or in a `test`/`tests`
   folder that sits there. A hidden file is no test (`.env.test`). A
   Scope `src` lets in no test at the root;
-- a test's helper, no test by its name: a fake in a test folder beside
-  the Scope, `src/test/` of a module whose `src/main/` it names;
 - a new test file beside the Scope, the write fence
   ([ADR-0063, §9](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)):
   - it matches the tester's `test-paths` patterns
@@ -84,6 +83,15 @@ first rule that matches refuses the whole patch:
   - said and folded in: listed on the pull request and on the issue
     (`workline:scope-kept`), added to the Scope at the product owner's
     next refine ([below](#asking-the-product-owner-for-files)).
+- a new test helper, the write fence too: a source file (`.kt`,
+  `.java`…), no test by its name, under `<module>/src/test/` when a
+  Scope path is under `<module>/src/main/` (`FakeGridRepository.kt`):
+  - never an existing file, nor one under `resources/`, `fixtures/` or
+    `testdata/`, nor a data file: a frozen test may read them, so the
+    developer asks to widen the Scope;
+  - a root Scope file opens no root `tests/`; a package named `test`
+    under `src/main/` is no test folder.
+  - kept, listed and folded in as a new test file is, above.
 
 **Never in bounds:**
 

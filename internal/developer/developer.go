@@ -698,7 +698,7 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 	for _, p := range b.Scope {
 		fmt.Fprintf(&t, "- `%s`\n", p)
 	}
-	t.WriteString("- the tests beside them: in their folder, or in a test folder, the name holding `test` or `spec`; a test's helper (a fake) in a test folder of their module.\n\n" +
+	t.WriteString("- the tests beside them: in their folder, or in a test folder, the name holding `test` or `spec`; a new test helper (a fake), a source file under the src/test/ of a module whose src/main/ they are in.\n\n" +
 		"Read any file you need. A change to any other file is reverted once you are done, whatever the reason: say it in your answer, it belongs in an issue. " +
 		"Never, whatever the scope: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
 		"a role's folder, `.workline/` (but the objections file below), the CI's workflows, a gate's definition.\n")

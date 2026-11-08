@@ -501,6 +501,7 @@ func TestScopeNamedReadsNamesWithTheirModules(t *testing.T) {
 		{"a name several files have, in a module", "- core:session `build.gradle.kts`.", []string{"core/session/build.gradle.kts"}},
 		{"a name several files have, no module", "- `build.gradle.kts`.", nil},
 		{"new file in a module", "- core:overlay: a new `CompositionGrid.kt`.", []string{"core/overlay/**/CompositionGrid.kt"}},
+		{"new file in a module, another module has one", "- core:overlay: a new `Model.kt`.", []string{"core/overlay/**/Model.kt"}},
 		{"new file, no module", "- a new `CompositionGrid.kt`.", []string{"**/CompositionGrid.kt"}},
 		{"a class is its source, not a page or data", "- core:overlay `Grid`, `README`.", nil},
 		{"a class's header and source", "- `native/grid`: `Grid`.", []string{"native/grid/Grid.h", "native/grid/Grid.cpp"}},
@@ -519,20 +520,47 @@ func TestScopeNamedReadsNamesWithTheirModules(t *testing.T) {
 	}
 }
 
-// A test's helper, a fake under a module's src/test, is beside a Scope
-// file under its src/main; one in another module, or a hidden one, is
-// not (#1207).
-func TestTestHelperBesideTheScope(t *testing.T) {
-	scope := []string{"feature/tracing/src/main/kotlin/t/settings/SettingsViewModel.kt"}
-	for p, want := range map[string]bool{
-		"feature/tracing/src/test/kotlin/t/settings/FakeSettingsRepository.kt": true,
-		"feature/tracing/src/test/kotlin/t/Fixtures.kt":                        true,
-		"feature/editor/src/test/kotlin/e/FakeSettingsRepository.kt":           false,
-		"feature/tracing/src/main/kotlin/t/settings/SettingsUiState.kt":        false,
-		"feature/tracing/src/test/.env":                                        false,
+// A new test helper, a fake under a module's src/test beside a Scope
+// file under its src/main, is the write fence's (#1207). An existing
+// helper, a fixture or data file a frozen test may read, a root tests/
+// beside a root Scope file, a Scope folder's modules and a production
+// package named test are not.
+func TestNewHelperIsANewSourceUnderSrcTest(t *testing.T) {
+	repo := t.TempDir()
+	for _, f := range []string{
+		"mul.sh", "tests/lib.sh", "tests/fixtures/expected.txt", "tests/test_mul.sh",
+		"app/src/main/kotlin/a/App.kt", "app/src/test/resources/golden.json",
+		"app/src/test/kotlin/a/FakeStore.kt", "feature/x/src/main/kotlin/x/X.kt",
 	} {
-		if got := besideTest(p, scope, checker{}.isDir); got != want {
-			t.Errorf("besideTest(%s) = %v, want %v", p, got, want)
+		if err := os.MkdirAll(filepath.Join(repo, filepath.Dir(f)), 0o755); err != nil {
+			t.Fatal(err)
 		}
+		if err := os.WriteFile(filepath.Join(repo, f), []byte("x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c := checker{repo: repo, steer: func(string) bool { return false },
+		b: Bounds{Issue: 5, Scope: []string{"mul.sh", "app/src/main/kotlin/a/App.kt", "feature"}}}
+	for p, want := range map[string]string{
+		"app/src/test/kotlin/a/FakeGrid.kt":    "",              // new, a source, beside
+		"app/src/test/kotlin/a/FakeStore.kt":   "outside-scope", // exists: a frozen test may read it
+		"app/src/test/resources/golden.json":   "outside-scope", // data
+		"app/src/test/resources/Golden.kt":     "outside-scope", // under resources
+		"app/src/test/kotlin/a/expected.txt":   "outside-scope", // not a source
+		"tests/lib.sh":                         "outside-scope", // a shared helper, a root Scope file
+		"tests/fixtures/expected.txt":          "outside-scope",
+		"tests/helper.sh":                      "outside-scope", // new, but no src/test of a module
+		"feature/x/src/test/kotlin/x/FakeX.kt": "",              // under the Scope folder itself
+		"other/src/test/kotlin/o/FakeO.kt":     "outside-scope", // another module
+		"app/src/main/kotlin/a/test/Other.kt":  "outside-scope", // a production package named test
+	} {
+		if got := c.rule(p); got != want {
+			t.Errorf("rule(%s) = %q, want %q", p, got, want)
+		}
+	}
+	// Kept by an earlier round: still the fence's on the branch's head.
+	c.b.Beside = []string{"app/src/test/kotlin/a/FakeStore.kt"}
+	if got := c.rule("app/src/test/kotlin/a/FakeStore.kt"); got != "" {
+		t.Errorf("a helper kept before: rule = %q, want in bounds", got)
 	}
 }

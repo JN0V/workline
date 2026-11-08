@@ -280,7 +280,8 @@ var (
 // repository holds): a class, `TracingViewModel`, as the source file
 // whose name it is (classExt); a file's name several files have, as those
 // in the line's modules; a new file's name, `CompositionGrid.kt`, as a
-// pattern for it under the line's modules, anywhere with none (#1207).
+// pattern for it under the line's modules, the module's whatever others
+// hold, anywhere with none and no file of that name (#1207).
 // A class name or a file's name with several files and no module to
 // choose names none. files are the repository's; nil reads none.
 func scopeNamed(body string, files []string) []string {
@@ -327,7 +328,7 @@ func scopeNamed(body string, files []string) []string {
 				for _, f := range found {
 					add(f)
 				}
-			case len(found) == 0 && !class && !slices.ContainsFunc(files, func(f string) bool { return path.Base(f) == w }):
+			case len(found) == 0 && !class && (len(modules) > 0 || !slices.ContainsFunc(files, func(f string) bool { return path.Base(f) == w })):
 				if len(modules) == 0 {
 					add("**/" + w)
 				}
@@ -358,7 +359,7 @@ func under(p string, roots []string) bool {
 // neighbourhood: a Scope `src` lets in no test at the root.
 func besideTest(p string, scope []string, isDir func(string) bool) bool {
 	if !testName(p) {
-		return testHelper(p, scope, isDir)
+		return false
 	}
 	dirs := []string{path.Dir(p)}
 	parts := strings.Split(path.Dir(p), "/")
@@ -372,28 +373,6 @@ func besideTest(p string, scope []string, isDir func(string) bool) bool {
 			if d == path.Dir(s) && !isDir(s) || under(d, []string{s}) {
 				return true
 			}
-		}
-	}
-	return false
-}
-
-// testHelper says whether p is a test's helper beside the scope: no test
-// by its name, not hidden, in a test folder whose home (testHome) is
-// beside a Scope path (testBeside): a fake under a module's src/test/
-// beside a Scope file under its src/main/ (#1207). A test by its name
-// there is besideTest's or the write fence's to judge.
-func testHelper(p string, scope []string, isDir func(string) bool) bool {
-	if strings.HasPrefix(path.Base(p), ".") || !inTestFolder(path.Dir(p)) {
-		return false
-	}
-	return testBeside(p, scope, isDir)
-}
-
-// inTestFolder says whether dir is a test folder or in one.
-func inTestFolder(dir string) bool {
-	for _, part := range strings.Split(dir, "/") {
-		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
-			return true
 		}
 	}
 	return false
@@ -467,7 +446,7 @@ func (c checker) rule(p string) string {
 		return "steering-file"
 	case c.b.Frozen[p] > 0:
 		return "acceptance-test-edit"
-	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope, c.isDir) && !c.newTestBeside(p):
+	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope, c.isDir) && !c.newTestBeside(p) && !c.newHelper(p):
 		return "outside-scope"
 	}
 	return ""
@@ -501,6 +480,34 @@ func (c checker) newTestBeside(p string) bool {
 		return false
 	}
 	return testBeside(p, c.b.Scope, c.isDir)
+}
+
+// newHelper says whether p is a new test helper, the write fence's too
+// (#1207): a source file (classExt), no test by its name, under a
+// module's src/test/ (resources, fixtures and testdata left out), whose
+// src/main/ holds a Scope path; not in the commit the rules are read at,
+// or kept by an earlier round. An existing helper, a fixture or a data
+// file a frozen test may read is never one: the developer asks to widen
+// the Scope. A root Scope file opens no root tests/, a Scope folder no
+// module's helpers, a production package named test nothing.
+func (c checker) newHelper(p string) bool {
+	if testName(p) || !slices.Contains(classExt, path.Ext(p)) ||
+		kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) {
+		return false
+	}
+	module, rest, ok := strings.Cut("/"+p, "/src/test/")
+	if !ok {
+		return false
+	}
+	for _, part := range strings.Split(path.Dir(rest), "/") {
+		if part == "resources" || part == "fixtures" || part == "testdata" {
+			return false
+		}
+	}
+	mainDir := strings.TrimPrefix(module+"/src/main", "/")
+	return slices.ContainsFunc(c.b.Scope, func(s string) bool {
+		return !work.Pattern(s) && strings.HasPrefix(path.Clean(s), mainDir+"/")
+	})
 }
 
 // testBeside says whether the test file p's home (testHome) is a Scope
