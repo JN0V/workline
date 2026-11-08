@@ -2391,8 +2391,10 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	// is what is applied, held to the same catalogue and bounds. A release
 	// held for what the run did not settle keeps them as a pass does (#543).
 	// An agent that edited a worktree may answer nothing: its diff is its
-	// proposal, post's to write (ADR-0056).
-	if v.Status == verdict.Pass && (len(intents) > 0 || agent.Worktree(runDir) != "") {
+	// proposal, post's to write (ADR-0056). One that proposed nothing may
+	// leave post moving its issue all the same: the tester's "no test
+	// possible", its label and comment, are applied (#1194).
+	if v.Status == verdict.Pass {
 		if a.intents, err = narrowedByPost(r, o, runDir, line, settings); err != nil {
 			return nil, err
 		}
