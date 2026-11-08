@@ -1,6 +1,6 @@
 ---
-sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, roles/tester/role.yaml]
-checked: a871936d
+sources: [internal/tester/build.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, internal/tester/junit.go, roles/tester/role.yaml]
+checked: ea7af9ef
 verified: agent:claude-code
 ---
 # A missing name, told from a broken build
