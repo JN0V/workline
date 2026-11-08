@@ -27,7 +27,8 @@ type Settings struct {
 	// {report} in it is the report's path.
 	Command string `json:"test-command"`
 	// Report is where the command writes the report, from the
-	// repository's root: a path, or a pattern one folder deep (*.xml).
+	// repository's root: a path, or a pattern, `**` spanning folders
+	// (`**/build/test-results/**/*.xml`), each file it names read.
 	Report string `json:"test-report"`
 	// Paths are the test files, as patterns (`**` spans folders).
 	Paths []string `json:"test-paths"`
@@ -474,8 +475,7 @@ func RemoveWorktree(repo, tree string) {
 // runIn runs the test command in tree and reads its report.
 func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 	report := filepath.Join(tree, filepath.FromSlash(s.Report))
-	old, _ := filepath.Glob(report)
-	for _, f := range old { // a report committed is not this run's
+	for _, f := range reportFiles(tree, s.Report) { // a report committed is not this run's
 		if err := os.Remove(f); err != nil {
 			return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
 		}
@@ -484,7 +484,7 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 	if late {
 		return ran{}, overTime(where)
 	}
-	found, _ := filepath.Glob(report)
+	found := reportFiles(tree, s.Report)
 	if len(found) == 0 {
 		said := "it exited 0"
 		if runErr != nil {

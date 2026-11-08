@@ -1,0 +1,32 @@
+case: tester/report-many-folders-deep
+about: >
+  A build tool writes one JUnit XML report per module, folders deep, as
+  Gradle's `<module>/build/test-results/<task>/*.xml` (#1175): a
+  test-report pattern with `**` reads each, no merge script. The new
+  test's report lies under core/session, another under app; a stale
+  report the command does not write again, a red test in it, is removed
+  before the run and never read.
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b change
+    - |
+      printf 'sub() { echo $(($1 - $2)); }\n' >> lib.sh && printf '. ./lib.sh\n[ "$(sub 5 3)" = 2 ]\n' > tests/test_sub.sh
+    - |
+      mkdir -p core/session/build/test-results/old && printf '<testsuite name="stale"><testcase classname="stale" name="test_gone"><failure message="old"/></testcase></testsuite>\n' > core/session/build/test-results/old/TEST-stale.xml
+    - "git add . && git commit -qm 'feat: subtract'"
+  config:
+    roles:
+      tester:
+        settings:
+          test-report: "**/build/test-results/**/*.xml"
+          test-command: >-
+            sh run-tests.sh core/session/build/test-results/test/TEST-tests.xml; s=$?;
+            mkdir -p app/build/test-results/test &&
+            printf '<testsuite name="app"><testcase classname="app" name="test_app"/></testsuite>' > app/build/test-results/test/TEST-app.xml;
+            exit $s
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base, green on the head"
+  no-findings: [{rule: test-green-on-base}, {rule: test-red-on-head}, {rule: report-missing}]

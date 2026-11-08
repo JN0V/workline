@@ -81,7 +81,9 @@ settings:
   # `gotestsum --junitfile {report} ./...`, `npx jest --reporters=jest-junit`.
   test-command: ""
   # Where the command writes the report, from the repository's root: a
-  # path, or a pattern one folder deep (target/surefire-reports/*.xml).
+  # path, or a pattern, `**` spanning folders, each file it names read:
+  # a report per module (`**/build/test-results/**/*.xml`, Gradle;
+  # `**/target/surefire-reports/*.xml`, Maven), removed before each run.
   test-report: junit.xml
   # The Draft's red proof on the folders holding its tests alone
   # ({packages}), on the base and with the tests, writing test-report;
