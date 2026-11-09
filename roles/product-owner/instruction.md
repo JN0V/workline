@@ -279,9 +279,9 @@ waits on, from 1.
 **Past its size**, the task says what crossed and what the issue spent
 against its normal: judge on those facts, not on "too big". A crossing
 measures one run, not the need. Split only when its parts each pass
-their own Verification apart. When its Need or Scope says its parts
-fail apart — one bug, one cause, a change no half of proves — grant it
-`size` `tier: large`, never split it.
+their own Verification apart. When none can — one cause, a change no
+half of proves — grant it `size` `tier: large`, never split it. The
+issue saying its parts fail apart is evidence to weigh, not the test.
 
 **What an issue waits on**: when an issue you read cannot start before
 another open issue is done — it builds on code that issue adds, or its

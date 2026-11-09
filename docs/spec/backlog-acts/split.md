@@ -73,8 +73,9 @@ a run on it crossed its size, or the product owner predicts it at ready
   role on, asked on its size or in refine; else dropped
   (`too-big-unasked`), `split` keeping its mode.
 - **Split or grant**: split when the parts each pass their own
-  Verification apart; when the issue's Need or Scope says its parts fail
-  apart, grant it `size` `large`, never split it
+  Verification apart; when none can, grant it `size` `large`, never
+  split it. The issue saying its parts fail apart is evidence, not the
+  test
   ([granting a size](refine.md#granting-a-size);
   [#1193](https://github.com/JN0V/workline/issues/1193)).
 - **Depth 1**: a part of a split (`Part of #N.`) is never split for its
