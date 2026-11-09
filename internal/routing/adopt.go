@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/JN0V/workline"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -101,20 +102,20 @@ func AddReviewer(repo string) (steps []string, changed bool, err error) {
 	if top.Kind != yaml.MappingNode {
 		return nil, false, fmt.Errorf(".workline/config.yaml: not a mapping")
 	}
-	child := func(m *yaml.Node, key string) *yaml.Node {
-		if v := value(m, key); v != nil {
-			return v
-		}
-		v := &yaml.Node{Kind: yaml.MappingNode}
-		m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: key}, v)
-		return v
+	routingNode, err := mappingChild(top, "routing", "", "reviewer not added")
+	if err != nil {
+		return nil, false, err
 	}
-	events := child(child(top, "routing"), "events")
+	events, err := mappingChild(routingNode, "events", "routing.", "reviewer not added")
+	if err != nil {
+		return nil, false, err
+	}
 	line := value(events, "merge-request")
 	if line == nil {
-		c, err := Load(repo)
-		if err != nil {
-			return nil, false, err
+		// The project routes no merge-request line: the shipped one is the line.
+		var c Config
+		if err := yaml.Unmarshal(workline.DefaultRouting, &c); err != nil {
+			return nil, false, fmt.Errorf("default routing: %w", err)
 		}
 		line = &yaml.Node{Kind: yaml.SequenceNode, Style: yaml.FlowStyle}
 		for _, s := range c.Events["merge-request"] {
@@ -144,6 +145,41 @@ func AddReviewer(repo string) (steps []string, changed bool, err error) {
 		return nil, false, err
 	}
 	return append(steps, "reviewer"), true, nil
+}
+
+// mappingChild returns the mapping under key in m, made when missing. A key
+// there with nothing under it (`roles:`, `roles: ~`) becomes a mapping; one
+// holding a value of its own is the person's: refused, with the message
+// ending in ending. where is the path of m, with its trailing dot.
+func mappingChild(m *yaml.Node, key, where, ending string) (*yaml.Node, error) {
+	v := value(m, key)
+	if v == nil && m.Kind == yaml.MappingNode {
+		// A flow mapping `{events:}` reads its key as "events:", null: the key meant.
+		for i := 0; i+1 < len(m.Content); i += 2 {
+			if k, n := m.Content[i], m.Content[i+1]; k.Value == key+":" && n.Kind == yaml.ScalarNode && n.Tag == "!!null" {
+				k.Value, v = key, n
+				break
+			}
+		}
+	}
+	switch {
+	case v == nil:
+		v = &yaml.Node{Kind: yaml.MappingNode}
+		m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: key}, v)
+	case v.Kind == yaml.ScalarNode && v.Tag == "!!null":
+		// Its comments go to its key: a block mapping holds no line comment.
+		for i := 0; i+1 < len(m.Content); i += 2 {
+			if k := m.Content[i]; m.Content[i+1] == v {
+				k.LineComment = strings.TrimSpace(k.LineComment + " " + v.LineComment)
+				k.HeadComment = strings.TrimSpace(k.HeadComment + "\n" + v.HeadComment)
+				k.FootComment = strings.TrimSpace(k.FootComment + "\n" + v.FootComment)
+			}
+		}
+		*v = yaml.Node{Kind: yaml.MappingNode, Line: v.Line, Column: v.Column}
+	case v.Kind != yaml.MappingNode:
+		return nil, fmt.Errorf(".workline/config.yaml: %s is not a mapping: %s", where+key, ending)
+	}
+	return v, nil
 }
 
 // value returns the value of key in a mapping node, or nil.
@@ -196,28 +232,8 @@ func setLevel(repo string, under []string, level, comment string) (string, bool,
 	if top.Kind != yaml.MappingNode {
 		return "", false, fmt.Errorf(".workline/config.yaml: not a mapping")
 	}
-	// A key there with nothing under it (`roles:`, `roles: ~`) becomes a
-	// mapping; one holding a value of its own is the person's: refused.
 	child := func(m *yaml.Node, key, where string) (*yaml.Node, error) {
-		v := value(m, key)
-		switch {
-		case v == nil:
-			v = &yaml.Node{Kind: yaml.MappingNode}
-			m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: key}, v)
-		case v.Kind == yaml.ScalarNode && v.Tag == "!!null":
-			// Its comments go to its key: a block mapping holds no line comment.
-			for i := 0; i+1 < len(m.Content); i += 2 {
-				if k := m.Content[i]; m.Content[i+1] == v {
-					k.LineComment = strings.TrimSpace(k.LineComment + " " + v.LineComment)
-					k.HeadComment = strings.TrimSpace(k.HeadComment + "\n" + v.HeadComment)
-					k.FootComment = strings.TrimSpace(k.FootComment + "\n" + v.FootComment)
-				}
-			}
-			*v = yaml.Node{Kind: yaml.MappingNode, Line: v.Line, Column: v.Column}
-		case v.Kind != yaml.MappingNode:
-			return nil, fmt.Errorf(".workline/config.yaml: %s is not a mapping: autonomy not set", where+key)
-		}
-		return v, nil
+		return mappingChild(m, key, where, "autonomy not set")
 	}
 	settings, where := top, ""
 	for _, key := range under {
