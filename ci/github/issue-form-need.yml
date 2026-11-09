@@ -18,7 +18,7 @@ body:
     id: verification
     attributes:
       label: Verification
-      description: How will the machine prove it works — which tests, which checks? Leave it empty: the tester writes it from its tests.
+      description: "How will the machine prove it works — which tests, which checks? Leave it empty: the tester writes it from its tests."
   - type: textarea
     id: validation
     attributes:
