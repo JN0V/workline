@@ -212,7 +212,9 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 			inputs = map[string]string{NeedsInput: l.Said}
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: where,
 				Message: fmt.Sprintf("the %s said it lacks code on this same input: run again, given %s", name, l.Said)})
-		case rec.State == BlockedState:
+		case rec.State == BlockedState && rec.From == s.Name:
+			// Blocked from refine itself: a block from a state further on
+			// is news its read never saw, read again.
 			why = fmt.Sprintf("the %s read it in %s before it was blocked, on this same text, code and comments: read again, it would get the same; a person completes it, or names the files it is about in a comment", strings.ReplaceAll(name, "-", " "), s.Name)
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-same-input", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
 		}

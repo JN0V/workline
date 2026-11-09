@@ -755,9 +755,11 @@ only then.
   read refine. Back in that state with nothing changed:
   - **Code said lacking once**: the role runs, given it
     (`state-given`); said lacking again, `workline:blocked` at once.
-  - **Said lacking twice, or refine read**: `workline:blocked` at once,
-    no agent (`needs-spent`, `state-same-input`). A person's comment,
-    a new body or label makes it a new input: the role runs.
+  - **Said lacking twice, or refine read and blocked there**:
+    `workline:blocked` at once, no agent (`needs-spent`,
+    `state-same-input`). A person's comment, a new body or label makes
+    it a new input: the role runs. A block from a later state is news
+    refine's read never saw: the product owner reads it again.
 - **Counted like a step**: within `reconcile-max`; not a hop, its state
   the same. With no agent, nothing is judged; the record still moves
   the next reading `revisit` days on.
