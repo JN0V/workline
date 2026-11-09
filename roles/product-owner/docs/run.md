@@ -113,8 +113,9 @@ Each issue comes with:
   obsolete issues ([settings](settings.md#off-by-default)).
 - The engine checks each act when it applies it: never a section a person
   wrote, edited or deleted; `ready` only with four sections and no draft;
-  a Scope's files read from its text, or the Scope left out, the rest
-  written; an outsider's issue proposed; never closed as not planned.
+  a Scope's files read from its text, each path found or on a line
+  `New:`, or the Scope left out, the rest written
+  ([writing](writing.md)); an outsider's issue proposed; never closed as not planned.
 - An issue read and left with nothing that refines it — a kind or an
   order alone counts for nothing — is said in the summary, and on the
   issue: what it lacks, each act dropped and why, the agent's note, and
