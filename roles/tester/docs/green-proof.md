@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/green.go, internal/tester/frozen.go, internal/tester/tester.go]
+sources: [internal/tester/green.go, internal/tester/frozen.go, internal/tester/renamed.go, internal/tester/tester.go]
 checked: 4b0fd7a4
 verified: agent:claude-code
 ---
@@ -14,7 +14,7 @@ flowchart LR
   pr["<b>Closing pull request</b><br/>marked ready"]
   base["<b>Base</b><br/>one run"]
   head["<b>Head</b><br/>three runs"]
-  out["<b>Each new test</b><br/>green 3 of 3"]
+  out["<b>Each frozen test</b><br/>green 3 of 3"]
   pr --> base --> head --> out
 ```
 
@@ -31,9 +31,40 @@ flowchart LR
 
 ## What it runs
 
-- **The base once**: the merge base of the record's base and the head.
-  The new tests are those the head's reports hold and the base's does
-  not, the builder's own new tests too.
+- **The tests required**: the ids the tester's record keeps, found new
+  by its red proof, never "the head's tests the base lacks": a change
+  to a build file or a filter that stops one running blocks, named
+  ([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)).
+  - **An id from a report** must be in each head run, green.
+  - **A test whose build broke on the base** is kept as `file:name`:
+    no report named it yet. A head id holding that name as a whole
+    part is it (`calc.Name`, `Name[1]`, `Name/case`), its package or
+    class naming the file's folder or file: another folder's `Name` is
+    not it.
+  - **A record with no class, failed, on the red run** is kept marked
+    `errored`: maybe the runner's record of a file it could not collect
+    (pytest's collection error), not a test case. Gone on the code, it
+    goes to the judge too.
+  - **Not found by that name, while the head has other new tests**: the
+    match is a guess, so the judge decides
+    ([rule A](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-a-a-guess-may-only-pass)).
+    - It reads the ids, the head's new tests, the frozen files, and the
+      change beside them (build and runner files among it).
+    - "Ran under another name" (a display name): passes, said.
+    - "Dropped": `frozen-test-missing` blocks.
+    - Unsure, failed, or no agent: `frozen-unproven`, a warning for a
+      person.
+    - Either way it is written on the pull request, in the tester's
+      comment there.
+  - **No new test the head could run it as**: it blocks, no judge.
+  - **A record written before the ids were kept**: the head's tests
+    the base lacks, as before, said by `frozen-ids-unknown`.
+  - **A rewrite on an objection** moves the ids: the file's old ones,
+    from one run of the base with the file as frozen, come off; the
+    rewrite's go on.
+- **The base once**: the merge base of the record's base and the head,
+  to tell the builder's own new tests (required green too) from the
+  base's.
 - **The head three times**, one run after the other, in one fresh
   checkout. Each run is `test-command`, its report read as JUnit XML.
 - **Never again until green**: three runs, not "until it passes".
@@ -49,8 +80,12 @@ flowchart LR
 |---|---|---|
 | `test-flaky` | yes | a new test passed in some runs, not all: the runs it was red in are named |
 | `test-flaky` | no, warns | a test the base already had is flaky here: not the change's |
-| `test-red-on-head` | yes | a new test is red, skipped or missing in each of the three runs |
-| `no-new-test` | yes | the head's reports name no test the base's does not |
+| `frozen-test-missing` | yes | a test of the record is in none of the three runs: its id is named; for a `file:name` beside other new tests, only on the judge's "dropped" |
+| `frozen-test-judged` | no, informs | the judge says a `file:name` test ran under another name |
+| `frozen-unproven` | no, warns | the judge did not tell, or no agent: a person reads the change |
+| `test-red-on-head` | yes | a frozen or new test is red, skipped or missing in each of the three runs |
+| `frozen-ids-unknown` | no, warns | an older record names files, not tests: the head's new tests are taken |
+| `no-new-test` | yes | an older record, and the head's reports name no test the base's does not |
 | `setting-missing`, `report-missing` | yes | no command, or a run wrote no report |
 
 - **A flaky test of the tester's**: find the cause in the code first;

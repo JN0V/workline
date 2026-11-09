@@ -522,7 +522,7 @@ func Post(runDir, repo string) int {
 		"body":  draftBody(t, tested, said, assumed(notes), newTests, proof),
 		// The tests frozen to whoever builds (ADR-0055, guards): kept in
 		// workline's own comment on the Draft once it is opened.
-		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Scenarios: t.Scenarios, RedUnproven: unprovenOf(*proof)}.intention()["comment"],
+		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Tests: newTests, Errored: erroredOf(runDir, newTests), Scenarios: t.Scenarios, RedUnproven: unprovenOf(*proof)}.intention()["comment"],
 	}
 	data, err := yaml.Marshal(mr)
 	if err != nil {

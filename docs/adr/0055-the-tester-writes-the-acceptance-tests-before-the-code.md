@@ -306,6 +306,12 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
 - **What runs**: the base once, to tell the new tests (the head's
   reports hold them, the base's does not); then the head three times,
   one after the other. Never again until green.
+- **Amended 2026-11-09**: the tests required are the ids the tester's
+  record keeps, each found in every head run, green; a missing one is
+  `frozen-test-missing` ([ADR-0065, change 2](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)).
+  The head's other new tests are required green too. An id named from
+  its file, not found by that name beside other new tests, is the
+  judge's: blocking only on its "dropped", else `frozen-unproven`.
 - **One fresh checkout for the three**, not three: the runner's build
   cache. On a copy of workline, a Go package: the proof about 10 s,
   not 22 s. A test that a run before it breaks is flaky too.

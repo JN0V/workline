@@ -37,6 +37,15 @@ type record struct {
 	Issue int               `json:"issue"`
 	Base  string            `json:"base"`
 	Files map[string]string `json:"files"`
+	// Tests: the ids of the tests the red proof found new; the green proof
+	// requires each on the code (ADR-0065, change 2): a report's id, or
+	// file:name for a test whose build broke on the base. None in a
+	// record written before.
+	Tests []string `json:"tests,omitempty"`
+	// Errored: those of Tests the red run wrote with no class, failed —
+	// maybe the runner's record of a file it could not collect, not a
+	// test case: gone on the code, the judge reads it, never a block.
+	Errored []string `json:"errored,omitempty"`
 	// Scenarios: the issue's, as the run that wrote the tests read them,
 	// for the auditor (ADR-0046); none in a record written before.
 	Scenarios []Scenario `json:"scenarios,omitempty"`
@@ -57,6 +66,9 @@ func (r record) body() string {
 		"(the test, its scenario, the kind, why). Any other change to them blocks, `tester-test-changed`.\n\n| Test file | Blob |\n|---|---|\n", r.Issue)
 	for _, f := range r.files() {
 		fmt.Fprintf(&b, "| `%s` | `%s` |\n", f, short(r.Files[f]))
+	}
+	if len(r.Tests) > 0 {
+		fmt.Fprintf(&b, "\nThe green proof requires each of these tests on the code, three runs out of three: `%s`.\n", strings.Join(r.Tests, "`, `"))
 	}
 	if r.RedUnproven != "" {
 		fmt.Fprintf(&b, "\n**Red unproven**: %s\n", r.RedUnproven)
@@ -127,10 +139,18 @@ func issueOf(branch string) int {
 }
 
 // guardPre is the frozen guard, the tester on a merge request, then, on
-// the one that closes the issue, the green proof: no agent.
+// the one that closes the issue, the green proof: no agent but the judge
+// of a frozen test not found under its name (renamed.go).
 func guardPre(runDir, repo string, s Settings) int {
 	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
 	id, _ := strconv.Atoi(num)
+	if os.Getenv("WORKLINE_JUDGED") == "answered" {
+		if v, ok, err := renameAnswered(runDir); err != nil {
+			return fail(err)
+		} else if ok {
+			return greenEnd(runDir, id, v)
+		}
+	}
 	if kind != "merge-request" || id <= 0 {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no merge request: no test of the tester's to guard"})
 	}
@@ -170,9 +190,19 @@ func guardPre(runDir, repo string, s Settings) int {
 	case mr.Draft: // its tests are meant red until whoever builds marks it ready
 		v.Summary += "; the green proof waits for the pull request marked ready"
 	default:
-		g := green(repo, r.Base, s)
+		g, doubt := green(repo, r, s)
 		g.Summary = v.Summary + "; " + g.Summary
 		v = g
+		if doubt != nil {
+			doubt.Verdict = g
+			if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
+				return greenEnd(runDir, id, doubt.unproven("no agent judges it"))
+			}
+			if err := doubt.ask(runDir); err != nil {
+				return fail(err)
+			}
+			return 0 // the engine asks the judge, and runs pre again with its answer
+		}
 	}
 	return final(runDir, v)
 }

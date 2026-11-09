@@ -39,8 +39,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 - runs on its own: an issue labelled `workline:needs-tests` at once,
   one a scheduled run, and an objection as it is posted ([below](#when-it-runs)); hands its Draft to whoever
   builds ([hand-over](docs/hand-over.md));
-- proves the new tests green three runs out of three on the pull
-  request that closes the issue: one red is flaky ([how](docs/green-proof.md));
+- proves each test it froze green three runs out of three on the pull
+  request that closes the issue: one red is flaky, one missing blocks ([how](docs/green-proof.md));
 - `workline test measure`: the corpus's measures, no agent, weekly in
   CI: count, time, slowest, red and flaky over time ([how](docs/curator.md));
 - `workline test curate`: the agent proposes a few redundant tests

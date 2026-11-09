@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/builtin/reviewer"
@@ -125,6 +126,9 @@ func proveJudged(runDir, repo, base string, patches []intent.Intention, s Settin
 		return nil, nil, nil, false, err
 	}
 	p, blobs, err := proveOnBase(repo, base, patches, s)
+	if err == nil {
+		err = keepErrored(runDir, p.errored)
+	}
 	if err != nil || p.doubt == nil || p.v.Status != verdict.Pass || len(p.added) == 0 {
 		return p.v, p.added, blobs, false, err
 	}
@@ -186,6 +190,36 @@ func (j judging) answered(dir, repo string, s Settings) (*verdict.Verdict, []str
 	v.Findings = append(clone(j.Red.Findings), verdict.Finding{Rule: "red-judged", Level: "info", Where: d.Where,
 		Message: fmt.Sprintf("the build broke on the base with the tests, and the judge says it is for the right reason: %s (%s)", a.Why, who)})
 	return &v, j.Added, j.Blobs, false, nil
+}
+
+// erroredFile keeps, beside the run, the new ids the red proof's run wrote
+// with no class, failed: kept while the judge reads, for the record.
+const erroredFile = "proof-errored.json"
+
+// keepErrored writes ids to the run's erroredFile, or removes it.
+func keepErrored(runDir string, ids []string) error {
+	file := filepath.Join(runDir, "out", erroredFile)
+	if len(ids) == 0 {
+		if err := os.Remove(file); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		return nil
+	}
+	data, err := json.Marshal(ids)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(file, data, 0o644)
+}
+
+// erroredOf is what keepErrored wrote, among tests: none when unread.
+func erroredOf(runDir string, tests []string) []string {
+	var ids []string
+	data, err := os.ReadFile(filepath.Join(runDir, "out", erroredFile))
+	if err != nil || json.Unmarshal(data, &ids) != nil {
+		return nil
+	}
+	return slices.DeleteFunc(ids, func(id string) bool { return !slices.Contains(tests, id) })
 }
 
 func said(why string) string {
