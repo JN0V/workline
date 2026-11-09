@@ -36,15 +36,13 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   the board's doing column ([boards](../../docs/boards.md)).
 - **Writes the code**, with an agent, in a worktree of the code: it
   reads, edits and runs the tests there ([the agent](docs/agent.md)).
-  Its diff is held to its bounds: a file outside the Scope, a frozen
-  acceptance test, a file that steers agents or a gate's are reverted,
-  no agent judging; on its pull request, the same bounds are a check,
-  whoever pushed ([the bounds](docs/bounds.md)). A test that does not
-  fit, it objects to on the tester's Draft. The Scope's paths and globs,
-  and a new test or fake beside them, are in bounds; a class named with
-  no path is not. Code wholly outside the Scope, it asks the product
-  owner for; the same files twice, a person
-  ([asking for files](docs/bounds.md#asking-the-product-owner-for-files)).
+  Its diff is held to its bounds: a frozen acceptance test, a file
+  that steers agents or a gate's are reverted, no agent judging; on its
+  pull request, the same bounds are a check, whoever pushed
+  ([the bounds](docs/bounds.md)). A test that does not fit, it objects
+  to on the tester's Draft. The Scope is a hint: a file beyond it is
+  applied, and listed on the pull request with why, for the reviewer
+  ([beyond the Scope](docs/bounds.md#beyond-the-scope)).
 - **Proves it** on the project's tests, the tester's `test-command`,
   then opens its pull request: ready when green with no cap reached,
   else a Draft ([the proof and the caps](docs/proof.md)).

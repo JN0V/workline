@@ -103,8 +103,9 @@ At `autonomy: normal`, the default:
   on, sent back to the state it came from or to refine; or kept
   blocked, its reason said afresh; put `workline:blocked` back to undo
   ([how](../../docs/spec/backlog-acts/refine.md#a-blocked-issue-read-again)).
-  The developer's ask for a file outside the Scope wakes it at once: it
-  widens the Scope, or says why not. So does a run too big for its role:
+  The developer's ask for a file outside the Scope, from before the
+  Scope was a hint, wakes it at once: it widens the Scope, or says why
+  not. So does a run too big for its role:
   it narrows the Scope, splits it, grants it `workline:size/large` when
   its need cannot be cut (proposed at `cautious`), or leaves it to a
   person. At ready, it predicts the size first

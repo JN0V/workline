@@ -714,7 +714,8 @@ only then.
   is news: the product owner reads it again at once, not in a week;
   the record then written has a version, so once
   ([ADR-0063, migration](../adr/0063-every-open-issue-is-due-waiting-or-done.md#migration)).
-- **The developer's ask for its Scope**: first seen blocked, the
+- **The developer's ask for its Scope**, from before
+  [#1228](https://github.com/JN0V/workline/issues/1228) made the Scope a hint: first seen blocked, the
   comment blocking it holding the developer's `workline:scope-ask`
   mark, the product owner is woken at once (`state-revisit`), told the
   files ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)).
