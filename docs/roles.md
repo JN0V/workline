@@ -6,8 +6,9 @@ verified: agent:claude-code
 ---
 # The roles
 
-Each role does one job, reads only what it needs, and works without AI
-([principles](PRINCIPLES.md)). Its page says what it does and does not do,
+Each role holds one human role's job, reads only what it needs, and its
+checks work without AI; for now a role may need an agent where working
+without one would make it rigid ([principles](PRINCIPLES.md)). Its page says what it does and does not do,
 its events, every setting with its default, what it writes, what it costs
 and where it stands: planned, beta or built, by
 [written criteria](adr/0036-a-roles-status-is-earned-by-written-criteria.md).

@@ -6,11 +6,13 @@
   panel on role boundaries
 - **Builds on:** [ADR-0018], [ADR-0054], [ADR-0055], [ADR-0065];
   principles 2, 4, 5, 8
-- **Amends:** principles 2, 4, 5 and 8 ([PRINCIPLES.md](../PRINCIPLES.md)),
-  now; once built, [ADR-0001]'s
+- **Amends, now:** principles 2, 4, 5 and 8
+  ([PRINCIPLES.md](../PRINCIPLES.md)); [ADR-0001]'s
   [2026-09-24 amendment](0001-engine-in-go.md#amendment-2026-09-24)
-  (a core role needs nothing but git and the engine) and [ADR-0060] §2
-  (the builder's part is the product owner's)
+  (a core role needs nothing but git and the engine), as principle 5
+- **Amends, once built ([#1261]):** [ADR-0018] and [ADR-0060] §2 (the
+  product owner writes Verification, at every level); [ADR-0055] (the
+  tester also writes the issue's Verification)
 
 ## Context
 
@@ -44,7 +46,7 @@
 - **Relaxed, for now**: a role need not work with agent `none` where that
   makes it rigid. Its judgement goes to the AI first.
 - **Later, each independent part becomes code** to save tokens, once
-  its facts converge ([ADR-0065], rule A).
+  its facts converge: [ADR-0065]'s "code only what converges", rule A.
 - **What still holds**:
   - the agent stays a choice: none, `claude`, `cmd:<any command>`;
   - a check on converging facts runs and blocks with no agent;

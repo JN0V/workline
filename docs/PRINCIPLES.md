@@ -13,8 +13,10 @@ choice is settled against this page.
 3. **Each role reads only what it needs.** No catch-all constitution; a context
    budget per role.
 4. **Tools for what converges, AI for judgement.** Scripts do what is
-   mechanical. For now, where code would make a role rigid, the AI goes
-   first; its independent parts become code later, to save tokens
+   mechanical and converges
+   ([ADR-0065](adr/0065-code-only-what-converges-language-knowledge-in-packs.md)).
+   For now, where code would make a role rigid, the AI goes first; its
+   independent parts become code later, to save tokens
    ([ADR-0066](adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)).
 5. **Its checks work without AI.** No model, no quota, no network: every
    check on converging facts still runs and still blocks; the agent stays

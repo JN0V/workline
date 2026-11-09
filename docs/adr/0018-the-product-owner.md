@@ -14,6 +14,7 @@
   (the weekly sample), ADR-0016 (writes go to the project's forge),
   docs/spec/routing.md ("Work starts from a clear need")
 - **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus): a question, or a Validation draft, unanswered past its level's delay is taken as an assumption written beside the person's text; Verification and Scope are the role's at every level
+- **To be amended by:** [ADR-0066](0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md#1-a-role-mirrors-a-human-role), once built ([#1261](https://github.com/JN0V/workline/issues/1261)): the tester writes Verification; the product owner keeps the Scope, as a hint
 
 ## Context
 
