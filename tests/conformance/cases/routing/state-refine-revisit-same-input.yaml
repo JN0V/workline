@@ -1,0 +1,30 @@
+case: routing/state-refine-revisit-same-input
+about: >
+  The product owner read an issue in refine, and the line blocked it
+  (#1157). A revisit moved it back to refine, nothing in it changed: its
+  text, labels, the code it is given and the comments the same. Read
+  again, the product owner would get the same input: it is not run, the
+  issue goes back to Blocked at once, why said, a person completing it.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 10
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"from\":\"refine\",\"body\":\"8a05ec2b42f7\",\"hops\":1,\"since\":\"2026-10-28T08:00:00Z\",\"revisited\":\"2026-11-05T07:00:00Z\",\"v\":1,\"last-run\":{\"product-owner\":{\"state\":\"refine\",\"body\":\"8a05ec2b42f7\",\"labels\":\"-\",\"given\":\"-\"}}} -->\n<!-- workline:sticky=line/state -->"
+run: {route: issue, target: {issue: 10}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-same-input, level: warn, where: "#10", message: "read again, it would get the same"}]
+  no-findings: [{rule: state-wakes}]
+  forge:
+    issues:
+      - id: 10
+        labels: [workline:blocked]
+        comment-contains: ["**workline's line** blocks this issue.", "a person completes it"]
