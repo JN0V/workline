@@ -2015,8 +2015,8 @@ func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool
 		// its need is atomic (step 4). Told the facts it judges on: what
 		// crossed, with the run's numbers, and what the issue spent so far
 		// against its normal (#1193, round 6's RC3).
-		grant := fmt.Sprintf("; or, its need atomic — no smaller %s nor part of it passes its own %s apart — `size` with `tier: %s` — every size target of its runs ×%d — then `unblock` it the same way (where the modes below say `size: propose`, it is only proposed: then `blocked`, `person: true`)",
-			work.Name(work.Scope), work.Name(work.Verification), backlog.TierLarge, backlog.TierFactor(backlog.TierLarge))
+		grant := fmt.Sprintf("; or, its need atomic — no smaller %s nor part of it passes its own scenarios apart — `size` with `tier: %s` — every size target of its runs ×%d — then `unblock` it the same way (where the modes below say `size: propose`, it is only proposed: then `blocked`, `person: true`)",
+			work.Name(work.Scope), backlog.TierLarge, backlog.TierFactor(backlog.TierLarge))
 		tier := input(engine.SizeTierInput)
 		if tier != "" {
 			grant = fmt.Sprintf(" (its size tier is %s already, `%s`: a tier only goes up, and past %s it is a person's, so no `size`)", tier, backlog.TierLabel(tier), backlog.TierLarge)
