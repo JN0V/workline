@@ -1,0 +1,47 @@
+case: developer/merge-normal-fix-unreviewed-past-the-delay
+about: >
+  The reviewer silent past the question's delay, a person is asked
+  (#1254, ADR-0060 decision 1): at `normal`, the developer's fix for #3,
+  workline's own, reproduced, its head's verdict passed; the
+  merge-request line runs the reviewer, but no verdict is on the head
+  25 h after its push. It waits for a person's yes, said on it, with how
+  to ask the reviewer again.
+given:
+  repo: tested-draft
+  config: {merge: {autonomy: normal}, routing: {events: {merge-request: [committer, documentalist, reviewer]}}}
+  env: {WORKLINE_CLOCK: "2026-01-05T10:00:00Z"}
+  setup:
+    - "git checkout -q -b workline/developer/3 && GIT_COMMITTER_NAME=workline-bot git commit -q --amend --no-edit && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && GIT_COMMITTER_NAME=workline-bot git commit -qam 'fix: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/developer/3 && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    issues:
+      - id: 3
+        title: "mul gives a sum"
+        labels: ["bug", "workline:developing"]
+        body: "## Need\n\nmul 2 3 gives 5.\n\n## Scope\n\n- `lib.sh`: `mul`.\n"
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        author: workline-bot
+        bot: true
+        title: "mul gives a sum"
+        body: "Closes #3"
+        labels: []
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"from\":\"workline/tester/issue-3\",\"acceptance\":[\"tests.test_mul_two_by_three\",\"tests.test_mul_by_zero\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: waits-for-a-yes, where: "#2", message: "a fix: its issue labelled `bug`, but no reviewer's verdict is on it"}
+  no-findings: [{rule: review-to-come}, {rule: auto-merge-on}, {rule: merged-at-once}]
+  not-pushed: [workline/developer/3]
+  forge:
+    merge-requests:
+      - {id: 2, auto-merge: false, labels: [], comment-contains: ["Waiting for a person's yes", "gave no verdict on this head within 24 h of its push", "workline:merge-waits=unreviewed"]}
+    statuses:
+      - {commit: "workline/developer/3", name: workline/accepted, absent: true}

@@ -1,6 +1,7 @@
 package reviewer
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -440,6 +441,37 @@ func (r Record) since(repo, base, head string) (span, error) {
 		}
 	}
 	return sp, nil
+}
+
+// ReviewedAll says whether the record a summary comment holds covers
+// every commit base..head, as the reviewer reads it: by its id, or by its
+// change's patch id once its parents are reviewed. A rebase gives a
+// commit a new id, not a new change (#286): the reviewer, finding nothing
+// new, writes no summary on the new head, and the merge policy reads this
+// instead (#1254). A record owing its lenses, or a change to the line's
+// own files, which the reviewer reads again whole, covers nothing.
+func ReviewedAll(repo, base, head, summary string) (bool, error) {
+	rec, err := parseRecord(summary)
+	if err != nil {
+		return false, err
+	}
+	if rec.Owed || len(rec.Failed) > 0 || len(rec.Reviewed)+len(rec.Patches) == 0 {
+		return false, nil
+	}
+	mb, err := git(repo, "merge-base", base, head)
+	if err != nil {
+		return false, err
+	}
+	from := strings.TrimSpace(mb)
+	line, err := lineFiles(repo, from, head, nil)
+	if err != nil || len(line) > 0 {
+		return false, err
+	}
+	sp, err := rec.since(repo, from, head)
+	if err != nil || sp.Unread != nil {
+		return false, cmp.Or(err, sp.Unread)
+	}
+	return sp.From == head, nil
 }
 
 // lineOwn are the files that change what a merge request's own pipeline

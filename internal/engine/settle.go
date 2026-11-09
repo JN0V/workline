@@ -52,6 +52,10 @@ type FollowOptions struct {
 	// States are the labels of the line's states (routing.states): a
 	// closed issue bearing one has it taken off (done.go, #999).
 	States []string
+	// Reviewer: the project's merge-request line runs the reviewer, which
+	// reads each push: the developer's code with no verdict on its head
+	// waits for it, a person asked only past the question's delay (#1254).
+	Reviewer bool
 }
 
 // workKeys are the keys of a doc's header workline writes, recording when

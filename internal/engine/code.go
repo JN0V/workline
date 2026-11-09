@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/builtin/reviewer"
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 )
@@ -76,13 +79,26 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 	case len(d.Open) > 0:
 		return waits("warn", fmt.Sprintf("%s, but the reviewer's findings are open: %s", d.Says(), strings.Join(d.Open, "; ")))
 	}
-	if why := d.Unreviewed(w.tip); why != "" {
-		// Said once on it, as the other waits: a human team merges no
-		// change nobody read (ADR-0065, change 2).
+	if why := unreviewed(o.Repo, w, d); why != "" {
+		// A team asks its reviewer before it pages a person: with the
+		// reviewer in the merge-request line, a head pushed within the
+		// question's delay waits for it (ADR-0060, decision 1).
+		if o.Reviewer {
+			if at, ok := pushedAt(w.st, w.tip); ok && clock.Since(at) < backlog.DefaultWait.D {
+				w.say("review-to-come", "", fmt.Sprintf("%s, but %s: it waits for the reviewer, which reads each push, until %s; then a person's yes", d.Says(), why, at.Add(backlog.DefaultWait.D).UTC().Format(time.RFC3339)))
+				return nil, nil
+			}
+		}
+		// Kept on it, edited at each head, as the other waits are said: a
+		// human team merges no change nobody read (ADR-0065, change 2).
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
-		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `%s`: the developer's code merges with no person's yes only once the reviewer's verdict is on its head, no finding open that blocks or is Important.\n\n- To accept this one, put the label `%s`.\n- To have the reviewer read each push: `workline init --review` adds it to the merge-request line.",
-			d.Says(), why, o.Merge, backlog.AcceptedLabel(f))
-		if err := f.Comment(t, body, forge.Marker("merge-waits="+developer.Unreviewed)); err != nil {
+		how := "- To have the reviewer read each push: `workline init --review` adds it to the merge-request line."
+		if o.Reviewer {
+			how = fmt.Sprintf("- The reviewer, in the merge-request line, gave no verdict on this head within %s of its push: a new push, or its job run again, asks it.", backlog.DefaultWait.Say())
+		}
+		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `%s`: the developer's code merges with no person's yes only once the reviewer's verdict is on its head, no finding open that blocks or is Important.\n\n- To accept this one, put the label `%s`.\n%s",
+			d.Says(), why, o.Merge, backlog.AcceptedLabel(f), how)
+		if err := f.Sticky(t, body, forge.Marker("merge-waits="+developer.Unreviewed), true); err != nil {
 			return nil, err
 		}
 		return waits("", d.Says()+", but "+why)
@@ -118,6 +134,36 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		}
 	}
 	return admit(f, m, o, w, n, hand, waits, kindCode, d.Says())
+}
+
+// unreviewed says why no review reads the head, "" when one does: the
+// reviewer's verdict names it, or its record covers every commit of it,
+// a head rebased with no new change, on which the reviewer writes no
+// summary (reviewer.ReviewedAll).
+func unreviewed(repo string, w weighed, d developer.Merge) string {
+	why := d.Unreviewed(w.tip)
+	if why == "" || d.Summary == "" || d.Owed {
+		return why
+	}
+	all, err := reviewer.ReviewedAll(repo, w.baseTip, w.tip, d.Summary)
+	switch {
+	case err != nil:
+		return why + " (what it read could not be compared with the head: " + err.Error() + ")"
+	case all:
+		return ""
+	}
+	return why
+}
+
+// pushedAt is when the forge says head was pushed, its last push.
+func pushedAt(st forge.MergeState, head string) (time.Time, bool) {
+	for _, p := range slices.Backward(st.Pushes) {
+		if p.Head == head {
+			at, err := time.Parse(time.RFC3339, p.At)
+			return at, err == nil
+		}
+	}
+	return time.Time{}, false
 }
 
 // unreproduced says why a fix's bug is not shown reproduced: its code

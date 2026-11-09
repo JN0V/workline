@@ -72,6 +72,9 @@ type Merge struct {
 	// Owed: that summary holds its rules only, every lens still owed: no
 	// lens read the change yet.
 	Owed bool
+	// Summary is that comment, its record in it: what the reviewer read,
+	// by commit and patch id, for a head rebased since (#1254).
+	Summary string
 }
 
 // Unreviewed says why no reviewer's verdict reads head, the pull
@@ -154,7 +157,7 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 		if at := reviewerAt.FindStringSubmatch(c); at != nil {
 			m.ReviewedAt = at[1]
 		}
-		m.Owed = reviewerOwed.MatchString(c)
+		m.Owed, m.Summary = reviewerOwed.MatchString(c), c
 	}
 	return m, nil
 }
