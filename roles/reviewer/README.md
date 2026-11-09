@@ -52,7 +52,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 | Event | Fired by | Reads |
 |---|---|---|
 | `review` | `workline review`, on your machine before you push | `base..HEAD`, every lens |
-| `merge-request` | CI, opt-in: `workline init --review` adds it to the line | a draft: the rules only, no lens ([more](docs/ready.md)); every lens once, on the whole change, when it becomes ready; then the commits not reviewed yet, one lens a push, five commits a push for a lens that warns ([more](docs/ready.md#after-ready-only-what-is-new)) |
+| `merge-request` | CI, opt-in: `workline init --review` adds it to the line; without it, the developer's fix waits for a person's yes ([why](../developer/docs/merge.md#what-each-gets-at-normal)) | a draft: the rules only, no lens ([more](docs/ready.md)); every lens once, on the whole change, when it becomes ready; then the commits not reviewed yet, one lens a push, five commits a push for a lens that warns ([more](docs/ready.md#after-ready-only-what-is-new)) |
 | `spec` | `workline review --spec <file>` or `--issue <n>` | the spec, every spec lens |
 | `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens |
 | `issue` | the line of states, opt-in: `reviewer` in the `issue` line, after the product owner woke on an issue to refine | that issue's spec, at once ([line of states](../../docs/spec/routing.md#the-line-of-states)) |
@@ -140,6 +140,9 @@ still gets its comments ([more](docs/run.md#on-a-merge-request)).
   ([ADR-0051, cut 4](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-4-no-fix-round-for-nits)).
 - **To hold the merge on important findings**: the forge's own
   "conversations resolved" rule ([how](docs/lines.md#what-it-asks)).
+- **What the merge policy reads**: the head its summary comment names.
+  The developer's fix merges alone only once that is its head
+  ([the merge](../developer/docs/merge.md#what-each-gets-at-normal)).
 
 The templates read the lenses that only warn apart from the verdict, in
 a run and a comment of their own: the head's verdict waits only for the
