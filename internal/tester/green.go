@@ -1,9 +1,10 @@
 package tester
 
 // The green proof (ADR-0055, step 5): on the pull request that closes the
-// issue — the tester's branch, marked ready — each test the tester froze
-// passes on the head three runs out of three: the project's test command,
-// three times one after the other, in one fresh checkout of the head. A
+// issue, marked ready — the developer's, stacked on the tester's Draft, or
+// the Draft itself — each test the tester froze passes on the head three
+// runs out of three: the project's test command, three times one after
+// the other, in one fresh checkout of the head. A
 // test red in some runs and green in others is flaky: blocking, named,
 // never run again until green (TestGen-LLM's flakiness filter, cheaper:
 // three runs, not five). The tests required are the ids the tester's

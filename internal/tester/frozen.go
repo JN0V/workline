@@ -138,9 +138,35 @@ func issueOf(branch string) int {
 	return n
 }
 
-// guardPre is the frozen guard, the tester on a merge request, then, on
-// the one that closes the issue, the green proof: no agent but the judge
-// of a frozen test not found under its name (renamed.go).
+// closingDraft is the tester's open Draft of the first issue mr closes
+// that has one, 0 when none: the developer's pull request, stacked on
+// that Draft, merges its tests, so they are guarded and proven green
+// there, the record read from the Draft (#1281). Any branch closing the
+// issue is read so, not only the developer's: the pull request that
+// closes an issue carries its frozen tests.
+func closingDraft(f forge.Forge, mr forge.MergeRequest) (int, error) {
+	closes := forge.Closes(mr.Title, mr.Body)
+	if len(closes) == 0 {
+		return 0, nil
+	}
+	open, err := f.ListMergeRequests()
+	if err != nil {
+		return 0, err
+	}
+	for _, n := range closes {
+		for _, o := range open {
+			if o.ID != mr.ID && issueOf(o.Branch) == n {
+				return o.ID, nil
+			}
+		}
+	}
+	return 0, nil
+}
+
+// guardPre is the frozen guard, the tester on a merge request — its own
+// Draft, or one closing the Draft's issue —, then, on one ready, the
+// green proof: no agent but the judge of a frozen test not found under
+// its name (renamed.go).
 func guardPre(runDir, repo string, s Settings) int {
 	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
 	id, _ := strconv.Atoi(num)
@@ -170,10 +196,21 @@ func guardPre(runDir, repo string, s Settings) int {
 	} else if err != nil {
 		return fail(err)
 	}
+	from := id
 	if issueOf(mr.Branch) == 0 {
-		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "not a tester's branch: no test of its to guard"})
+		draft, err := closingDraft(f, mr)
+		if errors.Is(err, forge.ErrUnreachable) {
+			fmt.Fprintln(os.Stderr, err)
+			return exitExternal
+		} else if err != nil {
+			return fail(err)
+		}
+		if draft == 0 {
+			return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no tester's Draft for an issue it closes: no test of its to guard"})
+		}
+		from = draft
 	}
-	r, missing, err := readRecord(f, id)
+	r, missing, err := readRecord(f, from)
 	if errors.Is(err, forge.ErrUnreachable) {
 		fmt.Fprintln(os.Stderr, err)
 		return exitExternal

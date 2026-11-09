@@ -122,7 +122,8 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
 - **The record**: on the Draft, workline's own comment lists each test
   file, its git blob, the scenarios read. Only the tester's runs write it.
 - **The guard**, no agent: route the tester on `merge-request`. On its
-  branch, a test file changed or deleted by anyone else blocks,
+  Draft, and on a pull request closing the Draft's issue (the
+  developer's), a test file changed or deleted by anyone else blocks,
   `tester-test-changed`. No label lifts it, and no commit trailer is
   trusted. With no record to read, `tester-record-missing` blocks.
 - **An objection**: a comment on the test's line, opened by

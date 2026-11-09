@@ -21,11 +21,18 @@ flowchart LR
 ## When it runs
 
 - **Where the frozen guard runs**: the tester routed on
-  `merge-request`, on its own branch `workline/tester/issue-<n>`
-  ([hand-over](hand-over.md)). No agent.
-- **Once the pull request is marked ready**: the builder marks it so
-  when it closes the issue. While it is a Draft, the tests are meant
-  red; the proof says it waits.
+  `merge-request`, no agent, on the pull request that merges the tests:
+  - **the developer's**, or any saying `Closes #<n>`: the record is
+    read from the tester's open Draft of `#<n>`
+    ([#1281](https://github.com/JN0V/workline/issues/1281));
+  - **its own Draft**, branch `workline/tester/issue-<n>`
+    ([hand-over](hand-over.md)), when a person builds on it.
+  - No open Draft for the issues it closes: nothing to guard, said.
+- **Once the pull request is marked ready**: the developer opens it so
+  when green. While it is a Draft, the tests are meant red; the proof
+  says it waits.
+- **Proven once**: the Draft stays a Draft under the developer's pull
+  request; once that merges, the Draft is closed, never proven twice.
 - **After the guard**: a test changed by another blocks first; the
   proof waits for the tests as the tester wrote them.
 
