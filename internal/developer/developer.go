@@ -154,8 +154,11 @@ type Act struct {
 	// (step 4).
 	From       string   `json:"from,omitempty"`
 	Acceptance []string `json:"acceptance,omitempty"`
-	Code       []string `json:"code,omitempty"`
-	Tests      []string `json:"tests,omitempty"`
+	// RedUnproven: why the tester's red proof of those tests was not
+	// settled by its judge (ADR-0065): said on its pull request.
+	RedUnproven string   `json:"red-unproven,omitempty"`
+	Code        []string `json:"code,omitempty"`
+	Tests       []string `json:"tests,omitempty"`
 	// The review loop (step 6): the rounds run, the reviewer's runs and
 	// a person's comments read already, the findings asked before (to
 	// tell one still there), the five whys run, a person handed it.
@@ -593,7 +596,7 @@ func Pre(runDir, repo string) int {
 	}
 	// Its code starts from the tester's Draft: the acceptance tests on it
 	// run in the proof (ADR-0054, step 4).
-	act.From, act.Acceptance = bounds.Head, bounds.acceptance()
+	act.From, act.Acceptance, act.RedUnproven = bounds.Head, bounds.acceptance(), bounds.RedUnproven
 	if err := writeIn(runDir, pickFile, act); err != nil {
 		return fail(err)
 	}
