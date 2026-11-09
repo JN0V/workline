@@ -1,9 +1,9 @@
-case: developer/scope-said-unread-waits-on-nothing
+case: developer/scope-prose-is-no-guess
 about: >
-  A Scope written before the `Guessed:` mark (#970), whose own words
-  say no code was given when it was written (#998): a guess as well,
-  it waits on nothing. #2's `src/` overlaps #1's, taken: #2 is taken
-  all the same.
+  Only a line `Guessed:` marks a Scope a guess (#970): its words saying
+  no code was given are English prose, which the engine no longer reads
+  (ADR-0065, change 2; #1228). #2's `src/` overlaps #1's, taken: #2
+  waits on it.
 given:
   repo: tested
   forge:
@@ -15,7 +15,6 @@ given:
 run: {develop: [], ai: "fake:developer-nothing"}
 expect:
   status: pass
-  summary: "took #2"
   forge:
     issues:
-      - {id: 2, labels: ["bug", "workline:developing"], comment-lacks: "waits on this issue"}
+      - {id: 2, labels: ["workline:ready", "bug"], comment-contains: ["**The developer** waits on this issue.", "overlaps #1's, taken"]}

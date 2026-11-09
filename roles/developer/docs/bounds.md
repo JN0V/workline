@@ -1,6 +1,7 @@
 ---
 sources:
   - internal/developer/bounds.go
+  - internal/work/scope.go
   - internal/developer/developer.go
   - internal/developer/worktree.go
   - internal/developer/words.go
@@ -43,19 +44,20 @@ first rule that matches refuses the whole patch:
 
 **What it may touch:**
 
-- the paths in backticks in the issue's Scope, a line after one taken
-  off (`parts.go:943`), a bare name read as the one file that has it,
-  a pattern as the files it matches (`src/calc/*.sh`, a new one too);
-  a path with a `/` only when it has a file's extension, ends with `/`,
-  or its first folder is the repository's (`dorny/paths-filter` or
-  `actions/checkout@v4.1`, an Action, bounds nothing);
-- a name alone in backticks, read with the modules its line names
-  (`core:session`, a folder): a class, `TracingViewModel`, as its source
-  file (`.kt`, `.java`, `.h`…, never a `.md` or `.json`);
-  a name several files have as the one in the module; a new file's
-  name, `CompositionGrid.kt`, as that name anywhere in the module, or,
-  with no module and no file of that name, anywhere not guarded: a
-  module narrows it. Several files and no module: none;
+- the paths and globs in backticks in the issue's Scope
+  ([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-and-globs-the-fence-matches-paths-only)):
+  - a path, a line after it taken off (`parts.go:943`); a bare file
+    name read as the one tracked file whose path ends with it;
+  - a glob as the files it matches, new ones too (`core/session/**`,
+    `src/calc/*.sh`), never its whole folder;
+  - a new file's path, on a line `New:` as the product owner writes it;
+  - a path with a `/` only when it has a file's extension, ends with
+    `/`, or its first folder is the repository's (`dorny/paths-filter`
+    or `actions/checkout@v4.1`, an Action, bounds nothing);
+  - never a name alone: a class (`TracingViewModel`) or a module
+    (`core:session`) bounds no file. Its code is outside, asked of the
+    product owner ([below](#asking-the-product-owner-for-files)), who
+    writes its path;
 - the paths in plain words in the Scope that the repository holds, a
   file or a folder (`docs/ci.md, internal/doctor`);
 - the product owner's `sources` for the issue;
@@ -81,9 +83,10 @@ first rule that matches refuses the whole patch:
   - a test the definition misses is code: outside the Scope, asked of
     the product owner ([below](#asking-the-product-owner-for-files));
     `workline doctor` says how to set `test-paths`;
-  - never the name of a class its module's `src/main/` holds, whatever
-    the extension: it would replace that class on the test run's
-    classpath;
+  - one named like a class of the main code is let in: the reviewer's
+    [`tests` lens](../../reviewer/lenses/tests.md) judges whether it
+    replaces that class when the tests run (a JVM classpath), not the
+    fence;
   - the root is a home only to a Scope file at the root: a Scope
     `src/x.py` lets in no `tests/test_x.py`;
   - a kept test stays the fence's in the next rounds, its record naming

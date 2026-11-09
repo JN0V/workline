@@ -170,6 +170,8 @@ Amends [ADR-0055].
 - **Moved, not deleted**: the JVM classpath-shadowing check (a test
   helper named like a main class) becomes a reviewer lens, a prompt
   that judges, not Go code (Rule B).
+- **Built in [#1228]**: a file to create is written on a line `New:`;
+  the shadowing check went into the reviewer's `tests` lens.
 
 #### 3. One definition of a test file
 

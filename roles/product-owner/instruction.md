@@ -85,10 +85,16 @@ Scope). What each holds:
 - `scope`: the part of the code it touches, by its paths — files or
   folders —, every file the change edits, each copy of a function it
   fixes included; up to 5 of the same paths in `sources`; from the code
-  given for that issue: read it first. With no code given for it, write no
+  given for that issue: read it first. Write each as a path from the
+  repository's root, in backticks, or a glob for a folder's files
+  (`core/session/**`): never a class, a function or a module's name
+  alone — the developer may change only the files these paths match.
+  A file to create goes on its own line starting `New:`, its full path
+  in backticks after it. A path the repository lacks, not on a `New:`
+  line, leaves the `scope` out. With no code given for it, write no
   `scope`: propose `sources` instead; the issue is read again with that
   code, and its `scope` written then. When the code given still does
-  not show where the change goes — new code, a file not given —, start
+  not show where the change goes — a file not given —, start
   the `scope` with a line `Guessed:` and why: a guess holds no other
   issue back. File paths, issue numbers and decisions go here, never in
   Need nor Validation.

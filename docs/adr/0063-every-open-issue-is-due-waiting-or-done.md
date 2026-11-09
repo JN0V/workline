@@ -406,6 +406,10 @@ Each role's run ends with one outcome, beside its finding codes:
 - **Anything else is an ask**: `needs-input(product owner, the files)`,
   the file set in its input. The same set asked twice waits for a
   person; a new set is new input, whatever the head.
+- **Amended by [ADR-0065, change 2](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-and-globs-the-fence-matches-paths-only)**,
+  built in [#1228](https://github.com/JN0V/workline/issues/1228): the
+  Scope's paths and globs only, a test file by the project's one
+  definition; a class or module name bounds nothing, its code asked.
 
 ### 10. Pull requests through the same function
 

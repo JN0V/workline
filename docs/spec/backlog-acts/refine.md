@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/assume.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/backlog/scenarios.go, internal/forge/forge.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go, internal/backlog/assume.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/work/scope.go, internal/backlog/scenarios.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
 checked: 3f424301
 verified: agent:claude-code
@@ -69,7 +69,14 @@ what it can and asks for the rest:
   names that the commit holds (`backlog.PathsIn`). A Scope naming none, or
   a path the commit does not hold, is left out, the rest of the refine
   written (`scope-without-files`, said in the summary with what a person
-  may do). A file the developer asked the Scope widened with, on its
+  may do). Each path the Scope writes in backticks is the developer's
+  bounds, so each must be found
+  ([ADR-0065, change 2](../../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-and-globs-the-fence-matches-paths-only),
+  [#1228](https://github.com/JN0V/workline/issues/1228); `work.Unfound`):
+  a file or folder the commit holds, a glob matching one of its files,
+  or a file to create on a line `New:`. A Scope naming only new files,
+  each on a `New:` line, needs no `sources`. A word with no `/` (a name,
+  `os.Getenv`) is no path to check. A file the developer asked the Scope widened with, on its
   blocked issue, is kept though the commit does not hold it: its pull
   request adds it ([#1061](https://github.com/JN0V/workline/issues/1061)).
   That widening left out, an `unblock` beside it is refused
@@ -94,8 +101,9 @@ what it can and asks for the rest:
   read again with that code. A refine with its Scope alone is dropped
   (`scope-unread`), the agent told to name the code with `sources`. A
   person's yes to a proposal is done as it reads. A Scope marked a
-  guess — a line `Guessed:`, or its older words that no code was given
-  (`work.Guessed`) — is the role's to rewrite: once its code is given,
+  guess — a line `Guessed:` (`work.Guessed`); its words saying no code
+  was given are no longer read, English prose being no fact
+  ([#1228](https://github.com/JN0V/workline/issues/1228)) — is the role's to rewrite: once its code is given,
   a refine's new Scope replaces it, never dropped as there already
   ([#1126](https://github.com/JN0V/workline/issues/1126)).
 - **Each thing said once** (ADR-0039, amended). The text above an

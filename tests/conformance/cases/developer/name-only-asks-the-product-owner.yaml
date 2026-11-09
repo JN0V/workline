@@ -1,0 +1,27 @@
+case: developer/name-only-asks-the-product-owner
+about: >
+  A Scope naming a class with no path bounds no file (ADR-0065, change
+  2; #1228): the engine never guesses a class's file from its name. The
+  developer's agent changes app/src/main/kotlin/Mul.kt for a Scope
+  naming `Mul` alone: outside the bounds, the step asks the product
+  owner for the file, #2 back to refine. Never a silent pass, never a
+  hard block.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p app/src/main/kotlin && echo 'class Mul' > app/src/main/kotlin/Mul.kt && git add -A && git commit -qm 'feat: a Mul class'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `Mul`: a class that multiplies.\n"}
+run: {develop: [], ai: "fake:developer-writes-a-class"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: outside-scope, level: warn, where: app/src/main/kotlin/Mul.kt}, {rule: scope-asked, level: warn, where: "#2"}]
+  not-pushed: [workline/developer/2]
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:to-refine"]
+        comment-contains: ["its code needs `app/src/main/kotlin/Mul.kt`, outside its Scope: it asks the product owner to widen it"]

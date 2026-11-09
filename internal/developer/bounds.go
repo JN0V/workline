@@ -13,7 +13,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -112,12 +111,9 @@ type Refusal struct {
 // readBounds reads, on the forge, what bounds the issue's patches.
 func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (Bounds, error) {
 	files := repoFiles(repo)
+	// The Scope's paths and globs, nothing guessed from a name (ADR-0065,
+	// change 2): a name alone bounds no file, its code asked for.
 	b := Bounds{Issue: is.ID, Scope: inRepo(scopePaths(is.Body, files), files), Frozen: map[string]int{}, Blobs: map[string]string{}}
-	for _, p := range scopeNamed(is.Body, files) {
-		if !slices.Contains(b.Scope, p) {
-			b.Scope = append(b.Scope, p)
-		}
-	}
 	for _, sc := range work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text) {
 		b.Scenarios = append(b.Scenarios, sc.Name)
 	}
@@ -273,84 +269,6 @@ func inRepo(scope, files []string) []string {
 	return out
 }
 
-var (
-	// className is a Scope's word that names a class, not a file: `TracingViewModel`.
-	className = regexp.MustCompile(`^[A-Z][A-Za-z0-9_]*$`)
-	// classExt are the extensions of a file a class is written in: a
-	// class name is never its `Model.md`, `Model.json` nor `README.md`.
-	classExt = []string{".kt", ".java", ".scala", ".groovy", ".swift", ".cs", ".fs", ".vb", ".ts", ".tsx", ".js", ".jsx",
-		".mjs", ".py", ".rb", ".php", ".go", ".rs", ".dart", ".m", ".mm", ".h", ".hh", ".hpp", ".hxx", ".c", ".cc", ".cpp", ".cxx", ".vue", ".svelte"}
-	// moduleWord is a module a Scope's line names as a build tool writes
-	// it: `core:session` is core/session.
-	moduleWord = regexp.MustCompile(`(?:^|[\s(` + "`" + `])(:?[A-Za-z][\w-]*(?::[A-Za-z][\w-]*)+)`)
-)
-
-// scopeNamed are the files a Scope's words name by a name alone, each
-// line read with the modules it names (`core:session`, a folder the
-// repository holds): a class, `TracingViewModel`, as the source file
-// whose name it is (classExt); a file's name several files have, as those
-// in the line's modules; a new file's name, `CompositionGrid.kt`, as a
-// pattern for it under the line's modules, the module's whatever others
-// hold, anywhere with none and no file of that name (#1207).
-// A class name or a file's name with several files and no module to
-// choose names none. files are the repository's; nil reads none.
-func scopeNamed(body string, files []string) []string {
-	if files == nil {
-		return nil
-	}
-	var out []string
-	add := func(p string) {
-		if !slices.Contains(out, p) {
-			out = append(out, p)
-		}
-	}
-	for _, line := range strings.Split(work.ByMeaning(body)[work.Scope].Text, "\n") {
-		var modules []string
-		for _, m := range moduleWord.FindAllStringSubmatch(line, -1) {
-			if d := strings.ReplaceAll(strings.TrimPrefix(m[1], ":"), ":", "/"); holds(files, d) && !slices.Contains(files, d) {
-				modules = append(modules, d)
-			}
-		}
-		for _, m := range backlog.PathLike.FindAllString(line, -1) {
-			if d, ok := repoPath(m); ok && strings.Contains(d, "/") && !slices.Contains(files, d) && holds(files, d) {
-				modules = append(modules, d)
-			}
-		}
-		for _, w := range work.ScopeWords(line) {
-			if strings.ContainsAny(w, `/\`) || work.Pattern(w) {
-				continue
-			}
-			class := className.MatchString(w)
-			if !class && !newPath(w) {
-				continue
-			}
-			var found []string
-			for _, f := range files {
-				base := path.Base(f)
-				if base == w || class && slices.Contains(classExt, path.Ext(base)) && strings.TrimSuffix(base, path.Ext(base)) == w {
-					if len(modules) == 0 || under(f, modules) {
-						found = append(found, f)
-					}
-				}
-			}
-			switch {
-			case len(found) == 1 || len(found) > 1 && len(modules) > 0:
-				for _, f := range found {
-					add(f)
-				}
-			case len(found) == 0 && !class && (len(modules) > 0 || !slices.ContainsFunc(files, func(f string) bool { return path.Base(f) == w })):
-				if len(modules) == 0 {
-					add("**/" + w)
-				}
-				for _, d := range modules {
-					add(d + "/**/" + w)
-				}
-			}
-		}
-	}
-	return out
-}
-
 // under says whether p is one of roots or in one of them, or matches one
 // that is a pattern, as the tester reads a Scope (work.Files, #801).
 func under(p string, roots []string) bool {
@@ -478,53 +396,15 @@ func besideKept(repo string, b Bounds, patches []intent.Intention) []string {
 // (ADR-0065), not in the commit the rules are read at, and its code's
 // folder (Def.Home) a Scope path's folder, in one, or holding one.
 // Written by rule, no ask. A test the definition misses is code: the
-// developer asks the product owner for it.
+// developer asks the product owner for it. One named like a class of the
+// main code is the reviewer's to judge (its `tests` lens), not the
+// fence's (ADR-0065, change 2).
 func (c checker) newTestBeside(p string) bool {
 	tests := c.b.tests()
-	if !tests.Test(p) || kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) || c.shadows(p) {
+	if !tests.Test(p) || kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) {
 		return false
 	}
 	return testBeside(tests.Home(p), c.b.Scope, c.isDir)
-}
-
-// shadows says whether p, a new file under a module's src/test/, has
-// the name of a class its src/main/ holds, whatever the extension: on
-// the test run's classpath it comes first and replaces the production
-// class, and the frozen tests run against it (#1207).
-func (c checker) shadows(p string) bool {
-	module, _, ok := strings.Cut("/"+p, "/src/test/")
-	if !ok || kindAt(c.repo, c.at, p) != "" {
-		return false
-	}
-	stem := func(f string) string { return strings.TrimSuffix(path.Base(f), path.Ext(f)) }
-	return slices.ContainsFunc(filesAt(c.repo, c.at, strings.TrimPrefix(module+"/src/main", "/")), func(f string) bool { return stem(f) == stem(p) })
-}
-
-// filesAt are the files under dir at rev, a commit, or in the checkout
-// when rev is "": their paths from the repository's root.
-func filesAt(repo, rev, dir string) []string {
-	var out []string
-	if rev != "" {
-		list, err := gitOut(repo, "ls-tree", "-r", "-z", "--name-only", rev, "--", dir+"/")
-		if err != nil {
-			return nil
-		}
-		for _, f := range strings.Split(list, "\x00") {
-			if f != "" {
-				out = append(out, f)
-			}
-		}
-		return out
-	}
-	_ = filepath.WalkDir(filepath.Join(repo, filepath.FromSlash(dir)), func(f string, d os.DirEntry, err error) error {
-		if err == nil && !d.IsDir() {
-			if rel, err := filepath.Rel(repo, f); err == nil {
-				out = append(out, filepath.ToSlash(rel))
-			}
-		}
-		return nil
-	})
-	return out
 }
 
 // testBeside says whether a test file's home, its code's folder

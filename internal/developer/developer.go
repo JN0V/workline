@@ -15,7 +15,6 @@ import (
 	"maps"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -235,7 +234,7 @@ func ReadAct(body string) (Act, bool) {
 // slash or a dot, its line off (work.ScopeWords); in plain words, a path
 // the repository holds (#901). files are the repository's, nil unread:
 // the words in backticks taken as written then. Else a word with a slash
-// is kept when newPath says so, or a pattern or a file it names is, or
+// is kept when work.NewPath says so, or a pattern or a file it names is, or
 // its first folder is the repository's: `dorny/paths-filter` is not.
 func scopePaths(body string, files []string) []string {
 	text := work.ByMeaning(body)[work.Scope].Text
@@ -250,7 +249,7 @@ func scopePaths(body string, files []string) []string {
 		if !ok || !strings.ContainsAny(w, "/.") {
 			continue
 		}
-		if files == nil || !strings.Contains(p, "/") || newPath(w) ||
+		if files == nil || !strings.Contains(p, "/") || work.NewPath(w) ||
 			len(work.Files(p, files)) > 0 || holds(files, strings.SplitN(p, "/", 2)[0]) {
 			add(p)
 		}
@@ -258,23 +257,12 @@ func scopePaths(body string, files []string) []string {
 	if files == nil {
 		return out
 	}
-	for _, m := range backlog.PathLike.FindAllString(text, -1) {
+	for _, m := range backlog.PathLike.FindAllString(work.Plain(text), -1) {
 		if p, ok := scopeEntry(work.LineOff(backlog.RepoPath(m))); ok && holds(files, p) {
 			add(p)
 		}
 	}
 	return out
-}
-
-// fileExt is a file's extension, a letter first: never an Action's
-// version, `@v4.1`.
-var fileExt = regexp.MustCompile(`^\.[A-Za-z][A-Za-z0-9]{0,7}$`)
-
-// newPath says whether a Scope's word reads as a path to create: a
-// file's extension or a trailing slash (`pkg/__init__.py`, `src/`), no
-// `@` (`actions/checkout@v4.1` is an Action).
-func newPath(w string) bool {
-	return !strings.Contains(w, "@") && (strings.HasSuffix(w, "/") || fileExt.MatchString(path.Ext(w)))
 }
 
 // holds says whether files hold p, a file or a folder.
