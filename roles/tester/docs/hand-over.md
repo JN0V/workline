@@ -209,7 +209,8 @@ refusal is written on the issue too
 - **Leaves the tests as they are**: a change to a recorded file, or its
   deletion, blocks the merge request (`tester-test-changed`). Its own
   new tests go in other files.
-- **Objects** to a test that does not fit, on the test's line
+- **Objects** to a test that does not fit, on the test's line in the
+  Draft, not in its own pull request
   ([the form](../README.md#frozen-tests-and-objections)); the tester
   keeps it or rewrites it, on top of the branch. The developer's next
   round takes the rewrite ([a round](../../developer/docs/review-loop.md#a-round)).
