@@ -233,7 +233,7 @@ func (j judging) material(s Settings) string {
 		b.WriteString("\n## No read is left\n\nYou read what you could (judge-read-rounds, judge-read-lines-max): answer now.\n")
 	}
 	b.WriteString("\nYour answer is one note: yes; no, quoting the compiler's line that is the test's own mistake; or unsure, when you still cannot tell:\n\n" +
-		"- note: \"yes: each error is a call to `restore(count, next)`, the signature the issue's Scope gives.\"\n" +
+		"- note: \"yes: each error is a call to `restore(count, next)`, the signature the issue gives.\"\n" +
 		"- note: \"no: the test calls `stubTwo`, a helper the issue never asks for.\"\n" +
 		"- note: \"unsure: whether the issue changes `add` or adds an overload is not said.\"\n")
 	return b.String()
