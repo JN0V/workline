@@ -11,7 +11,8 @@
 - **Amends, once built:** [ADR-0055] (the red proof of a broken build,
   its amendment "a missing name, told from a broken build");
   [ADR-0054] and [ADR-0063 §9] (the developer's bounds read paths only);
-  [ADR-0063 §8] (the code picker frozen)
+  [ADR-0063 §8] (the code picker frozen); [ADR-0059] (a `red unproven`
+  Draft moves the issue to ready, as a proven one does)
 - **Research:** [round6-root-causes.md](../research/round6-root-causes.md)
 
 ## Context
