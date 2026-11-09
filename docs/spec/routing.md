@@ -366,7 +366,7 @@ whose result moves the issue to the next. The table is the routing's
 | State | Label | Wakes | Its result moves it to |
 |---|---|---|---|
 | blocked | `workline:blocked` | nobody: its reason on the issue; the product owner reads it again on news ([below](#blocked-read-again)), at once for a developer's Scope ask or a run too big for its role | — |
-| doing | `workline:developing` | nobody: the developer's claim; one with no pull request wakes the developer to let it go, past `claim-hours` or on a change to its body, the day said until then ([#1084](https://github.com/JN0V/workline/issues/1084)); one whose agent wrote no code on the body it still has is blocked for a person past `claim-hours`, never run again on that input (`no-code-spent`, [#1120](https://github.com/JN0V/workline/issues/1120)) | — |
+| doing | `workline:developing` | nobody: the developer's claim; one with no pull request wakes the developer to let it go, past `claim-hours` or on a change to its body, the day said until then ([#1084](https://github.com/JN0V/workline/issues/1084)); one whose agent wrote no code on the body it still has is blocked for a person past `claim-hours`, never run again on that input (`no-code-spent`, [#1120](https://github.com/JN0V/workline/issues/1120)); one with its pull request open waits on it, said, naming it, a Draft a person's; a change to its body since the code is the developer's review round on it ([#1271](https://github.com/JN0V/workline/issues/1271)) | — |
 | ready | `workline:ready` | the developer | doing |
 | tests | `workline:needs-tests` | the tester | ready |
 | refine | `workline:to-refine` | the product owner | tests |

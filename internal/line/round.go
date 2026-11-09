@@ -11,6 +11,7 @@ package line
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/JN0V/workline/internal/developer"
@@ -58,6 +59,19 @@ func roundDue(res *Result, f forge.Forge, repo string, mr forge.MergeRequest) bo
 		return false
 	}
 	return ok
+}
+
+// roundWakes says a round due on mr on the issue it closes, in place of
+// what its claim waits on (mrWaits): the developer's next, on mr (#1271).
+func roundWakes(res *Result, mr forge.MergeRequest) {
+	id := developer.BranchIssue(mr.Branch)
+	if id == 0 {
+		return
+	}
+	where := fmt.Sprintf("#%d", id)
+	res.Findings = slices.DeleteFunc(res.Findings, func(f verdict.Finding) bool { return f.Where == where && f.Rule == "state-waits" })
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes", Level: "info", Where: where,
+		Message: fmt.Sprintf("a review round is due on its pull request #%d: wakes the developer on it", mr.ID)})
 }
 
 // roundSaid is a round due on mr, said with its command, for a line on
