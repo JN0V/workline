@@ -3,8 +3,10 @@ about: >
   A claimed issue whose developer's pull request is open said nothing at
   a reconcile (#1271): Doing wakes no role, and a claim with a pull
   request was skipped. Now it says what it waits on, naming the pull
-  request: #4's is a Draft, its check still running, so nothing is due
-  on it and a person takes the Draft. Nothing runs, nothing is written.
+  request and who acts next: #4's is a Draft, its check still running,
+  so nothing is due on it yet; the developer's round on it is, once the
+  check ends or goes red, no person paged. Nothing runs, nothing is
+  written.
 given:
   repo: tested-draft
   setup:
@@ -31,7 +33,7 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: state-waits, level: info, where: "#4", message: "its claim, workline:developing, waits on its pull request #5, a Draft, not proven green: a person takes it from there, or removes the claim; a change to its body is the developer's, at a review round on it"}
+    - {rule: state-waits, level: info, where: "#4", message: "its claim, workline:developing, waits on its pull request #5, a Draft: the developer's, a round on it once its checks end or one is red; a change to its body is the developer's, at a review round on it"}
   no-findings: [{rule: state-wakes}, {rule: review-round-due}]
   forge:
     issues:

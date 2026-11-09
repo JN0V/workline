@@ -1,0 +1,39 @@
+case: routing/claim-with-a-capped-draft-waits-on-a-person
+about: >
+  A claimed issue whose developer's Draft holds a cap reached in its
+  record (#1271): no round makes it ready, the developer's checks green
+  or not. Its wait names a person, and why: the record's cap. Nothing
+  runs, nothing is written.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git checkout -q -b workline/developer/4 && git push -q origin main workline/developer/4 && git checkout -q main"
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    head-checks:
+      workline/developer/4:
+        - {name: test, workflow: test, state: pending, job: 46}
+    issues:
+      - {id: 4, title: "Divide two numbers", labels: ["workline:developing"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - id: 5
+        branch: workline/developer/4
+        title: "Divide two numbers"
+        body: "Closes #4"
+        draft: true
+        comments:
+          - "**The developer**'s record.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":4,\"body\":\"0d3401a95172\",\"code\":[\"lib.sh\"],\"round\":1,\"review-runs\":1,\"caps\":[{\"setting\":\"ai-max-turns\",\"spent\":301,\"allows\":300}]} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {route: reconcile, open-merge-request: true, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-waits, level: info, where: "#4", message: "its claim, workline:developing, waits on its pull request #5, a Draft: its record holds a cap reached (ai-max-turns): a person marks it ready; a change to its body is the developer's, at a review round on it"}
+  no-findings: [{rule: state-wakes}, {rule: review-round-due}]
+  forge:
+    issues:
+      - {id: 4, labels: ["workline:developing"], comments: 0}
+    merge-requests:
+      - {id: 5, draft: true, comments: 2}

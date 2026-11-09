@@ -58,17 +58,35 @@ func closedByMR(t *tally, id int) (forge.MergeRequest, bool) {
 }
 
 // mrWaits says what a claim waits on once its pull request mr is open
-// (#1271): a Draft, a person, as its body says; a ready one, its review,
-// its checks and its merge. A change to the issue's body is the
-// developer's review round's on mr (developer.RoundDue): said by the
-// reconciler when due.
-func mrWaits(res *Result, doing routing.State, is forge.Issue, mr forge.MergeRequest) {
+// (#1271), naming who acts next. A ready one: its review, its checks and
+// its merge. A Draft: the developer's, a round on it at its checks' end
+// or a red one; a person's only when its record says so (a cap reached,
+// its agent failed, its rounds handed off: developer.DraftHolder). A
+// change to the issue's body is the developer's review round's on mr
+// (developer.RoundDue): said by the reconciler when due.
+func mrWaits(res *Result, b forge.Backlog, doing routing.State, is forge.Issue, mr forge.MergeRequest) {
 	msg := fmt.Sprintf("its claim, %s, waits on its pull request #%d: its review, its checks, then its merge", doing.Label, mr.ID)
 	if mr.Draft {
-		msg = fmt.Sprintf("its claim, %s, waits on its pull request #%d, a Draft, not proven green: a person takes it from there, or removes the claim", doing.Label, mr.ID)
+		msg = fmt.Sprintf("its claim, %s, waits on its pull request #%d, a Draft: ", doing.Label, mr.ID) + draftHolder(b, mr)
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
 		Message: msg + "; a change to its body is the developer's, at a review round on it"})
+}
+
+// draftHolder says who acts next on mr, the developer's Draft.
+func draftHolder(b forge.Backlog, mr forge.MergeRequest) string {
+	f, ok := b.(forge.Forge)
+	if !ok {
+		return "the developer's, a round on it once its checks end or one is red"
+	}
+	why, err := developer.DraftHolder(f, mr)
+	switch {
+	case err != nil:
+		return "who holds it not read (" + forge.Said(err) + ")"
+	case why != "":
+		return why
+	}
+	return "the developer's, a round on it once its checks end or one is red"
 }
 
 // claimStep reads an issue the developer claimed: done false when it
@@ -89,7 +107,7 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 		return nil, nil, false, err
 	}
 	if mr, ok := closedByMR(t, is.ID); ok {
-		mrWaits(res, doing, is, mr)
+		mrWaits(res, b, doing, is, mr)
 		return nil, nil, true, nil
 	}
 	rec, had, _, _, notes, err := readRecordAll(b, is.ID)
