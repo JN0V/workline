@@ -150,8 +150,10 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 type proven struct {
 	v     *verdict.Verdict
 	added []string
-	doubt *doubt
-	errs  []buildError // the errors of the build with the tests on the base
+	// errored: the added ids the red run wrote with no class, failed
+	errored []string
+	doubt   *doubt
+	errs    []buildError // the errors of the build with the tests on the base
 }
 
 // prove is Check, with the new tests it found, sorted, and its doubt.
@@ -349,7 +351,16 @@ func prove(repo, base string, s Settings) proven {
 			break
 		}
 	}
-	return proven{v: v, added: added, doubt: dbt, errs: errs}
+	// A new id the red run wrote with no class, failed, may be the
+	// runner's record of a file it could not collect, not a test case: the
+	// green proof hands it to the judge when it is gone (renamed.go).
+	var errored []string
+	for _, id := range added {
+		if redRun.classless[id] && redRun.results[id] == failed {
+			errored = append(errored, id)
+		}
+	}
+	return proven{v: v, added: added, errored: errored, doubt: dbt, errs: errs}
 }
 
 // unbuiltTests is the tests the change's test files declare, by the

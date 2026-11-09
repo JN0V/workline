@@ -13,6 +13,7 @@ package tester
 
 import (
 	"fmt"
+	"path"
 	"slices"
 	"strings"
 	"unicode"
@@ -94,11 +95,13 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	}
 	slices.Sort(added)
 	slices.Sort(old)
-	// A frozen id missing: blocking when it is a report's (it converges)
-	// or when no new test of the head could be it; else the judge's.
+	// A frozen id missing: blocking when it is a report's test case (it
+	// converges) or when no new test of the head could be it; one named
+	// from its file, or a record the red run wrote with no class, failed
+	// (a file it could not collect), is the judge's.
 	var doubt *renamed
 	for _, t := range missing {
-		if named(rec, t) && len(added) > 0 {
+		if (named(rec, t) || slices.Contains(rec.Errored, t)) && len(added) > 0 {
 			if doubt == nil {
 				doubt = &renamed{Candidates: added, Runs: len(runs)}
 			}
@@ -187,7 +190,11 @@ func named(r record, t string) bool {
 // the base (file:name, the file one the record freezes), is each id that
 // holds name as a whole part: after a dot or at the start, before the
 // end or a mark that is no word's nor a dot's (a parameter's `[`, a
-// subtest's `/`). A loose match may only find a test, never lose one.
+// subtest's `/`), qualified by its file: what comes before the name, when
+// anything does, holds the file's folder or its name without extension
+// as a word (`calc.TestNew` for `calc/new_test.go`, `tests.test_x.f` for
+// `tests/test_x.py`), never another folder's test of the same name. A
+// miss is the judge's (renamed.go), never a block on this guess.
 func (r record) frozenIn(t string, ids map[string]bool) []string {
 	if ids[t] {
 		return []string{t}
@@ -198,7 +205,7 @@ func (r record) frozenIn(t string, ids map[string]bool) []string {
 	i := strings.LastIndex(t, ":")
 	var out []string
 	for id := range ids {
-		if namedAs(id, t[i+1:]) {
+		if namedAs(id, t[i+1:], t[:i]) {
 			out = append(out, id)
 		}
 	}
@@ -206,8 +213,8 @@ func (r record) frozenIn(t string, ids map[string]bool) []string {
 	return out
 }
 
-// namedAs says whether id holds name as a whole part.
-func namedAs(id, name string) bool {
+// namedAs says whether id holds name as a whole part, qualified by file.
+func namedAs(id, name, file string) bool {
 	for i := 0; i <= len(id)-len(name); {
 		j := strings.Index(id[i:], name)
 		if j < 0 {
@@ -221,12 +228,24 @@ func namedAs(id, name string) bool {
 			c := []rune(id[end:])[0]
 			after = c != '.' && c != '_' && !unicode.IsLetter(c) && !unicode.IsDigit(c)
 		}
-		if before && after {
+		if before && after && (j == 0 || qualifiedBy(id[:j-1], file)) {
 			return true
 		}
 		i = j + 1
 	}
 	return false
+}
+
+// qualifiedBy says whether a test id's qualifier (its package, class or
+// module) holds, as a word, file's folder or its name without extension.
+func qualifiedBy(qualifier, file string) bool {
+	words := strings.FieldsFunc(qualifier, func(c rune) bool { return c != '_' && !unicode.IsLetter(c) && !unicode.IsDigit(c) })
+	stem := path.Base(file)
+	if k := strings.Index(stem, "."); k > 0 {
+		stem = stem[:k]
+	}
+	dir := path.Base(path.Dir(file))
+	return slices.ContainsFunc(words, func(w string) bool { return w == stem || (dir != "." && dir != "/" && w == dir) })
 }
 
 // judge is id's finding from the runs: nil when it passed in each.

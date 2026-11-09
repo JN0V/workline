@@ -42,6 +42,10 @@ type record struct {
 	// file:name for a test whose build broke on the base. None in a
 	// record written before.
 	Tests []string `json:"tests,omitempty"`
+	// Errored: those of Tests the red run wrote with no class, failed —
+	// maybe the runner's record of a file it could not collect, not a
+	// test case: gone on the code, the judge reads it, never a block.
+	Errored []string `json:"errored,omitempty"`
 	// Scenarios: the issue's, as the run that wrote the tests read them,
 	// for the auditor (ADR-0046); none in a record written before.
 	Scenarios []Scenario `json:"scenarios,omitempty"`
@@ -138,15 +142,15 @@ func issueOf(branch string) int {
 // the one that closes the issue, the green proof: no agent but the judge
 // of a frozen test not found under its name (renamed.go).
 func guardPre(runDir, repo string, s Settings) int {
+	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
+	id, _ := strconv.Atoi(num)
 	if os.Getenv("WORKLINE_JUDGED") == "answered" {
 		if v, ok, err := renameAnswered(runDir); err != nil {
 			return fail(err)
 		} else if ok {
-			return final(runDir, v)
+			return greenEnd(runDir, id, v)
 		}
 	}
-	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
-	id, _ := strconv.Atoi(num)
 	if kind != "merge-request" || id <= 0 {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no merge request: no test of the tester's to guard"})
 	}
@@ -192,7 +196,7 @@ func guardPre(runDir, repo string, s Settings) int {
 		if doubt != nil {
 			doubt.Verdict = g
 			if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
-				return final(runDir, doubt.unproven("no agent judges it"))
+				return greenEnd(runDir, id, doubt.unproven("no agent judges it"))
 			}
 			if err := doubt.ask(runDir); err != nil {
 				return fail(err)

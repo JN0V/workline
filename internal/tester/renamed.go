@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -52,15 +53,22 @@ const (
 // change beside the frozen files, masked and clipped.
 func renameFacts(repo, mb string, rec record, d *renamed) string {
 	var b strings.Builder
-	b.WriteString("## The tester's tests not found under their names\n\nEach as `file:name`, the name read from its file when its build broke on the base:\n\n")
+	b.WriteString("## The tester's tests not found under their names\n\n" +
+		"Each as `file:name`, the name read from its file when its build broke on the base; or as the id the runner wrote, " +
+		"with no class and failed, on the base with the tests: maybe its record of a file it could not collect, not a test case.\n\n")
 	files := map[string]bool{}
+	all := false // a runner's record names no file: each frozen file is shown
 	for _, t := range d.Missing {
 		fmt.Fprintf(&b, "- `%s`\n", t)
-		files[t[:strings.LastIndex(t, ":")]] = true
+		if named(rec, t) {
+			files[t[:strings.LastIndex(t, ":")]] = true
+		} else {
+			all = true
+		}
 	}
 	b.WriteString("\n## Their files, as the head holds them\n")
 	for _, f := range rec.files() {
-		if !files[f] {
+		if !files[f] && !all {
 			continue
 		}
 		content, _ := git(repo, "show", "HEAD:"+f)
@@ -167,6 +175,36 @@ func renameAnswered(runDir string) (verdict.Verdict, bool, error) {
 			Message: fmt.Sprintf("not in the head's reports under its name, and the judge says it ran under another: %s (%s)", a.Why, who)})
 	}
 	return v, true, nil
+}
+
+// greenEnd ends pre with v. A frozen test the judge said ran under
+// another name, or did not settle, is written on merge request mr too, in
+// the tester's one comment there (principle 14), applied though the run
+// blocks; the verdict is post's to give (saidPost).
+func greenEnd(runDir string, mr int, v verdict.Verdict) int {
+	var lines []string
+	for _, f := range v.Findings {
+		if f.Rule == FrozenUnproven || f.Rule == "frozen-test-judged" {
+			lines = append(lines, fmt.Sprintf("- `%s` (%s): %s", f.Where, f.Rule, f.Message))
+		}
+	}
+	if len(lines) == 0 || mr <= 0 {
+		return final(runDir, v)
+	}
+	body := "**The tester's green proof**: " + v.Summary + ".\n\nA test it froze is not in the head's reports under its name:\n\n" + strings.Join(lines, "\n") + "\n"
+	said := []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": mr, "sticky": "green", "on-block": true, "body": body}}}
+	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), said); err != nil {
+		return fail(err)
+	}
+	v.Final = true
+	data, err := json.Marshal(v)
+	if err != nil {
+		return fail(err)
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", saidFile), data, 0o644); err != nil {
+		return fail(err)
+	}
+	return 0
 }
 
 // unproven is the proof with each missing test marked: the judge did not

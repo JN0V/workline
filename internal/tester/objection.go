@@ -594,7 +594,7 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		return write(runDir, *proof)
 	}
 	act.Act, act.Blob = "rewritten", blobs[a.File]
-	r := a.Record.rewritten(a.File, blobs[a.File], *proof).retested(repo, a.File, newTests, s)
+	r := a.Record.rewritten(a.File, blobs[a.File], *proof).retested(repo, a.File, newTests, erroredOf(runDir, newTests), s)
 	out := []intent.Intention{patches[len(patches)-1],
 		reply("**Rewritten**, the tester's own commit on this branch, red on the base: " + reason + why + unprovenSaid(*proof) + "\n" + act.line()),
 		{Kind: "comment", Value: r.intention()["comment"]}}
@@ -638,26 +638,27 @@ func (r record) rewritten(file, blob string, proof verdict.Verdict) record {
 // run of the base with the file as frozen (HEAD's) reports. That run
 // failing, the record keeps no test ids, said by the green proof: never
 // a test required that the rewrite renamed.
-func (r record) retested(repo, file string, added []string, s Settings) record {
+func (r record) retested(repo, file string, added, errored []string, s Settings) record {
 	if len(r.Tests) == 0 {
 		return r
 	}
 	head, err := git(repo, "rev-parse", "--verify", "HEAD")
 	if err != nil {
-		r.Tests = nil
+		r.Tests, r.Errored = nil, nil
 		return r
 	}
 	old, f := run(repo, r.Base, []string{file}, strings.TrimSpace(head), s, "on the base with "+file+" as frozen")
 	if f != nil && f.Rule != "report-missing" { // no report: a build broken, its tests named file:name
-		r.Tests = nil
+		r.Tests, r.Errored = nil, nil
 		return r
 	}
-	return r.withTests(file, old.results, added)
+	return r.withTests(file, old.results, added, errored)
 }
 
 // withTests is r, file's old tests (those old reports, or named file:name)
-// replaced by added.
-func (r record) withTests(file string, old map[string]result, added []string) record {
+// replaced by added, errored those of added the red run wrote with no
+// class, failed.
+func (r record) withTests(file string, old map[string]result, added, errored []string) record {
 	var tests []string
 	for _, t := range r.Tests {
 		if _, ok := old[t]; !ok && !strings.HasPrefix(t, file+":") {
@@ -665,6 +666,8 @@ func (r record) withTests(file string, old map[string]result, added []string) re
 		}
 	}
 	r.Tests = slices.Compact(slices.Sorted(slices.Values(append(tests, added...))))
+	kept := slices.DeleteFunc(append(slices.Clone(r.Errored), errored...), func(t string) bool { return !slices.Contains(r.Tests, t) })
+	r.Errored = slices.Compact(slices.Sorted(slices.Values(kept)))
 	return r
 }
 
