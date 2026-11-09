@@ -1,0 +1,28 @@
+case: routing/tests-needs-code-revisit-person-named
+about: >
+  A tester said twice it lacks calc/calc.go, and the issue was blocked
+  (#1157). A person named the files in a comment, and a revisit moved it
+  back to its tests: a new input. The tester runs on it, as on any.
+given:
+  repo: go-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA Go test.\n\n## Scope\n\n- A `Mul` function beside `Add`.\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"from\":\"tests\",\"body\":\"7ac82fbdcadd\",\"hops\":1,\"since\":\"2026-10-28T08:00:00Z\",\"revisited\":\"2026-11-05T07:00:00Z\",\"v\":1,\"last-run\":{\"tester\":{\"state\":\"tests\",\"body\":\"7ac82fbdcadd\",\"labels\":\"-\",\"said\":\"calc/calc.go\",\"times\":2}}} -->\n<!-- workline:sticky=line/state -->"
+          - "The code is in calc/calc.go and calc/calc_test.go."
+run: {route: issue, target: {issue: 3}, ai: "fake:tester-needs-code"}
+expect:
+  agent-calls: 2
+  findings:
+    - {rule: state-wakes, level: info, where: "#3"}
+  no-findings: [{rule: state-given, message: "on this same input"}]

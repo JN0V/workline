@@ -10,6 +10,7 @@ package line
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -57,6 +58,51 @@ type Needs struct {
 	Said  string `json:"said"`
 	At    string `json:"at"`
 	Times int    `json:"times"`
+}
+
+// LastRun is the input a role's run was on, its state, body, input
+// labels, spec review, the code the product owner was given and the
+// comments the engine did not write, and what its agent said it lacked
+// there, if any (#1157). Times 2: said again once given it. A step due
+// anew on that same input, a revisit having moved the issue back with
+// nothing in it changed, is not run as before: given what was named
+// (Times 1), or blocked again for a person, no agent called.
+type LastRun struct {
+	State  string `json:"state"`
+	Body   string `json:"body"`
+	Labels string `json:"labels,omitempty"`
+	Spec   string `json:"spec,omitempty"`
+	Given  string `json:"given,omitempty"`
+	Talk   string `json:"talk,omitempty"`
+	Said   string `json:"said,omitempty"`
+	Times  int    `json:"times,omitempty"`
+}
+
+// lastOn is role's last run in r when its step, due on now, is on its
+// input: talk and given, its comments' hash and the code it would be
+// given.
+func lastOn(r Record, role string, now Record, talk, given string) (LastRun, bool) {
+	l, ok := r.Last[role]
+	return l, ok && l.State == now.State && l.Body == now.Body && l.Labels == now.Labels &&
+		l.Spec == now.Spec && l.Given == given && l.Talk == talk
+}
+
+// withLast is last with role's run set to l, or taken out when l is nil:
+// a copy, the record read never changed.
+func withLast(last map[string]LastRun, role string, l *LastRun) map[string]LastRun {
+	next := maps.Clone(last)
+	if l == nil {
+		delete(next, role)
+		if len(next) == 0 {
+			return nil
+		}
+		return next
+	}
+	if next == nil {
+		next = map[string]LastRun{}
+	}
+	next[role] = *l
+	return next
 }
 
 // needsCode says whether an outcome is a needs-input of the engine: the

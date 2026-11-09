@@ -31,7 +31,7 @@ func repro(res *Result, b forge.Backlog, t *tally, s routing.State, is forge.Iss
 	if had && rec.State == s.Name && rec.Body != bodyHash(is.Body) {
 		return nil, false, nil // its steps edited: the tester writes its tests again
 	}
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Last: rec.Last}
 	trail, err := b.Trail(is.ID, backlog.LabelNeedsRepro)
 	if err != nil {
 		return nil, false, err

@@ -1,0 +1,25 @@
+case: routing/state-refine-revisit-blocked-elsewhere
+about: >
+  The product owner read an issue in refine and readied it; a later role
+  blocked it in its tests (#1157). A revisit moved it back to refine, its
+  text, labels and comments the same as the product owner's read. The
+  block came from another state, whose news the read never saw: the
+  product owner reads it again, the issue not blocked at once.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 10
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"from\":\"tests\",\"body\":\"8a05ec2b42f7\",\"hops\":1,\"since\":\"2026-10-28T08:00:00Z\",\"revisited\":\"2026-11-05T07:00:00Z\",\"v\":1,\"last-run\":{\"product-owner\":{\"state\":\"refine\",\"body\":\"8a05ec2b42f7\",\"labels\":\"-\",\"given\":\"-\"}}} -->\n<!-- workline:sticky=line/state -->"
+run: {route: issue, target: {issue: 10}, ai: fake:ready-nine}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: state-wakes, level: info, where: "#10", message: "its state, refine, wakes the product-owner"}]
+  no-findings: [{rule: state-same-input}]
