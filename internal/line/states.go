@@ -773,8 +773,8 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			name = backlog.Keeper // a parent, told as its parts close (parent.go)
 		}
 		left := name == "" || o.Inputs[SkipInput] != "" && slices.Contains(skip, name)
-		if name == "" && claimNoPR(cfg, b, t, is) {
-			left = false // a claim with no pull request: read, never silent (claimwait.go)
+		if name == "" && claimed(cfg, is) {
+			left = false // a claim, its pull request or none: read, never silent (claimwait.go)
 		}
 		if left && cfg.StaleDays(s.Name) == 0 {
 			continue // no step of this project's, or left out: said by `route issue`, not by every reconcile
@@ -909,6 +909,7 @@ func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o e
 			}
 			continue
 		}
+		roundWakes(res, mr)
 		if *started >= cfg.ReconcileMax {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-left", Level: "info", Where: fmt.Sprintf("merge request %d", mr.ID),
 				Message: fmt.Sprintf("a review round due, past reconcile-max (%d) this run: the next run starts it", cfg.ReconcileMax)})

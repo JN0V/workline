@@ -1,0 +1,42 @@
+case: routing/claim-body-changed-lists-its-round
+about: >
+  A person changes the body of a claimed issue whose developer's pull
+  request is open (#1271): the developer wrote its code on another body,
+  its record says which. The change is the developer's to hold its code
+  to, as a person's comment on its pull request is: a review round is
+  due on it, listed, and the issue says so in place of its wait. No
+  agent is asked, nothing is written.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git checkout -q -b workline/developer/4 && git push -q origin main workline/developer/4 && git checkout -q main"
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    head-checks:
+      workline/developer/4:
+        - {name: test, workflow: test, state: pending, job: 46}
+    issues:
+      - {id: 4, title: "Divide two numbers", labels: ["workline:developing"], body: "## Need\n\nI want to divide, by zero too.\n"}
+    merge-requests:
+      - id: 5
+        branch: workline/developer/4
+        title: "Divide two numbers"
+        body: "Closes #4"
+        draft: true
+        comments:
+          - "**The developer**'s record.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":4,\"body\":\"0d3401a95172\",\"code\":[\"lib.sh\"],\"round\":1,\"review-runs\":1} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {route: reconcile, open-merge-request: true, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 0 issues due:; 1 review round due: merge request 5"
+  agent-calls: 0
+  findings:
+    - {rule: state-wakes, level: info, where: "#4", message: "a review round is due on its pull request #5: wakes the developer on it"}
+  no-findings: [{rule: state-waits, where: "#4"}]
+  forge:
+    issues:
+      - {id: 4, labels: ["workline:developing"], comments: 0}
+    merge-requests:
+      - {id: 5, draft: true, comments: 2}

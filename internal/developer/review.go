@@ -94,17 +94,20 @@ type Asked struct {
 
 // round is what the review run's pre leaves for post.
 type round struct {
-	MR       int      `json:"merge-request"`
-	Branch   string   `json:"branch"`
-	Record   Act      `json:"record"`
-	Asked    []Asked  `json:"asked"`
-	Heard    []string `json:"heard,omitempty"` // the ids of a person's comments it reads
-	Nits     int      `json:"nits"`
-	Runs     int      `json:"review-runs"`
-	ReviewAt string   `json:"review-at,omitempty"` // the head the reviewer's summary read
-	FiveWhys bool     `json:"five-whys"`
-	Person   bool     `json:"person"`          // past the last round: no agent, a person
-	Ready    bool     `json:"ready,omitempty"` // its Draft green, nothing asked: marked ready, no agent (#969)
+	MR     int      `json:"merge-request"`
+	Branch string   `json:"branch"`
+	Record Act      `json:"record"`
+	Asked  []Asked  `json:"asked"`
+	Heard  []string `json:"heard,omitempty"` // the ids of a person's comments it reads
+	// Body: its issue's body as the round reads it (BodyMark), when it
+	// changed since the code was written (#1271).
+	Body     string `json:"body,omitempty"`
+	Nits     int    `json:"nits"`
+	Runs     int    `json:"review-runs"`
+	ReviewAt string `json:"review-at,omitempty"` // the head the reviewer's summary read
+	FiveWhys bool   `json:"five-whys"`
+	Person   bool   `json:"person"`          // past the last round: no agent, a person
+	Ready    bool   `json:"ready,omitempty"` // its Draft green, nothing asked: marked ready, no agent (#969)
 	// Backstop: why its issue's runs reached their backstop, no round run
 	// (ADR-0064, §5; backstop.go).
 	Backstop string `json:"backstop,omitempty"`
@@ -197,7 +200,7 @@ func waited(a Act, asked []Asked) []Asked {
 // one resolved, the latest first.
 func lineDetails(asked []Asked, threads []forge.Thread, wrote func(forge.Note) bool) {
 	for i, a := range asked {
-		if a.Holds == "a person" || a.Holds == gateHolds || a.Holds == checkHolds || a.Holds == testerHolds || a.Holds == keptHolds {
+		if a.Holds == "a person" || a.Holds == issueHolds || a.Holds == gateHolds || a.Holds == checkHolds || a.Holds == testerHolds || a.Holds == keptHolds {
 			continue
 		}
 		_, title, _ := strings.Cut(strings.TrimPrefix(a.Key, a.Lens+"|"), "|")
@@ -430,6 +433,27 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 
 var errOwnAccount = errors.New("workline's own account")
 
+// issueHolds is who asks a round its issue's new body: the issue.
+const issueHolds = "the issue"
+
+// issueRewritten is the mark of a's issue's body when it changed since the
+// record's (#1271): the person's change is the developer's to hold its
+// code to, as a person's comment on its pull request is. "" when it did
+// not, or a record from before Body has none to compare.
+func issueRewritten(f forge.Forge, a Act) (string, error) {
+	if a.Body == "" || a.Issue == 0 {
+		return "", nil
+	}
+	is, err := f.Issue(a.Issue)
+	if err != nil {
+		return "", err
+	}
+	if BodyChanged(a.Body, is.Body) {
+		return BodyMark(is.Body), nil
+	}
+	return "", nil
+}
+
 // ErrRecordUnread: the developer's record on its merge request, workline's
 // own comment, was not read; on GitHub with an App, WORKLINE_APP_ID names
 // the account its comments are trusted from.
@@ -527,6 +551,13 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 		r.Heard = append(r.Heard, n.ID)
 		r.Asked = append(r.Asked, Asked{Key: "person|" + n.ID, Where: "@" + n.Author, Text: strings.TrimSpace(n.Body), Holds: "a person"})
 	}
+	if r.Body, err = issueRewritten(f, a); err != nil {
+		return r, false, err
+	}
+	if r.Body != "" {
+		r.Asked = append(r.Asked, Asked{Key: "issue|" + r.Body, Where: fmt.Sprintf("#%d", a.Issue), Holds: issueHolds,
+			Text: "its body changed since its code was written"})
+	}
 	return r, newReview || at != "" || checksAt != "" || len(rewrites) > 0 || len(keptNow) > 0, nil
 }
 
@@ -599,6 +630,10 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 		}
 		if a.Holds == "a person" {
 			fmt.Fprintf(&t, "- A person of the project, %s%s:\n\n  > %s\n\n", a.Where, seen, strings.ReplaceAll(a.Text, "\n", "\n  > "))
+			continue
+		}
+		if a.Holds == issueHolds {
+			fmt.Fprintf(&t, "- The issue, %s: %s. Its body as it reads now is below: hold your code to it.\n", a.Where, a.Text)
 			continue
 		}
 		if a.Holds == checkHolds {
@@ -699,6 +734,8 @@ func texts(l []Asked) []string {
 		switch a.Holds {
 		case "a person":
 			out[i] = "a person, " + a.Where
+		case issueHolds:
+			out[i] = fmt.Sprintf("the issue, %s: %s", a.Where, a.Text)
 		case gateHolds:
 			out[i] = gateLine(a)
 		case checkHolds:
@@ -943,6 +980,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 		a.ChecksAt = r.ChecksAt
 	}
 	a.Heard = append(a.Heard, r.Heard...)
+	if r.Body != "" {
+		a.Body = r.Body // read: the same body is not asked again
+	}
 	for _, x := range r.Asked {
 		if x.Holds != "a person" && !slices.Contains(a.Seen, x.Key) {
 			a.Seen = append(a.Seen, x.Key)

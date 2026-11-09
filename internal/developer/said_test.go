@@ -122,3 +122,20 @@ func TestNoCodeOnOtherBody(t *testing.T) {
 		t.Error("a body's mark reads its spaces around")
 	}
 }
+
+// TestBodyChangedEngineLine: the engine's own "Blocked by" line is no
+// change of a person's (#1271), and a record's mark kept of the whole
+// body before it was left out still reads the same body.
+func TestBodyChangedEngineLine(t *testing.T) {
+	body := "## Need\n\nI want to add."
+	blocked := body + "\n\nBlocked by #9. " + backlog.BlockedByMarker
+	if BodyChanged(BodyMark(body), blocked) {
+		t.Error("the engine's line read as a change")
+	}
+	if BodyChanged(digest(blocked), blocked) {
+		t.Error("a record's whole-body mark read as a change")
+	}
+	if !BodyChanged(BodyMark(body), blocked+"\n\nAnd subtract.") {
+		t.Error("a person's change not read")
+	}
+}

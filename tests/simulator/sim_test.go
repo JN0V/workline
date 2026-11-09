@@ -133,8 +133,9 @@ var traces = func() []trace {
 		// the file of the package its Scope names given at once.
 		trace{name: "workline-1004-needs-engine", file: "workline-1004", fresh: true, end: "done", by: one("product-owner", needsEngine)},
 		// #1271: the developer's code that does not build on a Go issue:
-		// its pull request a Draft, the issue says nothing.
-		trace{name: "workline-1004-broken-code", file: "workline-1004", fresh: true, end: "done", by: one("developer", broken)},
+		// its pull request a Draft, the issue waits on it, said; a change
+		// to its body is the developer's review round's.
+		trace{name: "workline-1004-broken-code", file: "workline-1004", fresh: true, end: "waiting:a Draft", by: one("developer", broken)},
 	)
 	for _, n := range trial {
 		f := fmt.Sprintf("trial-%d", n)

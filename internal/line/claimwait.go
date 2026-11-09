@@ -41,24 +41,57 @@ func (t *tally) claimHours() int {
 	return t.hours
 }
 
-// claimNoPR says whether is carries the label of the developer's claim
-// and no open merge request closes it; false when they cannot be read.
-func claimNoPR(cfg *routing.Config, b forge.Backlog, t *tally, is forge.Issue) bool {
+// claimed says whether is carries the label of the developer's claim:
+// read, its pull request or none, never silent (#1084, #1271).
+func claimed(cfg *routing.Config, is forge.Issue) bool {
 	doing, ok := cfg.State(doingState)
-	if !ok || !slices.Contains(is.Labels, doing.Label) || t.mergeRequests(b, "whether a claim has its pull request") != nil {
-		return false
-	}
-	return !closedByMR(t, is.ID)
+	return ok && slices.Contains(is.Labels, doing.Label)
 }
 
-// closedByMR says whether an open merge request t read closes issue id.
-func closedByMR(t *tally, id int) bool {
-	return slices.ContainsFunc(t.mrs, func(m forge.MergeRequest) bool { return slices.Contains(forge.Closes(m.Title, m.Body), id) })
+// closedByMR is the open merge request t read that closes issue id.
+func closedByMR(t *tally, id int) (forge.MergeRequest, bool) {
+	i := slices.IndexFunc(t.mrs, func(m forge.MergeRequest) bool { return slices.Contains(forge.Closes(m.Title, m.Body), id) })
+	if i < 0 {
+		return forge.MergeRequest{}, false
+	}
+	return t.mrs[i], true
+}
+
+// mrWaits says what a claim waits on once its pull request mr is open
+// (#1271), naming who acts next. A ready one: its review, its checks and
+// its merge. A Draft: the developer's, a round on it at its checks' end
+// or a red one; a person's only when its record says so (a cap reached,
+// its agent failed, its rounds handed off: developer.DraftHolder). A
+// change to the issue's body is the developer's review round's on mr
+// (developer.RoundDue): said by the reconciler when due.
+func mrWaits(res *Result, b forge.Backlog, doing routing.State, is forge.Issue, mr forge.MergeRequest) {
+	msg := fmt.Sprintf("its claim, %s, waits on its pull request #%d: its review, its checks, then its merge", doing.Label, mr.ID)
+	if mr.Draft {
+		msg = fmt.Sprintf("its claim, %s, waits on its pull request #%d, a Draft: ", doing.Label, mr.ID) + draftHolder(b, mr)
+	}
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
+		Message: msg + "; a change to its body is the developer's, at a review round on it"})
+}
+
+// draftHolder says who acts next on mr, the developer's Draft.
+func draftHolder(b forge.Backlog, mr forge.MergeRequest) string {
+	f, ok := b.(forge.Forge)
+	if !ok {
+		return "the developer's, a round on it once its checks end or one is red"
+	}
+	why, err := developer.DraftHolder(f, mr)
+	switch {
+	case err != nil:
+		return "who holds it not read (" + forge.Said(err) + ")"
+	case why != "":
+		return why
+	}
+	return "the developer's, a round on it once its checks end or one is red"
 }
 
 // claimStep reads an issue the developer claimed: done false when it
-// holds no claim, or an open merge request closes it (its round, read
-// elsewhere). Else the developer's step when its claim is to be let go,
+// holds no claim; what it waits on when an open merge request closes it
+// (its round, read elsewhere: roundsDue). Else the developer's step when its claim is to be let go,
 // claim-hours passed or its body changed since the claim, once for
 // that; none, the day it is let go said, while it waits. A claim whose
 // agent wrote no code on the body it has now is not let go past
@@ -73,8 +106,9 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 	if err := t.mergeRequests(b, "whether a claim has its pull request"); err != nil {
 		return nil, nil, false, err
 	}
-	if closedByMR(t, is.ID) {
-		return nil, nil, false, nil
+	if mr, ok := closedByMR(t, is.ID); ok {
+		mrWaits(res, b, doing, is, mr)
+		return nil, nil, true, nil
 	}
 	rec, had, _, _, notes, err := readRecordAll(b, is.ID)
 	if err != nil {
