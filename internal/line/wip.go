@@ -41,10 +41,11 @@ type tally struct {
 	proofs map[int]bool // by issue, once read
 	moved  map[int]bool
 	// The open merge requests, and the repository's files, read at first
-	// need: what says which claims hold their Scope (developer.Held).
-	mrs   []forge.MergeRequest
-	files []string
-	read  bool
+	// need: what says which claims hold which files (developer.Held).
+	mrs     []forge.MergeRequest
+	files   []string
+	changed developer.Diffs // the held ones' changed files, each read once
+	read    bool
 	// The product owner's delay for a question (timeout.go), read once
 	// from its role in rolesDir and the project in repo.
 	rolesDir, repo string
@@ -85,9 +86,10 @@ func (t *tally) drafted(b forge.Backlog, id int) (bool, error) {
 	return t.drafts[id], nil
 }
 
-// held are the developer's claims in state doing that hold their Scope,
-// each its paths: those an open merge request closes (#952); a claim
-// whose agent wrote no code holds none. open: the open issues.
+// held are the developer's claims in state doing that hold files, each
+// its pull request's changed files (developer.Held): those an open merge
+// request closes (#952); a claim whose agent wrote no code holds none.
+// open: the open issues.
 func (t *tally) held(b forge.Backlog, doing routing.State, open []forge.Issue) (map[int][]string, error) {
 	if !slices.ContainsFunc(open, func(is forge.Issue) bool { return slices.Contains(is.Labels, doing.Label) }) {
 		return nil, nil // no claim: nothing to read
@@ -95,7 +97,7 @@ func (t *tally) held(b forge.Backlog, doing routing.State, open []forge.Issue) (
 	if err := t.mergeRequests(b, "which claims hold code"); err != nil {
 		return nil, err
 	}
-	return developer.Held(open, t.mrs, doing.Label, nil, t.files), nil
+	return developer.Held(open, t.mrs, doing.Label, nil, t.files, t.changed), nil
 }
 
 // mergeRequests reads the forge's open merge requests, and the
@@ -117,6 +119,8 @@ func (t *tally) mergeRequests(b forge.Backlog, what string) error {
 	t.mrs, t.read = mrs, true
 	if t.repo != "" {
 		t.files = developer.RepoFiles(t.repo)
+		f, _ := b.(forge.Forge)
+		t.changed = developer.Changed(t.repo, f != nil && forge.KeepsBranches(f))
 	}
 	return nil
 }

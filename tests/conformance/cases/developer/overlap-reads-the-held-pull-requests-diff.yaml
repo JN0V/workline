@@ -1,0 +1,28 @@
+case: developer/overlap-reads-the-held-pull-requests-diff
+about: >
+  Real overlap waits (#1256): a held issue's files are its open pull
+  request's changed files, its diff from the merge base, not its Scope
+  (ADR-0065, change 2). #1's Scope names lib.sh; its pull request also
+  changes run-tests.sh, listed nowhere. #2, whose Scope names
+  run-tests.sh, is passed over as overlapping #1, the file named; #3,
+  clear, is taken.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main && git checkout -q -b workline/developer/1 && printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && echo '# all tests' >> run-tests.sh && git commit -qam 'feat: sub' && git push -q origin workline/developer/1 && git checkout -q main"
+  forge:
+    issues:
+      - {id: 1, title: "Subtract", labels: ["workline:ready", "workline:developing"], body: "## Need\n\nI want to subtract.\n\n## Scope\n\n- `lib.sh`: `sub`.\n"}
+      - {id: 2, title: "Report", labels: ["workline:ready"], body: "## Need\n\nI want a report.\n\n## Scope\n\n- `run-tests.sh`: the report.\n"}
+      - {id: 3, title: "Document", labels: ["workline:ready"], body: "## Need\n\nI want it said.\n\n## Scope\n\n- `README.md`.\n"}
+    merge-requests:
+      - {id: 4, branch: workline/developer/1, base: main, title: "feat: subtract", body: "Closes #1"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #3"
+  agent-calls: 1
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comment-contains: ["its Scope's `run-tests.sh` overlaps #1's, taken"]}
+      - {id: 3, labels: ["workline:developing"]}

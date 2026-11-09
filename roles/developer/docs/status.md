@@ -54,12 +54,15 @@ hold:
 
 - **The pick** (step 1): the first ready issue in the backlog's order,
   assigned to nobody, not taken, no open merge request closing it, its
-  Scope clear of the issues held; claimed by a label, since GitHub
+  Scope clear of the files the issues held change (their pull requests'
+  diffs, [#1256](https://github.com/JN0V/workline/issues/1256)); claimed by a label, since GitHub
   assigns no issue to an App
   ([the pick](pick.md#the-claim)); its record hidden in its comment.
   Cases `developer/picks-first-ready-unassigned`,
   `skips-assigned-issue`, `skips-issue-with-open-pr`,
-  `skips-overlapping-scope`, `none-ready-says-so`,
+  `skips-overlapping-scope`, `overlap-reads-the-held-pull-requests-diff`,
+  `overlap-predicted-only-does-not-wait`,
+  `overlap-reads-the-diff-in-a-shallow-clone`, `none-ready-says-so`,
   `no-agent-opens-nothing`.
 - **The bounds** (step 2): the agent's patches held, file by file, to
   the frozen acceptance tests, the files that steer agents and a gate's

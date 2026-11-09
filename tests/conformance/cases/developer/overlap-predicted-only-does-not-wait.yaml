@@ -1,0 +1,25 @@
+case: developer/overlap-predicted-only-does-not-wait
+about: >
+  Predicted only, no wait (#1256): #1's Scope names lib.sh and
+  README.md, but its open pull request changes lib.sh alone. #2, whose
+  Scope names README.md, is taken: a held issue holds the files its
+  pull request changes, not the ones its Scope predicted (ADR-0065,
+  change 2).
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main && git checkout -q -b workline/developer/1 && printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && git commit -qam 'feat: sub' && git push -q origin workline/developer/1 && git checkout -q main"
+  forge:
+    issues:
+      - {id: 1, title: "Subtract", labels: ["workline:ready", "workline:developing"], body: "## Need\n\nI want to subtract.\n\n## Scope\n\n- `lib.sh`: `sub`.\n- `README.md`: say it.\n"}
+      - {id: 2, title: "Document", labels: ["workline:ready"], body: "## Need\n\nI want it said.\n\n## Scope\n\n- `README.md`.\n"}
+    merge-requests:
+      - {id: 4, branch: workline/developer/1, base: main, title: "feat: subtract", body: "Closes #1"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #2"
+  agent-calls: 1
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:developing"]}

@@ -1,14 +1,14 @@
 case: routing/wip-ready-overlap-not-counted
 about: >
   Ready at its limit of 1 with an issue the developer passes over, its
-  Scope overlapping #3's, which it holds with an open pull request
-  (#952): #1 is not one the developer can take now, so it is not counted
+  Scope naming lib.sh, which #3's open pull request changes (#952,
+  #1256): #1 is not one the developer can take now, so it is not counted
   (ADR-0059, amended 2026-11-03). The tester starts on #6. Counted, #1
   would keep Tests waiting until #3 merges, hours or days on.
 given:
   repo: tested
   setup:
-    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main && git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && git commit -qam 'feat: sub' && git push -q origin workline/developer/3 && git checkout -q main"
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
     routing: {events: {issue: [tester, developer]}, wip: {ready: 1}}
@@ -21,7 +21,7 @@ given:
         labels: ["workline:needs-tests"]
         body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
     merge-requests:
-      - {id: 2, branch: workline/developer/3, title: "feat: subtract", body: "Closes #3"}
+      - {id: 2, branch: workline/developer/3, base: main, title: "feat: subtract", body: "Closes #3"}
 run: {route: issue, target: {issue: 6}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
 expect:
   status: pass

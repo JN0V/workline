@@ -5,7 +5,8 @@ package line
 // record holding that state, body and labelling ran nothing more. Yet
 // the developer may leave an issue free for a reason that ends: it took
 // it and let the claim go, no pull request after claim-hours; or it
-// passed it over for an issue it held, whose Scope overlaps. Nothing
+// passed it over for an issue it held, whose pull request changes a
+// file its Scope names (#1256). Nothing
 // else wakes it then, and a full Ready of such issues stops the line.
 //
 // Due again, once for each end, never on a clock: its own claim put on
@@ -87,8 +88,8 @@ func freed(cfg *routing.Config, b forge.Backlog, tl *tally, s routing.State, is 
 }
 
 // heldIn is the open issues in state next, the developer's claims that
-// hold their Scope (a claim with no code holds none, #952), but id: what
-// it held when woken on id, and each one's Scope's paths. open: listed
+// hold files (a claim with no code holds none, #952), but id: what it
+// held when woken on id, and each one's files (developer.Held). open: listed
 // at first need.
 func heldIn(b forge.Backlog, tl *tally, next routing.State, id int, open *[]forge.Issue) ([]int, map[int][]string, error) {
 	if *open == nil {

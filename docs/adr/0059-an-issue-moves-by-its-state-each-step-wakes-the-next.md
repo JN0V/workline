@@ -805,6 +805,37 @@ blocked it, its tests written and waiting.
   - counting backward moves alone: refine to tests is a forward move
     each time in a refine and tests loop.
 
+## Amendment (2026-11-09): a claim holds the files its pull request changes
+
+Settles [#1256](https://github.com/JN0V/workline/issues/1256), after
+[ADR-0065, change 2](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)
+made the Scope a hint: a claim's Scope predicts fewer of the files its
+code writes.
+
+- **A claim holding code holds its pull request's changed files**: its
+  diff from the merge base with its base, read with git, its branch
+  fetched from `origin` (in the clone itself on a forge that keeps
+  branches there). Not its Scope: a file its Scope named but its code
+  never changed holds nothing; one it changed beyond, unlisted, does.
+- **The candidate's side stays its Scope**, a hint: a miss lets two
+  issues run side by side, and a merge conflict, git's fact, is then the
+  developer's rebase.
+- **A diff git cannot read** (no `origin`, the branch gone) holds the
+  prediction, as before: the claim's Scope and the files its pull
+  request lists beyond it. Waiting by mistake costs hours; starting by
+  mistake costs a rebase.
+- **The same rule everywhere**: the pick, Ready's limit, and the record
+  of a wake (`held`) read it.
+- **A shallow clone** (a CI checkout) is deepened from `origin` until
+  the branch and its base share a merge base: the pick and the line's
+  reconcile read the same diff, never one the diff and the other the
+  prediction.
+- **Cost**: one `git fetch` of a branch per claim holding code, at
+  most once a run; a pull request closing an issue not claimed is never
+  fetched.
+- **Not chosen**: the forge's list of a pull request's files: a call per
+  forge to write and keep, where git says the same on each.
+
 [ADR-0024]: 0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md
 [ADR-0028]: 0028-an-issue-names-what-it-waits-on.md
 [#752]: https://github.com/JN0V/workline/issues/752
