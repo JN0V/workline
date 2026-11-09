@@ -2,9 +2,9 @@
 # role reads as a test file when the project sets none. Data, never engine
 # code; it becomes the built-in `generic` pack once packs exist (#1230).
 #
-# A test the generic patterns miss is code to the developer's fence: asked
-# of the product owner, and `workline doctor` says how to set the tester's
-# test-paths and test-homes.
+# A test the generic patterns miss is code to the developer: beyond the
+# Scope, listed on its pull request, and `workline doctor` says how to set
+# the tester's test-paths and test-homes.
 #
 # test-paths: the test files. A name opening on a dot is a setting, never a
 # test (`.env.test.local`). Matched as written: `Tests/` and `tests/` apart.

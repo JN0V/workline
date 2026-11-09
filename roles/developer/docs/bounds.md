@@ -53,7 +53,7 @@ is beyond it: listed, never refused.
 **What the Scope holds:**
 
 - the paths and globs in backticks in the issue's Scope
-  ([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-and-globs-the-fence-matches-paths-only)):
+  ([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)):
   - a path, a line after it taken off (`parts.go:943`); a bare file
     name read as the one tracked file whose path ends with it;
   - a glob as the files it matches, new ones too (`core/session/**`,
