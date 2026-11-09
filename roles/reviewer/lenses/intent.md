@@ -33,6 +33,7 @@ not a fence: the developer may change a file beyond it, and lists it under
 file the change touches beyond the Scope unlisted: a change the Need needs
 (a build file, a test fake, a helper the code calls) is no finding; one the
 issue does not ask — an unrelated fix, a refactor on the way, a feature
-creeping in — is a finding, its cause the changed code, its title naming
-the file as off the task. A reason that does not hold is said in the
+creeping in — is an Important finding, its cause the changed code, its
+title naming the file as off the task: the Scope no longer stops it, so
+this is where it is held. A reason that does not hold is said in the
 finding.
