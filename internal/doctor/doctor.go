@@ -301,12 +301,13 @@ func forgeCommand(r *Report, o Options, configured string) {
 		if f, err := forge.Open("cmd:"+script, o.Repo); err != nil {
 			r.add(Check{Area: "repository", Rule: "forge-command-failing", Where: script, Level: Warn,
 				Message: "the forge command `" + script + "` ran but the forge does not answer: " + err.Error(), Fix: forgeCommandFix})
-		} else if b, ok := f.(forge.Backlog); !ok {
-			r.add(Check{Area: "repository", Rule: "forge-command", Where: script, Level: OK,
-				Message: "the forge command `" + script + "` runs and the forge is reachable"})
-		} else if _, err := b.Milestones(); err != nil && !strings.Contains(err.Error(), "unknown operation") {
+		} else if answered, err := realCall(f); err != nil {
 			r.add(Check{Area: "repository", Rule: "forge-command-failing", Where: script, Level: Warn,
 				Message: "the forge command `" + script + "` ran but the forge does not answer: " + forge.Said(err), Fix: forgeCommandFix})
+		} else if !answered {
+			r.add(Check{Area: "repository", Rule: "forge-command-unverified", Where: script, Level: Warn,
+				Message: "the forge command `" + script + "` runs, but it knows no read-only operation to ask: whether the forge answers (and the token is right) is not verified",
+				Fix:     "make the command answer `milestones` or `issues`; see docs/spec/forge-command.md"})
 		} else {
 			r.add(Check{Area: "repository", Rule: "forge-command", Where: script, Level: OK,
 				Message: "the forge command `" + script + "` runs and the forge answered a real call"})
@@ -505,4 +506,26 @@ func orName(s string) string {
 		return "a role uses it"
 	}
 	return s
+}
+
+// realCall asks f one read-only operation. answered is false when the command
+// knows none of the operations tried (an unknown operation reached no forge,
+// so it proves nothing); err is a real failure of one it knows.
+func realCall(f forge.Forge) (answered bool, err error) {
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return false, nil
+	}
+	unknown := func(err error) bool { return strings.Contains(err.Error(), "unknown operation") }
+	if _, err := b.Milestones(); err == nil {
+		return true, nil
+	} else if !unknown(err) {
+		return false, err
+	}
+	if _, err := b.Issues(); err == nil {
+		return true, nil
+	} else if !unknown(err) {
+		return false, err
+	}
+	return false, nil
 }
