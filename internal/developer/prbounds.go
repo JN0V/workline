@@ -146,6 +146,10 @@ func boundsPre(runDir, repo string, id int) int {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: r.Rule, Where: r.File,
 			Message: "changed on the developer's branch, which its bounds refuse, whoever pushed it: " + why(r)})
 	}
+	if b.HomesIgnored != "" { // never silent (principle 12): every role ignores them alike
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "test-homes-ignored", Level: "warn", Where: ".workline/config.yaml",
+			Message: "the tester's " + b.HomesIgnored + ": the fence read the generic homes in their place"})
+	}
 	if code := writeIntents(runDir, "fallback.yaml", []intent.Intention{{Kind: "comment",
 		Value: map[string]any{"sticky": BoundsKey, "body": rec.body()}}}); code != 0 {
 		return code

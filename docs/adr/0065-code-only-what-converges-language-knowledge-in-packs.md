@@ -116,6 +116,7 @@ flowchart LR
   the raw output to the AI, the agent's read tools, and a built-in
   `generic` pack (`**/test/**`, `**/tests/**`, `*_test.*`, `*.test.*`,
   `*.spec.*`): data too, not engine code. Said by `doctor`.
+  - **Amended, built in [#1226]**: `**/Tests/**`, `**/__tests__/**`, `test_*`, `*_spec.*` too, and the code picker's aside folders as data.
   - **A test the generic pack misses** is code to the fence: the
     developer's scope-ask, the person's `test-paths` to fix it, said.
 - **Moving data, mostly**: the tables of `internal/codenav`,

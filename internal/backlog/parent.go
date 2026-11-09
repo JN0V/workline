@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -132,7 +133,7 @@ type Evidence struct {
 // the pull request or commit that closed it — and, when it names a test,
 // that test found in the code by tests (nil: not looked for); or said not
 // proved.
-func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinder) Evidence {
+func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinder, def testdef.Def) Evidence {
 	ev := Evidence{Parts: len(parts)}
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The parts of this need**, as they close: kept up to date by the %s role, which closes this issue only on a person's yes — accepting the need is a person's.\n\n", strings.ReplaceAll(role, "-", " "))
@@ -188,7 +189,7 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 			where := proof(item, parts)
 			if where != "" && tests != nil {
 				var in, missing, unread []string
-				for _, name := range TestNames(item) {
+				for _, name := range TestNames(item, def) {
 					path, err := tests(name)
 					switch {
 					case err != nil:
@@ -218,6 +219,22 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 				}
 				if len(in) > 0 {
 					where += "; the test " + strings.Join(in, ", ") + ", read from the code"
+				}
+				// A name alone may be a test's: looked up in the test files,
+				// said either way, never a missing test (ADR-0065, Rule A).
+				var seen, none []string
+				for _, name := range BareNames(item, def) {
+					if path, err := tests(name); err == nil && path != "" {
+						seen = append(seen, fmt.Sprintf("`%s` in %s", name, path))
+					} else {
+						none = append(none, "`"+name+"`")
+					}
+				}
+				if len(seen) > 0 {
+					where += "; " + strings.Join(seen, ", ") + ", a test file's word, read from the code"
+				}
+				if len(none) > 0 {
+					where += "; " + strings.Join(none, ", ") + " not found in a test file"
 				}
 			}
 			if where != "" {
@@ -283,33 +300,25 @@ type TestFinder func(name string) (string, error)
 // codeSpan is a Markdown code span: where an item names a test.
 var codeSpan = regexp.MustCompile("`([^`\n]+)`")
 
-// testFile is a path a test lives in, by the conventions of the common
-// languages: a tests or spec folder, a _test, .test, .spec or _spec file,
-// a test_ file.
-var testFile = regexp.MustCompile(`(?i)(^|/)(tests?|specs?|__tests__)/|(_test|\.test|\.spec|_spec)\.[a-z0-9]+$|(^|/)test_[^/]+$`)
-
-// testFunc is a test's own name: Go's and JUnit's TestX, Python's test_x,
-// JavaScript's and Java's testX.
-var testFunc = regexp.MustCompile(`^(Test[A-Z0-9_]\w*|test_\w+|test[A-Z]\w*)$`)
-
 // testBefore are the words that say the next code span names a test:
 // "test", "test case", "conformance case" — never "case" alone, prose's
 // "in that case".
 var testBefore = regexp.MustCompile(`(?i)\b(tests?|(test|conformance)\s+cases?)\s*$`)
 
 // TestNames are the tests a Verification item names, each in a code span:
-// a test file (a path, with ::name after it for one test in it), a test's
-// own name, or any name right after the word test, test case or
-// conformance case. The rest of
-// the item is prose, and names none.
-func TestNames(item string) []string {
+// a test file by the project's definition (ADR-0065; a path, a `/` or a
+// `.` in it, with ::name after it for one test in it; a word alone is a
+// BareName), or any name right after the word test,
+// test case or conformance case. The rest of the item is prose, and names
+// none.
+func TestNames(item string, def testdef.Def) []string {
 	var out []string
 	for _, m := range codeSpan.FindAllStringSubmatchIndex(item, -1) {
 		name := strings.TrimSpace(item[m[2]:m[3]])
 		path, _, _ := strings.Cut(name, "::")
 		switch {
 		case strings.ContainsAny(name, " \t"):
-		case testFile.MatchString(path), testFunc.MatchString(name), testBefore.MatchString(item[:m[0]]):
+		case strings.ContainsAny(path, "/.") && def.Test(path), testBefore.MatchString(item[:m[0]]):
 			if !slices.Contains(out, name) {
 				out = append(out, name)
 			}
@@ -318,10 +327,28 @@ func TestNames(item string) []string {
 	return out
 }
 
+// bareName is a name alone in a code span: a word, no path.
+var bareName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// BareNames are the names alone, in code spans, of a Verification item
+// that TestNames does not take: each may be a test's own name, by no
+// language's rule; looked up in the test files, never required there.
+func BareNames(item string, def testdef.Def) []string {
+	named := TestNames(item, def)
+	var out []string
+	for _, m := range codeSpan.FindAllStringSubmatch(item, -1) {
+		name := strings.TrimSpace(m[1])
+		if bareName.MatchString(name) && !slices.Contains(named, name) && !slices.Contains(out, name) {
+			out = append(out, name)
+		}
+	}
+	return out
+}
+
 // CodeTests finds a test in the repository at HEAD: a test file named by
 // its path, one test in it by path::name, or a name found as a word in a
 // test file (TestNames). The run's commit, never the working tree.
-func CodeTests(repo string) TestFinder {
+func CodeTests(repo string, def testdef.Def) TestFinder {
 	// grep lists the files at HEAD holding a word, under path when given:
 	// none is git's exit 1, any other failure an error.
 	grep := func(word, path string) ([]string, error) {
@@ -345,7 +372,7 @@ func CodeTests(repo string) TestFinder {
 	}
 	return func(name string) (string, error) {
 		path, fn, two := strings.Cut(name, "::")
-		if testFile.MatchString(path) && (two || strings.Contains(path, "/") || strings.Contains(path, ".")) {
+		if def.Test(path) && (two || strings.Contains(path, "/") || strings.Contains(path, ".")) {
 			// A file, a blob — never a folder —, its path taken literally.
 			out, err := exec.Command("git", "-C", repo, "ls-tree", "HEAD", "--", ":(literal)"+path).Output()
 			info, file, _ := strings.Cut(strings.TrimRight(string(out), "\n"), "\t")
@@ -365,7 +392,7 @@ func CodeTests(repo string) TestFinder {
 		}
 		files, err := grep(name, "")
 		for _, p := range files {
-			if testFile.MatchString(p) {
+			if def.Test(p) {
 				return p, nil
 			}
 		}

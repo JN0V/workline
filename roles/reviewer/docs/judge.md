@@ -44,7 +44,9 @@ else whether the quoted code fails:
   says;
 - tests ([#223](https://github.com/JN0V/workline/issues/223)): whether a
   test exercises the behaviour and would fail were it wrong. The judge is
-  shown the test files (`tests`) in the cause's folder and those naming
+  shown the test files (the tester's `test-paths`,
+  [one definition](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file))
+  in the cause's folder and those naming
   its file, whole up to `tests-lines-max`, the rest named; a no names the
   test;
 - intent ([#126](https://github.com/JN0V/workline/issues/126)): whether

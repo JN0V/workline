@@ -1,0 +1,55 @@
+# The built-in generic test definition (ADR-0065, change 3): what every
+# role reads as a test file when the project sets none. Data, never engine
+# code; it becomes the built-in `generic` pack once packs exist (#1230).
+#
+# A test the generic patterns miss is code to the developer's fence: asked
+# of the product owner, and `workline doctor` says how to set the tester's
+# test-paths and test-homes.
+#
+# test-paths: the test files. A name opening on a dot is a setting, never a
+# test (`.env.test.local`). Matched as written: `Tests/` and `tests/` apart.
+test-paths:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/Tests/**"
+  - "**/__tests__/**"
+  - "**/test_*"
+  - "**/[^.]*_test.*"
+  - "**/[^.]*_spec.*"
+  - "**/[^.]*.test.*"
+  - "**/[^.]*.spec.*"
+# test-homes: where a test file's code lives, its folder matched by
+# `tests`, mapped onto `code`: each `**` of `tests` fills the next one of
+# `code`, the rest dropped. A test in no mapping lives beside its code, in
+# its own folder. Here: the folder holding the test folder.
+test-homes:
+  - {tests: "**/test/**", code: "**"}
+  - {tests: "**/tests/**", code: "**"}
+  - {tests: "**/Tests/**", code: "**"}
+  - {tests: "**/__tests__/**", code: "**"}
+# aside: folders beside a project's own code: the code picker ranks what
+# they define after the code (#1109, #1189). Ranking only, never a verdict:
+# a miss costs a read. Matched as written, and lower-cased for the
+# lower-case ones.
+aside:
+  - "**/example/**"
+  - "**/examples/**"
+  - "**/tools/**"
+  - "**/mock/**"
+  - "**/mocks/**"
+  - "**/testdata/**"
+  - "**/spec/**"
+  - "**/__mocks__/**"
+  # Gradle's source sets: a target's or a suite's ending in Test
+  # (commonTest, androidUnitTest, integrationTest), testFixtures, a build
+  # variant's (testFreeDebug, androidTestDebug). src/testing/ is code.
+  - "**/src/*Test/**"
+  - "**/src/testFixtures/**"
+  - "**/src/test*Debug/**"
+  - "**/src/test*Release/**"
+  - "**/src/androidTest*/**"
+  # A .NET test project: Shop.Tests/, Shop.UnitTests/.
+  - "**/*.Tests/**"
+  - "**/*.Test/**"
+  - "**/*.UnitTests/**"
+  - "**/*.IntegrationTests/**"

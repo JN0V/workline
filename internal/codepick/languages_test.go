@@ -4,6 +4,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/testdef"
 )
 
 // The words not searched are those of the project's own languages
@@ -26,43 +28,33 @@ func TestKeywordsByLanguage(t *testing.T) {
 	}
 }
 
-// The folders beside a project's own code, by convention (#1109): a
-// Gradle source set (`src/test/`, `src/androidTest/`), `__tests__/`, a
-// .NET test project; never a folder whose name only holds "test".
-func TestAsideByConvention(t *testing.T) {
-	for f, want := range map[string]bool{
-		"tests/a.py":                            true,
-		"test/test_ui.cpp":                      true,
-		"examples/a.go":                         true,
-		"internal/x/testdata/a.go":              true,
-		"src/test/kotlin/shop/CartTest.kt":      true,
-		"app/src/androidTest/java/a/UiTest.kt":  true,
-		"lib/src/testFixtures/kotlin/a/Fake.kt": true,
-		"shared/src/commonTest/kotlin/a/T.kt":   true,
-		"web/src/__tests__/cart.test.ts":        true,
-		"web/src/__mocks__/api.ts":              true,
-		"Shop.Tests/CartTests.cs":               true,
-		"src/main/kotlin/shop/Cart.kt":          false,
-		"src/attestation/Check.kt":              false,
-		"src/latest/a.go":                       false,
-		"internal/tester/write.go":              false,
-		"contest/a.py":                          false,
-		"app/src/jvmTest/kotlin/a/T.kt":         true,
-		"app/src/androidUnitTest/kotlin/a/T.kt": true,
-		"app/src/integrationTest/java/a/T.java": true,
-		"app/src/watchosArm64Test/kotlin/T.kt":  true,
-		"app/src/tvosTest/kotlin/T.kt":          true,
-		"app/src/wasmTest/kotlin/T.kt":          true,
-		"app/src/testFreeDebug/java/T.java":     true,
-		"app/src/androidTestDebug/java/T.java":  true,
-		"app/src/main/java/a/Contest.java":      false,
-		"src/testing/helpers.go":                false, // a project's own test helpers are code (#1189)
-		"src/testutil/fixtures.go":              false,
-		"src/testFoo/a.go":                      false,
-		"src/fooTestBar/a.go":                   false,
+// The files beside a project's own code (#1109, #1189) are the project's
+// tests, and the folders the embedded data sets aside (ADR-0065):
+// examples, tools, Gradle's other source sets; a folder whose name only
+// holds "test" is code.
+func TestAsideByTheTestDefinition(t *testing.T) {
+	gradle := testdef.From([]string{"**/src/test/**", "**/src/androidTest/**", "**/src/*Test/**", "**/src/testFixtures/**"}, nil)
+	for f, want := range map[string][2]bool{ // generic, gradle
+		"tests/a.py":                            {true, false},
+		"test/test_ui.cpp":                      {true, false},
+		"examples/a.go":                         {true, true},
+		"internal/x/testdata/a.go":              {true, true},
+		"src/test/kotlin/shop/CartTest.kt":      {true, true},
+		"app/src/androidTest/java/a/UiTest.kt":  {true, true},
+		"shared/src/commonTest/kotlin/a/T.kt":   {true, true},
+		"lib/src/testFixtures/kotlin/a/Fake.kt": {true, true},
+		"web/src/cart.test.ts":                  {true, false},
+		"src/main/kotlin/shop/Cart.kt":          {false, false},
+		"src/attestation/Check.kt":              {false, false},
+		"contest/a.py":                          {false, false},
+		"src/testing/helpers.go":                {false, false}, // a project's own test helpers are code (#1189)
+		"src/testutil/fixtures.go":              {false, false},
 	} {
-		if got := aside(f); got != want {
-			t.Errorf("aside(%q) = %v, want %v", f, got, want)
+		if got := (testdef.Def{}).Aside(f); got != want[0] {
+			t.Errorf("generic: Aside(%q) = %v, want %v", f, got, want[0])
+		}
+		if got := gradle.Aside(f); got != want[1] {
+			t.Errorf("gradle: Aside(%q) = %v, want %v", f, got, want[1])
 		}
 	}
 }

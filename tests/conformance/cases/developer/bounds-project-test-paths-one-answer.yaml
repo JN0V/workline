@@ -1,0 +1,41 @@
+case: developer/bounds-project-test-paths-one-answer
+about: >
+  One definition of a test file (ADR-0065, change 3; #1226): a project
+  whose tester's test-paths are its spec/ folder, and whose test-homes
+  map spec/ onto lib/. A new spec and a new fake under spec/models/,
+  beside the Scope's lib/models/cart.rb, are tests the write fence keeps.
+  A new tests/test_cart.sh, a test by the generic patterns but not by the
+  project's, is code: outside the Scope.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q main && mkdir -p lib/models && echo '# v1' > lib/models/cart.rb && git add -A && git commit -qm 'chore: cart'"
+    - "git checkout -q -b workline/developer/3 && echo '# total' >> lib/models/cart.rb && mkdir -p spec/models && echo 'it totals' > spec/models/cart_spec.rb && echo 'class FakeStore; end' > spec/models/fake_store.rb && echo 'x' > tests/test_cart.sh && git add -A && git commit -qm 'feat: total for #3' -m 'Workline-Role: developer' && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-paths: ["spec/**"], test-homes: [{tests: "spec/**", code: "lib/**"}]}}}
+  forge:
+    issues:
+      - id: 3
+        title: "A cart total"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want a total.\n\n## Scope\n\n- `lib/models/cart.rb`: a total.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        title: "A cart total"
+        body: "Closes #3"
+run: {develop: [--bounds, --merge-request, "2"], ai: none}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: outside-scope, where: tests/test_cart.sh}
+  no-findings:
+    - {rule: outside-scope, where: lib/models/cart.rb}
+    - {rule: outside-scope, where: spec/models/cart_spec.rb}
+    - {rule: outside-scope, where: spec/models/fake_store.rb}

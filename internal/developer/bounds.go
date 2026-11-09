@@ -25,7 +25,9 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/steer"
+	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -77,11 +79,16 @@ type Bounds struct {
 	// Proof: the kind of proof the tester recorded in place of a Draft
 	// (ADR-0059, decision 4), when it did.
 	Proof *tester.Proof `json:"proof,omitempty"`
-	// TestPaths: the tester's test-paths patterns, read by the write
-	// fence (ADR-0063, §9): a new file matching one, beside the Scope, is
-	// written by rule. None when its settings could not be read: the
-	// fence is then the Scope and the tests beside it alone.
-	TestPaths []string `json:"test-paths,omitempty"`
+	// TestPaths, TestHomes: the tester's test-paths and test-homes, the
+	// project's one definition of a test file (ADR-0065), read by the
+	// write fence (ADR-0063, §9): a new test file whose code lives beside
+	// the Scope is written by rule. Unset, or its settings unread, the
+	// generic ones (testdef).
+	TestPaths []string       `json:"test-paths,omitempty"`
+	TestHomes []testdef.Home `json:"test-homes,omitempty"`
+	// HomesIgnored: why the project's test-homes were ignored, the
+	// generic ones read in their place; said on the bounds' verdict.
+	HomesIgnored string `json:"homes-ignored,omitempty"`
 	// Asked: every file the developer asked the product owner for on
 	// this issue, whatever the head (ADR-0063, §9): the same set asked
 	// again waits for a person.
@@ -114,8 +121,11 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 	for _, sc := range work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text) {
 		b.Scenarios = append(b.Scenarios, sc.Name)
 	}
-	if ts, err := testerSettings(repo); err == nil {
-		b.TestPaths = ts.Paths
+	// The project's one definition, as every role reads it (ADR-0065).
+	tests, err := role.TestDef(os.Getenv("WORKLINE_ROLES_DIR"), repo)
+	b.TestPaths, b.TestHomes = tests.Paths, tests.Homes
+	if errors.Is(err, testdef.ErrHomes) {
+		b.HomesIgnored = err.Error()
 	}
 	comments, err := bl.Comments(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {
@@ -353,29 +363,21 @@ func under(p string, roots []string) bool {
 	})
 }
 
-// besideTest says whether p is a test beside one of the scope's paths, its
-// name a test's (testName): in a scope path's folder or under it, or in a
-// test folder that sits there. A folder's own folder is not its
-// neighbourhood: a Scope `src` lets in no test at the root.
-func besideTest(p string, scope []string, isDir func(string) bool) bool {
-	if !testName(p) {
+// tests is the project's one definition of a test file (ADR-0065).
+func (b Bounds) tests() testdef.Def { return testdef.From(b.TestPaths, b.TestHomes) }
+
+// besideTest says whether p is a test (the project's definition,
+// ADR-0065) in a scope file's folder or under a scope folder, new or not:
+// `foo_test.go` beside `foo.go`. A test elsewhere is the fence's only when
+// new (newTestBeside): an existing one, a fixture a frozen test may read,
+// is asked for. A folder's own folder is not its neighbourhood: a Scope
+// `src` lets in no test at the root.
+func besideTest(p string, scope []string, isDir func(string) bool, tests testdef.Def) bool {
+	if !tests.Test(p) {
 		return false
 	}
-	dirs := []string{path.Dir(p)}
-	parts := strings.Split(path.Dir(p), "/")
-	for i, part := range parts {
-		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
-			dirs = append(dirs, path.Join(append([]string{"."}, parts[:i]...)...))
-		}
-	}
-	for _, d := range dirs {
-		for _, s := range scope {
-			if d == path.Dir(s) && !isDir(s) || under(d, []string{s}) {
-				return true
-			}
-		}
-	}
-	return false
+	d := path.Dir(p)
+	return slices.ContainsFunc(scope, func(s string) bool { return d == path.Dir(s) && !isDir(s) || under(d, []string{s}) })
 }
 
 // checker says, for a file a patch touches, the rule that refuses it, ""
@@ -446,7 +448,7 @@ func (c checker) rule(p string) string {
 		return "steering-file"
 	case c.b.Frozen[p] > 0:
 		return "acceptance-test-edit"
-	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope, c.isDir) && !c.newTestBeside(p) && !c.newHelper(p):
+	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope, c.isDir, c.b.tests()) && !c.newTestBeside(p):
 		return "outside-scope"
 	}
 	return ""
@@ -462,7 +464,7 @@ func besideKept(repo string, b Bounds, patches []intent.Intention) []string {
 		files, _ := touched(p.Value)
 		for _, f := range files {
 			f = path.Clean(filepath.ToSlash(f))
-			if c.rule(f) == "" && !under(f, b.Scope) && !besideTest(f, b.Scope, c.isDir) && !slices.Contains(out, f) {
+			if c.rule(f) == "" && !under(f, b.Scope) && !besideTest(f, b.Scope, c.isDir, b.tests()) && !slices.Contains(out, f) {
 				out = append(out, f)
 			}
 		}
@@ -472,47 +474,17 @@ func besideKept(repo string, b Bounds, patches []intent.Intention) []string {
 }
 
 // newTestBeside says whether p is a new test file beside the Scope, the
-// write fence's (ADR-0063, §9): matching the tester's test-paths, not in
-// the commit the rules are read at, and its home (testHome) a Scope
-// path's folder, in one, or holding one. Written by rule, no ask.
+// write fence's (ADR-0063, §9): a test by the project's definition
+// (ADR-0065), not in the commit the rules are read at, and its code's
+// folder (Def.Home) a Scope path's folder, in one, or holding one.
+// Written by rule, no ask. A test the definition misses is code: the
+// developer asks the product owner for it.
 func (c checker) newTestBeside(p string) bool {
-	if !pathglob.Any(c.b.TestPaths, p) || kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) || c.shadows(p) {
+	tests := c.b.tests()
+	if !tests.Test(p) || kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) || c.shadows(p) {
 		return false
 	}
-	return testBeside(p, c.b.Scope, c.isDir)
-}
-
-// newHelper says whether p is a new test helper, the write fence's too
-// (#1207): a source file (classExt), no test by its name, under a
-// module's src/test/ (resources, fixtures and testdata left out), whose
-// src/main/ holds a Scope path; not in the commit the rules are read at,
-// or kept by an earlier round. An existing helper, a fixture or a data
-// file a frozen test may read is never one: the developer asks to widen
-// the Scope. A root Scope file opens no root tests/, a Scope folder no
-// module's helpers, a production package named test nothing. A class
-// name its src/main/ holds already, whatever the extension, is never one:
-// a test class shadows the production one on the test run's classpath.
-func (c checker) newHelper(p string) bool {
-	if testName(p) || !slices.Contains(classExt, path.Ext(p)) ||
-		kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) {
-		return false
-	}
-	module, rest, ok := strings.Cut("/"+p, "/src/test/")
-	if !ok {
-		return false
-	}
-	for _, part := range strings.Split(path.Dir(rest), "/") {
-		if part == "resources" || part == "fixtures" || part == "testdata" {
-			return false
-		}
-	}
-	mainDir := strings.TrimPrefix(module+"/src/main", "/")
-	if !slices.ContainsFunc(c.b.Scope, func(s string) bool {
-		return !work.Pattern(s) && strings.HasPrefix(path.Clean(s), mainDir+"/")
-	}) {
-		return false
-	}
-	return !c.shadows(p)
+	return testBeside(tests.Home(p), c.b.Scope, c.isDir)
 }
 
 // shadows says whether p, a new file under a module's src/test/, has
@@ -555,12 +527,11 @@ func filesAt(repo, rev, dir string) []string {
 	return out
 }
 
-// testBeside says whether the test file p's home (testHome) is a Scope
-// path's folder, is in one, or holds one. The root is a home only to a
-// Scope file at the root: a Scope `src/x.c` lets in no test of a `test/`
-// at the root.
-func testBeside(p string, scope []string, isDir func(string) bool) bool {
-	home := testHome(p)
+// testBeside says whether a test file's home, its code's folder
+// (Def.Home), is a Scope path's folder, is in one, or holds one. The root
+// is a home only to a Scope file at the root: a Scope `src/x.c` lets in
+// no test of a `test/` at the root.
+func testBeside(home string, scope []string, isDir func(string) bool) bool {
 	for _, s := range scope {
 		s = path.Clean(s)
 		if work.Pattern(s) {
@@ -580,18 +551,6 @@ func testBeside(p string, scope []string, isDir func(string) bool) bool {
 		}
 	}
 	return false
-}
-
-// testHome is the folder a test file belongs to: the one holding its
-// first test folder (test, tests, spec, __tests__), else its own.
-func testHome(p string) string {
-	parts := strings.Split(path.Dir(p), "/")
-	for i, part := range parts {
-		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
-			return path.Join(append([]string{"."}, parts[:i]...)...)
-		}
-	}
-	return path.Dir(p)
 }
 
 // isDir says whether a Scope's path is a folder: one in the repository,

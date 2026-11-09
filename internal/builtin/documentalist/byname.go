@@ -4,6 +4,8 @@ import (
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/JN0V/workline/internal/testdef"
 )
 
 // Sources by name: adopting a repository with no agent, a doc's sources
@@ -31,7 +33,7 @@ func nameKey(s string) string {
 // codeByName indexes the repository's code folders and files by name: a
 // folder by its own, a file by its name up to the first dot. Folders end
 // with a slash.
-func codeByName(files map[string]bool, globs []string) map[string][]string {
+func codeByName(files map[string]bool, globs []string, tests testdef.Def) map[string][]string {
 	seen := map[string]bool{}
 	out := map[string][]string{}
 	add := func(name, p string) {
@@ -41,7 +43,7 @@ func codeByName(files map[string]bool, globs []string) map[string][]string {
 		}
 	}
 	for f := range files {
-		if notCode[strings.ToLower(path.Ext(f))] || matchAny(globs, f) || hidden(f) || isTest(f) {
+		if notCode[strings.ToLower(path.Ext(f))] || matchAny(globs, f) || hidden(f) || isTest(f, tests) {
 			continue
 		}
 		base := path.Base(f)
@@ -56,17 +58,17 @@ func codeByName(files map[string]bool, globs []string) map[string][]string {
 	return out
 }
 
-// isTest says whether a file is a test, or test data: a doc describes the
-// code they test (prettier's docs/api.md is not its tests' API.js).
-func isTest(f string) bool {
+// isTest says whether a file is a test or test data: a doc describes the
+// code they test (prettier's docs/api.md is not its tests' API.js). The
+// tests are the project's one definition (ADR-0065); a fixtures or
+// dependencies folder is never code.
+func isTest(f string, tests testdef.Def) bool {
 	for _, part := range strings.Split(path.Dir(f), "/") {
 		if notDocFolders[strings.ToLower(part)] {
 			return true
 		}
 	}
-	base := strings.ToLower(path.Base(f))
-	return strings.Contains(base, ".test.") || strings.Contains(base, ".spec.") ||
-		strings.Contains(base, "_test.") || strings.HasPrefix(base, "test_")
+	return tests.Test(f)
 }
 
 func hidden(f string) bool {

@@ -9,14 +9,13 @@ package developer
 
 import (
 	"fmt"
-	"path"
 	"slices"
 	"strings"
-	"unicode"
 
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -45,47 +44,13 @@ func ReadRecord(f forge.Forge, id int) (Act, bool, error) {
 // ProofLines are a proof's lines, as its pull request's body says them.
 func ProofLines(p Proof, caps []Cap) string { return proofLines(p, caps) }
 
-// isTest says whether a file is a test: "test" or "spec" a word of its
-// name (test_x.py, x_test.go, x.spec.ts, XTest.java), or in a test folder.
-func isTest(p string) bool {
-	if testName(p) {
-		return true
-	}
-	for _, part := range strings.Split(path.Dir(p), "/") {
-		if part == "test" || part == "tests" || part == "spec" || part == "__tests__" {
-			return true
-		}
-	}
-	return false
-}
-
-// testName says whether a file's name is a test's: "test" or "spec" a
-// word of it. A hidden file's never is: .env.test is a setting (#745).
-func testName(p string) bool {
-	base := path.Base(p)
-	if strings.HasPrefix(base, ".") {
-		return false
-	}
-	stem := strings.TrimSuffix(base, path.Ext(base))
-	for _, w := range strings.FieldsFunc(stem, func(c rune) bool { return c == '_' || c == '.' || c == '-' }) {
-		switch lw := strings.ToLower(w); {
-		case lw == "test" || lw == "tests" || lw == "spec" || lw == "conftest":
-			return true
-		case strings.HasSuffix(w, "Test") || strings.HasSuffix(w, "Tests") || strings.HasSuffix(w, "Spec"):
-			return true // XTest.java, XSpec.scala
-		case len(w) > 4 && strings.HasPrefix(w, "Test") && unicode.IsUpper(rune(w[4])):
-			return true // TestX.java, not Testimony.go
-		}
-	}
-	return false
-}
-
-// written are the files its patches touch, its code and its tests apart.
-func written(patches []intent.Intention) (code, tests []string) {
+// written are the files its patches touch, its code and its tests apart,
+// by the project's one definition of a test file (ADR-0065).
+func written(patches []intent.Intention, def testdef.Def) (code, tests []string) {
 	for _, p := range patches {
 		files, _ := touched(p.Value)
 		for _, f := range files {
-			if isTest(f) {
+			if def.Test(f) {
 				tests = append(tests, f)
 			} else {
 				code = append(code, f)

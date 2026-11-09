@@ -842,7 +842,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			v.Summary += "; its fix turns the tests red on a green head: not pushed"
 		} else {
 			a.Proof, a.Caps = &p, caps
-			code, tests := written(patches)
+			code, tests := written(patches, b.tests())
 			a.Code, a.Tests = union(a.Code, code), union(a.Tests, tests)
 			if this.Beside = besideKept(repo, b, patches); len(this.Beside) > 0 {
 				a.Beside = union(a.Beside, this.Beside)

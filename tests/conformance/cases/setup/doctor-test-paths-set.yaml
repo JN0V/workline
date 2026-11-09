@@ -1,0 +1,13 @@
+case: setup/doctor-test-paths-set
+about: >
+  The tester's test-paths set (ADR-0065, change 3; #1226): the doctor
+  says every role reads them as the test files, nothing to fix.
+given:
+  repo: documented
+  config:
+    roles: {tester: {settings: {test-paths: ["spec/**"]}}}
+run: {doctor: true}
+expect:
+  status: pass
+  no-findings:
+    - {rule: test-paths-generic}

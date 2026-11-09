@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/testdef"
 )
 
 // repo commits files in a new repository.
@@ -136,7 +138,7 @@ func TestRoomForATest(t *testing.T) {
 		"Console/test/test_console_x/test_console.c": filler(30, "// test %d"),
 		"Core/test/t_a/test_a.c":                     "// core\n",
 	})
-	pk, _ := pick(t, dir, Ask{Text: "`Console/include/Console.h`", Tests: []string{"**/test/**"}, Budget: 100})
+	pk, _ := pick(t, dir, Ask{Text: "`Console/include/Console.h`", Tests: testdef.From([]string{"**/test/**"}, nil), TestRoom: true, Budget: 100})
 	tf := pk.Test()
 	if tf == nil || tf.Path != "Console/test/test_console_x/test_console.c" || tf.GivenLines() != 20 || pk.Kept != 20 {
 		t.Fatalf("the test: %+v, kept %d", tf, pk.Kept)

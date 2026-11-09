@@ -31,6 +31,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
@@ -686,6 +687,22 @@ func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		"Its diff is your code. When you are done, your last message is `[]` alone: no label, no comment, the claim is the engine's.\n"
 }
 
+// testsBeside tells the agent the tests it may write beside the Scope,
+// by the project's one definition of a test file (ADR-0065): its
+// patterns and where a test's code lives, never a language's rule.
+func testsBeside(d testdef.Def) string {
+	var homes []string
+	for _, h := range d.Homes {
+		homes = append(homes, fmt.Sprintf("`%s` → `%s`", h.Tests, h.Code))
+	}
+	where := "a test's code lives in its own folder"
+	if len(homes) > 0 {
+		where = "a test's code lives where its folder maps (" + strings.Join(homes, ", ") + "), else in its own folder"
+	}
+	return fmt.Sprintf("- the test files beside them: one in their folder, or a new one whose code lives beside them. The test files: `%s`; %s. A file matching none is code, outside these bounds.\n",
+		strings.Join(d.Patterns(), "`, `"), where)
+}
+
 // question is what an issue run and a review round ask alike: the issue,
 // what bounds the code and the run, the frozen tests, the test command;
 // it ends on the answer's first words, the caller's own rules after them.
@@ -698,8 +715,8 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 	for _, p := range b.Scope {
 		fmt.Fprintf(&t, "- `%s`\n", p)
 	}
-	t.WriteString("- the tests beside them: in their folder, or in a test folder, the name holding `test` or `spec`; a new test helper (a fake), a source file under the src/test/ of a module whose src/main/ they are in.\n\n" +
-		"Read any file you need. A change to any other file is reverted once you are done, whatever the reason: say it in your answer, it belongs in an issue. " +
+	t.WriteString(testsBeside(b.tests()))
+	t.WriteString("\nRead any file you need. A change to any other file is reverted once you are done, whatever the reason: say it in your answer, it belongs in an issue. " +
 		"Never, whatever the scope: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
 		"a role's folder, `.workline/` (but the objections file below), the CI's workflows, a gate's definition.\n")
 	if frozen := b.acceptance(); len(frozen) > 0 {
@@ -909,7 +926,7 @@ func Post(runDir, repo string) int {
 			Message: fmt.Sprintf("its agent wrote no code within its bounds: nothing to prove, no pull request; blocked for a person after %d hours on the same body, said on the issue", s.ClaimHours)})
 		a.NoCode = true
 	} else {
-		a.Code, a.Tests = written(patches)
+		a.Code, a.Tests = written(patches, b.tests())
 		a.Beside = besideKept(repo, b, patches)
 		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, flakyOf(b.Proof, s), s)
 		if p.Result == Red && len(p.Red) == 0 && len(caps) == 0 && !objects(kept) {

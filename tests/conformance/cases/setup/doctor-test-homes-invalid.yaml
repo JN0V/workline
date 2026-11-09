@@ -1,0 +1,20 @@
+case: setup/doctor-test-homes-invalid
+about: >
+  A test-homes setting that cannot be read (ADR-0065; #1226): every role
+  ignores it the same way, the generic homes in its place, and the doctor
+  says so, truly. A reviewer's `tests` setting left from before is read by
+  nothing, said too.
+given:
+  repo: documented
+  config:
+    roles:
+      tester: {settings: {test-paths: ["spec/**"], test-homes: [{tests: "spec/*", code: "**/lib/**"}]}}
+      reviewer: {settings: {tests: ["spec/**"]}}
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: test-homes-invalid, level: warn, message: "every role reads the generic homes in their place"}
+    - {rule: reviewer-tests-gone, level: warn, message: "the reviewer's `tests` setting is gone"}
+  no-findings:
+    - {rule: test-paths-generic}

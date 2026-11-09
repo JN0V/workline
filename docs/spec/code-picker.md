@@ -80,11 +80,14 @@ Under the role's budget, each piece once a task:
      first: a file defining another name the issue writes, then the
      component's folder, then the rest, while the budget lasts.
    - Copies in tests, examples and tools last, 2 a name, the nearest
-     first, the rest counted. Beside the code by the folder's
-     convention: `tests/`, `test/` (Gradle's `src/test/` too), `spec/`,
-     `examples/`, `tools/`, `mocks/`, `testdata/`, Gradle's other source
-     sets (`src/androidTest/`, `src/testFixtures/`), Jest's
-     `__tests__/`, a .NET test project (`Shop.Tests/`).
+     first, the rest counted. The tests are the project's one
+     definition, the tester's `test-paths`, else the generic patterns
+     ([ADR-0065](../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file));
+     the folders beside the code by the same embedded data, ranking
+     only: `examples/`, `tools/`, `mocks/`, `testdata/`, `spec/`,
+     Gradle's other source sets (`src/androidTest/`,
+     `src/testFixtures/`), Jest's `__mocks__/`, a .NET test project
+     (`Shop.Tests/`).
 3. **The lines naming a name in a file named**: the function around
    each, 40 lines at most, else 3 lines either side.
 4. **A file named, whole** when what it adds fits; else, nothing of it

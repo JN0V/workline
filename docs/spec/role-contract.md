@@ -106,7 +106,8 @@ context:
 duties:
   reads: ["**"]                 # paths the role may read
   writes: []                    # paths a patch may touch; empty = none;
-                                # `$settings.<name>` uses a project setting
+                                # `$settings.<name>` uses a project setting;
+                                # `test-paths` unset: the generic test files
 
 intentions: [commit-message, note]   # subset of the catalogue below
 part-intentions: [claim]        # what a part of a question answers with (In parts);

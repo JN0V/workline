@@ -1,0 +1,9 @@
+# The developer's agent writing a test the generic patterns miss
+# (#1226): check/mul_check.sh, no test/ or tests/ folder, no _test, .test
+# or .spec in its name. With no test-paths set, it is code to the fence.
+- patch:
+    file: check/mul_check.sh
+    content: |
+      . ./lib.sh
+      [ "$(mul 2 3)" = 6 ]
+- note: "A check of mul in check/, the project's test folder."

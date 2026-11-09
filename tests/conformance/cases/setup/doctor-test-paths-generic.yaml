@@ -1,0 +1,13 @@
+case: setup/doctor-test-paths-generic
+about: >
+  No test-paths set (ADR-0065, change 3; #1226): every role reads the
+  built-in generic patterns as the test files, and the doctor says so,
+  with how to set the tester's test-paths and test-homes for the tests
+  they miss.
+given:
+  repo: documented
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: test-paths-generic, level: note, message: "the built-in generic patterns", fix: "set the tester's test-paths, and test-homes"}
