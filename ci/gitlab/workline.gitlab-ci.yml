@@ -273,7 +273,7 @@ workline:judge:
     - >
       workline route merge-request --ai "$ai" --no-apply ${WORKLINE_GITLAB_TOKEN:+--warn-apart}
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" --release-wait 30m
-      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft} --input ready=${lenses:+true}
+      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA} $lenses ${draft:+--input draft=$draft} --input ready=${lenses:+true}
       --gates-from gates.json --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html
       --verdict workline-verdict.json --verdict-head "${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" --json > line.json || status=$?
     - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || printf "\n- **warn lenses not run apart**: WORKLINE_GITLAB_TOKEN not set, they read in this job, on the path of the verdict\n" >> workline-summary.md'
@@ -377,7 +377,7 @@ workline:warn:
       [ "$2" != none ] || { echo "workline: CLAUDE_CODE_OAUTH_TOKEN is not set, or not scoped to the environment workline: no agent, nothing read apart"; exit 0; };
       workline route merge-request --warn-only "$@" --no-apply
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
-      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}
+      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA} $lenses ${draft:+--input draft=$draft}
       ${gates:+--gates-from $gates} --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - '[ "$status" != 3 ] || echo "workline: the agent could not be reached: the lenses that warn did not read this push"'
     - '[ "$status" = 0 ] || [ "$status" = 3 ] || exit $status'
