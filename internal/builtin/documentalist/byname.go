@@ -58,17 +58,17 @@ func codeByName(files map[string]bool, globs []string, tests testdef.Def) map[st
 	return out
 }
 
-// isTest says whether a file is a test, test data, or beside the code
-// (examples, tools): a doc describes the code they test (prettier's
-// docs/api.md is not its tests' API.js). The tests are the project's one
-// definition (ADR-0065); a fixtures or dependencies folder is never code.
+// isTest says whether a file is a test or test data: a doc describes the
+// code they test (prettier's docs/api.md is not its tests' API.js). The
+// tests are the project's one definition (ADR-0065); a fixtures or
+// dependencies folder is never code.
 func isTest(f string, tests testdef.Def) bool {
 	for _, part := range strings.Split(path.Dir(f), "/") {
 		if notDocFolders[strings.ToLower(part)] {
 			return true
 		}
 	}
-	return tests.Aside(f)
+	return tests.Test(f)
 }
 
 func hidden(f string) bool {
