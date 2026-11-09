@@ -205,7 +205,7 @@ func stale(res *Result, cfg *routing.Config, b forge.Backlog, x *scopeIndex, is 
 		return &StateWrite{Issue: is.ID, Record: rec, Kept: why}, nil
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-stale", Level: "warn", Where: where, Message: why + ": back to refine"})
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: t.Labeled, Hops: rec.Hops, Reached: rec.Reached, Stale: s.Name, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: t.Labeled, Hops: rec.Hops, Reached: rec.Reached, Stale: s.Name, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Last: rec.Last}
 	return &StateWrite{Issue: is.ID, Record: now, Stale: why}, nil
 }
 

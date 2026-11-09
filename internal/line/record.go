@@ -100,6 +100,11 @@ type Record struct {
 	// Needs: the code the step's agent said it lacked on its input
 	// (ADR-0063, §6; outcome.go): given at its next run, once.
 	Needs *Needs `json:"needs,omitempty"`
+	// Last: by role, the input its last run in a state of the line was
+	// on, when it said it lacked code there, or read refine (outcome.go,
+	// #1157): kept through every state, a block and its revisit among
+	// them, so the role is never run on that same input again as if anew.
+	Last map[string]LastRun `json:"last-run,omitempty"`
 	// V: the record's version: 1 since runs have typed outcomes; 0, a
 	// record from before, whose block a machine error may have made
 	// (revisit.go).
@@ -412,7 +417,7 @@ func afterWrite(r *Record, is forge.Issue) {
 // before — one, a count started again, for a state further on the line
 // (cfg) than any it reached (#1068).
 func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Parts: rec.Parts, Labels: inputLabels(is.Labels)}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Parts: rec.Parts, Labels: inputLabels(is.Labels), Last: rec.Last}
 	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec && sameLabels(rec, now) {
 		return rec, false
 	}
