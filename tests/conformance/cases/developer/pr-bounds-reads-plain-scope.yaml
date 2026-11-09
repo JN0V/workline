@@ -1,10 +1,11 @@
 case: developer/pr-bounds-reads-plain-scope
 about: >
-  A Scope's paths in plain words bound the developer when the repository
-  holds them (#901): `lib.sh`, written without backticks, passes. A word
-  in backticks with a slash whose first folder the repository lacks is
-  not a path: `dorny/paths-filter`, an Action the Scope names, bounds
-  nothing, so a file the branch adds there is outside-scope.
+  A Scope's paths in plain words are the Scope's when the repository
+  holds them (#901): `lib.sh`, written without backticks, is in it. A
+  word in backticks with a slash whose first folder the repository lacks
+  is not a path: `dorny/paths-filter`, an Action the Scope names, holds
+  nothing, so a file the branch adds there is beyond the Scope, said,
+  never refused (ADR-0065, change 2).
 given:
   repo: tested-draft
   setup:
@@ -27,8 +28,8 @@ given:
         body: "Closes #3"
 run: {develop: [--bounds, --merge-request, "2"], ai: none}
 expect:
-  status: block
+  status: pass
   agent-calls: 0
   findings:
-    - {rule: outside-scope, where: dorny/paths-filter}
-  no-findings: [{rule: outside-scope, where: lib.sh}]
+    - {rule: beyond-scope, level: info, where: dorny/paths-filter}
+  no-findings: [{rule: beyond-scope, where: lib.sh}]

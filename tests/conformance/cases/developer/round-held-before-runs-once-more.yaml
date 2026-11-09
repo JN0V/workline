@@ -1,7 +1,7 @@
 case: developer/round-held-before-runs-once-more
 about: >
-  A round on a red check that wrote no fix and named no file outside
-  its Scope before such a round blocked its issue, as on 2026-11-03
+  A round on a red check that wrote no fix before such a round blocked
+  its issue, as on 2026-11-03
   (#938): its record keeps the head the checks were read at, its round
   `held`, and no ask. Due once more at that head, the round runs; its
   agent still holds the check wrong, so #3 is blocked for a person now.
@@ -36,7 +36,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-holds-check-wrong"}
 expect:
   status: pass
-  summary: "round 2 of 5 on merge request 2; no fix for the red check test, and no file named outside the issue's Scope: #3 blocked for a person"
+  summary: "round 2 of 5 on merge request 2; no fix for the red check test: #3 blocked for a person"
   agent-calls: 1
   forge:
     issues:

@@ -88,13 +88,20 @@ func TestRuleOrder(t *testing.T) {
 		"src/roles/x/persona.md":    "steering-file",
 		".workline/config.yaml":     "gate-file",
 		".github/workflows/ci.yml":  "gate-file",
-		"README.md":                 "outside-scope",
-		"../elsewhere.go":           "outside-scope",
-		"../tests/test_x.sh":        "outside-scope",
-		"src/other.go":              "outside-scope",
+		"README.md":                 "", // beyond the Scope: applied, listed
+		"../elsewhere.go":           "outside-repo",
+		"../tests/test_x.sh":        "outside-repo",
+		"src/other.go":              "",
 	} {
 		if got := c.rule(p); got != want {
 			t.Errorf("rule(%s) = %q, want %q", p, got, want)
+		}
+	}
+	// The Scope is a hint (ADR-0065, change 2): a file beyond it is
+	// said, never refused.
+	for p, want := range map[string]bool{"README.md": true, "src/other.go": true, "src/lib.go": false, "src/lib_more_test.go": false} {
+		if got := c.beyond(p); got != want {
+			t.Errorf("beyond(%s) = %v, want %v", p, got, want)
 		}
 	}
 }
@@ -126,12 +133,12 @@ func TestBesideTestNeedsTheTestFolderBesideTheScope(t *testing.T) {
 	}
 }
 
-// The write fence (ADR-0063, §9): a new file matching the tester's
-// test-paths, in or beside a Scope path's folder, is written by rule; the
-// trial's #35 and #20 wrote theirs under the component's test/ folder, its
-// Scope a header under include/. The same file outside any Scope folder,
-// one the commit holds already, or one no test-paths names is refused,
-// an ask.
+// A new test beside the Scope (ADR-0063, §9): a new file matching the
+// tester's test-paths, in or beside a Scope path's folder; the trial's
+// #35 and #20 wrote theirs under the component's test/ folder, its Scope
+// a header under include/. The same file outside any Scope folder, one
+// the commit holds already, or one no test-paths names is beyond the
+// Scope: applied, listed.
 func TestNewTestBesideTheScopeIsKept(t *testing.T) {
 	repo := t.TempDir()
 	for _, f := range []string{"Storage/include/Storage.h", "Storage/test/test_old/test_old.cpp", "Wifi/include/Wifi.h"} {
@@ -144,28 +151,32 @@ func TestNewTestBesideTheScopeIsKept(t *testing.T) {
 	}
 	c := checker{repo: repo, steer: func(string) bool { return false },
 		b: Bounds{Issue: 20, Scope: []string{"Storage/include/Storage.h"}, TestPaths: []string{"*/test/**", "**/*_test.go"}}}
-	for p, want := range map[string]string{
-		"Storage/test/test_name_more/test_name_more.cpp": "",              // new, beside: kept
-		"Storage/test/test_old/test_old.cpp":             "outside-scope", // the commit holds it: not new
-		"Wifi/test/test_wifi/test_wifi.cpp":              "outside-scope", // beside no Scope path
-		"Storage/src/helper.cpp":                         "outside-scope", // no test-paths names it
-		"Storage/include/Storage.h":                      "",
+	for p, want := range map[string]bool{
+		"Storage/test/test_name_more/test_name_more.cpp": false, // new, beside
+		"Storage/test/test_old/test_old.cpp":             true,  // the commit holds it: not new
+		"Wifi/test/test_wifi/test_wifi.cpp":              true,  // beside no Scope path
+		"Storage/src/helper.cpp":                         true,  // no test-paths names it
+		"Storage/include/Storage.h":                      false,
 	} {
-		if got := c.rule(p); got != want {
-			t.Errorf("rule(%s) = %q, want %q", p, got, want)
+		if got := c.beyond(p); got != want {
+			t.Errorf("beyond(%s) = %v, want %v", p, got, want)
+		}
+		if got := c.rule(p); got != "" {
+			t.Errorf("rule(%s) = %q, want none: the Scope is a hint", p, got)
 		}
 	}
 	// No test-paths set: the generic ones (ADR-0065); a test they miss
-	// is code, outside the Scope: an ask.
+	// is code, beyond the Scope.
 	c.b.TestPaths = nil
-	if got := c.rule("Storage/test/test_name_more/test_name_more.cpp"); got != "" {
-		t.Errorf("with no test-paths, rule = %q, want the generic ones to keep it", got)
+	if c.beyond("Storage/test/test_name_more/test_name_more.cpp") {
+		t.Error("with no test-paths, the generic ones keep the new test beside the Scope")
 	}
-	if got := c.rule("Storage/check/check_name.cpp"); got != "outside-scope" {
-		t.Errorf("a test the generic patterns miss: rule = %q, want outside-scope", got)
+	if !c.beyond("Storage/check/check_name.cpp") {
+		t.Error("a test the generic patterns miss is beyond the Scope")
 	}
-	// besideKept lists only what the fence alone let in, the rules read
-	// in a repository.
+	// besideKept lists the new tests beside the Scope, beyondKept the
+	// files beyond it, each with its reason, the rules read in a
+	// repository.
 	for _, args := range [][]string{{"init", "-q"}, {"add", "-A"}, {"-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "core.hooksPath=/dev/null", "commit", "-qm", "base"}} {
 		if out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput(); err != nil {
 			t.Fatalf("git %v: %v\n%s", args, err, out)
@@ -175,9 +186,14 @@ func TestNewTestBesideTheScopeIsKept(t *testing.T) {
 	patches := []intent.Intention{
 		{Kind: "patch", Value: map[string]any{"file": "Storage/include/Storage.h", "content": "y\n"}},
 		{Kind: "patch", Value: map[string]any{"file": "Storage/test/test_name_more/test_name_more.cpp", "content": "z\n"}},
+		{Kind: "patch", Value: map[string]any{"file": "Wifi/include/Wifi.h", "content": "w\n"}},
 	}
 	if got := besideKept(repo, c.b, patches); !slices.Equal(got, []string{"Storage/test/test_name_more/test_name_more.cpp"}) {
-		t.Errorf("besideKept = %v, want the new test alone", got)
+		t.Errorf("besideKept = %v, want the new test alone, not the code beyond the Scope", got)
+	}
+	got := beyondKept(repo, c.b, patches, map[string]string{"Wifi/include/Wifi.h": "the grid reads its signal"})
+	if want := []Beyond{{File: "Wifi/include/Wifi.h", Why: "the grid reads its signal"}}; !slices.Equal(got, want) {
+		t.Errorf("beyondKept = %v, want %v", got, want)
 	}
 }
 
@@ -200,25 +216,6 @@ func TestTestBesideByItsHome(t *testing.T) {
 	} {
 		if got := testBeside(testdef.Def{}.Home(tc.p), tc.scope, isDir); got != tc.want {
 			t.Errorf("testBeside(%s, %v) = %v, want %v", tc.p, tc.scope, got, tc.want)
-		}
-	}
-}
-
-// The same set of files asked again waits for a person, whatever the
-// head; one file not asked before is a new ask (ADR-0063, §9; #1073).
-func TestAskedBeforeIsBySet(t *testing.T) {
-	before := []string{"a.h", "b.h"}
-	for _, tc := range []struct {
-		files []string
-		want  bool
-	}{
-		{[]string{"a.h"}, true},
-		{[]string{"b.h", "a.h"}, true},
-		{[]string{"a.h", "c.h"}, false},
-		{nil, false},
-	} {
-		if got := askedBefore(tc.files, before); got != tc.want {
-			t.Errorf("askedBefore(%v) = %v, want %v", tc.files, got, tc.want)
 		}
 	}
 }
@@ -249,8 +246,8 @@ func TestScopeNamingTheRootIsDropped(t *testing.T) {
 		t.Errorf("scopePaths = %v, want [src/a.go]", got)
 	}
 	c := checker{b: Bounds{Scope: []string{"."}}, steer: func(string) bool { return false }}
-	if got := c.rule("src/other.go"); got != "outside-scope" {
-		t.Errorf("rule with a Scope of . = %q, want outside-scope", got)
+	if !c.beyond("src/other.go") {
+		t.Error("with a Scope of ., src/other.go is not said beyond it")
 	}
 }
 
@@ -290,8 +287,8 @@ func TestScopePlainPathsAreBounds(t *testing.T) {
 		t.Errorf("files unread: scopePaths = %q, want the words in backticks as written", got)
 	}
 	ch := checker{b: Bounds{Scope: scopePaths("## Scope\n\ninternal/doctor\n", files)}, steer: func(string) bool { return false }}
-	if r := ch.rule("internal/doctor/new.go"); r != "" {
-		t.Errorf("rule(internal/doctor/new.go) = %q, want in bounds", r)
+	if ch.beyond("internal/doctor/new.go") {
+		t.Error("internal/doctor/new.go said beyond a Scope naming internal/doctor")
 	}
 }
 
@@ -504,10 +501,10 @@ func TestScopePathsOnlyNoNameGuessed(t *testing.T) {
 }
 
 // A new test file, a fake under a module's src/test beside a Scope file
-// under its src/main, is the write fence's (#1207, ADR-0065): the
+// under its src/main, is beside the Scope (#1207, ADR-0065): the
 // project's test definition says it is a test, its test-homes where its
 // code lives. An existing helper or fixture a frozen test may read, a
-// test of another module, are not. The generic definition calls a
+// test of another module, are beyond it: applied, listed. The generic definition calls a
 // production package named test a test; the project's test-paths, set,
 // do not.
 func TestNewTestFileByTheDefinition(t *testing.T) {
@@ -529,29 +526,31 @@ func TestNewTestFileByTheDefinition(t *testing.T) {
 	gradle := c
 	gradle.b.TestPaths = []string{"**/src/test/**", "tests/**"}
 	gradle.b.TestHomes = []testdef.Home{{Tests: "**/src/test/kotlin/**", Code: "**/src/main/kotlin/**"}}
-	for p, want := range map[string][2]string{ // generic, gradle
-		"app/src/test/kotlin/a/FakeGrid.kt":    {"", ""},                           // new, beside
-		"app/src/test/kotlin/a/FakeStore.kt":   {"outside-scope", "outside-scope"}, // exists: a frozen test may read it
-		"app/src/test/resources/golden.json":   {"outside-scope", "outside-scope"}, // exists
-		"tests/lib.sh":                         {"outside-scope", "outside-scope"}, // exists
-		"tests/fixtures/expected.txt":          {"outside-scope", "outside-scope"},
-		"tests/helper.sh":                      {"", "outside-scope"},              // new, beside a root Scope file; test-homes set, the generic ones not read
-		"feature/x/src/test/kotlin/x/FakeX.kt": {"", ""},                           // under the Scope folder itself
-		"other/src/test/kotlin/o/FakeO.kt":     {"outside-scope", "outside-scope"}, // another module
-		"app/src/test/kotlin/b/FakeB.kt":       {"", "outside-scope"},              // another package: its home app/src/main/kotlin/b
-		"app/src/main/kotlin/a/test/Other.kt":  {"", "outside-scope"},              // a production package named test
-		"app/src/check/kotlin/a/CheckApp.kt":   {"outside-scope", "outside-scope"}, // a test no definition names: code, asked
+	o, x := false, true                      // beyond the Scope: x
+	for p, want := range map[string][2]bool{ // generic, gradle
+		"app/src/test/kotlin/a/FakeGrid.kt":    {o, o}, // new, beside
+		"app/src/test/kotlin/a/FakeStore.kt":   {x, x}, // exists: a frozen test may read it
+		"app/src/test/resources/golden.json":   {x, x}, // exists
+		"tests/lib.sh":                         {x, x}, // exists
+		"tests/fixtures/expected.txt":          {x, x},
+		"tests/helper.sh":                      {o, x}, // new, beside a root Scope file; test-homes set, the generic ones not read
+		"feature/x/src/test/kotlin/x/FakeX.kt": {o, o}, // under the Scope folder itself
+		"other/src/test/kotlin/o/FakeO.kt":     {x, x}, // another module
+		"app/src/test/kotlin/b/FakeB.kt":       {o, x}, // another package: its home app/src/main/kotlin/b
+		"app/src/main/kotlin/a/test/Other.kt":  {o, x}, // a production package named test
+		"app/src/check/kotlin/a/CheckApp.kt":   {x, x}, // a test no definition names: code
 	} {
-		if got := c.rule(p); got != want[0] {
-			t.Errorf("generic: rule(%s) = %q, want %q", p, got, want[0])
+		if got := c.beyond(p); got != want[0] {
+			t.Errorf("generic: beyond(%s) = %v, want %v", p, got, want[0])
 		}
-		if got := gradle.rule(p); got != want[1] {
-			t.Errorf("gradle: rule(%s) = %q, want %q", p, got, want[1])
+		if got := gradle.beyond(p); got != want[1] {
+			t.Errorf("gradle: beyond(%s) = %v, want %v", p, got, want[1])
 		}
 	}
-	// Kept by an earlier round: still the fence's on the branch's head.
+	// Written by an earlier round: still beside the Scope on the branch's
+	// head.
 	c.b.Beside = []string{"app/src/test/kotlin/a/FakeStore.kt"}
-	if got := c.rule("app/src/test/kotlin/a/FakeStore.kt"); got != "" {
-		t.Errorf("a helper kept before: rule = %q, want in bounds", got)
+	if c.beyond("app/src/test/kotlin/a/FakeStore.kt") {
+		t.Error("a helper written beside the Scope before is said beyond it")
 	}
 }

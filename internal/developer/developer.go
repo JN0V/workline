@@ -177,17 +177,17 @@ type Act struct {
 	// ChecksAt: the head its last round read the project's red checks
 	// at: the same head is never asked twice (#917).
 	ChecksAt string `json:"checks-at,omitempty"`
-	// Widen: its last round's ask to the product owner for files outside
-	// the issue's Scope (#921).
+	// Widen: its last round's wait, for a person or the tester (#938,
+	// #987).
 	Widen *Widen `json:"widen,omitempty"`
-	// Asked: every file asked of the product owner on its issue, in any
-	// step or round, carried from claim to claim: the same set asked
-	// again waits for a person (ADR-0063, §9).
-	Asked []string `json:"asked,omitempty"`
-	// Beside: the new test files its code wrote beside the Scope, kept
-	// by the write fence (ADR-0063, §9): listed on its pull request, and
-	// added to the Scope at the product owner's next run.
+	// Beside: the new test files its code wrote beside the Scope
+	// (ADR-0063, §9): listed on its pull request, and added to the Scope
+	// at the product owner's next run.
 	Beside []string `json:"beside,omitempty"`
+	// Beyond: the files its code wrote beyond the Scope, each with its
+	// agent's reason (ADR-0065, change 2): listed on its pull request,
+	// for the reviewer's `intent` lens to judge.
+	Beyond []Beyond `json:"beyond,omitempty"`
 	// Board: the card its claim moved to Doing on the forge's board
 	// (ADR-0057); none, no board or no Doing column.
 	Board *board.Move `json:"board,omitempty"`
@@ -678,9 +678,9 @@ func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		"Its diff is your code. When you are done, your last message is `[]` alone: no label, no comment, the claim is the engine's.\n"
 }
 
-// testsBeside tells the agent the tests it may write beside the Scope,
-// by the project's one definition of a test file (ADR-0065): its
-// patterns and where a test's code lives, never a language's rule.
+// testsBeside tells the agent the tests that are beside the Scope, by
+// the project's one definition of a test file (ADR-0065): its patterns
+// and where a test's code lives, never a language's rule.
 func testsBeside(d testdef.Def) string {
 	var homes []string
 	for _, h := range d.Homes {
@@ -690,7 +690,7 @@ func testsBeside(d testdef.Def) string {
 	if len(homes) > 0 {
 		where = "a test's code lives where its folder maps (" + strings.Join(homes, ", ") + "), else in its own folder"
 	}
-	return fmt.Sprintf("- the test files beside them: one in their folder, or a new one whose code lives beside them. The test files: `%s`; %s. A file matching none is code, outside these bounds.\n",
+	return fmt.Sprintf("- the test files beside them: one in their folder, or a new one whose code lives beside them. The test files: `%s`; %s. A file matching none is code.\n",
 		strings.Join(d.Patterns(), "`, `"), where)
 }
 
@@ -701,15 +701,20 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 	var t strings.Builder
 	fmt.Fprintf(&t, "# Issue #%d: %s\n\n%s\n\n## What you may change\n\n", is.ID, is.Title, strings.TrimSpace(is.Body))
 	if len(b.Scope) == 0 {
-		t.WriteString("The issue names no path: every change is reverted. Change nothing.\n")
+		fmt.Fprintf(&t, "The issue's %s names no path.\n", scopeName)
+	} else {
+		fmt.Fprintf(&t, "The issue's %s, the product owner's hint of the files the change needs:\n\n", scopeName)
 	}
 	for _, p := range b.Scope {
 		fmt.Fprintf(&t, "- `%s`\n", p)
 	}
 	t.WriteString(testsBeside(b.tests()))
-	t.WriteString("\nRead any file you need. A change to any other file is reverted once you are done, whatever the reason: say it in your answer, it belongs in an issue. " +
-		"Never, whatever the scope: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
-		"a role's folder, `.workline/` (but the objections file below), the CI's workflows, a gate's definition.\n")
+	t.WriteString("\nRead any file you need, and change any file the change needs: the " + scopeName + " is a hint, not a fence. " +
+		"For each file you change beyond it, give one line of why in the file `" + BeyondFile + "` of your worktree, YAML, `path/to/file: why the change needs it`; " +
+		"the engine reads it and takes it out of your diff, and the pull request lists those files for the reviewer, who judges each. " +
+		"Stay on the issue: a fix it does not ask, found on the way, belongs in another issue, said in your answer. " +
+		"Never, whatever the change needs: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
+		"a role's folder, `.workline/` (but the files named here), the CI's workflows, a gate's definition: such a change is reverted.\n")
 	if frozen := b.acceptance(); len(frozen) > 0 {
 		t.WriteString("\n## The tester's acceptance tests: frozen\n\nIn your worktree, read-only to you; make them pass. A change to one is reverted.\n\n")
 		for _, f := range frozen {
@@ -814,7 +819,7 @@ func claimBody(a Act, s Settings) string {
 		}
 	}
 	if len(a.Beside) > 0 {
-		fmt.Fprintf(&b, "\nNew test files beside its %s, kept by the write fence: `%s`; the product owner adds them to the %[1]s at its next run.\n\n%[3]s\n",
+		fmt.Fprintf(&b, "\nNew test files beside its %s: `%s`; the product owner adds them to the %[1]s at its next run.\n\n%[3]s\n",
 			work.Name(work.Scope), strings.Join(a.Beside, "`, `"), backlog.ScopeKeptMark(a.Beside))
 	}
 	fmt.Fprintf(&b, "\n%s\n", a.Line())
@@ -871,11 +876,11 @@ func Post(runDir, repo string) int {
 	if a.From != "" {
 		on = a.From // the tester's Draft, its acceptance tests on it
 	}
-	kept, refused, said, unread, err := held(runDir, repo, on, b, claim, proposed)
+	kept, refused, said, unread, why, err := held(runDir, repo, on, b, claim, proposed)
 	if err != nil {
 		return fail(err)
 	}
-	a.Refused, a.Unread, a.Asked = refused, unread, b.Asked
+	a.Refused, a.Unread = refused, unread
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "took " + where, Findings: []verdict.Finding{rightsFinding(where)}}
 	for _, p := range a.Passed {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
@@ -894,31 +899,16 @@ func Post(runDir, repo string) int {
 	if len(unread) > 0 {
 		v.Findings = append(v.Findings, unreadFinding(where, unread, len(patches) > 0))
 	}
-	var ask []intent.Intention
-	if files := outsideScope(refused); len(patches) == 0 && len(files) > 0 {
-		// Its code lies outside the Scope, or the Scope names no file:
-		// the product owner's to widen (ADR-0063, §9), the issue blocked
-		// meanwhile; the same files asked already, a person's (#1084).
-		again := askedBefore(files, b.Asked)
-		var notes []string
-		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
-			notes = []string{note}
-		}
-		ask = askScope(repo, a, round{At: on}, files, again, notes)
-		a.NoCode, a.Widen, a.Asked = true, &Widen{At: on, Scope: scopeKey(b.Scope), Files: files, Again: again}, union(b.Asked, files)
-		msg := fmt.Sprintf("its code needs %s, outside the issue's %s: #%d sent back to refine, the product owner asked to widen it", strings.Join(files, ", "), scopeName, a.Issue)
-		if again {
-			msg = fmt.Sprintf("its code still needs %s, asked already, its %s not holding them: #%d blocked for a person", strings.Join(files, ", "), scopeName, a.Issue)
-		}
-		v.Findings = append(v.Findings, verdict.Finding{Rule: "scope-asked", Level: "warn", Where: where, Message: msg})
-		v.Summary += "; " + msg
-	} else if len(patches) == 0 {
+	if len(patches) == 0 {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: fmt.Sprintf("its agent wrote no code within its bounds: nothing to prove, no pull request; blocked for a person after %d hours on the same body, said on the issue", s.ClaimHours)})
 		a.NoCode = true
 	} else {
 		a.Code, a.Tests = written(patches, b.tests())
-		a.Beside = besideKept(repo, b, patches)
+		a.Beside, a.Beyond = besideKept(repo, b, patches), beyondKept(repo, b, patches, why)
+		if len(a.Beyond) > 0 {
+			v.Findings = append(v.Findings, beyondFinding(where, a.Beyond))
+		}
 		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, flakyOf(b.Proof, s), s)
 		if p.Result == Red && len(p.Red) == 0 && len(caps) == 0 && !objects(kept) {
 			// Its code does not build, or breaks the run, no test red, and
@@ -966,17 +956,8 @@ func Post(runDir, repo string) int {
 		}
 	}
 	// The claim carries the record, the refusals in it (ADR-0046).
-	// What pre said on the other issues follows it; an ask for files
-	// outside the Scope last, its block after the claim's labels.
-	mine := claimOf(a, s)
-	if len(ask) == 2 {
-		// One comment: the claim's carries the ask, the block's reason
-		// on top, the record below it.
-		c := ask[1].Value.(map[string]any)
-		mine[1].Value.(map[string]any)["body"] = fmt.Sprint(c["body"]) + "\n" + claimBody(a, s)
-		ask = ask[:1]
-	}
-	if code := writeIntents(runDir, "", slices.Concat(mine, told, kept[len(claim):], ask)); code != 0 {
+	// What pre said on the other issues follows it.
+	if code := writeIntents(runDir, "", slices.Concat(claimOf(a, s), told, kept[len(claim):])); code != 0 {
 		return code
 	}
 	return writeVerdict(runDir, v)
@@ -1043,19 +1024,31 @@ func escapedAt(rs []rune, i int) bool {
 // base, the claim pre made first; the files refused, the worktree's
 // before the bounds', and the rest said; its words that did not read, as
 // they came (agentWords).
-func held(runDir, repo, base string, b Bounds, claim, proposed []intent.Intention) (kept []intent.Intention, refused []Refusal, said, unread []string, err error) {
-	objections, unread, err := agentWords(runDir)
+func held(runDir, repo, base string, b Bounds, claim, proposed []intent.Intention) (kept []intent.Intention, refused []Refusal, said, unread []string, beyond map[string]string, err error) {
+	objections, beyond, unread, err := agentWords(runDir)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	// What its agent edited in the worktree is code too: its diff, held
 	// to the same bounds; the engine removes the worktree (ADR-0056).
 	fromTree, treeRefused, err := worktreeCode(runDir, base)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	kept, refused, said = bounded(repo, b, claim, append(append(proposed, objections...), fromTree...))
-	return kept, append(treeRefused, refused...), said, unread, nil
+	return kept, append(treeRefused, refused...), said, unread, beyond, nil
+}
+
+// beyondFinding says, in the verdict, the files a change wrote beyond its
+// issue's Scope (ADR-0065, change 2): applied, listed for the reviewer.
+func beyondFinding(where string, l []Beyond) verdict.Finding {
+	files := make([]string, len(l))
+	for i, x := range l {
+		files[i] = x.File
+	}
+	return verdict.Finding{Rule: "beyond-scope", Level: "info", Where: where,
+		Message: fmt.Sprintf("%d file%s beyond the issue's %s, applied and listed on the pull request for the reviewer's intent lens: %s",
+			len(l), plural(len(l)), scopeName, strings.Join(files, ", "))}
 }
 
 // unreadFinding says its agent's words that did not read, and where a

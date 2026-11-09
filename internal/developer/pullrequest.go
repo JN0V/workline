@@ -143,13 +143,17 @@ func body(a Act, ready bool) string {
 		fmt.Fprintf(&b, "- Tests, in a commit apart: %s.\n", files(a.Tests))
 	}
 	if len(a.Beside) > 0 {
-		fmt.Fprintf(&b, "- New test files beside the issue's %s, kept by the write fence: %s; the product owner adds them to the %[1]s at its next run.\n", work.Name(work.Scope), files(a.Beside))
+		fmt.Fprintf(&b, "- New test files beside the issue's %s: %s; the product owner adds them to the %[1]s at its next run.\n", work.Name(work.Scope), files(a.Beside))
 	}
 	if len(a.Acceptance) > 0 {
 		fmt.Fprintf(&b, "- The tester's acceptance tests, read-only to the developer, from `%s%d`: %s.\n", tester.TestsBranch, a.Issue, files(a.Acceptance))
 	}
 	if a.RedUnproven != "" {
 		fmt.Fprintf(&b, "- **Red unproven**: their red proof on the base was not settled by the tester's judge: %s.\n", a.RedUnproven)
+	}
+	if len(a.Beyond) > 0 {
+		fmt.Fprintf(&b, "\n## %s\n\nFiles changed beyond the issue's %s, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.\n\n%s",
+			BeyondHeading, work.Name(work.Scope), beyondLines(a.Beyond))
 	}
 	if len(a.Refused) > 0 {
 		b.WriteString("\n## Left out\n\nRefused at apply, out of its bounds: an issue for a person, not this change.\n\n")

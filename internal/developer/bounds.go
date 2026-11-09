@@ -2,8 +2,10 @@ package developer
 
 // The bounds at apply (ADR-0054, step 2): post, with no agent, leaves out
 // each patch reaching a gate's file, a file that steers agents, a frozen
-// test or a file outside the issue's scope, and the agent's labels and
-// comments but an objection; roles/developer/docs/bounds.md says why.
+// test or a path out of the repository, and the agent's labels and
+// comments but an objection; roles/developer/docs/bounds.md says why. The
+// issue's Scope is a hint, not a fence (ADR-0065, change 2): a file
+// beyond it is applied and listed on the pull request.
 
 import (
 	"encoding/json"
@@ -82,23 +84,18 @@ type Bounds struct {
 	// (ADR-0059, decision 4), when it did.
 	Proof *tester.Proof `json:"proof,omitempty"`
 	// TestPaths, TestHomes: the tester's test-paths and test-homes, the
-	// project's one definition of a test file (ADR-0065), read by the
-	// write fence (ADR-0063, §9): a new test file whose code lives beside
-	// the Scope is written by rule. Unset, or its settings unread, the
-	// generic ones (testdef).
+	// project's one definition of a test file (ADR-0065): a new test file
+	// whose code lives beside the Scope is not beyond it (ADR-0063, §9).
+	// Unset, or its settings unread, the generic ones (testdef).
 	TestPaths []string       `json:"test-paths,omitempty"`
 	TestHomes []testdef.Home `json:"test-homes,omitempty"`
 	// HomesIgnored: why the project's test-homes were ignored, the
 	// generic ones read in their place; said on the bounds' verdict.
 	HomesIgnored string `json:"homes-ignored,omitempty"`
-	// Asked: every file the developer asked the product owner for on
-	// this issue, whatever the head (ADR-0063, §9): the same set asked
-	// again waits for a person.
-	Asked []string `json:"asked,omitempty"`
-	// Beside: the new test files an earlier step or round kept beside
-	// the Scope, as its record names them: on its branch now, still the
-	// fence's, whatever the commit the rules are read at holds (a review
-	// round in CI runs on the pull request's head).
+	// Beside: the new test files an earlier step or round wrote beside
+	// the Scope, as its record names them: on its branch now, still
+	// beside it, whatever the commit the rules are read at holds (a
+	// review round in CI runs on the pull request's head).
 	Beside []string `json:"beside,omitempty"`
 }
 
@@ -115,7 +112,7 @@ type Refusal struct {
 func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (Bounds, error) {
 	files := repoFiles(repo)
 	// The Scope's paths and globs, nothing guessed from a name (ADR-0065,
-	// change 2): a name alone bounds no file, its code asked for.
+	// change 2): a hint, a file beyond it listed on the pull request.
 	b := Bounds{Issue: is.ID, Scope: inRepo(scopePaths(is.Body, files), files), Frozen: map[string]int{}, Blobs: map[string]string{}}
 	for _, sc := range work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text) {
 		b.Scenarios = append(b.Scenarios, sc.Name)
@@ -129,15 +126,6 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 	comments, err := bl.Comments(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {
 		return b, err
-	}
-	b.Asked = backlog.ScopeAsks(comments)
-	for _, c := range comments {
-		if a, ok := ReadAct(c); ok {
-			b.Asked = union(b.Asked, a.Asked)
-			if a.Widen != nil {
-				b.Asked = union(b.Asked, a.Widen.Files)
-			}
-		}
 	}
 	if st, found, err := backlog.ReadState(comments, "product-owner"); found && err == nil {
 		for _, s := range st.Sources {
@@ -289,10 +277,10 @@ func (b Bounds) tests() testdef.Def { return testdef.From(b.TestPaths, b.TestHom
 
 // besideTest says whether p is a test (the project's definition,
 // ADR-0065) in a scope file's folder or under a scope folder, new or not:
-// `foo_test.go` beside `foo.go`. A test elsewhere is the fence's only when
-// new (newTestBeside): an existing one, a fixture a frozen test may read,
-// is asked for. A folder's own folder is not its neighbourhood: a Scope
-// `src` lets in no test at the root.
+// `foo_test.go` beside `foo.go`. A test elsewhere is beside the Scope only
+// when new (newTestBeside): an existing one, a fixture a frozen test may
+// read, is beyond it. A folder's own folder is not its neighbourhood: a
+// Scope `src` holds no test at the root.
 func besideTest(p string, scope []string, isDir func(string) bool, tests testdef.Def) bool {
 	if !tests.Test(p) {
 		return false
@@ -360,7 +348,7 @@ func (c checker) rule(p string) string {
 	p = path.Clean(filepath.ToSlash(p))
 	switch {
 	case p == ".." || strings.HasPrefix(p, "../") || path.IsAbs(p):
-		return "outside-scope" // out of the repository
+		return "outside-repo"
 	case under(p, ciFiles) || under(p, c.gates):
 		return "gate-file"
 	case c.unread != nil:
@@ -369,23 +357,28 @@ func (c checker) rule(p string) string {
 		return "steering-file"
 	case c.b.Frozen[p] > 0:
 		return "acceptance-test-edit"
-	case !under(p, c.b.Scope) && !besideTest(p, c.b.Scope, c.isDir, c.b.tests()) && !c.newTestBeside(p):
-		return "outside-scope"
 	}
 	return ""
 }
 
-// besideKept are the files of patches the write fence alone let in: new
-// test files beside the Scope, not in it nor beside it before (ADR-0063,
-// §9). Said on the pull request, folded into the Scope after.
-func besideKept(repo string, b Bounds, patches []intent.Intention) []string {
-	c := newChecker(repo, b)
+// beyond says whether p, a file the rules let in, lies beyond the issue's
+// Scope (ADR-0065, change 2): not in it, nor a test beside it. Applied
+// all the same, and listed on the pull request for the reviewer's
+// `intent` lens to judge.
+func (c checker) beyond(p string) bool {
+	p = path.Clean(filepath.ToSlash(p))
+	return !under(p, c.b.Scope) && !besideTest(p, c.b.Scope, c.isDir, c.b.tests()) && !c.newTestBeside(p)
+}
+
+// patchFiles are the files kept patches touch, each once, sorted, those
+// keep says.
+func patchFiles(patches []intent.Intention, keep func(string) bool) []string {
 	var out []string
 	for _, p := range patches {
 		files, _ := touched(p.Value)
 		for _, f := range files {
 			f = path.Clean(filepath.ToSlash(f))
-			if c.rule(f) == "" && !under(f, b.Scope) && !besideTest(f, b.Scope, c.isDir, b.tests()) && !slices.Contains(out, f) {
+			if keep(f) && !slices.Contains(out, f) {
 				out = append(out, f)
 			}
 		}
@@ -394,14 +387,79 @@ func besideKept(repo string, b Bounds, patches []intent.Intention) []string {
 	return out
 }
 
-// newTestBeside says whether p is a new test file beside the Scope, the
-// write fence's (ADR-0063, §9): a test by the project's definition
-// (ADR-0065), not in the commit the rules are read at, and its code's
-// folder (Def.Home) a Scope path's folder, in one, or holding one.
-// Written by rule, no ask. A test the definition misses is code: the
-// developer asks the product owner for it. One named like a class of the
-// main code is the reviewer's to judge (its `tests` lens), not the
-// fence's (ADR-0065, change 2).
+// besideKept are the new test files patches wrote beside the Scope, not
+// in it nor beside it before (ADR-0063, §9): said on the pull request,
+// folded into the Scope after.
+func besideKept(repo string, b Bounds, patches []intent.Intention) []string {
+	c := newChecker(repo, b)
+	return patchFiles(patches, func(f string) bool {
+		return c.rule(f) == "" && !under(f, b.Scope) && !besideTest(f, b.Scope, c.isDir, b.tests()) && c.newTestBeside(f)
+	})
+}
+
+// beyondKept are the files patches wrote beyond the Scope (ADR-0065,
+// change 2), each with its agent's one-line reason, or none given.
+func beyondKept(repo string, b Bounds, patches []intent.Intention, why map[string]string) []Beyond {
+	c := newChecker(repo, b)
+	var out []Beyond
+	for _, f := range patchFiles(patches, func(f string) bool { return c.rule(f) == "" && c.beyond(f) }) {
+		out = append(out, Beyond{File: f, Why: why[f]})
+	}
+	return out
+}
+
+// Beyond is a file a change wrote beyond its issue's Scope, and the
+// one-line reason its agent gave, "" when it gave none.
+type Beyond struct {
+	File string `json:"file"`
+	Why  string `json:"why,omitempty"`
+}
+
+// BeyondHeading heads the list of files beyond the Scope, on the pull
+// request and in a round's commit: the reviewer's `intent` lens reads
+// it there.
+var BeyondHeading = "Beyond the " + work.Name(work.Scope)
+
+// beyondLines are the files beyond the Scope, one bullet each, its
+// reason or that none was given.
+func beyondLines(l []Beyond) string {
+	var b strings.Builder
+	for _, x := range l {
+		why := x.Why
+		if why == "" {
+			why = "no reason given by its agent"
+		}
+		fmt.Fprintf(&b, "- `%s`: %s\n", x.File, inertText(strings.Join(strings.Fields(why), " ")))
+	}
+	return b.String()
+}
+
+// BeyondLines are a record's files beyond the Scope, as its pull request
+// lists them: what the auditor samples (ADR-0046); "" for none.
+func BeyondLines(l []Beyond) string { return beyondLines(l) }
+
+// unionBeyond is a with each file of b it lacks, a later reason kept
+// where the earlier gave none.
+func unionBeyond(a, b []Beyond) []Beyond {
+	out := slices.Clone(a)
+	for _, x := range b {
+		i := slices.IndexFunc(out, func(y Beyond) bool { return y.File == x.File })
+		switch {
+		case i < 0:
+			out = append(out, x)
+		case out[i].Why == "":
+			out[i].Why = x.Why
+		}
+	}
+	return out
+}
+
+// newTestBeside says whether p is a new test file beside the Scope
+// (ADR-0063, §9): a test by the project's definition (ADR-0065), not in
+// the commit the rules are read at, and its code's folder (Def.Home) a
+// Scope path's folder, in one, or holding one. A test the definition
+// misses is beyond the Scope, listed. One named like a class of the main
+// code is the reviewer's to judge (its `tests` lens).
 func (c checker) newTestBeside(p string) bool {
 	tests := c.b.tests()
 	if !tests.Test(p) || kindAt(c.repo, c.at, p) != "" && !slices.Contains(c.b.Beside, p) {
@@ -512,7 +570,7 @@ func why(r Refusal) string {
 	case "acceptance-test-edit":
 		return "an acceptance test the tester froze: read-only to the developer, which objects to it on its line instead; the tester keeps or rewrites it (ADR-0055)"
 	}
-	return "outside the issue's scope, the product owner's sources for it and the tests beside them: anything found there belongs in an issue (principle 8)"
+	return "a path out of the repository: nothing outside it is the developer's"
 }
 
 // objection is the agent's word against a frozen test, as it proposes it.

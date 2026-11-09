@@ -1,0 +1,34 @@
+case: developer/worktree-beyond-the-scope-said
+about: >
+  ADR-0054's bounds hold the worktree's diff file by file (ADR-0056); the
+  Scope is a hint (ADR-0065, change 2): README.md, beyond #2's Scope, is
+  applied, and its agent's reason, written in the worktree's
+  .workline/beyond.yaml, is listed on the pull request under Beyond the
+  Scope. The file of reasons reaches no branch, and no bound refuses it.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {EDIT: outside}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: beyond-scope, level: info, where: "#2", message: "README.md"}]
+  no-findings: [{rule: outside-scope}, {rule: gate-file}]
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+      tests/test_mul.sh: "mul 2 3"
+      README.md: "It multiplies now"
+  pushed-lacks:
+    workline/developer/2:
+      .workline/beyond.yaml: "README"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        body-contains: ["## Beyond the Scope", "- `README.md`: the Need asks the multiplication said to the user"]

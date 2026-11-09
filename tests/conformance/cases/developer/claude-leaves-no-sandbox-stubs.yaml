@@ -6,7 +6,8 @@ about: >
   developer's worktree, a linked one, cannot hold (#745). Once it ran,
   the engine removes each of them it created that is still empty: none
   reaches the branch, none is refused. A package.json its agent wrote
-  stays its own, and is held to the bounds.
+  stays its own: beyond the issue's Scope, applied and listed on the
+  pull request (ADR-0065, change 2).
 given:
   repo: tested-draft
   setup:
@@ -28,16 +29,21 @@ given:
 run: {develop: [], ai: claude}
 expect:
   status: pass
-  summary: "took #3; 1 of its agent's proposals refused at apply"
   agent-calls: 1
-  findings: [{rule: outside-scope, level: warn, where: package.json}]
+  findings: [{rule: beyond-scope, level: info, where: "#3", message: "package.json"}]
+  no-findings: [{rule: outside-scope}, {rule: outside-repo}]
   pushed:
     workline/developer/3:
       lib.sh: "mul()"
+      package.json: '"name": "mul"'
   pushed-lacks:
     workline/developer/3:
       .env: ""
       .env.test: ""
       .env.test.local: ""
       yarn.lock: ""
-      package.json: ""
+  forge:
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        body-contains: ["## Beyond the Scope", "- `package.json`: no reason given by its agent"]

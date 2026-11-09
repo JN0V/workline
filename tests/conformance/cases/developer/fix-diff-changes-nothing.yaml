@@ -38,4 +38,4 @@ expect:
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 1 of 5: no fix within its bounds", "\"result\":\"no-code\"", "the patch above changes nothing"]
+        comment-contains: ["review round 1 of 5: no fix", "\"result\":\"no-code\"", "the patch above changes nothing"]

@@ -5,8 +5,10 @@ package developer
 // bounds on its diff against its base, whoever pushed its commits. The
 // rules are read at the base's tip, never at the head: a pull request
 // cannot loosen its own check. A file refused blocks, named with its
-// rule; the verdict is kept on the pull request, for the auditor
-// (ADR-0046). A person's branch is not held: it is reviewed as theirs.
+// rule; a file beyond the issue's Scope, a hint, is said, never refused
+// (ADR-0065, change 2). The verdict is kept on the pull request, for the
+// auditor (ADR-0046). A person's branch is not held: it is reviewed as
+// theirs.
 
 import (
 	"encoding/json"
@@ -39,6 +41,9 @@ type prBounds struct {
 	Head    string    `json:"head"`
 	Files   int       `json:"files"`
 	Refused []Refusal `json:"refused"`
+	// Beyond: the files changed beyond the issue's Scope, applied and
+	// listed for the reviewer (ADR-0065, change 2).
+	Beyond []string `json:"beyond,omitempty"`
 }
 
 func (r prBounds) body() string {
@@ -46,6 +51,9 @@ func (r prBounds) body() string {
 	fmt.Fprintf(&b, "**The developer's bounds** on this pull request, read at the base's %s: %d file%s changed since it, ", shortSHA(r.Base), r.Files, plural(r.Files))
 	if len(r.Refused) == 0 {
 		b.WriteString("each within the bounds of #" + fmt.Sprint(r.Issue) + ".\n")
+		if len(r.Beyond) > 0 {
+			fmt.Fprintf(&b, "\n%d beyond its %s, a hint, judged by the reviewer's intent lens: `%s`.\n", len(r.Beyond), work.Name(work.Scope), strings.Join(r.Beyond, "`, `"))
+		}
 	} else {
 		fmt.Fprintf(&b, "%d refused: its next round or a person reverts them ([the bounds](https://github.com/JN0V/workline/blob/main/roles/developer/docs/bounds.md)).\n\n| File | Rule |\n|---|---|\n", len(r.Refused))
 		for _, x := range r.Refused {
@@ -127,12 +135,12 @@ func boundsPre(runDir, repo string, id int) int {
 	if len(unknown) > 0 {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "frozen tests unknown: the bounds were not checked", Findings: unknown})
 	}
-	files, refused, err := prRefusals(repo, b, base, head)
+	files, refused, beyond, err := prRefusals(repo, b, base, head)
 	if err != nil {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the pull request's diff cannot be read: the bounds were not checked",
 			Findings: []verdict.Finding{{Rule: "bounds-unread", Where: where, Message: err.Error()}}})
 	}
-	rec := prBounds{Act: "bounds", Issue: n, Base: base, Head: head, Files: files, Refused: refused}
+	rec := prBounds{Act: "bounds", Issue: n, Base: base, Head: head, Files: files, Refused: refused, Beyond: beyond}
 	if rec.Refused == nil {
 		rec.Refused = []Refusal{}
 	}
@@ -146,9 +154,13 @@ func boundsPre(runDir, repo string, id int) int {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: r.Rule, Where: r.File,
 			Message: "changed on the developer's branch, which its bounds refuse, whoever pushed it: " + why(r)})
 	}
+	for _, f := range beyond {
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "beyond-scope", Level: "info", Where: f,
+			Message: "changed beyond the issue's " + work.Name(work.Scope) + ", a hint: never refused, the reviewer's intent lens judges it (ADR-0065, change 2)"})
+	}
 	if b.HomesIgnored != "" { // never silent (principle 12): every role ignores them alike
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "test-homes-ignored", Level: "warn", Where: ".workline/config.yaml",
-			Message: "the tester's " + b.HomesIgnored + ": the fence read the generic homes in their place"})
+			Message: "the tester's " + b.HomesIgnored + ": the bounds read the generic homes in their place"})
 	}
 	if code := writeIntents(runDir, "fallback.yaml", []intent.Intention{{Kind: "comment",
 		Value: map[string]any{"sticky": BoundsKey, "body": rec.body()}}}); code != 0 {
@@ -208,24 +220,24 @@ func prRange(runDir, repo string, mr forge.MergeRequest) (base, head string, err
 }
 
 // prRefusals holds each file the head changed since its merge base with
-// base to the bounds, the rules read at base: how many changed, and the
-// ones refused. A frozen test as the tester wrote it is not the
-// developer's change.
-func prRefusals(repo string, b Bounds, base, head string) (files int, refused []Refusal, err error) {
+// base to the bounds, the rules read at base: how many changed, the ones
+// refused, and the ones beyond the Scope. A frozen test as the tester
+// wrote it is not the developer's change.
+func prRefusals(repo string, b Bounds, base, head string) (files int, refused []Refusal, beyond []string, err error) {
 	from, err := gitOut(repo, "merge-base", base, head)
 	if err != nil {
-		return 0, nil, fmt.Errorf("no merge base between %s and %s", shortSHA(base), shortSHA(head))
+		return 0, nil, nil, fmt.Errorf("no merge base between %s and %s", shortSHA(base), shortSHA(head))
 	}
 	raw, err := gitOut(repo, "-c", "core.quotePath=false", "diff", "--raw", "--no-abbrev", "--no-renames", "--no-ext-diff", "-z", from, head)
 	if err != nil {
-		return 0, nil, fmt.Errorf("git diff %s..%s: %w", shortSHA(from), shortSHA(head), err)
+		return 0, nil, nil, fmt.Errorf("git diff %s..%s: %w", shortSHA(from), shortSHA(head), err)
 	}
 	c := newCheckerAt(repo, b, base)
 	fields := strings.Split(raw, "\x00")
 	for i := 0; i+1 < len(fields); i += 2 {
 		meta, name := strings.Fields(strings.TrimPrefix(fields[i], ":")), fields[i+1]
 		if len(meta) < 5 || name == "" {
-			return files, refused, errors.New("git diff --raw: a line it cannot read")
+			return files, refused, beyond, errors.New("git diff --raw: a line it cannot read")
 		}
 		files++
 		mode, blob := meta[1], meta[3]
@@ -244,6 +256,8 @@ func prRefusals(repo string, b Bounds, base, head string) (files int, refused []
 				r.Detail = c.unread.Error()
 			}
 			refused = append(refused, r)
+		} else if c.beyond(name) {
+			beyond = append(beyond, name)
 		}
 	}
 	// A test frozen for its issue that the head lacks or changed, though
@@ -257,7 +271,7 @@ func prRefusals(repo string, b Bounds, base, head string) (files int, refused []
 			refused = append(refused, Refusal{File: t, Rule: "acceptance-test-edit"})
 		}
 	}
-	return files, refused, nil
+	return files, refused, beyond, nil
 }
 
 // linkOut says a link at name pointing to to leads out of the tree.

@@ -3,9 +3,10 @@ about: >
   A test's home (ADR-0065, change 3; #1226): a Kotlin project whose tests
   live in each module's src/test, its tester's test-homes mapping them
   onto src/main. A new fake repository in app/src/test/kotlin/tg/x/,
-  beside the Scope's app/src/main/kotlin/tg/x/Repo.kt, is in bounds as a
-  new test file; one in another package's folder, whose code lives
-  elsewhere, and a production package named test, are not.
+  beside the Scope's app/src/main/kotlin/tg/x/Repo.kt, is beside the
+  Scope as a new test file; one in another package's folder, whose code
+  lives elsewhere, and a production package named test, are beyond it:
+  said, never refused (ADR-0065, change 2).
 given:
   repo: tested-draft
   setup:
@@ -34,8 +35,9 @@ expect:
   status: block
   agent-calls: 0
   findings:
-    - {rule: outside-scope, where: app/src/test/kotlin/tg/y/FakeOther.kt}
-    - {rule: outside-scope, where: app/src/main/kotlin/tg/x/test/Probe.kt}
+    - {rule: beyond-scope, level: info, where: app/src/test/kotlin/tg/y/FakeOther.kt}
+    - {rule: beyond-scope, level: info, where: app/src/main/kotlin/tg/x/test/Probe.kt}
   no-findings:
-    - {rule: outside-scope, where: app/src/main/kotlin/tg/x/Repo.kt}
-    - {rule: outside-scope, where: app/src/test/kotlin/tg/x/FakeRepository.kt}
+    - {rule: outside-scope}
+    - {rule: beyond-scope, where: app/src/main/kotlin/tg/x/Repo.kt}
+    - {rule: beyond-scope, where: app/src/test/kotlin/tg/x/FakeRepository.kt}

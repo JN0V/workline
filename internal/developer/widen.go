@@ -1,20 +1,16 @@
 package developer
 
-// A fix outside the Scope (#921): a round whose fix needs files the
-// issue's Scope does not hold writes none, and asks the product owner,
-// whose Scope it is (ADR-0060), to widen it. Its issue goes Blocked, the
-// files and why on it; the line wakes the product owner at once. It
-// widens the Scope and sends the issue back to ready, and the next round
-// resumes on the same pull request with the new bounds; or it keeps the
-// issue blocked, its reason written. One ask a head and a Scope: asked
-// again on the same, the issue is blocked for a person.
+// A round that cannot move alone: a red check its round did not fix
+// (#938), a fix held off a green head, an objection that waits for the
+// tester (#987). Its issue goes Blocked for a person, its reason on it,
+// or waits in Doing for the tester; sent back, the next round resumes.
+// A round asked the product owner for files outside the Scope before
+// ADR-0065's change 2 (#921): the Scope is a hint now, nothing is asked.
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"path"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -28,21 +24,16 @@ import (
 // scopeName is the Scope's heading, as the table names it.
 var scopeName = work.Name(work.Scope)
 
-// Widen is a round's ask to the product owner for files outside the
-// issue's Scope, as the record keeps it.
+// Widen is a round's wait, for a person or the tester, as the record
+// keeps it.
 type Widen struct {
-	At    string   `json:"at"`    // the branch's head it was asked at
-	Scope string   `json:"scope"` // the bounds' Scope then, hashed
-	Files []string `json:"files,omitempty"`
+	At    string `json:"at"`    // the branch's head it waited at
+	Scope string `json:"scope"` // the bounds' Scope then, hashed
 	// Held: no file asked, a project check red its round did not fix
 	// (#938): blocked for a person, who sends it back to resume.
 	Held bool `json:"held,omitempty"`
-	// Back: a round ran after the issue was sent back, by the product
-	// owner or a person.
+	// Back: a round ran after the issue was sent back, by a person.
 	Back bool `json:"back,omitempty"`
-	// Again: asked again on the same head and Scope, blocked for a
-	// person; one who sends it back resumes the round too.
-	Again bool `json:"again,omitempty"`
 	// Objected: the round objected to a frozen test at At, and its
 	// issue waits for the tester's answer (#987): a rewrite is taken by
 	// the next round, a test kept asks the round again. Kept: the
@@ -58,59 +49,6 @@ type Widen struct {
 	Review bool `json:"review,omitempty"`
 }
 
-// outsideScope are the repository's files the round's patches reached
-// outside the issue's Scope: what the product owner may widen it with.
-// A gate's, a steering file, a frozen test are never its to give.
-func outsideScope(refused []Refusal) []string {
-	var out []string
-	for _, r := range refused {
-		f := r.File
-		if r.Rule != "outside-scope" || f == ".." || strings.HasPrefix(f, "../") || path.IsAbs(f) || slices.Contains(out, f) {
-			continue
-		}
-		out = append(out, f)
-	}
-	slices.Sort(out)
-	return out
-}
-
-// noteNeeds are the files a note's `needs` names: those its fix needs
-// outside the bounds, given as a list or one path.
-func noteNeeds(v any) []string {
-	m, ok := v.(map[string]any)
-	if !ok {
-		return nil
-	}
-	switch n := m["needs"].(type) {
-	case string:
-		return []string{strings.TrimSpace(n)}
-	case []any:
-		var out []string
-		for _, x := range n {
-			if s, ok := x.(string); ok && strings.TrimSpace(s) != "" {
-				out = append(out, strings.TrimSpace(s))
-			}
-		}
-		return out
-	}
-	return nil
-}
-
-// needed holds the files the agent's notes say its fix needs to the
-// bounds, as a patch's: each the bounds would refuse, its rule said; one
-// within them asks nothing.
-func needed(repo string, b Bounds, files []string) []Refusal {
-	c := newChecker(repo, b)
-	var out []Refusal
-	for _, f := range files {
-		f = path.Clean(filepath.ToSlash(strings.Trim(f, "`")))
-		if r := c.rule(f); r != "" {
-			out = append(out, Refusal{File: f, Rule: r})
-		}
-	}
-	return out
-}
-
 // scopeKey is the bounds' Scope, hashed: the product owner widened it
 // when it changed.
 func scopeKey(scope []string) string {
@@ -120,8 +58,8 @@ func scopeKey(scope []string) string {
 	return hex.EncodeToString(sum[:6])
 }
 
-// backFromAsk says whether the product owner sent the issue back since
-// the record's ask: no more blocked, ready or taken again. One call, only
+// backFromAsk says whether a person sent the issue back since the
+// record's wait: no more blocked, ready or taken again. One call, only
 // while an ask waits.
 func backFromAsk(f forge.Forge, a Act) (bool, error) {
 	if a.Widen == nil || a.Widen.Back || a.Widen.Objected {
@@ -162,27 +100,26 @@ func redChecks(asked []Asked) []string {
 	return out
 }
 
-// holdCheck is what a round writes that fixed no red check and named
-// no file outside the Scope (#938): the issue blocked for a person, the
-// checks, its agent's notes, its objections' place and the checks' log
-// on it. No mark: nothing of the Scope for the product owner to widen.
+// holdCheck is what a round writes that fixed no red check (#938): the
+// issue blocked for a person, the checks, its agent's notes, its
+// objections' place and the checks' log on it.
 func holdCheck(repo string, a Act, r round, red, notes []string, objections []intent.Intention) []intent.Intention {
-	why := fmt.Sprintf("pull request %d is still red on `%s` at this head, and its round wrote no fix nor named a file outside the %s it needs: the check is not asked again at this head",
-		r.MR, strings.Join(red, "`, `"), scopeName)
-	next := "a person on the loop reads the developer's note below, then fixes the check or the test, re-runs a flaky check, " +
-		"or widens the " + scopeName + "; and moves the issue back to ready: the next round runs at the same head"
+	why := fmt.Sprintf("pull request %d is still red on `%s` at this head, and its round wrote no fix: the check is not asked again at this head",
+		r.MR, strings.Join(red, "`, `"))
+	next := "a person on the loop reads the developer's note below, then fixes the check or the test, or re-runs a flaky check; " +
+		"and moves the issue back to ready: the next round runs at the same head"
 	return holdFor(repo, a, r, why, next, notes, objections)
 }
 
 // holdGreen is what a round writes whose fix of the review turned
-// frozen tests red on a green head (#987): not pushed, and it neither
-// objected to a test nor named a file outside the Scope. Nothing else
+// frozen tests red on a green head (#987): not pushed, and it objected
+// to no test. Nothing else
 // would move: blocked for a person, the tests and the findings on it.
 func holdGreen(repo string, a Act, r round, red, notes []string, objections []intent.Intention) []intent.Intention {
-	why := fmt.Sprintf("its fix of the review turns the frozen tests red on pull request %d's green head (`%s`): not pushed, the head kept; it neither objected to a test nor named a file outside the %s, or objected already at this head",
-		r.MR, strings.Join(red, "`, `"), scopeName)
-	next := "a person on the loop reads the findings and the developer's note below, then answers the finding, fixes the test, " +
-		"or widens the " + scopeName + "; and moves the issue back to ready: the next round asks the findings again at the same head"
+	why := fmt.Sprintf("its fix of the review turns the frozen tests red on pull request %d's green head (`%s`): not pushed, the head kept; it objected to no test, or objected already at this head",
+		r.MR, strings.Join(red, "`, `"))
+	next := "a person on the loop reads the findings and the developer's note below, then answers the finding or fixes the test; " +
+		"and moves the issue back to ready: the next round asks the findings again at the same head"
 	return holdFor(repo, a, r, why, next, notes, objections)
 }
 
@@ -246,61 +183,7 @@ func moveTo(repo, state string, issue int, add, remove []string) intent.Intentio
 // developer's rounds kept beside its Scope, with the mark the product
 // owner reads to fold them in (ADR-0063, §9): one comment, edited.
 func besideSaid(a Act) intent.Intention {
-	body := fmt.Sprintf("**The developer** kept new test files beside this issue's %s, by the write fence: `%s`. The product owner adds them to the %[1]s at its next run.\n\n%[3]s\n",
+	body := fmt.Sprintf("**The developer** wrote new test files beside this issue's %s: `%s`. The product owner adds them to the %[1]s at its next run.\n\n%[3]s\n",
 		scopeName, strings.Join(a.Beside, "`, `"), backlog.ScopeKeptMark(a.Beside))
 	return intent.Intention{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "beside", "body": body}}
-}
-
-// askedBefore says whether every file of files was asked of the product
-// owner before on the issue (ADR-0063, §9): the same set asked again
-// waits for a person, whatever the head; one new file is a new ask.
-func askedBefore(files, before []string) bool {
-	return len(files) > 0 && !slices.ContainsFunc(files, func(f string) bool { return !slices.Contains(before, f) })
-}
-
-// askScope is what a round that needs files outside the Scope writes: the
-// issue blocked, the ask on it with what the round saw, for the product
-// owner; the same files asked already, blocked for a person. A round
-// with no pull request (r.MR 0) is the developer's first step: its code
-// needs them, and the issue goes back to refine, the product owner's
-// state, rather than Blocked, which waits for a person (ADR-0063, §5,
-// §9).
-func askScope(repo string, a Act, r round, files []string, again bool, notes []string) []intent.Intention {
-	list := "`" + strings.Join(files, "`, `") + "`"
-	what, resume, fixOr := fmt.Sprintf("the fix of pull request %d", r.MR), fmt.Sprintf("resumes on pull request %d", r.MR), ", or fixes or closes the pull request,"
-	verb, to, keep := "blocks this issue", "blocked", "keeps it blocked"
-	if r.MR == 0 {
-		what, resume, fixOr = "its code", "takes it again", ""
-		if !again {
-			verb, to, keep = backlog.ScopeAskRefine, "refine", "readies it as it is"
-		}
-	}
-	var why, next string
-	if again {
-		why = fmt.Sprintf("%s still needs %s, outside its %s, asked already: the product owner answered, and the %[3]s does not hold them", what, list, scopeName)
-		next = "a person on the loop widens the " + scopeName + fixOr + " and moves the issue back by its label"
-	} else {
-		why = fmt.Sprintf("%s needs %s, outside its %s: it asks the product owner to widen it", what, list, scopeName)
-		next = fmt.Sprintf("the product owner widens the %s and moves the issue back to ready, the developer %s with the new bounds; or %s, why not said", scopeName, resume, keep)
-	}
-	var b strings.Builder
-	b.WriteString(backlog.Said(who, verb, why, next))
-	if len(r.Asked) > 0 {
-		b.WriteString("\nWhat it was asked:\n\n" + askedList(r.Asked))
-	}
-	if len(notes) > 0 {
-		b.WriteString("\nWhy it needs them:\n\n")
-		for _, n := range notes {
-			fmt.Fprintf(&b, "- %s\n", inertText(strings.ReplaceAll(strings.TrimSpace(n), "\n", " ")))
-		}
-	}
-	b.WriteString(checkLogsSaid(r.Asked))
-	body := b.String() // a log's end is bounded already (logEnd)
-	if !again {
-		body += "\n" + backlog.ScopeAskMark(r.At, files) + "\n"
-	}
-	return []intent.Intention{
-		moveTo(repo, to, a.Issue, []string{backlog.StateLabel(to)}, []string{backlog.LabelReady, backlog.StateLabel("doing")}),
-		sayOn(a.Issue, body),
-	}
 }

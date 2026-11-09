@@ -1,0 +1,32 @@
+case: developer/takes-code-only-beyond-the-scope
+about: >
+  The developer's first step writes code only beyond the issue's Scope
+  (ADR-0065, change 2; #1228): README.md, which #2's Scope does not
+  name. Before, the patch was refused and #2 went back to the product
+  owner (#1084); the Scope is a hint now: the code is applied, the pull
+  request opens, README.md listed under Beyond the Scope.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-only-outside-scope"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: beyond-scope, level: info, where: "#2", message: "README.md"}]
+  no-findings: [{rule: outside-scope}, {rule: scope-asked}]
+  pushed:
+    workline/developer/2:
+      README.md: "It multiplies now"
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:developing"]
+        comment-lacks: ["workline:scope-ask", "sends this issue back to refine"]
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        body-contains: ["## Beyond the Scope", "- `README.md`"]

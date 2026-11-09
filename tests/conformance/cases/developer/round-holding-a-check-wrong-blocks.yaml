@@ -1,11 +1,10 @@
 case: developer/round-holding-a-check-wrong-blocks
 about: >
   A round on a red check whose agent holds the check wrong (#938): no
-  fix, a note, no file outside the Scope. The check is not asked again
-  at this head, so nothing would move: #3 goes Blocked for a person,
-  the check, the agent's note and the check's log on it, with no mark
-  that wakes the product owner (nothing of its Scope to widen). The
-  record keeps it, for a person who sends the issue back.
+  fix, a note. The check is not asked again at this head, so nothing
+  would move: #3 goes Blocked for a person, the check, the agent's note
+  and the check's log on it, with no mark that wakes the product owner.
+  The record keeps it, for a person who sends the issue back.
 given:
   repo: tested-draft
   setup:
@@ -37,7 +36,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-holds-check-wrong"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2; no fix for the red check test, and no file named outside the issue's Scope: #3 blocked for a person"
+  summary: "round 1 of 5 on merge request 2; no fix for the red check test: #3 blocked for a person"
   agent-calls: 1
   findings: [{rule: check-held, level: warn, where: "merge request 2"}]
   not-pushed: [workline/developer/3]
@@ -49,4 +48,4 @@ expect:
         comment-lacks: ["<!-- workline:scope-ask"]
     merge-requests:
       - id: 2
-        comment-contains: ["no fix within its bounds, and none outside them named: the red check stays, its issue is blocked for a person", "\"bounds\":\"blocked\"", "\"held\":true", "\"checks-at\":\""]
+        comment-contains: ["no fix: the red check stays, its issue is blocked for a person", "\"bounds\":\"blocked\"", "\"held\":true", "\"checks-at\":\""]

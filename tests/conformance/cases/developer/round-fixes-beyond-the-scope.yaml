@@ -1,14 +1,11 @@
-case: developer/round-asks-the-product-owner-for-scope
+case: developer/round-fixes-beyond-the-scope
 about: >
-  A round's fix lies outside the issue's Scope (#921): the project check
-  `test` is red, and the fix is in cases/mul.txt, which #3's Scope does
-  not name. The agent changes nothing and names the file in its note's
-  `needs`, as its task says, lib.sh too, within the bounds: nothing is
-  pushed. The round asks the product owner to widen the Scope with
-  cases/mul.txt alone: #3 goes Blocked, the file, the developer's note and
-  the check's log on it, with the mark the line wakes the product owner
-  on. The record keeps the ask, and the round's comment says the next
-  round resumes on this pull request.
+  A round's fix lies beyond the issue's Scope (#921; ADR-0065, change 2):
+  the project check `test` is red, and the fix is in cases/mul.txt, which
+  #3's Scope does not name. The agent makes it there: pushed, its commit
+  listing cases/mul.txt under Beyond the Scope, where the reviewer's
+  intent lens reads it; the round's comment and the record list it too.
+  Before, the round asked the product owner and blocked #3.
 given:
   repo: tested-draft
   setup:
@@ -36,21 +33,25 @@ given:
         comments:
           - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2},\"review-runs\":1} -->\n<!-- workline:sticky=developer/code -->"
           - "**workline reviewer** — 0 findings on the change.\n\nNo finding on the commits reviewed.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
-run: {develop: [--merge-request, "2"], ai: "fake:developer-needs-a-file-outside"}
+run: {develop: [--merge-request, "2"], ai: "fake:developer-fixes-outside-its-scope"}
 expect:
   status: pass
-  summary: "its fix needs cases/mul.txt, outside the issue's Scope: #3 blocked, the product owner asked to widen it"
   agent-calls: 1
-  findings: [{rule: scope-asked, level: warn, where: "merge request 2"}]
-  not-pushed: [workline/developer/3]
+  findings: [{rule: beyond-scope, level: info, where: "merge request 2", message: "cases/mul.txt"}]
+  no-findings: [{rule: scope-asked}, {rule: outside-scope}]
+  pushed:
+    workline/developer/3:
+      cases/mul.txt: "mul 2 3: 6"
+  pushed-message:
+    workline/developer/3: "Beyond the Scope:\n\n- `cases/mul.txt`: no reason given by its agent"
   run-files:
     in/task.md:
-      contains: ["A fix that needs a file outside what you may change: change nothing for it, and name the file in its note's `needs`"]
+      contains: ["A fix that lies in a file beyond the issue's Scope: make it there, and say why in `.workline/beyond.yaml`"]
   forge:
     issues:
       - id: 3
-        labels: ["workline:blocked"]
-        comment-contains: ["**The developer** blocks this issue.", "pull request 2 needs `cases/mul.txt`, outside its Scope: it asks the product owner to widen it", "the case expects the old sum", "--- FAIL: cases/mul.txt wants 5", "<!-- workline:scope-ask at="]
+        labels: ["workline:developing"]
+        comment-lacks: ["workline:scope-ask", "blocks this issue"]
     merge-requests:
       - id: 2
-        comment-contains: ["It needs `cases/mul.txt`, outside the issue's Scope: its issue is blocked, the product owner asked to widen it", "\"widen\":{\"at\":\"", "\"files\":[\"cases/mul.txt\"]}", "\"bounds\":\"asked\""]
+        comment-contains: ["Beyond the Scope, the issue's Scope a hint; the reviewer's intent lens judges each:\n\n- `cases/mul.txt`", "\"beyond\":[{\"file\":\"cases/mul.txt\"}]"]

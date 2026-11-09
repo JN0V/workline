@@ -84,7 +84,7 @@ func ScopeAsked(comments []string) []string {
 }
 
 // scopeKept is the developer's mark listing the new test files its code
-// wrote beside the issue's Scope, kept by the write fence (ADR-0063, §9).
+// wrote beside the issue's Scope (ADR-0063, §9).
 var scopeKept = regexp.MustCompile(`<!-- workline:scope-kept files=(\S+) -->`)
 
 // ScopeKeptMark is the mark of the new test files the developer kept

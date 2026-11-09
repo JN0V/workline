@@ -43,8 +43,8 @@ expect:
     issues:
       - id: 3
         labels: ["workline:developing"]
-        comment-contains: ["kept new test files beside this issue's Scope, by the write fence: `calc/test/test_mul_more.sh`", "<!-- workline:scope-kept files=calc/test/test_mul_more.sh -->"]
+        comment-contains: ["wrote new test files beside this issue's Scope: `calc/test/test_mul_more.sh`", "<!-- workline:scope-kept files=calc/test/test_mul_more.sh -->"]
         comment-lacks: ["workline:scope-ask", "blocks this issue"]
     merge-requests:
       - id: 2
-        comment-contains: ["New test files beside the issue's Scope, kept by the write fence: `calc/test/test_mul_more.sh`", "\"beside\":[\"calc/test/test_mul_more.sh\"]"]
+        comment-contains: ["New test files beside the issue's Scope: `calc/test/test_mul_more.sh`", "\"beside\":[\"calc/test/test_mul_more.sh\"]"]
