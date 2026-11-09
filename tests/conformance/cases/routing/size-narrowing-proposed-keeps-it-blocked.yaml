@@ -1,0 +1,37 @@
+case: routing/size-narrowing-proposed-keeps-it-blocked
+about: >
+  A narrowing proposed, not done, holds its unblock too (#1193): on #3,
+  asked on its size, a person had undone a refine of the role's there,
+  so its narrowing of the Scope to `lib.sh` is proposed, not written.
+  Back on the same Scope, the run would cross the same: the unblock is
+  refused, and #3 stays blocked, its Scope unchanged.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        comments:
+          - "```yaml\nsources: [src/wide.sh]\nconfirmed: abc1234\nundone:\n  - act: refine\n    evidence: a person put its Scope back\n```\n\n<!-- workline:sticky=product-owner/state -->"
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-narrowed.sh", then: again}
+expect:
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "the tester's run on it crossed its size"}
+    - {rule: undone-here, where: "#3", message: "a person undid a refine"}
+    - {rule: scope-not-narrowed, where: "#3", message: "not moved out of Blocked"}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked", "workline:proposed"]
+        body-contains: ["`src/wide.sh`"]
+        body-lacks: ["`lib.sh`: multiply beside add."]

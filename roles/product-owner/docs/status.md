@@ -193,6 +193,12 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   proposed at `cautious`, `x-large` a person's. Cases `routing/size-*`.
   Tried on [#1173](https://github.com/JN0V/workline/pull/1173#tried):
   the grant, with a stub agent; not tried: a real agent's prediction.
+- **Split or grant on facts**
+  ([#1193](https://github.com/JN0V/workline/issues/1193)): asked on its
+  size, told what crossed with the run's numbers, and the issue's fresh
+  tokens against its normal and backstop; an atomic need granted, never
+  split. Case `routing/size-task-names-what-crossed`; evaluation cases
+  `product-owner/size-*` with a real agent. Tried on [#1224](https://github.com/JN0V/workline/pull/1224#tried).
 - **The code an issue names, by the shared picker**
   ([the code picker](../../../docs/spec/code-picker.md)): each
   definition of a name, the lines named, a Scope written beside sources

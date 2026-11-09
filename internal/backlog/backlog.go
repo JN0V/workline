@@ -7,6 +7,7 @@ package backlog
 import (
 	"crypto/sha256"
 	"fmt"
+	"maps"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -726,25 +727,26 @@ type Plan struct {
 	// Elsewhere are the open issues a run woken for one issue did not
 	// visit that bear the role's label (#804): counted among those
 	// waiting, from the listing, their records unread.
-	Elsewhere    int          `yaml:"elsewhere,omitempty"`
-	open         map[int]bool // the open issues, read once
-	issues       map[int]forge.Issue
-	judged       map[int]Judged // the second judge's answers on the issues announced obsolete
-	settings     map[string]Setting
-	config       Config
-	bodies       []string         // their bodies, to find an import again
-	seen         map[string]bool  // the imports this run decided
-	read         []int            // the issues this run read
-	unread       map[int]string   // the issues a ready was held for, no scenario read: why, said on it
-	widenDropped map[int][]string // the blocked issues whose Scope widening, for the developer's ask, was dropped: the files asked
-	ledger       *Ledger          // what the role holds, read from the issues
-	ticked       map[string]bool  // the proposals a person accepted this run decided, done or dropped: settled
-	added        map[int][]int    // the blockers this run's depend acts add, for the next act's cycle check
-	dropped      map[int][]int    // the blockers this run's undepend acts take off
-	revisited    map[int]string   // the blocked issues this run decided on: unblock or blocked, one a run
-	labels       []string         // the project's labels, read once, at the first kind act
-	askedNow     map[int]int      // the issues this run asks a question on, each its round: an assumption at once follows it (ADR-0060)
-	hearsay      bool             // the last quote found was only in an outsider's comment
+	Elsewhere     int          `yaml:"elsewhere,omitempty"`
+	open          map[int]bool // the open issues, read once
+	issues        map[int]forge.Issue
+	judged        map[int]Judged // the second judge's answers on the issues announced obsolete
+	settings      map[string]Setting
+	config        Config
+	bodies        []string         // their bodies, to find an import again
+	seen          map[string]bool  // the imports this run decided
+	read          []int            // the issues this run read
+	unread        map[int]string   // the issues a ready was held for, no scenario read: why, said on it
+	widenDropped  map[int][]string // the blocked issues whose Scope widening, for the developer's ask, was dropped: the files asked
+	narrowDropped map[int]bool     // the blocked issues asked on their size whose Scope narrowing was dropped: an unblock beside it would cross the same
+	ledger        *Ledger          // what the role holds, read from the issues
+	ticked        map[string]bool  // the proposals a person accepted this run decided, done or dropped: settled
+	added         map[int][]int    // the blockers this run's depend acts add, for the next act's cycle check
+	dropped       map[int][]int    // the blockers this run's undepend acts take off
+	revisited     map[int]string   // the blocked issues this run decided on: unblock or blocked, one a run
+	labels        []string         // the project's labels, read once, at the first kind act
+	askedNow      map[int]int      // the issues this run asks a question on, each its round: an assumption at once follows it (ADR-0060)
+	hearsay       bool             // the last quote found was only in an outsider's comment
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).
 	changedFor map[int]Change
@@ -906,6 +908,9 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	slices.Sort(indexes)
 	// A sources is decided before the asks: an ask waits only for code a
 	// sources done in this run names (#548).
+	// A blocked issue's unblock or keep after the acts on its text: a
+	// narrowing or widening of its Scope is decided first, whatever the
+	// agent's order, so one dropped holds the unblock (#1193, #1061).
 	// An assumption after the rest: one taken at once follows an ask
 	// done in this run (ADR-0060).
 	slices.SortStableFunc(indexes, func(a, b int) int {
@@ -913,8 +918,10 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			switch closes[i].Do {
 			case "sources":
 				return 0
-			case "assume":
+			case "unblock", "blocked":
 				return 2
+			case "assume":
+				return 3
 			}
 			return 1
 		}
@@ -954,7 +961,23 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		if !once {
 			decided[c.key()] = true
 		}
+		// A narrowing of the Scope of an issue asked on its size (ADR-0064,
+		// step 3): one not written holds the unblock beside it (#1193).
+		narrowing := c.Do == "refine" && strings.TrimSpace(c.Scope) != "" && p.sizeAsked(c.Issue)
 		mode, why := p.check(f, repo, role, &c)
+		if narrowing {
+			// Dropped until it is done, its Scope written: a refine
+			// proposed, or held by a cap, leaves the Scope as it was.
+			if p.narrowDropped == nil {
+				p.narrowDropped = map[int]bool{}
+			}
+			p.narrowDropped[c.Issue] = true
+		}
+		narrowed := func(c Proposal) {
+			if narrowing && !c.ToReporter && work.Has(c.Added, work.Scope) {
+				p.narrowDropped[c.Issue] = false
+			}
+		}
 		c.Card = nil
 		if c.Do == "ready" {
 			// Its card to the board's ready column (ADR-0057); to its
@@ -994,6 +1017,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if c.Do == "undepend" {
 				p.recordUndepend(c)
 			}
+			narrowed(c)
 			p.recordDid(c)
 		default:
 			s, ok := settings[c.Kind()]
@@ -1139,11 +1163,13 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			}
 			if d.Mode == Act {
 				done[c.Kind()]++
+				narrowed(c)
 				if c.Do == "refine" && !c.ToReporter {
 					// A ready later in the run reads the body as this leaves it.
 					is := p.issues[c.Issue]
 					is.Body, _, _ = Refine(is.Body, c, role)
 					p.issues[c.Issue] = is
+					p.recordDrafted(c)
 				}
 				if c.Do == "close" && !c.Announce {
 					p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind(), Level: p.config.Level})
@@ -2145,6 +2171,13 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					c.Revise = append(c.Revise, s)
 				}
 			}
+			if p.sizeAsked(c.Issue) && !c.ToReporter {
+				// Asked on its size (ADR-0064, step 3): the Scope, the
+				// role's at every level, rewritten to narrow it (#1193).
+				if s := work.ByMeaning(is.Body)[work.Scope].Heading; s != "" && !slices.Contains(c.Revise, s) {
+					c.Revise = append(c.Revise, s)
+				}
+			}
 			p.plain(is, st, c)
 			p.repeats(is, st, c)
 		}
@@ -2159,6 +2192,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-unread", Level: "info", Where: c.where(), Message: unread})
 		}
 		if len(added) == 0 {
+			if len(c.Repeated) > 0 {
+				return "nothing-to-refine", "nothing written: the " + strings.Join(c.Repeated, ", ") + " it drafted repeats the text above it, left out"
+			}
 			return "nothing-to-refine", "nothing written: the sections it drafted are in the issue already, never rewritten"
 		}
 		if len(kept) > 0 {
@@ -3561,4 +3597,32 @@ func LocateIn(lines []string, text string) (from, to int, original string, ok bo
 		}
 	}
 	return 0, 0, "", false
+}
+
+// recordDrafted notes, in the plan's copy of an issue's state, the drafts a
+// refine just wrote into its body as the role's own, so that a ready later
+// in the run reads them as apply will: drafts no person accepted.
+func (p *Plan) recordDrafted(c Proposal) {
+	if p.ledger == nil {
+		return
+	}
+	if p.ledger.States == nil {
+		p.ledger.States = map[int]*State{}
+	}
+	is := p.issues[c.Issue]
+	have := work.ByMeaning(is.Body)
+	st := State{}
+	if old := p.ledger.States[c.Issue]; old != nil {
+		st = *old
+		st.Wrote = maps.Clone(old.Wrote)
+	}
+	for _, m := range layout() {
+		if !drafted(m) || work.Has(c.Refused, m) || strings.TrimSpace(c.Text(m)) == "" {
+			continue
+		}
+		if sec, ok := have[m]; ok {
+			st.SetWrote(sec.Heading, BodyDigest(sec.Text))
+		}
+	}
+	p.ledger.States[c.Issue] = &st
 }

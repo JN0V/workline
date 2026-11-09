@@ -1,0 +1,41 @@
+case: product-owner/size-grants-an-atomic-bug
+about: >
+  Split or grant at a size crossing (#1193, round 6's RC3), modelled on
+  the trial copy's #4: a bug whose Scope says its parts fail apart — one
+  cause, a counter used as a file index — crossed its size at the
+  tester's token cap. The issue spent 474k fresh tokens so far, the
+  crossing run's 412.65k among them, past its normal of 400k. The
+  product owner is woken on it, asked on its size; every file of its
+  Scope is needed. Expected: it grants `workline:size/large` and sends it
+  back to its tests, never a split: no part of it passes its
+  Verification apart.
+given:
+  repo: backlog
+  setup:
+    - "mkdir -p core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse && printf 'package io.github.jn0v.traceglass.core.timelapse\\n\\nclass TimelapseSession\\n' > core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/TimelapseSession.kt"
+    - "mkdir -p core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse && printf 'package io.github.jn0v.traceglass.core.timelapse\\n\\nclass SnapshotStorage\\n' > core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/SnapshotStorage.kt"
+    - "mkdir -p feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse && printf 'package io.github.jn0v.traceglass.feature.timelapse\\n\\nclass FileSnapshotStorage\\n' > feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt"
+    - "mkdir -p feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing && printf 'package io.github.jn0v.traceglass.feature.tracing\\n\\nclass TracingViewModel\\n' > feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt"
+    - "mkdir -p feature/timelapse/src/test/kotlin/io/github/jn0v/traceglass/feature/timelapse && printf 'package io.github.jn0v.traceglass.feature.timelapse\\n\\nclass TimelapseSessionTest\\n' > feature/timelapse/src/test/kotlin/io/github/jn0v/traceglass/feature/timelapse/TimelapseSessionTest.kt"
+    - "mkdir -p feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing && printf 'package io.github.jn0v.traceglass.feature.tracing\\n\\nclass TracingViewModelTest\\n' > feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModelTest.kt"
+    - "git add . && git commit -qm 'the app' "
+  forge:
+    issues:
+      - id: 4
+        title: "The time-lapse counter counts snapshots never taken"
+        labels: ["bug", "workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nA person recording a time-lapse needs the counter and the saved frames to match, so a restored time-lapse plays its frames in order and loses none.\n\n## Validation\n\n- **Background:** Given recording, When the app is in the background for 60 s, Then the counter does not grow.\n- **Restore:** Given 0000–0004 on disk and a restored time-lapse, When I continue, Then new frames are 0005, 0006, … and nothing is overwritten.\n- **Normal:** Given frames arriving, When I record 3 ticks, Then the counter shows 3 and the disk holds 3 files.\n\n---\n\n## Verification\n\n- A test on `TimelapseSession`: when `onCapture` throws or no frame is saved, the counter does not grow.\n- A test: a session restored with 5 existing files (0000–0004) saves its next frame as 0005, and no existing file is overwritten.\n- A test on `FileSnapshotStorage`: `nextIndex()` is the highest file number on disk plus 1; `saveSnapshot` refuses an index whose file exists.\n- The whole test suite compiles and passes.\n\n## Scope\n\nOne cause: the counter is used as the next file's index, and it grows on every tick whether a frame was saved or not. The parts below fail apart: counting only saved frames without a separate next index still overwrites a restored frame; the next index without counting only saved frames still numbers frames never taken. One change.\n\n- `core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/TimelapseSession.kt`: count after a confirmed save; keep a separate next index.\n- `core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/SnapshotStorage.kt`: add `nextIndex()`.\n- `feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt`: `nextIndex()` as highest + 1; refuse an existing index.\n- `feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt`: `onCapture` waits until the file is saved; `onTimelapseRestoreContinue` passes `storage.nextIndex()`.\n- Tests: `feature/timelapse/src/test/kotlin/io/github/jn0v/traceglass/feature/timelapse/TimelapseSessionTest.kt`, the storage tests, `feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModelTest.kt`.\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n- **Why**: the tester's run on it is too big for its context: 412650 tokens spent, the run allows 400000: the agent was asked nothing more; what is left waits for the next run; its state was tests.\n- **Next**: the line asks the product owner on its size at once: it narrows the issue's Scope or grants it `workline:size/large`, and sends it back, or leaves it blocked for a person, who may split it, give it `workline:size/x-large` or raise the setting named; a person may move it back by its label at any time.\n\n**workline's line** keeps this record while the issue is blocked, 3 state steps before; moved out of Blocked, its count starts again. 474k fresh tokens spent on it so far. Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"from\":\"tests\",\"hops\":3,\"why\":\"the tester's run on it is too big for its context: 412650 tokens spent, the run allows 400000: the agent was asked nothing more; what is left waits for the next run\",\"sized\":[\"tests\"],\"size-of\":\"tester\",\"spent\":{\"refine\":[61350],\"tests\":[412650]}} -->\n<!-- workline:sticky=line/state -->"
+run:
+  role: product-owner
+  event: issue
+  target: "issue:4"
+  input: {revisit: "the tester's run on it crossed its size", revisit-from: tests, size: tester}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {finding: {where: "#4", message: "Granted #4 `workline:size/large`"}}
+  - {no-finding: {message: "Split #4"}}
