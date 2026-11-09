@@ -37,6 +37,11 @@ type record struct {
 	Issue int               `json:"issue"`
 	Base  string            `json:"base"`
 	Files map[string]string `json:"files"`
+	// Tests: the ids of the tests the red proof found new; the green proof
+	// requires each on the code (ADR-0065, change 2): a report's id, or
+	// file:name for a test whose build broke on the base. None in a
+	// record written before.
+	Tests []string `json:"tests,omitempty"`
 	// Scenarios: the issue's, as the run that wrote the tests read them,
 	// for the auditor (ADR-0046); none in a record written before.
 	Scenarios []Scenario `json:"scenarios,omitempty"`
@@ -57,6 +62,9 @@ func (r record) body() string {
 		"(the test, its scenario, the kind, why). Any other change to them blocks, `tester-test-changed`.\n\n| Test file | Blob |\n|---|---|\n", r.Issue)
 	for _, f := range r.files() {
 		fmt.Fprintf(&b, "| `%s` | `%s` |\n", f, short(r.Files[f]))
+	}
+	if len(r.Tests) > 0 {
+		fmt.Fprintf(&b, "\nThe green proof requires each of these tests on the code, three runs out of three: `%s`.\n", strings.Join(r.Tests, "`, `"))
 	}
 	if r.RedUnproven != "" {
 		fmt.Fprintf(&b, "\n**Red unproven**: %s\n", r.RedUnproven)
@@ -170,7 +178,7 @@ func guardPre(runDir, repo string, s Settings) int {
 	case mr.Draft: // its tests are meant red until whoever builds marks it ready
 		v.Summary += "; the green proof waits for the pull request marked ready"
 	default:
-		g := green(repo, r.Base, s)
+		g := green(repo, r, s)
 		g.Summary = v.Summary + "; " + g.Summary
 		v = g
 	}

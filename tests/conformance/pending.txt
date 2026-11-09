@@ -1,8 +1,3 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 routing/ready-overlap-gone-wait-said
-tester/green-frozen-named-from-file-missing-blocks
-tester/green-frozen-test-missing-blocks
-tester/green-record-without-tests-said
-tester/green-three-runs-pass
-tester/write-one-test-a-scenario
