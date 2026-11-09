@@ -83,9 +83,11 @@ Under the role's budget, each piece once a task:
      first, the rest counted. The tests are the project's one
      definition, the tester's `test-paths`, else the generic patterns
      ([ADR-0065](../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file));
-     examples and tools by the same embedded data:
-     `examples/`, `tools/`, `mocks/`, `testdata/`. A Gradle source set
-     (`src/androidTest/`) is a test when `test-paths` names it.
+     the folders beside the code by the same embedded data, ranking
+     only: `examples/`, `tools/`, `mocks/`, `testdata/`, `spec/`,
+     Gradle's other source sets (`src/androidTest/`,
+     `src/testFixtures/`), Jest's `__mocks__/`, a .NET test project
+     (`Shop.Tests/`).
 3. **The lines naming a name in a file named**: the function around
    each, 40 lines at most, else 3 lines either side.
 4. **A file named, whole** when what it adds fits; else, nothing of it

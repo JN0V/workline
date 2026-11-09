@@ -55,6 +55,11 @@ person unlinked is no longer one. An issue whose state lists a split
   test missing: the item is not proved, "could not be looked for", and
   `proof-test-unread` (warn) says why. Whether the test passes is CI's,
   not read here.
+- **A name alone in a code span** (`` `TestWriteRows` passes``), by no
+  language's rule (`backlog.BareNames`): looked up as a word in the test
+  files, said where it is found, or "not found in a test file"; never a
+  missing test, never a block
+  ([ADR-0065, Rule A](../../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-a-a-guess-may-only-pass)).
 - **All its parts closed**: the comment asks a person to accept the need
   by closing the parent or labelling it `workline:accepted`, or to reopen
   a part or open one for what is missing, naming first the parts not

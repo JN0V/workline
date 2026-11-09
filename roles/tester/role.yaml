@@ -107,9 +107,9 @@ settings:
   # The test files: those a change adds or changes are laid on the base
   # for the red proof; the change's other files are its code. The one
   # definition of a test file every role reads (ADR-0065): unset, the
-  # built-in generic patterns (internal/testdef/generic.yaml: test/ and
-  # tests/ folders, *_test.*, *.test.*, *.spec.*), which `workline
-  # doctor` says. A test they miss is code to the developer's Scope fence.
+  # built-in generic patterns (internal/testdef/generic.yaml: test/,
+  # tests/, Tests/, __tests__/ folders, test_*, *_test.*, *_spec.*,
+  # *.test.*, *.spec.*), which `workline doctor` says. A test they miss is code to the developer's Scope fence.
   # E.g. ["**/src/test/**", "**/src/androidTest/**"], ["spec/**"].
   test-paths: []
   # Where a test's code lives, for the developer's fence: a new test file
