@@ -135,8 +135,16 @@ func issueOf(branch string) int {
 }
 
 // guardPre is the frozen guard, the tester on a merge request, then, on
-// the one that closes the issue, the green proof: no agent.
+// the one that closes the issue, the green proof: no agent but the judge
+// of a frozen test not found under its name (renamed.go).
 func guardPre(runDir, repo string, s Settings) int {
+	if os.Getenv("WORKLINE_JUDGED") == "answered" {
+		if v, ok, err := renameAnswered(runDir); err != nil {
+			return fail(err)
+		} else if ok {
+			return final(runDir, v)
+		}
+	}
 	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
 	id, _ := strconv.Atoi(num)
 	if kind != "merge-request" || id <= 0 {
@@ -178,9 +186,19 @@ func guardPre(runDir, repo string, s Settings) int {
 	case mr.Draft: // its tests are meant red until whoever builds marks it ready
 		v.Summary += "; the green proof waits for the pull request marked ready"
 	default:
-		g := green(repo, r, s)
+		g, doubt := green(repo, r, s)
 		g.Summary = v.Summary + "; " + g.Summary
 		v = g
+		if doubt != nil {
+			doubt.Verdict = g
+			if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
+				return final(runDir, doubt.unproven("no agent judges it"))
+			}
+			if err := doubt.ask(runDir); err != nil {
+				return fail(err)
+			}
+			return 0 // the engine asks the judge, and runs pre again with its answer
+		}
 	}
 	return final(runDir, v)
 }

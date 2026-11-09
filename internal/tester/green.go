@@ -24,19 +24,21 @@ import (
 const greenRuns = 3
 
 // green runs the green proof on HEAD, against the merge base of the
-// record's base and HEAD.
-func green(repo string, rec record, s Settings) verdict.Verdict {
+// record's base and HEAD. A frozen test named from its file that no head
+// id holds, while the head holds new tests it may run as, is the judge's
+// to tell (renamed): never a block on a guess (ADR-0065, rule A).
+func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	if v := unset(s); v != nil {
 		v.Summary = "the green proof did not run"
-		return *v
+		return *v, nil
 	}
 	mb, err := mergeBase(repo, rec.Base)
 	if err != nil {
-		return *refuse("the green proof did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()})
+		return *refuse("the green proof did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}), nil
 	}
 	baseRun, f := run(repo, mb, nil, "", s, "on the base "+short(mb))
 	if f != nil {
-		return *refuse("the green proof did not run", *f)
+		return *refuse("the green proof did not run", *f), nil
 	}
 	// The head's runs share one fresh checkout: a second build there is
 	// the runner's cache, not a new compile (Go: 1 s, not 4.5 s, on
@@ -44,14 +46,14 @@ func green(repo string, rec record, s Settings) verdict.Verdict {
 	// flaky too: it fails on a person's second run.
 	tree, done, f := checkout(repo, "HEAD")
 	if f != nil {
-		return *refuse("the green proof did not run", *f)
+		return *refuse("the green proof did not run", *f), nil
 	}
 	defer done()
 	var runs []ran
 	for i := 1; i <= greenRuns; i++ {
 		r, f := runIn(tree, s, fmt.Sprintf("on the head, run %d of %d", i, greenRuns))
 		if f != nil {
-			return *refuse("the green proof did not run", *f)
+			return *refuse("the green proof did not run", *f), nil
 		}
 		runs = append(runs, r)
 	}
@@ -65,13 +67,11 @@ func green(repo string, rec record, s Settings) verdict.Verdict {
 	// The tester's tests, by the ids its record keeps: each found in the
 	// head's reports, or a finding naming it.
 	frozen := map[string]bool{}
+	var missing []string
 	for _, t := range rec.Tests {
 		found := rec.frozenIn(t, ids)
 		if len(found) == 0 {
-			v.Findings = append(v.Findings, verdict.Finding{Rule: "frozen-test-missing", Where: t,
-				Message: fmt.Sprintf("a test the tester froze is not in the head's reports, in any of the %d runs: the change stops it running "+
-					"(a build file, a filter, a skip) or renames it. Run it again as the tester wrote it; a test that does not fit, "+
-					"object on its line, the comment opened by `workline:objection` (ADR-0055)", len(runs))})
+			missing = append(missing, t)
 		}
 		for _, id := range found {
 			frozen[id] = true
@@ -94,6 +94,22 @@ func green(repo string, rec record, s Settings) verdict.Verdict {
 	}
 	slices.Sort(added)
 	slices.Sort(old)
+	// A frozen id missing: blocking when it is a report's (it converges)
+	// or when no new test of the head could be it; else the judge's.
+	var doubt *renamed
+	for _, t := range missing {
+		if named(rec, t) && len(added) > 0 {
+			if doubt == nil {
+				doubt = &renamed{Candidates: added, Runs: len(runs)}
+			}
+			doubt.Missing = append(doubt.Missing, t)
+			continue
+		}
+		v.Findings = append(v.Findings, missingFinding(t, len(runs), ""))
+	}
+	if doubt != nil {
+		doubt.Facts = renameFacts(repo, mb, rec, doubt)
+	}
 	var required []string
 	for id := range frozen {
 		required = append(required, id)
@@ -102,7 +118,7 @@ func green(repo string, rec record, s Settings) verdict.Verdict {
 	required = append(required, added...)
 	if len(rec.Tests) == 0 && len(added) == 0 {
 		return *refuse("the green proof found no new test", verdict.Finding{Rule: "no-new-test", Where: s.Report,
-			Message: fmt.Sprintf("the head's reports name no test the base's (%s) does not: the tester's tests did not run on the head", short(mb))})
+			Message: fmt.Sprintf("the head's reports name no test the base's (%s) does not: the tester's tests did not run on the head", short(mb))}), nil
 	}
 	for _, id := range required {
 		if f := judge(id, runs); f != nil {
@@ -126,14 +142,44 @@ func green(repo string, rec record, s Settings) verdict.Verdict {
 		what = fmt.Sprintf("%d new test%s", len(added), plural(len(added)))
 	}
 	v.Summary = what + " green on the head, three runs out of three"
+	return settled(v), doubt
+}
+
+// greenSaid and redSaid end a green proof's summary, passed or not.
+const (
+	greenSaid = " green on the head, three runs out of three"
+	redSaid   = ", not each found green on the head three runs out of three"
+)
+
+// settled is v blocking, its summary said so, when a finding blocks.
+func settled(v verdict.Verdict) verdict.Verdict {
 	for _, f := range v.Findings {
-		if f.Level == "" {
+		if f.Level == "" && v.Status != verdict.Block {
 			v.Status = verdict.Block
-			v.Summary = what + ", not each found green on the head three runs out of three"
+			v.Summary = strings.Replace(v.Summary, greenSaid, redSaid, 1)
 			break
 		}
 	}
 	return v
+}
+
+// missingFinding is a frozen test in none of the runs, blocking; why is
+// the judge's word when it told so.
+func missingFinding(t string, runs int, why string) verdict.Finding {
+	msg := fmt.Sprintf("a test the tester froze is not in the head's reports, in any of the %d runs: the change stops it running "+
+		"(a build file, a filter, a skip) or renames it", runs)
+	if why != "" {
+		msg = "a test the tester froze is not in the head's reports, and the judge says it was dropped, not run under another name: " + why
+	}
+	return verdict.Finding{Rule: "frozen-test-missing", Where: t,
+		Message: msg + ". Run it again as the tester wrote it; a test that does not fit, object on its line, the comment opened by `workline:objection` (ADR-0055)"}
+}
+
+// named says whether t is a test the red proof named from its file
+// (file:name, the file one the record freezes): no report named it yet.
+func named(r record, t string) bool {
+	i := strings.LastIndex(t, ":")
+	return i > 0 && r.Files[t[:i]] != "" && t[i+1:] != ""
 }
 
 // frozenIn is the head's ids the record's test t is. An id from a report
@@ -146,10 +192,10 @@ func (r record) frozenIn(t string, ids map[string]bool) []string {
 	if ids[t] {
 		return []string{t}
 	}
-	i := strings.LastIndex(t, ":")
-	if i < 0 || r.Files[t[:i]] == "" || t[i+1:] == "" {
+	if !named(r, t) {
 		return nil
 	}
+	i := strings.LastIndex(t, ":")
 	var out []string
 	for id := range ids {
 		if namedAs(id, t[i+1:]) {
