@@ -94,7 +94,13 @@ func (a *simAgent) next(role string) (outcome, string) {
 		}
 		return progress, ""
 	}
-	if n := len(a.calls); n < len(a.script) {
+	n := 0
+	for _, c := range a.calls {
+		if !c.unscripted {
+			n++
+		}
+	}
+	if n < len(a.script) {
 		return a.script[n], ""
 	}
 	return progress, ""
@@ -109,6 +115,10 @@ type call struct {
 	Digest string
 	Kind   outcome
 	runDir string
+	// unscripted: a call the script does not choose, the tester's judge
+	// of a broken build: it takes no turn of the seeded script, so a
+	// seed plays the same outcomes as before that judge was asked.
+	unscripted bool
 }
 
 func (c call) String() string {
@@ -136,7 +146,7 @@ func (a *simAgent) Propose(r agent.Request) (agent.Call, error) {
 				break
 			}
 		}
-		a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(received(r.RunDir, task)), Kind: progress, runDir: r.RunDir})
+		a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(received(r.RunDir, task)), Kind: progress, runDir: r.RunDir, unscripted: true})
 		return c, os.WriteFile(filepath.Join(r.RunDir, "out", "intentions.yaml"), []byte("- note: \""+note+"\"\n"), 0o644)
 	}
 	kind, answer := a.next(r.Role.Name)
