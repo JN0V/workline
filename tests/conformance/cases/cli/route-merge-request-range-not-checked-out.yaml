@@ -1,0 +1,27 @@
+case: cli/route-merge-request-range-not-checked-out
+about: >
+  `workline route merge-request` on a local merge request whose branch
+  is not checked out, no range given: misuse, 64, naming the checkout
+  and the input to give, never an engine error (#1285).
+given:
+  repo: basic
+  setup:
+    - "git checkout -qb workline/developer/1 && echo one > one.txt && git add one.txt && git commit -qm 'fix: write one'"
+    - |
+      mkdir -p .git/workline/merge-requests && cat > .git/workline/merge-requests/1.md <<'MR'
+      ---
+      title: "fix: write one"
+      state: open
+      labels: []
+      branch: workline/developer/1
+      base: main
+      ---
+
+      Closes #1
+      MR
+    - "git checkout -q main"
+  config: {forge: local}
+run: {cli: [route, merge-request, --target, "merge-request:1", --ai, none]}
+expect:
+  exit: 64
+  stderr: ["merge-request #1: its branch workline/developer/1 is not checked out: run `git switch workline/developer/1` first", "--input range=<base>..<head>"]

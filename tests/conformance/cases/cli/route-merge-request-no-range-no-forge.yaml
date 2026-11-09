@@ -1,0 +1,10 @@
+case: cli/route-merge-request-no-range-no-forge
+about: >
+  `workline route merge-request --target merge-request:<n>` with no
+  range and no forge to read it from: misuse, 64, naming the input to
+  give, never an engine error (#1285).
+given: {repo: basic}
+run: {cli: [route, merge-request, --target, "merge-request:2", --forge, none, --ai, none]}
+expect:
+  exit: 64
+  stderr: ["merge-request #2: no forge to read it from; give the commits it judges with --input range=<base>..<head> and its branch with --branch"]
