@@ -826,8 +826,13 @@ code writes.
   mistake costs a rebase.
 - **The same rule everywhere**: the pick, Ready's limit, and the record
   of a wake (`held`) read it.
+- **A shallow clone** (a CI checkout) is deepened from `origin` until
+  the branch and its base share a merge base: the pick and the line's
+  reconcile read the same diff, never one the diff and the other the
+  prediction.
 - **Cost**: one `git fetch` of a branch per claim holding code, at
-  most once a run.
+  most once a run; a pull request closing an issue not claimed is never
+  fetched.
 - **Not chosen**: the forge's list of a pull request's files: a call per
   forge to write and keep, where git says the same on each.
 
