@@ -56,8 +56,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   gate or a test red, a test the tester rewrote, or a person's comment; the five whys at round three, a person past
   round five ([the review loop](docs/review-loop.md)).
 - **Its fixes merge alone** at the merge policy's `normal`, every gate
-  passed, a bug once a test that failed on the base showed it; a feature
-  waits for a person's yes. The issue's labels tell which, never the
+  passed, the reviewer's verdict on its head, a bug once a test that
+  failed on the base showed it; a feature waits for a person's yes. The
+  issue's labels tell which, never the
   agent ([the merge](docs/merge.md)).
 - **With no agent**: names the issue it would take; claims nothing.
 

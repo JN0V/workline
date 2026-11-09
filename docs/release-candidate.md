@@ -26,8 +26,8 @@ merge: {autonomy: enterprising}
 
 ## The flow
 
-- **A feature or a task merges alone** once every gate passes, as a
-  fix does at `normal`
+- **A feature or a task merges alone** once every gate passes and the
+  reviewer read its head, as a fix does at `normal`
   ([the developer's merge](../roles/developer/docs/merge.md)).
 - **It goes into a milestone** named by a version, `v1.4`: the product
   owner puts a feature there when it makes the issue ready; a task, or
