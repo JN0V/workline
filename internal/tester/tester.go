@@ -201,9 +201,10 @@ func prove(repo, base string, s Settings) proven {
 	rules, _ := compileBuildErrors(s.BuildErrors) // unset said a bad one
 	errs := buildErrorsIn(redRun.output, ch.tests, rules, redRun.roots...)
 	// On the head, a test file of the change that does not build, but for
-	// a name the code lacks, holds no test the code can turn green: the
-	// build is said broken, its lines quoted, never the change blamed for
-	// a red test (#1283: pytest that cannot import the project).
+	// a name the code lacks, holds no test that ran: the build is said
+	// broken, its lines quoted, no side blamed (the test, the code or the
+	// command), never a red test read as the change's fault (#1283:
+	// pytest that cannot import the project).
 	if onHead {
 		if broken := brokenTests(buildErrorsIn(headRun.output, ch.tests, rules, headRun.roots...)); len(broken) > 0 {
 			var lines []string
@@ -212,8 +213,8 @@ func prove(repo, base string, s Settings) proven {
 			}
 			return refused(&verdict.Verdict{Status: verdict.Block, Summary: "the change's tests do not build on the head",
 				Findings: []verdict.Finding{{Rule: "build-broken", Where: broken[0].file,
-					Message: fmt.Sprintf("the build broke on the head in the change's tests (%s): no code turns them green; "+
-						"a test must build, or fail by a name the issue adds, never by a wrong import or a test command that cannot import the project",
+					Message: fmt.Sprintf("the build broke on the head in the change's tests (%s): no test there ran, so none is proven green; "+
+						"the tests, the change's code or the test command is to mend, as the lines tell",
 						clipRunes(forge.Mask(sample(lines)), quoteMax))}}})
 		}
 	}
