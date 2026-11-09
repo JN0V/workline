@@ -147,7 +147,9 @@ Cases in `tests/conformance/cases/tester/`:
   marked ready, the base once, then the head three times in one fresh
   checkout; a new test red in some runs is flaky and blocks
   (`test-flaky`), red in all is `test-red-on-head`; a flaky test the
-  base had warns; a Draft waits ([the page](green-proof.md)).
+  base had warns; a Draft waits ([the page](green-proof.md)). Each
+  test id the record keeps must run: one missing blocks,
+  `frozen-test-missing` ([#1255](https://github.com/JN0V/workline/issues/1255)).
 - **The curator's measures** (step 6), no agent: `workline test
   measure` runs the suite twice on `HEAD`; each test's time, red and
   flaky ones, kept across measures in a history the CI passes as an

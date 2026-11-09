@@ -14,7 +14,7 @@ flowchart LR
   pr["<b>Closing pull request</b><br/>marked ready"]
   base["<b>Base</b><br/>one run"]
   head["<b>Head</b><br/>three runs"]
-  out["<b>Each new test</b><br/>green 3 of 3"]
+  out["<b>Each frozen test</b><br/>green 3 of 3"]
   pr --> base --> head --> out
 ```
 
@@ -31,9 +31,24 @@ flowchart LR
 
 ## What it runs
 
-- **The base once**: the merge base of the record's base and the head.
-  The new tests are those the head's reports hold and the base's does
-  not, the builder's own new tests too.
+- **The tests required**: the ids the tester's record keeps, found new
+  by its red proof, never "the head's tests the base lacks": a change
+  to a build file or a filter that stops one running blocks, named
+  ([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)).
+  - **An id from a report** must be in each head run, green.
+  - **A test whose build broke on the base** is kept as `file:name`:
+    no report named it yet. Any head id holding that name as a whole
+    part is it (`pkg.Name`, `Name[1]`, `Name/case`). A report naming it
+    otherwise, a display name, is not found: it blocks, and the test
+    is objected to on its line.
+  - **A record written before the ids were kept**: the head's tests
+    the base lacks, as before, said by `frozen-ids-unknown`.
+  - **A rewrite on an objection** moves the ids: the file's old ones,
+    from one run of the base with the file as frozen, come off; the
+    rewrite's go on.
+- **The base once**: the merge base of the record's base and the head,
+  to tell the builder's own new tests (required green too) from the
+  base's.
 - **The head three times**, one run after the other, in one fresh
   checkout. Each run is `test-command`, its report read as JUnit XML.
 - **Never again until green**: three runs, not "until it passes".
@@ -49,8 +64,10 @@ flowchart LR
 |---|---|---|
 | `test-flaky` | yes | a new test passed in some runs, not all: the runs it was red in are named |
 | `test-flaky` | no, warns | a test the base already had is flaky here: not the change's |
-| `test-red-on-head` | yes | a new test is red, skipped or missing in each of the three runs |
-| `no-new-test` | yes | the head's reports name no test the base's does not |
+| `frozen-test-missing` | yes | a test of the record is in none of the three runs: its id is named |
+| `test-red-on-head` | yes | a frozen or new test is red, skipped or missing in each of the three runs |
+| `frozen-ids-unknown` | no, warns | an older record names files, not tests: the head's new tests are taken |
+| `no-new-test` | yes | an older record, and the head's reports name no test the base's does not |
 | `setting-missing`, `report-missing` | yes | no command, or a run wrote no report |
 
 - **A flaky test of the tester's**: find the cause in the code first;

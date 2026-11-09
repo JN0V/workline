@@ -42,8 +42,9 @@ flowchart LR
     suite ([#979](https://github.com/JN0V/workline/issues/979)).
 - **The record**: workline's own comment on the Draft, marked
   `workline:tester-record`. It holds the issue, the base, each test
-  file with its git blob, and the scenarios as read. Only the tester's
-  runs write it.
+  file with its git blob, the test ids the red proof found new, and
+  the scenarios as read. Only the tester's runs write it. The green
+  proof requires each id on the code ([how](green-proof.md#what-it-runs)).
 
 ## When the tests are written
 
