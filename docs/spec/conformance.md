@@ -257,7 +257,8 @@ step 1):
   never quiet in between, is not yet held; quiet again, it is), the trace's
   expected end with an agent that always progresses (Done, or Waiting on
   what it names), one byte of a body changed makes the issue due, a
-  step or the developer's review round on its pull request (but one
+  step or the developer's review round on its pull request started, not
+  only said due (but one
   blocked at its backstop, which waits for a person). Each
   trace runs twice: the runs must match.
 - **Statuses read from today's findings**: a rule list in the test, a

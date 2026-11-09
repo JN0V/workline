@@ -79,6 +79,26 @@ func status(res *line.Result, id int) (string, string) {
 	return "", strings.Join(said, "; ")
 }
 
+// woken says whether a run really woke a role on issue id: its step, or
+// the developer's review round on its open pull request, started — not
+// a finding that only says one is due (#1271).
+func woken(res *line.Result, s forge.FakeState, id int) bool {
+	if res.Woke[id] != "" {
+		return true
+	}
+	for _, mr := range s.MergeRequests {
+		if mr.Closed || mr.Branch != fmt.Sprintf("workline/developer/%d", id) {
+			continue
+		}
+		where := fmt.Sprintf("merge request %d", mr.ID)
+		if slices.ContainsFunc(res.Findings, func(f verdict.Finding) bool { return f.Rule == "review-round-due" && f.Where == where }) ||
+			slices.ContainsFunc(res.Reviews, func(r line.Review) bool { return r.ID == mr.ID }) {
+			return true
+		}
+	}
+	return false
+}
+
 var recordRe = regexp.MustCompile(`workline:line-record (\{[^\n]*\}) -->`)
 
 // record is an issue's line record: its state and hops; had, whether it
@@ -602,10 +622,7 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 		if err := f.SetBody(is.ID, is.Body+"."); err != nil {
 			t.Fatal(err)
 		}
-		if res := w.run(at); c.on(pOneByte) {
-			if st, _ := status(res, is.ID); st == "due" {
-				continue
-			}
+		if res := w.run(at); c.on(pOneByte) && !woken(res, w.state(t), is.ID) {
 			st, said := status(res, is.ID)
 			return &failure{Property: pOneByte, Tick: k, Detail: fmt.Sprintf("#%d's body changed, not due: %s %s", is.ID, st, said)}, log.String(), ms
 		}
