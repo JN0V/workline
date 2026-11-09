@@ -5,8 +5,9 @@
 - **Decided by:** the maintainer, on 2026-11-09, in direction; details
   from three independent genericity reviews, which agree on the
   essentials; choices they left open under [Settled](#settled)
-- **Builds on:** [ADR-0005], [ADR-0045], [ADR-0046], [ADR-0063],
-  [ADR-0064]; principles 4, 5, 7, 10, 12, 13
+- **Builds on:** [ADR-0005], [ADR-0045], [ADR-0046], [ADR-0059],
+  [ADR-0060], [ADR-0063], [ADR-0064]; principles 4, 5, 7, 10, 11, 12,
+  13, 14
 - **Amends, once built:** [ADR-0055] (the red proof of a broken build,
   its amendment "a missing name, told from a broken build");
   [ADR-0054] and [ADR-0063 §9] (the developer's bounds read paths only);
@@ -16,8 +17,8 @@
 ## Context
 
 - **Each trial on a new language opens fixes in the same few places**:
-  the Kotlin/Android copy's rounds, about 310 engine commits since
-  2026-10-25.
+  310 commits landed since 2026-10-25; the Kotlin/Android copy's
+  fixes cluster in four places.
   - The red proof's "right reason": [#1111], [#1114], [#1183], [#1192],
     [#1202], [#1209], [#1214].
   - The developer's Scope fence: [#1207], [#1211]; `bounds.go` took 17
@@ -31,8 +32,9 @@
   - A regex can be extended, never finished. Its miss blocks or passes.
 - **Ecosystem knowledge is compiled into Go**: about twelve tables in
   eight packages (extensions, `src/main` ↔ `src/test`, Gradle module
-  words, JVM `package` lines, mutation tools, comment syntax), five
-  definitions of "a test file" that disagree.
+  words, JVM `package` lines, mutation tools, comment syntax), and
+  seven definitions of "a test file" that disagree: the tester's and
+  the reviewer's settings, five in Go.
 - **Two places already do it right**: the linters' table borrowed from
   trunk (`internal/linters`), and the tester's settings (`build-errors`,
   `test-paths`, `module-files`): data, not logic.
@@ -53,7 +55,12 @@ flowchart LR
 - **A verdict may rest on a guess** (a regex over prose, a heuristic)
   **only if its miss falls back to judgement**: the AI, or a person
   where there is none (principle 5).
-- **Never to a silent pass, never to a hard block** (principle 12).
+- **A guess's miss never passes silently** (principle 12) **and never
+  blocks hard**: a person is on the loop, never a bottleneck
+  ([ADR-0060]).
+- **A check on converging facts may still block** (a red report, a
+  file outside the paths, a missing setting): principle 5 holds; only
+  a guess's miss may not.
 - **A fast path may only pass**: sure of a yes, it passes, said; unsure,
   it hands the raw facts on.
 - **A context guess** (which file to show an agent) is no verdict: its
@@ -65,10 +72,15 @@ flowchart LR
   list, marker file, test folder, compiler message, build tool word.
 - **It goes in a pack** ([below](#language-packs)); the engine reads the
   pack's fields, never names a language.
-- **Enforced by a test, proposed**: a Go test walks the string literals
-  of `internal/` outside the pack loader and fails on one equal to a
-  pack's marker, extension or path pattern. A baseline file lists
-  today's offenders and may only shrink. Cheap: one AST walk, no tool.
+- **Enforced by a test, proposed**: a Go test walks the string
+  literals of `internal/` outside the pack loader, regexes included,
+  and fails on one holding a pack's marker, extension or path pattern.
+  - **A tripwire, not a proof**: it catches the usual leak, not every
+    one; the pull request's review does the rest.
+  - **An exemption** is a comment on the line saying why the literal
+    converges (`.xml` for the JUnit reader); the review judges it.
+  - **A baseline** lists today's offenders and may only shrink. Cheap:
+    one AST walk, no tool.
 
 ### Language packs
 
@@ -96,9 +108,11 @@ flowchart LR
   - `workline doctor` lists the packs, the languages with none, and
     drift from what it detects.
 - **No pack, the generic path, never a refusal**: the JUnit report,
-  the raw output to the AI, the agent's read tools, generic test paths
-  (`**/test/**`, `**/tests/**`, `*_test.*`, `*.test.*`, `*.spec.*`).
-  Said by `doctor`.
+  the raw output to the AI, the agent's read tools, and a built-in
+  `generic` pack (`**/test/**`, `**/tests/**`, `*_test.*`, `*.test.*`,
+  `*.spec.*`): data too, not engine code. Said by `doctor`.
+  - **A test the generic pack misses** is code to the fence: the
+    developer's scope-ask, the person's `test-paths` to fix it, said.
 - **Moving data, mostly**: the tables of `internal/codenav`,
   `internal/codepick`, `internal/tester` (`coverage.go`, `notrun.go`),
   the reviewer's and the documentalist's comment tables, the tester's
@@ -116,8 +130,14 @@ flowchart LR
      masked), the names the base lacks. "Does each test fail only
      because what the issue asks for does not exist yet?" Yes is red;
      no is `build-broken`, the judge's line quoted.
-   - **No AI**: the Draft opens `red unproven`, the compiler's lines
-     quoted, Waiting(person). Never a pass.
+   - **The judge `unsure`** ([ADR-0045]), past its read budget, failed
+     or at its cap: the Draft opens `red unproven`, the compiler's
+     lines and the judge's reason quoted, Waiting(person). Never a
+     pass, never a stuck run.
+   - **A person's tests, no agent**: with none, the tester writes no
+     tests ([ADR-0055]) and no judge runs ([ADR-0045]). A person's
+     test whose build breaks, past the fast path, is `red unproven`
+     the same way.
    - **Deleted**: `redfirst.go`'s knock-on, declaration and casing rules.
 2. **Scope as paths and globs, the fence matches paths only**:
    - The product owner, who reads the code, writes the Scope's files as
@@ -129,14 +149,29 @@ flowchart LR
    - **An issue with no path or glob**: its backticked words that are
      tracked paths count, as today; anything else asks.
    - **Deleted**: class name to file, Gradle module word to folder, the
-     `src/test` ↔ `src/main` helper rule.
+     `src/test` ↔ `src/main` helper rule and its prompt text, the
+     English-prose rule that reads a Scope as a guess (`codeUnread`;
+     the `Guessed:` mark stays).
+   - **Moved, not deleted**: the JVM classpath-shadowing check (a test
+     helper named like a main class) becomes a reviewer check.
 3. **One definition of a test file**: the project's `test-paths` and
    `test-homes`, from its packs or its config, read by the tester, the
-   developer, the product owner and the code picker. Four copies deleted.
+   developer, the product owner, the reviewer and the code picker.
+   The five Go copies are deleted; the reviewer's `tests` setting reads
+   the same.
 4. **The agent says which test covers which scenario**: a structured
-   field in its answer; the engine checks each test id in the JUnit
-   report, red on the base. An id not found is told the agent once,
-   then a person. The fuzzy name matcher is deleted.
+   field in its answer, an entry for every scenario, its test ids or a
+   written reason none can check it.
+   - **A report**: each id is found in the JUnit report, red on the base.
+   - **A broken build writes no report** (Gradle stops at
+     `compileTestKotlin`, [round 6](../research/round6-root-causes.md)):
+     each declared test is checked against the test files the change
+     adds, by file name or the pack's `test-name`.
+   - **A scenario with no entry** keeps today's block,
+     `scenario-without-test`, the answer asked again once.
+   - **An id not found, a reason disputed**: the existing chain, an
+     objection, then the product owner, then Blocked ([ADR-0059]).
+   - **Deleted**: the fuzzy name matcher.
 
 **And the code picker is frozen**: no new heuristic; its tables move
 to packs. An agent with read tools reads the files itself
@@ -165,6 +200,8 @@ One pull request a step, conformance cases first.
    the tables moved.
 6. **Rule B's test**, [#1231], its baseline only shrinking.
 7. **The two-repository round**, [#1232].
+8. **Parked, after the four changes**: agent-answer repair replaced by
+   a worktree for the tester, its `git diff` the patch, [#1233].
 
 ## Settled
 
@@ -179,9 +216,9 @@ One pull request a step, conformance cases first.
 - **Tree-sitter or ctags not adopted**: a dependency per language
   (principle 11); the codenav rows move to packs as they are.
 - **Agent answer repair** (`intent.NormalizeDiff`, prose before a
-  list) is not changed here: its miss already falls back to asking the
-  agent again, Rule A holds. A worktree for the tester is a later
-  choice.
+  list) breaks Rule A: a wrong repair passes changed content silently.
+  Parked after the four changes (step 8): a worktree for the tester,
+  its `git diff` the patch, as the developer's.
 
 ## Prior art
 
@@ -240,6 +277,7 @@ One pull request a step, conformance cases first.
 [#1209]: https://github.com/JN0V/workline/issues/1209
 [#1211]: https://github.com/JN0V/workline/issues/1211
 [#1214]: https://github.com/JN0V/workline/issues/1214
+[#1233]: https://github.com/JN0V/workline/issues/1233
 [#1226]: https://github.com/JN0V/workline/issues/1226
 [#1227]: https://github.com/JN0V/workline/issues/1227
 [#1228]: https://github.com/JN0V/workline/issues/1228
@@ -251,6 +289,8 @@ One pull request a step, conformance cases first.
 [ADR-0045]: 0045-the-judge-asks-for-the-code-it-needs.md
 [ADR-0046]: 0046-the-auditor-re-checks-every-roles-acts.md
 [ADR-0054]: 0054-the-developer-takes-a-ready-issue-to-a-pull-request.md
+[ADR-0059]: 0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md
+[ADR-0060]: 0060-the-person-is-on-the-loop.md
 [ADR-0055]: 0055-the-tester-writes-the-acceptance-tests-before-the-code.md
 [ADR-0063]: 0063-every-open-issue-is-due-waiting-or-done.md
 [ADR-0063 §8]: 0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them
