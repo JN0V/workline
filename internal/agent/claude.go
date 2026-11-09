@@ -170,6 +170,14 @@ func (c claude) Propose(req Request) (Call, error) {
 		}
 		return call, fmt.Errorf("%w: claude failed: %s", ErrUnavailable, lastLine(errOut.String()+said))
 	}
+	if !parsed && tree != "" {
+		// The raw stream may hold file contents and command output: never
+		// kept nor posted as the agent's words (#750). Its edits are its code.
+		_ = os.WriteFile(filepath.Join(req.RunDir, "out", ClosingUnread),
+			[]byte("The agent's closing words could not be read: its output held no result message.\n"), 0o644)
+		call.Mended = []string{"the agent's closing words could not be read: its output held no result message, and none of it is kept"}
+		return call, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), []byte("[]\n"), 0o644)
+	}
 	if !parsed {
 		answer.Result = out.String() // not the JSON asked for: read it as the answer itself
 	}
