@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -40,7 +41,8 @@ func noSources(repo string, t Tree, globs []string) ([]verdict.Finding, map[stri
 	var code map[string][]string
 	proposing := os.Getenv("WORKLINE_AI") == "none"
 	if proposing {
-		code = codeByName(t.Files, globs)
+		tests, _ := role.TestDef(os.Getenv("WORKLINE_ROLES_DIR"), repo) // unread: the generic one
+		code = codeByName(t.Files, globs, tests)
 	}
 	matched := 0
 	for _, p := range paths {

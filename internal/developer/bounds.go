@@ -25,6 +25,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/steer"
 	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/tester"
@@ -117,9 +118,9 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 	for _, sc := range work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text) {
 		b.Scenarios = append(b.Scenarios, sc.Name)
 	}
-	if ts, err := testerSettings(repo); err == nil {
-		b.TestPaths, b.TestHomes = ts.Paths, ts.Homes
-	}
+	// The project's one definition, as every role reads it (ADR-0065).
+	tests, _ := role.TestDef(os.Getenv("WORKLINE_ROLES_DIR"), repo)
+	b.TestPaths, b.TestHomes = tests.Paths, tests.Homes
 	comments, err := bl.Comments(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {
 		return b, err

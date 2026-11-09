@@ -110,8 +110,8 @@ func SettingsFrom(m map[string]any) (Settings, error) {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return s, fmt.Errorf("the tester's settings: %w", err)
 	}
-	if err := testdef.Check(s.Homes); err != nil {
-		return s, fmt.Errorf("the tester's settings: %w", err)
+	if testdef.Check(s.Homes) != nil {
+		s.Homes = nil // ignored, as every role does: the generic homes; doctor says why
 	}
 	d := s.Tests()
 	s.Paths, s.Homes = d.Paths, d.Homes
