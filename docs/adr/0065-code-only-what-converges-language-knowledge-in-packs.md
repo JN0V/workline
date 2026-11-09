@@ -13,7 +13,10 @@
   [ADR-0054] and [ADR-0063 §9] (the Scope bounds no write; a file
   beyond it is listed on the pull request);
   [ADR-0063 §8] (the code picker frozen); [ADR-0059] (a `red unproven`
-  Draft moves the issue to ready, as a proven one does)
+  Draft moves the issue to ready, as a proven one does; its
+  [2026-11-03 amendment], a fix outside the Scope asks the product
+  owner, reversed: no scope-ask on a file); [ADR-0060] §2 (the
+  developer asks to widen the Scope: no longer)
 - **Research:** [round6-root-causes.md](../research/round6-root-causes.md)
 - **Amended:** 2026-11-09, [change 2](#2-scope-as-paths-a-hint-not-a-fence):
   the Scope a hint, not the developer's fence
@@ -191,11 +194,14 @@ miss is the scope-ask".
 - **Moved, not deleted**: the JVM classpath-shadowing check (a test
   helper named like a main class) becomes a reviewer lens, a prompt
   that judges, not Go code (Rule B).
-- **Two preconditions, built first**:
+- **Two preconditions, built first**, not unanimous: each closes a gap
+  the fence hid.
   - **A fix merges alone only with a reviewer verdict on its head**
-    ([#1254]): the reviewer on merge requests is opt-in; with no
-    reviewer comment, no finding is open and a fix merges unread.
-  - **The green proof requires every frozen test id** ([#1255]): it
+    ([#1254]), raised by two of the three: the reviewer on merge
+    requests is opt-in; with no reviewer comment, no finding is open
+    and a fix merges unread.
+  - **The green proof requires every frozen test id** ([#1255]), raised
+    by one, a real gap all the same: it
     takes the head's tests the base lacks (`internal/tester/green.go`),
     so a build-file edit, now allowed, could drop a frozen test.
 
@@ -369,6 +375,7 @@ One pull request a step, conformance cases first.
 [#1257]: https://github.com/JN0V/workline/issues/1257
 [PR #1253]: https://github.com/JN0V/workline/pull/1253
 [ADR-0058]: 0058-the-forge-guards-the-project-not-the-agents-environment.md
+[2026-11-03 amendment]: 0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0045]: 0045-the-judge-asks-for-the-code-it-needs.md
 [ADR-0046]: 0046-the-auditor-re-checks-every-roles-acts.md

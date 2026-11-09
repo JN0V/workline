@@ -14,6 +14,9 @@
   [ADR-0042] and [ADR-0054] (a feature's yes moves to the candidate at
   `enterprising`), [ADR-0017] (the candidate's branch), [ADR-0059]
   (Blocked's reason; the bug's proof kind)
+- **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence),
+  once built: §2's "the developer asks it to widen the Scope" goes; a
+  file outside the Scope is applied and listed on the pull request
 - **Research:** [person-on-the-loop.md](../research/person-on-the-loop.md)
 
 ## Context
