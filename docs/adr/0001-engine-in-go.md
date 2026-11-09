@@ -1,6 +1,9 @@
 # ADR-0001: Write the engine in Go, configure it in YAML, leave Windows out
 
 - **Status:** accepted; amended 2026-09-24
+- **To be amended by:** [ADR-0066](0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md#2-ai-first-code-replaces-it-part-by-part-temporary),
+  for now: a core role may need an agent where working without one
+  makes it rigid; it still installs with nothing but git and the engine
 - **Date:** 2026-09-23
 - **Decided by:** the project's author, after a BMAD party-mode round table (architect, developer,
   security engineer, open-source maintainer, devil's advocate)

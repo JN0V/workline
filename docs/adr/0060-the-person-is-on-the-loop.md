@@ -17,6 +17,9 @@
 - **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence),
   once built: §2's "the developer asks it to widen the Scope" goes; a
   file outside the Scope is applied and listed on the pull request
+  and [ADR-0066](0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md#1-a-role-mirrors-a-human-role),
+  once built: §2's Verification moves to the tester; the product owner
+  keeps the Scope, as a hint
 - **Research:** [person-on-the-loop.md](../research/person-on-the-loop.md)
 
 ## Context
