@@ -1,3 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 routing/ready-overlap-gone-wait-said
+tester/frozen-closing-pr-changed-blocks
+tester/frozen-closing-pr-no-draft-passes
+tester/green-closing-pr-proven

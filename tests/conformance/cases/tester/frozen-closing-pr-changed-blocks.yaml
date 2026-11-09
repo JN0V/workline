@@ -1,0 +1,24 @@
+case: tester/frozen-closing-pr-changed-blocks
+about: >
+  The frozen guard where the tests merge (#1281): on the developer's pull
+  request closing the issue, a commit that changes a test the tester froze
+  on its Draft blocks, tester-test-changed, its record read from the Draft.
+given:
+  repo: tested-draft
+  setup:
+    - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && printf '. ./lib.sh\n[ \"$(mul 2 3)\" ]\n' > tests/test_mul_two_by_three.sh && git commit -qam 'feat: multiply'"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"tests\":[\"tests.test_mul_by_zero\",\"tests.test_mul_two_by_three\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        body: "Closes #3"
+run: {role: tester, event: merge-request, target: {merge-request: 2}}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: tester-test-changed, where: tests/test_mul_two_by_three.sh, message: "feat: multiply changes"}

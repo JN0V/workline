@@ -1,0 +1,15 @@
+case: tester/frozen-closing-pr-no-draft-passes
+about: >
+  A merge request closing an issue the tester holds no open Draft for has
+  no test of the tester's to guard: it passes, saying so.
+given:
+  repo: tested
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-4, draft: true}
+      - {id: 2, branch: feat/multiply, body: "Closes #3"}
+run: {role: tester, event: merge-request, target: {merge-request: 2}}
+expect:
+  status: pass
+  summary: "no tester's Draft for an issue it closes: no test of its to guard"
+  agent-calls: 0
