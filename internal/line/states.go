@@ -194,6 +194,34 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	now, ok := due(cfg, s, is, trail.Labeled, spec, rec, had)
 	changed := ok // due on a new state, label, body or review: not a retry (typedDue)
 	var inputs map[string]string
+	given := ""
+	if s.Name == refineState && name == backlog.Keeper {
+		given = givenNow(comments)
+	}
+	if l, on := lastOn(rec, name, now, talkHash(comments), given); ok && had && on {
+		// Due anew on the input of its role's last run there (#1157): a
+		// revisit moved it back, nothing in it changed. Code said lacking
+		// is given, or a person's, as in its step (outcome.go); refine,
+		// read again, would get the same: a person's.
+		why := ""
+		switch {
+		case l.Said != "" && l.Times > 1:
+			why = fmt.Sprintf("the %s said again it lacks code in its state %s, given what it named, and nothing changed since: %s; a person names the files it needs in a comment", name, s.Name, l.Said)
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "needs-spent", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
+		case l.Said != "":
+			inputs = map[string]string{NeedsInput: l.Said}
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: where,
+				Message: fmt.Sprintf("the %s said it lacks code on this same input: run again, given %s", name, l.Said)})
+		case rec.State == BlockedState && rec.From == s.Name:
+			// Blocked from refine itself: a block from a state further on
+			// is news its read never saw, read again.
+			why = fmt.Sprintf("the %s read it in %s before it was blocked, on this same text, code and comments: read again, it would get the same; a person completes it, or names the files it is about in a comment", strings.ReplaceAll(name, "-", " "), s.Name)
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-same-input", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
+		}
+		if why != "" {
+			return nil, &StateWrite{Issue: is.ID, Record: blocking(now, s.Name, why, comments), Blocked: why}, nil
+		}
+	}
 	retried := false
 	if !ok && had {
 		// Its last run on this input a machine error, or short of code
@@ -596,8 +624,8 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	before, steps := len(res.Findings), len(res.Steps)
 	first := steps // the step's runs, counted in its record (ADR-0064)
 	_, status := runRole(res, cfg, o, 0)
-	out, given := outcomeOf(res.Steps[steps:], status), false
-	if needsCode(out) && status != verdict.BlockedExternal && sameState(f, cfg, st) {
+	out, given := outcomeOf(res.Steps[steps:], status), st.inputs[NeedsInput] != "" // given what it lacked on its input (#1157)
+	if needsCode(out) && !given && status != verdict.BlockedExternal && sameState(f, cfg, st) {
 		// Its agent named the code it lacked (ADR-0063, §5): Due at once,
 		// given it — the role runs again, once, in this step.
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: fmt.Sprintf("#%d", st.write.Issue),
@@ -622,6 +650,19 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	// the product owner (crossed). Code said lacking once it was given
 	// waits for a person (needs-spent). Any other outcome starts them again.
 	w, now := st.write.Record, clock().UTC()
+	// ranOn keeps the input its run was on, the comments as its run left
+	// them, with what its agent said it lacked there (#1157).
+	ranOn := func(said string, times int) {
+		if w.State == BlockedState {
+			return // a blocked issue read again: its news is its input
+		}
+		var comments []string
+		if b, ok := f.(forge.Backlog); ok {
+			comments, _ = b.Comments(forge.Target{Kind: "issue", ID: st.write.Issue})
+		}
+		st.write.Record.Last = withLast(w.Last, st.role, &LastRun{State: w.State, Body: w.Body, Labels: w.Labels, Spec: w.Spec, Given: w.Given,
+			Talk: talkHash(comments), Said: said, Times: times})
+	}
 	same := st.rec.State == w.State && st.rec.Body == w.Body && st.rec.Labeled == w.Labeled && sameLabels(st.rec, w) // the same input
 	st.write.Record.Errors, st.write.Record.Lost, st.write.Record.Needs = nil, "", nil
 	// blockNow moves the issue to Blocked in this step, said at once.
@@ -658,6 +699,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	case needsCode(out) && given:
 		// Said lacking again once given it (ADR-0063, §5): Waiting on a
 		// person, Blocked on the board, in this step, said at once.
+		ranOn(oneLine(out.Said), 2)
 		blockNow("needs-spent", fmt.Sprintf("the %s said again it lacks code in its state %s, given what it named: %s; a person names the files it needs in a comment", st.role, st.from.Name, oneLine(out.Said)))
 	case needsCode(out):
 		n := &Needs{Said: oneLine(out.Said), At: now.Format(time.RFC3339), Times: 1}
@@ -665,6 +707,14 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			n.Times = 2
 		}
 		st.write.Record.Needs = n
+		ranOn(n.Said, n.Times)
+	case st.role == backlog.Keeper && w.State == refineState:
+		// Its read of refine: read again on the same input after a block,
+		// it would get the same (#1157).
+		ranOn("", 0)
+	case w.Last[st.role].State == w.State:
+		// It had what it needed on its state's input: nothing lacked now.
+		st.write.Record.Last = withLast(w.Last, st.role, nil)
 	}
 	if st.role == backlog.Keeper {
 		// Held for its spec review: said on the issue with the record,

@@ -138,9 +138,58 @@ func issueOf(branch string) int {
 	return n
 }
 
-// guardPre is the frozen guard, the tester on a merge request, then, on
-// the one that closes the issue, the green proof: no agent but the judge
-// of a frozen test not found under its name (renamed.go).
+// closingDrafts are the tester's open Drafts of the issues mr closes,
+// none when it closes none or no issue has one: the developer's pull
+// request, stacked on that Draft, merges its tests, so they are guarded
+// and proven green there, each record read from its Draft (#1281). Any
+// branch closing an issue is read so, not only the developer's: the pull
+// request that closes an issue carries its frozen tests. ok is false
+// when the forge lists no merge request: none could be looked for.
+func closingDrafts(f forge.Forge, mr forge.MergeRequest) (drafts []int, ok bool, err error) {
+	closes := forge.Closes(mr.Title, mr.Body)
+	if len(closes) == 0 {
+		return nil, true, nil
+	}
+	open, err := f.ListMergeRequests()
+	if errors.Is(err, forge.ErrUnreachable) {
+		return nil, false, err
+	} else if err != nil {
+		return nil, false, nil
+	}
+	for _, n := range closes {
+		for _, o := range open {
+			if o.ID != mr.ID && issueOf(o.Branch) == n && !slices.Contains(drafts, o.ID) {
+				drafts = append(drafts, o.ID)
+			}
+		}
+	}
+	return drafts, true, nil
+}
+
+// merged is the records of several Drafts as one, for one green proof:
+// their files, tests and scenarios together, the first's base.
+func merged(rs []record) record {
+	if len(rs) == 1 {
+		return rs[0]
+	}
+	m := rs[0]
+	m.Files = map[string]string{}
+	m.Tests, m.Errored, m.Scenarios = nil, nil, nil
+	for _, r := range rs {
+		for k, v := range r.Files {
+			m.Files[k] = v
+		}
+		m.Tests = append(m.Tests, r.Tests...)
+		m.Errored = append(m.Errored, r.Errored...)
+		m.Scenarios = append(m.Scenarios, r.Scenarios...)
+	}
+	return m
+}
+
+// guardPre is the frozen guard, the tester on a merge request — its own
+// Draft, or one closing the Draft's issue —, then, on one ready, the
+// green proof: no agent but the judge of a frozen test not found under
+// its name (renamed.go).
 func guardPre(runDir, repo string, s Settings) int {
 	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
 	id, _ := strconv.Atoi(num)
@@ -170,20 +219,54 @@ func guardPre(runDir, repo string, s Settings) int {
 	} else if err != nil {
 		return fail(err)
 	}
+	from := []int{id}
 	if issueOf(mr.Branch) == 0 {
-		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "not a tester's branch: no test of its to guard"})
+		drafts, ok, err := closingDrafts(f, mr)
+		if errors.Is(err, forge.ErrUnreachable) {
+			fmt.Fprintln(os.Stderr, err)
+			return exitExternal
+		}
+		if !ok {
+			return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "the tester's Drafts not read: no test of its guarded",
+				Findings: []verdict.Finding{{Rule: "drafts-unread", Level: "warn", Where: fmt.Sprintf("merge request %d", id),
+					Message: "it closes an issue, and the forge lists no merge request (`merge-requests`): the tester's Draft of that issue, and the tests it froze, cannot be found"}}})
+		}
+		if len(drafts) == 0 {
+			return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no tester's Draft for an issue it closes: no test of its to guard"})
+		}
+		from = drafts
 	}
-	r, missing, err := readRecord(f, id)
-	if errors.Is(err, forge.ErrUnreachable) {
-		fmt.Fprintln(os.Stderr, err)
-		return exitExternal
-	} else if err != nil {
-		return fail(err)
+	var rs []record
+	var v verdict.Verdict // every Draft's guard
+	for _, d := range from {
+		r, missing, err := readRecord(f, d)
+		if errors.Is(err, forge.ErrUnreachable) {
+			fmt.Fprintln(os.Stderr, err)
+			return exitExternal
+		} else if err != nil {
+			return fail(err)
+		}
+		if missing != nil {
+			return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the tester's tests cannot be told", Findings: []verdict.Finding{*missing}})
+		}
+		draft := 0
+		if d != id {
+			draft = d
+		}
+		g := guard(repo, r, draft)
+		if len(rs) == 0 || g.Status != verdict.Pass {
+			v.Status, v.Summary = g.Status, g.Summary
+		}
+		v.Findings = append(v.Findings, g.Findings...)
+		rs = append(rs, r)
 	}
-	if missing != nil {
-		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the tester's tests cannot be told", Findings: []verdict.Finding{*missing}})
+	r := merged(rs)
+	if len(rs) > 1 { // the summary counts every Draft's
+		v.Summary = fmt.Sprintf("the tester's %d test files of %d Drafts as it wrote them", len(r.Files), len(rs))
+		if v.Status != verdict.Pass {
+			v.Summary = fmt.Sprintf("%d of the tester's tests changed by another", len(v.Findings))
+		}
 	}
-	v := guard(repo, r)
 	switch {
 	case v.Status != verdict.Pass:
 		v.Summary += "; the green proof waits for the tests as the tester wrote them"
@@ -207,8 +290,14 @@ func guardPre(runDir, repo string, s Settings) int {
 	return final(runDir, v)
 }
 
-// guard compares each recorded test file with the head's.
-func guard(repo string, r record) verdict.Verdict {
+// guard compares each recorded test file with the head's; draft is the
+// tester's Draft the record was read from, 0 when it is the merge request
+// guarded: an objection is answered there only.
+func guard(repo string, r record, draft int) verdict.Verdict {
+	where := "on its line"
+	if draft > 0 {
+		where = fmt.Sprintf("on its line in the tester's Draft, merge request %d (not here: the tester answers on its own branch)", draft)
+	}
 	var findings []verdict.Finding
 	for _, file := range r.files() {
 		blob, err := git(repo, "rev-parse", "--verify", "-q", "HEAD:"+file)
@@ -226,7 +315,7 @@ func guard(repo string, r record) verdict.Verdict {
 		}
 		findings = append(findings, verdict.Finding{Rule: "tester-test-changed", Where: file,
 			Message: fmt.Sprintf("%s %s this test of the tester's: only the tester changes its tests. Put it back as it was, "+
-				"and object on its line, the comment opened by `workline:objection`: the tester answers, kept or rewritten (ADR-0055)", by, what)})
+				"and object %s, the comment opened by `workline:objection`: the tester answers, kept or rewritten (ADR-0055)", by, what, where)})
 	}
 	if len(findings) > 0 {
 		return verdict.Verdict{Status: verdict.Block, Summary: fmt.Sprintf("%d of the tester's tests changed by another", len(findings)), Findings: findings}
