@@ -19,5 +19,5 @@ expect:
     issues:
       - id: 4
         comments: 2
-        comment-contains: ["**Holds nothing**: 1 important finding open, round 1 of 5. Verification, the tester's: it answers it as it writes the tests, after ready, and holds nothing back.", "in=Verification -->"]
+        comment-contains: ["**Holds nothing**: 1 important finding open, round 1 of 5. Verification, the tester's: it answers it as it writes the tests, before ready, and holds nothing back.", "in=Verification -->"]
         comment-lacks: ["Verification, a person's", "Verification, the product owner's"]

@@ -52,7 +52,7 @@ var Headings = Table{
 
 // Required are the meanings an item needs before it is ready, in the order
 // a check says what is missing. The Verification is not one: the tester
-// writes it from its tests, after ready (ADR-0066).
+// writes it from its tests, in needs-tests, before ready (ADR-0066).
 var Required = []Meaning{Need, Validation, Scope}
 
 // Meaning is the meaning a heading names; "" when it names none.

@@ -133,13 +133,17 @@ func SpecHold(is forge.Issue, comments []string) (rule, why string) {
 		return SpecRecordUnread, SpecUnread(err)
 	case r == nil:
 		return "spec-not-reviewed", "the reviewer has not read its spec yet: ready once it has and no important finding is open, or a person accepts it (" + LabelAccepted + ")"
+	case r.Stopped && r.Open > 0 && r.Testers():
+		// Its rounds spent on findings in the tester's Verification alone:
+		// none a person's, the tester answers them as it writes its tests.
+		return "", ""
 	case r.Stopped:
 		return "spec-rounds-spent", fmt.Sprintf("the reviewer's findings still open after %d rounds: a person's to decide, as the reviewer's comment on it asks (%s, or %s by hand)", r.Round, LabelAccepted, LabelReady)
 	case r.Body != BodyDigest(is.Body):
 		return "spec-not-reviewed", "its spec changed since the reviewer read it: ready once it reads it again and no important finding is open"
 	case r.Open > 0 && r.Testers():
 		// Its findings lie in the tester's Verification alone (ADR-0066):
-		// the tester answers them as it writes its tests, after ready.
+		// the tester answers them as it writes its tests, in needs-tests.
 		return "", ""
 	case r.Open > 0:
 		return "spec-findings-open", fmt.Sprintf("%s of the reviewer open on its spec (round %d, in %s): the product owner answers at its next refine", plural(r.Open, "important finding"), r.Round, strings.Join(r.In, ", "))
@@ -148,10 +152,18 @@ func SpecHold(is forge.Issue, comments []string) (rule, why string) {
 }
 
 // SpecCleared says whether the reviewer read the issue's body as it is and
-// found no important finding open.
+// found no important finding open but in the tester's Verification
+// (ADR-0066), as SpecHold lets it through: the tester answers those. A
+// record stopped on such findings alone clears it too.
 func SpecCleared(is forge.Issue, comments []string) (*SpecReview, bool) {
 	r, _ := ReadSpecReview(comments) // one that does not read clears nothing (SpecHold says it)
-	return r, r != nil && !r.Stopped && r.Open == 0 && r.Body == BodyDigest(is.Body)
+	if r == nil {
+		return nil, false
+	}
+	if r.Open > 0 && r.Testers() {
+		return r, r.Stopped || r.Body == BodyDigest(is.Body)
+	}
+	return r, !r.Stopped && r.Open == 0 && r.Body == BodyDigest(is.Body)
 }
 
 // SpecOpen is the reviewer's record when it holds important findings open
@@ -178,7 +190,7 @@ func (r SpecReview) Testers() bool {
 // tester reads the findings against the issue as it is.
 func SpecForTester(comments []string) (string, []string) {
 	r, _ := ReadSpecReview(comments)
-	if r == nil || r.Stopped || r.Open == 0 {
+	if r == nil || r.Open == 0 { // its rounds spent too: the tester answers them
 		return "", nil
 	}
 	var in []string

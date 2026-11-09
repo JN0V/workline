@@ -184,12 +184,18 @@ func waitingSpecs(repo string, f forge.Backlog) (ws []waiting, unread []verdict.
 }
 
 // round is the review this one is: one more after a review that left an
-// important finding open, else the first.
+// important finding open for the product owner, else the first. Findings
+// in the tester's Verification alone spend no round: the product owner
+// does not answer them (ADR-0066), so they never put the issue to a
+// person.
 func round(prior *backlog.SpecReview) int {
-	if prior != nil && prior.Open > 0 {
-		return prior.Round + 1
+	switch {
+	case prior == nil || prior.Open == 0:
+		return 1
+	case prior.Testers():
+		return prior.Round
 	}
-	return 1
+	return prior.Round + 1
 }
 
 // queue is what a spec run finds on the forge: the specs it reads, at most
@@ -510,7 +516,7 @@ func whoAnswers(in, mine []string) string {
 			strings.Join(theirs, ", "), plural(len(theirs), "it", "them"), plural(len(theirs), "it", "them"), backlog.LabelAccepted)
 	}
 	if len(testers) > 0 {
-		fmt.Fprintf(&b, "%s, the tester's: it answers %s as it writes the tests, after ready, and holds nothing back. ", strings.Join(testers, ", "), plural(len(testers), "it", "them"))
+		fmt.Fprintf(&b, "%s, the tester's: it answers %s as it writes the tests, before ready, and holds nothing back. ", strings.Join(testers, ", "), plural(len(testers), "it", "them"))
 	}
 	if len(own)+len(theirs) == 0 && len(testers) > 0 {
 		return strings.TrimSpace(b.String())
