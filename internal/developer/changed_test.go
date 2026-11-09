@@ -118,3 +118,50 @@ func TestHeldReadsClaimedIssuesAlone(t *testing.T) {
 		t.Errorf("held = %v", held)
 	}
 }
+
+// A shallow clone, as a CI checkout, is deepened until the branch and
+// its base share a merge base: it reads the same diff as a full clone,
+// not the prediction (#1256).
+func TestChangedDeepensAShallowClone(t *testing.T) {
+	dir := t.TempDir()
+	src, origin, shallow := filepath.Join(dir, "src"), filepath.Join(dir, "origin.git"), filepath.Join(dir, "shallow")
+	env := append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1",
+		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.invalid", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.invalid")
+	run := func(in string, args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir, cmd.Env = in, env
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+	}
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write := func(name, s string) {
+		if err := os.WriteFile(filepath.Join(src, name), []byte(s), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	run(src, "init", "-q", "-b", "main")
+	write("a.txt", "a\n")
+	run(src, "add", ".")
+	run(src, "commit", "-q", "-m", "first")
+	run(src, "checkout", "-q", "-b", "workline/developer/1")
+	write("c.txt", "c\n")
+	run(src, "add", ".")
+	run(src, "commit", "-q", "-m", "change")
+	run(src, "checkout", "-q", "main")
+	for i := range 5 {
+		write("b.txt", string(rune('0'+i))+"\n")
+		run(src, "add", ".")
+		run(src, "commit", "-q", "-m", "main moves on")
+	}
+	run(dir, "clone", "-q", "--bare", src, origin)
+	run(dir, "clone", "-q", "--depth=1", "file://"+origin, shallow)
+
+	files, ok := Changed(shallow, false)(forge.MergeRequest{ID: 4, Branch: "workline/developer/1", Base: "main", Here: true})
+	if !ok || !slices.Equal(files, []string{"c.txt"}) {
+		t.Errorf("changed = %v, %v: want c.txt, read", files, ok)
+	}
+}

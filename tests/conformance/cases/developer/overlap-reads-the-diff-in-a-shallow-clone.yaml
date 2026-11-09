@@ -1,0 +1,28 @@
+case: developer/overlap-reads-the-diff-in-a-shallow-clone
+about: >
+  A shallow clone, as a CI checkout, reads the held pull request's diff
+  too (#1256): main moved on since #1's branch was cut, and the clone
+  holds main's last commit alone, no merge base. It is deepened until
+  one is found, so #2, whose Scope names run-tests.sh that #1's pull
+  request changes, is passed over as on a full clone; the line's
+  reconcile reads the same diff. #3, clear, is taken.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main && git checkout -q -b workline/developer/1 && echo '# all tests' >> run-tests.sh && git commit -qam 'feat: report' && git push -q origin workline/developer/1 && git checkout -q main && git branch -q -D workline/developer/1 && echo '# one' >> README.md && git commit -qam 'docs: one' && echo '# two' >> README.md && git commit -qam 'docs: two' && git push -q origin main && git fetch -q --depth=1 origin main && test \"$(git rev-parse --is-shallow-repository)\" = true"
+  forge:
+    issues:
+      - {id: 1, title: "Report", labels: ["workline:ready", "workline:developing"], body: "## Need\n\nI want a report.\n\n## Scope\n\n- `lib.sh`: the report.\n"}
+      - {id: 2, title: "Count", labels: ["workline:ready"], body: "## Need\n\nI want a count.\n\n## Scope\n\n- `run-tests.sh`: the count.\n"}
+      - {id: 3, title: "Document", labels: ["workline:ready"], body: "## Need\n\nI want it said.\n\n## Scope\n\n- `docs/usage.md`.\n"}
+    merge-requests:
+      - {id: 4, branch: workline/developer/1, base: main, title: "feat: report", body: "Closes #1"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #3"
+  agent-calls: 1
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comment-contains: ["its Scope's `run-tests.sh` overlaps #1's, taken"]}
+      - {id: 3, labels: ["workline:developing"]}

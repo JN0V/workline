@@ -16,8 +16,12 @@ type Diffs func(forge.MergeRequest) ([]string, bool)
 // Changed reads merge requests' changed files with git in repo, each
 // once: its branch in repo itself where the forge keeps branches there
 // (keeps, the local forge), else its branch fetched from origin, or a
-// fork's head ref. Nothing is written but FETCH_HEAD. A head
-// that cannot be read is not: the caller falls back on the prediction.
+// fork's head ref. A fetch writes FETCH_HEAD and, by git's
+// opportunistic update, refs/remotes/origin/<branch> of each branch
+// fetched; nothing else. A shallow clone, as a CI checkout, is deepened
+// until the merge base is found (deepened): the line's reconcile and the
+// developer then read the same diff. A head that cannot be read is
+// not: the caller falls back on the prediction.
 func Changed(repo string, keeps bool) Diffs {
 	if repo == "" {
 		return nil
@@ -63,7 +67,8 @@ func changedFiles(repo string, keeps bool, m forge.MergeRequest) ([]string, bool
 		}
 		heads, err := fetched(repo, refs)
 		if err != nil && len(refs) > 1 {
-			heads, err = fetched(repo, refs[:1])
+			refs = refs[:1]
+			heads, err = fetched(repo, refs)
 		}
 		if err != nil || len(heads) == 0 {
 			return nil, false
@@ -71,6 +76,12 @@ func changedFiles(repo string, keeps bool, m forge.MergeRequest) ([]string, bool
 		tip = heads[0]
 		if len(heads) > 1 {
 			base = heads[1]
+		}
+		if base == "" {
+			base = localBase(repo, m.Base)
+		}
+		if !deepened(repo, refs, base, tip) {
+			return nil, false
 		}
 	}
 	if base == "" {
@@ -113,6 +124,25 @@ func fetched(repo string, refs []string) ([]string, error) {
 		}
 	}
 	return heads, nil
+}
+
+// deepened says base and tip share a merge base, deepening a shallow
+// clone's history from origin until they do: by 64 commits, then 1024,
+// then whole. A full clone without one has none to find.
+func deepened(repo string, refs []string, base, tip string) bool {
+	for _, deepen := range []string{"--deepen=64", "--deepen=1024", "--unshallow"} {
+		if _, err := gitOut(repo, "merge-base", base, tip); err == nil {
+			return true
+		}
+		if s, _ := gitOut(repo, "rev-parse", "--is-shallow-repository"); s != "true" {
+			return false
+		}
+		if _, err := gitOut(repo, append([]string{"fetch", "-q", "--no-tags", deepen, "origin"}, refs...)...); err != nil {
+			return false
+		}
+	}
+	_, err := gitOut(repo, "merge-base", base, tip)
+	return err == nil
 }
 
 // localBase is the clone's base branch: origin's as last fetched, else

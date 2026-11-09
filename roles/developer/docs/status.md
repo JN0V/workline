@@ -61,7 +61,8 @@ hold:
   Cases `developer/picks-first-ready-unassigned`,
   `skips-assigned-issue`, `skips-issue-with-open-pr`,
   `skips-overlapping-scope`, `overlap-reads-the-held-pull-requests-diff`,
-  `overlap-predicted-only-does-not-wait`, `none-ready-says-so`,
+  `overlap-predicted-only-does-not-wait`,
+  `overlap-reads-the-diff-in-a-shallow-clone`, `none-ready-says-so`,
   `no-agent-opens-nothing`.
 - **The bounds** (step 2): the agent's patches held, file by file, to
   the frozen acceptance tests, the files that steer agents and a gate's
