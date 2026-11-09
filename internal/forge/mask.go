@@ -35,8 +35,7 @@ const Masked = "***"
 // Secrets are the values in env a command's output must never show
 // quoted (#1215): those of Tokens and of the variables named like a
 // secret, each line of a value on several lines too (a private key),
-// of minSecret characters or more, the longest first, so one holding
-// another is masked whole.
+// of minSecret characters or more, the longest first.
 func Secrets(env []string) []string {
 	seen := map[string]bool{}
 	var out []string
@@ -83,10 +82,46 @@ func Mask(s string) string {
 	return MaskWith(s, Secrets(os.Environ()))
 }
 
-// MaskWith is s with each of secrets replaced by Masked, in their order.
+// MaskWith is s with each of secrets replaced by Masked. Every match of
+// every value is found on s as it came, overlapping matches merged into
+// one span: a value replaced first never leaves part of another one,
+// which overlaps it, shown.
 func MaskWith(s string, secrets []string) string {
+	type span struct{ from, to int }
+	var spans []span
 	for _, v := range secrets {
-		s = strings.ReplaceAll(s, v, Masked)
+		if v == "" {
+			continue
+		}
+		for at := 0; ; {
+			i := strings.Index(s[at:], v)
+			if i < 0 {
+				break
+			}
+			spans = append(spans, span{at + i, at + i + len(v)})
+			at += i + 1
+		}
 	}
-	return s
+	if len(spans) == 0 {
+		return s
+	}
+	slices.SortFunc(spans, func(a, b span) int { return cmp.Compare(a.from, b.from) })
+	var b strings.Builder
+	last, cur := 0, spans[0]
+	flush := func() {
+		b.WriteString(s[last:cur.from])
+		b.WriteString(Masked)
+		last = cur.to
+	}
+	for _, sp := range spans[1:] {
+		if sp.from <= cur.to {
+			cur.to = max(cur.to, sp.to)
+			continue
+		}
+		flush()
+		cur = sp
+	}
+	flush()
+	b.WriteString(s[last:])
+	return b.String()
 }

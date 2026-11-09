@@ -39,3 +39,18 @@ func TestMaskReadsTheEnvironment(t *testing.T) {
 		t.Errorf("Mask = %q", got)
 	}
 }
+
+// Two values overlapping in the output are masked as one span: neither
+// leaves a part of the other shown; a value met twice is masked twice.
+func TestOverlappingSecretsMasked(t *testing.T) {
+	secrets := []string{"AAAAxxxx", "xxxxBBBB"}
+	if got := MaskWith("out AAAAxxxxBBBB end", secrets); got != "out *** end" {
+		t.Errorf("overlap: %q", got)
+	}
+	if got := MaskWith("AAAAxxxx and xxxxBBBB, AAAAxxxx", secrets); got != "*** and ***, ***" {
+		t.Errorf("apart: %q", got)
+	}
+	if got := MaskWith("abababab-abababab", []string{"abababab"}); got != "***-***" {
+		t.Errorf("repeated: %q", got)
+	}
+}
