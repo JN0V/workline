@@ -27,8 +27,10 @@
   (step 3, built): a new test file matching the tester's `test-paths`,
   beside the Scope, is in bounds; code wholly outside the Scope asks the
   product owner, the same files asked twice a person
-- **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#the-four-changes), once built: the bounds
-  read the Scope's paths and globs only, no class or module name
+- **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#the-four-changes), once built: the Scope's
+  paths are a hint, not bounds; a file beyond them is listed on the pull
+  request, judged by the reviewer; gate, steering and frozen-test files
+  stay refused
 
 ## Context
 

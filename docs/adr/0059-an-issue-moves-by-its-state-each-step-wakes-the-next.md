@@ -25,7 +25,10 @@
   same files asked twice, whatever the head, block it for a person
 - **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#1-red-for-the-right-reason-goes-to-judgement),
   once built: a `red unproven` Draft, its judge unsure, moves the issue
-  to ready too; the developer starts, the green proof settles it
+  to ready too; the developer starts, the green proof settles it;
+  [change 2, amended](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)
+  2026-11-09: the [2026-11-03 amendment](#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)
+  reversed, a file outside the Scope applied and listed, no scope-ask
 
 ## Context
 
