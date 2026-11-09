@@ -64,6 +64,17 @@ step 6).
   - **The record follows**: its start commit moves to the Draft's
     head, so [the bounds](bounds.md) hold the new test.
   - **Not in the record**: never taken, and no round due for it.
+- **The issue's body changed** ([#1271](https://github.com/JN0V/workline/issues/1271)):
+  a person rewrote the issue after the code was written; the record
+  keeps the body it read.
+  - **Asked as a person's comment is**: the issue as it reads now is
+    in the task; the agent holds its code to it.
+  - **Once a body**: the new one kept in the record. A record from
+    before has none to compare: nothing asked.
+  - **A person's change only**: the engine's own `Blocked by` line,
+    added or rewritten, starts no round.
+  - **No event wakes it**: the hourly reconciler starts it, the issue
+    saying so.
 - **The reviewer's rules alone** ([#1040](https://github.com/JN0V/workline/issues/1040)):
   rules that hold the lenses count no review run. A summary read at
   another head is a new verdict all the same, its head kept in the
@@ -78,7 +89,7 @@ step 6).
   workline's own account's comment is read.
 - **What it asks the agent**: the findings that block, and those that
   warn and are Important; a gate's new finding; a project check red;
-  a person's comment, as a finding. Nits are counted, never asked.
+  a person's comment, as a finding; the issue's new body. Nits are counted, never asked.
 - **Where its agent works**: as an issue run's
   ([the agent](agent.md)), in a worktree of its pull request's head,
   with tools, its [caps](proof.md#the-caps) the same. The question

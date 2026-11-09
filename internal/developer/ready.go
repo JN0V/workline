@@ -75,3 +75,25 @@ func readyPost(runDir string, r round) int {
 func readied(head string) []intent.Intention {
 	return []intent.Intention{{Kind: "comment", Value: map[string]any{"sticky": "ready", "body": readyBody(head)}}}
 }
+
+// DraftHolder says who acts next on mr, the developer's open Draft, when
+// no round is due on it (#1271): a person, why said, when its record
+// holds a cap reached, its agent's failure no round followed, or its
+// rounds handed off; "" when it is the developer's, its next round woken
+// by its checks' end, a red one, or a comment of a person's.
+func DraftHolder(f forge.Forge, mr forge.MergeRequest) (string, error) {
+	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: mr.ID})
+	if err != nil {
+		return "", err
+	}
+	body, ok := kept.Last(forge.Marker("sticky=developer/" + RecordKey))
+	a, read := ReadAct(body)
+	switch {
+	case !ok || !read:
+		return "", ErrRecordUnread
+	case a.Handed:
+		return fmt.Sprintf("past round %d, the developer handed it to a person", a.Round), nil
+	}
+	_, why := draftReady(f, a, "")
+	return why, nil
+}

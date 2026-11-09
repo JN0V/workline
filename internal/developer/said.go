@@ -158,7 +158,7 @@ func ClaimActIn(comments []string) Act {
 // NoCodeOnOtherBody says whether a claim's record a wrote no code on a
 // body other than body (#1084); false for a record from before Act.Body.
 func NoCodeOnOtherBody(a Act, body string) bool {
-	return a.NoCode && a.Body != "" && a.Body != BodyMark(body)
+	return a.NoCode && a.Body != "" && BodyChanged(a.Body, body)
 }
 
 // NoCodeOnSameBody says whether a claim's record a wrote no code on the
