@@ -149,7 +149,8 @@ Cases in `tests/conformance/cases/tester/`:
   (`test-flaky`), red in all is `test-red-on-head`; a flaky test the
   base had warns; a Draft waits ([the page](green-proof.md)). Each
   test id the record keeps must run: one missing blocks,
-  `frozen-test-missing` ([#1255](https://github.com/JN0V/workline/issues/1255)).
+  `frozen-test-missing` ([#1255](https://github.com/JN0V/workline/issues/1255));
+  one named from its file, beside other new tests, the judge's.
 - **The curator's measures** (step 6), no agent: `workline test
   measure` runs the suite twice on `HEAD`; each test's time, red and
   flaky ones, kept across measures in a history the CI passes as an

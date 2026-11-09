@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/green.go, internal/tester/frozen.go, internal/tester/tester.go]
+sources: [internal/tester/green.go, internal/tester/frozen.go, internal/tester/renamed.go, internal/tester/tester.go]
 checked: 4b0fd7a4
 verified: agent:claude-code
 ---
@@ -38,9 +38,17 @@ flowchart LR
   - **An id from a report** must be in each head run, green.
   - **A test whose build broke on the base** is kept as `file:name`:
     no report named it yet. Any head id holding that name as a whole
-    part is it (`pkg.Name`, `Name[1]`, `Name/case`). A report naming it
-    otherwise, a display name, is not found: it blocks, and the test
-    is objected to on its line.
+    part is it (`pkg.Name`, `Name[1]`, `Name/case`).
+  - **Not found by that name, while the head has other new tests**: the
+    match is a guess, so the judge decides
+    ([rule A](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-a-a-guess-may-only-pass)).
+    - It reads the ids, the head's new tests, the frozen files, and the
+      change beside them (build and runner files among it).
+    - "Ran under another name" (a display name): passes, said.
+    - "Dropped": `frozen-test-missing` blocks.
+    - Unsure, failed, or no agent: `frozen-unproven`, a warning on the
+      pull request for a person.
+  - **No new test the head could run it as**: it blocks, no judge.
   - **A record written before the ids were kept**: the head's tests
     the base lacks, as before, said by `frozen-ids-unknown`.
   - **A rewrite on an objection** moves the ids: the file's old ones,
@@ -64,7 +72,9 @@ flowchart LR
 |---|---|---|
 | `test-flaky` | yes | a new test passed in some runs, not all: the runs it was red in are named |
 | `test-flaky` | no, warns | a test the base already had is flaky here: not the change's |
-| `frozen-test-missing` | yes | a test of the record is in none of the three runs: its id is named |
+| `frozen-test-missing` | yes | a test of the record is in none of the three runs: its id is named; for a `file:name` beside other new tests, only on the judge's "dropped" |
+| `frozen-test-judged` | no, informs | the judge says a `file:name` test ran under another name |
+| `frozen-unproven` | no, warns | the judge did not tell, or no agent: a person reads the change |
 | `test-red-on-head` | yes | a frozen or new test is red, skipped or missing in each of the three runs |
 | `frozen-ids-unknown` | no, warns | an older record names files, not tests: the head's new tests are taken |
 | `no-new-test` | yes | an older record, and the head's reports name no test the base's does not |
