@@ -1,0 +1,24 @@
+case: tester/green-frozen-renamed-judge-unsure-said
+about: >
+  The judge cannot tell whether a frozen test named from its file ran
+  under another name: never a block on a guess, never silent. The proof
+  says it, frozen-unproven, for a person to read the change.
+given:
+  repo: tested-draft
+  setup:
+    - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && git commit -qam 'feat: multiply'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-unsure.yaml"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        body: "Closes #3"
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"tests\":[\"tests/test_mul_by_zero.sh:mulByZero\",\"tests.test_mul_two_by_three\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: tester, event: merge-request, target: {merge-request: 1}, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: frozen-unproven, level: warn, where: "tests/test_mul_by_zero.sh:mulByZero", message: "the judge cannot tell"}]
+  no-findings: [{rule: frozen-test-missing}]

@@ -1,0 +1,2 @@
+# The green proof's judge (ADR-0065, rule A): the change dropped the frozen test.
+- note: "no: run-tests.sh now skips every by_zero test file."

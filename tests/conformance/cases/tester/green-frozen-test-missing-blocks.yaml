@@ -3,8 +3,9 @@ about: >
   The green proof requires each test the tester froze, by the ids its
   record keeps, not the head's tests the base lacks (ADR-0065, change
   2). The developer's change edits the test runner so the
-  multiply-by-zero test no longer runs; the other test is green, new to
-  the base. The proof blocks, naming the missing test.
+  multiply-by-zero test no longer runs; the other test is green, and a
+  new test of the builder's runs. A report's id converges: no judge,
+  the proof blocks, naming the missing test.
 given:
   repo: tested-draft
   setup:
@@ -29,6 +30,12 @@ given:
       exit $failed
       RUN
       git commit -qam 'build: run fewer tests'
+    - |
+      cat > tests/test_mul_negative.sh <<'T'
+      . ./lib.sh
+      [ "$(mul -2 3)" = -6 ]
+      T
+      git add tests && git commit -qm 'test: multiply a negative number'
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:

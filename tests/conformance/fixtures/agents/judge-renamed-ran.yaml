@@ -1,0 +1,2 @@
+# The green proof's judge (ADR-0065, rule A): the frozen test ran under another name.
+- note: "yes: `mulByZero` is the test in tests/test_mul_by_zero.sh, reported as `tests.test_mul_by_zero`."
