@@ -10,7 +10,7 @@
   ([PRINCIPLES.md](../PRINCIPLES.md)); [ADR-0001]'s
   [2026-09-24 amendment](0001-engine-in-go.md#amendment-2026-09-24)
   (a core role needs nothing but git and the engine), as principle 5
-- **Amends, once built ([#1261]):** [ADR-0018] and [ADR-0060] §2 (the
+- **Amends, built in [#1261]:** [ADR-0018] and [ADR-0060] §2 (the
   product owner writes Verification, at every level); [ADR-0055] (the
   tester also writes the issue's Verification)
 

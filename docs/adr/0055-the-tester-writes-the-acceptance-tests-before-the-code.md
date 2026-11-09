@@ -1,9 +1,12 @@
 # ADR-0055: The tester writes the acceptance tests before the code, and keeps the corpus small
 
 - **Status:** proposed
-- **To be amended by:** [ADR-0066](0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md#1-a-role-mirrors-a-human-role),
-  once built ([#1261](https://github.com/JN0V/workline/issues/1261)):
-  the tester also writes the issue's Verification, its test plan
+- **Amended by:** [ADR-0066](0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md#1-a-role-mirrors-a-human-role),
+  built in [#1261](https://github.com/JN0V/workline/issues/1261): the
+  tester also writes the issue's Verification, its test plan, from the
+  tests it proved red: added where there is none, its own rewritten, a
+  person's kept and the tests' other way said on the issue; a reviewer's
+  finding on the Verification is the tester's to answer
 - **Date:** 2026-10-28
 - **Decided by:** the maintainer, on 2026-10-28: build the tester before
   the developer, which depends on it; the [five choices](#for-the-person)

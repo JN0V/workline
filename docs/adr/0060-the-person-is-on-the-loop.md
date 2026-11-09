@@ -17,9 +17,10 @@
 - **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence),
   once built: §2's "the developer asks it to widen the Scope" goes; a
   file outside the Scope is applied and listed on the pull request
-  and [ADR-0066](0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md#1-a-role-mirrors-a-human-role),
-  once built: §2's Verification moves to the tester; the product owner
-  keeps the Scope, as a hint
+- **Amended by:** [ADR-0066](0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md#1-a-role-mirrors-a-human-role),
+  built in [#1261](https://github.com/JN0V/workline/issues/1261): §2's
+  Verification moves to the tester; the product owner keeps the Scope,
+  as a hint
 - **Research:** [person-on-the-loop.md](../research/person-on-the-loop.md)
 
 ## Context
@@ -93,7 +94,9 @@ flowchart LR
 
 - **Verification and Scope** (below the `---`) are the product owner's
   at every level, even when a person wrote them: it rewrites them to
-  answer the reviewer, without asking.
+  answer the reviewer, without asking. Amended by [ADR-0066], built in
+  [#1261](https://github.com/JN0V/workline/issues/1261): the
+  Verification is the tester's; a finding there goes to the tester.
 - **Need and Validation stay the person's**, with an Example and Steps
   to reproduce: never rewritten, as today.
 - **Changes `Revisable`**: today a finding in a person's Verification
@@ -268,3 +271,4 @@ Docs to update with each step: [writing.md](../../roles/product-owner/docs/writi
 [ADR-0055]: 0055-the-tester-writes-the-acceptance-tests-before-the-code.md
 [ADR-0059]: 0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md
 [#844]: https://github.com/JN0V/workline/issues/844
+[ADR-0066]: 0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md
