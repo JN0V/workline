@@ -1,0 +1,19 @@
+# A refine whose Scope writes its files as paths and globs (#1228): one
+# the commit holds, a glob matching some, a new file on a line `New:`;
+# another naming a path the commit lacks, not marked new, and a glob
+# matching nothing.
+- refine:
+    issue: 9
+    scope: "- `src/export/csv.go`: WriteRows.\n- `src/export/*.go`: the writers.\n- New: `src/export/xml.go`, the XML writer."
+    verification: "A test writes three rows as XML and reads them back."
+    why: "Need and Validation are there; Verification and Scope are not."
+- refine:
+    issue: 12
+    scope: "- `src/export/csv.go`: the rows.\n- `src/import/xml.go`: the importer."
+    verification: "A test reads an XML file of two rows back."
+    why: "Need and Validation are there; Verification and Scope are not."
+- refine:
+    issue: 14
+    scope: "- `src/export/csv.go`: the rows.\n- `src/import/**`: the importers."
+    verification: "A test reads a file of two rows back."
+    why: "Need and Validation are there; Verification and Scope are not."

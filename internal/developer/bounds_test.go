@@ -476,53 +476,30 @@ func TestObjectionWithAnUnknownScenarioIsSaid(t *testing.T) {
 	}
 }
 
-// A Scope naming classes and files by their names alone bounds the files
-// they name, each line read with its modules (#1207): a class is its
-// file, a name several files have is the one in the line's module, a new
-// file's name a pattern under the module. With no module to choose among
-// several, nothing.
-func TestScopeNamedReadsNamesWithTheirModules(t *testing.T) {
+// The Scope's paths and globs are the bounds, nothing guessed from a
+// name (ADR-0065, change 2; #1228): a class or a module word bounds no
+// file; a path, a glob, a new file's path do.
+func TestScopePathsOnlyNoNameGuessed(t *testing.T) {
 	files := []string{
 		"core/session/build.gradle.kts",
 		"core/session/src/main/kotlin/s/SettingsRepository.kt",
-		"core/overlay/build.gradle.kts",
-		"core/overlay/src/main/kotlin/o/MatrixUtils.kt",
-		"feature/tracing/src/main/kotlin/t/Model.kt",
-		"feature/editor/src/main/kotlin/e/Model.kt",
-		"feature/tracing/src/test/kotlin/t/ModelTest.kt",
-		"core/overlay/docs/MatrixUtils.md",
-		"core/overlay/src/main/res/Grid.xml",
-		"native/grid/Grid.h", "native/grid/Grid.cpp",
-		"README.md",
+		"feature/tracing/src/main/kotlin/t/TracingViewModel.kt",
 	}
 	for _, c := range []struct {
 		name, scope string
 		want        []string
 	}{
-		{"class", "- core:session `SettingsRepository`.", []string{"core/session/src/main/kotlin/s/SettingsRepository.kt"}},
-		{"class, no module, one file", "- `MatrixUtils`.", []string{"core/overlay/src/main/kotlin/o/MatrixUtils.kt"}},
-		{"class in two modules, none named", "- `Model`.", nil},
-		{"class in two modules, one named", "- feature:tracing `Model`.", []string{"feature/tracing/src/main/kotlin/t/Model.kt"}},
-		{"a folder as the module", "- `feature/editor`: `Model`.", []string{"feature/editor/src/main/kotlin/e/Model.kt"}},
-		{"a name several files have, in a module", "- core:session `build.gradle.kts`.", []string{"core/session/build.gradle.kts"}},
-		{"a name several files have, no module", "- `build.gradle.kts`.", nil},
-		{"new file in a module", "- core:overlay: a new `CompositionGrid.kt`.", []string{"core/overlay/**/CompositionGrid.kt"}},
-		{"new file in a module, another module has one", "- core:overlay: a new `Model.kt`.", []string{"core/overlay/**/Model.kt"}},
-		{"new file, no module", "- a new `CompositionGrid.kt`.", []string{"**/CompositionGrid.kt"}},
-		{"a class is its source, not a page or data", "- core:overlay `Grid`, `README`.", nil},
-		{"a class's header and source", "- `native/grid`: `Grid`.", []string{"native/grid/Grid.h", "native/grid/Grid.cpp"}},
-		{"a word, not a class", "- `grid`, `Thirds`, `MatrixUtils.timesPoint`.", nil},
+		{"class", "- core:session `SettingsRepository`.", nil},
+		{"module word", "- `core:session`.", nil},
+		{"path", "- `feature/tracing/src/main/kotlin/t/TracingViewModel.kt`.", []string{"feature/tracing/src/main/kotlin/t/TracingViewModel.kt"}},
+		{"glob", "- `core/session/**`.", []string{"core/session/**"}},
+		{"narrow glob, never its folder", "- `core/session/*.kts`.", []string{"core/session/*.kts"}},
+		{"new file", "- New: `core/overlay/src/main/kotlin/o/CompositionGrid.kt`.", []string{"core/overlay/src/main/kotlin/o/CompositionGrid.kt"}},
 	} {
-		got := scopeNamed("## Need\n\nA need.\n\n## Scope\n\n"+c.scope+"\n", files)
-		if !slices.Equal(got, c.want) {
-			t.Errorf("%s: scopeNamed = %q, want %q", c.name, got, c.want)
+		body := "## Need\n\nA need.\n\n## Scope\n\n" + c.scope + "\n"
+		if got := inRepo(scopePaths(body, files), files); !slices.Equal(got, c.want) {
+			t.Errorf("%s: scope = %q, want %q", c.name, got, c.want)
 		}
-	}
-	if !under("core/overlay/src/main/kotlin/o/CompositionGrid.kt", []string{"core/overlay/**/CompositionGrid.kt"}) {
-		t.Error("the new file's pattern does not take it")
-	}
-	if under("feature/tracing/src/main/kotlin/t/CompositionGrid.kt", []string{"core/overlay/**/CompositionGrid.kt"}) {
-		t.Error("the new file's pattern takes it in another module")
 	}
 }
 

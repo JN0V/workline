@@ -2,8 +2,8 @@ case: routing/ready-overlap-gone-wakes
 about: >
   An issue the developer passed over for an overlap is due again once
   its Scope overlaps no claim held (#998), though the claim it waited on
-  still holds. #3's Scope, written before the `Guessed:` mark, says no
-  code was given: a guess, it overlaps nothing now. #4 still overlaps
+  still holds. #3's Scope, marked `Guessed:` since the developer passed
+  it over, is a guess: it overlaps nothing now. #4 still overlaps
   #5, its pull request open: it waits on. No agent asked, nothing
   written: the CI starts each run.
 given:
@@ -15,9 +15,9 @@ given:
       - id: 3
         title: "Multiply"
         labels: ["workline:ready", "bug"]
-        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: `mul`. No `mul` code was given in this run.\n"
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\nGuessed: no `mul` code was read.\n\n- `lib.sh`: `mul`.\n"
         comments:
-          - "<!-- workline:line-record {\"state\":\"ready\",\"body\":\"970b75497876\",\"hops\":1,\"woke\":\"2026-11-03T10:48:40Z\",\"held\":[5]} -->\n<!-- workline:sticky=line/state -->"
+          - "<!-- workline:line-record {\"state\":\"ready\",\"body\":\"eb61ae88c1ee\",\"hops\":1,\"woke\":\"2026-11-03T10:48:40Z\",\"held\":[5]} -->\n<!-- workline:sticky=line/state -->"
           - "**The developer** waits on this issue.\n\n- **Why**: its Scope's `lib.sh` overlaps #5's, taken.\n- **Next**: #5 merged or let go; the developer looks at this issue again at its next run.\n\n<!-- workline:sticky=developer/claim -->"
       - id: 4
         title: "Multiply again"
