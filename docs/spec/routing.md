@@ -576,7 +576,7 @@ whose result moves the issue to the next. The table is the routing's
   (`state-freed`) once its claim was put on since and let go, a hop
   more, so a take-and-let-go cycle ends at `max-hops`; or once an issue
   in `held` is held no more; or, passed over for an overlap, once its
-  Scope overlaps no claim held, once for the comment that said it
+  Scope names no file a claim held changes, once for the comment that said it
   (`unheld`)
   ([#998](https://github.com/JN0V/workline/issues/998)). A record from before `woke` is due once
   where the developer wrote its comment. Never on a clock: no loop.
@@ -805,14 +805,19 @@ a step starts only when the state it moves the issue to has room.
   an issue there that waits for its tests (named scenarios, no tester's
   Draft open, no proof kind recorded, where the project routes the
   tester), or on another open issue, or has parts, or whose Scope
-  overlaps a claim holding code (an open pull request closes it,
+  names a file a claim holding code changes (an open pull request
+  closes it,
   [amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-claim-with-no-code-holds-no-scope);
-  a Scope marked `Guessed:`, or whose words say no code was given when
-  it was written, overlaps nothing,
+  its files are that pull request's diff from the merge base, read
+  with git,
+  [amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-09-a-claim-holds-the-files-its-pull-request-changes);
+  a diff git cannot read holds the claim's Scope and the files its pull
+  request lists beyond it,
+  [#1228](https://github.com/JN0V/workline/issues/1228); a Scope marked
+  `Guessed:`, or whose words say no code was given when it was written,
+  overlaps nothing,
   [#970](https://github.com/JN0V/workline/issues/970),
-  [#998](https://github.com/JN0V/workline/issues/998); a held issue
-  holds too the files its pull request lists beyond its Scope,
-  [#1228](https://github.com/JN0V/workline/issues/1228)),
+  [#998](https://github.com/JN0V/workline/issues/998)),
   is counted apart, and said in the wait's reason. Read only at the
   limit: the tester's open Drafts once a run, the comments of a ready
   issue with none, the open pull requests once when a claim is there.
