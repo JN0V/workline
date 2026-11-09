@@ -39,9 +39,11 @@ person unlinked is no longer one. An issue whose state lists a split
   punctuation aside, said with where; "not proved" otherwise ("not proved yet" while a part is open). A parent
   without a Verification is said to have none.
 - **A test named as proof** (ADR-0029, amended): an item that names a
-  test in a code span — a test file by its path (`tests/…`, `…_test.go`,
-  `….spec.ts`, `test_….py`), one test in it as `path::name`, a test's own
-  name (`TestX`, `test_x`, `testX`), or any name right after the words
+  test in a code span — a test file by its path, as the project's one
+  definition of a test file names it (the tester's `test-paths`, else the
+  generic patterns,
+  [ADR-0065](../../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)),
+  one test in it as `path::name`, or any name right after the words
   "test", "test case" or "conformance case" — never "case" alone, prose's
   "in that case" (`backlog.TestNames`) — is proved only when the code
   at the run's commit holds it too: the file there, a file and never a

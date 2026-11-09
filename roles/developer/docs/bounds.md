@@ -59,20 +59,31 @@ first rule that matches refuses the whole patch:
 - the paths in plain words in the Scope that the repository holds, a
   file or a folder (`docs/ci.md, internal/doctor`);
 - the product owner's `sources` for the issue;
-- the tests beside them: `test` or `spec` a word of the name
-  (`mul_test.go`, `test_mul.py`, `MulTest.java`, not `latest.go`), in a
-  Scope file's folder or under a Scope folder, or in a `test`/`tests`
-  folder that sits there. A hidden file is no test (`.env.test`). A
-  Scope `src` lets in no test at the root;
+- the tests beside them, new or not: a test file in a Scope file's
+  folder or under a Scope folder (`mul_test.go` beside `mul.go`). A
+  test file is one the project's
+  [one definition](../../tester/README.md#settings) names: the tester's
+  `test-paths`, else the built-in generic patterns
+  ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)).
+  A Scope `src` lets in no test at the root;
 - a new test file beside the Scope, the write fence
   ([ADR-0063, §9](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)):
-  - it matches the tester's `test-paths` patterns
-    ([its settings](../../tester/README.md#settings)) and is not in
-    the commit the rules are read at;
-  - its home, the folder holding its first `test`, `tests`, `spec` or
-    `__tests__` folder, else its own, is a Scope path's folder, holds
-    one, or is in one: `Storage/test/test_name/test_name.cpp` beside a
-    Scope `Storage/include/Storage.h`;
+  - a test file by that definition, not in the commit the rules are
+    read at;
+  - its home, its code's folder by the tester's `test-homes`, is a
+    Scope path's folder, holds one, or is in one:
+    `app/src/test/kotlin/x/FakeRepo.kt` beside a Scope
+    `app/src/main/kotlin/x/Repo.kt`, with
+    `{tests: "**/src/test/kotlin/**", code: "**/src/main/kotlin/**"}`;
+  - unset, the generic homes: the folder holding its `test` or `tests`
+    folder, else its own: `Storage/test/test_name/test_name.cpp`
+    beside a Scope `Storage/include/Storage.h`;
+  - a test the definition misses is code: outside the Scope, asked of
+    the product owner ([below](#asking-the-product-owner-for-files));
+    `workline doctor` says how to set `test-paths`;
+  - never the name of a class its module's `src/main/` holds, whatever
+    the extension: it would replace that class on the test run's
+    classpath;
   - the root is a home only to a Scope file at the root: a Scope
     `src/x.py` lets in no `tests/test_x.py`;
   - a kept test stays the fence's in the next rounds, its record naming
@@ -82,21 +93,12 @@ first rule that matches refuses the whole patch:
     (`**/test_*.cpp`) for tests alone;
   - said and folded in: listed on the pull request and on the issue
     (`workline:scope-kept`), added to the Scope at the product owner's
-    next refine ([below](#asking-the-product-owner-for-files)).
-- a new test helper, the write fence too: a source file (`.kt`,
-  `.java`…), no test by its name, under `<module>/src/test/` when a
-  Scope path is under `<module>/src/main/` (`FakeGridRepository.kt`):
-  - never an existing file, nor one under `resources/`, `fixtures/` or
-    `testdata/`, nor a data file: a frozen test may read them, so the
-    developer asks to widen the Scope;
-  - a root Scope file opens no root `tests/`; a package named `test`
-    under `src/main/` is no test folder.
-  - never the name of a class its module's `src/main/` holds, whatever
-    the extension, nor such a new test file: it would replace that
-    class on the test run's classpath;
-  - kept, listed and folded in as a new test file is, above; the
-    reviewer checks a listed helper that sets up the test runner
-    (Kotest's `ProjectConfig`): it changes how every test runs.
+    next refine ([below](#asking-the-product-owner-for-files));
+  - an existing helper or fixture a frozen test may read, away from
+    the Scope's folders, is never one: the developer asks to widen
+    the Scope; the reviewer checks a listed helper that sets up the
+    test runner (Kotest's `ProjectConfig`): it changes how every test
+    runs.
 
 **Never in bounds:**
 
