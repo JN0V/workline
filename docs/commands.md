@@ -233,6 +233,10 @@ Run when the default branch moves (CI's `follow` job), with no agent.
 - **What a merge left open**: the tester's Draft of a closed issue is
   closed, and a closed issue loses the states' labels
   ([the hand-over](../roles/tester/docs/hand-over.md#what-the-builder-does)).
+- **A local merge request merged with git** (`forge: local`): each open
+  issue its body says it closes (`Closes #<n>`) is closed, with a comment
+  saying why, and the request is written `merged`, once; the summary
+  counts both ([no forge](ci-other-forges.md#no-forge)).
 - Options: `--base` (default: the branch checked out), `--forge`,
   `--repo`, `--json`, `--summary`; `--verdict <file>`, a head's verdict
   `route --verdict` wrote, kept first (`--verdict-only`: nothing else);
