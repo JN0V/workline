@@ -43,7 +43,7 @@ func TestReadyFollowsTheTable(t *testing.T) {
 		if !IsDraft(body, work.Validation, st) || NotReady(forge.Issue{Body: body}, st, false) == nil || NotReady(forge.Issue{Body: body}, st, true) != nil {
 			t.Errorf("%s: a draft of the role's not accepted holds ready back, accepted it does not", h)
 		}
-		if own := Own(forge.Issue{Body: body}, st); !slices.Equal(own, []string{strings.TrimPrefix(h, "## "), "Verification", "Scope"}) {
+		if own := Own(forge.Issue{Body: body}, st); !slices.Equal(own, []string{strings.TrimPrefix(h, "## "), "Scope"}) {
 			t.Errorf("%s: Own = %v", h, own)
 		}
 	}

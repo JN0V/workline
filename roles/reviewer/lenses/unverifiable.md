@@ -13,7 +13,7 @@ judge:
 machine will prove the Need is met. A Verification naming no test, command,
 check or threshold ("works well", "is fast", "the user is happy"), one that
 checks something other than the Need, or one that would pass with the Need
-unmet, is a finding, its cause the Verification's words. A part of the Need
-no Verification checks is one too, its cause the Need's words. A spec with
-no Verification at all: a finding quoting its Need. The Validation is a
-person's, not the machine's: leave it.
+unmet, is a finding, its cause the Verification's words. A spec with no
+Verification yet is no finding: the tester writes it from its tests,
+once the issue is ready. The Validation is a person's, not the
+machine's: leave it.

@@ -901,8 +901,8 @@ func Pre(runDir, repo string) int {
 					work.Name(work.Scope), strings.Join(kept, "`, `"))
 			}
 			if readyOpen(d.is, d.st, cfg) {
-				review += fmt.Sprintf("Ready: its four sections are there, %s and %s a person's — propose `ready` when it is evident: one need, a %s that proves it, nothing left open in its comments; the engine checks it.\n",
-					work.Name(work.Need), work.Name(work.Validation), work.Name(work.Verification))
+				review += fmt.Sprintf("Ready: its %s, %s and %s are there, %s and %s a person's — propose `ready` when it is evident: one need, scenarios that prove it, nothing left open in its comments; the engine checks it. The %s is the tester's, written from its tests.\n",
+					work.Name(work.Need), work.Name(work.Validation), work.Name(work.Scope), work.Name(work.Need), work.Name(work.Validation), work.Name(work.Verification))
 			} else if drafts != nil && toTests(d.is, d.comments, cfg, drafts) {
 				review += "Its tests: ready from before the line of states, no Draft of its tests — propose `ready` to send it to its tests (" + backlog.LabelNeedsTests + ") when it is still current and one run's work; `unready` with its reason when not.\n"
 			}
@@ -1517,9 +1517,9 @@ func noTestUnread(comments []string, st *backlog.State, role string) bool {
 func noTestSaid(reason string) string {
 	return fmt.Sprintf("No test possible, says the tester: %s\n"+
 		"Pick its proof in place of new tests — `ready` with `proof: {kind: <kind>, reason: <why it proves the need>}`, the kind one of: %s (%s), %s (%s), %s (%s; add `test: <its name>` and, if not the project's setting, `runs: <N>`). "+
-		"Or rewrite what keeps a test from being written — its %s and %s, yours to rewrite; its %s where it is your draft, so a test checks it — with a `refine` giving each section whole, or ask its reporter: a `ready` with no proof sends it back to its tests only beside that rewrite — alone, it is refused, and the line blocks the issue for a person.\n",
+		"Or rewrite what keeps a test from being written — its %s, yours to rewrite; its %s where it is your draft, so a test checks it — with a `refine` giving each section whole, or ask its reporter: a `ready` with no proof sends it back to its tests only beside that rewrite — alone, it is refused, and the line blocks the issue for a person.\n",
 		strings.TrimSpace(reason), backlog.KindSuite, backlog.ProofKinds[backlog.KindSuite], backlog.KindDocs, backlog.ProofKinds[backlog.KindDocs],
-		backlog.KindFlaky, backlog.ProofKinds[backlog.KindFlaky], work.Name(work.Verification), work.Name(work.Scope), work.Name(work.Validation))
+		backlog.KindFlaky, backlog.ProofKinds[backlog.KindFlaky], work.Name(work.Scope), work.Name(work.Validation))
 }
 
 // rewriteUnread says whether the agent is told to rewrite an issue's
@@ -2024,8 +2024,8 @@ func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool
 		rule := ""
 		if tier == "" && noSplit(is, splitOff) == "" {
 			// Both offered: which one, said once (ADR-0064, §3).
-			rule = fmt.Sprintf(" Split or grant: split when its parts each pass their own %s apart; when none can — one cause, a change no half of proves — grant it, never split it. Its %s or %s saying its parts fail apart is evidence to weigh, not the test.",
-				work.Name(work.Verification), work.Name(work.Need), work.Name(work.Scope))
+			rule = fmt.Sprintf(" Split or grant: split when its parts each pass their own scenarios apart; when none can — one cause, a change no half of proves — grant it, never split it. Its %s or %s saying its parts fail apart is evidence to weigh, not the test.",
+				work.Name(work.Need), work.Name(work.Scope))
 		}
 		return fmt.Sprintf("Blocked (%s), on its size. What crossed: %s. Read again because %s. Spent on it so far: %s. A crossing measures one run of the %s, not the need: a run again on the same input crosses the same, and sent back as it is, the issue waits for a person. Decide one, its `why` one plain line: narrow its %s — `refine` with `scope`, the %[6]s rewritten whole to the fewer files its need needs, and `sources` — then `unblock` it, %[7]s%[8]s%[10]s; or `blocked`, why its need cannot be narrowed, `person: true`: a person splits it, grants it `%[9]s`, or raises the setting the line names.%[11]s Never `ready` on it.\n",
 			backlog.LabelBlocked, why, news, spent(), strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where, grant, backlog.LabelSizeXLarge, splitSaid(is, splitOff), rule)
@@ -2361,8 +2361,16 @@ func specFindings(is forge.Issue, st *backlog.State, comments []string, r *backl
 	if len(mine) > 0 {
 		fmt.Fprintf(&b, "Answer them with a `refine` giving the whole new text of the sections they lie in that are yours to rewrite: %s. ", strings.Join(mine, ", "))
 	}
-	if theirs := slices.DeleteFunc(slices.Clone(r.In), func(n string) bool { return work.Has(mine, work.MeaningOf(n)) }); len(theirs) > 0 {
+	theirs := slices.DeleteFunc(slices.Clone(r.In), func(n string) bool { return work.Has(mine, work.MeaningOf(n)) })
+	testers := slices.DeleteFunc(slices.Clone(theirs), func(n string) bool { return !work.Testers(work.MeaningOf(n)) })
+	theirs = slices.DeleteFunc(theirs, func(n string) bool { return work.Testers(work.MeaningOf(n)) })
+	if len(theirs) > 0 {
 		fmt.Fprintf(&b, "%s: a person's, never rewritten: `ask` its reporter. ", strings.Join(theirs, ", "))
+	}
+	if len(testers) > 0 {
+		// The tester writes the test plan (ADR-0066): its finding is the
+		// tester's, read when it writes the tests.
+		fmt.Fprintf(&b, "%s: the tester's, answered as it writes the tests: leave it, ask no one. ", strings.Join(testers, ", "))
 	}
 	b.WriteString("The reviewer reads the spec again after your answer.\n")
 	for i := len(comments) - 1; i >= 0; i-- {

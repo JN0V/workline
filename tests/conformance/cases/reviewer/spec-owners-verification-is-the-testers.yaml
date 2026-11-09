@@ -1,5 +1,5 @@
-case: reviewer/spec-owners-section-is-rewritten
-about: "An issue whose Verification the product owner wrote, as its state records it (#847): the reviewer holds it with an important finding there, and its comment says the product owner rewrites it at its next refine; a person may still accept the issue as it reads."
+case: reviewer/spec-owners-verification-is-the-testers
+about: "An issue whose Verification the product owner wrote before ADR-0066, as its state records it (#847): an important finding there is the tester's now, answered as it writes the tests; it holds nothing from ready, and the product owner is not named."
 given:
   repo: reviewed
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
@@ -19,5 +19,5 @@ expect:
     issues:
       - id: 4
         comments: 2
-        comment-contains: ["**Holds it from ready**: 1 important finding open, round 1 of 5. Verification, the product owner's: it rewrites it at its next refine. The reviewer then reads the spec again. A person may accept the issue as it reads with `workline:accepted`.", "in=Verification -->"]
-        comment-lacks: "a person's"
+        comment-contains: ["**Holds nothing**: 1 important finding open, round 1 of 5. Verification, the tester's: it answers it as it writes the tests, after ready, and holds nothing back.", "in=Verification -->"]
+        comment-lacks: ["a person's", "the product owner's", "Holds it from ready"]

@@ -16,5 +16,5 @@ expect:
         body-contains:
           - "## Steps to reproduce\n\n<!-- workline:draft -->\n\n1. Run:"
           - "1. Run:\n\n```sh\nshop export --day 2026-10-08\n```\n\n2. Count the rows: 2, not 3."
-          - "## Verification\n\nA test writes three rows."
           - "## Scope\n\nWriteRows in src/export/csv.go."
+        body-lacks: "## Verification"

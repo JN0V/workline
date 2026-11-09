@@ -23,11 +23,14 @@ const (
 // Row is a meaning and its headings, the first the one written. A
 // builder's section is below the line between the person's part of an
 // issue and the builder's; above it, a person's, which the role drafts for
-// a person to make theirs.
+// a person to make theirs. A tester's section is the builder's part the
+// tester writes, as a human tester writes the test plan, never the
+// product owner (ADR-0066).
 type Row struct {
 	Meaning  Meaning
 	Headings []string
 	Builder  bool
+	Tester   bool
 }
 
 // Table holds each meaning once, in the order the role writes an issue's
@@ -43,13 +46,14 @@ var Headings = Table{
 	{Meaning: Example, Headings: []string{"Example"}},
 	{Meaning: Steps, Headings: []string{"Steps to reproduce"}},
 	{Meaning: Validation, Headings: []string{"Validation"}},
-	{Meaning: Verification, Headings: []string{"Verification"}, Builder: true},
+	{Meaning: Verification, Headings: []string{"Verification"}, Builder: true, Tester: true},
 	{Meaning: Scope, Headings: []string{"Scope"}, Builder: true},
 }
 
 // Required are the meanings an item needs before it is ready, in the order
-// a check says what is missing.
-var Required = []Meaning{Need, Verification, Validation, Scope}
+// a check says what is missing. The Verification is not one: the tester
+// writes it from its tests, after ready (ADR-0066).
+var Required = []Meaning{Need, Validation, Scope}
 
 // Meaning is the meaning a heading names; "" when it names none.
 func (t Table) Meaning(heading string) Meaning {
@@ -101,6 +105,17 @@ func (t Table) Builder(m Meaning) bool {
 	for _, r := range t {
 		if r.Meaning == m {
 			return r.Builder
+		}
+	}
+	return false
+}
+
+// Tester says whether a meaning's section is the tester's to write
+// (ADR-0066): the Verification, how the work is proved.
+func (t Table) Tester(m Meaning) bool {
+	for _, r := range t {
+		if r.Meaning == m {
+			return r.Tester
 		}
 	}
 	return false
@@ -169,6 +184,10 @@ func Name(m Meaning) string { return Headings.Name(m) }
 
 // ByMeaning is a body's sections by meaning, read with the engine's table.
 func ByMeaning(body string) map[Meaning]Section { return Headings.Read(body) }
+
+// Testers says whether the engine's table gives a meaning's section to
+// the tester (ADR-0066).
+func Testers(m Meaning) bool { return Headings.Tester(m) }
 
 // Has says whether names, headings, hold one of meaning m.
 func Has(names []string, m Meaning) bool {

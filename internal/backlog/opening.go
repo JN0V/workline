@@ -21,6 +21,10 @@ const LabelTriage = "needs-triage"
 // product owner reads it from its next run, as any other issue.
 const Keeper = "product-owner"
 
+// TesterRole is the role that writes an issue's Verification, from its
+// acceptance tests, as a human tester writes the test plan (ADR-0066).
+const TesterRole = "tester"
+
 // Outcomes of an opening.
 const (
 	Opened     = "opened"      // a new issue

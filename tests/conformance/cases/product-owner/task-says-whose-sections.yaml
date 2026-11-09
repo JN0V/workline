@@ -1,5 +1,5 @@
 case: product-owner/task-says-whose-sections
-about: 'The agent is told whose each section is, so the level decides ready (ADR-0038): a section the role did not mark a draft is a person''s; an issue whose four sections are there, Need and Validation a person''s, is said open to `ready` when evident; its reporter said of the project. A draft is said a draft, and no ready is offered on it.'
+about: 'The agent is told whose each section is, so the level decides ready (ADR-0038): a section the role did not mark a draft is a person''s; an issue whose Need, Validation and Scope are there, Need and Validation a person''s, is said open to `ready` when evident; its reporter said of the project. A draft is said a draft, and no ready is offered on it.'
 given:
   repo: backlog
   forge:
@@ -24,7 +24,7 @@ expect:
     in/task.md:
       contains:
         - "Opened by: ann, of the project"
-        - "Sections: Need (a person's), Verification, Validation (a person's), Scope"
-        - "Sections: Need (draft), Verification, Validation (a person's), Scope"
-        - "Ready: its four sections are there, Need and Validation a person's"
+        - "Sections: Need (a person's), Validation (a person's), Scope"
+        - "Sections: Need (draft), Validation (a person's), Scope"
+        - "Ready: its Need, Validation and Scope are there, Need and Validation a person's"
         - "a section not marked a draft is a person's"

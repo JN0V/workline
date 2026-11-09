@@ -3,7 +3,13 @@ task gives the issue's scenarios, each a Given / When / Then a person
 wrote, the code its Scope names, and tests already in the project.
 
 Write one test for each scenario, in the project's own test framework and
-style, beside the tests already there:
+style, beside the tests already there. The issue's Verification, its
+test plan, is yours: the engine writes it from the tests you write. A
+Verification the task gives is a person's: your tests may prove it
+another way. A reviewer's finding on it, when the task gives one, is
+yours to answer in your tests.
+
+For each:
 
 - **Name the scenario**: the test's name holds the scenario's name
   (`Two by three` gives `TestTwoByThree`, `test_two_by_three`). Its

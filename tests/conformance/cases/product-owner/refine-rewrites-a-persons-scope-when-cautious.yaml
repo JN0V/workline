@@ -1,5 +1,5 @@
-case: product-owner/refine-rewrites-a-persons-verification-when-cautious
-about: "At every level (ADR-0060): with the product owner at autonomy cautious, a finding in a Verification a person wrote is still rewritten in the body, with no proposal waiting on a person; only a Need or Validation draft would be proposed at that level."
+case: product-owner/refine-rewrites-a-persons-scope-when-cautious
+about: "At every level (ADR-0060): with the product owner at autonomy cautious, a finding in a Scope a person wrote is still rewritten in the body, with no proposal waiting on a person; only a Need or Validation draft would be proposed at that level."
 given:
   repo: backlog
   config:
@@ -18,15 +18,15 @@ given:
         labels: [workline:to-refine]
         comments:
           - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: efbae4cec0e6\n```\n\n<!-- workline:sticky=product-owner/state -->"
-          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
-run: {role: product-owner, event: schedule, ai: fake:refine-persons-verification}
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Scope -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: fake:refine-persons-scope}
 expect:
   no-findings: [{rule: drafts-proposed}]
   forge:
     issues:
       - id: 9
         labels: [workline:to-refine]
-        body-contains: "## Verification\n\nA test writes three rows and reads three lines back.\n\n## Scope"
-        body-lacks: "Sessions feel right"
-        comment-contains: ["Changed: Verification."]
+        body-contains: "## Scope\n\n- src/export/csv.go\n- src/export/csv_test.go: the test the Verification names."
+        body-lacks: "## Scope\n\nsrc/"
+        comment-contains: ["Changed: Scope."]
         comment-lacks: ["to refine this issue", "proposed:"]

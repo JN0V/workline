@@ -1,5 +1,5 @@
 case: product-owner/scope-files-taken-from-its-text
-about: A refine whose Scope names its files or folders in its text, with no `sources`, has them taken from that text when the commit holds them; a Scope naming none is left out with a plain finding, and the rest of the refine — its Verification — is still written, never dropped with it.
+about: A refine whose Scope names its files or folders in its text, with no `sources`, has them taken from that text when the commit holds them; a Scope naming none is left out with a plain finding, and the rest of the refine is still written, never dropped with it; its Verification left out, the tester's (ADR-0066).
 given:
   repo: backlog
   forge:
@@ -9,11 +9,10 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:refine-scope-paths}
 expect:
   findings:
-    - {rule: done, where: "#9", message: "Refined #9: Verification, Scope."}
-    - {rule: done, where: "#12", message: "Refined #12: Verification."}
+    - {rule: done, where: "#9", message: "Refined #9: Scope."}
     - {rule: scope-without-files, where: "#12", message: "could not tell which files #12 is about, so its Scope was left out: add a Scope naming them, or leave it"}
   no-findings: [{rule: sources-unknown}]
   forge:
     issues:
       - {id: 9, body-contains: "## Scope\n\nWriteRows, in src/export/csv.go, and the rest of src/export.", comment-contains: "sources: [src/export/csv.go, src/export]"}
-      - {id: 12, body-contains: "## Verification\n\nA test reads an XML file of two rows back.", body-lacks: "## Scope", comment-contains: "sources: []"}
+      - {id: 12, body-lacks: ["## Scope", "## Verification"], comment-contains: "sources: []"}

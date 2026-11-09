@@ -1,0 +1,7 @@
+# The product owner writes #9's Scope, the rest the person's: the body
+# edited, the issue kept in refine (ADR-0063, §3).
+- refine:
+    issue: 9
+    scope: "`WriteRows` in `src/export/csv.go`."
+    sources: [src/export/csv.go]
+    why: "The issue says what is wrong, not the code it touches."

@@ -1,5 +1,5 @@
 case: product-owner/description-proposed-when-cautious
-about: "A role's text on top taken into the Need draft follows the refine's mode and autonomy as the drafts do (ADR-0039, amended): at autonomy cautious, Scope and Verification are written and the Need draft is proposed on the issue, in its comment, the body's text on top left as it is; once a person accepts it, the engine writes the Need and takes that text from the top, its own lines kept. What a person said yes to is written as they read it: a proposal kept from before, which took nothing from the top, leaves the top as it is, and its Example is written whole, though it says the text above again."
+about: "A role's text on top taken into the Need draft follows the refine's mode and autonomy as the drafts do (ADR-0039, amended): at autonomy cautious, the Scope is written and the Need draft is proposed on the issue, in its comment, the body's text on top left as it is; once a person accepts it, the engine writes the Need and takes that text from the top, its own lines kept. What a person said yes to is written as they read it: a proposal kept from before, which took nothing from the top, leaves the top as it is, and its Example is written whole, though it says the text above again."
 given:
   repo: backlog
   config:
@@ -25,7 +25,7 @@ given:
         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nwrote:\n    Description: cce12975b3bc\nlabel: workline:proposed\nproposed:\n  - act: refine\n    line: 'Refine #10: Need (draft), Example (draft).'\n    since: \"2026-10-15\"\n    proposal:\n      do: refine\n      issue: 10\n      need: 'Exporting a CSV file drops its last row.'\n      example: 'The loop ends one row early and skips the last index.'\n      why: A finding in code words.\n      added: [Need, Example]\n```\n\n<!-- workline:sticky=product-owner/state -->"]
 run: {role: product-owner, event: schedule, ai: fake:description-cautious}
 expect:
-  findings: [{rule: drafts-proposed, where: "#8"}, {rule: done, where: "#8", message: "Refined #8: Verification, Scope."}, {rule: done-as-accepted, where: "#9"}, {rule: done-as-accepted, where: "#10"}]
+  findings: [{rule: drafts-proposed, where: "#8"}, {rule: done, where: "#8", message: "Refined #8: Scope."}, {rule: done-as-accepted, where: "#9"}, {rule: done-as-accepted, where: "#10"}]
   forge:
     issues:
       - id: 8

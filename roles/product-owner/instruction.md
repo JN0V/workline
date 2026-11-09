@@ -29,7 +29,7 @@ kind of act's mode. An `off` kind is dropped: do not write it — but a
 closing, said on its issue for a person when its kind is off. A
 `propose` kind is proposed on its issue for a person to accept: propose
 only what you would do. A refine whose Need and Validation drafts are
-proposed still writes Scope and Verification.
+proposed still writes the Scope.
 
 Propose a `close` for an issue only when the evidence settles it:
 
@@ -61,11 +61,13 @@ at the next run.
 **Refine** every issue you read that is not closed and lacks a section:
 propose `refine`, `ask` or a `close` for it in this run — it is your
 work, not a person's; one left with nothing is said in the night's
-summary. Its body needs four sections — Need, Verification, Validation,
-Scope; the task says which it has, and which are drafts. The engine
-writes them in the reader's order: the person's part first (Need, an
-example, Validation), then a line, then the builder's (Verification,
-Scope). What each holds:
+summary. Its body needs three sections — Need, Validation, Scope; the
+task says which it has, and which are drafts. The engine writes them in
+the reader's order: the person's part first (Need, an example,
+Validation), then a line, then the builder's (Scope). The Verification,
+how the machine proves it, is the tester's: it writes it from its tests
+once the issue is ready, as a tester writes the test plan. Write none:
+a `verification` you give is left out. What each holds:
 
 - `need`: one line — who needs what, and why, seen from their side.
   Never the solution, never the issue's own words rearranged.
@@ -81,7 +83,6 @@ Scope). What each holds:
   scenarios, one a bullet, as Given / When / Then. A bug's is its steps
   again, the expected result as the Then. Never "someone runs it and
   accepts the result".
-- `verification`: how the machine proves it — which tests, which checks.
 - `scope`: the part of the code it touches, by its paths — files or
   folders —, every file the change edits, each copy of a function it
   fixes included; up to 5 of the same paths in `sources`; from the code
@@ -100,8 +101,8 @@ Scope). What each holds:
   issue back. File paths, issue numbers and decisions go here, never in
   Need nor Validation.
 
-Propose `refine` with those it lacks: `scope` and `sources`,
-`verification` from the code and its tests; `need`, `example` or
+Propose `refine` with those it lacks: `scope` and `sources` from the
+code; `need`, `example` or
 `steps`, and `validation` only from what the issue and its comments say
 — they are drafts, the reporter's to make theirs; the engine marks them
 so, write the text alone. Write an `example` or `steps` only with a Need
@@ -115,9 +116,10 @@ the share of its words already said, and leaves it out past a limit.
 `validation` restates the case by design: it is never measured. A section it has is never
 rewritten, but one the task says the reviewer's findings lie in and is
 yours to rewrite: give its whole new text in `refine`, answering each
-finding. Verification and Scope are always yours, even when a person
-wrote them: answer a finding there by rewriting them, never by asking.
-Only a person's Need, Validation, example or steps are theirs to change.
+finding. The Scope is always yours, even when a person wrote it: answer
+a finding there by rewriting it, never by asking. A finding in the
+Verification is the tester's: leave it, ask no one. Only a person's
+Need, Validation, example or steps are theirs to change.
 
 **Write for a person who never read the code**, as a project's user docs
 are written — here, and in `why`, `questions` and `note`:
@@ -176,8 +178,8 @@ the top, so the problem is said once.
 - what only a builder needs — the code, a path, a commit, the fix — in
   `scope`, not in the `need`;
 - a folded block on top (`<details>` … `</details>`, a cause and its
-  fix) is moved whole by the engine to the end of your `scope` or
-  `verification`: do not copy it;
+  fix) is moved whole by the engine to the end of your `scope`: do not
+  copy it;
 - the line saying where it comes from is the engine's, kept: do not
   write it.
 
@@ -205,12 +207,6 @@ nothing says which one is hers.
   down, When the gate runs, Then it is not counted as new.
 
 ---
-
-## Verification
-
-- A finding on both the base and the head is not counted; one only on
-  the head is.
-- A tool that did not run is an error, never a pass.
 
 ## Scope
 
@@ -240,18 +236,15 @@ Users who exclude a folder with a trailing slash still upload it:
 
 ---
 
-## Verification
-
-`TestExcludeTrailingSlash` fails on 2.3.1, passes after the fix.
-
 ## Scope
 
 `matchExclude` in `internal/filter/glob.go`.
 ```
 
-When the four sections are there and neither Need nor Validation is a
-draft, propose `ready` if the issue is evident: one need, its
-Verification proves it, nothing left open in its comments. The task
+When the three sections are there and neither Need nor Validation is a
+draft, propose `ready` if the issue is evident: one need, scenarios that
+prove it, nothing left open in its comments. Never hold it for a
+Verification: the tester writes it. The task
 marks each draft; a section it does not mark is a person's — never hold
 `ready` back for not knowing who wrote it. The engine checks it, and
 proposes an outsider's to the project.
@@ -270,13 +263,10 @@ sends the issue back to its tests only beside that rewrite: alone, it is
 refused, and the issue waits for a person.
 
 **Split** an issue too big to be one need — it asks for several things,
-each proved by its own Verification, that a change could finish one at a
+each proved by its own scenarios, that a change could finish one at a
 time: propose `split` with 2 to 6 children, each a short title and its
-four sections, as `refine` writes them (`need` and `validation` drafts
-from the issue's words, `scope` and `sources` and `verification` from the
-code). When the issue has a Verification, each child's `verification`
-quotes, word for word, the items of it that child proves: the engine
-checks the parent against them as the children close. The issue keeps
+sections, as `refine` writes them (`need` and `validation` drafts from
+the issue's words, `scope` and `sources` from the code). The issue keeps
 its need and lists its children; one the task says is split already is
 not split again, nor closed — a person accepts it. Split only what is truly several
 needs, not a need with steps. A child that cannot start before another
@@ -286,7 +276,7 @@ waits on, from 1.
 **Past its size**, the task says what crossed and what the issue spent
 against its normal: judge on those facts, not on "too big". A crossing
 measures one run, not the need. Split only when its parts each pass
-their own Verification apart. When none can — one cause, a change no
+their own scenarios apart. When none can — one cause, a change no
 half of proves — grant it `size` `tier: large`, never split it. The
 issue saying its parts fail apart is evidence to weigh, not the test.
 

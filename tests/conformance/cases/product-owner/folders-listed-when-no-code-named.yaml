@@ -8,6 +8,6 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
   status: pass
-  findings: [{rule: nothing-proposed, where: "#7", message: "read, and nothing was drafted or asked though it lacks Need, Verification, Validation, Scope"}]
+  findings: [{rule: nothing-proposed, where: "#7", message: "read, and nothing was drafted or asked though it lacks Need, Validation, Scope"}]
   run-files:
     in/task.md: {contains: ["# The repository's folders", "\n- src/export\n", "no line is quoted from a folder"]}

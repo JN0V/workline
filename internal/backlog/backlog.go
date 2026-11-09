@@ -627,8 +627,9 @@ type Proposal struct {
 	Ticked string `yaml:"ticked,omitempty"`
 }
 
-// Child is one part of a split need: an issue of its own, with its four
-// sections (ADR-0022).
+// Child is one part of a split need: an issue of its own, with its
+// sections (ADR-0022); its Verification the tester's (ADR-0066), a
+// child's given by the product owner left out.
 type Child struct {
 	Title        string   `yaml:"title"`
 	Need         string   `yaml:"need"`
@@ -2436,9 +2437,9 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 		for _, sec := range []struct {
 			field work.Meaning
 			text  string
-		}{{work.Need, ch.Need}, {work.Verification, ch.Verification}, {work.Validation, ch.Validation}, {work.Scope, ch.Scope}} {
+		}{{work.Need, ch.Need}, {work.Validation, ch.Validation}, {work.Scope, ch.Scope}} {
 			if strings.TrimSpace(sec.text) == "" {
-				return "split-sections", fmt.Sprintf("%q has no %s: each child has its four sections", ch.Title, sec.field)
+				return "split-sections", fmt.Sprintf("%q has no %s: each child has its %s, %s and %s", ch.Title, sec.field, work.Name(work.Need), work.Name(work.Validation), work.Name(work.Scope))
 			}
 		}
 		if len(ch.Sources) == 0 || len(ch.Sources) > maxSources {
@@ -2610,7 +2611,9 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 	var kept []string
 	for _, m := range layout() {
 		text := Inert(strings.TrimSpace(c.Text(m))) // no quick action run on GitLab when the body is written
-		if text == "" || work.Has(c.Refused, m) {
+		if text == "" || work.Has(c.Refused, m) || work.Testers(m) && role != TesterRole {
+			// The Verification is the tester's to write (ADR-0066): one
+			// another role gives is left out.
 			continue
 		}
 		if drafted(m) {
