@@ -14,7 +14,10 @@ the Scope ([writing an issue](../../product-owner/docs/writing.md)).
 ## When it is written
 
 - **Once its tests are proved**: red on the base, linted, the Draft
-  ready to open.
+  ready to open; the issue in `needs-tests`, before ready.
+- **Only where the tester is routed**: with none, the product owner's
+  ready moves the issue straight to `workline:ready`, and no
+  Verification is written.
 - **By the engine, from the tests**: never the agent's text. Each
   scenario, the test that proves it, its file; or why no test can check
   it.
@@ -36,8 +39,9 @@ its tests.
 
 ## A Verification someone else wrote
 
-- **Kept word for word**: a person's, or one a product owner wrote
-  before.
+- **Kept word for word**: a person's, or one a person edited.
+- **Rewritten**: one the product owner wrote before the tester took it
+  over, as its state records it and unedited since.
 - **Its tests prove it another way**: when that text names not every
   test, the tester's comment says so and names each test, with its
   scenario.
@@ -46,7 +50,8 @@ its tests.
 ## A reviewer's finding on it
 
 - **The tester's**: the reviewer's comment says so; such a finding
-  alone holds nothing from ready
+  alone holds nothing from ready, spends no round of the review, and is
+  never put to a person
   ([the spec review](../../reviewer/docs/spec.md)).
 - **Given to its agent**: the finding is quoted in its task, to answer
   in the tests.

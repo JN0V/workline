@@ -66,7 +66,7 @@ task says which it has, and which are drafts. The engine writes them in
 the reader's order: the person's part first (Need, an example,
 Validation), then a line, then the builder's (Scope). The Verification,
 how the machine proves it, is the tester's: it writes it from its tests
-once the issue is ready, as a tester writes the test plan. Write none:
+before the issue is ready, as a tester writes the test plan. Write none:
 a `verification` you give is left out. What each holds:
 
 - `need`: one line — who needs what, and why, seen from their side.

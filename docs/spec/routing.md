@@ -27,7 +27,7 @@ to-refine ──► ready ──► in-progress ──► review ──► valid
 
 **Ready** means three things are written, even in one line each — Need,
 Validation, Scope; the fourth, Verification, is the tester's, written
-from its tests once the issue is ready, as a tester writes the test plan
+from its tests in `needs-tests`, before ready, as a tester writes the test plan
 ([ADR-0066](../adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)):
 
 | Field | Question |

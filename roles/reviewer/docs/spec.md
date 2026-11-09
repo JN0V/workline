@@ -107,7 +107,8 @@ routing:
     they wrote
     ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md));
     the tester, the Verification, answered as it writes the tests: such
-    a finding alone holds nothing
+    findings alone hold nothing, spend no round, and the engine moves
+    the issue on with no agent
     ([ADR-0066](../../../docs/adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md));
   - the findings, the questions for a person;
   - a hidden record (`workline:spec-review`): the body's digest, the

@@ -12,7 +12,7 @@ Part of [Acts on the backlog](../backlog-acts.md): writing the sections an issue
 An issue is `ready` when three sections are written in its body — `## Need`,
 `## Validation`, `## Scope` (docs/spec/routing.md) — and
 its Need and Validation are a person's (ADR-0018). Its `## Verification`
-is not one: the tester writes it from its tests, after ready
+is not one: the tester writes it from its tests, in `needs-tests`, before ready
 ([ADR-0066](../../adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md),
 [the tester's Verification](#the-testers-verification)). A person's text on top,
 with no Need section holding text, is its Need (`backlog.NeedOnTop`,
@@ -439,13 +439,20 @@ test plan ([ADR-0066](../../adr/0066-a-role-mirrors-a-human-role-ai-first-where-
   each scenario, the test that proves it, or why none can. It is
   marked `<!-- workline:verification=tester -->`, below the line, and its
   comment on the issue says it wrote it.
-- **Its own is rewritten** at its next tests; **another's is kept** word
-  for word (`backlog.WithVerification`): a person's, or one a product
-  owner wrote before. When that text names not every test, the tester's
-  comment says the tests prove it another way, naming each.
+- **Its own is rewritten** at its next tests, and so is one the product
+  owner wrote before, as its state's `wrote` records it, unedited
+  (`backlog.TestersToWrite`). **A person's is kept** word for word
+  (`backlog.WithVerification`). When that text names not every test,
+  the tester's comment says the tests prove it another way, naming each.
 - **A reviewer's finding on it is the tester's**: it holds nothing from
-  ready (`SpecReview.Testers`), the product owner is not given it, and
-  the tester's task quotes it (`backlog.SpecForTester`).
+  ready (`SpecReview.Testers`), it clears the spec as no finding would
+  (`backlog.SpecCleared`: the engine's ready with no agent), it spends no
+  round of the review, its rounds spent it is no person's, the product
+  owner is not given it, and the tester's task quotes it
+  (`backlog.SpecForTester`).
+- **No tester routed, no Verification**: the product owner's ready puts
+  `workline:ready` straight on, with no `needs-tests` step; the issue is
+  built without one. Route the tester to have it written.
 
 ## A body's footer
 

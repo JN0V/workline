@@ -15,7 +15,7 @@ Part of [the product owner](../README.md). What a run does, step by step:
   edit does not
   ([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
   - what it did there last, and when — for its sections, one line:
-    "Added: Verification, Scope. Changed: —. See the issue's edit
+    "Added: Validation, Scope. Changed: —. See the issue's edit
     history.";
   - a question it asked: one line linking to the comment that asks it,
     never written twice;
