@@ -1,0 +1,33 @@
+case: routing/wip-ready-predicted-overlap-counted
+about: >
+  Ready at its limit of 1, #1's Scope naming lib.sh as held #3's does,
+  but #3's open pull request changes only run-tests.sh (#1256): #1 is
+  one the developer can take now, so it is counted, and the tester
+  waits on #6. A held issue holds the files its pull request changes,
+  not its Scope's prediction.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main && git checkout -q -b workline/developer/3 && echo '# all tests' >> run-tests.sh && git commit -qam 'feat: sub' && git push -q origin workline/developer/3 && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 1}}
+  forge:
+    issues:
+      - {id: 1, title: "Add", labels: ["workline:ready"], body: "## Need\n\nI want to add.\n\n## Scope\n\n- `lib.sh`: `add`.\n"}
+      - {id: 3, title: "Subtract", labels: ["workline:developing"], body: "## Need\n\nI want to subtract.\n\n## Scope\n\n- `lib.sh`: a `sub` function.\n"}
+      - id: 6
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"
+    merge-requests:
+      - {id: 2, branch: workline/developer/3, base: main, title: "feat: subtract", body: "Closes #3"}
+run: {route: issue, target: {issue: 6}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-waits, level: info, where: "#6"}]
+  forge:
+    issues:
+      - {id: 1, labels: ["workline:ready"]}
+      - {id: 6, labels: ["workline:needs-tests"]}
