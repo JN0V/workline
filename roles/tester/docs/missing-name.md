@@ -60,6 +60,8 @@ flowchart LR
 - **It may read the base first**: a file's lines, a definition, a word's
   places, served from git (`judge-read-rounds`, 2; `judge-read-lines-max`,
   400).
+- **The proof kept while it reads** lost (unreadable): the run fails
+  once, said; the judge is not asked again.
 - **Picked** at the best independence from the tester's agent
   ([ADR-0005](../../../docs/adr/0005-independence-takes-the-best-level-available.md));
   `WORKLINE_JUDGE` names one. Its calls count in the tester's

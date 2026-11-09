@@ -109,10 +109,17 @@ type redAnswer struct {
 func proveJudged(runDir, repo, base string, patches []intent.Intention, s Settings) (v *verdict.Verdict, newTests []string, blobs map[string]string, asked bool, err error) {
 	dir := filepath.Join(runDir, "out", "judge", redProof)
 	if os.Getenv("WORKLINE_JUDGED") == "answered" {
+		// The proof kept while the judge read: lost, the judge is not
+		// asked again (the engine would, up to its rounds), the run fails.
 		var j judging
-		if data, err := os.ReadFile(filepath.Join(dir, "state.json")); err == nil && json.Unmarshal(data, &j) == nil {
-			return j.answered(dir, repo, s)
+		data, err := os.ReadFile(filepath.Join(dir, "state.json"))
+		if err == nil {
+			err = json.Unmarshal(data, &j)
 		}
+		if err != nil {
+			return nil, nil, nil, false, fmt.Errorf("the red proof kept for its judge cannot be read, the judge not asked again: %w", err)
+		}
+		return j.answered(dir, repo, s)
 	}
 	if err := os.RemoveAll(dir); err != nil {
 		return nil, nil, nil, false, err

@@ -77,6 +77,31 @@ func TestRecordSaysRedUnproven(t *testing.T) {
 	}
 }
 
+// A proof lost while the judge read fails the run once, said, never the
+// judge asked again round after round.
+func TestJudgedLostStateFails(t *testing.T) {
+	t.Setenv("WORKLINE_JUDGED", "answered")
+	runDir := t.TempDir()
+	dir := filepath.Join(runDir, "out", "judge", redProof)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, state := range []string{"", "{not json"} {
+		if state != "" {
+			if err := os.WriteFile(filepath.Join(dir, "state.json"), []byte(state), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		v, _, _, asked, err := proveJudged(runDir, ".", "main", nil, Settings{})
+		if err == nil || asked || v != nil || !strings.Contains(err.Error(), "the judge not asked again") {
+			t.Errorf("state %q: %v, asked %v, err %v", state, v, asked, err)
+		}
+		if _, err := os.Stat(filepath.Join(dir, "question.yaml")); err == nil {
+			t.Errorf("state %q: the judge asked again", state)
+		}
+	}
+}
+
 // A rewrite red unproven says so, on the record and in the reply; one
 // proven keeps what the earlier proof said of the other tests.
 func TestRewrittenSaysRedUnproven(t *testing.T) {
