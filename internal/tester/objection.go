@@ -594,15 +594,9 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		return write(runDir, *proof)
 	}
 	act.Act, act.Blob = "rewritten", blobs[a.File]
-	r := a.Record
-	files := map[string]string{}
-	for f, b := range r.Files {
-		files[f] = b
-	}
-	files[a.File] = blobs[a.File]
-	r.Files = files
+	r := a.Record.rewritten(a.File, blobs[a.File], *proof)
 	out := []intent.Intention{patches[len(patches)-1],
-		reply("**Rewritten**, the tester's own commit on this branch, red on the base: " + reason + why + "\n" + act.line()),
+		reply("**Rewritten**, the tester's own commit on this branch, red on the base: " + reason + why + unprovenSaid(*proof) + "\n" + act.line()),
 		{Kind: "comment", Value: r.intention()["comment"]}}
 	for _, in := range intents {
 		if in.Kind == "note" && (!a.FiveWhys || !whys.Is(noteText(in.Value))) {
@@ -621,6 +615,30 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	}
 	proof.Summary = "the test is rewritten, red on the base: " + proof.Summary + whysSaid(a) + left
 	return write(runDir, *proof)
+}
+
+// rewritten is the record once file is rewritten to blob, proven by
+// proof: a rewrite red unproven says why (ADR-0065); one proven keeps
+// what an earlier proof said, the other tests' proof not run again.
+func (r record) rewritten(file, blob string, proof verdict.Verdict) record {
+	files := map[string]string{}
+	for f, b := range r.Files {
+		files[f] = b
+	}
+	files[file] = blob
+	r.Files = files
+	if why := unprovenOf(proof); why != "" {
+		r.RedUnproven = why
+	}
+	return r
+}
+
+// unprovenSaid is the reply's line on a rewrite the judge did not settle.
+func unprovenSaid(proof verdict.Verdict) string {
+	if why := unprovenOf(proof); why != "" {
+		return "\n\n**Red unproven**: " + why
+	}
+	return ""
 }
 
 // whysSaid says the five whys were posted with the answer.

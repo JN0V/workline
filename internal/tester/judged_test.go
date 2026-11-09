@@ -76,3 +76,21 @@ func TestRecordSaysRedUnproven(t *testing.T) {
 		t.Errorf("record: %s", b)
 	}
 }
+
+// A rewrite red unproven says so, on the record and in the reply; one
+// proven keeps what the earlier proof said of the other tests.
+func TestRewrittenSaysRedUnproven(t *testing.T) {
+	r := record{Issue: 3, Files: map[string]string{"A.kt": "a1", "B.kt": "b1"}}
+	unproven := verdict.Verdict{Status: verdict.Pass, Findings: []verdict.Finding{{Rule: RedUnproven, Message: "the judge cannot tell"}}}
+	got := r.rewritten("A.kt", "a2", unproven)
+	if got.RedUnproven != "the judge cannot tell" || got.Files["A.kt"] != "a2" || got.Files["B.kt"] != "b1" || r.Files["A.kt"] != "a1" {
+		t.Errorf("rewritten: %+v (from %+v)", got, r)
+	}
+	if s := unprovenSaid(unproven); !strings.Contains(s, "**Red unproven**: the judge cannot tell") {
+		t.Errorf("reply: %q", s)
+	}
+	proven := verdict.Verdict{Status: verdict.Pass}
+	if again := got.rewritten("A.kt", "a3", proven); again.RedUnproven != "the judge cannot tell" || unprovenSaid(proven) != "" {
+		t.Errorf("proven: %+v, %q", again, unprovenSaid(proven))
+	}
+}

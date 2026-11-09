@@ -77,6 +77,8 @@ flowchart LR
   green proof on the code and the
   [objection chain](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)
   settle it: never a pass unsaid, never a stuck run.
+- **A test rewritten on an objection** is proven again: red unproven,
+  its reply and the record say why.
 - **A person's tests, no agent** (`workline test check`): no judge runs.
   Past the fast path, the check ends `human`, `red-unproven`, its lines
   quoted: the only case a person is waited for.
