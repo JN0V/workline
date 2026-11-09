@@ -10,4 +10,4 @@ given:
 run: {role: tester, event: merge-request, target: {merge-request: 1}}
 expect:
   status: pass
-  summary: "not a tester's branch: no test of its to guard"
+  summary: "no tester's Draft for an issue it closes: no test of its to guard"

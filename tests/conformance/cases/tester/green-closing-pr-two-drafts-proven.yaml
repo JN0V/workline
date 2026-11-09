@@ -1,0 +1,30 @@
+case: tester/green-closing-pr-two-drafts-proven
+about: >
+  A pull request closing two issues, each with its tester's Draft (#1286):
+  the green proof requires the tests of both records, each green three
+  runs out of three, in one proof.
+given:
+  repo: tested-draft
+  setup:
+    - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && git commit -qam 'feat: multiply'"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\"},\"tests\":[\"tests.test_mul_by_zero\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 4
+        branch: workline/tester/issue-4
+        draft: true
+        comments: ["The tests of #4, frozen.\n\n<!-- workline:tester-record {\"issue\":4,\"base\":\"main\",\"files\":{\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"tests\":[\"tests.test_mul_two_by_three\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 5
+        branch: workline/developer/3
+        body: "Closes #3\nCloses #4"
+run: {role: tester, event: merge-request, target: {merge-request: 5}}
+expect:
+  status: pass
+  summary: "the tester's 2 test files of 2 Drafts as it wrote them; the tester's 2 tests green on the head, three runs out of three"
+  agent-calls: 0
+  no-findings: [{rule: test-flaky}, {rule: test-red-on-head}]
