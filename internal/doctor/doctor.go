@@ -278,6 +278,8 @@ func repository(r *Report, o Options) {
 	languages(r, o)
 }
 
+const forgeCommandFix = "set what the command needs (for the Forgejo sample: FORGEJO_URL and a valid FORGEJO_TOKEN), then run `workline doctor` again; see docs/spec/forge-command.md"
+
 // forgeCommand looks at a forge plugged by a command (`forge: cmd:<command>`,
 // docs/spec/forge-command.md): the command must be found, run, and say why
 // when it cannot reach its forge. Any other forge is left as it was.
@@ -294,8 +296,21 @@ func forgeCommand(r *Report, o Options, configured string) {
 	state, detail := forge.CheckCommand(o.Repo, script)
 	switch state {
 	case forge.ProbeReachable:
-		r.add(Check{Area: "repository", Rule: "forge-command", Where: script, Level: OK,
-			Message: "the forge command `" + script + "` runs and the forge is reachable"})
+		// A ping a command does not know proves nothing of its token: one
+		// real, read-only call must answer before the forge is called reachable.
+		if f, err := forge.Open("cmd:"+script, o.Repo); err != nil {
+			r.add(Check{Area: "repository", Rule: "forge-command-failing", Where: script, Level: Warn,
+				Message: "the forge command `" + script + "` ran but the forge does not answer: " + err.Error(), Fix: forgeCommandFix})
+		} else if b, ok := f.(forge.Backlog); !ok {
+			r.add(Check{Area: "repository", Rule: "forge-command", Where: script, Level: OK,
+				Message: "the forge command `" + script + "` runs and the forge is reachable"})
+		} else if _, err := b.Milestones(); err != nil && !strings.Contains(err.Error(), "unknown operation") {
+			r.add(Check{Area: "repository", Rule: "forge-command-failing", Where: script, Level: Warn,
+				Message: "the forge command `" + script + "` ran but the forge does not answer: " + forge.Said(err), Fix: forgeCommandFix})
+		} else {
+			r.add(Check{Area: "repository", Rule: "forge-command", Where: script, Level: OK,
+				Message: "the forge command `" + script + "` runs and the forge answered a real call"})
+		}
 	case forge.ProbeMissing:
 		first := script
 		if f := strings.Fields(script); len(f) > 0 {
@@ -306,8 +321,7 @@ func forgeCommand(r *Report, o Options, configured string) {
 			Fix:     fmt.Sprintf("install %s or make it executable, or fix `forge: cmd:…` in .workline/config.yaml; see docs/spec/forge-command.md", first)})
 	default:
 		why := "the forge command `" + script + "` ran but the forge is not reachable: " + detail
-		fix := "set what the command needs (for the Forgejo sample: FORGEJO_URL and FORGEJO_TOKEN), then run `workline doctor` again; see docs/spec/forge-command.md"
-		r.add(Check{Area: "repository", Rule: "forge-command-failing", Where: script, Level: Warn, Message: why, Fix: fix})
+		r.add(Check{Area: "repository", Rule: "forge-command-failing", Where: script, Level: Warn, Message: why, Fix: forgeCommandFix})
 	}
 }
 
