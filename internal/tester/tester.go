@@ -20,6 +20,7 @@ import (
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -36,8 +37,11 @@ type Settings struct {
 	// nested repository holds, or a folder linked outside the root leads
 	// to: those are read, never removed.
 	Report string `json:"test-report"`
-	// Paths are the test files, as patterns (`**` spans folders).
-	Paths []string `json:"test-paths"`
+	// Paths are the test files, as patterns (`**` spans folders); unset,
+	// the generic ones (testdef, ADR-0065). Homes: where a test's code
+	// lives (Tests).
+	Paths []string       `json:"test-paths"`
+	Homes []testdef.Home `json:"test-homes"`
 	// ModuleFiles name the file marking a build module's folder
 	// (`build.gradle.kts`, `pom.xml`): set, `{packages}` is the modules
 	// a change touches, not the folders holding tests (#1176).
@@ -106,8 +110,18 @@ func SettingsFrom(m map[string]any) (Settings, error) {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return s, fmt.Errorf("the tester's settings: %w", err)
 	}
+	if err := testdef.Check(s.Homes); err != nil {
+		return s, fmt.Errorf("the tester's settings: %w", err)
+	}
+	d := s.Tests()
+	s.Paths, s.Homes = d.Paths, d.Homes
 	return s, nil
 }
+
+// Tests is the project's one definition of a test file, every role's
+// (ADR-0065, change 3): its test-paths and test-homes, each unset the
+// generic one.
+func (s Settings) Tests() testdef.Def { return testdef.From(s.Paths, s.Homes) }
 
 // Check is the red-first check on the change from the merge base of base
 // and HEAD to HEAD, as committed: the tests HEAD's report holds that the

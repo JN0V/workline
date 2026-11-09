@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"go.yaml.in/yaml/v3"
+
+	"github.com/JN0V/workline/internal/testdef"
 )
 
 // Role is a parsed role.yaml, plus the folder it was loaded from.
@@ -491,16 +493,39 @@ func (r *Role) Writes(settings map[string]any) []string {
 			out = append(out, w)
 			continue
 		}
+		var vals []string
 		switch v := settings[name].(type) {
 		case string:
-			out = append(out, v)
+			vals = append(vals, v)
 		case []any:
 			for _, x := range v {
 				if s, ok := x.(string); ok {
-					out = append(out, s)
+					vals = append(vals, s)
 				}
 			}
 		}
+		if len(vals) == 0 && name == testdef.PathsSetting {
+			vals = testdef.Generic().Patterns() // unset: the generic test files (ADR-0065)
+		}
+		out = append(out, vals...)
 	}
 	return out
+}
+
+// TestDef is the project's one definition of a test file (ADR-0065,
+// change 3): the tester's test-paths and test-homes, in its role.yaml
+// under rolesDir and the project's config, each unset the generic one.
+// Not read, the generic one, with the error.
+func TestDef(rolesDir, repo string) (testdef.Def, error) {
+	cfg, err := LoadProjectConfig(repo)
+	if err != nil {
+		return testdef.Generic(), err
+	}
+	r, err := Load(rolesDir, "tester")
+	if err != nil {
+		// The project's own settings still say it.
+		d, _ := testdef.FromSettings(cfg.Roles["tester"].Settings)
+		return d, fmt.Errorf("the tester's role, whose test-paths say which files are tests: %w", err)
+	}
+	return testdef.FromSettings(r.MergedSettings(cfg))
 }

@@ -105,19 +105,20 @@ settings:
   # `./gradlew $(echo {packages} | sed -E 's#\./##g; s#/#:#g; s#([^ ]+)#:\1:test#g')`.
   module-files: []
   # The test files: those a change adds or changes are laid on the base
-  # for the red proof; the change's other files are its code.
-  test-paths:
-    - "**/*_test.go"
-    - "**/test_*.py"
-    - "**/*_test.py"
-    - "**/*.test.ts"
-    - "**/*.test.js"
-    - "**/*.spec.ts"
-    - "**/*.spec.js"
-    - "**/*_test.rs"
-    - "tests/**"
-    - "test/**"
-    - "**/src/test/**"
+  # for the red proof; the change's other files are its code. The one
+  # definition of a test file every role reads (ADR-0065): unset, the
+  # built-in generic patterns (internal/testdef/generic.yaml: test/ and
+  # tests/ folders, *_test.*, *.test.*, *.spec.*), which `workline
+  # doctor` says. A test they miss is code to the developer's Scope fence.
+  # E.g. ["**/src/test/**", "**/src/androidTest/**"], ["spec/**"].
+  test-paths: []
+  # Where a test's code lives, for the developer's fence: a new test file
+  # whose code folder holds a Scope path is in bounds. Each maps a test's
+  # folder (`tests`) onto its code's (`code`), each `**` filling the next;
+  # a test in none lives beside its code. Unset, the generic ones: the
+  # folder holding a test/ or tests/ folder.
+  # E.g. [{tests: "**/src/test/**", code: "**/src/main/**"}].
+  test-homes: []
   # A build broken by a new test, told apart by ecosystem: an error line
   # of the test command's output (groups file and message), the messages
   # naming what the code lacks (the name in a group `name`, else the

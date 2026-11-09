@@ -1,0 +1,32 @@
+# The built-in generic test definition (ADR-0065, change 3): what every
+# role reads as a test file when the project sets none. Data, never engine
+# code; it becomes the built-in `generic` pack once packs exist (#1230).
+#
+# A test the generic patterns miss is code to the developer's fence: asked
+# of the product owner, and `workline doctor` says how to set the tester's
+# test-paths and test-homes.
+#
+# test-paths: the test files. A name opening on a dot is a setting, never a
+# test (`.env.test.local`).
+test-paths:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/[^.]*_test.*"
+  - "**/[^.]*.test.*"
+  - "**/[^.]*.spec.*"
+# test-homes: where a test file's code lives, its folder matched by
+# `tests`, mapped onto `code`: each `**` of `tests` fills the next one of
+# `code`, the rest dropped. A test in no mapping lives beside its code, in
+# its own folder. Here: the folder holding the test folder.
+test-homes:
+  - {tests: "**/test/**", code: "**"}
+  - {tests: "**/tests/**", code: "**"}
+# aside: folders beside a project's own code that hold no test either: the
+# code picker ranks them after the code. A context guess: a miss costs a read.
+aside:
+  - "**/example/**"
+  - "**/examples/**"
+  - "**/tools/**"
+  - "**/mock/**"
+  - "**/mocks/**"
+  - "**/testdata/**"
