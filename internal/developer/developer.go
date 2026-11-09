@@ -217,10 +217,27 @@ func (a Act) Line() string {
 }
 
 // BodyMark is an issue body's short digest, as a claim's record keeps
-// it (Act.Body): the line and the developer read a change by it.
+// it (Act.Body): the line and the developer read a change by it. The
+// engine's own "Blocked by" line (backlog.BlockedByMarker) is left out:
+// the engine recording what an issue waits on is no change of a
+// person's, and starts no round (#1271).
 func BodyMark(body string) string {
-	sum := sha256.Sum256([]byte(strings.TrimSpace(body)))
+	lines := strings.Split(body, "\n")
+	lines = slices.DeleteFunc(lines, func(l string) bool { return strings.Contains(l, backlog.BlockedByMarker) })
+	return digest(strings.Join(lines, "\n"))
+}
+
+// digest is the short digest of a text, its spaces around trimmed.
+func digest(text string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(text)))
 	return hex.EncodeToString(sum[:])[:12]
+}
+
+// BodyChanged says whether body is not the one mark, a record's
+// BodyMark, was kept of. A record from before the engine's line was left
+// out kept the whole body's digest: read as the same body too.
+func BodyChanged(mark, body string) bool {
+	return mark != BodyMark(body) && mark != digest(body)
 }
 
 // ReadAct reads a pick's record from a comment of the developer's.

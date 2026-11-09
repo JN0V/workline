@@ -448,8 +448,8 @@ func issueRewritten(f forge.Forge, a Act) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if m := BodyMark(is.Body); m != a.Body {
-		return m, nil
+	if BodyChanged(a.Body, is.Body) {
+		return BodyMark(is.Body), nil
 	}
 	return "", nil
 }

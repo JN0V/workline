@@ -71,6 +71,8 @@ step 6).
     in the task; the agent holds its code to it.
   - **Once a body**: the new one kept in the record. A record from
     before has none to compare: nothing asked.
+  - **A person's change only**: the engine's own `Blocked by` line,
+    added or rewritten, starts no round.
   - **No event wakes it**: the hourly reconciler starts it, the issue
     saying so.
 - **The reviewer's rules alone** ([#1040](https://github.com/JN0V/workline/issues/1040)):

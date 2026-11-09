@@ -1,0 +1,40 @@
+case: routing/claim-blocker-line-is-no-round
+about: >
+  The engine adds its own "Blocked by" line to a claimed issue's body,
+  recording what it waits on (#1271): no person changed it, so no paid
+  review round is due on its pull request. The issue waits on its
+  Draft, as before the line. No agent is asked, nothing is written.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git checkout -q -b workline/developer/4 && git push -q origin main workline/developer/4 && git checkout -q main"
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    head-checks:
+      workline/developer/4:
+        - {name: test, workflow: test, state: pending, job: 46}
+    issues:
+      - {id: 4, title: "Divide two numbers", labels: ["workline:developing"], body: "## Need\n\nI want to divide.\n\nBlocked by #9. <!-- workline:blocked-by -->"}
+    merge-requests:
+      - id: 5
+        branch: workline/developer/4
+        title: "Divide two numbers"
+        body: "Closes #4"
+        draft: true
+        comments:
+          - "**The developer**'s record.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":4,\"body\":\"0d3401a95172\",\"code\":[\"lib.sh\"],\"round\":1,\"review-runs\":1} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {route: reconcile, open-merge-request: true, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 0 issues due:"
+  agent-calls: 0
+  findings:
+    - {rule: state-waits, level: info, where: "#4", message: "its claim, workline:developing, waits on its pull request #5, a Draft: the developer's, a round on it once its checks end or one is red; a change to its body is the developer's, at a review round on it"}
+  no-findings: [{rule: state-wakes, where: "#4"}, {rule: review-round-due}]
+  forge:
+    issues:
+      - {id: 4, labels: ["workline:developing"], comments: 0}
+    merge-requests:
+      - {id: 5, draft: true, comments: 2}
