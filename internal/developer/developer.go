@@ -301,26 +301,47 @@ func overlap(a, b []string) string {
 	return ""
 }
 
-// Held are the issues the developer holds with code, each its Scope's
-// paths: claimed (claimLabel), and an open merge request closes it
-// (#952). A claim whose agent wrote no code holds no Scope: nothing of
+// Held are the issues the developer holds with code, each the files it
+// holds: claimed (claimLabel), and an open merge request closes it
+// (#952). A claim whose agent wrote no code holds no file: nothing of
 // its can conflict, and the hours it waits out are a pause before it is
 // taken again, not a hold on the issues beside it. letGo: the claims a
 // run lets go; files: the repository's, the Scopes read against them.
-// The files its pull request lists beyond the Scope are held too
-// (ADR-0065, change 2); its whole diff is #1256's.
-func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string) map[int][]string {
-	coded := map[int][]string{}
+// The files it holds are its merge requests' changed files, as changed
+// reads them: facts, not its Scope's prediction (ADR-0065, change 2,
+// #1256). One changed cannot read holds its prediction, as before: its
+// Scope's paths and those its pull request lists beyond the Scope.
+func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string, changed Diffs) map[int][]string {
+	type code struct {
+		files, beyond []string
+		unread        bool
+	}
+	coded := map[int]*code{}
 	for _, m := range mrs {
 		for _, n := range forge.Closes(m.Title, m.Body) {
-			coded[n] = union(coded[n], beyondListed(m.Body))
+			c := coded[n]
+			if c == nil {
+				c = &code{}
+				coded[n] = c
+			}
+			c.beyond = union(c.beyond, beyondListed(m.Body))
+			var diff []string
+			ok := false
+			if changed != nil {
+				diff, ok = changed(m)
+			}
+			c.files, c.unread = union(c.files, diff), c.unread || !ok
 		}
 	}
 	held := map[int][]string{}
 	for _, is := range issues {
-		beyond, ok := coded[is.ID]
-		if !is.Closed && slices.Contains(is.Labels, claimLabel) && ok && !letGo[is.ID] {
-			held[is.ID] = union(scopeHeld(is.Body, files), beyond)
+		c, ok := coded[is.ID]
+		if is.Closed || !slices.Contains(is.Labels, claimLabel) || !ok || letGo[is.ID] {
+			continue
+		}
+		held[is.ID] = c.files
+		if c.unread {
+			held[is.ID] = union(c.files, union(scopeHeld(is.Body, files), c.beyond))
 		}
 	}
 	return held
@@ -355,8 +376,8 @@ func beyondListed(body string) []string {
 	return out
 }
 
-// Overlapping is the first issue of held, by number, whose Scope's
-// paths overlap is's, and the path; 0 when none, or is itself. A Scope
+// Overlapping is the first issue of held, by number, whose files (Held)
+// overlap is's Scope's paths, and the path; 0 when none, or is itself. A Scope
 // its writer marked as a guess (work.Guessed) waits on nothing: its paths
 // were named before their code was read (#970).
 func Overlapping(is forge.Issue, held map[int][]string, files []string) (int, string) {
@@ -412,10 +433,11 @@ func RepoFiles(repo string) []string { return repoFiles(repo) }
 // Validation names scenarios waits for the tester's open Draft of its
 // tests (ADR-0055), or the kind of proof it recorded instead (proofs,
 // ADR-0059). only, when not 0, is the one issue looked at. files are the
-// repository's, its Scopes' paths read against them (scopePaths).
+// repository's, its Scopes' paths read against them (scopePaths);
+// changed reads the files held merge requests change (Held).
 // letGo are the claims this run lets go: held no more, taken at a next
 // run. passed are the issues offered it passed over, why each.
-func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string) (id int, passed []Passed) {
+func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string, changed Diffs) (id int, passed []Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
@@ -431,7 +453,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			}
 		}
 	}
-	held := Held(issues, mrs, s.ClaimLabel, letGo, files)
+	held := Held(issues, mrs, s.ClaimLabel, letGo, files, changed)
 	backlog.Order(issues)
 	for _, is := range issues {
 		if only != 0 && is.ID != only || !backlog.Offered(is, open) {
@@ -557,7 +579,7 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return external(err)
 	}
-	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo, proofs, repoFiles(repo))
+	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo, proofs, repoFiles(repo), Changed(repo, forge.KeepsBranches(f)))
 	for _, p := range passed {
 		findings = append(findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}
