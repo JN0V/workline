@@ -77,6 +77,8 @@ flowchart LR
   and fails on one holding a pack's marker, extension or path pattern.
   - **A tripwire, not a proof**: it catches the usual leak, not every
     one; the pull request's review does the rest.
+  - **The `generic` pack's patterns are left out**: `test` or `_test.`
+    would flag many plain strings.
   - **An exemption** is a comment on the line saying why the literal
     converges (`.xml` for the JUnit reader); the review judges it.
   - **A baseline** lists today's offenders and may only shrink. Cheap:
@@ -138,13 +140,15 @@ Amends [ADR-0055].
   because what the issue asks for does not exist yet?" Yes is red;
   no is `build-broken`, the judge's line quoted.
 - **The judge `unsure`** ([ADR-0045]), past its read budget, failed
-  or at its cap: the Draft opens `red unproven`, the compiler's
-  lines and the judge's reason quoted, Waiting(person). Never a
-  pass, never a stuck run.
+  or at its cap: the Draft opens with `red unproven` written on it,
+  the compiler's lines and the judge's reason quoted, and the
+  developer starts. The pull request says it too; the green proof on
+  the code and the objection chain ([ADR-0059]) settle it. Never a
+  pass, never a stuck run, no person waited for.
 - **A person's tests, no agent**: with none, the tester writes no
   tests ([ADR-0055]) and no judge runs ([ADR-0045]). A person's
-  test whose build breaks, past the fast path, is `red unproven`
-  the same way.
+  test whose build breaks, past the fast path, is `red unproven`,
+  Waiting(person): the only case a person is waited for.
 - **Deleted**: `redfirst.go`'s knock-on, declaration and casing rules.
 
 #### 2. Scope as paths and globs, the fence matches paths only
@@ -162,7 +166,8 @@ Amends [ADR-0055].
   English-prose rule that reads a Scope as a guess (`codeUnread`;
   the `Guessed:` mark stays).
 - **Moved, not deleted**: the JVM classpath-shadowing check (a test
-  helper named like a main class) becomes a reviewer check.
+  helper named like a main class) becomes a reviewer lens, a prompt
+  that judges, not Go code (Rule B).
 
 #### 3. One definition of a test file
 
@@ -180,7 +185,10 @@ Amends [ADR-0055].
 - **A broken build writes no report** (Gradle stops at
   `compileTestKotlin`, [round 6](../research/round6-root-causes.md)):
   each declared test is checked against the test files the change
-  adds, by file name or the pack's `test-name`.
+  adds, by file name or the pack's `test-name`. Under the `generic`
+  pack, with no `test-name`, that proves only that the file exists;
+  the code's report must later build and run the test green
+  ([ADR-0055]), which closes the gap.
 - **A scenario with no entry** keeps today's block,
   `scenario-without-test`, the answer asked again once.
 - **An id not found, a reason disputed**: the existing chain, an
