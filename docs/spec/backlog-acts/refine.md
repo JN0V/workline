@@ -364,9 +364,14 @@ from.
   resumes on its pull request. Else `blocked`, why not.
 - **A run too big for its role**
   ([ADR-0064, step 3](../../adr/0064-size-is-a-target-not-a-wall.md#2-two-checkpoints)):
-  woken at once (`size`, the role). To narrow it, a `refine` rewrites the
-  Scope whole, fewer files, then `unblock` to its state; sent back as it
-  is, the next crossing waits for a person. Its need atomic, at the
+  woken at once (`size`, the role), told what crossed with the run's
+  numbers, and the issue's fresh tokens so far against its normal and
+  its backstop ([#1193](https://github.com/JN0V/workline/issues/1193)).
+  To narrow it, a `refine` rewrites the Scope whole, fewer files, a
+  person's Scope too, then `unblock` to its state. A narrowing not
+  written holds the unblock beside it (`scope-not-narrowed`); sent back
+  as it is, the next crossing waits for a person. Its need atomic — no part
+  passes its own Verification apart — at the
   normal size: `size` with `tier: large`, then `unblock`
   ([ADR-0064, step 4](../../adr/0064-size-is-a-target-not-a-wall.md#3-the-product-owner-decides-once-a-state-an-issue)).
   Parts that pass apart, the issue no part itself: a `split`,

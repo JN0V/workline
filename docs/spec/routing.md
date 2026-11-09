@@ -497,8 +497,11 @@ whose result moves the issue to the next. The table is the routing's
     said, and that the product owner reads it at once (`size-crossed`).
     The record keeps the role (`size-of`) and the state (`sized`).
   - **The product owner reads it** at the next run, no news needed
-    (`state-revisit`), told the size: it narrows the Scope and sends it
-    back; grants it `workline:size/large` and sends it back; splits it,
+    (`state-revisit`), told the facts: what crossed, with the run's
+    numbers, and the issue's fresh tokens so far against its normal and
+    its backstop
+    ([#1193](https://github.com/JN0V/workline/issues/1193)). It narrows
+    the Scope and sends it back; grants it `workline:size/large` and sends it back; splits it,
     `split` on for it, and keeps it blocked for a person to accept from
     its parts
     ([ADR-0064, step 4](../adr/0064-size-is-a-target-not-a-wall.md#3-the-product-owner-decides-once-a-state-an-issue);
