@@ -192,7 +192,8 @@ reported as advisory. The verdict comes from the rules either way.
 ## Verdict and report
 
 A gate gives the same verdict as a role (`--json`), with the findings of every
-check, and keeps each check's output under `.git/workline/gates/`: its log,
+check, and keeps each check's output under `.git/workline/gates/`: its log
+(a secret's value masked, [#1215](https://github.com/JN0V/workline/issues/1215)),
 its SARIF, and on a merge request the run at the merge base under `base/`
 and the results marked under `compared/`. A check over its thresholds names
 its first findings, file and line; no agent is ever asked, so the verdict
