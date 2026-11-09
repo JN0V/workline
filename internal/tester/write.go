@@ -839,7 +839,8 @@ var seeLog = regexp.MustCompile(`; see (/\S+\.log)`)
 
 // ranOn is a gate's message without the folders of the machine that ran
 // it, gone with the tests' tree: a failed check's log given by its last
-// lines instead, where the findings were marked left out.
+// lines instead, its secrets masked, where the findings were marked left
+// out.
 func ranOn(msg string) string {
 	msg = markedIn.ReplaceAllString(msg, "")
 	return seeLog.ReplaceAllStringFunc(msg, func(m string) string {
@@ -847,7 +848,7 @@ func ranOn(msg string) string {
 		if err != nil || strings.TrimSpace(string(data)) == "" {
 			return ""
 		}
-		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+		lines := strings.Split(strings.TrimRight(forge.Mask(string(data)), "\n"), "\n")
 		if len(lines) > logTail {
 			lines = lines[len(lines)-logTail:]
 		}

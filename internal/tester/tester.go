@@ -569,7 +569,8 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 }
 
 // shell runs a command line in dir, Go's result cache off, stopped past
-// deadline when one is set: late says it was.
+// deadline when one is set: late says it was. Its output comes back
+// masked (forge.Mask).
 func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, err error) {
 	ctx := context.Background()
 	if !deadline.IsZero() {
@@ -586,7 +587,9 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 	cmd.Stdout, cmd.Stderr = &out, &out
 	cmd.WaitDelay = 5 * time.Second
 	err = cmd.Run() // a test that fails exits non-zero: the report says which
-	return out, ctx.Err() != nil, err
+	// Its secrets masked before a reason quotes or cuts it (#1215).
+	masked := bytes.NewBufferString(forge.Mask(out.String()))
+	return *masked, ctx.Err() != nil, err
 }
 
 // overTime is the finding of a command stopped past the proof's budget.

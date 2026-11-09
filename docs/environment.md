@@ -1,5 +1,5 @@
 ---
-sources: [internal/forge/retry.go, internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks, internal/line/payload.go]
+sources: [internal/forge/retry.go, internal/forge/mask.go, internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks, internal/line/payload.go]
 checked: cd8e8d0d
 verified: agent:claude-code
 judged: e343388
@@ -66,3 +66,16 @@ as the tester's or the developer's proof, its checks, and the agent
   oldest pruned, the live run with them.
 - **Kept**: what a person sets for their own use, such as
   `WORKLINE_JUDGE`, `WORKLINE_ROLES` or `WORKLINE_MODELS_SEEN`.
+
+## Secrets in quoted output
+
+A command's output a comment quotes shows `***` in place of a secret
+([#1215](https://github.com/JN0V/workline/issues/1215)): the tests' lines
+in a red proof, a check's log, a docs example's output.
+
+- **Which**: the values of the forge's tokens above, and of each
+  variable whose name ends in `_TOKEN`, `_KEY`, `_SECRET`, `_PASSWORD`,
+  `_PAT` or `_CREDENTIALS`, case aside.
+- **Kept**: a value under 8 characters, and every variable's name.
+- **When**: before a line is cut to fit a comment, so no cut leaves a
+  part of one.

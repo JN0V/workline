@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -185,7 +186,7 @@ func run(repo, command string) (string, error) {
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("%v: %s", err, strings.TrimSpace(errOut.String()))
+		return "", fmt.Errorf("%v: %s", err, strings.TrimSpace(forge.Mask(errOut.String())))
 	}
 	return strings.TrimSpace(out.String()), nil
 }

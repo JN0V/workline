@@ -434,6 +434,7 @@ func execute(dir, out string, c Check, timeout time.Duration, env []string) (int
 		cmd.Stdout, cmd.Stderr = log, log
 	}
 	err := cmd.Run()
+	maskLog(logFile)
 	var exitErr *exec.ExitError
 	switch {
 	case errors.Is(ctx.Err(), context.DeadlineExceeded):
@@ -447,6 +448,18 @@ func execute(dir, out string, c Check, timeout time.Duration, env []string) (int
 		return 0, &verdict.Finding{Rule: "check-error", Where: c.ID, Message: err.Error()}
 	}
 	return 0, nil
+}
+
+// maskLog writes a check's log again, its secrets masked (forge.Mask):
+// a finding names it, and a role quotes its lines in a comment (#1215).
+func maskLog(file string) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return
+	}
+	if masked := forge.Mask(string(data)); masked != string(data) {
+		_ = os.WriteFile(file, []byte(masked), 0o644)
+	}
 }
 
 // rerun runs a SARIF check again at the merge base, its output in a

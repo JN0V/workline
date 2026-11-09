@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -272,10 +273,10 @@ func checkExamples(repo, command string, docs map[string]string, named []string)
 var exampleTimeout = 10 * time.Minute
 
 // outputSaid is a command's output on one line, its last lines kept: what
-// a finding and a merge request's list can show.
+// a finding and a merge request's list can show, its secrets masked.
 func outputSaid(out string, err error) string {
 	var lines []string
-	for _, l := range strings.Split(out, "\n") {
+	for _, l := range strings.Split(forge.Mask(out), "\n") {
 		if l = strings.TrimSpace(l); l != "" {
 			lines = append(lines, l)
 		}
