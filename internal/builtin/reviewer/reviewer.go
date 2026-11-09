@@ -130,6 +130,7 @@ type state struct {
 	Advisories []verdict.Finding  `json:"advisories,omitempty"`
 	Issues     []ClosedIssue      `json:"issues,omitempty"`    // the issues the change says it closes, as read (#126)
 	Testimony  string             `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
+	Beyond     string             `json:"beyond,omitempty"`    // the files the author lists beyond the issue's Scope, and why, for the intent lens (ADR-0065)
 	Skipped    []string           `json:"skipped,omitempty"`   // lenses not asked, each with why
 	Spec       *Spec              `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
 	Part       string             `json:"part,omitempty"`      // one spec of several a run reads: what its parts' names start with (#433)
@@ -400,6 +401,9 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	var unread []verdict.Finding
 	st.Issues, unread = readIssues(repo, ids, s.IssueLinesMax)
+	if len(st.Issues) > 0 {
+		st.Beyond = beyondListed(mr, msgs)
+	}
 	// An issue cut is said once the lenses are asked to read it, with
 	// the testimony's: a change no lens reads says why, not what they
 	// would have read.
@@ -913,7 +917,7 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 	// request, a push asking another lens does not pay for them.
 	purpose := ""
 	if slices.ContainsFunc(st.Lenses, func(l string) bool { return read[l].Needs == "issue" }) {
-		purpose = whatFor(st.Issues)
+		purpose = whatFor(st.Issues, st.Beyond)
 	}
 	write := func(name, task string) error {
 		dir := filepath.Join(runDir, "in", "parts", name)
@@ -1428,7 +1432,7 @@ func askJudges(runDir, repo string, s Settings, st state, c *candidates, n *int)
 			m = material(repo, st, s, f)
 			m += testsTouching(repo, st.Head, f.Cause.Path, s.Tests, s.TestsLinesMax)
 		case l.Judge.Reads == "issue" && issueOf(st, f.Cause.Path) == nil: // one quoting an issue is shown it already
-			m = material(repo, st, s, f) + "\n" + whatFor(st.Issues)
+			m = material(repo, st, s, f) + "\n" + whatFor(st.Issues, st.Beyond)
 		default:
 			m = material(repo, st, s, f)
 		}
@@ -1613,7 +1617,7 @@ func material(repo string, st state, s Settings, f Finding) string {
 	// compared with: the whole range, base..head, commits reviewed before
 	// included, so a part one of them did is not missing; up to code-lines-max.
 	if is := issueOf(st, f.Cause.Path); is != nil {
-		b.WriteString("\n" + whatFor([]ClosedIssue{*is}))
+		b.WriteString("\n" + whatFor([]ClosedIssue{*is}, st.Beyond))
 		if diff, err := git(repo, "diff", "-U1", "--no-color", "--no-ext-diff", "--find-renames", st.Base, st.Head, "--"); err == nil {
 			fmt.Fprintf(&b, "\n## The whole change: every commit of the merge request, those reviewed before too\n\n```diff\n%s```\n", capLines(diff, s.CodeLinesMax, "the change is cut here, past code-lines-max"))
 		}

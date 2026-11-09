@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -31,8 +32,9 @@ func issueOf(st state, path string) *ClosedIssue {
 	return nil
 }
 
-// whatFor is the section the lenses and a judge read of the issues closed.
-func whatFor(issues []ClosedIssue) string {
+// whatFor is the section the lenses and a judge read of the issues
+// closed, and of the files the author lists beyond their Scope.
+func whatFor(issues []ClosedIssue, beyond string) string {
 	if len(issues) == 0 {
 		return ""
 	}
@@ -41,7 +43,44 @@ func whatFor(issues []ClosedIssue) string {
 	for _, is := range issues {
 		b.WriteString(is.Text + "\n")
 	}
+	if beyond != "" {
+		fmt.Fprintf(&b, "\n### %s, as the author lists them\n\nThe %s is the product owner's hint, not a fence (ADR-0065): each file below was changed beyond it, its reason the author's. Judge each against the issue.\n\n%s", beyondHeading, work.Name(work.Scope), beyond)
+	}
 	return b.String()
+}
+
+// beyondHeading heads the developer's list of the files it changed
+// beyond the issue's Scope, on its pull request and in a round's commit
+// (internal/developer, BeyondHeading).
+var beyondHeading = "Beyond the " + work.Name(work.Scope)
+
+// beyondListed are the bullets listed under a heading or a line
+// "Beyond the Scope" in the texts given, the merge request's body and its
+// commits' messages, each once, in order: the files changed beyond the
+// issue's Scope and why, as the author says (ADR-0065, change 2).
+func beyondListed(texts ...string) string {
+	var out []string
+	for _, t := range texts {
+		in := false
+		for _, l := range strings.Split(strings.ReplaceAll(t, "\r\n", "\n"), "\n") {
+			l = strings.TrimSpace(l)
+			switch {
+			case strings.TrimSuffix(strings.TrimSpace(strings.TrimLeft(l, "#")), ":") == beyondHeading:
+				in = true
+			case !in || l == "":
+			case strings.HasPrefix(l, "- "):
+				if !slices.Contains(out, l) {
+					out = append(out, l)
+				}
+			default:
+				in = strings.HasPrefix(l, "Files changed beyond") // the list's own lead line
+			}
+		}
+	}
+	if len(out) == 0 {
+		return ""
+	}
+	return strings.Join(out, "\n") + "\n"
 }
 
 // intentSections are what of an issue a change is compared with: what it
