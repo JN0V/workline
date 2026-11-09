@@ -17,7 +17,6 @@ Part of [Acts on the backlog](../backlog-acts.md): breaking an issue into its pa
     into:                                   # 2 to 6 children
       - title: "Keep the last row in the CSV export"
         need: "Every row exported, so a report counts what was sold."   # a draft
-        verification: "A test writes three rows and reads three lines back."
         validation: "The maintainer opens an export of a known day."    # a draft
         scope: "WriteRows in src/export/csv.go."
         sources: [src/export/csv.go]
@@ -74,7 +73,7 @@ a run on it crossed its size, or the product owner predicts it at ready
   role on, asked on its size or in refine; else dropped
   (`too-big-unasked`), `split` keeping its mode.
 - **Split or grant**: split when the parts each pass their own
-  Verification apart; when none can, grant it `size` `large`, never
+  scenarios apart; when none can, grant it `size` `large`, never
   split it. The issue saying its parts fail apart is evidence, not the
   test
   ([granting a size](refine.md#granting-a-size);

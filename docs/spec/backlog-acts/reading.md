@@ -44,7 +44,7 @@ state written before any act; then those with something new since they
 were read — a commit touched their sources, a person changed its body
 (`body`), a person reopened what the role closed (`closed`), the
 reviewer's spec findings, a review answered by asking a person for the
-Verification or Scope the role now rewrites, its own Validation naming no
+Scope the role now rewrites, its own Validation naming no
 scenario the tester reads, the tester's "no test possible" (`no-test`) —; then one left with nothing under an older
 way of reading (`backlog.LeftBehind`: its `rules` below
 `backlog.Reading`, a section lacking, no code named, no act ever done,
