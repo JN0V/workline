@@ -23,6 +23,8 @@
     the tester's read tools before step 9, the token ceiling measured;
   - [2026-11-08](#amendment-2026-11-08-a-persons-labels-are-input-a-roles-own-write-is-not):
     §3's input, a person's labels in, the role's own write out
+- **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#the-four-changes), once built: §8's
+  picker frozen, its tables in packs; §9's fence on paths only
 
 ## Context
 

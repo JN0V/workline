@@ -15,6 +15,8 @@
   proven, linted Draft moves the issue to ready; a proof kind in place of
   a Draft; past its answers, the product owner settles an objection,
   then Blocked; `objection-person` is gone
+- **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#the-four-changes),
+  once built: a broken build's right reason is judged, not guessed
 
 ## Context
 
