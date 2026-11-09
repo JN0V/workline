@@ -98,7 +98,8 @@ step due that no event started, run.
 
 - **Due**: the role its state wakes is routed on `issue`, and the line's
   record on it does not hold that state, body and labelling yet.
-- **`--ai`**, `--open-merge-request`, `--forge`: as for each step.
+- **`--ai`**, `--open-merge-request`, `--forge`: as for each step;
+  on a forge, `--open-merge-request` is the default, as for `route issue`.
 - **At most `reconcile-max`** steps a run (3); `--input reconcile=list`
   names them and starts none.
 - **The one waiting longest first**, so a new issue never waits behind

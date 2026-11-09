@@ -381,7 +381,11 @@ whose result moves the issue to the next. The table is the routing's
   role the issue's state wakes, alone, when the project routes it on
   `issue`; none, said (`state-wakes-none`): a state that wakes nobody,
   or a role not routed there. Without a target, the event's steps run
-  as listed.
+  as listed. On a forge, a role's work is handed over in a merge
+  request, as `--open-merge-request` does, unless the run says
+  `--open-merge-request=false`; then nothing of a role that proposes
+  one is applied (`merge-request-not-opened`,
+  [#1280](https://github.com/JN0V/workline/issues/1280)).
 - **GitLab's webhook**: on `issue` with no target, a pipeline its
   trigger started (`$TRIGGER_PAYLOAD`, the event or its file) names the
   issue an issue event put a state's label on, or a note event's
