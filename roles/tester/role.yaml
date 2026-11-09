@@ -129,9 +129,10 @@ settings:
   # other broken build goes to the judge with the raw facts; its yes is
   # red, its no build-broken, anything else red unproven
   # (docs/missing-name.md). An absolute path, or a file:// URI, under the
-  # checkout is read from the root. Go's, Kotlin's (Gradle's `e:` lines,
-  # Kotlin 2 and 1), javac's and Gradle's build files here; data, until
-  # the language packs take them.
+  # checkout is read from the root. A message on a later line, read by
+  # message-line (pytest's `E` line). Go's, Kotlin's (Gradle's `e:`
+  # lines, Kotlin 2 and 1), javac's, Gradle's build files and pytest's
+  # collection errors here; data, until the language packs take them.
   build-errors:
     - error: '^(?:\./)?(?P<file>[^\s:]+\.go):\d+:\d+: (?P<message>.+)$'
       missing-name:
@@ -152,6 +153,11 @@ settings:
       name-line: '^\s*symbol:\s+\w+\s+(?P<name>\w+)'
       test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|protected|private|static|final)\s+)*void\s+(\w+)\s*\('
     - error: '^(?:Build|Settings) file ''(?P<file>[^'']+)'' line: \d+(?P<message>)$'
+    - error: '^_+ ERROR collecting (?P<file>\S+\.py) _+(?P<message>)$'
+      message-line: '^E\s+(?P<message>[\w.]+: .+)$'
+      missing-name:
+        - '^ImportError: cannot import name ''(?P<name>[^'']+)'''
+      test-name: '(?m)^\s*(?:async\s+)?def (test\w*)\s*\('
   # The judge of a broken build may read the base before it answers
   # (ADR-0045): its rounds of reads, and the lines served, all rounds
   # together. 0 rounds: it answers from the facts alone.

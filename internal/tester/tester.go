@@ -200,6 +200,23 @@ func prove(repo, base string, s Settings) proven {
 	// raw (ADR-0065, change 1).
 	rules, _ := compileBuildErrors(s.BuildErrors) // unset said a bad one
 	errs := buildErrorsIn(redRun.output, ch.tests, rules, redRun.roots...)
+	// On the head, a test file of the change that does not build, but for
+	// a name the code lacks, holds no test the code can turn green: the
+	// build is said broken, its lines quoted, never the change blamed for
+	// a red test (#1283: pytest that cannot import the project).
+	if onHead {
+		if broken := brokenTests(buildErrorsIn(headRun.output, ch.tests, rules, headRun.roots...)); len(broken) > 0 {
+			var lines []string
+			for _, e := range broken {
+				lines = append(lines, e.line)
+			}
+			return refused(&verdict.Verdict{Status: verdict.Block, Summary: "the change's tests do not build on the head",
+				Findings: []verdict.Finding{{Rule: "build-broken", Where: broken[0].file,
+					Message: fmt.Sprintf("the build broke on the head in the change's tests (%s): no code turns them green; "+
+						"a test must build, or fail by a name the issue adds, never by a wrong import or a test command that cannot import the project",
+						clipRunes(forge.Mask(sample(lines)), quoteMax))}}})
+		}
+	}
 	if noReport != nil && len(errs) == 0 {
 		// No report and no error a row reads: the tests' own to mend,
 		// asked again with what the command said, never final.
@@ -361,6 +378,12 @@ func prove(repo, base string, s Settings) proven {
 		}
 	}
 	return proven{v: v, added: added, errored: errored, doubt: dbt, errs: errs}
+}
+
+// brokenTests is the errors in the change's test files that are no name
+// the code lacks.
+func brokenTests(errs []buildError) []buildError {
+	return slices.DeleteFunc(errs, func(e buildError) bool { return !e.inTest || e.missing })
 }
 
 // unbuiltTests is the tests the change's test files declare, by the

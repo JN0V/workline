@@ -1,0 +1,22 @@
+case: tester/pytest-collection-error-on-head-build-broken
+about: >
+  A Python change with its code and its test, run by plain `pytest`,
+  which cannot import the flat-layout project: the test file is not
+  collected on the head either, `No module named 'pkg'`. No code turns
+  it green, so the build is said broken there, the error quoted, never
+  the change blamed for a red test (#1283).
+given:
+  repo: python-tested
+  setup:
+    - git checkout -q -b feat/money
+    - |
+      printf 'def tax(amount):\n    return amount * 0.2\n\n\ndef money(amount):\n    return "%%.2f" %% amount\n' > pkg/pricing.py
+    - |
+      printf 'from pkg.pricing import money\n\n\ndef test_money():\n    assert money(1) == "1.00"\n' > tests/test_pricing.py && git add . && git commit -qm "feat: money"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: block
+  findings: [{rule: build-broken, where: tests/test_pricing.py, message: "No module named 'pkg'"}]
+  no-findings: [{rule: test-red-on-head}]

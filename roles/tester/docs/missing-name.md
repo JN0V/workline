@@ -90,7 +90,9 @@ flowchart LR
 - **The tests' names**, when nothing built them: read from the test
   files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`).
 - **Beside code**, the head builds and runs those tests: they must pass
-  there, as any new test.
+  there, as any new test. A test file that does not build on the head
+  but for a missing name is `build-broken`, its lines quoted, never
+  the code's red ([#1283](https://github.com/JN0V/workline/issues/1283)).
 - **No error line read**, in a language with no rows set: as before,
   `tests-not-built` warns, and `test write` opens no Draft.
 
@@ -103,6 +105,7 @@ flowchart LR
 | `error` | a regular expression matching one error line of the test command's output, with groups `file` and `message` |
 | `missing-name` | the messages naming what the code lacks; the name in a group `name`, else the message's first quoted word (`‘lostCount’`) |
 | `name-line` | optional: a later line giving the name a missing-name message lacks, in its group `name`; read up to the next error line |
+| `message-line` | optional: a later line giving the message an error line lacks, in its group `message`; read up to the next error line, quoted with it |
 | `test-name` | finds the tests a test file declares; its first group that matched is the name; empty, the row names no tests |
 
 - **The file, from the repository's root**: an absolute path or a
@@ -124,9 +127,13 @@ In [role.yaml](../role.yaml), each tried on a real build:
 | Kotlin, by Gradle | `e: file:///…/MulTest.kt:10:25 Unresolved reference 'mul'.`; Kotlin 1's `e: /…/MulTest.kt: (10, 25): …` | `Unresolved reference`, `No parameter with name` |
 | Java (`javac`) | `/…/MulTest.java:9: error: cannot find symbol` | `cannot find symbol` |
 | Gradle build files | `Build file '/…/build.gradle' line: 3` | none: the judge reads it |
+| pytest | `___ ERROR collecting tests/test_pricing.py ___`, then `E   ImportError: …` | `cannot import name`; a module not found goes to the judge |
 
 - **Kotlin's tests**: `@Test fun `two by three`()` or `@Test fun
   twoByThree()`, named without the backquotes.
+- **pytest's message** is on its first `E` line under the file it
+  could not collect, read by its `message-line`
+  ([#1283](https://github.com/JN0V/workline/issues/1283)).
 - **javac's name** is on a later line (`symbol: method mul(int,int)`),
   read by its `name-line`, then checked against the issue's text.
 - **Data, not engine code**: these rows stay in role.yaml until the

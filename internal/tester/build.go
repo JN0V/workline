@@ -27,6 +27,11 @@ type BuildErrors struct {
 	// no name, the name in its group `name`: javac's `symbol:` line
 	// (#1183). Read up to the next error line.
 	NameLine string `json:"name-line"`
+	// MessageLine finds, on a line after the error line, its message in
+	// the group `message`, when the error line gives none: pytest's `E`
+	// line under the file it could not collect (#1283). Read up to the
+	// next error line; the error is quoted with it.
+	MessageLine string `json:"message-line"`
 	// TestName finds the tests a test file declares, the first of its
 	// groups that matched the name: their ids while the file does not
 	// build. Empty, a row naming no tests (a build file's errors).
@@ -37,6 +42,7 @@ type buildRules struct {
 	error    *regexp.Regexp
 	missing  []*regexp.Regexp
 	nameLine *regexp.Regexp
+	msgLine  *regexp.Regexp
 	testName *regexp.Regexp
 }
 
@@ -66,6 +72,14 @@ func compileBuildErrors(list []BuildErrors) ([]buildRules, error) {
 					err = fmt.Errorf("the group (?P<name>…) is needed")
 				}
 				return nil, fmt.Errorf("build-errors[%d].name-line: %v", i, err)
+			}
+		}
+		if b.MessageLine != "" {
+			if r.msgLine, err = regexp.Compile(b.MessageLine); err != nil || r.msgLine.SubexpIndex("message") < 0 {
+				if err == nil {
+					err = fmt.Errorf("the group (?P<message>…) is needed")
+				}
+				return nil, fmt.Errorf("build-errors[%d].message-line: %v", i, err)
 			}
 		}
 		if b.TestName == "" {
@@ -105,6 +119,7 @@ func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...s
 	}
 	var errs []buildError
 	unnamed := -1 // the last error, a missing name whose name a later line gives
+	untold := -1  // the last error, whose message a later line gives
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimRight(line, "\r")
 		read := false
@@ -116,23 +131,30 @@ func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...s
 			file := fromRoot(m[r.error.SubexpIndex("file")], roots)
 			msg := m[r.error.SubexpIndex("message")]
 			e := buildError{file: file, line: line, msg: msg, inTest: inTests[file], rules: i}
-			if e.inTest {
-				for _, re := range r.missing {
-					if m := re.FindStringSubmatch(msg); m != nil {
-						e.missing, e.name = true, nameIn(re, m, msg)
-						break
-					}
-				}
-			}
 			errs = append(errs, e)
-			unnamed = -1
-			if e.missing && e.name == "" && r.nameLine != nil {
+			unnamed, untold = -1, -1
+			if msg == "" && r.msgLine != nil {
+				untold = len(errs) - 1
+			} else if missingIn(&errs[len(errs)-1], r) {
 				unnamed = len(errs) - 1
 			}
 			read = true
 			break
 		}
-		if !read && unnamed >= 0 {
+		switch {
+		case read:
+		case untold >= 0:
+			re := rules[errs[untold].rules].msgLine
+			if m := re.FindStringSubmatch(line); m != nil {
+				e := &errs[untold]
+				e.msg = m[re.SubexpIndex("message")]
+				e.line = strings.TrimSpace(e.line) + " " + strings.TrimSpace(line)
+				if missingIn(e, rules[e.rules]) {
+					unnamed = untold
+				}
+				untold = -1
+			}
+		case unnamed >= 0:
 			re := rules[errs[unnamed].rules].nameLine
 			if m := re.FindStringSubmatch(line); m != nil {
 				errs[unnamed].name = m[re.SubexpIndex("name")]
@@ -141,6 +163,23 @@ func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...s
 		}
 	}
 	return errs
+}
+
+// missingIn marks e a missing name when it lies in a test of the change
+// and its message names what the code lacks, by r's patterns: its index
+// and its message names what the code lacks, by r's patterns; true when
+// a later line is to give the name it lacks (r's name-line).
+func missingIn(e *buildError, r buildRules) bool {
+	if !e.inTest {
+		return false
+	}
+	for _, re := range r.missing {
+		if m := re.FindStringSubmatch(e.msg); m != nil {
+			e.missing, e.name = true, nameIn(re, m, e.msg)
+			break
+		}
+	}
+	return e.missing && e.name == "" && r.nameLine != nil
 }
 
 // fromRoot is a file an error line names, from the repository's root: a
