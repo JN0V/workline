@@ -1,6 +1,7 @@
 package tester
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -98,6 +99,34 @@ func TestJudgedLostStateFails(t *testing.T) {
 		}
 		if _, err := os.Stat(filepath.Join(dir, "question.yaml")); err == nil {
 			t.Errorf("state %q: the judge asked again", state)
+		}
+	}
+}
+
+// The question lets the judge read only while a read is left.
+func TestAskReadsOnlyWhenLeft(t *testing.T) {
+	for _, c := range []struct {
+		s     Settings
+		reads bool
+	}{
+		{Settings{JudgeReadRounds: 2, JudgeReadMax: 400}, true},
+		{Settings{JudgeReadRounds: 0, JudgeReadMax: 400}, false},
+		{Settings{JudgeReadRounds: 2, JudgeReadMax: 0}, false},
+	} {
+		dir := t.TempDir()
+		if err := (judging{}).ask(dir, c.s); err != nil {
+			t.Fatal(err)
+		}
+		data, err := os.ReadFile(filepath.Join(dir, "question.yaml"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var q struct{ Reads bool }
+		if err := json.Unmarshal(data, &q); err != nil {
+			t.Fatal(err)
+		}
+		if q.Reads != c.reads {
+			t.Errorf("%+v: reads %v, want %v", c.s, q.Reads, c.reads)
 		}
 	}
 }

@@ -59,7 +59,7 @@ flowchart LR
   base holds it.
 - **It may read the base first**: a file's lines, a definition, a word's
   places, served from git (`judge-read-rounds`, 2; `judge-read-lines-max`,
-  400).
+  400). Either at 0: it answers from the facts alone.
 - **The proof kept while it reads** lost (unreadable): the run fails
   once, said; the judge is not asked again.
 - **Picked** at the best independence from the tester's agent

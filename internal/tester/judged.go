@@ -213,7 +213,8 @@ func (j judging) ask(dir string, s Settings) error {
 	if err := os.WriteFile(filepath.Join(dir, "state.json"), data, 0o644); err != nil {
 		return err
 	}
-	q, _ := json.Marshal(map[string]any{"question": redQuestion, "material": j.material(s), "reads": true}) // JSON, which YAML reads
+	rounds, lines := j.left(s)
+	q, _ := json.Marshal(map[string]any{"question": redQuestion, "material": j.material(s), "reads": rounds > 0 && lines > 0}) // JSON, which YAML reads
 	return os.WriteFile(filepath.Join(dir, "question.yaml"), q, 0o644)
 }
 
