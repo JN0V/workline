@@ -6,14 +6,23 @@ choice is settled against this page.
 1. **People at both ends, the machine in between.** People state the need, how
    the result is verified and who validates it; they accept the result, or
    write beforehand the narrow class the line accepts for them.
-2. **One role, one job.** Each role does one thing and hands over, like a post
-   on an assembly line.
+2. **One role, one human job.** Each role holds the job, craft and scope
+   of a human role, and hands over, like a post on an assembly line.
+   Unsure what it should do? Ask what a human in that post would do
+   ([ADR-0066](adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)).
 3. **Each role reads only what it needs.** No catch-all constitution; a context
    budget per role.
-4. **Tools first, AI for judgement.** Scripts do everything mechanical. The AI
-   is called only when a decision needs judgement.
-5. **It works without AI.** No model, no quota, no network: every check still
-   runs and still blocks; judgement calls go to a person.
+4. **Tools for what converges, AI for judgement.** Scripts do what is
+   mechanical and converges
+   ([ADR-0065](adr/0065-code-only-what-converges-language-knowledge-in-packs.md)).
+   For now, where code would make a role rigid, the AI goes first; its
+   independent parts become code later, to save tokens
+   ([ADR-0066](adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)).
+5. **Its checks work without AI.** No model, no quota, no network: every
+   check on converging facts still runs and still blocks; the agent stays
+   a choice. Relaxed for now: a role need not work with agent `none`
+   where that makes it rigid; with `none` it says what it skipped
+   ([ADR-0066](adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)).
 6. **The agent proposes; the forge's guards decide.** What an agent writes
    reaches the default branch only through the forge's guards — protection,
    required checks, review, the merge policy — which hold whoever pushes.
@@ -21,8 +30,8 @@ choice is settled against this page.
    no write token; a separate step applies its proposals.
 7. **A rule that matters is a check.** A rule written only in prose is a wish.
    Every defect that got through ends as a proven, mechanical guard.
-8. **Stay on the task.** Anything found outside the task's scope is reported,
-   not fixed on the spot.
+8. **Stay on the task.** Anything found outside the task's scope is handed
+   to the role whose scope it is, not fixed on the spot.
 9. **Cut cascades.** Only direct consequences are handled in a change; the rest
    is listed and due at a chosen moment.
 10. **Same everywhere.** A role runs the same on a laptop, in GitHub Actions, in

@@ -18,7 +18,8 @@ A software factory for AI-assisted development:
   context it needs;
 - tools do the mechanical work; an AI is called only when a decision
   needs judgement;
-- everything keeps working without AI;
+- every check keeps working without AI; for now a role may need an agent
+  where working without one would make it rigid;
 - people state the need and accept the result; the line does the work in
   between ([principles](docs/PRINCIPLES.md)).
 
