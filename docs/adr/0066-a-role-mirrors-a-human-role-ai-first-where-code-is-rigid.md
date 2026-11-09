@@ -37,7 +37,7 @@
   would do. This keeps roles small, fine-grained and well made.
 - **First application**: the issue's Verification moves from the product
   owner to the tester; the product owner keeps the Need, the example,
-  the Validation, and the Scope as a hint.
+  the Validation, and the Scope as a hint ([#1261]).
 
 ### 2. AI first; code replaces it part by part (temporary)
 
@@ -75,3 +75,4 @@
 [ADR-0055]: 0055-the-tester-writes-the-acceptance-tests-before-the-code.md
 [ADR-0060]: 0060-the-person-is-on-the-loop.md
 [ADR-0065]: 0065-code-only-what-converges-language-knowledge-in-packs.md
+[#1261]: https://github.com/JN0V/workline/issues/1261
