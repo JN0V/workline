@@ -311,37 +311,35 @@ func overlap(a, b []string) string {
 // reads them: facts, not its Scope's prediction (ADR-0065, change 2,
 // #1256). One changed cannot read holds its prediction, as before: its
 // Scope's paths and those its pull request lists beyond the Scope.
+// Only a claimed issue's merge requests are read: an unclaimed one's
+// branch is never fetched, a wait each pick would feel.
 func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string, changed Diffs) map[int][]string {
-	type code struct {
-		files, beyond []string
-		unread        bool
-	}
-	coded := map[int]*code{}
+	closing := map[int][]forge.MergeRequest{}
 	for _, m := range mrs {
 		for _, n := range forge.Closes(m.Title, m.Body) {
-			c := coded[n]
-			if c == nil {
-				c = &code{}
-				coded[n] = c
-			}
-			c.beyond = union(c.beyond, beyondListed(m.Body))
-			var diff []string
-			ok := false
-			if changed != nil {
-				diff, ok = changed(m)
-			}
-			c.files, c.unread = union(c.files, diff), c.unread || !ok
+			closing[n] = append(closing[n], m)
 		}
 	}
 	held := map[int][]string{}
 	for _, is := range issues {
-		c, ok := coded[is.ID]
-		if is.Closed || !slices.Contains(is.Labels, claimLabel) || !ok || letGo[is.ID] {
-			continue
+		ms := closing[is.ID]
+		if is.Closed || !slices.Contains(is.Labels, claimLabel) || len(ms) == 0 || letGo[is.ID] {
+			continue // its merge requests' branches not fetched: a claim alone is read
 		}
-		held[is.ID] = c.files
-		if c.unread {
-			held[is.ID] = union(c.files, union(scopeHeld(is.Body, files), c.beyond))
+		var diff, beyond []string
+		unread := false
+		for _, m := range ms {
+			beyond = union(beyond, beyondListed(m.Body))
+			var d []string
+			ok := false
+			if changed != nil {
+				d, ok = changed(m)
+			}
+			diff, unread = union(diff, d), unread || !ok
+		}
+		held[is.ID] = diff
+		if unread {
+			held[is.ID] = union(diff, union(scopeHeld(is.Body, files), beyond))
 		}
 	}
 	return held

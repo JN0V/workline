@@ -91,3 +91,30 @@ func TestHeldHoldsTheDiffRead(t *testing.T) {
 		t.Errorf("held[2] = %v, want its Scope, its diff unread", held[2])
 	}
 }
+
+// Only a claimed issue's merge requests are read: one closing an issue
+// not claimed, or a claim let go, is never fetched (#1256).
+func TestHeldReadsClaimedIssuesAlone(t *testing.T) {
+	issues := []forge.Issue{
+		{ID: 1, Labels: []string{"workline:developing"}, Body: "## Scope\n\n- `a.sh`.\n"},
+		{ID: 2, Labels: []string{"workline:ready"}, Body: "## Scope\n\n- `b.sh`.\n"},
+		{ID: 3, Labels: []string{"workline:developing"}, Body: "## Scope\n\n- `c.sh`.\n"},
+	}
+	mrs := []forge.MergeRequest{
+		{ID: 4, Branch: "b1", Body: "Closes #1"},
+		{ID: 5, Branch: "b2", Body: "Closes #2"},
+		{ID: 6, Branch: "b3", Body: "Closes #3"},
+	}
+	var read []string
+	diffs := func(m forge.MergeRequest) ([]string, bool) {
+		read = append(read, m.Branch)
+		return []string{m.Branch + ".sh"}, true
+	}
+	held := Held(issues, mrs, "workline:developing", map[int]bool{3: true}, nil, diffs)
+	if !slices.Equal(read, []string{"b1"}) {
+		t.Errorf("read %v, want b1 alone", read)
+	}
+	if len(held) != 1 || !slices.Equal(held[1], []string{"b1.sh"}) {
+		t.Errorf("held = %v", held)
+	}
+}
