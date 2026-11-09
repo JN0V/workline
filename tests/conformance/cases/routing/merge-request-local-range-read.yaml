@@ -2,12 +2,13 @@ case: routing/merge-request-local-range-read
 about: >
   With `forge: local`, `workline route merge-request --target
   merge-request:1` with no range, its branch checked out, judges the
-  range the merge request names, its base to its branch: no engine
-  error for a missing input (#1285).
+  range the merge request names, its base to its branch: the commit
+  on the branch, whose subject is too long, is read and refused; no
+  engine error for a missing input (#1285).
 given:
   repo: basic
   setup:
-    - "git checkout -qb workline/developer/1 && echo one > one.txt && git add one.txt && git commit -qm 'fix: write one'"
+    - "git checkout -qb workline/developer/1 && echo one > one.txt && git add one.txt && git commit -qm 'fix: write the first file of the series, the one the rest of the work depends on'"
     - |
       mkdir -p .git/workline/merge-requests && cat > .git/workline/merge-requests/1.md <<'MR'
       ---
@@ -25,6 +26,7 @@ given:
     routing: {events: {merge-request: [committer]}}
 run: {route: merge-request, target: {merge-request: 1}, ai: none}
 expect:
-  status: pass
+  status: block
   steps: [committer]
+  findings: [{rule: subject-length}]
   no-findings: [{rule: engine-error}]
