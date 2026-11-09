@@ -1,0 +1,5 @@
+# The tester's judge of a broken build reads the base first (ADR-0045),
+# then says yes.
+calls:
+  - - read: {grep: nextIndex, why: "whether the base declares it"}
+  - - note: "yes: the base declares no nextIndex; the issue adds it to the interface."

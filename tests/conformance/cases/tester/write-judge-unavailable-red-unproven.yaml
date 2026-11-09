@@ -1,0 +1,32 @@
+case: tester/write-judge-unavailable-red-unproven
+about: >
+  Judge failed: the tester's Kotlin test calls `add` with the signature
+  the issue gives, and the build breaks past the fast path. The judge's
+  provider is down: the run is neither passed silently nor stuck. The
+  Draft opens marked red unproven, the compiler's lines and the judge's
+  failure quoted, and the issue moves on (ADR-0065).
+given:
+  repo: kotlin-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "unavailable:the judge's provider is down"}
+  config:
+    roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Add three numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total three prices, I want to add them in one call, so I need not chain two.\n\n## Validation\n\n- **Three numbers:** Given the library, When I add 2, 3 and 4, Then I get 9.\n\n---\n\n## Verification\n\nA Kotlin test.\n\n## Scope\n\n- `calc/src/main/kotlin/calc/Calc.kt`: `add(a, b, c)` takes a third number.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-kotlin-signature"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base (1 not built there, a broken build), red unproven"
+  agent-calls: 2
+  findings: [{rule: red-unproven, level: warn, message: "the judge's provider is down"}]
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["**Red unproven**", "Too many arguments for 'fun add(a: Int, b: Int): Int'"]

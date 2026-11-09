@@ -94,7 +94,13 @@ func (a *simAgent) next(role string) (outcome, string) {
 		}
 		return progress, ""
 	}
-	if n := len(a.calls); n < len(a.script) {
+	n := 0
+	for _, c := range a.calls {
+		if !c.unscripted {
+			n++
+		}
+	}
+	if n < len(a.script) {
 		return a.script[n], ""
 	}
 	return progress, ""
@@ -109,6 +115,10 @@ type call struct {
 	Digest string
 	Kind   outcome
 	runDir string
+	// unscripted: a call the script does not choose, the tester's judge
+	// of a broken build: it takes no turn of the seeded script, so a
+	// seed plays the same outcomes as before that judge was asked.
+	unscripted bool
 }
 
 func (c call) String() string {
@@ -123,6 +133,21 @@ func (a *simAgent) Propose(r agent.Request) (agent.Call, error) {
 	task, _ := os.ReadFile(filepath.Join(r.RunDir, "in", "task.md"))
 	if d := os.Getenv("SIM_DUMP"); d != "" {
 		_ = os.WriteFile(filepath.Join(d, fmt.Sprintf("%d-%s.md", len(a.calls), r.Role.Name)), task, 0o644)
+	}
+	if r.Role.Name == "judge" && strings.Contains(string(task), "Their build broke there") {
+		// The tester's judge of a broken build (ADR-0065), as a real one
+		// reads it: red when each compiler line names the fix the issue
+		// adds (fixed_<n>, fixed<n>), the test's own mistake otherwise.
+		note := "yes: each error names the fix the issue adds."
+		errs, _, _ := strings.Cut(string(task)[strings.Index(string(task), "## The build's errors"):], "\nThe output")
+		for _, l := range strings.Split(errs, "\n") {
+			if strings.Contains(l, ": ") && !strings.Contains(l, "fixed") {
+				note = "no: " + strings.NewReplacer(`"`, `'`, `\`, `/`).Replace(strings.TrimSpace(l))
+				break
+			}
+		}
+		a.calls = append(a.calls, call{Tick: tick, Role: r.Role.Name, Digest: a.digest(received(r.RunDir, task)), Kind: progress, runDir: r.RunDir, unscripted: true})
+		return c, os.WriteFile(filepath.Join(r.RunDir, "out", "intentions.yaml"), []byte("- note: \""+note+"\"\n"), 0o644)
 	}
 	kind, answer := a.next(r.Role.Name)
 	if kind == replayed {

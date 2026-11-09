@@ -1,0 +1,21 @@
+case: tester/go-missing-name-no-agent-waits
+about: >
+  A person's tests, no agent: the tests alone, in Go, calling a name the
+  code lacks, and no issue known (`workline test check`). The package does
+  not build; with no issue naming `Mul`, the fast path does not pass it,
+  and no agent judges it: red unproven, a person reads it, the test
+  still named from its file (ADR-0065).
+given:
+  repo: go-tested
+  setup:
+    - git checkout -q -b workline/issue-7
+    - |
+      printf 'package calc\n\nimport "testing"\n\nfunc TestMulTwoByThree(t *testing.T) {\n\tif Mul(2, 3) != 6 {\n\t\tt.Fatal("2 x 3 is not 6")\n\t}\n}\n' > calc/mul_test.go && git add . && git commit -qm "test: multiply"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: human
+  summary: "1 new test, red on the base (1 not built there, a broken build), red unproven: a person reads it"
+  findings: [{rule: red-unproven, where: calc/mul_test.go, message: "undefined: Mul"}]
+  no-findings: [{rule: tests-not-built}, {rule: no-new-test}]

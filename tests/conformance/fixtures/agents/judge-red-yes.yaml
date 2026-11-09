@@ -1,0 +1,2 @@
+# The tester's judge of a broken build (ADR-0065): red for the right reason.
+- note: "yes: each error is a call to what the issue adds or changes, which the base lacks."

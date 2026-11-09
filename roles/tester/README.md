@@ -200,16 +200,18 @@ workline test check --base origin/main
 | `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML; its error lines quoted. With the change's tests and no error a row reads, the agent is asked once more ([missing name](docs/missing-name.md)) |
 | `tests-not-built` | no, warns | tests the base ran are not in the report of the base with the change's tests: their build broke there |
 | `no-new-test` | no, warns | the change touches test files, but no new test is in the report |
-| `build-broken` | yes | the build broke on the base with the change's tests, not by what the issue adds nor its knock-ons ([missing name](docs/missing-name.md)); writing an issue's tests, after the agent is asked once more with the error, then a machine error the line runs again ([the record](../../docs/spec/routing.md#once-a-state-the-record)) |
+| `red-unproven` | no, warns; `human` with no agent | the build broke on the base past the fast path, and the judge did not settle it: the Draft opens marked, the developer starts ([broken build](docs/missing-name.md#the-judge)) |
+| `build-broken` | yes | the build broke on the base with the change's tests, and the judge says it is not by what the issue adds, its line quoted ([broken build](docs/missing-name.md)); writing an issue's tests, after the agent is asked once more with the error, then a machine error the line runs again ([the record](../../docs/spec/routing.md#once-a-state-the-record)) |
 
 - **A change with no new test** passes, and says so.
 - **The change's tests alone** (no code yet, the tester's own change):
   only red on the base is asked; green is the code's job. When they
   break the build, the runner's record of it (gotestsum's `TestMain`)
   is not a new test: `tests-not-built` says so.
-- **A missing name is red**: a test calling code the base lacks does
-  not build there. Red only when each compiler error is such a name, in
-  the change's tests, and the issue names it ([how](docs/missing-name.md)).
+- **A broken build is read, then judged**: each compiler error a name
+  the base lacks and the issue names is red at once; any other goes to
+  the judge, whose yes is red and no `build-broken`
+  ([how](docs/missing-name.md)).
 
 ## Settings
 
@@ -224,7 +226,8 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern, `**` spanning folders, each file it names read. Removed before each run, but a file git tracks, in a nested repository, or through a folder linked outside the root, as Bazel's `bazel-testlogs/*/*/test.xml`: kept, read only if the run rewrites it into a JUnit report ([#1175](https://github.com/JN0V/workline/issues/1175), [#1185](https://github.com/JN0V/workline/issues/1185), [#1189](https://github.com/JN0V/workline/issues/1189)) |
 | `test-paths` | none: the generic ones | the test files, as patterns; every role reads them, the one definition of a test file ([ADR-0065](../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)). Unset: `test/`, `tests/`, `Tests/`, `__tests__/` folders, `test_*`, `*_test.*`, `*_spec.*`, `*.test.*`, `*.spec.*`, said by `workline doctor`. The only files `test write` may add; a new one beside the Scope is in the developer's bounds ([its bounds](../developer/docs/bounds.md#what-it-checks)) |
 | `test-homes` | none: the generic ones | where a test's code lives, for the developer's fence: `[{tests: "**/src/test/kotlin/**", code: "**/src/main/kotlin/**"}]`, each `**` filling the next; unset, the folder holding a `test/` or `tests/` folder; in none, the test's own folder |
-| `build-errors` | Go, Kotlin, Java, Gradle | how a build broken by a missing name reads, by ecosystem ([page](docs/missing-name.md)) |
+| `build-errors` | Go, Kotlin, Java, Gradle | how a broken build's errors and missing names read, by ecosystem ([page](docs/missing-name.md)) |
+| `judge-read-rounds`, `judge-read-lines-max` | 2, 400 | what the judge of a broken build may read of the base before it answers ([page](docs/missing-name.md#the-judge)) |
 | `code-lines-max` | 1500 | lines of the code the issue names and of the tests given to the agent, all files together, fewer when long lines would pass the context budget; a longer file gives the pieces the issue names in it, inside its declarations; the files the test and the Scope include or import, two steps deep, as declarations ([the code picker](../../docs/spec/code-picker.md)); a fifth kept for a test beside when the code would fill it; files past it are named with their size |
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
 | `ai-max-turns` | 40 | the turns of an agent that reads the project itself (`claude`), told in its task and enforced by the engine (`claude --max-turns`); reached before it answered: asked again once, then a machine error the line retries, never "no test possible" ([#1194](https://github.com/JN0V/workline/issues/1194)) |

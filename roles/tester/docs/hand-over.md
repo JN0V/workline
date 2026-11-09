@@ -31,9 +31,11 @@ flowchart LR
   - `## Tests`: a table, each scenario and the test that checks it;
     a scenario no test can check is listed as not tested, with why.
   - What the proof said: each test red on the base, by an assertion,
-    a missing name the issue names, or a signature it gives anew. A
-    test whose package did not build is named
-    `file:name` ([how](missing-name.md)).
+    a missing name the issue names, or a broken build the judge read.
+    A test whose package did not build is named `file:name`
+    ([how](missing-name.md)). **Red unproven**, when the judge did
+    not settle it, is written on top, in the record, and on the
+    developer's pull request.
   - Where it ran: with `draft-command` naming `{packages}`, the folders
     holding the tests alone, or their build modules with
     `module-files` set, said as `proof-scope`; else the whole
@@ -67,8 +69,8 @@ Once the Draft is proven, the engine moves the issue on, no agent asked
   and line
   ([#964](https://github.com/JN0V/workline/issues/964)). Still there,
   the run blocks (`tests-lint`): no Draft, the issue keeps its state,
-  the finding said on it. A lint's error naming the
-  [missing name](missing-name.md#the-lint) the test is red by is not
+  the finding said on it. A lint's error repeating the build's own
+  error the test is red by ([how](missing-name.md#the-lint)) is not
   counted.
 - **Then ready**: `workline:ready` on, the other states' labels off,
   said in the tester's comment on the issue (`state-moved`). An issue

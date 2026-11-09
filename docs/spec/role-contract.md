@@ -400,6 +400,17 @@ token), **apply** (trusted, no AI key).
    the agent answered none (ADR-0056); its closing words never fail the
    call there: a YAML list among prose is read alone, and words that do
    not read are kept for `post` to say (#746).
+
+   **Questions `post` asks a judge** ([ADR-0065](../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#1-red-for-the-right-reason-goes-to-judgement)).
+   `post` may write questions as `pre` does, under `out/judge/<key>/`:
+   `question.yaml`, `reads: true` allowed. The engine asks each with no
+   `answer.yaml` yet, as `pre`'s, then runs `post` again with
+   `WORKLINE_JUDGED=answered`; `post` may serve reads and ask again, 10
+   rounds at most. With no agent, past the rounds, or once
+   `ai-max-tokens` is spent, the answer is `{error: not asked …}`, for
+   `post` to settle. The verdict read is the last `post`'s. The tester's
+   red proof of a broken build is the one `post` that asks so
+   ([missing name](../../roles/tester/docs/missing-name.md)).
 5. **Apply.** The engine checks that `in/` still matches its digest, then
    validates the intentions against the catalogue, the role's `intentions` list
    and its `duties.writes`. An invalid intention set is refused whole. Valid

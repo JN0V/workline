@@ -148,6 +148,9 @@ func body(a Act, ready bool) string {
 	if len(a.Acceptance) > 0 {
 		fmt.Fprintf(&b, "- The tester's acceptance tests, read-only to the developer, from `%s%d`: %s.\n", tester.TestsBranch, a.Issue, files(a.Acceptance))
 	}
+	if a.RedUnproven != "" {
+		fmt.Fprintf(&b, "- **Red unproven**: their red proof on the base was not settled by the tester's judge: %s.\n", a.RedUnproven)
+	}
 	if len(a.Refused) > 0 {
 		b.WriteString("\n## Left out\n\nRefused at apply, out of its bounds: an issue for a person, not this change.\n\n")
 		for _, r := range a.Refused {

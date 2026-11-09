@@ -18,5 +18,5 @@ given:
 run: {test: [check, --base, main]}
 expect:
   status: pass
-  summary: "1 new test, red on the base, green on the head (1 not built there, a missing name)"
+  summary: "1 new test, red on the base, green on the head (1 not built there, a missing name the change's code adds)"
   no-findings: [{rule: tests-not-built, where: junit.xml}]

@@ -1,15 +1,16 @@
 case: tester/write-go-made-up-name-asked-again
 about: >
-  The tester's Go test calls `Mul`, which the issue names, and
-  `stubTwo`, a helper no code declares and the issue never names (#1111,
-  the C++ trial's `stubSetBrokerLink`). Both are missing names, but only
-  one is what the change adds: the build is broken, and the agent is
-  asked once more with the error. Its second answer calls `Mul` alone:
-  red by a name the issue names, the Draft opens.
+  Judged no: the tester's Go test calls `Mul`, which the issue names, and
+  `stubTwo`, a helper no code declares and the issue never names (#1111).
+  The fast path does not pass `stubTwo`; the judge says no: the build is
+  broken, and the agent is asked once more with the judge's line. Its
+  second answer calls `Mul` alone: the fast path, no judge, the Draft
+  opens.
 given:
   repo: go-tested
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-no.yaml"}
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:
@@ -21,10 +22,10 @@ given:
 run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-go-stub-once.sh"}
 expect:
   status: pass
-  summary: "1 new test, red on the base (1 not built there, a missing name)"
-  agent-calls: 2
+  summary: "1 new test, red on the base (1 not built there, a missing name the issue names)"
+  agent-calls: 3
   run-files:
-    out/feedback.md: {contains: ["build-broken", "the issue never names (stubTwo)"]}
+    out/feedback.md: {contains: ["build-broken", "the judge: the test calls a helper the issue never asks for", "undefined: stubTwo"]}
   pushed:
     workline/tester/issue-3:
       calc/mul_test.go: "Mul(2, 3) != 6"

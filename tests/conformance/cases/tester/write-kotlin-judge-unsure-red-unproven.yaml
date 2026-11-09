@@ -1,0 +1,33 @@
+case: tester/write-kotlin-judge-unsure-red-unproven
+about: >
+  Judge unsure: the tester's Kotlin test calls `grid`, the one name the
+  issue gives, and reaches a type and a member of it: Gradle writes no
+  report, and Kotlin prints `grid`, `Thirds`, `vertical` and a type it
+  cannot infer. No guess sorts them: the judge is asked, and cannot tell.
+  The Draft opens all the same, marked red unproven with the compiler's
+  lines and the judge's reason, so the developer starts (ADR-0065).
+given:
+  repo: kotlin-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-unsure.yaml"}
+  config:
+    roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Guide lines at the thirds"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I frame a picture, I want guide lines at its thirds, so I can place what matters.\n\n## Validation\n\n- **Thirds of nine:** Given the library, When I cut 9 in thirds, Then the lines are at 3 and 6.\n\n---\n\n## Verification\n\nA Kotlin test.\n\n## Scope\n\n- `calc/src/main/kotlin/calc/Calc.kt`: a `grid` function.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-kotlin-grid"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base (1 not built there, a broken build), red unproven"
+  agent-calls: 2
+  findings: [{rule: red-unproven, level: warn, message: "the judge cannot tell"}]
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["**Red unproven**", "the judge cannot tell", "Unresolved reference 'grid'"]
