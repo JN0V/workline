@@ -137,7 +137,7 @@ type Act struct {
 	// AgentFailed: why its agent's call failed, its time aside; what it
 	// edited is proven all the same, its pull request a Draft.
 	AgentFailed string `json:"agent-failed,omitempty"`
-	// NoCode: its agent wrote no code within its bounds, so no pull
+	// NoCode: its agent wrote no code, so no pull
 	// request; the claim waits to be let go (ADR-0059, decision 1).
 	NoCode bool `json:"no-code,omitempty"`
 	// Body: the issue's body as the claim read it (BodyMark): a claim
@@ -838,7 +838,7 @@ func claimBody(a Act, s Settings) string {
 		b.WriteString("\nIts code on the project's tests:\n\n" + proofLines(*a.Proof, a.Caps))
 	}
 	if a.NoCode && a.Widen == nil {
-		fmt.Fprintf(&b, "\n- **Why no pull request**: its agent wrote no code within its bounds.\n"+
+		fmt.Fprintf(&b, "\n- **Why no pull request**: its agent wrote no code.\n"+
 			"- **Next**: %d hours after it was taken, its body unchanged, the line blocks it for a person, never running the developer on the same input again; "+
 			"a change to its body before lets the claim go at once, and the developer may take it again. "+
 			"Meanwhile it holds no paths: an issue whose %s overlaps this one's may be taken.\n", s.ClaimHours, work.Name(work.Scope))
@@ -933,7 +933,7 @@ func Post(runDir, repo string) int {
 	}
 	if len(patches) == 0 {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
-			Message: fmt.Sprintf("its agent wrote no code within its bounds: nothing to prove, no pull request; blocked for a person after %d hours on the same body, said on the issue", s.ClaimHours)})
+			Message: fmt.Sprintf("its agent wrote no code: nothing to prove, no pull request; blocked for a person after %d hours on the same body, said on the issue", s.ClaimHours)})
 		a.NoCode = true
 	} else {
 		a.Code, a.Tests = written(patches, b.tests())

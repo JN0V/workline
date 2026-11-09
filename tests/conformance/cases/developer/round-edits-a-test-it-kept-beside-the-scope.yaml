@@ -1,6 +1,6 @@
 case: developer/round-edits-a-test-it-kept-beside-the-scope
 about: >
-  A test the write fence kept in an earlier round (ADR-0063, §9) is on
+  A test written beside the Scope in an earlier round (ADR-0063, §9) is on
   the pull request's branch, which a review round in CI checks out: it is
   no longer new there. Its record names it kept beside the Scope, so the
   round may still change it: calc/test/test_mul_more.sh, edited, is

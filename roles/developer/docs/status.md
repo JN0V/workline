@@ -153,9 +153,10 @@ hold:
   [ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#build-plan)):
   `workline develop --bounds --merge-request <n>`, or routed on
   `merge-request`, no agent; each file its branch changed held to the
-  bounds read at the base's tip, whoever pushed; its record kept on
-  the pull request ([the bounds](bounds.md#on-the-pull-request)). Cases
-  `developer/pr-bounds-refuses-out-of-scope`,
+  bounds read at the base's tip, whoever pushed, a file beyond the
+  Scope said, never refused; its record kept on the pull request
+  ([the bounds](bounds.md#on-the-pull-request)). Cases
+  `developer/pr-bounds-says-a-file-beyond-the-scope`,
   `pr-bounds-refuses-frozen-test`, `pr-bounds-refuses-steering-file`,
   `pr-bounds-passes-in-scope`, `pr-bounds-skips-a-persons-branch`,
   `pr-bounds-refuses-frozen-test-deleted`, `pr-bounds-reads-rules-at-base`,

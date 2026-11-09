@@ -1,6 +1,6 @@
 case: developer/round-keeps-a-new-test-beside-the-scope
 about: >
-  The write fence (ADR-0063, §9; #1061, from a trial): a round's fix of
+  A new test beside the Scope (ADR-0063, §9; #1061, from a trial): a round's fix of
   the review is a new test file, calc/test/test_mul_more.sh, in the test
   folder of the component whose header #3's Scope names, and matching the
   tester's test-paths. It is written by rule: pushed, listed on the pull

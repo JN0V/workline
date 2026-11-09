@@ -88,7 +88,8 @@ Scope). What each holds:
   given for that issue: read it first. Write each as a path from the
   repository's root, in backticks, or a glob for a folder's files
   (`core/session/**`): never a class, a function or a module's name
-  alone — the developer may change only the files these paths match.
+  alone — a hint to the developer, who lists each file it changes
+  beyond these paths, with why.
   A file to create goes on its own line starting `New:`, its full path
   in backticks after it. A path the repository lacks, not on a `New:`
   line, leaves the `scope` out. With no code given for it, write no

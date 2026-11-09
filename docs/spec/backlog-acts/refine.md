@@ -70,8 +70,8 @@ what it can and asks for the rest:
   a path the commit does not hold, is left out, the rest of the refine
   written (`scope-without-files`, said in the summary with what a person
   may do). Each path the Scope writes in backticks is the developer's
-  bounds, so each must be found
-  ([ADR-0065, change 2](../../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-and-globs-the-fence-matches-paths-only),
+  hint, so each must be found
+  ([ADR-0065, change 2](../../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence),
   [#1228](https://github.com/JN0V/workline/issues/1228); `work.Unfound`):
   a file or folder the commit holds, a glob matching one of its files,
   or a file to create on a line `New:`. A Scope naming only new files,

@@ -53,8 +53,9 @@ first, the cause folded.
   ([#970](https://github.com/JN0V/workline/issues/970)).
 - **A Scope is paths**: each file a path from the root, or a glob
   (`core/session/**`), in backticks; never a class or module name
-  alone. The developer changes only what they match
-  ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-and-globs-the-fence-matches-paths-only)).
+  alone. A hint, not a fence: the developer lists each file it changes
+  beyond them, with why
+  ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)).
   - A file to create: on a line `New:`, its full path.
   - A path the repository lacks, not on a `New:` line: the Scope is
     left out, said.

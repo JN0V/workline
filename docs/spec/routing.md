@@ -51,10 +51,10 @@ example or the steps to reproduce, are kept and never required
 `ready`, or the product owner does once Need and Validation are a person's
 ([refining to ready](backlog-acts/refine.md)), through the tester's state
 where the project routes the tester ([the line of states](#the-line-of-states)).
-Development roles only take `ready` items, and the item's **scope** bounds
+Development roles only take `ready` items, and the item's **scope** guides
 the run ([stay on the task](role-outcome.md#stay-on-the-task)). *Built for an issue: the developer
-takes a `ready` one, its Scope bounding what it changes
-([bounds](../../roles/developer/docs/bounds.md)); a file in
+takes a `ready` one, its Scope a hint, each file beyond it listed with why
+([bounds](../../roles/developer/docs/bounds.md#beyond-the-scope)); a file in
 `.workline/work/` is taken by no role yet.*
 
 `review` is the machine's part: reviewers and gates run the verification.

@@ -1,10 +1,11 @@
 contract: 1
 name: developer
-mission: A ready issue becomes a pull request that proves its Verification, written within its Scope, without a person opening a session.
+mission: A ready issue becomes a pull request that proves its Verification, its Scope a hint, without a person opening a session.
 
 # issue: `workline develop [--issue <n>]` (ADR-0054): picks the first
 #        ready issue free to take (docs/pick.md); with an agent, claims
-#        it, writes its code within its bounds (docs/bounds.md), proves
+#        it, writes its code, guarded files refused, files beyond the
+#        Scope listed (docs/bounds.md), proves
 #        it: ready when green, no cap reached, else a Draft
 #        (docs/proof.md). With none, the issue is named, nothing claimed.
 #        Routed on `issue` (`workline route issue --target issue:<n>`)

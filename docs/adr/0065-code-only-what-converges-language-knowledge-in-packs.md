@@ -198,7 +198,10 @@ miss is the scope-ask".
   worktree's `.workline/beyond.yaml`; the first step lists the files on
   the pull request, a review round in its commit's message, where the
   `intent` lens reads them; the pull request's check says them, never
-  refuses them. A file to create is written on a line `New:`.
+  refuses them. A file to create is written on a line `New:`. A held
+  issue holds the files its pull request lists beyond its Scope; an old
+  Scope saying no code was given (`codeUnread`) is read as no path for
+  overlap alone, never for the bounds.
 - **Two preconditions, built first**, not unanimous: each closes a gap
   the fence hid.
   - **A fix merges alone only with a reviewer verdict on its head**
