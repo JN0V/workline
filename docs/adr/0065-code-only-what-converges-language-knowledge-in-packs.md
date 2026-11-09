@@ -120,58 +120,70 @@ flowchart LR
 
 ### The four changes
 
-1. **Red for the right reason goes to judgement**, amending [ADR-0055]:
-   - **Kept mechanical**: the run, the report, whether the build broke,
-     the files the output names, the names the base lacks (`git grep -w`).
-   - **Fast path**: a build broken only by a name the base lacks, which
-     the issue names verbatim: red, proven, said.
-   - **Else the judge** ([ADR-0045]) with the raw facts: the issue's
-     Scope and scenarios, the test diff, the build output (clipped,
-     masked), the names the base lacks. "Does each test fail only
-     because what the issue asks for does not exist yet?" Yes is red;
-     no is `build-broken`, the judge's line quoted.
-   - **The judge `unsure`** ([ADR-0045]), past its read budget, failed
-     or at its cap: the Draft opens `red unproven`, the compiler's
-     lines and the judge's reason quoted, Waiting(person). Never a
-     pass, never a stuck run.
-   - **A person's tests, no agent**: with none, the tester writes no
-     tests ([ADR-0055]) and no judge runs ([ADR-0045]). A person's
-     test whose build breaks, past the fast path, is `red unproven`
-     the same way.
-   - **Deleted**: `redfirst.go`'s knock-on, declaration and casing rules.
-2. **Scope as paths and globs, the fence matches paths only**:
-   - The product owner, who reads the code, writes the Scope's files as
-     repository paths or globs; its writing check finds each, or a line
-     marks it new.
-   - The developer's fence matches those paths, `test-homes` for new
-     tests, nothing else. A miss is the existing scope-ask
-     ([bounds](../../roles/developer/docs/bounds.md#asking-the-product-owner-for-files)).
-   - **An issue with no path or glob**: its backticked words that are
-     tracked paths count, as today; anything else asks.
-   - **Deleted**: class name to file, Gradle module word to folder, the
-     `src/test` ↔ `src/main` helper rule and its prompt text, the
-     English-prose rule that reads a Scope as a guess (`codeUnread`;
-     the `Guessed:` mark stays).
-   - **Moved, not deleted**: the JVM classpath-shadowing check (a test
-     helper named like a main class) becomes a reviewer check.
-3. **One definition of a test file**: the project's `test-paths` and
-   `test-homes`, from its packs or its config, read by the tester, the
-   developer, the product owner, the reviewer and the code picker.
-   The five Go copies are deleted; the reviewer's `tests` setting reads
-   the same.
-4. **The agent says which test covers which scenario**: a structured
-   field in its answer, an entry for every scenario, its test ids or a
-   written reason none can check it.
-   - **A report**: each id is found in the JUnit report, red on the base.
-   - **A broken build writes no report** (Gradle stops at
-     `compileTestKotlin`, [round 6](../research/round6-root-causes.md)):
-     each declared test is checked against the test files the change
-     adds, by file name or the pack's `test-name`.
-   - **A scenario with no entry** keeps today's block,
-     `scenario-without-test`, the answer asked again once.
-   - **An id not found, a reason disputed**: the existing chain, an
-     objection, then the product owner, then Blocked ([ADR-0059]).
-   - **Deleted**: the fuzzy name matcher.
+Each a build step below, its own issue.
+
+#### 1. Red for the right reason goes to judgement
+
+Amends [ADR-0055].
+
+- **Kept mechanical**: the run, the report, whether the build broke,
+  the files the output names, the names the base lacks (`git grep -w`).
+- **Fast path**: a build broken only by a name the base lacks, which
+  the issue names verbatim: red, proven, said.
+- **Else the judge** ([ADR-0045]) with the raw facts: the issue's
+  Scope and scenarios, the test diff, the build output (clipped,
+  masked), the names the base lacks. "Does each test fail only
+  because what the issue asks for does not exist yet?" Yes is red;
+  no is `build-broken`, the judge's line quoted.
+- **The judge `unsure`** ([ADR-0045]), past its read budget, failed
+  or at its cap: the Draft opens `red unproven`, the compiler's
+  lines and the judge's reason quoted, Waiting(person). Never a
+  pass, never a stuck run.
+- **A person's tests, no agent**: with none, the tester writes no
+  tests ([ADR-0055]) and no judge runs ([ADR-0045]). A person's
+  test whose build breaks, past the fast path, is `red unproven`
+  the same way.
+- **Deleted**: `redfirst.go`'s knock-on, declaration and casing rules.
+
+#### 2. Scope as paths and globs, the fence matches paths only
+
+- The product owner, who reads the code, writes the Scope's files as
+  repository paths or globs; its writing check finds each, or a line
+  marks it new.
+- The developer's fence matches those paths, `test-homes` for new
+  tests, nothing else. A miss is the existing scope-ask
+  ([bounds](../../roles/developer/docs/bounds.md#asking-the-product-owner-for-files)).
+- **An issue with no path or glob**: its backticked words that are
+  tracked paths count, as today; anything else asks.
+- **Deleted**: class name to file, Gradle module word to folder, the
+  `src/test` ↔ `src/main` helper rule and its prompt text, the
+  English-prose rule that reads a Scope as a guess (`codeUnread`;
+  the `Guessed:` mark stays).
+- **Moved, not deleted**: the JVM classpath-shadowing check (a test
+  helper named like a main class) becomes a reviewer check.
+
+#### 3. One definition of a test file
+
+- **The project's `test-paths` and `test-homes`**, from its packs or
+  its config, read by the tester, the developer, the product owner,
+  the reviewer and the code picker.
+- **Deleted**: the five Go copies; the reviewer's `tests` setting
+  reads the same.
+
+#### 4. The agent says which test covers which scenario
+
+- **A structured field in its answer**: an entry for every scenario,
+  its test ids or a written reason none can check it.
+- **A report**: each id is found in the JUnit report, red on the base.
+- **A broken build writes no report** (Gradle stops at
+  `compileTestKotlin`, [round 6](../research/round6-root-causes.md)):
+  each declared test is checked against the test files the change
+  adds, by file name or the pack's `test-name`.
+- **A scenario with no entry** keeps today's block,
+  `scenario-without-test`, the answer asked again once.
+- **An id not found, a reason disputed**: the existing chain, an
+  objection, then the product owner, then Blocked ([ADR-0059]).
+- **Deleted**: the fuzzy name matcher.
 
 **And the code picker is frozen**: no new heuristic; its tables move
 to packs. An agent with read tools reads the files itself
