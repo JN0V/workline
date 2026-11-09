@@ -86,6 +86,9 @@ type Bounds struct {
 	// generic ones (testdef).
 	TestPaths []string       `json:"test-paths,omitempty"`
 	TestHomes []testdef.Home `json:"test-homes,omitempty"`
+	// HomesIgnored: why the project's test-homes were ignored, the
+	// generic ones read in their place; said on the bounds' verdict.
+	HomesIgnored string `json:"homes-ignored,omitempty"`
 	// Asked: every file the developer asked the product owner for on
 	// this issue, whatever the head (ADR-0063, §9): the same set asked
 	// again waits for a person.
@@ -119,8 +122,11 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 		b.Scenarios = append(b.Scenarios, sc.Name)
 	}
 	// The project's one definition, as every role reads it (ADR-0065).
-	tests, _ := role.TestDef(os.Getenv("WORKLINE_ROLES_DIR"), repo)
+	tests, err := role.TestDef(os.Getenv("WORKLINE_ROLES_DIR"), repo)
 	b.TestPaths, b.TestHomes = tests.Paths, tests.Homes
+	if errors.Is(err, testdef.ErrHomes) {
+		b.HomesIgnored = err.Error()
+	}
 	comments, err := bl.Comments(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {
 		return b, err

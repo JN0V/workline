@@ -1,0 +1,37 @@
+case: developer/bounds-test-homes-ignored-said
+about: >
+  A test-homes setting that cannot be read (ADR-0065; #1226): the fence
+  ignores it as every role does, the generic homes in its place, and the
+  bounds' verdict says so in a warning, never silent (principle 12).
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q main && mkdir -p app/src/main/kotlin/tg/x app/src/main/kotlin/tg/y && echo '// v1' > app/src/main/kotlin/tg/x/Repo.kt && echo '// v1' > app/src/main/kotlin/tg/y/Other.kt && git add -A && git commit -qm 'chore: kotlin module'"
+    - "git checkout -q -b workline/developer/3 && echo '// grid' >> app/src/main/kotlin/tg/x/Repo.kt && mkdir -p app/src/test/kotlin/tg/x app/src/test/kotlin/tg/y app/src/main/kotlin/tg/x/test && echo '// fake' > app/src/test/kotlin/tg/x/FakeRepository.kt && echo '// fake' > app/src/test/kotlin/tg/y/FakeOther.kt && echo '// code' > app/src/main/kotlin/tg/x/test/Probe.kt && git add -A && git commit -qm 'feat: grid for #3' -m 'Workline-Role: developer' && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-paths: ["**/src/test/**"], test-homes: [{tests: "src/test/*", code: "**/src/main/kotlin/**"}]}}}
+  forge:
+    issues:
+      - id: 3
+        title: "A grid"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want a grid.\n\n## Scope\n\n- `app/src/main/kotlin/tg/x/Repo.kt`: a grid.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        title: "A grid"
+        body: "Closes #3"
+run: {develop: [--bounds, --merge-request, "2"], ai: none}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: test-homes-ignored, level: warn, message: "the fence read the generic homes in their place"}
+    - {rule: outside-scope, where: app/src/main/kotlin/tg/x/test/Probe.kt}
+  no-findings:
+    - {rule: outside-scope, where: app/src/test/kotlin/tg/x/FakeRepository.kt}

@@ -687,7 +687,6 @@ func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		"Its diff is your code. When you are done, your last message is `[]` alone: no label, no comment, the claim is the engine's.\n"
 }
 
-// question is what an issue run and a review round ask alike: the issue,
 // testsBeside tells the agent the tests it may write beside the Scope,
 // by the project's one definition of a test file (ADR-0065): its
 // patterns and where a test's code lives, never a language's rule.
@@ -704,6 +703,7 @@ func testsBeside(d testdef.Def) string {
 		strings.Join(d.Patterns(), "`, `"), where)
 }
 
+// question is what an issue run and a review round ask alike: the issue,
 // what bounds the code and the run, the frozen tests, the test command;
 // it ends on the answer's first words, the caller's own rules after them.
 func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) string {
