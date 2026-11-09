@@ -528,3 +528,59 @@ func (l *Local) Closers(id int) ([]Closer, error) { return nil, nil }
 // Trail: the local forge keeps no history, nor links: it does not say
 // when an issue got a label (ADR-0031).
 func (l *Local) Trail(id int, label string) (Trail, error) { return Trail{}, nil }
+
+// Settled is a merge request merged outside the forge, and the issues its
+// merge closed.
+type Settled struct {
+	MergeRequest int
+	Base         string
+	Issues       []int
+}
+
+// Settler is a forge whose merge requests are merged outside it, with git:
+// what a forge does on a merge, closing the issues the request says it
+// closes, is done when it is asked.
+type Settler interface {
+	// SettleMerges closes the issues each merge request merged since says
+	// it closes (`Closes #n`), once: the request is written merged.
+	SettleMerges() ([]Settled, error)
+}
+
+var _ Settler = &Local{}
+
+// SettleMerges closes, once each, the open issues a merge request merged
+// with git says it closes in its body, as a forge does on its merge
+// (#1282). The request is then written merged: an issue a person opens
+// again stays open.
+func (l *Local) SettleMerges() ([]Settled, error) {
+	items, err := l.Items("merge-request")
+	if err != nil {
+		return nil, err
+	}
+	var out []Settled
+	for _, it := range items {
+		if it.State != "open" || l.StateOf(it) != "merged" {
+			continue
+		}
+		s := Settled{MergeRequest: it.ID, Base: it.Base}
+		for _, n := range Closes(it.Body) {
+			is, err := l.Item("issue", n)
+			if err != nil || is.State != "open" {
+				continue // none here, or closed already
+			}
+			if err := l.Comment(Target{Kind: "issue", ID: n}, fmt.Sprintf("Closed by !%d, merged into %s.", it.ID, it.Base), Marker(fmt.Sprintf("closed-by=%d", it.ID))); err != nil {
+				return out, err
+			}
+			if err := l.Close(n, 0); err != nil {
+				return out, err
+			}
+			s.Issues = append(s.Issues, n)
+		}
+		it.State = "merged"
+		if err := l.save("merge-request", it); err != nil {
+			return out, err
+		}
+		out = append(out, s)
+	}
+	return out, nil
+}

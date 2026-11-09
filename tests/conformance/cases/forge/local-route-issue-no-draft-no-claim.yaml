@@ -1,0 +1,51 @@
+case: forge/local-route-issue-no-draft-no-claim
+about: >
+  With `forge: local`, a run on an issue told to open no merge request
+  (`--open-merge-request=false`) applies none of the tester's work: no
+  test lands on the person's branch, the issue keeps its state, and
+  the line says why and what to run (#1280).
+given:
+  repo: tested
+  setup:
+    - |
+      mkdir -p .git/workline/issues && cat > .git/workline/issues/3.md <<'IS'
+      ---
+      title: "Multiply two numbers"
+      state: open
+      labels: ["workline:needs-tests"]
+      ---
+
+      ## Need
+
+      When I total an order, I want to multiply a price by a count, so I need not add it up by hand.
+
+      ## Validation
+
+      - **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.
+      - **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.
+
+      ---
+
+      ## Verification
+
+      A test a scenario, in tests/.
+
+      ## Scope
+
+      - `lib.sh`: a `mul` function beside `add`.
+      IS
+  config:
+    forge: local
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}}
+run: {route: issue, target: {issue: 3}, ai: "fake:tester-two-scenarios", args: [--open-merge-request=false]}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: merge-request-not-opened, where: "#3", message: "run again with --open-merge-request: the issue keeps its state"}
+  no-findings: [{rule: state-moved}]
+  files:
+    tests/test_mul_two_by_three.sh: {exists: false}
+    .git/workline/merge-requests/1.md: {exists: false}
+    .git/workline/issues/3.md: {contains: "workline:needs-tests", lacks: "workline:ready"}

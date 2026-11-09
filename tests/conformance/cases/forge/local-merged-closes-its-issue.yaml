@@ -1,0 +1,50 @@
+case: forge/local-merged-closes-its-issue
+about: >
+  With `forge: local`, a person merges the developer's branch with git,
+  as a forge's merge: `workline follow` closes the issue its merge
+  request says it closes (`Closes #1`), its state's label taken off,
+  once; the issue of a merge request still open stays as it is (#1282).
+given:
+  repo: basic
+  setup:
+    - "git checkout -qb workline/developer/1 && echo one > one.txt && git add one.txt && git commit -qm 'fix: one' && git checkout -q main && git merge -q --ff-only workline/developer/1"
+    - "git checkout -qb workline/developer/2 && echo two > two.txt && git add two.txt && git commit -qm 'fix: two' && git checkout -q main"
+    - |
+      mkdir -p .git/workline/issues .git/workline/merge-requests
+      for n in 1 2; do cat > .git/workline/issues/$n.md <<IS
+      ---
+      title: "Bug $n"
+      state: open
+      labels: [bug, "workline:developing"]
+      ---
+
+      ## Need
+
+      Bug $n.
+      IS
+      cat > .git/workline/merge-requests/$n.md <<MR
+      ---
+      title: "fix: bug $n"
+      state: open
+      labels: []
+      branch: workline/developer/$n
+      base: main
+      ---
+
+      Closes #$n
+      MR
+      done
+  config: {forge: local}
+run: {follow: [--base, main], forge: local}
+expect:
+  status: pass
+  findings:
+    - {rule: issue-closed, where: "#1", message: "!1, which says it closes it, is merged into main"}
+    - {rule: state-cleared, where: "#1"}
+  no-findings: [{where: "#2"}]
+  files:
+    .git/workline/issues/1.md: {contains: ["state: closed", "Closed by !1, merged into main."], lacks: "workline:developing"}
+    .git/workline/merge-requests/1.md: {contains: "state: merged"}
+    .git/workline/issues/2.md: {contains: ["state: open", "workline:developing"]}
+    .git/workline/merge-requests/2.md: {contains: "state: open"}
+  issues-listed: ["!1    merged"]

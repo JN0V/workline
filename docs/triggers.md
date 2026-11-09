@@ -24,6 +24,8 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 | gardening | `workline route schedule` (`--forge local --open-merge-request` keeps its merge requests as local branches) | yours |
 | the backlog | `workline run-role product-owner --event schedule --forge gitlab` | yours |
 | a ready issue's tests | `workline test write --issue <n>`; red-first on any change: `workline test check --base <rev>` ([tester](../roles/tester/README.md)) | yours; `check`, never |
+| an issue's next step, by its state | `workline route issue --target issue:<n>`: a role's merge request is opened, as in CI ([routing](spec/routing.md#the-line-of-states)) | yours |
+| a merge request | `workline route merge-request --target merge-request:<n> --input range=<base>..<head>`; `forge: local`, its branch checked out: no range ([no forge](ci-other-forges.md#no-forge)) | yours |
 | a ready issue's code | `workline develop` (`--issue <n>`; `--merge-request <n>`, a review round) ([developer](../roles/developer/README.md)) | yours |
 | a roadmap file to issues | `workline issues import <file>`, then the same with `--apply`; in CI, `--json > line.json`, then `workline apply --line line.json` | yours |
 | before tagging a release | `workline route release` | yours |

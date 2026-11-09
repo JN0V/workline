@@ -1352,7 +1352,7 @@ func routeCmd(args []string) int {
 	var scope multi
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	noApply := fs.Bool("no-apply", false, "judge every step, apply none; apply later with `workline apply` and the runs listed as pending")
-	openMR := fs.Bool("open-merge-request", false, "put what the patches write on a branch of the role, and open a merge request for it (needs a forge)")
+	openMR := fs.Bool("open-merge-request", false, "put what the patches write on a branch of the role, and open a merge request for it (needs a forge; on by default for the issue and reconcile events when a forge is set: =false to turn it off)")
 	sarifFile := fs.String("sarif", "", "also write every step's findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write every step's findings to this file as a GitLab Code Quality report")
 	var summaryFiles multi
@@ -1435,6 +1435,25 @@ func routeCmd(args []string) int {
 	if *gatesKept != "" {
 		*gatesKept, _ = filepath.Abs(*gatesKept)
 	}
+	spec := projectForge(abs, *forgeSpec)
+	// The issue's line hands each role's work over in a merge request, the
+	// tester's Draft, the developer's, as CI runs it: on a machine too,
+	// unless the person says otherwise (#1280).
+	if (event == line.IssueEvent || event == line.ReconcileEvent) && spec != "" && spec != "none" && !isSet(fs, "open-merge-request") {
+		*openMR = true
+	}
+	// A merge request's line judges a range: one not given is read from a
+	// merge request whose branches are here, else asked for (#1285).
+	if event == "merge-request" && t != nil && t.Kind == "merge-request" && inputs["range"] == "" {
+		rng, from, why := localRange(abs, spec, t.ID)
+		if why != "" {
+			return misuse(fs, fmt.Sprintf("%s: %s; give the commits it judges with --input range=<base>..<head> and its branch with --branch", t, why))
+		}
+		inputs["range"] = rng
+		if *branch == "" {
+			*branch = from
+		}
+	}
 	res := line.RunWith(event, engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR,
 		DryRun: *dryRun, ReleaseWait: *releaseWait},
@@ -1483,6 +1502,50 @@ func routeCmd(args []string) int {
 		}
 	}
 	return exitFor(res.Status)
+}
+
+// projectForge is the forge given, else the project's `forge:`; "" none.
+func projectForge(repo, given string) string {
+	if given != "" {
+		return given
+	}
+	if cfg, err := role.LoadProjectConfig(repo); err == nil {
+		return cfg.Forge
+	}
+	return ""
+}
+
+// localRange is the range a merge request of a forge kept in this clone
+// judges, its base to its branch, and that branch; why, when the forge
+// keeps its branches elsewhere or the request is not here to read.
+func localRange(repo, spec string, id int) (rng, branch, why string) {
+	f, err := forge.Open(spec, repo)
+	switch {
+	case err != nil:
+		return "", "", err.Error()
+	case f == nil:
+		return "", "", "no forge to read it from"
+	case !forge.KeepsBranches(f):
+		return "", "", "its commits are on the forge, not read from here"
+	}
+	mr, err := f.MergeRequest(id)
+	if err != nil {
+		return "", "", err.Error()
+	}
+	tip := ""
+	for _, b := range []string{mr.Base, mr.Branch} {
+		out, err := exec.Command("git", "-C", repo, "rev-parse", "-q", "--verify", "refs/heads/"+b).Output()
+		if b == "" || err != nil {
+			return "", "", fmt.Sprintf("its branch %q is not in this clone", b)
+		}
+		tip = strings.TrimSpace(string(out))
+	}
+	// The line reads the working tree as CI's checkout of the head: one
+	// on another commit would be judged in its place.
+	if head, _ := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output(); strings.TrimSpace(string(head)) != tip {
+		return "", "", fmt.Sprintf("its branch %s is not checked out: run `git switch %s` first, as CI checks out its head", mr.Branch, mr.Branch)
+	}
+	return mr.Base + ".." + mr.Branch, mr.Branch, ""
 }
 
 // writeVerdict writes the line's verdict on the head it judged — the

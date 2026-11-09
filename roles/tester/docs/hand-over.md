@@ -76,6 +76,11 @@ Once the Draft is proven, the engine moves the issue on, no agent asked
 - **Then ready**: `workline:ready` on, the other states' labels off,
   said in the tester's comment on the issue (`state-moved`). An issue
   already ready keeps its labels.
+- **No Draft, no move**: a Draft that does not open (its commit
+  refused, say) undoes the move, the reason on the issue; a run told
+  to open none (`--open-merge-request=false`) is refused before its
+  agent is asked, nothing applied
+  ([#1280](https://github.com/JN0V/workline/issues/1280)).
 
 ## A proof kind, not always a new test
 

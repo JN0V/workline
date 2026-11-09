@@ -129,9 +129,17 @@ Each in detail: [the commands](commands.md), and
   open ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)),
   and what each changes, so it asks nothing they hold again
   ([ADR-0013, amended](adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-14-a-doc-waits-while-a-merge-request-holds-it)).
-  With `local`, the branch stays in the clone. A branch a person committed
-  to is never pushed over (`not-proposed`); `workline follow --gardening`
-  keeps the others on the base, or closes them
+  With `local`, the branch stays in the clone.
+  - **On by default** for `route issue` and `route reconcile` when a
+    forge is set, as CI runs them; `--open-merge-request=false` turns it
+    off.
+  - **Without it**, a role that hands its work on an issue over in a
+    merge request (the tester's Draft, the developer's) is refused
+    before its agent runs: the issue keeps its state, the working tree
+    is left as it was.
+- A branch a person committed to is never pushed over (`not-proposed`);
+  `workline follow --gardening` keeps the others on the base, or closes
+  them
   ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
 - **`--branch`**: for a job that does not ask the forge (CI's judging
   job, which holds no token); default: the forge says. A release tool's
