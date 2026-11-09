@@ -13,8 +13,13 @@ func TestGenericTest(t *testing.T) {
 		"tests/helpers.rs":                true,
 		"tests/conftest.py":               true,
 		"app/src/test/kotlin/a/Fake.kt":   true,
-		"spec/cart_spec.rb":               false, // generic: no spec folder, a pack's
-		"test_mul.py":                     false, // generic miss: pytest's root test_ file
+		"spec/cart_spec.rb":               true,
+		"test_mul.py":                     true,
+		"web/__tests__/cart.js":           true,
+		"Sources/Tests/CartTests.swift":   true,
+		"spec/support/helpers.rb":         false, // generic: no spec folder, a pack's
+		"conftest.py":                     false, // a pack's
+		"src/CartTest.kt":                 false, // a pack's
 		"app/src/androidTest/kotlin/A.kt": false,
 		"latest.go":                       false,
 		"docs/specification.md":           false,
@@ -76,7 +81,10 @@ func TestFromSettings(t *testing.T) {
 
 func TestAside(t *testing.T) {
 	d := Def{}
-	for p, want := range map[string]bool{"examples/a.go": true, "Tools/x.py": true, "tests/a.py": true, "src/a.go": false, "src/testing/a.go": false} {
+	for p, want := range map[string]bool{"examples/a.go": true, "Tools/x.py": true, "tests/a.py": true, "src/a.go": false, "src/testing/a.go": false,
+		"app/src/androidTest/java/a/UiTest.kt": true, "shared/src/commonTest/kotlin/T.kt": true, "lib/src/testFixtures/kotlin/F.kt": true,
+		"app/src/testFreeDebug/java/T.java": true, "Shop.Tests/CartTests.cs": true, "web/src/__mocks__/api.ts": true,
+		"src/testFoo/a.go": false, "src/fooTestBar/a.go": false, "src/attestation/Check.kt": false} {
 		if got := d.Aside(p); got != want {
 			t.Errorf("Aside(%q) = %v, want %v", p, got, want)
 		}

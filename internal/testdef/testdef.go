@@ -7,6 +7,7 @@ package testdef
 import (
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -91,12 +92,16 @@ func FromSettings(m map[string]any) (Def, error) {
 	return From(s.Paths, s.Homes), nil
 }
 
+// ErrHomes marks test-homes that cannot be read: every role then ignores
+// them, the generic homes in their place, the same answer everywhere.
+var ErrHomes = errors.New("test-homes ignored")
+
 // Check says what is wrong with test-homes: a `code` asking for more `**`
 // than its `tests` gives, or a wildcard other than `**` in it.
 func Check(homes []Home) error {
 	for _, h := range homes {
 		if h.Tests == "" || h.Code == "" {
-			return fmt.Errorf("test-homes: %+v: both tests and code are needed", h)
+			return fmt.Errorf("%w: %+v: both tests and code are needed", ErrHomes, h)
 		}
 		n := 0
 		for _, seg := range strings.Split(h.Code, "/") {
@@ -104,11 +109,11 @@ func Check(homes []Home) error {
 			case seg == "**":
 				n++
 			case strings.ContainsAny(seg, "*?["):
-				return fmt.Errorf("test-homes: code %q: only ** may stand for folders", h.Code)
+				return fmt.Errorf("%w: code %q: only ** may stand for folders", ErrHomes, h.Code)
 			}
 		}
 		if n > strings.Count("/"+h.Tests+"/", "/**/") {
-			return fmt.Errorf("test-homes: code %q has more ** than tests %q", h.Code, h.Tests)
+			return fmt.Errorf("%w: code %q has more ** than tests %q", ErrHomes, h.Code, h.Tests)
 		}
 	}
 	return nil
@@ -132,7 +137,7 @@ func (d Def) Test(p string) bool { return pathglob.Any(d.Patterns(), clean(p)) }
 // in a folder that holds neither code nor tests (examples, tools).
 func (d Def) Aside(p string) bool {
 	p = clean(p)
-	return d.Test(p) || pathglob.Any(d.orGeneric().Asides, strings.ToLower(p))
+	return d.Test(p) || pathglob.Any(d.orGeneric().Asides, p) || pathglob.Any(d.orGeneric().Asides, strings.ToLower(p))
 }
 
 // Home is the folder a test file's code lives in: its folder mapped by

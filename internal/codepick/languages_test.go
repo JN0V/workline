@@ -28,10 +28,10 @@ func TestKeywordsByLanguage(t *testing.T) {
 	}
 }
 
-// The files beside a project's own code (#1109) are the project's test
-// definition's, and its examples' and tools' (ADR-0065): a Gradle source
-// set is a test by the project's test-paths, never by the engine's; a
-// folder whose name only holds "test" is code.
+// The files beside a project's own code (#1109, #1189) are the project's
+// tests, and the folders the embedded data sets aside (ADR-0065):
+// examples, tools, Gradle's other source sets; a folder whose name only
+// holds "test" is code.
 func TestAsideByTheTestDefinition(t *testing.T) {
 	gradle := testdef.From([]string{"**/src/test/**", "**/src/androidTest/**", "**/src/*Test/**", "**/src/testFixtures/**"}, nil)
 	for f, want := range map[string][2]bool{ // generic, gradle
@@ -40,9 +40,9 @@ func TestAsideByTheTestDefinition(t *testing.T) {
 		"examples/a.go":                         {true, true},
 		"internal/x/testdata/a.go":              {true, true},
 		"src/test/kotlin/shop/CartTest.kt":      {true, true},
-		"app/src/androidTest/java/a/UiTest.kt":  {false, true},
-		"shared/src/commonTest/kotlin/a/T.kt":   {false, true},
-		"lib/src/testFixtures/kotlin/a/Fake.kt": {false, true},
+		"app/src/androidTest/java/a/UiTest.kt":  {true, true},
+		"shared/src/commonTest/kotlin/a/T.kt":   {true, true},
+		"lib/src/testFixtures/kotlin/a/Fake.kt": {true, true},
 		"web/src/cart.test.ts":                  {true, false},
 		"src/main/kotlin/shop/Cart.kt":          {false, false},
 		"src/attestation/Check.kt":              {false, false},
