@@ -11,8 +11,9 @@ import (
 // Long thread, last reply read: Given a review thread of 250 comments, more
 // than two pages of 100, on GitHub, When the forge lists the threads, Then
 // the thread holds all 250 comments in their order, the last one included.
-// The simulated gh answers as GitHub does: a thread's comments, a hundred
-// at most, the first ones.
+// The simulated gh answers per query, as GitHub does: the first hundred
+// comments with a cursor, then the hundred after the cursor it is given,
+// and so on to the end.
 func TestGitHubThreadsLongThreadLastReplyRead(t *testing.T) {
 	bin := t.TempDir()
 	type node struct {
@@ -26,23 +27,39 @@ func TestGitHubThreadsLongThreadLastReplyRead(t *testing.T) {
 			Login string `json:"login"`
 		} `json:"author"`
 	}
-	var first []node
-	for i := 1; i <= 100; i++ {
-		n := node{ID: i, Body: fmt.Sprintf("comment %d", i), URL: fmt.Sprintf("https://github.com/o/r/pull/1#discussion_r%d", i), Created: "2026-01-01T00:00:00Z", Assoc: "MEMBER"}
-		n.Author.Type, n.Author.Login = "User", "someone"
-		first = append(first, n)
+	writePage := func(name string, from, to int, next string) {
+		var nodes []node
+		for i := from; i <= to; i++ {
+			n := node{ID: i, Body: fmt.Sprintf("comment %d", i), URL: fmt.Sprintf("https://github.com/o/r/pull/1#discussion_r%d", i), Created: "2026-01-01T00:00:00Z", Assoc: "MEMBER"}
+			n.Author.Type, n.Author.Login = "User", "someone"
+			nodes = append(nodes, n)
+		}
+		info := map[string]any{"hasNextPage": next != "", "endCursor": nil}
+		if next != "" {
+			info["endCursor"] = next
+		}
+		thread := map[string]any{"id": "PRRT_1", "isResolved": false, "path": "a_test.go", "line": 3,
+			"comments": map[string]any{"nodes": nodes, "pageInfo": info}}
+		data, err := json.Marshal(thread)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(bin, name), append(data, '\n'), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
-	thread := map[string]any{"id": "PRRT_1", "isResolved": false, "path": "a_test.go", "line": 3,
-		"comments": map[string]any{"nodes": first}}
-	data, err := json.Marshal(thread)
-	if err != nil {
-		t.Fatal(err)
-	}
-	page := filepath.Join(bin, "page.json")
-	if err := os.WriteFile(page, append(data, '\n'), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	script := "#!/bin/sh\ncat " + page + "\n"
+	writePage("page1.json", 1, 100, "CURSOR100")
+	writePage("page2.json", 101, 200, "CURSOR200")
+	writePage("page3.json", 201, 250, "")
+	calls := filepath.Join(bin, "calls")
+	script := "#!/bin/sh\n" +
+		"echo x >> " + calls + "\n" +
+		"if [ \"$(wc -l < " + calls + ")\" -gt 20 ]; then exit 1; fi\n" +
+		"case \"$*\" in\n" +
+		"*CURSOR200*) cat " + filepath.Join(bin, "page3.json") + " ;;\n" +
+		"*CURSOR100*) cat " + filepath.Join(bin, "page2.json") + " ;;\n" +
+		"*) cat " + filepath.Join(bin, "page1.json") + " ;;\n" +
+		"esac\n"
 	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}

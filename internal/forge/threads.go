@@ -120,7 +120,7 @@ func noThreads(id int, missing []string) error {
 // threadsFullQuery lists a pull request's review threads with their
 // comments, a hundred of each, who wrote each: GitHub says whether a
 // thread is resolved in GraphQL only.
-const threadsFullQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { reviewThreads(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { id isResolved path line comments(first: 100) { pageInfo { hasNextPage } nodes { databaseId body url createdAt authorAssociation author { __typename login } } } } } } } }`
+const threadsFullQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { reviewThreads(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { id isResolved path line comments(first: 100) { pageInfo { hasNextPage endCursor } nodes { databaseId body url createdAt authorAssociation author { __typename login } } } } } } } }`
 
 // threadCommentsQuery lists the comments of one review thread, by its
 // GraphQL id, a hundred a page: a thread holds more than a page of them.
@@ -153,7 +153,8 @@ func (g *github) Threads(id int) ([]Thread, error) {
 		Line     int    `json:"line"`
 		Comments struct {
 			PageInfo struct {
-				HasNext bool `json:"hasNextPage"`
+				HasNext bool   `json:"hasNextPage"`
+				Cursor  string `json:"endCursor"`
 			} `json:"pageInfo"`
 			Nodes []comment `json:"nodes"`
 		} `json:"comments"`
@@ -168,16 +169,30 @@ func (g *github) Threads(id int) ([]Thread, error) {
 		}
 		th := Thread{ID: strconv.Itoa(t.Comments.Nodes[0].ID), Path: t.Path, Line: t.Line, Resolved: t.Resolved, URL: t.Comments.Nodes[0].URL, node: t.Node}
 		comments := t.Comments.Nodes
-		if t.Comments.PageInfo.HasNext {
-			// More than a page: read them all, the last reply included.
-			more, err := g.api("graphql", "--paginate", "-f", "query="+threadCommentsQuery, "-f", "id="+t.Node,
-				"--jq", `.data.node.comments.nodes[]`)
+		for next := t.Comments.PageInfo; next.HasNext && next.Cursor != ""; {
+			// More than a page: read the pages after it, the last reply included.
+			more, err := g.api("graphql", "-f", "query="+threadCommentsQuery, "-f", "id="+t.Node, "-f", "endCursor="+next.Cursor,
+				"--jq", `.data.node`)
 			if err != nil {
 				return nil, err
 			}
-			if comments, err = lines[comment](more); err != nil {
+			pg, err := lines[struct {
+				Comments struct {
+					PageInfo struct {
+						HasNext bool   `json:"hasNextPage"`
+						Cursor  string `json:"endCursor"`
+					} `json:"pageInfo"`
+					Nodes []comment `json:"nodes"`
+				} `json:"comments"`
+			}](more)
+			if err != nil {
 				return nil, err
 			}
+			if len(pg) == 0 {
+				break
+			}
+			comments = append(comments, pg[0].Comments.Nodes...)
+			next = pg[0].Comments.PageInfo
 		}
 		for _, c := range comments {
 			n := Note{Body: c.Body, Created: c.Created, ID: strconv.Itoa(c.ID), Insider: insider(c.Association)}
