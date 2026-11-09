@@ -715,7 +715,9 @@ func shapeKeys(shape string) map[string]bool {
 	return keys
 }
 
+// lastLine is a command's last line of output, as a finding quotes it:
+// its secrets masked (forge.Mask, #1215).
 func lastLine(s string) string {
-	lines := strings.Split(strings.TrimSpace(s), "\n")
+	lines := strings.Split(strings.TrimSpace(forge.Mask(s)), "\n")
 	return lines[len(lines)-1]
 }
