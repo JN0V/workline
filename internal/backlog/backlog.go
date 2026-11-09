@@ -2190,6 +2190,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-unread", Level: "info", Where: c.where(), Message: unread})
 		}
 		if len(added) == 0 {
+			if len(c.Repeated) > 0 {
+				return "nothing-to-refine", "nothing written: the " + strings.Join(c.Repeated, ", ") + " it drafted repeats the text above it, left out"
+			}
 			return "nothing-to-refine", "nothing written: the sections it drafted are in the issue already, never rewritten"
 		}
 		if len(kept) > 0 {
