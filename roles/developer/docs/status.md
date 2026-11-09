@@ -305,9 +305,14 @@ hold:
   ([#1254](https://github.com/JN0V/workline/issues/1254),
   [ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)):
   merges alone only when the reviewer's summary names its head, its
-  lenses run; none, or one on an older commit, waits, said. Cases
+  lenses run, or its record covers a head rebased since; none, or one
+  on an older commit, waits for the reviewer where the line runs it,
+  24 h at most, then for a person, said. Cases
   `merge-normal-holds-unreviewed-fix`,
-  `merge-normal-holds-fix-reviewed-before-head`. Tried: its pull
+  `merge-normal-holds-fix-reviewed-before-head`,
+  `merge-normal-admits-fix-rebased-since-review`,
+  `merge-normal-fix-waits-for-the-reviewer`,
+  `merge-normal-fix-unreviewed-past-the-delay`. Tried: its pull
   request's `## Tried`.
 - **A feature at `enterprising`**
   ([the release candidate](../../../docs/release-candidate.md)): merges

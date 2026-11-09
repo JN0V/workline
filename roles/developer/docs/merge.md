@@ -4,7 +4,7 @@ sources:
   - internal/engine/code.go
   - internal/engine/candidate.go
   - internal/sample/developer.go
-checked: a9080082
+checked: a7fe9448
 verified: agent:claude-code
 ---
 # The merge
@@ -66,10 +66,16 @@ a feature or a task merges too, and the yes moves to the milestone's
   ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)):
   - the reviewer's summary comment names the pull request's head, and
     its lenses read it, not only its rules;
-  - none (the reviewer is not in the merge-request line), or one on an
-    older commit: it waits for a review of its head or a person's yes,
-    said once on it (`merge-waits=unreviewed`): a team merges no change
-    nobody read.
+  - or a rebase since: the record in that comment covers every commit
+    of the head, by its change's patch id, as the reviewer reads it; the
+    reviewer, finding nothing new, writes no summary then;
+  - the reviewer in the merge-request line, its verdict not on the head
+    yet: it waits for the reviewer, no person asked, until 24 h after
+    the push (the question's delay,
+    [ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus));
+  - past it, or with no reviewer in the line: it waits for a person's
+    yes, said on it (`merge-waits=unreviewed`), the comment edited at
+    each head: a team merges no change nobody read.
 - **A fix, its bug reproduced first**
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
   - its record names the tester's Draft its code started from, and
