@@ -15,7 +15,7 @@ given:
         author: ann
         insider: true
         labels: [workline:to-refine]
-        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Steps to reproduce\n\n1. Export three rows.\n- **Expected:** three rows.\n- **Actual:** two.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n"
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Steps to reproduce\n\n1. Export three rows.\n- **Expected:** three rows.\n- **Actual:** two.\n"
         comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
       - id: 10
         title: "First row lost"
@@ -32,5 +32,5 @@ expect:
   no-findings: [{rule: nothing-to-refine, where: "#10"}]
   forge:
     issues:
-      - {id: 9, body-contains: "## Verification", body-lacks: "## Scope", comment-contains: "sources: [src/export]\n"}
+      - {id: 9, body-contains: "## Validation", body-lacks: ["## Scope", "## Verification"], comment-contains: "sources: [src/export]\n"}
       - {id: 10, body-lacks: "## Scope"}

@@ -38,7 +38,7 @@ expect:
     issues:
       - {id: 9, body-lacks: "## Need"}
       - {id: 9, comment-contains: "**What it still needs:** Since when does it drop the row?"}
-      - {id: 9, comment-contains: "**Verification**"}
+      - {id: 9, comment-contains: "**Scope**", comment-lacks: "**Verification**"}
       - {id: 9, comment-contains: "<!-- workline:product-owner/proposal=2 -->"}
       - {id: 10, body-lacks: "## Need"}
-      - {id: 10, comment-contains: ["**Verification**", "<!-- workline:product-owner/proposal=2 -->"], comment-lacks: "What it still needs"}
+      - {id: 10, comment-contains: ["**Scope**", "<!-- workline:product-owner/proposal=2 -->"], comment-lacks: "What it still needs"}

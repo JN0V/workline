@@ -3,7 +3,7 @@ about: >
   A bug in refine whose first product owner run named its sources and
   nothing more (#951): the line wakes the product owner again on the
   same body, told what its last read left, with the code it named. Its
-  Verification and Scope are written.
+  Its Scope is written; the Verification left to the tester (ADR-0066).
 given:
   repo: backlog
   config:
@@ -31,5 +31,6 @@ expect:
   forge:
     issues:
       - id: 9
-        body-contains: ["## Verification", "A test writes three rows", "## Scope"]
+        body-contains: "## Scope"
+        body-lacks: "## Verification"
         comment-contains: "\"given\":\"src/export\"" # the code this read got (#980)

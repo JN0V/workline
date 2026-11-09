@@ -22,6 +22,6 @@ expect:
         body-contains:
           - "## Example\n\nThe export of 8 Oct, 3 sales:\n\n```csv\nday,item\n2026-10-08,tea\n2026-10-08,cake\n```"
           - "## Steps to reproduce\n\n1. Run:\n\n```sh\nshop export --day 2026-10-08\n```\n\n2. Count the rows: 2, not 3."
-          - "## Verification\n\nA test writes three rows and reads three lines back."
           - "## Validation\n\n- **One day:** Given 3 sales on 8 Oct"
           - "## Scope\n\n`WriteRows` in src/export/csv.go, and its test."
+        body-lacks: "## Verification"

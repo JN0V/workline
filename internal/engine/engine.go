@@ -2771,6 +2771,47 @@ func (a *applier) apply(in intent.Intention) error {
 			return a.forge.Sticky(*target, backlog.Inert(body), marker, !only)
 		}
 		return a.forge.Comment(*target, backlog.Inert(body), a.marker())
+	case "verification":
+		// The tester's test plan, written in the issue it names (ADR-0066):
+		// added, or its own rewritten; another's kept as it reads.
+		m, _ := in.Value.(map[string]any)
+		n, _ := m["issue"].(int)
+		text, _ := m["text"].(string)
+		if n <= 0 || strings.TrimSpace(text) == "" {
+			return errors.New("a verification needs {issue, text}")
+		}
+		if err := a.needForge("verification"); err != nil {
+			return err
+		}
+		b, ok := a.forge.(forge.Backlog)
+		if !ok {
+			return errors.New("a verification is written in an issue, on a forge that keeps a backlog")
+		}
+		is, err := a.forge.Issue(n)
+		if err != nil {
+			return err
+		}
+		body, changed := backlog.WithVerification(is.Body, text)
+		if !changed {
+			return nil
+		}
+		if err := b.SetBody(n, body); err != nil {
+			return err
+		}
+		// The tester's test plan is no person's change: the product
+		// owner, which read the body as it was, keeps it as it is now,
+		// and is not woken to read it again.
+		t := forge.Target{Kind: "issue", ID: n}
+		comments, err := b.Comments(t)
+		if err != nil {
+			return err
+		}
+		st, found, err := backlog.ReadState(comments, backlog.Keeper)
+		if err != nil || !found || st.Body != backlog.BodyDigest(is.Body) {
+			return nil // none, or one that does not read: left as it is
+		}
+		st.Keep(body)
+		return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(backlog.Keeper), false)
 	case "label":
 		m, _ := in.Value.(map[string]any)
 		if err := a.needForge("label"); err != nil {

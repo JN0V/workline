@@ -30,14 +30,14 @@ var contracts = map[string]string{
 	"skip":           `- skip: {lines: "12-14", reason: done, quote: {path: "docs/ROADMAP.md", text: "the words that say it is done"}}  # importing only: or reason: held, issue: 7 (an issue holds it); or reason: not-item, why: "an introduction"`,
 	"milestone":      `- milestone: {issue: 12, milestone: "v2.14.0", why: "why it belongs to that release"}`,
 	"order":          `- order: {issue: 12, priority: 1, why: "why it comes before the others"}  # 1 the most pressing, to ` + strconv.Itoa(scale.Priority.Count()),
-	"refine":         `- refine: {issue: 12, need: "one line: who needs what, and why (a draft)", example: "one real case, today and wanted (a draft)", validation: "named scenarios, each a bullet - **Name:** Given …, When …, Then … (a draft)", verification: "the tests that will prove it", scope: "the part of the code", sources: ["src/file.go"], why: "why", questions: "what is still missing (an outsider's issue only)"}  # only the sections it lacks; a bug: steps instead of example — the steps, Expected, Actual, the version (a draft); description: the text above its sections in plain words, only where the task says it is a role's`,
+	"refine":         `- refine: {issue: 12, need: "one line: who needs what, and why (a draft)", example: "one real case, today and wanted (a draft)", validation: "named scenarios, each a bullet - **Name:** Given …, When …, Then … (a draft)", scope: "the part of the code", sources: ["src/file.go"], why: "why", questions: "what is still missing (an outsider's issue only)"}  # only the sections it lacks; a bug: steps instead of example — the steps, Expected, Actual, the version (a draft); description: the text above its sections in plain words, only where the task says it is a role's`,
 	"ready":          `- ready: {issue: 12, why: "its four sections are there, ` + work.Name(work.Need) + ` and ` + work.Name(work.Validation) + ` a person's"}`,
 	"unready":        `- unready: {issue: 12, why: "what in the change it no longer fits"}  # a ready issue back to refine: done, its reason on the issue; a person puts workline:ready back to undo`,
 	"unblock":        `- unblock: {issue: 12, to: refine, why: "what changed, so the block no longer holds"}  # a blocked issue the task says is read again: to the state it came from, or refine; done, its reason on the issue`,
 	"blocked":        `- blocked: {issue: 12, why: "one line: why it stays blocked, as things are now", person: false}  # a blocked issue the task says is read again, kept blocked; person: true when only a person can lift it`,
 	"ask":            `- ask: {issue: 12, questions: "what its reporter should say", why: "why the issue cannot be refined without it"}`,
 	"assume":         `- assume: {issue: 12, assumption: "one plain sentence: your best answer to the question", why: "why it is the likeliest answer"}  # only where the task says the question got no answer in its delay, or your level does not wait: written under the issue's Assumptions, for a person to correct`,
-	"split":          `- split: {issue: 12, into: [{title: "a short title", need: "who needs this part, and why (a draft)", verification: "the tests that will prove it", validation: "who accepts it (a draft)", scope: "the part of the code", sources: ["src/file.go"]}, {title: "…", …}], why: "why it is several needs"}  # 2 to 6 children, each its four sections; too-big: true when the task says the issue is past its size (on even where split is off; a part never split again)`,
+	"split":          `- split: {issue: 12, into: [{title: "a short title", need: "who needs this part, and why (a draft)", validation: "who accepts it (a draft)", scope: "the part of the code", sources: ["src/file.go"]}, {title: "…", …}], why: "why it is several needs"}  # 2 to 6 children, each its need, validation and scope; too-big: true when the task says the issue is past its size (on even where split is off; a part never split again)`,
 	"depend":         `- depend: {issue: 14, blocked-by: [13], why: "what #14 needs from #13 before it can start"}  # only what it cannot start without; a split's child says it with after: [1], the children it waits on by their place`,
 	"undepend":       `- undepend: {issue: 14, blocked-by: [13], why: "why #14 no longer needs #13"}  # only a link the role set; a closed blocker's link the engine takes off itself; proposed to a person`,
 	"kind":           `- kind: {issue: 12, kind: bug, why: "what in it says so: a behaviour that worked and broke"}  # bug, feature (a function people have not seen) or task (no behaviour change); only an issue no kind label tells`,
@@ -54,8 +54,9 @@ var contracts = map[string]string{
 
 // engineOnly are the kinds the engine makes and the agent never writes,
 // left out of the output contract: an effort is split from an order
-// (ADR-0040), the task telling how when the project keeps one.
-var engineOnly = map[string]bool{"effort": true}
+// (ADR-0040), the task telling how when the project keeps one; the
+// tester's Verification is written from the tests it proved (ADR-0066).
+var engineOnly = map[string]bool{"effort": true, "verification": true}
 
 // BlockScalars is how a text holding code is written so that it reads: a
 // plain text starting with a backtick, or holding `: ` or ` #`, does not

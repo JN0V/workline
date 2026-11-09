@@ -137,6 +137,10 @@ func SpecHold(is forge.Issue, comments []string) (rule, why string) {
 		return "spec-rounds-spent", fmt.Sprintf("the reviewer's findings still open after %d rounds: a person's to decide, as the reviewer's comment on it asks (%s, or %s by hand)", r.Round, LabelAccepted, LabelReady)
 	case r.Body != BodyDigest(is.Body):
 		return "spec-not-reviewed", "its spec changed since the reviewer read it: ready once it reads it again and no important finding is open"
+	case r.Open > 0 && r.Testers():
+		// Its findings lie in the tester's Verification alone (ADR-0066):
+		// the tester answers them as it writes its tests, after ready.
+		return "", ""
 	case r.Open > 0:
 		return "spec-findings-open", fmt.Sprintf("%s of the reviewer open on its spec (round %d, in %s): the product owner answers at its next refine", plural(r.Open, "important finding"), r.Round, strings.Join(r.In, ", "))
 	}
@@ -154,10 +158,44 @@ func SpecCleared(is forge.Issue, comments []string) (*SpecReview, bool) {
 // on the body as it is, for the product owner to answer; nil otherwise.
 func SpecOpen(is forge.Issue, comments []string) *SpecReview {
 	r, _ := ReadSpecReview(comments) // one that does not read holds nothing to answer
-	if r == nil || r.Stopped || r.Open == 0 || r.Body != BodyDigest(is.Body) {
+	if r == nil || r.Stopped || r.Open == 0 || r.Body != BodyDigest(is.Body) || r.Testers() {
 		return nil
 	}
 	return r
+}
+
+// Testers says whether the sections a review's findings lie in are all
+// the tester's, the Verification (ADR-0066): none the product owner
+// answers, nor a person.
+func (r SpecReview) Testers() bool {
+	return len(r.In) > 0 && !slices.ContainsFunc(r.In, func(h string) bool { return !work.Testers(work.MeaningOf(h)) })
+}
+
+// SpecForTester is the reviewer's last comment on an issue's spec when it
+// holds important findings open in the tester's sections, the
+// Verification (ADR-0066), and those sections by heading; "" otherwise.
+// The body may have moved since, its drafts' marks gone at ready: the
+// tester reads the findings against the issue as it is.
+func SpecForTester(comments []string) (string, []string) {
+	r, _ := ReadSpecReview(comments)
+	if r == nil || r.Stopped || r.Open == 0 {
+		return "", nil
+	}
+	var in []string
+	for _, h := range r.In {
+		if work.Testers(work.MeaningOf(h)) {
+			in = append(in, h)
+		}
+	}
+	if len(in) == 0 {
+		return "", nil
+	}
+	for i := len(comments) - 1; i >= 0; i-- {
+		if strings.Contains(comments[i], SpecMarker) {
+			return comments[i], in
+		}
+	}
+	return "", nil
 }
 
 // SectionAt is the section of a body a line lies in, by its `## ` (or
@@ -202,14 +240,18 @@ func Own(is forge.Issue, st *State) []string {
 }
 
 // Rewritable is the one rule of whose a section of meaning m is
-// (ADR-0060): the builder's part — Verification, Scope — is the role's
-// at every level, even a text a person wrote; the person's part — Need,
+// (ADR-0060): the builder's part — the Scope — is the role's at every
+// level, even a text a person wrote; the Verification is the tester's,
+// never the product owner's (ADR-0066); the person's part — Need,
 // Validation, an example, a bug's steps — only while it is still the
 // role's own: a draft no person accepted — the role's, or one its writer
 // marked `Draft:` (MarkedDraft, #1019) —, or a text as the role wrote it
 // (the state's `wrote`). A person's text there is theirs: never
 // rewritten, asked of them.
 func Rewritable(is forge.Issue, st *State, m work.Meaning) bool {
+	if work.Testers(m) {
+		return false
+	}
 	return builder(m) || (IsDraft(is.Body, m, st) || MarkedDraft(is.Body, m)) && !Accepted(is) || mine(st, m, work.ByMeaning(is.Body)[m].Text)
 }
 
@@ -222,8 +264,8 @@ func mine(st *State, m work.Meaning, text string) bool {
 
 // Revisable are the sections of a body the role may rewrite to answer the
 // reviewer's findings (#128): those the findings lie in that are
-// Rewritable — the builder's part always, the person's part while still
-// the role's own (ADR-0060).
+// Rewritable — the Scope always, the person's part while still the
+// role's own (ADR-0060); never the tester's Verification (ADR-0066).
 func Revisable(is forge.Issue, st *State, r *SpecReview) []string {
 	if r == nil {
 		return nil
@@ -232,7 +274,7 @@ func Revisable(is forge.Issue, st *State, r *SpecReview) []string {
 	var out []string
 	for _, name := range r.In {
 		m := work.MeaningOf(name)
-		if _, ok := have[m]; ok && slices.Contains(work.Required, m) && !work.Has(out, m) && Rewritable(is, st, m) {
+		if _, ok := have[m]; ok && (slices.Contains(work.Required, m) || work.Testers(m)) && !work.Has(out, m) && Rewritable(is, st, m) {
 			out = append(out, name)
 		}
 	}

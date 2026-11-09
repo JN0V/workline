@@ -41,6 +41,7 @@ var Catalogue = map[string]bool{
 	"blocked":        true, // a blocked issue read again, kept blocked, its reason said afresh (ADR-0059, amended)
 	"ask":            true, // the reporter asked what is missing (docs/spec/backlog-acts.md)
 	"assume":         true, // a question left unanswered past the delay taken as the role's assumption, written on the issue (ADR-0060)
+	"verification":   true, // an issue's Verification written by the tester from its tests, a person's kept (ADR-0066)
 	"split":          true, // a need split into issues of their own, linked to it (docs/spec/backlog-acts.md)
 	"rename":         true, // an issue's title set; a person's kept (docs/spec/backlog-acts.md)
 	"depend":         true, // what an issue waits on: the forge's relation, or a line in its body (ADR-0028)
@@ -216,7 +217,7 @@ func Marshal(in []Intention) ([]byte, error) {
 // applyOrder is the order intentions are applied in, whatever order they were
 // proposed in: files first, then what depends on them, then what only informs.
 var applyOrder = map[string]int{
-	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "keep": 6, "milestone": 7, "order": 8, "effort": 8, "kind": 8, "size": 9, "refine": 9, "ready": 10, "unready": 10, "unblock": 10, "blocked": 10, "ask": 11, "assume": 11, "split": 12, "rename": 13, "depend": 13, "undepend": 13, "issue": 14, "handoff": 15, "note": 16,
+	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "verification": 3, "open": 4, "sources": 5, "close": 6, "keep": 6, "milestone": 7, "order": 8, "effort": 8, "kind": 8, "size": 9, "refine": 9, "ready": 10, "unready": 10, "unblock": 10, "blocked": 10, "ask": 11, "assume": 11, "split": 12, "rename": 13, "depend": 13, "undepend": 13, "issue": 14, "handoff": 15, "note": 16,
 }
 
 // SortForApply puts intentions in apply order, keeping the proposed order within a kind.

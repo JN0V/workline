@@ -1,0 +1,30 @@
+case: product-owner/refine-rewrites-a-scope-it-asked-a-person-for
+about: "An issue left waiting on a person by the rule before ADR-0060: the product owner answered the reviewer's finding in a Scope a person wrote by asking them, and nobody answered. Its state holds the review answered, but not the sections it was given to rewrite then (`revised`): the next run reads it again, once, without the person, and rewrites the Scope; the question asked stays, nothing asked again."
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nSessions feel right to the users.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: efbae4cec0e6\nanswered: efbae4cec0e6\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Scope -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - "@ann, to refine this issue: The reviewer found a problem in the Scope, which is yours to change. Could you name the function?\n\n<!-- workline:product-owner/ask -->"
+run: {role: product-owner, event: schedule, ai: fake:refine-persons-scope}
+expect:
+  forge:
+    issues:
+      - id: 9
+        body-contains: "## Scope\n\n- src/export/csv.go\n- src/export/csv_test.go: the test the Verification names."
+        body-lacks: "## Scope\n\nsrc/"
+        comment-contains: ["Changed: Scope.", "revised: [Scope]"]
+  run-files:
+    in/issues-read: {contains: "9"}
+    in/task.md: {contains: ["yours to rewrite: Scope"]}

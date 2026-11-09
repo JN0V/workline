@@ -64,7 +64,8 @@ type waiting struct {
 
 // revisable are the sections of an issue the product owner may rewrite to
 // answer a finding, by its own rule (backlog.Revisable, ADR-0060): the
-// Verification and the Scope always, whoever wrote them; the Need, the
+// Scope always, whoever wrote it, never the tester's Verification
+// (ADR-0066); the Need, the
 // Validation, an example or a bug's steps while a draft no person
 // accepted, or a text as it wrote it. The others are a person's: the
 // product owner asks its reporter, never rewrites them. Its state not
@@ -454,6 +455,10 @@ func specComment(v Review, r backlog.SpecReview, rounds int, mine []string) stri
 	switch {
 	case r.Body == "":
 		b.WriteString("Not read whole: the reviewer reads it again at the next run; ready waits.\n\n")
+	case r.Open > 0 && r.Testers():
+		// In the tester's Verification alone (ADR-0066): nothing held.
+		fmt.Fprintf(&b, "**Holds nothing**: %d important %s open, round %d of %d. %s\n\n",
+			r.Open, plural(r.Open, "finding", "findings"), r.Round, rounds, whoAnswers(r.In, mine))
 	case r.Open > 0:
 		fmt.Fprintf(&b, "**Holds it from ready**: %d important %s open, round %d of %d. %s\n\n",
 			r.Open, plural(r.Open, "finding", "findings"), r.Round, rounds, whoAnswers(r.In, mine))
@@ -477,16 +482,19 @@ func specComment(v Review, r backlog.SpecReview, rounds int, mine []string) stri
 }
 
 // whoAnswers says who acts on the findings open, section by section: the
-// product owner rewrites at its next refine what is its own, the
-// Verification and the Scope always; a Need or a Validation a person
-// wrote is theirs, the product owner asks them and never rewrites it
-// (ADR-0060).
+// product owner rewrites at its next refine what is its own, the Scope
+// always; a Need or a Validation a person wrote is theirs, the product
+// owner asks them and never rewrites it (ADR-0060); the Verification is
+// the tester's, answered as it writes the tests (ADR-0066).
 func whoAnswers(in, mine []string) string {
-	var own, theirs []string
+	var own, theirs, testers []string
 	for _, n := range in {
-		if slices.ContainsFunc(mine, func(m string) bool { return work.MeaningOf(m) == work.MeaningOf(n) }) {
+		switch {
+		case work.Testers(work.MeaningOf(n)):
+			testers = append(testers, n)
+		case slices.ContainsFunc(mine, func(m string) bool { return work.MeaningOf(m) == work.MeaningOf(n) }):
 			own = append(own, n)
-		} else {
+		default:
 			theirs = append(theirs, n)
 		}
 	}
@@ -500,6 +508,12 @@ func whoAnswers(in, mine []string) string {
 	if len(theirs) > 0 {
 		fmt.Fprintf(&b, "%s, a person's: the product owner never rewrites %s and asks its reporter; a person answers, editing %s, or accepts the issue as it reads with `%s`. ",
 			strings.Join(theirs, ", "), plural(len(theirs), "it", "them"), plural(len(theirs), "it", "them"), backlog.LabelAccepted)
+	}
+	if len(testers) > 0 {
+		fmt.Fprintf(&b, "%s, the tester's: it answers %s as it writes the tests, after ready, and holds nothing back. ", strings.Join(testers, ", "), plural(len(testers), "it", "them"))
+	}
+	if len(own)+len(theirs) == 0 && len(testers) > 0 {
+		return strings.TrimSpace(b.String())
 	}
 	b.WriteString("The reviewer then reads the spec again.")
 	if len(theirs) == 0 {
@@ -529,7 +543,7 @@ func lastFindings(comment string) string {
 	var kept []string
 	for _, l := range strings.Split(comment, "\n") {
 		switch {
-		case strings.HasPrefix(l, "**workline reviewer**"), strings.HasPrefix(l, "**Holds it from ready**"),
+		case strings.HasPrefix(l, "**workline reviewer**"), strings.HasPrefix(l, "**Holds it from ready**"), strings.HasPrefix(l, "**Holds nothing**"),
 			strings.HasPrefix(l, "No important finding open"), strings.HasPrefix(l, "Not read whole"),
 			strings.HasPrefix(l, "The reviewer never"), strings.Contains(l, "<!-- workline:"):
 			continue

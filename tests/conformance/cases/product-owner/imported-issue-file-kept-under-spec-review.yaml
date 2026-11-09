@@ -33,4 +33,4 @@ expect:
       contains:
         - "Imported from `ROADMAP.md`: its item is at lines 5 to 5 as the file reads at this commit."
         - "     3  ## Export\n     4\n     5  - LO-3: **Keep the last row.** WriteRows stops one row short.\n"
-        - "yours to rewrite: Verification, Scope"
+        - "yours to rewrite: Scope"

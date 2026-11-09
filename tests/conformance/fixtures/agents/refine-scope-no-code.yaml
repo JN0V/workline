@@ -4,7 +4,7 @@
 - refine:
     issue: 9
     scope: "`src/export`: the CSV export, guessed from the folders."
-    verification: "A test exports three rows and reads three lines back."
+    validation: "- **Three rows:** Given three rows, When I export them, Then the file holds three."
     why: "No code was given in this run: the paths come from the folders."
 - refine:
     issue: 10

@@ -20,7 +20,7 @@ expect:
     - {rule: done, where: "#12", message: "Refined #12: Need (draft, from the text on top)."}
     - {rule: description-kept, where: "#13", message: "its description is left as it is: a role's text on top is taken into the Need it drafts, never rewritten apart"}
   run-files:
-    in/task.md: {contains: ["## #7 Five whys\n\nOpened by: ann, of the project\nDescription: the text above its sections is a role's, and no person edited it — give it as the `need` draft, rewritten in plain words: the engine takes it from the top, its Need said once\nSections: none; missing: Need, Verification, Validation, Scope", "## #11 Rows lost\n\nOpened by: ann, of the project\nSections: Need (the text on top, a person's); missing: Verification, Validation, Scope", "## #12 Last row\n\nOpened by: ann, of the project\nDescription: the text above its sections is a role's"]}
+    in/task.md: {contains: ["## #7 Five whys\n\nOpened by: ann, of the project\nDescription: the text above its sections is a role's, and no person edited it — give it as the `need` draft, rewritten in plain words: the engine takes it from the top, its Need said once\nSections: none; missing: Need, Validation, Scope", "## #11 Rows lost\n\nOpened by: ann, of the project\nSections: Need (the text on top, a person's); missing: Validation, Scope", "## #12 Last row\n\nOpened by: ann, of the project\nDescription: the text above its sections is a role's"]}
   forge:
     issues:
       - id: 7
