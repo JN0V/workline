@@ -1,0 +1,33 @@
+case: tester/write-pytest-missing-name-draft
+about: >
+  The tester writes a pytest test for a ready issue whose code does not
+  exist yet, run by `python -m pytest`: the test imports `money`,
+  which pkg.pricing lacks and the issue names, so pytest cannot collect
+  it, by that name only. Red by a missing name: the Draft opens, the
+  test named from its file (#1283).
+given:
+  repo: python-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh -m {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Show a price as money"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I print an invoice, I want a price shown with two decimals, so I need not format it by hand.\n\n## Validation\n\n- **One as money:** Given the library, When I show 1 as money, Then I get 1.00.\n\n---\n\n## Verification\n\nA pytest test.\n\n## Scope\n\n- `pkg/pricing.py`: a `money` function beside `tax`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-py-money"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base (1 not built there, a missing name the issue names)"
+  agent-calls: 1
+  pushed:
+    workline/tester/issue-3:
+      tests/test_pricing.py: "Scenario: One as money"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Refs #3", "One as money", "tests/test_pricing.py:test_one_as_money"]

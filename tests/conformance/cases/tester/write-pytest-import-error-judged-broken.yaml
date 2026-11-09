@@ -1,0 +1,32 @@
+case: tester/write-pytest-import-error-judged-broken
+about: >
+  The tester's pytest test, run by plain `pytest`, which cannot import
+  the flat-layout project: `No module named 'pkg'`, a module the issue
+  does not add. It is no missing name, so the judge reads it; its no is
+  build-broken, the error quoted. Asked again, the agent answers the
+  same: the run blocks, said on the issue, and no Draft opens (#1283).
+given:
+  repo: python-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-no.yaml"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Show a price as money"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I print an invoice, I want a price shown with two decimals, so I need not format it by hand.\n\n## Validation\n\n- **One as money:** Given the library, When I show 1 as money, Then I get 1.00.\n\n---\n\n## Verification\n\nA pytest test.\n\n## Scope\n\n- `pkg/pricing.py`: a `money` function beside `tax`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-py-money"}
+expect:
+  status: block
+  agent-calls: 4
+  findings: [{rule: build-broken, where: tests/test_pricing.py, message: "No module named 'pkg'"}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
+    issues:
+      - id: 3
+        comment-contains: ["**The tester** wrote no tests for this issue this run", "No module named 'pkg'"]
