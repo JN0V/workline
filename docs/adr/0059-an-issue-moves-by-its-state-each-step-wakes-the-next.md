@@ -23,6 +23,9 @@
   step 3, built: the developer's first step with code only outside the
   Scope sends the issue back to refine, a Scope ask, not Blocked; the
   same files asked twice, whatever the head, block it for a person
+- **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#1-red-for-the-right-reason-goes-to-judgement),
+  once built: a `red unproven` Draft, its judge unsure, moves the issue
+  to ready too; the developer starts, the green proof settles it
 
 ## Context
 

@@ -40,3 +40,8 @@ choice is settled against this page.
     machine can do, it does, without being asked. What needs a person is
     written where they look — what to do, why, and how — never left in a
     job's log or in someone's memory.
+15. **A guess may only pass.** A check on converging facts may block.
+    A heuristic may pass a case it is sure of; its miss goes to
+    judgement, never to a block nor a silent pass. Language knowledge
+    is data in packs, not engine code
+    ([ADR-0065](adr/0065-code-only-what-converges-language-knowledge-in-packs.md)).
