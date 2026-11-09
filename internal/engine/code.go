@@ -14,8 +14,9 @@ import (
 // The developer's code at `normal` and `enterprising` (ADR-0054, step 7;
 // ADR-0060): its pull request,
 // workline's own as the forge says it, merges with no person's yes when
-// the issue it closes is a fix, every gate passed, no finding of the
-// reviewer's open and its bug reproduced, the tester's test red on the
+// the issue it closes is a fix, every gate passed, the reviewer's verdict
+// on its head (ADR-0065, change 2), no finding of the reviewer's open and
+// its bug reproduced, the tester's test red on the
 // base (ADR-0060); a feature or a task waits for a person's yes, but at
 // `enterprising`, where it goes into a milestone whose release candidate
 // a person tries (candidate.go). The kind is the issue's labels', never
@@ -74,6 +75,17 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		return waits("warn", fmt.Sprintf("%s, but features and tasks wait for a person's yes since a release candidate was refused (%s)", d.Says(), n.demoted[kindFeature]))
 	case len(d.Open) > 0:
 		return waits("warn", fmt.Sprintf("%s, but the reviewer's findings are open: %s", d.Says(), strings.Join(d.Open, "; ")))
+	}
+	if why := d.Unreviewed(w.tip); why != "" {
+		// Said once on it, as the other waits: a human team merges no
+		// change nobody read (ADR-0065, change 2).
+		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
+		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `%s`: the developer's code merges with no person's yes only once the reviewer's verdict is on its head, no finding open that blocks or is Important.\n\n- To accept this one, put the label `%s`.\n- To have the reviewer read each push: `workline init --review` adds it to the merge-request line.",
+			d.Says(), why, o.Merge, backlog.AcceptedLabel(f))
+		if err := f.Comment(t, body, forge.Marker("merge-waits="+developer.Unreviewed)); err != nil {
+			return nil, err
+		}
+		return waits("", d.Says()+", but "+why)
 	}
 	if d.WaitsForAYes() && d.Milestone == "" {
 		// At `enterprising`, a feature or a task goes into a milestone,

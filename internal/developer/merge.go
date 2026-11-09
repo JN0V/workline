@@ -26,6 +26,11 @@ const (
 // red on the base showed: it waits for a person's yes (ADR-0060).
 const Unreproduced = "unreproduced"
 
+// Unreviewed marks the merge policy's word on the developer's code no
+// reviewer's verdict reads at its head: it waits for a person's yes, or
+// a review of its head (ADR-0065, change 2).
+const Unreviewed = "unreviewed"
+
 // IssueKind is the kind its labels give an issue, and the label that
 // told it (backlog.KindOf): a feature over a fix over a task, on the safe
 // side; "" when none says it.
@@ -61,6 +66,29 @@ type Merge struct {
 	// Milestone is the issue's milestone, "" for none: a feature merging
 	// at `enterprising` goes into one, its release candidate (ADR-0060).
 	Milestone string
+	// ReviewedAt is the head the reviewer's summary comment names, its
+	// verdict's (forge.At); "" when no summary, or one naming none.
+	ReviewedAt string
+	// Owed: that summary holds its rules only, every lens still owed: no
+	// lens read the change yet.
+	Owed bool
+}
+
+// Unreviewed says why no reviewer's verdict reads head, the pull
+// request's: none on it, one on another commit, or one whose lenses are
+// still owed; "" when the reviewer read head. With the developer's files
+// no longer fenced by the Scope, the review is what reads a file beyond
+// it: no change merges unread (ADR-0065, change 2).
+func (m Merge) Unreviewed(head string) string {
+	switch {
+	case m.ReviewedAt == "":
+		return "no reviewer's verdict is on it"
+	case m.ReviewedAt != head:
+		return fmt.Sprintf("the reviewer's verdict is on %s, not on its head %s", shortSHA(m.ReviewedAt), shortSHA(head))
+	case m.Owed:
+		return fmt.Sprintf("the reviewer's lenses have not read its head %s yet: only its rules ran", shortSHA(head))
+	}
+	return ""
 }
 
 // WaitsForAYes says its kind waits for a person's yes: a feature or a
@@ -120,6 +148,13 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 		for _, x := range asked {
 			m.Open = append(m.Open, fmt.Sprintf("%s %s `%s`: %s", x.Holds, x.Lens, x.Where, x.Text))
 		}
+		if marker != reviewerMarkers[0] {
+			continue // the lenses that warn, read apart: never the verdict
+		}
+		if at := reviewerAt.FindStringSubmatch(c); at != nil {
+			m.ReviewedAt = at[1]
+		}
+		m.Owed = reviewerOwed.MatchString(c)
 	}
 	return m, nil
 }
@@ -133,7 +168,7 @@ func MergeSaid(f forge.Forge, id int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for _, marker := range []string{"merge-alone=code", "merge-waits=" + KindFeature, "merge-waits=" + KindTask, "merge-waits=" + Unreproduced} {
+	for _, marker := range []string{"merge-alone=code", "merge-waits=" + KindFeature, "merge-waits=" + KindTask, "merge-waits=" + Unreproduced, "merge-waits=" + Unreviewed} {
 		if body, whole := kept.Last(forge.Marker(marker)); body != "" && whole {
 			said, _, _ := strings.Cut(body, "\n")
 			return strings.TrimSpace(said), nil

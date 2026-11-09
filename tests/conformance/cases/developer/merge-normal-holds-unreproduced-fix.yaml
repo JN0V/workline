@@ -2,7 +2,8 @@ case: developer/merge-normal-holds-unreproduced-fix
 about: >
   No failing test, no fix merged alone (ADR-0060, decision 4): at
   `normal`, the developer's pull request for #3, an issue labelled
-  `bug`, is workline's own, its head's verdict passed; but its record
+  `bug`, is workline's own, its head's verdict passed, the reviewer's
+  verdict on its head; but its record
   names no tester's Draft its code started from, so no test red on main
   ever showed the bug. A fix with no failing test proves nothing: it
   waits for a person's yes, said once on it, and why.
@@ -32,6 +33,7 @@ given:
         pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
         comments:
           - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\n<!-- workline:at head=4feb95cd88448f137d793775c4ad7b591c1ac175 run=7 -->\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass

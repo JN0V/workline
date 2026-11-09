@@ -44,6 +44,9 @@ var (
 	// reviewerAt: the head its summary read. A run its rules hold counts
 	// no run, its findings new all the same (#1040).
 	reviewerAt = regexp.MustCompile(`<!-- workline:at head=([0-9a-f]+)`)
+	// reviewerOwed: its summary's record owes every lens, its rules alone
+	// ran (the reviewer's record.go writes it).
+	reviewerOwed = regexp.MustCompile(`<!-- workline:record reviewed=\S*(?: patches=\S*)? runs=\d+ owed=all`)
 )
 
 // Round is one round of the review loop, as the record keeps it.
