@@ -115,7 +115,7 @@ settings:
     sources: {mode: act, max: 10}     # the code an issue is about, named
     close-duplicate: {mode: act, max: 3}
     refine: {mode: act, max: 5}       # the sections an issue lacks, Need and Validation as drafts
-    ready: {mode: act, max: 5}        # an evident issue: its four sections, Need and Validation a person's; an outsider's is proposed
+    ready: {mode: act, max: 5}        # an evident issue: its Need, Validation and Scope, Need and Validation a person's; an outsider's is proposed
     ask: {mode: act, max: 3, rounds: 3, wait: 24h}  # the reporter asked what is missing; again only after an answer; three rounds, revisions included, then a person
     milestone: {mode: off, max: 10}   # an issue put in a release's milestone; one that slipped moved by the engine
     order: {mode: off, max: 10}       # an issue's priority, workline:priority/1 to /4; a person's kept
@@ -130,7 +130,7 @@ settings:
 # What each autonomy level lays over the settings above, before the
 # project's own (docs/spec/backlog-acts.md, "Autonomy and caps"). normal is
 # the settings as they are. cautious notes and proposes: the code named,
-# Scope and Verification written, the rest proposed, a question waits for
+# the Scope written, the rest proposed, a question waits for
 # its answer; enterprising raises the caps, and goes on at once with its
 # assumption.
 levels:
@@ -138,7 +138,7 @@ levels:
     cautious:
       acts:
         close-duplicate: {mode: propose}
-        refine: {drafts: propose}     # Scope and Verification written; Need and Validation drafts proposed
+        refine: {drafts: propose}     # the Scope written; Need and Validation drafts proposed
         ready: {mode: propose}
         kind: {mode: propose}
         size: {mode: propose}

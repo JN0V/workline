@@ -1,0 +1,38 @@
+case: tester/persons-verification-kept
+about: >
+  A person's stands (#1261, ADR-0066): a ready issue whose Verification
+  a person wrote, and on which the reviewer left an important finding.
+  The tester is given that finding, its own to answer. Its tests prove
+  the scenarios another way than the person's text says: the tester
+  says so on the issue, naming each test, and leaves the person's
+  Verification word for word.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        author: ann
+        insider: true
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nThe multiplication works well.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        comments:
+          - "**workline reviewer**, its spec.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#3:13` | Important: The Verification names no test |\n\n<!-- workline:spec-review body=aaaaaaaaaaaa round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md: {contains: ["## Verification\n\nThe multiplication works well.", "## The reviewer's findings on its Verification", "The Verification names no test"]}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        body-contains: "## Verification\n\nThe multiplication works well.\n\n## Scope"
+        body-lacks: "workline:verification=tester"
+        comment-contains: "its Verification, a person's, is kept as written; the tests prove it another way: `tests.test_mul_two_by_three` (Two by three), `tests.test_mul_by_zero` (By zero)"

@@ -32,7 +32,7 @@ func splitSaid(is forge.Issue, off bool) string {
 	if why := noSplit(is, off); why != "" {
 		return " (no `split`: " + why + ")"
 	}
-	return "; or split it, when its parts each pass their own " + work.Name(work.Verification) + " apart: `split` with `too-big: true`, 2 to 6 parts, then `blocked`, `person: true`: a person accepts it from what its parts deliver"
+	return "; or split it, when its parts each pass their own scenarios apart: `split` with `too-big: true`, 2 to 6 parts, then `blocked`, `person: true`: a person accepts it from what its parts deliver"
 }
 
 // predictSaid asks for is's size at ready, against its normal (§2): split
@@ -49,7 +49,7 @@ func predictSaid(b forge.Backlog, open []forge.Issue, is forge.Issue, st *backlo
 	}
 	var past []string
 	if noSplit(is, off) == "" {
-		past = append(past, "`split` it with `too-big: true`, 2 to 6 parts each passing its own "+work.Name(work.Verification)+" apart, and no `ready` on it")
+		past = append(past, "`split` it with `too-big: true`, 2 to 6 parts each passing its own scenarios apart, and no `ready` on it")
 	}
 	if backlog.SizeTier(is.Labels) == "" {
 		past = append(past, fmt.Sprintf("its need one no part proves apart, `size` with `tier: %s`, then `ready`", backlog.TierLarge))

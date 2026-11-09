@@ -17,4 +17,4 @@ expect:
     issues:
       - id: 7
         comments: 1
-        comment-contains: ["**The product owner** read this issue and did not refine it.", "- **Why**: it lacks Need, Verification, Validation and Scope, and the agent drafted nothing nor asked; its note: #7 needs a Scope, but no code was given for it.", "- **Next**: it reads it again when the line wakes it on this issue, or once the issue changes or a person comments", "silent: "]
+        comment-contains: ["**The product owner** read this issue and did not refine it.", "- **Why**: it lacks Need, Validation and Scope, and the agent drafted nothing nor asked; its note: #7 needs a Scope, but no code was given for it.", "- **Next**: it reads it again when the line wakes it on this issue, or once the issue changes or a person comments", "silent: "]

@@ -83,7 +83,7 @@ routing:
 ```
 
 - **Which issues**: those the product owner keeps (its state comment),
-  not `workline:ready` nor `workline:needs-tests`, their four sections written (drafts too), their
+  not `workline:ready` nor `workline:needs-tests`, their Need, Validation and Scope written (drafts too), their
   body not read as it is. A person's text on top stands for the Need,
   as the product owner reads it with its state
   ([#1062](https://github.com/JN0V/workline/issues/1062)). None: no agent asked.
@@ -102,10 +102,14 @@ routing:
     written on them, each said (`spec-not-read`), read at the next run.
 - **What it writes**: one comment on the issue, edited each review:
   - what holds it from ready, and who answers each section a finding
-    lies in: the product owner, the Verification and the Scope whoever
-    wrote them, and a Need or a Validation that is its own; the person,
-    a Need or a Validation they wrote
+    lies in: the product owner, the Scope whoever wrote it, and a Need
+    or a Validation that is its own; the person, a Need or a Validation
+    they wrote
     ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md));
+    the tester, the Verification, answered as it writes the tests: such
+    findings alone hold nothing, spend no round, and the engine moves
+    the issue on with no agent
+    ([ADR-0066](../../../docs/adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md));
   - the findings, the questions for a person;
   - a hidden record (`workline:spec-review`): the body's digest, the
     round, the important findings open and the sections they lie in.

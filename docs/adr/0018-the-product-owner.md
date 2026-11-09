@@ -14,7 +14,7 @@
   (the weekly sample), ADR-0016 (writes go to the project's forge),
   docs/spec/routing.md ("Work starts from a clear need")
 - **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus): a question, or a Validation draft, unanswered past its level's delay is taken as an assumption written beside the person's text; Verification and Scope are the role's at every level
-- **To be amended by:** [ADR-0066](0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md#1-a-role-mirrors-a-human-role), once built ([#1261](https://github.com/JN0V/workline/issues/1261)): the tester writes Verification; the product owner keeps the Scope, as a hint
+- **Amended by:** [ADR-0066](0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md#1-a-role-mirrors-a-human-role), built in [#1261](https://github.com/JN0V/workline/issues/1261): the tester writes the Verification from its tests; the product owner writes none, keeps the Scope, as a hint, and moves an issue to ready on its Need, Validation and Scope
 
 ## Context
 
@@ -59,7 +59,8 @@ them into the backlog.
 **It acts alone**, through the engine, on what a Product Owner does:
 
 - opens issues, and splits a need into technical tasks (sub-issues);
-- refines: writes an issue's Scope and Verification, finds the code it
+- refines: writes an issue's Scope (and, before [ADR-0066], its
+  Verification, the tester's since), finds the code it
   concerns and names it as its sources, asks the reporter what is missing;
 - moves an issue to `ready` once its four fields are there and its Need
   and Validation are the person's — written or accepted by them, not
@@ -240,3 +241,5 @@ a copy, applying nothing.
 - Every role's issues share one way in; their lifecycle is the PO
   assistant's.
 - A roadmap file goes, once its entries are issues.
+
+[ADR-0066]: 0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md

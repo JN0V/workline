@@ -11,7 +11,7 @@ expect:
   findings:
     - {rule: not-ready, where: "#42", message: "not moved to ready: Need is missing"}
   run-files:
-    in/task.md: {contains: ["## #41 Last sale missing\n\nOpened by: ann, of the project\nSections: Need (the text on top, a person's), Verification, Validation (a person's), Scope"]}
+    in/task.md: {contains: ["## #41 Last sale missing\n\nOpened by: ann, of the project\nSections: Need (the text on top, a person's), Validation (a person's), Scope"]}
   forge:
     issues:
       - {id: 41, labels: [workline:ready]}

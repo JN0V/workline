@@ -151,7 +151,8 @@ The reviewer reviews this branch before it is pushed
 ### workline item ready
 
 `workline item ready <id>` moves a work item to `ready`, once its Need,
-Verification, Validation and Scope are written (`--forge` reads it from
+Validation and Scope are written; its Verification is the tester's,
+written after (`--forge` reads it from
 the forge).
 
 ### workline issues

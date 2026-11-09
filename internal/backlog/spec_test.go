@@ -73,50 +73,99 @@ func TestSectionAt(t *testing.T) {
 	}
 }
 
-// The one rule (ADR-0060): the builder's part — Verification, Scope —
-// always the role's, even a person's text; the person's part only while
-// still the role's own, a draft or a text as it wrote it.
+// The one rule (ADR-0060): the builder's part — the Scope — always the
+// role's, even a person's text; the person's part only while still the
+// role's own, a draft or a text as it wrote it; the Verification never,
+// the tester's (ADR-0066).
 func TestRevisableBuildersPartAlwaysPersonsPartWhenOwn(t *testing.T) {
 	is := forge.Issue{Body: "## Need\n\n" + DraftLine("product-owner") + "\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD."}
 	st := &State{Wrote: map[string]string{"Verification": BodyDigest("B."), "Scope": BodyDigest("not D.")}}
 	r := &SpecReview{In: []string{"Need", "Verification", "Validation", "Scope"}}
-	if got := Revisable(is, st, r); !slices.Equal(got, []string{"Need", "Verification", "Scope"}) {
-		t.Fatalf("revisable %v, want the draft and the builder's part", got)
+	if got := Revisable(is, st, r); !slices.Equal(got, []string{"Need", "Scope"}) {
+		t.Fatalf("revisable %v, want the draft and the Scope", got)
 	}
 	// A person wrote it whole: their Need and Validation theirs, the
-	// builder's part the role's.
+	// Scope the role's, the Verification the tester's.
 	person := forge.Issue{Body: "## Need\n\nA.\n\n## Example\n\nE.\n\n## Validation\n\nC.\n\n---\n\n## Verification\n\nB.\n\n## Scope\n\nD."}
 	for _, st := range []*State{nil, {}} {
-		if got := Revisable(person, st, r); !slices.Equal(got, []string{"Verification", "Scope"}) {
-			t.Errorf("a person's issue, state %v: revisable %v, want Verification and Scope", st, got)
+		if got := Revisable(person, st, r); !slices.Equal(got, []string{"Scope"}) {
+			t.Errorf("a person's issue, state %v: revisable %v, want Scope", st, got)
 		}
-		if got := Own(person, st); !slices.Equal(got, []string{"Verification", "Scope"}) {
-			t.Errorf("a person's issue, state %v: own %v, want Verification and Scope", st, got)
+		if got := Own(person, st); !slices.Equal(got, []string{"Scope"}) {
+			t.Errorf("a person's issue, state %v: own %v, want Scope", st, got)
 		}
 	}
-	for m, want := range map[work.Meaning]bool{work.Need: false, work.Example: false, work.Validation: false, work.Verification: true, work.Scope: true} {
+	for m, want := range map[work.Meaning]bool{work.Need: false, work.Example: false, work.Validation: false, work.Verification: false, work.Scope: true} {
 		if got := Rewritable(person, nil, m); got != want {
 			t.Errorf("a person's %s rewritable: %v, want %v", m, got, want)
 		}
 	}
-	// Accepted, a draft is a person's; the builder's part stays the role's.
+	// Accepted, a draft is a person's; the Scope stays the role's.
 	accepted := is
 	accepted.Labels = []string{LabelAccepted}
-	if got := Revisable(accepted, &State{}, r); !slices.Equal(got, []string{"Verification", "Scope"}) {
-		t.Errorf("accepted: revisable %v, want Verification and Scope", got)
+	if got := Revisable(accepted, &State{}, r); !slices.Equal(got, []string{"Scope"}) {
+		t.Errorf("accepted: revisable %v, want Scope", got)
 	}
 }
 
-// A review answered by asking a person for their Verification, under the
-// rule before ADR-0060, is read again once: then never again for it.
+// Findings in the Verification alone are the tester's (ADR-0066): they
+// hold nothing from ready, and the product owner is not given them.
+func TestVerificationFindingsAreTheTesters(t *testing.T) {
+	body := "## Need\n\nA.\n\n## Validation\n\nC.\n\n---\n\n## Verification\n\nB.\n\n## Scope\n\nD."
+	is := forge.Issue{Body: body}
+	only := []string{"<!-- workline:spec-review body=" + BodyDigest(body) + " round=1 open=1 in=Verification -->\n\n" + SpecMarker}
+	if rule, _ := SpecHold(is, only); rule != "" {
+		t.Errorf("a finding in the Verification alone holds it: %s", rule)
+	}
+	if SpecOpen(is, only) != nil {
+		t.Error("a finding in the Verification alone is given to the product owner")
+	}
+	if c, in := SpecForTester(only); c == "" || !slices.Equal(in, []string{"Verification"}) {
+		t.Errorf("the tester is not given the finding: %q %v", c, in)
+	}
+	both := []string{"<!-- workline:spec-review body=" + BodyDigest(body) + " round=1 open=2 in=Scope,Verification -->\n\n" + SpecMarker}
+	if rule, _ := SpecHold(is, both); rule != "spec-findings-open" {
+		t.Errorf("a finding in the Scope too holds nothing: %q", rule)
+	}
+}
+
+// The tester writes the Verification where there is none, rewrites its
+// own, and keeps another's word for word (ADR-0066).
+func TestWithVerificationKeepsAPersons(t *testing.T) {
+	bare := "## Need\n\nA.\n\n## Validation\n\nC.\n\n---\n\n## Scope\n\nD."
+	got, changed := WithVerification(bare, "- **C:** `TestC`.", nil)
+	if !changed || !strings.Contains(got, "---\n\n## Verification\n\n"+TesterMarker+"\n\n- **C:** `TestC`.\n\n## Scope") {
+		t.Fatalf("not written above the Scope: %v\n%s", changed, got)
+	}
+	again, changed := WithVerification(got, "- **C:** `TestC2`.", nil)
+	if !changed || !strings.Contains(again, "`TestC2`") || strings.Contains(again, "`TestC`.") {
+		t.Errorf("its own not rewritten: %v\n%s", changed, again)
+	}
+	person := strings.Replace(bare, "## Scope", "## Verification\n\nRun the suite.\n\n## Scope", 1)
+	if kept, changed := WithVerification(person, "- **C:** `TestC`.", nil); changed || kept != person {
+		t.Errorf("a person's rewritten: %v\n%s", changed, kept)
+	}
+	po := &State{}
+	po.SetWrote("Verification", BodyDigest("Run the suite."))
+	if out, changed := WithVerification(person, "- **C:** `TestC`.", po); !changed || strings.Contains(out, "Run the suite.") {
+		t.Errorf("the product owner's own, from before ADR-0066, kept: %v\n%s", changed, out)
+	}
+	edited := strings.Replace(person, "Run the suite.", "Run the whole suite.", 1)
+	if kept, changed := WithVerification(edited, "- **C:** `TestC`.", po); changed || kept != edited {
+		t.Errorf("the product owner's, a person edited, rewritten: %v\n%s", changed, kept)
+	}
+}
+
+// A review answered by asking a person for their Scope, under the rule
+// before ADR-0060, is read again once: then never again for it.
 func TestUnrevisedOnceAReview(t *testing.T) {
 	body := "## Need\n\nA.\n\n## Validation\n\nC.\n\n---\n\n## Verification\n\nB.\n\n## Scope\n\nD."
 	is := forge.Issue{Body: body}
-	comments := []string{"<!-- workline:spec-review body=" + BodyDigest(body) + " round=1 open=1 in=Verification -->\n\n" + SpecMarker}
-	if got := Unrevised(is, &State{Answered: BodyDigest(body)}, comments); !slices.Equal(got, []string{"Verification"}) {
-		t.Fatalf("answered before the rule: unrevised %v, want Verification", got)
+	comments := []string{"<!-- workline:spec-review body=" + BodyDigest(body) + " round=1 open=1 in=Scope -->\n\n" + SpecMarker}
+	if got := Unrevised(is, &State{Answered: BodyDigest(body)}, comments); !slices.Equal(got, []string{"Scope"}) {
+		t.Fatalf("answered before the rule: unrevised %v, want Scope", got)
 	}
-	if got := Unrevised(is, &State{Answered: BodyDigest(body), Revised: []string{"Verification"}}, comments); len(got) != 0 {
+	if got := Unrevised(is, &State{Answered: BodyDigest(body), Revised: []string{"Scope"}}, comments); len(got) != 0 {
 		t.Errorf("answered with it to rewrite: unrevised %v, want none", got)
 	}
 	if got := Unrevised(is, &State{}, comments); len(got) != 0 {

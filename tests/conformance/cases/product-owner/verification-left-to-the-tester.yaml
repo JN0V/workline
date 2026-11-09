@@ -1,0 +1,31 @@
+case: product-owner/verification-left-to-the-tester
+about: >
+  Product owner leaves it (#1261, ADR-0066): the Verification, how the
+  work is proved, is the tester's. #9 lacks it: the product owner's
+  refine writes its Need, Validation and Scope, and the Verification its
+  agent gave is left out. #11 has its Need, Validation and Scope, a
+  person's, and no Verification: it is ready, sent to its tests, the
+  tester's to prove.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner, tester]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 11
+        title: "Last sale missing"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nAnn needs the last sale of a day in its export.\n\n## Validation\n\n- **Last sale:** Given a sale at 18:59, When Ann exports the day, Then the file holds it.\n\n---\n\n## Scope\n\n`WriteRows` in `src/export/csv.go`."
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:verification-left-to-the-tester}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Refined #9: Need (draft), Validation (draft), Scope."}
+  no-findings: [{rule: not-ready, where: "#11"}]
+  forge:
+    issues:
+      - {id: 9, body-contains: "---\n\n## Scope\n\nWriteRows in src/export/csv.go.", body-lacks: ["## Verification", "A test writes three rows"]}
+      - {id: 11, labels: [workline:needs-tests], body-lacks: "## Verification"}

@@ -1,0 +1,33 @@
+case: product-owner/ready-not-held-by-a-verification-finding
+about: >
+  Reviewer's finding (#1261, ADR-0066): the reviewer's important finding
+  lies in the Verification a person wrote, the tester's. It is routed to
+  the tester, not the product owner: the product owner is not given it,
+  rewrites nothing, asks no one, and its ready is not held by it.
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nSessions feel right to the users.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#9:13` | Important: The Verification proves nothing |\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: fake:ready-three}
+expect:
+  no-findings: [{rule: spec-findings-open, where: "#9"}]
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        body-contains: "## Verification\n\nSessions feel right to the users."
+        comment-lacks: ["Changed: Verification", "to refine this issue"]
+  run-files:
+    in/task.md: {not-contains: ["The reviewer's findings on its spec", "yours to rewrite: Verification"]}

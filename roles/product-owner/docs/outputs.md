@@ -15,7 +15,7 @@ Part of [the product owner](../README.md). What a run does, step by step:
   edit does not
   ([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
   - what it did there last, and when — for its sections, one line:
-    "Added: Verification, Scope. Changed: —. See the issue's edit
+    "Added: Validation, Scope. Changed: —. See the issue's edit
     history.";
   - a question it asked: one line linking to the comment that asks it,
     never written twice;
@@ -49,7 +49,7 @@ Part of [the product owner](../README.md). What a run does, step by step:
   edit one and it is yours. To an outsider, a comment proposing them
   instead.
 - **In the reader's order**: Need, Example, Validation, then a line,
-  then Verification and Scope; yours never moved
+  then the Scope; yours never moved
   ([writing an issue](writing.md)).
 - **Each thing said once**: what an import or another role wrote above
   the sections, no person having edited it, becomes the Need draft —

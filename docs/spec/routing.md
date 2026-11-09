@@ -25,7 +25,10 @@ to-refine ──► ready ──► in-progress ──► review ──► valid
     └────────────┘  (the need turns out unclear: back to refining)
 ```
 
-**Ready** means four things are written, even in one line each:
+**Ready** means three things are written, even in one line each — Need,
+Validation, Scope; the fourth, Verification, is the tester's, written
+from its tests in `needs-tests`, before ready, as a tester writes the test plan
+([ADR-0066](../adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)):
 
 | Field | Question |
 |---|---|
@@ -36,8 +39,8 @@ to-refine ──► ready ──► in-progress ──► review ──► valid
 
 Verification is what the line checks on its own; validation is what a person
 decides at the end. Writing both before starting is what keeps the machine
-from grading its own work. The engine checks that the four are present and
-not empty; it does not judge their quality. A section is the text under its
+from grading its own work. The engine checks that the three are present and
+not empty, the Verification once the tester wrote it; it does not judge their quality. A section is the text under its
 `## ` or `### ` heading (`work.Sections`): a heading written twice holds
 both texts, one naming a Gherkin scenario (`### Scenario: …`) is no
 section but a scenario of the one it lies in, and a thematic break ending a section — the line between the
@@ -597,7 +600,7 @@ whose result moves the issue to the next. The table is the routing's
   `state-review-missing`; `review-again` in the record). After that, it
   stays acted: no loop. A spec waits on a review by the product owner's
   rule: its sections read with its state, text on top its Need.
-- **A review answered by asking for a person's Verification** under the
+- **A review answered by asking for a person's Scope** under the
   rule before
   [ADR-0060](../adr/0060-the-person-is-on-the-loop.md): the product
   owner's state shows a section it may rewrite now and was not given
@@ -943,7 +946,7 @@ On a forge, the state of a work item is a label (`workline:ready`,
 `workline:developing`…, [the line of states](#the-line-of-states)),
 readable by humans and by any CI. Without a forge, it
 is the `state:` line of the item's file in `.workline/work/<id>.md`, whose
-`## Need`, `## Verification`, `## Validation` and `## Scope` sections
+`## Need`, `## Validation` and `## Scope` sections
 `workline item ready <id>` checks before moving it — `### ` headings too,
 as an issue form writes them, a field left `_No response_` empty, a
 footer after the last section left out

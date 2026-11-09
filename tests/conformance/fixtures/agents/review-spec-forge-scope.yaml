@@ -1,0 +1,11 @@
+# A spec lens on issue #4, read by its number: its Scope leaves out the
+# README its Need asks for, which the out-of-scope lens quotes in the
+# Scope. Whose the Scope is, the case says.
+calls:
+  - - finding:
+        lens: out-of-scope
+        severity: important
+        title: The Scope leaves out the README the Need asks for
+        why: "The Need has the README tell the users; the Scope names calc/calc.go only"
+        cause: {path: "#4", quote: "calc/calc.go"}
+        fix: add README.md to the Scope

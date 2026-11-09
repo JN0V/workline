@@ -1,0 +1,34 @@
+case: tester/verification-written-from-the-tests
+about: >
+  Tester writes it (#1261, ADR-0066): a ready issue with its Need,
+  Validation and Scope and no Verification, waiting for its tests. When
+  the tester writes them, the issue gets a Verification naming the test
+  of each scenario, below the line with the Scope, marked as the
+  tester's; its comment on the issue says the tester wrote it. The
+  product owner, which read the body before, keeps it as it is now: no
+  person changed it, and it is not woken to read it again.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        comments: ["```yaml\nsources: [lib.sh]\nconfirmed: d8c4dff\nbody: a4a2a9b039af\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        body-contains:
+          - "---\n\n## Verification\n\n<!-- workline:verification=tester -->\n\n- **Two by three:** `tests.test_mul_two_by_three`, in `tests/test_mul_two_by_three.sh`.\n- **By zero:** `tests.test_mul_by_zero`, in `tests/test_mul_by_zero.sh`.\n\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-3`. Written by the tester from its tests.\n\n## Scope"
+        comment-contains: ["**The tester** wrote the acceptance tests of this issue, as a Draft", "the tester wrote its Verification from them: which test proves which scenario", "body: 8dd389212f9c\n"]

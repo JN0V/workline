@@ -27,7 +27,9 @@ tests of a name the base lacks, on a copy of workline, on
 measures of workline's own corpus, on
 [#665](https://github.com/JN0V/workline/pull/665); a real agent's
 removal of a duplicate test, proven on a copy of workline, on
-[#668](https://github.com/JN0V/workline/pull/668).
+[#668](https://github.com/JN0V/workline/pull/668); the issue's
+Verification written from a real agent's tests, a person's kept, on
+[#1277](https://github.com/JN0V/workline/pull/1277#tried).
 
 ## To leave beta
 

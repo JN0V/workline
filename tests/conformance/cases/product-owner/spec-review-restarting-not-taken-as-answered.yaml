@@ -15,7 +15,7 @@ given:
         labels: [workline:to-refine]
         comments:
           - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: d424ff914f28\nanswered: aaaaaaaaaaaa\n```\n\n<!-- workline:sticky=product-owner/state -->"
-          - "**workline reviewer**, its spec.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#9:11` | Important: The Verification proves nothing |\n\n<!-- workline:spec-review body=d424ff914f28 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - "**workline reviewer**, its spec.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#9:11` | Important: The Scope names no function |\n\n<!-- workline:spec-review body=d424ff914f28 round=1 open=1 in=Scope -->\n\n<!-- workline:sticky=reviewer/spec -->"
       - id: 10
         title: Rows lost again
         body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
@@ -23,8 +23,8 @@ given:
         insider: true
         labels: [workline:to-refine]
         comments:
-          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 7d6b5529bb37\nanswered: 7d6b5529bb37\nrevised: [Verification]\n```\n\n<!-- workline:sticky=product-owner/state -->"
-          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=7d6b5529bb37 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 7d6b5529bb37\nanswered: 7d6b5529bb37\nrevised: [Scope]\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=7d6b5529bb37 round=1 open=1 in=Scope -->\n\n<!-- workline:sticky=reviewer/spec -->"
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
   forge:

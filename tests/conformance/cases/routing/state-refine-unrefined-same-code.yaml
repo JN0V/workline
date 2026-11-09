@@ -38,7 +38,7 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: refine-capped, where: "#9", message: "read it on this text with only the code of `src/export`, and left it lacking Verification, Scope, nothing asked: read again, it would get the same"}
+    - {rule: refine-capped, where: "#9", message: "read it on this text with only the code of `src/export`, and left it lacking Scope, nothing asked: read again, it would get the same"}
     - {rule: refine-capped, where: "#10", message: "read it on this text with no code: its text names no file of the repository, nor did the product owner"}
     - {rule: state-unrefined, where: "#11", message: "woken again, 1 of 2"}
   forge:

@@ -11,7 +11,7 @@ run: {role: product-owner, event: schedule, ai: fake:refine-scope-paths, no-appl
 expect:
   status: pass
   summary-file:
-    - "**pass** — judged, not applied (issues: 2 to do alone, 1 set aside by a person); apply with"
-    - "- **to do alone, once applied** (2)\n  - [#9](https://forge.example/issues/9): Refined #9: Verification, Scope."
-    - "- **read, left incomplete: yours to complete, or to leave** (1)\n  - [#12](https://forge.example/issues/12): could not tell which files #12 is about, so its Scope was left out: add a Scope naming them, or leave it\n"
+    - "**pass** — judged, not applied (issues: 1 to do alone, 1 set aside by a person); apply with"
+    - "- **to do alone, once applied** (1)\n  - [#9](https://forge.example/issues/9): Refined #9: Scope."
+    - "- **read, left incomplete: yours to complete, or to leave** (1)\n  - [#12](https://forge.example/issues/12): could not tell which files #12 is about, so its Scope"
     - "- **set aside by a person** (1)\n  - [#14](https://forge.example/issues/14): workline:proposed taken off without a yes: nothing more is proposed until it changes or someone comments\n"

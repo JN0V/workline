@@ -1,0 +1,39 @@
+case: product-owner/ready-released-by-a-verification-only-finding
+about: >
+  Reviewer's finding (#1261, ADR-0066): findings in the tester's
+  Verification alone hold nothing, so they clear the spec as no finding
+  would: the engine moves the issue on with no agent, its rounds spent
+  on them too (#11), none put to a person.
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nSessions feel right to the users.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: efbae4cec0e6\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 11
+        title: Rows lost, rounds spent
+        body: "## Need\n\nEvery row exported.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nIt works.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b5344200d397\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=111111111111 round=3 open=1 in=Verification stopped -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  no-findings: [{rule: spec-findings-open}, {rule: spec-rounds-spent}]
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready]}
+      - {id: 11, labels: [workline:ready]}

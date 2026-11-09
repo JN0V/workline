@@ -16,7 +16,7 @@ state under it in an HTML comment, so no mail holds it (`backlog.FormatState`,
 
 - what the role did there on the last day it acted, a line an act — "Accepted by @x"
   when it was a person's yes; a refine says what it wrote in one line,
-  "Added: Verification, Scope. Changed: —. See the issue's edit history."
+  "Added: Scope. Changed: —. See the issue's edit history."
   (`backlog.refined`), then "Rewrote: the text on top as the Need, in
   plain words." when it took a role's text there into the Need, and
   "Not written: the Example, which said again what is above it." for

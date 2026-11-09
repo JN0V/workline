@@ -28,4 +28,4 @@ expect:
     issues:
       - id: 10
         labels: [workline:blocked]
-        comment-contains: ["**workline's line** blocks this issue.", "read it 3 times on the same text and left it lacking Verification, Scope", "a person completes it", "\"state\":\"blocked\""]
+        comment-contains: ["**workline's line** blocks this issue.", "read it 3 times on the same text and left it lacking Scope", "a person completes it", "\"state\":\"blocked\""]

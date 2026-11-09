@@ -64,8 +64,8 @@ workline test write --issue 42 --ai claude
   ([writing an issue](../product-owner/docs/writing.md)):
   `- **Old debt:** Given …, When …, Then …`; a `**Scenario: Old debt**`
   or `Scenario: Old debt` line with its steps below is read too.
-- **What the agent reads**: the scenarios, the Need, Verification and
-  Scope, the code the issue names, found by [the code
+- **What the agent reads**: the scenarios, the Need, a person's
+  Verification and the reviewer's findings on it, the Scope, the code the issue names, found by [the code
   picker](../../docs/spec/code-picker.md) (the Scope's files, a folder's
   own, a pattern's matches; each definition of a name its title, Need or
   Scope writes as code; a long file by those pieces), the tests beside
@@ -98,6 +98,9 @@ workline test write --issue 42 --ai claude
 - **The Draft**: branch `workline/tester/issue-<n>`, `Refs #<n>`, a
   `## Tests` table of each scenario and its test. A person builds on
   that branch; the [developer](../developer/docs/pull-request.md), on top of it.
+- **The issue's Verification**: written from the tests, each scenario
+  and its test, as a tester writes the test plan; one a person wrote is
+  kept ([how](docs/verification.md)).
 
 | Finding | When; nothing is opened |
 |---|---|

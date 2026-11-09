@@ -66,6 +66,10 @@ type task struct {
 	// Author: who opened the issue, asked how to reproduce a bug its
 	// tests do not show (ADR-0060).
 	Author string `json:"author,omitempty"`
+	// Verification: the issue's Verification as pre read it when another
+	// wrote it, a person: kept, never erased (ADR-0066); "" when it has
+	// none, or the tester's own.
+	Verification string `json:"verification,omitempty"`
 	// Text: the issue's title and body, as pre read them; a missing name
 	// counts as red only when it names it (#1111).
 	Text string `json:"text,omitempty"`
@@ -144,6 +148,7 @@ func Pre(runDir, repo string) int {
 	// The issue's comments: the record of a "no test possible", and the
 	// code the product owner named for it, its sources (#1047).
 	var comments, sources []string
+	var po *backlog.State // the product owner's, to tell its Verification from a person's
 	if bl, ok := f.(forge.Backlog); ok {
 		comments, err = bl.Comments(forge.Target{Kind: "issue", ID: id})
 		if errors.Is(err, forge.ErrUnreachable) {
@@ -154,7 +159,7 @@ func Pre(runDir, repo string) int {
 			return fail(err)
 		}
 		if st, found, err := backlog.ReadState(comments, "product-owner"); found && err == nil {
-			sources = st.Sources
+			sources, po = st.Sources, st
 		}
 	}
 	// The files its agent said it lacked at its last run, given now,
@@ -169,6 +174,9 @@ func Pre(runDir, repo string) int {
 	}
 	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels, Body: backlog.BodyDigest(is.Body), Author: is.Author,
 		Text: is.Title + "\n" + is.Body}
+	if v := strings.TrimSpace(sections[work.Verification].Text); v != "" && !backlog.TestersToWrite(is.Body, po) {
+		t.Verification = v
+	}
 	if data, err := json.Marshal(t); err != nil {
 		return fail(err)
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", taskFile), data, 0o644); err != nil {
@@ -184,9 +192,15 @@ func Pre(runDir, repo string) int {
 		fmt.Fprintf(&b, "- **%s:** %s\n", sc.Name, sc.Text)
 	}
 	for _, m := range []work.Meaning{work.Verification, work.Scope} {
-		if text := strings.TrimSpace(sections[m].Text); text != "" {
+		if text := strings.TrimSpace(sections[m].Text); text != "" && (m != work.Verification || t.Verification != "") {
 			fmt.Fprintf(&b, "\n## %s\n\n%s\n", work.Name(m), text)
 		}
+	}
+	if review, in := backlog.SpecForTester(comments); review != "" {
+		// The reviewer's findings on the Verification are the tester's to
+		// answer, in its tests (ADR-0066).
+		fmt.Fprintf(&b, "\n## The reviewer's findings on its %s\n\nThey lie in %s, yours: answer them in your tests, so each scenario is proved; the engine writes the issue's %[1]s from your tests, a person's kept.\n\n> %[3]s\n",
+			work.Name(work.Verification), strings.Join(in, ", "), strings.ReplaceAll(strings.TrimSpace(hidden.ReplaceAllString(review, "")), "\n", "\n> "))
 	}
 	fmt.Fprintf(&b, "\n## The project's tests\n\n- Run by: `%s`\n- Test files are those matching: %s\n",
 		s.Command, strings.Join(s.Paths, ", "))
@@ -214,6 +228,10 @@ func Pre(runDir, repo string) int {
 	}
 	return 0
 }
+
+// hidden are the engine's records a comment hides, left out where an
+// agent reads it.
+var hidden = regexp.MustCompile(`(?s)<!--.*?-->`)
 
 // readingHeading opens the part of the task telling its agent it reads
 // the project itself.
@@ -534,7 +552,8 @@ func Post(runDir, repo string) int {
 	// Each scenario has its row, the tests red on the base and linted: the
 	// issue moves to the state its tests lead to, ready (ADR-0059,
 	// decision 3), said on it; no agent decides it.
-	moved, err := testsDone(runDir, repo, t, intents, len(said))
+	intents = append(intents, intent.Intention{Kind: "verification", Value: map[string]any{"issue": t.Issue, "text": testPlan(t, tested, said, newTests)}})
+	moved, err := testsDone(runDir, repo, t, intents, len(said), planSaid(t, tested, newTests))
 	if err != nil {
 		return fail(err)
 	}
@@ -549,14 +568,18 @@ func Post(runDir, repo string) int {
 // after its own in the routing's table, its other states' labels off,
 // and says so on it, beside the agent's intentions; "" when its state is
 // not the tester's (an issue labelled ready by hand keeps its state).
-func testsDone(runDir, repo string, t task, intents []intent.Intention, untested int) (string, error) {
+func testsDone(runDir, repo string, t task, intents []intent.Intention, untested int, plan string) (string, error) {
 	line, err := routing.Load(repo)
 	if err != nil {
 		return "", err
 	}
 	s, ok := line.StateOf(t.Labels)
 	if !ok || s.Role != "tester" || s.Next == "" {
-		return "", nil
+		// Its state not the tester's: its Verification written, said.
+		intents = append(intents, intent.Intention{Kind: "comment", Value: map[string]any{"issue": t.Issue, "sticky": "issue",
+			"body": backlog.Said("The tester", "wrote the acceptance tests of this issue, as a Draft", plan,
+				"whoever builds it starts from the Draft, workline/tester/"+taskKey(t.Issue))}})
+		return "", intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents)
 	}
 	add, remove, err := line.Move(s.Next)
 	if err != nil {
@@ -575,7 +598,7 @@ func testsDone(runDir, repo string, t task, intents []intent.Intention, untested
 	intents = append(intents,
 		intent.Intention{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove, "card": s.Next}},
 		intent.Intention{Kind: "comment", Value: map[string]any{"issue": t.Issue, "sticky": "issue",
-			"body": backlog.Said("The tester", "wrote the acceptance tests of this issue, as a Draft", why,
+			"body": backlog.Said("The tester", "wrote the acceptance tests of this issue, as a Draft", why+"; "+plan,
 				"it is "+s.Next+": whoever builds it starts from the Draft, workline/tester/"+taskKey(t.Issue))}})
 	return s.Next, intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents)
 }
@@ -919,6 +942,62 @@ func assumed(notes []string) []string {
 	return out
 }
 
+// testIDs are the ids of the new tests that name a scenario, each in a
+// code span.
+func testIDs(t task, sc Scenario, newTests []string) []string {
+	var ids []string
+	for _, id := range newTests {
+		if i := claim(words(id[strings.LastIndexAny(id, "./:")+1:]), t.Scenarios, hasSuffix); i >= 0 && t.Scenarios[i].Name == sc.Name {
+			ids = append(ids, "`"+id+"`")
+		}
+	}
+	return ids
+}
+
+// testPlan is the issue's Verification the tester writes from its tests
+// (ADR-0066), as a human tester writes the test plan: each scenario and
+// the test that proves it, or why none can.
+func testPlan(t task, tested, said map[string]string, newTests []string) string {
+	var b strings.Builder
+	for _, sc := range t.Scenarios {
+		if file, ok := tested[sc.Name]; ok {
+			test := "a test in `" + file + "`"
+			if ids := testIDs(t, sc, newTests); len(ids) > 0 {
+				test = strings.Join(ids, ", ") + ", in `" + file + "`"
+			}
+			fmt.Fprintf(&b, "- **%s:** %s.\n", sc.Name, test)
+		} else if n, ok := said[sc.Name]; ok {
+			fmt.Fprintf(&b, "- **%s:** no test can check it: %s\n", sc.Name, strings.ReplaceAll(strings.TrimSpace(n), "\n", " "))
+		}
+	}
+	fmt.Fprintf(&b, "\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/%s`. Written by the tester from its tests.", taskKey(t.Issue))
+	return b.String()
+}
+
+// planSaid is what the tester says on the issue of its Verification: it
+// wrote it; or a person's, kept word for word — and, when their text
+// names not every test, that the tests prove it another way (ADR-0066).
+func planSaid(t task, tested map[string]string, newTests []string) string {
+	if t.Verification == "" {
+		return "the tester wrote its " + work.Name(work.Verification) + " from them: which test proves which scenario"
+	}
+	var other []string
+	for _, sc := range t.Scenarios {
+		if _, ok := tested[sc.Name]; !ok {
+			continue
+		}
+		for _, id := range testIDs(t, sc, newTests) {
+			if name := strings.Trim(id, "`"); !strings.Contains(t.Verification, name[strings.LastIndexAny(name, "./:")+1:]) {
+				other = append(other, id+" ("+sc.Name+")")
+			}
+		}
+	}
+	if len(other) == 0 {
+		return "its " + work.Name(work.Verification) + ", a person's, names each test: kept as written"
+	}
+	return "its " + work.Name(work.Verification) + ", a person's, is kept as written; the tests prove it another way: " + strings.Join(other, ", ")
+}
+
 // draftBody is the Draft's description: the issue it refers to, each
 // scenario and its test, what the tests assume, what the proof said.
 func draftBody(t task, tested, said map[string]string, assumes, newTests []string, proof *verdict.Verdict) string {
@@ -935,12 +1014,7 @@ func draftBody(t task, tested, said map[string]string, assumes, newTests []strin
 		if !ok {
 			continue
 		}
-		var ids []string
-		for _, id := range newTests {
-			if i := claim(words(id[strings.LastIndexAny(id, "./:")+1:]), t.Scenarios, hasSuffix); i >= 0 && t.Scenarios[i].Name == sc.Name {
-				ids = append(ids, "`"+id+"`")
-			}
-		}
+		ids := testIDs(t, sc, newTests)
 		test := "in `" + file + "`"
 		if len(ids) > 0 {
 			test = strings.Join(ids, ", ") + " " + test
@@ -977,11 +1051,12 @@ func unprovenOf(v verdict.Verdict) string {
 	return ""
 }
 
-// enginesOnly refuses an agent's comment or label: the tester's are the
-// engine's own, its record and its replies, never the agent's.
+// enginesOnly refuses an agent's comment, label or verification: the
+// tester's are the engine's own, its record, its replies and the
+// Verification it writes from the tests, never the agent's.
 func enginesOnly(intents []intent.Intention) *verdict.Verdict {
 	for _, in := range intents {
-		if in.Kind == "comment" || in.Kind == "label" {
+		if in.Kind == "comment" || in.Kind == "label" || in.Kind == "verification" {
 			return &verdict.Verdict{Status: verdict.Block, Summary: "the agent may propose only tests and notes",
 				Findings: []verdict.Finding{{Rule: "not-the-agents", Where: in.Kind,
 					Message: "a " + in.Kind + " is the engine's to write, from the tester's verdict: the agent answers with `patch` and `note` only"}}}

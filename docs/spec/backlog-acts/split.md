@@ -17,7 +17,6 @@ Part of [Acts on the backlog](../backlog-acts.md): breaking an issue into its pa
     into:                                   # 2 to 6 children
       - title: "Keep the last row in the CSV export"
         need: "Every row exported, so a report counts what was sold."   # a draft
-        verification: "A test writes three rows and reads three lines back."
         validation: "The maintainer opens an export of a known day."    # a draft
         scope: "WriteRows in src/export/csv.go."
         sources: [src/export/csv.go]
@@ -29,15 +28,16 @@ Part of [Acts on the backlog](../backlog-acts.md): breaking an issue into its pa
 An issue too big to be one need is broken into its parts (ADR-0022):
 
 - **Checked**: 2 to 6 children (`split-size`), each a title of one line,
-  120 characters at most, no two alike (`split-title`), its four sections
-  written (`split-sections`), its Scope's files 1 to 5, files of the
+  120 characters at most, no two alike (`split-title`), its Need,
+  Validation and Scope written (`split-sections`), a `verification` left
+  out, the tester's, its Scope's files 1 to 5, files of the
   commit (`sources-unknown`); the issue's state must read. One whose state lists
   children already is never split again (`already-split`); nor twice in one
   run, nor renamed twice: the first that passes its check is kept
   (`once-a-run`).
 - **Each child** is opened through the one way ([Opening issues](opening.md)), keyed by
   the parent and its title, case and spaces aside
-  (`split=<parent>/<8 hex>`): a line `Part of #12.`, its four sections — Need and Validation as drafts, as `refine`
+  (`split=<parent>/<8 hex>`): a line `Part of #12.`, its sections — Need and Validation as drafts, as `refine`
   writes them —, "Opened from #12 by the product-owner role."; the labels
   `workline:to-refine` and `workline:draft`; its own state, its sources,
   confirmed at the commit. Not `needs-triage`, not counted in
@@ -73,7 +73,7 @@ a run on it crossed its size, or the product owner predicts it at ready
   role on, asked on its size or in refine; else dropped
   (`too-big-unasked`), `split` keeping its mode.
 - **Split or grant**: split when the parts each pass their own
-  Verification apart; when none can, grant it `size` `large`, never
+  scenarios apart; when none can, grant it `size` `large`, never
   split it. The issue saying its parts fail apart is evidence, not the
   test
   ([granting a size](refine.md#granting-a-size);

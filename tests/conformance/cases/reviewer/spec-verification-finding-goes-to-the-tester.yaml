@@ -1,5 +1,5 @@
-case: reviewer/spec-persons-verification-is-the-product-owners
-about: "An issue a person wrote whole, refined by the product owner with nothing to add: the reviewer holds it with an important finding in its Verification. The builder's part is the product owner's at every level, even a text a person wrote (ADR-0060): the comment says the product owner rewrites it at its next refine, never that a person answers it."
+case: reviewer/spec-verification-finding-goes-to-the-tester
+about: "Reviewer's finding (#1261): an issue a person wrote whole, with an important finding in its Verification. The Verification is the tester's (ADR-0066): the reviewer's comment routes the finding to the tester, who answers it as it writes the tests; the finding holds nothing from ready, and neither the product owner nor a person is asked."
 given:
   repo: reviewed
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
@@ -19,5 +19,5 @@ expect:
     issues:
       - id: 4
         comments: 2
-        comment-contains: ["**Holds it from ready**: 1 important finding open, round 1 of 5. Verification, the product owner's: it rewrites it at its next refine. The reviewer then reads the spec again.", "in=Verification -->"]
-        comment-lacks: "Verification, a person's"
+        comment-contains: ["**Holds nothing**: 1 important finding open, round 1 of 5. Verification, the tester's: it answers it as it writes the tests, before ready, and holds nothing back.", "in=Verification -->"]
+        comment-lacks: ["Verification, a person's", "Verification, the product owner's"]
