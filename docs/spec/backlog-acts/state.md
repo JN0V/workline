@@ -28,9 +28,9 @@ kept: ['src/export/csv.go:b2a6ba892dee'] # announcements as obsolete kept open, 
 sections:                                # its Need and Scope as last read or written (A changed need)
   Need: Every row exported, so a report counts what was sold.
   Scope: WriteRows in src/export/csv.go.
-wrote: {Verification: cb1c26c09a46}      # the sections the role wrote, a digest of each text (A spec read before ready); Description, the text a role opened it with
+wrote: {Scope: cb1c26c09a46}      # the sections the role wrote, a digest of each text (A spec read before ready); Description, the text a role opened it with
 answered: 3f9a1c0e2b7d                   # the review of its spec last given to the agent, by the body it read
-revised: [Verification]                  # the sections it was given to rewrite with that review (A spec read before ready)
+revised: [Scope]                  # the sections it was given to rewrite with that review (A spec read before ready)
 plain: 9b0e7d1c2a44                      # its description as an earlier engine rewrote it in plain words: still the role's (Refining to ready)
 deleted: [Validation]                    # sections the role wrote and a person deleted: never written again
 proposed:                                # the acts proposed on it, each as decided, since a day (On the issue)
