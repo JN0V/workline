@@ -1352,7 +1352,7 @@ func routeCmd(args []string) int {
 	var scope multi
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	noApply := fs.Bool("no-apply", false, "judge every step, apply none; apply later with `workline apply` and the runs listed as pending")
-	openMR := fs.Bool("open-merge-request", false, "put what the patches write on a branch of the role, and open a merge request for it (needs a forge)")
+	openMR := fs.Bool("open-merge-request", false, "put what the patches write on a branch of the role, and open a merge request for it (needs a forge; on by default for the issue and reconcile events when a forge is set: =false to turn it off)")
 	sarifFile := fs.String("sarif", "", "also write every step's findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write every step's findings to this file as a GitLab Code Quality report")
 	var summaryFiles multi
