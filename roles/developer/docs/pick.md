@@ -48,8 +48,12 @@ comment, the claim's, edited in place on each run, never a second one
 
 - **Its tests not written yet**: why, and that the tester's Draft comes
   next.
-- **Its Scope overlapping an issue the developer holds**: which one, and
-  that it is looked at again once that one is merged or let go.
+- **Its Scope naming a file an issue the developer holds changes**:
+  which one, the file, and that it is looked at again once that one is
+  merged or let go. The files held are its pull request's changed
+  files, its diff from the merge base, not its Scope; read from
+  `origin`, else its Scope and the files listed beyond it
+  ([#1256](https://github.com/JN0V/workline/issues/1256)).
   An issue that is not a bug merges on a person's yes: the comment
   names its pull request and that yes
   ([#998](https://github.com/JN0V/workline/issues/998)).
