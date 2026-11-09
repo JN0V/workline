@@ -166,7 +166,6 @@ func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...s
 }
 
 // missingIn marks e a missing name when it lies in a test of the change
-// and its message names what the code lacks, by r's patterns: its index
 // and its message names what the code lacks, by r's patterns; true when
 // a later line is to give the name it lacks (r's name-line).
 func missingIn(e *buildError, r buildRules) bool {
