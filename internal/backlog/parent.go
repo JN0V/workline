@@ -306,8 +306,9 @@ var codeSpan = regexp.MustCompile("`([^`\n]+)`")
 var testBefore = regexp.MustCompile(`(?i)\b(tests?|(test|conformance)\s+cases?)\s*$`)
 
 // TestNames are the tests a Verification item names, each in a code span:
-// a test file by the project's definition (ADR-0065; a path, with ::name
-// after it for one test in it), or any name right after the word test,
+// a test file by the project's definition (ADR-0065; a path, a `/` or a
+// `.` in it, with ::name after it for one test in it; a word alone is a
+// BareName), or any name right after the word test,
 // test case or conformance case. The rest of the item is prose, and names
 // none.
 func TestNames(item string, def testdef.Def) []string {
@@ -317,7 +318,7 @@ func TestNames(item string, def testdef.Def) []string {
 		path, _, _ := strings.Cut(name, "::")
 		switch {
 		case strings.ContainsAny(name, " \t"):
-		case def.Test(path), testBefore.MatchString(item[:m[0]]):
+		case strings.ContainsAny(path, "/.") && def.Test(path), testBefore.MatchString(item[:m[0]]):
 			if !slices.Contains(out, name) {
 				out = append(out, name)
 			}

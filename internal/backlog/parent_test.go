@@ -83,7 +83,7 @@ func TestTestNames(t *testing.T) {
 		{"`TestWriteRows` passes", nil}, // a test's own name, by an ecosystem's pattern: a pack's (ADR-0065)
 		{"the test `TestWriteRows` passes", []string{"TestWriteRows"}},
 		{"the test `keeps-the-last-row` and `src/export/csv_test.go::TestQuote`", []string{"keeps-the-last-row", "src/export/csv_test.go::TestQuote"}},
-		{"`tests/export.spec.ts` and `test_quote` cover it", []string{"tests/export.spec.ts", "test_quote"}},
+		{"`tests/export.spec.ts` and `test_quote` cover it", []string{"tests/export.spec.ts"}}, // `test_quote` a word alone: looked up, never required
 		{"conformance case `parent-x` passes", []string{"parent-x"}},
 		{"in that case `WriteRows` returns; the spec `x` says so", nil},
 		{"`WriteRows` keeps the last row; `make check` is green", nil},
@@ -99,8 +99,8 @@ func TestTestNames(t *testing.T) {
 // A name alone in a code span, which TestNames does not take, is looked
 // up in the test files, by no language's rule (ADR-0065).
 func TestBareNames(t *testing.T) {
-	got := BareNames("`TestWriteRows` and `WriteRows` pass; the test `x` and `src/a_test.go`; `make check`", testdef.Def{})
-	if !slices.Equal(got, []string{"TestWriteRows", "WriteRows"}) {
+	got := BareNames("`TestWriteRows`, `test_quote` and `WriteRows` pass; the test `x` and `src/a_test.go`; `make check`", testdef.Def{})
+	if !slices.Equal(got, []string{"TestWriteRows", "test_quote", "WriteRows"}) {
 		t.Errorf("BareNames = %q", got)
 	}
 }
