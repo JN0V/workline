@@ -69,9 +69,30 @@ func runIn(t *testing.T, bin, dir string, args ...string) (string, int) {
 	return string(out), code
 }
 
-// findings is the output without the lines naming the revision given.
+// phaseLine is the line CI's job log gets as a role's step starts, with the
+// time it started (the engine's phase, #1197): two runs on different
+// seconds differ by it alone (#1234).
+var phaseLine = regexp.MustCompile(`(?m)^workline: \S+: \S+ \(\d{2}:\d{2}:\d{2} UTC\)\n`)
+
+// sinceFindings is the output with the revision given as REV, and without
+// the phase lines.
 func sinceFindings(out, rev string) string {
-	return strings.ReplaceAll(out, rev, "REV")
+	return strings.ReplaceAll(phaseLine.ReplaceAllString(out, ""), rev, "REV")
+}
+
+func TestSinceFindingsIgnoresPhaseTimes(t *testing.T) {
+	run := func(rev, at, verdict string) string {
+		return "workline: judging the docs made suspect by the commits since " + rev + "\n" +
+			"workline: documentalist: pre (" + at + " UTC)\n" +
+			"workline: " + verdict + "\n"
+	}
+	same := run("v1", "09:13:26", "pass — no doc changed")
+	if sinceFindings(same, "v1") != sinceFindings(run("df14f5c", "09:13:25", "pass — no doc changed"), "df14f5c") {
+		t.Error("same findings on different seconds compare different")
+	}
+	if sinceFindings(same, "v1") == sinceFindings(run("df14f5c", "09:13:26", "block — docs/a.md suspect"), "df14f5c") {
+		t.Error("different findings compare the same")
+	}
 }
 
 func TestSinceKnownRevisions(t *testing.T) {
