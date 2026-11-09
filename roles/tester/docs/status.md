@@ -145,8 +145,9 @@ Cases in `tests/conformance/cases/tester/`:
 - **The objection's trigger** (step 4): GitHub's
   `workline-objection.yml` and `workline-answer.yml`, GitLab's
   `workline:objection:*` jobs on a pipeline a note webhook starts.
-- **The green proof** (step 5), no agent: on the tester's pull request
-  marked ready, the base once, then the head three times in one fresh
+- **The green proof** (step 5), no agent: on the pull request closing
+  the issue, marked ready, the developer's among them, the record read
+  from the tester's Draft ([#1281](https://github.com/JN0V/workline/issues/1281)); the base once, then the head three times in one fresh
   checkout; a new test red in some runs is flaky and blocks
   (`test-flaky`), red in all is `test-red-on-head`; a flaky test the
   base had warns; a Draft waits ([the page](green-proof.md)). Each

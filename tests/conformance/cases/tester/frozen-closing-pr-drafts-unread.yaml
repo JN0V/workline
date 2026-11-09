@@ -1,0 +1,15 @@
+case: tester/frozen-closing-pr-drafts-unread
+about: >
+  On a forge plugged by a command that does not list merge requests, a
+  pull request closing an issue passes the frozen guard as it did before
+  (#1286), and says, as a warning, that the tester's Drafts were not read.
+given:
+  repo: tested-draft
+  config:
+    forge: 'cmd:sh "$FIXTURES/forges/no-list.sh"'
+run: {role: tester, event: merge-request, target: {merge-request: 2}}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: drafts-unread, level: warn}

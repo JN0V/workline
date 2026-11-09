@@ -1,0 +1,28 @@
+case: tester/green-closing-pr-proven
+about: >
+  The green proof runs where the tests merge (#1281): the developer's pull
+  request, stacked on the tester's Draft and closing its issue, is not the
+  tester's branch; the tester reads its record from the Draft of the issue
+  it closes, guards its tests and proves each green three runs out of three.
+given:
+  repo: tested-draft
+  setup:
+    - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && git commit -qam 'feat: multiply'"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body: "Closes #3"
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"tests\":[\"tests.test_mul_by_zero\",\"tests.test_mul_two_by_three\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        body: "Closes #3\n\nThe developer's code for #3."
+run: {role: tester, event: merge-request, target: {merge-request: 2}}
+expect:
+  status: pass
+  summary: "the tester's 2 tests green on the head, three runs out of three"
+  agent-calls: 0
+  no-findings: [{rule: test-flaky}, {rule: test-red-on-head}]
