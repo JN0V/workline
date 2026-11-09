@@ -152,6 +152,9 @@ func (g *github) Threads(id int) ([]Thread, error) {
 		Path     string `json:"path"`
 		Line     int    `json:"line"`
 		Comments struct {
+			PageInfo struct {
+				HasNext bool `json:"hasNextPage"`
+			} `json:"pageInfo"`
 			Nodes []comment `json:"nodes"`
 		} `json:"comments"`
 	}](out)
@@ -164,7 +167,19 @@ func (g *github) Threads(id int) ([]Thread, error) {
 			continue
 		}
 		th := Thread{ID: strconv.Itoa(t.Comments.Nodes[0].ID), Path: t.Path, Line: t.Line, Resolved: t.Resolved, URL: t.Comments.Nodes[0].URL, node: t.Node}
-		for _, c := range t.Comments.Nodes {
+		comments := t.Comments.Nodes
+		if t.Comments.PageInfo.HasNext {
+			// More than a page: read them all, the last reply included.
+			more, err := g.api("graphql", "--paginate", "-f", "query="+threadCommentsQuery, "-f", "id="+t.Node,
+				"--jq", `.data.node.comments.nodes[]`)
+			if err != nil {
+				return nil, err
+			}
+			if comments, err = lines[comment](more); err != nil {
+				return nil, err
+			}
+		}
+		for _, c := range comments {
 			n := Note{Body: c.Body, Created: c.Created, ID: strconv.Itoa(c.ID), Insider: insider(c.Association)}
 			if c.Author != nil {
 				n.Author, n.Bot = c.Author.Login, c.Author.Type == "Bot"
