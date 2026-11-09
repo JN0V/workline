@@ -220,6 +220,22 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 				if len(in) > 0 {
 					where += "; the test " + strings.Join(in, ", ") + ", read from the code"
 				}
+				// A name alone may be a test's: looked up in the test files,
+				// said either way, never a missing test (ADR-0065, Rule A).
+				var seen, none []string
+				for _, name := range BareNames(item, def) {
+					if path, err := tests(name); err == nil && path != "" {
+						seen = append(seen, fmt.Sprintf("`%s` in %s", name, path))
+					} else {
+						none = append(none, "`"+name+"`")
+					}
+				}
+				if len(seen) > 0 {
+					where += "; " + strings.Join(seen, ", ") + ", a test file's word, read from the code"
+				}
+				if len(none) > 0 {
+					where += "; " + strings.Join(none, ", ") + " not found in a test file"
+				}
 			}
 			if where != "" {
 				fmt.Fprintf(&b, "- Proved: \"%s\" — %s.\n", item, where)
@@ -305,6 +321,24 @@ func TestNames(item string, def testdef.Def) []string {
 			if !slices.Contains(out, name) {
 				out = append(out, name)
 			}
+		}
+	}
+	return out
+}
+
+// bareName is a name alone in a code span: a word, no path.
+var bareName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// BareNames are the names alone, in code spans, of a Verification item
+// that TestNames does not take: each may be a test's own name, by no
+// language's rule; looked up in the test files, never required there.
+func BareNames(item string, def testdef.Def) []string {
+	named := TestNames(item, def)
+	var out []string
+	for _, m := range codeSpan.FindAllStringSubmatch(item, -1) {
+		name := strings.TrimSpace(m[1])
+		if bareName.MatchString(name) && !slices.Contains(named, name) && !slices.Contains(out, name) {
+			out = append(out, name)
 		}
 	}
 	return out

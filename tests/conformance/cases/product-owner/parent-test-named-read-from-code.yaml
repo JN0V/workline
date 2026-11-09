@@ -1,5 +1,5 @@
 case: product-owner/parent-test-named-read-from-code
-about: A Verification item of a parent that names a test, quoted by a part delivered, is proved only when the code at the run's commit holds that test — found by its name in a test file, or by its path — and the comment says where; a test it names that the code does not hold leaves the item not proved, said on the parent and in a finding, never taken on trust (ADR-0029). A name alone, with no word test before it, names no test, as no ecosystem pattern is in the engine (ADR-0065).
+about: A Verification item of a parent that names a test, quoted by a part delivered, is proved only when the code at the run's commit holds that test — found by its name in a test file, or by its path — and the comment says where; a test it names that the code does not hold leaves the item not proved, said on the parent and in a finding, never taken on trust (ADR-0029). A name alone, with no word test before it, is looked up in the test files by no language's rule (ADR-0065), said where it is found, never a missing test.
 given:
   repo: backlog-tested
   forge:
@@ -16,6 +16,6 @@ expect:
     - {rule: parent-to-accept, where: "#9", message: "not proved: 1 Verification item(s)"}
   forge:
     issues:
-      - {id: 9, closed: false, comment-contains: "- Proved: \"`TestWriteRowsKeepsTheLast` passes.\" — quoted in #11's Verification, closed by pull request #20."}
+      - {id: 9, closed: false, comment-contains: "- Proved: \"`TestWriteRowsKeepsTheLast` passes.\" — quoted in #11's Verification, closed by pull request #20; `TestWriteRowsKeepsTheLast` in src/export/csv_test.go, a test file's word, read from the code."}
       - {id: 9, comment-contains: "- Proved: \"`src/export/csv_test.go` runs in CI.\" — quoted in #11's Verification, closed by pull request #20; the test `src/export/csv_test.go`, read from the code."}
       - {id: 9, comment-contains: "- **Not proved**: \"The test `TestQuoteCommas` reads a cell back whole.\" — quoted in #12's Verification, closed by pull request #21, but the code holds no test `TestQuoteCommas`: a test named is no proof until it is there."}

@@ -83,7 +83,7 @@ func TestTestNames(t *testing.T) {
 		{"`TestWriteRows` passes", nil}, // a test's own name, by an ecosystem's pattern: a pack's (ADR-0065)
 		{"the test `TestWriteRows` passes", []string{"TestWriteRows"}},
 		{"the test `keeps-the-last-row` and `src/export/csv_test.go::TestQuote`", []string{"keeps-the-last-row", "src/export/csv_test.go::TestQuote"}},
-		{"`tests/export.spec.ts` and `test_quote` cover it", []string{"tests/export.spec.ts"}},
+		{"`tests/export.spec.ts` and `test_quote` cover it", []string{"tests/export.spec.ts", "test_quote"}},
 		{"conformance case `parent-x` passes", []string{"parent-x"}},
 		{"in that case `WriteRows` returns; the spec `x` says so", nil},
 		{"`WriteRows` keeps the last row; `make check` is green", nil},
@@ -93,6 +93,15 @@ func TestTestNames(t *testing.T) {
 		if got := TestNames(c.item, testdef.Def{}); !slices.Equal(got, c.want) {
 			t.Errorf("TestNames(%q) = %q, want %q", c.item, got, c.want)
 		}
+	}
+}
+
+// A name alone in a code span, which TestNames does not take, is looked
+// up in the test files, by no language's rule (ADR-0065).
+func TestBareNames(t *testing.T) {
+	got := BareNames("`TestWriteRows` and `WriteRows` pass; the test `x` and `src/a_test.go`; `make check`", testdef.Def{})
+	if !slices.Equal(got, []string{"TestWriteRows", "WriteRows"}) {
+		t.Errorf("BareNames = %q", got)
 	}
 }
 
@@ -117,13 +126,13 @@ func TestCodeTestsReadsHead(t *testing.T) {
 	}
 	find := CodeTests(dir, testdef.Def{})
 	for name, want := range map[string]string{
-		"tests/export/rows_test.go":          "tests/export/rows_test.go",
+		"tests/export/rows_test.go":           "tests/export/rows_test.go",
 		"tests/export/rows_test.go::TestRows": "tests/export/rows_test.go",
 		"tests/export/rows_test.go::TestNope": "", // the file there, the test not
-		"TestRows":                           "tests/export/rows_test.go",
-		"tests/export":                       "", // a folder, no test file
-		"tests/export/cols_test.go":          "",
-		"TestCols":                           "",
+		"TestRows":                            "tests/export/rows_test.go",
+		"tests/export":                        "", // a folder, no test file
+		"tests/export/cols_test.go":           "",
+		"TestCols":                            "",
 	} {
 		if got, err := find(name); got != want || err != nil {
 			t.Errorf("CodeTests(%q) = %q, %v; want %q", name, got, err, want)
