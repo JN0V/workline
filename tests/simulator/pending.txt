@@ -46,9 +46,3 @@ trial-36-replay i1-status expected-end
 # (#1091); then refine-capped, no status, blocked for the week, read
 # again at its end (its K ticks from there not over: quiet).
 trial-37-replay same-tick-twice i1-status expected-end
-# #1262: a miscounted hunk the engine reads whole, taken for a machine
-# error that moved the issue.
-trial-18-hunk-retried i3-machine-error-moves-nothing
-# #1262: the fake product owner names the C++ fixture's header on a Go
-# issue; the developer's proof does not run, its Draft says nothing.
-workline-1004-needs-engine i1-status expected-end one-byte-due

@@ -21,8 +21,10 @@ type outcome string
 
 // The outcomes a fake answers with. A malformed answer is a machine
 // error the agent made: an answer the engine cannot read (malformed), a
-// patch whose hunk miscounts its lines (hunk, #1075), a test or code
-// that does not build (broken, #1048). A needs-input names who must give
+// test or code that does not build (broken, #1048). A patch whose hunk
+// miscounts its lines (hunk, #1075) is not: the engine applies it as its
+// lines read, its counts recounted, and it moves the issue as progress
+// does (#1262). A needs-input names who must give
 // what is lacking: the engine, another role, a person (ADR-0063, §4),
 // each in the form a role has today. A replayed answer is the trial's
 // own, from the trace (traces/answers/).
@@ -54,7 +56,7 @@ const (
 )
 
 func (o outcome) machine() bool {
-	return o == machineError || o == malformed || o == hunk || o == broken || o == replayedUnread || o == overBudget || o == refused
+	return o == machineError || o == malformed || o == broken || o == replayedUnread || o == overBudget || o == refused
 }
 
 func (o outcome) needs() bool { return o == needsEngine || o == needsRole || o == needsPerson }
@@ -244,7 +246,14 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 	case kind == needsEngine && role == "product-owner":
 		// The trial's product owner with no code given: the folder it
 		// names, its files given at the next run (trial-35's first answer).
+		// On a Go issue, its package's file, as the tester and the
+		// developer pick it (#1262): never the C++ fixture's header.
 		h := headerIn(task, "## Scope")
+		if _, ok := headerFound(task, "## Scope"); !ok {
+			if d, ok := a.goDir(task, "## Scope"); ok {
+				h, _ = a.goFile(d)
+			}
+		}
 		code, _ := os.ReadFile(filepath.Join(a.work, "repo", h))
 		line := ""
 		for _, l := range strings.Split(string(code), "\n") {
