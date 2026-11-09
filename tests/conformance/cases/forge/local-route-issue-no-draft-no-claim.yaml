@@ -41,8 +41,9 @@ given:
 run: {route: issue, target: {issue: 3}, ai: "fake:tester-two-scenarios", args: [--open-merge-request=false]}
 expect:
   status: block
+  agent-calls: 0
   findings:
-    - {rule: merge-request-not-opened, where: "issue #3", message: "run again with --open-merge-request: the issue keeps its state"}
+    - {rule: merge-request-not-opened, where: "#3", message: "run again with --open-merge-request: the issue keeps its state"}
   no-findings: [{rule: state-moved}]
   files:
     tests/test_mul_two_by_three.sh: {exists: false}

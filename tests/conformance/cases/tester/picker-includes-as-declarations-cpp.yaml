@@ -29,6 +29,7 @@ given:
 run:
   role: tester
   event: issue
+  open-merge-request: true
   target: {issue: 3}
   ai: "fake:tester-two-scenarios"
 expect:

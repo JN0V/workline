@@ -168,6 +168,13 @@ func Pre(runDir, repo string) int {
 	if code, done := sentBack(runDir, repo, *is, comments); done {
 		return code
 	}
+	// Its tests go to a Draft of their own: a run that opens none would
+	// throw away what its agent wrote (#1280). Refused before the agent.
+	if n, ok := os.LookupEnv("WORKLINE_OPEN_MERGE_REQUESTS"); !ok || n == "" {
+		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "no Draft can be opened",
+			Findings: []verdict.Finding{{Rule: "merge-request-not-opened", Where: where,
+				Message: fmt.Sprintf("the tester proposes workline/tester/issue-%d; run again with --open-merge-request: the issue keeps its state, the working tree is left as it was", id)}}})
+	}
 	head, err := git(repo, "rev-parse", "HEAD")
 	if err != nil {
 		return fail(err)

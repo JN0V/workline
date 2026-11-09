@@ -27,6 +27,7 @@ given:
 run:
   role: tester
   event: issue
+  open-merge-request: true
   target: {issue: 3}
   input: {needs: "DomoticsCore-MQTT/include/DomoticsCore/MQTT_HAL.h, DomoticsCore-Wifi/include/DomoticsCore/Wifi_HAL.h, DomoticsCore-Core/include/DomoticsCore/Platform_HAL.h, DomoticsCore-MQTT/test/test_mqtt_limits_links/test_mqtt_limits_links.cpp, DomoticsCore-HomeAssistant/test/test_ha_dropped_link/test_ha_dropped_link.cpp"}
   ai: "fake:tester-two-scenarios"
