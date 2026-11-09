@@ -10,10 +10,13 @@
   13, 14
 - **Amends, once built:** [ADR-0055] (the red proof of a broken build,
   its amendment "a missing name, told from a broken build");
-  [ADR-0054] and [ADR-0063 §9] (the developer's bounds read paths only);
+  [ADR-0054] and [ADR-0063 §9] (the Scope bounds no write; a file
+  beyond it is listed on the pull request);
   [ADR-0063 §8] (the code picker frozen); [ADR-0059] (a `red unproven`
   Draft moves the issue to ready, as a proven one does)
 - **Research:** [round6-root-causes.md](../research/round6-root-causes.md)
+- **Amended:** 2026-11-09, [change 2](#2-scope-as-paths-a-hint-not-a-fence):
+  the Scope a hint, not the developer's fence
 
 ## Context
 
@@ -60,7 +63,7 @@ flowchart LR
   blocks hard**: a person is on the loop, never a bottleneck
   ([ADR-0060]).
 - **A check on converging facts may still block** (a red report, a
-  file outside the paths, a missing setting): principle 5 holds; only
+  frozen test edited, a missing setting): principle 5 holds; only
   a guess's miss may not.
 - **A fast path may only pass**: sure of a yes, it passes, said; unsure,
   it hands the raw facts on.
@@ -117,8 +120,9 @@ flowchart LR
   `generic` pack (`**/test/**`, `**/tests/**`, `*_test.*`, `*.test.*`,
   `*.spec.*`): data too, not engine code. Said by `doctor`.
   - **Amended, built in [#1226]**: `**/Tests/**`, `**/__tests__/**`, `test_*`, `*_spec.*` too, and the code picker's aside folders as data.
-  - **A test the generic pack misses** is code to the fence: the
-    developer's scope-ask, the person's `test-paths` to fix it, said.
+  - **A test the generic pack misses** is code to the developer,
+    listed beyond the Scope when outside it; the person's `test-paths`
+    fix it, said.
 - **Moving data, mostly**: the tables of `internal/codenav`,
   `internal/codepick`, `internal/tester` (`coverage.go`, `notrun.go`),
   the reviewer's and the documentalist's comment tables, the tester's
@@ -153,16 +157,33 @@ Amends [ADR-0055].
   Waiting(person): the only case a person is waited for.
 - **Deleted**: `redfirst.go`'s knock-on, declaration and casing rules.
 
-#### 2. Scope as paths and globs, the fence matches paths only
+#### 2. Scope as paths, a hint, not a fence
 
-- The product owner, who reads the code, writes the Scope's files as
-  repository paths or globs; its writing check finds each, or a line
+**Amended on 2026-11-09**, before it was built, after a role-boundary
+review by three independent reviewers, unanimous on the fence
+([why](#why-the-fence-goes)). Was: "the fence matches paths only, a
+miss is the scope-ask".
+
+- **The product owner, who reads the code, writes the Scope's files as
+  repository paths or globs**; its writing check finds each, or a line
   marks it new.
-- The developer's fence matches those paths, `test-homes` for new
-  tests, nothing else. A miss is the existing scope-ask
-  ([bounds](../../roles/developer/docs/bounds.md#asking-the-product-owner-for-files)).
-- **An issue with no path or glob**: its backticked words that are
-  tracked paths count, as today; anything else asks.
+- **The Scope is a hint**: the tester's and the code picker's context,
+  the size predicted at ready ([ADR-0064]), staleness, the overlap of
+  an issue not yet coded.
+- **The developer owns the files**: one beyond the Scope is applied,
+  and listed on the pull request under `## Beyond the Scope`, with the
+  agent's one-line reason.
+- **Judged, never refused**: the reviewer's `intent` lens reads that
+  list; an Important finding holds a fix's merge
+  ([merge policy](../merge-policy-normal.md)); the auditor samples the
+  lists ([ADR-0046]).
+- **Hard refusals stay where the rule converges**: gate files, steering
+  files, frozen tests, on the pull request's check too ([ADR-0058]).
+- **No scope-ask on a file**: nothing is refused. A change bigger than
+  its issue is a size question to the product owner ([ADR-0064]).
+- **Overlap reads facts**: a held issue's files are its open pull
+  request's changed files (`git diff`), not its Scope ([#1256]); the
+  candidate's Scope may only make it wait, and a conflict is git's.
 - **Deleted**: class name to file, Gradle module word to folder, the
   `src/test` ↔ `src/main` helper rule and its prompt text, the
   English-prose rule that reads a Scope as a guess (`codeUnread`;
@@ -170,6 +191,30 @@ Amends [ADR-0055].
 - **Moved, not deleted**: the JVM classpath-shadowing check (a test
   helper named like a main class) becomes a reviewer lens, a prompt
   that judges, not Go code (Rule B).
+- **Two preconditions, built first**:
+  - **A fix merges alone only with a reviewer verdict on its head**
+    ([#1254]): the reviewer on merge requests is opt-in; with no
+    reviewer comment, no finding is open and a fix merges unread.
+  - **The green proof requires every frozen test id** ([#1255]): it
+    takes the head's tests the base lacks (`internal/tester/green.go`),
+    so a build-file edit, now allowed, could drop a frozen test.
+
+##### Why the fence goes
+
+- **It bounds a guess**: the path match converges, the boundary does
+  not. The Scope is written before the code; predicting the file set
+  is designing the change.
+- **It refuses files the change needs**: [#1207], 6 files refused on a
+  Kotlin feature, a build file and a test fake among them, 3 of 5
+  review rounds ([#1211]); [PR #1253]'s own try, with full paths from
+  the product owner, still refused 2 of 14.
+- **It cuts a change in half**: part in bounds, the rest dropped, an
+  incoherent change proven red ([#1207]'s `Unresolved reference`).
+- **It saves no tokens**: it bounds writes, not reads; the agent reads
+  the worktree freely. Each scope-ask adds a product owner run and a
+  new developer run.
+- **Its other jobs are served elsewhere**: overlap by the diff, size by
+  [ADR-0064], unrelated edits by the `intent` lens.
 
 #### 3. One definition of a test file
 
@@ -195,6 +240,10 @@ Amends [ADR-0055].
   `scenario-without-test`, the answer asked again once.
 - **An id not found, a reason disputed**: the existing chain, an
   objection, then the product owner, then Blocked ([ADR-0059]).
+- **The declared ids serve two more readers** (amended 2026-11-09):
+  the green proof's frozen ids ([#1255]), and the developer's
+  objection, whose scenario the mapping gives, not a match on the
+  test's name.
 - **Deleted**: the fuzzy name matcher.
 
 **And the code picker is frozen**: no new heuristic; its tables move
@@ -218,7 +267,8 @@ One pull request a step, conformance cases first.
 1. **One test-file definition** (change 3), [#1226]: cheapest, and
    the fence needs it.
 2. **The red proof's judgement** (change 1), [#1227].
-3. **Scope paths, a dumb fence** (change 2), [#1228].
+3. **Scope paths, a hint** (change 2), [#1228], after [#1254] and
+   [#1255]; overlap from the diff, [#1256].
 4. **Scenarios declared** (change 4), [#1229].
 5. **Packs**, [#1230]: the format, the loader, detection into config, `doctor`;
    the tables moved.
@@ -272,8 +322,9 @@ One pull request a step, conformance cases first.
   generic path works, slower.
 - **Judge tokens on the red proof: not measured.** Only on a broken
   build the fast path did not pass; measured in step 2's try.
-- **More scope-asks at first**, until the product owner writes paths;
-  its output grows by the paths.
+- **No scope-ask on files**; the product owner's output grows by the
+  paths. Files beyond the Scope, and the ones the review flags, are
+  counted in step 7's round ([#1232]).
 - **Kept, because it converges**: the JUnit XML and coverage readers
   (Go profile, LCOV), the mutation report schema, `module-files` and
   `{packages}`, sizes, labels, timeouts, exit codes, git facts, our own
@@ -281,6 +332,9 @@ One pull request a step, conformance cases first.
   `exec.LookPath`, path normalising, Gherkin scenario parsing.
 - **Not yet read against Rule A**: the documentalist's prose rules on
   counts and versions; they flag suspects, which may be enough.
+- **Read against Rule A on 2026-11-09**: the reviewer's `story-words`
+  block a comment on an English word, no agent asked: to a lens or a
+  warning ([#1257]).
 
 [#1109]: https://github.com/JN0V/workline/issues/1109
 [#1111]: https://github.com/JN0V/workline/issues/1111
@@ -309,6 +363,12 @@ One pull request a step, conformance cases first.
 [#1230]: https://github.com/JN0V/workline/issues/1230
 [#1231]: https://github.com/JN0V/workline/issues/1231
 [#1232]: https://github.com/JN0V/workline/issues/1232
+[#1254]: https://github.com/JN0V/workline/issues/1254
+[#1255]: https://github.com/JN0V/workline/issues/1255
+[#1256]: https://github.com/JN0V/workline/issues/1256
+[#1257]: https://github.com/JN0V/workline/issues/1257
+[PR #1253]: https://github.com/JN0V/workline/pull/1253
+[ADR-0058]: 0058-the-forge-guards-the-project-not-the-agents-environment.md
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0045]: 0045-the-judge-asks-for-the-code-it-needs.md
 [ADR-0046]: 0046-the-auditor-re-checks-every-roles-acts.md
