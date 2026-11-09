@@ -1,8 +1,10 @@
-case: tester/go-wrong-call-blocks
+case: tester/go-wrong-call-no-agent-waits
 about: >
   The tests alone, in Go, calling a name the base has, wrongly (too few
   arguments) beside one it lacks: one error is not a missing name, so the
-  build broke otherwise, and nothing is proven red (build-broken).
+  fast path does not pass it. No agent judges it: no guess blocks nor
+  passes it, it is red unproven, its compiler lines quoted, for a person
+  (ADR-0065).
 given:
   repo: go-tested
   setup:
@@ -13,5 +15,5 @@ given:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
 run: {test: [check, --base, main]}
 expect:
-  status: block
-  findings: [{rule: build-broken, where: calc/mul_test.go}]
+  status: human
+  findings: [{rule: red-unproven, where: calc/mul_test.go, message: "not enough arguments in call to Add"}]

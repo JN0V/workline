@@ -488,3 +488,12 @@ func covered(spans []seen, p string, pl Place) bool {
 	}
 	return true
 }
+
+// ServeReads serves another role's judge the reads it asked (ADR-0045),
+// as a judge of the code's are: from git at rev, at most left lines of
+// linesMax, a name looked for near cause first. It gives the text served,
+// the lines it holds, and each read refused with why.
+func ServeReads(repo, rev, cause string, reads []judge.Read, left, linesMax int) (served string, lines int, refused []string) {
+	rd := serve(repo, rev, cause, reads, left, linesMax)
+	return rd.Served, rd.Lines, rd.Refused
+}

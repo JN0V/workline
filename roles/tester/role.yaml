@@ -119,17 +119,17 @@ settings:
   # folder holding a test/ or tests/ folder.
   # E.g. [{tests: "**/src/test/**", code: "**/src/main/**"}].
   test-homes: []
-  # A build broken by a new test, told apart by ecosystem: an error line
-  # of the test command's output (groups file and message), the messages
+  # A build broken by a new test, read by ecosystem: an error line of
+  # the test command's output (groups file and message), the messages
   # naming what the code lacks (the name in a group `name`, else the
-  # first quoted word), and the tests a file declares. Each file of the
-  # change's tests holding an error on what the issue adds (a missing name
-  # it names, a name the base lacks, a signature it writes), the others
-  # its knock-ons: red, the tests named from their files; any other error
-  # goes back to the tester (build-broken, docs/missing-name.md). An
-  # absolute path, or a file:// URI, under the checkout is read from the
-  # root. Go's, Kotlin's (Gradle's `e:` lines, Kotlin 2 and 1), javac's
-  # and Gradle's build files here; others in docs/missing-name.md.
+  # first quoted word), and the tests a file declares. Each error a
+  # missing name the base lacks and the issue names: red at once. Any
+  # other broken build goes to the judge with the raw facts; its yes is
+  # red, its no build-broken, anything else red unproven
+  # (docs/missing-name.md). An absolute path, or a file:// URI, under the
+  # checkout is read from the root. Go's, Kotlin's (Gradle's `e:` lines,
+  # Kotlin 2 and 1), javac's and Gradle's build files here; data, until
+  # the language packs take them.
   build-errors:
     - error: '^(?:\./)?(?P<file>[^\s:]+\.go):\d+:\d+: (?P<message>.+)$'
       missing-name:
@@ -150,6 +150,11 @@ settings:
       name-line: '^\s*symbol:\s+\w+\s+(?P<name>\w+)'
       test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|protected|private|static|final)\s+)*void\s+(\w+)\s*\('
     - error: '^(?:Build|Settings) file ''(?P<file>[^'']+)'' line: \d+(?P<message>)$'
+  # The judge of a broken build may read the base before it answers
+  # (ADR-0045): its rounds of reads, and the lines served, all rounds
+  # together. 0 rounds: it answers from the facts alone.
+  judge-read-rounds: 2
+  judge-read-lines-max: 400
   # An objection's thread (ADR-0055): the tester answers it this many
   # times; the builder still objecting after the last, the product owner
   # settles it, the issue sent back to it; objected to again after that,

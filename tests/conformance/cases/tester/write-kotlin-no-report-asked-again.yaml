@@ -4,12 +4,13 @@ about: >
   row reads, and Gradle writes no report. The run is not refused as final
   on the build tool's last lines (`BUILD FAILED`): the agent is asked
   once more, its feedback quoting the compiler's error line. Its second
-  test compiles but for the signature the issue gives: the Draft opens
-  (#1192).
+  test does not compile but for the signature the issue gives: the judge
+  says yes, the Draft opens (#1192, ADR-0065).
 given:
   repo: kotlin-tested
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-yes.yaml"}
   config:
     roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
   forge:
@@ -21,7 +22,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-kotlin-unread-once.sh"}
 expect:
   status: pass
-  agent-calls: 2
+  agent-calls: 3
   run-files:
     out/feedback.md: {contains: ["report-missing", "e: kapt: an annotation processor failed: AddProcessor"]}
   forge:

@@ -1,67 +1,93 @@
 ---
-sources: [internal/tester/build.go, internal/tester/redfirst.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, internal/tester/junit.go, roles/tester/role.yaml]
-checked: 90ca43c5
+sources: [internal/tester/build.go, internal/tester/redfirst.go, internal/tester/judged.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, internal/tester/junit.go, roles/tester/role.yaml]
+checked: 035da449
 verified: agent:claude-code
 ---
-# A missing name, told from a broken build
+# A broken build, red for the right reason
 
 Part of [the tester](../README.md). A test written before its code
 calls names the code lacks. In a compiled language the test's package
 then does not build: the report holds no new test, only the runner's
-record of the failed build.
+record of the failed build. Whether that is red for the right reason is
+read from facts, then judged
+([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#1-red-for-the-right-reason-goes-to-judgement)).
 
 ```mermaid
 flowchart LR
   run["<b>Tests on the base</b><br/>build fails"]
-  errs["<b>Each error line</b><br/>of the output"]
-  red["<b>Red</b><br/>what the change adds"]
+  fast{"<b>Fast path</b><br/>names the issue gives?"}
+  judge["<b>The judge</b><br/>raw facts"]
+  red["<b>Red</b>"]
+  unproven["<b>Red unproven</b><br/>Draft opens, said"]
   block["<b>Back to the tester</b><br/>build-broken"]
-  run --> errs
-  errs -- "each file of the change's tests:<br/>one error on what the issue adds,<br/>the others its knock-ons" --> red
-  errs -- "any other" --> block
+  run --> fast
+  fast -- "yes" --> red
+  fast -- "not sure" --> judge
+  judge -- "yes" --> red
+  judge -- "no" --> block
+  judge -- "unsure, failed, capped" --> unproven
 ```
 
 ## The rule
 
+- **Kept mechanical**: the runs, the report, whether the build broke,
+  the error lines the `build-errors` rows read, and whether the base
+  holds a name (`git grep -w`).
 - **No report**: a build that stops at compiling the tests, as Gradle
-  does, writes no report. The compiler's lines are read first
-  ([#1192](https://github.com/JN0V/workline/issues/1192)), then quoted
-  before the build tool's last lines
-  ([#1209](https://github.com/JN0V/workline/issues/1209)).
-- **Red, for the right reason**, when each file of the change's tests
-  holding an error holds one on what the change adds:
-  - **a missing name** (`undefined: Mul`, `Unresolved reference 'mul'`)
-    the issue's text names as a whole word, or its last part
-    (`lostCount` for `MQTTStatistics::lostCount`)
-    ([#1111](https://github.com/JN0V/workline/issues/1111));
-  - **any other error** quoting a name the issue writes as a call
-    (`restoreFromExisting(existingCount, nextIndex)` makes `Too many
-    arguments for 'fun restoreFromExisting(…)'` red), or a name the
-    base lacks that the issue names (`'nextIndex' overrides nothing`).
-    With no issue known, a name the base lacks counts unless a test of
-    the change declares it (`class FakeCalc`). Quoting none, the words
-    the test calls count (`call to Add`, `Add(` in the test).
-- **Knock-ons**, in such a file, are not counted: a type the compiler
-  could not infer (`Cannot infer type`), a missing name the test reaches
-  as a member (`grid.vertical`), or a type it does not call
-  (`GridType.THIRDS`). Any other error quoting nothing (a parse error,
-  K1's `Type mismatch: inferred type is String`) or quoting a value
-  (Go's `cannot use "Kitchen" … as int value`) is the test's own.
-- **Anything else goes back to the tester** (`build-broken`): a syntax
-  error, a wrong import, a wrong call on what the base has (`call to
-  Add` where the issue only names `Add`), an error in a code file, a
-  helper the test calls and the issue never names
-  (`stubSetBrokerLink`). The check quotes the compiler's lines. Writing
-  an issue's tests, the agent is asked once more with them.
+  does, writes none. The compiler's lines are read first
+  ([#1192](https://github.com/JN0V/workline/issues/1192)).
+- **The fast path, red at once**: each error lies in the change's tests,
+  is a missing name a row reads (`undefined: Mul`, `Unresolved reference
+  'mul'`), the base lacks it, and the issue names it verbatim, as a whole
+  word or its last part (`lostCount` for `MQTTStatistics::lostCount`).
+  The summary says so: `a missing name the issue names`. Sure of a yes,
+  or it hands the facts on: it never blocks.
+- **Anything else goes to the judge**
+  ([ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md)):
+  a changed signature, a name the issue never names, a wrong call, a
+  syntax error. No compiler message is guessed at.
+- **No issue known** (`workline test check`): a name the change's code
+  adds counts as named; with the tests alone, nothing does.
+
+## The judge
+
+- **Asked**: "Does each test fail only because what the issue asks for
+  does not exist yet, and not by a mistake of its own?"
+- **What it reads, raw**: the issue's text, its Scope and scenarios; the
+  change's test files; the compiler's lines and the output's end,
+  clipped and masked; and, for each name the errors give, whether the
+  base holds it.
+- **It may read the base first**: a file's lines, a definition, a word's
+  places, served from git (`judge-read-rounds`, 2; `judge-read-lines-max`,
+  400).
+- **Picked** at the best independence from the tester's agent
+  ([ADR-0005](../../../docs/adr/0005-independence-takes-the-best-level-available.md));
+  `WORKLINE_JUDGE` names one. Its calls count in the tester's
+  `ai-max-tokens`.
+
+| The judge | The run |
+|---|---|
+| yes | red: the Draft opens, `red-judged` says why |
+| no | `build-broken`, the judge's line quoted; the agent is asked once more |
+| unsure, past its reads, failed, or at the tokens' cap | **red unproven**: the Draft opens, marked |
+
+- **Red unproven** is written on the Draft, its body and its record,
+  with the compiler's lines and the judge's reason; the issue moves to
+  ready, and the developer starts. Its pull request says it too. The
+  green proof on the code and the
+  [objection chain](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)
+  settle it: never a pass unsaid, never a stuck run.
+- **A person's tests, no agent** (`workline test check`): no judge runs.
+  Past the fast path, the check ends `human`, `red-unproven`, its lines
+  quoted: the only case a person is waited for.
 - **No report and no error a row reads**: `report-missing`, its error
   lines quoted, not the build tool's last ones (`BUILD FAILED`). On the
   tests' run, the agent is asked once more; on the base alone, final.
 - **The tests' names**, when nothing built them: read from the test
   files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`).
 - **Beside code**, the head builds and runs those tests: they must pass
-  there, as any new test. A name the change's code touches counts as
-  one the issue writes.
-- **No error line read**, in a language with no patterns set: as before,
+  there, as any new test.
+- **No error line read**, in a language with no rows set: as before,
   `tests-not-built` warns, and `test write` opens no Draft.
 
 ## The setting
@@ -93,12 +119,15 @@ In [role.yaml](../role.yaml), each tried on a real build:
 | Go | `calc/mul_test.go:6:5: undefined: Mul` | `undefined`, `has no field or method`, `unknown field` |
 | Kotlin, by Gradle | `e: file:///…/MulTest.kt:10:25 Unresolved reference 'mul'.`; Kotlin 1's `e: /…/MulTest.kt: (10, 25): …` | `Unresolved reference`, `No parameter with name` |
 | Java (`javac`) | `/…/MulTest.java:9: error: cannot find symbol` | `cannot find symbol` |
-| Gradle build files | `Build file '/…/build.gradle' line: 3` | none: it blocks |
+| Gradle build files | `Build file '/…/build.gradle' line: 3` | none: the judge reads it |
 
 - **Kotlin's tests**: `@Test fun `two by three`()` or `@Test fun
   twoByThree()`, named without the backquotes.
 - **javac's name** is on a later line (`symbol: method mul(int,int)`),
   read by its `name-line`, then checked against the issue's text.
+- **Data, not engine code**: these rows stay in role.yaml until the
+  language packs take them
+  ([#1230](https://github.com/JN0V/workline/issues/1230)).
 - **A path with a space** is read, Kotlin 1's and javac's plain paths
   too.
 - **JUnit 5 on Gradle** reports `two by three()`: the `()` is dropped,
@@ -135,9 +164,10 @@ golangci-lint does, reports the same missing name
 ([#988](https://github.com/JN0V/workline/issues/988)):
 
 - **Not counted**: a lint finding read by `build-errors` as a missing
-  name in a test of the change. golangci-lint puts the compiler's lines
-  in its message (`calc/mul_test.go:8:5: undefined: Mul`), at the
-  package's first file: each line must be a missing name.
+  name, or as one of the build's own errors in a test of the change,
+  which the proof reads or the judge does. golangci-lint puts the
+  compiler's lines in its message (`calc/mul_test.go:8:5: undefined:
+  Mul`), at the package's first file: each line must be one.
 - **Still counted**: any other finding, a format check's too.
 - **Seen later**: golangci-lint runs no other linter on a package that
   does not build. An unchecked error in the test shows only once the
@@ -145,19 +175,18 @@ golangci-lint does, reports the same missing name
 
 ## Limits
 
-- **A name not read**: a message with no group `name` and no quoted
-  word counts as red, as before: the issue's text is not checked.
-- **Case counts**: `lostcount` in the issue does not name `lostCount`.
+- **Case counts**: `lostcount` in the issue does not name `lostCount`:
+  the judge reads it.
 - **A common word**: a made-up name that is also a word of the issue's
-  prose (`get`, `init`, `lost`) counts as red, since a whole word
-  matches.
-- **`workline test check`** on a pull request knows no issue: any
-  missing name counts; another error counts by the base or the
-  change's code alone.
+  prose (`get`, `init`, `lost`), and the base lacks, passes the fast
+  path, since a whole word matches.
+- **`workline test check`** with the tests alone knows no issue: a
+  broken build there is always red unproven, for a person.
 - **The base's words**: "a name the base lacks" is a whole-word search
-  of the base's files; a word in a comment there counts as held.
+  of the base's files; a word in a comment there counts as held, and
+  the judge reads it.
 - **Go stops at ten errors** a package (`too many errors`): the errors
   past the tenth are not read. `-gcflags=-e` in the test command shows
   them all.
-- **A new package's import** (`package … is not in std`) is not counted
-  as a missing name: it blocks.
+- **The judge's tokens**: asked only past the fast path; measured on a
+  real build in [the pull request that built it](https://github.com/JN0V/workline/issues/1227).

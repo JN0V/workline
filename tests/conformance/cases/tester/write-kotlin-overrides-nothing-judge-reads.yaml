@@ -1,14 +1,15 @@
-case: tester/write-kotlin-overrides-nothing-red
+case: tester/write-kotlin-overrides-nothing-judge-reads
 about: >
   The issue adds `nextIndex` to an interface. The tester's Kotlin test
   fakes it with `override fun nextIndex()`: Gradle writes no report, and
-  Kotlin says `'nextIndex' overrides nothing`, no missing name. The name
-  is one the base lacks and the issue names: red for the right reason,
-  the Draft opens at once (#1192).
+  Kotlin says `'nextIndex' overrides nothing`, no missing name. The judge
+  first asks to read the base where `nextIndex` is written, is served it
+  from git, then says yes: red, the Draft opens (ADR-0065, ADR-0045).
 given:
   repo: kotlin-tested
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-reads.yaml"}
   config:
     roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
   forge:
@@ -20,8 +21,11 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-kotlin-override"}
 expect:
   status: pass
-  summary: "1 new test, red on the base (1 not built there, a name or a signature the change adds)"
-  agent-calls: 1
+  summary: "1 new test, red on the base (1 not built there, a broken build)"
+  agent-calls: 3
+  findings: [{rule: red-judged, level: info}]
+  run-files:
+    out/judge/red-proof/question.yaml: {contains: ["What you read, round 1", "grep `nextIndex`"]}
   forge:
     merge-requests:
       - {id: 1, branch: workline/tester/issue-3, draft: true}

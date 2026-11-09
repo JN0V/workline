@@ -11,7 +11,7 @@ given:
   repo: go-tested
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
-  env: {ALWAYS: "1", WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  env: {ALWAYS: "1", WORKLINE_CLOCK: "2026-11-05T08:00:00Z", WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-no.yaml"}
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
     routing: {events: {issue: [tester]}}
@@ -23,7 +23,7 @@ given:
         body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA Go test.\n\n## Scope\n\n- `calc/calc.go`: a `Mul` function beside `Add`.\n"
 run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/tester-go-wrong-call-once.sh", then: again}
 expect:
-  agent-calls: 2
+  agent-calls: 4
   findings:
     - {rule: state-wakes, level: info, where: "#3", message: "its state, tests, wakes the tester"}
     - {rule: build-broken}

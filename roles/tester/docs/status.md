@@ -75,15 +75,16 @@ Cases in `tests/conformance/cases/tester/`:
 - **A build record told from a test**: with the tests alone, a red id
   in a suite that lost its base tests is the runner's record only when
   it is the suite's one case, with no classname or named `TestMain`.
-- **A missing name told from a broken build**: a build that broke on
-  the base is red only when each compiler error lies in the change's
-  tests and names what the base lacks; any other blocks
-  (`build-broken`). Go's, Kotlin's, javac's and Gradle's errors by
-  default (`build-errors`, [the page](missing-name.md); Kotlin's
-  tried on an Android project,
-  [#1181](https://github.com/JN0V/workline/pull/1181#tried)). A
-  missing name the issue never names is a broken build too, asked again once
-  ([#1111](https://github.com/JN0V/workline/issues/1111)).
+- **A broken build, judged**: a build that broke on the base is red
+  at once when each compiler error lies in the change's tests, names
+  what the base lacks, and the issue names it; any other goes to the
+  judge with the raw facts: yes red, no `build-broken`, anything else
+  red unproven, the Draft opened and marked
+  ([the page](missing-name.md),
+  [#1227](https://github.com/JN0V/workline/issues/1227)). Go's,
+  Kotlin's, javac's and Gradle's errors read by default
+  (`build-errors`; Kotlin's tried on an Android project,
+  [#1181](https://github.com/JN0V/workline/pull/1181#tried)).
 - **Tests from the criteria** (`workline test write --issue <n>`): one
   test a scenario, named after it; a ready issue only, with named
   scenarios; new test files only; a scenario said untestable in a note;

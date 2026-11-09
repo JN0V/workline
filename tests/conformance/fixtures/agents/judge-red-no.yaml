@@ -1,0 +1,2 @@
+# The tester's judge of a broken build (ADR-0065): the test's own mistake.
+- note: "no: the test calls a helper the issue never asks for, or calls what the base has wrongly."

@@ -2,13 +2,14 @@ case: tester/write-build-broken-asked-again
 about: >
   The tester's Go test calls a name the base has, wrongly: its package
   does not build for an error other than a missing name (#1048, a wrong
-  constructor call on the C++ trial). As for a lint finding, the agent
-  is asked once more with the build's error; its second answer builds
-  but for the missing name, red on the base: the Draft opens.
+  constructor call on the C++ trial). The judge says no, and the agent is
+  asked once more with its line; its second answer builds but for the
+  missing name the issue names, red by the fast path: the Draft opens.
 given:
   repo: go-tested
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-no.yaml"}
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:
@@ -20,9 +21,9 @@ given:
 run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-go-wrong-call-once.sh"}
 expect:
   status: pass
-  agent-calls: 2
+  agent-calls: 3
   run-files:
-    out/feedback.md: {contains: ["build-broken", "calc/mul_test.go"]}
+    out/feedback.md: {contains: ["build-broken", "calc/mul_test.go", "the judge: the test calls a helper"]}
   pushed:
     workline/tester/issue-3:
       calc/mul_test.go: "Mul(2, 3) != 6"

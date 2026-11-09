@@ -1,124 +1,25 @@
 package tester
 
-// Which compiler errors in a test of the change are red for the right
-// reason, beyond a missing name: a signature the issue gives anew, a name
-// it adds, and the errors that follow from those in their file (#1192).
-// The rule, its reasons and its limits: roles/tester/docs/missing-name.md.
+// Whether a build the change's tests broke on the base is red for the
+// right reason (ADR-0065, change 1). Kept mechanical: the errors the
+// build-errors rows read, the names the base lacks (`git grep -w`). A
+// fast path that may only pass: each error a missing name the base lacks
+// and the issue names verbatim. Anything else is not guessed here: the
+// judge reads the raw facts (judged.go). The rule and its limits:
+// roles/tester/docs/missing-name.md.
 
 import (
 	"errors"
+	"fmt"
 	"os/exec"
-	"regexp"
+	"slices"
 	"strings"
-	"sync"
-	"unicode"
+
+	"github.com/JN0V/workline/internal/forge"
 )
 
-// quotedPart is a stretch between quotes in a message, spaces in it or
-// not: 'fun restoreFromExisting(existingCount: Int): Unit'. The opening
-// quote follows no letter: the apostrophe of `Can't` opens nothing.
-var quotedPart = regexp.MustCompile("(?:^|[^\\p{L}\\p{N}])(['‘\"`])([^'‘’\"`\n]+)['’\"`]")
-
-// beforeParen is the name before a quoted signature's first parenthesis.
-var beforeParen = regexp.MustCompile(`([\p{L}_][\p{L}\p{N}_]*)\s*\(`)
-
-// word is a name-shaped word of a message.
-var word = regexp.MustCompile(`[\p{L}_][\p{L}\p{N}_]*`)
-
-// inference is a message saying a type could not be inferred: it follows
-// from a name the compiler could not resolve before it.
-var inference = regexp.MustCompile(`(?i)\b(?:cannot|can't|could not|not enough information to) infer\b`)
-
-// namesOf is the names an error's message gives: the quoted ones (a
-// signature's own name, before its parenthesis; a lone word, its last
-// part), never a double-quoted value; quoting none, its words the test
-// file calls (`Add` of Go's `not enough arguments in call to Add`,
-// called `Add(` in the test).
-func namesOf(msg, test string) []string {
-	var out []string
-	for _, q := range quotedPart.FindAllStringSubmatch(msg, -1) {
-		if q[1] == `"` {
-			continue // a value, as Go quotes a string literal: not a name
-		}
-		part := q[2]
-		if m := beforeParen.FindStringSubmatch(part); m != nil {
-			out = append(out, m[1])
-			continue
-		}
-		if !strings.ContainsAny(part, " \t") {
-			if last := lastPart.FindString(part); last != "" {
-				out = append(out, last)
-			}
-		}
-	}
-	if len(out) > 0 || test == "" {
-		return out
-	}
-	for _, w := range word.FindAllString(msg, -1) {
-		if calledIn(w, test) {
-			out = append(out, w)
-		}
-	}
-	return out
-}
-
-// patterns keeps each name's patterns compiled once.
-var patterns sync.Map
-
-// pattern is the regular expression a format makes of a name, compiled
-// once: %s is the name, quoted.
-func pattern(format, name string) *regexp.Regexp {
-	key := format + "\x00" + name
-	if re, ok := patterns.Load(key); ok {
-		return re.(*regexp.Regexp)
-	}
-	re := regexp.MustCompile(strings.ReplaceAll(format, "%s", regexp.QuoteMeta(name)))
-	patterns.Store(key, re)
-	return re
-}
-
-// member is a name written after a dot.
-func member(name, text string) bool {
-	last := lastPart.FindString(name)
-	return last != "" && pattern(`\.\s*%s(?:$|[^\p{L}\p{N}_])`, last).MatchString(text)
-}
-
-// calledIn says whether text writes name, or its last part, as a call:
-// `name(`.
-func calledIn(name, text string) bool {
-	last := lastPart.FindString(name)
-	return last != "" && pattern(`(?:^|[^\p{L}\p{N}_.])%s\s*\(`, last).MatchString(text)
-}
-
-// declaredIn says whether text declares name: a class, an object, an
-// interface, a type, a function or a value, never an override of one.
-func declaredIn(name, text string) bool {
-	last := lastPart.FindString(name)
-	return last != "" && pattern(`(?m)(?:^|[^\p{L}\p{N}_])(?:class|object|interface|type|struct|enum|fun|func|def|val|var|let|const)\s+%s(?:$|[^\p{L}\p{N}_])`, last).
-		MatchString(overrides.ReplaceAllString(text, "override"))
-}
-
-// overrides is an override's keyword and what it overrides: not a
-// declaration of the test's own.
-var overrides = regexp.MustCompile(`\boverride\s+(?:fun|val|var)\b`)
-
-// knockOn says whether a missing name the issue never names follows from
-// another in its file: the test reaches it as a member, or it is a type
-// (a capital first) the test does not call; not a helper it calls.
-func knockOn(name, test string) bool {
-	last := lastPart.FindString(name)
-	if last == "" {
-		return true
-	}
-	if member(last, test) {
-		return true
-	}
-	return unicode.IsUpper([]rune(last)[0]) && !calledIn(last, test)
-}
-
-// redFirst sorts the build errors of the run where the change's tests
-// were laid on the base: those red for the right reason, those broken
-// otherwise, and the missing names the issue never names.
+// redFirst reads the build errors of the run where the change's tests
+// were laid on the base.
 type redFirst struct {
 	repo, base string
 	issue      string              // the issue's text, "" when not known
@@ -148,70 +49,97 @@ func (r *redFirst) lacks(name string) bool {
 	return !has
 }
 
-// declared says whether a test file of the change declares name.
-func (r *redFirst) declared(name string) bool {
-	for _, f := range r.tests {
-		if declaredIn(name, r.test(f)) {
-			return true
-		}
-	}
-	return false
-}
-
-// adds says whether the change adds or reshapes name: the issue writes it
-// as a call; the change's code touches it; or the base lacks it and the
-// issue names it, or, no issue known, no test of the change declares it.
-func (r *redFirst) adds(name string) bool {
-	if (r.issue != "" && calledIn(name, r.issue)) || namedIn(name, r.code()) {
-		return true
-	}
-	if !r.lacks(name) {
-		return false
-	}
+// named says whether the issue names name verbatim, as a whole word; no
+// issue known (`workline test check`), whether the change's code does.
+func (r *redFirst) named(name string) bool {
 	if r.issue != "" {
 		return namedIn(name, r.issue)
 	}
-	return !r.declared(name)
+	return namedIn(name, r.code())
 }
 
-// sort is errs, each in a test of the change red first or its knock-on
-// left out of broken and unnamed; byShape says an error other than a
-// missing name made a test red.
-func (r *redFirst) sort(errs []buildError) (broken, unnamed []buildError, byShape bool) {
-	anchored := map[string]bool{}
-	red := make([]bool, len(errs))
-	names := make([][]string, len(errs))
-	for i, e := range errs {
-		switch {
-		case !e.inTest:
-		case e.missing:
-			red[i] = r.issue == "" || e.name == "" || namedIn(e.name, r.issue)
-		default:
-			names[i] = namesOf(e.msg, r.test(e.file))
-			for _, n := range names[i] {
-				if r.adds(n) {
-					red[i], byShape = true, true
-					break
-				}
+// fast says each error is red by the fast path: in a test of the change,
+// a missing name the build-errors rows read, the base lacks it, and the
+// issue names it. Sure of a yes, or false: never a no.
+func (r *redFirst) fast(errs []buildError) bool {
+	if len(errs) == 0 {
+		return false
+	}
+	for _, e := range errs {
+		if !e.inTest || !e.missing || e.name == "" || !r.lacks(e.name) || !r.named(e.name) {
+			return false
+		}
+	}
+	return true
+}
+
+// facts are what the judge reads of a broken build, raw: the issue, the
+// change's test files, the compiler's lines and the output's end, clipped
+// and masked, and whether the base holds each name the errors quote.
+func (r *redFirst) facts(errs []buildError, output string, list []BuildErrors) string {
+	var b strings.Builder
+	issue := r.issue
+	if issue == "" {
+		issue = "(not known: the tests are proven on their own)"
+	}
+	fmt.Fprintf(&b, "## The issue\n\n%s\n", clipRunes(forge.Mask(issue), factsIssueMax))
+	b.WriteString("\n## The change's test files\n")
+	left := factsTestsMax
+	for _, f := range r.tests {
+		c := clipRunes(forge.Mask(r.test(f)), max(left, 200))
+		left -= len([]rune(c))
+		fmt.Fprintf(&b, "\n### `%s`\n\n````\n%s\n````\n", f, strings.TrimRight(c, "\n"))
+	}
+	b.WriteString("\n## The build's errors, on the base with these tests\n\n```\n")
+	var lines []string
+	for _, e := range errs {
+		lines = append(lines, clipRunes(e.line, quoteLine))
+	}
+	if len(lines) > factsLinesMax {
+		lines = append(lines[:factsLinesMax], fmt.Sprintf("(and %d more)", len(lines)-factsLinesMax))
+	}
+	fmt.Fprintf(&b, "%s\n```\n", forge.Mask(strings.Join(lines, "\n")))
+	fmt.Fprintf(&b, "\nThe output, as the project's lines read it: %s\n", forge.Mask(errorLines(output, list, 15)))
+	var names []string
+	for _, e := range errs {
+		for _, n := range quotedNames(e) {
+			if !slices.Contains(names, n) {
+				names = append(names, n)
 			}
 		}
-		if red[i] {
-			anchored[e.file] = true
+	}
+	if len(names) > 0 {
+		b.WriteString("\n## The names the errors give, in the base\n\n")
+		for _, n := range names {
+			held := "held somewhere in the base's files"
+			if r.lacks(n) {
+				held = "in none of the base's files"
+			}
+			fmt.Fprintf(&b, "- `%s`: %s\n", n, held)
 		}
 	}
-	for i, e := range errs {
-		switch {
-		case red[i]:
-		case !e.inTest:
-			broken = append(broken, e)
-		case anchored[e.file] && !e.missing && len(names[i]) == 0 && !quotedPart.MatchString(e.msg) && inference.MatchString(e.msg):
-			// a knock-on: a type not inferred past a name the base lacks
-		case anchored[e.file] && e.missing && knockOn(e.name, r.test(e.file)):
-		case e.missing:
-			unnamed = append(unnamed, e)
-		default:
-			broken = append(broken, e) // a wrong call, a parse error: the test's own
-		}
-	}
-	return broken, unnamed, byShape
+	return b.String()
 }
+
+// quotedNames is the names an error gives: the one its row reads, and
+// each word it quotes. Context for the judge, never a verdict.
+func quotedNames(e buildError) []string {
+	var out []string
+	if e.name != "" {
+		out = append(out, e.name)
+	}
+	for _, q := range quotedName.FindAllStringSubmatch(e.msg, -1) {
+		if !slices.Contains(out, q[1]) && lastPart.MatchString(q[1]) {
+			out = append(out, q[1])
+		}
+	}
+	return out
+}
+
+// The judge's material, bounded: the issue's runes, the test files' all
+// together, the compiler's lines.
+const (
+	factsIssueMax = 6000
+	factsTestsMax = 12000
+	factsLinesMax = 40
+)

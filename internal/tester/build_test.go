@@ -48,7 +48,7 @@ func TestBuildErrorsGo(t *testing.T) {
 	// A lint's finding (#988): golangci-lint's typecheck, the compiler's
 	// lines in its message at the package's first file, or the finding
 	// itself in a test file.
-	missingName := missingNamed([]string{"a/mul_test.go"}, rules)
+	missingName := missingNamed([]string{"a/mul_test.go"}, rules, nil)
 	for _, c := range []struct {
 		path, message string
 		want          bool

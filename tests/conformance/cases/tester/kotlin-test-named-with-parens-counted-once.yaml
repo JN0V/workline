@@ -4,6 +4,7 @@ about: >
   missing name; the other builds and fails by its assertion, JUnit 5 on
   Gradle naming it `loud()`. Its name read from its file, `loud`, is the
   one the report holds: each test counted once, two, not three (#1178).
+  No issue known and no agent: red unproven, a person reads it.
 given:
   repo: kotlin-tested
   setup:
@@ -16,6 +17,6 @@ given:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
 run: {test: [check, --base, main]}
 expect:
-  status: pass
-  summary: "2 new tests, red on the base (1 not built there, a missing name)"
+  status: human
+  summary: "2 new tests, red on the base (1 not built there, a broken build), red unproven"
   no-findings: [{rule: tests-not-built, where: junit.xml}]

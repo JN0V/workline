@@ -483,9 +483,12 @@ func Post(runDir, repo string) int {
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "the tests do not hold to the issue's scenarios", Findings: findings, Again: again})
 	}
 	s.issue = t.Text
-	proof, newTests, blobs, err := proveOnBase(repo, t.Base, patches, s)
+	proof, newTests, blobs, asked, err := proveJudged(runDir, repo, t.Base, patches, s)
 	if err != nil {
 		return fail(err)
+	}
+	if asked { // the engine asks the judge, and runs post again with its answer
+		return write(runDir, *proof)
 	}
 	if proof.Status == verdict.Pass && len(newTests) == 0 {
 		// The files were written, and no test of them ran: the project's
@@ -519,7 +522,7 @@ func Post(runDir, repo string) int {
 		"body":  draftBody(t, tested, said, assumed(notes), newTests, proof),
 		// The tests frozen to whoever builds (ADR-0055, guards): kept in
 		// workline's own comment on the Draft once it is opened.
-		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Scenarios: t.Scenarios}.intention()["comment"],
+		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Scenarios: t.Scenarios, RedUnproven: unprovenOf(*proof)}.intention()["comment"],
 	}
 	data, err := yaml.Marshal(mr)
 	if err != nil {
@@ -579,10 +582,10 @@ func testsDone(runDir, repo string, t task, intents []intent.Intention, untested
 
 // proveOnBase commits the patches on base in a checkout apart and runs the
 // red-first check on that commit: the tests alone, red on the base.
-func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*verdict.Verdict, []string, map[string]string, error) {
+func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (proven, map[string]string, error) {
 	tree, err := os.MkdirTemp("", "workline-tests-")
 	if err != nil {
-		return nil, nil, nil, err
+		return proven{}, nil, err
 	}
 	defer func() {
 		if _, err := git(repo, "worktree", "remove", "--force", tree); err != nil {
@@ -591,17 +594,17 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 		}
 	}()
 	if _, err := git(repo, "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", "--quiet", tree, base); err != nil {
-		return nil, nil, nil, err
+		return proven{}, nil, err
 	}
 	if v, err := layPatches(tree, patches); v != nil || err != nil {
-		return v, nil, nil, err
+		return proven{v: v}, nil, err
 	}
 	if _, err := git(tree, "add", "-A"); err != nil {
-		return nil, nil, nil, err
+		return proven{}, nil, err
 	}
 	if _, err := git(tree, "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", "-c", "user.name=workline", "-c", "user.email=workline@invalid",
 		"commit", "-q", "--no-verify", "-m", "test: the tests proven red"); err != nil {
-		return nil, nil, nil, err
+		return proven{}, nil, err
 	}
 	var files []string
 	for _, p := range patches {
@@ -609,7 +612,7 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 	}
 	blobs, err := blobsOf(tree, "HEAD", files)
 	if err != nil {
-		return nil, nil, nil, err
+		return proven{}, nil, err
 	}
 	// The tests alone change: their new tests are in the folders that hold
 	// them, so a draft-command naming {packages} runs those alone, on the
@@ -626,18 +629,21 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (*ve
 	if s.SuiteMaxSeconds > 0 && s.deadline.IsZero() {
 		s.deadline, s.budget = time.Now().Add(3*time.Duration(s.SuiteMaxSeconds)*time.Second), "suite-max-seconds"
 	}
-	v, newTests := Prove(tree, base, s)
-	if len(pkgs) > 0 && v.Status == verdict.Pass {
-		v.Findings = append(v.Findings, verdict.Finding{Rule: "proof-scope", Level: "info", Where: "draft-command",
+	p := prove(tree, base, s)
+	if len(pkgs) > 0 && p.v.Status == verdict.Pass {
+		p.v.Findings = append(p.v.Findings, verdict.Finding{Rule: "proof-scope", Level: "info", Where: "draft-command",
 			Message: "run on the folders holding the tests alone, " + strings.Join(pkgs, " ") + ": the pull request's own checks run the whole suite"})
 	}
-	if v.Status == verdict.Pass {
-		rules, _ := compileBuildErrors(s.BuildErrors) // Prove said a bad one
-		if lint := lintTests(repo, tree, base, missingNamed(files, rules, rootsOf(tree)...)); lint != nil {
-			return lint, newTests, blobs, nil
+	if p.v.Status == verdict.Pass {
+		// The lint, past the build's own errors in the tests: a missing
+		// name, or an error the judge is to read; a judge's no makes the
+		// lint moot.
+		rules, _ := compileBuildErrors(s.BuildErrors) // prove said a bad one
+		if lint := lintTests(repo, tree, base, missingNamed(files, rules, p.errs, rootsOf(tree)...)); lint != nil {
+			p.v = lint
 		}
 	}
-	return v, newTests, blobs, nil
+	return p, blobs, nil
 }
 
 // lintTests runs the project's lint on the tests, as their merge request
@@ -806,15 +812,21 @@ func withinLeftOut(check string, g *gate.Gate, add *gate.Added, missing func(pat
 // gives the compiler's lines in its message, at the package's first
 // file: each line it holds must be one; else the finding itself, in a
 // test file, is read. A file under one of roots is read from there.
-func missingNamed(tests []string, rules []buildRules, roots ...string) func(path, message string) bool {
+func missingNamed(tests []string, rules []buildRules, built []buildError, roots ...string) func(path, message string) bool {
 	in := map[string]bool{}
 	for _, t := range tests {
 		in[path.Clean(t)] = true
 	}
+	broke := map[string]bool{} // the build's own errors in the tests, the proof's to read
+	for _, e := range built {
+		if e.inTest {
+			broke[e.file+"\x00"+e.msg] = true
+		}
+	}
 	return func(p, message string) bool {
 		if errs := buildErrorsIn(message, tests, rules, roots...); len(errs) > 0 {
 			for _, e := range errs {
-				if !e.missing {
+				if !e.missing && !broke[e.file+"\x00"+e.msg] {
 					return false
 				}
 			}
@@ -912,8 +924,12 @@ func assumed(notes []string) []string {
 func draftBody(t task, tested, said map[string]string, assumes, newTests []string, proof *verdict.Verdict) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Refs #%d\n\nThe acceptance tests of #%d, written before the code: %s. "+
-		"Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n## Tests\n\n| Scenario | Test |\n|---|---|\n",
+		"Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n",
 		t.Issue, t.Issue, proof.Summary)
+	if why := unprovenOf(*proof); why != "" {
+		fmt.Fprintf(&b, "**Red unproven**: %s.\n\n", why)
+	}
+	b.WriteString("## Tests\n\n| Scenario | Test |\n|---|---|\n")
 	for _, sc := range t.Scenarios {
 		file, ok := tested[sc.Name]
 		if !ok {
@@ -949,6 +965,16 @@ func draftBody(t task, tested, said map[string]string, assumes, newTests []strin
 		fmt.Fprintf(&b, "\n> %s (%s): %s\n", f.Rule, f.Level, f.Message)
 	}
 	return b.String()
+}
+
+// unprovenOf is why a proof is red unproven, "" when it is not.
+func unprovenOf(v verdict.Verdict) string {
+	for _, f := range v.Findings {
+		if f.Rule == RedUnproven {
+			return f.Message
+		}
+	}
+	return ""
 }
 
 // enginesOnly refuses an agent's comment or label: the tester's are the

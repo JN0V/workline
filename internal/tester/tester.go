@@ -5,6 +5,7 @@ package tester
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -59,6 +60,10 @@ type Settings struct {
 	// BuildErrors tell, by ecosystem, a build a new test broke by a name
 	// the code lacks from one broken otherwise.
 	BuildErrors []BuildErrors `json:"build-errors"`
+	// The judge of a broken build may read the base first (ADR-0045):
+	// its rounds of reads, and the lines read, all rounds together.
+	JudgeReadRounds int `json:"judge-read-rounds"`
+	JudgeReadMax    int `json:"judge-read-lines-max"`
 	// The curator's measures (`workline test measure`): the command run,
 	// when not the test command (one writing a coverage report too); the
 	// runs a measure; the slowest tests named; the window of measures a
@@ -95,8 +100,8 @@ type Settings struct {
 	// {packages}: those of them its tree holds.
 	packages []string
 	// issue, when set, is the text of the issue the tests are written
-	// for: a missing name it does not name is a build broken, a name the
-	// test made up, not one the change adds (#1111).
+	// for: a missing name it names verbatim, the base lacking it, is red
+	// at once; any other broken build is the judge's (ADR-0065).
 	issue string
 }
 
@@ -127,24 +132,41 @@ func (s Settings) Tests() testdef.Def { return testdef.From(s.Paths, s.Homes) }
 // and HEAD to HEAD, as committed: the tests HEAD's report holds that the
 // base's does not are the new ones; each must fail on the base with the
 // change's test files laid on it, and, when the change touches more than
-// tests, pass on HEAD. No report read is never a pass.
+// tests, pass on HEAD. No report read is never a pass. A build broken
+// past the fast path, with no agent to judge it, is red unproven: a
+// person reads it (ADR-0065).
 func Check(repo, base string, s Settings) *verdict.Verdict {
-	v, _ := Prove(repo, base, s)
-	return v
+	p := prove(repo, base, s)
+	if p.doubt != nil && p.v.Status == verdict.Pass {
+		return p.doubt.waiting(*p.v)
+	}
+	return p.v
 }
 
-// Prove is Check, with the new tests it found, sorted.
-func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
+// proof is what the red proof found: its verdict and the new tests. When
+// the build broke on the base otherwise than the fast path passes, doubt
+// holds the facts the judge reads, and the verdict is the one its yes
+// gives.
+type proven struct {
+	v     *verdict.Verdict
+	added []string
+	doubt *doubt
+	errs  []buildError // the errors of the build with the tests on the base
+}
+
+// prove is Check, with the new tests it found, sorted, and its doubt.
+func prove(repo, base string, s Settings) proven {
+	refused := func(v *verdict.Verdict) proven { return proven{v: v} }
 	if v := unset(s); v != nil {
-		return v, nil
+		return refused(v)
 	}
 	ch, err := changeOf(repo, base, s.Paths)
 	if err != nil {
-		return refuse("the red-first check did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}), nil
+		return refused(refuse("the red-first check did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}))
 	}
 	baseRun, f := run(repo, ch.base, nil, "", s, "on the base "+short(ch.base))
 	if f != nil {
-		return refuse("the red-first check did not run", *f), nil
+		return refused(refuse("the red-first check did not run", *f))
 	}
 	// A run that wrote no report is read by its compiler's lines when it
 	// is the one where the change's tests were laid on the base: a build
@@ -157,7 +179,7 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 	case f != nil && !onHead && f.Rule == "report-missing":
 		noReport = f
 	case f != nil:
-		return refuse("the red-first check did not run", *f), nil
+		return refused(refuse("the red-first check did not run", *f))
 	}
 	// Tests alone changed: the head is the base with its tests, and red
 	// there is all a change holding no code yet can prove.
@@ -165,25 +187,24 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 	if onHead {
 		if redRun, f = run(repo, ch.base, ch.tests, ch.head, s, "on the base "+short(ch.base)+" with the change's tests"); f != nil {
 			if f.Rule != "report-missing" {
-				return refuse("the red-first check did not run", *f), nil
+				return refused(refuse("the red-first check did not run", *f))
 			}
 			noReport = f
 		}
 	}
-	// The build where the change's tests were laid on the base: an error
-	// it printed in a test of the change red for the right reason (a name
-	// the base lacks, or a signature the issue gives anew) is a proof, the
-	// errors that follow from it in its file too; any other is a build
-	// broken otherwise, never a proof (build-errors, redfirst.go).
+	// The build where the change's tests were laid on the base: each error
+	// a missing name the base lacks and the issue names is red, proven
+	// (the fast path); any other error is the judge's to read, its facts
+	// raw (ADR-0065, change 1).
 	rules, _ := compileBuildErrors(s.BuildErrors) // unset said a bad one
 	errs := buildErrorsIn(redRun.output, ch.tests, rules, redRun.roots...)
 	if noReport != nil && len(errs) == 0 {
 		// No report and no error a row reads: the tests' own to mend,
 		// asked again with what the command said, never final.
-		return &verdict.Verdict{Status: verdict.Block, Summary: "the test command wrote no report with the change's tests, and no error a build-errors row reads",
-			Findings: []verdict.Finding{*noReport}}, nil
+		return refused(&verdict.Verdict{Status: verdict.Block, Summary: "the test command wrote no report with the change's tests, and no error a build-errors row reads",
+			Findings: []verdict.Finding{*noReport}})
 	}
-	sorter := &redFirst{repo: repo, base: ch.base, issue: s.issue,
+	reader := &redFirst{repo: repo, base: ch.base, issue: s.issue,
 		code: onceString(func() string {
 			if !onHead {
 				return ""
@@ -194,31 +215,16 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 			return changedLines(out)
 		}),
 		test: testFiles(repo, ch.head), tests: ch.tests}
-	broken, unnamed, byShape := sorter.sort(errs)
-	if len(broken) > 0 || len(unnamed) > 0 {
-		var lines, names []string
-		for _, e := range broken {
-			lines = append(lines, e.line)
-		}
-		for _, e := range unnamed {
-			lines = append(lines, e.line)
-			if !slices.Contains(names, e.name) {
-				names = append(names, e.name)
+	var dbt *doubt
+	if len(errs) > 0 && !reader.fast(errs) {
+		dbt = &doubt{Facts: reader.facts(errs, redRun.output, s.BuildErrors), Base: ch.base, errs: errs}
+		for _, e := range errs {
+			dbt.Lines = append(dbt.Lines, e.line)
+			if dbt.Where == "" && e.inTest {
+				dbt.Where = e.file
 			}
 		}
-		where := slices.Concat(broken, unnamed)[0].file
-		var msgs []string
-		if len(broken) > 0 {
-			msgs = append(msgs, fmt.Sprintf("%d build error%s not red for the right reason in a test of the change", len(broken), plural(len(broken))))
-		}
-		if len(unnamed) > 0 {
-			msgs = append(msgs, fmt.Sprintf("%d missing name%s the issue never names (%s): a test calls what the base has or what the issue names, never a helper it made up",
-				len(unnamed), plural(len(unnamed)), strings.Join(names, ", ")))
-		}
-		return &verdict.Verdict{Status: verdict.Block, Summary: "the build broke on the base with the change's tests, not by what the issue adds",
-			Findings: []verdict.Finding{{Rule: "build-broken", Where: where,
-				Message: fmt.Sprintf("%s (%s): a test must fail by its assertion, a missing name or a signature the issue gives, "+
-					"never a syntax error, a wrong import or a wrong call on what the base has", strings.Join(msgs, "; "), sample(lines))}}}, nil
+		dbt.Where = cmp.Or(dbt.Where, errs[0].file)
 	}
 	byName := len(errs) > 0
 	// A base test the red run lacks was not built there. Beside code, the
@@ -273,7 +279,7 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 	if !onHead && byName {
 		names, err := unbuiltTests(repo, ch, headRun, errs, rules)
 		if err != nil {
-			return refuse("the red-first check did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}), nil
+			return refused(refuse("the red-first check did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}))
 		}
 		added = append(added, names...)
 	}
@@ -295,7 +301,7 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "no-new-test", Level: "warn", Where: s.Report,
 				Message: fmt.Sprintf("the change touches %d test file(s) (%s) but its report names no test the base's does not: a build that fails names none", len(ch.tests), sample(ch.tests))})
 		}
-		return v, nil
+		return proven{v: v, doubt: dbt, errs: errs}
 	}
 	missing := 0
 	for _, id := range added {
@@ -326,9 +332,13 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 		v.Summary += ", green on the head"
 	}
 	if missing > 0 {
-		why := "a missing name"
-		if byShape {
-			why = "a name or a signature the change adds"
+		// Said: the fast path passed it, without the judge (ADR-0065).
+		why := "a missing name the issue names"
+		switch {
+		case dbt != nil:
+			why = "a broken build"
+		case s.issue == "":
+			why = "a missing name the change's code adds"
 		}
 		v.Summary += fmt.Sprintf(" (%d not built there, %s)", missing, why)
 	}
@@ -339,7 +349,7 @@ func Prove(repo, base string, s Settings) (*verdict.Verdict, []string) {
 			break
 		}
 	}
-	return v, added
+	return proven{v: v, added: added, doubt: dbt, errs: errs}
 }
 
 // unbuiltTests is the tests the change's test files declare, by the

@@ -40,6 +40,10 @@ type record struct {
 	// Scenarios: the issue's, as the run that wrote the tests read them,
 	// for the auditor (ADR-0046); none in a record written before.
 	Scenarios []Scenario `json:"scenarios,omitempty"`
+	// RedUnproven: why the judge did not settle the tests' red proof, a
+	// build broken on the base (ADR-0065); the developer's pull request
+	// says it too. None when proven.
+	RedUnproven string `json:"red-unproven,omitempty"`
 }
 
 var recordData = regexp.MustCompile(`<!-- workline:tester-record (\{.*\}) -->`)
@@ -53,6 +57,9 @@ func (r record) body() string {
 		"(the test, its scenario, the kind, why). Any other change to them blocks, `tester-test-changed`.\n\n| Test file | Blob |\n|---|---|\n", r.Issue)
 	for _, f := range r.files() {
 		fmt.Fprintf(&b, "| `%s` | `%s` |\n", f, short(r.Files[f]))
+	}
+	if r.RedUnproven != "" {
+		fmt.Fprintf(&b, "\n**Red unproven**: %s\n", r.RedUnproven)
 	}
 	data, _ := json.Marshal(r)
 	fmt.Fprintf(&b, "\n<!-- workline:tester-record %s -->", data)

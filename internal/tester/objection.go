@@ -578,9 +578,12 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		return block("scenario-without-test", "the rewritten test no longer names its scenario, "+a.Scenario.Name)
 	}
 	s.issue = a.Text
-	proof, newTests, blobs, err := proveOnBase(repo, a.Record.Base, patches[len(patches)-1:], s)
+	proof, newTests, blobs, asked, err := proveJudged(runDir, repo, a.Record.Base, patches[len(patches)-1:], s)
 	if err != nil {
 		return fail(err)
+	}
+	if asked { // the engine asks the judge, and runs post again with its answer
+		return write(runDir, *proof)
 	}
 	if proof.Status == verdict.Pass && len(newTests) == 0 {
 		proof.Status = verdict.Block

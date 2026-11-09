@@ -19,7 +19,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-go-missing-name"}
 expect:
   status: pass
-  summary: "1 new test, red on the base (1 not built there, a missing name)"
+  summary: "1 new test, red on the base (1 not built there, a missing name the issue names)"
   agent-calls: 1
   pushed:
     workline/tester/issue-3:

@@ -1,15 +1,16 @@
 case: tester/write-made-up-name-twice-blocked
 about: >
-  In a shell project, asked once more with the error, the agent's test
-  still calls `stub_two`, a name the code lacks and the issue never
-  names (#1111): the tester asks no third time. The run blocks with the
-  error, said on the issue, which waits for a person; no Draft opens.
+  In a shell project, asked once more with the judge's no, the agent's
+  test still calls `stub_two`, a name the issue never names (#1111); the
+  judge says no again: the tester asks no third time. The run blocks with
+  its line, said on the issue; no Draft opens.
 given:
   repo: tested
   setup:
     - "sed -i 's|>/dev/null 2>&1|>/dev/null|' run-tests.sh && git commit -qam 'chore: the tests say their errors'"
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   env:
+    WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-no.yaml"
     ALWAYS: "1"
   config:
     roles:
@@ -29,7 +30,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-mul-stub-once.sh"}
 expect:
   status: block
-  agent-calls: 2
+  agent-calls: 4
   findings: [{rule: build-broken, where: tests/test_mul_two_by_three.sh}]
   not-pushed: [workline/tester/issue-3]
   forge:
@@ -37,4 +38,4 @@ expect:
       - {id: 1, absent: true}
     issues:
       - id: 3
-        comment-contains: ["**The tester** wrote no tests for this issue this run", "the issue never names (stub_two)"]
+        comment-contains: ["**The tester** wrote no tests for this issue this run", "the judge: the test calls a helper the issue never asks for"]

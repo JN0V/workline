@@ -1,16 +1,16 @@
-case: tester/write-kotlin-changed-signature-red
+case: tester/write-kotlin-changed-signature-judged-red
 about: >
-  The issue changes a function's signature (`add(a, b, c)`, the base's
-  `add` taking two). The tester's Kotlin test calls it with three
-  arguments: the module does not compile, Gradle writes no report at all,
+  Judged yes: the issue changes a function's signature (`add(a, b, c)`,
+  the base's `add` taking two). The tester's Kotlin test calls it with
+  three arguments: the module does not compile, Gradle writes no report,
   and Kotlin says `Too many arguments for 'fun add(…)'`, no missing name.
-  The compiler's lines are read before the missing report refuses the
-  run, and a signature the issue writes anew is red for the right reason:
-  the Draft opens at once (#1192).
+  The fast path does not pass it; the judge is asked with the compiler's
+  lines, and its yes makes the test red: the Draft opens (ADR-0065).
 given:
   repo: kotlin-tested
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-yes.yaml"}
   config:
     roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
   forge:
@@ -22,8 +22,11 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-kotlin-signature"}
 expect:
   status: pass
-  summary: "1 new test, red on the base (1 not built there, a name or a signature the change adds)"
-  agent-calls: 1
+  summary: "1 new test, red on the base (1 not built there, a broken build)"
+  agent-calls: 2
+  findings: [{rule: red-judged, level: info, where: calc/src/test/kotlin/calc/AddThreeTest.kt}]
+  run-files:
+    out/judge/red-proof/question.yaml: {contains: ["Too many arguments for 'fun add(a: Int, b: Int): Int'", "add(2, 3, 4)", "takes a third number"]}
   forge:
     merge-requests:
       - {id: 1, branch: workline/tester/issue-3, draft: true}
