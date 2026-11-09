@@ -695,3 +695,5 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-11-09T07:20:08Z	c778a9e5+changes	claude	claude-sonnet-5-5	medium	product-owner/size-splits-a-separable-feature	4/4	1	13064	2245	0.0421	15			fresh 6950 (in 2, cache write 4703, out 2245); cache read 8359; turns 1
 2026-11-09T07:20:42Z	c778a9e5+changes	claude	claude-sonnet-5-5	medium	product-owner/size-grants-an-atomic-bug	4/4	1	12364	644	0.0233	6			fresh 4649 (in 2, cache write 4003, out 644); cache read 8359; turns 1
 2026-11-09T07:20:50Z	c778a9e5+changes	claude	claude-sonnet-5-5	medium	product-owner/size-splits-a-separable-feature	4/4	1	13064	2158	0.0229	14			fresh 2160 (in 2, cache write 0, out 2158); cache read 13062; turns 1
+2026-11-09T08:21:33Z	f2126aeb+changes	claude	claude-sonnet-5-5	medium	product-owner/size-grants-an-atomic-bug	4/4	1	12378	339	0.0529	5			fresh 12717 (in 2, cache write 12376, out 339); cache read 0; turns 1
+2026-11-09T08:21:43Z	f2126aeb+changes	claude	claude-sonnet-5-5	medium	product-owner/size-splits-a-separable-feature	4/4	1	13078	2202	0.0743	15			fresh 15280 (in 2, cache write 13076, out 2202); cache read 0; turns 1
