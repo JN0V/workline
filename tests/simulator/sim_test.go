@@ -104,9 +104,10 @@ var traces = func() []trace {
 		// The product owner's answer unreadable twice in its run.
 		trace{name: "trial-35-po-unread", file: "trial-35", fresh: true, end: "done", by: map[string][]outcome{"product-owner": {malformed, malformed}}},
 		// Needs input, from each source: the engine (the product owner's
-		// files), the product owner (the tester's no test, the
-		// developer's file outside its Scope), a person (the product
-		// owner's question, unanswered: the issue waits on its reporter).
+		// files), the product owner (the tester's no test), a person (the
+		// product owner's question, unanswered: the issue waits on its
+		// reporter). The developer's file beyond its Scope asks no one:
+		// applied, listed (ADR-0065, change 2).
 		trace{name: "trial-35-needs-engine", file: "trial-35", fresh: true, end: "done", by: one("product-owner", needsEngine)},
 		trace{name: "trial-35-needs-po-test", file: "trial-35", fresh: true, end: "done", by: one("tester", needsRole)},
 		// #1047, #1059: the tester short of code says what it lacks.
@@ -114,7 +115,7 @@ var traces = func() []trace {
 		trace{name: "trial-35-needs-po-code", file: "trial-35", fresh: true, end: "done", by: one("developer", needsRole)},
 		trace{name: "trial-35-needs-person", file: "trial-35", fresh: true, end: "waiting:", by: one("product-owner", needsPerson)},
 		// #1061: the developer's new test file beside its Scope, alone,
-		// as the trial's round wrote it: kept by the write fence, no ask.
+		// as the trial's round wrote it: beside the Scope, no ask.
 		trace{name: "trial-35-test-beside", file: "trial-35", fresh: true, end: "done", by: one("developer", testBeside)},
 		// ADR-0064, step 5: every run crosses its target. The tester's
 		// first, 350k past its cap of 300k, its answer unread, crosses its

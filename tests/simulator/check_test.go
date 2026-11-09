@@ -192,8 +192,8 @@ func knownDraft(s forge.FakeState, id int) bool {
 // knownNeeds: the needs-input answers an open issue says end with no
 // status: the product owner's from the engine. Its question, a person's,
 // is held: it waits on its reporter, said (#1082). The tester's is
-// held, and the developer's, its file outside the Scope asked of the
-// product owner (#1084, ADR-0063 §9).
+// held. The developer's file beyond the Scope asks no one: applied,
+// listed (ADR-0065, change 2).
 func knownNeeds(cl call) bool {
 	return cl.Role == "product-owner" && cl.Kind == needsEngine
 }
@@ -317,6 +317,9 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 		a := issueOf(after, cl.Issue)
 		if !cl.Kind.needs() || !c.on(pNeeds) || c.known && knownNeeds(cl) || a == nil || a.Closed {
 			continue
+		}
+		if cl.Kind == needsRole && cl.Role == "developer" {
+			continue // a file beyond the Scope is applied, asked of no one (ADR-0065, change 2)
 		}
 		st, said := status(again, cl.Issue)
 		_, next, _ := w.cfg.Wakes(a.Labels, line.IssueEvent)

@@ -275,8 +275,9 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 		return kind, patch(componentOf(h)+"/test/test_more_ISSUE/test_more_ISSUE.cpp",
 			fmt.Sprintf("#include <unity.h>\n#include <DomoticsCore/%s>\n\nvoid test_more(void) { TEST_ASSERT_TRUE(true); }\n\nint main() {\n    UNITY_BEGIN();\n    RUN_TEST(test_more);\n    return UNITY_END();\n}\n", path.Base(h)))
 	case kind == needsRole && role == "developer":
-		// A file outside its Scope: the product owner widens it.
-		return kind, patch(outside(headerIn(task, "## What you may change")), "#pragma once\n// what the fix needs here\n")
+		// Its code, and a file beyond its Scope the code needs: both
+		// applied, the file listed (ADR-0065, change 2); no one asked.
+		return kind, a.progressOf(role, task) + patch(outside(headerIn(task, "## What you may change")), "#pragma once\n// what the fix needs here\n")
 	case kind == needsPerson && role == "product-owner":
 		return kind, "- ask: {issue: ISSUE, questions: \"Which of the two screens shows it?\", why: \"only the reporter saw it\"}\n"
 	}
