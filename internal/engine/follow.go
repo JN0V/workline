@@ -117,6 +117,9 @@ func Follow(o FollowOptions) *Result {
 	} else {
 		res.Summary = "the roles' merge requests left to gardening"
 	}
+	if s, ok := f.(forge.Settler); ok {
+		res.Summary += "; " + settleMerges(s, res) // done.go
+	}
 	res.Summary += "; " + settleDone(f, open, o.States, res) // done.go
 	o.Base = base
 	if o.Merge == MergeEnterprising {

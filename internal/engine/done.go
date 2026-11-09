@@ -131,3 +131,24 @@ func closedBearing(f forge.Forge, labels []string) ([]forge.Issue, error) {
 		return !is.Closed || !slices.ContainsFunc(labels, func(l string) bool { return slices.Contains(is.Labels, l) })
 	}), err
 }
+
+// settleMerges closes the issues the merge requests merged outside the
+// forge say they close, as a forge does on a merge (#1282): the local
+// forge's, merged with git. Before settleDone, which takes their states
+// off.
+func settleMerges(s forge.Settler, res *Result) string {
+	settled, err := s.SettleMerges()
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "done-not-tended", Level: "warn", Where: "the merged merge requests",
+			Message: "what a merge left open could not be tended here, the next run tries again: " + err.Error()})
+	}
+	closed := 0
+	for _, m := range settled {
+		for _, n := range m.Issues {
+			closed++
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "issue-closed", Where: fmt.Sprintf("#%d", n),
+				Message: fmt.Sprintf("!%d, which says it closes it, is merged into %s", m.MergeRequest, m.Base)})
+		}
+	}
+	return fmt.Sprintf("%d merge requests merged with git, %d of the issues they close closed", len(settled), closed)
+}

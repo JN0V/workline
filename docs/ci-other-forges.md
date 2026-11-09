@@ -76,6 +76,9 @@ forge: local
   pushed.
 - `workline issues` lists them, `workline issues show <n>` (or `!<n>` for a
   merge request) shows one; you merge a branch with git.
+- After that merge, `workline follow` closes the issues the merge request
+  says it closes (`Closes #<n>`), their state's label taken off, as a
+  forge does.
 - No CI to set up: gardening and the [weekly sample](ci.md#the-weekly-sample)
   run on your machine — `workline route schedule --open-merge-request`,
   then `workline follow --gardening` to rebuild or close its earlier
