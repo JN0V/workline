@@ -49,7 +49,7 @@ Part of [the product owner](../README.md). What a run does, step by step:
   edit one and it is yours. To an outsider, a comment proposing them
   instead.
 - **In the reader's order**: Need, Example, Validation, then a line,
-  then Verification and Scope; yours never moved
+  then the Scope; yours never moved
   ([writing an issue](writing.md)).
 - **Each thing said once**: what an import or another role wrote above
   the sections, no person having edited it, becomes the Need draft —

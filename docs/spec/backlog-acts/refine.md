@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/assume.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/work/scope.go, internal/backlog/scenarios.go, internal/forge/forge.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go, internal/backlog/assume.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/work/scope.go, internal/backlog/scenarios.go, internal/backlog/verification.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
 checked: 3f424301
 verified: agent:claude-code
@@ -9,9 +9,12 @@ verified: agent:claude-code
 
 Part of [Acts on the backlog](../backlog-acts.md): writing the sections an issue lacks, moving it to ready and back, and naming its code.
 
-An issue is `ready` when four sections are written in its body — `## Need`,
-`## Verification`, `## Validation`, `## Scope` (docs/spec/routing.md) — and
-its Need and Validation are a person's (ADR-0018). A person's text on top,
+An issue is `ready` when three sections are written in its body — `## Need`,
+`## Validation`, `## Scope` (docs/spec/routing.md) — and
+its Need and Validation are a person's (ADR-0018). Its `## Verification`
+is not one: the tester writes it from its tests, after ready
+([ADR-0066](../../adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md),
+[the tester's Verification](#the-testers-verification)). A person's text on top,
 with no Need section holding text, is its Need (`backlog.NeedOnTop`,
 ADR-0039, amended). The product owner writes
 what it can and asks for the rest:
@@ -21,12 +24,11 @@ what it can and asks for the rest:
     issue: 12
     scope: "WriteRows in src/export/csv.go, and its test."
     sources: [src/export/csv.go]     # the files the scope names, in the commit
-    verification: "A test writes three rows and reads three lines back."
     need: "Every row exported, so a report counts what was sold."   # a draft
     example: "Ann makes 3 sales on 8 Oct and exports that day: 2 rows."   # a draft, never required; a bug: steps
     validation: "The maintainer opens an export of a known day."    # a draft
     why: "The issue says what is wrong, not how it will be proved."
-- ready: {issue: 12, why: "Its four sections are there, Need and Validation the reporter's."}
+- ready: {issue: 12, why: "Its Need, Validation and Scope are there, Need and Validation the reporter's."}
 - ask: {issue: 14, questions: "Which export: CSV or JSON? What should a blank row become?", why: "The need is not clear."}
 ```
 
@@ -36,14 +38,15 @@ what it can and asks for the rest:
   `### ` headings, read as `## ` ones). A section with text — a person's,
   or one the role wrote before — is never rewritten (`section-kept`), but
   one the role may rewrite to answer the reviewer or a person's comment:
-  the Verification and the Scope always, whoever wrote them
+  the Scope always, whoever wrote it
   ([ADR-0060](../../adr/0060-the-person-is-on-the-loop.md)); the Need,
   the Validation, an example or a bug's steps while its own
   ([A spec read before ready](spec-review.md), [A person's answers](answers.md)).
   **In the reader's order** (the table's, `work.Headings`): the person's part — Need,
   an `example` (`## Example`) or a bug's `steps` (`## Steps to
   reproduce`), Validation — above a thematic break `---`; the builder's —
-  Verification, Scope — below it. A section added goes after the nearest
+  Verification, Scope — below it. A `verification` the product owner
+  gives is left out: the tester's. A section added goes after the nearest
   one before it in that order, else before the nearest one after it, at
   its heading's level, never moving a person's; the break is added when
   every section of the person's part comes before every one of the
@@ -123,7 +126,7 @@ what it can and asks for the rest:
     their order, and the text before is in the forge's edit history.
     A block the role folded there (`<details>` … `</details>`, a cause
     and its fix) moves whole to the end of the last builder's section
-    the refine writes (Scope, else Verification), or stays on top when
+    the refine writes (the Scope), or stays on top when
     it writes none ([#841](https://github.com/JN0V/workline/issues/841)).
     Never on an outsider's issue proposed in a comment. It follows the
     refine's mode and level as the drafts do: at `cautious`, proposed.
@@ -322,7 +325,7 @@ The tester found no test possible and sent the issue back to refine
   unnamed (`proof-reason-missing`, `proof-kind-unknown`,
   `proof-test-missing`).
 - **Or back to its tests**: the role rewrites what keeps a test from
-  being written — its Verification and Scope, its own Validation draft
+  being written — its Scope, its own Validation draft
   ([#1053](https://github.com/JN0V/workline/issues/1053)) — or asks; a
   `ready` with no proof beside that rewrite goes to
   `workline:needs-tests`.
@@ -380,7 +383,7 @@ from.
   person's Scope too, then `unblock` to its state. A narrowing not
   written holds the unblock beside it (`scope-not-narrowed`); sent back
   as it is, the next crossing waits for a person. Its need atomic — no part
-  passes its own Verification apart — at the
+  passes its own scenarios apart — at the
   normal size: `size` with `tier: large`, then `unblock`
   ([ADR-0064, step 4](../../adr/0064-size-is-a-target-not-a-wall.md#3-the-product-owner-decides-once-a-state-an-issue)).
   Parts that pass apart, the issue no part itself: a `split`,
@@ -422,6 +425,27 @@ in the same call:
   ([routing](../routing.md#the-line-of-states)).
 - **Mode**: `act` at `normal` and `enterprising`, `propose` at
   `cautious` ([autonomy](autonomy.md)).
+
+## The tester's Verification
+
+How the work is proved is the tester's, as a human tester writes the
+test plan ([ADR-0066](../../adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md),
+[#1261](https://github.com/JN0V/workline/issues/1261)):
+
+- **The product owner writes none**: a `verification` in its `refine` or
+  a `split` child is left out (`work.Testers`); ready never waits for one.
+- **The tester writes it** once its tests are proved red and linted, by
+  the engine, not its agent (intention `verification`, `tester.testPlan`):
+  each scenario, the test that proves it, or why none can. It is
+  marked `<!-- workline:verification=tester -->`, below the line, and its
+  comment on the issue says it wrote it.
+- **Its own is rewritten** at its next tests; **another's is kept** word
+  for word (`backlog.WithVerification`): a person's, or one a product
+  owner wrote before. When that text names not every test, the tester's
+  comment says the tests prove it another way, naming each.
+- **A reviewer's finding on it is the tester's**: it holds nothing from
+  ready (`SpecReview.Testers`), the product owner is not given it, and
+  the tester's task quotes it (`backlog.SpecForTester`).
 
 ## A body's footer
 

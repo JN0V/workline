@@ -16,10 +16,16 @@ first, the cause folded.
 |---|---|---|
 | The person's, on top | Need, Example (a bug: Steps to reproduce), Validation | who decides and accepts |
 | A line | `---` | the reader may stop here |
-| The builder's, below | Verification, Scope | who builds it |
+| The builder's, below | Verification (the tester's), Scope | who builds it |
 
-- **Four sections are required**: Need, Verification, Validation, Scope
+- **Three sections are required** to be ready: Need, Validation, Scope
   ([what ready means](../../../docs/spec/backlog-acts/refine.md)).
+- **The Verification is the tester's**: how the machine proves it, which
+  test proves which scenario. The tester writes it from its tests once
+  the issue is ready, as a tester writes the test plan; one you wrote is
+  kept
+  ([ADR-0066](../../../docs/adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)).
+  The product owner writes none.
 - **Example and Steps to reproduce are not**, nor any other heading you
   add: kept as they are.
 - **Your text on top, with no Need heading, is the Need**: the product
@@ -86,12 +92,6 @@ nothing says which one is hers.
 
 ---
 
-## Verification
-
-- A finding on both the base and the head is not counted; one only on
-  the head is.
-- A tool that did not run is an error, never a pass.
-
 ## Scope
 
 `internal/gate`: the runs on the base and the head.
@@ -122,10 +122,6 @@ Users who exclude a folder with a trailing slash still upload it:
 
 ---
 
-## Verification
-
-`TestExcludeTrailingSlash` fails on 2.3.1, passes after the fix.
-
 ## Scope
 
 `matchExclude` in `internal/filter/glob.go`.
@@ -141,8 +137,8 @@ amended; [worked case](proposed-headings.md#each-thing-said-once)):
   another role opened the issue with, rewritten in plain words, then
   taken from the top. The line saying where it comes from, and the
   hidden markers, stay. What it folded there, a cause and its fix,
-  moves whole to the end of the Scope or Verification written; with
-  neither written, it stays on top
+  moves whole to the end of the Scope written; with none written, it
+  stays on top
   ([#841](https://github.com/JN0V/workline/issues/841)).
 - **Your text on top is the Need**, when no Need heading follows: the
   product owner adds Validation and the builder's part, never a Need
@@ -160,13 +156,14 @@ amended; [worked case](proposed-headings.md#each-thing-said-once)):
 
 ## What the product owner says it changed
 
-- **One line on the issue**, in its comment: "Added: Verification, Scope.
-  Changed: —. See the issue's edit history."
+- **One line on the issue**, in its comment: "Added: Scope. Changed: —.
+  See the issue's edit history."
 - **Changed** lists the sections it rewrote:
   - its own drafts, or a text as it wrote it;
-  - the Verification or the Scope, even yours, to answer the reviewer
+  - the Scope, even yours, to answer the reviewer
     ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md)):
-    the builder's part is its to keep, at every level;
+    it is its to keep, at every level; never the Verification, the
+    tester's, a finding there answered by the tester;
   - never a sentence of your Need, Example or Validation.
 - **Rewrote: the text on top as the Need, in plain words** when it took
   a role's text on top into the Need.
