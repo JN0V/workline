@@ -27,7 +27,12 @@ flowchart LR
     ([#1281](https://github.com/JN0V/workline/issues/1281));
   - **its own Draft**, branch `workline/tester/issue-<n>`
     ([hand-over](hand-over.md)), when a person builds on it.
+  - **closing several issues**: each Draft's record is guarded, and
+    their tests proven together; an objection goes on the Draft's
+    line, where the tester answers.
   - No open Draft for the issues it closes: nothing to guard, said.
+  - A forge that lists no merge request: the Drafts not read, a
+    warning, `drafts-unread`.
 - **Once the pull request is marked ready**: the developer opens it so
   when green. While it is a Draft, the tests are meant red; the proof
   says it waits.
