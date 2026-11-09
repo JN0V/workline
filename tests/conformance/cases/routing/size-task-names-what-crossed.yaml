@@ -1,0 +1,43 @@
+case: routing/size-task-names-what-crossed
+about: >
+  The product owner asked on an issue's size judges on facts (#1193,
+  round 6's RC3): on #3, waiting for its tests, 228k fresh tokens spent
+  on it already, the tester's prompt is over its context budget. Its
+  task names what crossed, with the run's numbers, and what the issue
+  spent so far against its normal and its backstop. It says the rule:
+  split when its parts pass their Verification apart; grant
+  `workline:size/large` when its Need or Scope says its parts fail apart,
+  never split.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+        comments:
+          - "**workline's line** last woke the product owner on this issue.\n\n<!-- workline:line-record {\"state\":\"refine\",\"hops\":1,\"spent\":{\"refine\":[60000],\"tests\":[168000]}} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/blocked-for-size.sh", then: again}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: size-crossed, level: warn, where: "#3", message: "the product owner reads it at once: moved to blocked"}
+    - {rule: state-revisit, level: info, where: "#3", message: "blocked, read again by the product-owner: the tester's run on it crossed its size"}
+  run-files:
+    in/task.md:
+      contains:
+        - "What crossed: the tester's run on it"
+        - "over the role's budget of 60000"
+        - "Spent on it so far: 228k fresh tokens, all runs, against its normal of 400k"
+        - "its backstop of 1.6M"
+        - "its Need or Scope says its parts fail apart"
+        - "grant it, never split it"

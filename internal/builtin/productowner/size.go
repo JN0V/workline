@@ -67,3 +67,9 @@ func predictSaid(b forge.Backlog, open []forge.Issue, is forge.Issue, st *backlo
 	return fmt.Sprintf("Its size, before `ready`: predict what the line's runs on it will spend, from its %s's files, its scenarios and its effort, against its normal here: %s fresh tokens an issue of its kind (%s). Well past it: %s. Within it, nothing more.\n",
 		work.Name(work.Scope), line.Tokens(n), from, said)
 }
+
+// spentSaid is what is spent so far against its normal and its backstop,
+// told the product owner asked on its size (line.SpentSaid).
+func spentSaid(b forge.Backlog, open []forge.Issue, is forge.Issue, comments []string) string {
+	return line.SpentSaid(b, open, is, comments)
+}

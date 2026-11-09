@@ -232,6 +232,24 @@ func BackstopSaid(f forge.Forge, repo string, id int) (string, error) {
 	return bs.said(spent), nil
 }
 
+// SpentSaid says what issue is spent so far, its record read from
+// comments, against its normal (IssueNormal, its tier in) and its
+// backstop: the facts the product owner asked on its size judges on
+// (#1193, round 6's RC3), never "too big" alone.
+func SpentSaid(b forge.Backlog, open []forge.Issue, is forge.Issue, comments []string) string {
+	rec, _ := recordIn(comments)
+	n, measured := IssueNormal(b, open, is)
+	from := "the seed, until about 10 issues of its kind are done here"
+	if measured {
+		from = "this project's own, its 85th percentile"
+	}
+	if tier := backlog.SizeTier(is.Labels); tier != "" {
+		from += fmt.Sprintf(", ×%d its tier `%s`", backlog.TierFactor(tier), backlog.TierLabel(tier))
+	}
+	return fmt.Sprintf("%s fresh tokens, all runs, against its normal of %s an issue of its kind (%s), and its backstop of %s, where it waits for a person",
+		Tokens(rec.Fresh()), Tokens(n), from, Tokens(backstopOf(b, open, is).Tokens))
+}
+
 // roundStopped says whether the review round due on mr is stopped, its
 // issue's runs at their backstop (ADR-0064, §5, the panel of
 // 2026-11-08): said on the pull request, kept open, and the write that

@@ -469,7 +469,7 @@ func productOwnerOf(task []byte) string {
 			strings.TrimSpace(scope), strings.Join(q, ", "))
 	}
 	switch {
-	case strings.Contains(string(task), "is too big for that role") && strings.Contains(string(task), "`size` with `tier: large`"):
+	case strings.Contains(string(task), "), on its size. What crossed:") && strings.Contains(string(task), "`size` with `tier: large`"):
 		// A run too big for its role, the issue atomic as the fake sees
 		// it (ADR-0064, §3): `large` granted, sent back where it was.
 		to := "refine"

@@ -276,6 +276,13 @@ needs, not a need with steps. A child that cannot start before another
 of the split is done says so with `after`: the places of the children it
 waits on, from 1.
 
+**Past its size**, the task says what crossed and what the issue spent
+against its normal: judge on those facts, not on "too big". A crossing
+measures one run, not the need. Split only when its parts each pass
+their own Verification apart. When its Need or Scope says its parts
+fail apart — one bug, one cause, a change no half of proves — grant it
+`size` `tier: large`, never split it.
+
 **What an issue waits on**: when an issue you read cannot start before
 another open issue is done — it builds on code that issue adds, or its
 test needs that issue's fix — propose `depend` with `blocked-by`, the
