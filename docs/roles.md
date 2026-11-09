@@ -1,5 +1,5 @@
 ---
-sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/inspector/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml, roles/tester/role.yaml, roles/developer/role.yaml]
+sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/inspector/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/ux/role.yaml, roles/auditor/role.yaml, roles/tester/role.yaml, roles/developer/role.yaml]
 checked: 8538d558
 judged: d34fd75
 verified: agent:claude-code
@@ -23,6 +23,7 @@ How far each goes alone before a person is its level:
 | Tester | writes the tests of an issue waiting for them from its scenarios, each proven red on the base, frozen to the builder | `issue`, `schedule` and `merge-request` (opt-in), an objection on its Draft, `workline test` | [tester](../roles/tester/README.md) |
 | Developer | takes the first ready issue nobody took and writes its code within bounds, proves it on the project's tests, opens a pull request, ready or a Draft, and fixes its review | `workline develop`, `issue` and `schedule` (opt-in), a review or a red check on its pull request, its bounds on `merge-request` (opt-in) | [developer](../roles/developer/README.md) |
 | Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import`, `issue` | [product owner](../roles/product-owner/README.md) |
+| UX | reads a change's screens against the issue's Need for what accessibility tools cannot judge; advisory, never the verdict | `merge-request` (opt-in), on a project declaring a `ui:` | [ux](../roles/ux/README.md) |
 | Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
 | Auditor | re-checks a weekly sample of every role's acts | `workline sample` | [auditor](../roles/auditor/role.yaml) |
 

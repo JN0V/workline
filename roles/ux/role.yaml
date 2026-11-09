@@ -1,0 +1,38 @@
+contract: 1
+name: ux
+mission: A change's screens are read against the issue's Need, for what accessibility tools cannot judge — a flow, words, consistency — and the tools' verdict stays theirs.
+
+# merge-request: on a project that declares its interface (`ui:`, ADR-0061),
+#         the screens a change brings, read against the Need of the issue it
+#         closes. Opt-in in the project's routing.
+events: [merge-request]
+# The reading only warns: it reads apart from the verdict (ADR-0050).
+apart: [merge-request]
+
+requires: [git]
+
+# Telling an unclear message, or two names for one action, is judgement on
+# words and flows.
+model:
+  capability: reasoning
+  tier: standard
+  effort: medium
+  promote-after: 1
+
+context:
+  budget: 40000
+
+duties:
+  reads: ["**"]
+  writes: []         # never the code, never the gates' verdict: a person fixes
+
+# One comment on the merge request carrying the findings, each quoting the
+# screen and the Need. Never a patch, a label, nor a verdict.
+intentions: [comment, note]
+
+# No agent, no reading: the accessibility checks run and their verdict
+# stands.
+without-ai: pass
+
+settings:
+  findings-max: 10     # findings shown a run; the rest counted

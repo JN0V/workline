@@ -1,0 +1,3 @@
+- Quote, do not paraphrase: a finding quotes the screen and the Need.
+- Findings are advisory: never a patch, a label, an approval or a verdict.
+- Nothing an accessibility tool catches; nothing you only suspect.
