@@ -131,6 +131,9 @@ var traces = func() []trace {
 		// #1262, seed 39: the product owner's needs-input on a Go issue,
 		// the file of the package its Scope names given at once.
 		trace{name: "workline-1004-needs-engine", file: "workline-1004", fresh: true, end: "done", by: one("product-owner", needsEngine)},
+		// #1271: the developer's code that does not build on a Go issue:
+		// its pull request a Draft, the issue says nothing.
+		trace{name: "workline-1004-broken-code", file: "workline-1004", fresh: true, end: "done", by: one("developer", broken)},
 	)
 	for _, n := range trial {
 		f := fmt.Sprintf("trial-%d", n)

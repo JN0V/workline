@@ -46,3 +46,7 @@ trial-36-replay i1-status expected-end
 # (#1091); then refine-capped, no status, blocked for the week, read
 # again at its end (its K ticks from there not over: quiet).
 trial-37-replay same-tick-twice i1-status expected-end
+# #1271: the developer's pull request a Draft, its proof not run: the
+# issue says nothing, and a change to its body wakes no one. Seeds on
+# that path are not held to these (knownDraft).
+workline-1004-broken-code i1-status expected-end one-byte-due
