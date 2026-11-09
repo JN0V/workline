@@ -1,0 +1,42 @@
+case: product-owner/size-splits-a-separable-feature
+about: >
+  Split or grant at a size crossing (#1193, round 6's RC3), modelled on
+  the trial copy's #5: a feature whose parts each pass their own
+  Verification apart — the grid's maths, its setting, its drawing —
+  crossed its size on the tester's run, at its token cap, 228k fresh
+  tokens spent on it so far. The product owner is woken on it, asked on
+  its size. Expected: it splits it into vertical slices, never a grant:
+  in round 6 it granted `large` where Thirds alone was a slice.
+given:
+  repo: backlog
+  setup:
+    - "mkdir -p core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session && printf 'package io.github.jn0v.traceglass.core.session\\n\\nclass SettingsData\\n' > core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SettingsData.kt"
+    - "mkdir -p core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session && printf 'package io.github.jn0v.traceglass.core.session\\n\\nclass SettingsRepository\\n' > core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SettingsRepository.kt"
+    - "mkdir -p core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session && printf 'package io.github.jn0v.traceglass.core.session\\n\\nclass DataStoreSettingsRepository\\n' > core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/DataStoreSettingsRepository.kt"
+    - "mkdir -p feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/settings && printf 'package io.github.jn0v.traceglass.feature.tracing.settings\\n\\nclass SettingsViewModel\\n' > feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/settings/SettingsViewModel.kt"
+    - "mkdir -p feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/settings && printf 'package io.github.jn0v.traceglass.feature.tracing.settings\\n\\nclass SettingsScreen\\n' > feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/settings/SettingsScreen.kt"
+    - "mkdir -p feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing && printf 'package io.github.jn0v.traceglass.feature.tracing\\n\\nclass TracingContent\\n' > feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingContent.kt"
+    - "mkdir -p core/overlay/src/main/kotlin/io/github/jn0v/traceglass/core/overlay && printf 'package io.github.jn0v.traceglass.core.overlay\\n\\nclass MatrixUtils\\n' > core/overlay/src/main/kotlin/io/github/jn0v/traceglass/core/overlay/MatrixUtils.kt"
+    - "mkdir -p feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/settings && printf 'package io.github.jn0v.traceglass.feature.tracing.settings\\n\\nclass FakeSettingsRepository\\n' > feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/settings/FakeSettingsRepository.kt"
+    - "mkdir -p feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/settings && printf 'package io.github.jn0v.traceglass.feature.tracing.settings\\n\\nclass SettingsViewModelTest\\n' > feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/settings/SettingsViewModelTest.kt"
+    - "git add . && git commit -qm 'the app' "
+  forge:
+    issues:
+      - id: 5
+        title: "A composition grid over the reference image"
+        labels: ["enhancement", "workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nA person tracing a picture wants a rule-of-thirds or golden-ratio grid on the image, to check proportions while drawing.\n\n## Validation\n\n- **Off by default:** Given a fresh install, Then no grid is shown.\n- **Choice kept:** Given I pick Thirds, When I restart the app, Then Thirds is still selected.\n- **Thirds:** Given Thirds on a 900×1200 image, Then the lines are at x=300, 600 and y=400, 800.\n- **Golden:** Given Golden, Then the lines are at 0.382 and 0.618 of each side.\n- **Follows the paper:** Given perspective tracking, Then grid points are mapped by the same matrix as the image.\n\n---\n\n## Verification\n\n- A pure `CompositionGrid` unit test: for Thirds on a 900×1200 image, the lines are at x=300, 600 and y=400, 800.\n- A unit test: for Golden on a 1000×1000 image, the lines are at 0.381966 and 0.618034 of each side, within 0.001.\n- A unit test with a known matrix (a translation by 10, 20 and a scale of 2): `CompositionGrid` maps each grid point through it.\n- A Compose UI test on `TracingContent` with Thirds on: 4 grid lines are found by a test tag; with the grid off, none.\n- `SettingsViewModelTest`: the grid choice defaults to off; `onGridChanged(Thirds)` writes Thirds to the repository.\n- A settings repository test: a stored grid choice is read back from a repository created again.\n\n## Scope\n\n- core:session: `core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SettingsData.kt`, `core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SettingsRepository.kt`, `core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/DataStoreSettingsRepository.kt`: the grid choice, stored.\n- feature:tracing settings: `feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/settings/SettingsViewModel.kt`, `feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/settings/SettingsScreen.kt`: a Grid row.\n- feature:tracing tracing screen: `feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingContent.kt`: the grid drawn.\n- core:overlay: a new pure `core/overlay/src/main/kotlin/io/github/jn0v/traceglass/core/overlay/CompositionGrid.kt` using `core/overlay/src/main/kotlin/io/github/jn0v/traceglass/core/overlay/MatrixUtils.kt`: Thirds and Golden lines, mapped through a matrix.\n- Tests: `feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/settings/FakeSettingsRepository.kt`, `feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/settings/SettingsViewModelTest.kt`.\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n- **Why**: the tester's run on it is too big for its context: 412650 tokens spent, the run allows 400000: the agent was asked nothing more; what is left waits for the next run; its state was tests.\n- **Next**: the line asks the product owner on its size at once: it narrows the issue's Scope or grants it `workline:size/large`, and sends it back, or leaves it blocked for a person, who may split it, give it `workline:size/x-large` or raise the setting named; a person may move it back by its label at any time.\n\n**workline's line** keeps this record while the issue is blocked, 3 state steps before; moved out of Blocked, its count starts again. 228k fresh tokens spent on it so far. Edited by the engine, not by hand.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"from\":\"tests\",\"hops\":3,\"why\":\"the tester's run on it is too big for its context: 412650 tokens spent, the run allows 400000: the agent was asked nothing more; what is left waits for the next run\",\"sized\":[\"tests\"],\"size-of\":\"tester\",\"spent\":{\"refine\":[61000],\"tests\":[167000]}} -->\n<!-- workline:sticky=line/state -->"
+run:
+  role: product-owner
+  event: issue
+  target: "issue:5"
+  input: {revisit: "the tester's run on it crossed its size", revisit-from: tests, size: tester}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {finding: {where: "#5", message: "Split #5 into"}}
+  - {no-finding: {message: "Granted #5"}}
