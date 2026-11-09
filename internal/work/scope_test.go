@@ -99,3 +99,18 @@ func TestUnfound(t *testing.T) {
 		}
 	}
 }
+
+// An old Scope saying no code was given holds no other issue back
+// (#998); a phrase going on past `code` is no such word.
+func TestCodeUnread(t *testing.T) {
+	for s, want := range map[string]bool{
+		"- `x.go`: no `init` code was given in this run.": true,
+		"No code was read for it.":                        true,
+		"no other code was given a new name":              false,
+		"- `x.go`: the parser.":                           false,
+	} {
+		if got := CodeUnread(s); got != want {
+			t.Errorf("CodeUnread(%q) = %v, want %v", s, got, want)
+		}
+	}
+}

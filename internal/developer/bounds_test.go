@@ -554,3 +554,24 @@ func TestNewTestFileByTheDefinition(t *testing.T) {
 		t.Error("a helper written beside the Scope before is said beyond it")
 	}
 }
+
+// A held issue holds the files its pull request lists beyond its Scope
+// (ADR-0065, change 2); an old Scope saying no code was given holds no
+// path of its own (#998).
+func TestHeldReadsBeyondTheScope(t *testing.T) {
+	issues := []forge.Issue{
+		{ID: 1, Labels: []string{"workline:developing"}, Body: "## Scope\n\n- `src/lib.sh`.\n"},
+		{ID: 2, Labels: []string{"workline:developing"}, Body: "## Scope\n\n- `src/other.sh`: no code was given in this run.\n"},
+	}
+	mrs := []forge.MergeRequest{
+		{ID: 4, Body: "Closes #1\n\n## " + BeyondHeading + "\n\nFiles changed beyond.\n\n- `go.mod`: a newer module\n\n## Verification\n\n- `x`: not this\n"},
+		{ID: 5, Body: "Closes #2"},
+	}
+	held := Held(issues, mrs, "workline:developing", nil, nil)
+	if !slices.Equal(held[1], []string{"go.mod", "src/lib.sh"}) {
+		t.Errorf("held[1] = %v, want its Scope and go.mod", held[1])
+	}
+	if p, ok := held[2]; !ok || len(p) != 0 {
+		t.Errorf("held[2] = %v, %v: want held, with no path", p, ok)
+	}
+}

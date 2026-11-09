@@ -54,12 +54,6 @@ func UnblockTo(from string) []string {
 // of its pull request it asked at, and the files.
 var scopeAsk = regexp.MustCompile(`<!-- workline:scope-ask at=(\S+) files=(\S+) -->`)
 
-// ScopeAskMark is the mark of a developer's ask for files outside its
-// Scope, its pull request's head at, on the comment that blocks the issue.
-func ScopeAskMark(at string, files []string) string {
-	return fmt.Sprintf("<!-- workline:scope-ask at=%s files=%s -->", at, strings.Join(files, ","))
-}
-
 // ScopeAskRefine is what the developer's first step says when it sends
 // its issue back to refine to ask the product owner for files outside
 // its Scope (ADR-0063, §9): the product owner's state, not Blocked.
@@ -109,22 +103,6 @@ func ScopeKept(comments []string) []string {
 	return out
 }
 
-// ScopeAsks are every file a developer asked to add to the issue's
-// Scope, in any of its asks, whatever the head (ADR-0063, §9): the same
-// set asked again waits for a person.
-func ScopeAsks(comments []string) []string {
-	var out []string
-	for _, c := range comments {
-		for _, m := range scopeAsk.FindAllStringSubmatch(c, -1) {
-			for _, f := range strings.Split(m[2], ",") {
-				if f != "" && !slices.Contains(out, f) {
-					out = append(out, f)
-				}
-			}
-		}
-	}
-	return out
-}
 
 // scopeKeptOf folds into a refine's Scope the new test files the
 // developer kept beside it (ScopeKept, ADR-0063 §9): each it does not

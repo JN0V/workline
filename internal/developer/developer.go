@@ -307,20 +307,52 @@ func overlap(a, b []string) string {
 // its can conflict, and the hours it waits out are a pause before it is
 // taken again, not a hold on the issues beside it. letGo: the claims a
 // run lets go; files: the repository's, the Scopes read against them.
+// The files its pull request lists beyond the Scope are held too
+// (ADR-0065, change 2); its whole diff is #1256's.
 func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string) map[int][]string {
-	coded := map[int]bool{}
+	coded := map[int][]string{}
 	for _, m := range mrs {
 		for _, n := range forge.Closes(m.Title, m.Body) {
-			coded[n] = true
+			coded[n] = union(coded[n], beyondListed(m.Body))
 		}
 	}
 	held := map[int][]string{}
 	for _, is := range issues {
-		if !is.Closed && slices.Contains(is.Labels, claimLabel) && coded[is.ID] && !letGo[is.ID] {
-			held[is.ID] = inRepo(scopePaths(is.Body, files), files)
+		beyond, ok := coded[is.ID]
+		if !is.Closed && slices.Contains(is.Labels, claimLabel) && ok && !letGo[is.ID] {
+			held[is.ID] = union(scopeHeld(is.Body, files), beyond)
 		}
 	}
 	return held
+}
+
+// scopeHeld are a Scope's paths as they hold other issues back: none when
+// the Scope says no code was given when it was written, as Scopes said
+// before the `Guessed:` mark (#998): such paths were never read.
+func scopeHeld(body string, files []string) []string {
+	if work.CodeUnread(work.ByMeaning(body)[work.Scope].Text) {
+		return nil
+	}
+	return inRepo(scopePaths(body, files), files)
+}
+
+// beyondListed are the files a pull request's body lists under its
+// Beyond the Scope heading, as body writes them.
+func beyondListed(body string) []string {
+	var out []string
+	in := false
+	for _, l := range strings.Split(body, "\n") {
+		l = strings.TrimSpace(l)
+		switch {
+		case strings.HasPrefix(l, "## "):
+			in = l == "## "+BeyondHeading
+		case in && strings.HasPrefix(l, "- `"):
+			if f, _, ok := strings.Cut(l[3:], "`"); ok && f != "" && !slices.Contains(out, f) {
+				out = append(out, f)
+			}
+		}
+	}
+	return out
 }
 
 // Overlapping is the first issue of held, by number, whose Scope's
@@ -331,7 +363,7 @@ func Overlapping(is forge.Issue, held map[int][]string, files []string) (int, st
 	if work.Guessed(work.ByMeaning(is.Body)[work.Scope].Text) {
 		return 0, ""
 	}
-	mine := inRepo(scopePaths(is.Body, files), files)
+	mine := scopeHeld(is.Body, files)
 	for _, n := range slices.Sorted(maps.Keys(held)) {
 		if p := overlap(mine, held[n]); p != "" && n != is.ID {
 			return n, p

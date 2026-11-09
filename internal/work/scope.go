@@ -32,6 +32,20 @@ func Guessed(scope string) bool {
 	return guessMark.MatchString(scope)
 }
 
+// codeUnread is a Scope's own word that no code was given when it was
+// written, as Scopes said it before the `Guessed:` mark (#998): "no
+// `init` code was given in this run". Two words at most before `code`,
+// and the phrase ends there: "no other code was given a new name" is no
+// guess.
+var codeUnread = regexp.MustCompile(`(?im)\bno(?:\s+\S+){0,2}?\s+code\s+(?:was|were|has\s+been|had\s+been)\s+(?:given|read)(?:\s+in\s+this\s+run|\s+for\s+(?:it|this\s+issue)|\s*[.,;:)]|\s*$)`)
+
+// CodeUnread says whether an old Scope's words say no code was given
+// when it was written (#998): its paths hold no other issue back, as a
+// `Guessed:` Scope's. Read only for overlap, never for the bounds.
+func CodeUnread(scope string) bool {
+	return codeUnread.MatchString(scope)
+}
+
 // MarksNew says whether a Scope's text names a file to create, on a line
 // starting `New:`.
 func MarksNew(scope string) bool {
