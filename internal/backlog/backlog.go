@@ -907,6 +907,9 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	slices.Sort(indexes)
 	// A sources is decided before the asks: an ask waits only for code a
 	// sources done in this run names (#548).
+	// A blocked issue's unblock or keep after the acts on its text: a
+	// narrowing or widening of its Scope is decided first, whatever the
+	// agent's order, so one dropped holds the unblock (#1193, #1061).
 	// An assumption after the rest: one taken at once follows an ask
 	// done in this run (ADR-0060).
 	slices.SortStableFunc(indexes, func(a, b int) int {
@@ -914,8 +917,10 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			switch closes[i].Do {
 			case "sources":
 				return 0
-			case "assume":
+			case "unblock", "blocked":
 				return 2
+			case "assume":
+				return 3
 			}
 			return 1
 		}
@@ -960,10 +965,17 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		narrowing := c.Do == "refine" && strings.TrimSpace(c.Scope) != "" && p.sizeAsked(c.Issue)
 		mode, why := p.check(f, repo, role, &c)
 		if narrowing {
+			// Dropped until it is done, its Scope written: a refine
+			// proposed, or held by a cap, leaves the Scope as it was.
 			if p.narrowDropped == nil {
 				p.narrowDropped = map[int]bool{}
 			}
-			p.narrowDropped[c.Issue] = why != "" || !work.Has(c.Added, work.Scope)
+			p.narrowDropped[c.Issue] = true
+		}
+		narrowed := func(c Proposal) {
+			if narrowing && !c.ToReporter && work.Has(c.Added, work.Scope) {
+				p.narrowDropped[c.Issue] = false
+			}
 		}
 		c.Card = nil
 		if c.Do == "ready" {
@@ -1004,6 +1016,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if c.Do == "undepend" {
 				p.recordUndepend(c)
 			}
+			narrowed(c)
 			p.recordDid(c)
 		default:
 			s, ok := settings[c.Kind()]
@@ -1149,6 +1162,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			}
 			if d.Mode == Act {
 				done[c.Kind()]++
+				narrowed(c)
 				if c.Do == "refine" && !c.ToReporter {
 					// A ready later in the run reads the body as this leaves it.
 					is := p.issues[c.Issue]

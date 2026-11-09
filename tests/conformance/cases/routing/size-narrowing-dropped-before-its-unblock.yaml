@@ -1,0 +1,33 @@
+case: routing/size-narrowing-dropped-before-its-unblock
+about: >
+  The hold does not rest on the agent's order (#1193): on #3, asked on
+  its size, the product owner writes its unblock first, then a
+  narrowing of the Scope to `missing.sh`, a file the repository does
+  not hold. The refine is decided before the unblock: dropped, it holds
+  the unblock, and #3 stays blocked, its Scope unchanged.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-narrowed.sh missing.sh unblock-first", then: again}
+expect:
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "the tester's run on it crossed its size"}
+    - {rule: scope-not-narrowed, where: "#3", message: "not moved out of Blocked"}
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        body-contains: ["`src/wide.sh`"]
