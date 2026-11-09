@@ -120,7 +120,11 @@ func noThreads(id int, missing []string) error {
 // threadsFullQuery lists a pull request's review threads with their
 // comments, a hundred of each, who wrote each: GitHub says whether a
 // thread is resolved in GraphQL only.
-const threadsFullQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { reviewThreads(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { id isResolved path line comments(first: 100) { nodes { databaseId body url createdAt authorAssociation author { __typename login } } } } } } } }`
+const threadsFullQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { reviewThreads(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { id isResolved path line comments(first: 100) { pageInfo { hasNextPage } nodes { databaseId body url createdAt authorAssociation author { __typename login } } } } } } } }`
+
+// threadCommentsQuery lists the comments of one review thread, by its
+// GraphQL id, a hundred a page: a thread holds more than a page of them.
+const threadCommentsQuery = `query($id: ID!, $endCursor: String) { node(id: $id) { ... on PullRequestReviewThread { comments(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { databaseId body url createdAt authorAssociation author { __typename login } } } } } }`
 
 // Threads reads the review threads; a thread's id is its first comment's,
 // the one a reply answers (REST). A bot's login is given as REST gives
