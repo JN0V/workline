@@ -1,0 +1,33 @@
+case: reviewer/tests-judge-reads-project-test-paths
+about: >
+  One definition of a test file (ADR-0065, change 3; #1226): the
+  reviewer's tests-lens judge is shown the test files by the tester's
+  test-paths, the project's spec/ folder here, not by a list of its own:
+  spec/shipping_spec.rb, naming shipping, is shown as a test touching
+  the cause's file.
+given:
+  repo: shop
+  setup:
+    - |
+      mkdir -p spec && printf 'describe "shipping" do\n  it "is free from 50"\nend\n' > spec/shipping_spec.rb && git add spec && git commit -qm 'test: shipping spec'
+      git checkout -q -b feature
+      cat > shop/shipping.go <<'GO'
+      package shop
+
+      // Shipping is what delivery costs, in cents: free from 50.00, else 4.90.
+      func Shipping(items []Item) int {
+      	if Total(items) >= 5000 {
+      		return 0
+      	}
+      	return 490
+      }
+      GO
+      git add shop && git commit -qm 'feat(shipping): free from 50.00'
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {tester: {settings: {test-paths: ["spec/**", "**/*_test.go"]}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: tests}, ai: "fake:review-shipping-untested"}
+expect:
+  status: pass
+  agent-calls: 2
+  run-files:
+    in/judge/01/question.yaml: {contains: "spec/shipping_spec.rb"}

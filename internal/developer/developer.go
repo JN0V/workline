@@ -909,7 +909,7 @@ func Post(runDir, repo string) int {
 			Message: fmt.Sprintf("its agent wrote no code within its bounds: nothing to prove, no pull request; blocked for a person after %d hours on the same body, said on the issue", s.ClaimHours)})
 		a.NoCode = true
 	} else {
-		a.Code, a.Tests = written(patches)
+		a.Code, a.Tests = written(patches, b.tests())
 		a.Beside = besideKept(repo, b, patches)
 		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, flakyOf(b.Proof, s), s)
 		if p.Result == Red && len(p.Red) == 0 && len(caps) == 0 && !objects(kept) {

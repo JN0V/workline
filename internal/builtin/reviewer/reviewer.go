@@ -28,6 +28,7 @@ import (
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -57,7 +58,7 @@ type Settings struct {
 	JudgeByRole     map[string]string `json:"judge-at-least-by-role"` // a higher floor for a change a role made, by its commits' Workline-Role (the developer's: model, ADR-0054)
 	ForgeWrites     bool     `json:"forge-writes"`         // on a merge request: the comments on lines, the summary comment and the issues
 	FinderFloor     bool     `json:"finder-floor"`         // ask each lens to look for a number of candidates before it stops
-	Tests           []string `json:"tests"`                // the test files: what a judge reading tests is shown of them
+	Tests           []string `json:"-"`                    // the test files, the project's one definition (ADR-0065): what a judge reading tests is shown of them
 	TestsLinesMax   int      `json:"tests-lines-max"`      // lines of those tests a judge is shown, all together
 	JudgeLinesMax   int      `json:"judge-lines-max"`      // lines of code a judge is shown: the cause's function, then those it reaches; 0: 31 lines around the cause
 	JudgeReadRounds int      `json:"judge-read-rounds"`    // rounds of reads a judge of the code may ask before it answers (ADR-0045); 0: it reads none
@@ -216,6 +217,7 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	s.Tests = testsOf(repo).Patterns()
 	switch {
 	case os.Getenv("WORKLINE_JUDGED") == "answered":
 		// A judge that asked to read is served, and asked again, before
@@ -1714,7 +1716,7 @@ func testFiles(repo, head, file string, patterns []string) []string {
 }
 
 // testsTouching is what a judge reading tests is shown besides: the test
-// files at the head (the `tests` setting) that touch the cause's file — in
+// files at the head (the project's test-paths) that touch the cause's file — in
 // its folder, or naming it as a word — whole, its folder's first, up to limit
 // lines all together; those left out are named.
 func testsTouching(repo, head, file string, patterns []string, limit int) string {
@@ -1722,7 +1724,7 @@ func testsTouching(repo, head, file string, patterns []string, limit int) string
 	dir, stem := path.Dir(file), strings.TrimSuffix(path.Base(file), path.Ext(file))
 	fmt.Fprintf(&b, "\n## The tests that touch %s\n\nThe test files in %s/ and those naming `%s`, as they read at %s.\n", file, dir, stem, short(head))
 	if len(patterns) == 0 {
-		b.WriteString("\nNone shown: no `tests` setting says which files are tests.\n")
+		b.WriteString("\nNone shown: nothing says which files are tests.\n")
 		return b.String()
 	}
 	files := testFiles(repo, head, file, patterns)
@@ -2496,6 +2498,13 @@ func enforcement(repo string) (map[string]string, error) {
 		return nil, err
 	}
 	return cfg.Roles[roleName()].Enforce, nil
+}
+
+// testsOf is the project's one definition of a test file (ADR-0065),
+// the tester's test-paths; unread, the generic one.
+func testsOf(repo string) testdef.Def {
+	d, _ := role.TestDef(os.Getenv("WORKLINE_ROLES_DIR"), repo)
+	return d
 }
 
 func settings(runDir string) (Settings, error) {

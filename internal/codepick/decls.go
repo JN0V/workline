@@ -68,7 +68,7 @@ func (p *Picker) closure(a Ask, test string, roots, order []string, byPath map[s
 	reach := func(from []string) []string {
 		var out []string
 		for _, f := range from {
-			for _, im := range p.imports(f, a.Tests) {
+			for _, im := range p.imports(f, a.Tests.Patterns()) {
 				if !seen[im.file] && !slices.Contains(a.Skip, im.file) && len(p.Lines(im.file)) > 0 {
 					seen[im.file] = true
 					out = append(out, im.file)

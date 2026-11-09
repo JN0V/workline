@@ -34,6 +34,7 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
+	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
@@ -821,6 +822,7 @@ func Pre(runDir, repo string) int {
 		if err != nil {
 			return t, err
 		}
+		tests := testsOf(repo)
 		var code []string          // the files the issues name
 		var picks []codepick.Pick  // each issue's, in order
 		var pickedFor []int        // the issue each pick is for
@@ -836,7 +838,7 @@ func Pre(runDir, repo string) int {
 			t.ids = append(t.ids, strconv.Itoa(d.is.ID))
 			written, aboutIt := writtenAt(repo, d.is, d.st, tracked, cfg.Archived)
 			share := codeLeft / max(min(n, len(toRead))-i, 1)
-			a := askOf(picker, d.is, d.st, d.comments, aboutIt, share)
+			a := askOf(picker, tests, d.is, d.st, d.comments, aboutIt, share)
 			a.Bytes = s.CodeBytesMax // each issue's: the context budget bounds the run
 			if d.is.ID == issueEvent() {
 				// Run again for the code its agent said it lacked
@@ -936,7 +938,7 @@ func Pre(runDir, repo string) int {
 				}
 			}
 			writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, ledger.OwnBlockers(d.is), front[d.is.ID]+review)
-			for _, f := range picker.Where(askOf(picker, d.is, d.st, d.comments, aboutIt, 0)) {
+			for _, f := range picker.Where(askOf(picker, tests, d.is, d.st, d.comments, aboutIt, 0)) {
 				if !slices.Contains(code, f) {
 					code = append(code, f)
 				}
@@ -988,7 +990,7 @@ func Pre(runDir, repo string) int {
 		backlog.Order(ordered)
 		for _, is := range ordered {
 			d := byID[is.ID]
-			files := picker.Where(askOf(picker, d.is, d.st, d.comments, "", 0))
+			files := picker.Where(askOf(picker, tests, d.is, d.st, d.comments, "", 0))
 			if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
 				shown++
 				fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
@@ -1259,6 +1261,13 @@ func commented(n forge.Note, is forge.Issue, st *backlog.State) string {
 		"Unless the comment says otherwise (not now, leave it, they will do it themselves): then propose nothing, and say so in a `note`.\n"
 }
 
+// testsOf is the project's one definition of a test file (ADR-0065);
+// unread, the generic one.
+func testsOf(repo string) testdef.Def {
+	d, _ := role.TestDef(os.Getenv("WORKLINE_ROLES_DIR"), repo)
+	return d
+}
+
 // quoteMax bounds a person's comment quoted where it brought an issue
 // back; the comment is given whole among the issue's comments.
 const quoteMax = 600
@@ -1294,7 +1303,8 @@ func evidence(b forge.Backlog, repo string, parent forge.Issue, ids []int, role 
 		}
 		parts = append(parts, p)
 	}
-	return backlog.ReadEvidence(parent, parts, role, backlog.CodeTests(repo)), nil
+	tests := testsOf(repo)
+	return backlog.ReadEvidence(parent, parts, role, backlog.CodeTests(repo, tests), tests), nil
 }
 
 // issueRefs says issue numbers as references: "#12, #13".
@@ -1794,7 +1804,7 @@ func writeFolders(b *strings.Builder, tracked map[string]bool) {
 // and a person's comments, its sources, the lines of the file it was
 // imported from that name its item (writtenAt: aboutIt), never that file
 // itself, which is where it was written, not its code (#548, #1063).
-func askOf(picker *codepick.Picker, is forge.Issue, st *backlog.State, comments []string, aboutIt string, budget int) codepick.Ask {
+func askOf(picker *codepick.Picker, tests testdef.Def, is forge.Issue, st *backlog.State, comments []string, aboutIt string, budget int) codepick.Ask {
 	from, _, _, _ := backlog.Imported(is.Body)
 	body := marker.ReplaceAllString(provenance.ReplaceAllString(is.Body, ""), "")
 	for _, c := range comments {
@@ -1813,7 +1823,7 @@ func askOf(picker *codepick.Picker, is forge.Issue, st *backlog.State, comments 
 			paths = append(paths, p)
 		}
 	}
-	a := codepick.Ask{Text: text, Paths: paths, Budget: budget, BudgetName: "code-lines-max"}
+	a := codepick.Ask{Text: text, Paths: paths, Tests: tests, Budget: budget, BudgetName: "code-lines-max"}
 	if from != "" {
 		a.Skip = []string{from}
 	}

@@ -1,0 +1,42 @@
+case: tester/check-project-test-paths-laid-on-base
+about: >
+  One definition of a test file (ADR-0065, change 3; #1226): a project
+  whose tester's test-paths are its spec/ folder. A change adds
+  spec/sub_spec.sh and the code it checks: the spec is a test, laid on
+  the base, red there for a missing name, green on the head.
+given:
+  repo: tested
+  setup:
+    - |
+      cat > run-tests.sh <<'RUN'
+      #!/bin/sh
+      report=$1 failed=0
+      mkdir -p "$(dirname "$report")"
+      {
+        echo '<?xml version="1.0" encoding="UTF-8"?>'
+        echo '<testsuites><testsuite name="spec">'
+        for t in spec/*_spec.sh; do
+          [ -f "$t" ] || continue
+          name=$(basename "$t" .sh)
+          if sh "$t" >/dev/null 2>&1; then
+            echo "<testcase classname=\"spec\" name=\"$name\" time=\"0.01\"/>"
+          else
+            failed=1
+            echo "<testcase classname=\"spec\" name=\"$name\" time=\"0.01\"><failure message=\"$t failed\"/></testcase>"
+          fi
+        done
+        echo '</testsuite></testsuites>'
+      } > "$report"
+      exit $failed
+      RUN
+      git add run-tests.sh && git commit -qm 'build: run the specs'
+    - git checkout -q -b change
+    - |
+      printf 'sub() { echo $(($1 - $2)); }\n' >> lib.sh && mkdir -p spec && printf '. ./lib.sh\n[ "$(sub 5 3)" = 2 ]\n' > spec/sub_spec.sh && git add . && git commit -qm "feat: subtract"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["spec/**"]}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base, green on the head"
+  no-findings: [{rule: test-green-on-base}, {rule: test-red-on-head}]

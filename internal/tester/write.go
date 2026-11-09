@@ -268,7 +268,7 @@ func writeCode(b *strings.Builder, repo, text, scope string, sources, needs []st
 	if budget <= 0 {
 		budget = 1500
 	}
-	pick := pk.Pick(codepick.Ask{Text: text + "\n" + scope, Paths: paths, Needs: needs, Tests: s.Paths, Depth: closureDepth, Budget: budget, BudgetName: "code-lines-max"})
+	pick := pk.Pick(codepick.Ask{Text: text + "\n" + scope, Paths: paths, Needs: needs, Tests: s.Tests(), TestRoom: true, Depth: closureDepth, Budget: budget, BudgetName: "code-lines-max"})
 	if len(pick.Named()) > 0 {
 		fmt.Fprintf(b, "\n## The code the %s names\n", work.Name(work.Scope))
 		if len(owners) > 0 {

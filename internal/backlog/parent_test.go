@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/testdef"
 )
 
 func TestParts(t *testing.T) {
@@ -62,7 +63,7 @@ func TestProofIsAQuote(t *testing.T) {
 
 func TestCloserNotReadIsSaid(t *testing.T) {
 	part := Part{ID: 11, Issue: forge.Issue{Closed: true, Reason: "completed", Title: "Keep the last row"}, Unread: errors.New("the forge refused closers: unknown operation")}
-	ev := ReadEvidence(forge.Issue{ID: 9}, []Part{part}, "product-owner", nil)
+	ev := ReadEvidence(forge.Issue{ID: 9}, []Part{part}, "product-owner", nil, testdef.Def{})
 	if !strings.Contains(ev.Body, "| #11 Keep the last row | closed as completed | not read: the forge did not say |") || strings.Contains(ev.Body, "by hand") {
 		t.Errorf("a closer the forge refused to say is said not read, never by hand:\n%s", ev.Body)
 	}
@@ -79,16 +80,17 @@ func TestTestNames(t *testing.T) {
 		item string
 		want []string
 	}{
-		{"`TestWriteRows` passes", []string{"TestWriteRows"}},
+		{"`TestWriteRows` passes", nil}, // a test's own name, by an ecosystem's pattern: a pack's (ADR-0065)
+		{"the test `TestWriteRows` passes", []string{"TestWriteRows"}},
 		{"the test `keeps-the-last-row` and `src/export/csv_test.go::TestQuote`", []string{"keeps-the-last-row", "src/export/csv_test.go::TestQuote"}},
-		{"`tests/export.spec.ts` and `test_quote` cover it", []string{"tests/export.spec.ts", "test_quote"}},
+		{"`tests/export.spec.ts` and `test_quote` cover it", []string{"tests/export.spec.ts"}},
 		{"conformance case `parent-x` passes", []string{"parent-x"}},
 		{"in that case `WriteRows` returns; the spec `x` says so", nil},
 		{"`WriteRows` keeps the last row; `make check` is green", nil},
 		{"A test writes three rows.", nil},
 	}
 	for _, c := range cases {
-		if got := TestNames(c.item); !slices.Equal(got, c.want) {
+		if got := TestNames(c.item, testdef.Def{}); !slices.Equal(got, c.want) {
 			t.Errorf("TestNames(%q) = %q, want %q", c.item, got, c.want)
 		}
 	}
@@ -113,7 +115,7 @@ func TestCodeTestsReadsHead(t *testing.T) {
 			t.Fatalf("git %v: %v %s", args, err, out)
 		}
 	}
-	find := CodeTests(dir)
+	find := CodeTests(dir, testdef.Def{})
 	for name, want := range map[string]string{
 		"tests/export/rows_test.go":          "tests/export/rows_test.go",
 		"tests/export/rows_test.go::TestRows": "tests/export/rows_test.go",
@@ -130,7 +132,7 @@ func TestCodeTestsReadsHead(t *testing.T) {
 }
 
 func TestCodeTestsUnreadIsNotMissing(t *testing.T) {
-	find := CodeTests(t.TempDir()) // not a repository: git fails
+	find := CodeTests(t.TempDir(), testdef.Def{}) // not a repository: git fails
 	for _, name := range []string{"TestWriteRows", "src/export/csv_test.go"} {
 		if path, err := find(name); err == nil {
 			t.Errorf("CodeTests(%q) = %q, no error: a git that failed is read as a test missing", name, path)

@@ -353,7 +353,7 @@ func namedCode(repo, head, spec, text string, limit int, setting string) (code, 
 	if err != nil {
 		return "", ""
 	}
-	a := codepick.Ask{Text: text, Budget: max(limit, 1), BudgetName: setting}
+	a := codepick.Ask{Text: text, Tests: testsOf(repo), Budget: max(limit, 1), BudgetName: setting}
 	if spec != "" && !strings.HasPrefix(spec, "#") {
 		a.Skip = []string{spec} // the spec itself: given above
 	}

@@ -1,0 +1,24 @@
+case: product-owner/parent-test-in-project-test-paths
+about: >
+  One definition of a test file (ADR-0065, change 3; #1226): a project
+  whose tester's test-paths are its spec/ folder. A parent's Verification
+  item naming spec/export/csv_spec.rb is checked against the code: the
+  product owner reads the same test files as the tester, and finds it.
+  The generic patterns alone would not call cart_spec.rb a test.
+given:
+  repo: backlog-tested
+  setup:
+    - "mkdir -p spec/export && echo 'it keeps the last row' > spec/export/csv_spec.rb && git add -A && git commit -qm 'test: csv spec'"
+  config:
+    roles: {tester: {settings: {test-paths: ["spec/**"]}}}
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row.\n\n## Verification\n\n- `spec/export/csv_spec.rb` runs in CI.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.\n\n## Verification\n\n`spec/export/csv_spec.rb` runs in CI.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#20", text: "fix(export): write the last row"}]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 9, comment-contains: "- Proved: \"`spec/export/csv_spec.rb` runs in CI.\" — quoted in #11's Verification, closed by pull request #20; the test `spec/export/csv_spec.rb`, read from the code."}

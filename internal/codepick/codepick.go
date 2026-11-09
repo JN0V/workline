@@ -16,6 +16,7 @@ import (
 
 	"github.com/JN0V/workline/internal/codenav"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -67,7 +68,11 @@ type Ask struct {
 	Text  string   // what names the code: the title, the Need, the Steps, the Scope, a person's comments
 	Paths []string // files, folders or patterns named outright, the Scope's or the sources: given first
 	Skip  []string // files never given: the file an issue was imported from
-	Tests []string // test-paths: one existing test given room, test files' definitions ranked as copies
+	// Tests: the project's test files (testdef, ADR-0065), never its own
+	// code, their definitions ranked as copies; zero, the generic ones.
+	// TestRoom: one existing test given room, the tester's.
+	Tests    testdef.Def
+	TestRoom bool
 	// Needs are the files the agent said it lacked at its last run: each
 	// given whole, its first lines when it does not fit, right after the
 	// definitions, before any file is given whole for being named.
@@ -346,7 +351,7 @@ func (p *Picker) namedFiles(a Ask) []string {
 		}
 	}
 	for _, w := range a.Paths {
-		for _, f := range p.wordFiles(strings.TrimSpace(work.LineOff(w)), a.Tests) {
+		for _, f := range p.wordFiles(strings.TrimSpace(work.LineOff(w)), a.Tests.Patterns()) {
 			add(f)
 		}
 	}
@@ -402,7 +407,7 @@ func (p *Picker) Where(a Ask) []string {
 	for _, n := range names {
 		pats := map[*codenav.Language]*regexp.Regexp{}
 		for _, h := range hits[n] {
-			if slices.Contains(out, h.file) || slices.Contains(a.Skip, h.file) || aside(h.file) || (len(a.Tests) > 0 && pathglob.Any(a.Tests, h.file)) {
+			if slices.Contains(out, h.file) || slices.Contains(a.Skip, h.file) || a.Tests.Aside(h.file) {
 				continue
 			}
 			if _, ok := p.defines(h, n, pats); ok {
@@ -431,7 +436,6 @@ func (p *Picker) Pick(a Ask) Pick {
 		return byPath[f]
 	}
 	skip := func(f string) bool { return slices.Contains(a.Skip, f) }
-	isTest := func(f string) bool { return len(a.Tests) > 0 && pathglob.Any(a.Tests, f) }
 	named := p.namedFiles(a)
 	for _, f := range named {
 		file(f).Named = true
@@ -512,7 +516,7 @@ func (p *Picker) Pick(a Ask) Pick {
 				if g, ok := p.defines(h, n, pats); ok {
 					w := want{h.file, g.From, g.To, fmt.Sprintf("`%s`, defined", n), true}
 					calls[fmt.Sprintf("%s:%d", h.file, g.From)] = g.Calls
-					if isTest(h.file) || aside(h.file) {
+					if a.Tests.Aside(h.file) {
 						fd.aside = append(fd.aside, w)
 					} else {
 						fd.defs = append(fd.defs, w)
@@ -533,7 +537,7 @@ func (p *Picker) Pick(a Ask) Pick {
 	}
 	// A place in the project's own code first, a doc last.
 	for _, fd := range byName {
-		slices.SortStableFunc(fd.uses, func(x, y want) int { return useRank(x.file) - useRank(y.file) })
+		slices.SortStableFunc(fd.uses, func(x, y want) int { return useRank(a.Tests, x.file) - useRank(a.Tests, y.file) })
 	}
 	// The rarer a name, the more it says: its pieces come first.
 	rank := slices.Clone(names)
@@ -648,7 +652,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		}
 		file(f).Named = true
 		switch {
-		case a.Depth > 0 && isTest(f):
+		case a.Depth > 0 && a.Tests.Test(f):
 			askedTests = append(askedTests, f)
 		case a.Depth > 0:
 			asked = append(asked, f)
@@ -721,7 +725,7 @@ func (p *Picker) Pick(a Ask) Pick {
 	// The test kept room for, before the code fills the budget.
 	var test string
 	kept := 0
-	if len(a.Tests) > 0 {
+	if a.TestRoom {
 		// Near the files named; none named, near the definitions found.
 		anchor := slices.Clone(named)
 		for _, w := range wants {
@@ -729,9 +733,9 @@ func (p *Picker) Pick(a Ask) Pick {
 				anchor = append(anchor, w.file)
 			}
 		}
-		ts := NearestTests(p.files, a.Tests, anchor)
+		ts := NearestTests(p.files, a.Tests.Patterns(), anchor)
 		if len(ts) == 0 && len(anchor) > 0 { // none near: the project's first, its style
-			ts = slices.DeleteFunc(slices.Clone(p.files), func(f string) bool { return !pathglob.Any(a.Tests, f) })
+			ts = slices.DeleteFunc(slices.Clone(p.files), func(f string) bool { return !a.Tests.Test(f) })
 		}
 		if len(ts) > 0 {
 			test = ts[0]
@@ -874,7 +878,7 @@ func (p *Picker) Pick(a Ask) Pick {
 		upgrade(asked)
 		roots := slices.Clone(asked)
 		for _, w := range a.Paths {
-			roots = append(roots, p.wordFiles(strings.TrimSpace(work.LineOff(w)), a.Tests)...)
+			roots = append(roots, p.wordFiles(strings.TrimSpace(work.LineOff(w)), a.Tests.Patterns())...)
 		}
 		left = p.closure(a, test, roots, order, byPath, file, left, bytesLeft)
 		for _, f := range askedTests {
@@ -892,7 +896,7 @@ func (p *Picker) Pick(a Ask) Pick {
 	for _, docs := range []bool{false, true} {
 		for _, n := range rank {
 			for _, w := range byNear(byName[n].uses) {
-				if (useRank(w.file) == 2) != docs || covered(file(w.file).Given, w.from, w.to) {
+				if (useRank(a.Tests, w.file) == 2) != docs || covered(file(w.file).Given, w.from, w.to) {
 					continue
 				}
 				size := w.to - w.from + 1
@@ -937,7 +941,7 @@ func (p *Picker) Pick(a Ask) Pick {
 	if tf != nil {
 		pk.Files = append(pk.Files, *tf)
 	}
-	pk.Linked = p.linked(pk, a.Tests)
+	pk.Linked = p.linked(pk, a.Tests.Patterns())
 	pk.Left, pk.Short, pk.byLines, pk.byBytes = left, short, byLines, byBytes
 	return pk
 }
@@ -945,11 +949,11 @@ func (p *Picker) Pick(a Ask) Pick {
 // useRank orders the places naming a name: the project's own code, then
 // its tests', examples' and tools', then docs and files no language is
 // known for.
-func useRank(f string) int {
+func useRank(d testdef.Def, f string) int {
 	switch {
 	case codenav.Of(f) == nil:
 		return 2
-	case aside(f):
+	case d.Aside(f):
 		return 1
 	}
 	return 0
@@ -1005,26 +1009,6 @@ func top(f string) string {
 	}
 	return t
 }
-
-// aside says whether a file is beside the project's own code: its tests,
-// examples, tools.
-func aside(f string) bool { return asideFolder.MatchString(f) }
-
-// asideFolders are the folders beside a project's own code, by the
-// conventions of its ecosystem (#1109), one a row.
-var asideFolders = []string{
-	`(?i:(^|/)(tests?|examples?|tools|mocks?|testdata|spec)/)`, // most: tests/, test/ (Gradle's src/test/ too), spec/, Go's testdata/
-	// Gradle's other source sets, by how they are named: a target's or a
-	// suite's ending in `Test` (commonTest, iosX64Test, androidUnitTest,
-	// integrationTest), testFixtures, a build variant's (testFreeDebug,
-	// androidTestDebug). A project's own src/testing/ or src/testutil/ is
-	// code (#1189).
-	`(^|/)src/([a-z][a-zA-Z0-9]*Test|testFixtures|(test|androidTest)([A-Z][a-zA-Z0-9]*)?(Debug|Release))/`,
-	`(^|/)__(tests|mocks)__/`,                                  // Jest's
-	`(^|/)[\w.]+\.(Unit|Integration)?Tests?/`,                  // a .NET test project: Shop.Tests/, Shop.UnitTests/
-}
-
-var asideFolder = regexp.MustCompile(strings.Join(asideFolders, "|"))
 
 // covered says whether pieces hold every line from to.
 func covered(ps []Piece, from, to int) bool {

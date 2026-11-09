@@ -49,7 +49,7 @@ func TestTestsTouching(t *testing.T) {
 	if strings.Index(got, "cart_test.go") > strings.Index(got, "test_shipping.py") {
 		t.Errorf("the cause's folder's tests come first:\n%s", got)
 	}
-	if got := testsTouching(repo, "HEAD", "docs/shipping.md", nil, 20); !strings.Contains(got, "no `tests` setting") {
+	if got := testsTouching(repo, "HEAD", "docs/shipping.md", nil, 20); !strings.Contains(got, "nothing says which files are tests") {
 		t.Errorf("no setting, not said:\n%s", got)
 	}
 }
