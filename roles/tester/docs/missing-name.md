@@ -189,4 +189,4 @@ golangci-lint does, reports the same missing name
   past the tenth are not read. `-gcflags=-e` in the test command shows
   them all.
 - **The judge's tokens**: asked only past the fast path; measured on a
-  real build in [the pull request that built it](https://github.com/JN0V/workline/issues/1227).
+  real build on [#1252](https://github.com/JN0V/workline/pull/1252#tried): 2k to 7.5k tokens in a call.

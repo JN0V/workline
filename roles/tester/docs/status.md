@@ -81,7 +81,9 @@ Cases in `tests/conformance/cases/tester/`:
   judge with the raw facts: yes red, no `build-broken`, anything else
   red unproven, the Draft opened and marked
   ([the page](missing-name.md),
-  [#1227](https://github.com/JN0V/workline/issues/1227)). Go's,
+  [#1227](https://github.com/JN0V/workline/issues/1227); tried on the
+  Kotlin/Android copy and in Go, on
+  [#1252](https://github.com/JN0V/workline/pull/1252#tried)). Go's,
   Kotlin's, javac's and Gradle's errors read by default
   (`build-errors`; Kotlin's tried on an Android project,
   [#1181](https://github.com/JN0V/workline/pull/1181#tried)).
