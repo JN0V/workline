@@ -95,7 +95,9 @@ flowchart LR
   - `problem-matchers` for build errors, in the GitHub Actions and
     VS Code format (owner, regexp, file, line, message), so shipped
     matchers are copied, not written;
-  - an optional `missing-name` fast path (Rule A);
+  - an optional `missing-name` fast path (Rule A); `test-name`, to
+    find a declared test when a broken build wrote no report;
+    `build-record`, a runner's record of a failed build;
   - code navigation rows (definitions, imports, keywords), comment
     syntax;
   - the mutation tool, runner filters.
