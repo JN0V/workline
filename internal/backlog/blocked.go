@@ -185,6 +185,8 @@ func (p *Plan) checkBlocked(c *Proposal) (rule, why string) {
 		return "once-a-run", fmt.Sprintf("#%d: one decision on a blocked issue a run; the %s before it is kept", c.Issue, p.revisited[c.Issue])
 	case c.Do == "ready" && blocked:
 		return "blocked-first", fmt.Sprintf("#%d is %s: `unblock` it, to the state it came from or to refine, rather than ready", c.Issue, LabelBlocked)
+	case c.Do == "unblock" && p.narrowDropped[c.Issue]:
+		return "scope-not-narrowed", fmt.Sprintf("not moved out of Blocked: its run crossed its size, and the narrowing of its %s beside this was not written: back on the same %[1]s, the run would cross the same", work.Name(work.Scope))
 	case c.Do == "unblock" && len(p.widenDropped[c.Issue]) > 0:
 		return "scope-not-widened", fmt.Sprintf("not moved out of Blocked: the developer asked to widen its %s with %s, and its %[1]s did not change", work.Name(work.Scope), strings.Join(p.widenDropped[c.Issue], ", "))
 	}
@@ -207,4 +209,11 @@ func orList(names []string) string {
 		out += n
 	}
 	return out
+}
+
+// sizeAsked says whether the line asked the role on issue id's size, the
+// issue blocked for it (ADR-0064, step 3).
+func (p *Plan) sizeAsked(id int) bool {
+	is, ok := p.issues[id]
+	return ok && p.config.SizeAsked && p.config.Sized == id && slices.Contains(is.Labels, LabelBlocked)
 }

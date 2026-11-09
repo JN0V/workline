@@ -1,0 +1,36 @@
+case: routing/size-narrowed-and-sent-back
+about: >
+  The product owner asked on an issue's size narrows its Scope (#1193):
+  on #3, waiting for its tests, the Scope a person wrote names one line
+  of 100,000 characters, and the tester's prompt is over its context
+  budget. Told it may narrow the Scope, it rewrites it to `lib.sh` and
+  sends #3 back to its tests. The Scope is a person's, yet the narrowing
+  is written: asked on its size, the Scope is the product owner's to
+  rewrite.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-narrowed.sh", then: again}
+expect:
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "the tester's run on it crossed its size"}
+  no-findings: [{rule: nothing-to-refine}, {rule: scope-not-narrowed}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:needs-tests"]
+        body-contains: ["`lib.sh`: multiply beside add."]
+        body-lacks: ["`src/wide.sh`"]

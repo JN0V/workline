@@ -367,10 +367,11 @@ from.
   woken at once (`size`, the role), told what crossed with the run's
   numbers, and the issue's fresh tokens so far against its normal and
   its backstop ([#1193](https://github.com/JN0V/workline/issues/1193)).
-  To narrow it, a `refine` rewrites the
-  Scope whole, fewer files, then `unblock` to its state; sent back as it
-  is, the next crossing waits for a person. Its need atomic — its Need
-  or Scope says its parts fail apart — at the
+  To narrow it, a `refine` rewrites the Scope whole, fewer files, a
+  person's Scope too, then `unblock` to its state. A narrowing not
+  written holds the unblock beside it (`scope-not-narrowed`); sent back
+  as it is, the next crossing waits for a person. Its need atomic — no part
+  passes its own Verification apart — at the
   normal size: `size` with `tier: large`, then `unblock`
   ([ADR-0064, step 4](../../adr/0064-size-is-a-target-not-a-wall.md#3-the-product-owner-decides-once-a-state-an-issue)).
   Parts that pass apart, the issue no part itself: a `split`,
