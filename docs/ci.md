@@ -175,7 +175,7 @@ In short:
   ([ADR-0021](adr/0021-the-product-owner-talks-with-the-reporter.md)); it
   asks again only after an answer, three times at most; past its wait, it
   goes on, its assumption written ([ADR-0060](adr/0060-the-person-is-on-the-loop.md));
-- an issue form with the four sections,
+- an issue form with the sections an issue holds,
   [ci/github/issue-form-need.yml](../ci/github/issue-form-need.yml), copied
   to `.github/ISSUE_TEMPLATE/need.yml`, has a person's issue arrive with
   them written;

@@ -32,9 +32,11 @@ is on each issue; you answer there
 - write code or docs (`writes: []`: the forge's issues only);
 - write the Need or Validation of a person's issue as final;
 - rewrite a Need, Example or Validation a person wrote or edited, or
-  any section they deleted; their Verification and Scope it rewrites to
-  answer the reviewer
+  any section they deleted; their Scope it rewrites to answer the
+  reviewer
   ([ADR-0060](../../docs/adr/0060-the-person-is-on-the-loop.md));
+- write an issue's Verification: the tester writes it from its tests
+  ([ADR-0066](../../docs/adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md));
 - move an outsider's issue to `ready`, nor one with a draft left;
 - close as "not planned", or reopen an issue;
 - keep a report issue, or any memory outside the issues.
@@ -94,10 +96,10 @@ is on each issue; you answer there
 
 At `autonomy: normal`, the default:
 
-- **Alone**: names an issue's code; completes it — Scope and Verification
-  from the code, Need and Validation as drafts; asks its reporter what is
+- **Alone**: names an issue's code; completes it — its Scope from the
+  code, Need and Validation as drafts; asks its reporter what is
   missing; closes an evident duplicate; moves an evident issue to
-  `ready` (four sections, none a draft); labels an issue with no kind
+  `ready` (Need, Validation, Scope, none a draft); labels an issue with no kind
   bug, feature or task, once ([the kind](docs/kind.md)).
 - **Out of Blocked, at every level**: a blocked issue the line wakes it
   on, sent back to the state it came from or to refine; or kept

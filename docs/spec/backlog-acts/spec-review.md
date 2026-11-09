@@ -31,10 +31,12 @@ reads refined issues and keeps what it found in one comment on each, `<!-- workl
   held, said (`spec-record-unread`) until a person deletes the comment or
   accepts the issue.
 - **`ready` is held** by the engine's check (`backlog.SpecHold`), after
-  the four sections, whoever proposed it — the agent, or the engine
+  the Need, Validation and Scope, whoever proposed it — the agent, or the engine
   itself — and at every level: `spec-not-reviewed` (no record, or
   one for another body, its rounds not spent: a refine in the same run changes it),
-  `spec-findings-open`, `spec-rounds-spent`. A person's
+  `spec-findings-open`, `spec-rounds-spent`. Findings in the
+  Verification alone hold nothing: the tester's
+  ([ADR-0066](../../adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)). A person's
   `workline:accepted` lifts it; `workline:ready` set by hand is theirs.
 - **Read again**: an issue with findings open on its body as it is, a
   review its state has not `answered` — kept by the body that review
@@ -44,9 +46,11 @@ reads refined issues and keeps what it found in one comment on each, `<!-- workl
 - **Answered**: a `refine` may rewrite a section with text when a finding
   open lies in it and the one rule says it may (`backlog.Rewritable`,
   [ADR-0060](../../adr/0060-the-person-is-on-the-loop.md)):
-  - the builder's part, Verification and Scope, always — even a text a
-    person wrote, at every level; "Changed: Verification" says it, the
-    text before in the forge's edit history;
+  - the builder's part, the Scope, always — even a text a person
+    wrote, at every level; "Changed: Scope" says it, the text before in
+    the forge's edit history;
+  - never the Verification, the tester's: a finding there is given to
+    the tester when it writes the tests (`backlog.SpecForTester`);
   - the person's part, Need, Validation, an example, a bug's steps, only
     while it is the role's own: a draft no person accepted, or a text
     whose digest is the one the state's `wrote` holds — recorded by every
@@ -61,7 +65,7 @@ reads refined issues and keeps what it found in one comment on each, `<!-- workl
   (`backlog.Unrevised`) is read again once; the line counts refine's
   step due again for it, once a review (its record's `revise`).
 - **Released**: once the record holds the body as it is, nothing open,
-  not stopped, and the four sections pass, `pre` proposes `ready` itself
+  not stopped, and the Need, Validation and Scope pass, `pre` proposes `ready` itself
   (`own`), with no agent, under `acts.ready`'s mode and cap.
 - **At once, on `issue`** ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md),
   [routing](../routing.md)): refine's step runs the reviewer after the

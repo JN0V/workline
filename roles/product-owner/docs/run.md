@@ -70,7 +70,7 @@ Each issue comes with:
 
 - what the engine knows of it, who opened it — of the project or not —,
   which sections it has, which are the role's drafts and which yours;
-- when its four sections are there and Need and Validation are yours —
+- when its Need, Validation and Scope are there and Need and Validation are yours —
   your text on top, with no Need heading, is its Need —, that it may go
   to `ready` if evident: the agent judges that, the engine checks the
   sections;
@@ -112,7 +112,7 @@ Each issue comes with:
 - **Off by default**: milestones, priorities, splits, renames, links,
   obsolete issues ([settings](settings.md#off-by-default)).
 - The engine checks each act when it applies it: never a section a person
-  wrote, edited or deleted; `ready` only with four sections and no draft;
+  wrote, edited or deleted; `ready` only with Need, Validation and Scope, and no draft;
   a Scope's files read from its text, each path found or on a line
   `New:`, or the Scope left out, the rest written
   ([writing](writing.md)); an outsider's issue proposed; never closed as not planned.

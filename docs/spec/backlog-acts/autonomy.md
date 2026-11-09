@@ -75,7 +75,7 @@ The other levels change these (role.yaml, `levels`):
 | sources | act 10 | act 10 | act 10 |
 | refine | act 5, Need and Validation drafts proposed (`drafts: propose`) | act 5 | act 10 |
 | ask | act 2, 2 rounds, waits for the answer (`wait: never`) | act 3, 3 rounds, `wait: 24h` | act 5, 3 rounds, `wait: "0"` |
-| ready (the engine's check: four sections, no draft, or drafts past `wait`) | propose | act 5 | act 10 |
+| ready (the engine's check: Need, Validation, Scope, no draft, or drafts past `wait`) | propose | act 5 | act 10 |
 | close-duplicate | propose | act 3 | act 5 |
 | kind ([the kind](../../../roles/product-owner/docs/kind.md)) | propose | act 10 | act 20 |
 | size ([granting a size](refine.md#granting-a-size)) | propose | act 3 | act 5 |
@@ -83,7 +83,7 @@ The other levels change these (role.yaml, `levels`):
 | undepend | propose; a closed blocker's: the engine's, done | the same | the same |
 | open (import) | act 30 | act 30 | act 30 |
 
-`cautious` notes and proposes: the code named, Scope and Verification
+`cautious` notes and proposes: the code named, the Scope
 written, the Need and Validation drafts proposed on the issue
 (`drafts-proposed`) — unless a person's already: agreed to in a reply,
 accepted by the label, or proposed to an outsider in a comment.
@@ -105,7 +105,7 @@ the agent says what the level means, and lists each kind's mode and where
 it comes from — `level`, `setting` (differs from the level's) or
 `demoted`. It says whose each section is: `(draft)`, the role's draft;
 Need and Validation not marked a draft, `(a person's)`; an issue whose
-four sections are there, Need and Validation a person's, not ready and
+Need, Validation and Scope are there, Need and Validation a person's, not ready and
 `ready` not off, is said open to `ready` when evident — the agent judges
 it, the engine checks it, and an outsider's is proposed. Its reporter is
 said of the project or not. A level the role does

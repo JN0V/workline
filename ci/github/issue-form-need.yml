@@ -1,7 +1,8 @@
 # A need, as workline's product owner reads it — copy to
 # .github/ISSUE_TEMPLATE/need.yml. GitHub writes each field under a
-# "### <label>" heading: the four sections an issue needs to be ready
-# (docs/spec/routing.md). Write what you know; the product owner drafts the
+# "### <label>" heading: the sections an issue needs to be ready
+# (docs/spec/routing.md), and the Verification the tester writes from its
+# tests (ADR-0066). Write what you know; the product owner drafts the
 # rest from the code, and you accept its drafts with the label
 # workline:accepted (docs/spec/backlog-acts.md, "Refining to ready").
 name: A need
@@ -17,7 +18,7 @@ body:
     id: verification
     attributes:
       label: Verification
-      description: How will the machine prove it works — which tests, which checks? Leave it empty if you do not know.
+      description: How will the machine prove it works — which tests, which checks? Leave it empty: the tester writes it from its tests.
   - type: textarea
     id: validation
     attributes:
