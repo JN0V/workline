@@ -2373,7 +2373,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	if err := os.Remove(onBlockFile); err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
-	code, err := script(r, "post", o.Repo, postEnv)
+	code, err := postAsking(r, o, ag, runDir, postEnv, res)
 	if err != nil {
 		return nil, err
 	}
@@ -2530,7 +2530,7 @@ func judgeAgain(r *role.Role, o Options, runDir string, env []string, cfg *role.
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), kept); err != nil {
 		return nil, err
 	}
-	code, err := script(r, "post", o.Repo, env)
+	code, err := postAsking(r, o, nil, runDir, env, res)
 	if err != nil {
 		return nil, err
 	}
@@ -3588,6 +3588,45 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 		}
 	}
 	return nil
+}
+
+// postAsking runs post, then the questions it leaves for a judge
+// (out/judge/<key>/question.yaml, as pre's): each asked as pre's are, and
+// post run again with their answers (WORKLINE_JUDGED=answered), until it
+// asks none (the tester's red proof of a broken build, ADR-0065). With
+// no agent, or past the rounds, a question is answered as not asked.
+func postAsking(r *role.Role, o Options, ag agent.Agent, runDir string, env []string, res *Result) (int, error) {
+	code, err := script(r, "post", o.Repo, env)
+	for round := 1; err == nil; round++ {
+		questions := unanswered(filepath.Join(runDir, "out", "judge"))
+		if len(questions) == 0 {
+			break
+		}
+		switch {
+		case round > maxJudgeRounds+1:
+			return 0, fmt.Errorf("post asked its judges again past %d rounds", maxJudgeRounds)
+		case ag == nil:
+			err = notAsked(questions, "not asked: no agent to judge with")
+		case round > maxJudgeRounds:
+			err = notAsked(questions, fmt.Sprintf("not asked: past %d rounds of the judge", maxJudgeRounds))
+		default:
+			err = askQuestions(o, ag, runDir, questions, res)
+		}
+		if err != nil {
+			return 0, err
+		}
+		code, err = script(r, "post", o.Repo, append(env[:len(env):len(env)], "WORKLINE_JUDGED=answered"))
+	}
+	return code, err
+}
+
+// unanswered are the questions under dir holding no answer yet.
+func unanswered(dir string) []string {
+	questions, _ := filepath.Glob(filepath.Join(dir, "*", "question.yaml"))
+	return slices.DeleteFunc(questions, func(q string) bool {
+		_, err := os.Stat(filepath.Join(filepath.Dir(q), "answer.yaml"))
+		return err == nil
+	})
 }
 
 // overBudgetSummary is the summary of a gate's run whose task was over the
