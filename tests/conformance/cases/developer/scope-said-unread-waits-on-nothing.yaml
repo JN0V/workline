@@ -2,7 +2,8 @@ case: developer/scope-said-unread-waits-on-nothing
 about: >
   A Scope written before the `Guessed:` mark (#970), whose own words
   say no code was given when it was written (#998): a guess as well,
-  it waits on nothing. #2's `src/` overlaps #1's, taken: #2 is taken
+  so it waits on nothing (ADR-0065, change 2 keeps it for overlap
+  alone). #2's `src/` overlaps #1's, taken: #2 is taken
   all the same.
 given:
   repo: tested

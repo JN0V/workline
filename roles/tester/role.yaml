@@ -109,11 +109,11 @@ settings:
   # definition of a test file every role reads (ADR-0065): unset, the
   # built-in generic patterns (internal/testdef/generic.yaml: test/,
   # tests/, Tests/, __tests__/ folders, test_*, *_test.*, *_spec.*,
-  # *.test.*, *.spec.*), which `workline doctor` says. A test they miss is code to the developer's Scope fence.
+  # *.test.*, *.spec.*), which `workline doctor` says. A test they miss is code to the developer: beyond its Scope, listed.
   # E.g. ["**/src/test/**", "**/src/androidTest/**"], ["spec/**"].
   test-paths: []
-  # Where a test's code lives, for the developer's fence: a new test file
-  # whose code folder holds a Scope path is in bounds. Each maps a test's
+  # Where a test's code lives, for the developer: a new test file whose
+  # code folder holds a Scope path is beside the Scope, not listed beyond it. Each maps a test's
   # folder (`tests`) onto its code's (`code`), each `**` filling the next;
   # a test in none lives beside its code. Unset, the generic ones: the
   # folder holding a test/ or tests/ folder.

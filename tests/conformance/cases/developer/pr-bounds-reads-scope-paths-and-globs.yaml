@@ -1,15 +1,16 @@
-case: developer/pr-bounds-reads-class-names-and-new-file
+case: developer/pr-bounds-reads-scope-paths-and-globs
 about: >
-  A Scope naming classes and a new file by their names alone, each line
-  with its module, bounds those files (#1207; the trial's composition
-  grid): `TracingViewModel` under feature:tracing is its
-  `TracingViewModel.kt`, a new `CompositionGrid.kt` under core:overlay is
-  in bounds wherever the module puts it, and a new fake in the module's
-  src/test beside a Scope file under its src/main is a test's helper.
-  A file the Scope does not name stays outside: `SettingsUiState.kt`,
-  the module's `build.gradle.kts`, an existing fake and a golden file
-  in src/test, which a frozen test may read, and a new one that shadows
-  a production class of its name.
+  The Scope's paths and globs, and test homes for new tests, are what is
+  in it; nothing else (ADR-0065, change 2; #1228; the trial's
+  composition grid, #1207). A glob for the core/session folder holds
+  every file under it, its build.gradle.kts too; a path holds
+  TracingViewModel.kt; a line `New:` names CompositionGrid.kt, to
+  create. A class named with no path, `SettingsUiState`, holds nothing:
+  its file is beyond the Scope. A new test beside a Scope file is in it,
+  by test homes; one named like a main class is too, the reviewer's to
+  judge. An existing fake and a golden file a frozen test may read are
+  beyond it. Beyond the Scope is said, never refused; the branch lacks
+  the frozen tests, which block it alone.
 given:
   repo: tested-draft
   setup:
@@ -20,7 +21,7 @@ given:
       - id: 3
         title: "A composition grid"
         labels: ["workline:developing"]
-        body: "## Need\n\nI want a grid.\n\n## Scope\n\n- core:session `SettingsData`, `SettingsRepository`.\n- feature:tracing `TracingViewModel`.\n- core:overlay: a new pure `CompositionGrid.kt` using `MatrixUtils`.\n"
+        body: "## Need\n\nI want a grid.\n\n## Scope\n\n- `core/session/**`: the settings.\n- `feature/tracing/src/main/kotlin/tg/tracing/TracingViewModel.kt`, and its `SettingsUiState`.\n- New: `core/overlay/src/main/kotlin/tg/overlay/CompositionGrid.kt`, a pure grid using `MatrixUtils`.\n"
     merge-requests:
       - id: 1
         branch: workline/tester/issue-3
@@ -36,13 +37,14 @@ expect:
   status: block
   agent-calls: 0
   findings:
-    - {rule: outside-scope, where: feature/tracing/src/main/kotlin/tg/tracing/settings/SettingsUiState.kt}
-    - {rule: outside-scope, where: core/session/build.gradle.kts}
-    - {rule: outside-scope, where: feature/tracing/src/test/kotlin/tg/tracing/settings/FakeSettingsRepository.kt}
-    - {rule: outside-scope, where: feature/tracing/src/test/resources/golden.json}
-    - {rule: outside-scope, where: feature/tracing/src/test/kotlin/tg/tracing/settings/SettingsUiState.kt}
+    - {rule: beyond-scope, level: info, where: feature/tracing/src/main/kotlin/tg/tracing/settings/SettingsUiState.kt}
+    - {rule: beyond-scope, level: info, where: feature/tracing/src/test/kotlin/tg/tracing/settings/FakeSettingsRepository.kt}
+    - {rule: beyond-scope, level: info, where: feature/tracing/src/test/resources/golden.json}
   no-findings:
-    - {rule: outside-scope, where: core/session/src/main/kotlin/tg/session/SettingsRepository.kt}
-    - {rule: outside-scope, where: feature/tracing/src/main/kotlin/tg/tracing/TracingViewModel.kt}
-    - {rule: outside-scope, where: core/overlay/src/main/kotlin/tg/overlay/CompositionGrid.kt}
-    - {rule: outside-scope, where: feature/tracing/src/test/kotlin/tg/tracing/settings/FakeGridRepository.kt}
+    - {rule: outside-scope}
+    - {rule: beyond-scope, where: core/session/src/main/kotlin/tg/session/SettingsRepository.kt}
+    - {rule: beyond-scope, where: feature/tracing/src/main/kotlin/tg/tracing/TracingViewModel.kt}
+    - {rule: beyond-scope, where: core/overlay/src/main/kotlin/tg/overlay/CompositionGrid.kt}
+    - {rule: beyond-scope, where: feature/tracing/src/test/kotlin/tg/tracing/settings/FakeGridRepository.kt}
+    - {rule: beyond-scope, where: core/session/build.gradle.kts}
+    - {rule: beyond-scope, where: feature/tracing/src/test/kotlin/tg/tracing/settings/SettingsUiState.kt}

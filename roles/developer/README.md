@@ -36,14 +36,13 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   the board's doing column ([boards](../../docs/boards.md)).
 - **Writes the code**, with an agent, in a worktree of the code: it
   reads, edits and runs the tests there ([the agent](docs/agent.md)).
-  Its diff is held to its bounds: a file outside the Scope, a frozen
-  acceptance test, a file that steers agents or a gate's are reverted,
-  no agent judging; on its pull request, the same bounds are a check,
-  whoever pushed ([the bounds](docs/bounds.md)). A test that does not
-  fit, it objects to on the tester's Draft. A new test or fake beside
-  the Scope, and a class it names, are in bounds. Code wholly outside the Scope, it asks the product
-  owner for; the same files twice, a person
-  ([asking for files](docs/bounds.md#asking-the-product-owner-for-files)).
+  Its diff is held to its bounds: a frozen acceptance test, a file
+  that steers agents or a gate's are reverted, no agent judging; on its
+  pull request, the same bounds are a check, whoever pushed
+  ([the bounds](docs/bounds.md)). A test that does not fit, it objects
+  to on the tester's Draft. The Scope is a hint: a file beyond it is
+  applied, and listed on the pull request with why, for the reviewer
+  ([beyond the Scope](docs/bounds.md#beyond-the-scope)).
 - **Proves it** on the project's tests, the tester's `test-command`,
   then opens its pull request: ready when green with no cap reached,
   else a Draft ([the proof and the caps](docs/proof.md)).
@@ -118,7 +117,7 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 | `proof-seconds` | 900 | how long the project's tests may run on its code; past it, a Draft |
 | `proof-command` | none | the tests on the folders its change touches, `{packages}` in it; none, the whole suite ([the proof](docs/proof.md#what-runs)) |
 | `review-rounds` | 5 | the review rounds it runs on its pull request |
-| the tester's `test-paths`, `test-homes` | the generic ones | the one definition of a test file, read by the write fence: a new test file whose code lives beside the Scope is in bounds ([the bounds](docs/bounds.md#what-it-checks)) |
+| the tester's `test-paths`, `test-homes` | the generic ones | the one definition of a test file: a new test file whose code lives beside the Scope is not listed beyond it ([the bounds](docs/bounds.md#what-it-checks)) |
 | `autonomy` | `normal` | its level, else the project's `autonomy`: `cautious` runs 3 review rounds, `enterprising` 8; `review-rounds` set wins ([autonomy](../../docs/autonomy.md)) |
 
 The tests it runs are the tester's `test-command` and `test-report`

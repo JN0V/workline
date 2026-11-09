@@ -1,8 +1,8 @@
 case: developer/round-undoing-green-blocks
 about: >
   A green pull request, a review finding whose fix turns a frozen test
-  red (#987); its round's agent makes the fix, and neither objects to
-  the test nor names a file outside the Scope. The fix is not pushed,
+  red (#987); its round's agent makes the fix, and does not object to
+  the test. The fix is not pushed,
   the green head kept; nothing else would move, so the issue goes
   Blocked for a person, the red tests and the finding on it.
 given:
@@ -32,7 +32,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul-wrong"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2; its fix turns the tests red on a green head: not pushed; no objection left for the tester at this head, and no file named outside the issue's Scope: #3 blocked for a person"
+  summary: "round 1 of 5 on merge request 2; its fix turns the tests red on a green head: not pushed; no objection left for the tester at this head: #3 blocked for a person"
   agent-calls: 1
   findings:
     - {rule: green-kept, level: warn, where: "merge request 2", message: "test_mul_two_by_three"}

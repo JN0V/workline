@@ -92,7 +92,8 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
 It names the code, never pastes it; the agent reads it in its worktree:
 
 - the issue, whole;
-- the paths it may change: the Scope, the tests beside them;
+- the Scope, a hint, the tests beside it; any file the change needs
+  may be changed, but the guarded ones ([the bounds](bounds.md));
 - the tester's frozen tests, by path, and how to object to one;
 - the test command, the tester's `test-command`, or why its setting
   could not be read;
@@ -104,6 +105,9 @@ It answers with its edits; its diff is its code
 - **An objection goes in a file**, `.workline/objections.yaml` in its
   worktree, a YAML list the question shows: the engine reads it, then
   takes it out of the diff.
+- **Why a file beyond the Scope** goes in `.workline/beyond.yaml`,
+  `path: why`, one line each: read, taken out of the diff, listed on
+  the pull request ([beyond the Scope](bounds.md#beyond-the-scope)).
 - **Its last message is `[]`**: the question says the engine reads it,
   YAML only.
 - **Closing words that do not read never cost the code**: it is still
@@ -113,8 +117,8 @@ It answers with its edits; its diff is its code
     under "Its agent's words, unread", said (`agent-words-unread`), so
     an objection written there is not lost; with no pull request, in
     its claim on the issue.
-  - An objections file that is a link, or a folder: never followed nor
-    read, removed, said.
+  - An objections or reasons file that is a link, or a folder: never
+    followed nor read, removed, said.
 - **The same for a `cmd:` agent**: its output is read so.
 
 ## Not yet

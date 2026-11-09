@@ -24,8 +24,11 @@
   - [2026-11-08](#amendment-2026-11-08-a-persons-labels-are-input-a-roles-own-write-is-not):
     §3's input, a person's labels in, the role's own write out
 - **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#the-four-changes), once built: §8's
-  picker frozen, its tables in packs; §9's fence on the Scope dropped, a
-  file beyond it listed on the pull request
+  picker frozen, its tables in packs
+- **Amended by:** [ADR-0065, change 2](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence),
+  built in [#1228](https://github.com/JN0V/workline/issues/1228): §9's
+  fence on the Scope dropped, a file beyond it listed on the pull
+  request
 
 ## Context
 
@@ -407,6 +410,11 @@ Each role's run ends with one outcome, beside its finding codes:
 - **Anything else is an ask**: `needs-input(product owner, the files)`,
   the file set in its input. The same set asked twice waits for a
   person; a new set is new input, whatever the head.
+- **Amended by [ADR-0065, change 2](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)**,
+  built in [#1228](https://github.com/JN0V/workline/issues/1228): the
+  Scope is a hint, not a fence; a file beyond it is applied, never
+  asked, and listed on the pull request for the reviewer. A new test
+  beside it, by the project's one definition, is not listed.
 
 ### 10. Pull requests through the same function
 

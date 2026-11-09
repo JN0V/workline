@@ -1,0 +1,28 @@
+case: developer/generic-miss-is-beyond-the-scope
+about: >
+  A test the generic patterns miss (ADR-0065, change 3; #1226): no
+  test-paths set, the developer's agent writes check/mul_check.sh, a test
+  by the project's habits but by no pattern the engine knows. It is code
+  to the engine, beyond #2's Scope: applied, never refused, and listed on
+  the pull request for the reviewer (ADR-0065, change 2).
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-writes-a-test-generic-misses"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: beyond-scope, level: info, where: "#2", message: "check/mul_check.sh"}]
+  no-findings: [{rule: outside-scope}, {rule: scope-asked}]
+  pushed:
+    workline/developer/2:
+      check/mul_check.sh: "mul 2 3"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        body-contains: ["## Beyond the Scope", "- `check/mul_check.sh`"]

@@ -3,9 +3,9 @@ about: >
   One definition of a test file (ADR-0065, change 3; #1226): a project
   whose tester's test-paths are its spec/ folder, and whose test-homes
   map spec/ onto lib/. A new spec and a new fake under spec/models/,
-  beside the Scope's lib/models/cart.rb, are tests the write fence keeps.
-  A new tests/test_cart.sh, a test by the generic patterns but not by the
-  project's, is code: outside the Scope.
+  beside the Scope's lib/models/cart.rb, are tests beside the Scope. A
+  new tests/test_cart.sh, a test by the generic patterns but not by the
+  project's, is code: beyond the Scope, said, never refused.
 given:
   repo: tested-draft
   setup:
@@ -34,8 +34,9 @@ expect:
   status: block
   agent-calls: 0
   findings:
-    - {rule: outside-scope, where: tests/test_cart.sh}
+    - {rule: beyond-scope, level: info, where: tests/test_cart.sh}
   no-findings:
-    - {rule: outside-scope, where: lib/models/cart.rb}
-    - {rule: outside-scope, where: spec/models/cart_spec.rb}
-    - {rule: outside-scope, where: spec/models/fake_store.rb}
+    - {rule: outside-scope}
+    - {rule: beyond-scope, where: lib/models/cart.rb}
+    - {rule: beyond-scope, where: spec/models/cart_spec.rb}
+    - {rule: beyond-scope, where: spec/models/fake_store.rb}

@@ -58,3 +58,22 @@ func TestIssueText(t *testing.T) {
 		t.Errorf("no section, the body whole:\n%s", text)
 	}
 }
+
+// The intent lens reads the files the developer lists beyond the Scope
+// (ADR-0065, change 2): under the pull request's heading, and in a
+// round's commit, each once; nothing else of the texts.
+func TestBeyondListed(t *testing.T) {
+	body := "Closes #3\n\n## Changes\n\n- Code: `a.kt`.\n\n## Beyond the Scope\n\nFiles changed beyond the issue's Scope, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.\n\n- `MatrixUtils.kt`: the grid needs its inverse\n\n## Verification\n\n- proven\n"
+	msgs := "fix: the review's findings on #3, round 1\n\nBeyond the Scope:\n\n- `Fake.kt`: the test's fake lacks the new call\n- `MatrixUtils.kt`: the grid needs its inverse\n"
+	got := beyondListed(body, msgs)
+	want := "- `MatrixUtils.kt`: the grid needs its inverse\n- `Fake.kt`: the test's fake lacks the new call\n"
+	if got != want {
+		t.Errorf("beyondListed = %q, want %q", got, want)
+	}
+	if beyondListed("Closes #3\n\n- `x`: a bullet elsewhere\n") != "" {
+		t.Error("a bullet under no Beyond the Scope heading is listed")
+	}
+	if s := whatFor([]ClosedIssue{{ID: 3, Text: "### Issue #3: grid\n"}}, got); !strings.Contains(s, "### Beyond the Scope, as the author lists them") || !strings.Contains(s, "`Fake.kt`") {
+		t.Errorf("whatFor does not give the intent lens the list:\n%s", s)
+	}
+}

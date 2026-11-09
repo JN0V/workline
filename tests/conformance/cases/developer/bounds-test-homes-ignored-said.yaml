@@ -1,7 +1,7 @@
 case: developer/bounds-test-homes-ignored-said
 about: >
-  A test-homes setting that cannot be read (ADR-0065; #1226): the fence
-  ignores it as every role does, the generic homes in its place, and the
+  A test-homes setting that cannot be read (ADR-0065; #1226): the bounds
+  ignore it as every role does, the generic homes in its place, and the
   bounds' verdict says so in a warning, never silent (principle 12).
 given:
   repo: tested-draft
@@ -31,7 +31,8 @@ expect:
   status: block
   agent-calls: 0
   findings:
-    - {rule: test-homes-ignored, level: warn, message: "the fence read the generic homes in their place"}
-    - {rule: outside-scope, where: app/src/main/kotlin/tg/x/test/Probe.kt}
+    - {rule: test-homes-ignored, level: warn, message: "the bounds read the generic homes in their place"}
+    - {rule: beyond-scope, level: info, where: app/src/main/kotlin/tg/x/test/Probe.kt}
   no-findings:
-    - {rule: outside-scope, where: app/src/test/kotlin/tg/x/FakeRepository.kt}
+    - {rule: outside-scope}
+    - {rule: beyond-scope, where: app/src/test/kotlin/tg/x/FakeRepository.kt}

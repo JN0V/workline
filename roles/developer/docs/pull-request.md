@@ -96,6 +96,7 @@ flowchart LR
 |---|---|
 | first line | `Closes #<n>` |
 | `## Changes` | its code, its tests, the tester's acceptance tests it starts from |
+| `## Beyond the Scope` | each file changed beyond the issue's Scope, its agent's reason; only when one was ([the bounds](bounds.md#beyond-the-scope)) |
 | `## Left out` | each file refused at apply, and why; only when one was |
 | `## Verification` | with whose rights its agent ran; what ran and its result, each cap reached ([the proof](proof.md)) |
 | `## Tried` | its tests on a fresh checkout; not the issue's Verification commands, nor a person's use |

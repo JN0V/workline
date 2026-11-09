@@ -1,0 +1,7 @@
+# The developer's agent changing a class the Scope named with no path
+# (#1228): app/src/main/kotlin/Mul.kt, for a Scope naming `Mul` alone.
+- patch:
+    file: app/src/main/kotlin/Mul.kt
+    content: |
+      class Mul { fun of(a: Int, b: Int) = a * b }
+- note: "Mul multiplies now."

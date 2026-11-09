@@ -104,6 +104,11 @@ func (rd *reader) developerMaterial(a *Act, m *material) string {
 		proof := developer.ProofLines(*d.record.Proof, d.record.Caps)
 		m.items = append(m.items, item{name: "proof", text: proof, full: proof})
 	}
+	// The files it changed beyond the issue's Scope, each with its
+	// agent's reason (ADR-0065, change 2): sampled, as its code is.
+	if beyond := developer.BeyondLines(d.record.Beyond); beyond != "" {
+		m.items = append(m.items, item{name: "beyond-scope", text: beyond, full: beyond})
+	}
 	m.act = fmt.Sprintf("The developer's code for #%d, its commits up to %.7s, opened as %s.", d.record.Issue, a.Commit, a.Ref)
 	m.about = "The issue as it reads now, the diff of the developer's own commits (its code, its tests), and what the project's tests said on it."
 	// Its review rounds (ADR-0054, step 6): what each was asked and how it

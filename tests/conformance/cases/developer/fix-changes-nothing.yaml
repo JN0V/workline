@@ -37,4 +37,4 @@ expect:
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 1 of 5: no fix within its bounds", "\"round\":1", "\"result\":\"no-code\""]
+        comment-contains: ["review round 1 of 5: no fix", "\"round\":1", "\"result\":\"no-code\""]

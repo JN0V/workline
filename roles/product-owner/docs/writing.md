@@ -51,6 +51,14 @@ first, the cause folded.
   from the code it names, read first; one still a guess says so on a
   line `Guessed:`, and holds no other issue back
   ([#970](https://github.com/JN0V/workline/issues/970)).
+- **A Scope is paths**: each file a path from the root, or a glob
+  (`core/session/**`), in backticks; never a class or module name
+  alone. A hint, not a fence: the developer lists each file it changes
+  beyond them, with why
+  ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)).
+  - A file to create: on a line `New:`, its full path.
+  - A path the repository lacks, not on a `New:` line: the Scope is
+    left out, said.
 - **Fold only what is long** — a log, a list of more than ten lines — in
   `<details>`.
 - **Never invent**: no real case known, ask the reporter for one.

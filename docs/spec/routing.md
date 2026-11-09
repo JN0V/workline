@@ -51,10 +51,10 @@ example or the steps to reproduce, are kept and never required
 `ready`, or the product owner does once Need and Validation are a person's
 ([refining to ready](backlog-acts/refine.md)), through the tester's state
 where the project routes the tester ([the line of states](#the-line-of-states)).
-Development roles only take `ready` items, and the item's **scope** bounds
+Development roles only take `ready` items, and the item's **scope** guides
 the run ([stay on the task](role-outcome.md#stay-on-the-task)). *Built for an issue: the developer
-takes a `ready` one, its Scope bounding what it changes
-([bounds](../../roles/developer/docs/bounds.md)); a file in
+takes a `ready` one, its Scope a hint, each file beyond it listed with why
+([bounds](../../roles/developer/docs/bounds.md#beyond-the-scope)); a file in
 `.workline/work/` is taken by no role yet.*
 
 `review` is the machine's part: reviewers and gates run the verification.
@@ -714,7 +714,8 @@ only then.
   is news: the product owner reads it again at once, not in a week;
   the record then written has a version, so once
   ([ADR-0063, migration](../adr/0063-every-open-issue-is-due-waiting-or-done.md#migration)).
-- **The developer's ask for its Scope**: first seen blocked, the
+- **The developer's ask for its Scope**, from before
+  [#1228](https://github.com/JN0V/workline/issues/1228) made the Scope a hint: first seen blocked, the
   comment blocking it holding the developer's `workline:scope-ask`
   mark, the product owner is woken at once (`state-revisit`), told the
   files ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)).
@@ -722,13 +723,12 @@ only then.
   product owner is woken at once (`state-revisit`), told the role, the
   record then written without it, so once
   ([the line of states](#the-line-of-states)).
-- **The developer's first step with code only outside the Scope** goes
-  back to refine, not Blocked: the product owner is due on its own
-  state, told the files; the same files asked again, whatever the
-  head, are blocked for a person, no mark
-  ([ADR-0063, §9](../adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)).
-- **The developer's red check with no fix**, no file outside the Scope
-  named: blocked for a person, no mark; read again as any blocked issue,
+- **The developer's code beyond the Scope** moves nothing: applied,
+  listed on its pull request, the Scope a hint
+  ([ADR-0065, change 2](../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)). An issue sent back to
+  refine by an ask from before is read as before: the product owner is
+  due on its own state, told the files.
+- **The developer's red check with no fix**: blocked for a person, no mark; read again as any blocked issue,
   on news or after `revisit` days
   ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-red-check-with-no-fix-blocks-for-a-person)).
 - **News**, each against that record: its body edited; a comment
@@ -807,8 +807,12 @@ a step starts only when the state it moves the issue to has room.
   tester), or on another open issue, or has parts, or whose Scope
   overlaps a claim holding code (an open pull request closes it,
   [amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-claim-with-no-code-holds-no-scope);
-  a Scope marked `Guessed:`, or saying no code was given, overlaps
-  nothing, #970, #998),
+  a Scope marked `Guessed:`, or whose words say no code was given when
+  it was written, overlaps nothing,
+  [#970](https://github.com/JN0V/workline/issues/970),
+  [#998](https://github.com/JN0V/workline/issues/998); a held issue
+  holds too the files its pull request lists beyond its Scope,
+  [#1228](https://github.com/JN0V/workline/issues/1228)),
   is counted apart, and said in the wait's reason. Read only at the
   limit: the tester's open Drafts once a run, the comments of a ready
   issue with none, the open pull requests once when a claim is there.

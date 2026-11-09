@@ -843,6 +843,22 @@ func InCommit(repo, path string) bool {
 	return path != "" && exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() == nil
 }
 
+// Tracked are the files of the commit the run is on, nil when they
+// cannot be read.
+func Tracked(repo string) []string {
+	out, err := exec.Command("git", "-C", repo, "ls-tree", "-r", "-z", "--name-only", "HEAD").Output()
+	if err != nil {
+		return nil
+	}
+	var files []string
+	for _, f := range strings.Split(string(out), "\x00") {
+		if f != "" {
+			files = append(files, f)
+		}
+	}
+	return files
+}
+
 // PathsIn are the files and folders a text names that the commit holds,
 // in the order named, at most maxSources.
 func PathsIn(repo, text string) []string {
@@ -2069,15 +2085,23 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					missing = path
 				}
 			}
+			// Each path the Scope writes, the developer's bounds (ADR-0065,
+			// change 2): a file or folder the commit holds, a glob matching
+			// one, or a new file on a line `New:`.
+			for _, u := range work.Unfound(c.Scope, append(Tracked(repo), onBranch...)) {
+				if missing == "" {
+					missing = u
+				}
+			}
 			switch {
-			case len(c.Sources) == 0:
+			case len(c.Sources) == 0 && missing == "" && !work.MarksNew(c.Scope):
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-without-files", Level: "info", Where: c.where(),
 					Message: fmt.Sprintf("could not tell which files #%d is about, so its %[2]s was left out: add a %[2]s naming them, or leave it", c.Issue, work.Name(work.Scope))})
 			case missing != "":
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-without-files", Level: "info", Where: c.where(),
-					Message: fmt.Sprintf("its %[1]s named %[2]s, which the repository does not hold, so it was left out: add a %[1]s naming the right files, or leave it", work.Name(work.Scope), missing)})
+					Message: fmt.Sprintf("its %[1]s named %[2]s, which the repository does not hold, so it was left out: name a path it holds, a glob matching one, or a new file on a line `New:`", work.Name(work.Scope), missing)})
 			}
-			if len(c.Sources) == 0 || missing != "" {
+			if len(c.Sources) == 0 && !work.MarksNew(c.Scope) || missing != "" {
 				c.Scope, c.Sources = "", nil
 				if len(asked) > 0 {
 					// Its widening dropped: an unblock beside it would send

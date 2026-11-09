@@ -58,19 +58,23 @@ type Round struct {
 	Result string   `json:"result,omitempty"` // its proof's result; no-code when it wrote none
 	Whys   bool     `json:"whys,omitempty"`   // the five whys ran
 	Person bool     `json:"person,omitempty"` // past the last round: its issue blocked (ADR-0059)
-	// Bounds, a round with no fix: asked, it asked the product owner for
-	// files outside the Scope (#921); held, it needed none; blocked, it
-	// needed none and a project check stays red: blocked for a person
-	// (#938); objected, its objection waits for the tester (#987).
+	// Bounds, a round with no fix: held, nothing to wait for; blocked, a
+	// project check stays red, or its fix was held off a green head:
+	// blocked for a person (#938); objected, its objection waits for the
+	// tester (#987). Asked, in a record before ADR-0065's change 2: it
+	// asked the product owner for files outside the Scope (#921).
 	// Result not-pushed: its fix, red on a green head, kept off it.
 	Bounds string         `json:"bounds,omitempty"`
 	Turns  int            `json:"turns,omitempty"`  // what its agent used, as it reported them
 	Tokens int            `json:"tokens,omitempty"` // fresh, what ai-max-tokens holds
 	Cached int            `json:"cached,omitempty"` // read from cache, apart
 	Tools  map[string]int `json:"tools,omitempty"`
-	// Beside: the new test files its fix wrote beside the Scope, kept by
-	// the write fence (ADR-0063, §9).
+	// Beside: the new test files its fix wrote beside the Scope
+	// (ADR-0063, §9).
 	Beside []string `json:"beside,omitempty"`
+	// Beyond: the files its fix wrote beyond the Scope, each with its
+	// agent's reason (ADR-0065, change 2).
+	Beyond []Beyond `json:"beyond,omitempty"`
 }
 
 // Asked is a finding a round asks the agent to fix: a reviewer's row that
@@ -99,14 +103,14 @@ type round struct {
 	Runs     int      `json:"review-runs"`
 	ReviewAt string   `json:"review-at,omitempty"` // the head the reviewer's summary read
 	FiveWhys bool     `json:"five-whys"`
-	Person   bool     `json:"person"`              // past the last round: no agent, a person
-	Ready    bool     `json:"ready,omitempty"`     // its Draft green, nothing asked: marked ready, no agent (#969)
+	Person   bool     `json:"person"`          // past the last round: no agent, a person
+	Ready    bool     `json:"ready,omitempty"` // its Draft green, nothing asked: marked ready, no agent (#969)
 	// Backstop: why its issue's runs reached their backstop, no round run
 	// (ADR-0064, §5; backstop.go).
 	Backstop string `json:"backstop,omitempty"`
-	At       string   `json:"at,omitempty"`        // its branch's head, where its fix starts
-	GatesAt  string   `json:"gates-at,omitempty"`  // the head the gates' findings asked were read at
-	ChecksAt string   `json:"checks-at,omitempty"` // the head the project's red checks were read at
+	At       string `json:"at,omitempty"`        // its branch's head, where its fix starts
+	GatesAt  string `json:"gates-at,omitempty"`  // the head the gates' findings asked were read at
+	ChecksAt string `json:"checks-at,omitempty"` // the head the project's red checks were read at
 	// ChecksUnread: why the forge did not say the project's checks.
 	ChecksUnread string `json:"checks-unread,omitempty"`
 	// Back: the product owner sent the issue back since the record's ask
@@ -380,7 +384,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	for _, t := range a.Acceptance { // frozen, on its branch, whatever the tester's Draft
 		bounds.Frozen[t] = issue
 	}
-	bounds.Beside = a.Beside // kept by an earlier round: still the fence's on its head
+	bounds.Beside = a.Beside // written by an earlier round: still beside the Scope on its head
 	if !r.KeptRead && bounds.Draft != 0 {
 		// The tester's answers so far: an objection of this round waits
 		// for one more (#987).
@@ -625,12 +629,10 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 		fmt.Fprintf(&t, "\nThe reviewer showed %d nit%s too: not asked, leave them.\n", r.Nits, plural(r.Nits))
 	}
 	t.WriteString("\n" + question(is, b, test, testErr, s))
-	t.WriteString("A fix that needs a file outside what you may change: change nothing for it, and name the file in its note's `needs`, " +
-		"`- note: {text: \"why the fix lies there\", needs: [path/to/file]}`. " +
-		"The product owner is asked to widen the issue's " + work.Name(work.Scope) + " with it; the next round makes the fix then. " +
-		"Never a fix of the symptom within your bounds in its place.\n\n")
+	t.WriteString("A fix that lies in a file beyond the issue's " + work.Name(work.Scope) + ": make it there, and say why in `" + BeyondFile + "`, as above. " +
+		"Never a fix of the symptom within the " + work.Name(work.Scope) + " in its place.\n\n")
 	t.WriteString("A finding whose fix would turn a frozen test red: never undo the code a frozen test needs for it. " +
-		"Object to the test, as above, or name what the " + work.Name(work.Scope) + " lacks; say so in the finding's note. " +
+		"Object to the test, as above; say so in the finding's note. " +
 		"On a green head, a fix the proof finds red on a frozen test is not pushed.\n\n")
 	t.WriteString("Its diff is your fix: the cause, not the symptom. Then answer a `note` a finding, one line, what you did; " +
 		"a finding you hold wrong: say why in its note, change nothing for it, the reviewer decides a finding is fixed. An objection, if any, as above.\n")
@@ -750,14 +752,13 @@ func reviewPost(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
-	var notes, analyses, needs []string
+	var notes, analyses []string
 	var rest []intent.Intention
 	for _, in := range proposed {
 		if in.Kind != "note" {
 			rest = append(rest, in)
 			continue
 		}
-		needs = append(needs, noteNeeds(in.Value)...)
 		if text := noteText(in.Value); r.FiveWhys && whys.Is(text) {
 			analyses = append(analyses, text)
 		} else if text != "" {
@@ -782,7 +783,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 	if r.Base != "" {
 		base = r.Base // the tester's rewrites in it: its agent's diff is its own
 	}
-	kept, refused, said, unread, err := held(runDir, repo, base, b, nil, rest)
+	kept, refused, said, unread, why, err := held(runDir, repo, base, b, nil, rest)
 	if err != nil {
 		return fail(err)
 	}
@@ -821,7 +822,6 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	var ask []intent.Intention
 	objected := objectedOn(others)
-	files := outsideScope(append(refused, needed(repo, b, needs)...))
 	// Objected already at this head, the tester's answer read: no second
 	// wait at the same head (#987).
 	answered := a.Widen != nil && a.Widen.Objected && sameCommit(a.Widen.At, r.At)
@@ -850,6 +850,10 @@ func reviewPost(runDir, repo string, s Settings) int {
 			if this.Beside = besideKept(repo, b, patches); len(this.Beside) > 0 {
 				a.Beside = union(a.Beside, this.Beside)
 			}
+			if this.Beyond = beyondKept(repo, b, patches, why); len(this.Beyond) > 0 {
+				a.Beyond = unionBeyond(a.Beyond, this.Beyond)
+				v.Findings = append(v.Findings, beyondFinding(where, this.Beyond))
+			}
 			if len(takes) > 0 && r.From != "" {
 				a.From = r.From // the Draft's head the frozen tests are read at now
 			}
@@ -860,7 +864,13 @@ func reviewPost(runDir, repo string, s Settings) int {
 			v.Summary += ", its fix pushed, the tests " + p.Result
 			cs, unread := committerSettings(repo, where)
 			v.Findings = append(v.Findings, unread...)
-			if err := writeMergeRequest(runDir, map[string]any{"push": reviewSubject(a.Issue, n, cs)}); err != nil {
+			push := reviewSubject(a.Issue, n, cs)
+			if len(this.Beyond) > 0 {
+				// In its commit, where the reviewer's intent lens reads
+				// it with the commits not reviewed yet.
+				push += "\n\n" + BeyondHeading + ":\n\n" + strings.TrimRight(beyondLines(this.Beyond), "\n")
+			}
+			if err := writeMergeRequest(runDir, map[string]any{"push": push}); err != nil {
 				return fail(err)
 			}
 		}
@@ -870,39 +880,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 		if this.Result == "" {
 			this.Result = "no-code"
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
-				Message: "its agent wrote no fix within its bounds that changes the branch: the round is counted, nothing pushed"})
+				Message: "its agent wrote no fix that changes the branch: the round is counted, nothing pushed"})
 		}
-		if len(files) > 0 {
-			// Its fix lies outside the Scope (#921): the product owner's
-			// to widen, a set of files once, whatever the head, then a
-			// person (ADR-0063, §9). A file not asked before is asked
-			// (#1073).
-			key := scopeKey(b.Scope)
-			same := a.Widen != nil && sameCommit(a.Widen.At, r.At) && a.Widen.Scope == key
-			before := union(b.Asked, a.Asked)
-			if a.Widen != nil {
-				before = union(before, a.Widen.Files)
-			}
-			again := askedBefore(files, before)
-			asked := files // every file asked at this head and Scope, so asks never alternate
-			if same {
-				asked = slices.Clone(a.Widen.Files)
-				for _, f := range files {
-					if !slices.Contains(asked, f) {
-						asked = append(asked, f)
-					}
-				}
-			}
-			ask = askScope(repo, a, r, files, again, notes)
-			a.Widen, this.Bounds = &Widen{At: r.At, Scope: key, Files: asked, Again: again, Review: heldRed != nil}, "asked"
-			a.Asked = union(union(a.Asked, b.Asked), files)
-			msg := fmt.Sprintf("its fix needs %s, outside the issue's %s: #%d blocked, the product owner asked to widen it", strings.Join(files, ", "), scopeName, a.Issue)
-			if again {
-				msg = fmt.Sprintf("its fix still needs %s, asked already, its %s not holding them: #%d blocked for a person", strings.Join(files, ", "), scopeName, a.Issue)
-			}
-			v.Findings = append(v.Findings, verdict.Finding{Rule: "scope-asked", Level: "warn", Where: where, Message: msg})
-			v.Summary += "; " + msg
-		} else if objected && !answered && b.Draft != 0 {
+		if objected && !answered && b.Draft != 0 {
 			// Its objection is on the tester's Draft (#987): the issue
 			// waits for its answer, not for a person. A rewrite is the
 			// next round; a test kept asks it again at this head.
@@ -917,7 +897,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			// written; one who sends it back resumes the round.
 			ask = holdCheck(repo, a, r, red, notes, others)
 			a.Widen, this.Bounds = &Widen{At: r.At, Scope: scopeKey(b.Scope), Held: true}, "blocked"
-			msg := fmt.Sprintf("no fix for the red check %s, and no file named outside the issue's %s: #%d blocked for a person", strings.Join(red, ", "), scopeName, a.Issue)
+			msg := fmt.Sprintf("no fix for the red check %s: #%d blocked for a person", strings.Join(red, ", "), a.Issue)
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "check-held", Level: "warn", Where: where, Message: msg})
 			v.Summary += "; " + msg
 		} else if heldRed != nil {
@@ -926,7 +906,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			// person; one who sends it back has the findings asked again.
 			ask = holdGreen(repo, a, r, heldRed, notes, others)
 			a.Widen, this.Bounds = &Widen{At: r.At, Scope: scopeKey(b.Scope), Held: true, Review: true}, "blocked"
-			msg := fmt.Sprintf("no objection left for the tester at this head, and no file named outside the issue's %s: #%d blocked for a person", scopeName, a.Issue)
+			msg := fmt.Sprintf("no objection left for the tester at this head: #%d blocked for a person", a.Issue)
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "green-held", Level: "warn", Where: where, Message: msg})
 			v.Summary += "; " + msg
 		} else if objected && answered {
@@ -1000,24 +980,23 @@ func roundBody(x Round, s Settings, notes []string, analysis string, w *Widen) s
 	case x.Bounds == "objected":
 		fmt.Fprintf(&b, "Nothing pushed; its objection is on the tester's Draft !%d, on its lines: its issue waits for the tester's answer. A rewrite is taken by the next round; a test kept asks it again here.\n\n", w.Draft)
 	case x.Bounds == "blocked" && x.Result == "not-pushed":
-		b.WriteString("No objection left for the tester at this head, and no file outside its bounds named: its issue is blocked for a person, its reason on it; moved back to ready, the next round asks the findings again here.\n\n")
+		b.WriteString("No objection left for the tester at this head: its issue is blocked for a person, its reason on it; moved back to ready, the next round asks the findings again here.\n\n")
 	case x.Bounds == "blocked" && w.Review:
 		b.WriteString("no fix, and it objected again at this head after the tester's answer: its issue is blocked for a person, its reason on it; moved back to ready, the next round asks the findings again here.\n\n")
 	case x.Result == "not-pushed" && x.Bounds == "held":
 		b.WriteString("\n\n")
-	case x.Bounds == "asked" && w.Again:
-		fmt.Fprintf(&b, "no fix within its bounds. It still needs `%s`, asked already, its %s not holding them: its issue is blocked for a person.\n\n", strings.Join(w.Files, "`, `"), scopeName)
-	case x.Bounds == "asked":
-		fmt.Fprintf(&b, "no fix within its bounds. It needs `%s`, outside the issue's %s: its issue is blocked, the product owner asked to widen it; the next round resumes here.\n\n", strings.Join(w.Files, "`, `"), scopeName)
 	case x.Bounds == "blocked":
-		b.WriteString("no fix within its bounds, and none outside them named: the red check stays, its issue is blocked for a person, its reason on it; moved back to ready, the next round runs here.\n\n")
+		b.WriteString("no fix: the red check stays, its issue is blocked for a person, its reason on it; moved back to ready, the next round runs here.\n\n")
 	case x.Result == "no-code":
-		b.WriteString("no fix within its bounds.\n\n")
+		b.WriteString("no fix.\n\n")
 	default:
 		fmt.Fprintf(&b, "its fix pushed, the project's tests %s.\n\n", x.Result)
 	}
 	if len(x.Beside) > 0 {
-		fmt.Fprintf(&b, "New test files beside the issue's %s, kept by the write fence: `%s`; the product owner adds them to the %[1]s at its next run.\n\n", scopeName, strings.Join(x.Beside, "`, `"))
+		fmt.Fprintf(&b, "New test files beside the issue's %s: `%s`; the product owner adds them to the %[1]s at its next run.\n\n", scopeName, strings.Join(x.Beside, "`, `"))
+	}
+	if len(x.Beyond) > 0 {
+		fmt.Fprintf(&b, "%s, the issue's %s a hint; the reviewer's intent lens judges each:\n\n%s\n", BeyondHeading, scopeName, beyondLines(x.Beyond))
 	}
 	b.WriteString("Asked:\n\n")
 	for _, t := range x.Asked {

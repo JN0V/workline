@@ -68,17 +68,49 @@ func TestGuessed(t *testing.T) {
 		"- guessed: from the folders.":              true,
 		"- `src/`: the parser, guessed before.":     false,
 		"- `src/lib.sh`: `add`.":                    false,
-		// Before the mark, its own words said no code was given (#998).
-		"The check (`roles/documentalist`). The paths come from the error text, because no `init` code was given in this run.": true,
-		"- `src/`: no code was read.":                                                                                           true,
-		"- `src/`: no code is read from the network.":                                                                           false,
-		"- `src/`: the code was given a new name.":                                                                              false,
-		"- `src/`: no other code was given a new name.":                                                                         false,
-		"- `src/`: no new code was read by the parser.":                                                                         false,
-		"- `src/`: the error code was not shown to the user.":                                                                   false,
+		// English prose is no mark (ADR-0065, change 2): only the line.
+		"The check (`roles/documentalist`). The paths come from the error text, because no `init` code was given in this run.": false,
+		"- `src/`: no code was read.": false,
 	} {
 		if got := Guessed(scope); got != want {
 			t.Errorf("Guessed(%q) = %v, want %v", scope, got, want)
+		}
+	}
+}
+
+// The product owner's writing check (ADR-0065, change 2): each path a
+// Scope writes is a file or folder files hold, a glob matching one, or
+// on a line `New:`; a name, a dotted word, an Action are no path.
+func TestUnfound(t *testing.T) {
+	files := []string{"src/export/csv.go", "README.md"}
+	for scope, want := range map[string][]string{
+		"- `src/export/csv.go`: rows.\n- `src/export/`.\n- `src/export/*.go`.": nil,
+		"- `src/import/xml.go`: the importer.":                                 {"src/import/xml.go"},
+		"- `src/import/**`: the importers.":                                    {"src/import/**"},
+		"- New: `src/import/xml.go`, the importer.":                            nil,
+		"- **New:** `newmod/x.kt`.":                                            nil,
+		"- `newmod/x.kt`.":                                                     {"newmod/x.kt"},
+		"- `TracingViewModel`, `os.Getenv`, `csv.go`.":                         nil,
+		"- `dorny/paths-filter`, `actions/checkout@v4`.":                       nil,
+		"- `src/export/csv.go:12`, `src/export/csv.go:3-9`.":                   nil,
+	} {
+		if got := Unfound(scope, files); !slices.Equal(got, want) {
+			t.Errorf("Unfound(%q) = %q, want %q", scope, got, want)
+		}
+	}
+}
+
+// An old Scope saying no code was given holds no other issue back
+// (#998); a phrase going on past `code` is no such word.
+func TestCodeUnread(t *testing.T) {
+	for s, want := range map[string]bool{
+		"- `x.go`: no `init` code was given in this run.": true,
+		"No code was read for it.":                        true,
+		"no other code was given a new name":              false,
+		"- `x.go`: the parser.":                           false,
+	} {
+		if got := CodeUnread(s); got != want {
+			t.Errorf("CodeUnread(%q) = %v, want %v", s, got, want)
 		}
 	}
 }

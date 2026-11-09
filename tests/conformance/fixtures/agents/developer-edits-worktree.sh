@@ -1,7 +1,7 @@
 #!/bin/sh
 # A cmd: agent editing its worktree in place (ADR-0056), answering
 # nothing: mul in lib.sh and a test of its own, untracked. EDIT adds
-# README.md (outside), a frozen test edited (frozen) or deleted (delete),
+# README.md and its reason in .workline/beyond.yaml (outside), a frozen test edited (frozen) or deleted (delete),
 # AGENTS.md (steering), a link to /etc/hosts (symlink), or lib.sh
 # committed on a branch of its own (commit), or in lib.sh the tokens its
 # environment holds (env); or it makes its own run green where the code
@@ -28,7 +28,10 @@ commit)
 	git add lib.sh
 	git -c core.hooksPath=/dev/null -c user.name=Agent -c user.email=agent@example.invalid commit -q -m "agent: its own commit"
 	;;
-outside) printf '# Project\n\nIt multiplies now.\n' > README.md ;;
+outside)
+	printf '# Project\n\nIt multiplies now.\n' > README.md
+	mkdir -p .workline && printf 'README.md: the Need asks the multiplication said to the user\n' > .workline/beyond.yaml
+	;;
 delete) rm tests/test_mul_by_zero.sh ;;
 frozen) printf '. ./lib.sh\n[ "$(mul 5 0)" = 1 ]\n' > tests/test_mul_by_zero.sh ;;
 env)

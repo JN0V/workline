@@ -13,9 +13,9 @@ given:
       - id: 3
         title: "Multiply"
         labels: ["workline:ready", "bug"]
-        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: `mul`. No `mul` code was given in this run.\n"
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\nGuessed: no `mul` code was read.\n\n- `lib.sh`: `mul`.\n"
         comments:
-          - "<!-- workline:line-record {\"state\":\"ready\",\"body\":\"970b75497876\",\"hops\":1,\"woke\":\"2026-11-03T11:48:40Z\",\"held\":[5],\"unheld\":\"5b182b264c34\"} -->\n<!-- workline:sticky=line/state -->"
+          - "<!-- workline:line-record {\"state\":\"ready\",\"body\":\"eb61ae88c1ee\",\"hops\":1,\"woke\":\"2026-11-03T11:48:40Z\",\"held\":[5],\"unheld\":\"5b182b264c34\"} -->\n<!-- workline:sticky=line/state -->"
           - "**The developer** waits on this issue.\n\n- **Why**: its Scope's `lib.sh` overlaps #5's, taken.\n- **Next**: #5 merged or let go; the developer looks at this issue again at its next run.\n\n<!-- workline:sticky=developer/claim -->"
       - id: 5
         title: "Add"

@@ -99,9 +99,9 @@ step 6).
 
 ## A round with no fix pushed
 
-When its fix lies outside the Scope, a red check stays with no fix, or
-a finding fights a frozen test, a round asks the product owner, waits
-for the tester, or blocks its issue for a person:
+When a red check stays with no fix, or a finding fights a frozen test,
+a round waits for the tester, or blocks its issue for a person; a fix
+beyond the Scope is pushed and listed:
 [a round with no fix pushed](review-held.md).
 
 ## A Draft made green

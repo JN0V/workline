@@ -1,0 +1,29 @@
+case: developer/name-only-is-beyond-the-scope
+about: >
+  A Scope naming a class with no path holds no file (ADR-0065, change
+  2; #1228): the engine never guesses a class's file from its name. The
+  developer's agent changes app/src/main/kotlin/Mul.kt for a Scope naming
+  `Mul` alone: beyond the Scope, applied, and listed on the pull request
+  for the reviewer. Never a refusal, never a scope-ask.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p app/src/main/kotlin && echo 'class Mul' > app/src/main/kotlin/Mul.kt && git add -A && git commit -qm 'feat: a Mul class'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `Mul`: a class that multiplies.\n"}
+run: {develop: [], ai: "fake:developer-writes-a-class"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: beyond-scope, level: info, where: "#2", message: "app/src/main/kotlin/Mul.kt"}]
+  no-findings: [{rule: outside-scope}, {rule: scope-asked}]
+  pushed:
+    workline/developer/2:
+      app/src/main/kotlin/Mul.kt: "fun of"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        body-contains: ["## Beyond the Scope", "- `app/src/main/kotlin/Mul.kt`"]

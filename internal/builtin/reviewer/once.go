@@ -183,7 +183,7 @@ func sameAs(repo string, st state, s Settings, f Finding, l Lens) Answered {
 			put(blobs)
 		}
 	case "issue":
-		put(whatFor(st.Issues))
+		put(whatFor(st.Issues, st.Beyond))
 	}
 	return Answered{Patch: patch, Finding: hex.EncodeToString(h.Sum(nil)[:6])}
 }

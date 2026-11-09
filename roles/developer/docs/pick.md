@@ -55,8 +55,9 @@ comment, the claim's, edited in place on each run, never a second one
   ([#998](https://github.com/JN0V/workline/issues/998)).
   A Scope marked as a guess, a line starting `Guessed:`, waits on
   nothing: its paths were named before their code was read
-  ([#970](https://github.com/JN0V/workline/issues/970)). So does one
-  whose words say no code was given, written before that mark.
+  ([#970](https://github.com/JN0V/workline/issues/970)). Its words
+  alone saying no code was given are no mark: prose is no fact
+  ([#1228](https://github.com/JN0V/workline/issues/1228)).
 - A person's hold (an assignee), a claim, or an open pull request
   closing it say themselves: nothing is written for them.
 

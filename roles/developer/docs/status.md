@@ -62,10 +62,17 @@ hold:
   `skips-overlapping-scope`, `none-ready-says-so`,
   `no-agent-opens-nothing`.
 - **The bounds** (step 2): the agent's patches held, file by file, to
-  the issue's Scope, the frozen acceptance tests, the files that steer
-  agents and a gate's definition; a label or comment of its own
-  refused; an objection posted on the test's line of the tester's
-  Draft ([the bounds](bounds.md)). Cases `developer/refuses-file-outside-scope`,
+  the frozen acceptance tests, the files that steer agents and a gate's
+  definition; a label or comment of its own refused; an objection
+  posted on the test's line of the tester's Draft
+  ([the bounds](bounds.md)). The Scope is a hint since [#1228](https://github.com/JN0V/workline/issues/1228): a
+  file beyond it is applied, listed on the pull request with its
+  agent's reason, judged by the reviewer's `intent` lens
+  ([beyond the Scope](bounds.md#beyond-the-scope)). Cases
+  `developer/applies-a-file-beyond-the-scope`,
+  `worktree-beyond-the-scope-said`, `takes-code-only-beyond-the-scope`,
+  `name-only-is-beyond-the-scope`, `round-fixes-beyond-the-scope`,
+  `pr-bounds-says-a-file-beyond-the-scope`,
   `refuses-acceptance-test-edit`, `refuses-steering-file`,
   `refuses-gate-file`, `has-no-merge-intention`, `objects-to-a-test`,
   `objection-names-a-test-mapped`, `objection-names-no-scenario-held`.
@@ -146,9 +153,10 @@ hold:
   [ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#build-plan)):
   `workline develop --bounds --merge-request <n>`, or routed on
   `merge-request`, no agent; each file its branch changed held to the
-  bounds read at the base's tip, whoever pushed; its record kept on
-  the pull request ([the bounds](bounds.md#on-the-pull-request)). Cases
-  `developer/pr-bounds-refuses-out-of-scope`,
+  bounds read at the base's tip, whoever pushed, a file beyond the
+  Scope said, never refused; its record kept on the pull request
+  ([the bounds](bounds.md#on-the-pull-request)). Cases
+  `developer/pr-bounds-says-a-file-beyond-the-scope`,
   `pr-bounds-refuses-frozen-test`, `pr-bounds-refuses-steering-file`,
   `pr-bounds-passes-in-scope`, `pr-bounds-skips-a-persons-branch`,
   `pr-bounds-refuses-frozen-test-deleted`, `pr-bounds-reads-rules-at-base`,
@@ -217,15 +225,13 @@ hold:
   `developer/red-check-is-a-round`, `red-check-read-once`,
   `red-check-waits-for-the-others`, `red-check-of-workline-asks-nothing`,
   `routing/reconcile-lists-a-red-check-round`.
-- **A fix outside the Scope asks the product owner** ([#921](https://github.com/JN0V/workline/issues/921)):
-  the issue blocked, the files and the check's log on it; the product
-  owner, woken at once, widens the Scope and sends it back, the next
-  round resuming on the same pull request; or keeps it blocked, its
-  reason said ([the review loop](review-held.md#a-fix-outside-the-scope)).
-  Cases `developer/round-asks-the-product-owner-for-scope`,
-  `round-resumes-on-a-widened-scope`, `round-asks-once-a-head-and-scope`,
+- **A fix outside the Scope asked the product owner** ([#921](https://github.com/JN0V/workline/issues/921)),
+  until [#1228](https://github.com/JN0V/workline/issues/1228) made the Scope a hint: a round's fix beyond it is
+  pushed and listed ([the review loop](review-held.md#a-fix-beyond-the-scope)).
+  An issue still blocked by an ask resumes as before. Cases
+  `developer/round-fixes-beyond-the-scope`,
+  `round-resumes-on-a-widened-scope`,
   `round-resumes-after-a-person-widens`,
-  `round-before-the-ask-runs-once-more`,
   `routing/scope-ask-wakes-the-product-owner`,
   `scope-ask-refused-stays-blocked`,
   `reconcile-lists-a-round-back-from-scope`. Tried: its pull request's
@@ -233,12 +239,12 @@ hold:
 - **A round's move of its issue applied in CI** ([#923](https://github.com/JN0V/workline/issues/923)):
   the apply job refused the whole run, its label on the issue its pull
   request closes read as on another issue. Now that issue alone, to
-  Blocked or Doing. Case `developer/round-ask-applied-from-the-default-branch`.
+  Blocked or Doing. Case `developer/round-hold-applied-from-the-default-branch`.
 - **A log quoted in the ask, its marks broken** ([#925](https://github.com/JN0V/workline/issues/925)):
   a red check's log that quoted workline's hidden marks hid the ask: the
   line read a test's record as the issue's, the product owner its state,
   and the line wrote over the ask. Now the quote's marks are broken.
-  Cases `developer/scope-ask-quotes-a-log-with-workline-marks`,
+  Cases `developer/round-hold-quotes-a-log-with-workline-marks`,
   `routing/scope-ask-with-a-quoted-log-wakes-the-product-owner`.
 - **A widened Scope resumes its round at once** ([#1013](https://github.com/JN0V/workline/issues/1013)):
   back to ready, the issue's step was a new claim the developer passed

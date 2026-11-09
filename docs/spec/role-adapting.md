@@ -65,7 +65,7 @@ config that cannot be read too (`personal-config-invalid`).
 never its own copy of them: every role reads the tester's `test-paths`
 and `test-homes` as the one definition of a test file
 ([ADR-0065](../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)),
-the developer's write fence among them
+the developer's bounds among them
 ([ADR-0063, §9](../adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)).
 Set once, in `roles.tester.settings`, it holds for all, locally and in
 CI, on GitHub and GitLab alike; unset or unread, the built-in generic

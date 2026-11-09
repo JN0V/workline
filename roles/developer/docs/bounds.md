@@ -1,6 +1,7 @@
 ---
 sources:
   - internal/developer/bounds.go
+  - internal/work/scope.go
   - internal/developer/developer.go
   - internal/developer/worktree.go
   - internal/developer/words.go
@@ -8,7 +9,7 @@ sources:
   - ci/github/workline-bounds.yml
   - ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go
-checked: 59a004d4
+checked: 8ddc4e54
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch
@@ -21,41 +22,48 @@ flowchart LR
   agent(["Agent"])
   patches["<b>Patches</b><br/>and objections"]
   post["<b>Post</b><br/>no agent"]
-  kept["<b>Applied</b><br/>within bounds"]
-  refused["<b>Refused</b><br/>said, recorded"]
+  kept["<b>Applied</b><br/>beyond the Scope listed"]
+  refused["<b>Refused</b><br/>guarded files"]
   agent --> patches --> post --> kept
   post --> refused
 ```
+
+The issue's Scope is a hint, not a fence
+([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)):
+a file beyond it is applied and listed on the pull request
+([below](#beyond-the-scope)). Only guarded files are refused.
 
 ## What it checks
 
 The agent proposes patches, or edits a worktree
 ([below](#a-worktree-its-diff-is-the-code)). The engine's judge step,
 with no agent, checks each file a patch touches, in this order. The
-first rule that matches refuses the whole patch:
+first rule that matches refuses the whole patch, whatever the Scope:
 
-| Rule | The file is… | Refused even if the Scope names it |
-|---|---|---|
-| `gate-file` | under `.workline/`, `.github/workflows/`, `.github/actions/`, `.gitlab/ci/`, or `.gitlab-ci.yml`; a script a gate's check runs; a check's `config` | yes |
-| `steering-file` | a file that steers agents: AGENTS.md, CLAUDE.md, a page they link, a prompt; a file in a role's folder (`roles/<name>/`, its `role.yaml` there) | yes |
-| `acceptance-test-edit` | a test the tester froze on its open Draft ([the hand-over](../../tester/docs/hand-over.md)) | yes |
-| `outside-scope` | none of the paths below | — |
+| Rule | The file is… |
+|---|---|
+| `outside-repo` | a path out of the repository (`../x`, `/etc/x`) |
+| `gate-file` | under `.workline/`, `.github/workflows/`, `.github/actions/`, `.gitlab/ci/`, or `.gitlab-ci.yml`; a script a gate's check runs; a check's `config` |
+| `steering-file` | a file that steers agents: AGENTS.md, CLAUDE.md, a page they link, a prompt; a file in a role's folder (`roles/<name>/`, its `role.yaml` there) |
+| `acceptance-test-edit` | a test the tester froze on its open Draft ([the hand-over](../../tester/docs/hand-over.md)) |
 
-**What it may touch:**
+Any other file is applied. One the Scope does not hold, as read below,
+is beyond it: listed, never refused.
 
-- the paths in backticks in the issue's Scope, a line after one taken
-  off (`parts.go:943`), a bare name read as the one file that has it,
-  a pattern as the files it matches (`src/calc/*.sh`, a new one too);
-  a path with a `/` only when it has a file's extension, ends with `/`,
-  or its first folder is the repository's (`dorny/paths-filter` or
-  `actions/checkout@v4.1`, an Action, bounds nothing);
-- a name alone in backticks, read with the modules its line names
-  (`core:session`, a folder): a class, `TracingViewModel`, as its source
-  file (`.kt`, `.java`, `.h`…, never a `.md` or `.json`);
-  a name several files have as the one in the module; a new file's
-  name, `CompositionGrid.kt`, as that name anywhere in the module, or,
-  with no module and no file of that name, anywhere not guarded: a
-  module narrows it. Several files and no module: none;
+**What the Scope holds:**
+
+- the paths and globs in backticks in the issue's Scope
+  ([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)):
+  - a path, a line after it taken off (`parts.go:943`); a bare file
+    name read as the one tracked file whose path ends with it;
+  - a glob as the files it matches, new ones too (`core/session/**`,
+    `src/calc/*.sh`), never its whole folder;
+  - a new file's path, on a line `New:` as the product owner writes it;
+  - a path with a `/` only when it has a file's extension, ends with
+    `/`, or its first folder is the repository's (`dorny/paths-filter`
+    or `actions/checkout@v4.1`, an Action, holds nothing);
+  - never a name alone: a class (`TracingViewModel`) or a module
+    (`core:session`) holds no file. Its code is beyond the Scope;
 - the paths in plain words in the Scope that the repository holds, a
   file or a folder (`docs/ci.md, internal/doctor`);
 - the product owner's `sources` for the issue;
@@ -65,8 +73,8 @@ first rule that matches refuses the whole patch:
   [one definition](../../tester/README.md#settings) names: the tester's
   `test-paths`, else the built-in generic patterns
   ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)).
-  A Scope `src` lets in no test at the root;
-- a new test file beside the Scope, the write fence
+  A Scope `src` holds no test at the root;
+- a new test file beside the Scope
   ([ADR-0063, §9](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)):
   - a test file by that definition, not in the commit the rules are
     read at;
@@ -78,35 +86,33 @@ first rule that matches refuses the whole patch:
   - unset, the generic homes: the folder holding its `test` or `tests`
     folder, else its own: `Storage/test/test_name/test_name.cpp`
     beside a Scope `Storage/include/Storage.h`;
-  - a test the definition misses is code: outside the Scope, asked of
-    the product owner ([below](#asking-the-product-owner-for-files));
+  - a test the definition misses is code: beyond the Scope, listed;
     `workline doctor` says how to set `test-paths`;
-  - never the name of a class its module's `src/main/` holds, whatever
-    the extension: it would replace that class on the test run's
-    classpath;
+  - one named like a class of the main code is beside it too: the
+    reviewer's [`tests` lens](../../reviewer/lenses/tests.md) judges
+    whether it replaces that class when the tests run (a JVM
+    classpath);
   - the root is a home only to a Scope file at the root: a Scope
-    `src/x.py` lets in no `tests/test_x.py`;
-  - a kept test stays the fence's in the next rounds, its record naming
-    it, though the pull request's head holds it;
-  - a folder pattern lets in any new file under it: `*/test/**` takes a
+    `src/x.py` holds no `tests/test_x.py`;
+  - a test written so stays beside the Scope in the next rounds, its
+    record naming it, though the pull request's head holds it;
+  - a folder pattern takes any new file under it: `*/test/**` takes a
     `test/CMakeLists.txt` or a `conftest.py` too; name files
     (`**/test_*.cpp`) for tests alone;
   - said and folded in: listed on the pull request and on the issue
     (`workline:scope-kept`), added to the Scope at the product owner's
-    next refine ([below](#asking-the-product-owner-for-files));
+    next refine;
   - an existing helper or fixture a frozen test may read, away from
-    the Scope's folders, is never one: the developer asks to widen
-    the Scope; the reviewer checks a listed helper that sets up the
-    test runner (Kotest's `ProjectConfig`): it changes how every test
-    runs.
+    the Scope's folders, is never one: it is beyond the Scope; the
+    reviewer checks a listed helper that sets up the test runner
+    (Kotest's `ProjectConfig`): it changes how every test runs.
 
-**Never in bounds:**
+**Never in the Scope**: a Scope or source naming the repository's root
+(`.`, `./`): it is dropped, else every file would be in it.
 
-- a Scope or source naming the repository's root (`.`, `./`): it is
-  dropped, else every file would be in bounds;
-- anything, when the engine cannot read the gates' config or the files
-  that steer agents: every patch is refused (`bounds-unread`), the
-  error said, rather than one let past.
+**Every patch refused** when the engine cannot read the gates' config
+or the files that steer agents (`bounds-unread`), the error said,
+rather than one let past.
 
 A patch naming no file, or a diff header whose two names cannot be told
 apart with no other line naming them, is refused (`patch-unread`).
@@ -160,9 +166,11 @@ The check above, before the push, stays a fast first pass.
   `frozen-tests-unknown`, never a pass.
 - **A refused file blocks**, named with its rule; a link out of the
   tree is `symlink-out`. Its next round or a person reverts it.
+- **A file beyond the Scope passes**, said (`beyond-scope`, info),
+  whoever pushed it: the reviewer's `intent` lens judges it.
 - **Kept for the auditor**: a comment on the pull request,
   `sticky=developer/bounds`, its hidden record `act: bounds` with each
-  file refused, kept even when it blocks.
+  file refused and each beyond the Scope, kept even when it blocks.
 
 ### In CI
 
@@ -195,28 +203,36 @@ The check above, before the push, stays a fast first pass.
 - **Frozen tests**: the tester wrote them from the issue's scenarios,
   before the code ([ADR-0055](https://github.com/JN0V/workline/pull/648)).
   The developer objects; it never edits them.
-- **Outside the scope**: anything found there belongs in an issue
-  ([principle 8](../../../docs/PRINCIPLES.md)).
+- **No fence on the Scope**: the Scope is written before the code; the
+  files a change needs are the developer's to find, as a human
+  developer's are. An edit off the task is judged by the reviewer, and
+  belongs in another issue
+  ([principle 8](../../../docs/PRINCIPLES.md)); why, in
+  [ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#why-the-fence-goes).
 
-## Asking the product owner for files
+## Beyond the Scope
 
-A step whose code lies wholly outside the bounds asks the product owner,
-whose Scope it is
-([ADR-0063, §9](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)):
+The developer owns the files: a change may need one the product owner
+did not foresee, a build file, a test fake, a helper
+([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)).
 
-- **Its first step**, no pull request yet: the issue goes back to
-  refine, the product owner's state, with the files, its agent's note
-  and the `workline:scope-ask` mark (`scope-asked`). A Scope naming no
-  file is the same: every file is outside it. The product owner widens
-  the Scope and readies it, or readies it as it is, why said.
-- **A review round**: the issue is blocked, the product owner woken at
-  once on the mark; it widens the Scope and sends the issue back to
-  ready ([review held](review-held.md)).
-- **The same files asked again**, whatever the head: blocked for a
-  person, no mark. A file not asked before is a new ask. The files
-  asked are kept in the developer's record, from claim to claim.
-- **Part of its code in bounds**: applied, the rest refused and said;
-  no ask.
+- **Applied**: never refused, never asked of the product owner; no
+  `workline:scope-ask`. A change bigger than its issue is a size
+  question ([ADR-0064](../../../docs/adr/0064-size-is-a-target-not-a-wall.md)).
+- **Its reason**: the agent writes one line for each such file in its
+  worktree's `.workline/beyond.yaml`, `path: why`, as
+  [its question](agent.md) says; the file never reaches the branch.
+- **Listed**: under `## Beyond the Scope` on the pull request, each
+  file with its reason, or "no reason given by its agent"; a review
+  round lists its own in its commit's message and its comment. The
+  verdict says them (`beyond-scope`, info); the record keeps them.
+- **Judged**: the reviewer's
+  [`intent` lens](../../reviewer/lenses/intent.md) reads the list and
+  flags a file off the task; the auditor samples the lists
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
+- **Before**: a file outside the Scope was refused, and the step asked
+  the product owner to widen it. An issue still blocked by such an ask
+  is read as before.
 
 ## What happens to a refusal
 
@@ -265,7 +281,8 @@ whose Scope it is
 ## Not yet
 
 - **A refused patch beside kept code is not asked again**: the code is
-  applied without it; the proof (step 3) shows what is missing.
+  applied without it, the refusal said; the proof (step 3) shows what
+  is missing.
 - **Where the code goes**: a branch of its own, proven, opened ready
   or as a Draft ([the proof](proof.md)); a refused file is said in its
   `## Left out` ([the pull request](pull-request.md)).

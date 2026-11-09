@@ -24,7 +24,7 @@ func TestAgentWordsNeverFollowALink(t *testing.T) {
 	secret := filepath.Join(t.TempDir(), "secret")
 	must(os.WriteFile(secret, []byte("- test: SECRET-TEXT\n  line: 1\n"), 0o644))
 	must(os.Symlink(secret, filepath.Join(tree, filepath.FromSlash(ObjectionsFile))))
-	objections, unread, err := agentWords(run)
+	objections, _, unread, err := agentWords(run)
 	must(err)
 	if len(objections) != 0 || len(unread) != 1 || strings.Contains(strings.Join(unread, ""), "SECRET-TEXT") || !strings.Contains(unread[0], "not followed") {
 		t.Errorf("a link read: %v, %q", objections, unread)
@@ -45,7 +45,7 @@ func TestAgentWordsRemoveAFolder(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "a.yaml"), []byte("- test: x\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	objections, unread, err := agentWords(run)
+	objections, _, unread, err := agentWords(run)
 	if err != nil || len(objections) != 0 || len(unread) != 1 || !strings.Contains(unread[0], "not followed") {
 		t.Fatalf("a folder: %v, %v, %q", err, objections, unread)
 	}
