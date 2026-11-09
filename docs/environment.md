@@ -71,11 +71,13 @@ as the tester's or the developer's proof, its checks, and the agent
 
 A command's output a comment quotes shows `***` in place of a secret
 ([#1215](https://github.com/JN0V/workline/issues/1215)): the tests' lines
-in a red proof, a check's log, a docs example's output.
+in a red proof, a check's log, an agent's failure, a docs example's output.
 
 - **Which**: the values of the forge's tokens above, and of each
   variable whose name ends in `_TOKEN`, `_KEY`, `_SECRET`, `_PASSWORD`,
   `_PAT` or `_CREDENTIALS`, case aside.
 - **Kept**: a value under 8 characters, and every variable's name.
+- **Only the exact value**: a form the command changed — URL-encoded,
+  JSON-escaped, in another case — is not masked.
 - **When**: before a line is cut to fit a comment, so no cut leaves a
   part of one.
