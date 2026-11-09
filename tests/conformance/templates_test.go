@@ -1171,7 +1171,7 @@ func TestGitLabTemplateAsksEveryLensWhenReady(t *testing.T) {
 		t.Fatalf(".workline:ready: %v, want one script", top[".workline:ready"])
 	}
 	judge, _ := top["workline:judge"].(map[string]any)
-	if script := fmt.Sprint(judge["script"]); !strings.Contains(script, "--input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}") ||
+	if script := fmt.Sprint(judge["script"]); !strings.Contains(script, "--input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA} $lenses ${draft:+--input draft=$draft}") ||
 		!strings.Contains(script, "lenses=;") {
 		t.Errorf("workline:judge does not run .workline:ready and pass $lenses and the draft state (#359): %s", script)
 	}

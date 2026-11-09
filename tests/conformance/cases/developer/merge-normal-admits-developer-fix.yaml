@@ -4,7 +4,8 @@ about: >
   the developer's pull request for #3, an issue labelled `bug`, is
   workline's own — opened and pushed by its App, every commit the App's,
   the tester's or the developer's by its `Workline-Role` trailer, its
-  record on it naming #3 —, its head's verdict passed, no finding of the
+  record on it naming #3 —, its head's verdict passed, the reviewer's
+  verdict on its head (ADR-0065, change 2), no finding of the
   reviewer's open but a nit. The kind is the issue's label, never the
   agent's say. The bug was reproduced first (ADR-0060): the code starts
   from the tester's Draft, its tests red on main, the tester's commit on
@@ -38,7 +39,7 @@ given:
         pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
         comments:
           - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"from\":\"workline/tester/issue-3\",\"acceptance\":[\"tests.test_mul_two_by_three\",\"tests.test_mul_by_zero\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
-          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | naming | `lib.sh:2` | Nit: a one-letter name. |\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | naming | `lib.sh:2` | Nit: a one-letter name. |\n\n<!-- workline:at head=4feb95cd88448f137d793775c4ad7b591c1ac175 run=7 -->\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass

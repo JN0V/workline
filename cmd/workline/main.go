@@ -227,6 +227,7 @@ func followSettings(o *engine.FollowOptions) (gone bool, err error) {
 	for _, st := range line.States {
 		o.States = append(o.States, st.Label)
 	}
+	o.Reviewer = slices.Contains(line.Events["merge-request"], "reviewer")
 	o.Derive = func(dir string, docs map[string]string) bool {
 		findings, stale := documentalist.Derive(dir, docs, s.Derive, false)
 		for _, f := range findings {

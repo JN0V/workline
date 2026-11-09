@@ -9,7 +9,7 @@ else a Draft, its record hidden on it; with none, it names the issue.
 Routed, it runs when an issue is labelled ready and on the schedule.
 On its pull request, a fresh run fixes each review: the five whys at
 round three, a person past round five. At the merge policy's `normal`,
-its pull request for a reproduced bug's fix merges with no person's
+its pull request for a reproduced bug's fix, reviewed at its head, merges with no person's
 yes; a feature or a task waits for one. Measured on planted issues and a copy of a
 real repository: the eight steps of
 [ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)
@@ -301,6 +301,19 @@ hold:
   `merge-cautious-holds-reproduced-fix`. Tried on
   [#876](https://github.com/JN0V/workline/pull/876#tried), the merge
   itself not on a forge.
+- **A fix reviewed at its head**
+  ([#1254](https://github.com/JN0V/workline/issues/1254),
+  [ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)):
+  merges alone only when the reviewer's summary names its head, its
+  lenses run, or its record covers a head rebased since; none, or one
+  on an older commit, waits for the reviewer where the line runs it,
+  24 h at most, then for a person, said. Cases
+  `merge-normal-holds-unreviewed-fix`,
+  `merge-normal-holds-fix-reviewed-before-head`,
+  `merge-normal-admits-fix-rebased-since-review`,
+  `merge-normal-fix-waits-for-the-reviewer`,
+  `merge-normal-fix-unreviewed-past-the-delay`. Tried: its pull
+  request's `## Tried`.
 - **A feature at `enterprising`**
   ([the release candidate](../../../docs/release-candidate.md)): merges
   alone, put in a milestone first; a refused candidate sends features

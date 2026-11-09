@@ -75,6 +75,13 @@ merge: {autonomy: normal}   # a project's choice, never a default
 - **A fifth kind, `code`**: the developer's pull request for an issue
   its labels call a fix, every gate passed and no finding of
   the reviewer's open that blocks or is Important.
+- **A fix, once the reviewer read its head**: the reviewer's summary
+  names the pull request's head, read by its lenses, or its record
+  covers a head rebased since; else it waits for the reviewer, 24 h
+  after the push where the line runs it, then for a person's yes, said
+  on it
+  ([ADR-0065](adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence),
+  [the detail](../roles/developer/docs/merge.md#what-each-gets-at-normal)).
 - **A fix, once its bug was reproduced**: its code starts from the
   tester's Draft, whose tests failed on the base; else it waits for a
   person's yes, said once on it
@@ -121,7 +128,8 @@ and:
 
 | Said | When |
 |---|---|
-| `waits-for-a-yes` | the release tool's; a push, a commit or a page not workline's; a kind demoted; `reader`, not let merge alone; the developer's feature or task, a fix whose bug no test reproduced, or a finding open |
+| `review-to-come` | the developer's code, the reviewer in the line, its verdict not on the head yet: it waits for it, 24 h at most |
+| `waits-for-a-yes` | the release tool's; a push, a commit or a page not workline's; a kind demoted; `reader`, not let merge alone; the developer's feature or task, a fix whose bug no test reproduced, a fix no review read at its head, or a finding open |
 | `merge-app-unknown` | the token is no App's: nothing merges alone |
 | `merge-demoted`, `demotion-unrecorded` | a revert of one merged alone read: its kind demoted, its issue opened or not |
 | `revert-unread` | a revert tied to no merge request: every kind demoted |

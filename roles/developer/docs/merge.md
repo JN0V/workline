@@ -4,7 +4,7 @@ sources:
   - internal/engine/code.go
   - internal/engine/candidate.go
   - internal/sample/developer.go
-checked: 54d84678
+checked: a7fe9448
 verified: agent:claude-code
 ---
 # The merge
@@ -16,7 +16,7 @@ flowchart LR
   alone["<b>Merges</b><br/>with no person's yes"]
   person["<b>Waits</b><br/>for a person's yes"]
   pr --> kind
-  kind -- "a fix reproduced" --> alone
+  kind -- "a fix reproduced, reviewed" --> alone
   kind -- "a feature or task, at enterprising" --> alone
   kind -- "a feature, a task, none" --> person
 ```
@@ -25,7 +25,8 @@ The developer never merges: `workline follow` does, by the project's
 merge policy
 ([ADR-0054](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#a-person-on-the-loop-not-in-it),
 step 7). At `cautious`, every pull request waits for a person's label.
-At `normal`, only a reproduced bug's fix merges alone. At `enterprising`,
+At `normal`, only a reproduced bug's fix, reviewed at its head, merges
+alone. At `enterprising`,
 a feature or a task merges too, and the yes moves to the milestone's
 [release candidate](../../../docs/release-candidate.md).
 
@@ -61,6 +62,20 @@ a feature or a task merges too, and the yes moves to the milestone's
   - its head's verdict passed, its checks not red;
   - no finding of the reviewer's open that blocks or is Important: a
     nit holds nothing.
+- **A fix the reviewer read at its head**
+  ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)):
+  - the reviewer's summary comment names the pull request's head, and
+    its lenses read it, not only its rules;
+  - or a rebase since: the record in that comment covers every commit
+    of the head, by its change's patch id, as the reviewer reads it; the
+    reviewer, finding nothing new, writes no summary then;
+  - the reviewer in the merge-request line, its verdict not on the head
+    yet: it waits for the reviewer, no person asked, until 24 h after
+    the push (the question's delay,
+    [ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus));
+  - past it, or with no reviewer in the line: it waits for a person's
+    yes, said on it (`merge-waits=unreviewed`), the comment edited at
+    each head: a team merges no change nobody read.
 - **A fix, its bug reproduced first**
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
   - its record names the tester's Draft its code started from, and
