@@ -148,6 +148,7 @@ func Pre(runDir, repo string) int {
 	// The issue's comments: the record of a "no test possible", and the
 	// code the product owner named for it, its sources (#1047).
 	var comments, sources []string
+	var po *backlog.State // the product owner's, to tell its Verification from a person's
 	if bl, ok := f.(forge.Backlog); ok {
 		comments, err = bl.Comments(forge.Target{Kind: "issue", ID: id})
 		if errors.Is(err, forge.ErrUnreachable) {
@@ -158,7 +159,7 @@ func Pre(runDir, repo string) int {
 			return fail(err)
 		}
 		if st, found, err := backlog.ReadState(comments, "product-owner"); found && err == nil {
-			sources = st.Sources
+			sources, po = st.Sources, st
 		}
 	}
 	// The files its agent said it lacked at its last run, given now,
@@ -173,7 +174,7 @@ func Pre(runDir, repo string) int {
 	}
 	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels, Body: backlog.BodyDigest(is.Body), Author: is.Author,
 		Text: is.Title + "\n" + is.Body}
-	if v := strings.TrimSpace(sections[work.Verification].Text); v != "" && !backlog.TestersVerification(is.Body) {
+	if v := strings.TrimSpace(sections[work.Verification].Text); v != "" && !backlog.TestersToWrite(is.Body, po) {
 		t.Verification = v
 	}
 	if data, err := json.Marshal(t); err != nil {

@@ -2791,7 +2791,16 @@ func (a *applier) apply(in intent.Intention) error {
 		if err != nil {
 			return err
 		}
-		body, changed := backlog.WithVerification(is.Body, text)
+		t := forge.Target{Kind: "issue", ID: n}
+		comments, err := b.Comments(t)
+		if err != nil {
+			return err
+		}
+		st, found, err := backlog.ReadState(comments, backlog.Keeper)
+		if err != nil {
+			st = nil // one that does not read tells no Verification of its own
+		}
+		body, changed := backlog.WithVerification(is.Body, text, st)
 		if !changed {
 			return nil
 		}
@@ -2801,13 +2810,7 @@ func (a *applier) apply(in intent.Intention) error {
 		// The tester's test plan is no person's change: the product
 		// owner, which read the body as it was, keeps it as it is now,
 		// and is not woken to read it again.
-		t := forge.Target{Kind: "issue", ID: n}
-		comments, err := b.Comments(t)
-		if err != nil {
-			return err
-		}
-		st, found, err := backlog.ReadState(comments, backlog.Keeper)
-		if err != nil || !found || st.Body != backlog.BodyDigest(is.Body) {
+		if st == nil || !found || st.Body != backlog.BodyDigest(is.Body) {
 			return nil // none, or one that does not read: left as it is
 		}
 		st.Keep(body)

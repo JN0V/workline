@@ -133,17 +133,26 @@ func TestVerificationFindingsAreTheTesters(t *testing.T) {
 // own, and keeps another's word for word (ADR-0066).
 func TestWithVerificationKeepsAPersons(t *testing.T) {
 	bare := "## Need\n\nA.\n\n## Validation\n\nC.\n\n---\n\n## Scope\n\nD."
-	got, changed := WithVerification(bare, "- **C:** `TestC`.")
+	got, changed := WithVerification(bare, "- **C:** `TestC`.", nil)
 	if !changed || !strings.Contains(got, "---\n\n## Verification\n\n"+TesterMarker+"\n\n- **C:** `TestC`.\n\n## Scope") {
 		t.Fatalf("not written above the Scope: %v\n%s", changed, got)
 	}
-	again, changed := WithVerification(got, "- **C:** `TestC2`.")
+	again, changed := WithVerification(got, "- **C:** `TestC2`.", nil)
 	if !changed || !strings.Contains(again, "`TestC2`") || strings.Contains(again, "`TestC`.") {
 		t.Errorf("its own not rewritten: %v\n%s", changed, again)
 	}
 	person := strings.Replace(bare, "## Scope", "## Verification\n\nRun the suite.\n\n## Scope", 1)
-	if kept, changed := WithVerification(person, "- **C:** `TestC`."); changed || kept != person {
+	if kept, changed := WithVerification(person, "- **C:** `TestC`.", nil); changed || kept != person {
 		t.Errorf("a person's rewritten: %v\n%s", changed, kept)
+	}
+	po := &State{}
+	po.SetWrote("Verification", BodyDigest("Run the suite."))
+	if out, changed := WithVerification(person, "- **C:** `TestC`.", po); !changed || strings.Contains(out, "Run the suite.") {
+		t.Errorf("the product owner's own, from before ADR-0066, kept: %v\n%s", changed, out)
+	}
+	edited := strings.Replace(person, "Run the suite.", "Run the whole suite.", 1)
+	if kept, changed := WithVerification(edited, "- **C:** `TestC`.", po); changed || kept != edited {
+		t.Errorf("the product owner's, a person edited, rewritten: %v\n%s", changed, kept)
 	}
 }
 
