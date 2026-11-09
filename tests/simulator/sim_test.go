@@ -124,6 +124,16 @@ var traces = func() []trace {
 		// hard caps.
 		trace{name: "trial-35-every-run-crosses", file: "trial-35", fresh: true, end: "waiting:", by: one("tester", malformed),
 			tokens: map[string]int{"product-owner": 350000, "tester": 350000, "developer": 600000}},
+		// #1262, seed 36: the tester's test that does not build, judged
+		// its own mistake; an answer not read; then a new file's hunk
+		// miscounted, its retry at the next tick.
+		trace{name: "trial-18-hunk-retried", file: "trial-18", fresh: true, end: "done", by: map[string][]outcome{"tester": {broken, malformed, hunk}}},
+		// #1262, seed 39: the product owner's needs-input on a Go issue,
+		// the file of the package its Scope names given at once.
+		trace{name: "workline-1004-needs-engine", file: "workline-1004", fresh: true, end: "done", by: one("product-owner", needsEngine)},
+		// #1271: the developer's code that does not build on a Go issue:
+		// its pull request a Draft, the issue says nothing.
+		trace{name: "workline-1004-broken-code", file: "workline-1004", fresh: true, end: "done", by: one("developer", broken)},
 	)
 	for _, n := range trial {
 		f := fmt.Sprintf("trial-%d", n)

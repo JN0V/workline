@@ -203,7 +203,8 @@ step 1):
   what a change adds. `SIM_DUMP=<dir>` keeps each task; `SIM_INFO=1` logs every
   finding.
 - **Every answer kind**, as a named trace on a real issue and in the
-  seeded scripts: a malformed answer, a miscounted hunk, a test or code
+  seeded scripts: a malformed answer, a miscounted hunk (recounted by the engine:
+  progress, [#1262](https://github.com/JN0V/workline/issues/1262)), a test or code
   that does not build, needs-input from the engine, the product owner or
   a person. A role with no form today for a kind answers its progress.
   The tester's wait is an ask it may not use: refused whole, a machine

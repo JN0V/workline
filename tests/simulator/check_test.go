@@ -174,8 +174,19 @@ type checks struct {
 	only  []string
 	until int // the last tick checked, when not all
 	// known: a needs-input an open issue says breaks its property is not
-	// held to it (knownNeeds), under seeds.
+	// held to it (knownNeeds), nor a developer's Draft (knownDraft),
+	// under seeds.
 	known bool
+}
+
+// knownDraft: an issue whose developer's pull request is an open Draft
+// says no status, and a change to its body wakes no one (#1271): not
+// held to I1 nor one-byte-due under seeds. The named trace
+// workline-1004-broken-code holds it, pending.
+func knownDraft(s forge.FakeState, id int) bool {
+	return slices.ContainsFunc(s.MergeRequests, func(mr forge.FakeItem) bool {
+		return !mr.Closed && mr.Draft && mr.Branch == fmt.Sprintf("workline/developer/%d", id)
+	})
 }
 
 // knownNeeds: the needs-input answers an open issue says end with no
@@ -271,7 +282,7 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 	}
 	// I1: every open issue on the line has a status.
 	for _, is := range after.Issues {
-		if is.Closed || !onLine(is) || !c.on(pI1) {
+		if is.Closed || !onLine(is) || !c.on(pI1) || c.known && knownDraft(after, is.ID) {
 			continue
 		}
 		if st, said := status(res, is.ID); st == "" {
@@ -591,7 +602,7 @@ func measured(t *testing.T, tr trace, script []outcome, c checks) (_ *failure, _
 	// blocked at its backstop, which waits for a person, no product
 	// owner reading it again (ADR-0064, §5).
 	for _, is := range w.state(t).Issues {
-		if is.Closed || atBackstop(is) {
+		if is.Closed || atBackstop(is) || c.known && knownDraft(w.state(t), is.ID) {
 			continue
 		}
 		f := forge.Fake{Path: w.forge}
