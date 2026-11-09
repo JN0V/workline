@@ -26,6 +26,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -1436,6 +1437,12 @@ func routeCmd(args []string) int {
 		*gatesKept, _ = filepath.Abs(*gatesKept)
 	}
 	spec := projectForge(abs, *forgeSpec)
+	// The issue's line hands each role's work over in a merge request, the
+	// tester's Draft, the developer's, as CI runs it: on a machine too,
+	// unless the person says otherwise (#1280).
+	if (event == line.IssueEvent || event == line.ReconcileEvent) && spec != "" && spec != "none" && !flagGiven(fs, "open-merge-request") {
+		*openMR = true
+	}
 	// A merge request's line judges a range: one not given is read from a
 	// merge request whose branches are here, else asked for (#1285).
 	if event == "merge-request" && t != nil && t.Kind == "merge-request" && inputs["range"] == "" {
@@ -1509,6 +1516,13 @@ func projectForge(repo, given string) string {
 		return cfg.Forge
 	}
 	return ""
+}
+
+// flagGiven says whether the command line set the option name.
+func flagGiven(fs *flag.FlagSet, name string) bool {
+	given := false
+	fs.Visit(func(f *flag.Flag) { given = given || f.Name == name })
+	return given
 }
 
 // localRange is the range a merge request of a forge kept in this clone

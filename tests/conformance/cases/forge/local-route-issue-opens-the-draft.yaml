@@ -1,0 +1,51 @@
+case: forge/local-route-issue-opens-the-draft
+about: >
+  With `forge: local`, `workline route issue` on an issue waiting for
+  its tests opens the tester's Draft as CI does, with no option: the
+  tests on the local branch workline/tester/issue-3, its merge request
+  recorded in the clone, the person's working tree left clean, the
+  issue moved to ready (#1280).
+given:
+  repo: tested
+  setup:
+    - |
+      mkdir -p .git/workline/issues && cat > .git/workline/issues/3.md <<'IS'
+      ---
+      title: "Multiply two numbers"
+      state: open
+      labels: ["workline:needs-tests"]
+      ---
+
+      ## Need
+
+      When I total an order, I want to multiply a price by a count, so I need not add it up by hand.
+
+      ## Validation
+
+      - **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.
+      - **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.
+
+      ---
+
+      ## Verification
+
+      A test a scenario, in tests/.
+
+      ## Scope
+
+      - `lib.sh`: a `mul` function beside `add`.
+      IS
+  config:
+    forge: local
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}}
+run: {route: issue, target: {issue: 3}, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  branches:
+    workline/tester/issue-3: {tests/test_mul_two_by_three.sh: "Scenario: Two by three"}
+  files:
+    tests/test_mul_two_by_three.sh: {exists: false}
+    .git/workline/merge-requests/1.md: {contains: ["branch: workline/tester/issue-3", "draft: true"]}
+    .git/workline/issues/3.md: {contains: "workline:ready", lacks: "workline:needs-tests"}

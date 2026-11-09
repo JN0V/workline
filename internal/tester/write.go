@@ -534,6 +534,14 @@ func Post(runDir, repo string) int {
 		}
 		return refusePost(runDir, t.Issue, *proof)
 	}
+	// Each scenario has its row, the tests red on the base and linted: the
+	// issue moves to the state its tests lead to, ready (ADR-0059,
+	// decision 3), said on it; no agent decides it.
+	intents = append(intents, intent.Intention{Kind: "verification", Value: map[string]any{"issue": t.Issue, "text": testPlan(t, tested, said, newTests)}})
+	moved, undo, err := testsDone(runDir, repo, t, intents, len(said), planSaid(t, tested, newTests))
+	if err != nil {
+		return fail(err)
+	}
 	mr := map[string]any{
 		"key": fmt.Sprintf("issue-%d", t.Issue), "draft": true,
 		"title": fmt.Sprintf("test: the acceptance tests of #%d", t.Issue),
@@ -542,19 +550,14 @@ func Post(runDir, repo string) int {
 		// workline's own comment on the Draft once it is opened.
 		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Tests: newTests, Errored: erroredOf(runDir, newTests), Scenarios: t.Scenarios, RedUnproven: unprovenOf(*proof)}.intention()["comment"],
 	}
+	if len(undo) > 0 {
+		mr["unopened"] = undo // its Draft not opened, the issue keeps its state (#1280)
+	}
 	data, err := yaml.Marshal(mr)
 	if err != nil {
 		return fail(err)
 	}
 	if err := os.WriteFile(filepath.Join(runDir, "out", "merge-request.yaml"), data, 0o644); err != nil {
-		return fail(err)
-	}
-	// Each scenario has its row, the tests red on the base and linted: the
-	// issue moves to the state its tests lead to, ready (ADR-0059,
-	// decision 3), said on it; no agent decides it.
-	intents = append(intents, intent.Intention{Kind: "verification", Value: map[string]any{"issue": t.Issue, "text": testPlan(t, tested, said, newTests)}})
-	moved, err := testsDone(runDir, repo, t, intents, len(said), planSaid(t, tested, newTests))
-	if err != nil {
 		return fail(err)
 	}
 	if moved != "" {
@@ -568,10 +571,10 @@ func Post(runDir, repo string) int {
 // after its own in the routing's table, its other states' labels off,
 // and says so on it, beside the agent's intentions; "" when its state is
 // not the tester's (an issue labelled ready by hand keeps its state).
-func testsDone(runDir, repo string, t task, intents []intent.Intention, untested int, plan string) (string, error) {
+func testsDone(runDir, repo string, t task, intents []intent.Intention, untested int, plan string) (string, []map[string]any, error) {
 	line, err := routing.Load(repo)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	s, ok := line.StateOf(t.Labels)
 	if !ok || s.Role != "tester" || s.Next == "" {
@@ -579,11 +582,11 @@ func testsDone(runDir, repo string, t task, intents []intent.Intention, untested
 		intents = append(intents, intent.Intention{Kind: "comment", Value: map[string]any{"issue": t.Issue, "sticky": "issue",
 			"body": backlog.Said("The tester", "wrote the acceptance tests of this issue, as a Draft", plan,
 				"whoever builds it starts from the Draft, workline/tester/"+taskKey(t.Issue))}})
-		return "", intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents)
+		return "", nil, intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents)
 	}
 	add, remove, err := line.Move(s.Next)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	// Only the labels it bears come off: one call less each on GitHub.
 	remove = slices.DeleteFunc(remove, func(l string) bool { return !slices.Contains(t.Labels, l) })
@@ -600,7 +603,14 @@ func testsDone(runDir, repo string, t task, intents []intent.Intention, untested
 		intent.Intention{Kind: "comment", Value: map[string]any{"issue": t.Issue, "sticky": "issue",
 			"body": backlog.Said("The tester", "wrote the acceptance tests of this issue, as a Draft", why+"; "+plan,
 				"it is "+s.Next+": whoever builds it starts from the Draft, workline/tester/"+taskKey(t.Issue))}})
-	return s.Next, intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents)
+	// Its Draft not opened, the move is undone, said: no issue says ready
+	// with no Draft to start from (#1280).
+	undo := []map[string]any{
+		{"label": map[string]any{"issue": t.Issue, "add": remove, "remove": add, "card": s.Name}},
+		{"comment": map[string]any{"issue": t.Issue, "sticky": "issue", "body": backlog.Said("The tester", "keeps this issue in "+s.Name,
+			"its Draft did not open: "+intent.WhyMark, "the tester writes its tests again at a next run")}},
+	}
+	return s.Next, undo, intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents)
 }
 
 // proveOnBase commits the patches on base in a checkout apart and runs the

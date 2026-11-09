@@ -1379,6 +1379,17 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	if err != nil {
 		return err
 	}
+	// A role handing its work on an issue over in a merge request, with
+	// none to be opened: its patches would land on the person's branch,
+	// and what it says on the issue would name a branch that is not there
+	// (#1280). Nothing applied, said.
+	if task := proposedTask(runDir); f != nil && st.Target != nil && st.Target.Kind == "issue" && !st.OpenMergeRequest && task != "" {
+		res.Status, res.Summary = verdict.Block, fmt.Sprintf("nothing applied: %s hands its work over in a merge request, and this run opens none", r.Name)
+		res.Findings = unmoved(res.Findings)
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-request-not-opened", Where: st.Target.String(),
+			Message: fmt.Sprintf("the %s proposes %s%s; run again with --open-merge-request: the issue keeps its state, the working tree is left as it was", r.Name, branchPrefix(r.Name), task)})
+		return nil
+	}
 	ap := applier{repo: st.Repo, runDir: runDir, targets: st.Targets, writes: r.Writes(settings),
 		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name, settings: settings, own: st.trailers()}
 	for _, c := range res.Calls {
@@ -1552,6 +1563,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 				}
 			}
 			res.Status, res.Summary = verdict.Block, "its merge request did not open: said where the role asked"
+			res.Findings = unmoved(res.Findings)
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "not-opened", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
 				Message: err.Error() + "; then applied what the role asks for that case: " + strings.Join(intent.Kinds(undo), ", ")})
 			return nil
@@ -1636,6 +1648,12 @@ func unopened(runDir string) ([]intent.Intention, error) {
 		}
 	}
 	return out, nil
+}
+
+// unmoved drops the role's word that its issue moved state: with its
+// merge request not opened, the move is not made, or undone (#1280).
+func unmoved(findings []verdict.Finding) []verdict.Finding {
+	return slices.DeleteFunc(findings, func(f verdict.Finding) bool { return f.Rule == "state-moved" })
 }
 
 // sayWhy puts what failed in a comment's body, in place of intent.WhyMark,

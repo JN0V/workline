@@ -79,6 +79,9 @@ forge: local
 - After that merge, `workline follow` closes the issues the merge request
   says it closes (`Closes #<n>`), their state's label taken off, as a
   forge does.
+- `workline route issue --target issue:<n>` opens the tester's Draft or
+  the developer's merge request as a local branch, as CI does; your
+  working tree is left as it was.
 - `workline route merge-request --target merge-request:<n>`, its branch
   checked out, judges its base to its branch: no `range` to give.
 - No CI to set up: gardening and the [weekly sample](ci.md#the-weekly-sample)
