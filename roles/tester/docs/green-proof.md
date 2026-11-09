@@ -37,8 +37,14 @@ flowchart LR
   ([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)).
   - **An id from a report** must be in each head run, green.
   - **A test whose build broke on the base** is kept as `file:name`:
-    no report named it yet. Any head id holding that name as a whole
-    part is it (`pkg.Name`, `Name[1]`, `Name/case`).
+    no report named it yet. A head id holding that name as a whole
+    part is it (`calc.Name`, `Name[1]`, `Name/case`), its package or
+    class naming the file's folder or file: another folder's `Name` is
+    not it.
+  - **A record with no class, failed, on the red run** is kept marked
+    `errored`: maybe the runner's record of a file it could not collect
+    (pytest's collection error), not a test case. Gone on the code, it
+    goes to the judge too.
   - **Not found by that name, while the head has other new tests**: the
     match is a guess, so the judge decides
     ([rule A](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-a-a-guess-may-only-pass)).
@@ -46,8 +52,10 @@ flowchart LR
       change beside them (build and runner files among it).
     - "Ran under another name" (a display name): passes, said.
     - "Dropped": `frozen-test-missing` blocks.
-    - Unsure, failed, or no agent: `frozen-unproven`, a warning on the
-      pull request for a person.
+    - Unsure, failed, or no agent: `frozen-unproven`, a warning for a
+      person.
+    - Either way it is written on the pull request, in the tester's
+      comment there.
   - **No new test the head could run it as**: it blocks, no judge.
   - **A record written before the ids were kept**: the head's tests
     the base lacks, as before, said by `frozen-ids-unknown`.
