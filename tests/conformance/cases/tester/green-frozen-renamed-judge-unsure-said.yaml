@@ -2,7 +2,8 @@ case: tester/green-frozen-renamed-judge-unsure-said
 about: >
   The judge cannot tell whether a frozen test named from its file ran
   under another name: never a block on a guess, never silent. The proof
-  says it, frozen-unproven, for a person to read the change.
+  says it, frozen-unproven, on the pull request, for a person to read
+  the change.
 given:
   repo: tested-draft
   setup:
@@ -22,3 +23,7 @@ expect:
   agent-calls: 1
   findings: [{rule: frozen-unproven, level: warn, where: "tests/test_mul_by_zero.sh:mulByZero", message: "the judge cannot tell"}]
   no-findings: [{rule: frozen-test-missing}]
+  forge:
+    merge-requests:
+      - id: 1
+        comment-contains: ["The tester's green proof", "frozen-unproven", "tests/test_mul_by_zero.sh:mulByZero"]

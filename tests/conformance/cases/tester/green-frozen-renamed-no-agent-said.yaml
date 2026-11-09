@@ -21,3 +21,7 @@ expect:
   agent-calls: 0
   findings: [{rule: frozen-unproven, level: warn, where: "tests/test_mul_by_zero.sh:mulByZero", message: "no agent judges it"}]
   no-findings: [{rule: frozen-test-missing}]
+  forge:
+    merge-requests:
+      - id: 1
+        comment-contains: ["The tester's green proof", "frozen-unproven", "tests/test_mul_by_zero.sh:mulByZero"]

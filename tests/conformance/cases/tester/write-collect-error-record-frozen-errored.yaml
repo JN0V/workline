@@ -1,0 +1,31 @@
+case: tester/write-collect-error-record-frozen-errored
+about: >
+  A runner that cannot collect a new test file writes one record of it,
+  with no class, failed (pytest's collection error), in place of its
+  tests. The red proof counts it new and red, and the record keeps it
+  marked errored: the green proof does not block when the code's run
+  names the file's real tests instead.
+given:
+  repo: tested
+  setup:
+    - |
+      sed -i 's|echo "<testcase classname=\\"tests\\" name=\\"$name\\" time=\\"0.01\\"><failure|echo "<testcase name=\\"tests.$name\\" time=\\"0.01\\"><error|' run-tests.sh
+      grep -q 'name=\\"tests.$name' run-tests.sh
+      git commit -qam 'build: a test that fails is not collected'
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  forge:
+    merge-requests:
+      - id: 1
+        comment-contains: ['"errored":["tests.test_mul_by_zero","tests.test_mul_two_by_three"]']
