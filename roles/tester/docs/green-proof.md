@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/green.go, internal/tester/frozen.go, internal/tester/renamed.go, internal/tester/tester.go]
+sources: [internal/tester/green.go, internal/tester/symptom.go, internal/tester/frozen.go, internal/tester/renamed.go, internal/tester/tester.go]
 checked: 4b0fd7a4
 verified: agent:claude-code
 ---
@@ -117,6 +117,35 @@ flowchart LR
 - **A flaky test the base had**: the ecosystem's skip and an issue
   naming it, never deleted
   ([ADR-0055](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#job-2-the-corpus-curator)).
+
+## A bug's parent
+
+[#1212](https://github.com/JN0V/workline/issues/1212): what a person
+in QA does, rerunning the reproduction once the fixes merged.
+
+- **Before the split**: a bug goes to its tests first. The tester
+  writes the reporter's symptom as red tests on the bug's Draft; the
+  line then asks the product owner its split, before the developer
+  ([split](../../../docs/spec/backlog-acts/split.md#split-on-size)).
+- **Once every part is closed**, no person's yes on it: the line runs the tester on the
+  parent, no agent, given `symptom`, before the product owner.
+  - The Draft's test files, as its commits changed them since the
+    record's base, are merged over the default branch's current commit.
+  - The green proof runs there: the record's tests, three runs out of
+    three.
+- **What it says**: one comment on the parent,
+  `<!-- workline:sticky=tester/symptom -->`: green, the tests and the
+  commit named; or why not.
+  - No open Draft of the parent: no test of its own.
+  - Its tests do not merge over the branch, or are red, flaky or
+    missing: not proven, the first finding said.
+  - The branch's commit is fetched from `origin`; a fetch that fails is
+    no proof, never the clone's own copy, maybe behind.
+  - A tester's run that fails leaves its older comment: the product
+    owner reads one older than the run as no proof.
+- **What follows**: green, the parent is closed alone past `cautious`;
+  else its closing stays a person's
+  ([a bug's parent](../../../docs/spec/backlog-acts/parent.md)).
 
 ## Random order, by ecosystem
 

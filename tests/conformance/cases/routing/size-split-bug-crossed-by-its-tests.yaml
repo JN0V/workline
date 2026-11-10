@@ -1,0 +1,36 @@
+case: routing/size-split-bug-crossed-by-its-tests
+about: >
+  A bug whose tests are too big to write is split all the same (#1212):
+  on bug #3, waiting for its tests, the tester's prompt is over its
+  context budget, so no Draft is opened. Asked on its size, the product
+  owner is offered a split, never told to ready it; it splits #3 into #4
+  and #5, each to get its own tests, and keeps #3 blocked for a person.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p src && awk 'BEGIN { printf \"# \"; for (i = 1; i <= 2000; i++) printf \"%050d\", i; printf \"\\n\" }' > src/wide.sh && git add src && git commit -qm 'src' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiplying and dividing give wrong totals"
+        labels: ["workline:needs-tests", bug]
+        author: ann
+        insider: true
+        body: "## Need\n\nI multiply and divide, and the totals are wrong.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n\n---\n\n## Scope\n\n- `src/wide.sh`\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-split.sh 3 big blocked", then: again}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "the tester's run on it crossed its size"}
+  no-findings: [{rule: bug-tests-first}, {rule: bug-tests-unread}]
+  run-files:
+    in/task.md: {contains: ["`split` with `too-big: true`"], not-contains: ["`ready` it"]}
+  forge:
+    issues:
+      - {id: 3, labels: [bug, "workline:blocked"], comment-contains: ["split: [4, 5]"]}
+      - {id: 4, title: "Multiply two numbers"}
+      - {id: 5, title: "Divide two numbers"}

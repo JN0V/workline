@@ -693,6 +693,14 @@ func (a *applier) refining(c backlog.Proposal) error {
 				return err
 			}
 		}
+		if c.TooBig && !st.SplitTests {
+			// A bug predicted past its normal (#1212): its tests first,
+			// then the line asks its split, before the developer.
+			st.SplitTests = true
+			if err := f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false); err != nil {
+				return err
+			}
+		}
 		add, remove := []string{backlog.LabelReady}, backlog.ReadyRemoves(*is)
 		// Where the project routes the tester, an issue with named
 		// scenarios goes to its tests first: the tester's result makes it
@@ -908,6 +916,7 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		c.Do = in.Kind
 		if m, _ := in.Value.(map[string]any); m["own"] != true {
 			c.Parent = false // the engine's alone, never an agent's (ADR-0029)
+			c.Symptom = ""
 			c.IfRefined = false
 		}
 		closes[i] = c
@@ -967,6 +976,30 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	}
 	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
 	cfg.Tester = line.Runs("tester")
+	if cfg.Tester && f != nil {
+		// A bug goes to its tests before its split, and its parent is
+		// closed alone on its reproduction test, green on the default
+		// branch (#1212): the tester's Drafts listed once, at first need.
+		var drafts []string
+		var listed bool
+		cfg.Tested = func(issue int) (bool, error) {
+			if !listed {
+				var err error
+				if drafts, err = f.OpenMergeRequests(tester.TestsBranch); err != nil {
+					return false, err
+				}
+				listed = true
+			}
+			return slices.Contains(drafts, tester.TestsBranch+strconv.Itoa(issue)), nil
+		}
+		// After the tester's run the line started on it: an older proof,
+		// that run having failed, proves nothing now.
+		after, _ := os.ReadFile(filepath.Join(runDir, "in", "input", backlog.SymptomAfterInput))
+		cfg.Symptom = func(issue int) (backlog.Symptom, bool, error) {
+			s, found, err := backlog.ReadSymptom(f, issue)
+			return s.Since(strings.TrimSpace(string(after))), found, err
+		}
+	}
 	// The board's ready column a ready moves the card to (ADR-0057); a
 	// board out of reach is said and moves nothing.
 	for _, c := range closes {

@@ -432,6 +432,9 @@ in the same call:
 - **Well past it**: a `split`, `too-big: true`, and no `ready`; or, its
   need atomic, `size` with `tier: large`, then `ready`. A part of a
   split is offered no split, an issue with a tier no grant.
+- **A bug, its tests first**: in place of the split, `ready` with
+  `too-big: true`; once its tests are written, the line asks its split
+  ([split on size](split.md#split-on-size)).
 
 ## Granting a size
 

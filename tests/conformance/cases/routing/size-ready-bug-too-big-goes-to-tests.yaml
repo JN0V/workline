@@ -1,0 +1,29 @@
+case: routing/size-ready-bug-too-big-goes-to-tests
+about: >
+  A bug predicted past its normal goes to its tests first (#1212): the
+  line wakes the product owner on bug #3, in refine. It predicts #3 too
+  big, and readies it `too-big: true`, as its task offers. #3 goes to
+  its tests, and the product owner's state on it keeps that its split
+  is asked once they are written.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiplying and dividing give wrong totals"
+        labels: ["workline:to-refine", bug]
+        author: ann
+        insider: true
+        body: "## Need\n\nI multiply and divide, and the totals are wrong.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n\n---\n\n## Verification\n\nA shell test a scenario.\n\n## Scope\n\n- `lib.sh`: `mul` and `div` beside `add`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/ready-too-big.sh 3"}
+expect:
+  agent-calls: 1
+  no-findings: [{rule: too-big-ready-dropped}]
+  forge:
+    issues:
+      - {id: 3, labels: [bug, "workline:needs-tests"], comment-contains: ["split-after-tests: true"]}

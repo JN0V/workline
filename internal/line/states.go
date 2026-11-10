@@ -90,6 +90,12 @@ type stateStep struct {
 	// parent: a parent's step, its parts told (parent.go): no move to
 	// ready expected of it.
 	parent bool
+	// first: a role run before it on the same issue, with no agent, given
+	// firstInputs: the tester proving a bug's parent's symptom before the
+	// product owner reads its closing (#1212). Its outcome moves nothing:
+	// what it found is its comment on the issue.
+	first       string
+	firstInputs map[string]string
 }
 
 // never is a step's since when how long it waited is not known: a re-try
@@ -410,6 +416,9 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "hops-capped", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
 		return nil, &StateWrite{Issue: is.ID, Record: blocking(now, s.Name, why, comments), Blocked: why}, nil
 	}
+	if w := splitAfterTests(res, cfg, s, is, now, comments); w != nil {
+		return nil, w, nil
+	}
 	if why, err := waits(cfg, b, s, open, t); err != nil {
 		return nil, nil, err
 	} else if why != "" {
@@ -620,6 +629,20 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			in[engine.SizeTierInput] = st.tier
 		}
 		o.Inputs = in
+	}
+	if st.first != "" {
+		fo := o
+		fo.Role, fo.AI = st.first, "none"
+		in := maps.Clone(o.Inputs)
+		if in == nil {
+			in = map[string]string{}
+		}
+		maps.Copy(in, st.firstInputs)
+		fo.Inputs = in
+		if _, status := runRole(res, cfg, fo, 0); status == verdict.BlockedExternal {
+			res.Status = worst(res.Status, status)
+			return
+		}
 	}
 	before, steps := len(res.Findings), len(res.Steps)
 	first := steps // the step's runs, counted in its record (ADR-0064)
