@@ -13,6 +13,7 @@ package developer
 // the auditor (ADR-0046).
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -43,6 +44,9 @@ var (
 	// reviewerAt: the head its summary read. A run its rules hold counts
 	// no run, its findings new all the same (#1040).
 	reviewerAt = regexp.MustCompile(`<!-- workline:at head=([0-9a-f]+)`)
+	// reviewerFindings: the hidden record of its findings, a JSON list of
+	// lens, holds, where, severity and text (the reviewer's reviewer.go).
+	reviewerFindings = regexp.MustCompile(`<!-- workline:findings (\[.*\]) -->`)
 	// reviewerOwed: its summary's record owes every lens, its rules alone
 	// ran (the reviewer's record.go writes it).
 	reviewerOwed = regexp.MustCompile(`<!-- workline:record reviewed=\S*(?: patches=\S*)? runs=\d+ owed=all`)
@@ -145,25 +149,36 @@ type round struct {
 	Disputed []Asked `json:"disputed,omitempty"`
 }
 
-// reviewRows reads the findings of the reviewer's comment: what blocks,
-// a lens's or a rule's, and what warns and is Important; the nits
-// counted. Another row that warns asks nothing: left.
+// reviewRows reads the findings of the reviewer's comment from its hidden
+// findings record, never from its table's words (#705): what blocks, a
+// lens's or a rule's, and what warns and is Important; the nits counted.
+// Another that warns asks nothing: left. A comment with no record asks
+// nothing.
 func reviewRows(comment string) (asked []Asked, nits int) {
-	for _, l := range strings.Split(comment, "\n") {
-		cells := tableRow(l)
-		if len(cells) != 4 {
-			continue
-		}
-		holds, lens, where, msg := strings.Trim(cells[0], "*"), cells[1], strings.Trim(cells[2], "`"), cells[3]
+	m := reviewerFindings.FindStringSubmatch(comment)
+	if m == nil {
+		return nil, 0
+	}
+	var list []struct {
+		Lens, Holds, Where, Severity, Text string
+	}
+	if json.Unmarshal([]byte(m[1]), &list) != nil {
+		return nil, 0
+	}
+	for _, x := range list {
 		switch {
-		case strings.HasPrefix(msg, "Nit:"):
+		case x.Severity == "Nit":
 			nits++
 			continue
-		case holds == "blocks": // a lens's, or a rule's: a gate's, said bare
-		case holds != "warns" || !strings.HasPrefix(msg, "Important:"):
+		case x.Holds == "blocks": // a lens's, or a rule's: a gate's, said bare
+		case x.Holds != "warns" || x.Severity != "Important":
 			continue
 		}
-		asked = append(asked, reviewFinding(holds, lens, where, msg))
+		msg := x.Text
+		if x.Severity != "" {
+			msg = x.Severity + ": " + msg
+		}
+		asked = append(asked, reviewFinding(x.Holds, x.Lens, x.Where, msg))
 	}
 	return asked, nits
 }
@@ -243,30 +258,6 @@ func lineDetails(asked []Asked, threads []forge.Thread, wrote func(forge.Note) b
 		}
 		asked[i].Detail = strings.TrimSpace(strings.Join(keep, "\n"))
 	}
-}
-
-// tableRow is a Markdown table's row, its cells; nil for any other line,
-// its header and its rule.
-func tableRow(line string) []string {
-	line = strings.TrimSpace(line)
-	if !strings.HasPrefix(line, "|") || !strings.HasSuffix(line, "|") || strings.HasPrefix(line, "|---") || strings.HasPrefix(line, "| | |") {
-		return nil
-	}
-	var cells []string
-	var cell strings.Builder
-	for i := 1; i < len(line); i++ {
-		switch {
-		case line[i] == '\\' && i+1 < len(line) && line[i+1] == '|':
-			cell.WriteByte('|')
-			i++
-		case line[i] == '|':
-			cells = append(cells, strings.TrimSpace(cell.String()))
-			cell.Reset()
-		default:
-			cell.WriteByte(line[i])
-		}
-	}
-	return cells
 }
 
 // developerIssue is the issue of a developer's branch, 0 for another's.
