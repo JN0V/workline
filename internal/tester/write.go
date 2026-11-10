@@ -462,11 +462,13 @@ func Post(runDir, repo string) int {
 		// A file outside test-paths never comes here: the engine refuses
 		// the proposal whole against duties.writes first.
 		for _, file := range intent.PatchFiles(p.Value) {
-			// A test already there is never changed: the tester adds its
-			// own files (ADR-0055, guards; weakening needs a proof).
-			if _, err := git(repo, "cat-file", "-e", t.Base+":"+file); err == nil {
-				findings = append(findings, verdict.Finding{Rule: "test-file-exists", Where: file,
-					Message: "the base already holds this file: the tester writes its tests in new files, and never changes a test already there"})
+			// Where a test lives is the tester's judgement; a test already
+			// there is never changed: to a file the base holds, it only
+			// adds lines (ADR-0055, guards, amended by #1259).
+			if line, ok := baseLineChanged(repo, t.Base, file, p); !ok {
+				findings = append(findings, verdict.Finding{Rule: "test-line-changed", Where: file,
+					Message: "the patch changes or removes " + line + " of this file as the base holds it: the tester may add its tests to a test file already there, " +
+						"never change nor remove a line of it; add the tests beside the others, or in a new file"})
 				continue
 			}
 			if _, ok := written[file]; !ok {

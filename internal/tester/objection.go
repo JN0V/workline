@@ -577,6 +577,10 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	if !names(content, a.Scenario.Name) {
 		return block("scenario-without-test", "the rewritten test no longer names its scenario, "+a.Scenario.Name)
 	}
+	if line, ok := baseLineChanged(repo, a.Record.Base, a.File, patches[len(patches)-1]); !ok {
+		// A file the tests share with the base's: its lines stay (#1259).
+		return block("test-line-changed", "the rewrite changes or removes "+line+" of this file as the base holds it: a rewrite changes the tester's own lines alone")
+	}
 	s.issue = a.Text
 	proof, newTests, blobs, asked, err := proveJudged(runDir, repo, a.Record.Base, patches[len(patches)-1:], s)
 	if err != nil {

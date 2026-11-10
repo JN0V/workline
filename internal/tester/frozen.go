@@ -3,8 +3,10 @@ package tester
 // The frozen guard (ADR-0055, guards): the tester keeps, in workline's own
 // comment on the Draft it opened, each test file it wrote and the blob
 // git names it by. On the merge request's every push, a test file whose
-// blob at the head is not the recorded one — changed, deleted — is the
-// blocking finding tester-test-changed. Only the tester's own runs write
+// blob at the head is not the recorded one is read against it: the lines
+// the tester wrote kept whole, others added beside them, it passes
+// (#1259); one of them changed, or the file deleted, is the blocking
+// finding tester-test-changed. Only the tester's own runs write
 // the record: no label lifts it, no commit's trailer, which anyone can
 // write, is trusted.
 
@@ -308,6 +310,15 @@ func guard(repo string, r record, draft int) verdict.Verdict {
 		what := "deletes"
 		if err == nil {
 			what = "changes"
+			// Its lines kept whole, others added beside them: a file
+			// the tests share, each test as it was (#1259).
+			missing, kept, read := keptBeside(repo, r, file)
+			if kept {
+				continue
+			}
+			if read {
+				what = "changes the tester's lines from " + missing.name() + ", in"
+			}
 		}
 		by := "a commit not the tester's"
 		if c, err := git(repo, "log", "-1", "--format=%h %s", r.Base+"..HEAD", "--", file); err == nil && strings.TrimSpace(c) != "" {

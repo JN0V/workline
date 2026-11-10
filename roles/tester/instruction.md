@@ -28,9 +28,14 @@ For each:
   as it is, by its own assertion or a name the code lacks, and pass once
   the code does what the scenario says. A test that passes today proves
   nothing and is refused.
-- Write the tests in new test files, beside those already there, each
-  whole as a `patch` with `file` and `content`: never a diff, and never
-  a file already there, which is refused.
+- **Put each test where the project keeps it**, as a tester on the team
+  would: in the test file of the code it checks when the project keeps
+  one test file per class or module, else in a new test file beside
+  those already there. Each file whole as a `patch` with `file` and
+  `content`, never a diff. To a file already there, only add: every
+  line of it kept as it is, yours added; one changed or removed is
+  refused. Add to it only when you were given it whole; else write a
+  new file.
 - **Isolate it from the machine**, as the project's own tests do: a test
   that runs git in a temporary repository first points git's global
   config at the null device (`GIT_CONFIG_GLOBAL`, in Go

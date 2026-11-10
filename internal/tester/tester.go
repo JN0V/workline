@@ -297,7 +297,7 @@ func prove(repo, base string, s Settings) proven {
 	// Tests alone, broken by a missing name: no report names the tests
 	// that did not build, so their files do, as file:name.
 	if !onHead && byName {
-		names, err := unbuiltTests(repo, ch, headRun, errs, rules)
+		names, err := unbuiltTests(repo, ch, headRun, baseRun, errs, rules)
 		if err != nil {
 			return refused(refuse("the red-first check did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}))
 		}
@@ -389,16 +389,20 @@ func brokenTests(errs []buildError) []buildError {
 
 // unbuiltTests is the tests the change's test files declare, by the
 // test-name of the ecosystems whose errors broke the build, that the
-// head's report does not name: they did not build, as file:name.
-func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []buildRules) ([]string, error) {
+// head's report does not name: they did not build, as file:name. A test
+// the base's report names is the base's, in a file the change adds to,
+// never a new one (#1259).
+func unbuiltTests(repo string, ch *change, head, base ran, errs []buildError, rules []buildRules) ([]string, error) {
 	used := map[int]bool{}
 	for _, e := range errs {
 		used[e.rules] = true
 	}
 	ran := func(name string) bool {
-		for id := range head.results {
-			if id == name || strings.HasSuffix(id, "."+name) {
-				return true
+		for _, r := range []ran{head, base} {
+			for id := range r.results {
+				if id == name || strings.HasSuffix(id, "."+name) {
+					return true
+				}
 			}
 		}
 		return false

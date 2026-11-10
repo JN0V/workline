@@ -1,0 +1,27 @@
+case: tester/frozen-shared-file-test-edited-blocks
+about: >
+  A frozen test touched: the tester added a test to a file the base
+  holds; a later commit not the tester's adds a line beside it and edits
+  one of the tester's lines. The frozen guard blocks,
+  tester-test-changed, naming the file and the tester's test it changed
+  (#1259).
+given:
+  repo: tested-draft
+  setup:
+    - |
+      printf '# Scenario: Two by three\n[ "$(mul 2 3)" = 6 ]\n' >> tests/test_add.sh && git commit -qam 'test: a test beside add' -m 'Workline-Role: tester'
+    - |
+      printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && sed -i 's/= 6 ]/]/' tests/test_add.sh && printf '[ "$(add 1 1)" = 2 ]\n' >> tests/test_add.sh && git commit -qam 'feat: multiply'
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_add.sh\":\"2506e8d18ef03a0e78aa1441fbfd616274da98b0\",\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: tester, event: merge-request, target: {merge-request: 1}}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: tester-test-changed, where: tests/test_add.sh, message: "# Scenario: Two by three"}
+  no-findings: [{rule: tester-test-changed, where: tests/test_mul_by_zero.sh}]

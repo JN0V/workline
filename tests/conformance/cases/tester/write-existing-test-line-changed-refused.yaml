@@ -1,8 +1,9 @@
-case: tester/write-existing-test-refused
+case: tester/write-existing-test-line-changed-refused
 about: >
-  The tester never changes a test already there: it writes its tests in
-  new files. A patch to a test file the base holds is refused, and no
-  Draft is opened.
+  The tester may add its tests to a test file the base holds, never
+  change a line already there (ADR-0055, guards): a patch that changes
+  or removes one of its lines is refused, the file named, and no Draft
+  is opened (#1259).
 given:
   repo: tested
   setup:
@@ -15,10 +16,11 @@ given:
         title: "Multiply two numbers"
         labels: ["workline:ready"]
         body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
-run: {test: [write, --issue, "3"], ai: "fake:tester-changes-a-test"}
+run: {test: [write, --issue, "3"], ai: "fake:tester-changes-a-test-line"}
 expect:
   status: block
-  findings: [{rule: test-file-exists, where: tests/test_add.sh}]
+  findings: [{rule: test-line-changed, where: tests/test_add.sh, message: '[ "$(add 2 3)" = 5 ]'}]
+  no-findings: [{rule: test-file-exists}]
   forge:
     merge-requests:
       - {id: 1, absent: true}

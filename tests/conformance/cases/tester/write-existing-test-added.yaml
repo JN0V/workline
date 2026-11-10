@@ -1,0 +1,37 @@
+case: tester/write-existing-test-added
+about: >
+  Where a test lives is the tester's judgement: a project keeping one
+  test file per code file gets the new tests in that file. The tester
+  adds two tests to a test file the base holds, and changes no line
+  already there: they are proven red on the base, by a missing name the
+  issue names, and the Draft opens. The base's own test in that file is
+  not taken for a new one, so it is not frozen (#1259).
+given:
+  repo: python-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh -m {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA pytest test a scenario, beside test_add.\n\n## Scope\n\n- `pkg/calc.py`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-py-mul-added"}
+expect:
+  status: pass
+  summary: "2 new tests, red on the base (2 not built there, a missing name the issue names)"
+  agent-calls: 1
+  no-findings: [{rule: test-file-exists}, {rule: test-line-changed}]
+  pushed:
+    workline/tester/issue-3:
+      tests/test_calc.py: "Scenario: Two by three"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Refs #3", "Two by three", "By zero"]
+        comment-contains: ['"tests":["tests/test_calc.py:test_by_zero","tests/test_calc.py:test_two_by_three"]']
+        comment-lacks: ["test_calc.py:test_add"]

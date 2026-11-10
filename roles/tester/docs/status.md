@@ -134,6 +134,11 @@ Cases in `tests/conformance/cases/tester/`:
   blob in workline's own comment on the Draft; a test changed or
   deleted by another blocks (`tester-test-changed`), a forged trailer
   too; a record a person wrote is never read.
+- **Tests added to a file already there**, where the project keeps
+  them: only lines added, `test-line-changed` else; the base's tests of
+  that file never taken for new ones; the guard freezes the tester's
+  lines, others added beside them pass
+  ([#1259](https://github.com/JN0V/workline/issues/1259)).
 - **Objections** (`workline test answer --merge-request <n>`): kept
   with the reason; rewritten on the branch, `Refs` the thread, still red
   on the base, else refused; the need itself back to the product owner;
@@ -229,8 +234,9 @@ Cases in `tests/conformance/cases/tester/`:
 
 - **Asked again**: a test refused (green on the base) is not asked of
   the agent again with the reason; the run blocks.
-- **Adding to a test file already there**: refused for now; new files
-  only.
+- **The developer beside a frozen test**: its bounds still refuse any
+  edit to a file the tester froze, a shared one whole, though the guard
+  passes lines added beside the frozen ones.
 - **A case the conformance suite cannot read** is told by workline's
   own `build-errors` line, not by the role: another project's suite
   that fails a malformed test file alike reads as red.
