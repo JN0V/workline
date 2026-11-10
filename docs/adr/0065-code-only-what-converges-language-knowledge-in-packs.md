@@ -79,17 +79,24 @@ flowchart LR
   list, marker file, test folder, compiler message, build tool word.
 - **It goes in a pack** ([below](#language-packs)); the engine reads the
   pack's fields, never names a language.
-- **Enforced by a test, proposed**: a Go test walks the string
+- **Enforced by a test**, built in [#1231]: a Go test walks the string
   literals of `internal/` outside the pack loader, regexes included,
   and fails on one holding a pack's marker, extension or path pattern.
+  - **A token, not a substring**: never glued to a letter or a digit
+    on its own word edge, so `.kt` is in `Main.kt`, not in `a.ktx`; a
+    path pattern gives its runs of two folders or more (`src/test`)
+    and its parts with a dot (`_test.go`).
   - **A tripwire, not a proof**: it catches the usual leak, not every
     one; the pull request's review does the rest.
   - **The `generic` pack's patterns are left out**: `test` or `_test.`
     would flag many plain strings.
-  - **An exemption** is a comment on the line saying why the literal
-    converges (`.xml` for the JUnit reader); the review judges it.
-  - **A baseline** lists today's offenders and may only shrink. Cheap:
-    one AST walk, no tool.
+  - **An exemption** is a `// converges: <reason>` comment on the
+    literal's first or last line; the review judges the reason. A
+    pattern no pack names (`.xml` for the JUnit reader) needs none.
+  - **A baseline** lists today's offenders, a file, a token and how
+    many literals hold it
+    ([rule-b-baseline.txt](../../internal/packs/testdata/rule-b-baseline.txt)),
+    and may only shrink. Cheap: one AST walk, no tool.
 
 ### Language packs
 
