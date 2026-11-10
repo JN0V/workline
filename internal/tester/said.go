@@ -48,6 +48,15 @@ func refuseIssue(runDir string, n int, v verdict.Verdict, next string) int {
 // in the tester's one comment there, applied though the run blocks: post's
 // out/on-block.yaml (ADR-0059, decision 1).
 func refusePost(runDir string, n int, v verdict.Verdict) int {
+	if code := sayBlock(runDir, n, v); code != 0 {
+		return code
+	}
+	return write(runDir, v)
+}
+
+// sayBlock writes, for a blocking verdict, the tester's comment on the
+// issue (out/on-block.yaml); its exit, 0 when written or not needed.
+func sayBlock(runDir string, n int, v verdict.Verdict) int {
 	if v.Status == verdict.Block {
 		why := v.Summary
 		if len(v.Findings) > 0 {
@@ -69,7 +78,7 @@ func refusePost(runDir string, n int, v verdict.Verdict) int {
 			return fail(err)
 		}
 	}
-	return write(runDir, v)
+	return 0
 }
 
 // What the tester says, in its one comment on an issue, when it writes

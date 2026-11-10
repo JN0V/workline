@@ -31,4 +31,4 @@ expect:
     merge-requests:
       - {id: 1, absent: true}
     issues:
-      - {id: 3, labels: ["bug", "workline:needs-tests"], comment-contains: ["**The tester** wrote no tests for this issue this run", "passes on the base"]}
+      - {id: 3, labels: ["bug", "workline:needs-tests"], comment-contains: ["**The tester** wrote no tests for this issue this run", "passes on the base"], comment-lacks: ["kept as today", "covers entry"]}

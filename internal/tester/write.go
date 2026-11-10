@@ -523,12 +523,17 @@ func Post(runDir, repo string) int {
 		}) {
 			proof.Again = true
 		}
-		// A test green on the base beside tests that are not: the answer's
-		// to mend too, asked once more, told which test passes there, so
-		// it can keep that scenario as today; sent again green, it blocks
-		// (#1156).
-		if !proof.Final && keptAsToday(proof.Findings) {
+		// A test green on the base, beside red tests or, for a feature,
+		// alone: the answer's to mend too, asked once more, told how
+		// (#1156). Sent again green, it blocks. The hint is the agent's:
+		// the issue's comment and the board's reason say the finding alone.
+		if told, ok := toMend(proof.Findings); ok && !proof.Final {
 			proof.Again = true
+			if code := sayBlock(runDir, t.Issue, *proof); code != 0 {
+				return code
+			}
+			proof.Findings = told
+			return write(runDir, *proof)
 		}
 		return refusePost(runDir, t.Issue, *proof)
 	}
@@ -1152,20 +1157,32 @@ func fail(err error) int {
 	return 1
 }
 
-// keptAsToday says whether a refused proof holds a test green on the
-// base, and adds to each such finding how the answer can mend it: a
-// scenario that describes what the base already does is kept as today,
-// its covers entry giving the reason, its test dropped.
-func keptAsToday(findings []verdict.Finding) bool {
-	green := false
-	for i, f := range findings {
+// What a new test's run on the base says when it is not red there.
+const (
+	greenOnBase   = "passes on the base: it proves nothing the base does not already do; a new test must fail there first"
+	skippedOnBase = "is skipped on the base: a skipped test is not red; a new test must fail there first"
+)
+
+// toMend says whether a refused proof holds a test not red on the base,
+// and returns a copy of its findings telling the agent how to mend each:
+// a test that passes there checks what the base already does, or checks
+// it wrong; a skipped one does not run.
+func toMend(findings []verdict.Finding) ([]verdict.Finding, bool) {
+	told := slices.Clone(findings)
+	found := false
+	for i, f := range told {
 		if f.Rule != "test-green-on-base" || f.Level != "" {
 			continue
 		}
-		green = true
-		findings[i].Message += "; if its scenario describes what the base already does, write no test for it: " +
-			"its covers entry gives the reason, \"kept as today: the existing suite guards it\"; " +
-			"else make it check what the issue asks, so that it fails on the base"
+		found = true
+		switch f.Message {
+		case greenOnBase:
+			told[i].Message += "; if its scenario describes what the base already does, write no test for it: " +
+				"its covers entry gives the reason, \"kept as today: the existing suite guards it\"; " +
+				"else make it check what the issue asks, so that it fails on the base"
+		case skippedOnBase:
+			told[i].Message += "; make it run on the base, and fail there: a test that skips itself when what the issue adds is missing checks nothing yet"
+		}
 	}
-	return green
+	return told, found
 }
