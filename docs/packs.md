@@ -1,6 +1,6 @@
 ---
 sources: [internal/packs, internal/doctor/packs.go, internal/routing/adopt.go]
-checked: 89ff7635
+checked: 6cfa74c5
 ---
 # Language packs
 
@@ -76,6 +76,20 @@ test-command: "flutter test --machine | tojunit > {report}"
   `workline doctor` names the language.
 - **Only the listed packs are read**: a draft file not listed stops no
   run; `workline doctor` checks them all.
+
+## The engine names no language
+
+For workline's own code: a test fails on a string of `internal/` that
+holds a pack's marker, extension or path pattern (`"build.gradle.kts"`,
+a regex on `\.kt`)
+([Rule B](adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-b-no-ecosystem-pattern-in-the-engine)).
+
+- **Put it in a pack**: a new language's fix lands in its YAML.
+- **It converges** (`.xml` for any JUnit report): a
+  `// converges: <reason>` comment on its line; the review judges it.
+- **Today's offenders** are listed in
+  [rule-b-baseline.txt](../internal/packs/testdata/rule-b-baseline.txt):
+  a line only shrinks, never added to.
 
 ## What `workline doctor` says
 
