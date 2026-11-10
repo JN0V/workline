@@ -109,7 +109,9 @@ Cases in `tests/conformance/cases/tester/`:
   slip asked again, on [#776](https://github.com/JN0V/workline/pull/776).
 - **A test green on the base**, asked again once, told which test
   passes there: the answer keeps its scenario as today, or the run
-  blocks ([#1156](https://github.com/JN0V/workline/issues/1156)).
+  blocks; a feature's every scenario kept so goes back to the product
+  owner; trial #56's real answer replayed with its green test
+  ([#1156](https://github.com/JN0V/workline/issues/1156)).
 - **Real answers replayed** from the DomoticsCore trial's round 5, with
   the covers entries they predate: one test declared for two scenarios
   counts for both
