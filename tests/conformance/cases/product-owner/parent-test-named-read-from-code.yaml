@@ -12,7 +12,7 @@ run: {role: product-owner, event: schedule, ai: none}
 expect:
   agent-calls: 0
   findings:
-    - {rule: proof-test-missing, where: "#9", message: "its Verification names `TestQuoteCommas` as proof, and the code at this commit holds no such test"}
+    - {rule: proof-test-missing, where: "#9", message: "its Verification rests on `TestQuoteCommas` as proof, and the code at this commit holds no such test"}
     - {rule: parent-to-accept, where: "#9", message: "not proved: 1 Verification item(s)"}
   forge:
     issues:

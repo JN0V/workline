@@ -435,7 +435,7 @@ func Pre(runDir, repo string) int {
 			}
 			if len(ev.NoTest) > 0 {
 				findings = append(findings, verdict.Finding{Rule: "proof-test-missing", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
-					Message: fmt.Sprintf("its %s names %s as proof, and the code at this commit holds no such test: the item is said not proved", work.Name(work.Verification), strings.Join(ev.NoTest, ", "))})
+					Message: fmt.Sprintf("its %s rests on %s as proof, and the code at this commit holds no such test: the item is said not proved", work.Name(work.Verification), strings.Join(ev.NoTest, ", "))})
 			}
 			if ev.AllClosed {
 				msg := fmt.Sprintf("its %d parts are closed: for a person to accept, by closing it or with %s — the role never closes it alone", ev.Parts, backlog.AcceptedLabel(b))
