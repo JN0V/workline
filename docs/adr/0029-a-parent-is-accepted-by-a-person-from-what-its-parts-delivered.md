@@ -1,6 +1,6 @@
 # ADR-0029: A parent is accepted by a person, from what its parts delivered
 
-- **Status:** accepted; amended 2026-10-07 (a test named as proof, read from the code); amended 2026-11-08 (the line tells a parent; a person accepts it with one label)
+- **Status:** accepted; amended 2026-10-07 (a test named as proof, read from the code); amended 2026-11-08 (the line tells a parent; a person accepts it with one label; a yes put early, 2026-11-10)
 - **Date:** 2026-10-05
 - **Builds on:** ADR-0022 (a split keeps the need in its parent), ADR-0026
   (a kind of act has a mode per level), ADR-0028 (`next-ready`);
@@ -132,6 +132,11 @@ wants every open issue due, waiting or done, said.
   split), and every part is closed now. An agent claiming the mark on
   another issue is dropped (`parent-not-split`); a part open again
   drops the yes (`parent-part-open`).
+- **A yes put early** ([#1213](https://github.com/JN0V/workline/issues/1213)):
+  `workline:accepted` put before the closing is proposed is checked the
+  same way. All parts closed by the role's run, it closes the parent. A
+  part still open, it is taken off, with a line to put it on again once
+  the closing is proposed: never left on to stand for a later act.
 - **In refine too**: a parent left in refine after a split for its
   size is told the same way, when its own step is not due.
 
