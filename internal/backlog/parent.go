@@ -129,8 +129,9 @@ type Evidence struct {
 
 // ReadEvidence writes a parent's report from its parts: what each became
 // and what closed it; each item of its Verification proved by a part
-// delivered that quotes it — in its own Verification, or in the text of
-// the pull request or commit that closed it — and, when it names a test,
+// delivered that quotes it — in its own Verification, in the scenario of
+// its Validation the split gave the item (#1279), or in the text of the
+// pull request or commit that closed it — and, when it names a test,
 // that test found in the code by tests (nil: not looked for); or said not
 // proved.
 func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinder, def testdef.Def) Evidence {
@@ -184,7 +185,7 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 	if len(items) == 0 {
 		fmt.Fprintf(&b, "\nThis issue has no %s of its own: nothing to prove its parts against; a person judges from the parts alone.\n", proofs)
 	} else {
-		fmt.Fprintf(&b, "\n**Its %[1]s**, each item against the parts delivered — proved when a part's %[1]s, or what closed it, quotes it, and a test it names is in the code:\n\n", proofs)
+		fmt.Fprintf(&b, "\n**Its %[1]s**, each item against the parts delivered — proved when a part's %[1]s, the scenario of its %[2]s that delivers it, or what closed it, quotes it, and a test it names is in the code:\n\n", proofs, work.Name(work.Validation))
 		for _, item := range items {
 			where := proof(item, parts)
 			if where != "" && tests != nil {
@@ -280,8 +281,14 @@ func proof(item string, parts []Part) string {
 		if len(p.Closers) > 0 {
 			closed = ", closed by " + closerName(p.Closers[0])
 		}
-		if s := work.ByMeaning(p.Issue.Body)[work.Verification]; strings.Contains(plain(s.Text), want) {
+		sections := work.ByMeaning(p.Issue.Body)
+		if s := sections[work.Verification]; strings.Contains(plain(s.Text), want) {
 			return fmt.Sprintf("quoted in #%d's %s%s", p.ID, s.Heading, closed)
+		}
+		if s := sections[work.Validation]; strings.Contains(plain(s.Text), want) {
+			// The split quoted it in the scenario that delivers it, and the
+			// tester's Verification names that scenario's tests (#1279).
+			return fmt.Sprintf("quoted in #%d's %s%s%s", p.ID, s.Heading, scenarioProof(want, s.Text, sections[work.Verification]), closed)
 		}
 		for _, c := range p.Closers {
 			if strings.Contains(plain(c.Text), want) {
@@ -290,6 +297,37 @@ func proof(item string, parts []Part) string {
 		}
 	}
 	return ""
+}
+
+// scenarioLabel is a scenario's name, bold at the head of its list item:
+// "- **Three sales:** Given …".
+var scenarioLabel = regexp.MustCompile(`^\s*(?:[-*+]|\d+[.)])\s+\*\*([^*\n]+?):?\*\*:?\s*(.*)$`)
+
+// scenarioProof says, for an item a part's Validation quotes, the scenario
+// that quotes it and what the part's Verification says proves that
+// scenario: ", its scenario "Three sales", proved by `tests.test_x` in its
+// Verification"; less when a name or a line is missing.
+func scenarioProof(want, validation string, verification work.Section) string {
+	name := ""
+	for _, l := range strings.Split(validation, "\n") {
+		if m := scenarioLabel.FindStringSubmatch(l); m != nil && strings.Contains(plain(l), want) {
+			name = strings.TrimSpace(m[1])
+			break
+		}
+	}
+	if name == "" {
+		return ""
+	}
+	out := fmt.Sprintf(", its scenario \"%s\"", name)
+	for _, l := range strings.Split(verification.Text, "\n") {
+		if m := scenarioLabel.FindStringSubmatch(l); m != nil && plain(m[1]) == plain(name) {
+			if by := strings.TrimRight(strings.TrimSpace(m[2]), " ."); by != "" {
+				out += fmt.Sprintf(", proved by %s in its %s", by, verification.Heading)
+			}
+			break
+		}
+	}
+	return out
 }
 
 // TestFinder says where the code holds a test a Verification item names:

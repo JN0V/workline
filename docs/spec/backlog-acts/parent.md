@@ -34,7 +34,11 @@ person unlinked is no longer one. An issue whose state lists a split
   gone from the forge: those three not delivered. GitLab and the local
   forge keep no reason: a closed part there is taken as done. Then each
   item of its Verification — each list item, or the section whole — proved
-  when a part delivered quotes it, in its own Verification or in the text
+  when a part delivered quotes it, in its own Verification, in a scenario
+  of its Validation — the split gives each item to the part that delivers
+  it, the comment then names that scenario and the tests the tester's
+  Verification declares for it
+  ([#1279](https://github.com/JN0V/workline/issues/1279)) — or in the text
   of what closed it, case, spaces, `` ` ``, `*`, `_` and the final
   punctuation aside, said with where; "not proved" otherwise ("not proved yet" while a part is open). A parent
   without a Verification is said to have none.

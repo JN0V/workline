@@ -61,6 +61,28 @@ func TestProofIsAQuote(t *testing.T) {
 	}
 }
 
+func TestProofInAPartsValidation(t *testing.T) {
+	part := func(body string) []Part {
+		return []Part{{ID: 11, Issue: forge.Issue{Closed: true, Reason: "completed", Body: body}}}
+	}
+	cases := []struct{ body, want string }{
+		{"## Validation\n\n- **Three sales:** Then an export of 3 sales writes 3 rows.\n\n## Verification\n\n- **Three sales:** `t.test_three`.",
+			"quoted in #11's Validation, its scenario \"Three sales\", proved by `t.test_three` in its Verification"},
+		{"## Validation\n\n- **Three sales:** Then an export of 3 sales writes 3 rows.",
+			"quoted in #11's Validation, its scenario \"Three sales\""},
+		{"## Validation\n\nAn export of 3 sales writes 3 rows.",
+			"quoted in #11's Validation"},
+	}
+	for _, c := range cases {
+		if got := proof("An export of 3 sales writes 3 rows.", part(c.body)); got != c.want {
+			t.Errorf("proof in %q = %q, want %q", c.body, got, c.want)
+		}
+	}
+	if got := proof("An empty day writes a header only.", part(cases[0].body)); got != "" {
+		t.Errorf("a scenario that quotes another item proves nothing, got %q", got)
+	}
+}
+
 func TestCloserNotReadIsSaid(t *testing.T) {
 	part := Part{ID: 11, Issue: forge.Issue{Closed: true, Reason: "completed", Title: "Keep the last row"}, Unread: errors.New("the forge refused closers: unknown operation")}
 	ev := ReadEvidence(forge.Issue{ID: 9}, []Part{part}, "product-owner", nil, testdef.Def{})

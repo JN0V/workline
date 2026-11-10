@@ -1,0 +1,26 @@
+case: product-owner/parent-item-proved-by-part-scenario
+about: >
+  A split parent's item proved by its part (#1279): a person's parent
+  with two Verification items, split in two parts. Each part's
+  Validation quotes the item it delivers in one scenario, as the split
+  wrote it; the tester wrote each part's Verification from its tests,
+  scenario names and test ids, never the parent's words. Both parts
+  closed: each item reads proved, naming the part, its scenario and the
+  test the tester declared for it.
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Sales export", body: "Export a day's sales as CSV.\n\n## Verification\n\n- An export of 3 sales writes 3 rows.\n- An empty day writes a header only.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Write one row per sale", body: "Part of #9.\n\n## Need\n\n<!-- workline:draft -->\n\nEvery sale exported, so a report counts what was sold.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Three sales:** Given a day of 3 sales, When I export it, Then an export of 3 sales writes 3 rows.\n\n---\n\n## Verification\n\n<!-- workline:verification=tester -->\n\n- **Three sales:** `tests.test_three_sales`.\n\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-11`. Written by the tester from its tests.\n\n## Scope\n\nWriteRows in src/export/csv.go.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#20", text: "fix(export): one row per sale"}]}
+      - {id: 12, title: "Export an empty day", body: "Part of #9.\n\n## Need\n\n<!-- workline:draft -->\n\nA day with no sale still exported, so the report opens.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Empty day:** Given a day with no sale, When I export it, Then an empty day writes a header only.\n\n---\n\n## Verification\n\n<!-- workline:verification=tester -->\n\n- **Empty day:** `tests.test_empty_day`.\n\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-12`. Written by the tester from its tests.\n\n## Scope\n\nWriteRows in src/export/csv.go.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#21", text: "fix(export): header on an empty day"}]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: parent-to-accept, where: "#9", message: "its 2 parts are closed: for a person to accept, by closing it"}]
+  forge:
+    issues:
+      - {id: 9, closed: false, comment-contains: "- Proved: \"An export of 3 sales writes 3 rows.\" — quoted in #11's Validation, its scenario \"Three sales\", proved by `tests.test_three_sales` in its Verification, closed by pull request #20."}
+      - {id: 9, comment-contains: "- Proved: \"An empty day writes a header only.\" — quoted in #12's Validation, its scenario \"Empty day\", proved by `tests.test_empty_day` in its Verification, closed by pull request #21."}
+      - {id: 9, comment-lacks: "not proved"}
