@@ -330,10 +330,10 @@ func prove(repo, base string, s Settings) proven {
 			missing++ // not built on the base: a missing name, red
 		case r == passed:
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "test-green-on-base", Where: id,
-				Message: "passes on the base: it proves nothing the base does not already do; a new test must fail there first"})
+				Message: greenOnBase})
 		case r == skipped:
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "test-green-on-base", Where: id,
-				Message: "is skipped on the base: a skipped test is not red; a new test must fail there first"})
+				Message: skippedOnBase})
 		}
 		if !onHead {
 			continue

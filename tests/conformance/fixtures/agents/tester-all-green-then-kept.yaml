@@ -1,0 +1,20 @@
+# A feature's tester, asked twice (#1156): its first answer's two tests
+# both pass on the base, which already does what the issue asks; told
+# so, its second answer keeps both scenarios as today, no test written.
+calls:
+  - - patch:
+        file: tests/test_add_two_and_three.sh
+        content: |
+          # Scenario: Two and three
+          . ./lib.sh
+          [ "$(add 2 3)" = 5 ]
+    - patch:
+        file: tests/test_add_minus_one.sh
+        content: |
+          # Scenario: Minus one
+          . ./lib.sh
+          [ "$(add -1 1)" = 0 ]
+    - covers: {scenario: "Two and three", tests: ["test_add_two_and_three"]}
+    - covers: {scenario: "Minus one", tests: ["test_add_minus_one"]}
+  - - covers: {scenario: "Two and three", reason: "kept as today: the existing suite guards it."}
+    - covers: {scenario: "Minus one", reason: "kept as today: add already sums a negative number."}

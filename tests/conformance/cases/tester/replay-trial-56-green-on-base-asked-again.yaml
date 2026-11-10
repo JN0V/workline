@@ -1,0 +1,82 @@
+case: tester/replay-trial-56-green-on-base-asked-again
+about: >
+  Replay of the DomoticsCore trial's #56 (round 5) where its tester's
+  answer, as it came, has a test green on the base: the fixture's runner
+  passes test_enabled_console_and_restart there, as the trial's did (the
+  answer's own note says it passes today). Refused, the answer is asked
+  once more, told which test passes on the base (#1156). The second
+  answer, the first cut to its red test, keeps Enabled console and
+  Restart as today: the Draft opens with the red test, those scenarios
+  under Not tested.
+given:
+  repo: dc-trial
+  setup:
+    - "echo 'DomoticsCore-RemoteConsole/test_remoteconsole_enabled_listener test_enabled_console_and_restart' >> tools/green-tests.txt && git commit -qam 'test: a case green today'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "tools/workline-tests.sh {report}", test-paths: ["DomoticsCore-*/test/**", "DomoticsCore-WebUI/webui_test/**"]}}}
+  forge:
+    issues:
+      - id: 56
+        author: JN0V
+        insider: true
+        labels: ["bug", "workline:needs-tests"]
+        title: "RemoteConsole: a disabled console's shutdown() removes my log listener"
+        body: |
+          Who it hurts: an application that adds its own log listener with `LoggerCallbacks::addCallback()` (to forward log lines to MQTT or a file, say) and has the remote console disabled in its config. When the disabled console is shut down (switched off on the WebUI's Components page, or at the Core's shutdown), the application's listener stops receiving log lines. Nothing says so.
+
+          Steps to reproduce
+          1. In `setup()`, add a log listener with `LoggerCallbacks::addCallback(...)` before any other.
+          2. Add a `RemoteConsoleComponent` with `enabled = false` in its config.
+          3. Run its `begin()`, then its `shutdown()`.
+          4. Log a line.
+
+          Expected
+          - The application's listener gets the line: a console that never started has nothing to remove.
+
+          Actual
+          - The listener gets nothing after step 3. It was removed from the logger.
+
+          Host run (native stubs):
+
+          ```
+          my listener got 1 APP line(s)
+          after a disabled console's begin()+shutdown(): my listener got 1 APP line(s)
+          ```
+
+          The second line should say 2.
+
+          Version: DomoticsCore 2.13.0 (RemoteConsole component 1.7.3), native build.
+
+          ## Validation
+
+          - **Disabled console:** Given an application listener added with `LoggerCallbacks::addCallback()` and a `RemoteConsoleComponent` with `enabled = false`, When I run its `begin()` then `shutdown()` and log a line, Then my listener still receives the line (2 lines in total, not 1).
+          - **Enabled console:** Given an enabled console, When I run `shutdown()` and log a line, Then the console no longer receives the line and my own listener still does.
+          - **Restart:** Given a console shut down twice in a row, When I log a line, Then no other listener is removed.
+
+          ---
+
+          ## Verification
+
+          - A native test (new, in the RemoteConsole test suite): add an application listener with `LoggerCallbacks::addCallback()` first, then run `begin()` and `shutdown()` of a console with `enabled = false`, then log one APP-tagged line. Assert the listener got that line (2 APP-tagged lines in total, counting only lines tagged APP, not the CONSOLE lines the console logs itself). It fails today.
+          - A native test with an enabled console and an application listener added before it: after one `shutdown()`, log an APP-tagged line. Assert the application listener still gets it and the console's log buffer gets none.
+          - The same test runs `shutdown()` a second time, logs another APP-tagged line, and asserts again that the application listener still gets it and the console buffer gets none. A fix that removed all listeners on shutdown fails this test.
+
+          ## Scope
+
+          `DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`: `shutdown()` removes `loggerCallbackId_` without knowing that `begin()` ever registered one, and `begin()` returns early when the console is disabled. The fix tracks whether a callback was registered and clears it on removal.
+          `DomoticsCore-Core/include/DomoticsCore/Logger.h`: `LoggerCallbacks::addCallback()` hands out ids from a counter starting at 0, so an unset id of 0 can match the first listener ever added. This is why the application's listener, added first, is removed.
+
+          ## Assumptions
+
+          - Assumption taken on 2026-11-06, the Validation draft unanswered after 5 min: written as the role drafted it, for a person to correct.
+run: {test: [write, --issue, "56"], ai: "cmd:sh $FIXTURES/agents/replay.sh dc56-tester-answer.txt test-green-on-base dc56-tester-answer-kept.txt"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  agent-calls: 2
+  run-files:
+    out/feedback.md: {contains: ["test-green-on-base", "test_enabled_console_and_restart", "kept as today"]}
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-56, draft: true, body-contains: ["test_disabled_console", "Not tested", "kept as today: the existing suite guards it"]}
