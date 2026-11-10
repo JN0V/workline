@@ -45,17 +45,23 @@ func ruleBTokens(all map[string]Pack) []patternToken {
 			generic[t.text] = true
 		}
 	}
-	seen := map[string]bool{}
+	seen := map[string]int{}
 	var out []patternToken
 	for _, name := range Names(all) {
 		if name == Generic {
 			continue
 		}
 		for _, t := range packTokens(all[name]) {
-			if generic[t.text] || seen[t.text] {
+			if generic[t.text] {
 				continue
 			}
-			seen[t.text] = true
+			// The same text from two patterns is open when either is:
+			// a closed `src/test` must not hide an open one.
+			if i, ok := seen[t.text]; ok {
+				out[i].open = out[i].open || t.open
+				continue
+			}
+			seen[t.text] = len(out)
 			out = append(out, t)
 		}
 	}
@@ -447,6 +453,7 @@ func TestRuleBScan(t *testing.T) {
 		{"exempt on a raw string's last line", "package x\n\nvar p = `say\nopen Main.kt` // converges: an example\n", nil},
 		{"longer and shorter apart", "package x\n\nvar a = \"conftest.py and x.py\"\n", []string{".py@3", "conftest.py@3"}},
 		{"shorter inside longer", "package x\n\nvar a = \"conftest.py\"\n", []string{"conftest.py@3"}},
+		{"open copy of a closed token", "package x\n\nvar a = \"app/src/testFreeDebug/x\"\n", []string{"src/test@3"}},
 		{"tag and import", "package x\n\nimport _ \"example.com/x.py\"\n\ntype T struct{ A string `yaml:\"go.mod\"` }\n", nil},
 	} {
 		hits, err := ruleBScan(c.name+".go", []byte(c.src), tokens)
