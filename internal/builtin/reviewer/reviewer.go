@@ -132,6 +132,7 @@ type state struct {
 	Testimony  string             `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
 	Beyond     string             `json:"beyond,omitempty"`    // the files the author lists beyond the issue's Scope, and why, for the intent lens (ADR-0065)
 	Skipped    []string           `json:"skipped,omitempty"`   // lenses not asked, each with why
+	Hints      []Hint             `json:"hints,omitempty"`     // the comments the story guess flags, for the lens judging them (ADR-0065, Rule A)
 	Spec       *Spec              `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
 	Part       string             `json:"part,omitempty"`      // one spec of several a run reads: what its parts' names start with (#433)
 	Specs      []state            `json:"specs,omitempty"`     // on the forge: the specs the run reads, each reviewed as if alone (#433)
@@ -297,6 +298,13 @@ func prepare(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	mech = verdict.Levels(mech, enforce)
+	// A guess never blocks, its miss judged (ADR-0065, Rule A): with an
+	// agent, the comments a story word flags go to the lens that judges
+	// them (its `hints`), not to the verdict; with none, the guess warns.
+	hinted := hintedLens(repo, s)
+	if ai := os.Getenv("WORKLINE_AI"); hinted != "" && ai != "" && ai != "none" {
+		mech = slices.DeleteFunc(mech, func(f verdict.Finding) bool { return f.Rule == storyRule })
+	}
 	// The rules block on the verdict's run, which reports them; the run
 	// apart waits for them as it does, saying nothing of them again.
 	rulesHold := status(mech) == verdict.Block
@@ -414,8 +422,28 @@ func prepare(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
+	// The lens judging the story guess reads what the commits not reviewed
+	// yet add; with nothing flagged it is not asked, and not said.
+	if hinted != "" && enforce[storyRule] != "off" {
+		added, err := readChange(repo, st.lensFrom(), head, files)
+		if err != nil {
+			return fail(err)
+		}
+		var guessed []verdict.Finding
+		if guessed, st.Hints, err = rules(added, s, codes); err != nil {
+			return fail(err)
+		}
+		// A run told its lenses, that one left out: the guess warns.
+		if asked := input(runDir, "lenses"); asked != "" && asked != "all" && !slices.Contains(strings.Split(strings.ReplaceAll(asked, " ", ""), ","), hinted) {
+			st.Mechanical = append(st.Mechanical, slices.DeleteFunc(guessed, func(f verdict.Finding) bool { return f.Rule != storyRule })...)
+			st.Hints = nil
+		}
+	}
+	if hinted != "" && len(st.Hints) == 0 {
+		skip[hinted] = "no comment a story word flags"
+	}
 	for _, l := range s.Lenses {
-		if why, ok := skip[l]; ok {
+		if why, ok := skip[l]; ok && l != hinted {
 			st.Skipped = append(st.Skipped, fmt.Sprintf("%s (%s)", l, why))
 		}
 	}
@@ -425,6 +453,9 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	if input(runDir, "lenses") == "" {
 		st.Lenses = union(st.Lenses, answering(st.Standing, files, skip))
+		if len(st.Hints) > 0 { // on its turn or not: a guess is judged on the push that adds it
+			st.Lenses = union(st.Lenses, []string{hinted})
+		}
 	}
 	if len(st.Lenses) == 0 && !st.Alone {
 		return final(runDir, review(st, nil, "no lens asked can review this change: not asked: "+strings.Join(st.Skipped, ", ")))
@@ -911,6 +942,9 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 		if err != nil {
 			return "", err
 		}
+		if l.Hints != "" {
+			l.Text = strings.TrimSpace(l.Text) + hintsText(st.Hints)
+		}
 		read[lens] = l
 	}
 	// The issues closed only when a lens asked reads them: on a merge
@@ -1096,6 +1130,7 @@ type Lens struct {
 	Subject string `yaml:"subject"` // spec: a lens of a spec, under spec-lenses (#128); empty, of code
 	Needs   string `yaml:"needs"`   // issue: asked only of a change closing an issue, given it (#126); code: of a spec naming code, given it (#128)
 	Cites   string `yaml:"cites"`   // claim: each finding quotes a claim of the author, found again in what they said, or is dropped
+	Hints   string `yaml:"hints"`   // bug-story: given the comments that rule's guess flags, asked only when it flags one (ADR-0065, Rule A)
 	Judge   struct {
 		Question string `yaml:"question"` // empty: judgeQuestion
 		Reads    string `yaml:"reads"`    // tests: the tests that touch the cause's file; issue: the issues the change closes; code: the code a spec's finding stands on
@@ -1133,7 +1168,35 @@ func readLens(repo, name string) (Lens, error) {
 	if l.Cites != "" && l.Cites != "claim" {
 		return l, fmt.Errorf("lens %q: cites %q: only `claim` is known", name, l.Cites)
 	}
+	if l.Hints != "" && l.Hints != storyRule {
+		return l, fmt.Errorf("lens %q: hints %q: only `%s` is known", name, l.Hints, storyRule)
+	}
 	return l, nil
+}
+
+// hintedLens is the lens of the project that judges the story guess (its
+// `hints`), "" when none: the guess then warns, agent or not.
+func hintedLens(repo string, s Settings) string {
+	for _, name := range s.Lenses {
+		if l, err := readLens(repo, name); err == nil && l.Hints == storyRule { // one failing to read stops the run that asks the lenses (unasked)
+			return name
+		}
+	}
+	return ""
+}
+
+// hintsText is what the lens judging a guess is given of it: each comment
+// flagged, where it starts and the words that flagged it.
+func hintsText(hints []Hint) string {
+	if len(hints) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n\nThe comments a word list flags (story-words), a guess for you to judge, never a verdict by itself:\n\n")
+	for _, h := range hints {
+		fmt.Fprintf(&b, "- `%s` (%q): %s\n", h.Where, h.Word, h.Comment)
+	}
+	return strings.TrimRight(b.String(), "\n")
 }
 
 // readLenses reads what each lens answered, finds each finding's quotes
