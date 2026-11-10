@@ -211,9 +211,10 @@ refusal is written on the issue too
 - **The developer** opens a pull request of its own instead,
   `workline/developer/<n>`, on top of the Draft's commits; merged, it
   brings the tests ([its pull request](../../developer/docs/pull-request.md)).
-- **Leaves the tests as they are**: a change to a recorded file, or its
-  deletion, blocks the merge request (`tester-test-changed`). Its own
-  new tests go in other files.
+- **Leaves the tests as they are**: a change to the tester's recorded
+  lines, or their file's deletion, blocks the merge request
+  (`tester-test-changed`). Its own new tests go in other files: its
+  bounds keep a frozen file whole, even one the tester only added to.
 - **Objects** to a test that does not fit, on the test's line in the
   Draft, not in its own pull request
   ([the form](../README.md#frozen-tests-and-objections)); the tester

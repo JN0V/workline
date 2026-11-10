@@ -88,7 +88,9 @@ flowchart LR
   lines quoted, not the build tool's last ones (`BUILD FAILED`). On the
   tests' run, the agent is asked once more; on the base alone, final.
 - **The tests' names**, when nothing built them: read from the test
-  files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`).
+  files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`). A
+  test the base's report names, in a file the tests were added to, is
+  the base's, never a new one.
 - **Beside code**, the head builds and runs those tests: they must pass
   there, as any new test. A test file that does not build on the head
   but for a missing name is `build-broken`, its lines quoted, never
