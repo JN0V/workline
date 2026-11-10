@@ -1,0 +1,32 @@
+case: reviewer/tester-none-needed-judge-fails-block-stands
+about: "A blocking finding of the tests lens the tester answered needs no test (#1303); the judge weighing the reason cannot tell. Nothing is recorded as weighed: the run says the answer was not weighed, the block stands, and the next run asks again."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-unsure.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 finding on the change; lenses: tests; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:blocks [{"lens":"tests","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Average has no test for a count off by one","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"}}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+          - "**The tester** answers a test finding of this review on `calc/calc.go:11`, “Average has no test for a count off by one”, sent to its Draft ([the thread](https://forge.example/pr/1#7)): **None needed**: TestAverage already averages 2 and 4: a new test would pass on the base and prove nothing.\n\n<!-- workline:sticky=tester/tester-answer-7 -->"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: block
+  agent-calls: 1
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: ["| **blocks** | tests | `calc/calc.go:11`", "tester-answer-unweighed", "weighed next run"]
+        comment-lacks: ["<!-- workline:weighed "]

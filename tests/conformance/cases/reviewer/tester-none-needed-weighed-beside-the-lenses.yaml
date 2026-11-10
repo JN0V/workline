@@ -1,0 +1,35 @@
+case: reviewer/tester-none-needed-weighed-beside-the-lenses
+about: "A blocking finding of the tests lens the tester answered needs no test (#1303), and a new commit elsewhere: the lenses read the commit, and the judge weighs the answer in the same run. It holds, and the block goes."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Twice doubles n.\\nfunc Twice(n int) int { return 2 * n }\\n' > calc/twice.go && git add calc/twice.go && git commit -qm 'feat: twice'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-none-needed-holds.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 finding on the change; lenses: tests; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:blocks [{"lens":"tests","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Average has no test for a count off by one","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"}}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+          - "**The tester** answers a test finding of this review on `calc/calc.go:11`, “Average has no test for a count off by one”, sent to its Draft ([the thread](https://forge.example/pr/1#7)): **None needed**: TestAverage already averages 2 and 4: a new test would pass on the base and prove nothing.\n\n<!-- workline:sticky=tester/tester-answer-7 -->"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: tests}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  # The tests lens on the new commit, then the judge weighing the answer.
+  agent-calls: 2
+  summary: "1 answer of the tester's that no test is needed weighed: 1 settled"
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: ["**The tester's answers weighed**", "): settled, the reason holds"]
+        comment-lacks: ["<!-- workline:blocks ", "| **blocks** |"]
