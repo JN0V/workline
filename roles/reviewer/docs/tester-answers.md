@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/reviewer/weigh.go, internal/builtin/reviewer/resolve.go, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go]
-checked: 9b0b2783
+checked: 460795f9
 verified: agent:claude-code
 ---
 # Reviewer — the tester's "none needed", weighed
