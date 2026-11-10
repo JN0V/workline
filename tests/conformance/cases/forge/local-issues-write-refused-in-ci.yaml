@@ -1,0 +1,17 @@
+case: forge/local-issues-write-refused-in-ci
+about: >
+  In CI the job's clone is thrown away after it: `workline issues open`
+  and `label` refuse to write the local forge there, and say why, rather
+  than write what nobody would read (#1284).
+given:
+  repo: basic
+  config: {forge: local}
+  env: {CI: "true"}
+run:
+  sh: "workline issues open One; echo \"open $?\"; workline issues label 1 --add bug; echo \"label $?\""
+expect:
+  exit: 0
+  stdout: ["open 1", "label 1"]
+  stderr: ["the local forge in CI (CI is set)"]
+  files:
+    .git/workline/issues/1.md: {exists: false}
