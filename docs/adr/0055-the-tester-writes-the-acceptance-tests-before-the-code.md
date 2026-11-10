@@ -478,7 +478,9 @@ where a test lives is judgement, a frozen test is the rule that converges.
   judge on the Draft: telling a test's body apart is language knowledge.
 - **What is frozen**: the tester's own lines, a whole new file or the
   runs it added to one already there, read from the record's blob
-  against the base's, no new field. Another's commit that keeps each
+  against the base's, no new field. The base's lines are matched so
+  that the tester's form the fewest runs: a blank line inside a new
+  test, equal to the base's next one, stays in its run. Another's commit that keeps each
   run whole, in order, passes, whatever it adds beside; one that
   changes a run blocks, `tester-test-changed`, naming its first line.
   Language-blind: a skip mark put before a frozen test passes this

@@ -89,3 +89,21 @@ func TestBaseLineChangedDiff(t *testing.T) {
 		t.Error("a new file read as changing the base")
 	}
 }
+
+func TestFrozenRunsBlankLineInside(t *testing.T) {
+	// A blank line inside the new test equals the base's next line: it
+	// stays the test's, so a line put in the test still blocks.
+	base := lines("def test_a():\n    assert 1\n\n\ndef test_b():\n    assert 2\n")
+	recorded := lines("def test_a():\n    assert 1\n\ndef test_new():\n    x = 1\n\n    assert x == 2\n\n\ndef test_b():\n    assert 2\n")
+	runs := frozenRuns(base, recorded)
+	if len(runs) != 1 {
+		t.Fatalf("runs = %+v, want the new test as one run", runs)
+	}
+	inside := lines("def test_a():\n    assert 1\n\ndef test_new():\n    x = 1\n    return\n\n    assert x == 2\n\n\ndef test_b():\n    assert 2\n")
+	if _, ok := missingRun(runs, inside); ok {
+		t.Error("a line inserted in the frozen test read as kept")
+	}
+	if _, ok := missingRun(runs, recorded); !ok {
+		t.Error("the file as recorded read as changed")
+	}
+}

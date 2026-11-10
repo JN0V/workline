@@ -93,14 +93,16 @@ func (r frozenRun) name() string {
 }
 
 // frozenRuns are the runs of lines the tester added to the base's file,
-// as recorded: the base's lines matched in order, first fit, the rest
-// its own. A file the base lacks is one run, whole.
+// as recorded: the base's lines matched in order so that the tester's
+// form the fewest runs, its tests whole; a first fit would take a blank
+// line inside a new test for the base's next one, and split the test
+// where a line could then be put in. A file the base lacks is one run,
+// whole.
 func frozenRuns(base, recorded []string) []frozenRun {
+	added := addedLines(base, recorded)
 	var runs []frozenRun
-	i := 0
 	for n, l := range recorded {
-		if i < len(base) && l == base[i] {
-			i++
+		if !added[n] {
 			continue
 		}
 		if k := len(runs) - 1; k >= 0 && runs[k].start+len(runs[k].lines) == n+1 {
@@ -110,6 +112,77 @@ func frozenRuns(base, recorded []string) []frozenRun {
 		runs = append(runs, frozenRun{start: n + 1, lines: []string{l}})
 	}
 	return runs
+}
+
+// maxCells bounds the table addedLines fills: past it, a first fit.
+const maxCells = 1 << 22
+
+// addedLines says which of recorded's lines are not the base's: the base's
+// matched in order, the rest in the fewest runs, a match kept on a tie.
+// When recorded does not hold the base's lines in order, or the files are
+// too long to weigh, the base's are matched first fit.
+func addedLines(base, recorded []string) []bool {
+	n, m := len(base), len(recorded)
+	added := make([]bool, m)
+	if (n+1)*(m+1) > maxCells {
+		return firstFit(base, recorded)
+	}
+	// cost[(i*(m+1)+j)*2+a]: the fewest runs that recorded[j:] adds to
+	// base[i:], a = 1 when recorded[j-1] was added.
+	const inf = int32(1 << 30)
+	cost := make([]int32, (n+1)*(m+1)*2)
+	at := func(i, j, a int) int { return (i*(m+1)+j)*2 + a }
+	for i := n; i >= 0; i-- {
+		for j := m; j >= 0; j-- {
+			for a := 0; a < 2; a++ {
+				switch {
+				case i == n:
+					cost[at(i, j, a)] = 0
+					if j < m && a == 0 {
+						cost[at(i, j, a)] = 1
+					}
+				case j == m:
+					cost[at(i, j, a)] = inf
+				default:
+					c := cost[at(i, j+1, 1)]
+					if c < inf && a == 0 {
+						c++
+					}
+					if base[i] == recorded[j] {
+						c = min(c, cost[at(i+1, j+1, 0)])
+					}
+					cost[at(i, j, a)] = c
+				}
+			}
+		}
+	}
+	if cost[at(0, 0, 0)] >= inf {
+		return firstFit(base, recorded)
+	}
+	i, a := 0, 0
+	for j := range recorded {
+		if i < n && base[i] == recorded[j] && cost[at(i+1, j+1, 0)] == cost[at(i, j, a)] {
+			i, a = i+1, 0
+			continue
+		}
+		added[j], a = true, 1
+	}
+	return added
+}
+
+// firstFit says which of recorded's lines are not the base's, the base's
+// matched in order, each to the first line equal to it.
+func firstFit(base, recorded []string) []bool {
+	added := make([]bool, len(recorded))
+	i := 0
+	for j, l := range recorded {
+		if i < len(base) && l == base[i] {
+			i++
+			continue
+		}
+		added[j] = true
+	}
+	return added
 }
 
 // missingRun is the first of runs that head does not hold whole, each
