@@ -48,6 +48,30 @@ func TestFrozenIn(t *testing.T) {
 	}
 }
 
+func TestQualifiedBy(t *testing.T) {
+	for _, c := range []struct {
+		qualifier, file string
+		want            bool
+	}{
+		{"example.com/app/tester", "tester/x_test.go", true},      // the file's package
+		{"example.com/app/tester/sub", "tester/x_test.go", false}, // a nested folder's (#1269)
+		{"tests", "tests/test_x.sh", true},                        // a report's class: the folder
+		{"tests.test_x", "tests/test_x.py", true},                 // a module
+		{"tests.test_x.TestK", "tests/test_x.py", true},           // a class in it
+		{"test_x", "tests/test_x.py", true},                       // run from inside its folder
+		{"tests.sub.test_x", "tests/test_x.py", false},            // a namesake file in a nested folder
+		{"com.example.CalcTest", "src/test/java/com/example/CalcTest.java", true},
+		{"test_x", "test_x.py", true},        // at the root
+		{"pkg.test_x", "test_x.py", false},   // another folder's namesake
+		{"other", "calc/mul_test.go", false}, // another folder
+		{"", "calc/mul_test.go", false},
+	} {
+		if got := qualifiedBy(c.qualifier, c.file); got != c.want {
+			t.Errorf("qualifiedBy(%q, %q) = %v, want %v", c.qualifier, c.file, got, c.want)
+		}
+	}
+}
+
 func TestWithTests(t *testing.T) {
 	r := record{Tests: []string{"a.A.one", "b.B.two", "B.kt:three"}}
 	got := r.withTests("B.kt", map[string]result{"b.B.two": failed, "base.old": passed}, []string{"b.B.twice"}, nil)

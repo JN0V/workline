@@ -50,9 +50,9 @@ flowchart LR
   - **An id from a report** must be in each head run, green.
   - **A test whose build broke on the base** is kept as `file:name`:
     no report named it yet. A head id holding that name as a whole
-    part is it (`calc.Name`, `Name[1]`, `Name/case`), its package or
-    class naming the file's folder or file: another folder's `Name` is
-    not it.
+    part is it (`calc.Name`, `Name[1]`, `Name/case`), its package
+    the file's folder or its module the file: another folder's `Name`,
+    or a nested one's (`calc/sub.Name`), is not it.
   - **A record with no class, failed, on the red run** is kept marked
     `errored`: maybe the runner's record of a file it could not collect
     (pytest's collection error), not a test case. Gone on the code, it

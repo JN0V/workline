@@ -192,9 +192,10 @@ func named(r record, t string) bool {
 // holds name as a whole part: after a dot or at the start, before the
 // end or a mark that is no word's nor a dot's (a parameter's `[`, a
 // subtest's `/`), qualified by its file: what comes before the name, when
-// anything does, holds the file's folder or its name without extension
-// as a word (`calc.TestNew` for `calc/new_test.go`, `tests.test_x.f` for
-// `tests/test_x.py`), never another folder's test of the same name. A
+// anything does, ends with the file's folder or holds its name without
+// extension (`calc.TestNew` for `calc/new_test.go`, `tests.test_x.f` for
+// `tests/test_x.py`), never another folder's test of the same name, nor a
+// nested folder's (`calc/sub.TestNew`). A
 // miss is the judge's (renamed.go), never a block on this guess.
 func (r record) frozenIn(t string, ids map[string]bool) []string {
 	if ids[t] {
@@ -238,15 +239,32 @@ func namedAs(id, name, file string) bool {
 }
 
 // qualifiedBy says whether a test id's qualifier (its package, class or
-// module) holds, as a word, file's folder or its name without extension.
+// module) is file's: its last word is the file's folder (a Go package,
+// `calc` for `calc/new_test.go`), or one of its words is the file's name
+// without extension, right after that folder or first (a module or a
+// class, `tests.test_x` for `tests/test_x.py`, classes after it). A
+// folder nested in the file's (`calc/sub`), or a namesake file in one,
+// is not it.
 func qualifiedBy(qualifier, file string) bool {
 	words := strings.FieldsFunc(qualifier, func(c rune) bool { return c != '_' && !unicode.IsLetter(c) && !unicode.IsDigit(c) })
+	if len(words) == 0 {
+		return false
+	}
 	stem := path.Base(file)
 	if k := strings.Index(stem, "."); k > 0 {
 		stem = stem[:k]
 	}
 	dir := path.Base(path.Dir(file))
-	return slices.ContainsFunc(words, func(w string) bool { return w == stem || (dir != "." && dir != "/" && w == dir) })
+	inDir := dir != "." && dir != "/"
+	if inDir && words[len(words)-1] == dir {
+		return true
+	}
+	for k, w := range words {
+		if w == stem && (k == 0 || inDir && words[k-1] == dir) {
+			return true
+		}
+	}
+	return false
 }
 
 // judge is id's finding from the runs: nil when it passed in each.
