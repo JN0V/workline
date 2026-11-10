@@ -1,0 +1,37 @@
+case: tester/bug-green-on-base-asked-again-kept
+about: >
+  A bug's test green on the base beside one red there is the answer's to
+  mend (#1156, the DomoticsCore trial's #56): asked once more, told which
+  test passes on the base. Its second answer keeps that scenario as
+  today, its test dropped: the Draft opens with the red test, the other
+  scenario listed as not tested.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "mul is missing"
+        author: ann
+        insider: true
+        labels: ["bug", "workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **Add unchanged:** Given the library, When I add 2 and 3, Then I get 5.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: `mul` beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-green-then-kept"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  agent-calls: 2
+  run-files:
+    out/feedback.md: {contains: ["test-green-on-base", "tests.test_add_unchanged", "kept as today"]}
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "mul 2 3"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Not tested", "kept as today: the existing suite guards it"]

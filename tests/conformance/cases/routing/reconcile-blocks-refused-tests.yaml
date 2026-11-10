@@ -20,7 +20,7 @@ given:
         body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
 run: {route: reconcile, open-merge-request: true, ai: "fake:tester-green-on-base", then: again}
 expect:
-  agent-calls: 1
+  agent-calls: 2
   findings: [{rule: tests-refused, level: warn, where: "#3", message: "passes on the base"}]
   not-pushed: [workline/tester/issue-3]
   forge:

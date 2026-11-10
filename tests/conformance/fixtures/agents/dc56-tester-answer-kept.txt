@@ -1,0 +1,51 @@
+# Not recorded: trial #56's first answer cut to its first patch, the answer
+# asked again would send once told its other test passes on the base (#1156).
+- patch: |
+    --- /dev/null
+    +++ b/DomoticsCore-RemoteConsole/test/test_remoteconsole_disabled_listener/test_remoteconsole_disabled_listener.cpp
+    @@ -0,0 +1,45 @@
+    +// A disabled console's shutdown() must not remove an application listener.
+    +// This file is its own test binary, so the listener added here is the first
+    +// one the process ever registers (callback id 0).
+    +
+    +#include <unity.h>
+    +#include <DomoticsCore/RemoteConsole.h>
+    +
+    +using namespace DomoticsCore;
+    +using namespace DomoticsCore::Components;
+    +
+    +static int appLines = 0;
+    +
+    +void setUp(void) {
+    +    HAL::Platform::setMillisForTest(1000);
+    +    HAL::setCanOpenServerForTest(true);
+    +}
+    +
+    +void tearDown(void) {
+    +    HAL::Platform::resetMillisForTest();
+    +}
+    +
+    +// Disabled console: Given an application listener added with
+    +// LoggerCallbacks::addCallback() and a RemoteConsoleComponent with
+    +// enabled = false, When I run its begin() then shutdown() and log a line,
+    +// Then my listener still receives the line (2 lines in total, not 1).
+    +void test_disabled_console(void) {
+    +    LoggerCallbacks::addCallback([](LogLevel, const char* tag, const char*) {
+    +        if (String(tag) == "APP") appLines++;
+    +    });
+    +
+    +    RemoteConsoleConfig config;
+    +    config.enabled = false;
+    +    RemoteConsoleComponent console(config);
+    +    console.begin();
+    +    console.shutdown();
+    +
+    +    DLOG_I("APP", "after the disabled console shut down");
+    +    TEST_ASSERT_EQUAL_INT_MESSAGE(1, appLines, "the application listener was removed");
+    +}
+    +
+    +int main(int argc, char** argv) {
+    +    UNITY_BEGIN();
+    +    RUN_TEST(test_disabled_console);
+    +    return UNITY_END();
+    +}

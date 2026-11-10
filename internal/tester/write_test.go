@@ -143,3 +143,34 @@ func TestScenarios(t *testing.T) {
 		}
 	}
 }
+
+// A test not red on the base is told how to mend it (#1156): one that
+// passes there may keep its scenario as today; a skipped one is told to
+// run, never that its scenario is the base's. The findings given stay
+// as they were: what a person reads holds no hint for the agent.
+func TestToMendTellsEachTestNotRed(t *testing.T) {
+	given := []verdict.Finding{
+		{Rule: "test-green-on-base", Where: "tests.a", Message: greenOnBase},
+		{Rule: "test-green-on-base", Where: "tests.b", Message: skippedOnBase},
+		{Rule: "build-broken", Message: "x"},
+	}
+	told, ok := toMend(given)
+	if !ok {
+		t.Fatal("toMend found no test to mend")
+	}
+	if given[0].Message != greenOnBase || given[1].Message != skippedOnBase {
+		t.Fatalf("toMend changed the findings given: %q", given)
+	}
+	if !strings.Contains(told[0].Message, "kept as today") {
+		t.Errorf("a test passing on the base is not told it may keep its scenario as today: %q", told[0].Message)
+	}
+	if strings.Contains(told[1].Message, "kept as today") || !strings.Contains(told[1].Message, "make it run on the base") {
+		t.Errorf("a skipped test is told %q", told[1].Message)
+	}
+	if told[2].Message != "x" {
+		t.Errorf("another finding is told %q", told[2].Message)
+	}
+	if _, ok := toMend(given[2:]); ok {
+		t.Error("toMend found a test to mend in a build-broken finding alone")
+	}
+}

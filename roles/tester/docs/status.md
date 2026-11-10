@@ -107,6 +107,11 @@ Cases in `tests/conformance/cases/tester/`:
   error; each refusal written on the issue, at night too
   ([#761](https://github.com/JN0V/workline/issues/761)); a real agent's
   slip asked again, on [#776](https://github.com/JN0V/workline/pull/776).
+- **A test green on the base**, asked again once, told which test
+  passes there: the answer keeps its scenario as today, or the run
+  blocks; a feature's every scenario kept so goes back to the product
+  owner; trial #56's real answer replayed with its green test
+  ([#1156](https://github.com/JN0V/workline/issues/1156)).
 - **Real answers replayed** from the DomoticsCore trial's round 5, with
   the covers entries they predate: one test declared for two scenarios
   counts for both
@@ -250,8 +255,6 @@ Cases in `tests/conformance/cases/tester/`:
 
 ## Missing
 
-- **Asked again**: a test refused (green on the base) is not asked of
-  the agent again with the reason; the run blocks.
 - **The developer beside a frozen test**: its bounds still refuse any
   edit to a file the tester froze, a shared one whole, though the guard
   passes lines added beside the frozen ones.

@@ -20,7 +20,7 @@ given:
 run: {route: schedule, open-merge-request: true, ai: "fake:tester-green-on-base"}
 expect:
   status: pass
-  agent-calls: 1
+  agent-calls: 2
   findings: [{rule: test-green-on-base, level: warn}]
   not-pushed: [workline/tester/issue-3]
   forge:

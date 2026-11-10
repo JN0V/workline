@@ -1,0 +1,31 @@
+case: tester/feature-all-green-asked-again-kept
+about: >
+  A feature whose every test passes on the base (#1156): the answer's to
+  mend, asked once more, told which tests pass there. Its second answer
+  keeps each scenario as today, no test written: no test possible, the
+  reasons said, back to the product owner, never blocked for a person.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Add takes a negative number"
+        author: ann
+        insider: true
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total a refund, I want to add a negative amount, so I need not subtract by hand.\n\n## Validation\n\n- **Two and three:** Given the library, When I add 2 and 3, Then I get 5.\n- **Minus one:** Given the library, When I add -1 and 1, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-all-green-then-kept"}
+expect:
+  status: pass
+  agent-calls: 2
+  summary: "no new test: none; the issue moves to refine"
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:to-refine"], comment-contains: ["finds no test possible", "kept as today: add already sums a negative number"]}
+  run-files:
+    out/feedback.md: {contains: ["test-green-on-base", "tests.test_add_minus_one", "kept as today"]}
+  not-pushed: [workline/tester/issue-3]
