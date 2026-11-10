@@ -631,6 +631,11 @@ type Proposal struct {
 	// yes (workline:accepted) closes it. No quote: its parts' comment is
 	// the evidence.
 	Parent bool `yaml:"parent,omitempty"`
+	// Symptom, the engine's, on a bug's parent's closing: its
+	// reproduction test green on the default branch, as the tester's
+	// comment says it (#1212); the parent is then closed alone past
+	// cautious, the test named. "" otherwise: proposed, as any parent.
+	Symptom string `yaml:"symptom,omitempty"`
 	// Ticked, the engine's: who ticked this proposal's box in the report, a
 	// person of the project — checked again on the forge, the act done as
 	// the record says, never as the intention does (ADR-0025).
@@ -1082,7 +1087,13 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				s = Setting{Mode: Act} // keeping an issue open is never held back
 			}
 			if c.Do == "close" && c.Parent {
-				s = Setting{Mode: Propose} // a parent is accepted by a person, whatever the level (ADR-0029)
+				// A parent is accepted by a person (ADR-0029), but a bug's
+				// whose reporter's symptom its own test proves gone on the
+				// default branch, past cautious (#1212).
+				s = Setting{Mode: Propose}
+				if c.Symptom != "" && p.config.Level != "cautious" {
+					s = Setting{Mode: Act}
+				}
 			}
 			if c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "assume" {
 				// Back to refine, out of Blocked: cheap, undone by putting
@@ -1844,7 +1855,13 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		return p.checkKeep(f, repo, role, st, c)
 	}
 	if c.Do == "close" && c.Parent {
-		return p.checkParent(c.Issue, st) // its parts' comment is the evidence, a person's yes the act (ADR-0029, amended)
+		if rule, why := p.checkParent(c.Issue, st); rule != "" {
+			return rule, why // its parts' comment is the evidence, a person's yes the act (ADR-0029, amended)
+		}
+		if c.Ticked == "" {
+			p.bugParent(c, st)
+		}
+		return "", ""
 	}
 	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "kind" || c.Do == "size" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "unblock" || c.Do == "blocked" || c.Do == "ask" || c.Do == "assume" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
@@ -1901,6 +1918,32 @@ func (p *Plan) checkParent(id int, st *State) (rule, why string) {
 		return "parent-part-open", fmt.Sprintf("#%d's part %s is open: it is closed once all its parts are, a person's yes then", id, issueList(open))
 	}
 	return "", ""
+}
+
+// bugParent reads a bug's parent's closing against the tester's proof of
+// its reporter's symptom (#1212): green on the default branch once all
+// its parts were closed, c.Symptom says it, the closing done alone past
+// cautious; otherwise why it stays a person's is added to c.Why. A
+// feature's or a task's parent is left as it is: proposed.
+func (p *Plan) bugParent(c *Proposal, st *State) {
+	c.Symptom = ""
+	if kind, _ := KindOf(p.issues[c.Issue].Labels); kind != KindBug {
+		return
+	}
+	why := "no reproduction test of its own was run on the default branch: the tester writes it on the bug's Draft before its split"
+	if p.config.Symptom != nil {
+		s, found, err := p.config.Symptom(c.Issue)
+		switch {
+		case err != nil:
+			why = "the tester's proof of its symptom could not be read (" + err.Error() + ")"
+		case found:
+			if why = s.Proves(SplitInto(p.issues[c.Issue], st)); why == "" {
+				c.Symptom = s.Said()
+				return
+			}
+		}
+	}
+	c.Why = strings.TrimSuffix(strings.TrimSpace(c.Why), ".") + "; its closing is a person's: " + why
 }
 
 // unshown splits sources into the code the run did not give for an
@@ -2452,6 +2495,18 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 		// Split depth 1 (ADR-0064, §4): a part may be granted a size,
 		// never split again for it.
 		return "split-depth", fmt.Sprintf("it is a part of #%d already: a part is never split for its size; grant it `size` `%s`, or leave it to a person", parent, TierLarge)
+	}
+	if kind, _ := KindOf(is.Labels); kind == KindBug && p.config.Tested != nil && c.Ticked == "" {
+		// A bug goes to its tests first (#1212): the tester writes the
+		// reporter's symptom as a red test on its Draft, then it is
+		// split; at its closing, that test is run on the default branch.
+		tested, err := p.config.Tested(c.Issue)
+		switch {
+		case err != nil:
+			return "bug-tests-unread", fmt.Sprintf("#%d is a bug, split once its reproduction test is written, and the tester's Drafts could not be read (%v): not split", c.Issue, err)
+		case !tested:
+			return "bug-tests-first", fmt.Sprintf("#%d is a bug: it is split once the tester wrote its reproduction test, on its Draft; `ready` it for its tests first, and its split is asked again if a run on it crosses its size", c.Issue)
+		}
 	}
 	if len(c.Into) < 2 || len(c.Into) > maxChildren {
 		return "split-size", fmt.Sprintf("a split makes 2 to %d issues", maxChildren)
@@ -3500,7 +3555,11 @@ func describe(c Proposal, verb string) string {
 		return fmt.Sprintf("Kept #%d open, announced obsolete on %s: %s.", c.Issue, c.Announced, strings.TrimSuffix(strings.TrimSpace(c.Why), "."))
 	}
 	if c.Parent {
-		return fmt.Sprintf("%s #%d as completed: %s", map[bool]string{true: "Closed", false: "Close"}[done], c.Issue, strings.TrimSpace(c.Why))
+		why := strings.TrimSpace(c.Why)
+		if c.Symptom != "" {
+			why = strings.TrimSuffix(why, ".") + "; " + c.Symptom // a bug's, its symptom gone (#1212)
+		}
+		return fmt.Sprintf("%s #%d as completed: %s", map[bool]string{true: "Closed", false: "Close"}[done], c.Issue, why)
 	}
 	what := fmt.Sprintf("%s #%d as obsolete", verb, c.Issue)
 	switch {
@@ -3579,6 +3638,10 @@ func Comment(c Proposal, role string) string {
 		by := "Closed by the " + role + " role"
 		if c.Ticked != "" {
 			by += ", " + c.Ticked + " having accepted it (" + LabelAccepted + ")"
+		}
+		if c.Symptom != "" && c.Ticked == "" {
+			// A bug's, its reporter's symptom proven gone (#1212).
+			return fmt.Sprintf("Fixed: its parts are closed, and %s; what each part delivered is said in the comment on its parts.\n\nClosed by the %s role. Reopen it to undo.", c.Symptom, role)
 		}
 		return fmt.Sprintf("Accepted: its parts are closed, what each delivered said in the comment on its parts.\n\n%s. Reopen it to undo.", by)
 	}

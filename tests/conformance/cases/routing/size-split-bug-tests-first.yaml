@@ -1,0 +1,33 @@
+case: routing/size-split-bug-tests-first
+about: >
+  A bug goes to its tests before its split (#1212): the line wakes the
+  product owner on bug #3, in refine, its size predicted at ready. Its
+  task offers no split yet: the tester writes the reporter's symptom as
+  a red test on the bug's Draft first. The agent splits it anyway,
+  `too-big: true`: the split is dropped, said, nothing is opened.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiplying and dividing give wrong totals"
+        labels: ["workline:to-refine", bug]
+        author: ann
+        insider: true
+        body: "## Need\n\nI multiply and divide, and the totals are wrong.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n\n---\n\n## Verification\n\nA shell test a scenario.\n\n## Scope\n\n- `lib.sh`: `mul` and `div` beside `add`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-split.sh 3 big"}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: bug-tests-first, where: "#3", message: "#3 is a bug: it is split once the tester wrote its reproduction test"}
+  run-files:
+    in/task.md: {contains: ["Its size, before `ready`", "(no `split`: a bug is split once the tester wrote its reproduction test, on its Draft"], not-contains: ["`split` it with `too-big: true`"]}
+  forge:
+    issues:
+      - {id: 3, comment-lacks: ["split: [4, 5]"]}
+      - {id: 4, absent: true}

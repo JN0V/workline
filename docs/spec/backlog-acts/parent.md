@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/parent.go, internal/builtin/productowner/productowner.go, internal/line/parent.go, internal/forge/forge.go, internal/forge/github.go, internal/forge/gitlab.go]
+sources: [internal/backlog/parent.go, internal/backlog/symptom.go, internal/builtin/productowner/productowner.go, internal/line/parent.go, internal/forge/forge.go, internal/forge/github.go, internal/forge/gitlab.go]
 status: draft
 checked: a16d7f0a
 verified: agent:claude-code
@@ -78,7 +78,7 @@ person unlinked is no longer one. An issue whose state lists a split
   (info) says it in the job's summary.
 - **The closing proposed** (ADR-0029, amended): the engine's `close`,
   reason `completed`, marked `parent`, with no quote — the comment on its
-  parts is the evidence. Always proposed, at every level:
+  parts is the evidence. Proposed, at every level, but a bug's below:
   `workline:proposed` on it; a person's `workline:accepted` closes it as
   completed, their yes named. The mark is the engine's: on an agent's
   intention it is dropped. It is checked at the proposal and at the
@@ -90,7 +90,23 @@ person unlinked is no longer one. An issue whose state lists a split
   put early, or one to another act never taken off, it is dropped
   (`parent-not-proposed`) and taken off, said. All parts closed, the
   closing is proposed in the same run, for a new yes.
-- **Never closed by the role alone**: an agent's `close` on a parent, a
+- **A bug's parent, closed alone** ([#1212](https://github.com/JN0V/workline/issues/1212)):
+  - **Its test**: the tester's, the reporter's symptom, written red on
+    the bug's Draft before its split
+    ([split](split.md#split-on-size)).
+  - **Its proof**: every part closed, the tester runs those tests over
+    the default branch's commit, three runs out of three, with no agent;
+    said on the parent, `<!-- workline:sticky=tester/symptom -->`
+    ([the tester](../../../roles/tester/docs/green-proof.md#a-bugs-parent)).
+  - **Green**, run once all its parts were closed, and the level
+    `normal` or `enterprising`: the engine closes it as completed, the
+    tests and the commit named.
+  - **Otherwise proposed**, the reason in its `why`: no Draft, a red or
+    unproven test, one run before a part closed, the level `cautious`.
+    A feature's or a task's parent: always proposed.
+  - Read from workline's own comment only, edited by no one else; on an
+    agent's intention, the mark is dropped.
+- **Never closed by the role alone**, but a bug's above: an agent's `close` on a parent, a
   duplicate or an announcement as obsolete, is dropped
   (`parent-accepted-by-a-person`) unless a person accepted it. The agent's
   task marks a parent's parts, open or closed.

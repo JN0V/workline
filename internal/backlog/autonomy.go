@@ -148,6 +148,12 @@ type Config struct {
 	// at ready (ADR-0064, §2). Set by the caller, from the run.
 	Sized     int
 	SizeAsked bool
+	// Symptom reads the tester's proof of a bug's parent's symptom, on
+	// the issue (ReadSymptom, #1212); nil, none is read. Tested says
+	// whether the tester's Draft of an issue holds its tests: a bug is
+	// split only then; nil, not known, as before. Set by the caller.
+	Symptom func(issue int) (Symptom, bool, error)
+	Tested  func(issue int) (bool, error)
 	// ModeSet are the kinds whose mode the project wrote itself, even
 	// equal to the level's: a `split` it turned off is never turned on for
 	// an issue's size (ADR-0064, §3, the panel of 2026-11-08).

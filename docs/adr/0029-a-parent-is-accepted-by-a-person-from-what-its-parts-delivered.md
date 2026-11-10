@@ -1,6 +1,6 @@
 # ADR-0029: A parent is accepted by a person, from what its parts delivered
 
-- **Status:** accepted; amended 2026-10-07 (a test named as proof, read from the code); amended 2026-11-08 (the line tells a parent; a person accepts it with one label; a yes put early, 2026-11-10)
+- **Status:** accepted; amended 2026-10-07 (a test named as proof, read from the code); amended 2026-11-08 (the line tells a parent; a person accepts it with one label; a yes put early, 2026-11-10; a bug's parent built, 2026-11-10)
 - **Date:** 2026-10-05
 - **Builds on:** ADR-0022 (a split keeps the need in its parent), ADR-0026
   (a kind of act has a mode per level), ADR-0028 (`next-ready`);
@@ -149,6 +149,26 @@ the part, not the symptom the reporter saw. The engine keeps no such
 test for a parent today, so this amendment always asks a person;
 [#1212](https://github.com/JN0V/workline/issues/1212) builds the middle
 path.
+
+Built (2026-11-10, [#1212](https://github.com/JN0V/workline/issues/1212)),
+as a person in QA works: the reproduction written before the parts are
+handed out, run again on the default branch once they merged. Decided
+by the person on the issue, of three options; an expected-failure test
+merged to the default branch was dropped, language-specific and against
+"a test is red until its fix".
+
+- **Tests before the split**: a bug is split only once the tester's
+  Draft of it holds its tests, the reporter's symptom red
+  (`bug-tests-first`). The cost, accepted: one tester run for each
+  split bug, and a later split.
+- **Its Draft over the default branch**: every part closed, the line
+  runs the tester on the parent, no agent: the Draft's tests merged over
+  the default branch's current commit, through the green proof. What it
+  found is its comment on the parent.
+- **Closed alone**: green, run once every part was closed, at `normal`
+  or `enterprising`; the tests and the commit named. Otherwise proposed,
+  the reason said: no Draft, red, one run before a part closed,
+  `cautious`, or not a bug.
 
 ### Left
 

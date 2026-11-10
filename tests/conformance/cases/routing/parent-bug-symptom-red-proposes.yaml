@@ -1,0 +1,47 @@
+case: routing/parent-bug-symptom-red-proposes
+about: >
+  A bug's parent, every part closed, whose reproduction test is still red
+  on main (#1212): the parts merged nothing that fixes the symptom. The
+  tester says it on the parent, and the closing is proposed to a person,
+  the reason said.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q main && printf '# notes\n' >> lib.sh && git commit -qam 'docs: a note'"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    sub-issues: true
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        base: main
+        draft: true
+        body: "The acceptance tests of #3."
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main~1\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"tests\":[\"tests.test_mul_by_zero\",\"tests.test_mul_two_by_three\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+    issues:
+      - id: 3
+        title: "Multiplying gives a wrong total"
+        labels: [bug]
+        author: ann
+        insider: true
+        body: "## Need\n\nI multiply and the total is wrong.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n## Verification\n\n- A shell test a scenario.\n\n## Scope\n\nlib.sh"
+        comments:
+          - "```yaml\nsources: [lib.sh]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [6, 7]\n```\n\n<!-- workline:sticky=product-owner/state -->"
+      - {id: 6, title: "Multiply two numbers", body: "Part of #3.", labels: [], parent: 3, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#13", text: "fix: multiply"}]}
+      - {id: 7, title: "Multiply by zero", body: "Part of #3.", labels: [], parent: 3, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#14", text: "fix: multiply by zero"}]}
+run: {route: reconcile, open-merge-request: true, ai: "fake:blocked-three"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: parent-to-accept, where: "#3"}
+  forge:
+    issues:
+      - id: 3
+        closed: false
+        labels: [bug, "workline:proposed"]
+        comment-contains:
+          - "**The reporter's symptom is not proven gone**: its reproduction tests, from merge request 1, are not green on main"
+          - "its closing is a person's: its reproduction tests, from merge request 1, are not green on main"

@@ -85,6 +85,12 @@ a run on it crossed its size, or the product owner predicts it at ready
   test
   ([granting a size](refine.md#granting-a-size);
   [#1193](https://github.com/JN0V/workline/issues/1193)).
+- **A bug, its tests first** ([#1212](https://github.com/JN0V/workline/issues/1212)):
+  split once the tester's Draft of it holds its tests, the reporter's
+  symptom red; else dropped (`bug-tests-first`; `bug-tests-unread` when
+  the Drafts cannot be listed). At ready, its task offers no split: it
+  goes to its tests, and its split is asked if a run on it crosses its
+  size. Where the line runs no tester, or a person said yes, as before.
 - **Depth 1**: a part of a split (`Part of #N.`) is never split for its
   size (`split-depth`); it may be granted `size` `large`.
 - **The rest as any split**: the checks above, the parent kept open

@@ -908,6 +908,7 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		c.Do = in.Kind
 		if m, _ := in.Value.(map[string]any); m["own"] != true {
 			c.Parent = false // the engine's alone, never an agent's (ADR-0029)
+			c.Symptom = ""
 			c.IfRefined = false
 		}
 		closes[i] = c
@@ -967,6 +968,24 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	}
 	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
 	cfg.Tester = line.Runs("tester")
+	if cfg.Tester && f != nil {
+		// A bug goes to its tests before its split, and its parent is
+		// closed alone on its reproduction test, green on the default
+		// branch (#1212): the tester's Drafts listed once, at first need.
+		var drafts []string
+		var listed bool
+		cfg.Tested = func(issue int) (bool, error) {
+			if !listed {
+				var err error
+				if drafts, err = f.OpenMergeRequests(tester.TestsBranch); err != nil {
+					return false, err
+				}
+				listed = true
+			}
+			return slices.Contains(drafts, tester.TestsBranch+strconv.Itoa(issue)), nil
+		}
+		cfg.Symptom = func(issue int) (backlog.Symptom, bool, error) { return backlog.ReadSymptom(f, issue) }
+	}
 	// The board's ready column a ready moves the card to (ADR-0057); a
 	// board out of reach is said and moves nothing.
 	for _, c := range closes {

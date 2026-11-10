@@ -99,6 +99,11 @@ func Pre(runDir, repo string) int {
 	case "curate":
 		return curatePre(runDir, repo, s)
 	}
+	if parts, ok := symptomInput(runDir); ok {
+		// A bug's parent, its parts all closed (#1212): its reproduction
+		// test over the default branch, no agent.
+		return symptomPre(runDir, repo, s, parts)
+	}
 	if v := unset(s); v != nil { // no proof possible: the agent is not asked
 		return final(runDir, *v)
 	}

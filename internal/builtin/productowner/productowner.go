@@ -438,7 +438,11 @@ func Pre(runDir, repo string) int {
 					Message: fmt.Sprintf("its %s rests on %s as proof, and the code at this commit holds no such test: the item is said not proved", work.Name(work.Verification), strings.Join(ev.NoTest, ", "))})
 			}
 			if ev.AllClosed {
-				msg := fmt.Sprintf("its %d parts are closed: for a person to accept, by closing it or with %s — the role never closes it alone", ev.Parts, backlog.AcceptedLabel(b))
+				alone := "the role never closes it alone"
+				if kind, _ := backlog.KindOf(is.Labels); kind == backlog.KindBug {
+					alone = "the role closes it alone only on its reproduction test green on the default branch"
+				}
+				msg := fmt.Sprintf("its %d parts are closed: for a person to accept, by closing it or with %s — %s", ev.Parts, backlog.AcceptedLabel(b), alone)
 				if len(ev.Undone) > 0 || len(ev.Unproved) > 0 {
 					msg += fmt.Sprintf("; not delivered: %d part(s), not proved: %d %s item(s)", len(ev.Undone), len(ev.Unproved), work.Name(work.Verification))
 				}
@@ -893,10 +897,10 @@ func Pre(runDir, repo string) int {
 			if d.is.ID == issueEvent() && slices.Contains(d.is.Labels, backlog.LabelToRefine) {
 				// The line's refine step on it: its size predicted at
 				// ready (ADR-0064, §2), no call of its own.
-				review += predictSaid(b, open, d.is, d.st, cfg.SplitOff())
+				review += predictSaid(b, open, d.is, d.st, cfg.SplitOff(), testsFirst(b, d.is, cfg.Tester))
 			}
 			if slices.Contains(d.is.Labels, backlog.LabelBlocked) && d.is.ID == issueEvent() {
-				review += blockedSaid(runDir, d.is, d.comments, cfg.SplitOff(), func() string { return spentSaid(b, open, d.is, d.comments) })
+				review += blockedSaid(runDir, d.is, d.comments, cfg.SplitOff(), testsFirst(b, d.is, cfg.Tester), func() string { return spentSaid(b, open, d.is, d.comments) })
 				if unrefinedRead(runDir) {
 					// Blocked on its own read in refine, its text rewritten
 					// and nothing decided on it: back to refine in the same
@@ -2014,7 +2018,7 @@ var blockWhy = regexp.MustCompile(`(?m)^- \*\*Why\*\*: (.+)$`)
 // why it was blocked, what is new, and what it may decide (ADR-0059,
 // amended): back to the state it came from or to refine, or kept
 // blocked, its reason said afresh.
-func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool, spent func() string) string {
+func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool, first string, spent func() string) string {
 	input := func(name string) string {
 		data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", name))
 		return strings.TrimSpace(string(data))
@@ -2055,13 +2059,13 @@ func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool
 			grant = fmt.Sprintf(" (its size tier is %s already, `%s`: a tier only goes up, and past %s it is a person's, so no `size`)", tier, backlog.TierLabel(tier), backlog.TierLarge)
 		}
 		rule := ""
-		if tier == "" && noSplit(is, splitOff) == "" {
+		if tier == "" && noSplit(is, splitOff, first) == "" {
 			// Both offered: which one, said once (ADR-0064, §3).
 			rule = fmt.Sprintf(" Split or grant: split when its parts each pass their own scenarios apart; when none can — one cause, a change no half of proves — grant it, never split it. Its %s or %s saying its parts fail apart is evidence to weigh, not the test.",
 				work.Name(work.Need), work.Name(work.Scope))
 		}
 		return fmt.Sprintf("Blocked (%s), on its size. What crossed: %s. Read again because %s. Spent on it so far: %s. A crossing measures one run of the %s, not the need: a run again on the same input crosses the same, and sent back as it is, the issue waits for a person. Decide one, its `why` one plain line: narrow its %s — `refine` with `scope`, the %[6]s rewritten whole to the fewer files its need needs, and `sources` — then `unblock` it, %[7]s%[8]s%[10]s; or `blocked`, why its need cannot be narrowed, `person: true`: a person splits it, grants it `%[9]s`, or raises the setting the line names.%[11]s Never `ready` on it.\n",
-			backlog.LabelBlocked, why, news, spent(), strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where, grant, backlog.LabelSizeXLarge, splitSaid(is, splitOff), rule)
+			backlog.LabelBlocked, why, news, spent(), strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where, grant, backlog.LabelSizeXLarge, splitSaid(is, splitOff, first), rule)
 	}
 	alone := ""
 	if unrefinedRead(runDir) {
