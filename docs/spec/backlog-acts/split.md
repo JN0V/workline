@@ -38,7 +38,8 @@ An issue too big to be one need is broken into its parts (ADR-0022):
 - **The parent's Verification**, when it has one: the product owner
   quotes each item, word for word, in the scenario of the child's
   Validation that delivers it, so the parent's comment says it proved
-  once that child closes
+  once that child closes, by the tests the tester declares for that
+  scenario
   ([a parent and its parts](parent.md), [#1279](https://github.com/JN0V/workline/issues/1279)).
   Its judgement, not checked: an item no child quotes reads "not proved".
 - **Each child** is opened through the one way ([Opening issues](opening.md)), keyed by

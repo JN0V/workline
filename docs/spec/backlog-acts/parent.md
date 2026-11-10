@@ -35,13 +35,19 @@ person unlinked is no longer one. An issue whose state lists a split
   forge keep no reason: a closed part there is taken as done. Then each
   item of its Verification — each list item, or the section whole — proved
   when a part delivered quotes it, in its own Verification, in a scenario
-  of its Validation — the split gives each item to the part that delivers
-  it, the comment then names that scenario and the tests the tester's
-  Verification declares for it
-  ([#1279](https://github.com/JN0V/workline/issues/1279)) — or in the text
-  of what closed it, case, spaces, `` ` ``, `*`, `_` and the final
+  of its Validation, or in the text of what closed it, case, spaces, `` ` ``, `*`, `_` and the final
   punctuation aside, said with where; "not proved" otherwise ("not proved yet" while a part is open). A parent
   without a Verification is said to have none.
+- **An item given to a part at the split**
+  ([#1279](https://github.com/JN0V/workline/issues/1279)): quoted in a
+  scenario of the part's Validation (any form `work.Scenarios` reads), it
+  is proved by the tests the part's Verification declares for that
+  scenario — its list item opening on the scenario's name in bold, then
+  the test ids in code spans — each found in the code as below, by its id or else its last
+  word (`tests.test_x.test_y` is `test_y`). The quote alone, a draft
+  written before any test, proves nothing: "not proved" when the quote is
+  in no scenario, when the Verification names no test for it, or when it
+  says `no test can check it` (its reason said, a person judges).
 - **A test named as proof** (ADR-0029, amended): an item that names a
   test in a code span — a test file by its path, as the project's one
   definition of a test file names it (the tester's `test-paths`, else the

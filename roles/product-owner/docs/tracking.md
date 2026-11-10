@@ -76,8 +76,9 @@ move
 - **each item of its Verification**: proved where a part delivered quotes
   it — a test it names found in the code —, or not proved;
 - **an item given to a part at the split**: the product owner quotes it
-  in the scenario of that part's Validation that delivers it; the
-  comment names the scenario and the tests the tester declared for it
+  in the scenario of that part's Validation that delivers it; proved by
+  the tests the tester declared for that scenario, found in the code —
+  the quote alone proves nothing
   ([split](../../../docs/spec/backlog-acts/split.md#splitting)).
 
 Once all its parts are closed, the comment and a finding
