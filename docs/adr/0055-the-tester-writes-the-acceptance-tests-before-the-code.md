@@ -21,6 +21,9 @@
   proven, linted Draft moves the issue to ready; a proof kind in place of
   a Draft; past its answers, the product owner settles an objection,
   then Blocked; `objection-person` is gone
+- **Amended 2026-11-10** ([#1259](https://github.com/JN0V/workline/issues/1259)):
+  the tester may add its tests to a test file already there; the guard
+  freezes its own lines ([below](#amendment-2026-11-10-tests-added-to-a-file-already-there))
 - **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#the-four-changes),
   once built: a broken build's right reason is judged, not guessed
 
@@ -454,3 +457,37 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
 - **A case the suite cannot read** fails too, red for no reason:
   workline's `build-errors` adds a line for it, never a missing name,
   so the check says `build-broken`.
+
+## Amendment 2026-11-10: tests added to a file already there
+
+[#1259](https://github.com/JN0V/workline/issues/1259), after the
+role-boundary review of 2026-11-09 and
+[ADR-0065, change 2](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence):
+where a test lives is judgement, a frozen test is the rule that converges.
+
+- **Where**: a project keeping one test file per class gets the new
+  tests in that file, as its testers would. The engine no longer
+  refuses a file because the base holds it (`test-file-exists` is gone).
+- **Only added**: a patch to a file the base holds keeps each of its
+  lines, in order; one changed or removed blocks, `test-line-changed`,
+  naming the line. A rewrite after an objection is held alike.
+- **Inserted in a base test**: kept lines do not prove the test kept.
+  A base test that ran on the base and is skipped with the tests laid
+  blocks, `base-test-skipped`, a fact of the reports. An inserted line
+  that leaves it running (an early `return`) is the reviewer's to
+  judge on the Draft: telling a test's body apart is language knowledge.
+- **What is frozen**: the tester's own lines, a whole new file or the
+  runs it added to one already there, read from the record's blob
+  against the base's, no new field. The base's lines are matched so
+  that the tester's form the fewest runs: a blank line inside a new
+  test, equal to the base's next one, stays in its run. Another's commit that keeps each
+  run whole, in order, passes, whatever it adds beside; one that
+  changes a run blocks, `tester-test-changed`, naming its first line.
+  Language-blind: a skip mark put before a frozen test passes this
+  guard, and the green proof fails it, the test not green.
+- **New tests**: a test the base's own version of that file declares,
+  unbuilt with the change's tests by a missing name, is the base's,
+  never counted new nor frozen; told by its file, not its name alone.
+- **Left as they are**: the developer's bounds still refuse any edit to
+  a frozen file, a shared one whole; the curator still keeps a frozen
+  file whole while its Draft is open.

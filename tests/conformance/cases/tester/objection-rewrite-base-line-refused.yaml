@@ -1,0 +1,36 @@
+case: tester/objection-rewrite-base-line-refused
+about: >
+  A rewrite on an objection, in a test file the tester shares with the
+  base's tests, changes the tester's own lines alone: one that removes a
+  line the base holds is refused, test-line-changed, and nothing is
+  pushed (#1259).
+given:
+  repo: tested-draft
+  setup:
+    - |
+      printf '# Scenario: Two by three\n[ "$(mul 2 3)" = 6 ]\n' >> tests/test_add.sh && git commit -qam 'test: a test beside add' -m 'Workline-Role: tester'
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_add.sh\":\"2506e8d18ef03a0e78aa1441fbfd616274da98b0\",\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+        threads:
+          - {id: "7", path: tests/test_add.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_add.sh\n- scenario: Two by three\n- kind: over-specified\n- why: mul may print spaces around the number"}
+run: {test: [answer, --merge-request, "1"], ai: "fake:tester-answer-rewrites-a-base-line"}
+expect:
+  status: block
+  agent-calls: 1
+  findings: [{rule: test-line-changed, where: tests/test_add.sh, message: 'add 2 3'}]
+  forge:
+    merge-requests:
+      - id: 1
+        comment-contains: ["2506e8d18ef03a0e78aa1441fbfd616274da98b0"]

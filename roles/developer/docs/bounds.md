@@ -164,6 +164,8 @@ The check above, before the push, stays a fast first pass.
   deleted even when the range shows no trace of it. Frozen tests it
   cannot read (a record unread, a start commit not fetched) block,
   `frozen-tests-unknown`, never a pass.
+  - A test file two Drafts froze, testers adding to a file the base
+    holds, is read against the issue's own Draft.
 - **A refused file blocks**, named with its rule; a link out of the
   tree is `symlink-out`. Its next round or a person reverts it.
 - **A file beyond the Scope passes**, said (`beyond-scope`, info),

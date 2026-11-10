@@ -1,0 +1,7 @@
+- patch:
+    file: tests/test_add.sh
+    content: |
+      . ./lib.sh
+      # Scenario: Two by three
+      [ "$(mul 2 3 | tr -d ' ')" -eq 6 ]
+- note: "Right: the scenario asks for the value 6, not its spaces; the test now reads the number."

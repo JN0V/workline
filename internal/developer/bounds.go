@@ -66,7 +66,8 @@ type Bounds struct {
 	// Scenarios: the names of the issue's Validation scenarios, the one
 	// an objection names among them (#913).
 	Scenarios []string `json:"scenarios,omitempty"`
-	// Frozen: each test the tester froze on an open Draft, by its issue.
+	// Frozen: each test the tester froze on an open Draft, by its issue;
+	// a file two Drafts froze, the issue's own Draft's.
 	Frozen map[string]int `json:"frozen,omitempty"`
 	// Blobs: each frozen test's blob, as the tester's record names it.
 	Blobs map[string]string `json:"blobs,omitempty"`
@@ -154,6 +155,9 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 			continue
 		}
 		for file, blob := range r.Files {
+			if r.Issue != is.ID && b.Frozen[file] == is.ID {
+				continue // a file two Drafts share: the issue's own Draft's blob
+			}
 			b.Frozen[file], b.Blobs[file] = r.Issue, blob
 		}
 		if n == is.ID {

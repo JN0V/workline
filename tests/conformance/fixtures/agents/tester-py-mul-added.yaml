@@ -1,0 +1,21 @@
+- patch:
+    file: tests/test_calc.py
+    content: |
+      from pkg.calc import add
+      from pkg.calc import mul
+
+
+      def test_add():
+          assert add(2, 3) == 5
+
+
+      # Scenario: Two by three
+      # Given the library, When I multiply 2 by 3, Then I get 6.
+      def test_two_by_three():
+          assert mul(2, 3) == 6
+
+
+      # Scenario: By zero
+      # Given the library, When I multiply 5 by 0, Then I get 0.
+      def test_by_zero():
+          assert mul(5, 0) == 0
