@@ -61,9 +61,18 @@ func TestQualifiedBy(t *testing.T) {
 		{"test_x", "tests/test_x.py", true},                       // run from inside its folder
 		{"tests.sub.test_x", "tests/test_x.py", false},            // a namesake file in a nested folder
 		{"com.example.CalcTest", "src/test/java/com/example/CalcTest.java", true},
-		{"test_x", "test_x.py", true},        // at the root
-		{"pkg.test_x", "test_x.py", false},   // another folder's namesake
-		{"other", "calc/mul_test.go", false}, // another folder
+		{"com.other.CalcTest", "src/test/java/com/example/CalcTest.java", false}, // another package's class
+		{"com.example.CalcTest", "src/test/kotlin/CalcTest.kt", true},            // Kotlin: the root package left out
+		{"com.example.calc.CalcTest", "src/test/kotlin/calc/CalcTest.kt", true},
+		{"Calc.Tests.CalcTests", "tests/Calc.Tests/CalcTests.cs", true}, // .NET: the folder is the namespace
+		{"MyApp.Tests.CalcTests", "tests/UnitTests/CalcTests.cs", true}, // a namespace apart from the folders
+		{"example.com/app/internal/tester", "internal/tester/x_test.go", true},
+		{"example.com/app/cmd/tester", "internal/tester/x_test.go", false}, // a same-named folder elsewhere
+		{"tester", "internal/tester/x_test.go", true},                      // a runner's folder, short
+		{"pkg.tests.test_x", "tests/test_x.py", false},                     // a same-named folder elsewhere
+		{"test_x", "test_x.py", true},                                      // at the root
+		{"pkg.test_x", "test_x.py", false},                                 // another folder's namesake
+		{"other", "calc/mul_test.go", false},                               // another folder
 		{"", "calc/mul_test.go", false},
 	} {
 		if got := qualifiedBy(c.qualifier, c.file); got != c.want {
