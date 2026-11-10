@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -111,7 +112,7 @@ type buildError struct {
 // pattern. Each is a missing name only when it lies in one of tests (the
 // change's test files) and its message names what the code lacks. A
 // file under one of roots, the folder the command ran in, is read from
-// there.
+// there, and its line is kept with those roots taken off (#1274).
 func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...string) []buildError {
 	inTests := map[string]bool{}
 	for _, t := range tests {
@@ -130,7 +131,7 @@ func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...s
 			}
 			file := fromRoot(m[r.error.SubexpIndex("file")], roots)
 			msg := m[r.error.SubexpIndex("message")]
-			e := buildError{file: file, line: line, msg: msg, inTest: inTests[file], rules: i}
+			e := buildError{file: file, line: unrooted(line, roots), msg: msg, inTest: inTests[file], rules: i}
 			errs = append(errs, e)
 			unnamed, untold = -1, -1
 			if msg == "" && r.msgLine != nil {
@@ -148,7 +149,7 @@ func buildErrorsIn(output string, tests []string, rules []buildRules, roots ...s
 			if m := re.FindStringSubmatch(line); m != nil {
 				e := &errs[untold]
 				e.msg = m[re.SubexpIndex("message")]
-				e.line = strings.TrimSpace(e.line) + " " + strings.TrimSpace(line)
+				e.line = strings.TrimSpace(e.line) + " " + strings.TrimSpace(unrooted(line, roots))
 				if missingIn(e, rules[e.rules]) {
 					unnamed = untold
 				}
@@ -231,6 +232,27 @@ func rootsOf(dir string) []string {
 		roots = append(roots, r)
 	}
 	return roots
+}
+
+// unrooted is output with the folder the command ran in taken off its
+// paths, as a path or a file:// URI (Gradle's): the same build broken the
+// same way reads the same from one checkout to the next, as its judge is
+// asked it (#1274).
+func unrooted(output string, roots []string) string {
+	var prefixes []string
+	for _, r := range roots {
+		if r != "" {
+			r += string(filepath.Separator)
+			prefixes = append(prefixes, "file://"+filepath.ToSlash(r), r)
+		}
+	}
+	// The longest first: a URI holds its path, /private/var/x holds /var/x
+	// (macOS).
+	slices.SortStableFunc(prefixes, func(a, b string) int { return len(b) - len(a) })
+	for _, p := range prefixes {
+		output = strings.ReplaceAll(output, p, "")
+	}
+	return output
 }
 
 // testNames is the tests content declares, by the rules' test-name: the

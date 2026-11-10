@@ -2,6 +2,7 @@ package tester
 
 import (
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -351,5 +352,40 @@ func TestNamedIn(t *testing.T) {
 		if got := namedIn(c.name, issue); got != c.want {
 			t.Errorf("namedIn(%q) = %v, want %v", c.name, got, c.want)
 		}
+	}
+}
+
+// The folder a build ran in is taken off its output: the same build
+// broken the same way reads the same from one checkout to the next (#1274).
+func TestUnrooted(t *testing.T) {
+	out := "ImportError while importing test module '/tmp/workline-test-42/tests/test_a.py'.\n/private/tmp/workline-test-42/b.py:1: x"
+	got := unrooted(out, []string{"/tmp/workline-test-42", "/private/tmp/workline-test-42", ""})
+	if want := "ImportError while importing test module 'tests/test_a.py'.\nb.py:1: x"; got != want {
+		t.Errorf("unrooted: %q, want %q", got, want)
+	}
+	uri := "e: file:///tmp/workline-test-42/src/test/kotlin/MulTest.kt:10:25 Too many arguments"
+	if got, want := unrooted(uri, []string{"/tmp/workline-test-42"}), "e: src/test/kotlin/MulTest.kt:10:25 Too many arguments"; got != want {
+		t.Errorf("unrooted: %q, want %q", got, want)
+	}
+}
+
+// A compiler's line quoting an absolute path reads the same from one
+// checkout to the next: the judge's facts quote it (#1274).
+func TestBuildErrorLineUnrooted(t *testing.T) {
+	kotlin := buildRules{error: regexp.MustCompile(`^e: (?P<file>.+?\.kts?):\d+:\d+ (?P<message>.*)$`)}
+	javac := buildRules{error: regexp.MustCompile(`^(?P<file>\S.*?\.java):\d+: error: (?P<message>.*)$`)}
+	var lines []string
+	for _, root := range []string{"/tmp/workline-test-111", "/tmp/workline-test-222"} {
+		out := "e: file://" + root + "/src/test/kotlin/MulTest.kt:10:25 Too many arguments\n" +
+			root + "/src/test/java/AddTest.java:3: error: cannot find symbol"
+		errs := buildErrorsIn(out, []string{"src/test/kotlin/MulTest.kt"}, []buildRules{kotlin, javac}, root)
+		if len(errs) != 2 || errs[0].file != "src/test/kotlin/MulTest.kt" || !errs[0].inTest || errs[1].file != "src/test/java/AddTest.java" {
+			t.Fatalf("errors from %s: %+v", root, errs)
+		}
+		lines = append(lines, errs[0].line+"\n"+errs[1].line)
+	}
+	want := "e: src/test/kotlin/MulTest.kt:10:25 Too many arguments\nsrc/test/java/AddTest.java:3: error: cannot find symbol"
+	if lines[0] != want || lines[1] != want {
+		t.Errorf("lines: %q, want %q twice", lines, want)
 	}
 }

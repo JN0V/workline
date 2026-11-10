@@ -2,7 +2,8 @@ case: routing/tests-build-broken-not-moved
 about: >
   A machine error moves nothing (ADR-0063, I3): on #3, waiting for its
   tests, the tester's Go test does not build, asked once more with the
-  build's error, and still does not (#1048). Its run is a machine error,
+  build's error, and still does not, the same way (#1048): the judge is
+  not asked again (#1274). Its run is a machine error,
   never a verdict on the issue: #3 keeps workline:needs-tests and its
   hops, the error said on it with when it runs again; never blocked. The
   same reconcile run again starts nothing: it says it waits until then.
@@ -23,7 +24,7 @@ given:
         body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA Go test.\n\n## Scope\n\n- `calc/calc.go`: a `Mul` function beside `Add`.\n"
 run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/tester-go-wrong-call-once.sh", then: again}
 expect:
-  agent-calls: 4
+  agent-calls: 3
   findings:
     - {rule: state-wakes, level: info, where: "#3", message: "its state, tests, wakes the tester"}
     - {rule: build-broken}

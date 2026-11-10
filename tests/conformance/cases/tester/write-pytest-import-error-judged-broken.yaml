@@ -4,7 +4,8 @@ about: >
   the flat-layout project: `No module named 'pkg'`, a module the issue
   does not add. It is no missing name, so the judge reads it; its no is
   build-broken, the error quoted. Asked again, the agent answers the
-  same: the run blocks, said on the issue, and no Draft opens (#1283).
+  same, and the judge is not asked again on the same build (#1274): the
+  run blocks, said on the issue, and no Draft opens (#1283).
 given:
   repo: python-tested
   setup:
@@ -21,7 +22,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-py-money"}
 expect:
   status: block
-  agent-calls: 4
+  agent-calls: 3
   findings: [{rule: build-broken, where: tests/test_pricing.py, message: "No module named 'pkg'"}]
   not-pushed: [workline/tester/issue-3]
   forge:

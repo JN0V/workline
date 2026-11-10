@@ -1,0 +1,33 @@
+case: tester/write-build-broken-other-errors-judged-again
+about: >
+  Asked once more with the judge's no, the agent's Go test still does
+  not build, with another error: `Add` called with three arguments, not
+  one. The judge's first answer is kept by what it read, so this new
+  build is put to it again (#1274), and its no blocks the run.
+given:
+  repo: go-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env:
+    WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-no.yaml"
+    OTHER: "1"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA Go test.\n\n## Scope\n\n- `calc/calc.go`: a `Mul` function beside `Add`.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-go-wrong-call-once.sh"}
+expect:
+  status: block
+  agent-calls: 4
+  findings: [{rule: build-broken, where: calc/mul_test.go, message: "too many arguments in call to Add"}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
+    issues:
+      - id: 3
+        comment-contains: ["**The tester** wrote no tests for this issue this run", "the judge: the test calls a helper"]

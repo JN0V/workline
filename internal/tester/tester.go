@@ -237,7 +237,7 @@ func prove(repo, base string, s Settings) proven {
 		test: testFiles(repo, ch.head), tests: ch.tests}
 	var dbt *doubt
 	if len(errs) > 0 && !reader.fast(errs) {
-		dbt = &doubt{Facts: reader.facts(errs, redRun.output, s.BuildErrors), Base: ch.base, errs: errs}
+		dbt = &doubt{Facts: reader.facts(errs, unrooted(redRun.output, redRun.roots), s.BuildErrors), Base: ch.base, errs: errs}
 		for _, e := range errs {
 			dbt.Lines = append(dbt.Lines, e.line)
 			if dbt.Where == "" && e.inTest {

@@ -148,3 +148,51 @@ func TestRewrittenSaysRedUnproven(t *testing.T) {
 		t.Errorf("proven: %+v, %q", again, unprovenSaid(proven))
 	}
 }
+
+// The judge's last answer is kept by its input in the run (#1274): the
+// same build broken the same way gets it again, with no call; another
+// input, or a round of reads, keeps nothing.
+func TestJudgedAnswerKeptByInput(t *testing.T) {
+	runDir := t.TempDir()
+	dir := filepath.Join(runDir, "out", "judge", redProof)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	s := Settings{JudgeReadRounds: 1, JudgeReadMax: 10}
+	same := doubt{Facts: "## The build's errors\n\nT.kt:9: Too many arguments", Base: "abc", Lines: []string{"T.kt:9: Too many arguments"}, Where: "T.kt"}
+	other := same
+	other.Facts += "\nT.kt:12: Unresolved reference: stub"
+	j := judging{Red: verdict.Verdict{Status: verdict.Pass}, Added: []string{"T.kt:t"}, Doubt: same, Key: inputKey(&same)}
+
+	// A round of reads is no answer: nothing kept.
+	if err := os.WriteFile(filepath.Join(dir, "answer.yaml"), []byte("reads: [{grep: add}]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, asked, err := j.answered(dir, ".", s); err != nil || !asked {
+		t.Fatalf("reads: asked %v, err %v", asked, err)
+	}
+	if _, ok := keptAnswer(runDir, j.Key); ok {
+		t.Fatal("a round of reads was kept as an answer")
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, "answer.yaml"), []byte("yes: false\nwhy: a helper the issue never asks for\nlevel: model\nmodel: m\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if v, _, _, _, err := j.answered(dir, ".", s); err != nil || v.Status != verdict.Block {
+		t.Fatalf("no: %v, err %v", v, err)
+	}
+	a, ok := keptAnswer(runDir, inputKey(&same))
+	if !ok || a.Yes == nil || *a.Yes || a.Why != "a helper the issue never asks for" {
+		t.Fatalf("same input: kept %+v, %v", a, ok)
+	}
+	v, _, _ := j.settle(a, ", its answer to the same build earlier in this run")
+	if v.Status != verdict.Block || !strings.Contains(v.Findings[0].Message, "the judge: a helper the issue never asks for") || !strings.Contains(v.Findings[0].Message, "earlier in this run") {
+		t.Errorf("kept answer's verdict: %+v", v)
+	}
+	if _, ok := keptAnswer(runDir, inputKey(&other)); ok {
+		t.Error("other errors took the answer given to the first")
+	}
+	if _, ok := keptAnswer(t.TempDir(), inputKey(&same)); ok {
+		t.Error("another run took this run's answer")
+	}
+}

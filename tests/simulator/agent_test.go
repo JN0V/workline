@@ -215,7 +215,7 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 	case kind == hunk && role == "tester":
 		// #1075: a new file's hunk counting fewer lines than it adds.
 		file, content := a.testOf(task)
-		return kind, diffNew(file, content, -3)
+		return kind, diffNew(file, content, -3) + coversOf(task, strings.HasSuffix(file, ".go"))
 	case kind == hunk && role == "developer":
 		if file, code, ok := a.goCode(task); ok {
 			// On a Go issue, in the file its progress writes: within its
@@ -235,7 +235,9 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 			// In Go, a value of the wrong type: no missing name either.
 			content += "\nfunc TestWrongCall(t *testing.T) {\n\tvar n int = \"Kitchen\"\n\t_ = n\n}\n"
 		}
-		return kind, patch(file, content)
+		// Its scenarios declared, as progress's (ADR-0065, change 4): the
+		// build is what breaks, never the answer's shape.
+		return kind, patch(file, content) + coversOf(task, strings.HasSuffix(file, ".go"))
 	case kind == broken && role == "developer":
 		if file, code, ok := a.goCode(task); ok {
 			return kind, patch(file, code+"\nfunc fixedISSUE( bool { return true }\n")
