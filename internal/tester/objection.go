@@ -203,20 +203,24 @@ type answer struct {
 	// said too (#1265).
 	Scenarios []Scenario `json:"scenarios,omitempty"`
 	From      int        `json:"from,omitempty"`
+	// Found: the line the review found it on, as its why names it: the
+	// developer reads the answer by it.
+	Found string `json:"found,omitempty"`
 }
 
 // reviewedOnWords finds, in a test missing's why, the pull request whose
-// review found it, as the developer writes it.
-var reviewedOnWords = regexp.MustCompile(`\bon pull request (\d+)\b`)
+// review found it, and the line, as the developer writes them.
+var reviewedOnWords = regexp.MustCompile("\\bon pull request (\\d+)\\b(?:, `([^`]+)`)?")
 
-// reviewedOn is the pull request a test missing's why names, 0 for none.
-func reviewedOn(why string) int {
+// reviewedOn is the pull request a test missing's why names, 0 for none,
+// and the line the review found it on, "" for none.
+func reviewedOn(why string) (int, string) {
 	m := reviewedOnWords.FindStringSubmatch(why)
 	if m == nil {
-		return 0
+		return 0, ""
 	}
 	n, _ := strconv.Atoi(m[1])
-	return n
+	return n, m[2]
 }
 
 const answerFile = "answer.json"
@@ -371,7 +375,8 @@ func answerPre(runDir, repo string, s Settings) int {
 	}
 	a.FiveWhys = a.Mode == modeAgent && a.Decided == "" && a.Answers == 2
 	if a.Kind == "missing" {
-		a.Scenarios, a.From = scenarios, reviewedOn(o.Why)
+		a.Scenarios = scenarios
+		a.From, a.Found = reviewedOn(o.Why)
 	}
 	if line, err := routing.Load(repo); err == nil {
 		a.Line = line.States
@@ -758,9 +763,17 @@ func (a answer) toReview(text string) []intent.Intention {
 	if a.Kind != "missing" || a.From == 0 {
 		return nil
 	}
-	return []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": a.From, "sticky": "tester-answer-" + a.Thread,
-		"body": fmt.Sprintf("**The tester** answers a test finding of this review, sent to its Draft ([the thread](%s)): %s", a.URL, text)}}}
+	on := ""
+	if a.Found != "" {
+		on = " on `" + a.Found + "`"
+	}
+	return []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": a.From, "sticky": TesterAnswerKey + a.Thread,
+		"body": fmt.Sprintf("**The tester** answers a test finding of this review%s, sent to its Draft ([the thread](%s)): %s", on, a.URL, text)}}}
 }
+
+// TesterAnswerKey starts the sticky key of a test missing's answer on
+// the reviewed pull request, its thread's id after it.
+const TesterAnswerKey = "tester-answer-"
 
 // otherFiles are the record's tests but file, sorted, each in code.
 func otherFiles(r record, file string) []string {

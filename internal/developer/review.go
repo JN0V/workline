@@ -27,7 +27,6 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/whys"
 	"github.com/JN0V/workline/internal/work"
@@ -141,6 +140,9 @@ type round struct {
 	ToTester   []Asked `json:"to-tester,omitempty"`
 	TesterOnly bool    `json:"tester-only,omitempty"`
 	Sent       int     `json:"sent,omitempty"` // those the record sent already, not asked again
+	// Disputed: those sent that still block, the tester holding no test
+	// needed: its issue blocked for a person.
+	Disputed []Asked `json:"disputed,omitempty"`
 }
 
 // reviewRows reads the findings of the reviewer's comment: what blocks,
@@ -340,6 +342,14 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			return external(err)
 		}
 		r.Asked, r.ToTester = splitTests(r.Asked, bounds)
+	}
+	if len(r.Asked) == 0 && len(r.ToTester) == 0 && len(r.Disputed) > 0 {
+		// Blocked on test findings the tester holds needless: no round
+		// settles it, a person does (#1265).
+		if err := writeIn(runDir, roundFile, r); err != nil {
+			return fail(err)
+		}
+		return writeIntents(runDir, "fallback.yaml", disputedOff(r, repo))
 	}
 	if len(r.Asked) == 0 && len(r.ToTester) == 0 {
 		var kept string
@@ -560,6 +570,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 	// (#1040). A record from before review-at counts runs alone.
 	newReview := r.Runs > a.ReviewRuns ||
 		r.ReviewAt != "" && r.ReviewAt != a.ReviewAt && (a.ReviewAt != "" || a.ReviewRuns == 0)
+	r.Disputed = disputed(r.Asked, a, kept)
 	if !newReview { // the review read already
 		r.Asked = nil
 	}
@@ -650,6 +661,9 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	r, _, err := readAsked(f, b, kept, repo, a, mr.ID, head)
 	if err == nil && len(r.Asked) == 0 && r.ChecksUnread != "" {
 		err = fmt.Errorf("its project's checks: %s", r.ChecksUnread)
+	}
+	if err == nil && len(r.Asked) == 0 && len(r.Disputed) > 0 {
+		return true, nil // blocked on test findings the tester holds needless: its round blocks the issue
 	}
 	if err == nil && len(r.Asked) == 0 && mr.Draft {
 		ready, _ := draftReady(f, a, head) // its Draft made green: its round marks it ready (#969)
@@ -779,12 +793,7 @@ func handOff(r round, b Bounds, repo string) []intent.Intention {
 	if r.ChecksAt != "" {
 		a.ChecksAt = r.ChecksAt
 	}
-	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
-	if line, err := routing.Load(repo); err == nil {
-		if ad, rm, err := line.Move("blocked"); err == nil {
-			add, remove = ad, rm
-		}
-	}
+	add, remove := blockedMove(repo)
 	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree",
 		a.Round, r.MR, len(r.Asked), plural(len(r.Asked)))
 	return append(tests,
@@ -850,6 +859,11 @@ func reviewPost(runDir, repo string, s Settings) int {
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("%d test finding%s of the review sent to the tester: no round counted", len(r.ToTester), plural(len(r.ToTester))),
 			Findings: []verdict.Finding{{Rule: "tests-to-the-tester", Level: "info", Where: where,
 				Message: fmt.Sprintf("the review asks test findings alone, the tester's: on its Draft, #%d waits for its tests (#1265)", r.Record.Issue)}}})
+	}
+	if len(r.Disputed) > 0 && len(r.Asked) == 0 && len(r.ToTester) == 0 {
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("the review blocks on test findings the tester holds needless: its issue #%d blocked", r.Record.Issue),
+			Findings: []verdict.Finding{{Rule: "tests-disputed", Level: "warn", Where: where,
+				Message: fmt.Sprintf("%d test finding%s still block, the tester answering no test is needed: #%d blocked for a person, its reason on it", len(r.Disputed), plural(len(r.Disputed)), r.Record.Issue)}}})
 	}
 	if r.Person {
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("past round %d: its issue #%d blocked", r.Record.Round, r.Record.Issue),

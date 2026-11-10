@@ -11,11 +11,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/tester"
 )
 
@@ -163,6 +166,69 @@ func toTesterOnly(r round, b Bounds, repo string) []intent.Intention {
 	return []intent.Intention{
 		testRequests(repo, b, r.MR, r.ToTester),
 		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": body.String()}},
+		{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}},
+	}
+}
+
+// noneNeededWords read the tester's answer on the reviewed pull request
+// that no test is needed, and the line the review found it on
+// (tester.toReview).
+var noneNeededWords = regexp.MustCompile("\\*\\*The tester\\*\\* answers a test finding of this review on `([^`]+)`, sent to its Draft \\(\\[the thread\\]\\([^)]*\\)\\): \\*\\*None needed\\*\\*")
+
+// disputed are the review's rows sent to the tester that still block the
+// merge, the tester answering on the pull request that no test is needed
+// on their line: the reviewer and the tester do not agree, and nothing
+// the developer may do settles it.
+func disputed(rows []Asked, a Act, kept forge.Kept) []Asked {
+	needless := map[string]bool{}
+	for _, c := range kept.Each("<!-- workline:sticky=tester/" + tester.TesterAnswerKey) {
+		if m := noneNeededWords.FindStringSubmatch(c); m != nil {
+			needless[m[1]] = true
+		}
+	}
+	var out []Asked
+	for _, x := range rows {
+		if x.Holds == "blocks" && slices.Contains(a.Tester, x.Key) && needless[x.Where] {
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+// blockedMove are the labels its issue takes, blocked: the line's, or
+// workline's own with no line.
+func blockedMove(repo string) (add, remove []string) {
+	add, remove = []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
+	if line, err := routing.Load(repo); err == nil {
+		if ad, rm, err := line.Move("blocked"); err == nil {
+			add, remove = ad, rm
+		}
+	}
+	return add, remove
+}
+
+// disputedOff is what a review blocking on test findings the tester
+// holds needless writes, no agent and no round counted: its issue
+// blocked, the reason on it and on the pull request, for a person who
+// reads both; no round runs after.
+func disputedOff(r round, repo string) []intent.Intention {
+	a := r.Record
+	a.Handed = true
+	a.ReviewRuns = max(a.ReviewRuns, r.Runs)
+	if r.ReviewAt != "" {
+		a.ReviewAt = r.ReviewAt
+	}
+	add, remove := blockedMove(repo)
+	n := len(r.Disputed)
+	why := fmt.Sprintf("the review of merge request %d still blocks on %d test finding%s the tester answered no test is needed for: the reviewer and the tester do not agree",
+		r.MR, n, plural(n))
+	return []intent.Intention{
+		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
+		sayOn(a.Issue, backlog.Said(who, "blocks this issue", why,
+			"a person on the loop reads the finding and the tester's answer on the pull request, settles it, and moves the issue back by its label")),
+		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(
+			"**Blocked**: the review still blocks on %d test finding%s the tester answered no test is needed for. #%d is blocked, its reason on it: a person of the project reads both and settles it.\n\n%s",
+			n, plural(n), a.Issue, askedList(r.Disputed))}},
 		{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}},
 	}
 }

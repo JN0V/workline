@@ -96,6 +96,11 @@ step 6).
     no one.
   - **Alone**: no agent, no round counted; the rounds never run out on
     test findings.
+  - **None needed, still blocking**: the tester answers on the pull
+    request that no test is needed, and the review still blocks on the
+    finding. No round settles it: its issue goes `workline:blocked`,
+    the reason on it and on the pull request, for a person who reads
+    both.
   - **The developer's still**: one on a test file, one asked again from
     the record when a round resumes, or a row where the reviewer groups
     a finding of another lens under it (code to fix on the same line).

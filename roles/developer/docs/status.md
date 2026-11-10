@@ -298,8 +298,9 @@ hold:
   `round-splits-code-and-test-findings`,
   `round-five-test-findings-not-blocked`,
   `round-five-blocks-on-code-sends-tests`,
-  `round-asks-no-test-finding-sent-before`. Tried: its pull request's
-  `## Tried`.
+  `round-asks-no-test-finding-sent-before`,
+  `round-blocks-on-a-test-finding-held-needless`. Tried: its pull
+  request's `## Tried`.
 
 - **The merge** (step 7): at `normal`, `workline follow` merges its
   pull request with no person's yes, the kind `code`, when the issue it
