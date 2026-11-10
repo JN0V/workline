@@ -353,3 +353,13 @@ func TestNamedIn(t *testing.T) {
 		}
 	}
 }
+
+// The folder a build ran in is taken off its output: the same build
+// broken the same way reads the same from one checkout to the next (#1274).
+func TestUnrooted(t *testing.T) {
+	out := "ImportError while importing test module '/tmp/workline-test-42/tests/test_a.py'.\n/private/tmp/workline-test-42/b.py:1: x"
+	got := unrooted(out, []string{"/tmp/workline-test-42", "/private/tmp/workline-test-42", ""})
+	if want := "ImportError while importing test module 'tests/test_a.py'.\nb.py:1: x"; got != want {
+		t.Errorf("unrooted: %q, want %q", got, want)
+	}
+}

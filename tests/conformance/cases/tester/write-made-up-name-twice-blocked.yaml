@@ -2,8 +2,9 @@ case: tester/write-made-up-name-twice-blocked
 about: >
   In a shell project, asked once more with the judge's no, the agent's
   test still calls `stub_two`, a name the issue never names (#1111); the
-  judge says no again: the tester asks no third time. The run blocks with
-  its line, said on the issue; no Draft opens.
+  judge's no stands, not asked again on the same build (#1274): the
+  tester asks no third time. The run blocks with its line, said on the
+  issue; no Draft opens.
 given:
   repo: tested
   setup:
@@ -30,7 +31,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-mul-stub-once.sh"}
 expect:
   status: block
-  agent-calls: 4
+  agent-calls: 3
   findings: [{rule: build-broken, where: tests/test_mul_two_by_three.sh}]
   not-pushed: [workline/tester/issue-3]
   forge:

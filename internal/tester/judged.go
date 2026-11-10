@@ -9,6 +9,8 @@ package tester
 // proof on the code settles it. With no agent at all, a person reads it.
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -87,6 +89,10 @@ type judging struct {
 	Doubt  doubt             `json:"doubt"`
 	Cause  string            `json:"cause"` // a test file: a name is looked for near it first
 	Rounds []judgeRound      `json:"rounds,omitempty"`
+	// Key is the judge's input, digested: its answer is kept under it in
+	// the run (judgedFile), and the same input again in that run is not
+	// asked again (#1274).
+	Key string `json:"key,omitempty"`
 }
 
 type judgeRound struct {
@@ -135,11 +141,17 @@ func proveJudged(runDir, repo, base string, patches []intent.Intention, s Settin
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 		return p.doubt.waiting(*p.v), p.added, blobs, false, nil
 	}
-	j := judging{Red: *p.v, Added: p.added, Blobs: blobs, Doubt: *p.doubt}
+	j := judging{Red: *p.v, Added: p.added, Blobs: blobs, Doubt: *p.doubt, Key: inputKey(p.doubt)}
 	for _, pt := range patches {
 		if files := intent.PatchFiles(pt.Value); len(files) > 0 && j.Cause == "" {
 			j.Cause = files[0]
 		}
+	}
+	if a, ok := keptAnswer(runDir, j.Key); ok {
+		// The same build, broken the same way, judged earlier in this
+		// run: its answer stands, the judge not paid to give it again.
+		v, tests, blobs := j.settle(a, ", its answer to the same build earlier in this run")
+		return v, tests, blobs, false, nil
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, nil, nil, false, err
@@ -159,7 +171,6 @@ func (j judging) answered(dir, repo string, s Settings) (*verdict.Verdict, []str
 		err = yaml.Unmarshal(data, &a)
 	}
 	d := &j.Doubt
-	who := fmt.Sprintf("independence: %s, %s", a.Level, a.Model)
 	switch {
 	case err != nil:
 		return d.unproven(j.Red, "the judge gave no answer: "+err.Error()), j.Added, j.Blobs, false, nil
@@ -179,17 +190,72 @@ func (j judging) answered(dir, repo string, s Settings) (*verdict.Verdict, []str
 			return nil, nil, nil, false, err
 		}
 		return &verdict.Verdict{Status: verdict.Block, Summary: "the red proof waits for its judge"}, nil, nil, true, nil
+	}
+	if err := keepAnswer(filepath.Dir(filepath.Dir(dir)), j.Key, a); err != nil {
+		return nil, nil, nil, false, err
+	}
+	v, tests, blobs := j.settle(a, "")
+	return v, tests, blobs, false, nil
+}
+
+// settle is the verdict the judge's last answer gives: yes, no, unsure,
+// or none of them; earlier says where an answer kept was given.
+func (j judging) settle(a redAnswer, earlier string) (*verdict.Verdict, []string, map[string]string) {
+	d := &j.Doubt
+	who := fmt.Sprintf("independence: %s, %s%s", a.Level, a.Model, earlier)
+	switch {
 	case a.Unsure:
-		return d.unproven(j.Red, "the judge cannot tell"+said(a.Why)), j.Added, j.Blobs, false, nil
+		return d.unproven(j.Red, "the judge cannot tell"+said(a.Why)+earlier), j.Added, j.Blobs
 	case a.Yes == nil:
-		return d.unproven(j.Red, "the judge said neither yes, no nor unsure"), j.Added, j.Blobs, false, nil
+		return d.unproven(j.Red, "the judge said neither yes, no nor unsure"+earlier), j.Added, j.Blobs
 	case !*a.Yes:
-		return d.broken(a.Why, who), nil, j.Blobs, false, nil
+		return d.broken(a.Why, who), nil, j.Blobs
 	}
 	v := j.Red
 	v.Findings = append(clone(j.Red.Findings), verdict.Finding{Rule: "red-judged", Level: "info", Where: d.Where,
 		Message: fmt.Sprintf("the build broke on the base with the tests, and the judge says it is for the right reason: %s (%s)", a.Why, who)})
-	return &v, j.Added, j.Blobs, false, nil
+	return &v, j.Added, j.Blobs
+}
+
+// judgedFile holds, beside the run, the judge's answers by their input:
+// what the judge said of a build is said once a run (#1274).
+const judgedFile = "red-judged.json"
+
+// inputKey is the judge's input, digested: the facts it reads and the
+// commit its reads are served at.
+func inputKey(d *doubt) string {
+	sum := sha256.Sum256([]byte(d.Base + "\x00" + d.Facts))
+	return hex.EncodeToString(sum[:])
+}
+
+// keptAnswer is the answer kept for key in the run, if any.
+func keptAnswer(runDir, key string) (redAnswer, bool) {
+	kept := map[string]redAnswer{}
+	data, err := os.ReadFile(filepath.Join(runDir, "out", judgedFile))
+	if err != nil || json.Unmarshal(data, &kept) != nil {
+		return redAnswer{}, false
+	}
+	a, ok := kept[key]
+	return a, ok && key != ""
+}
+
+// keepAnswer keeps a's answer under key in out, the run's out folder:
+// none without a key, as a proof kept before keys were.
+func keepAnswer(out, key string, a redAnswer) error {
+	if key == "" {
+		return nil
+	}
+	file := filepath.Join(out, judgedFile)
+	kept := map[string]redAnswer{}
+	if data, err := os.ReadFile(file); err == nil {
+		_ = json.Unmarshal(data, &kept) // unreadable: started anew
+	}
+	kept[key] = a
+	data, err := json.Marshal(kept)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(file, data, 0o644)
 }
 
 // erroredFile keeps, beside the run, the new ids the red proof's run wrote

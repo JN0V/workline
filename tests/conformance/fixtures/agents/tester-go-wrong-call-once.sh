@@ -3,11 +3,13 @@
 # `go-tested` fixture, that calls `Add` with one argument where it takes
 # two: its package does not build for an error other than a missing name,
 # as on the C++ trial (#1048). Asked again with the build's error, it
-# calls `Mul` alone; with ALWAYS set, it never does.
+# calls `Mul` alone; with ALWAYS set, it never does; with OTHER set, it
+# calls `Add` with three arguments: the build breaks with another error.
 prompt=$(cat)
 want='Add(6)'
 if [ -z "$ALWAYS" ] && printf '%s\n' "$prompt" | grep -q 'build-broken'; then
 	want='6'
+	[ -n "$OTHER" ] && want='Add(6, 7, 8)'
 fi
 cat <<YAML
 - patch:

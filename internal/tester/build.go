@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -231,6 +232,21 @@ func rootsOf(dir string) []string {
 		roots = append(roots, r)
 	}
 	return roots
+}
+
+// unrooted is output with the folder the command ran in taken off its
+// paths: the same build broken the same way reads the same from one
+// checkout to the next, as its judge is asked it (#1274).
+func unrooted(output string, roots []string) string {
+	// The longest first: /private/var/x holds /var/x (macOS).
+	roots = slices.Clone(roots)
+	slices.SortFunc(roots, func(a, b string) int { return len(b) - len(a) })
+	for _, r := range roots {
+		if r != "" {
+			output = strings.ReplaceAll(output, r+string(filepath.Separator), "")
+		}
+	}
+	return output
 }
 
 // testNames is the tests content declares, by the rules' test-name: the
