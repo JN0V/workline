@@ -154,6 +154,14 @@ Cases in `tests/conformance/cases/tester/`:
   the shared skill, checked and posted with it (step 8);
   past it, the product owner settles it, then the issue is blocked
   ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#6-disagreements-end-at-the-product-owner-then-blocked)).
+- **A test missing** ([#1265](https://github.com/JN0V/workline/issues/1265)):
+  a review's test finding on code, sent by the developer; the tester
+  adds the test in any of its tests, whole or a diff, or says why none
+  is needed, its answer said on the reviewed pull request too. Cases
+  `tester/objection-missing-test-added`,
+  `objection-missing-test-added-as-a-diff`,
+  `objection-missing-none-needed`. Tried: its pull request's
+  `## Tried`.
 - **Its moment** (step 4): on `schedule`, one ready issue a run, the
   first in the backlog's order with named scenarios and no open Draft;
   none waiting, said; `--open-merge-request` needed

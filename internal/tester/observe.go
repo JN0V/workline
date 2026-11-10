@@ -54,6 +54,9 @@ type Answered struct {
 	Test     string   `json:"test"`            // the test objected to
 	Blob     string   `json:"blob,omitempty"`  // a rewrite's: the test as rewritten
 	Whys     bool     `json:"whys,omitempty"`  // the reply holds the five whys, the third answer's
+	// Missing: an answer to a test the review finds missing (#1265):
+	// kept, none needed; rewritten, the test added.
+	Missing bool `json:"missing,omitempty"`
 }
 
 var answeredData = regexp.MustCompile(`<!-- workline:tester-act (\{.*\}) -->`)

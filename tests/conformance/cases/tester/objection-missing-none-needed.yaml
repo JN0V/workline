@@ -1,0 +1,41 @@
+case: tester/objection-missing-none-needed
+about: >
+  A test the review finds missing, sent to the tester (#1265): the
+  tester says why none is needed. Nothing pushed; its reason in the
+  thread and on the pull request whose review found it, the act
+  recorded as a test missing, so the developer is asked nothing for it.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:developing"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+        threads:
+          - {id: "7", path: tests/test_mul_by_zero.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_by_zero.sh\n- kind: missing\n- why: the reviewer's tests lens, on pull request 2, `lib.sh:2`: Important: mul of a negative factor has no test — nothing runs mul -2 3."}
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+run: {test: [answer, --merge-request, "1", --no-apply], ai: "fake:tester-answer-missing-none", then: resume}
+expect:
+  status: pass
+  agent-calls: 1
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - id: 1
+        threads:
+          - {path: tests/test_mul_by_zero.sh, replies: 1, replies-contain: ["**None needed**", "\"missing\":true"]}
+      - id: 2
+        comment-contains: ["**The tester** answers a test finding of this review", "**None needed**", "Two by three's test already runs mul"]

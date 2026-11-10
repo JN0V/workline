@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -58,6 +59,10 @@ var kinds = []struct{ key, name, word string }{
 	{"contradicts", "contradicts another scenario", "contradict"},
 	{"untestable", "untestable as written", "untestable"},
 	{"need", "the need itself", "need"},
+	// A test the review finds missing, its cause a line of code: the
+	// tester adds it or says why none is needed (#1265). No scenario
+	// named: the tester reads them all.
+	{"missing", "a test missing", "missing"},
 }
 
 // What an answer run does, decided before any agent.
@@ -131,7 +136,7 @@ func (o objection) missing() []string {
 	if o.Test == "" {
 		missing = append(missing, "test")
 	}
-	if o.Scenario == "" {
+	if o.Scenario == "" && kindOf(o.Kind) != "missing" {
 		missing = append(missing, "scenario")
 	}
 	if kindOf(o.Kind) == "" {
@@ -193,6 +198,25 @@ type answer struct {
 	// Text: the issue's title and body; a rewrite's missing name counts
 	// as red only when it names it (#1111).
 	Text string `json:"text,omitempty"`
+	// Scenarios, a test missing's: the issue's, the test may be any's;
+	// From, the pull request whose review found it, where the answer is
+	// said too (#1265).
+	Scenarios []Scenario `json:"scenarios,omitempty"`
+	From      int        `json:"from,omitempty"`
+}
+
+// reviewedOnWords finds, in a test missing's why, the pull request whose
+// review found it, as the developer writes it.
+var reviewedOnWords = regexp.MustCompile(`\bon pull request (\d+)\b`)
+
+// reviewedOn is the pull request a test missing's why names, 0 for none.
+func reviewedOn(why string) int {
+	m := reviewedOnWords.FindStringSubmatch(why)
+	if m == nil {
+		return 0
+	}
+	n, _ := strconv.Atoi(m[1])
+	return n
 }
 
 const answerFile = "answer.json"
@@ -334,7 +358,7 @@ func answerPre(runDir, repo string, s Settings) int {
 		a.Mode, a.Why = modeMalformed, "it names no "+strings.Join(unread, ", no ")
 	case r.Files[t.Path] == "":
 		a.Mode, a.Why = modeMalformed, "its line is in `"+t.Path+"`, not one of the tester's tests ("+strings.Join(r.files(), ", ")+")"
-	case a.Scenario.Name == "":
+	case a.Scenario.Name == "" && a.Kind != "missing":
 		var names []string
 		for _, sc := range scenarios {
 			names = append(names, sc.Name)
@@ -346,6 +370,9 @@ func answerPre(runDir, repo string, s Settings) int {
 		a.Mode = modeAgent
 	}
 	a.FiveWhys = a.Mode == modeAgent && a.Decided == "" && a.Answers == 2
+	if a.Kind == "missing" {
+		a.Scenarios, a.From = scenarios, reviewedOn(o.Why)
+	}
 	if line, err := routing.Load(repo); err == nil {
 		a.Line = line.States
 	}
@@ -375,8 +402,17 @@ func answerPre(runDir, repo string, s Settings) int {
 // an interface claim.
 func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Issue, s Settings) int {
 	var b strings.Builder
-	fmt.Fprintf(&b, "# An objection to a test of #%d: %s\n\n", a.Issue, is.Title)
-	fmt.Fprintf(&b, "## The scenario, a person's\n\n- **%s:** %s\n\n", a.Scenario.Name, a.Scenario.Text)
+	if a.Kind == "missing" {
+		fmt.Fprintf(&b, "# A test the review finds missing, for #%d: %s\n\n", a.Issue, is.Title)
+		b.WriteString("## The scenarios, a person's\n\n")
+		for _, sc := range a.Scenarios {
+			fmt.Fprintf(&b, "- **%s:** %s\n", sc.Name, sc.Text)
+		}
+		b.WriteString("\n")
+	} else {
+		fmt.Fprintf(&b, "# An objection to a test of #%d: %s\n\n", a.Issue, is.Title)
+		fmt.Fprintf(&b, "## The scenario, a person's\n\n- **%s:** %s\n\n", a.Scenario.Name, a.Scenario.Text)
+	}
 	fmt.Fprintf(&b, "## The objection: %s\n\n", kindName(a.Kind))
 	for i, c := range t.Comments {
 		who := "the builder"
@@ -401,12 +437,23 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 		return fail(err)
 	}
 	fmt.Fprintf(&b, "## The test, `%s`, as it stands\n\n````\n%s\n````\n", a.File, strings.TrimRight(string(data), "\n"))
+	if a.Kind == "missing" {
+		fmt.Fprintf(&b, "Your other tests of #%d: %s.\n", a.Issue, strings.Join(otherFiles(a.Record, a.File), ", "))
+	}
 	head := b.String()
 	b.Reset()
-	b.WriteString("\n## Your answer\n\n" +
-		"- **Kept**: a `note`, the reason the test holds for the scenario.\n" +
-		"- **Rewritten**: the same file whole as a `patch` with `file` and `content`, and a `note`, why. " +
-		"It still checks the scenario's Then, and fails on the code before the change.\n")
+	if a.Kind == "missing" {
+		b.WriteString("\n## Your answer\n\n" +
+			"The reviewer found a behaviour of the change with no test, its cause in the code: you are the one who writes the acceptance tests.\n\n" +
+			"- **Added**: the test, in this file or another of your tests above, as a `patch` (the file whole with `file` and `content`, or a diff of it), and a `note`, why. " +
+			"It checks a scenario's Then, and fails on the code before the change.\n" +
+			"- **None needed**: a `note`, why no acceptance test is needed (a scenario's test covers it already, naming it; or it is no behaviour a scenario asks).\n")
+	} else {
+		b.WriteString("\n## Your answer\n\n" +
+			"- **Kept**: a `note`, the reason the test holds for the scenario.\n" +
+			"- **Rewritten**: the same file whole as a `patch` with `file` and `content`, and a `note`, why. " +
+			"It still checks the scenario's Then, and fails on the code before the change.\n")
+	}
 	if covers := declaredAt(a.Record); covers != "" {
 		b.WriteString("- **Its tests, as declared**: a rewrite keeps these ids, or gives a `covers` entry, " +
 			"`- covers: {scenario: <its name>, tests: [<test id>, …]}`, for each scenario whose tests it renames or removes, " +
@@ -572,17 +619,42 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		why = "\n\n" + w.Markdown()
 	}
 	at, _ := git(repo, "rev-parse", "HEAD")
-	act := Answered{Act: "kept", At: strings.TrimSpace(at), Model: asked(runDir), Scenario: a.Scenario, Test: a.File, Whys: a.FiveWhys}
+	missing := a.Kind == "missing"
+	act := Answered{Act: "kept", At: strings.TrimSpace(at), Model: asked(runDir), Scenario: a.Scenario, Test: a.File, Whys: a.FiveWhys, Missing: missing}
 	if len(patches) == 0 {
-		out := []intent.Intention{reply("**Kept**: " + reason + why + "\n" + act.line())}
+		word := "**Kept**: "
+		if missing {
+			word = "**None needed**: "
+		}
+		out := []intent.Intention{reply(word + reason + why + "\n" + act.line())}
+		out = append(out, a.toReview(word+reason)...)
 		if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), out); err != nil {
 			return fail(err)
 		}
+		if missing {
+			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no test needed, the reason in the thread" + whysSaid(a) + left})
+		}
 		return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "the test is kept, the reason in the thread" + whysSaid(a) + left})
 	}
-	for _, p := range patches {
+	for i, p := range patches {
 		files := intent.PatchFiles(p.Value)
+		if diff, ok := p.Value.(string); ok && missing && len(files) == 1 && a.Record.Files[files[0]] != "" {
+			// A test added is a diff by nature: laid on the file, whole.
+			content, err := laidWhole(repo, files[0], diff)
+			if err != nil {
+				return block("patch-unreadable", "the test added does not apply to `"+files[0]+"`: "+err.Error())
+			}
+			p = intent.Intention{Kind: "patch", Value: map[string]any{"file": files[0], "content": content}}
+			patches[i] = p
+		}
+		if missing && len(files) == 1 && a.Record.Files[files[0]] != "" {
+			a.File = files[0] // a test missing goes in any of its tests
+			act.Test = a.File
+		}
 		if len(files) != 1 || files[0] != a.File {
+			if missing {
+				return block("rewrite-other-file", "a test missing goes in one of the tester's tests of the issue, one file: not "+strings.Join(files, ", "))
+			}
 			return block("rewrite-other-file", "a rewrite changes the objected test alone, `"+a.File+"`: not "+strings.Join(files, ", "))
 		}
 		if _, ok := p.Value.(map[string]any); !ok {
@@ -616,9 +688,14 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	if why := r.recovered(intents, newTests, a.File); why != "" {
 		return block("scenario-without-test", why)
 	}
+	word := "**Rewritten**"
+	if missing {
+		word = "**Added** in `" + a.File + "`"
+	}
 	out := []intent.Intention{patches[len(patches)-1],
-		reply("**Rewritten**, the tester's own commit on this branch, red on the base: " + reason + why + unprovenSaid(*proof) + "\n" + act.line()),
+		reply(word + ", the tester's own commit on this branch, red on the base: " + reason + why + unprovenSaid(*proof) + "\n" + act.line()),
 		{Kind: "comment", Value: r.intention()["comment"]}}
+	out = append(out, a.toReview(word+": "+reason)...)
 	for _, in := range intents {
 		if in.Kind == "note" && (!a.FiveWhys || !whys.Is(noteText(in.Value))) {
 			out = append(out, in) // the five whys are in the thread already
@@ -627,15 +704,76 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), out); err != nil {
 		return fail(err)
 	}
-	data, err := yaml.Marshal(map[string]any{"push": fmt.Sprintf("test: rewrite %s on an objection\n\nRefs %s", a.File, a.URL)})
+	push := fmt.Sprintf("test: rewrite %s on an objection\n\nRefs %s", a.File, a.URL)
+	if missing {
+		push = fmt.Sprintf("test: add a test the review asks to %s\n\nRefs %s", a.File, a.URL)
+	}
+	data, err := yaml.Marshal(map[string]any{"push": push})
 	if err != nil {
 		return fail(err)
 	}
 	if err := os.WriteFile(filepath.Join(runDir, "out", "merge-request.yaml"), data, 0o644); err != nil {
 		return fail(err)
 	}
-	proof.Summary = "the test is rewritten, red on the base: " + proof.Summary + whysSaid(a) + left
+	done := "the test is rewritten"
+	if missing {
+		done = "the test missing is added"
+	}
+	proof.Summary = done + ", red on the base: " + proof.Summary + whysSaid(a) + left
 	return write(runDir, *proof)
+}
+
+// laidWhole is file as diff leaves it, laid on HEAD on an index of its
+// own: the checkout is not touched.
+func laidWhole(repo, file, diff string) (string, error) {
+	tmp, err := os.MkdirTemp("", "workline-laid-")
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = os.RemoveAll(tmp) }()
+	run := func(stdin string, args ...string) (string, error) {
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env, cmd.Stdin = append(os.Environ(), "GIT_INDEX_FILE="+filepath.Join(tmp, "index")), strings.NewReader(stdin)
+		var stderr strings.Builder
+		cmd.Stderr = &stderr
+		out, err := cmd.Output()
+		if err != nil {
+			return "", fmt.Errorf("%v: %s", err, strings.TrimSpace(stderr.String()))
+		}
+		return string(out), nil
+	}
+	if _, err := run("", "read-tree", "HEAD"); err != nil {
+		return "", err
+	}
+	if _, err := run(intent.NormalizeDiff(diff), "apply", "--cached", "--recount", "-"); err != nil {
+		return "", err
+	}
+	return run("", "show", ":"+file)
+}
+
+// toReview is a test missing's answer said on the pull request whose
+// review found it (#1265), where the review and the developer read it;
+// none for another objection, or a why naming no pull request.
+func (a answer) toReview(text string) []intent.Intention {
+	if a.Kind != "missing" || a.From == 0 {
+		return nil
+	}
+	return []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": a.From, "sticky": "tester-answer-" + a.Thread,
+		"body": fmt.Sprintf("**The tester** answers a test finding of this review, sent to its Draft ([the thread](%s)): %s", a.URL, text)}}}
+}
+
+// otherFiles are the record's tests but file, sorted, each in code.
+func otherFiles(r record, file string) []string {
+	var out []string
+	for _, f := range r.files() {
+		if f != file {
+			out = append(out, "`"+f+"`")
+		}
+	}
+	if len(out) == 0 {
+		return []string{"none"}
+	}
+	return out
 }
 
 // rewritten is the record once file is rewritten to blob, proven by
