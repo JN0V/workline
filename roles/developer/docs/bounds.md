@@ -131,6 +131,10 @@ what each agent gets: [the agent](agent.md)).
 - **Where**: the commit its code starts from (the tester's Draft, or
   the commit read), checked out in the run's folder. The agent runs
   there, its path in `WORKLINE_WORKTREE`, and edits in place.
+- **Never under `.git/`**: a run's folder there (the default, no
+  `WORKLINE_RUNS_DIR`) has its worktree in a temporary folder of its
+  own, linked from the run: Claude Code edits no file under `.git/`
+  ([#1304](https://github.com/JN0V/workline/issues/1304)).
 - **What is taken**: the diff against that commit, new files in,
   whatever the agent committed, a deleted file a deletion; one patch a
   file, held to the rules above. A file's mode is not read.

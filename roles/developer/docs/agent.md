@@ -21,7 +21,8 @@ The agent is a choice: none, `claude`, or `cmd:<any command>`.
 - **A worktree** of the commit its code starts from: the tester's
   Draft, or the commit the run read; in a review round, its pull
   request's head ([the review loop](review-loop.md#a-round)). It reads,
-  edits and runs commands there.
+  edits and runs commands there, never under `.git/`
+  ([the bounds](bounds.md#a-worktree-its-diff-is-the-code)).
 - **Its diff is its code**, held to the bounds once it is done
   ([the bounds](bounds.md#a-worktree-its-diff-is-the-code)), then
   proven on a fresh tree ([the proof](proof.md#a-fresh-tree)).

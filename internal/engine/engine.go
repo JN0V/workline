@@ -3262,9 +3262,9 @@ func newRunDir(repo, roleName string) (string, error) {
 // in the run for its agent, kept through every attempt (ADR-0056,
 // ADR-0063 §8); none, nothing.
 func dropWorktree(repo, runDir string) {
-	for _, tree := range []string{agent.Worktree(runDir), agent.ReadTree(runDir)} {
+	for name, tree := range map[string]string{agent.WorktreeDir: agent.Worktree(runDir), agent.ReadTreeDir: agent.ReadTree(runDir)} {
 		if tree != "" {
-			tester.RemoveWorktree(repo, tree)
+			tester.RemoveRunTree(repo, runDir, name, tree)
 		}
 	}
 }

@@ -33,7 +33,16 @@ const WorktreeDir = "worktree"
 
 // Worktree is the run's worktree, "" when its role made none.
 func Worktree(runDir string) string {
-	dir := filepath.Join(runDir, WorktreeDir)
+	return runTree(runDir, WorktreeDir)
+}
+
+// runTree is the run's tree name, its real path when linked from the run
+// (tester.RunTree: a run folder under .git has it outside); "" when none.
+func runTree(runDir, name string) string {
+	dir, err := filepath.EvalSymlinks(filepath.Join(runDir, name))
+	if err != nil {
+		return ""
+	}
 	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
 		return ""
 	}
@@ -49,11 +58,7 @@ const ReadTreeDir = "readtree"
 
 // ReadTree is the run's read-only tree, "" when its role made none.
 func ReadTree(runDir string) string {
-	dir := filepath.Join(runDir, ReadTreeDir)
-	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
-		return ""
-	}
-	return dir
+	return runTree(runDir, ReadTreeDir)
 }
 
 func (c command) Propose(req Request) (Call, error) {

@@ -610,6 +610,48 @@ func Worktree(repo, rev, tree string) error {
 	return nil
 }
 
+// RunTree checks rev out for a run's agent, at runDir/name (an
+// agent.WorktreeDir or agent.ReadTreeDir). A run folder under a .git
+// folder, the default (no WORKLINE_RUNS_DIR), has its tree in a folder of
+// its own outside it, linked from runDir/name: Claude Code edits no file
+// under .git, taking it for a sensitive one (#1304).
+func RunTree(repo, rev, runDir, name string) error {
+	at := filepath.Join(runDir, name)
+	if !underGitDir(runDir) {
+		return Worktree(repo, rev, at)
+	}
+	tree, err := os.MkdirTemp("", "workline-"+name+"-")
+	if err != nil {
+		return err
+	}
+	if err := Worktree(repo, rev, tree); err != nil {
+		return err
+	}
+	if err := os.Symlink(tree, at); err != nil {
+		RemoveWorktree(repo, tree)
+		return err
+	}
+	return nil
+}
+
+// RemoveRunTree removes a tree RunTree made, and its link.
+func RemoveRunTree(repo, runDir, name, tree string) {
+	RemoveWorktree(repo, tree)
+	at := filepath.Join(runDir, name)
+	if st, err := os.Lstat(at); err == nil && st.Mode()&os.ModeSymlink != 0 {
+		_ = os.Remove(at)
+	}
+}
+
+// underGitDir says dir lies under a folder named .git.
+func underGitDir(dir string) bool {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		abs = dir
+	}
+	return slices.Contains(strings.Split(filepath.ToSlash(abs), "/"), ".git")
+}
+
 // RemoveWorktree removes a worktree Worktree made, whatever it holds.
 func RemoveWorktree(repo, tree string) {
 	if _, err := git(repo, "worktree", "remove", "--force", tree); err != nil {
