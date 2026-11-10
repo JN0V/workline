@@ -1,0 +1,23 @@
+case: forge/local-issues-on-a-merge-request
+about: >
+  `workline issues label !1` and `comment !1` act on the local forge's
+  merge request 1, not on issue 1; a label taken off with `--remove`
+  alone is enough (#1284). An issue opened with a label given twice
+  holds it once, as a forge does.
+given:
+  repo: basic
+  config: {forge: local}
+  setup:
+    - "git checkout -q -b feature && git -c user.name=b -c user.email=b@x commit -q --allow-empty -m change && git checkout -q main && mkdir -p .git/workline/merge-requests && printf -- '---\\ntitle: Add a total\\nstate: open\\nlabels: [workline:changes-requested]\\nbranch: feature\\nbase: main\\n---\\n\\nThe change.\\n' > .git/workline/merge-requests/1.md"
+run:
+  sh: >
+    workline issues open "Total an order" --label bug --label bug &&
+    workline issues label !1 --remove workline:changes-requested &&
+    workline issues comment !1 --body "Fixed in the last push." &&
+    workline issues show !1
+expect:
+  exit: 0
+  stdout: ["#1 opened", "!1 labelled", "!1 commented", "Add a total — open  (feature into main)", "Fixed in the last push."]
+  files:
+    .git/workline/merge-requests/1.md: {contains: ["labels: []", "Fixed in the last push."]}
+    .git/workline/issues/1.md: {contains: "labels: [bug]", lacks: ["workline-comment", "changes-requested"]}

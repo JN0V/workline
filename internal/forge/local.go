@@ -369,13 +369,20 @@ func (l *Local) OpenIssue(title, body, marker string) (int, error) {
 }
 
 // Open opens an issue as a person does on a forge: a new number each
-// time, whatever the titles of the others, its labels set (#1284).
+// time, whatever the titles of the others, its labels set, each once
+// as on a forge (#1284).
 func (l *Local) Open(title, body string, labels []string) (int, error) {
 	id, err := l.next("issue")
 	if err != nil {
 		return 0, err
 	}
-	return id, l.save("issue", &LocalItem{ID: id, Title: title, State: "open", Labels: labels, Body: body})
+	var set []string
+	for _, a := range labels {
+		if !slices.Contains(set, a) {
+			set = append(set, a)
+		}
+	}
+	return id, l.save("issue", &LocalItem{ID: id, Title: title, State: "open", Labels: set, Body: body})
 }
 
 // Answer adds a person's comment after the others, as written: no
