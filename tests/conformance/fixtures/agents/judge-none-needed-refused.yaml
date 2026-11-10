@@ -1,0 +1,3 @@
+# A judge weighing the tester's answer that no test is needed (#1303):
+# yes, the finding still holds, the reason does not settle it.
+- note: "yes: no test averages an empty list, and the reason names none that does."

@@ -11,11 +11,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/routing"
@@ -170,11 +170,6 @@ func toTesterOnly(r round, b Bounds, repo string) []intent.Intention {
 	}
 }
 
-// noneNeededWords read the tester's answer on the reviewed pull request
-// that no test is needed, and the line the review found it on
-// (tester.toReview).
-var noneNeededWords = regexp.MustCompile("\\*\\*The tester\\*\\* answers a test finding of this review on `([^`]+)`, sent to its Draft \\(\\[the thread\\]\\([^)]*\\)\\): \\*\\*None needed\\*\\*")
-
 // disputed are the review's rows sent to the tester that still block the
 // merge, the tester answering on the pull request that no test is needed
 // on their line: the reviewer and the tester do not agree, and nothing
@@ -182,8 +177,8 @@ var noneNeededWords = regexp.MustCompile("\\*\\*The tester\\*\\* answers a test 
 func disputed(rows []Asked, a Act, kept forge.Kept) []Asked {
 	needless := map[string]bool{}
 	for _, c := range kept.Each("<!-- workline:sticky=tester/" + tester.TesterAnswerKey) {
-		if m := noneNeededWords.FindStringSubmatch(c); m != nil {
-			needless[m[1]] = true
+		if a, ok := reviewer.NoneNeeded(c); ok {
+			needless[a.Where] = true
 		}
 	}
 	var out []Asked

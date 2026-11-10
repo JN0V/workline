@@ -1,0 +1,3 @@
+# A judge weighing the tester's answer that no test is needed (#1303):
+# no, the finding does not hold, the reason settles it.
+- note: "no: TestAverage already averages 2 and 4, and fails were the count off by one."

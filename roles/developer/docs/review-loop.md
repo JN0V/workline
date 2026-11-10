@@ -10,7 +10,7 @@ sources:
   - roles/developer/role.yaml
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: 00f558d1
+checked: 3ec4d022
 verified: agent:claude-code
 ---
 # The review loop
@@ -97,8 +97,10 @@ step 6).
   - **Alone**: no agent, no round counted; the rounds never run out on
     test findings.
   - **None needed, still blocking**: the tester answers on the pull
-    request that no test is needed, and the review still blocks on the
-    finding. No round settles it: its issue goes `workline:blocked`,
+    request that no test is needed; the reviewer's judge weighs the
+    reason, and a reason that holds lifts the block
+    ([weighed](../../reviewer/docs/tester-answers.md)).
+    The review still blocking on the finding, no round settles it: its issue goes `workline:blocked`,
     the reason on it and on the pull request, for a person who reads
     both.
   - **The developer's still**: one on a test file, one asked again from

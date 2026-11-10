@@ -1,0 +1,35 @@
+case: reviewer/tester-none-needed-settles-a-warning
+about: "A warning of the tests lens went to the tester, who answered on the pull request that no test is needed, and why (#1303). The reviewer runs again, nothing new to read: a judge weighs the reason, it holds, and the warning's conversation is resolved, the tester's reason quoted in the summary comment. Weighed once: the record keeps the verdict."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-none-needed-holds.yaml"}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 finding on the change; lenses: tests.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+
+            <!-- workline:sticky=reviewer/summary -->
+          - "**The tester** answers a test finding of this review on `calc/calc.go:11`, sent to its Draft ([the thread](https://forge.example/pr/1#7)): **None needed**: TestAverage already averages 2 and 4: a new test would pass on the base and prove nothing.\n\n<!-- workline:sticky=tester/tester-answer-7 -->"
+        threads:
+          - {path: calc/calc.go, line: 11, body: "**workline reviewer** · warns · tests\n\n**Important: Average has no test for a count off by one**\n\n<!-- workline:line=tests/d861c7fa46d7 -->"}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  # The judge weighing the answer; no lens: nothing new to read.
+  agent-calls: 1
+  summary: "1 answer of the tester's that no test is needed weighed: 1 settled"
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: ["**The tester's answers weighed**", "`calc/calc.go:11` (tests, Average has no test for a count off by one): settled, the reason holds", "TestAverage already averages 2 and 4", "the reason holds", "**Resolved**: 1 conversation", "<!-- workline:weighed "]
+        threads:
+          - {path: calc/calc.go, line: 11, resolved: true}
