@@ -874,7 +874,7 @@ func Pre(runDir, repo string) int {
 			}
 			if reason, _, ok := backlog.NoTest(d.comments); ok {
 				if _, picked := backlog.ReadProof(d.comments, role); !picked {
-					review += noTestSaid(reason)
+					review += noTestSaid(reason, backlog.RetestSpent(d.comments))
 				}
 			}
 			if unread, own := backlog.ScenariosUnread(d.is, d.st); unread && cfg.Tester && !backlog.Readied(d.is) {
@@ -1512,14 +1512,21 @@ func noTestUnread(comments []string, st *backlog.State, role string) bool {
 }
 
 // noTestSaid tells the agent the tester found no test possible, and what
-// it may do: pick the proof in place of new tests, or send the issue back
-// to its tests with scenarios a test checks (ADR-0059, decision 4).
-func noTestSaid(reason string) string {
+// it may do: pick the proof in place of new tests, send the issue back to
+// its tests with scenarios a test checks (ADR-0059, decision 4), or, the
+// tester's reason its own, send it back unchanged once (#1053); spent,
+// the retest is not offered.
+func noTestSaid(reason string, spent bool) string {
+	retest := "If the reason is the tester's own, not the issue's — code missing from its task, a run that failed — send it back to its tests unchanged, once: `ready` with `retest: true` and why. "
+	if spent {
+		retest = "It was sent back to its tests unchanged once already, and the tester found none again: no second retest. "
+	}
 	return fmt.Sprintf("No test possible, says the tester: %s\n"+
 		"Pick its proof in place of new tests — `ready` with `proof: {kind: <kind>, reason: <why it proves the need>}`, the kind one of: %s (%s), %s (%s), %s (%s; add `test: <its name>` and, if not the project's setting, `runs: <N>`). "+
-		"Or rewrite what keeps a test from being written — its %s, yours to rewrite; its %s where it is your draft, so a test checks it — with a `refine` giving each section whole, or ask its reporter: a `ready` with no proof sends it back to its tests only beside that rewrite — alone, it is refused, and the line blocks the issue for a person.\n",
+		"Or rewrite what keeps a test from being written — its %s, yours to rewrite; its %s where it is your draft, so a test checks it — with a `refine` giving each section whole, or ask its reporter: a `ready` with no proof sends it back to its tests beside that rewrite. %s"+
+		"A `ready` alone is refused, and the line blocks the issue for a person.\n",
 		strings.TrimSpace(reason), backlog.KindSuite, backlog.ProofKinds[backlog.KindSuite], backlog.KindDocs, backlog.ProofKinds[backlog.KindDocs],
-		backlog.KindFlaky, backlog.ProofKinds[backlog.KindFlaky], work.Name(work.Scope), work.Name(work.Validation))
+		backlog.KindFlaky, backlog.ProofKinds[backlog.KindFlaky], work.Name(work.Scope), work.Name(work.Validation), retest)
 }
 
 // rewriteUnread says whether the agent is told to rewrite an issue's

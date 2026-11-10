@@ -98,6 +98,7 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 	}
 	if p.Kind == KindNone {
 		p.Body = t.Body // the body it read: sent again unchanged, Blocked (#815)
+		p.Retried = t.Retried // after a retest: no second one (#1053)
 		to, did, rule = "", "finds no test possible for this issue", "no-test-possible"
 		for _, o := range line.States {
 			if o.Role == "product-owner" {

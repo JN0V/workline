@@ -62,6 +62,9 @@ type task struct {
 	// Body: the digest of the issue's body pre read, kept with a "no
 	// test possible" (#815).
 	Body string `json:"body,omitempty"`
+	// Retried: the product owner sent it back unchanged after a "no test
+	// possible" (#1053); another one is recorded as said once retried.
+	Retried bool `json:"retried,omitempty"`
 	// Author: who opened the issue, asked how to reproduce a bug its
 	// tests do not show (ADR-0060).
 	Author string `json:"author,omitempty"`
@@ -179,7 +182,7 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels, Body: backlog.BodyDigest(is.Body), Author: is.Author,
-		Text: is.Title + "\n" + is.Body}
+		Text: is.Title + "\n" + is.Body, Retried: backlog.Retested(comments, "product-owner")}
 	if v := strings.TrimSpace(sections[work.Verification].Text); v != "" && !backlog.TestersToWrite(is.Body, po) {
 		t.Verification = v
 	}
