@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/resolve.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/forge/threads.go, internal/engine/review.go]
-checked: 1f74082b
+checked: 9b0b2783
 judged: 39dcb7b
 verified: agent:claude-code
 ---
@@ -96,6 +96,9 @@ flowchart LR
     pushed, its tests green, and the next run does not raise it again
     ([#1050](https://github.com/JN0V/workline/issues/1050)): a warning
     asks nothing, its lens may never read the file again.
+  - or the tester answered that no test is needed, and a judge found
+    the reason holds
+    ([judge](tester-answers.md)).
   - The summary comment counts them, under **Resolved**.
 - **Left open**: found again, a block still standing, a lens that read
   elsewhere, a warning nothing answered; one a person opened, or
