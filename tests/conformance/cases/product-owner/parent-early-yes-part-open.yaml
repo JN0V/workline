@@ -1,0 +1,30 @@
+case: product-owner/parent-early-yes-part-open
+about: "A person put workline:accepted on a split parent while one of its parts was still open, before the line proposed its closing. With no closing proposed, a yes on a parent is never one to its closing: it is taken off, said (#1213). The last part closed, the next run proposes the closing, and the parent waits for a new yes, never closed nor left with a stale one."
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - id: 9
+        title: "Export fixes"
+        body: "The export drops its last row, and a comma splits a cell."
+        author: ann
+        insider: true
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dev, insider: true, created: "2026-11-08T18:00:00Z"}]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], parent: 9}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: commit, ref: "1a2b3c4", text: "fix(export): quote commas, closes #12"}]}
+run:
+  role: product-owner
+  event: schedule
+  ai: none
+  then: again
+  between: {issues: [{id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: completed}]}
+expect:
+  agent-calls: 0
+  findings: [{rule: parent-to-accept, where: "#9", message: "its 2 parts are closed: for a person to accept"}]
+  no-findings: [{rule: done-as-accepted, where: "#9"}, {rule: done, where: "#9", message: "Moved #9 to ready"}]
+  forge:
+    issues:
+      - {id: 9, closed: false, labels: [workline:proposed], comment-contains: ["Took `workline:accepted` off #9, put by @dev: no closing of #9 is proposed, and a yes left on a parent never stands for one; a yes to its closing is asked once all its parts are closed.", "**Proposes**: Close it as completed"]}

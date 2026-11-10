@@ -449,6 +449,15 @@ func Pre(runDir, repo string) int {
 					"issue": is.ID, "reason": "completed", "parent": true, "own": true,
 					"why": fmt.Sprintf("its %d parts are closed; what each delivered, and what is missing, is in the comment on its parts", ev.Parts)}})
 			}
+			if backlog.Accepted(is) && !closing {
+				// A yes left on it with no closing proposed (#1213): put
+				// early, or one to an act done already, never a yes to
+				// what its parts delivered: checked as one to its closing,
+				// it is taken off, said, never left to stand for it.
+				fallback = append(fallback, intent.Intention{Kind: "close", Value: map[string]any{
+					"issue": is.ID, "reason": "completed", "parent": true, "own": true, "ticked": who,
+					"why": "accepted by " + who + " (" + backlog.AcceptedLabel(b) + ")"}})
+			}
 		}
 		// An issue announced obsolete (ADR-0024): kept open when someone
 		// wrote or took the label off, closed once due if a second judge

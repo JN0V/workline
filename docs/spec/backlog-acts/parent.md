@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/parent.go, internal/builtin/productowner/productowner.go, internal/line/parent.go, internal/forge/forge.go, internal/forge/github.go, internal/forge/gitlab.go]
 status: draft
-checked: 8538d558
+checked: a16d7f0a
 verified: agent:claude-code
 ---
 # A parent and its parts
@@ -85,6 +85,10 @@ person unlinked is no longer one. An issue whose state lists a split
   `parent-not-split` or `parent-part-open`. A yes dropped for a part
   open again is taken off, said in the role's comment: it never stands
   for a later act, nor moves the parent to ready.
+- **A yes left on with no closing proposed** ([#1213](https://github.com/JN0V/workline/issues/1213)):
+  put early, or one to another act never taken off, it is dropped
+  (`parent-not-proposed`) and taken off, said. All parts closed, the
+  closing is proposed in the same run, for a new yes.
 - **Never closed by the role alone**: an agent's `close` on a parent, a
   duplicate or an announcement as obsolete, is dropped
   (`parent-accepted-by-a-person`) unless a person accepted it. The agent's

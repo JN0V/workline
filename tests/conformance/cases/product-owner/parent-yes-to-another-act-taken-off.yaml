@@ -1,0 +1,32 @@
+case: product-owner/parent-yes-to-another-act-taken-off
+about: "A split parent, one part still open, holds a rename proposed; a person of the project labels it workline:accepted. The rename is done on that yes. With no closing proposed, the yes is never one to close it (#1213): it is taken off, said without telling the person their yes was misplaced, never left on to stand for the closing later."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {rename: {mode: propose, max: 5}}
+  forge:
+    sub-issues: true
+    issues:
+      - id: 9
+        title: "bug"
+        body: "The export drops its last row, and a comma splits a cell."
+        author: ann
+        insider: true
+        labels: [workline:proposed, workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dev, insider: true, created: "2026-11-08T18:00:00Z"}]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\nlabel: workline:proposed\nproposed:\n  - act: rename\n    line: 'Rename #9 from \"bug\" to \"Export fixes\": \"bug\" says nothing.'\n    proposal: {do: rename, issue: 9, title: Export fixes, why: '\"bug\" says nothing.'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], parent: 9}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: commit, ref: "1a2b3c4", text: "fix(export): quote commas, closes #12"}]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: done-as-accepted, where: "#9", message: "Renamed #9 from \"bug\" to \"Export fixes\""}
+    - {rule: parent-not-proposed, where: "#9", message: "no closing of #9 is proposed"}
+  no-findings: [{rule: done-as-accepted, where: "#9", message: "Closed #9"}, {rule: parent-part-open, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, title: "Export fixes", closed: false, labels: [], comment-contains: ["Took `workline:accepted` off #9, put by @dev: no closing of #9 is proposed, and a yes left on a parent never stands for one; a yes to its closing is asked once all its parts are closed."], comment-lacks: "is open: it is closed once all its parts are"}
