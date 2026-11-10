@@ -1,0 +1,41 @@
+case: routing/drafts-cautious-waits-said-by-the-apply
+about: >
+  As in CI: the line judges with no write token (--no-apply) and the
+  apply job writes its record (`workline apply --line`). The product
+  owner's delay travels with the record: at cautious, the comment
+  says the drafts wait for a person's yes, with no day, never the
+  default delay's date (#1195).
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+    roles:
+      product-owner:
+        settings:
+          autonomy: cautious
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: "workline-jn0v[bot]"
+        insider: false
+        labels: [workline:to-refine, workline:draft]
+        labeled: {"workline:draft": "2026-10-01T09:00:00Z"}
+        body: "## Need\n\n<!-- workline:draft -->\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run:
+  route: issue
+  target: {issue: 9}
+  ai: none
+  no-apply: true
+  then: resume
+  apply-from: {line: true}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine, workline:draft]
+        comment-contains: "**workline's line** waits for a person on this issue.\n\n- **Why**: its drafts, since 2026-10-01 09:00 UTC, wait on a person's yes (acts.ask.wait: never).\n- **Next**: a person labels it `workline:accepted` to take them, or edits them, which wakes the product owner.\n\n**workline's line** last woke the product owner"
