@@ -118,7 +118,7 @@ workline test write --issue 42 --ai claude
 | `test-line-changed` | a patch changes or removes a line of a test file the base holds |
 | `base-test-skipped` | a test that ran on the base is skipped with the tests laid on it |
 | `intention-refused` | a patch reaches a file outside `test-paths` |
-| `test-green-on-base` | a test is not proven red |
+| `test-green-on-base` | a test is not proven red; asked again once, told which test passes on the base, so its scenario can be kept as today, then blocked |
 | `no-new-test` | the report names no test of the files written: the project's runner did not run them, the filter that may skip them named (a PlatformIO `test_filter`); the next run gives the agent this reason |
 | `bug-not-reproduced` | a bug's tests all pass on the base: `workline:needs-repro`, its reporter asked ([how](docs/hand-over.md#a-bug-not-reproduced)) |
 | `no-test-written` | no test proposed, the answer unread or refused whole; an answer that does not read is asked again once first. An answer read with no test nor kind is `none`, back to the product owner |

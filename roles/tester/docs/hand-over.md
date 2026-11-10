@@ -180,7 +180,8 @@ refusal is written on the issue too
 - **One comment of the tester's**, edited on each refusal: why, and
   what comes next (ready it, or name its scenarios).
 - **Its own tests refused too**: a test green on the base, a scenario
-  with no test: said in the same comment, the run still blocks. In
+  with no test: asked again once first, told which; still refused, said
+  in the same comment, the run blocks. In
   `workline:needs-tests`, the line then blocks the issue, `workline:blocked`,
   the reason on the board
   ([routing](../../../docs/spec/routing.md#the-line-of-states)).
