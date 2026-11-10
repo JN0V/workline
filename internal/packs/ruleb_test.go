@@ -14,6 +14,7 @@ import (
 	"go/token"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -132,18 +133,44 @@ func globTokens(glob string) []patternToken {
 // or a digit on a side where the token itself starts or ends with one, so
 // `.kt` is in `task.kt.bak` and `Main.kt`, never in `a.ktx`.
 func holds(s string, t patternToken) bool {
-	for i := 0; ; {
+	return len(spans(s, t)) > 0
+}
+
+// spans is where s holds the token, as holds reads it: start and end.
+func spans(s string, t patternToken) [][2]int {
+	var out [][2]int
+	for i := 0; i < len(s); {
 		j := strings.Index(s[i:], t.text)
 		if j < 0 {
-			return false
+			break
 		}
 		start, end := i+j, i+j+len(t.text)
-		if glued(s, start-1, t.text[0]) || (!t.open && glued(s, end, t.text[len(t.text)-1])) {
-			i = start + 1
-			continue
+		if !glued(s, start-1, t.text[0]) && (t.open || !glued(s, end, t.text[len(t.text)-1])) {
+			out = append(out, [2]int{start, end})
 		}
-		return true
+		i = start + 1
 	}
+	return out
+}
+
+// ownLine is the first line of s, from 0, where the token sits outside
+// every longer token's span, or -1: `build.gradle.kts` holds `.kts` only
+// inside the longer token, `conftest.py and x.py` holds `.py` on its own.
+func ownLine(s string, t patternToken, tokens []patternToken) int {
+	for i, l := range strings.Split(s, "\n") {
+		var longer [][2]int
+		for _, o := range tokens {
+			if len(o.text) > len(t.text) && strings.Contains(o.text, t.text) {
+				longer = append(longer, spans(l, o)...)
+			}
+		}
+		for _, sp := range spans(l, t) {
+			if !slices.ContainsFunc(longer, func(o [2]int) bool { return o[0] <= sp[0] && sp[1] <= o[1] }) {
+				return i
+			}
+		}
+	}
+	return -1
 }
 
 // glued says whether s[at] is a letter or a digit and the token's own
@@ -214,12 +241,11 @@ func ruleBScan(name string, src []byte, tokens []patternToken) ([]ruleBHit, erro
 			if err != nil {
 				s = n.Value
 			}
-			var lit []ruleBHit
 			ls := strings.Split(s, "\n")
 			for _, t := range tokens {
-				at := tokenLine(s, t)
+				at := ownLine(s, t, tokens)
 				if at < 0 {
-					at = tokenLine(unescapeRegex(s), t)
+					at = ownLine(unescapeRegex(s), t, tokens)
 				}
 				if at < 0 {
 					continue
@@ -228,31 +254,12 @@ func ruleBScan(name string, src []byte, tokens []patternToken) ([]ruleBHit, erro
 				if strings.HasPrefix(n.Value, "`") {
 					line += at
 				}
-				lit = append(lit, ruleBHit{file: name, line: line, token: t.text, lit: strings.TrimSpace(ls[at])})
-			}
-			// One token inside another the literal holds counts once, as
-			// the longer: `build.gradle.kts`, not `.kts` too.
-			for _, h := range lit {
-				if !slices.ContainsFunc(lit, func(o ruleBHit) bool {
-					return o.token != h.token && strings.Contains(o.token, h.token)
-				}) {
-					hits = append(hits, h)
-				}
+				hits = append(hits, ruleBHit{file: name, line: line, token: t.text, lit: strings.TrimSpace(ls[at])})
 			}
 		}
 		return true
 	})
 	return hits, nil
-}
-
-// tokenLine is the line of s, from 0, holding the token, or -1.
-func tokenLine(s string, t patternToken) int {
-	for i, l := range strings.Split(s, "\n") {
-		if holds(l, t) {
-			return i
-		}
-	}
-	return -1
 }
 
 // ruleBKey is a baseline line's key: a file and a token.
@@ -288,12 +295,10 @@ func readRuleBBaseline(t *testing.T) map[ruleBKey]int {
 	return out
 }
 
-// No Go file of internal/ holds a pack's marker, extension or path
-// pattern beyond the baseline: a new language's fix lands in a pack.
-// Test files, testdata and the pack loader are left out.
-func TestRuleBNoEcosystemPatternInTheEngine(t *testing.T) {
-	tokens := ruleBTokens(Builtin())
-	root := filepath.Join("..")
+// ruleBWalk is the hits of the Go files under root, shown under prefix:
+// test files, testdata folders and root's packs folder, the pack loader,
+// left out.
+func ruleBWalk(root, prefix string, tokens []patternToken) ([]ruleBHit, error) {
 	var hits []ruleBHit
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -316,19 +321,21 @@ func TestRuleBNoEcosystemPatternInTheEngine(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		h, err := ruleBScan(filepath.ToSlash(filepath.Join("internal", rel)), src, tokens)
+		h, err := ruleBScan(path.Join(prefix, filepath.ToSlash(rel)), src, tokens)
 		hits = append(hits, h...)
 		return err
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	return hits, err
+}
+
+// ruleBCompare is what fails against the baseline, sorted: each literal of
+// a file and token past its count, and each count past the literals left.
+func ruleBCompare(hits []ruleBHit, base map[ruleBKey]int) []string {
 	got := map[ruleBKey][]ruleBHit{}
 	for _, h := range hits {
 		k := ruleBKey{h.file, h.token}
 		got[k] = append(got[k], h)
 	}
-	base := readRuleBBaseline(t)
 	var fails []string
 	for k, hs := range got {
 		if len(hs) <= base[k] {
@@ -344,13 +351,27 @@ func TestRuleBNoEcosystemPatternInTheEngine(t *testing.T) {
 		}
 	}
 	slices.Sort(fails)
-	for _, f := range fails {
+	return fails
+}
+
+// No Go file of internal/ holds a pack's marker, extension or path
+// pattern beyond the baseline: a new language's fix lands in a pack.
+func TestRuleBNoEcosystemPatternInTheEngine(t *testing.T) {
+	hits, err := ruleBWalk("..", "internal", ruleBTokens(Builtin()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range ruleBCompare(hits, readRuleBBaseline(t)) {
 		t.Error(f)
 	}
 	if t.Failed() && os.Getenv("WORKLINE_RULE_B_PRINT") != "" {
+		count := map[ruleBKey]int{}
+		for _, h := range hits {
+			count[ruleBKey{h.file, h.token}]++
+		}
 		var lines []string
-		for k, hs := range got {
-			lines = append(lines, fmt.Sprintf("%s %s %d", k.file, k.token, len(hs)))
+		for k, n := range count {
+			lines = append(lines, fmt.Sprintf("%s %s %d", k.file, k.token, n))
 		}
 		slices.Sort(lines)
 		t.Log("today's offenders:\n" + strings.Join(lines, "\n"))
@@ -423,6 +444,9 @@ func TestRuleBScan(t *testing.T) {
 		{"comment without reason", "package x\n\nvar a = \".kt\" // converges:\n", []string{".kt@3"}},
 		{"plain comment", "package x\n\nvar a = \".kt\" // the extension\n", []string{".kt@3"}},
 		{"clean", "package x\n\nvar a = \"a.ktx and testing\"\n", nil},
+		{"exempt on a raw string's last line", "package x\n\nvar p = `say\nopen Main.kt` // converges: an example\n", nil},
+		{"longer and shorter apart", "package x\n\nvar a = \"conftest.py and x.py\"\n", []string{".py@3", "conftest.py@3"}},
+		{"shorter inside longer", "package x\n\nvar a = \"conftest.py\"\n", []string{"conftest.py@3"}},
 		{"tag and import", "package x\n\nimport _ \"example.com/x.py\"\n\ntype T struct{ A string `yaml:\"go.mod\"` }\n", nil},
 	} {
 		hits, err := ruleBScan(c.name+".go", []byte(c.src), tokens)
@@ -436,5 +460,51 @@ func TestRuleBScan(t *testing.T) {
 		if !slices.Equal(got, c.want) {
 			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
 		}
+	}
+}
+
+// The walk leaves out test files, testdata and the pack loader.
+func TestRuleBWalk(t *testing.T) {
+	root := t.TempDir()
+	src := []byte("package x\n\nvar a = \"pom.xml\"\n")
+	for _, f := range []string{"a/x.go", "a/x_test.go", "a/testdata/y.go", "packs/z.go", "a/packs/w.go"} {
+		p := filepath.Join(root, filepath.FromSlash(f))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, src, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hits, err := ruleBWalk(root, "internal", ruleBTokens(Builtin()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, h := range hits {
+		got = append(got, h.file)
+	}
+	slices.Sort(got)
+	if want := []string{"internal/a/packs/w.go", "internal/a/x.go"}; !slices.Equal(got, want) {
+		t.Errorf("walked %q, want %q", got, want)
+	}
+}
+
+// A literal past the baseline fails, a count past the code is stale, the
+// count reached passes.
+func TestRuleBCompare(t *testing.T) {
+	hit := ruleBHit{file: "internal/a/x.go", line: 3, token: ".kt", lit: "Main.kt"}
+	k := ruleBKey{hit.file, hit.token}
+	if f := ruleBCompare([]ruleBHit{hit}, map[ruleBKey]int{k: 1}); len(f) != 0 {
+		t.Errorf("at the count: %q", f)
+	}
+	if f := ruleBCompare([]ruleBHit{hit, hit}, map[ruleBKey]int{k: 1}); len(f) != 2 || !strings.Contains(f[0], "internal/a/x.go:3:") {
+		t.Errorf("past the count: %q", f)
+	}
+	if f := ruleBCompare(nil, map[ruleBKey]int{k: 1}); len(f) != 1 || !strings.Contains(f[0], "is stale") {
+		t.Errorf("stale: %q", f)
+	}
+	if f := ruleBCompare([]ruleBHit{hit}, nil); len(f) != 1 || !strings.Contains(f[0], "put it in a pack") {
+		t.Errorf("new: %q", f)
 	}
 }
