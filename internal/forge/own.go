@@ -129,6 +129,19 @@ func (k Kept) Last(marker string) (string, bool) {
 	return "", false
 }
 
+// Each are the comments carrying part that workline's own account wrote
+// and no one else edited last, oldest first: Last's, each sticky of a
+// family whose keys only start alike.
+func (k Kept) Each(part string) []string {
+	var out []string
+	for _, n := range k.notes {
+		if strings.Contains(n.Body, part) && k.own.Wrote(n) && !k.edited(n) {
+			out = append(out, n.Body)
+		}
+	}
+	return out
+}
+
 // Wrote says whether workline's own account wrote n, a comment read apart
 // from these: a comment on a line, which GitHub's GraphQL gives by its
 // login alone, never the App that wrote it. A login that wrote one of

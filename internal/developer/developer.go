@@ -188,6 +188,9 @@ type Act struct {
 	// agent's reason (ADR-0065, change 2): listed on its pull request,
 	// for the reviewer's `intent` lens to judge.
 	Beyond []Beyond `json:"beyond,omitempty"`
+	// Tester: the keys of the review's test findings sent to the tester
+	// (#1265): never asked again, of the developer nor the tester.
+	Tester []string `json:"tester,omitempty"`
 	// Board: the card its claim moved to Doing on the forge's board
 	// (ADR-0057); none, no board or no Doing column.
 	Board *board.Move `json:"board,omitempty"`

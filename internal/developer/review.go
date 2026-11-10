@@ -27,7 +27,6 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/whys"
 	"github.com/JN0V/workline/internal/work"
@@ -75,6 +74,8 @@ type Round struct {
 	// Beyond: the files its fix wrote beyond the Scope, each with its
 	// agent's reason (ADR-0065, change 2).
 	Beyond []Beyond `json:"beyond,omitempty"`
+	// Tester: the review's test findings it sent to the tester (#1265).
+	Tester []string `json:"tester,omitempty"`
 }
 
 // Asked is a finding a round asks the agent to fix: a reviewer's row that
@@ -90,6 +91,9 @@ type Asked struct {
 	Detail string `json:"detail,omitempty"`
 	// Check: a project check red, whose log the round reads (#917).
 	Check *forge.HeadCheck `json:"check,omitempty"`
+	// Waited: asked again from the record's last round (#1022): the
+	// developer's still, a test finding too.
+	Waited bool `json:"waited,omitempty"`
 }
 
 // round is what the review run's pre leaves for post.
@@ -131,6 +135,14 @@ type round struct {
 	// one more (#987).
 	Kept     int  `json:"kept,omitempty"`
 	KeptRead bool `json:"kept-read,omitempty"`
+	// ToTester: the review's test findings it sends to the tester
+	// (#1265); TesterOnly, they alone were asked: no agent, no round.
+	ToTester   []Asked `json:"to-tester,omitempty"`
+	TesterOnly bool    `json:"tester-only,omitempty"`
+	Sent       int     `json:"sent,omitempty"` // those the record sent already, not asked again
+	// Disputed: those sent that still block, the tester holding no test
+	// needed: its issue blocked for a person.
+	Disputed []Asked `json:"disputed,omitempty"`
 }
 
 // reviewRows reads the findings of the reviewer's comment: what blocks,
@@ -186,6 +198,7 @@ func waited(a Act, asked []Asked) []Asked {
 			continue
 		}
 		f := reviewFinding(m[1], m[2], m[3], m[4])
+		f.Waited = true
 		if !slices.ContainsFunc(asked, func(x Asked) bool { return x.Key == f.Key }) {
 			asked = append(asked, f)
 		}
@@ -320,7 +333,25 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "a person has its pull request: the developer runs no more rounds",
 			Findings: []verdict.Finding{{Rule: "review-to-a-person", Level: "info", Where: where, Message: fmt.Sprintf("past round %d, a person of the project takes it from here", a.Round)}}})
 	}
-	if len(r.Asked) == 0 {
+	// The review's test findings on code are the tester's (#1265): its
+	// issue and bounds read first, when the review asks one.
+	var is *forge.Issue
+	var bounds Bounds
+	if slices.ContainsFunc(r.Asked, testFinding) {
+		if is, bounds, err = roundBounds(f, b, repo, a, issue); err != nil {
+			return external(err)
+		}
+		r.Asked, r.ToTester = splitTests(r.Asked, bounds)
+	}
+	if len(r.Asked) == 0 && len(r.ToTester) == 0 && len(r.Disputed) > 0 {
+		// Blocked on test findings the tester holds needless: no round
+		// settles it, a person does (#1265).
+		if err := writeIn(runDir, roundFile, r); err != nil {
+			return fail(err)
+		}
+		return writeIntents(runDir, "fallback.yaml", disputedOff(r, repo))
+	}
+	if len(r.Asked) == 0 && len(r.ToTester) == 0 {
 		var kept string
 		if mr.Draft {
 			// Its Draft made green: marked ready, no agent asked (#969).
@@ -343,6 +374,9 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		if r.ChecksUnread != "" {
 			v.Findings = append(v.Findings, checksUnread(where, r.ChecksUnread))
 		}
+		if r.Sent > 0 && newReview {
+			v.Findings = append(v.Findings, testsSent(where, r.Sent))
+		}
 		if r.Nits > 0 && newReview {
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "nits-not-asked", Level: "info", Where: where,
 				Message: fmt.Sprintf("%d nit%s shown by the reviewer, not asked: a nit never holds the merge (ADR-0051)", r.Nits, plural(r.Nits))})
@@ -363,12 +397,21 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			return writeIntents(runDir, "fallback.yaml", stopped(r, repo, issue))
 		}
 	}
+	if len(r.Asked) == 0 {
+		// Test findings alone: the tester's, no agent, no round counted;
+		// the rounds never run out on them (#1265).
+		r.TesterOnly = true
+		if err := writeIn(runDir, roundFile, r); err != nil {
+			return fail(err)
+		}
+		return writeIntents(runDir, "fallback.yaml", toTesterOnly(r, bounds, repo))
+	}
 	if a.Round >= s.Rounds {
 		r.Person = true
 		if err := writeIn(runDir, roundFile, r); err != nil {
 			return fail(err)
 		}
-		return writeIntents(runDir, "fallback.yaml", handOff(r, repo))
+		return writeIntents(runDir, "fallback.yaml", handOff(r, bounds, repo))
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("no agent: %d finding%s wait for a run with one, no round counted", len(r.Asked), plural(len(r.Asked))),
@@ -376,18 +419,11 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	}
 	n := a.Round + 1
 	r.FiveWhys = n >= 3 && !a.Whys && slices.ContainsFunc(r.Asked, func(x Asked) bool { return slices.Contains(a.Seen, x.Key) })
-	is, err := f.Issue(issue)
-	if err != nil {
-		return external(err)
+	if is == nil {
+		if is, bounds, err = roundBounds(f, b, repo, a, issue); err != nil {
+			return external(err)
+		}
 	}
-	bounds, err := readBounds(f, b, repo, *is)
-	if err != nil {
-		return external(err)
-	}
-	for _, t := range a.Acceptance { // frozen, on its branch, whatever the tester's Draft
-		bounds.Frozen[t] = issue
-	}
-	bounds.Beside = a.Beside // written by an earlier round: still beside the Scope on its head
 	if !r.KeptRead && bounds.Draft != 0 {
 		// The tester's answers so far: an objection of this round waits
 		// for one more (#987).
@@ -432,6 +468,31 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 }
 
 var errOwnAccount = errors.New("workline's own account")
+
+// roundBounds reads a round's issue and its bounds: its frozen tests
+// those of its branch too, whatever the tester's Draft, and the test
+// files an earlier round wrote beside the Scope, still beside it.
+func roundBounds(f forge.Forge, b forge.Backlog, repo string, a Act, issue int) (*forge.Issue, Bounds, error) {
+	is, err := f.Issue(issue)
+	if err != nil {
+		return nil, Bounds{}, err
+	}
+	bounds, err := readBounds(f, b, repo, *is)
+	if err != nil {
+		return nil, Bounds{}, err
+	}
+	for _, t := range a.Acceptance {
+		bounds.Frozen[t] = issue
+	}
+	bounds.Beside = a.Beside
+	return is, bounds, nil
+}
+
+// testsSent says the review's test findings the tester has already.
+func testsSent(where string, n int) verdict.Finding {
+	return verdict.Finding{Rule: "tests-with-the-tester", Level: "info", Where: where,
+		Message: fmt.Sprintf("%d test finding%s of the review sent to the tester already: not asked again (#1265)", n, plural(n))}
+}
 
 // issueHolds is who asks a round its issue's new body: the issue.
 const issueHolds = "the issue"
@@ -509,9 +570,18 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 	// (#1040). A record from before review-at counts runs alone.
 	newReview := r.Runs > a.ReviewRuns ||
 		r.ReviewAt != "" && r.ReviewAt != a.ReviewAt && (a.ReviewAt != "" || a.ReviewRuns == 0)
+	r.Disputed = disputed(r.Asked, a, kept)
 	if !newReview { // the review read already
 		r.Asked = nil
 	}
+	// A test finding sent to the tester is never asked again (#1265).
+	r.Asked = slices.DeleteFunc(r.Asked, func(x Asked) bool {
+		if slices.Contains(a.Tester, x.Key) {
+			r.Sent++
+			return true
+		}
+		return false
+	})
 	if back {
 		r.Asked = waited(a, r.Asked)
 	}
@@ -592,6 +662,9 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	if err == nil && len(r.Asked) == 0 && r.ChecksUnread != "" {
 		err = fmt.Errorf("its project's checks: %s", r.ChecksUnread)
 	}
+	if err == nil && len(r.Asked) == 0 && len(r.Disputed) > 0 {
+		return true, nil // blocked on test findings the tester holds needless: its round blocks the issue
+	}
 	if err == nil && len(r.Asked) == 0 && mr.Draft {
 		ready, _ := draftReady(f, a, head) // its Draft made green: its round marks it ready (#969)
 		return ready, nil
@@ -660,6 +733,12 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 			fmt.Fprintf(&t, "\n  > %s\n\n", strings.ReplaceAll(a.Detail, "\n", "\n  > "))
 		}
 	}
+	if len(r.ToTester) > 0 {
+		t.WriteString("\n## Sent to the tester, not yours\n\nThe review's test findings on your code: the tester adds each acceptance test, or says why none is needed. Write no test for them, change nothing for them.\n\n")
+		for _, l := range testerLines(r.ToTester) {
+			fmt.Fprintf(&t, "- %s\n", l)
+		}
+	}
 	if r.Nits > 0 {
 		fmt.Fprintf(&t, "\nThe reviewer showed %d nit%s too: not asked, leave them.\n", r.Nits, plural(r.Nits))
 	}
@@ -695,10 +774,15 @@ func frozenNote(a Asked, b Bounds) string {
 // developer do not agree. Its issue goes to the blocked state, the reason
 // on it and on the pull request (ADR-0059, decision 6); no person is
 // asked: one on the loop reads the board.
-func handOff(r round, repo string) []intent.Intention {
+func handOff(r round, b Bounds, repo string) []intent.Intention {
 	a := r.Record
 	a.Handed = true
-	a.Rounds = append(a.Rounds, Round{N: a.Round + 1, Asked: texts(r.Asked), Person: true})
+	a.Rounds = append(a.Rounds, Round{N: a.Round + 1, Asked: texts(r.Asked), Person: true, Tester: testerLines(r.ToTester)})
+	var tests []intent.Intention
+	if len(r.ToTester) > 0 { // the tester's all the same: no disagreement on them
+		sendTests(&a, r.ToTester)
+		tests = append(tests, testRequests(repo, b, r.MR, r.ToTester))
+	}
 	a.ReviewRuns = max(a.ReviewRuns, r.Runs)
 	if r.ReviewAt != "" {
 		a.ReviewAt = r.ReviewAt
@@ -709,23 +793,18 @@ func handOff(r round, repo string) []intent.Intention {
 	if r.ChecksAt != "" {
 		a.ChecksAt = r.ChecksAt
 	}
-	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
-	if line, err := routing.Load(repo); err == nil {
-		if ad, rm, err := line.Move("blocked"); err == nil {
-			add, remove = ad, rm
-		}
-	}
+	add, remove := blockedMove(repo)
 	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree",
 		a.Round, r.MR, len(r.Asked), plural(len(r.Asked)))
-	return []intent.Intention{
-		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
+	return append(tests,
+		intent.Intention{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
 		sayOn(a.Issue, backlog.Said(who, "blocks this issue", why,
 			"a person on the loop reads the pull request, fixes the findings or closes it, and moves the issue back by its label")),
-		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(
+		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(
 			"**Blocked**: %d rounds, and the review still asks %d finding%s. #%d is blocked, its reason on it: a person of the project fixes them, or closes this pull request.\n\n%s",
 			a.Round, len(r.Asked), plural(len(r.Asked)), a.Issue, askedList(r.Asked))}},
-		{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}},
-	}
+		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}},
+	)
 }
 
 func texts(l []Asked) []string {
@@ -775,6 +854,16 @@ func reviewPost(runDir, repo string, s Settings) int {
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("at its backstop: its issue #%d blocked, no round run", r.Record.Issue),
 			Findings: []verdict.Finding{{Rule: "backstop-crossed", Level: "warn", Where: where,
 				Message: fmt.Sprintf("%s: no review round runs; #%d blocked, this pull request kept open", r.Backstop, r.Record.Issue)}}})
+	}
+	if r.TesterOnly {
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("%d test finding%s of the review sent to the tester: no round counted", len(r.ToTester), plural(len(r.ToTester))),
+			Findings: []verdict.Finding{{Rule: "tests-to-the-tester", Level: "info", Where: where,
+				Message: fmt.Sprintf("the review asks test findings alone, the tester's: on its Draft, #%d waits for its tests (#1265)", r.Record.Issue)}}})
+	}
+	if len(r.Disputed) > 0 && len(r.Asked) == 0 && len(r.ToTester) == 0 {
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("the review blocks on test findings the tester holds needless: its issue #%d blocked", r.Record.Issue),
+			Findings: []verdict.Finding{{Rule: "tests-disputed", Level: "warn", Where: where,
+				Message: fmt.Sprintf("%d test finding%s still block, the tester answering no test is needed: #%d blocked for a person, its reason on it", len(r.Disputed), plural(len(r.Disputed)), r.Record.Issue)}}})
 	}
 	if r.Person {
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("past round %d: its issue #%d blocked", r.Record.Round, r.Record.Issue),
@@ -852,7 +941,13 @@ func reviewPost(runDir, repo string, s Settings) int {
 			others = append(others, in) // an objection on the tester's Draft
 		}
 	}
-	this := Round{N: n, Asked: texts(r.Asked), Heard: len(r.Heard), Nits: r.Nits, Whys: r.FiveWhys}
+	this := Round{N: n, Asked: texts(r.Asked), Heard: len(r.Heard), Nits: r.Nits, Whys: r.FiveWhys, Tester: testerLines(r.ToTester)}
+	if len(r.ToTester) > 0 {
+		sendTests(&a, r.ToTester)
+		others = append(others, testRequests(repo, b, r.MR, r.ToTester))
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "tests-to-the-tester", Level: "info", Where: where,
+			Message: fmt.Sprintf("%d test finding%s of the review sent to the tester, on its Draft !%d (#1265)", len(r.ToTester), plural(len(r.ToTester)), b.Draft)})
+	}
 	a.Refused = append(a.Refused, refused...)
 	if r.Back {
 		a.Widen.Back = true
@@ -1041,6 +1136,12 @@ func roundBody(x Round, s Settings, notes []string, analysis string, w *Widen) s
 	b.WriteString("Asked:\n\n")
 	for _, t := range x.Asked {
 		fmt.Fprintf(&b, "- %s\n", t)
+	}
+	if len(x.Tester) > 0 {
+		b.WriteString("\nSent to the tester, its to add or to hold needless:\n\n")
+		for _, t := range x.Tester {
+			fmt.Fprintf(&b, "- %s\n", t)
+		}
 	}
 	if x.Nits > 0 {
 		fmt.Fprintf(&b, "\n%d nit%s shown, not asked.\n", x.Nits, plural(x.Nits))

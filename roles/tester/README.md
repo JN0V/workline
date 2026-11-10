@@ -141,7 +141,17 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
 - **An objection**: a comment on the test's line in the Draft, opened by
   `workline:objection`, one field a line: `test:`, `scenario:`,
   `kind:` (wrong interface, over-specified, contradicts another
-  scenario, untestable as written, the need itself), `why:`.
+  scenario, untestable as written, the need itself, a test missing),
+  `why:`.
+- **A test missing** ([#1265](https://github.com/JN0V/workline/issues/1265)):
+  the review found a behaviour with no test, on code; the developer
+  sends it, naming no scenario. The agent reads every scenario and
+  answers:
+  - *added*: the test in one of its tests of the issue, the file whole
+    or a diff, proven as a rewrite;
+  - *none needed*: its reason.
+  - Its answer is said on the pull request whose review found it too,
+    naming the finding's line: the developer reads it there.
 - **The answer**: `workline test answer --merge-request <n> --ai claude`
   takes the first objection waiting, checked out at the branch's tip.
   The agent reads the scenario first, then answers in the thread:

@@ -1,0 +1,8 @@
+# The tester's agent answering a test the review finds missing (#1265):
+# the test added as a diff of the file objected on.
+- patch: |
+    --- a/tests/test_mul_by_zero.sh
+    +++ b/tests/test_mul_by_zero.sh
+    @@ -4,0 +5 @@
+    +[ "$(mul 0 -7)" = 0 ]
+- note: "By zero now also multiplies zero by a negative factor."

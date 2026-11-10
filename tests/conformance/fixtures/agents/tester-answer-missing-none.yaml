@@ -1,0 +1,3 @@
+# The tester's agent answering a test the review finds missing (#1265):
+# none needed, a scenario's test covers it.
+- note: "None needed: Two by three's test already runs mul on that line; a negative factor is no behaviour a scenario asks."
