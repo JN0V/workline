@@ -1,0 +1,22 @@
+case: forge/local-issues-by-command
+about: >
+  With `forge: local`, a person opens an issue, labels it and answers on
+  it by command, never editing .git/workline/ by hand (#1284): `workline
+  issues open` gives the next number, `label` adds and takes off, and
+  `comment` adds a comment after the body, all three read back by `show`.
+given:
+  repo: basic
+  config: {forge: local}
+run:
+  sh: >
+    printf '## Need\n\nA total.\n' | workline issues open "Total an order" --body-file - --label workline:to-refine &&
+    workline issues open "Second" &&
+    workline issues label 1 --add workline:accepted --remove workline:to-refine &&
+    workline issues comment 1 --body "Yes, as proposed." &&
+    workline issues show 1
+expect:
+  exit: 0
+  stdout: ["#1 opened", "#2 opened", "Total an order — open  [workline:accepted]", "Yes, as proposed."]
+  files:
+    .git/workline/issues/1.md: {contains: ["title: Total an order", "## Need\n\nA total.", "workline:accepted", "<!-- workline-comment -->\nYes, as proposed."], lacks: "workline:to-refine"}
+    .git/workline/issues/2.md: {contains: "title: Second"}

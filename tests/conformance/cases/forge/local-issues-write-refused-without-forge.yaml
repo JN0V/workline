@@ -1,0 +1,14 @@
+case: forge/local-issues-write-refused-without-forge
+about: >
+  A project that sets no `forge` has no local forge a role reads:
+  `workline issues open` refuses to write an issue in the clone and says
+  the setting to add (#1284).
+given:
+  repo: basic
+  config: {}
+run: {cli: [issues, open, "Total an order"]}
+expect:
+  exit: 1
+  stderr: ["sets no `forge: local`", "set it first"]
+  files:
+    .git/workline/issues/1.md: {exists: false}

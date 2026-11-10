@@ -37,6 +37,8 @@ pull requests and nightly gardening of workline and of another project;
   ([install](docs/install.md#5-adopt-a-repository)).
 - **Add CI**: the GitHub or GitLab templates ([install](docs/install.md#in-ci)).
 - Step by step, in ten minutes: [the quickstart](docs/quickstart.md).
+- **No forge**: the whole line, need to merge, on your machine
+  ([the line with no forge](docs/local-line.md)).
 
 ## Documentation
 

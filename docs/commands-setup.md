@@ -80,6 +80,9 @@ changes nothing.
 - With an `autonomy` set: the level each role runs at and where it
   comes from; a role with no levels, that it changes nothing for it
   ([autonomy](autonomy.md)).
+- The tester or the developer routed with no `test-command`: said, with
+  the setting to add
+  ([#1284](https://github.com/JN0V/workline/issues/1284)).
 - For each language the repository holds: which tools read it (lint,
   types, security, dependencies), which it lacks, and the gate check to
   add; a warning, never an error ([languages](languages.md)).

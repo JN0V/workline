@@ -1,0 +1,18 @@
+case: forge/local-issues-comment-needs-a-body
+about: >
+  `workline issues comment` with no text, or on an issue the local forge
+  does not hold, and `open` with a blank title, write nothing and say
+  why, never an empty comment, an untitled issue nor a new file (#1284).
+given:
+  repo: basic
+  config: {forge: local}
+run:
+  sh: "workline issues open One >/dev/null && workline issues comment 1; echo \"code $?\"; workline issues comment 7 --body hi; echo \"code $?\"; workline issues open ' '; echo \"blank $?\""
+expect:
+  exit: 0
+  stdout: ["code 64", "code 1", "blank 64"]
+  stderr: ["--body or --body-file", "no issue #7", "open needs a title"]
+  files:
+    .git/workline/issues/1.md: {lacks: "workline-comment"}
+    .git/workline/issues/7.md: {exists: false}
+    .git/workline/issues/2.md: {exists: false}

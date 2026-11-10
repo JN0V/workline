@@ -1,0 +1,17 @@
+case: forge/local-issues-option-of-another-refused
+about: >
+  Each `workline issues` command reads its own options alone: `comment
+  --add`, `label --body` and `open --remove` are refused and write
+  nothing, never a label nor a note silently dropped (#1284).
+given:
+  repo: basic
+  config: {forge: local}
+run:
+  sh: "workline issues open One >/dev/null; workline issues comment 1 --body yes --add workline:accepted; echo \"comment $?\"; workline issues label 1 --add x --body note; echo \"label $?\"; workline issues open Two --remove y; echo \"open $?\""
+expect:
+  exit: 0
+  stdout: ["comment 64", "label 64", "open 64"]
+  stderr: ["--add is not an option of `issues comment`", "--body is not an option of `issues label`", "--remove is not an option of `issues open`"]
+  files:
+    .git/workline/issues/1.md: {lacks: ["workline:accepted", "workline-comment", "labels: [x]"]}
+    .git/workline/issues/2.md: {exists: false}

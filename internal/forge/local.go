@@ -17,7 +17,8 @@ import (
 // forge, or one whose person works alone. Each issue is a Markdown file,
 // .git/workline/issues/<n>.md; each merge request is a local branch, recorded
 // the same way in .git/workline/merge-requests/<n>.md. Nothing is pushed: `workline issues`
-// reads them. Writes are idempotent, as on any forge.
+// reads them, and a person's writes go through it (open, label, comment).
+// A role's writes are idempotent, as on any forge.
 type Local struct{ Repo string }
 
 // LocalItem is an issue or a merge request of the local forge.
@@ -365,6 +366,29 @@ func (l *Local) OpenIssue(title, body, marker string) (int, error) {
 		return 0, err
 	}
 	return id, l.save("issue", &LocalItem{ID: id, Title: title, State: "open", Body: body + "\n\n" + marker})
+}
+
+// Open opens an issue as a person does on a forge: a new number each
+// time, whatever the titles of the others, its labels set, each once
+// as on a forge (#1284).
+func (l *Local) Open(title, body string, labels []string) (int, error) {
+	id, err := l.next("issue")
+	if err != nil {
+		return 0, err
+	}
+	var set []string
+	for _, a := range labels {
+		if !slices.Contains(set, a) {
+			set = append(set, a)
+		}
+	}
+	return id, l.save("issue", &LocalItem{ID: id, Title: title, State: "open", Labels: set, Body: body})
+}
+
+// Answer adds a person's comment after the others, as written: no
+// marker, so two alike are two comments, as on a forge (#1284).
+func (l *Local) Answer(t Target, body string) error {
+	return l.change(t, func(it *LocalItem) { it.Comments = append(it.Comments, body) })
 }
 
 func (l *Local) KeepIssue(title, body string, create bool) (int, error) {
