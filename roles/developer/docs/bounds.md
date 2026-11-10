@@ -261,10 +261,13 @@ did not foresee, a build file, a test fake, a helper
   The tester keeps or rewrites the test.
 - **The scenario is the issue's**
   ([#913](https://github.com/JN0V/workline/issues/913)): the question
-  lists the Validation's scenario names in the file's form. A test's
-  name that spells one (`TestNotVouchedFor` for "Not vouched for") is
-  posted as that scenario; one that spells none is not posted, said:
-  the tester could not read it.
+  lists the Validation's scenario names in the file's form, and which
+  test covers which, as the tester declared them. A test's id the
+  tester declared (`CartTest.addsItem`) is posted on the scenario it
+  covers, whatever its name; a test's name maps by nothing else, and an
+  objection naming no scenario is not posted, said: the tester could
+  not read it
+  ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#4-the-agent-says-which-test-covers-which-scenario)).
 - **One comment per test and line**: an objection still open on its
   line is not posted twice; one on another line of the same test opens
   its own. The developer's comment on the Draft counts those posted

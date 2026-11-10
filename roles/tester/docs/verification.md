@@ -19,8 +19,8 @@ the Scope ([writing an issue](../../product-owner/docs/writing.md)).
   ready moves the issue straight to `workline:ready`, and no
   Verification is written.
 - **By the engine, from the tests**: never the agent's text. Each
-  scenario, the test that proves it, its file; or why no test can check
-  it.
+  scenario, the tests its agent declared for it, found among the tests
+  red on the base; or why no test can check it.
 - **Below the line**, beside the Scope, marked by a line a reader does
   not see (`<!-- workline:verification=tester -->`).
 - **Said on the issue**, in the tester's one comment there: "the tester
@@ -29,8 +29,8 @@ the Scope ([writing an issue](../../product-owner/docs/writing.md)).
 ```markdown
 ## Verification
 
-- **Two by three:** `tests.test_mul_two_by_three`, in `tests/test_mul_two_by_three.sh`.
-- **By zero:** `tests.test_mul_by_zero`, in `tests/test_mul_by_zero.sh`.
+- **Two by three:** `tests.test_mul_two_by_three`.
+- **By zero:** `tests.test_mul_by_zero`.
 
 Each test fails on the code before the change and passes once it is
 built; they are on `workline/tester/issue-3`. Written by the tester from

@@ -138,6 +138,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported`; or, beside a `patch`, why it takes words out | never: read by `pre`, which puts the parts' claims together, or by `post` |
 | `read` | a judge's ask, when its question lets it read (role contract, "A judge that reads"; ADR-0045): `{path, lines}`, `{name}` or `{grep}`, each with `why`, in place of its verdict | never: served by `pre`, at the commit judged, and the judge asked again |
 | `quote` | the lines a judge's no rests on, `{path, text}`, beside its note | never: found again by `pre` before a finding is dropped |
+| `covers` | the tester's agent's word on a scenario: `{scenario, tests}`, the ids of the tests that check it as the report names them, or `{scenario, reason}`, why none can ([ADR-0065](../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#4-the-agent-says-which-test-covers-which-scenario)) | never: read by the tester's `post` |
 
 A role that needs another intention asks for it to be added here; it does not
 invent one. Intentions that reach the forge can be applied by a separate step
