@@ -1,0 +1,15 @@
+case: reviewer/bug-story-judged-by-the-comments-lens
+about: "A comment telling the code's history (`the bug was`), with an agent: the comments lens judges the word list's guess and flags the comment, quoting its line; the judge verifies it, and the rule itself says nothing (ADR-0065, Rule A)."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Double returns twice n.\\n// The bug was a missing nil check.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-story"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings: [{rule: comments, where: "calc/calc.go:21", message: "the bug it fixed"}]
+  no-findings: [{rule: bug-story}]
+  run-files:
+    in/judge/01/question.yaml: {contains: "tell the code's history"}

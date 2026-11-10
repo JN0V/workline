@@ -1,0 +1,13 @@
+case: reviewer/bug-story-warns-without-ai
+about: "A comment the change adds holding a story word (\"used to\", \"the bug was\", \"previously\"), with no agent to judge it: the word list's guess warns, said, and never blocks (ADR-0065, Rule A)."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Double returns twice n.\\n// It used to crash here.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: bug-story, level: warn, where: "calc/calc.go:21", message: "no agent judged"}
+    - {rule: not-reviewed, level: warn}

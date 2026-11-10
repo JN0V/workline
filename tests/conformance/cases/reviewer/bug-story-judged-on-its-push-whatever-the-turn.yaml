@@ -1,0 +1,16 @@
+case: reviewer/bug-story-judged-on-its-push-whatever-the-turn
+about: "On a merge request, one lens a push: a push adding a comment a story word flags asks the comments lens too, beside the lens whose turn it is, so the guess is judged on the push that adds it (ADR-0065, Rule A)."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Double returns twice n.\\n// It used to crash here.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: bug-story}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["# Lenses: correctness, comments", "`calc/calc.go:21` (\"used to\"): Double returns twice n. It used to crash here."]}
