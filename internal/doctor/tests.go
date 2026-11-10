@@ -15,7 +15,7 @@ import (
 const testsFix = "set the tester's test-paths, and test-homes where a test's code lives, in .workline/config.yaml: roles: {tester: {settings: {test-paths: [\"spec/**\"], test-homes: [{tests: \"**/src/test/**\", code: \"**/src/main/**\"}]}}}   # roles/tester/README.md"
 
 // testFiles says which files every role reads as tests (ADR-0065, change
-// 3): the tester's test-paths, or, none set, its listed packs', or the
+// 3): the tester's test-paths, or, none set, its listed packs' then the
 // built-in generic patterns, and how to set them when those miss the
 // project's tests.
 func testFiles(r *Report, o Options, cfg *role.ProjectConfig) {
@@ -37,7 +37,7 @@ func testFiles(r *Report, o Options, cfg *role.ProjectConfig) {
 	}
 	if _, own := cfg.Roles["tester"].Settings[testdef.PathsSetting]; !own && d.PathsSet {
 		r.add(Check{Area: "repository", Rule: "test-paths-packs", Where: o.Repo, Level: OK,
-			Message: fmt.Sprintf("every role reads the test paths of the packs listed (%s) as the test files: %s; the tester's test-paths, set, would win", strings.Join(cfg.Packs, ", "), quoted(d.Paths))})
+			Message: fmt.Sprintf("every role reads the test paths of the packs listed (%s), then the generic pack's, as the test files: %s; the tester's test-paths, set, would win", strings.Join(cfg.Packs, ", "), quoted(d.Paths))})
 		return
 	}
 	if d.PathsSet {

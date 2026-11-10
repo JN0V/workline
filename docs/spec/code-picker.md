@@ -82,7 +82,7 @@ Under the role's budget, each piece once a task:
    - Copies in tests, examples and tools last, 2 a name, the nearest
      first, the rest counted. The tests are the project's one
      definition, the tester's `test-paths`, else its listed
-     [packs'](../packs.md), else the generic patterns
+     [packs'](../packs.md) with the generic patterns, else those alone
      ([ADR-0065](../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file));
      the folders beside the code by the same embedded data, ranking
      only: `examples/`, `tools/`, `mocks/`, `testdata/`, `spec/`,

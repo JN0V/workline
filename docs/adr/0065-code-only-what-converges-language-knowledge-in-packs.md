@@ -138,7 +138,9 @@ flowchart LR
     suggested `test-command`; `aside` the generic pack's only. A field
     it does not read is refused.
   - **A pack's field is a setting's default**: the listed packs'
-    union, under the project's settings, over the role's defaults.
+    union, then the generic pack's, under the project's settings,
+    over the role's defaults. A pack adds to the generic patterns,
+    never narrows them: a Go project's `tests/` stays tests.
   - **A project's file replaces a built-in pack of its name whole**:
     no merge, one file says it all.
   - **The other tables move next**, [#1309].

@@ -1,6 +1,7 @@
 package packs
 
 import (
+	"fmt"
 	"go/parser"
 	"go/token"
 	"io/fs"
@@ -69,20 +70,29 @@ func TestProjectPacks(t *testing.T) {
 	}
 }
 
-// The listed packs' test fields add up, each once; a field none gives is
-// left to the generic pack.
+// The listed packs' test fields add up, each once, then the generic
+// pack's: a pack adds to the generic patterns, never narrows them.
 func TestTesterDefaults(t *testing.T) {
 	b := Builtin()
+	g := b[Generic]
 	d := TesterDefaults([]Pack{b["go"], b["kotlin-gradle"], b["java-maven"]})
 	paths, _ := d["test-paths"].([]any)
-	if len(paths) != 1+len(b["kotlin-gradle"].TestPaths) || paths[0] != "**/*_test.go" {
+	if len(paths) != 1+len(b["kotlin-gradle"].TestPaths)+len(g.TestPaths) || paths[0] != "**/*_test.go" || !slices.Contains(paths, any("**/tests/**")) {
 		t.Errorf("test-paths: %v", paths)
 	}
-	if homes, _ := d["test-homes"].([]any); len(homes) != len(b["kotlin-gradle"].TestHomes) {
-		t.Errorf("test-homes, src/test → src/main once: %v", homes)
+	homes, _ := d["test-homes"].([]any)
+	if len(homes) != len(b["kotlin-gradle"].TestHomes)+len(g.TestHomes) {
+		t.Errorf("test-homes, src/test → src/main once, then the generic ones: %v", homes)
 	}
-	if d := TesterDefaults([]Pack{b["go"]}); d["test-homes"] != nil {
-		t.Errorf("go gives no homes, left to the generic pack: %v", d)
+	if h, _ := homes[0].(map[string]any); h["code"] != "**/src/main/**" {
+		t.Errorf("the packs' homes first: %v", homes)
+	}
+	if d := TesterDefaults([]Pack{b["go"]}); len(d["test-homes"].([]any)) != len(g.TestHomes) {
+		t.Errorf("go gives no homes, the generic ones stay: %v", d)
+	}
+	own := Pack{Name: Generic, TestPaths: []string{"checks/**"}}
+	if d := TesterDefaults([]Pack{own}); fmt.Sprint(d["test-paths"]) != "[checks/**]" {
+		t.Errorf("a listed generic pack of the project's stands for the built-in one: %v", d)
 	}
 }
 

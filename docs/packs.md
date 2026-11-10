@@ -23,8 +23,8 @@ One YAML file a language or ecosystem:
 |---|---|
 | `about` | one line, for a person |
 | `detect` | `files`: marker names, at any depth (`go.mod`); `extensions`: the languages it knows, for `workline doctor` |
-| `test-paths` | the test files, as patterns: the tester's `test-paths` when it sets none |
-| `test-homes` | where a test's code lives: the tester's `test-homes` when it sets none |
+| `test-paths` | the test files, as patterns, added to the generic ones: the tester's `test-paths` when it sets none |
+| `test-homes` | where a test's code lives, read before the generic homes: the tester's `test-homes` when it sets none |
 | `test-command` | a suggested test command, never run unless you set it |
 | `aside` | folders beside the code, ranked after it: the generic pack's only, for now |
 
@@ -41,9 +41,10 @@ One YAML file a language or ecosystem:
 `go`, `kotlin-gradle`, `java-maven`, `python-pytest`, `js-jest`, and
 `generic`: [internal/packs/builtin/](../internal/packs/builtin/).
 
-- **`generic`** is read where no pack is listed, and for a field no
-  listed pack gives: `test/`, `tests/`, `__tests__/` folders, `test_*`,
-  `*_test.*`, `*.spec.*`…
+- **`generic`** is always read: `test/`, `tests/`, `__tests__/`
+  folders, `test_*`, `*_test.*`, `*.spec.*`…
+- **A listed pack adds to it**, never narrows it: a Go project's
+  `tests/` folder stays tests. To narrow, set the tester's `test-paths`.
 - **Several packs**: each field is the union of theirs (a Go service
   with a Kotlin app reads both test paths).
 
@@ -84,5 +85,5 @@ test-command: "flutter test --machine | tojunit > {report}"
 - **A language no listed pack knows**, with its file count, from a
   subset of [GitHub linguist](https://github.com/github-linguist/linguist)'s
   extensions: the pack built in to list, else the file to write.
-- Which test paths every role reads: the tester's, the packs', or the
-  generic ones.
+- Which test paths every role reads: the tester's, the packs' with the
+  generic ones, or the generic ones alone.

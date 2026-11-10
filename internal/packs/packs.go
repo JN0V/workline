@@ -177,13 +177,20 @@ func Listed(repo string, names []string) ([]Pack, error) {
 }
 
 // TesterDefaults are the tester's settings the listed packs give, each
-// field the union of theirs: test-paths, test-homes. A field none gives
-// is left out, the generic one then read (internal/testdef).
+// field the union of theirs, then the generic pack's: test-paths,
+// test-homes. A pack adds what its ecosystem knows to what most share,
+// never narrows it: a Go project's tests/ folder stays tests. The
+// listed packs' homes come first, the first matching one wins; a listed
+// generic pack, the project's own file, stands for the built-in one.
 func TesterDefaults(listed []Pack) map[string]any {
 	var paths []any
 	var homes []any
 	seenP, seenH := map[string]bool{}, map[Home]bool{}
-	for _, p := range listed {
+	all := slices.Clone(listed)
+	if !slices.ContainsFunc(listed, func(p Pack) bool { return p.Name == Generic }) {
+		all = append(all, Builtin()[Generic])
+	}
+	for _, p := range all {
 		for _, t := range p.TestPaths {
 			if !seenP[t] {
 				seenP[t] = true
