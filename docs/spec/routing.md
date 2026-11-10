@@ -664,8 +664,8 @@ whose result moves the issue to the next. The table is the routing's
 - **No test possible, unsettled**
   ([#1053](https://github.com/JN0V/workline/issues/1053)): in refine,
   acted on, the tester's "no test possible" still stands on the body and
-  the product owner's state says it picked no proof nor rewrote the
-  text. The issue moves to `workline:blocked`, the tester's reason said
+  the product owner's state says it picked no proof, sent no retest, nor
+  rewrote the text. The issue moves to `workline:blocked`, the tester's reason said
   (`no-test-unsettled`): never left in refine with nothing due.
 - **Not for an outside failure**: a step that ended
   `blocked-external`, its agent out of reach, keeps no record: the next

@@ -686,6 +686,13 @@ func (a *applier) refining(c backlog.Proposal) error {
 				return err
 			}
 		}
+		if c.Retest && c.Retested != "" {
+			// Sent back to its tests unchanged, the tester's reason its
+			// own: kept in its state, the tester tries again once (#1053).
+			if err := a.recordRetest(t, c.Retested); err != nil {
+				return err
+			}
+		}
 		add, remove := []string{backlog.LabelReady}, backlog.ReadyRemoves(*is)
 		// Where the project routes the tester, an issue with named
 		// scenarios goes to its tests first: the tester's result makes it
@@ -758,6 +765,26 @@ func (a *applier) recordProof(t forge.Target, p *backlog.Proof) error {
 		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
 	}
 	st.Proof = p
+	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
+}
+
+// recordRetest keeps in an issue's state the tester's "no test possible"
+// a ready sent back to its tests unchanged, read again from the forge:
+// nothing kept when the tester's word changed since the plan read it.
+func (a *applier) recordRetest(t forge.Target, digest string) error {
+	b := a.forge.(forge.Backlog)
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	if now, ok := backlog.RetestKey(comments); !ok || now != digest {
+		return fmt.Errorf("#%d: the tester's word on it changed since the plan read it: no retest kept", t.ID)
+	}
+	st, _, err := backlog.ReadState(comments, a.role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	st.Retest = digest
 	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 

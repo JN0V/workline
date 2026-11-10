@@ -102,8 +102,9 @@ When no new test fits, the tester's agent names the proof that does
 - **`none`**, no test possible: the issue goes back to the product
   owner's state, refine, the reason said and recorded
   (`no-test-possible`). The product owner then picks a kind, or
-  rewrites the text and sends it back to its tests — or, neither, the
-  line blocks it
+  rewrites the text and sends it back to its tests, or, the reason
+  being the tester's own, sends it back unchanged once (its next
+  `none` recorded `retried`) — or, none of these, the line blocks it
   ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked));
   with no agent, a person of the project names one in a comment,
   `proof: <kind> — why`.
@@ -131,7 +132,9 @@ When no new test fits, the tester's agent names the proof that does
   tester read. The same body back in its tests, no kind picked, goes to
   `workline:blocked` with no agent, once, said on it
   (`sent-back-unchanged`): no back and forth until the hop cap
-  ([#815](https://github.com/JN0V/workline/issues/815)).
+  ([#815](https://github.com/JN0V/workline/issues/815)). A product
+  owner's retest lifts it once: the agent is asked again
+  ([#1053](https://github.com/JN0V/workline/issues/1053)).
 - **`flaky-n-of-n` names its test**, `test: <name>` under the note,
   and its runs, `runs: <N>`; both kept in the record. The developer's
   proof runs that test N times

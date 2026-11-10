@@ -259,8 +259,11 @@ reason. If another proof shows the need is met, propose `ready` with
 what each runs are in the task, a flaky test's with `test: <its name>`.
 If the Validation asks what no test can check and it is your draft,
 rewrite it so a test can, or ask its reporter; a `ready` with no proof
-sends the issue back to its tests only beside that rewrite: alone, it is
-refused, and the issue waits for a person.
+sends the issue back to its tests beside that rewrite. If the reason is
+the tester's own, not the issue's — code missing from its task, a run
+that failed — propose `ready` with `retest: true`: back to its tests
+unchanged, once. A `ready` alone is refused, and the issue waits for a
+person.
 
 **Split** an issue too big to be one need — it asks for several things,
 each proved by its own scenarios, that a change could finish one at a

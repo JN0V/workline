@@ -126,6 +126,10 @@ type State struct {
 	// NoTest is the tester's "no test possible" the role was last given,
 	// by its digest (NoTest): read once, not again until it changes.
 	NoTest string `yaml:"no-test,omitempty"`
+	// Retest is the tester's "no test possible" the role sent the issue
+	// back to its tests unchanged for, by its key (RetestKey: the word and
+	// the body it read, #1053): the tester tries again, once (Retested).
+	Retest string `yaml:"retest,omitempty"`
 	// Silent is why the role read the issue and wrote nothing on it,
 	// though it lacks a section: said on the issue until the role acts
 	// on it (ADR-0059, decision 1).
@@ -224,6 +228,7 @@ func FormatState(s State) string {
 		Left      string            `yaml:"left,omitempty"`
 		Proof     *Proof            `yaml:"proof,omitempty"`
 		NoTest    string            `yaml:"no-test,omitempty"`
+		Retest    string            `yaml:"retest,omitempty"`
 		Silent    string            `yaml:"silent,omitempty"`
 		Unread    string            `yaml:"unread,omitempty"`
 		Assumed   int               `yaml:"assumed,omitempty"`
@@ -232,7 +237,7 @@ func FormatState(s State) string {
 		Kind      string            `yaml:"kind,omitempty"`
 		Size      string            `yaml:"size,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Revised, s.Plain, s.Deleted,
-		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Silent, s.Unread,
+		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Retest, s.Silent, s.Unread,
 		s.Assumed, s.AssumedAt, s.Told, s.Kind, s.Size})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
@@ -511,6 +516,11 @@ type Proposal struct {
 	// no test possible (ADR-0059, decision 4); the issue goes to ready,
 	// not back to its tests.
 	Proof *Proof `yaml:"proof,omitempty"`
+	// Retest, on a ready: the role sends the issue back to its tests
+	// unchanged after the tester's "no test possible", the tester's
+	// reason its own (#1053); Retested, the engine's: the word it answers.
+	Retest   bool   `yaml:"retest,omitempty"`
+	Retested string `yaml:"retested,omitempty"`
 	// To, on an unblock: the state a blocked issue goes back to, the one
 	// it came from or refine; Person, on a blocked: only a person can
 	// lift the block (ADR-0059, amended).
@@ -2227,7 +2237,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 				Message: "already in the body, left as it is: " + strings.Join(kept, ", ")})
 		}
 	case "ready":
-		c.Assumed, c.Written = nil, ""
+		c.Assumed, c.Written, c.Retested = nil, "", ""
 		if missing := NotReady(is, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
 			// Drafts no person accepted, past the level's delay: taken as
 			// assumptions, the issue goes on (ADR-0060).
@@ -2246,7 +2256,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			p.unread[c.Issue] = scenariosUnreadWhy(is, own)
 			return "scenarios-unread", fmt.Sprintf("not moved to ready: %s (%s)", scenariosWhat(is), work.ScenarioForm)
 		}
-		if c.Proof != nil {
+		if c.Proof != nil && !c.Retest {
 			return p.checkProof(f, c)
 		}
 		if rule, why := p.checkNoTest(f, role, is, c); rule != "" {

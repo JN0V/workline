@@ -1,0 +1,80 @@
+case: product-owner/no-test-retested-back-to-tests
+about: >
+  The tester found no test possible, for a reason of its own: the code
+  it needed was not in its task (#1053). The product owner sends the
+  issue back to its tests unchanged, a ready with retest, kept in its
+  state. Once only: where the tester found none again after a retest,
+  a second one is refused, and the issue waits, said on it. A retest
+  needs the tester's "no test possible" and no proof beside it; on a
+  text rewritten since the tester read it, it is a plain ready.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: Client ids wrap
+        body: "## Need\n\nEach client keeps its own id.\n\n## Verification\n\nA test connects clients.\n\n## Validation\n\n- **Distinct ids:** Given a client connected, When the counter wraps, Then every client has its own id.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 50be807bebf9\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the code of the counter was not in its task.\",\"body\":\"50be807bebf9\"} -->\n<!-- workline:sticky=tester/issue -->"
+      - id: 10
+        title: Client ids wrap again
+        body: "## Need\n\nEach client keeps its own id.\n\n## Verification\n\nA test connects clients.\n\n## Validation\n\n- **Distinct ids:** Given a client connected, When the counter wraps, Then every client has its own id.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 50be807bebf9\nretest: 6a26718a80dd\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the code of the counter was not in its task.\",\"body\":\"50be807bebf9\",\"retried\":true} -->\n<!-- workline:sticky=tester/issue -->"
+      - id: 11
+        title: Client ids never asked
+        body: "## Need\n\nEach client keeps its own id.\n\n## Verification\n\nA test connects clients.\n\n## Validation\n\n- **Distinct ids:** Given a client connected, When the counter wraps, Then every client has its own id.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 50be807bebf9\n```\n\n<!-- workline:sticky=product-owner/state -->"
+      - id: 12
+        title: Client ids proved and retested
+        body: "## Need\n\nEach client keeps its own id.\n\n## Verification\n\nA test connects clients.\n\n## Validation\n\n- **Distinct ids:** Given a client connected, When the counter wraps, Then every client has its own id.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 50be807bebf9\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the code of the counter was not in its task.\",\"body\":\"50be807bebf9\"} -->\n<!-- workline:sticky=tester/issue -->"
+      - id: 13
+        title: Client ids read on an older text
+        body: "## Need\n\nEach client keeps its own id.\n\n## Verification\n\nA test connects clients.\n\n## Validation\n\n- **Distinct ids:** Given a client connected, When the counter wraps, Then every client has its own id.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 50be807bebf9\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the code of the counter was not in its task.\",\"body\":\"0ldb0dy0ld00\"} -->\n<!-- workline:sticky=tester/issue -->"
+run: {role: product-owner, event: schedule, ai: "fake:no-test-retest-nine"}
+expect:
+  findings:
+    - {rule: retest-spent, where: "#10"}
+    - {rule: no-test-waits, where: "#10"}
+    - {rule: retest-not-asked, where: "#11"}
+    - {rule: retest-with-proof, where: "#12"}
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:needs-tests]
+        comment-contains: ["retest: 6a26718a80dd"]
+      - id: 10
+        labels: [workline:to-refine]
+      - id: 11
+        labels: [workline:to-refine]
+      - id: 12
+        labels: [workline:to-refine]
+      - id: 13
+        labels: [workline:needs-tests]
+        comment-lacks: ["retest:"]

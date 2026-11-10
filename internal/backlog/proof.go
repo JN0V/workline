@@ -60,6 +60,10 @@ type Proof struct {
 	// body it read (BodyDigest). The same body sent to its tests again,
 	// nothing picked, is no new reason to write any (#815).
 	Body string `json:"body,omitempty" yaml:"body,omitempty"`
+	// Retried, on the tester's "no test possible": written again after
+	// the product owner sent the issue back unchanged (Retested, #1053).
+	// A retest is spent: another word of the tester's, never a loop.
+	Retried bool `json:"retried,omitempty" yaml:"retried,omitempty"`
 }
 
 // TestName is a test's name as a proof-command takes it in `{test}`:
@@ -166,22 +170,62 @@ func (p *Plan) checkNoTest(f forge.Backlog, role string, is forge.Issue, c *Prop
 	if err != nil {
 		return "no-state", err.Error()
 	}
+	if c.Retest {
+		return p.checkRetest(is, comments, role, c)
+	}
 	if !NoTestStands(is, comments, role) {
 		return "", ""
 	}
 	rec, _ := testerRecord(comments)
-	if slices.ContainsFunc(p.Decisions, func(d Decision) bool {
-		if d.Mode != Act || d.Act.Do != "refine" || d.Act.Issue != c.Issue || d.Act.ToReporter {
-			return false
-		}
-		// Done, not proposed to its reporter, and writing another body.
-		body, _, _ := Refine(is.Body, d.Act, role)
-		return BodyDigest(body) != rec.Body
-	}) {
+	if p.rewrites(is, c.Issue, role, rec.Body) {
 		return "", ""
 	}
 	return "no-test-unanswered", "not moved to ready: the tester found no test possible for it as it stands, and no proof is picked; " +
 		"a ready alone sends it back to its tests unchanged: pick its proof, or rewrite its " + work.Name(work.Validation) + " so a test checks it"
+}
+
+// rewrites says whether a refine of this run, done and not proposed to
+// its reporter, writes another body than the one the tester read.
+func (p *Plan) rewrites(is forge.Issue, issue int, role, read string) bool {
+	return slices.ContainsFunc(p.Decisions, func(d Decision) bool {
+		if d.Mode != Act || d.Act.Do != "refine" || d.Act.Issue != issue || d.Act.ToReporter {
+			return false
+		}
+		body, _, _ := Refine(is.Body, d.Act, role)
+		return BodyDigest(body) != read
+	})
+}
+
+// RetestSpent says whether the tester's "no test possible" on an issue
+// came after a retest (#1053): no second one is sent.
+func RetestSpent(comments []string) bool {
+	rec, ok := testerRecord(comments)
+	return ok && rec.Kind == KindNone && rec.Retried
+}
+
+// checkRetest checks a ready that sends an issue back to its tests
+// unchanged (#1053): only where the tester's last word is "no test
+// possible" on the body as it stands, never a second time on the tester's
+// word after a retest (Proof.Retried). It records the word it answers.
+func (p *Plan) checkRetest(is forge.Issue, comments []string, role string, c *Proposal) (rule, why string) {
+	rec, ok := testerRecord(comments)
+	key, _ := RetestKey(comments)
+	switch {
+	case c.Proof != nil:
+		return "retest-with-proof", "not moved to ready: a retest sends it to its tests, a proof kind past them: one or the other"
+	case !ok || rec.Kind != KindNone:
+		return "retest-not-asked", "not moved to ready: a retest answers the tester's \"no test possible\"; the tester said none on it — a ready alone sends it to its tests"
+	case rec.Body != "" && rec.Body != BodyDigest(is.Body), p.rewrites(is, c.Issue, role, rec.Body):
+		// Rewritten since the tester read it, or in this run: a ready
+		// alone sends it to its tests, no retest spent on it.
+		c.Retest = false
+		return "", ""
+	case RetestSpent(comments):
+		return "retest-spent", "not moved to ready: it was sent back to its tests unchanged once, and the tester found no test possible again; " +
+			"pick its proof, or rewrite its " + work.Name(work.Validation) + " so a test checks it"
+	}
+	c.Retested = key
+	return "", ""
 }
 
 // Same says whether a kept pick is that one, read again: the same person,
@@ -239,13 +283,45 @@ func NoTest(comments []string) (reason, digest string, ok bool) {
 	if !ok || p.Kind != KindNone {
 		return "", "", false
 	}
-	sum := sha256.Sum256([]byte(p.Reason))
+	said := p.Reason
+	if p.Retried {
+		said += "\x00retried" // another word than the one a retest answered
+	}
+	sum := sha256.Sum256([]byte(said))
 	return p.Reason, hex.EncodeToString(sum[:])[:12], true
 }
 
+// RetestKey is what a retest answers (#1053): the tester's "no test
+// possible" (NoTest's digest) on the body it read. A later word with the
+// same reason on another body is another word: a stale retest never
+// answers it. False when the tester's last word is another.
+func RetestKey(comments []string) (string, bool) {
+	rec, _ := testerRecord(comments)
+	_, digest, ok := NoTest(comments)
+	if !ok {
+		return "", false
+	}
+	sum := sha256.Sum256([]byte(digest + "\x00" + rec.Body))
+	return hex.EncodeToString(sum[:])[:12], true
+}
+
+// Retested says whether the product owner sent an issue back to its tests
+// unchanged after the tester's "no test possible" (#1053): its state's
+// retest answers the tester's word as it stands. The tester's own reason —
+// code missing from its task, a run that failed — is no reason to change
+// the issue's text; it is tried again, once (Proof.Retried).
+func Retested(comments []string, role string) bool {
+	key, ok := RetestKey(comments)
+	if !ok {
+		return false
+	}
+	st, found, err := ReadState(comments, role)
+	return found && err == nil && st.Retest == key
+}
+
 // NoTestStands says whether the tester's "no test possible" on an issue
-// still stands (#815): no kind picked for it, and the issue's body the one
-// the tester read. A ready with no proof would send it back to its tests
+// still stands (#815): no kind picked for it, no retest sent (#1053), and
+// the issue's body the one the tester read. A ready with no proof would send it back to its tests
 // unchanged. A record that does not say which body it read, from before
 // #815, stands for none: it could never be lifted by a rewrite, and the
 // tester's next word records the body.
@@ -254,7 +330,7 @@ func NoTestStands(is forge.Issue, comments []string, role string) bool {
 	if !ok || p.Kind != KindNone || p.Body == "" {
 		return false
 	}
-	if _, picked := ReadProof(comments, role); picked {
+	if _, picked := ReadProof(comments, role); picked || Retested(comments, role) {
 		return false
 	}
 	return p.Body == BodyDigest(is.Body)
