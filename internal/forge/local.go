@@ -21,6 +21,13 @@ import (
 // A role's writes are idempotent, as on any forge.
 type Local struct{ Repo string }
 
+// notHere is an item the clone does not hold: the forge's answer that it
+// is not there (NotFound), as another forge's 404.
+type notHere struct{ said string }
+
+func (e notHere) Error() string        { return e.said }
+func (e notHere) Is(target error) bool { return target == errNotFound }
+
 // LocalItem is an issue or a merge request of the local forge.
 type LocalItem struct {
 	ID        int      `yaml:"-"`
@@ -31,8 +38,11 @@ type LocalItem struct {
 	Branch    string   `yaml:"branch,omitempty"` // a merge request's local branch
 	Base      string   `yaml:"base,omitempty"`
 	Draft     bool     `yaml:"draft,omitempty"` // a merge request opened as a draft
-	Body      string   `yaml:"-"`
-	Comments  []string `yaml:"-"`
+	// Events are a merge request's labels set and taken off, the head
+	// each was on (local_merge.go): a person's yes covers that head.
+	Events   []LocalEvent `yaml:"events,omitempty"`
+	Body     string       `yaml:"-"`
+	Comments []string     `yaml:"-"`
 }
 
 // commentLine starts each comment in an item's file. It is not a marker
@@ -71,7 +81,7 @@ func (l *Local) Item(kind string, id int) (*LocalItem, error) {
 	}
 	data, err := os.ReadFile(p)
 	if err != nil {
-		return nil, fmt.Errorf("no %s", Target{Kind: kind, ID: id})
+		return nil, notHere{fmt.Sprintf("no %s", Target{Kind: kind, ID: id})}
 	}
 	it, err := parseLocal(string(data))
 	if err != nil {
@@ -330,6 +340,9 @@ func (l *Local) Sticky(t Target, body, marker string, create bool) error {
 
 func (l *Local) Label(t Target, add, remove []string) error {
 	return l.change(t, func(it *LocalItem) {
+		if t.Kind == "merge-request" {
+			l.labelled(it, add, remove)
+		}
 		for _, a := range add {
 			if !slices.Contains(it.Labels, a) {
 				it.Labels = append(it.Labels, a)
@@ -466,7 +479,7 @@ func (l *Local) MergeRequest(id int) (MergeRequest, error) {
 	if err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body, Draft: it.Draft}, nil
+	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body, Draft: it.Draft, Author: localAuthor(it.Branch), Labels: it.Labels}, nil
 }
 
 // MarkReady marks a draft merge request ready; one ready already is left.
@@ -489,7 +502,7 @@ func (l *Local) ListMergeRequests() ([]MergeRequest, error) {
 	var out []MergeRequest
 	for _, it := range items {
 		if it.Branch != "" && l.StateOf(it) == "open" {
-			out = append(out, MergeRequest{ID: it.ID, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body, Labels: it.Labels, Draft: it.Draft})
+			out = append(out, MergeRequest{ID: it.ID, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body, Labels: it.Labels, Draft: it.Draft, Author: localAuthor(it.Branch)})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })

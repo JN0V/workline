@@ -23,6 +23,9 @@ merge: {autonomy: normal}   # a project's choice, never a default
   - from a role's branch (`workline/<role>/…`), opened by workline's App;
   - every push to it the App's, every commit committed by it and its own
     by its tree;
+  - on the local forge, with no App: a role's branch, every commit a
+    role's by its trailer and tree, whatever its committer — the roles
+    commit under your name there;
   - only docs of the documentalist's that agents are not told to read
     (not [AGENTS.md](../AGENTS.md), [CLAUDE.md](../CLAUDE.md), a page they link to, a prompt…);
   - in a role's folder, only its README and `docs/` pages, never what
@@ -117,6 +120,9 @@ merge: {autonomy: normal}   # a project's choice, never a default
 
 - As at `cautious` ([set up](merge-policy.md#set-up)); the App marks each
   base commit it read for reverts with the status `workline/merge-read`.
+- **The local forge**: the marks and the demotion issues are kept in the
+  clone; a demotion issue you close is lifted
+  ([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-10-1322-the-local-forge-merges-itself)).
 - **Another forge** (`cmd:`): besides the operations `cautious` needs,
   `app`, `merge-state`'s `pushers`, `closing`, `mark`, `marked`,
   `comments`, `comment`, `issue` and `open-issue`

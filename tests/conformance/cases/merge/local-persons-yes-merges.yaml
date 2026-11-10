@@ -1,0 +1,23 @@
+case: merge/local-persons-yes-merges
+about: >
+  With `forge: local`, a person's yes merges a merge request whose head
+  passed (#1322): `!2`, a feature that waits at `normal`, is labelled
+  `workline:accepted` with `workline issues label`; the yes covers the
+  head it was given on. `workline follow` merges it into main and closes
+  #3.
+given:
+  repo: local-fix
+  config: {forge: local, merge: {autonomy: normal}}
+  setup:
+    - "sed -i 's/labels: \\[bug,/labels: [enhancement,/' .git/workline/issues/3.md"
+run:
+  sh: >
+    workline issues label '!2' --add workline:accepted &&
+    workline follow --base main --verdict .git/verdict.json --json
+expect:
+  exit: 0
+  stdout: ["!2 labelled", "\"rule\": \"merged-at-once\"", "its head's verdict passed: merged at once", "\"rule\": \"issue-closed\""]
+  files:
+    lib.sh: {contains: "mul()"}
+    .git/workline/issues/3.md: {contains: "state: closed"}
+    .git/workline/merge-requests/2.md: {contains: ["state: merged", "label: workline:accepted"]}

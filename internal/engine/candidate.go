@@ -638,10 +638,10 @@ func (c *candidateRun) refused(v minor, is forge.Issue) (string, error) {
 	if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
 		return "", err
 	}
-	if _, shipped := ownNote(notes, "candidate-shipped=", c.app); shipped {
+	if _, shipped := ownNote(notes, "candidate-shipped=", c.app, false); shipped {
 		return "", nil
 	}
-	if _, done := ownNote(notes, "candidate-refused=", c.app); done {
+	if _, done := ownNote(notes, "candidate-refused=", c.app, false); done {
 		return "", nil
 	}
 	who, ok, err := forge.Closing(c.f, is.ID)

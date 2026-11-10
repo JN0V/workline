@@ -214,8 +214,14 @@ The [merge policy](merge-policy.md) acts only with `merge:` in
   100 commits — the first run too —: someone who may push and merge closes
   the issue it names, and workline's own work merges alone again.
 - `merge-unsupported`, `merge-token`, `merge-unguarded`: nothing is
-  turned on — the local forge has no auto-merge, a GitHub job's own
-  token, a base that does not require `workline/accepted`
-  ([set up](merge-policy.md#set-up)).
+  turned on — a forge with no auto-merge, a GitHub job's own token, a
+  base that does not require `workline/accepted`
+  ([set up](merge-policy.md#set-up)). The local forge merges itself
+  ([the merge](local-line.md#6-the-merge)).
+- `auto-merge-refused` on the local forge: `main` checked out with
+  uncommitted changes, a conflict, or a branch moved since it was
+  weighed; commit or stash, rebase, or run the line again.
 - `verdict-not-kept`: `follow --verdict` with no `merge:` set, or on a
-  forge without auto-merge.
+  forge without auto-merge; on the local forge, `route merge-request`
+  could not keep its verdict in the clone: the request waits, run the
+  line again.

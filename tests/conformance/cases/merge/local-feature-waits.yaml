@@ -1,0 +1,23 @@
+case: merge/local-feature-waits
+about: >
+  With `forge: local` at `normal`, the developer's merge request for a
+  feature waits for a person's yes, as on any forge (#1322): every gate
+  passed on its head, but #3 is labelled `enhancement`. `workline
+  follow` merges nothing, main stays where it was, `!2` stays open, and
+  the reason is said in the run and once on `!2`.
+given:
+  repo: local-fix
+  config: {forge: local, merge: {autonomy: normal}}
+  setup:
+    - "sed -i 's/labels: \\[bug,/labels: [enhancement,/' .git/workline/issues/3.md"
+run: {follow: [--base, main, --verdict, .git/verdict.json], forge: local}
+expect:
+  status: pass
+  findings:
+    - {rule: waits-for-a-yes, where: "!2", message: "the developer's code for #3, a feature: its issue labelled `enhancement`"}
+  no-findings: [{rule: merged-at-once}, {rule: issue-closed}]
+  files:
+    lib.sh: {lacks: "mul()"}
+    .git/workline/issues/3.md: {contains: "state: open"}
+    .git/workline/merge-requests/2.md: {contains: ["state: open", "**Waiting for a person's yes**", "put the label `workline:accepted`"]}
+  issues-listed: ["!2    open"]

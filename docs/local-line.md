@@ -1,17 +1,18 @@
 ---
-sources: [cmd/workline/main.go, internal/forge/local.go, internal/doctor/tests.go]
-checked: 94d4c5157
+sources: [cmd/workline/main.go, internal/forge/local.go, internal/forge/local_merge.go, internal/doctor/tests.go]
+checked: 796746533
 verified: agent:claude-code
 ---
 # The whole line with no forge
 
 From a need to a merged change on your machine, with no GitHub nor
 GitLab: the product owner refines, the tester writes the tests, the
-developer the code, the reviewer reads it, you merge with git.
+developer the code, the reviewer reads it; the merge policy merges a
+fix, you say yes to a feature.
 
 ```
-need ──► product owner ──► tester ──► developer ──► review ──► git merge
- you      refines it        tests      code          the line    you
+need ──► product owner ──► tester ──► developer ──► review ──► merge
+ you      refines it        tests      code          the line    the policy, or you
 ```
 
 - **Issues and merge requests stay in the clone** (`.git/workline/`),
@@ -44,6 +45,7 @@ routing:
     merge-request: [committer, documentalist, tester, reviewer]
     issue: [product-owner, reviewer, tester, developer]
 autonomy: normal
+merge: {autonomy: normal}
 roles:
   tester:
     settings:
@@ -56,6 +58,8 @@ roles:
 - **`test-command`**: any runner that writes a JUnit XML report
   ([the tester's settings](../roles/tester/README.md#settings)).
 - **`autonomy`**: how far the roles go alone ([autonomy](autonomy.md)).
+- **`merge`**: what merges with no yes of yours: at `normal`, a bug's
+  fix ([the merge policy](merge-policy.md)). Left out, you merge.
 
 ```sh
 workline doctor          # says a missing test-command, with the setting to add
@@ -120,20 +124,39 @@ workline route merge-request --target merge-request:2 --ai claude
 
 - The committer, the tester's check and the reviewer read the branch;
   their findings go on `!2` (`workline issues show !2`).
+- **The line's verdict** on the branch's head is kept in the clone, with
+  a `merge:` setting, for the merge (step 6). A commit since needs a new
+  run.
 - A finding to fix: `workline develop --merge-request 2 --ai claude`, a
   review round on its branch.
 
-## 6. Merge it yourself
+## 6. The merge
 
 ```sh
-git checkout main && git merge --ff-only workline/developer/1
-workline follow          # closes the issues the merged request says it closes
+git checkout main
+workline follow          # merges what the policy says yes to; closes its issue
 workline issues          # #1 closed, !1 and !2 merged
 ```
 
-You are the forge's guards here: nothing merges unless you run
-`git merge`
-([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md)).
+`workline follow` does what a forge's auto-merge would
+([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-10-1322-the-local-forge-merges-itself)):
+
+- **A bug's fix merges alone**: its tests red on `main` first, every
+  gate passed, the reviewer's verdict on its head, no Important finding.
+- **A feature or a task waits for your yes**, said on `!2`:
+  `workline issues label !2 --add workline:accepted`, then `follow`.
+- **Only the head that passed**: a commit since waits for the next
+  `route merge-request`.
+- **Into `main` in this clone**: a merge commit naming `!2`; nothing is
+  pushed. `main` checked out with uncommitted changes, or a conflict:
+  nothing merges, the reason said.
+- **No `merge:` setting**: you merge with git, then `follow` closes the
+  issue:
+
+```sh
+git checkout main && git merge --ff-only workline/developer/1
+workline follow
+```
 
 ## When a step stalls
 

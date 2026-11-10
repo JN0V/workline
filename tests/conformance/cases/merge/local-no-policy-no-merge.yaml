@@ -1,0 +1,16 @@
+case: merge/local-no-policy-no-merge
+about: >
+  With `forge: local` and no `merge:` setting, nothing merges, as
+  before #1322: the line's verdict is not kept, main stays where it was.
+given:
+  repo: local-fix
+  config: {forge: local}
+run: {follow: [--base, main, --verdict, .git/verdict.json], forge: local}
+expect:
+  status: pass
+  findings:
+    - {rule: verdict-not-kept, message: "the project sets no merge policy"}
+  no-findings: [{rule: merged-at-once}, {rule: waits-for-a-yes}]
+  files:
+    lib.sh: {lacks: "mul()"}
+    .git/workline/merge-requests/2.md: {contains: "state: open"}
