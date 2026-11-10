@@ -33,6 +33,8 @@ import (
 // each merges once its own head is green, none brought up to date first
 // (ADR-0042, ADR-0051; merge.go). Verdict, a head's verdict the line wrote, is kept
 // first, in hand for this run and, where the forge keeps it, for the next.
+// The local forge has no auto-merge: its merge is made here, of the head
+// weighed, and settled in the same run (#1322).
 func Follow(o FollowOptions) *Result {
 	repo, forgeSpec, base, gardening := o.Repo, o.Forge, o.Base, o.Gardening
 	res := &Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
@@ -63,7 +65,7 @@ func Follow(o FollowOptions) *Result {
 	hand := map[string]kept{}
 	m, merges := f.(forge.Merger)
 	switch {
-	case o.Verdict != "" && o.Merge != "" && merges && !local:
+	case o.Verdict != "" && o.Merge != "" && merges:
 		finding, err := keepVerdict(m, o.Verdict, hand)
 		if err != nil {
 			return fail(err)
@@ -122,6 +124,13 @@ func Follow(o FollowOptions) *Result {
 	}
 	res.Summary += "; " + settleDone(f, open, o.States, res) // done.go
 	o.Base = base
+	if local && o.Merge == MergeEnterprising {
+		// No release candidate is cut here for a person to try: a feature
+		// would merge with nobody's yes at all.
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "candidate-unsupported", Level: "warn",
+			Message: "at `enterprising`, the local forge cuts no release candidate for a person to try: features and tasks wait for a person's yes, as at `normal`"})
+		o.Merge = MergeNormal
+	}
 	if o.Merge == MergeEnterprising {
 		// The milestones' release candidates first: a refusal's demotion
 		// is read by the merge policy below (candidate.go, ADR-0060).
@@ -132,11 +141,22 @@ func Follow(o FollowOptions) *Result {
 		res.Summary += "; " + sum
 	}
 	if o.Merge != "" {
+		before := len(res.Findings)
 		sum, err := mergePolicy(f, o, local, res, hand)
 		if err != nil {
 			return fail(err)
 		}
 		res.Summary += "; " + sum
+		// Merged here, by the policy: what a forge does on its merge is
+		// done in this run, its issues closed, their states taken off.
+		s, ok := f.(forge.Settler)
+		if ok && local && slices.ContainsFunc(res.Findings[before:], func(x verdict.Finding) bool { return x.Rule == "merged-at-once" }) {
+			still, err := f.OpenMergeRequests("workline/")
+			if err != nil {
+				return fail(err)
+			}
+			res.Summary += "; then " + settleMerges(s, res) + "; " + settleDone(f, still, o.States, res)
+		}
 	}
 	return res
 }

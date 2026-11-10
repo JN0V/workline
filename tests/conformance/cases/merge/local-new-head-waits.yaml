@@ -1,0 +1,23 @@
+case: merge/local-new-head-waits
+about: >
+  With `forge: local` at `normal`, a verdict covers the head it was
+  given on (#1322): the line passed on `!2`'s head, then a new commit
+  was made on its branch with no new run. `workline follow` keeps the
+  pass on the old head, finds none on the new one, and merges nothing
+  until the line passes there.
+given:
+  repo: local-fix
+  config: {forge: local, merge: {autonomy: normal}}
+  setup:
+    - "git checkout -q workline/developer/3 && echo '# mul' >> lib.sh && git commit -qam 'fix: say mul' -m 'Workline-Role: developer' && git checkout -q main"
+    - "sed -i \"s/workline:at head=[0-9a-f]*/workline:at head=$(git rev-parse workline/developer/3)/\" .git/workline/merge-requests/2.md"
+run: {follow: [--base, main, --verdict, .git/verdict.json], forge: local}
+expect:
+  status: pass
+  findings:
+    - {rule: verdict-kept}
+    - {rule: verdict-missing, where: "!2", message: "no verdict of the line on its head"}
+  no-findings: [{rule: merged-at-once}]
+  files:
+    lib.sh: {lacks: "mul()"}
+    .git/workline/merge-requests/2.md: {contains: "state: open"}

@@ -190,6 +190,16 @@ func keepVerdict(m forge.Merger, file string, hand map[string]kept) (verdict.Fin
 	if err := json.Unmarshal(data, &v); err != nil || v.Head == "" || v.Status == "" {
 		return verdict.Finding{}, fmt.Errorf("the verdict to keep, %s: no head and status in it (%v)", file, err)
 	}
+	return keepHead(m, v, hand)
+}
+
+// KeepVerdict keeps the line's verdict on its head where m keeps it: the
+// local forge's line keeps its own as it runs, no file between (#1322).
+func KeepVerdict(m forge.Merger, v HeadVerdict) (verdict.Finding, error) {
+	return keepHead(m, v, map[string]kept{})
+}
+
+func keepHead(m forge.Merger, v HeadVerdict, hand map[string]kept) (verdict.Finding, error) {
 	class, why := v.class()
 	var rules []string
 	if class == verdictShort {
@@ -557,7 +567,7 @@ type inLine struct {
 func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand map[string]kept) (string, error) {
 	sum := "merge policy (" + o.Merge + ")"
 	m, ok := f.(forge.Merger)
-	if !ok || local {
+	if !ok {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-unsupported", Level: "warn",
 			Message: "this forge has no auto-merge workline can turn on: nothing turned on"})
 		return sum + ": the forge has no auto-merge", nil
@@ -609,6 +619,9 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 	var n *normal
 	if byPolicy(o.Merge) {
 		tip, err := remoteTip(o.Repo, o.Base)
+		if local {
+			tip, err = git(o.Repo, nil, "rev-parse", "--verify", "refs/heads/"+o.Base)
+		}
 		if err != nil {
 			return "", err
 		}

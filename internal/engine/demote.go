@@ -349,7 +349,7 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 		return nil, err
 	}
 	for _, is := range open {
-		if _, ok := demotedKind(is.Title); ok && is.Author == app && strings.Contains(is.Body, "<!-- workline:merge-demoted=") {
+		if _, ok := demotedKind(is.Title); ok && byApp(is.Author, app) && strings.Contains(is.Body, "<!-- workline:merge-demoted=") {
 			issues = append(issues, is.ID)
 		}
 	}
@@ -435,7 +435,7 @@ func holds(f forge.Forge, id int, app string, res *Result) (string, bool, error)
 		return kindAll, true, nil
 	}
 	kind, ok := demotedKind(is.Title)
-	if !ok || is.Author != app {
+	if !ok || !byApp(is.Author, app) {
 		return "", false, nil // never one of the App's demotions
 	}
 	which := "its " + kind + " merge requests"
@@ -491,7 +491,7 @@ func demote(f forge.Forge, d *demotion, app string, res *Result) error {
 	id, err := f.OpenIssue(title, body, forge.Marker("merge-demoted="+d.revert))
 	if err == nil {
 		var is *forge.Issue
-		if is, err = f.Issue(id); err == nil && (app == "" || is.Author != app) {
+		if is, err = f.Issue(id); err == nil && !byApp(is.Author, app) {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "demotion-unrecorded", Level: "warn", Where: where,
 				Message: fmt.Sprintf("%s: %s wait for a person's yes, but #%d, of that title, is @%s's, not workline's: it is not taken for it, and this is read again next run", short(d.revert), which, id, is.Author)})
 			return nil

@@ -188,7 +188,8 @@ func unreproduced(repo, baseTip, tip string, d developer.Merge) (string, error) 
 // notCoded names the first commit of the branch, past base, that is not
 // the developer's nor the tester's: not committed under the name
 // workline's jobs commit with, or with no trailer naming one of them; ""
-// when every one is.
+// when every one is. A committer "" is a forge that names none, the local
+// one: the trailer alone tells, every commit in the clone the person's.
 func notCoded(repo, baseTip, tip, committer string) (string, error) {
 	out, err := git(repo, nil, "log", "--reverse", "--format=%H%x1f%cn", baseTip+".."+tip)
 	if err != nil {
@@ -200,7 +201,7 @@ func notCoded(repo, baseTip, tip, committer string) (string, error) {
 			continue
 		}
 		by := ownTrailer(repo, c)
-		if name != committer || by == "" || slices.ContainsFunc(strings.Split(by, ","), func(r string) bool { return !slices.Contains(codeRoles, strings.TrimSpace(r)) }) {
+		if committer != "" && name != committer || by == "" || slices.ContainsFunc(strings.Split(by, ","), func(r string) bool { return !slices.Contains(codeRoles, strings.TrimSpace(r)) }) {
 			return commitSaid(repo, c) + ", committed by " + name, nil
 		}
 	}

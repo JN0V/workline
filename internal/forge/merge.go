@@ -169,9 +169,11 @@ func Said(err error) string {
 	return strings.TrimPrefix(said(err), ErrUnreachable.Error()+": ")
 }
 
-// MergeRef is how f names a merge request: !7 on GitLab, #7 elsewhere.
+// MergeRef is how f names a merge request: !7 on GitLab and the local
+// forge, #7 elsewhere.
 func MergeRef(f any, id int) string {
-	if _, ok := f.(*gitlab); ok {
+	switch f.(type) {
+	case *gitlab, *Local:
 		return fmt.Sprintf("!%d", id)
 	}
 	return fmt.Sprintf("#%d", id)

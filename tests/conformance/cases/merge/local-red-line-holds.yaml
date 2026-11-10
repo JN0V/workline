@@ -1,0 +1,19 @@
+case: merge/local-red-line-holds
+about: >
+  With `forge: local` at `normal`, a fix whose reviewer found an
+  Important finding on its head does not merge (#1322): the finding is
+  named, main stays where it was, `!2` stays open.
+given:
+  repo: local-fix
+  config: {forge: local, merge: {autonomy: normal}}
+  setup:
+    - "sed -i 's/^No finding on the commits reviewed.$/| | | Where | Finding |\\n|---|---|---|---|\\n| blocks | correctness | `lib.sh:2` | Important: mul overflows. |/' .git/workline/merge-requests/2.md"
+run: {follow: [--base, main, --verdict, .git/verdict.json], forge: local}
+expect:
+  status: pass
+  findings:
+    - {rule: waits-for-a-yes, where: "!2", message: "but the reviewer's findings are open: blocks correctness `lib.sh:2`: Important: mul overflows."}
+  no-findings: [{rule: merged-at-once}]
+  files:
+    lib.sh: {lacks: "mul()"}
+    .git/workline/merge-requests/2.md: {contains: "state: open"}

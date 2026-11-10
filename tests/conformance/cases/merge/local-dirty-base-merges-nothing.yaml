@@ -1,0 +1,22 @@
+case: merge/local-dirty-base-merges-nothing
+about: >
+  With `forge: local` at `normal`, a fix the policy says yes to is not
+  merged into a base checked out with uncommitted changes (#1322): the
+  reason is said, the changes stay, and the worktree is never left
+  mid-merge. The next `follow`, the changes committed, merges it.
+given:
+  repo: local-fix
+  config: {forge: local, merge: {autonomy: normal}}
+  setup:
+    - "echo 'a note' >> README.md"
+run: {follow: [--base, main, --verdict, .git/verdict.json], forge: local}
+expect:
+  status: pass
+  findings:
+    - {rule: auto-merge-refused, where: "!2", message: "main is checked out at"}
+  no-findings: [{rule: merged-at-once}, {rule: issue-closed}]
+  files:
+    README.md: {contains: "a note"}
+    lib.sh: {lacks: "mul()"}
+    .git/MERGE_HEAD: {exists: false}
+    .git/workline/merge-requests/2.md: {contains: "state: open"}

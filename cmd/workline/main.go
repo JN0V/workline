@@ -1477,6 +1477,15 @@ func routeCmd(args []string) int {
 			fmt.Fprintln(os.Stderr, "workline:", err)
 			return 1
 		}
+	} else if event == "merge-request" && t != nil && t.Kind == "merge-request" && !*dryRun && !*gatesOnly && inputs[line.WarnInput] != line.WarnOnly {
+		said, err := keepLocalVerdict(abs, spec, inputs["range"], res)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		if said != "" {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "verdict-kept", Where: t.String(), Message: said + "; `workline follow` weighs it"})
+		}
 	}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
@@ -1553,6 +1562,35 @@ func localRange(repo, spec string, id int) (rng, branch, why string) {
 // writeVerdict writes the line's verdict on the head it judged — the
 // range's end, else HEAD — for the merge policy (ADR-0042).
 func writeVerdict(repo, file, rng string, res *line.Result) error {
+	v, err := headVerdict(repo, rng, res)
+	if err != nil {
+		return err
+	}
+	return engine.WriteVerdict(file, v)
+}
+
+// keepLocalVerdict keeps the line's verdict on the head of a merge
+// request of the local forge in the clone, for `workline follow` and the
+// merge policy (#1322): no job between them to hand a file over.
+func keepLocalVerdict(repo, spec, rng string, res *line.Result) (string, error) {
+	f, err := forge.Open(spec, repo)
+	if err != nil || f == nil || !forge.KeepsBranches(f) || forge.InCI() != "" {
+		return "", err // in CI, the clone and what it keeps are thrown away
+	}
+	m, ok := f.(forge.Merger)
+	if !ok {
+		return "", nil
+	}
+	v, err := headVerdict(repo, rng, res)
+	if err != nil {
+		return "", err
+	}
+	kept, err := engine.KeepVerdict(m, v)
+	return kept.Message, err
+}
+
+// headVerdict is the line's verdict on the head it judged.
+func headVerdict(repo, rng string, res *line.Result) (engine.HeadVerdict, error) {
 	head := "HEAD"
 	if rng != "" {
 		head = gitrange.Head(rng)
@@ -1562,13 +1600,13 @@ func writeVerdict(repo, file, rng string, res *line.Result) error {
 	case err == nil:
 		head = strings.TrimSpace(string(out))
 	case len(head) != 40 || strings.Trim(head, "0123456789abcdef") != "":
-		return fmt.Errorf("--verdict: the head judged, %s, is no commit here", head)
+		return engine.HeadVerdict{}, fmt.Errorf("--verdict: the head judged, %s, is no commit here", head)
 	} // a full id not fetched here: the source head of a merge result
 	v := engine.HeadVerdict{Head: head, Status: res.Status, Findings: res.Findings}
 	for _, s := range res.Steps {
 		v.Steps = append(v.Steps, engine.StepStatus{Name: s.Name, Status: s.Status})
 	}
-	return engine.WriteVerdict(file, v)
+	return v, nil
 }
 
 func itemCmd(args []string) int {
