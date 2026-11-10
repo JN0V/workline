@@ -1,0 +1,6 @@
+# The product owner, reading again #9, blocked lacking Validation,
+# drafts it and decides nothing else (#1206).
+- refine:
+    issue: 9
+    validation: "- **Three rows:** Given three rows, When I export them, Then the file holds three."
+    why: "The Need says what a person sees: its scenario follows."

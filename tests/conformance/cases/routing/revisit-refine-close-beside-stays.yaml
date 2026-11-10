@@ -1,0 +1,31 @@
+case: routing/revisit-refine-close-beside-stays
+about: >
+  The same read again as revisit-refine-moves-out-of-blocked, but the
+  product owner closes #9 beside its refine, the close only proposed by
+  default (#1206). It decided on #9: the engine adds no unblock, and #9
+  stays blocked with the proposal.
+given:
+  repo: backlog
+  env: {WORKLINE_CLOCK: "2026-11-12T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:blocked]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n\n---\n\n## Scope\n\nGuessed: the export loop is not in the code given.\n- `src/export/`: the export loop must write every row."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"v\":1,\"state\":\"blocked\",\"body\":\"000000000000\",\"hops\":1,\"from\":\"refine\",\"why\":\"the product owner read it on this text with only the code of `src/export/csv.go`, and left it lacking Scope, nothing asked: read again, it would get the same; a person names the files it is about in a comment, or completes it\",\"since\":\"2026-11-04T08:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:refine-blocked-scope-close"}
+expect:
+  status: pass
+  agent-calls: 1
+  forge:
+    issues:
+      - id: 9
+        labels: ["workline:blocked", "workline:proposed"]
+        comment-lacks: ["Moved #9 out of Blocked"]
