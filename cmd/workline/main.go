@@ -26,6 +26,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -1642,6 +1643,9 @@ func issuesCmd(args []string) int {
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
+	if code, done := issuesOptions(fs, what); done {
+		return code
+	}
 	root, err := gitRoot(*repo)
 	if err != nil {
 		return notInRepo()
@@ -1710,6 +1714,30 @@ func issuesCmd(args []string) int {
 	}
 	fmt.Fprintln(os.Stderr, issuesUsage)
 	return 64
+}
+
+// issuesOwn are the options each `workline issues` command reads; one
+// meant for another is refused, never dropped (`comment --add` would
+// set no label).
+var issuesOwn = map[string][]string{
+	"open":    {"body", "body-file", "label"},
+	"label":   {"add", "remove"},
+	"comment": {"body", "body-file"},
+	"import":  {"apply", "forge", "ai", "lines", "roles", "json", "summary"},
+}
+
+// issuesOptions refuses an option the command given does not read.
+func issuesOptions(fs *flag.FlagSet, what string) (int, bool) {
+	var foreign string
+	fs.Visit(func(f *flag.Flag) {
+		if foreign == "" && f.Name != "repo" && !slices.Contains(issuesOwn[what], f.Name) {
+			foreign = f.Name
+		}
+	})
+	if foreign == "" {
+		return 0, false
+	}
+	return misuse(fs, fmt.Sprintf("--%s is not an option of `issues %s`", foreign, what)), true
 }
 
 const issuesUsage = "usage: workline issues [list] | show <n>|!<n> | open <title> [--body <text>|--body-file <file>] [--label <l>]... | " +
