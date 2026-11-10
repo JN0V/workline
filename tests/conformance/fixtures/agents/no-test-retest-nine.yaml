@@ -1,5 +1,10 @@
 # After the tester's "no test possible" (#1053): the reason is the
 # tester's own, so the issue goes back to its tests unchanged, once; on
-# #10 the tester said none again after a retest: refused.
+# #10 the tester said none again after a retest: refused; #11 the tester
+# said nothing, #12 a proof beside it: refused; #13 rewritten since: a
+# plain ready.
 - ready: {issue: 9, retest: true, why: "the tester lacked the counter's code, not a scenario: tried again"}
 - ready: {issue: 10, retest: true, why: "tried again"}
+- ready: {issue: 11, retest: true, why: "tried again"}
+- ready: {issue: 12, retest: true, proof: {kind: suite, reason: "the suite covers it"}, why: "tried again"}
+- ready: {issue: 13, retest: true, why: "tried again"}
