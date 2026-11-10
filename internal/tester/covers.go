@@ -127,40 +127,64 @@ func held(covers []declared, scenarios []Scenario) (tested map[string][]string, 
 // found (newTests) in the test files the change writes (written):
 //   - a report's id: itself, or one it ends as a whole dotted part
 //     (`CartTest.addsItem` for `shop.CartTest.addsItem`, `test_x` for
-//     `tests.test_x`);
+//     `tests.test_x`), its parameters aside (`test_x` for every row of
+//     `tests.test_x[1]`, `addsItem` for `CartTest.addsItem(int)[1]`);
 //   - file:name, a test its file declares, its build broken on the base:
-//     that id, its name, or an id holding the name qualified by the file
-//     (`CartTest.addsItem` for `src/test/CartTest.kt:addsItem`);
-//   - with no report row of the change's tests at all, a build broken
-//     and no test-name to name them by, the test file itself, `file` or
-//     `file:name`: that proves the file exists, the code's green proof
-//     runs the test (ADR-0055).
+//     that id, its name, an id holding the name qualified by the file
+//     (`CartTest.addsItem` for `src/test/CartTest.kt:addsItem`), or the
+//     file, each test it declares.
 //
-// byFile says the last: found by its file alone.
-func declaredIn(id string, newTests, written []string) (found []string, byFile bool) {
+// An id the whole id of none and the tail of two tests or more names none
+// of them: those are its others, the agent's to tell apart.
+func declaredIn(id string, newTests, written []string) (found, others []string) {
 	id = strings.TrimSuffix(id, "()")
-	report := false
+	var exact, tails []string
 	for _, t := range newTests {
 		if file, name, ok := fileNamed(t, written); ok {
-			if id == t || id == name || namedAs(id, name, file) {
-				found = append(found, t)
+			switch {
+			case id == t:
+				exact = append(exact, t)
+			case id == file:
+				exact = append(exact, t) // the file's tests, each
+			case id == name || namedAs(id, name, file):
+				tails = append(tails, t)
 			}
 			continue
 		}
-		report = true
-		if id == t || strings.HasSuffix(t, "."+id) {
-			found = append(found, t)
+		b := bare(t)
+		switch {
+		case id == t || id == b:
+			exact = append(exact, t)
+		case strings.HasSuffix(b, "."+id) || strings.HasSuffix(t, "."+id):
+			tails = append(tails, t)
 		}
 	}
-	if len(found) > 0 || report {
-		return found, false
+	if len(exact) > 0 {
+		return exact, nil
 	}
-	for _, f := range written {
-		if id == f || strings.HasPrefix(id, f+":") {
-			return []string{id}, true
+	var tests []string
+	for _, t := range tails {
+		if b := bare(t); !slices.Contains(tests, b) {
+			tests = append(tests, b)
 		}
 	}
-	return nil, false
+	if len(tests) > 1 {
+		return nil, tests
+	}
+	return tails, nil
+}
+
+// bare is a report's id without its parameters: a parametrised test's row
+// (pytest's `test_x[1]`, JUnit 5's `addsItem(int)[1]`) is its test, and
+// `addsItem()` is `addsItem`.
+func bare(id string) string {
+	if i := strings.Index(id, "["); i > 0 && id[i-1] != ' ' && strings.HasSuffix(id, "]") {
+		id = id[:i]
+		if j := strings.LastIndex(id, "("); j > 0 && strings.HasSuffix(id, ")") {
+			id = id[:j]
+		}
+	}
+	return strings.TrimSuffix(id, "()")
 }
 
 // fileNamed splits a new test named from its file, file:name, the file
@@ -175,21 +199,22 @@ func fileNamed(t string, written []string) (file, name string, ok bool) {
 
 // found holds each scenario's declared ids to the new tests: matched, the
 // tests each scenario is proven by; the findings of an id found nowhere,
-// the answer's to mend, asked again; byFile, the ids found by their file
-// alone, said.
-func found(tested map[string][]string, scenarios []Scenario, newTests, written []string) (matched map[string][]string, findings []verdict.Finding, byFile []string) {
+// or the tail of several tests, the answer's to mend, asked again.
+func found(tested map[string][]string, scenarios []Scenario, newTests, written []string) (matched map[string][]string, findings []verdict.Finding) {
 	matched = map[string][]string{}
 	for _, sc := range scenarios {
 		for _, id := range tested[sc.Name] {
-			ids, file := declaredIn(id, newTests, written)
+			ids, others := declaredIn(id, newTests, written)
+			if len(others) > 0 {
+				findings = append(findings, verdict.Finding{Rule: "declared-test-ambiguous", Where: sc.Name,
+					Message: fmt.Sprintf("`%s`, declared for this scenario, ends several new tests (%s): declare the one meant by a longer id, its module or class too", id, codes(others))})
+				continue
+			}
 			if len(ids) == 0 {
 				findings = append(findings, verdict.Finding{Rule: "declared-test-missing", Where: sc.Name,
 					Message: fmt.Sprintf("`%s`, declared for this scenario, is none of the new tests red on the base (%s), nor of the test files written: "+
 						"declare it as the project's test report names it, its class and name dot-joined, or its name alone", id, sample(newTests))})
 				continue
-			}
-			if file {
-				byFile = append(byFile, id)
 			}
 			for _, t := range ids {
 				if !slices.Contains(matched[sc.Name], t) {
@@ -198,7 +223,7 @@ func found(tested map[string][]string, scenarios []Scenario, newTests, written [
 			}
 		}
 	}
-	return matched, findings, byFile
+	return matched, findings
 }
 
 // CoveredBy is the scenario a test id is declared for, by a record's
@@ -229,9 +254,10 @@ func Covering(covers map[string][]string, id string) []string {
 
 // SameTest says whether two ids name the same test: equal, or one the
 // other's whole dotted or file-named tail (`CartTest.addsItem` and
-// `shop.CartTest.addsItem`; `addsItem` and `src/CartTest.kt:addsItem`).
+// `shop.CartTest.addsItem`; `addsItem` and `src/CartTest.kt:addsItem`),
+// a parametrised row's parameters aside (`test_x` and `tests.test_x[1]`).
 func SameTest(a, b string) bool {
-	a, b = strings.TrimSuffix(a, "()"), strings.TrimSuffix(b, "()")
+	a, b = bare(a), bare(b)
 	if a == "" || b == "" {
 		return false
 	}

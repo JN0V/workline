@@ -522,17 +522,12 @@ func Post(runDir, repo string) int {
 		}
 		return refusePost(runDir, t.Issue, *proof)
 	}
-	// Each declared id is one of the new tests, red on the base, or, the
-	// build broken with no test named, a test file written: a miss is the
-	// answer's to mend, asked again once, then blocked; the product owner
-	// reads a blocked issue again (ADR-0059).
-	matched, misses, byFile := found(tested, t.Scenarios, newTests, order)
+	// Each declared id is one of the new tests, red on the base: a miss is
+	// the answer's to mend, asked again once, then blocked; the product
+	// owner reads a blocked issue again (ADR-0059).
+	matched, misses := found(tested, t.Scenarios, newTests, order)
 	if len(misses) > 0 {
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "a declared test is none of the tests proven red", Findings: misses, Again: true})
-	}
-	if len(byFile) > 0 {
-		proof.Findings = append(proof.Findings, verdict.Finding{Rule: "declared-by-file", Level: "info", Where: strings.Join(byFile, ", "),
-			Message: "the build broke on the base and no test-name names its tests: found by their file alone; the green proof on the code runs them"})
 	}
 	tested = matched
 	// Each scenario has its row, the tests red on the base and linted: the

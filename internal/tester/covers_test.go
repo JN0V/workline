@@ -50,35 +50,50 @@ func TestHeldEntries(t *testing.T) {
 	}
 }
 
-// A declared id is found as a report names it, whole or by a dotted tail;
-// from its file when the build broke on the base; by the file alone only
-// when no report row and no test-name name the change's tests.
+// A declared id is found as a report names it, whole or by a dotted
+// tail, a parametrised test's rows by its name; from its file when the
+// build broke on the base; a tail of two tests names neither.
 func TestDeclaredIn(t *testing.T) {
-	report := []string{"shop.CartTest.addsItem", "tests.test_mul_by_zero"}
-	for id, want := range map[string]string{
-		"shop.CartTest.addsItem": "shop.CartTest.addsItem", "CartTest.addsItem": "shop.CartTest.addsItem", "addsItem()": "shop.CartTest.addsItem",
-		"test_mul_by_zero": "tests.test_mul_by_zero", "Item": "", "by_zero": "", "tests/test_mul_by_zero.sh": "",
+	report := []string{"shop.CartTest.addsItem", "tests.test_mul_by_zero", "tests.test_m.test_x[1]", "tests.test_m.test_x[2.5]",
+		"shop.CartTest.adds(int)[1]", "shop.CartTest.adds(int)[2]"}
+	for id, want := range map[string][]string{
+		"shop.CartTest.addsItem": {"shop.CartTest.addsItem"}, "CartTest.addsItem": {"shop.CartTest.addsItem"}, "addsItem()": {"shop.CartTest.addsItem"},
+		"test_mul_by_zero": {"tests.test_mul_by_zero"}, "Item": nil, "by_zero": nil, "tests/test_mul_by_zero.sh": nil,
+		"test_x": {"tests.test_m.test_x[1]", "tests.test_m.test_x[2.5]"}, "test_m.test_x": {"tests.test_m.test_x[1]", "tests.test_m.test_x[2.5]"},
+		"test_x[1]": {"tests.test_m.test_x[1]"}, "tests.test_m.test_x[1]": {"tests.test_m.test_x[1]"},
+		"CartTest.adds": {"shop.CartTest.adds(int)[1]", "shop.CartTest.adds(int)[2]"},
 	} {
-		got, _ := declaredIn(id, report, []string{"tests/test_mul_by_zero.sh"})
-		if (want == "") != (len(got) == 0) || want != "" && got[0] != want {
-			t.Errorf("declaredIn(%q) = %v, want %q", id, got, want)
+		got, others := declaredIn(id, report, []string{"tests/test_mul_by_zero.sh"})
+		if !slices.Equal(got, want) || others != nil {
+			t.Errorf("declaredIn(%q) = %v %v, want %v", id, got, others, want)
 		}
 	}
+	two := []string{"a.test_x", "b.test_x"}
+	if got, others := declaredIn("test_x", two, nil); got != nil || !slices.Equal(others, two) {
+		t.Errorf("a tail of two tests: %v %v", got, others)
+	}
+	if got, _ := declaredIn("b.test_x", two, nil); !slices.Equal(got, []string{"b.test_x"}) {
+		t.Errorf("a longer id: %v", got)
+	}
 	file := "calc/src/test/kotlin/calc/AddThreeTest.kt"
-	broke := []string{file + ":two plus three plus four"}
+	broke := []string{file + ":two plus three plus four", file + ":one"}
 	for _, id := range []string{"AddThreeTest.two plus three plus four", "calc.AddThreeTest.two plus three plus four", "two plus three plus four", broke[0]} {
-		if got, byFile := declaredIn(id, broke, []string{file}); len(got) != 1 || got[0] != broke[0] || byFile {
-			t.Errorf("declaredIn(%q) = %v, %v", id, got, byFile)
+		if got, others := declaredIn(id, broke, []string{file}); !slices.Equal(got, broke[:1]) || others != nil {
+			t.Errorf("declaredIn(%q) = %v, %v", id, got, others)
 		}
 	}
 	if got, _ := declaredIn("OtherTest.two plus three plus four", broke, []string{file}); len(got) != 0 {
 		t.Errorf("another class's test of the same name is found: %v", got)
 	}
-	if got, byFile := declaredIn(file, nil, []string{file}); len(got) != 1 || !byFile {
-		t.Errorf("no report, no test-name: the file is not found: %v %v", got, byFile)
+	if got, _ := declaredIn(file, broke, []string{file}); !slices.Equal(got, broke) {
+		t.Errorf("a file declared: its tests are not each found: %v", got)
 	}
-	if got, _ := declaredIn(file, report, []string{file}); len(got) != 0 {
-		t.Errorf("a report holds the change's tests, yet a file is found: %v", got)
+	if got, _ := declaredIn(file, nil, []string{file}); len(got) != 0 {
+		t.Errorf("no test the red proof found, yet a file is: %v", got)
+	}
+	other := "calc/src/test/kotlin/calc/OtherTest.kt"
+	if got, others := declaredIn("one", []string{file + ":one", other + ":one"}, []string{file, other}); got != nil || len(others) != 2 {
+		t.Errorf("one name in two files: %v %v", got, others)
 	}
 }
 
@@ -88,7 +103,7 @@ func TestCoveredBy(t *testing.T) {
 	covers := map[string][]string{"Add item": {"shop.CartTest.addsItem"}, "Enabled console": {"t.both"}, "Restart": {"t.both"}}
 	for id, want := range map[string]string{
 		"CartTest.addsItem": "Add item", "shop.CartTest.addsItem": "Add item", "`addsItem`": "Add item",
-		"both": "", "TestAddItem": "", "": "",
+		"both": "", "TestAddItem": "", "": "", "CartTest.addsItem(int)[1]": "Add item",
 	} {
 		if got := CoveredBy(covers, id); got != want {
 			t.Errorf("CoveredBy(%q) = %q, want %q", id, got, want)

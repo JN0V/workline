@@ -85,7 +85,8 @@ workline test write --issue 42 --ai claude
   (`needs:`), given at once.
 - **One test a scenario, declared**: the agent says which test covers
   which scenario, a `covers` entry each, the test's id as the report
-  names it; one test may cover several. Each id must be one of the new
+  names it, a parametrised test by its name for all its rows; one test
+  may cover several. Each id must be one of the new
   tests red on the base, or, the build broken with no report, a test a
   new file declares; nothing is read from a test's name. A scenario no
   test can check gets a reason instead, listed in the Draft as not
@@ -112,6 +113,7 @@ workline test write --issue 42 --ai claude
 | `no-named-scenario` | its Validation names no scenario: asked of the product owner, never invented |
 | `scenario-without-test` | a scenario has no `covers` entry, no test nor reason; asked again once with the names first |
 | `declared-test-missing` | a declared test is none of the new tests red on the base, nor of the test files written; asked again once, then blocked: the product owner reads a blocked issue again |
+| `declared-test-ambiguous` | a declared id is the end of several new tests (`test_x` for `a.test_x` and `b.test_x`); asked again once for a longer id, then blocked |
 | `test-line-changed` | a patch changes or removes a line of a test file the base holds |
 | `base-test-skipped` | a test that ran on the base is skipped with the tests laid on it |
 | `intention-refused` | a patch reaches a file outside `test-paths` |
