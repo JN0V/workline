@@ -15,8 +15,8 @@ variables. The commands and options: [usage.md](usage.md).
 `WORKLINE_AI` (the git hooks); the project's `ai`; yours; else `none`.
 **Which forge**: `--forge`, else the project's `forge`, else `none`.
 **A role's settings**: the role's defaults (its `role.yaml`, listed on its
-[page](roles.md)), its [autonomy](autonomy.md) level, the listed
-[packs](packs.md), then the project's `settings`.
+[page](roles.md)), the listed [packs](packs.md), its
+[autonomy](autonomy.md) level, then the project's `settings`.
 
 | Key of `.workline/config.yaml` | Holds |
 |---|---|
