@@ -25,6 +25,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
@@ -204,23 +205,25 @@ type answer struct {
 	Scenarios []Scenario `json:"scenarios,omitempty"`
 	From      int        `json:"from,omitempty"`
 	// Found: the line the review found it on, as its why names it: the
-	// developer reads the answer by it.
+	// developer reads the answer by it. Title: the finding's, after it,
+	// which the reviewer reads the answer by, its line moved or not.
 	Found string `json:"found,omitempty"`
+	Title string `json:"title,omitempty"`
 }
 
 // reviewedOnWords finds, in a test missing's why, the pull request whose
-// review found it, and the line, as the developer writes them.
-var reviewedOnWords = regexp.MustCompile("\\bon pull request (\\d+)\\b(?:, `([^`]+)`)?")
+// review found it, the line and the finding, as the developer writes them.
+var reviewedOnWords = regexp.MustCompile("\\bon pull request (\\d+)\\b(?:, `([^`]+)`(?:: ([^\\n]*))?)?")
 
 // reviewedOn is the pull request a test missing's why names, 0 for none,
-// and the line the review found it on, "" for none.
-func reviewedOn(why string) (int, string) {
+// the line the review found it on and the finding's title, "" for none.
+func reviewedOn(why string) (n int, found, title string) {
 	m := reviewedOnWords.FindStringSubmatch(why)
 	if m == nil {
-		return 0, ""
+		return 0, "", ""
 	}
-	n, _ := strconv.Atoi(m[1])
-	return n, m[2]
+	n, _ = strconv.Atoi(m[1])
+	return n, m[2], reviewer.FindingTitle(m[3])
 }
 
 const answerFile = "answer.json"
@@ -376,7 +379,7 @@ func answerPre(runDir, repo string, s Settings) int {
 	a.FiveWhys = a.Mode == modeAgent && a.Decided == "" && a.Answers == 2
 	if a.Kind == "missing" {
 		a.Scenarios = scenarios
-		a.From, a.Found = reviewedOn(o.Why)
+		a.From, a.Found, a.Title = reviewedOn(o.Why)
 	}
 	if line, err := routing.Load(repo); err == nil {
 		a.Line = line.States
@@ -763,17 +766,13 @@ func (a answer) toReview(text string) []intent.Intention {
 	if a.Kind != "missing" || a.From == 0 {
 		return nil
 	}
-	on := ""
-	if a.Found != "" {
-		on = " on `" + a.Found + "`"
-	}
 	return []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": a.From, "sticky": TesterAnswerKey + a.Thread,
-		"body": fmt.Sprintf("**The tester** answers a test finding of this review%s, sent to its Draft ([the thread](%s)): %s", on, a.URL, text)}}}
+		"body": reviewer.TesterAnswer(a.Found, a.Title, a.URL, text)}}}
 }
 
 // TesterAnswerKey starts the sticky key of a test missing's answer on
 // the reviewed pull request, its thread's id after it.
-const TesterAnswerKey = "tester-answer-"
+const TesterAnswerKey = reviewer.TesterAnswerKey
 
 // otherFiles are the record's tests but file, sorted, each in code.
 func otherFiles(r record, file string) []string {

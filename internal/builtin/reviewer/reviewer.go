@@ -146,6 +146,9 @@ type state struct {
 	Fresh      int                `json:"fresh,omitempty"`     // with Upto: the new commits of the push
 	Left       []string           `json:"left,omitempty"`      // with Upto: the new commits left for the next run, oldest first
 	Line       []string           `json:"line,omitempty"`      // the line's own files the change touches: no commit skipped nor left (ADR-0051, cut 5)
+	Weigh      []weigh            `json:"weigh,omitempty"`     // the tester's answers that no test is needed a judge weighs this run (#1303)
+	Held       string             `json:"held,omitempty"`      // with Weigh and nothing new to read: the summary of the review held
+	Answers    []Answer           `json:"answers,omitempty"`   // the tester's answers that no test is needed, on the merge request (#1303)
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -183,6 +186,7 @@ type Review struct {
 	Warn      string            `json:"warn,omitempty"`   // apart: the verdict's run; only: the run apart, the lenses that warn (ADR-0050)
 	Reused    int               `json:"reused,omitempty"` // findings judged before on the same patch, their verdicts kept (ADR-0050, step 6)
 	Resolved  []string          `json:"resolved,omitempty"` // the conversations on lines of a review before the code answers now, by thread id (#1039)
+	Weighed   []string          `json:"weighed,omitempty"`  // what the run's judges said of the tester's answers that no test is needed (#1303)
 }
 
 // JudgeRead is one round of reads a judge asked (ADR-0045): what it asked,
@@ -355,8 +359,22 @@ func prepare(runDir, repo string, s Settings) int {
 	// What blocked the last review stands until a commit answers it (#326):
 	// a run with nothing new to read never turns it green.
 	st.Standing = standing(repo, s, st, rec.Blocks)
+	// The tester's answers that no test is needed: one weighed before
+	// settles its block now; one not weighed yet is a judge's (#1303).
+	st.weighing(repo, s)
 	if start == head {
-		return held(runDir, repo, s, st, review(st, nil, fmt.Sprintf("the %d %s reviewed already: only the rules ran", len(sp.Commits), plural(len(sp.Commits), "commit was", "commits were"))))
+		said := fmt.Sprintf("the %d %s reviewed already: only the rules ran", len(sp.Commits), plural(len(sp.Commits), "commit was", "commits were"))
+		if len(st.Weigh) > 0 { // nothing new to read, the judge weighs them alone
+			st.Held = said
+			if err := st.askWeighs(runDir, repo, s); err != nil {
+				return fail(err)
+			}
+			if err := writeJSON(filepath.Join(runDir, "in", "review-state.json"), st); err != nil {
+				return fail(err)
+			}
+			return 0
+		}
+		return held(runDir, repo, s, st, review(st, nil, said))
 	}
 	// The rules first: what they block on is fixed before any agent is
 	// asked, and asked again after each push while it is not.
@@ -497,6 +515,9 @@ func prepare(runDir, repo string, s Settings) int {
 	st.Advisories = append(st.Advisories, issueCuts...) // said once the lenses are asked to read them
 	if cut > 0 {
 		st.Advisories = append(st.Advisories, cutSaid("", "what the author says (the commit messages, the merge request)", cut, s.TestimonyLines, "testimony-lines-max"))
+	}
+	if err := st.askWeighs(runDir, repo, s); err != nil {
+		return fail(err)
 	}
 	if err := writeJSON(filepath.Join(runDir, "in", "review-state.json"), st); err != nil {
 		return fail(err)
@@ -1254,7 +1275,7 @@ func readLenses(runDir, repo string, s Settings) int {
 			return fail(err)
 		}
 	}
-	if n > 0 {
+	if n > 0 || len(st.Weigh) > 0 {
 		return 0 // the judge first
 	}
 	return settle(runDir, repo, s)
@@ -1842,6 +1863,9 @@ func settle(runDir, repo string, s Settings) int {
 	if len(st.Specs) > 0 {
 		return settleSpecs(runDir, repo, s, st)
 	}
+	if st.Held != "" {
+		return settleHeld(runDir, repo, s, st)
+	}
 	if err := readJSON(filepath.Join(runDir, "in", "candidates.json"), &c); err != nil {
 		return fail(err)
 	}
@@ -1970,10 +1994,15 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 		return kept
 	}
 	related, outside := regroup(c.Related), regroup(c.Outside)
+	weighs, settledN, unweighed := st.weighed(runDir) // before reread: a block they settle goes
+	c.Logged = append(c.Logged, unweighed...)
 	var err error
 	if st.Standing, err = reread(repo, s, st, c, related, len(c.Failed) == 0 && unjudged == 0); err != nil {
 		return Review{}, nil, err
 	}
+	// A finding the lens raises again, the tester's answer weighed
+	// before settling it, goes as its block did (#1303).
+	related = slices.DeleteFunc(related, func(f Finding) bool { return st.settles(f.Lens, f.Where, shortMessage(f)) })
 	v := review(st, nil, "")
 	v.Lenses, v.Change, v.Complete, v.Parts = facets(st), related, len(c.Failed) == 0, st.Parts
 	var fallback []intent.Intention
@@ -2038,7 +2067,8 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	v.Reads = readsDone
 	v.Reused = reused
 	v.Status = status(v.Findings)
-	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged) + st.leftSaid() + st.still()
+	v.Weighed = weighs
+	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged) + st.leftSaid() + st.still() + weighedSummary(len(weighs), settledN)
 	if len(st.Skipped) > 0 {
 		v.Summary += "; not asked: " + strings.Join(st.Skipped, ", ")
 	}
@@ -2106,7 +2136,9 @@ func review(st state, extra []verdict.Finding, summary string) Review {
 }
 
 // standingFindings are the last review's findings that still block, each
-// saying where it was found: no lens read them again (#326).
+// saying where it was found: no lens read them again (#326); and why the
+// tester's answer that no test is needed does not settle it, when a
+// judge weighed one (#1303).
 func (st state) standingFindings() []verdict.Finding {
 	var out []verdict.Finding
 	for _, b := range st.Standing {
@@ -2114,8 +2146,11 @@ func (st state) standingFindings() []verdict.Finding {
 		if b.At != "" {
 			at = "reviewing " + short(b.At)
 		}
-		out = append(out, verdict.Finding{Rule: b.Lens, Where: b.Where,
-			Message: fmt.Sprintf("%s (found %s; no commit since answers it)", b.Title, at)})
+		m := fmt.Sprintf("%s (found %s; no commit since answers it", b.Title, at)
+		if w, ok := refusedAt(st.Record.Weighed, b.Lens, b.Where, b.Title); ok { // the tester's answer weighed (#1303)
+			m += "; the tester's answer that no test is needed does not hold: " + strings.TrimRight(w.Why, ".")
+		}
+		out = append(out, verdict.Finding{Rule: b.Lens, Where: b.Where, Message: m + ")"})
 	}
 	return out
 }
@@ -2390,6 +2425,7 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 		}
 		b.WriteString("\n")
 	}
+	b.WriteString(weighedSaid(v.Weighed))
 	if issues > 0 {
 		fmt.Fprintf(&b, "What lies outside this change goes to %d issues, labelled `needs-triage`: not the author's to fix here.\n\n", issues)
 	}

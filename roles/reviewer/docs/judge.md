@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/codenav]
-checked: 06b87b8a
+checked: 3ec4d022
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -154,6 +154,9 @@ each finding that blocked, its cause quoted, beside the commits reviewed
 - **It stays past a commit elsewhere**: a lens that did not read the cause
   again leaves it. One quoted from an issue stays until its lens reads the
   issue again.
+- **The tester answers that no test is needed**: a judge weighs the
+  reason, even with no new commit; the block goes if it holds
+  ([weighed](tester-answers.md)).
 - **Its lens set back to `warn`** (`ai-findings`): it goes.
 - **Resolving its comment on the line does not lift it**: a person who
   disagrees merges where the forge lets them, or sets its lens to `warn`.

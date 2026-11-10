@@ -68,7 +68,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - **Cost**: one call for the lenses (all of them on a machine, together;
   one a push on a merge request, none on a draft), one judge call for each important
   finding, up to three when it reads the code it needs, none for one
-  judged before on the same patch ([judged once](docs/once.md)); a spec,
+  judged before on the same patch ([judged once](docs/once.md)); one
+  for each tester's answer that no test is needed
+  ([weighed](docs/tester-answers.md)); a spec,
   one call. A change too large for one call: a call a part
   ([in parts](docs/parts.md)). Capped at 300000 tokens a run
   (`ai-max-tokens`) and by the `*-max` settings below. Measured:

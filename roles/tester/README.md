@@ -151,7 +151,9 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
     or a diff, proven as a rewrite;
   - *none needed*: its reason.
   - Its answer is said on the pull request whose review found it too,
-    naming the finding's line: the developer reads it there.
+    naming the finding's line and title: the developer reads it there,
+    and the reviewer's judge weighs a *none needed*
+    ([weighed](../reviewer/docs/tester-answers.md)).
 - **The answer**: `workline test answer --merge-request <n> --ai claude`
   takes the first objection waiting, checked out at the branch's tip.
   The agent reads the scenario first, then answers in the thread:

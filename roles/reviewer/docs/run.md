@@ -65,6 +65,8 @@ flowchart LR
    - Beside it on a merge request, a line per finding judged, every
      run's, for the weekly sample; kept even when the record does not
      read ([more](judge.md#every-finding-judged-kept-for-the-weekly-sample)).
+   - And a line of the tester's answers a judge weighed, so the same
+     reason is weighed once ([more](tester-answers.md)).
    - **A rebase** ([#286](https://github.com/JN0V/workline/issues/286)): it
      holds each change's patch id too, so a commit rebased with its change
      intact is not asked again. One a conflict changed is, and those after

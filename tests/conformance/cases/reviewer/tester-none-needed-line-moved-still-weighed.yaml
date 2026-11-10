@@ -1,0 +1,33 @@
+case: reviewer/tester-none-needed-line-moved-still-weighed
+about: "The tester answered on the place the developer's objection named, `calc/calc.go:9`, that a blocking finding of the tests lens needs no test (#1303); the code moved since, the block now on line 11. The answer names the finding by its title: it is weighed all the same, holds, and the block goes."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-none-needed-holds.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 finding on the change; lenses: tests; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:blocks [{"lens":"tests","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Average has no test for a count off by one","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"}}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+          - "**The tester** answers a test finding of this review on `calc/calc.go:9`, “Average has no test for a count off by one”, sent to its Draft ([the thread](https://forge.example/pr/1#7)): **None needed**: TestAverage already averages 2 and 4: a new test would pass on the base and prove nothing.\n\n<!-- workline:sticky=tester/tester-answer-7 -->"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  summary: "1 answer of the tester's that no test is needed weighed: 1 settled"
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: ["**The tester's answers weighed**", "`calc/calc.go:11` (tests, Average has no test for a count off by one): settled, the reason holds"]
+        comment-lacks: ["<!-- workline:blocks ", "| **blocks** |"]
