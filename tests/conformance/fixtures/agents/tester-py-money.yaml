@@ -8,3 +8,4 @@
       # Given the library, When I show 1 as money, Then I get 1.00.
       def test_one_as_money():
           assert money(1) == "1.00"
+- covers: {scenario: "One as money", tests: ["test_one_as_money"]}

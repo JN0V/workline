@@ -51,6 +51,7 @@ var Catalogue = map[string]bool{
 	"claim":          true, // a part's answer (in/parts), read by pre; or why a patch takes words out, read by post; never applied
 	"read":           true, // a judge's ask to read code before it answers, served at the commit judged; never applied (ADR-0045)
 	"quote":          true, // the code a judge's no rests on, found again before a finding is dropped; never applied (ADR-0045)
+	"covers":         true, // a scenario and the tests that check it, or why none can, the tester's agent's; read by post, never applied (ADR-0065)
 }
 
 // WhyMark, in the body of a comment a role asks written when its merge

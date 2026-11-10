@@ -94,16 +94,19 @@ Cases in `tests/conformance/cases/tester/`:
   missing name, is `build-broken`, never the code's red; on the base,
   a module pytest cannot import is the judge's, its no `build-broken`.
 - **Tests from the criteria** (`workline test write --issue <n>`): one
-  test a scenario, named after it; a ready issue only, with named
+  test a scenario; a ready issue only, with named
   scenarios; a new test file or one already there, lines added only;
-  a scenario said untestable in a note; proven red before the Draft
-  opens; no agent, nothing written.
+  which test covers which scenario declared by the agent, each id found
+  among the tests red on the base, or a reason for a scenario none can
+  check ([#1229](https://github.com/JN0V/workline/issues/1229));
+  proven red before the Draft opens; no agent, nothing written.
 - **An answer that does not read**, asked again once with the reader's
   error; each refusal written on the issue, at night too
   ([#761](https://github.com/JN0V/workline/issues/761)); a real agent's
   slip asked again, on [#776](https://github.com/JN0V/workline/pull/776).
-- **Real answers replayed** from the DomoticsCore trial's round 5: one
-  test naming two scenarios counts for both
+- **Real answers replayed** from the DomoticsCore trial's round 5, with
+  the covers entries they predate: one test declared for two scenarios
+  counts for both
   ([#1147](https://github.com/JN0V/workline/issues/1147)); prose before
   the list, or a `file:` beside a patch, no longer refuses the answer
   ([#1148](https://github.com/JN0V/workline/issues/1148)); a new test the

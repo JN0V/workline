@@ -1,0 +1,3 @@
+- covers: {scenario: "Enable a running component", tests: ["test_enable_a_running_component"]}
+- covers: {scenario: "Disable twice", tests: ["test_disable_twice"]}
+- covers: {scenario: "Normal switching", tests: ["test_normal_switching"]}

@@ -1,0 +1,19 @@
+# A parametrised test, its rows named with their parameters as pytest
+# does, declared by its name alone (ADR-0065, change 4).
+- patch:
+    file: tests/test_mul_two_by_three.sh
+    content: |
+      . ./lib.sh
+      [ "$(mul 2 3)" = 6 ]
+- patch:
+    file: tests/test_mul_by_zero[0].sh
+    content: |
+      . ./lib.sh
+      [ "$(mul 0 0)" = 0 ]
+- patch:
+    file: tests/test_mul_by_zero[5].sh
+    content: |
+      . ./lib.sh
+      [ "$(mul 5 0)" = 0 ]
+- covers: {scenario: Two by three, tests: [test_mul_two_by_three]}
+- covers: {scenario: By zero, tests: [test_mul_by_zero]}

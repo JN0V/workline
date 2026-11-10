@@ -30,5 +30,5 @@ expect:
       - id: 3
         labels: ["workline:ready"]
         body-contains:
-          - "---\n\n## Verification\n\n<!-- workline:verification=tester -->\n\n- **Two by three:** `tests.test_mul_two_by_three`, in `tests/test_mul_two_by_three.sh`.\n- **By zero:** `tests.test_mul_by_zero`, in `tests/test_mul_by_zero.sh`.\n\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-3`. Written by the tester from its tests.\n\n## Scope"
-        comment-contains: ["**The tester** wrote the acceptance tests of this issue, as a Draft", "the tester wrote its Verification from them: which test proves which scenario", "body: 8dd389212f9c\n"]
+          - "---\n\n## Verification\n\n<!-- workline:verification=tester -->\n\n- **Two by three:** `tests.test_mul_two_by_three`.\n- **By zero:** `tests.test_mul_by_zero`.\n\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-3`. Written by the tester from its tests.\n\n## Scope"
+        comment-contains: ["**The tester** wrote the acceptance tests of this issue, as a Draft", "the tester wrote its Verification from them: which test proves which scenario", "body: a8e83ddb08a4\n"]

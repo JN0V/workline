@@ -1,0 +1,30 @@
+case: tester/write-declared-build-broke
+about: >
+  Build broke, no report (ADR-0065, change 4): a Kotlin test whose build
+  breaks on the base, Gradle writing no report. Its agent declares it
+  `AddThreeTest.two plus three plus four`; no report names it, so it is
+  found in the test file the change adds, by the test-name of the
+  build-errors row that read the error, its class the file's name. The
+  scenario is covered, the Draft opens; no name of the scenario's is read.
+given:
+  repo: kotlin-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-yes.yaml"}
+  config:
+    roles: {tester: {settings: {test-command: "sh \"$FIXTURES/bin/gradle-says\" {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Add three numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total three prices, I want to add them in one call, so I need not chain two.\n\n## Validation\n\n- **Three numbers:** Given the library, When I add 2, 3 and 4, Then I get 9.\n\n---\n\n## Verification\n\nA Kotlin test.\n\n## Scope\n\n- `calc/src/main/kotlin/calc/Calc.kt`: `add(a, b, c)` takes a third number.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-kotlin-declared"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base (1 not built there, a broken build)"
+  agent-calls: 2
+  findings: [{rule: red-judged, level: info, where: calc/src/test/kotlin/calc/AddThreeTest.kt}]
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, draft: true, body-contains: ["| Three numbers | `calc/src/test/kotlin/calc/AddThreeTest.kt:two plus three plus four` |"]}

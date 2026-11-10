@@ -14,3 +14,4 @@
       # Given the library, When I multiply 2 by 3, Then I get 6.
       def test_two_by_three():
           assert False, "mul is not there yet"
+- covers: {scenario: "Two by three", tests: ["test_two_by_three"]}

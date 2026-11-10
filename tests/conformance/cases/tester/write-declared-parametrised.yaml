@@ -1,0 +1,30 @@
+case: tester/write-declared-parametrised
+about: >
+  A parametrised test declared by its name (ADR-0065, change 4): the
+  report names each of its rows with its parameters, pytest's
+  `test_x[1]`; the name declared is found as every row, the scenario
+  proven by them all.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-declared-parametrised"}
+expect:
+  status: pass
+  summary: "3 new tests, red on the base"
+  agent-calls: 1
+  no-findings: [{rule: declared-test-missing}, {rule: declared-test-ambiguous}]
+  forge:
+    merge-requests:
+      - id: 1
+        draft: true
+        body-contains: ["| By zero | `tests.test_mul_by_zero[0]`, `tests.test_mul_by_zero[5]` |"]
+        comment-contains: ['"By zero":["tests.test_mul_by_zero[0]","tests.test_mul_by_zero[5]"]']

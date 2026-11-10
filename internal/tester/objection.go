@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -405,7 +406,12 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 	b.WriteString("\n## Your answer\n\n" +
 		"- **Kept**: a `note`, the reason the test holds for the scenario.\n" +
 		"- **Rewritten**: the same file whole as a `patch` with `file` and `content`, and a `note`, why. " +
-		"It still checks the scenario's Then, names the scenario, and fails on the code before the change.\n")
+		"It still checks the scenario's Then, and fails on the code before the change.\n")
+	if covers := declaredAt(a.Record); covers != "" {
+		b.WriteString("- **Its tests, as declared**: a rewrite keeps these ids, or gives a `covers` entry, " +
+			"`- covers: {scenario: <its name>, tests: [<test id>, …]}`, for each scenario whose tests it renames or removes, " +
+			"one entry naming every test that covers it now:\n" + covers)
+	}
 	if a.FiveWhys {
 		b.WriteString("- **The five whys**: two answers did not settle this thread. First run the five whys skill below on it; " +
 			"give the analysis as its own `note`, and answer as its root cause says: a rewrite when the test is the cause, kept when it is not.\n")
@@ -428,6 +434,18 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 		return fail(err)
 	}
 	return 0
+}
+
+// declaredAt lists each scenario of the record and the tests it is
+// declared covered by, a line each; "" for a record with none.
+func declaredAt(r record) string {
+	var b strings.Builder
+	for _, sc := range slices.Sorted(maps.Keys(r.Covers)) {
+		if len(r.Covers[sc]) > 0 {
+			fmt.Fprintf(&b, "  - **%s:** %s\n", sc, codes(r.Covers[sc]))
+		}
+	}
+	return b.String()
 }
 
 // answerPost holds the agent's answer to an objection; another's answer,
@@ -562,20 +580,14 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		}
 		return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "the test is kept, the reason in the thread" + whysSaid(a) + left})
 	}
-	var content string
 	for _, p := range patches {
 		files := intent.PatchFiles(p.Value)
 		if len(files) != 1 || files[0] != a.File {
 			return block("rewrite-other-file", "a rewrite changes the objected test alone, `"+a.File+"`: not "+strings.Join(files, ", "))
 		}
-		m, ok := p.Value.(map[string]any)
-		if !ok {
+		if _, ok := p.Value.(map[string]any); !ok {
 			return block("rewrite-not-whole", "a rewrite gives the test whole, `file` and `content`, never a diff")
 		}
-		content, _ = m["content"].(string)
-	}
-	if !names(content, a.Scenario.Name) {
-		return block("scenario-without-test", "the rewritten test no longer names its scenario, "+a.Scenario.Name)
 	}
 	if line, ok := baseLineChanged(repo, a.Record.Base, a.File, patches[len(patches)-1]); !ok {
 		// A file the tests share with the base's: its lines stay (#1259).
@@ -599,6 +611,11 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	}
 	act.Act, act.Blob = "rewritten", blobs[a.File]
 	r := a.Record.rewritten(a.File, blobs[a.File], *proof).retested(repo, a.File, newTests, erroredOf(runDir, newTests), s)
+	// Its scenario still has its tests, as declared: never one guessed
+	// from a name (ADR-0065, change 4).
+	if why := r.recovered(intents, newTests, a.File); why != "" {
+		return block("scenario-without-test", why)
+	}
 	out := []intent.Intention{patches[len(patches)-1],
 		reply("**Rewritten**, the tester's own commit on this branch, red on the base: " + reason + why + unprovenSaid(*proof) + "\n" + act.line()),
 		{Kind: "comment", Value: r.intention()["comment"]}}

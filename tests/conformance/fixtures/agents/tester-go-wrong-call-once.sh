@@ -24,4 +24,5 @@ cat <<YAML
       		t.Fatal("2 x 3 is not 6")
       	}
       }
+- covers: {scenario: "Two by three", tests: ["TestMulTwoByThree"]}
 YAML

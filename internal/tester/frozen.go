@@ -51,6 +51,11 @@ type record struct {
 	// Scenarios: the issue's, as the run that wrote the tests read them,
 	// for the auditor (ADR-0046); none in a record written before.
 	Scenarios []Scenario `json:"scenarios,omitempty"`
+	// Covers: each scenario's tests, as the agent declared them and the
+	// red proof found them (ADR-0065, change 4): the developer's
+	// objection names a scenario by them. None in a record written before,
+	// nor for a scenario no test can check.
+	Covers map[string][]string `json:"covers,omitempty"`
 	// RedUnproven: why the judge did not settle the tests' red proof, a
 	// build broken on the base (ADR-0065); the developer's pull request
 	// says it too. None when proven.

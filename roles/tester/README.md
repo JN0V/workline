@@ -5,7 +5,7 @@ sources:
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
   - ci/github/workline-gardening.yml
-checked: a142a5a1
+checked: ccbfd55d
 verified: agent:claude-code
 ---
 # Tester
@@ -83,12 +83,15 @@ workline test write --issue 42 --ai claude
   ([ADR-0063 §8](../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them)).
   Another agent reads its task alone, and names the files it lacks
   (`needs:`), given at once.
-- **One test a scenario**: its name holds the scenario's name, its
-  comment opens on it, then the Given / When / Then
-  (`// Two by three: Given …`). A test may name several scenarios, in
-  its comment or its name (`test_enabled_console_and_restart`). A
-  scenario no test can check is said in a note, listed in the Draft as
-  not tested.
+- **One test a scenario, declared**: the agent says which test covers
+  which scenario, a `covers` entry each, the test's id as the report
+  names it, a parametrised test by its name for all its rows; one test
+  may cover several. Each id must be one of the new
+  tests red on the base, or, the build broken with no report, a test a
+  new file declares; nothing is read from a test's name. A scenario no
+  test can check gets a reason instead, listed in the Draft as not
+  tested, for a builder to object to
+  ([ADR-0065](../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#4-the-agent-says-which-test-covers-which-scenario)).
 - **Where the project keeps its tests**: what `test-paths` names, never
   the code. A new file, or one already there, as the agent judges: to
   that one it only adds lines, none changed nor removed.
@@ -97,7 +100,7 @@ workline test write --issue 42 --ai claude
   test reported, `no-new-test` blocks; a bug's test, of code that
   exists, is proven ([status](docs/status.md#missing)).
 - **The Draft**: branch `workline/tester/issue-<n>`, `Refs #<n>`, a
-  `## Tests` table of each scenario and its test. A person builds on
+  `## Tests` table of each scenario and its declared tests. A person builds on
   that branch; the [developer](../developer/docs/pull-request.md), on top of it.
 - **The issue's Verification**: written from the tests, each scenario
   and its test, as a tester writes the test plan; one a person wrote is
@@ -108,7 +111,9 @@ workline test write --issue 42 --ai claude
 | `issue-not-ready` | the issue is labelled neither `workline:needs-tests` nor `workline:ready` |
 | `tests-lint` | the tests do not pass the project's lint, still after the agent is asked once more with each finding |
 | `no-named-scenario` | its Validation names no scenario: asked of the product owner, never invented |
-| `scenario-without-test` | no test names a scenario, and no note says why none can; asked again once with the names first |
+| `scenario-without-test` | a scenario has no `covers` entry, no test nor reason; asked again once with the names first |
+| `declared-test-missing` | a declared test is none of the new tests red on the base, nor of the test files written; asked again once, then blocked: the product owner reads a blocked issue again |
+| `declared-test-ambiguous` | a declared id is the end of several new tests (`test_x` for `a.test_x` and `b.test_x`); asked again once for a longer id, then blocked |
 | `test-line-changed` | a patch changes or removes a line of a test file the base holds |
 | `base-test-skipped` | a test that ran on the base is skipped with the tests laid on it |
 | `intention-refused` | a patch reaches a file outside `test-paths` |
@@ -122,7 +127,7 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
 ## Frozen tests and objections
 
 - **The record**: on the Draft, workline's own comment lists each test
-  file, its git blob, the scenarios read. Only the tester's runs write it.
+  file, its git blob, the scenarios read, the tests declared for each. Only the tester's runs write it.
   What it freezes is the tester's own lines: a whole new file, or the
   lines it added to one already there.
 - **The guard**, no agent: route the tester on `merge-request`. On its
@@ -141,7 +146,8 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
   The agent reads the scenario first, then answers in the thread:
   - *kept*, with its reason;
   - *rewritten*: its own commit on the branch, `Refs` the thread. It
-    still names the scenario and must be red on the base. The record
+    must be red on the base, and keep its scenarios' declared tests,
+    or name the new ones in a `covers` entry. The record
     and the reply follow only once the commit is pushed.
   - Either keeps a hidden line for the [weekly sample](../../docs/weekly-sample.md).
 - **The need itself** goes to the product owner, with no agent: the

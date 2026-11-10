@@ -5,3 +5,5 @@
       # Scenario: By zero
       . ./lib.sh
       [ "$(add 2 3)" = 5 ] && [ "$(mul 2 3)" = 6 ] && [ "$(mul 5 0)" = 0 ]
+- covers: {scenario: "Two by three", tests: ["test_add"]}
+- covers: {scenario: "By zero", tests: ["test_add"]}

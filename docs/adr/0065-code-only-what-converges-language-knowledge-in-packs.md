@@ -259,6 +259,13 @@ miss is the scope-ask".
   objection, whose scenario the mapping gives, not a match on the
   test's name.
 - **Deleted**: the fuzzy name matcher.
+- **Built in [#1229]**: a `covers` intention, `{scenario, tests}` or
+  `{scenario, reason}`, read by the tester's post, never applied; a
+  report's id matched whole or by a dotted tail, its parameters aside,
+  never the tail of two tests, a broken build's by
+  `file:name`; a miss asked again once, then blocked, where the product
+  owner reads it again. The record keeps the mapping; the green proof's
+  frozen ids already hold every declared test, [#1255].
 
 **And the code picker is frozen**: no new heuristic; its tables move
 to packs. An agent with read tools reads the files itself

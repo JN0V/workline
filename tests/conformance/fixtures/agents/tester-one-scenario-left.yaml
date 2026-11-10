@@ -4,3 +4,4 @@
       # Scenario: Two by three
       . ./lib.sh
       [ "$(mul 2 3)" = 6 ]
+- covers: {scenario: "Two by three", tests: ["test_mul_two_by_three"]}

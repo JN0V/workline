@@ -19,3 +19,5 @@
       # Given the library, When I multiply 5 by 0, Then I get 0.
       def test_by_zero():
           assert mul(5, 0) == 0
+- covers: {scenario: "Two by three", tests: ["test_two_by_three"]}
+- covers: {scenario: "By zero", tests: ["test_by_zero"]}

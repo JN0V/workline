@@ -1,0 +1,28 @@
+case: tester/write-declared-no-entry-asked-again
+about: >
+  No entry (ADR-0065, change 4): a scenario the answer declares no test
+  for, nor a reason, is asked again once, its name said; the same answer
+  again blocks as before, scenario-without-test, no Draft opened.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-declared-no-entry"}
+expect:
+  status: block
+  agent-calls: 2
+  findings: [{rule: scenario-without-test, where: "By zero"}]
+  no-findings: [{rule: scenario-without-test, where: "Two by three"}]
+  run-files:
+    out/feedback.md: {contains: ["By zero", "covers"]}
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}

@@ -5,3 +5,4 @@
       # Given the library, When I add 5 and 0, Then I get 5.
       . ./lib.sh
       [ "$(add 5 0)" = 5 ]
+- covers: {scenario: "Adding zero", tests: ["test_add_zero"]}

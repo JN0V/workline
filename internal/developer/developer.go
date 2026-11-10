@@ -789,12 +789,20 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		for _, f := range frozen {
 			fmt.Fprintf(&t, "- `%s`\n", f)
 		}
+		if len(b.Covers) > 0 {
+			t.WriteString("\nWhich test covers which scenario, as the tester declared it:\n\n")
+			for _, sc := range b.Scenarios {
+				if ids := b.Covers[sc]; len(ids) > 0 {
+					fmt.Fprintf(&t, "- %s: `%s`\n", sc, strings.Join(ids, "`, `"))
+				}
+			}
+		}
 		// In a file, not in the closing words: a real agent wrote its
 		// objection in prose around YAML, and it was lost (#746).
 		t.WriteString("\nOne that does not fit: object to it in the file `" + ObjectionsFile + "` of your worktree, " +
 			"YAML only, one item an objection:\n\n" +
 			"```yaml\n- test: <file>\n  line: <n>\n  scenario: " + scenarioHint(b.Scenarios) + "\n  kind: <interface | over-specified | contradicts | untestable | need>\n  why: <one or two sentences>\n```\n\n" +
-			"The scenario is the issue's, as its " + work.Name(work.Validation) + " names it, not the test's function. " +
+			"The scenario is the issue's, as its " + work.Name(work.Validation) + " names it, or the id of a test the tester declared for it; never a test's function name. " +
 			"The engine reads that file and takes it out of your diff; the tester keeps or rewrites each objection.\n\n" +
 			"A test that cannot pass within your bounds (it calls a command against its documented rule, for instance without a flag its no-terminal rule requires) is such an objection, of kind `contradicts`: object to it in that file, never in a text note, which reaches no tester.\n")
 	}
