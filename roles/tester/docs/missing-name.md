@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/build.go, internal/tester/redfirst.go, internal/tester/judged.go, internal/tester/tester.go, internal/tester/write.go, internal/tester/objection.go, internal/tester/junit.go, roles/tester/role.yaml]
-checked: 0b356676
+checked: ccbfd55d
 verified: agent:claude-code
 ---
 # A broken build, red for the right reason
