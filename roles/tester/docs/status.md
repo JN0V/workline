@@ -98,7 +98,10 @@ Cases in `tests/conformance/cases/tester/`:
   scenarios; a new test file or one already there, lines added only;
   which test covers which scenario declared by the agent, each id found
   among the tests red on the base, or a reason for a scenario none can
-  check ([#1229](https://github.com/JN0V/workline/issues/1229));
+  check ([#1229](https://github.com/JN0V/workline/issues/1229)); a
+  broken build with no `test-name`: the test file the change adds,
+  declared by its file, the file alone proven
+  ([#1293](https://github.com/JN0V/workline/issues/1293));
   proven red before the Draft opens; no agent, nothing written.
 - **An answer that does not read**, asked again once with the reader's
   error; each refusal written on the issue, at night too
@@ -167,7 +170,8 @@ Cases in `tests/conformance/cases/tester/`:
   base had warns; a Draft waits ([the page](green-proof.md)). Each
   test id the record keeps must run: one missing blocks,
   `frozen-test-missing` ([#1255](https://github.com/JN0V/workline/issues/1255));
-  one named from its file, beside other new tests, the judge's.
+  one named from its file, or kept as its file alone, beside other new
+  tests, the judge's.
 - **The curator's measures** (step 6), no agent: `workline test
   measure` runs the suite twice on `HEAD`; each test's time, red and
   flaky ones, kept across measures in a history the CI passes as an

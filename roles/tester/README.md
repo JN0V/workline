@@ -88,7 +88,8 @@ workline test write --issue 42 --ai claude
   names it, a parametrised test by its name for all its rows; one test
   may cover several. Each id must be one of the new
   tests red on the base, or, the build broken with no report, a test a
-  new file declares; nothing is read from a test's name. A scenario no
+  new file declares, or that file alone where no `test-name` names its
+  tests ([#1293](https://github.com/JN0V/workline/issues/1293)); nothing is read from a test's name. A scenario no
   test can check gets a reason instead, listed in the Draft as not
   tested, for a builder to object to
   ([ADR-0065](../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#4-the-agent-says-which-test-covers-which-scenario)).
