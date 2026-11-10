@@ -222,17 +222,17 @@ func SuggestFromActs(level string, done, undone int) (string, string) {
 	return "", ""
 }
 
-// unaccept takes a person's yes off a parent with a part open: one given
-// to its closing, a part open again since (#1208), or one put before its
-// closing was proposed (#1213). Said in the role's comment, with what to
-// do: put it on again once the closing is proposed, all its parts closed.
-func (p *Plan) unaccept(c Proposal, why string) {
+// unaccept takes a person's yes off a parent: one given to its closing,
+// a part open again since (#1208), or one left on it with no closing
+// proposed (#1213), never a yes to it. Said in the role's comment, with
+// what comes next, then.
+func (p *Plan) unaccept(c Proposal, why, then string) {
 	if p.Unaccepted == nil {
 		p.Unaccepted = map[int]string{}
 	}
 	p.Unaccepted[c.Issue] = why
 	now := clock.Now().UTC()
-	line := fmt.Sprintf("Took `%s` off #%d, put by %s: %s; put it on again once its closing is proposed, all its parts closed.", LabelAccepted, c.Issue, c.Ticked, strings.TrimSuffix(why, "."))
+	line := fmt.Sprintf("Took `%s` off #%d, put by %s: %s; %s.", LabelAccepted, c.Issue, c.Ticked, strings.TrimSuffix(why, "."), then)
 	p.Record.Did = append(p.Record.Did, Did{Issue: c.Issue, Act: "unaccept", Level: p.config.Level, Day: now.Format(dateLayout), Line: line,
 		At: p.config.Read.At, Body: p.config.Read.Bodies[c.Issue]})
 }

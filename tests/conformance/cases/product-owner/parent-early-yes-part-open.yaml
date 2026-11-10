@@ -1,5 +1,5 @@
 case: product-owner/parent-early-yes-part-open
-about: "A person put workline:accepted on a split parent while one of its parts was still open, before the line proposed its closing. A yes on a parent stands only while all its parts are closed: it is taken off, said, with a line to put it on again (#1213). The last part closed, the next run proposes the closing, and the parent waits for a new yes, never closed nor left with a stale one."
+about: "A person put workline:accepted on a split parent while one of its parts was still open, before the line proposed its closing. With no closing proposed, a yes on a parent is never one to its closing: it is taken off, said (#1213). The last part closed, the next run proposes the closing, and the parent waits for a new yes, never closed nor left with a stale one."
 given:
   repo: backlog
   forge:
@@ -27,4 +27,4 @@ expect:
   no-findings: [{rule: done-as-accepted, where: "#9"}, {rule: done, where: "#9", message: "Moved #9 to ready"}]
   forge:
     issues:
-      - {id: 9, closed: false, labels: [workline:proposed], comment-contains: ["Took `workline:accepted` off #9, put by @dev: #9's part #11 is open", "put it on again once its closing is proposed", "**Proposes**: Close it as completed"]}
+      - {id: 9, closed: false, labels: [workline:proposed], comment-contains: ["Took `workline:accepted` off #9, put by @dev: no closing of #9 is proposed, and a yes left on a parent never stands for one; a yes to its closing is asked once all its parts are closed.", "**Proposes**: Close it as completed"]}

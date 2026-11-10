@@ -972,6 +972,16 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			// against the forge's label.
 			var why string
 			if c, why = p.tickedAct(c); why != "" {
+				if c.Do == "close" && c.Parent {
+					// A yes left on a split parent with no closing
+					// proposed (#1213): early, or one to an act done
+					// already, it is never one to close it, from what its
+					// parts delivered (ADR-0029): taken off, said.
+					dropped(c, "parent-not-proposed", why)
+					p.unaccept(c, why, "a yes to its closing is asked once all its parts are closed")
+					p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c})
+					continue
+				}
 				dropped(c, "not-accepted", why)
 				p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c})
 				continue
@@ -1036,7 +1046,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			// Their yes was to close it with all its parts closed: one is
 			// open again, so the yes is taken off, said (#1208).
 			dropped(c, mode, why)
-			p.unaccept(c, why)
+			p.unaccept(c, why, "its closing is proposed again once all its parts are closed")
 		case why != "":
 			dropped(c, mode, why)
 		case c.Ticked != "":
@@ -1491,10 +1501,7 @@ func (p *Plan) tickedAct(c Proposal) (Proposal, string) {
 		return c, "" // the drafts accepted: ready, as the engine checks it
 	}
 	if c.Do == "close" && c.Parent {
-		// A yes on a split parent before its closing was proposed (#1213):
-		// it stands while all its parts are closed (checkParent), or is
-		// taken off, said.
-		return c, ""
+		return c, fmt.Sprintf("no closing of #%d is proposed, and a yes left on a parent never stands for one", c.Issue)
 	}
 	return c, "no such proposal in its issue's state"
 }

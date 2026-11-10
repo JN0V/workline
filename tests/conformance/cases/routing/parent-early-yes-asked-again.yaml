@@ -1,11 +1,13 @@
-case: routing/parent-early-yes-closes
+case: routing/parent-early-yes-asked-again
 about: >
   A person labelled a split parent workline:accepted before the line
   proposed its closing, and its last part closed before the line read it
-  again (#1213). A yes on a parent stands while all its parts are
-  closed: the reconciler wakes the product owner on it with no agent,
-  and the parent is closed on that yes, the yes named — never left open
-  with the label on and nothing to wake it.
+  again (#1213). That yes may be one to the split itself, never taken
+  off: no closing was proposed, so it is never read as a yes to what the
+  parts delivered (ADR-0029). The reconciler wakes the product owner on
+  it with no agent: the yes is taken off, said, and the closing proposed,
+  for a person to accept — never closed on it, nor left open with the
+  label on and nothing to wake it.
 given:
   repo: tested
   config:
@@ -30,11 +32,12 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: state-parent, level: info, where: "#4", message: "a parent, 2 of its 2 parts closed, a person's yes on it"}
-    - {rule: done-as-accepted, where: "#4", message: "Closed #4 as completed"}
-  no-findings: [{rule: parent-to-accept, where: "#4"}]
+    - {rule: parent-to-accept, where: "#4", message: "its 2 parts are closed: for a person to accept"}
+    - {rule: parent-not-proposed, where: "#4", message: "no closing of #4 is proposed"}
+  no-findings: [{rule: done-as-accepted, where: "#4"}]
   forge:
     issues:
       - id: 4
-        closed: true
-        comment-contains: ["Accepted: its parts are closed", "@dev having accepted it (workline:accepted)"]
+        closed: false
+        labels: [workline:proposed]
+        comment-contains: ["Took `workline:accepted` off #4, put by @dev: no closing of #4 is proposed, and a yes left on a parent never stands for one; a yes to its closing is asked once all its parts are closed.", "**Proposes**: Close it as completed"]

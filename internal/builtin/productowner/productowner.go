@@ -442,22 +442,18 @@ func Pre(runDir, repo string) int {
 				if len(ev.Undone) > 0 || len(ev.Unproved) > 0 {
 					msg += fmt.Sprintf("; not delivered: %d part(s), not proved: %d %s item(s)", len(ev.Undone), len(ev.Unproved), work.Name(work.Verification))
 				}
-				if !backlog.Accepted(is) || closing {
-					findings = append(findings, verdict.Finding{Rule: "parent-to-accept", Level: "info", Where: fmt.Sprintf("#%d", is.ID), Message: msg})
-				}
+				findings = append(findings, verdict.Finding{Rule: "parent-to-accept", Level: "info", Where: fmt.Sprintf("#%d", is.ID), Message: msg})
 				// Proposed to a person, its yes one label (ADR-0029,
 				// amended): never left open with nothing asked (#1208).
-				act := map[string]any{
+				fallback = append(fallback, intent.Intention{Kind: "close", Value: map[string]any{
 					"issue": is.ID, "reason": "completed", "parent": true, "own": true,
-					"why": fmt.Sprintf("its %d parts are closed; what each delivered, and what is missing, is in the comment on its parts", ev.Parts)}
-				if backlog.Accepted(is) && !closing {
-					act["ticked"] = who // a yes put before the closing was proposed, all its parts closed now: it stands (#1213)
-				}
-				fallback = append(fallback, intent.Intention{Kind: "close", Value: act})
-			} else if backlog.Accepted(is) && !closing {
-				// A yes put with a part open, before any closing was
-				// proposed (#1213): checked as a yes to the closing, it is
-				// taken off, said, never left to stand for a later act.
+					"why": fmt.Sprintf("its %d parts are closed; what each delivered, and what is missing, is in the comment on its parts", ev.Parts)}})
+			}
+			if backlog.Accepted(is) && !closing {
+				// A yes left on it with no closing proposed (#1213): put
+				// early, or one to an act done already, never a yes to
+				// what its parts delivered: checked as one to its closing,
+				// it is taken off, said, never left to stand for it.
 				fallback = append(fallback, intent.Intention{Kind: "close", Value: map[string]any{
 					"issue": is.ID, "reason": "completed", "parent": true, "own": true, "ticked": who,
 					"why": "accepted by " + who + " (" + backlog.AcceptedLabel(b) + ")"}})

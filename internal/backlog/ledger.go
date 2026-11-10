@@ -702,19 +702,24 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 				return err
 			}
 			st.Label, st.Proposed, st.Aside, st.Heard = "", nil, BodyDigest(is.Body), &n
-		case Accepted(*is):
+		case Accepted(*is) && p.Unaccepted[id] == "":
 			// Their yes, on every plan: the role takes its label off itself.
-			// A yes dropped for a part open again goes too (#1208).
-			off := []string{st.Label, LabelProposed, scopedProposed}
-			if p.Unaccepted[id] != "" {
-				off = append(off, acceptedLabels...)
-			}
-			for _, l := range off {
+			for _, l := range []string{st.Label, LabelProposed, scopedProposed} {
 				if l != "" && slices.Contains(is.Labels, l) && !slices.Contains(w.remove, l) {
 					w.remove = append(w.remove, l)
 				}
 			}
 			st.Label = ""
+		case Accepted(*is):
+			// A yes dropped on a parent (#1208, #1213): taken off, and what
+			// the issue holds proposed labelled as with no yes, a closing
+			// proposed in this run among it.
+			for _, l := range acceptedLabels {
+				if slices.Contains(is.Labels, l) && !slices.Contains(w.remove, l) {
+					w.remove = append(w.remove, l)
+				}
+			}
+			fallthrough
 		default:
 			if st.Aside != "" && (BodyDigest(is.Body) != st.Aside || p.Answers[id] != nil || p.decidedOn(id)) {
 				// The issue changed since, or a person's comment brought it
