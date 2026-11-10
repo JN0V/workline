@@ -1,6 +1,6 @@
 ---
-sources: [internal/packs, internal/doctor/packs.go, internal/routing/adopt.go]
-checked: d05af792
+sources: [internal/packs, internal/codenav/codenav.go, internal/doctor/packs.go, internal/routing/adopt.go]
+checked: 6088f02a
 ---
 # Language packs
 
@@ -27,13 +27,14 @@ One YAML file a language or ecosystem:
 | `test-homes` | where a test's code lives, read before the generic homes: the tester's `test-homes` when it sets none |
 | `test-command` | a suggested test command, given by `workline doctor` when the tester has none; never run unless you set it |
 | `aside` | folders beside the code, ranked after it: the generic pack's only, for now |
+| `code-navigation` | how a language's functions are found with no build: [below](#code-navigation) |
 
 - **A field it does not read** is refused, with the pack's name: never
   ignored.
 - **A pack never decides a verdict**: its fields are a role's settings
   until the project sets its own.
-- **The other tables** (build errors, code navigation, comment syntax,
-  mutation tools) still sit in the engine; they move to packs next
+- **The other tables** (build errors, comment syntax, mutation tools)
+  still sit in the engine; they move to packs next
   ([#1309](https://github.com/JN0V/workline/issues/1309)).
 
 ## The packs built in
@@ -47,6 +48,35 @@ One YAML file a language or ecosystem:
   `tests/` folder stays tests. To narrow, set the tester's `test-paths`.
 - **Several packs**: each field is the union of theirs (a Go service
   with a Kotlin app reads both test paths).
+
+## Code navigation
+
+How the code picker and the reviewer's judge find a function with no
+build ([code navigation](research/code-navigation.md)): one row a
+language.
+
+```yaml
+code-navigation:
+  - name: Elixir
+    extensions: [.ex, .exs]
+    definition: '^\s*defp?\s+(NAME)\b'   # NAME: the function's name
+    body: end            # go (Go's parser), braces, indent or end
+    hash-comments: true
+    keywords: "def defp defmodule do end nil fn"
+```
+
+- **The other fields**: `outline` (braces, indent, or none),
+  `containers`, `bodies`, `ignore`, `bases`, `preproc`, `line-ends`,
+  `param-headers`, `shell-quotes`, `bare-calls`; the built-in packs
+  show each. `definition: c-like` is the pattern C, Java, Kotlin and
+  most brace languages share.
+- **Every built-in pack's rows are read**, whatever the list:
+  navigation decides no verdict, and a Go project's shell scripts are
+  read too. The generic pack holds the languages with no pack of
+  their own yet (shell, C and C++, Rust, Swift…).
+- **A listed pack's rows come first**: yours wins on its extensions.
+- **A row it cannot read** (no `NAME`, a body it does not know, a
+  pattern that does not compile) stops the run, with the pack's name.
 
 ## Choosing the packs
 

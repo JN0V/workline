@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -66,6 +67,130 @@ type Pack struct {
 	// TestCommand is a suggested test-command, `workline doctor` gives it
 	// when the tester has none; never run unless the person sets it.
 	TestCommand string `yaml:"test-command"`
+	// Code are its languages' code navigation rows, read by
+	// internal/codenav: how a file's functions and declarations are found
+	// with no build.
+	Code []Code `yaml:"code-navigation"`
+}
+
+// Code is how one language's functions are found, and how its
+// declarations are outlined, with no build
+// (docs/research/code-navigation.md, docs/research/code-outline.md).
+type Code struct {
+	Name       string   `yaml:"name"`
+	Extensions []string `yaml:"extensions"`
+	// Definition is a definition's pattern, NAME standing for its name,
+	// or "c-like" for CLike.
+	Definition string `yaml:"definition"`
+	// Body is how a function's bounds are found: go (Go's parser), braces,
+	// indent (Python), end (Ruby, Lua).
+	Body string `yaml:"body"`
+	// Outline is how its declarations are outlined: braces, indent, or
+	// none: whole or cut, never a body shown.
+	Outline string `yaml:"outline"`
+	// Containers are the words opening a block whose members are
+	// declarations (`class`, `struct`, `namespace`): kept in an outline.
+	Containers []string `yaml:"containers"`
+	// Bodies, for an indented language, are the words opening a body cut
+	// from an outline (`def`); another block (`if TYPE_CHECKING:`) is kept.
+	Bodies []string `yaml:"bodies"`
+	// Ignore is the pattern of what a block's header holds that says
+	// nothing of the block: annotations, attributes, a template's head.
+	Ignore string `yaml:"ignore"`
+	// Preproc: a line opening with `#` is the preprocessor's, kept.
+	Preproc bool `yaml:"preproc"`
+	// LineEnds: a line ends a statement, no `;` needed, unless a
+	// parenthesis is still open.
+	LineEnds bool `yaml:"line-ends"`
+	// Bases is the pattern of the types a type derives from or embeds,
+	// each group a name.
+	Bases string `yaml:"bases"`
+	// ParamHeaders: a type's header may hold its parameters: a container
+	// word before a parenthesis keeps the block.
+	ParamHeaders bool `yaml:"param-headers"`
+	// ShellQuotes: a single quote is raw, a backquote no string, a `#`
+	// after a space opens a comment.
+	ShellQuotes bool `yaml:"shell-quotes"`
+	// HashComments: a `#` opens a comment.
+	HashComments bool `yaml:"hash-comments"`
+	// BareCalls: a function is called with no parenthesis, any word may
+	// be one.
+	BareCalls bool `yaml:"bare-calls"`
+	// Keywords are the language's words that name no definition worth a
+	// search when a text writes them as code, space-separated.
+	Keywords string `yaml:"keywords"`
+}
+
+// CLike is a C-like language's definition, a row's `definition: c-like`:
+// a function by its keyword, a function bound to a name, or a name before
+// its parameters.
+const CLike = `(?:\b(?:function|fn|fun|func|def)\s+(NAME)\b|\b(?:const|let|var)\s+(NAME)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)|^\s*(?:[\w$:<>,*&\[\]~.]+\s+)*(?:[\w$]+(?:<(?:[^<>()]|<[^<>()]*>)*>)?::)*(NAME)\s*\([^;{]*(?:\{.*)?$)`
+
+// wordRe is a word of a language: a container or a body's opening word.
+var wordRe = regexp.MustCompile(`^\w+$`)
+
+// check reads a code navigation row: a word or a pattern it cannot read is
+// refused, said with the row's name.
+func (c *Code) check() error {
+	if c.Name == "" {
+		return errors.New("code-navigation: a row has no name")
+	}
+	if len(c.Extensions) == 0 {
+		return fmt.Errorf("code-navigation %s: no extensions", c.Name)
+	}
+	for _, e := range c.Extensions {
+		if !strings.HasPrefix(e, ".") || e != strings.ToLower(e) {
+			return fmt.Errorf("code-navigation %s: extension %q: a dot, then lower case", c.Name, e)
+		}
+	}
+	if c.Definition == "c-like" {
+		c.Definition = CLike
+	}
+	if !strings.Contains(c.Definition, "NAME") {
+		return fmt.Errorf("code-navigation %s: definition holds no NAME", c.Name)
+	}
+	for _, w := range append(slices.Clone(c.Containers), c.Bodies...) {
+		if !wordRe.MatchString(w) {
+			return fmt.Errorf("code-navigation %s: %q in containers or bodies: a word", c.Name, w)
+		}
+	}
+	if !slices.Contains([]string{"go", "braces", "indent", "end"}, c.Body) {
+		return fmt.Errorf("code-navigation %s: body is %q: go, braces, indent or end", c.Name, c.Body)
+	}
+	if c.Outline == "none" {
+		c.Outline = ""
+	}
+	if !slices.Contains([]string{"", "braces", "indent"}, c.Outline) {
+		return fmt.Errorf("code-navigation %s: outline is %q: braces, indent, or none", c.Name, c.Outline)
+	}
+	for what, re := range map[string]string{"definition": strings.ReplaceAll(c.Definition, "NAME", "x"), "ignore": c.Ignore, "bases": c.Bases} {
+		if _, err := regexp.Compile(re); err != nil {
+			return fmt.Errorf("code-navigation %s: %s: %w", c.Name, what, err)
+		}
+	}
+	return nil
+}
+
+// CodeRows are the code navigation rows a project reads: the listed
+// packs' first, a project's own row winning on its extensions, then
+// every built-in pack's, by name. Navigation decides no verdict: a Go
+// project's shell scripts are read too, whatever its list.
+func CodeRows(listed []Pack) []Code {
+	var out []Code
+	done := map[string]bool{}
+	for _, p := range listed {
+		out = append(out, p.Code...)
+		if p.Source == "built-in" {
+			done[p.Name] = true
+		}
+	}
+	b := Builtin()
+	for _, n := range Names(b) {
+		if !done[n] {
+			out = append(out, b[n].Code...)
+		}
+	}
+	return out
 }
 
 //go:embed builtin/*.yaml
@@ -109,6 +234,11 @@ func parse(name, source string, data []byte) (Pack, error) {
 		return p, fmt.Errorf("pack %s (%s): %w", name, source, err)
 	}
 	p.Name, p.Source = name, source
+	for i := range p.Code {
+		if err := p.Code[i].check(); err != nil {
+			return p, fmt.Errorf("pack %s (%s): %w", name, source, err)
+		}
+	}
 	if len(p.Aside) > 0 && name != Generic {
 		return p, fmt.Errorf("pack %s (%s): aside is read from the generic pack only, for now", name, source)
 	}
@@ -174,6 +304,27 @@ func Listed(repo string, names []string) ([]Pack, error) {
 		out = append(out, p)
 	}
 	return out, nil
+}
+
+// OfProject are the packs a project's .workline/config.yaml lists, read:
+// none when it lists none, or has no config. For a role reading packs
+// with no settings to carry them, the code navigation rows; the config's
+// other keys are role.LoadProjectConfig's to check.
+func OfProject(repo string) ([]Pack, error) {
+	data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml"))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var c struct {
+		Packs []string `yaml:"packs"`
+	}
+	if err := yaml.Unmarshal(data, &c); err != nil {
+		return nil, fmt.Errorf(".workline/config.yaml: %w", err)
+	}
+	return Listed(repo, c.Packs)
 }
 
 // TesterDefaults are the tester's settings the listed packs give, each

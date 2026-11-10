@@ -1,0 +1,41 @@
+case: routing/size-split-asked-once-tests-written
+about: >
+  A bug's split is asked once its tests are written (#1212): bug #3 is
+  ready, the tester's Draft of it open, and the product owner predicted
+  it past its normal at refine (`split-after-tests` in its state). The
+  developer is not woken: the line blocks #3 on its size, and the
+  product owner, asked at once, splits it into #4 and #5 and keeps #3
+  blocked for a person, who accepts it from its parts.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner, tester, developer]}}
+  forge:
+    merge-requests:
+      - {id: 1, branch: workline/tester/issue-3, base: main, draft: true, body: "The acceptance tests of #3."}
+    issues:
+      - id: 3
+        title: "Multiplying and dividing give wrong totals"
+        labels: ["workline:ready", bug]
+        author: ann
+        insider: true
+        body: "## Need\n\nI multiply and divide, and the totals are wrong.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **Six by three:** Given the library, When I divide 6 by 3, Then I get 2.\n\n---\n\n## Verification\n\nA shell test a scenario.\n\n## Scope\n\n- `lib.sh`: `mul` and `div` beside `add`.\n"
+        comments:
+          - "```yaml\nsources: [lib.sh]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit-after-tests: true\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/size-split.sh 3 big blocked", then: again}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: size-predicted, level: warn, where: "#3", message: "the product owner reads it at once: moved to blocked"}
+    - {rule: state-revisit, level: info, where: "#3", message: "its size, predicted past its normal at refine, is asked now that its tests are written"}
+  no-findings: [{rule: bug-tests-first}, {rule: split-depth}]
+  run-files:
+    in/task.md: {contains: ["you predicted it past its normal at refine", "split it, when its parts each pass their own scenarios apart"], not-contains: ["A crossing measures"]}
+  forge:
+    issues:
+      - {id: 3, labels: [bug, "workline:blocked"], comment-contains: ["split: [4, 5]"]}
+      - {id: 4, title: "Multiply two numbers"}
+      - {id: 5, title: "Divide two numbers"}

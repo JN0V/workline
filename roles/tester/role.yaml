@@ -7,6 +7,9 @@ mission: Each test a change adds is proven red on its base before the code makes
 #        Validation scenarios, a test each, proven red on the base and
 #        linted, opened as a Draft; its Verification written from them
 #        (ADR-0066); the issue then moves to ready (ADR-0055, step 2).
+#        Given `symptom` by the line on a bug's parent, every part
+#        closed: its Draft's tests over the default branch, the green
+#        proof, no agent, said on the parent (#1212).
 # schedule: its moment (step 4), where the project routes it: one issue
 #        waiting for its tests a run, the first with named scenarios and
 #        no open Draft, then as on issue; needs --open-merge-request.

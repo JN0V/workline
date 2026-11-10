@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
@@ -25,15 +26,20 @@ import (
 // step: the parts closed, by number, and a person's yes; "" when no part
 // is closed and no yes is on it.
 func partsInput(closed []int, is forge.Issue) string {
-	words := make([]string, len(closed))
-	for i, n := range closed {
-		words[i] = strconv.Itoa(n)
-	}
-	in := strings.Join(words, ",")
+	in := partList(closed)
 	if backlog.Accepted(is) {
 		in += "+accepted"
 	}
 	return in
+}
+
+// partList is the parts, by number, as the tester's input names them.
+func partList(parts []int) string {
+	words := make([]string, len(parts))
+	for i, n := range parts {
+		words[i] = strconv.Itoa(n)
+	}
+	return strings.Join(words, ",")
 }
 
 // parentStep reads issue is as a parent, when its state wakes no role
@@ -94,8 +100,19 @@ func parentStep(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issu
 		}
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-parent", Level: "info", Where: where,
 			Message: said + ": the " + backlog.Keeper + " says what they delivered, with no agent"})
-		return &stateStep{role: backlog.Keeper, write: StateWrite{Issue: is.ID, Record: now}, from: s, rec: rec,
-			since: never, tier: backlog.SizeTier(is.Labels), ai: "none", parent: true}, true, nil
+		step := &stateStep{role: backlog.Keeper, write: StateWrite{Issue: is.ID, Record: now}, from: s, rec: rec,
+			since: never, tier: backlog.SizeTier(is.Labels), ai: "none", parent: true}
+		if kind, _ := backlog.KindOf(is.Labels); kind == backlog.KindBug && len(left) == 0 && !backlog.Accepted(is) && slices.Contains(cfg.Events[IssueEvent], testerRole) {
+			// A bug's, every part closed (#1212): the tester runs its
+			// reproduction test over the default branch first, and the
+			// product owner reads what it found at the closing. A
+			// person's yes on it closes it as they said: no proof read.
+			step.first, step.firstInputs = testerRole, map[string]string{backlog.SymptomInput: partList(closed)}
+			step.inputs = map[string]string{backlog.SymptomAfterInput: clock().UTC().Format(time.RFC3339)}
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-parent-symptom", Level: "info", Where: where,
+				Message: "a bug's parent, every part closed: the tester runs its reproduction test on the default branch first, with no agent"})
+		}
+		return step, true, nil
 	}
 	if s.Name == BlockedState {
 		return nil, false, nil // read again on its news, as any blocked issue (revisit.go)

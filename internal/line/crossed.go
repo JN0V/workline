@@ -71,6 +71,9 @@ func sizeAsked(res *Result, rec Record, issue int) *stateStep {
 		return nil
 	}
 	said := fmt.Sprintf("the %s's run on it crossed its size", roleSaid(rec.SizeOf))
+	if rec.SizeOf == engine.SizePredicted {
+		said = "its size, predicted past its normal at refine, is asked now that its tests are written"
+	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-revisit", Level: "info", Where: fmt.Sprintf("#%d", issue),
 		Message: fmt.Sprintf("blocked, read again by the %s: %s", backlog.Keeper, said)})
 	next := rec
@@ -141,4 +144,32 @@ func tierLabels(res *Result, f forge.Forge, noApply bool) {
 				Message: fmt.Sprintf("the label %s could not be made in the forge's list, for a person to put: %v", backlog.TierLabel(tier), err)})
 		}
 	}
+}
+
+// splitAfterTests blocks a bug its developer would take for the product
+// owner's question on its size, when that one predicted it past its
+// normal at refine and readied it for its tests first (#1212): its tests
+// written now, on its Draft, it is split, or granted, before any
+// developer run. Asked once from its state (Sized); nil when not due.
+func splitAfterTests(res *Result, cfg *routing.Config, s routing.State, is forge.Issue, now Record, comments []string) *StateWrite {
+	if s.Role != developerRole || slices.Contains(now.Sized, s.Name) || backlog.SizeTier(is.Labels) != "" {
+		return nil
+	}
+	if ok, _ := revisits(cfg); !ok {
+		return nil // no product owner reads it here: the developer takes it, a crossing a person's
+	}
+	if kind, _ := backlog.KindOf(is.Labels); kind != backlog.KindBug {
+		return nil
+	}
+	st, found, err := backlog.ReadState(comments, backlog.Keeper)
+	if !found || err != nil || !st.SplitTests || len(st.Split) > 0 {
+		return nil
+	}
+	why := "the product owner predicted it past its normal at refine, and its tests went first: they are written now, on its Draft, so it is split or granted before the developer takes it"
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "size-predicted", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+		Message: why + "; the product owner reads it at once: moved to " + BlockedState})
+	r := blocking(now, s.Name, why, comments)
+	r.Sized = append(slices.Clone(r.Sized), s.Name)
+	r.SizeOf = engine.SizePredicted
+	return &StateWrite{Issue: is.ID, Record: r, Blocked: why}
 }

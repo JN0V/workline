@@ -525,6 +525,13 @@ whose result moves the issue to the next. The table is the routing's
     moved the issue keeps that move.
   - A record from before, its machine error of kind `size` or `budget`,
     is spent at once, for a person (`machine-error-spent`).
+  - **A bug predicted past its size**, readied for its tests first
+    (`split-after-tests` in the product owner's state): due to its
+    developer, it is blocked the same way, no run crossed
+    (`size-predicted`, `size-of: prediction`), so the product owner
+    splits or grants it once its tests are written
+    ([split on size](backlog-acts/split.md#split-on-size);
+    [#1212](https://github.com/JN0V/workline/issues/1212)).
 - **An issue's size tier** ([ADR-0064, §3](../adr/0064-size-is-a-target-not-a-wall.md#3-the-product-owner-decides-once-a-state-an-issue)):
   `workline:size/large` (×2), the product owner's grant, or
   `workline:size/x-large` (×4), a person's label only. Every step on the
@@ -796,6 +803,11 @@ blocked; its parts close in their own runs.
   line last read it (the record's `parts`). The product owner is woken
   on it with no agent (`state-parent`): it writes what the parts
   delivered and, all closed, proposes the closing.
+- **A bug's, all its parts closed**, no person's yes on it: the tester
+  runs first, with no agent, given `symptom`: its Draft's tests over the
+  default branch (`state-parent-symptom`). Green, the product owner closes it alone
+  past `cautious`
+  ([a bug's parent](backlog-acts/parent.md); [#1212](https://github.com/JN0V/workline/issues/1212)).
 - **Nothing new**: it waits, said in the job's summary
   (`state-parent-waits`): on its open parts, or on a person to accept
   it. A blocked parent is then read again as any blocked issue.

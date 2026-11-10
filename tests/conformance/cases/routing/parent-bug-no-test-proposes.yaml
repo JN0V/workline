@@ -1,0 +1,41 @@
+case: routing/parent-bug-no-test-proposes
+about: >
+  A bug's parent, every part closed, with no reproduction test of its own
+  (#1212): no Draft of the tester's holds one, split before its tests. The
+  tester says so on the parent, and the closing is proposed to a person,
+  as before, the reason said.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q main && printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && git commit -qam 'fix: multiply'"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    sub-issues: true
+    issues:
+      - id: 3
+        title: "Multiplying gives a wrong total"
+        labels: [bug]
+        author: ann
+        insider: true
+        body: "## Need\n\nI multiply and the total is wrong.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n## Verification\n\n- A shell test a scenario.\n\n## Scope\n\nlib.sh"
+        comments:
+          - "```yaml\nsources: [lib.sh]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [6, 7]\n```\n\n<!-- workline:sticky=product-owner/state -->"
+      - {id: 6, title: "Multiply two numbers", body: "Part of #3.", labels: [], parent: 3, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#13", text: "fix: multiply"}]}
+      - {id: 7, title: "Multiply by zero", body: "Part of #3.", labels: [], parent: 3, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#14", text: "fix: multiply by zero"}]}
+run: {route: reconcile, open-merge-request: true, ai: "fake:blocked-three"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-parent-symptom, level: info, where: "#3"}
+    - {rule: parent-to-accept, where: "#3"}
+  forge:
+    issues:
+      - id: 3
+        closed: false
+        labels: [bug, "workline:proposed"]
+        comment-contains:
+          - "**The reporter's symptom is not proven gone**: no reproduction test of its own"
+          - "its closing is a person's: no reproduction test of its own: the tester has no open Draft of #3"

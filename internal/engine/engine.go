@@ -100,6 +100,12 @@ const (
 	SizeInput        = "size"
 )
 
+// SizePredicted is SizeInput's value on a bug the product owner predicted
+// past its normal at refine and readied for its tests first (#1212): no
+// run crossed it; its tests written, its split is asked before the
+// developer takes it.
+const SizePredicted = "prediction"
+
 // RevisitUnrefinedInput, `true`, tells the product owner woken on a
 // blocked issue that the line blocked it from refine on that role's own
 // read, left lacking (#951, #980): its text rewritten, the cause is

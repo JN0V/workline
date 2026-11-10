@@ -25,17 +25,6 @@ internal/builtin/reviewer/rules.go .mjs 1
 internal/builtin/reviewer/rules.go .py 1
 internal/builtin/reviewer/rules.go .ts 1
 internal/builtin/reviewer/rules.go .tsx 1
-internal/codenav/codenav.go .cjs 1
-internal/codenav/codenav.go .go 1
-internal/codenav/codenav.go .java 1
-internal/codenav/codenav.go .js 1
-internal/codenav/codenav.go .jsx 1
-internal/codenav/codenav.go .kt 1
-internal/codenav/codenav.go .kts 1
-internal/codenav/codenav.go .mjs 1
-internal/codenav/codenav.go .py 1
-internal/codenav/codenav.go .ts 1
-internal/codenav/codenav.go .tsx 1
 internal/codepick/imports.go .cjs 1
 internal/codepick/imports.go .go 1
 internal/codepick/imports.go .java 1
