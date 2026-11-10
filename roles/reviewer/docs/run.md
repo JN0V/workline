@@ -40,11 +40,9 @@ flowchart LR
 2. **The rules**, on the comments the change adds, no agent:
    - a code internal to the project (`internal-code`, the committer's lists);
    - a block over `comment-block-max` lines (`long-comment`, a warning);
-   - a story of the code (`story-words`: "used to", "the bug was",
-     "previously"): a guess by a word list, never a block
-     ([Rule A of ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-a-a-guess-may-only-pass)).
-     With an agent, the `comments` lens judges each comment flagged, on
-     the push that adds it, its turn or not; with none, `bug-story` warns.
+   - a story of the code (`story-words`), a guess never blocking ([Rule A of ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-a-a-guess-may-only-pass)):
+     the `comments` lens judges each comment flagged, on the push adding
+     it, its turn or not; with no agent, `bug-story` warns.
 
    While a rule blocks, no agent is asked; one the project sets to `warn`
    (`enforce`) only warns ([#550](https://github.com/JN0V/workline/issues/550)).

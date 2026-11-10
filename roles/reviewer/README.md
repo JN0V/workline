@@ -30,9 +30,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - quotes each finding; the engine finds the quote again, and a second AI
   call (the judge) checks each important one;
 - asks a person what only a person decides;
-- rules on the comments the change adds (an internal code), with no
-  agent; a comment telling the code's history is flagged by a word list
-  and judged by a lens;
+- rules on the comments the change adds (an internal code), no agent; a
+  lens judges one a word list flags as telling the code's history;
 - reads a spec before it is built too, a file or an issue: what is
   ambiguous, unverifiable, out of its scope, or contradicted by the code;
   on the forge, after the product owner refines an issue, its findings
