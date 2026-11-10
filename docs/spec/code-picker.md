@@ -35,8 +35,7 @@ flowchart LR
   them: in backticks, called (`f(`), or shaped as a name (`load_all`,
   `answerItems`). Not an acronym (`CSV`, `MQTT`): a format as often as
   code. Not a keyword nor a type of a language the project holds, one
-  row a language in
-  [codenav.go](../../internal/codenav/codenav.go)
+  row a language in a [language pack](../packs.md#code-navigation)
   ([#1109](https://github.com/JN0V/workline/issues/1109)): `open` is
   searched in Python, not in Kotlin; `suspend` never in Kotlin.
 - **The component the issue is about**
@@ -62,8 +61,9 @@ Under the role's budget, each piece once a task:
    15 lines either side.
 2. **Each definition of a name**, whole, its comment up to 20 lines
    above ([code navigation](../research/code-navigation.md): Go by its
-   parser, other languages by a pattern and braces or indentation; C++
-   methods defined out of their class too).
+   parser, other languages by a pattern and braces or indentation, a
+   [pack's row](../packs.md#code-navigation); C++ methods defined out of
+   their class too).
    - Those in a file named first. A name defined in a file named is that
      one: one of the same name elsewhere is counted, not given.
    - Then the code a route names, then those in the component the issue
