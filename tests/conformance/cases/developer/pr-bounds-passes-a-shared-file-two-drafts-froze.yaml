@@ -1,0 +1,35 @@
+case: developer/pr-bounds-passes-a-shared-file-two-drafts-froze
+about: >
+  Two testers added their tests to the same file the base holds, each on
+  its own Draft. The developer's pull request carries its own tester's
+  version of that file: it passes, read against its own Draft's blob,
+  whichever Draft the forge lists last.
+given:
+  repo: tested
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && printf '[ \"$(mul 2 3)\" = 6 ]\\n' >> tests/test_add.sh && git add lib.sh tests/test_add.sh && git commit -qm 'feat: mul for #3' -m 'Workline-Role: developer' && git checkout -q main"
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_add.sh\":\"14b6982e9f3fd9860c0bba8a871218ffb19826bc\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 4
+        branch: workline/tester/issue-4
+        draft: true
+        comments: ["The tests of #4, frozen.\n\n<!-- workline:tester-record {\"issue\":4,\"base\":\"main\",\"files\":{\"tests/test_add.sh\":\"13b8d2081c1aeee1d271a9eacb6b2de3e48721b4\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        title: "Multiply two numbers"
+        body: "Closes #3"
+run: {develop: [--bounds, --merge-request, "2"], ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: acceptance-test-edit}]
