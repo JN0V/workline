@@ -3252,6 +3252,7 @@ func newRunDir(repo, roleName string) (string, error) {
 	}
 	if old, err := os.ReadDir(base); err == nil && len(old) > keepRuns {
 		for _, e := range old[:len(old)-keepRuns] { // names start with a timestamp, so the oldest come first
+			dropWorktree(repo, filepath.Join(base, e.Name())) // an interrupted run's tree may lie outside it
 			os.RemoveAll(filepath.Join(base, e.Name()))
 		}
 	}
