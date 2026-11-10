@@ -7,7 +7,7 @@ given:
   repo: local-fix
   config: {forge: local, merge: {autonomy: normal}}
   setup:
-    - "sed -i 's/^No finding on the commits reviewed.$/| | | Where | Finding |\\n|---|---|---|---|\\n| blocks | correctness | `lib.sh:2` | Important: mul overflows. |/' .git/workline/merge-requests/2.md"
+    - "sed -i 's/^No finding on the commits reviewed.$/| | | Where | Finding |\\n|---|---|---|---|\\n| blocks | correctness | `lib.sh:2` | Important: mul overflows. |\\n\\n<!-- workline:findings [{\"lens\":\"correctness\",\"holds\":\"blocks\",\"where\":\"lib.sh:2\",\"severity\":\"Important\",\"text\":\"mul overflows.\"}] -->/' .git/workline/merge-requests/2.md"
 run: {follow: [--base, main, --verdict, .git/verdict.json], forge: local}
 expect:
   status: pass
