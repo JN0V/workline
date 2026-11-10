@@ -126,6 +126,9 @@ type Code struct {
 // its parameters.
 const CLike = `(?:\b(?:function|fn|fun|func|def)\s+(NAME)\b|\b(?:const|let|var)\s+(NAME)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)|^\s*(?:[\w$:<>,*&\[\]~.]+\s+)*(?:[\w$]+(?:<(?:[^<>()]|<[^<>()]*>)*>)?::)*(NAME)\s*\([^;{]*(?:\{.*)?$)`
 
+// wordRe is a word of a language: a container or a body's opening word.
+var wordRe = regexp.MustCompile(`^\w+$`)
+
 // check reads a code navigation row: a word or a pattern it cannot read is
 // refused, said with the row's name.
 func (c *Code) check() error {
@@ -146,8 +149,16 @@ func (c *Code) check() error {
 	if !strings.Contains(c.Definition, "NAME") {
 		return fmt.Errorf("code-navigation %s: definition holds no NAME", c.Name)
 	}
+	for _, w := range append(slices.Clone(c.Containers), c.Bodies...) {
+		if !wordRe.MatchString(w) {
+			return fmt.Errorf("code-navigation %s: %q in containers or bodies: a word", c.Name, w)
+		}
+	}
 	if !slices.Contains([]string{"go", "braces", "indent", "end"}, c.Body) {
 		return fmt.Errorf("code-navigation %s: body is %q: go, braces, indent or end", c.Name, c.Body)
+	}
+	if c.Outline == "none" {
+		c.Outline = ""
 	}
 	if !slices.Contains([]string{"", "braces", "indent"}, c.Outline) {
 		return fmt.Errorf("code-navigation %s: outline is %q: braces, indent, or none", c.Name, c.Outline)

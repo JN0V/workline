@@ -109,7 +109,11 @@ func Use(rows []packs.Code) {
 			// A container word opening a declaration: a name, a brace or a
 			// type's parameters after it (`class A`, `struct {`,
 			// `impl<T>`), never `module.exports` nor `var record =`.
-			l.containerRe = regexp.MustCompile(`\b(?:` + strings.Join(l.Containers, "|") + `)(?:\s+[A-Za-z_]|\s*[{<]|\s*$)`)
+			words := make([]string, len(l.Containers))
+			for i, w := range l.Containers {
+				words[i] = regexp.QuoteMeta(w)
+			}
+			l.containerRe = regexp.MustCompile(`\b(?:` + strings.Join(words, "|") + `)(?:\s+[A-Za-z_]|\s*[{<]|\s*$)`)
 		}
 		if l.Bases != "" {
 			l.basesRe = regexp.MustCompile(l.Bases)

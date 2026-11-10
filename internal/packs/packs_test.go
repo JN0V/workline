@@ -188,7 +188,7 @@ func TestCodeRows(t *testing.T) {
 			t.Errorf("%s: %v, want %q", body, err, want)
 		}
 	}
-	own, err := parse("elixir", "own", []byte("code-navigation: [{name: Elixir, extensions: [.ex], definition: '^def (NAME)', body: end}]"))
+	own, err := parse("elixir", "own", []byte("code-navigation: [{name: Elixir, extensions: [.ex], definition: '^def (NAME)', body: end, outline: none}]"))
 	if err != nil {
 		t.Fatal(err)
 	}
