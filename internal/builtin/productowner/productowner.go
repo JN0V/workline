@@ -888,6 +888,11 @@ func Pre(runDir, repo string) int {
 			}
 			if slices.Contains(d.is.Labels, backlog.LabelBlocked) && d.is.ID == issueEvent() {
 				review += blockedSaid(runDir, d.is, d.comments, cfg.SplitOff(), func() string { return spentSaid(b, open, d.is, d.comments) })
+				// Its text rewritten and nothing decided on it: back to
+				// refine in the same run, not blocked a week more (#1206).
+				fallback = append(fallback, intent.Intention{Kind: "unblock", Value: map[string]any{
+					"issue": d.is.ID, "to": "refine", "own": true, "if-refined": true,
+					"why": "its text rewritten on this read, nothing else decided on it: the read it was blocked on is gone, so it is read again in refine as it stands now"}})
 			} else if files := backlog.ScopeAsked(d.comments); len(files) > 0 && slices.Contains(d.is.Labels, backlog.LabelToRefine) {
 				// The developer's first step sent it back to ask for files
 				// outside the Scope (ADR-0063, §9): widened, or ready as it is.
@@ -2043,7 +2048,7 @@ func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool
 		return fmt.Sprintf("Blocked (%s): %s. Read again because %s. The developer's pull request needs `%s`, outside the issue's %s; its comment says why. Decide one, its `why` one plain line: to widen it, `refine` with `scope`, the %[5]s rewritten whole with these files in it, and `sources`, then `unblock` it `to: ready`: the developer resumes on its pull request with the new bounds; or `blocked`, why the %[5]s must not take them — another issue's need, a file no developer changes — `person: true` when only a person can decide. Never `ready` on it.\n",
 			backlog.LabelBlocked, why, news, strings.Join(files, "`, `"), work.Name(work.Scope))
 	}
-	return fmt.Sprintf("Blocked (%s): %s. Read again because %s. Decide one, its `why` one plain line: `unblock` it, %s, when what blocked it is gone; `blocked`, the reason it stays as things are now, `person: true` when only a person can lift it — a decision, an access, a fix outside this repository; or a `close` by the rules above. Never `ready` on it.\n",
+	return fmt.Sprintf("Blocked (%s): %s. Read again because %s. Decide one, its `why` one plain line: `unblock` it, %s, when what blocked it is gone; `blocked`, the reason it stays as things are now, `person: true` when only a person can lift it — a decision, an access, a fix outside this repository; or a `close` by the rules above. A `refine` with neither beside it sends it back to refine, read again as rewritten. Never `ready` on it.\n",
 		backlog.LabelBlocked, why, news, where)
 }
 

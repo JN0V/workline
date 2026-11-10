@@ -1,0 +1,35 @@
+case: routing/revisit-refine-kept-blocked
+about: >
+  The same read again as revisit-refine-moves-out-of-blocked, but the
+  product owner, its Scope rewritten, keeps #9 blocked: a choice only the
+  maintainer makes (#1206). Its word stands: #9 stays blocked, its
+  comment says why and that a person lifts it.
+given:
+  repo: backlog
+  env: {WORKLINE_CLOCK: "2026-11-12T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:blocked]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n\n---\n\n## Scope\n\nGuessed: the export loop is not in the code given.\n- `src/export/`: the export loop must write every row."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"v\":1,\"state\":\"blocked\",\"body\":\"000000000000\",\"hops\":1,\"from\":\"refine\",\"why\":\"the product owner read it on this text with only the code of `src/export/csv.go`, and left it lacking Scope, nothing asked: read again, it would get the same; a person names the files it is about in a comment, or completes it\",\"since\":\"2026-11-04T08:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:refine-blocked-scope-kept"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, level: info, where: "#9", message: "blocked, read again by the product-owner"}
+  forge:
+    issues:
+      - id: 9
+        labels: ["workline:blocked"]
+        body-contains: "`src/export/csv.go`: `WriteRows` stops one row short."
+        comment-contains: ["Kept #9 blocked, for a person to lift, read again: which export format the fix keeps"]
+        comment-lacks: ["Moved #9 out of Blocked"]

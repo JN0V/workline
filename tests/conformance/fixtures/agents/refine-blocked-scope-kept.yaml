@@ -1,0 +1,8 @@
+# The product owner, reading again #9, rewrites its Scope, but what
+# blocked it still holds: it keeps it blocked, for a person (#1206).
+- refine:
+    issue: 9
+    scope: "`src/export/csv.go`: `WriteRows` stops one row short."
+    sources: [src/export/csv.go]
+    why: "The code is read now: the guess is replaced by the cause."
+- blocked: {issue: 9, why: "which export format the fix keeps is the maintainer's choice", person: true}
