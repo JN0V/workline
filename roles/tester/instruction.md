@@ -56,7 +56,9 @@ For each:
 - A scenario of behaviour kept as it is today ("as today", "unchanged",
   "still"): its test would pass today, and is refused. Write none: its
   `covers` entry's reason, "kept as today: the existing suite guards
-  it". Test the other scenarios as above.
+  it". Test the other scenarios as above. Told a test of yours passes
+  on the base: keep its scenario so, if it describes what the base
+  already does; else make the test check what the issue asks.
 
 A file given as "its declarations" shows each signature, type and
 member, its bodies left out as `…`: enough to call it and to build

@@ -523,6 +523,13 @@ func Post(runDir, repo string) int {
 		}) {
 			proof.Again = true
 		}
+		// A test green on the base beside tests that are not: the answer's
+		// to mend too, asked once more, told which test passes there, so
+		// it can keep that scenario as today; sent again green, it blocks
+		// (#1156).
+		if !proof.Final && keptAsToday(proof.Findings) {
+			proof.Again = true
+		}
 		return refusePost(runDir, t.Issue, *proof)
 	}
 	// Each declared id is one of the new tests, red on the base: a miss is
@@ -1143,4 +1150,22 @@ func write(runDir string, v verdict.Verdict) int {
 func fail(err error) int {
 	fmt.Fprintln(os.Stderr, "tester:", err)
 	return 1
+}
+
+// keptAsToday says whether a refused proof holds a test green on the
+// base, and adds to each such finding how the answer can mend it: a
+// scenario that describes what the base already does is kept as today,
+// its covers entry giving the reason, its test dropped.
+func keptAsToday(findings []verdict.Finding) bool {
+	green := false
+	for i, f := range findings {
+		if f.Rule != "test-green-on-base" || f.Level != "" {
+			continue
+		}
+		green = true
+		findings[i].Message += "; if its scenario describes what the base already does, write no test for it: " +
+			"its covers entry gives the reason, \"kept as today: the existing suite guards it\"; " +
+			"else make it check what the issue asks, so that it fails on the base"
+	}
+	return green
 }

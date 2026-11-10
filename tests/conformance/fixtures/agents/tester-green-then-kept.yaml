@@ -1,0 +1,27 @@
+# A bug's tester, asked twice (#1156): its first answer tests both
+# scenarios, the second's test passing on the base as it checks what the
+# base already does; told so, its second answer keeps that scenario as
+# today, its test dropped.
+calls:
+  - - patch:
+        file: tests/test_mul_two_by_three.sh
+        content: |
+          # Scenario: Two by three
+          . ./lib.sh
+          [ "$(mul 2 3)" = 6 ]
+    - patch:
+        file: tests/test_add_unchanged.sh
+        content: |
+          # Scenario: Add unchanged
+          . ./lib.sh
+          [ "$(add 2 3)" = 5 ]
+    - covers: {scenario: "Two by three", tests: ["test_mul_two_by_three"]}
+    - covers: {scenario: "Add unchanged", tests: ["test_add_unchanged"]}
+  - - patch:
+        file: tests/test_mul_two_by_three.sh
+        content: |
+          # Scenario: Two by three
+          . ./lib.sh
+          [ "$(mul 2 3)" = 6 ]
+    - covers: {scenario: "Two by three", tests: ["test_mul_two_by_three"]}
+    - covers: {scenario: "Add unchanged", reason: "kept as today: the existing suite guards it."}

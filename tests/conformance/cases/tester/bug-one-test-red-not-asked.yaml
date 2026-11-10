@@ -3,7 +3,9 @@ about: >
   A bug one test shows is reproduced (ADR-0060, decision 4): #3 is a
   bug; of its two tests, one fails on main, the other passes there. The
   bug shows, so its reporter is not asked and no workline:needs-repro is
-  put; the green test is refused as any test that proves nothing.
+  put; the green test is refused as any test that proves nothing. Asked
+  once more, told which test passes on the base (#1156), the agent sends
+  the same green test: the run blocks.
 given:
   repo: tested
   setup:
@@ -21,6 +23,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-green-on-base"}
 expect:
   status: block
+  agent-calls: 2
   findings: [{rule: test-green-on-base, where: tests.test_mul_by_zero}]
   no-findings: [{rule: bug-not-reproduced}]
   not-pushed: [workline/tester/issue-3]
