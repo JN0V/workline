@@ -51,8 +51,9 @@ One YAML file a language or ecosystem:
 ## Choosing the packs
 
 - **`workline init`** lists in `.workline/config.yaml` the packs whose
-  marker files the repository holds, unless it lists some already. A
-  marker in a test or aside folder (a fixture's `go.mod`) calls for none.
+  marker files the repository holds, unless `packs:` holds a list
+  already, `packs: []` too. A marker in a test or aside folder (a
+  fixture's `go.mod`) calls for none.
 - **Edit the list** as any setting: `packs: [go, kotlin-gradle]`. A name
   with no pack stops every run, said: never skipped.
 - **A role's setting wins**: the tester's `test-paths` set, a pack's

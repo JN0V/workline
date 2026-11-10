@@ -2694,6 +2694,8 @@ func initPacks(root, rolesDir string) (string, error) {
 		return "language packs listed: " + strings.Join(listed, ", ") + " (.workline/config.yaml)", nil
 	case len(listed) > 0:
 		return "language packs " + strings.Join(listed, ", ") + ", as the project listed them", nil
+	case listed != nil: // `packs: []`
+		return "no language pack, as the project listed them: every role reads the generic pack", nil
 	}
 	return "no language pack detected: every role reads the generic pack", nil
 }

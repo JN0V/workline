@@ -231,8 +231,10 @@ func setLevel(repo string, under []string, level, comment string) (string, bool,
 }
 
 // SetPacks lists the language packs in the project's
-// .workline/config.yaml (ADR-0065), unless it lists some already, or
-// none were given: then the file is left as it is. It returns the packs
+// .workline/config.yaml (ADR-0065), unless `packs:` holds a list
+// already, `packs: []` too (the person's choice: the generic pack
+// alone), or none were given: then the file is left as it is. The
+// packs listed are empty, not nil, for `packs: []`. It returns the packs
 // listed afterwards, and whether the file changed.
 func SetPacks(repo string, names []string) ([]string, bool, error) {
 	c, err := readConfig(repo)
@@ -241,8 +243,8 @@ func SetPacks(repo string, names []string) ([]string, bool, error) {
 	}
 	top := c.doc.Content[0]
 	switch v := value(top, "packs"); {
-	case v != nil && v.Kind == yaml.SequenceNode && len(v.Content) > 0:
-		var listed []string
+	case v != nil && v.Kind == yaml.SequenceNode:
+		listed := []string{}
 		for _, n := range v.Content {
 			listed = append(listed, n.Value)
 		}
@@ -257,7 +259,7 @@ func SetPacks(repo string, names []string) ([]string, bool, error) {
 		list.Content = append(list.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: n})
 	}
 	if v := value(top, "packs"); v != nil {
-		*v = *list // `packs:` or `packs: []`, nothing listed
+		*v = *list // `packs:` or `packs: ~`, nothing written
 	} else {
 		top.Content = append(top.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: "packs",
 			HeadComment: "The language packs every role reads (ADR-0065), detected by `workline init`: docs/packs.md."}, list)
