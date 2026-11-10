@@ -211,7 +211,7 @@ func (r ran) ofFile(file string) []string {
 }
 
 func ofFile(id, file string) bool {
-	return fileQualified(idWords(id), file)
+	return fileQualified(id, file)
 }
 
 // frozenIn is the head's ids the record's test t is. An id from a report
@@ -298,35 +298,50 @@ func qualifiedBy(qualifier, file string) bool {
 	if len(dirs) > 0 && (endsWith(q, dirs) || endsWith(dirs, q)) {
 		return true
 	}
-	return fileQualified(q, file)
+	return fileQualified(qualifier, file)
 }
 
-// fileQualified says whether a qualifier's words are file's: a module or
-// class that is the file, or a class named after it (qualifiedBy).
-func fileQualified(q []string, file string) bool {
+// fileQualified says whether a qualifier is file's: a module or class
+// that is the file, or a class named after it (qualifiedBy). A stem of
+// several words (`test-mul`) is one part of the qualifier, cut where a
+// mark the stem does not hold is: `tests.test-mul-big` is not
+// `tests/test-mul.sh`'s.
+func fileQualified(qualifier, file string) bool {
 	stem := path.Base(file)
 	if k := strings.Index(stem, "."); k > 0 {
 		stem = stem[:k]
 	}
-	words := idWords(stem) // a stem of one word, or several: `test-mul`'s
+	words := idWords(stem)
 	if len(words) == 0 {
 		return false
 	}
-	dirs := idWords(path.Dir(file))
-	for k := range q {
-		if len(q)-k < len(words) || !slices.Equal(q[k:k+len(words)], words) {
-			continue
+	marks := strings.Map(func(c rune) rune { // the stem's marks between its words
+		if isWord(c) {
+			return -1
 		}
-		if endsWith(dirs, q[:k]) || unicode.IsUpper([]rune(stem)[0]) && apart(q[:k], dirs) {
+		return c
+	}, stem)
+	parts := strings.FieldsFunc(qualifier, func(c rune) bool { return !isWord(c) && !strings.ContainsRune(marks, c) })
+	dirs := idWords(path.Dir(file))
+	var before []string // the words of the parts before parts[k]
+	for _, part := range parts {
+		if slices.Equal(idWords(part), words) &&
+			(endsWith(dirs, before) || unicode.IsUpper([]rune(stem)[0]) && apart(before, dirs)) {
 			return true
 		}
+		before = append(before, idWords(part)...)
 	}
 	return false
 }
 
+// isWord says whether c is a word's: a letter, a digit or an underscore.
+func isWord(c rune) bool {
+	return c == '_' || unicode.IsLetter(c) || unicode.IsDigit(c)
+}
+
 // idWords is s's words: runs of letters, digits and underscores.
 func idWords(s string) []string {
-	return strings.FieldsFunc(s, func(c rune) bool { return c != '_' && !unicode.IsLetter(c) && !unicode.IsDigit(c) })
+	return strings.FieldsFunc(s, func(c rune) bool { return !isWord(c) })
 }
 
 // endsWith says whether a's last words are b.
