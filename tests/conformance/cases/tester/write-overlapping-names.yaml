@@ -1,8 +1,9 @@
 case: tester/write-overlapping-names
 about: >
-  A test names a scenario by its whole name: a test for "Minus one
-  hundred", or prose saying "minus one", does not name the scenario
-  "Minus one", which is left without a test and blocks.
+  A scenario is covered by its own entry, never by a name: a test
+  declared for "Minus one hundred", whose comment says "minus one", does
+  not cover the scenario "Minus one", which is left with no entry and
+  blocks.
 given:
   repo: tested
   setup:

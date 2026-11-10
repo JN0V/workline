@@ -50,13 +50,15 @@ duties:
   reads: ["**"]
   writes: [$settings.test-paths]   # test files only, never the code
 
-# patch: a test file, new or changed. note: a scenario no test can check,
-# and why, said in the Draft; an answer's reason. comment, label and
+# patch: a test file, new or changed. covers: a scenario and the tests
+# that check it, or why none can, said in the Draft; read by post, never
+# applied (ADR-0065). note: an answer's reason, what a test assumes, the
+# files or the proof it needs. comment, label and
 # verification are the engine's, never the agent's: the record of the
 # tests, the reply in an objection's thread, a need sent back to the
 # product owner, the issue's Verification written from the tests, a
 # person's kept (ADR-0066).
-intentions: [patch, note, comment, label, verification]
+intentions: [patch, covers, note, comment, label, verification]
 
 without-ai: pass   # with none, nothing is written: the issue waits for its tests
 

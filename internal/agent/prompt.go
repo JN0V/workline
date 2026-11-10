@@ -50,6 +50,7 @@ var contracts = map[string]string{
 	"claim":          `- claim: {lines: "12-14", status: contradicted, quote: "the doc's words, as they read", source: {path: "src/file.go", lines: "40-41", quote: "the source's words, as they read"}, why: "why they disagree"}`,
 	"read":           `- read: {path: "src/file.go", lines: "40-80", why: "what you look for there"}  # or name: "Decide", where it is defined; or grep: "a_word", the lines that name it; instead of a note, when the task lets you read`,
 	"quote":          `- quote: {path: "src/file.go", text: "the lines that refute the finding, as they read"}  # beside a note saying no`,
+	"covers":         `- covers: {scenario: "Two by three", tests: ["CalcTest.twoByThree"]}  # one for each scenario, its name as the issue writes it; each test as the project's test report names it, its class and name dot-joined, or its name alone; one test may cover several scenarios; or reason: "why no test can check it", in place of tests`,
 }
 
 // engineOnly are the kinds the engine makes and the agent never writes,

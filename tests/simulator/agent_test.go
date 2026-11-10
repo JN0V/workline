@@ -387,7 +387,8 @@ func (a *simAgent) attribute(n int, woke map[int]string) {
 func (a *simAgent) progressOf(role string, task []byte) string {
 	switch role {
 	case "tester":
-		return patch(a.testOf(task))
+		file, code := a.testOf(task)
+		return patch(file, code) + coversOf(task, strings.HasSuffix(file, ".go"))
 	case "developer":
 		if file, code, ok := a.goCode(task); ok {
 			return patch(file, code+goFix)
@@ -484,6 +485,20 @@ func (a *simAgent) testOf(task []byte) (string, string) {
 	}
 	b.WriteString("    return UNITY_END();\n}\n")
 	return componentOf(h) + "/test/test_issue_ISSUE/test_issue_ISSUE.cpp", b.String()
+}
+
+// coversOf declares the tester's test of each scenario, in the order
+// testOf writes them (ADR-0065, change 4).
+func coversOf(task []byte, goTest bool) string {
+	var b strings.Builder
+	for i, sc := range scenariosIn(task) {
+		name := fmt.Sprintf("test_scenario_%d", i+1)
+		if goTest {
+			name = fmt.Sprintf("TestScenario%d", i+1)
+		}
+		fmt.Fprintf(&b, "- covers: {scenario: %q, tests: [%q]}\n", sc, name)
+	}
+	return b.String()
 }
 
 // productOwnerOf is the product owner's answer that moves the issue on.
@@ -612,6 +627,11 @@ func componentOf(header string) string { c, _, _ := strings.Cut(header, "/"); re
 // at least.
 func scenariosIn(task []byte) []string {
 	_, after, _ := strings.Cut(string(task), "## The scenarios, one test each")
+	// The section alone: a later one (a Verification, the feedback) may
+	// list bold names that are none of the issue's scenarios.
+	if i := strings.Index(after, "\n## "); i >= 0 {
+		after = after[:i]
+	}
 	var out []string
 	for _, m := range scenarioRe.FindAllStringSubmatch(after, -1) {
 		if !slices.Contains(out, m[1]) {

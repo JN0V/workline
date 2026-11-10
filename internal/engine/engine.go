@@ -912,7 +912,9 @@ func run(o Options, res *Result) error {
 			return err
 		}
 	}
-	intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "claim" || i.Kind == "skip" })
+	// A covers entry tells post which test covers which scenario: read
+	// there, never applied (ADR-0065).
+	intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "claim" || i.Kind == "skip" || i.Kind == "covers" })
 	intents = splitEffort(intents)
 	intent.SortForApply(intents)
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {

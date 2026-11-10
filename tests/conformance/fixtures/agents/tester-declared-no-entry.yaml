@@ -1,0 +1,12 @@
+# Two tests, one scenario declared.
+- patch:
+    file: tests/test_mul_case_a.sh
+    content: |
+      . ./lib.sh
+      [ "$(mul 2 3)" = 6 ]
+- patch:
+    file: tests/test_mul_case_b.sh
+    content: |
+      . ./lib.sh
+      [ "$(mul 5 0)" = 0 ]
+- covers: {scenario: Two by three, tests: [tests.test_mul_case_a]}

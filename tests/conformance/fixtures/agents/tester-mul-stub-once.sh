@@ -18,4 +18,5 @@ cat <<YAML
       # Given the library, When I multiply 2 by 3, Then I get 6.
       . ./lib.sh
       [ "\$(mul $two 3)" = 6 ]
+- covers: {scenario: "Two by three", tests: ["test_mul_two_by_three"]}
 YAML

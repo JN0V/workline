@@ -296,6 +296,7 @@ func newWorld(t *testing.T, tr trace, a *simAgent) *world {
 // the agent's answer a run of the trial kept (its out/agent-answer.txt),
 // run by run of the round. A developer's `[]` is left out: its code was
 // in its worktree, which the run did not keep; the fake writes its own.
+// A <n>-<role>.txt.covers beside one is given after it.
 func answers(t *testing.T, file string) map[string][]string {
 	paths, err := filepath.Glob(filepath.Join("traces", "answers", file, "*.txt"))
 	if err != nil || len(paths) == 0 {
@@ -311,6 +312,11 @@ func answers(t *testing.T, file string) map[string][]string {
 		}
 		if role == "developer" && strings.TrimSpace(string(data)) == "[]" {
 			continue
+		}
+		// The covers entries a tester's answer predates (ADR-0065,
+		// change 4), kept beside it, given after it.
+		if covers, err := os.ReadFile(p + ".covers"); err == nil {
+			data = append(append(data, '\n'), covers...)
 		}
 		out[role] = append(out[role], string(data))
 	}

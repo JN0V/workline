@@ -26,4 +26,5 @@ cat <<YAML
               check(add(2, 3, 4) == 9)
           }
       }
+- covers: {scenario: "Three numbers", tests: ["two plus three plus four"]}
 YAML

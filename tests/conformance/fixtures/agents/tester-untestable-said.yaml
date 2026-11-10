@@ -4,4 +4,5 @@
       # Scenario: Two by three
       . ./lib.sh
       [ "$(mul 2 3)" = 6 ]
-- note: "By zero: no test can check it, a person reads the printed table by eye."
+- covers: {scenario: "By zero", reason: "no test can check it, a person reads the printed table by eye."}
+- covers: {scenario: "Two by three", tests: ["test_mul_two_by_three"]}

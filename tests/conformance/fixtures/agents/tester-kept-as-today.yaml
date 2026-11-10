@@ -6,4 +6,5 @@
       # Scenario: Two by three
       . ./lib.sh
       [ "$(mul 2 3)" = 6 ]
-- note: "Add unchanged: kept as today: the existing suite guards it."
+- covers: {scenario: "Add unchanged", reason: "kept as today: the existing suite guards it."}
+- covers: {scenario: "Two by three", tests: ["test_mul_two_by_three"]}

@@ -18,13 +18,13 @@ func TestAssumedOnTheDraft(t *testing.T) {
 	if want := []string{"stubDrop() — read in the stub", "a clock helper\nset first"}; !slices.Equal(got, want) {
 		t.Fatalf("assumed %q, want %q", got, want)
 	}
-	body := draftBody(task{Issue: 3}, nil, nil, got, nil, &verdict.Verdict{Summary: "red"})
+	body := draftBody(task{Issue: 3}, nil, nil, got, &verdict.Verdict{Summary: "red"})
 	for _, w := range []string{"**Assumed**", "- stubDrop() — read in the stub\n", "- a clock helper set first\n"} {
 		if !strings.Contains(body, w) {
 			t.Errorf("the Draft lacks %q:\n%s", w, body)
 		}
 	}
-	if body := draftBody(task{Issue: 3}, nil, nil, nil, nil, &verdict.Verdict{Summary: "red"}); strings.Contains(body, "Assumed") {
+	if body := draftBody(task{Issue: 3}, nil, nil, nil, &verdict.Verdict{Summary: "red"}); strings.Contains(body, "Assumed") {
 		t.Errorf("nothing assumed, yet said:\n%s", body)
 	}
 }
@@ -141,111 +141,5 @@ func TestScenarios(t *testing.T) {
 		if got[i] != want[i] {
 			t.Errorf("scenario %d = %+v, want %+v", i, got[i], want[i])
 		}
-	}
-}
-
-func TestNamesAScenarioWhole(t *testing.T) {
-	for _, code := range []string{"func TestOldDebt(t *testing.T)", "def test_old_debt():", "// Scenario: Old debt",
-		`t.Run("Old debt", func(t *testing.T) {`, "func TestGate_OldDebt(t *testing.T)"} {
-		if !names(code, "Old debt") {
-			t.Errorf("%q does not name the scenario", code)
-		}
-	}
-	for _, code := range []string{"func TestOldDebtGone(t *testing.T)", "def test_old_debt_gone():", "// Scenario: Old debt gone",
-		"// the old debt is kept", `msg := "old debt and more"`, "func TestNewOldDebt(t *testing.T)"} {
-		if names(code, "Old debt") {
-			t.Errorf("%q names the scenario, though only a longer name or prose holds it", code)
-		}
-	}
-	if names("// Scenario: !!", "!!") {
-		t.Error("a name of no word is named")
-	}
-}
-
-// A comment opening on the scenario's name, or a sentence of it, names
-// it, as the instruction asks (`// Name: Given …`); one test naming two
-// scenarios names both, by its comment or its name (#1147, trial #56).
-func TestNamesAScenarioInItsComment(t *testing.T) {
-	real := "// Enabled console: Given an enabled console and an application listener added\n" +
-		"// before it, When I run shutdown() and log a line, Then the console no longer\n" +
-		"// receives the line and my own listener still does. Restart: Given a console\n" +
-		"// shut down twice in a row, When I log a line, Then no other listener is\n" +
-		"// removed.\nvoid test_enabled_console_and_restart(void) {\n"
-	for _, name := range []string{"Enabled console", "Restart"} {
-		if !names(real, name) {
-			t.Errorf("trial #56's test does not name %q", name)
-		}
-	}
-	for _, code := range []string{"# Old debt: Given 140 findings", "/**\n * Old debt: Given\n */", "// TestOldDebt: Given 140 findings",
-		"/* Old debt: Given 140 findings */", "  -- Old debt: Given", "// Moved code and Old debt: Given a move", "// Old debt, Moved code: Given",
-		"func TestMovedCodeAndOldDebt(t *testing.T)", "def test_old_debt_and_moved_code():"} {
-		if !names(code, "Old debt") {
-			t.Errorf("%q does not name the scenario", code)
-		}
-	}
-	for _, code := range []string{"// Old debt gone: Given", "// the old debt: kept", "// Old debt is kept: Given",
-		"std::Old::debt()", "debt := 1", "// Then it prints: Old debt",
-		// code, not a comment: a field, a key, a case
-		"\tOldDebt: 5 * time.Second,", "old_debt: true", "Old debt: x", "\tcase OldDebt:",
-		// a comment after code, or `//` in a string, labels nothing
-		"x := 1 // Old debt: Given", `url := "http://old-debt:8080"`, `s := "// Old debt: 5"`, "x /* a */ Old debt: 5",
-		// a `*` line outside any /* … */
-		"*Old debt: 5", " * Old debt: Given", "/* a */\n * Old debt: Given"} {
-		if names(code, "Old debt") {
-			t.Errorf("%q names the scenario, though only a longer name or prose holds it", code)
-		}
-	}
-	// The probes of #1155's review, each with its own scenario's name.
-	for _, p := range []struct{ code, name string }{
-		{`url := "http://timeout:8080"`, "Timeout"}, {`c := New("redis://cache:6379")`, "Cache"},
-		{`s := "// Timeout: 5"`, "Timeout"}, {"x /* a */ Timeout: 5", "Timeout"}, {"*Timeout: 5", "Timeout"},
-	} {
-		if names(p.code, p.name) {
-			t.Errorf("%q names %q", p.code, p.name)
-		}
-	}
-	if !names("// Bread and butter: Given", "Bread and butter") {
-		t.Error("a name holding \"and\" is not read whole")
-	}
-	for _, name := range []string{"Add/remove", "Save, then load", "R&D"} {
-		if !names("// "+name+": Given", name) {
-			t.Errorf("%q, a name holding a separator, is not named by its label", name)
-		}
-	}
-}
-
-// A note naming two scenarios counts for both; one naming one, for it
-// (#1147).
-func TestNoteClaimsEachScenarioItNames(t *testing.T) {
-	sc := []Scenario{{Name: "Disabled console"}, {Name: "Enabled console"}, {Name: "Restart"}}
-	if got := claimed("Enabled console and Restart: they share one test, as the verification describes.", sc); !slices.Equal(got, []int{1, 2}) {
-		t.Errorf("claimed %v, want [1 2]", got)
-	}
-	if got := claimed("Restart cannot be checked on the host", sc); !slices.Equal(got, []int{2}) {
-		t.Errorf("claimed %v, want [2]", got)
-	}
-	if got := claimed("assumes: a stub", sc); len(got) != 0 {
-		t.Errorf("claimed %v, want none", got)
-	}
-}
-
-func TestClaimTakesTheLongestName(t *testing.T) {
-	sc := []Scenario{{Name: "Minus one"}, {Name: "Minus one hundred"}}
-	if i := claim(words("Minus one hundred: a person reads it"), sc, hasPrefix); i != 1 {
-		t.Errorf("note claimed by %d, want 1", i)
-	}
-	if i := claim(words("test_minus_one"), sc, hasSuffix); i != 0 {
-		t.Errorf("test claimed by %d, want 0", i)
-	}
-}
-
-// A one-letter word in a camel-cased name: `TestSpaceInAName` names
-// "Space in a name", `TestHTTPServer` "HTTP server".
-func TestWordsOfCapitals(t *testing.T) {
-	if !names("func TestSpaceInAName(t *testing.T)", "Space in a name") {
-		t.Error("TestSpaceInAName does not name \"Space in a name\"")
-	}
-	if got := words("TestHTTPServer"); !slices.Equal(got, []string{"test", "http", "server"}) {
-		t.Errorf("words(TestHTTPServer) = %q", got)
 	}
 }

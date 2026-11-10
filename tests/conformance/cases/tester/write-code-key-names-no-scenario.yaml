@@ -1,8 +1,8 @@
 case: tester/write-code-key-names-no-scenario
 about: >
-  A label names a scenario in a comment only: the one test written, for
-  Retry, sets `Timeout: 5` in its code, which names no scenario. Timeout
-  has no test and is refused, as before #1147 read comments' labels.
+  A scenario only a test's code names declares nothing: the one test
+  written, declared for Retry, sets `Timeout: 5` in its code. Timeout has
+  no covers entry, so no test, and is refused (ADR-0065, change 4).
 given:
   repo: tested
   setup:

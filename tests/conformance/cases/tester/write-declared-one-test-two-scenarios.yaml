@@ -1,0 +1,27 @@
+case: tester/write-declared-one-test-two-scenarios
+about: >
+  Two scenarios, one test (ADR-0065, change 4): the agent declares the
+  same test for both, as the Verification may ask. The report holds it
+  red on the base: both scenarios are covered, no name read.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-declared-one-for-two"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  agent-calls: 1
+  no-findings: [{rule: scenario-without-test}]
+  forge:
+    merge-requests:
+      - id: 1
+        body-contains: ["| Two by three | `tests.test_mul_both` |", "| By zero | `tests.test_mul_both` |"]

@@ -18,3 +18,4 @@
               check(store.nextIndex() == 5)
           }
       }
+- covers: {scenario: "Next index", tests: ["next index after five"]}

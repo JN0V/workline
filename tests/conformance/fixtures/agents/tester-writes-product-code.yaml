@@ -15,3 +15,5 @@
     content: |
       add() { echo $(($1 + $2)); }
       mul() { echo $(($1 * $2)); }
+- covers: {scenario: "Two by three", tests: ["test_mul_two_by_three"]}
+- covers: {scenario: "By zero", tests: ["test_mul_by_zero"]}

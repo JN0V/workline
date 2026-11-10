@@ -1,0 +1,8 @@
+# One test declared for two scenarios, as a Verification may ask.
+- patch:
+    file: tests/test_mul_both.sh
+    content: |
+      . ./lib.sh
+      [ "$(mul 2 3)" = 6 ] && [ "$(mul 5 0)" = 0 ]
+- covers: {scenario: Two by three, tests: [tests.test_mul_both]}
+- covers: {scenario: By zero, tests: [tests.test_mul_both]}

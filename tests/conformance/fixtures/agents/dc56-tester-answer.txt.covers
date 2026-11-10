@@ -1,0 +1,3 @@
+- covers: {scenario: "Disabled console", tests: ["test_disabled_console"]}
+- covers: {scenario: "Enabled console", tests: ["test_enabled_console_and_restart"]}
+- covers: {scenario: "Restart", tests: ["test_enabled_console_and_restart"]}

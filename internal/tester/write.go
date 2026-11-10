@@ -19,7 +19,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"go.yaml.in/yaml/v3"
 
@@ -444,7 +443,7 @@ func Post(runDir, repo string) int {
 			msg = "the agent's answer could not be read, asked again once with the error: " + why
 		} else if why := os.Getenv("WORKLINE_AGENT_REFUSED"); why != "" {
 			msg = "the agent's answer was refused whole: " + why
-		} else if reason := strings.Join(notes, " "); os.Getenv("WORKLINE_AGENT_ANSWERED") == "true" && strings.TrimSpace(reason) != "" {
+		} else if reason := strings.Join(append(notes, reasons(intents)...), " "); os.Getenv("WORKLINE_AGENT_ANSWERED") == "true" && strings.TrimSpace(reason) != "" {
 			// Read, and no test written nor kind named: no test possible,
 			// its notes the reason, back to the product owner (#794). An
 			// answer with no reason is no work: retried (#1194).
@@ -477,36 +476,16 @@ func Post(runDir, repo string) int {
 			written[file] += added(p.Value)
 		}
 	}
-	tested := map[string]string{} // scenario -> the first test file naming it
-	said := map[string]string{}   // scenario -> the note saying no test checks it
-	for _, n := range notes {
-		for _, i := range claimed(n, t.Scenarios) {
-			if _, ok := said[t.Scenarios[i].Name]; !ok {
-				said[t.Scenarios[i].Name] = n
-			}
-		}
-	}
-	for _, sc := range t.Scenarios {
-		for _, file := range order {
-			if names(written[file], sc.Name) {
-				tested[sc.Name] = file
-				break
-			}
-		}
-		if _, ok := tested[sc.Name]; ok {
-			delete(said, sc.Name)
-			continue
-		}
-		if _, ok := said[sc.Name]; !ok {
-			findings = append(findings, verdict.Finding{Rule: "scenario-without-test", Where: sc.Name,
-				Message: "no test names this scenario, and no note says why none can check it: each scenario gets a test that names it, " +
-					"in its name or in its comment opening on the name (`// " + sc.Name + ": Given …`); one test may name several"})
-		}
-	}
+	// Which test covers which scenario: the agent's word, an entry each
+	// (ADR-0065, change 4); nothing guessed from a test's name.
+	covers, unread := coversOf(intents)
+	tested, said, missing := held(covers, t.Scenarios)
+	findings = append(append(findings, unread...), missing...)
 	if len(findings) > 0 {
-		// Scenarios left unnamed, and nothing else, are the answer's to
-		// mend: asked again once with their names, before any block (#1147).
-		again := !slices.ContainsFunc(findings, func(f verdict.Finding) bool { return f.Rule != "scenario-without-test" })
+		// Entries missing or unread, and nothing else, are the answer's to
+		// mend: asked again once with the scenarios' names, before any
+		// block (#1147).
+		again := !slices.ContainsFunc(findings, func(f verdict.Finding) bool { return !answerMends[f.Rule] })
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "the tests do not hold to the issue's scenarios", Findings: findings, Again: again})
 	}
 	s.issue = t.Text
@@ -543,21 +522,34 @@ func Post(runDir, repo string) int {
 		}
 		return refusePost(runDir, t.Issue, *proof)
 	}
+	// Each declared id is one of the new tests, red on the base, or, the
+	// build broken with no test named, a test file written: a miss is the
+	// answer's to mend, asked again once, then blocked; the product owner
+	// reads a blocked issue again (ADR-0059).
+	matched, misses, byFile := found(tested, t.Scenarios, newTests, order)
+	if len(misses) > 0 {
+		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "a declared test is none of the tests proven red", Findings: misses, Again: true})
+	}
+	if len(byFile) > 0 {
+		proof.Findings = append(proof.Findings, verdict.Finding{Rule: "declared-by-file", Level: "info", Where: strings.Join(byFile, ", "),
+			Message: "the build broke on the base and no test-name names its tests: found by their file alone; the green proof on the code runs them"})
+	}
+	tested = matched
 	// Each scenario has its row, the tests red on the base and linted: the
 	// issue moves to the state its tests lead to, ready (ADR-0059,
 	// decision 3), said on it; no agent decides it.
-	intents = append(intents, intent.Intention{Kind: "verification", Value: map[string]any{"issue": t.Issue, "text": testPlan(t, tested, said, newTests)}})
-	moved, undo, err := testsDone(runDir, repo, t, intents, len(said), planSaid(t, tested, newTests))
+	intents = append(intents, intent.Intention{Kind: "verification", Value: map[string]any{"issue": t.Issue, "text": testPlan(t, tested, said)}})
+	moved, undo, err := testsDone(runDir, repo, t, intents, len(said), planSaid(t, tested))
 	if err != nil {
 		return fail(err)
 	}
 	mr := map[string]any{
 		"key": fmt.Sprintf("issue-%d", t.Issue), "draft": true,
 		"title": fmt.Sprintf("test: the acceptance tests of #%d", t.Issue),
-		"body":  draftBody(t, tested, said, assumed(notes), newTests, proof),
+		"body":  draftBody(t, tested, said, assumed(notes), proof),
 		// The tests frozen to whoever builds (ADR-0055, guards): kept in
 		// workline's own comment on the Draft once it is opened.
-		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Tests: newTests, Errored: erroredOf(runDir, newTests), Scenarios: t.Scenarios, RedUnproven: unprovenOf(*proof)}.intention()["comment"],
+		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Tests: newTests, Errored: erroredOf(runDir, newTests), Scenarios: t.Scenarios, Covers: tested, RedUnproven: unprovenOf(*proof)}.intention()["comment"],
 	}
 	if len(undo) > 0 {
 		mr["unopened"] = undo // its Draft not opened, the issue keeps its state (#1280)
@@ -961,30 +953,17 @@ func assumed(notes []string) []string {
 	return out
 }
 
-// testIDs are the ids of the new tests that name a scenario, each in a
-// code span.
-func testIDs(t task, sc Scenario, newTests []string) []string {
-	var ids []string
-	for _, id := range newTests {
-		if i := claim(words(id[strings.LastIndexAny(id, "./:")+1:]), t.Scenarios, hasSuffix); i >= 0 && t.Scenarios[i].Name == sc.Name {
-			ids = append(ids, "`"+id+"`")
-		}
-	}
-	return ids
-}
+// codes are ids, each in a code span.
+func codes(ids []string) string { return "`" + strings.Join(ids, "`, `") + "`" }
 
 // testPlan is the issue's Verification the tester writes from its tests
 // (ADR-0066), as a human tester writes the test plan: each scenario and
-// the test that proves it, or why none can.
-func testPlan(t task, tested, said map[string]string, newTests []string) string {
+// the tests its agent declared prove it, or why none can.
+func testPlan(t task, tested map[string][]string, said map[string]string) string {
 	var b strings.Builder
 	for _, sc := range t.Scenarios {
-		if file, ok := tested[sc.Name]; ok {
-			test := "a test in `" + file + "`"
-			if ids := testIDs(t, sc, newTests); len(ids) > 0 {
-				test = strings.Join(ids, ", ") + ", in `" + file + "`"
-			}
-			fmt.Fprintf(&b, "- **%s:** %s.\n", sc.Name, test)
+		if ids, ok := tested[sc.Name]; ok {
+			fmt.Fprintf(&b, "- **%s:** %s.\n", sc.Name, codes(ids))
 		} else if n, ok := said[sc.Name]; ok {
 			fmt.Fprintf(&b, "- **%s:** no test can check it: %s\n", sc.Name, strings.ReplaceAll(strings.TrimSpace(n), "\n", " "))
 		}
@@ -996,18 +975,15 @@ func testPlan(t task, tested, said map[string]string, newTests []string) string 
 // planSaid is what the tester says on the issue of its Verification: it
 // wrote it; or a person's, kept word for word — and, when their text
 // names not every test, that the tests prove it another way (ADR-0066).
-func planSaid(t task, tested map[string]string, newTests []string) string {
+func planSaid(t task, tested map[string][]string) string {
 	if t.Verification == "" {
 		return "the tester wrote its " + work.Name(work.Verification) + " from them: which test proves which scenario"
 	}
 	var other []string
 	for _, sc := range t.Scenarios {
-		if _, ok := tested[sc.Name]; !ok {
-			continue
-		}
-		for _, id := range testIDs(t, sc, newTests) {
-			if name := strings.Trim(id, "`"); !strings.Contains(t.Verification, name[strings.LastIndexAny(name, "./:")+1:]) {
-				other = append(other, id+" ("+sc.Name+")")
+		for _, id := range tested[sc.Name] {
+			if !strings.Contains(t.Verification, id[strings.LastIndexAny(id, "./:")+1:]) {
+				other = append(other, "`"+id+"` ("+sc.Name+")")
 			}
 		}
 	}
@@ -1018,8 +994,9 @@ func planSaid(t task, tested map[string]string, newTests []string) string {
 }
 
 // draftBody is the Draft's description: the issue it refers to, each
-// scenario and its test, what the tests assume, what the proof said.
-func draftBody(t task, tested, said map[string]string, assumes, newTests []string, proof *verdict.Verdict) string {
+// scenario and the tests declared for it, what the tests assume, what the
+// proof said.
+func draftBody(t task, tested map[string][]string, said map[string]string, assumes []string, proof *verdict.Verdict) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Refs #%d\n\nThe acceptance tests of #%d, written before the code: %s. "+
 		"Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n",
@@ -1027,24 +1004,17 @@ func draftBody(t task, tested, said map[string]string, assumes, newTests []strin
 	if why := unprovenOf(*proof); why != "" {
 		fmt.Fprintf(&b, "**Red unproven**: %s.\n\n", why)
 	}
-	b.WriteString("## Tests\n\n| Scenario | Test |\n|---|---|\n")
+	b.WriteString("## Tests\n\nWhich test covers which scenario, as the tester declared it, each test red on the base.\n\n| Scenario | Test |\n|---|---|\n")
 	for _, sc := range t.Scenarios {
-		file, ok := tested[sc.Name]
-		if !ok {
-			continue
+		if ids, ok := tested[sc.Name]; ok {
+			fmt.Fprintf(&b, "| %s | %s |\n", sc.Name, codes(ids))
 		}
-		ids := testIDs(t, sc, newTests)
-		test := "in `" + file + "`"
-		if len(ids) > 0 {
-			test = strings.Join(ids, ", ") + " " + test
-		}
-		fmt.Fprintf(&b, "| %s | %s |\n", sc.Name, test)
 	}
 	if len(said) > 0 {
-		b.WriteString("\n**Not tested**, no test can check it:\n\n")
+		b.WriteString("\n**Not tested**, no test can check it; a builder may object:\n\n")
 		for _, sc := range t.Scenarios {
 			if n, ok := said[sc.Name]; ok {
-				fmt.Fprintf(&b, "- %s: %s\n", sc.Name, n)
+				fmt.Fprintf(&b, "- %s: %s\n", sc.Name, strings.ReplaceAll(n, "\n", " "))
 			}
 		}
 	}
@@ -1107,221 +1077,6 @@ func noteText(v any) string {
 	}
 	t, _ := v.(string)
 	return t
-}
-
-// names reports whether a test file names the scenario by a whole,
-// delimited mention, never as a part of a longer name nor in prose: a
-// "Scenario: <name>" line, a quoted string that is the name, an
-// identifier whose words are the name's, after a "test" prefix or an
-// underscore (`TestMinusOne`, `test_minus_one`, `TestSub_MinusOne`), or
-// the label a comment or one of its sentences opens with
-// (`// Minus one: Given …`, `// TestMinusOne: …`). "Minus one" is thus
-// not named by `TestMinusOneHundred`. One test may name several
-// scenarios: a label or a test's name listing them, joined by "and" or
-// commas (`// Enabled console and Restart: …`,
-// `test_enabled_console_and_restart`), names each (#1147).
-func names(text, name string) bool {
-	want := words(name)
-	if len(want) == 0 {
-		return false
-	}
-	inBlock := false // within a /* … */ comment, as far as the lines show
-	for _, line := range strings.Split(text, "\n") {
-		if i := strings.Index(strings.ToLower(line), "scenario:"); i >= 0 && slices.Equal(words(line[i+len("scenario:"):]), want) {
-			return true
-		}
-		for _, l := range labels(line, inBlock) {
-			if lists(l, want) {
-				return true
-			}
-		}
-		if open, end := strings.LastIndex(line, "/*"), strings.LastIndex(line, "*/"); open > end {
-			inBlock = true
-		} else if end > open {
-			inBlock = false
-		}
-		for _, q := range quotedRe.FindAllString(line, -1) {
-			if slices.Equal(words(q[1:len(q)-1]), want) {
-				return true
-			}
-		}
-		for _, id := range identRe.FindAllString(line, -1) {
-			w := words(id)
-			if len(w) > 0 && (w[0] == "test" || w[0] == "tests") && slices.ContainsFunc(joined(w[1:]), equal(want)) {
-				return true
-			}
-			// a camel-cased last segment, after a prefix: `TestSub_MinusOne`
-			if seg := id[strings.LastIndex(id, "_")+1:]; seg != id && hasUpper(seg) && slices.Equal(words(seg), want) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-var (
-	quotedRe = regexp.MustCompile("\"[^\"]*\"|'[^']*'|`[^`]*`")
-	identRe  = regexp.MustCompile(`[A-Za-z_][A-Za-z0-9_]*`)
-)
-
-func hasUpper(s string) bool { return strings.ToLower(s) != s }
-
-// commentLead is what opens a comment line, in the languages tests are
-// written in: `//`, `/*`, `#`, `--`, `;`, a docstring's quotes; and
-// blockStar a `*` line inside a /* … */ comment.
-var (
-	commentLead = regexp.MustCompile(`^\s*(?://+|/\*+|#+|--|;+|"""|'''|<!--)\s*`)
-	blockStar   = regexp.MustCompile(`^\s*\*+\s*`)
-)
-
-// sentenceEnd cuts a comment into its sentences.
-var sentenceEnd = regexp.MustCompile(`[.!?;]\s+`)
-
-// labels are the words a comment line, or one of its sentences, opens
-// with before a colon: "Restart" in `// … still does. Restart: Given …`.
-// Only a line a comment starts, after its indentation: code labels
-// nothing, nor a comment after code, nor a string holding `//` or
-// `://` (`"http://timeout:8080"`); a `*` line only inside a /* … */
-// comment (inBlock). A colon of code (`::`, `:=`) opens none.
-func labels(line string, inBlock bool) []string {
-	lead := commentLead.FindString(line)
-	if lead == "" && inBlock && !strings.HasPrefix(strings.TrimSpace(line), "*/") {
-		lead = blockStar.FindString(line)
-	}
-	if lead == "" {
-		return nil
-	}
-	text := line[len(lead):]
-	if i := strings.Index(text, "*/"); i >= 0 {
-		text = text[:i]
-	}
-	text = strings.TrimSuffix(strings.TrimSpace(text), "-->")
-	var out []string
-	for _, sentence := range sentenceEnd.Split(text, -1) {
-		i := strings.Index(sentence, ":")
-		if i <= 0 || strings.HasPrefix(sentence[i:], "::") || strings.HasPrefix(sentence[i:], ":=") || strings.HasPrefix(sentence[i:], "://") {
-			continue
-		}
-		out = append(out, sentence[:i])
-	}
-	return out
-}
-
-// lists says whether a label is the name, or lists it among others,
-// joined by commas, "&", "/" or "and": each maybe a test's name
-// (`TestMinusOne: …`) or after the word "scenario".
-func lists(label string, want []string) bool {
-	// The label whole first: a name may hold a separator (`Add/remove`).
-	for _, part := range append([]string{label}, listSep.Split(label, -1)...) {
-		w := words(part)
-		if len(w) > 1 && !slices.Equal(w, want) && slices.Contains([]string{"test", "tests", "scenario", "scenarios"}, w[0]) {
-			w = w[1:]
-		}
-		if slices.ContainsFunc(joined(w), equal(want)) {
-			return true
-		}
-	}
-	return false
-}
-
-var listSep = regexp.MustCompile(`\s*[,&/+]\s*`)
-
-// joined are a name's words whole, then each part of them between the
-// word "and": a name holding "and" is still read whole.
-func joined(w []string) [][]string {
-	out := [][]string{w}
-	from := 0
-	for i, x := range w {
-		if x == "and" {
-			out = append(out, w[from:i])
-			from = i + 1
-		}
-	}
-	if from > 0 {
-		out = append(out, w[from:])
-	}
-	return out
-}
-
-func equal(want []string) func([]string) bool {
-	return func(w []string) bool { return slices.Equal(w, want) }
-}
-
-// claimed are the scenarios a note names: each its label lists
-// (`Enabled console and Restart: …`, #1147), or else the one its words
-// open with, the longest when several do.
-func claimed(note string, scenarios []Scenario) []int {
-	var out []int
-	if label, _, ok := strings.Cut(note, ":"); ok {
-		for i, sc := range scenarios {
-			if w := words(sc.Name); len(w) > 0 && lists(label, w) {
-				out = append(out, i)
-			}
-		}
-	}
-	if len(out) == 0 {
-		if i := claim(words(note), scenarios, hasPrefix); i >= 0 {
-			out = append(out, i)
-		}
-	}
-	return out
-}
-
-// words cuts a text into its lowercased words: at what is no letter nor
-// digit, at a lower-to-upper case change and between letters and digits,
-// so "Two by 3", `TwoBy3` and `two_by_3` give the same words, and
-// "Space in a name" those of `TestSpaceInAName`.
-func words(s string) []string {
-	var out []string
-	var cur []rune
-	cut := func() {
-		if len(cur) > 0 {
-			out = append(out, strings.ToLower(string(cur)))
-			cur = cur[:0]
-		}
-	}
-	for _, r := range s {
-		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
-			cut()
-			continue
-		}
-		if n := len(cur); n > 0 {
-			p := cur[n-1]
-			switch {
-			case (unicode.IsUpper(r) && !unicode.IsUpper(p)) || unicode.IsLetter(r) != unicode.IsLetter(p):
-				cut()
-			case unicode.IsLower(r) && unicode.IsUpper(p) && n > 1 && unicode.IsUpper(cur[n-2]):
-				// capitals then a word: `AName` is "a name", `HTTPServer` "http server"
-				cur = cur[:n-1]
-				cut()
-				cur = append(cur, p)
-			}
-		}
-		cur = append(cur, r)
-	}
-	cut()
-	return out
-}
-
-func hasPrefix(have, want []string) bool {
-	return len(have) >= len(want) && slices.Equal(have[:len(want)], want)
-}
-
-func hasSuffix(have, want []string) bool {
-	return len(have) >= len(want) && slices.Equal(have[len(have)-len(want):], want)
-}
-
-// claim is the scenario a text's words mention, by the match given: the
-// one with the most words when several do ("Minus one hundred" before
-// "Minus one"); -1 when none does.
-func claim(have []string, scenarios []Scenario, match func(have, want []string) bool) int {
-	best, most := -1, 0
-	for i, sc := range scenarios {
-		if w := words(sc.Name); len(w) > most && match(have, w) {
-			best, most = i, len(w)
-		}
-	}
-	return best
 }
 
 // norm keeps a text's letters and digits, lowercased: a scenario's name

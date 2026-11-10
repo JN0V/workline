@@ -18,3 +18,4 @@
               check(g.vertical.map { x -> x } == listOf(3, 6))
           }
       }
+- covers: {scenario: "Thirds of nine", tests: ["thirds of nine"]}

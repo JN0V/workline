@@ -6,3 +6,4 @@
       # Unlike minus one, the sum goes past two digits.
       . ./lib.sh
       [ "$(add 0 -100)" = -100 ]
+- covers: {scenario: "Minus one hundred", tests: ["test_minus_one_hundred"]}

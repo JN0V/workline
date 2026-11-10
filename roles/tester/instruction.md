@@ -11,14 +11,15 @@ yours to answer in your tests.
 
 For each:
 
-- **Name the scenario**: the test's name holds the scenario's name
-  (`Two by three` gives `TestTwoByThree`, `test_two_by_three`). Its
-  comment opens with the scenario's name as the issue writes it, then
-  its Given / When / Then (`// Two by three: Given …, When …, Then …`),
-  so a reader finds the test by the name. Where the Verification has
-  one test check two scenarios, it wins: the test's comment opens each
-  sentence on its scenario's name (`// Two by three: Given …. By zero:
-  Given …`).
+- **Declare which test covers it**: one `covers` entry for every
+  scenario, its name exactly as the issue writes it, and the ids of the
+  tests that check it, as the project's test report names them: the
+  class and the name dot-joined (`CalcTest.twoByThree`), or the name
+  alone (`test_two_by_three`). Where the Verification has one test check
+  two scenarios, declare it in both entries. The engine finds each id
+  among your tests, red on the base, and reads nothing from a test's
+  name: name it as the project does, its comment giving the Given /
+  When / Then.
 - **Check the Then**, exactly: the value, the message, the state it says.
   Call the code as the Scope says it will be: a function or option it
   names may not exist yet, and the test then fails on a missing name.
@@ -45,12 +46,13 @@ For each:
   comments included: a reader of the code cannot look it up, and the
   lint refuses it. Say what it refers to. A scenario's name (`Two by
   three`) is not a tracker code: keep it.
-- A scenario no test can check (a person's look, a feeling): say it in a
-  `note`, the scenario's name first, then why. Never fake a test for it.
+- A scenario no test can check (a person's look, a feeling): its
+  `covers` entry gives `reason:`, why, in place of `tests:`. Never fake
+  a test for it.
 - A scenario of behaviour kept as it is today ("as today", "unchanged",
-  "still"): its test would pass today, and is refused. Write none: a
-  `note`, the scenario's name first, "kept as today: the existing suite
-  guards it". Test the other scenarios as above.
+  "still"): its test would pass today, and is refused. Write none: its
+  `covers` entry's reason, "kept as today: the existing suite guards
+  it". Test the other scenarios as above.
 
 A file given as "its declarations" shows each signature, type and
 member, its bodies left out as `…`: enough to call it and to build

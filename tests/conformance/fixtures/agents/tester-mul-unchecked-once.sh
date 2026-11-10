@@ -25,4 +25,6 @@ cat <<YAML
       . ./lib.sh
       $rm
       [ "\$(mul 5 0)" = 0 ]
+- covers: {scenario: "Two by three", tests: ["test_mul_two_by_three"]}
+- covers: {scenario: "By zero", tests: ["test_mul_by_zero"]}
 YAML
