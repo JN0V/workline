@@ -1,6 +1,7 @@
 // Package codenav finds the functions of a file with no build
 // (docs/research/code-navigation.md): Go by its own parser; other
-// languages by a definition pattern for their extension, and braces,
+// languages by a definition pattern for their extension, a language
+// pack's row (internal/packs), and braces,
 // indentation or an `end` for a function's bounds. The reviewer's judge
 // reads a finding's functions by it (#127), the tester the functions a
 // Scope names in a file too long to give whole (#908).
@@ -14,11 +15,14 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync/atomic"
+
+	"github.com/JN0V/workline/internal/packs"
 )
 
 // Language is how functions are found in a family of files, and how its
-// declarations are outlined (Outline): data, one row a language, no
-// parser but Go's (docs/research/code-outline.md).
+// declarations are outlined (Outline): a pack's code-navigation row
+// (packs.Code), no parser but Go's (docs/research/code-outline.md).
 type Language struct {
 	Name string
 	Exts []string
@@ -67,73 +71,37 @@ type Language struct {
 	ignoreRe, containerRe, basesRe *regexp.Regexp
 }
 
-const (
-	// cLike is a C-like language's definition: a function by its keyword,
-	// a function bound to a name, or a name before its parameters.
-	cLike = `(?:\b(?:function|fn|fun|func|def)\s+(NAME)\b|\b(?:const|let|var)\s+(NAME)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)|^\s*(?:[\w$:<>,*&\[\]~.]+\s+)*(?:[\w$]+(?:<(?:[^<>()]|<[^<>()]*>)*>)?::)*(NAME)\s*\([^;{]*(?:\{.*)?$)`
-	// annotations: `@Entity(name = "x")`, Java's, Kotlin's, TypeScript's.
-	annotations = `@[\w.]+(?:\([^)]*\))?`
-	extendsBase = `\b(?:extends|implements|with)\s+([A-Z]\w*)`
-)
+// Languages are the families known, in the order they are tried: the
+// project's packs' rows, then every built-in pack's (packs.CodeRows).
+func Languages() []Language { return *table.Load() }
 
-// Languages are the families known, in the order they are tried.
-var Languages = []Language{
-	{Name: "Go", Exts: []string{".go"}, def: `^func\s+(?:\([^)]*\)\s*)?(NAME)\s*[\[(]`, Body: "go",
-		Outline: "braces", Containers: []string{"type", "struct", "interface"}, LineEnds: true,
-		Bases:    `^\s+\*?([A-Z]\w*)\s*(?://.*)?$`,
-		Keywords: "func nil package import var const type struct interface map chan go defer select range fallthrough goto bool string byte rune uint8 uint16 uint32 uint64 int8 int16 int32 int64 float32 float64"},
-	{Name: "shell", Exts: []string{".sh", ".bash", ".zsh", ".ksh"}, def: `^\s*(?:function\s+(NAME)\b|(NAME)\s*\(\s*\))`, Body: "braces",
-		ShellQuotes: true, HashComments: true, BareCalls: true,
-		Keywords: "function local then elif fi done esac"}, // echo, export, source: commands, searched as a function is (#1189)
-	{Name: "Python", Exts: []string{".py"}, def: `^\s*(?:async\s+)?def\s+(NAME)\s*\(`, Body: "indent",
-		Outline: "indent", Containers: []string{"class"}, Bodies: []string{"def", "async"}, HashComments: true,
-		Bases:    `^\s*class\s+\w+\(\s*(?:[\w.]+\.)?([A-Z]\w*)`,
-		Keywords: "def elif None True False self cls lambda pass from import async await with yield global nonlocal raise except finally assert del str"},
-	{Name: "Ruby", Exts: []string{".rb"}, def: `^\s*def\s+(?:self\.)?(NAME)\b`, Body: "end", HashComments: true, BareCalls: true,
-		Keywords: "def end nil self elsif unless until module require yield"},
-	{Name: "Lua", Exts: []string{".lua"}, def: `^\s*(?:local\s+)?function\s+(?:[\w.:]*[.:])?(NAME)\s*\(`, Body: "end",
-		Keywords: "function local nil end then elseif"},
-	{Name: "C and C++", Exts: []string{".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".hxx", ".ino", ".m", ".mm"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "struct", "union", "namespace", "enum", "extern", "interface", "protocol", "implementation"},
-		Ignore:  `\[\[[^\]]*\]\]|__attribute__\s*\(\([^)]*\)\)|__declspec\s*\([^)]*\)|alignas\s*\([^)]*\)|template\s*<(?:[^<>]|<[^<>]*>)*>|@\w+`,
-		Preproc: true, Bases: `\b(?:public|protected|private)\s+(?:virtual\s+)?([A-Z]\w*)|^\s*(?:class|struct)\s+\w+\s*:\s*(?:virtual\s+)?([A-Z]\w*)`,
-		Keywords: "std auto inline virtual override template typename unsigned signed namespace delete include define ifdef ifndef endif pragma union typedef extern sizeof nullptr struct bool void char short long size_t uint8_t uint16_t uint32_t uint64_t int8_t int16_t int32_t int64_t String self super"},
-	{Name: "Java", Exts: []string{".java", ".groovy"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "interface", "enum", "record", "trait"}, Ignore: annotations, Bases: extendsBase, ParamHeaders: true,
-		Keywords: "extends implements final abstract synchronized throws instanceof interface record boolean String Integer Object Override"},
-	{Name: "Kotlin", Exts: []string{".kt", ".kts"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "interface", "object"}, Ignore: annotations, LineEnds: true, ParamHeaders: true,
-		Bases:    `\b(?:class|object|interface)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)`,
-		Keywords: "fun val var override companion object data sealed suspend lateinit internal open inline when typealias Unit Int Long Boolean String Any Float Double"},
-	{Name: "Scala", Exts: []string{".scala"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "object", "trait", "enum"}, Ignore: annotations, LineEnds: true, Bases: extendsBase, ParamHeaders: true,
-		Keywords: "def val var object trait override implicit lazy sealed Unit Int String"},
-	{Name: "Swift", Exts: []string{".swift"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "struct", "enum", "protocol", "extension", "actor"}, Ignore: annotations, LineEnds: true,
-		Bases:    `\b(?:class|struct|enum|protocol|extension|actor)\s+\w+(?:<[^>]*>)?\s*:\s*([A-Z]\w*)`,
-		Keywords: "func let var self Self nil guard extension protocol struct override mutating Int String Bool"},
-	{Name: "C#", Exts: []string{".cs"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "struct", "interface", "enum", "record", "namespace"}, Ignore: `\[[^\]]*\]`, Preproc: true, ParamHeaders: true,
-		Bases:    `\b(?:class|struct|interface|record)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)`,
-		Keywords: "using namespace var string bool void override virtual async await sealed readonly"},
-	{Name: "JavaScript and TypeScript", Exts: []string{".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "interface", "namespace", "module", "enum", "type"}, Ignore: annotations, Bases: extendsBase, ParamHeaders: true,
-		Keywords: "function undefined let async await typeof instanceof export default yield extends implements interface readonly"},
-	{Name: "Rust", Exts: []string{".rs"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"struct", "enum", "trait", "impl", "mod", "union"}, Ignore: `#!?\[[^\]]*\]`,
-		Bases:    `\bimpl(?:<[^>]*>)?\s+([A-Z]\w*)(?:<[^>]*>)?\s+for\b`,
-		Keywords: "fn let mut impl trait pub self Self crate mod use struct dyn Some None Ok Err Vec String usize isize u8 u16 u32 u64 i8 i16 i32 i64 f32 f64"},
-	{Name: "PHP", Exts: []string{".php"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "interface", "trait", "enum", "namespace"}, Ignore: `#\[[^\]]*\]`, Bases: extendsBase,
-		Keywords: "function echo null array namespace use"},
-	{Name: "Dart", Exts: []string{".dart"}, def: cLike, Body: "braces",
-		Outline: "braces", Containers: []string{"class", "mixin", "extension", "enum"}, Ignore: annotations, Bases: extendsBase,
-		Keywords: "void final var dynamic late required"},
+// table is the rows in use: one project a process.
+var table atomic.Pointer[[]Language]
+
+func init() { Use(packs.CodeRows(nil)) }
+
+// UseProject sets the rows in use to a project's: its listed packs'
+// first, then every built-in pack's. A config or a pack it cannot read
+// leaves the built-in rows, said: role.LoadProjectConfig refuses it too.
+func UseProject(repo string) error {
+	listed, err := packs.OfProject(repo)
+	if err != nil {
+		Use(packs.CodeRows(nil))
+		return err
+	}
+	Use(packs.CodeRows(listed))
+	return nil
 }
 
-func init() {
-	for i := range Languages {
-		l := &Languages[i]
+// Use sets the rows in use, a project's packs' read (packs.CodeRows):
+// read whole by the pack loader, each pattern compiles.
+func Use(rows []packs.Code) {
+	out := make([]Language, 0, len(rows))
+	for _, r := range rows {
+		l := Language{Name: r.Name, Exts: r.Extensions, def: r.Definition, Body: r.Body, Outline: r.Outline,
+			Containers: r.Containers, Bodies: r.Bodies, Ignore: r.Ignore, Preproc: r.Preproc, LineEnds: r.LineEnds,
+			Bases: r.Bases, ParamHeaders: r.ParamHeaders, ShellQuotes: r.ShellQuotes, HashComments: r.HashComments,
+			BareCalls: r.BareCalls, Keywords: r.Keywords}
 		if l.Ignore != "" {
 			l.ignoreRe = regexp.MustCompile(l.Ignore)
 		}
@@ -146,7 +114,9 @@ func init() {
 		if l.Bases != "" {
 			l.basesRe = regexp.MustCompile(l.Bases)
 		}
+		out = append(out, l)
 	}
+	table.Store(&out)
 }
 
 // BasesIn are the types a line says a type derives from or embeds.
@@ -185,9 +155,10 @@ var NotCalls = map[string]bool{"if": true, "for": true, "while": true, "switch":
 // Of is the language of a file by its extension; nil when none is known.
 func Of(file string) *Language {
 	ext := strings.ToLower(path.Ext(file))
-	for i := range Languages {
-		if slices.Contains(Languages[i].Exts, ext) {
-			return &Languages[i]
+	ls := Languages()
+	for i := range ls {
+		if slices.Contains(ls[i].Exts, ext) {
+			return &ls[i]
 		}
 	}
 	return nil

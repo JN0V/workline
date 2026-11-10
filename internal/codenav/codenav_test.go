@@ -1,8 +1,12 @@
 package codenav
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/packs"
 )
 
 // A C++ function defined out of its class, `Class::name`, a template's
@@ -61,5 +65,36 @@ func TestNamedOthersUnchanged(t *testing.T) {
 		if got := Named(file, strings.Split(strings.TrimRight(src, "\n"), "\n"), "add"); len(got) != 1 {
 			t.Errorf("%s: %+v", file, got)
 		}
+	}
+}
+
+// A project's own pack adds a language: its rows come first.
+func TestUseProjectPack(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".workline", "packs"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		".workline/config.yaml":       "packs: [elixir]\n",
+		".workline/packs/elixir.yaml": "code-navigation: [{name: Elixir, extensions: [.ex], definition: '^\\s*defp?\\s+(NAME)\\b', body: end}]\n",
+	}
+	for f, body := range files {
+		if err := os.WriteFile(filepath.Join(repo, f), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	defer Use(packs.CodeRows(nil))
+	if Of("lib/shop.ex") != nil {
+		t.Fatal(".ex known before the pack")
+	}
+	if err := UseProject(repo); err != nil {
+		t.Fatal(err)
+	}
+	lines := []string{"defmodule Shop do", "  def total(items) do", "    items", "  end", "end"}
+	if f, ok := Enclosing("lib/shop.ex", lines, 3); !ok || f.Name != "total" || f.From != 2 || f.To != 4 {
+		t.Errorf("Enclosing = %+v, %v", f, ok)
+	}
+	if Of("a.go") == nil || Of("a.sh") == nil {
+		t.Error("the built-in rows after the project's")
 	}
 }

@@ -239,6 +239,9 @@ func New(repo, rev string) (*Picker, error) {
 	if rev == "" {
 		rev = "HEAD"
 	}
+	if err := codenav.UseProject(repo); err != nil { // its packs' code navigation rows
+		return nil, fmt.Errorf("the project's packs: %v", err)
+	}
 	out, err := exec.Command("git", "-C", repo, "ls-tree", "-r", "-z", "--name-only", rev).Output()
 	if err != nil {
 		return nil, fmt.Errorf("the files of %s: %v", rev, err)
@@ -287,7 +290,7 @@ var (
 
 // commonWords are words a text writes as code that name no definition
 // worth searching in most languages; each language's own are in its row
-// of codenav.Languages (#1109).
+// of codenav.Languages, a language pack's (#1109).
 var commonWords = strings.Fields(`if else while for foreach switch case return break continue
 	null true false new this super class enum public private protected static const var
 	int long float double char byte string String import package`)
@@ -308,8 +311,9 @@ func (p *Picker) notName(w string) bool {
 				langs[l] = true
 			}
 		}
-		for i := range codenav.Languages {
-			if l := &codenav.Languages[i]; langs[l] || len(langs) == 0 {
+		ls := codenav.Languages()
+		for i := range ls {
+			if l := &ls[i]; langs[l] || len(langs) == 0 {
 				for _, k := range strings.Fields(l.Keywords) {
 					p.notNames[k] = true
 				}

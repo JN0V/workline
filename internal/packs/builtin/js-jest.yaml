@@ -11,3 +11,16 @@ test-paths:
   - "**/[^.]*.spec.*"
   - "**/test/**"
   - "**/tests/**"
+# code-navigation: how a file's functions are found and its declarations
+# outlined, with no build.
+code-navigation:
+  - name: JavaScript and TypeScript
+    extensions: [.js, .jsx, .mjs, .cjs, .ts, .tsx, .mts, .cts]
+    definition: c-like
+    body: braces
+    outline: braces
+    containers: [class, interface, namespace, module, enum, type]
+    ignore: '@[\w.]+(?:\([^)]*\))?'
+    bases: '\b(?:extends|implements|with)\s+([A-Z]\w*)'
+    param-headers: true
+    keywords: "function undefined let async await typeof instanceof export default yield extends implements interface readonly"

@@ -8,3 +8,16 @@ test-paths:
   - "**/src/test/**"
 test-homes:
   - {tests: "**/src/test/**", code: "**/src/main/**"}
+# code-navigation: how a file's functions are found and its declarations
+# outlined, with no build.
+code-navigation:
+  - name: Java
+    extensions: [.java, .groovy]
+    definition: c-like
+    body: braces
+    outline: braces
+    containers: [class, interface, enum, record, trait]
+    ignore: '@[\w.]+(?:\([^)]*\))?'
+    bases: '\b(?:extends|implements|with)\s+([A-Z]\w*)'
+    param-headers: true
+    keywords: "extends implements final abstract synchronized throws instanceof interface record boolean String Integer Object Override"

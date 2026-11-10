@@ -274,6 +274,7 @@ func serve(repo, head, cause string, reads []judge.Read, left, linesMax int) rea
 			fmt.Fprintf(&b, "\n%s: lines %d to %d not read: past judge-read-lines-max (%d).\n", p, end+1, to, linesMax)
 		}
 	}
+	navigate(repo)
 	rc := &reacher{repo: repo, head: head, files: map[string][]string{}}
 	for _, r := range reads {
 		switch {
