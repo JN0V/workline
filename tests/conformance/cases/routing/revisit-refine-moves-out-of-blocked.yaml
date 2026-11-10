@@ -1,0 +1,35 @@
+case: routing/revisit-refine-moves-out-of-blocked
+about: >
+  The line blocked #9 in refine, left lacking with the code it had,
+  and a week on reads it again (#1206). The product owner rewrites the
+  Scope that was a guess, and decides nothing else: its text changed,
+  the read the block was made on is gone. The same run moves #9 back to
+  refine, said with how to undo it, not left blocked for a week more.
+given:
+  repo: backlog
+  env: {WORKLINE_CLOCK: "2026-11-12T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:blocked]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n\n---\n\n## Scope\n\nGuessed: the export loop is not in the code given.\n- `src/export/`: the export loop must write every row."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"v\":1,\"state\":\"blocked\",\"body\":\"000000000000\",\"hops\":1,\"from\":\"refine\",\"why\":\"the product owner read it on this text with only the code of `src/export/csv.go`, and left it lacking Scope, nothing asked: read again, it would get the same; a person names the files it is about in a comment, or completes it\",\"since\":\"2026-11-04T08:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:refine-blocked-scope"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, level: info, where: "#9", message: "blocked, read again by the product-owner"}
+  forge:
+    issues:
+      - id: 9
+        labels: ["workline:to-refine"]
+        body-contains: "`src/export/csv.go`: `WriteRows` stops one row short."
+        comment-contains: ["Moved #9 out of Blocked, to refine (workline:blocked off, workline:to-refine on; put workline:blocked back to undo)"]

@@ -209,8 +209,12 @@ func revisit(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 		Message: fmt.Sprintf("blocked, read again by the %s: %s", backlog.Keeper, said)})
 	next := rec
 	next.Body, next.Talk, next.Closed, next.Revisited = bodyHash(is.Body), talkHash(comments), closed, now.Format(time.RFC3339)
+	inputs := map[string]string{engine.RevisitInput: said, engine.RevisitFromInput: rec.From}
+	if unrefinedBlock(rec) {
+		inputs[engine.RevisitUnrefinedInput] = "true" // its text rewritten, back to refine (#1206)
+	}
 	return &stateStep{role: backlog.Keeper, write: StateWrite{Issue: is.ID, Record: next}, tier: backlog.SizeTier(is.Labels),
-		inputs: map[string]string{engine.RevisitInput: said, engine.RevisitFromInput: rec.From}}, nil, nil
+		inputs: inputs}, nil, nil
 }
 
 // The reasons the line gave a block it made of a tester's run: its tests

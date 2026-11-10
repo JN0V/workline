@@ -635,6 +635,12 @@ type Proposal struct {
 	// person of the project — checked again on the forge, the act done as
 	// the record says, never as the intention does (ADR-0025).
 	Ticked string `yaml:"ticked,omitempty"`
+	// IfRefined, the engine's, on an unblock: done only beside a refine
+	// of the same issue done in the run, and no unblock, blocked, close
+	// nor split of the agent's on it (#1206). A blocked issue read again
+	// whose text the role rewrote, deciding nothing on it, goes back to
+	// refine: the read it was blocked on is gone.
+	IfRefined bool `yaml:"if-refined,omitempty"`
 }
 
 // Child is one part of a split need: an issue of its own, with its
@@ -957,6 +963,9 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	decided := map[string]bool{}
 	for _, i := range indexes {
 		c := closes[i]
+		if c.IfRefined && !p.refinedAlone(c.Issue, closes) {
+			continue // its text unchanged, or the agent decided on it: nothing to do
+		}
 		if c.Ticked != "" {
 			// A proposal a person of the project accepted, by the label on
 			// its issue: the act as its state holds it, checked again

@@ -177,6 +177,20 @@ func (p *Plan) checkBlocked(c *Proposal) (rule, why string) {
 	return "", ""
 }
 
+// refinedAlone says whether the blocked issue id, in this run, has a
+// refine done, decided before any unblock (Decide's order), and no
+// unblock, blocked, close nor split of the agent's (#1206).
+func (p *Plan) refinedAlone(id int, closes map[int]Proposal) bool {
+	for _, c := range closes {
+		if c.Issue == id && !c.IfRefined && slices.Contains([]string{"unblock", "blocked", "close", "split"}, c.Do) {
+			return false
+		}
+	}
+	return slices.ContainsFunc(p.Decisions, func(d Decision) bool {
+		return d.Act.Issue == id && d.Act.Do == "refine" && d.Mode == Act && !d.Act.ToReporter
+	})
+}
+
 // orList says names as choices: refine or tests.
 func orList(names []string) string {
 	out := ""

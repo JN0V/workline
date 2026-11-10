@@ -908,6 +908,7 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		c.Do = in.Kind
 		if m, _ := in.Value.(map[string]any); m["own"] != true {
 			c.Parent = false // the engine's alone, never an agent's (ADR-0029)
+			c.IfRefined = false
 		}
 		closes[i] = c
 	}

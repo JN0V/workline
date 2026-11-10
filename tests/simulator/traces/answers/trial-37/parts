@@ -2,8 +2,8 @@ after refine: the trial went to tests, the simulator to blocked; unused: 1 teste
 The product owner names WebUI.h; the same tick's second run wakes it again with that code,
 where its next answer drafts nothing new: refine-capped, and the line blocks the issue for
 the week. In the trial, the spec reviewer's findings came between those answers. Read
-again at the week's end, its answer replaces its guessed Scope (#1126) and leaves it
-blocked. That edit is its own, no new input for it (ADR-0063 §3, amended 2026-11-08): it
-is not woken again on it, so the issue waits for the next week or a person's news, and the
-tester's answer stays unused. Before, its own edit woke it once more and that read moved it
-to its tests.
+again at the week's end, its answer writes nothing: its sections are in the issue already,
+and its Scope names a folder the copy does not hold. Its Need still lacking, the read it was
+blocked on stands, so it stays blocked for the next week or a person's news, and the
+tester's answer stays unused. A re-read that rewrites its text sends it back to refine in
+the same run (#1206); this one rewrites none.
