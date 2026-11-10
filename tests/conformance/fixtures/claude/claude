@@ -9,7 +9,8 @@
 # string), `[]` by default, in stream-json. STUBS set, it first creates
 # the empty files Claude Code 2.1.314's sandbox binds over, where absent,
 # then writes a package.json of its own; EMPTY names an empty file it
-# writes on purpose.
+# writes on purpose. Like Claude Code 2.1.322, it edits nothing in a
+# folder under a .git folder: it takes such a file for a sensitive one.
 set -eu
 want() { echo "claude stand-in: $*" >&2; exit 1; }
 args=" $* "
@@ -24,6 +25,7 @@ for a in "--output-format stream-json" "--verbose" "--tools Read,Edit,Write,Glob
 done
 case "$args" in *" --system-prompt"*) want "its own prompt replaced" ;; esac
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] && [ -f lib.sh ] || want "not run in the worktree: $(pwd)"
+case "$(pwd -P)/" in */.git/*) want "refused to edit lib.sh: a sensitive file, under .git/" ;; esac
 question=$(cat)
 for w in '`lib.sh`' '`tests/test_mul_by_zero.sh`' '`sh run-tests.sh {report}`' 'Edit the files in your worktree'; do
 	case "$question" in *"$w"*) ;; *) want "the question does not name $w" ;; esac

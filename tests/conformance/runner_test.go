@@ -223,6 +223,8 @@ type expectSpec struct {
 	Signed       map[string]bool              `yaml:"signed"`           // branch -> the remote branch's tip carries a signature git verifies (true), or none (false)
 	Merged       map[string]string            `yaml:"merged"`           // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
 	Gone         []string                     `yaml:"gone"`             // branches of the remote absent after the run
+	TreesLeft    *int                         `yaml:"trees-left"`       // git worktrees of the repository after the run, besides its own
+	DirsEmpty    []string                     `yaml:"dirs-empty"`       // folders empty after the run, each path from the repository
 	Forge        *forgeWant                   `yaml:"forge"`
 	Steps        []string                     `yaml:"steps"`
 	Calls        []map[string]string          `yaml:"calls"`
@@ -1199,6 +1201,17 @@ func runCase(t *testing.T, c *caseFile) []string {
 	for _, b := range c.Expect.Gone {
 		if out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output(); len(out) > 0 {
 			problems = append(problems, fmt.Sprintf("origin's %s is there: %s", b, out))
+		}
+	}
+	if want := c.Expect.TreesLeft; want != nil {
+		out, _ := exec.Command("git", "-C", repo, "worktree", "list", "--porcelain").Output()
+		if got := strings.Count("\n"+string(out), "\nworktree ") - 1; got != *want {
+			problems = append(problems, fmt.Sprintf("%d worktrees left besides the repository's, want %d:\n%s", got, *want, out))
+		}
+	}
+	for _, d := range c.Expect.DirsEmpty {
+		if left, err := os.ReadDir(filepath.Join(repo, d)); err != nil || len(left) > 0 {
+			problems = append(problems, fmt.Sprintf("%s not empty: %v %v", d, left, err))
 		}
 	}
 	for b, base := range c.Expect.Merged {

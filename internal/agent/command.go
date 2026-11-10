@@ -33,11 +33,33 @@ const WorktreeDir = "worktree"
 
 // Worktree is the run's worktree, "" when its role made none.
 func Worktree(runDir string) string {
-	dir := filepath.Join(runDir, WorktreeDir)
+	return runTree(runDir, WorktreeDir)
+}
+
+// runTree is the run's tree name: runDir/name, or the folder the file
+// runDir/name+TreeAtExt names (tester.RunTree: a run folder under .git has
+// it outside); "" when none.
+func runTree(runDir, name string) string {
+	dir := filepath.Join(runDir, name)
+	if at, err := os.ReadFile(TreeAt(runDir, name)); err == nil {
+		dir = strings.TrimSpace(string(at))
+	}
 	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
 		return ""
 	}
 	return dir
+}
+
+// TreeAtExt ends the name of the file of a run that holds the path of its
+// tree, when that tree lies outside the run (tester.RunTree, #1304): a
+// plain file, where a symbolic link needs rights Windows does not give
+// to everyone.
+const TreeAtExt = ".at"
+
+// TreeAt is the file of the run that holds the path of its tree name,
+// when that tree lies outside the run.
+func TreeAt(runDir, name string) string {
+	return filepath.Join(runDir, name+TreeAtExt)
 }
 
 // ReadTreeDir is the folder of a run where a role's pre checks out the
@@ -49,11 +71,7 @@ const ReadTreeDir = "readtree"
 
 // ReadTree is the run's read-only tree, "" when its role made none.
 func ReadTree(runDir string) string {
-	dir := filepath.Join(runDir, ReadTreeDir)
-	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
-		return ""
-	}
-	return dir
+	return runTree(runDir, ReadTreeDir)
 }
 
 func (c command) Propose(req Request) (Call, error) {

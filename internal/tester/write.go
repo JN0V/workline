@@ -216,7 +216,7 @@ func Pre(runDir, repo string) int {
 	// An agent that reads files itself reads the project at the base, the
 	// code below its seed (ADR-0063 §8); any other gets the task alone.
 	if agent.ReadsFiles(os.Getenv("WORKLINE_AI")) {
-		if err := Worktree(repo, t.Base, filepath.Join(runDir, agent.ReadTreeDir)); err != nil {
+		if err := RunTree(repo, t.Base, runDir, agent.ReadTreeDir); err != nil {
 			return fail(err)
 		}
 		writeReading(&b, s)
