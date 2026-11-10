@@ -55,7 +55,7 @@ flowchart LR
   does not exist yet, and not by a mistake of its own?"
 - **What it reads, raw**: the issue's text, its Scope and scenarios; the
   change's test files; the compiler's lines and the output's end,
-  clipped and masked, the checkout's folder taken off its paths; and,
+  clipped and masked, the checkout's folder taken off their paths; and,
   for each name the errors give, whether the base holds it.
 - **Asked once a run on the same facts**: the agent asked again writes
   the same tests, broken the same way: the judge's first answer stands,
