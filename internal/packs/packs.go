@@ -136,11 +136,7 @@ func Available(repo string) (map[string]Pack, error) {
 		if e.IsDir() || !ok {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(dir, e.Name()))
-		if err != nil {
-			return out, err
-		}
-		p, err := parse(name, Dir+"/"+e.Name(), data)
+		p, err := own(repo, name)
 		if err != nil {
 			return out, err
 		}
@@ -149,21 +145,31 @@ func Available(repo string) (map[string]Pack, error) {
 	return out, nil
 }
 
-// Listed is the packs a project's config lists, in its order: a name
-// with no pack is an error, never skipped.
-func Listed(repo string, names []string) ([]Pack, error) {
-	if len(names) == 0 {
-		return nil, nil
-	}
-	all, err := Available(repo)
+// own reads the project's pack file of that name.
+func own(repo, name string) (Pack, error) {
+	data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(Dir), name+".yaml"))
 	if err != nil {
-		return nil, err
+		return Pack{}, err
 	}
+	return parse(name, Dir+"/"+name+".yaml", data)
+}
+
+// Listed is the packs a project's config lists, in its order: a name
+// with no pack is an error, never skipped. Only the listed packs are
+// read: a draft pack file the project does not list stops no run.
+func Listed(repo string, names []string) ([]Pack, error) {
 	var out []Pack
 	for _, n := range names {
-		p, ok := all[n]
-		if !ok {
-			return nil, fmt.Errorf("packs lists %q: no built-in pack nor %s/%s.yaml has that name", n, Dir, n)
+		p, err := own(repo, n)
+		if errors.Is(err, fs.ErrNotExist) {
+			var ok bool
+			if p, ok = Builtin()[n]; !ok {
+				return nil, fmt.Errorf("packs lists %q: no built-in pack nor %s/%s.yaml has that name", n, Dir, n)
+			}
+			err = nil
+		}
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, p)
 	}

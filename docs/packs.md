@@ -72,6 +72,8 @@ test-command: "flutter test --machine | tojunit > {report}"
 - **Same name as a built-in pack**: yours replaces it whole, no merge.
 - **No pack for your language**: the generic one stands in, and
   `workline doctor` names the language.
+- **Only the listed packs are read**: a draft file not listed stops no
+  run; `workline doctor` checks them all.
 
 ## What `workline doctor` says
 

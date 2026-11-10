@@ -86,6 +86,25 @@ func TestTesterDefaults(t *testing.T) {
 	}
 }
 
+// Only the listed packs are read: a broken draft the project does not
+// list stops nothing.
+func TestListedReadsListedOnly(t *testing.T) {
+	repo := t.TempDir()
+	dir := filepath.Join(repo, ".workline", "packs")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "dart.yaml"), []byte("aside: [x]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if l, err := Listed(repo, []string{"go"}); err != nil || len(l) != 1 || l[0].Source != "built-in" {
+		t.Errorf("go listed, dart a draft: %v %v", l, err)
+	}
+	if _, err := Listed(repo, []string{"dart"}); err == nil || !strings.Contains(err.Error(), "dart") {
+		t.Errorf("dart listed, broken: %v", err)
+	}
+}
+
 // Marker files outside test and aside folders call for a pack; the
 // languages no listed pack knows are counted.
 func TestDetectedAndUnknown(t *testing.T) {
