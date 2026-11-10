@@ -66,6 +66,10 @@ type Bounds struct {
 	// Scenarios: the names of the issue's Validation scenarios, the one
 	// an objection names among them (#913).
 	Scenarios []string `json:"scenarios,omitempty"`
+	// Covers: each scenario's tests, as the tester's agent declared them
+	// on its Draft's record: an objection naming a test is on the
+	// scenario it covers (ADR-0065, change 4).
+	Covers map[string][]string `json:"covers,omitempty"`
 	// Frozen: each test the tester froze on an open Draft, by its issue;
 	// a file two Drafts froze, the issue's own Draft's.
 	Frozen map[string]int `json:"frozen,omitempty"`
@@ -161,7 +165,7 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 			b.Frozen[file], b.Blobs[file] = r.Issue, blob
 		}
 		if n == is.ID {
-			b.Draft, b.RedUnproven = mr.ID, r.RedUnproven
+			b.Draft, b.RedUnproven, b.Covers = mr.ID, r.RedUnproven, r.Covers
 			for _, ref := range []string{"refs/remotes/origin/" + mr.Branch, "refs/heads/" + mr.Branch} {
 				if h, err := gitOut(repo, "rev-parse", "-q", "--verify", ref+"^{commit}"); err == nil && h != "" {
 					b.Head = h
@@ -616,39 +620,29 @@ func (o objection) body() string {
 }
 
 // scenarioOf is the issue's scenario an objection names: the one its name
-// spells, letters and digits alike, or a test's name for it once its
-// `Test` is off (TestNoBrewNoCargo, test_no_brew_no_cargo, a subtest's
-// last part): agents name the function they read (#913). "" when none,
-// or two; the name as it is when the issue's are unknown.
-func scenarioOf(name string, scenarios []string) string {
+// spells, letters and digits alike; else the one the tester declared the
+// named test covers (`CartTest.addsItem`), whatever the test's name
+// (ADR-0065, change 4). "" when none, or two; the name as it is when the
+// issue's are unknown. No guess from a test's name: an objection on the
+// wrong scenario is worse than one said and not posted.
+func scenarioOf(name string, scenarios []string, covers map[string][]string) string {
 	if len(scenarios) == 0 {
 		return name
 	}
-	names := append([]string{name}, strings.Split(name, "/")...)
-	untest := func(s string) string { return strings.TrimSuffix(strings.TrimPrefix(s, "test"), "test") }
-	for _, spells := range []func(n, sc string) bool{
-		func(n, sc string) bool { return n == sc },
-		func(n, sc string) bool { return untest(n) == sc },
-	} {
-		var found []string
-		for _, sc := range scenarios {
-			for _, n := range names {
-				if c := compact(sc); c != "" && spells(compact(n), c) && !slices.Contains(found, sc) {
-					found = append(found, sc)
-				}
-			}
-		}
-		switch len(found) {
-		case 0:
-		case 1:
-			return found[0]
-		default:
-			return ""
+	var found []string
+	for _, sc := range scenarios {
+		if c := compact(sc); c != "" && compact(name) == c {
+			found = append(found, sc)
 		}
 	}
-	// No guess past that: TestMulByZero may be "By zero", but TestNonZero
-	// is not "Zero"; an objection on the wrong scenario is worse than one
-	// said and not posted.
+	switch len(found) {
+	case 1:
+		return found[0]
+	case 0:
+		if sc := tester.CoveredBy(covers, name); slices.Contains(scenarios, sc) {
+			return sc
+		}
+	}
 	return ""
 }
 
@@ -712,11 +706,14 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 				said = append(said, fmt.Sprintf("an objection to `%s`: the commit of the tester's Draft !%d could not be read, so no line to put it on", o.Test, b.Draft))
 			case o.Line < 1 || strings.TrimSpace(o.Scenario) == "" || strings.TrimSpace(o.Kind) == "" || strings.TrimSpace(o.Why) == "":
 				said = append(said, fmt.Sprintf("an objection to `%s`: it names the test's line, the scenario, the kind and why", o.Test))
-			case scenarioOf(o.Scenario, b.Scenarios) == "":
+			case scenarioOf(o.Scenario, b.Scenarios, b.Covers) == "" && len(tester.Covering(b.Covers, o.Scenario)) > 1:
+				said = append(said, fmt.Sprintf("an objection to `%s`: the test %q covers %s, as the tester declared it: name the one scenario it objects for, so the tester reads it: not posted",
+					o.Test, o.Scenario, strings.Join(tester.Covering(b.Covers, o.Scenario), " and ")))
+			case scenarioOf(o.Scenario, b.Scenarios, b.Covers) == "":
 				said = append(said, fmt.Sprintf("an objection to `%s`: its scenario %q is none of #%d's (%s), so the tester would not read it: not posted",
 					o.Test, o.Scenario, b.Issue, strings.Join(b.Scenarios, ", ")))
 			default:
-				o.Scenario = scenarioOf(o.Scenario, b.Scenarios)
+				o.Scenario = scenarioOf(o.Scenario, b.Scenarios, b.Covers)
 				objections = append(objections, forge.LineComment{Path: o.Test, Line: o.Line, Key: o.key(), Body: o.body()})
 			}
 		case i.Kind == "note":

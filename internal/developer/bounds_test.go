@@ -420,30 +420,31 @@ func TestObjectionKeyIsPerLine(t *testing.T) {
 	}
 }
 
-// Test name given (#913): Given an issue's scenarios, When an objection
-// names the Go test for one, Then it maps to that scenario; a name that
-// spells none, or two, maps to nothing and is not posted.
-func TestScenarioOfMapsATestsName(t *testing.T) {
+// A test named (#913, ADR-0065): Given an issue's scenarios and the
+// tests the tester declared for each, When an objection names a declared
+// test, Then it maps to the one scenario it covers; a test's name maps by
+// nothing else, nor one covering two.
+func TestScenarioOfMapsADeclaredTest(t *testing.T) {
 	vouched := []string{"Not vouched for", "Vouched for"}
+	covers := map[string][]string{"Add item": {"shop.CartTest.addsItem"}, "Remove item": {"shop.CartTest.both"}, "Other": {"shop.CartTest.both"}}
 	for _, c := range []struct {
 		name string
 		in   []string
 		want string
 	}{
 		{"Not vouched for", vouched, "Not vouched for"},
-		{"TestNotVouchedFor", vouched, "Not vouched for"},
-		{"TestVouchedFor", vouched, "Vouched for"},
-		{"TestNoBrewNoCargo", []string{"No brew, no cargo"}, "No brew, no cargo"},
-		{"test_no_brew_no_cargo", []string{"No brew, no cargo"}, "No brew, no cargo"},
-		{"TestLychee/No_brew,_no_cargo", []string{"No brew, no cargo"}, "No brew, no cargo"},
-		{"TestSomethingElse", vouched, ""},
-		{"TestByZero", []string{"By zero", "Two by three"}, "By zero"},
-		{"TestMulByZero", []string{"By zero", "Two by three"}, ""},
-		{"TestNonZero", []string{"Zero", "One"}, ""},
+		{"not vouched FOR", vouched, "Not vouched for"},
+		{"No brew no cargo", []string{"No brew, no cargo"}, "No brew, no cargo"},
+		// a test's name maps only by what the tester declared (ADR-0065)
+		{"TestNotVouchedFor", vouched, ""},
+		{"TestByZero", []string{"By zero", "Two by three"}, ""},
+		{"CartTest.addsItem", []string{"Add item", "Remove item"}, "Add item"},
+		{"addsItem", []string{"Add item", "Remove item"}, "Add item"},
+		{"both", []string{"Add item", "Remove item"}, ""},
 		{"Test", []string{"Test", "Other"}, "Test"},
 		{"Anything", nil, "Anything"},
 	} {
-		if got := scenarioOf(c.name, c.in); got != c.want {
+		if got := scenarioOf(c.name, c.in, covers); got != c.want {
 			t.Errorf("scenarioOf(%q, %q) = %q, want %q", c.name, c.in, got, c.want)
 		}
 	}
