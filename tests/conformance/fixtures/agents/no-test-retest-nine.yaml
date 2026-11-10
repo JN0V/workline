@@ -1,0 +1,5 @@
+# After the tester's "no test possible" (#1053): the reason is the
+# tester's own, so the issue goes back to its tests unchanged, once; on
+# #10 the tester said none again after a retest: refused.
+- ready: {issue: 9, retest: true, why: "the tester lacked the counter's code, not a scenario: tried again"}
+- ready: {issue: 10, retest: true, why: "tried again"}
