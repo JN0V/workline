@@ -167,6 +167,10 @@ func (c claude) Propose(req Request) (Call, error) {
 		said := out.String()
 		if parsed {
 			said = answer.Result
+		} else if tree != "" || reads != "" {
+			// A raw stream may hold the files it read and the output of
+			// what it ran: never quoted, its stderr alone (#1245).
+			said = ""
 		}
 		return call, fmt.Errorf("%w: claude failed: %s", ErrUnavailable, lastLine(errOut.String()+said))
 	}
