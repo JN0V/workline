@@ -120,7 +120,7 @@ func rules(c Change, s Settings, codes committer.Settings) ([]verdict.Finding, [
 				word := strings.TrimSpace(joined[loc[0]:loc[1]])
 				where := fmt.Sprintf("%s:%d", f, at)
 				out = append(out, verdict.Finding{Rule: storyRule, Level: "warn", Where: where,
-					Message: fmt.Sprintf("the comment may tell the code's history (%q), a guess by a word list (story-words) that no agent judged: if it does, say what the code does now; how it was, and the bug, belong in the commit message", word)})
+					Message: fmt.Sprintf("the comment may tell the code's history (%q), a guess by a word list (story-words) that no lens judged: if it does, say what the code does now; how it was, and the bug, belong in the commit message", word)})
 				hints = append(hints, Hint{Rule: storyRule, Where: where, Word: word, Comment: strings.TrimSpace(joined)})
 				return
 			}

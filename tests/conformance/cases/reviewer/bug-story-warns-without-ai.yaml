@@ -9,5 +9,5 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: bug-story, level: warn, where: "calc/calc.go:21", message: "no agent judged"}
+    - {rule: bug-story, level: warn, where: "calc/calc.go:21", message: "no lens judged"}
     - {rule: not-reviewed, level: warn}
