@@ -1,0 +1,56 @@
+case: tester/green-frozen-named-subfolder-namesake-blocks
+about: >
+  A test frozen as its file and name (file:name) is the head's report
+  test of that name whose package is the file's folder, never one of a
+  folder nested in it. The base already runs a test of the same name in
+  tests/sub; the developer's edit stops the frozen multiply-by-zero test
+  running: the report names tests/sub's only. The frozen test is
+  missing and blocks, named; the other is found green.
+given:
+  repo: tested-draft
+  setup:
+    # On the base: a runner naming each test by its folder, and a test
+    # of the same name in tests/sub, red there, already in its report.
+    - |
+      git checkout -q main
+      mkdir -p tests/sub
+      printf '. ./lib.sh\n[ "$(mul 5 0)" = 0 ]\n' > tests/sub/test_mul_by_zero.sh
+      cat > run-tests.sh <<'RUN'
+      #!/bin/sh
+      # run-tests.sh <report>: each test named by its folder.
+      report=$1 failed=0
+      mkdir -p "$(dirname "$report")"
+      {
+        echo '<?xml version="1.0" encoding="UTF-8"?>'
+        echo '<testsuites><testsuite name="tests">'
+        for t in tests/test_*.sh tests/sub/test_*.sh; do
+          name=$(basename "$t" .sh) dir=$(dirname "$t")
+          if sh "$t" >/dev/null 2>&1; then echo "<testcase classname=\"$dir\" name=\"$name\"/>"
+          else failed=1; echo "<testcase classname=\"$dir\" name=\"$name\"><failure/></testcase>"; fi
+        done
+        echo '</testsuite></testsuites>'
+      } > "$report"
+      exit $failed
+      RUN
+      git add tests/sub run-tests.sh && git commit -qm 'test: run the tests by folder'
+      git checkout -q workline/tester/issue-3 && git merge -q --no-edit main
+    - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && git commit -qam 'feat: multiply'"
+    # The developer's edit: the frozen tests/test_mul_by_zero.sh no
+    # longer runs; its namesake in tests/sub still does.
+    - |
+      sed -i '/^ *name=/i\    case $t in tests/test_mul_by_zero.sh) continue ;; esac' run-tests.sh
+      git commit -qam 'build: run fewer tests'
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        body: "Closes #3"
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"tests\":[\"tests/test_mul_by_zero.sh:test_mul_by_zero\",\"tests/test_mul_two_by_three.sh:test_mul_two_by_three\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: tester, event: merge-request, target: {merge-request: 1}}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: frozen-test-missing, where: "tests/test_mul_by_zero.sh:test_mul_by_zero"}]
+  no-findings: [{rule: frozen-test-missing, where: "tests/test_mul_two_by_three.sh:test_mul_two_by_three"}, {rule: test-red-on-head}]

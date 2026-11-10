@@ -48,6 +48,39 @@ func TestFrozenIn(t *testing.T) {
 	}
 }
 
+func TestQualifiedBy(t *testing.T) {
+	for _, c := range []struct {
+		qualifier, file string
+		want            bool
+	}{
+		{"example.com/app/tester", "tester/x_test.go", true},      // the file's package
+		{"example.com/app/tester/sub", "tester/x_test.go", false}, // a nested folder's (#1269)
+		{"tests", "tests/test_x.sh", true},                        // a report's class: the folder
+		{"tests.test_x", "tests/test_x.py", true},                 // a module
+		{"tests.test_x.TestK", "tests/test_x.py", true},           // a class in it
+		{"test_x", "tests/test_x.py", true},                       // run from inside its folder
+		{"tests.sub.test_x", "tests/test_x.py", false},            // a namesake file in a nested folder
+		{"com.example.CalcTest", "src/test/java/com/example/CalcTest.java", true},
+		{"com.other.CalcTest", "src/test/java/com/example/CalcTest.java", false}, // another package's class
+		{"com.example.CalcTest", "src/test/kotlin/CalcTest.kt", true},            // Kotlin: the root package left out
+		{"com.example.calc.CalcTest", "src/test/kotlin/calc/CalcTest.kt", true},
+		{"Calc.Tests.CalcTests", "tests/Calc.Tests/CalcTests.cs", true}, // .NET: the folder is the namespace
+		{"MyApp.Tests.CalcTests", "tests/UnitTests/CalcTests.cs", true}, // a namespace apart from the folders
+		{"example.com/app/internal/tester", "internal/tester/x_test.go", true},
+		{"example.com/app/cmd/tester", "internal/tester/x_test.go", false}, // a same-named folder elsewhere
+		{"tester", "internal/tester/x_test.go", true},                      // a runner's folder, short
+		{"pkg.tests.test_x", "tests/test_x.py", false},                     // a same-named folder elsewhere
+		{"test_x", "test_x.py", true},                                      // at the root
+		{"pkg.test_x", "test_x.py", false},                                 // another folder's namesake
+		{"other", "calc/mul_test.go", false},                               // another folder
+		{"", "calc/mul_test.go", false},
+	} {
+		if got := qualifiedBy(c.qualifier, c.file); got != c.want {
+			t.Errorf("qualifiedBy(%q, %q) = %v, want %v", c.qualifier, c.file, got, c.want)
+		}
+	}
+}
+
 func TestWithTests(t *testing.T) {
 	r := record{Tests: []string{"a.A.one", "b.B.two", "B.kt:three"}}
 	got := r.withTests("B.kt", map[string]result{"b.B.two": failed, "base.old": passed}, []string{"b.B.twice"}, nil)

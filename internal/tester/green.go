@@ -192,10 +192,11 @@ func named(r record, t string) bool {
 // holds name as a whole part: after a dot or at the start, before the
 // end or a mark that is no word's nor a dot's (a parameter's `[`, a
 // subtest's `/`), qualified by its file: what comes before the name, when
-// anything does, holds the file's folder or its name without extension
-// as a word (`calc.TestNew` for `calc/new_test.go`, `tests.test_x.f` for
-// `tests/test_x.py`), never another folder's test of the same name. A
-// miss is the judge's (renamed.go), never a block on this guess.
+// anything does, is the file's folder or the file (qualifiedBy:
+// `calc.TestNew` for `calc/new_test.go`, `tests.test_x.f` for
+// `tests/test_x.py`), never a nested folder's test of the same name
+// (`calc/sub.TestNew`), nor a same-named folder's elsewhere. A miss is
+// the judge's (renamed.go), never a block on this guess.
 func (r record) frozenIn(t string, ids map[string]bool) []string {
 	if ids[t] {
 		return []string{t}
@@ -238,15 +239,67 @@ func namedAs(id, name, file string) bool {
 }
 
 // qualifiedBy says whether a test id's qualifier (its package, class or
-// module) holds, as a word, file's folder or its name without extension.
+// module) is file's, its words against the words of file's folders:
+//   - a package that is the folder: one ends with the other (a Go
+//     package `example.com/app/calc` for `calc/new_test.go`, a runner's
+//     `calc`);
+//   - a module or class that is the file: a word is the file's name
+//     without extension, the words before it the folders' last ones, or
+//     none (`tests.test_x`, `tests.test_x.TestK` or `test_x` for
+//     `tests/test_x.py`; `com.example.CalcTest` for
+//     `src/test/java/com/example/CalcTest.java`; `Calc.Tests.CalcTests`
+//     for `tests/Calc.Tests/CalcTests.cs`);
+//   - a class named after its file, its name capitalised, its package
+//     apart from the folders: past the folders' last words it may end
+//     with, none of its words is a folder's (Kotlin's
+//     `com.example.CalcTest` for `src/test/kotlin/CalcTest.kt`, a C#
+//     namespace). Another folder's class of that name cannot be told
+//     from it.
+//
+// A folder nested in the file's (`calc/sub`), or one of the same name
+// elsewhere (`example.com/app/cmd/calc` for `internal/calc/new_test.go`,
+// `pkg.tests.test_x` for `tests/test_x.py`), is not it.
 func qualifiedBy(qualifier, file string) bool {
-	words := strings.FieldsFunc(qualifier, func(c rune) bool { return c != '_' && !unicode.IsLetter(c) && !unicode.IsDigit(c) })
+	q := idWords(qualifier)
+	if len(q) == 0 {
+		return false
+	}
 	stem := path.Base(file)
 	if k := strings.Index(stem, "."); k > 0 {
 		stem = stem[:k]
 	}
-	dir := path.Base(path.Dir(file))
-	return slices.ContainsFunc(words, func(w string) bool { return w == stem || (dir != "." && dir != "/" && w == dir) })
+	dirs := idWords(path.Dir(file))
+	if len(dirs) > 0 && (endsWith(q, dirs) || endsWith(dirs, q)) {
+		return true
+	}
+	for k, w := range q {
+		if w != stem {
+			continue
+		}
+		if endsWith(dirs, q[:k]) || unicode.IsUpper([]rune(stem)[0]) && apart(q[:k], dirs) {
+			return true
+		}
+	}
+	return false
+}
+
+// idWords is s's words: runs of letters, digits and underscores.
+func idWords(s string) []string {
+	return strings.FieldsFunc(s, func(c rune) bool { return c != '_' && !unicode.IsLetter(c) && !unicode.IsDigit(c) })
+}
+
+// endsWith says whether a's last words are b.
+func endsWith(a, b []string) bool {
+	return len(b) <= len(a) && slices.Equal(a[len(a)-len(b):], b)
+}
+
+// apart says whether a package leaves the folders aside: past the last
+// words both end with, none of its words is a folder's.
+func apart(pkg, dirs []string) bool {
+	for len(pkg) > 0 && len(dirs) > 0 && pkg[len(pkg)-1] == dirs[len(dirs)-1] {
+		pkg, dirs = pkg[:len(pkg)-1], dirs[:len(dirs)-1]
+	}
+	return !slices.ContainsFunc(pkg, func(w string) bool { return slices.Contains(dirs, w) })
 }
 
 // judge is id's finding from the runs: nil when it passed in each.
