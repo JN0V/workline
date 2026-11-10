@@ -23,7 +23,7 @@ given:
         body: "Closes #4"
         comments:
           - "**The developer**'s record.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":4,\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":1},\"round\":1,\"review-runs\":1,\"rounds\":[{\"n\":1,\"asked\":[\"warns tests `lib.sh:2`: Important: div by zero is not tested.\"],\"result\":\"green\"}],\"checks-at\":\"@head4@\"} -->\n<!-- workline:sticky=developer/code -->"
-          - "**workline reviewer** — 1 finding on the change.\n\n| Holds | Lens | Where | Finding |\n|---|---|---|---|\n| warns | tests | `lib.sh:2` | Important: div by zero is not tested. |\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+          - "**workline reviewer** — 1 finding on the change.\n\n| Holds | Lens | Where | Finding |\n|---|---|---|---|\n| warns | tests | `lib.sh:2` | Important: div by zero is not tested. |\n\n<!-- workline:findings [{\"lens\":\"tests\",\"holds\":\"warns\",\"where\":\"lib.sh:2\",\"severity\":\"Important\",\"text\":\"div by zero is not tested.\"}] -->\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
 run: {route: issue, target: {issue: 4}, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
 expect:
   status: pass

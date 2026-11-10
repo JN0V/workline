@@ -7,13 +7,14 @@ import (
 )
 
 func TestReviewRows(t *testing.T) {
-	comment := "| | | Where | Finding |\n|---|---|---|---|\n" +
-		"| **blocks** | correctness | `lib.sh:2` | Important: mul adds — it gives 5. Fix: multiply. |\n" +
-		"| warns | design | `lib.sh:1` | Important: a \\| in it; also tests: more |\n" +
-		"| warns | style | `lib.sh:2` | Nit: name the operands |\n" +
-		"| warns | finding-judged-no |  | dropped, from the correctness lens: \"x\" at lib.sh:3 — the judge: no |\n" +
-		"| warns | gate-lint | `a.go:4` | unused variable |\n" +
-		"| **blocks** | gate:lint | `a.go:9` | gate lint did not pass — 1 new finding |\n"
+	comment := "<!-- workline:findings [" +
+		`{"lens":"correctness","holds":"blocks","where":"lib.sh:2","severity":"Important","text":"mul adds — it gives 5. Fix: multiply."},` +
+		`{"lens":"design","holds":"warns","where":"lib.sh:1","severity":"Important","text":"a | in it; also tests: more"},` +
+		`{"lens":"style","holds":"warns","where":"lib.sh:2","severity":"Nit","text":"name the operands"},` +
+		`{"lens":"finding-judged-no","holds":"warns","text":"dropped, from the correctness lens"},` +
+		`{"lens":"gate-lint","holds":"warns","where":"a.go:4","text":"unused variable"},` +
+		`{"lens":"gate:lint","holds":"blocks","where":"a.go:9","text":"gate lint did not pass — 1 new finding"}` +
+		"] -->\n"
 	asked, nits := reviewRows(comment)
 	if nits != 1 || len(asked) != 3 {
 		t.Fatalf("asked %v, nits %d: want 3 asked, 1 nit", asked, nits)
