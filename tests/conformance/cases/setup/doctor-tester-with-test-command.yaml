@@ -1,0 +1,14 @@
+case: setup/doctor-tester-with-test-command
+about: >
+  The tester is routed and its test-command is set: `workline doctor`
+  finds nothing missing there (#1284).
+given:
+  repo: documented
+  config:
+    forge: local
+    routing: {events: {issue: [product-owner, tester, developer]}}
+    roles: {tester: {settings: {test-command: "pytest --junitxml={report}"}}}
+run: {doctor: true}
+expect:
+  status: pass
+  no-findings: [{rule: test-command-missing}]

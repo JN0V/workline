@@ -277,6 +277,7 @@ func repository(r *Report, o Options) {
 	docs(r, o, cfg)
 	languages(r, o)
 	testFiles(r, o, cfg)
+	testCommand(r, o, cfg, line)
 }
 
 // forgeCommand looks at a forge plugged by a command (`forge: cmd:<command>`,

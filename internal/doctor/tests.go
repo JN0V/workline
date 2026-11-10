@@ -3,9 +3,11 @@ package doctor
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/testdef"
 )
 
@@ -40,4 +42,34 @@ func testFiles(r *Report, o Options, cfg *role.ProjectConfig) {
 	r.add(Check{Area: "repository", Rule: "test-paths-generic", Where: o.Repo, Level: Note,
 		Message: fmt.Sprintf("no test-paths set: every role reads the built-in generic patterns as the test files (%s); a test they miss is code to the developer, asked of the product owner", quoted(d.Paths)),
 		Fix:     testsFix})
+}
+
+// testCommand says a tester or developer routed with no test-command: the
+// tester's check refuses each run, the developer's code stays a Draft
+// unproven; said before the first run, with the setting (#1284).
+func testCommand(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Config) {
+	var routed []string
+	for _, steps := range line.Events {
+		for _, name := range []string{"tester", "developer"} {
+			if slices.Contains(steps, name) && !slices.Contains(routed, name) {
+				routed = append(routed, name)
+			}
+		}
+	}
+	if len(routed) == 0 {
+		return
+	}
+	rl, err := role.Load(o.RolesDir, "tester")
+	if err != nil {
+		return // the role's own load says it, where it runs
+	}
+	if c, _ := rl.MergedSettings(cfg)["test-command"].(string); strings.TrimSpace(c) != "" {
+		return
+	}
+	slices.Sort(routed)
+	r.add(Check{Area: "repository", Rule: "test-command-missing", Where: "tester", Level: Warn,
+		Message: fmt.Sprintf("no test-command is set, and %s routed: the tester refuses each run, the developer's code stays an unproven Draft",
+			map[bool]string{true: "the " + routed[0] + " is", false: "the developer and the tester are"}[len(routed) == 1]),
+		Fix: "set the command running the project's tests and writing a JUnit XML report to {report}, in .workline/config.yaml: " +
+			"roles: {tester: {settings: {test-command: \"pytest --junitxml={report}\"}}}   # roles/tester/README.md#settings"})
 }
