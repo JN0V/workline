@@ -1564,18 +1564,26 @@ func localRange(repo, spec string, id int) (rng, branch, why string) {
 func writeVerdict(repo, file, rng string, res *line.Result) error {
 	v, err := headVerdict(repo, rng, res)
 	if err != nil {
-		return err
+		return fmt.Errorf("--verdict: %w", err)
 	}
 	return engine.WriteVerdict(file, v)
 }
 
 // keepLocalVerdict keeps the line's verdict on the head of a merge
 // request of the local forge in the clone, for `workline follow` and the
-// merge policy (#1322): no job between them to hand a file over.
+// merge policy (#1322): no job between them to hand a file over. Another
+// forge, a project with no merge policy, or CI — whose clone is thrown
+// away — keeps nothing, and the route goes on as before.
 func keepLocalVerdict(repo, spec, rng string, res *line.Result) (string, error) {
+	if spec != "local" || forge.InCI() != "" {
+		return "", nil
+	}
+	if cfg, err := role.LoadProjectConfig(repo); err != nil || cfg.Merge == nil {
+		return "", nil
+	}
 	f, err := forge.Open(spec, repo)
-	if err != nil || f == nil || !forge.KeepsBranches(f) || forge.InCI() != "" {
-		return "", err // in CI, the clone and what it keeps are thrown away
+	if err != nil || f == nil || !forge.KeepsBranches(f) {
+		return "", nil
 	}
 	m, ok := f.(forge.Merger)
 	if !ok {
@@ -1600,7 +1608,7 @@ func headVerdict(repo, rng string, res *line.Result) (engine.HeadVerdict, error)
 	case err == nil:
 		head = strings.TrimSpace(string(out))
 	case len(head) != 40 || strings.Trim(head, "0123456789abcdef") != "":
-		return engine.HeadVerdict{}, fmt.Errorf("--verdict: the head judged, %s, is no commit here", head)
+		return engine.HeadVerdict{}, fmt.Errorf("the head judged, %s, is no commit here", head)
 	} // a full id not fetched here: the source head of a merge result
 	v := engine.HeadVerdict{Head: head, Status: res.Status, Findings: res.Findings}
 	for _, s := range res.Steps {

@@ -137,3 +137,19 @@ func TestLocalMergeStateAndVerdict(t *testing.T) {
 		t.Fatalf("an issue not here: %v", err)
 	}
 }
+
+// A base checked out nowhere moves by its ref alone, to the merge.
+func TestLocalAutoMergeBaseNotCheckedOut(t *testing.T) {
+	l, head := localMergeRepo(t)
+	if out, err := exec.Command("git", "-C", l.Repo, "checkout", "-q", "--detach").CombinedOutput(); err != nil {
+		t.Fatal(string(out))
+	}
+	mr, _ := l.MergeRequest(1)
+	if merged, err := l.AutoMerge(mr, head, true); !merged || err != nil {
+		t.Fatalf("AutoMerge = %v, %v", merged, err)
+	}
+	parents, _ := exec.Command("git", "-C", l.Repo, "rev-list", "--parents", "-n", "1", "main").Output()
+	if f := strings.Fields(string(parents)); len(f) != 3 || f[2] != head {
+		t.Fatalf("main is not a merge of %s: %s", head, parents)
+	}
+}
