@@ -54,3 +54,99 @@ aside:
   - "**/*.Test/**"
   - "**/*.UnitTests/**"
   - "**/*.IntegrationTests/**"
+# code-navigation: how a file's functions are found and its declarations
+# outlined, with no build, for the languages with no built-in pack of
+# their own yet. Every built-in pack's rows are read, whatever the list:
+# navigation decides no verdict. outline none: a file whole or cut, never
+# a body shown.
+code-navigation:
+  - name: shell
+    extensions: [.sh, .bash, .zsh, .ksh]
+    definition: '^\s*(?:function\s+(NAME)\b|(NAME)\s*\(\s*\))'
+    body: braces
+    shell-quotes: true
+    hash-comments: true
+    bare-calls: true
+    # echo, export, source: commands, searched as a function is (#1189).
+    keywords: "function local then elif fi done esac"
+  - name: Ruby
+    extensions: [.rb]
+    definition: '^\s*def\s+(?:self\.)?(NAME)\b'
+    body: end
+    hash-comments: true
+    bare-calls: true
+    keywords: "def end nil self elsif unless until module require yield"
+  - name: Lua
+    extensions: [.lua]
+    definition: '^\s*(?:local\s+)?function\s+(?:[\w.:]*[.:])?(NAME)\s*\('
+    body: end
+    keywords: "function local nil end then elseif"
+  - name: C and C++
+    extensions: [.c, .h, .cc, .cpp, .cxx, .hpp, .hh, .hxx, .ino, .m, .mm]
+    definition: c-like
+    body: braces
+    outline: braces
+    containers: [class, struct, union, namespace, enum, extern, interface, protocol, implementation]
+    ignore: '\[\[[^\]]*\]\]|__attribute__\s*\(\([^)]*\)\)|__declspec\s*\([^)]*\)|alignas\s*\([^)]*\)|template\s*<(?:[^<>]|<[^<>]*>)*>|@\w+'
+    preproc: true
+    bases: '\b(?:public|protected|private)\s+(?:virtual\s+)?([A-Z]\w*)|^\s*(?:class|struct)\s+\w+\s*:\s*(?:virtual\s+)?([A-Z]\w*)'
+    keywords: "std auto inline virtual override template typename unsigned signed namespace delete include define ifdef ifndef endif pragma union typedef extern sizeof nullptr struct bool void char short long size_t uint8_t uint16_t uint32_t uint64_t int8_t int16_t int32_t int64_t String self super"
+  - name: Scala
+    extensions: [.scala]
+    definition: c-like
+    body: braces
+    outline: braces
+    containers: [class, object, trait, enum]
+    ignore: '@[\w.]+(?:\([^)]*\))?'
+    line-ends: true
+    bases: '\b(?:extends|implements|with)\s+([A-Z]\w*)'
+    param-headers: true
+    keywords: "def val var object trait override implicit lazy sealed Unit Int String"
+  - name: Swift
+    extensions: [.swift]
+    definition: c-like
+    body: braces
+    outline: braces
+    containers: [class, struct, enum, protocol, extension, actor]
+    ignore: '@[\w.]+(?:\([^)]*\))?'
+    line-ends: true
+    bases: '\b(?:class|struct|enum|protocol|extension|actor)\s+\w+(?:<[^>]*>)?\s*:\s*([A-Z]\w*)'
+    keywords: "func let var self Self nil guard extension protocol struct override mutating Int String Bool"
+  - name: C#
+    extensions: [.cs]
+    definition: c-like
+    body: braces
+    outline: braces
+    containers: [class, struct, interface, enum, record, namespace]
+    ignore: '\[[^\]]*\]'
+    preproc: true
+    param-headers: true
+    bases: '\b(?:class|struct|interface|record)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)'
+    keywords: "using namespace var string bool void override virtual async await sealed readonly"
+  - name: Rust
+    extensions: [.rs]
+    definition: c-like
+    body: braces
+    outline: braces
+    containers: [struct, enum, trait, impl, mod, union]
+    ignore: '#!?\[[^\]]*\]'
+    bases: '\bimpl(?:<[^>]*>)?\s+([A-Z]\w*)(?:<[^>]*>)?\s+for\b'
+    keywords: "fn let mut impl trait pub self Self crate mod use struct dyn Some None Ok Err Vec String usize isize u8 u16 u32 u64 i8 i16 i32 i64 f32 f64"
+  - name: PHP
+    extensions: [.php]
+    definition: c-like
+    body: braces
+    outline: braces
+    containers: [class, interface, trait, enum, namespace]
+    ignore: '#\[[^\]]*\]'
+    bases: '\b(?:extends|implements|with)\s+([A-Z]\w*)'
+    keywords: "function echo null array namespace use"
+  - name: Dart
+    extensions: [.dart]
+    definition: c-like
+    body: braces
+    outline: braces
+    containers: [class, mixin, extension, enum]
+    ignore: '@[\w.]+(?:\([^)]*\))?'
+    bases: '\b(?:extends|implements|with)\s+([A-Z]\w*)'
+    keywords: "void final var dynamic late required"

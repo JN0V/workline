@@ -1,0 +1,60 @@
+case: tester/picker-reads-own-pack-code-navigation
+about: >
+  Code navigation from a pack (ADR-0065; #1309): a project's pack of its
+  own, .workline/packs/elixir.yaml, listed in its config, holds a
+  code-navigation row for .ex files: `def NAME`, a body closed by `end`.
+  An issue's Scope names `total()` in a 900-line module, past the
+  tester's code-lines-max: the code picker finds its definition by the
+  pack's row and gives the function whole, its last line too, not only the lines around its name. No
+  built-in pack knows .ex.
+given:
+  repo: tested
+  setup:
+    - |
+      mkdir -p lib .workline/packs
+      awk 'BEGIN {
+        print "defmodule Shop do"
+        for (i = 1; i <= 900; i++) {
+          if (i == 600) {
+            print "  def total(items) do"
+            for (j = 1; j <= 12; j++) print "    # step " j " of the sum: a price a line"
+            print "    items"
+            print "    |> Enum.map(fn item -> item.price end)"
+            print "    |> Enum.sum()"
+            print "    |> round_cents()"
+            print "  end"
+          } else print "  def filler_" i "(x), do: x + " i
+        }
+        print "end"
+      }' > lib/shop.ex
+      cat > .workline/packs/elixir.yaml <<'PACK'
+      about: Elixir projects
+      detect: {files: [mix.exs], extensions: [.ex, .exs]}
+      test-paths: ["test/**"]
+      code-navigation:
+        - name: Elixir
+          extensions: [.ex, .exs]
+          definition: '^\s*defp?\s+(NAME)\b'
+          body: end
+          hash-comments: true
+          keywords: "def defp defmodule do end nil fn"
+      PACK
+      git add . && git commit -qm 'feat: the shop, in Elixir'
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main
+  config:
+    packs: [elixir]
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", code-lines-max: 100}}}
+  forge:
+    issues:
+      - id: 3
+        title: "The total skips free items"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\n`total()` sums every item's price, but a free item has none.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario.\n\n## Scope\n\n- `lib/shop.ex`: `total()`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["def total(items) do", "    |> round_cents()\n  end"]
+      not-contains: ["def filler_1(x), do: x + 1\n"]

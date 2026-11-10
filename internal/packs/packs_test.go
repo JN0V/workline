@@ -139,10 +139,11 @@ func TestDetectedAndUnknown(t *testing.T) {
 
 // A pack never decides a verdict: its fields reach a role only as the
 // defaults of its settings (internal/role) and the test-file definition
-// (internal/testdef), and the doctor and init read them; no package that
-// judges imports this one.
+// (internal/testdef), the code navigation rows (internal/codenav: what is
+// read, never a verdict), and the doctor and init read them; no package
+// that judges imports this one.
 func TestNoVerdictReadsAPack(t *testing.T) {
-	allowed := []string{"internal/testdef", "internal/role", "internal/doctor", "cmd/workline"}
+	allowed := []string{"internal/testdef", "internal/codenav", "internal/role", "internal/doctor", "cmd/workline"}
 	root := filepath.Join("..", "..")
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -170,5 +171,40 @@ func TestNoVerdictReadsAPack(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Code navigation rows: a row workline cannot read is refused with its
+// pack's name; the listed packs' rows come first, then every built-in
+// pack's, each once.
+func TestCodeRows(t *testing.T) {
+	for body, want := range map[string]string{
+		"code-navigation: [{name: X, extensions: [.x], definition: 'def (NAME)', body: curly}]": `body is "curly"`,
+		"code-navigation: [{name: X, extensions: [.x], definition: 'def', body: end}]":          "no NAME",
+		"code-navigation: [{name: X, extensions: [x], definition: 'def (NAME)', body: end}]":    `extension "x"`,
+		"code-navigation: [{name: X, extensions: [.x], definition: 'def (NAME', body: end}]":    "definition",
+	} {
+		if _, err := parse("x", "test", []byte(body)); err == nil || !strings.Contains(err.Error(), want) || !strings.Contains(err.Error(), "pack x") {
+			t.Errorf("%s: %v, want %q", body, err, want)
+		}
+	}
+	own, err := parse("elixir", "own", []byte("code-navigation: [{name: Elixir, extensions: [.ex], definition: '^def (NAME)', body: end, outline: none}]"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := Builtin()
+	rows := CodeRows([]Pack{own, b["go"]})
+	var names []string
+	for _, r := range rows {
+		names = append(names, r.Name)
+	}
+	if names[0] != "Elixir" || names[1] != "Go" || slices.Index(names[2:], "Go") >= 0 || !slices.Contains(names, "Kotlin") || !slices.Contains(names, "shell") {
+		t.Errorf("rows = %v", names)
+	}
+	if k := rows[slices.Index(names, "Kotlin")]; k.Definition != CLike {
+		t.Errorf("c-like not read: %q", k.Definition)
+	}
+	if len(CodeRows(nil)) != len(rows)-1 {
+		t.Errorf("none listed: every built-in pack's rows, %d", len(CodeRows(nil)))
 	}
 }

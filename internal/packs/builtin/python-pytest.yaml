@@ -11,3 +11,16 @@ test-paths:
   - "**/test/**"
   - "**/conftest.py"
 test-command: "pytest --junitxml={report}"
+# code-navigation: how a file's functions are found and its declarations
+# outlined, with no build.
+code-navigation:
+  - name: Python
+    extensions: [.py]
+    definition: '^\s*(?:async\s+)?def\s+(NAME)\s*\('
+    body: indent
+    outline: indent
+    containers: [class]
+    bodies: [def, async]
+    hash-comments: true
+    bases: '^\s*class\s+\w+\(\s*(?:[\w.]+\.)?([A-Z]\w*)'
+    keywords: "def elif None True False self cls lambda pass from import async await with yield global nonlocal raise except finally assert del str"

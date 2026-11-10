@@ -15,3 +15,18 @@ test-homes:
   - {tests: "**/src/test/**", code: "**/src/main/**"}
   - {tests: "**/src/androidTest/**", code: "**/src/main/**"}
   - {tests: "**/src/commonTest/**", code: "**/src/commonMain/**"}
+# code-navigation: how a file's functions are found and its declarations
+# outlined, with no build. Java's rows are the java-maven pack's, read
+# whatever the list.
+code-navigation:
+  - name: Kotlin
+    extensions: [.kt, .kts]
+    definition: c-like
+    body: braces
+    outline: braces
+    containers: [class, interface, object]
+    ignore: '@[\w.]+(?:\([^)]*\))?'
+    line-ends: true
+    param-headers: true
+    bases: '\b(?:class|object|interface)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)'
+    keywords: "fun val var override companion object data sealed suspend lateinit internal open inline when typealias Unit Int Long Boolean String Any Float Double"

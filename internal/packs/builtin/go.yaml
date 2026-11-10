@@ -8,3 +8,15 @@ test-paths:
   - "**/*_test.go"
 # go test writes no JUnit report itself: gotestsum does.
 test-command: "gotestsum --junitfile {report} ./..."
+# code-navigation: how a file's functions are found and its declarations
+# outlined, with no build; Go's by its own parser (body: go).
+code-navigation:
+  - name: Go
+    extensions: [.go]
+    definition: '^func\s+(?:\([^)]*\)\s*)?(NAME)\s*[\[(]'
+    body: go
+    outline: braces
+    containers: [type, struct, interface]
+    line-ends: true
+    bases: '^\s+\*?([A-Z]\w*)\s*(?://.*)?$'
+    keywords: "func nil package import var const type struct interface map chan go defer select range fallthrough goto bool string byte rune uint8 uint16 uint32 uint64 int8 int16 int32 int64 float32 float64"

@@ -26,11 +26,15 @@ type language = codenav.Language
 func languageOf(file string) *language { return codenav.Of(file) }
 
 var (
-	languages = codenav.Languages
 	notCalls  = codenav.NotCalls
 	stripCode = codenav.StripCode
 	callsIn   = codenav.CallsIn
 )
+
+// navigate sets the code navigation rows to the project's packs'; a
+// pack it cannot read leaves the built-in rows: role.LoadProjectConfig
+// stops the run on it.
+func navigate(repo string) { _ = codenav.UseProject(repo) }
 
 // fn is a function found: its file, its lines (its doc comment included),
 // its name, and what it is to the finding.
@@ -96,8 +100,9 @@ func (r *reacher) defs(names []string, langs []*language) map[string][]fn {
 		return out
 	}
 	if langs == nil {
-		for i := range languages {
-			langs = append(langs, &languages[i])
+		ls := codenav.Languages()
+		for i := range ls {
+			langs = append(langs, &ls[i])
 		}
 	}
 	args := []string{"grep", "-n", "-I", "-w", "-E", "-e", "(" + strings.Join(ok, "|") + ")", r.head, "--"}
@@ -225,6 +230,7 @@ func namedIn(text string) (code, capital, weak []string) { return codepick.Named
 // the symptom's, then the functions the finding names, those the cause's
 // calls, and those calling it, each whole or named.
 func reach(repo, head string, tests []string, f Finding, at int, symptomAt int, limit int) string {
+	navigate(repo)
 	r := &reacher{repo: repo, head: head, skip: tests, files: map[string][]string{}}
 	var b strings.Builder
 	left := limit
@@ -355,6 +361,7 @@ func (c Change) reaches(repo, head, path string, p Place) int {
 	if len(removed) == 0 {
 		return 0
 	}
+	navigate(repo)
 	r := &reacher{repo: repo, head: head, files: map[string][]string{}}
 	in, ok := r.enclosing(path, p.From)
 	lines := r.lines(path)
