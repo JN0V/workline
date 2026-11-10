@@ -29,12 +29,10 @@ build ([research](../../../docs/research/code-navigation.md)), up to
   the cause's function calls, those calling it, and last a capitalised
   word opening a sentence that names a function;
 - Go by its own parser, an unexported name looked for in its package only;
-- shell, Python, Ruby, Lua and C-like files (C, C++, Java, C#, JavaScript,
-  TypeScript, Rust, Kotlin, Swift, PHP, Scala, Dart) by a definition
-  pattern and braces, indentation or `end`, a
-  [language pack's row](../../../docs/packs.md#code-navigation), a
-  project's own packs first; a C++ method defined out of
-  its class (`void Class::name() {`) and a destructor too;
+- other languages by a [language pack's row](../../../docs/packs.md#code-navigation)
+  (shell, Python, C, C++, Java, Kotlin, Rust…): a definition pattern and
+  braces, indentation or `end`; a C++ method defined out of its class
+  (`void Class::name() {`) and a destructor too;
 - references by `git grep -w` at the head; a name defined in the cause's
   file first, then its folder; in more than two other places, named, none
   shown; test files left to the tests judge.
