@@ -1,6 +1,7 @@
 package role
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -236,5 +237,22 @@ func TestMergedSettingsTwoLevelsInOrder(t *testing.T) {
 		if got := r.MergedSettings(&c)["max"]; got != 9 {
 			t.Fatalf("max %v, want 9: pace laid after autonomy", got)
 		}
+	}
+}
+
+// A listed pack's test paths are the tester's under the project's own,
+// over the role's defaults (ADR-0065).
+func TestPackDefaultsUnderProject(t *testing.T) {
+	r := &Role{Name: "tester", Settings: map[string]any{"test-paths": []any{}, "test-command": ""}}
+	c := &ProjectConfig{PackDefaults: map[string]map[string]any{"tester": {"test-paths": []any{"**/*_test.go"}}}}
+	if got := r.MergedSettings(c)["test-paths"]; fmt.Sprint(got) != "[**/*_test.go]" {
+		t.Errorf("the pack's: %v", got)
+	}
+	c.Roles = map[string]struct {
+		Settings map[string]any    `yaml:"settings"`
+		Enforce  map[string]string `yaml:"enforce"`
+	}{"tester": {Settings: map[string]any{"test-paths": []any{"spec/**"}}}}
+	if got := r.MergedSettings(c)["test-paths"]; fmt.Sprint(got) != "[spec/**]" {
+		t.Errorf("the project's wins: %v", got)
 	}
 }

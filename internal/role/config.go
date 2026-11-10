@@ -67,6 +67,7 @@ var (
 		"release": {keys: map[string]*shape{"branches": free, "tags": free}},
 		"merge":   {keys: map[string]*shape{"autonomy": free, "alone": free}},
 		"gitlab":  {keys: map[string]*shape{"bots": free}},
+		"packs":   free, // the language packs listed (ADR-0065), checked by LoadProjectConfig
 		"board":   {keys: map[string]*shape{"ready": free, "doing": free, "refine": free, "tests": free, "blocked": free, "project": free}},
 	}}
 )

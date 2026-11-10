@@ -1,0 +1,10 @@
+# Java built with Maven (ADR-0065, "Language packs"): a module's tests in
+# src/test/, its code in src/main/.
+about: Java projects built with Maven
+detect:
+  files: [pom.xml]
+  extensions: [.java]
+test-paths:
+  - "**/src/test/**"
+test-homes:
+  - {tests: "**/src/test/**", code: "**/src/main/**"}

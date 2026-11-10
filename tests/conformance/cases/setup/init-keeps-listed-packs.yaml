@@ -1,0 +1,15 @@
+case: setup/init-keeps-listed-packs
+about: >
+  A project that lists its packs keeps its choice (ADR-0065; #1230): init
+  detects go and kotlin-gradle, the project lists go alone, init leaves it.
+given:
+  repo: basic
+  setup:
+    - "printf 'module example.com/app\\n' > go.mod && printf 'rootProject.name = \"app\"\\n' > settings.gradle.kts && git add go.mod settings.gradle.kts && git commit -qm 'build: modules'"
+  config:
+    packs: [go]
+run: {init: true, ai: none}
+expect:
+  status: pass
+  files:
+    .workline/config.yaml: {lacks: "kotlin-gradle"}

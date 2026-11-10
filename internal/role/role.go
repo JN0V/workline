@@ -13,6 +13,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/JN0V/workline/internal/packs"
 	"github.com/JN0V/workline/internal/testdef"
 )
 
@@ -280,6 +281,13 @@ type ProjectConfig struct {
 	// Board overrides how the forge's board is matched (ADR-0057): a
 	// column's name for a slot, a GitHub project's number among several.
 	Board Board `yaml:"board"`
+	// Packs are the language packs the project uses (ADR-0065), written
+	// by `workline init` from their markers; none, the generic pack.
+	Packs []string `yaml:"packs"`
+	// PackDefaults are the settings the listed packs give each role, by
+	// role name, read by LoadProjectConfig: under the project's own, over
+	// the role's defaults. A pack never decides a verdict.
+	PackDefaults map[string]map[string]any `yaml:"-"`
 }
 
 // Board is the `board:` setting: empty, the columns are matched by their
@@ -331,6 +339,13 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	}
 	if err := yaml.Unmarshal(data, &c); err != nil {
 		return nil, &ConfigError{err.Error()}
+	}
+	if len(c.Packs) > 0 {
+		listed, err := packs.Listed(repo, c.Packs)
+		if err != nil {
+			return nil, &ConfigError{err.Error()}
+		}
+		c.PackDefaults = map[string]map[string]any{"tester": packs.TesterDefaults(listed)}
 	}
 	if c.Autonomy != "" && !slices.Contains(AutonomyLevels, c.Autonomy) {
 		return nil, &ConfigError{fmt.Sprintf("autonomy is %q: the levels are %s", c.Autonomy, strings.Join(AutonomyLevels, ", "))}
@@ -393,10 +408,14 @@ func (r *Role) MergedSettings(c *ProjectConfig) map[string]any {
 	if rc, ok := c.Roles[r.Name]; ok {
 		project = rc.Settings
 	}
-	if len(r.Levels) == 0 {
-		return MergeSettings(r.Settings, project)
+	own := r.Settings
+	if d := c.PackDefaults[r.Name]; len(d) > 0 {
+		own = MergeSettings(own, d) // the packs' over the role's defaults, the project's over both
 	}
-	base := r.Settings
+	if len(r.Levels) == 0 {
+		return MergeSettings(own, project)
+	}
+	base := own
 	names := make([]string, 0, len(r.Levels))
 	for name := range r.Levels {
 		names = append(names, name)
@@ -407,7 +426,7 @@ func (r *Role) MergedSettings(c *ProjectConfig) map[string]any {
 		v, ok := project[name]
 		from[name] = FromRoleSetting
 		if !ok || v == nil {
-			v, from[name] = r.Settings[name], FromRoleDefault
+			v, from[name] = own[name], FromRoleDefault
 			if _, has := r.Levels[name][c.Autonomy]; name == ProjectDefault && c.Autonomy != "" && has {
 				v, from[name] = c.Autonomy, FromProjectDefault
 				picked[name] = v

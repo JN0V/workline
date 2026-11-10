@@ -1,0 +1,17 @@
+# Kotlin, and Java, built with Gradle (ADR-0065, "Language packs"): a
+# module's tests in its src/test/ source set, an Android module's in
+# src/androidTest/, a multiplatform one's in src/<target>Test/.
+about: Kotlin or Java projects built with Gradle
+detect:
+  files: [settings.gradle.kts, settings.gradle, build.gradle.kts, build.gradle]
+  extensions: [.kt, .kts, .java]
+test-paths:
+  - "**/src/test/**"
+  - "**/src/*Test/**"
+  - "**/src/androidTest*/**"
+  - "**/src/test*Debug/**"
+  - "**/src/test*Release/**"
+test-homes:
+  - {tests: "**/src/test/**", code: "**/src/main/**"}
+  - {tests: "**/src/androidTest/**", code: "**/src/main/**"}
+  - {tests: "**/src/commonTest/**", code: "**/src/commonMain/**"}

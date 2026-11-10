@@ -1,0 +1,16 @@
+case: setup/init-detects-packs
+about: >
+  Language packs detected at init (ADR-0065; #1230): a repository holding
+  settings.gradle.kts and go.mod gets the packs kotlin-gradle and go listed
+  in its config, from their marker files, so a run never guesses again. A
+  go.mod under a test folder is a fixture, not a module: no pack of its own.
+given:
+  repo: basic
+  setup:
+    - "printf 'module example.com/app\\n' > go.mod && printf 'rootProject.name = \"app\"\\n' > settings.gradle.kts && git add go.mod settings.gradle.kts && git commit -qm 'build: modules'"
+    - "mkdir -p tests/fixture && printf '{}\\n' > tests/fixture/package.json && git add tests && git commit -qm 'test: fixture'"
+run: {init: true, ai: none}
+expect:
+  status: pass
+  files:
+    .workline/config.yaml: {contains: "packs:\n  - go\n  - kotlin-gradle\n"}

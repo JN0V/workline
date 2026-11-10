@@ -1,20 +1,17 @@
 // Package testdef is the one definition of a test file every role reads
 // (ADR-0065, change 3): the project's test-paths and test-homes, the
-// tester's settings, else the built-in generic ones, embedded data
-// (generic.yaml), never engine code.
+// tester's settings, else its listed packs', else the built-in generic
+// pack's (internal/packs), data, never engine code.
 package testdef
 
 import (
-	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
 	"strings"
-	"sync"
 
-	"go.yaml.in/yaml/v3"
-
+	"github.com/JN0V/workline/internal/packs"
 	"github.com/JN0V/workline/internal/pathglob"
 )
 
@@ -26,10 +23,7 @@ const (
 
 // Home maps the folder of a test file onto the folder of its code: each
 // `**` of Tests fills the next one of Code, the rest dropped.
-type Home struct {
-	Tests string `json:"tests" yaml:"tests"`
-	Code  string `json:"code" yaml:"code"`
-}
+type Home = packs.Home
 
 // Def says which files are tests and where a test's code lives. Its zero
 // value is the generic definition.
@@ -37,27 +31,16 @@ type Def struct {
 	Paths  []string
 	Homes  []Home
 	Asides []string
-	// PathsSet, HomesSet: the project set them; else the generic ones.
+	// PathsSet, HomesSet: the project set them, or its listed packs;
+	// else the generic ones.
 	PathsSet, HomesSet bool
 }
 
-//go:embed generic.yaml
-var genericYAML []byte
-
-var generic = sync.OnceValue(func() Def {
-	var g struct {
-		Paths []string `yaml:"test-paths"`
-		Homes []Home   `yaml:"test-homes"`
-		Aside []string `yaml:"aside"`
-	}
-	if err := yaml.Unmarshal(genericYAML, &g); err != nil {
-		panic(fmt.Sprintf("testdef: generic.yaml: %v", err)) // embedded: a test reads it
-	}
-	return Def{Paths: g.Paths, Homes: g.Homes, Asides: g.Aside}
-})
-
-// Generic is the built-in generic definition.
-func Generic() Def { return generic() }
+// Generic is the built-in generic pack's definition.
+func Generic() Def {
+	g := packs.Builtin()[packs.Generic]
+	return Def{Paths: g.TestPaths, Homes: g.TestHomes, Asides: g.Aside}
+}
 
 // From is the definition from a project's test-paths and test-homes:
 // each unset, the generic one.

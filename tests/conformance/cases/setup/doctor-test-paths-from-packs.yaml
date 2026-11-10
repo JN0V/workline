@@ -1,0 +1,17 @@
+case: setup/doctor-test-paths-from-packs
+about: >
+  A listed pack's test paths (ADR-0065; #1230): the go pack listed, no
+  test-paths set on the tester: the doctor says every role reads the
+  pack's, and that the tester's setting would win.
+given:
+  repo: basic
+  config:
+    packs: [go]
+run: {cli: [doctor]}
+expect:
+  stdout:
+    - "language packs listed: go"
+    - "every role reads the test paths of the packs listed (go) as the test files: `**/*_test.go`; the tester's test-paths, set, would win"
+  stdout-lacks:
+    - "no test-paths set"
+    - "Go (1 file) has no pack listed"

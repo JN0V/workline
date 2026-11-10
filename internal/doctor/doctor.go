@@ -276,6 +276,7 @@ func repository(r *Report, o Options) {
 	}
 	docs(r, o, cfg)
 	languages(r, o)
+	languagePacks(r, o, cfg)
 	testFiles(r, o, cfg)
 	testCommand(r, o, cfg, line)
 }

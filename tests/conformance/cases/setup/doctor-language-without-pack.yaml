@@ -1,0 +1,16 @@
+case: setup/doctor-language-without-pack
+about: >
+  No pack (ADR-0065; #1230): a Dart repository, no pack built in for it,
+  none listed. Every role reads the generic pack's test files, and the
+  doctor names Dart as a language with no pack, with how to write one.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p lib test && printf 'int add(int a, int b) => a + b;\\n' > lib/add.dart && printf 'void main() {}\\n' > test/add_test.dart && git add lib test && git commit -qm 'feat: add'"
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: packs-none, level: note, message: "no language pack listed: every role reads the generic pack"}
+    - {rule: language-without-pack, level: note, message: "Dart (1 file) has no pack listed", fix: ".workline/packs/dart.yaml"}
+    - {rule: test-paths-generic, level: note}

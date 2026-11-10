@@ -15,8 +15,9 @@ import (
 const testsFix = "set the tester's test-paths, and test-homes where a test's code lives, in .workline/config.yaml: roles: {tester: {settings: {test-paths: [\"spec/**\"], test-homes: [{tests: \"**/src/test/**\", code: \"**/src/main/**\"}]}}}   # roles/tester/README.md"
 
 // testFiles says which files every role reads as tests (ADR-0065, change
-// 3): the tester's test-paths, or, none set, the built-in generic
-// patterns, and how to set them when those miss the project's tests.
+// 3): the tester's test-paths, or, none set, its listed packs', or the
+// built-in generic patterns, and how to set them when those miss the
+// project's tests.
 func testFiles(r *Report, o Options, cfg *role.ProjectConfig) {
 	quoted := func(l []string) string { return "`" + strings.Join(l, "`, `") + "`" }
 	if _, set := cfg.Roles["reviewer"].Settings["tests"]; set {
@@ -32,6 +33,11 @@ func testFiles(r *Report, o Options, cfg *role.ProjectConfig) {
 	case err != nil:
 		r.add(Check{Area: "repository", Rule: "test-paths-unread", Where: o.Repo, Level: Warn,
 			Message: fmt.Sprintf("the tester's settings could not be read whole (%v): every role reads as the test files %s", err, quoted(d.Patterns()))})
+		return
+	}
+	if _, own := cfg.Roles["tester"].Settings[testdef.PathsSetting]; !own && d.PathsSet {
+		r.add(Check{Area: "repository", Rule: "test-paths-packs", Where: o.Repo, Level: OK,
+			Message: fmt.Sprintf("every role reads the test paths of the packs listed (%s) as the test files: %s; the tester's test-paths, set, would win", strings.Join(cfg.Packs, ", "), quoted(d.Paths))})
 		return
 	}
 	if d.PathsSet {

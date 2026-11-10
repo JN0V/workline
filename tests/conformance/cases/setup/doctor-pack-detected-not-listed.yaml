@@ -1,0 +1,16 @@
+case: setup/doctor-pack-detected-not-listed
+about: >
+  Drift said (ADR-0065; #1230): the config lists go alone; a
+  build.gradle.kts is added since; the doctor says kotlin-gradle is
+  detected but not listed, with how to list it.
+given:
+  repo: basic
+  setup:
+    - "printf 'module example.com/app\\n' > go.mod && printf 'plugins {}\\n' > build.gradle.kts && git add go.mod build.gradle.kts && git commit -qm 'build: modules'"
+  config:
+    packs: [go]
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: pack-not-listed, level: warn, where: build.gradle.kts, message: "kotlin-gradle is detected but not listed", fix: "packs: [go, kotlin-gradle]"}

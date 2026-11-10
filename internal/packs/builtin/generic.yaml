@@ -1,10 +1,11 @@
-# The built-in generic test definition (ADR-0065, change 3): what every
-# role reads as a test file when the project sets none. Data, never engine
-# code; it becomes the built-in `generic` pack once packs exist (#1230).
+# The built-in generic pack (ADR-0065, "Language packs"): what every role
+# reads as a test file when no pack listed in .workline/config.yaml gives
+# test-paths, nor the tester's settings. Data, never engine code.
 #
 # A test the generic patterns miss is code to the developer: beyond the
 # Scope, listed on its pull request, and `workline doctor` says how to set
-# the tester's test-paths and test-homes.
+# the tester's test-paths and test-homes, or list a pack.
+about: the test folders and test names most ecosystems share
 #
 # test-paths: the test files. A name opening on a dot is a setting, never a
 # test (`.env.test.local`). Matched as written: `Tests/` and `tests/` apart.

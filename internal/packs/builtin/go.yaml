@@ -1,0 +1,10 @@
+# Go (ADR-0065, "Language packs"): its tests sit beside their code, in
+# files named *_test.go.
+about: Go modules, tested with go test
+detect:
+  files: [go.mod]
+  extensions: [.go]
+test-paths:
+  - "**/*_test.go"
+# go test writes no JUnit report itself: gotestsum does.
+test-command: "gotestsum --junitfile {report} ./..."

@@ -1,6 +1,10 @@
 package testdef
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/JN0V/workline/internal/packs"
+)
 
 // The generic definition: test folders and test names, never a setting
 // file opening on a dot, never a word that only holds the letters.
@@ -88,5 +92,23 @@ func TestAside(t *testing.T) {
 		if got := d.Aside(p); got != want {
 			t.Errorf("Aside(%q) = %v, want %v", p, got, want)
 		}
+	}
+}
+
+// Every built-in pack's test-homes can be read, and kotlin-gradle's maps
+// a test onto its module's main source set.
+func TestBuiltinPackHomes(t *testing.T) {
+	for n, p := range packs.Builtin() {
+		if err := Check(p.TestHomes); err != nil {
+			t.Errorf("pack %s: %v", n, err)
+		}
+	}
+	k := packs.Builtin()["kotlin-gradle"]
+	d := From(k.TestPaths, k.TestHomes)
+	if got := d.Home("app/src/test/kotlin/a/CartTest.kt"); got != "app/src/main/kotlin/a" {
+		t.Errorf("Home = %q", got)
+	}
+	if !d.Test("app/src/androidTest/kotlin/A.kt") || d.Test("app/src/main/kotlin/A.kt") {
+		t.Error("kotlin-gradle test-paths")
 	}
 }
