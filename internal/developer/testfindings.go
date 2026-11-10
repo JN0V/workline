@@ -24,9 +24,34 @@ import (
 const testsLens = "tests"
 
 // testFinding says whether a is a reviewer's finding of its tests lens,
-// a row that blocks or warns.
+// a row that blocks or warns, with no finding of another lens grouped
+// under it on its line: such a row holds code to fix, the developer's.
 func testFinding(a Asked) bool {
-	return a.Lens == testsLens && (a.Holds == "blocks" || a.Holds == "warns")
+	if a.Lens != testsLens || (a.Holds != "blocks" && a.Holds != "warns") {
+		return false
+	}
+	return !slices.ContainsFunc(alsoLenses(a.Text), func(l string) bool { return l != testsLens })
+}
+
+// alsoWords open, in a reviewer's row, the findings grouped under the
+// one leading its line, each "<lens>: <title>", apart by "; "
+// (internal/builtin/reviewer, message).
+const alsoWords = " (also found on this line — "
+
+// alsoLenses are the lenses of the findings a row's text groups under
+// the one leading it; none for a row of one finding.
+func alsoLenses(text string) []string {
+	_, rest, ok := strings.Cut(text, alsoWords)
+	if !ok {
+		return nil
+	}
+	var out []string
+	for _, item := range strings.Split(rest, "; ") {
+		if lens, _, ok := strings.Cut(item, ": "); ok && lens != "" && !strings.ContainsAny(lens, " ()") {
+			out = append(out, lens)
+		}
+	}
+	return out
 }
 
 // testerTests are the issue's frozen tests on its open Draft, sorted:

@@ -26,6 +26,15 @@ func TestSplitTests(t *testing.T) {
 	if mine, theirs := splitTests([]Asked{resumed}, b); len(theirs) != 0 || len(mine) != 1 {
 		t.Errorf("asked again from the record, the developer's still: %v, %v", mine, theirs)
 	}
+	grouped := asked[0]
+	grouped.Text = "Important: a — no test. (also found on this line — correctness: nil deref on empty amount (verified))"
+	if mine, theirs := splitTests([]Asked{grouped}, b); len(theirs) != 0 || len(mine) != 1 {
+		t.Errorf("a code finding grouped under it, the developer's: %v, %v", mine, theirs)
+	}
+	grouped.Text = "Important: a — no test. (also found on this line — tests: no test of zero)"
+	if _, theirs := splitTests([]Asked{grouped}, b); len(theirs) != 1 {
+		t.Errorf("test findings alone grouped, the tester's: %v", theirs)
+	}
 	b.Draft = 0
 	if _, theirs := splitTests(asked, b); len(theirs) != 0 {
 		t.Errorf("no Draft, none the tester's: %v", theirs)

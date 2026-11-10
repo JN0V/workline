@@ -96,8 +96,9 @@ step 6).
     no one.
   - **Alone**: no agent, no round counted; the rounds never run out on
     test findings.
-  - **The developer's still**: one on a test file, or asked again from
-    the record when a round resumes.
+  - **The developer's still**: one on a test file, one asked again from
+    the record when a round resumes, or a row where the reviewer groups
+    a finding of another lens under it (code to fix on the same line).
 - **A finding on its line**: its row shows only a title; the round
   reads it whole from the reviewer's comment on that line. Only
   workline's own account's comment is read.
