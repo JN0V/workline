@@ -68,14 +68,17 @@ family:
 | Indentation (Python) | a header ending in `:` whose first word opens a body (`def`) is cut: its header kept, `…` after it; `class`, `if TYPE_CHECKING:` kept |
 | A closing word (Ruby, Lua), shell | no outline: whole or cut, as before |
 
-Each language is one row of `codenav.Languages`, as ctags' optlib keeps
-one per language: its container words (Kotlin's `object`, Java's
-`record`, Rust's `impl`), what a header holds that says nothing (an
+Each language is one `code-navigation` row of a
+[language pack](../packs.md#code-navigation) (Kotlin's in
+internal/packs/builtin/kotlin-gradle.yaml, those with no pack of their
+own in generic.yaml), as ctags' optlib keeps one per language: its
+container words (`containers`: Kotlin's `object`, Java's `record`,
+Rust's `impl`), what a header holds that says nothing (`ignore`: an
 annotation, `__attribute__((packed))`, `alignas(8)`, `template <…>`),
-whether `#` opens a preprocessor line (C, C++, C#), whether a line ends
-a statement (Go, Kotlin, Scala, Swift), and the pattern of the types a
-type derives from or embeds (C#'s `: B`, Kotlin's `: B()`, Rust's
-`impl T for`, Go's embedded fields).
+whether `#` opens a preprocessor line (`preproc`: C, C++, C#), whether
+a line ends a statement (`line-ends`: Go, Kotlin, Scala, Swift), and
+the pattern of the types a type derives from or embeds (`bases`: C#'s
+`: B`, Kotlin's `: B()`, Rust's `impl T for`, Go's embedded fields).
 
 Lines holding only a comment go too: the lines are the budget. A piece
 the picker gives whole (a function the issue names) stays whole inside
