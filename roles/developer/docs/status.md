@@ -297,6 +297,7 @@ hold:
   `developer/round-sends-a-test-finding-to-the-tester`,
   `round-splits-code-and-test-findings`,
   `round-five-test-findings-not-blocked`,
+  `round-five-blocks-on-code-sends-tests`,
   `round-asks-no-test-finding-sent-before`. Tried: its pull request's
   `## Tried`.
 

@@ -21,6 +21,11 @@ func TestSplitTests(t *testing.T) {
 	if len(mine) != 4 {
 		t.Errorf("the developer's: %v", mine)
 	}
+	resumed := asked[0]
+	resumed.Waited = true
+	if mine, theirs := splitTests([]Asked{resumed}, b); len(theirs) != 0 || len(mine) != 1 {
+		t.Errorf("asked again from the record, the developer's still: %v, %v", mine, theirs)
+	}
 	b.Draft = 0
 	if _, theirs := splitTests(asked, b); len(theirs) != 0 {
 		t.Errorf("no Draft, none the tester's: %v", theirs)

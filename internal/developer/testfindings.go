@@ -1,15 +1,11 @@
 package developer
 
-// A test finding goes to the tester (#1265, ADR-0066): the reviewer's
-// tests lens finds a behaviour of the change with no test, its cause a
-// line of code. In a team the reviewer asks the tester for that test; the
-// developer neither writes the acceptance test nor waits on it. The
-// round sends each such finding to the tester's Draft, an objection of
-// kind `missing` on a line of its tests, with no agent; the tester adds
-// the test or says why none is needed. A finding sent is never asked
-// again, of the developer or the tester: a rewrite the tester makes is
-// taken by the next round, as any. Its code findings stay the
-// developer's; the rounds never run out on a test finding alone.
+// A test finding goes to the tester (#1265, ADR-0066): a tests-lens
+// finding on a line of code is sent to the tester's Draft, an objection
+// of kind `missing`, with no agent; the tester adds the test or says why
+// none is needed. A finding sent is never asked again; code findings
+// stay the developer's; the rounds never run out on test findings
+// (roles/developer/docs/review-loop.md).
 
 import (
 	"crypto/sha256"
@@ -79,7 +75,9 @@ func testRequests(repo string, b Bounds, mr int, l []Asked) intent.Intention {
 		line = max(1, strings.Count(strings.TrimRight(string(data), "\n"), "\n")+1)
 	}
 	var comments []forge.LineComment
+	var keys []string
 	for _, x := range l {
+		keys = append(keys, x.Key)
 		why := fmt.Sprintf("the reviewer's tests lens, on pull request %d, `%s`: %s", mr, x.Where, x.Text)
 		if x.Detail != "" {
 			why += "\n\n" + x.Detail
@@ -88,8 +86,9 @@ func testRequests(repo string, b Bounds, mr int, l []Asked) intent.Intention {
 		comments = append(comments, forge.LineComment{Path: file, Line: line, Key: "missing-" + hex.EncodeToString(sum[:6]),
 			Body: fmt.Sprintf("%s\n- test: %s\n- kind: missing\n- why: %s", tester.ObjectionWord, file, why)})
 	}
+	batch := sha256.Sum256([]byte(strings.Join(keys, "\n")))
 	return intent.Intention{Kind: "comment", Value: map[string]any{
-		"merge-request": b.Draft, "sticky": "test-findings",
+		"merge-request": b.Draft, "sticky": "test-findings-" + hex.EncodeToString(batch[:4]), // a send its own comment, an earlier one kept
 		"body": fmt.Sprintf("**The developer** sends the review's test findings on pull request %d to the tester, #%d's: it adds each test, or says why none is needed (#1265).\n\n%s\n%s\n%s",
 			mr, b.Issue, forge.ReviewHere, forge.Unplaced(comments, "the engine that applied this run posts no comment on a line").Section(), forge.ReviewEnd),
 		"review": map[string]any{"head": b.Head, "body": "", "comments": comments}}}
