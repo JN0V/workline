@@ -1,0 +1,35 @@
+case: reviewer/tester-none-needed-settled-raised-again
+about: "The judge settled the tester's answer that a blocking finding of the tests lens needs no test (#1303). A new commit touches its line, and the lens raises the same finding again: the verdict settles it as it settled its block, the status the same as on a run with no new commit."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "sed -i 's|return total / (len(values) - 1)|return total / (len(values) - 1) // the count less one|' calc/calc.go && git commit -qam 'docs: say the count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 finding on the change; lenses: tests; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:blocks [{"lens":"tests","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Average has no test for a count off by one","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"}}] -->
+            <!-- workline:weighed [{"lens":"tests","where":"calc/calc.go:11","title":"Average has no test for a count off by one","answer":"72f3d83f3918","holds":true,"why":"a test would pass on the base"}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+          - "**The tester** answers a test finding of this review on `calc/calc.go:11`, “Average has no test for a count off by one”, sent to its Draft ([the thread](https://forge.example/pr/1#7)): **None needed**: TestAverage already averages 2 and 4: a new test would pass on the base and prove nothing.\n\n<!-- workline:sticky=tester/tester-answer-7 -->"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: tests}, target: {merge-request: 5}, ai: "fake:review-untested-average"}
+expect:
+  status: pass
+  # The tests lens on the new commit, then the judge of its finding; no
+  # judge weighs the answer: its verdict is in the record.
+  agent-calls: 2
+  forge:
+    merge-requests:
+      - id: 5
+        comment-lacks: ["<!-- workline:blocks ", "| **blocks** |", "**The tester's answers weighed**"]

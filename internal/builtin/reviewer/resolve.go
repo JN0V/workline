@@ -94,7 +94,8 @@ func answered(repo string, s Settings, st state, lines []forge.LineComment, r le
 		failed := slices.Contains(facets(st), by) && !slices.Contains(r.lenses, by)
 		warnFixed := !s.AIFindings.Blocks(by) && !failed && fixedWarn(fixed, by, t)
 		// A finding the tester's answer settled, its reason weighed (#1303).
-		weighed := settledAt(st.Record.Weighed, by, fmt.Sprintf("%s:%d", t.Path, t.Line))
+		title, _ := lineTitle(t.Comments[0].Body)
+		weighed := st.settles(by, fmt.Sprintf("%s:%d", t.Path, t.Line), title)
 		if gone(linesOf(t.Path), t.Path, by, keys[0]) || readAgain(repo, s, st, r, lensOf, by, t.Path) || warnFixed || weighed {
 			out = append(out, t.ID)
 		}

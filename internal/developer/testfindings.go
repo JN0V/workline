@@ -177,8 +177,8 @@ func toTesterOnly(r round, b Bounds, repo string) []intent.Intention {
 func disputed(rows []Asked, a Act, kept forge.Kept) []Asked {
 	needless := map[string]bool{}
 	for _, c := range kept.Each("<!-- workline:sticky=tester/" + tester.TesterAnswerKey) {
-		if where, _, ok := reviewer.NoneNeeded(c); ok {
-			needless[where] = true
+		if a, ok := reviewer.NoneNeeded(c); ok {
+			needless[a.Where] = true
 		}
 	}
 	var out []Asked

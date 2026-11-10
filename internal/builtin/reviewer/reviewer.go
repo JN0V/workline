@@ -148,6 +148,7 @@ type state struct {
 	Line       []string           `json:"line,omitempty"`      // the line's own files the change touches: no commit skipped nor left (ADR-0051, cut 5)
 	Weigh      []weigh            `json:"weigh,omitempty"`     // the tester's answers that no test is needed a judge weighs this run (#1303)
 	Held       string             `json:"held,omitempty"`      // with Weigh and nothing new to read: the summary of the review held
+	Answers    []Answer           `json:"answers,omitempty"`   // the tester's answers that no test is needed, on the merge request (#1303)
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -1999,6 +2000,9 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	if st.Standing, err = reread(repo, s, st, c, related, len(c.Failed) == 0 && unjudged == 0); err != nil {
 		return Review{}, nil, err
 	}
+	// A finding the lens raises again, the tester's answer weighed
+	// before settling it, goes as its block did (#1303).
+	related = slices.DeleteFunc(related, func(f Finding) bool { return st.settles(f.Lens, f.Where, shortMessage(f)) })
 	v := review(st, nil, "")
 	v.Lenses, v.Change, v.Complete, v.Parts = facets(st), related, len(c.Failed) == 0, st.Parts
 	var fallback []intent.Intention
@@ -2143,7 +2147,7 @@ func (st state) standingFindings() []verdict.Finding {
 			at = "reviewing " + short(b.At)
 		}
 		m := fmt.Sprintf("%s (found %s; no commit since answers it", b.Title, at)
-		if w, ok := refusedAt(st.Record.Weighed, b.Lens, b.Where); ok { // the tester's answer weighed (#1303)
+		if w, ok := refusedAt(st.Record.Weighed, b.Lens, b.Where, b.Title); ok { // the tester's answer weighed (#1303)
 			m += "; the tester's answer that no test is needed does not hold: " + strings.TrimRight(w.Why, ".")
 		}
 		out = append(out, verdict.Finding{Rule: b.Lens, Where: b.Where, Message: m + ")"})

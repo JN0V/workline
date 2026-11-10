@@ -38,4 +38,4 @@ expect:
         threads:
           - {path: tests/test_mul_by_zero.sh, replies: 1, replies-contain: ["**None needed**", "\"missing\":true"]}
       - id: 2
-        comment-contains: ["**The tester** answers a test finding of this review on `lib.sh:2`", "**None needed**", "Two by three's test already runs mul"]
+        comment-contains: ["**The tester** answers a test finding of this review on `lib.sh:2`, “mul of a negative factor has no test”", "**None needed**", "Two by three's test already runs mul"]

@@ -1,0 +1,7 @@
+# A lens of the reviewer, on the `reviewed` fixture once Average divides by
+# one less than the count: no test for it (#1303).
+- finding:
+    severity: important
+    title: Average has no test for a count off by one
+    why: no test averages a list whose mean the change moves
+    cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
