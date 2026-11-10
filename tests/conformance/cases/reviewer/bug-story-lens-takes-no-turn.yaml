@@ -1,0 +1,21 @@
+case: reviewer/bug-story-lens-takes-no-turn
+about: "The comments lens takes no turn of its own: on the run whose count would have named it, a push adding a comment a story word flags still gets a lens reading its code, the comments lens beside it (ADR-0065, Rule A)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf '\\n// Double returns twice n.\\n// It used to crash here.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - "A lens read the change.\n\n<!-- workline:record reviewed=@reviewed@ runs=5 -->\n\n<!-- workline:sticky=reviewer/summary -->"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["# Lenses: correctness, comments", "It used to crash here."]}

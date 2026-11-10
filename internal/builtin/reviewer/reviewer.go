@@ -434,7 +434,7 @@ func prepare(runDir, repo string, s Settings) int {
 			return fail(err)
 		}
 		// A run told its lenses, that one left out: the guess warns.
-		if asked := input(runDir, "lenses"); asked != "" && asked != "all" && !slices.Contains(strings.Split(strings.ReplaceAll(asked, " ", ""), ","), hinted) {
+		if asked := input(runDir, "lenses"); asked != "" && asked != "all" && !named(runDir, hinted) {
 			st.Mechanical = append(st.Mechanical, slices.DeleteFunc(guessed, func(f verdict.Finding) bool { return f.Rule != storyRule })...)
 			st.Hints = nil
 		}
@@ -443,11 +443,11 @@ func prepare(runDir, repo string, s Settings) int {
 		skip[hinted] = "no comment a story word flags"
 	}
 	for _, l := range s.Lenses {
-		if why, ok := skip[l]; ok && l != hinted {
+		if why, ok := skip[l]; ok && (l != hinted || named(runDir, l)) { // nothing flagged: said only to a run told to ask it
 			st.Skipped = append(st.Skipped, fmt.Sprintf("%s (%s)", l, why))
 		}
 	}
-	st.Lenses, st.Alone, err = lenses(runDir, s, rec, skip, ready)
+	st.Lenses, st.Alone, err = lenses(runDir, s, rec, skip, ready, hinted)
 	if err != nil {
 		return fail(err)
 	}
@@ -789,8 +789,10 @@ func everyLens(st state, v *Review, answered bool) {
 // commits after the record (#588). A lens
 // in skip, which has nothing to read in this change, is never asked. With
 // them, the diff-alone facet, when its setting is on; a run told which
-// lenses to ask asks it only when it names it, whatever its setting.
-func lenses(runDir string, s Settings, rec Record, skip map[string]string, every bool) ([]string, bool, error) {
+// lenses to ask asks it only when it names it, whatever its setting. The
+// lens judging the story guess (hinted) takes no turn: it is asked on the
+// push whose comments the guess flags, beside the lens in turn.
+func lenses(runDir string, s Settings, rec Record, skip map[string]string, every bool, hinted string) ([]string, bool, error) {
 	if len(s.Lenses) == 0 {
 		return nil, false, fmt.Errorf("settings: no lenses")
 	}
@@ -846,10 +848,15 @@ func lenses(runDir string, s Settings, rec Record, skip map[string]string, every
 	// In turn over every lens, one with nothing to read passed over: the
 	// same run count names the same place in the turn whatever this
 	// change closes.
+	turn := slices.DeleteFunc(slices.Clone(s.Lenses), func(l string) bool { return l == hinted })
+	usable = slices.DeleteFunc(usable, func(l string) bool { return l == hinted })
+	if len(turn) == 0 || len(usable) == 0 {
+		return nil, s.DiffAlone, nil
+	}
 	n := max(1, min(s.LensesPerPush, len(usable)))
 	var out []string
-	for i := 0; len(out) < n && i < len(s.Lenses); i++ { // a lens named twice counts once
-		if l := s.Lenses[(rec.Runs+i)%len(s.Lenses)]; slices.Contains(usable, l) && !slices.Contains(out, l) {
+	for i := 0; len(out) < n && i < len(turn); i++ { // a lens named twice counts once
+		if l := turn[(rec.Runs+i)%len(turn)]; slices.Contains(usable, l) && !slices.Contains(out, l) {
 			out = append(out, l)
 		}
 	}
@@ -1172,6 +1179,11 @@ func readLens(repo, name string) (Lens, error) {
 		return l, fmt.Errorf("lens %q: hints %q: only `%s` is known", name, l.Hints, storyRule)
 	}
 	return l, nil
+}
+
+// named tells whether the run is told to ask lens by its name (`lenses=`).
+func named(runDir, lens string) bool {
+	return slices.Contains(strings.Split(strings.ReplaceAll(input(runDir, "lenses"), " ", ""), ","), lens)
 }
 
 // hintedLens is the lens of the project that judges the story guess (its
