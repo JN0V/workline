@@ -106,6 +106,12 @@ step 6).
   - **The developer's still**: one on a test file, one asked again from
     the record when a round resumes, or a row where the reviewer groups
     a finding of another lens under it (code to fix on the same line).
+- **The reviewer's findings, from its record**
+  ([#705](https://github.com/JN0V/workline/issues/705)): read from the
+  hidden `workline:findings` line of its comment (each finding's lens,
+  place, severity, text), never from its table's words.
+  - **No record** beside a table, or one that does not parse: nothing
+    asked, the run says why (`findings-record-unread`).
 - **A finding on its line**: its row shows only a title; the round
   reads it whole from the reviewer's comment on that line. Only
   workline's own account's comment is read.

@@ -211,6 +211,11 @@ lenses that only warn read apart, in a comment of their own ([apart](apart.md)).
 - **Each important finding on its line**, in the forge's own review; the
   summary comment keeps a row for each, its title, links to the review,
   and lists the nits last, asking nothing ([what it asks](lines.md#what-it-asks)).
+- **A findings record**, hidden in the summary comment
+  ([#705](https://github.com/JN0V/workline/issues/705)): one
+  `workline:findings` line, each finding with its lens, whether it
+  blocks, its place, severity and text. [The developer](../../developer/docs/review-loop.md)
+  reads it, not the table: the table's words may change.
 - **A blocked merge request still gets the comment**
   ([#226](https://github.com/JN0V/workline/issues/226)): what blocks
   first, marked `**blocks**`, then the warnings, then the nits; the issues
