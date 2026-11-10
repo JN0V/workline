@@ -1,0 +1,23 @@
+case: tester/green-frozen-file-alone-proven
+about: >
+  A test frozen by its file alone (#1293): its build broke on the base and no test-name named a test in it, so the record keeps the file. On the code, a test of that file, present and green on the head, meets it: the proof passes.
+given:
+  repo: c-tested
+  setup:
+    - "git checkout -q -b workline/tester/issue-3"
+    - "printf '#include <assert.h>\\n\\nint mul(int a, int b);\\n\\nint main(void) {\\n    assert(mul(2, 3) == 6);\\n    return 0;\\n}\\n' > tests/test_mul.c && git add tests && git commit -q -m 'test: the acceptance tests of #3' -m 'Workline-Role: tester'"
+    - "printf 'int mul(int a, int b) { return a * b; }\\n' >> src/calc.c && git commit -qam 'feat: multiply'"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        body: "Closes #3"
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul.c\":\"fdc59b87a8e675c7f16ac17305bae997982d1504\"},\"tests\":[\"tests/test_mul.c\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: tester, event: merge-request, target: {merge-request: 1}}
+expect:
+  status: pass
+  summary: "the tester's 1 test green on the head, three runs out of three"
+  agent-calls: 0
+  no-findings: [{rule: frozen-test-missing}, {rule: test-red-on-head}]

@@ -32,7 +32,8 @@ flowchart LR
     a scenario no test can check is listed as not tested, with why.
   - What the proof said: each test red on the base, by an assertion,
     a missing name the issue names, or a broken build the judge read.
-    A test whose package did not build is named `file:name`
+    A test whose package did not build is named `file:name`, or by
+    its file alone where no `test-name` names its tests, marked so
     ([how](missing-name.md)). **Red unproven**, when the judge did
     not settle it, is written on top, in the record, and on the
     developer's pull request.

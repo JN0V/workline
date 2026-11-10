@@ -17,7 +17,9 @@ For each:
   class and the name dot-joined (`CalcTest.twoByThree`), or the name
   alone (`test_two_by_three`), a parametrised test by its name for all
   its rows; when two of your tests share a name, the one meant by its
-  module or class too. Where the Verification has one test check
+  module or class too. A project whose runner names a test file's
+  tests in no way you can tell (one C test binary a file): its test
+  file's path (`tests/test_mul.c`). Where the Verification has one test check
   two scenarios, declare it in both entries. The engine finds each id
   among your tests, red on the base, and reads nothing from a test's
   name: name it as the project does, its comment giving the Given /

@@ -58,6 +58,12 @@ flowchart LR
     - Not it: a nested folder's `Name` (`calc/sub.Name`), or one of a
       same-named folder elsewhere (`app/cmd/calc.Name` for
       `internal/calc`).
+  - **A test kept as its file alone** (its build broke, no
+    `test-name` to name it,
+    [#1293](https://github.com/JN0V/workline/issues/1293)): met by a
+    head id of that file, its name after its last folders or nothing
+    (`test_mul.main`, `tests.test_mul` for `tests/test_mul.c`); none,
+    `frozen-test-missing`, or the judge's beside other new tests.
   - **A record with no class, failed, on the red run** is kept marked
     `errored`: maybe the runner's record of a file it could not collect
     (pytest's collection error), not a test case. Gone on the code, it

@@ -40,9 +40,10 @@ type record struct {
 	Base  string            `json:"base"`
 	Files map[string]string `json:"files"`
 	// Tests: the ids of the tests the red proof found new; the green proof
-	// requires each on the code (ADR-0065, change 2): a report's id, or
-	// file:name for a test whose build broke on the base. None in a
-	// record written before.
+	// requires each on the code (ADR-0065, change 2): a report's id,
+	// file:name for a test whose build broke on the base, or the file
+	// alone when its ecosystem names no test (#1293). None in a record
+	// written before.
 	Tests []string `json:"tests,omitempty"`
 	// Errored: those of Tests the red run wrote with no class, failed —
 	// maybe the runner's record of a file it could not collect, not a
@@ -76,6 +77,15 @@ func (r record) body() string {
 	}
 	if len(r.Tests) > 0 {
 		fmt.Fprintf(&b, "\nThe green proof requires each of these tests on the code, three runs out of three: `%s`.\n", strings.Join(r.Tests, "`, `"))
+		var alone []string
+		for _, t := range r.Tests {
+			if fileAlone(r, t) {
+				alone = append(alone, t)
+			}
+		}
+		if len(alone) > 0 {
+			fmt.Fprintf(&b, "By its file alone, its build broken on the base and no test named in it: %s, met by a test of that file.\n", codes(alone))
+		}
 	}
 	if r.RedUnproven != "" {
 		fmt.Fprintf(&b, "\n**Red unproven**: %s\n", r.RedUnproven)

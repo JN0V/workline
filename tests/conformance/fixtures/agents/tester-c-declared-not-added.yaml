@@ -1,0 +1,14 @@
+# A C test whose build breaks on the base, declared by a file the
+# change does not add (#1293).
+- patch:
+    file: tests/test_mul.c
+    content: |
+      #include <assert.h>
+
+      int mul(int a, int b);
+
+      int main(void) {
+          assert(mul(2, 3) == 6);
+          return 0;
+      }
+- covers: {scenario: Multiply, tests: [tests/test_div.c]}

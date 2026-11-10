@@ -48,6 +48,28 @@ func TestFrozenIn(t *testing.T) {
 	}
 }
 
+// A test frozen by its file alone (#1293) is met by each test of that
+// file, never by another file's.
+func TestFrozenInFileAlone(t *testing.T) {
+	r := record{Files: map[string]string{"tests/test_mul.c": "a1", "tests/test-div.sh": "b1"}}
+	ids := map[string]bool{
+		"test_mul.main": true, "tests.test_mul.big": true, "test_mul_more.main": true, "other.test_mul.x": true,
+		"tests.test-div": true, "tests.test-div-big": true, "tests.test-div.big.case": true, "test_add.main": true,
+	}
+	for _, c := range []struct {
+		test string
+		want []string
+	}{
+		{"tests/test_mul.c", []string{"test_mul.main", "tests.test_mul.big"}},
+		{"tests/test-div.sh", []string{"tests.test-div", "tests.test-div.big.case"}}, // a stem of two words; never test-div-big's
+		{"tests/test_sub.c", nil}, // not a frozen file
+	} {
+		if got := r.frozenIn(c.test, ids); !slices.Equal(got, c.want) {
+			t.Errorf("frozenIn(%q) = %q, want %q", c.test, got, c.want)
+		}
+	}
+}
+
 func TestQualifiedBy(t *testing.T) {
 	for _, c := range []struct {
 		qualifier, file string
@@ -86,5 +108,22 @@ func TestWithTests(t *testing.T) {
 	got := r.withTests("B.kt", map[string]result{"b.B.two": failed, "base.old": passed}, []string{"b.B.twice"}, nil)
 	if want := []string{"a.A.one", "b.B.twice"}; !slices.Equal(got.Tests, want) {
 		t.Errorf("withTests = %q, want %q", got.Tests, want)
+	}
+}
+
+func TestOfFileStemOfWords(t *testing.T) {
+	for _, c := range []struct {
+		id, file string
+		want     bool
+	}{
+		{"tests.test-mul", "tests/test-mul.sh", true},
+		{"tests.test-mul.case one", "tests/test-mul.sh", true},
+		{"tests.test-mul-big", "tests/test-mul.sh", false}, // another file's
+		{"tests.big-test-mul", "tests/test-mul.sh", false},
+		{"tests.test_mul_big", "tests/test_mul.c", false},
+	} {
+		if got := ofFile(c.id, c.file); got != c.want {
+			t.Errorf("ofFile(%q, %q) = %v, want %v", c.id, c.file, got, c.want)
+		}
 	}
 }

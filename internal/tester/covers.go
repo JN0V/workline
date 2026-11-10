@@ -5,7 +5,7 @@ package tester
 // a reason none can check it. The engine guesses nothing from a test's
 // name: it finds each declared id among the tests the red proof found
 // new, a report's, or, its build broken on the base, one a test file of
-// the change declares.
+// the change declares, or the file alone when no test-name names them.
 
 import (
 	"fmt"
@@ -132,7 +132,10 @@ func held(covers []declared, scenarios []Scenario) (tested map[string][]string, 
 //   - file:name, a test its file declares, its build broken on the base:
 //     that id, its name, an id holding the name qualified by the file
 //     (`CartTest.addsItem` for `src/test/CartTest.kt:addsItem`), or the
-//     file, each test it declares.
+//     file, each test it declares;
+//   - a file the change adds, its build broken on the base and its
+//     ecosystem naming no test (the generic pack's): that file, or a
+//     test of it as file:name, the file alone proven (#1293).
 //
 // An id the whole id of none and the tail of two tests or more names none
 // of them: those are its others, the agent's to tell apart.
@@ -140,6 +143,12 @@ func declaredIn(id string, newTests, written []string) (found, others []string) 
 	id = strings.TrimSuffix(id, "()")
 	var exact, tails []string
 	for _, t := range newTests {
+		if slices.Contains(written, t) {
+			if id == t || strings.HasPrefix(id, t+":") {
+				exact = append(exact, t)
+			}
+			continue
+		}
 		if file, name, ok := fileNamed(t, written); ok {
 			switch {
 			case id == t:
@@ -213,7 +222,7 @@ func found(tested map[string][]string, scenarios []Scenario, newTests, written [
 			if len(ids) == 0 {
 				findings = append(findings, verdict.Finding{Rule: "declared-test-missing", Where: sc.Name,
 					Message: fmt.Sprintf("`%s`, declared for this scenario, is none of the new tests red on the base (%s), nor of the test files written: "+
-						"declare it as the project's test report names it, its class and name dot-joined, or its name alone", id, sample(newTests))})
+						"declare it as the project's test report names it, its class and name dot-joined, or its name alone; a test file named here alone, by its path", id, sample(newTests))})
 				continue
 			}
 			for _, t := range ids {

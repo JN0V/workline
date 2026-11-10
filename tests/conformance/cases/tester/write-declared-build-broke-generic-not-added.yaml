@@ -1,0 +1,30 @@
+case: tester/write-declared-build-broke-generic-not-added
+about: >
+  Build broke, no test-name, a file declared the change does not add
+  (#1293): the C test file it adds is the one test found, by its file;
+  the agent declares tests/test_div.c, none of them. It goes the
+  declared-test-missing way: asked again once, the same answer blocks;
+  no Draft opened.
+given:
+  repo: c-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-yes.yaml"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", build-errors: [{error: '^(?P<file>[^\s:]+\.c):\d+:\d+: error: (?P<message>.+)$', missing-name: ['^implicit declaration of function']}]}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Multiply:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA C test in tests/.\n\n## Scope\n\n- `src/calc.c`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-c-declared-not-added"}
+expect:
+  status: block
+  agent-calls: 2
+  findings: [{rule: declared-test-missing, where: "Multiply"}]
+  run-files:
+    out/feedback.md: {contains: ["tests/test_div.c"]}
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}

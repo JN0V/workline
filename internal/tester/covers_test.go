@@ -1,6 +1,8 @@
 package tester
 
 import (
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 
@@ -95,6 +97,14 @@ func TestDeclaredIn(t *testing.T) {
 	if got, others := declaredIn("one", []string{file + ":one", other + ":one"}, []string{file, other}); got != nil || len(others) != 2 {
 		t.Errorf("one name in two files: %v %v", got, others)
 	}
+	// A file alone, its ecosystem naming no test (#1293): the file, or a
+	// test of it by file:name, is it; another file is not.
+	c := "tests/test_mul.c"
+	for id, want := range map[string][]string{c: {c}, c + ":mul_works": {c}, "tests/test_div.c": nil, "test_mul": nil, "mul_works": nil} {
+		if got, others := declaredIn(id, []string{c}, []string{c}); !slices.Equal(got, want) || others != nil {
+			t.Errorf("file alone: declaredIn(%q) = %v %v, want %v", id, got, others, want)
+		}
+	}
 }
 
 // An objection naming a declared test is on the scenario it covers; one
@@ -143,5 +153,43 @@ func TestRecovered(t *testing.T) {
 	}
 	if got := both.Covers["Restart"]; !slices.Equal(got, []string{"tests.test_new"}) {
 		t.Errorf("Restart now %v", got)
+	}
+}
+
+// A broken build read by a row with no test-name (#1293): a test file
+// the change adds counts alone; one a row with test-name names a test
+// of, by its names only; one it adds to, never.
+func TestUnbuiltTestsFileAlone(t *testing.T) {
+	repo, run := gitRepo(t, map[string]string{"test_old.c": "int main(void) { return 0; }\n"})
+	base := run(repo, "rev-parse", "HEAD")
+	files := map[string]string{
+		"test_mul.c":  "int main(void) { return mul(2, 3) != 6; }\n",
+		"test_old.c":  "int main(void) { return 0; }\nint more(void) { return mul(1, 1); }\n",
+		"AddTest.kt":  "class AddTest {\n    @Test\n    fun `adds three`() { check(add(1, 2, 3) == 6) }\n}\n",
+		"test_done.c": "int main(void) { return 0; }\n",
+		"helpers.h":   "int helper(void);\n", // no error in it: no test
+	}
+	for name, text := range files {
+		if err := os.WriteFile(filepath.Join(repo, name), []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	run(repo, "add", ".")
+	run(repo, "-c", "user.name=T", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "tests")
+	head := run(repo, "rev-parse", "HEAD")
+	rules, err := compileBuildErrors([]BuildErrors{
+		{Error: `^(?P<file>\S+\.c):\d+:\d+: error: (?P<message>.+)$`},
+		{Error: `^e: (?P<file>\S+\.kt):\d+:\d+ (?P<message>.+)$`, TestName: "(?m)@Test\\s+fun\\s+`([^`]+)`"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ch := &change{base: base, head: head, tests: []string{"AddTest.kt", "helpers.h", "test_done.c", "test_mul.c", "test_old.c"}}
+	ran := ran{results: map[string]result{"test_done.main": failed}} // its file's test ran
+	got, err := unbuiltTests(repo, ch, ran, []buildError{
+		{file: "test_mul.c", rules: 0}, {file: "test_old.c", rules: 0}, {file: "test_done.c", rules: 0}, {file: "AddTest.kt", rules: 1},
+	}, rules)
+	if want := []string{"AddTest.kt:adds three", "test_mul.c"}; err != nil || !slices.Equal(got, want) {
+		t.Errorf("unbuiltTests = %q, %v; want %q", got, err, want)
 	}
 }

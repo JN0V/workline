@@ -54,15 +54,19 @@ const (
 func renameFacts(repo, mb string, rec record, d *renamed) string {
 	var b strings.Builder
 	b.WriteString("## The tester's tests not found under their names\n\n" +
-		"Each as `file:name`, the name read from its file when its build broke on the base; or as the id the runner wrote, " +
+		"Each as `file:name`, the name read from its file when its build broke on the base; as its file alone, its ecosystem naming no test, " +
+		"met by any test of that file; or as the id the runner wrote, " +
 		"with no class and failed, on the base with the tests: maybe its record of a file it could not collect, not a test case.\n\n")
 	files := map[string]bool{}
 	all := false // a runner's record names no file: each frozen file is shown
 	for _, t := range d.Missing {
 		fmt.Fprintf(&b, "- `%s`\n", t)
-		if named(rec, t) {
+		switch {
+		case fileAlone(rec, t):
+			files[t] = true
+		case named(rec, t):
 			files[t[:strings.LastIndex(t, ":")]] = true
-		} else {
+		default:
 			all = true
 		}
 	}
@@ -102,7 +106,7 @@ func excludes(rec record) []string {
 
 // renamedQuestion is what the judge is asked.
 const renamedQuestion = "The tests below were written before the code and frozen: whoever builds may not change them. " +
-	"The head's test reports do not hold them under the name read from their file. " +
+	"The head's test reports do not hold them under the name read from their file (or, one named by its file alone, any test of that file). " +
 	"Did each still run on the head under another name the reports give (a display name, a parameter, the runner's own naming), " +
 	"or did the change stop it running (a build file, a filter, a skip, an exclusion)?"
 
