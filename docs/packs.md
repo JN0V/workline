@@ -85,8 +85,9 @@ a regex on `\.kt`)
 ([Rule B](adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-b-no-ecosystem-pattern-in-the-engine)).
 
 - **Put it in a pack**: a new language's fix lands in its YAML.
-- **It converges** (`.xml` for any JUnit report): a
+- **It converges** (every ecosystem needs it the same way): a
   `// converges: <reason>` comment on its line; the review judges it.
+  `.xml` for a JUnit report needs none: no pack names it.
 - **Today's offenders** are listed in
   [rule-b-baseline.txt](../internal/packs/testdata/rule-b-baseline.txt):
   a line only shrinks, never added to.

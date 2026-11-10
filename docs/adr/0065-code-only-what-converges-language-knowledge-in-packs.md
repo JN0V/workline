@@ -91,8 +91,8 @@ flowchart LR
   - **The `generic` pack's patterns are left out**: `test` or `_test.`
     would flag many plain strings.
   - **An exemption** is a `// converges: <reason>` comment on the
-    literal's first or last line (`.xml` for the JUnit reader); the
-    review judges the reason.
+    literal's first or last line; the review judges the reason. A
+    pattern no pack names (`.xml` for the JUnit reader) needs none.
   - **A baseline** lists today's offenders, a file, a token and how
     many literals hold it
     ([rule-b-baseline.txt](../../internal/packs/testdata/rule-b-baseline.txt)),
