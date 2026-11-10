@@ -1,0 +1,14 @@
+case: forge/local-issues-write-refused-on-another-forge
+about: >
+  A project whose forge is GitHub keeps its issues there: `workline
+  issues open` refuses to write one in the clone, which no role would
+  read, and says where to open it (#1284).
+given:
+  repo: basic
+  config: {forge: github}
+run: {cli: [issues, open, "Total an order"]}
+expect:
+  exit: 1
+  stderr: ["forge: github", "open it there"]
+  files:
+    .git/workline/issues/1.md: {exists: false}

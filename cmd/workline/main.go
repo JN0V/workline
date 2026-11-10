@@ -1612,16 +1612,24 @@ func itemCmd(args []string) int {
 }
 
 // issuesCmd reads the local forge (`forge: local`): the issues and merge
-// requests kept in the clone, listed, or one shown whole. It writes nothing.
+// requests kept in the clone, listed, or one shown whole; and writes a
+// person's acts on it, as on a forge's page: open an issue, label an
+// item, comment on it (#1284).
 func issuesCmd(args []string) int {
 	what, id := "list", ""
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		what, args = args[0], args[1:]
 	}
-	if (what == "show" || what == "import") && len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+	if slices.Contains([]string{"show", "import", "open", "label", "comment"}, what) && len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		id, args = args[0], args[1:]
 	}
 	fs := newFlags("issues")
+	body := fs.String("body", "", "open, comment: the text")
+	bodyFile := fs.String("body-file", "", "open, comment: the file holding the text; - reads it from stdin")
+	var addLabels, removeLabels multi
+	fs.Var(&addLabels, "label", "open: a label the issue starts with (repeatable)")
+	fs.Var(&addLabels, "add", "label: a label to put on (repeatable)")
+	fs.Var(&removeLabels, "remove", "label: a label to take off (repeatable)")
 	repo := fs.String("repo", ".", "repository")
 	apply := fs.Bool("apply", false, "import: open the issues; without it, only say which")
 	forgeSpec := fs.String("forge", "", "import: github, gitlab, local, cmd:<command> (default: the project's `forge` setting)")
@@ -1642,6 +1650,10 @@ func issuesCmd(args []string) int {
 		return importIssues(root, id, *forgeSpec, *ai, *roles, *share, *apply, *asJSON, summaryFiles)
 	}
 	l := &forge.Local{Repo: root}
+	switch what {
+	case "open", "label", "comment":
+		return issuesWrite(l, root, what, id, *body, *bodyFile, addLabels, removeLabels)
+	}
 	switch {
 	case what == "list":
 		n := 0
@@ -1696,8 +1708,91 @@ func issuesCmd(args []string) int {
 		}
 		return 0
 	}
-	fmt.Fprintln(os.Stderr, "usage: workline issues [list] [--repo <dir>] | workline issues show <n>|!<n> [--repo <dir>]")
+	fmt.Fprintln(os.Stderr, issuesUsage)
 	return 64
+}
+
+const issuesUsage = "usage: workline issues [list] | show <n>|!<n> | open <title> [--body <text>|--body-file <file>] [--label <l>]... | " +
+	"label <n>|!<n> [--add <l>]... [--remove <l>]... | comment <n>|!<n> --body <text>|--body-file <file>   [--repo <dir>]"
+
+// issuesWrite is a person's act on the local forge: what they would do
+// on a forge's page. Only where the project's forge is the local one:
+// elsewhere no role would read what it writes.
+func issuesWrite(l *forge.Local, root, what, id, body, bodyFile string, add, remove []string) int {
+	cfg, err := role.LoadProjectConfig(root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if cfg.Forge != "local" {
+		if cfg.Forge == "" {
+			fmt.Fprintln(os.Stderr, "workline: this project sets no `forge: local` in .workline/config.yaml: no role would read an issue written in this clone; set it first")
+		} else {
+			fmt.Fprintf(os.Stderr, "workline: this project's issues are on its forge (`forge: %s`): open it there; `workline issues` writes the local forge's alone\n", cfg.Forge)
+		}
+		return 1
+	}
+	if id == "" {
+		fmt.Fprintln(os.Stderr, issuesUsage)
+		return 64
+	}
+	text := body
+	if bodyFile != "" {
+		if body != "" {
+			fmt.Fprintln(os.Stderr, "workline: --body or --body-file, not both")
+			return 64
+		}
+		var data []byte
+		if bodyFile == "-" {
+			data, err = io.ReadAll(os.Stdin)
+		} else {
+			data, err = os.ReadFile(bodyFile)
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		text = string(data)
+	}
+	text = strings.TrimSpace(text)
+	if what == "open" {
+		n, err := l.Open(strings.TrimSpace(id), text, add)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		fmt.Printf("#%d opened\n", n)
+		return 0
+	}
+	t := forge.Target{Kind: "issue"}
+	sign := "#"
+	if rest, ok := strings.CutPrefix(id, "!"); ok {
+		t.Kind, id, sign = "merge-request", rest, "!"
+	}
+	if _, err := fmt.Sscan(strings.TrimPrefix(id, "#"), &t.ID); err != nil || t.ID <= 0 || strings.TrimLeft(strings.TrimPrefix(id, "#"), "0123456789") != "" {
+		fmt.Fprintf(os.Stderr, "workline: %s <n> for an issue, %s !<n> for a merge request\n", what, what)
+		return 64
+	}
+	switch what {
+	case "label":
+		if len(add)+len(remove) == 0 {
+			fmt.Fprintln(os.Stderr, "workline: label needs --add or --remove")
+			return 64
+		}
+		err = l.Label(t, add, remove)
+	case "comment":
+		if text == "" {
+			fmt.Fprintln(os.Stderr, "workline: comment needs its text: --body or --body-file")
+			return 64
+		}
+		err = l.Answer(t, text)
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	fmt.Printf("%s%d %s\n", sign, t.ID, map[string]string{"label": "labelled", "comment": "commented"}[what])
+	return 0
 }
 
 func exitFor(status string) int {
