@@ -58,7 +58,7 @@ beside the verdict's, and posts once it answered.
   ([#588](https://github.com/JN0V/workline/issues/588)). So is one that
   left commits past five a push: no run records what it left
   ([#591](https://github.com/JN0V/workline/issues/591)).
-- **The rules** (`bug-story`, `internal-code`) block on the verdict's
+- **The rules** (`internal-code`) block on the verdict's
   run. While they block, the run apart asks no lens either, and says
   nothing of them again.
   They are read at the levels the project sets in

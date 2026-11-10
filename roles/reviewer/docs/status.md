@@ -54,8 +54,11 @@ its measure in
 [tests/evaluation/cases/reviewer](../../../tests/evaluation/cases/reviewer).
 
 - **Rules on the comments a change adds**, no agent while they block:
-  `bug-story-in-comment-blocks-without-ai`, `ticket-code-in-comment`,
-  `long-comment-block-reported`.
+  `ticket-code-in-comment`, `long-comment-block-reported`.
+- **A story word in a comment judged, never blocking**:
+  `bug-story-warns-without-ai`, `bug-story-word-in-a-right-comment-not-blocked`,
+  `bug-story-judged-by-the-comments-lens`,
+  `bug-story-judged-on-its-push-whatever-the-turn`.
 - **Only code reviewed**, commits reviewed whole not asked again:
   `docs-only-asks-nobody`, `reviewed-commits-not-asked-again`,
   `push-without-code-asks-nobody`, `lens-given-new-commits-files`.
