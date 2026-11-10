@@ -1,0 +1,30 @@
+case: routing/proposed-question-line-says-both
+about: >
+  A proposed issue whose product owner also asked its reporter a
+  question, unanswered and inside the delay: the line's comment says
+  what the proposal offers and what the question waits for, with the
+  day its assumption is taken. Neither drops the other (#1195).
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:proposed]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nproposed:\n  - act: rename\n    line: 'Rename #9 to Print the plain version line'\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2099-01-01T09:00:00Z"}
+run: {route: issue, target: {issue: 9}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine, workline:proposed]
+        comment-contains: "- **Why**: the product owner proposes what a person decides: Rename #9 to Print the plain version line; its question of 2099-01-01 09:00 UTC waits on its reporter: the product owner takes its assumption on 2099-01-02 09:00 UTC (acts.ask.wait: 24 h).\n- **Next**: a person labels it `workline:accepted` to do it, which wakes the product owner, or takes `workline:proposed` off to set it aside; its reporter's answer in a comment wakes the product owner."

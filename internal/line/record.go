@@ -602,7 +602,7 @@ func WriteStates(f forge.Forge, repo string, res *Result) error {
 // personWaits is the line's word on an issue the product owner's run
 // left waiting on a person, its delay wait as the setting writes it (""
 // its default): why, and what of a person ends it. In this order: what
-// its proposal offers; its question or drafts, with the day they time
+// its proposal offers, with its open question if any; its question or drafts, with the day they time
 // out — or none, at cautious; what else keeps a proposed issue from
 // ready, its drafts among them. "" when nothing waits on a person, or
 // its comments do not read.
@@ -619,12 +619,8 @@ func personWaits(f forge.Forge, cfg *routing.Config, is forge.Issue, wait string
 	yes := fmt.Sprintf("a person labels it `%s` to do it, which wakes the product owner, or takes `%s` off to set it aside",
 		backlog.AcceptedLabel(f), backlog.ProposedLabel(f))
 	proposed := backlog.Proposed(is)
-	if offers := backlog.Proposes(comments, backlog.Keeper); proposed && len(offers) > 0 {
-		return backlog.Said("workline's line", "waits for a person on this issue",
-			"the product owner proposes what a person decides: "+strings.Join(offers, " "), yes)
-	}
+	var waits, next string // in refine, a question or drafts wait on a person's answer
 	if s, ok := cfg.StateOf(is.Labels); ok && s.Name == refineState {
-		// In refine, a question or drafts wait on a person's answer.
 		var setting any // unset: the default delay
 		if wait != "" {
 			setting = wait
@@ -632,10 +628,23 @@ func personWaits(f forge.Forge, cfg *routing.Config, is forge.Issue, wait string
 		if w, err := backlog.ReadWait(setting); err == nil {
 			t := newTally()
 			t.wait = &w
-			if _, _, waits, next, err := timedOut(b, t, is, notes, Record{}); err == nil && waits != "" {
-				return backlog.Said("workline's line", "waits for a person on this issue", waits, next)
+			if _, _, ws, nx, err := timedOut(b, t, is, notes, Record{}); err == nil {
+				waits, next = ws, nx
 			}
 		}
+	}
+	if offers := backlog.Proposes(comments, backlog.Keeper); proposed && len(offers) > 0 {
+		why, then := "the product owner proposes what a person decides: "+strings.Join(offers, " "), yes
+		q, open := backlog.Unanswered(notes, backlog.Keeper)
+		st, _, _ := backlog.ReadState(comments, backlog.Keeper)
+		if open && (st == nil || st.Assumed < q.Round) && waits != "" {
+			// a question too, not yet assumed: timedOut says it first, never dropped
+			why, then = why+"; "+waits, then+"; "+next
+		}
+		return backlog.Said("workline's line", "waits for a person on this issue", why, then)
+	}
+	if waits != "" {
+		return backlog.Said("workline's line", "waits for a person on this issue", waits, next)
 	}
 	if st, found, err := backlog.ReadState(comments, backlog.Keeper); proposed && found && err == nil {
 		if left := backlog.NotReady(is, st, false); len(left) > 0 {
