@@ -147,6 +147,12 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 			m.Why = "the reviewer's comment on it was edited by another: its findings cannot be read"
 			return m, nil
 		}
+		if why := recordUnread(c); why != "" {
+			// Never read as no finding open: a comment from an older
+			// engine, or a record that does not parse, holds it (#705).
+			m.Why = "the reviewer's findings on it cannot be read: " + why
+			return m, nil
+		}
 		asked, _ := reviewRows(c)
 		for _, x := range asked {
 			m.Open = append(m.Open, fmt.Sprintf("%s %s `%s`: %s", x.Holds, x.Lens, x.Where, x.Text))
