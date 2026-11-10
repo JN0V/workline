@@ -162,8 +162,17 @@ the forge).
 local forge (`forge: local`,
 [ADR-0016](adr/0016-writes-go-where-the-project-lives.md)): lists the
 issues (`#<n>`) and merge requests (`!<n>`) kept in the clone, with their
-state and labels, or shows one whole, its comments after its body. It
-writes nothing.
+state and labels, or shows one whole, its comments after its body.
+
+A person's acts, as on a forge's page
+([the line with no forge](local-line.md)):
+
+- **`open <title>`**: a new issue, the next number; `--body <text>` or
+  `--body-file <file>` (`-`: stdin), `--label <l>` repeatable.
+- **`label <n>|!<n>`**: `--add <l>`, `--remove <l>`, each repeatable.
+- **`comment <n>|!<n>`**: `--body` or `--body-file`; none, refused (64).
+- Only where the project sets `forge: local`; elsewhere refused, as in
+  CI, where the clone is thrown away.
 
 ### workline issues import
 

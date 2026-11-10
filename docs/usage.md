@@ -37,7 +37,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline test curate --history <file>`](commands-work.md#workline-test) | the curator removes a few redundant tests, proven by coverage and mutants |
 | [`workline develop`](commands-work.md#workline-develop) | the developer takes the first ready issue, writes its code, opens its pull request; `--merge-request <n>`: fixes its review; `--bounds`: checks its files against its issue's bounds |
 | [`workline item ready <id>`](commands-work.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
-| [`workline issues`, `issues show <n>`](commands-work.md#workline-issues) | reads the issues kept in the clone (`forge: local`) |
+| [`workline issues`, `issues show <n>`](commands-work.md#workline-issues) | reads the issues kept in the clone (`forge: local`); `open`, `label`, `comment` write them |
 | [`workline issues import <file>`](commands-work.md#workline-issues-import) | turns a roadmap or backlog file into issues |
 | [`workline docs`](commands.md#workline-docs) | your agent fixes the docs made suspect; you keep or drop each fix |
 | [`workline sample`](commands.md#workline-sample) | the weekly sample: one in ten of every role's acts of the week, re-checked |

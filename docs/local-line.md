@@ -1,0 +1,145 @@
+---
+sources: [cmd/workline/main.go, internal/forge/local.go, internal/doctor/tests.go]
+checked: 94d4c5157
+verified: agent:claude-code
+---
+# The whole line with no forge
+
+From a need to a merged change on your machine, with no GitHub nor
+GitLab: the product owner refines, the tester writes the tests, the
+developer the code, the reviewer reads it, you merge with git.
+
+```
+need ──► product owner ──► tester ──► developer ──► review ──► git merge
+ you      refines it        tests      code          the line    you
+```
+
+- **Issues and merge requests stay in the clone** (`.git/workline/`),
+  never committed nor pushed
+  ([ADR-0016](adr/0016-writes-go-where-the-project-lives.md)).
+- **You act by command**: `workline issues` opens, labels and comments,
+  as you would on a forge's page.
+- **An agent is needed** for the roles that write: `claude`, or any
+  command as `cmd:` ([the agent](install.md#3-the-agent-your-choice)).
+  With `none`, each role says what it skipped.
+
+## 1. Install and adopt
+
+Install the binary and set the machine up ([install](install.md)), then
+in the repository:
+
+```sh
+workline init --review   # routes pre-push and the reviewer; proposes each doc's sources
+```
+
+## 2. Route the line
+
+Write `.workline/config.yaml` (`init` wrote its routing; replace it):
+
+```yaml
+forge: local
+routing:
+  events:
+    pre-push: [committer, documentalist]
+    merge-request: [committer, documentalist, tester, reviewer]
+    issue: [product-owner, reviewer, tester, developer]
+autonomy: normal
+roles:
+  tester:
+    settings:
+      test-command: python -m pytest -q --junitxml={report}   # yours: runs the tests, writes JUnit XML to {report}
+      test-paths: ["tests/**"]                                # where your tests live
+```
+
+- **`issue`**: an issue's state label wakes its role
+  ([the line of states](spec/routing.md#the-line-of-states)).
+- **`test-command`**: any runner that writes a JUnit XML report
+  ([the tester's settings](../roles/tester/README.md#settings)).
+- **`autonomy`**: how far the roles go alone ([autonomy](autonomy.md)).
+
+```sh
+workline doctor          # says a missing test-command, with the setting to add
+git add .workline/config.yaml && git commit -m "chore: adopt workline"
+export WORKLINE_RUNS_DIR=~/.cache/workline-runs   # outside the clone: see below
+```
+
+`WORKLINE_RUNS_DIR` keeps the runs out of `.git/`: Claude Code refuses
+to edit a file under `.git/`, where the developer's worktree would be
+([#1304](https://github.com/JN0V/workline/issues/1304)).
+
+## 3. Write the need
+
+```sh
+workline issues open "sc-late-fee takes NaN for an amount" \
+  --body-file need.md --label workline:to-refine --label bug
+```
+
+- Write it as a person would: what you saw, what you want
+  ([writing an issue](../roles/product-owner/docs/writing.md)).
+- `--body "text"` for a short one; `--body-file -` reads stdin.
+- `workline issues` lists them; `workline issues show 1` shows one whole.
+
+## 4. Run each step
+
+Each run wakes the role the issue's state names, then moves the issue on:
+
+```sh
+workline route issue --target issue:1 --ai claude
+workline issues show 1   # what it wrote, and what it asks of you
+```
+
+| State label | Wakes | What you do |
+|---|---|---|
+| `workline:to-refine` | the product owner, then the reviewer on the spec | answer it (below) |
+| `workline:needs-tests` | the tester: tests on `workline/tester/issue-1`, a Draft `!1` | nothing |
+| `workline:ready` | the developer: code on `workline/developer/1`, `!2` | nothing |
+| `workline:developing` | nobody: its merge request waits for the review | review it (step 5) |
+
+Run the same command after each step until the issue is
+`workline:developing` with its merge request open.
+
+### Answer the product owner
+
+At `normal`, it proposes its drafts and waits for your yes:
+
+```sh
+workline issues label 1 --add workline:accepted   # yes: it moves the issue on at its next run
+workline issues comment 1 --body "Refuse inf too."  # it revises what it proposes
+```
+
+Its comment on the issue lists every answer
+([its run](../roles/product-owner/docs/run.md)).
+
+## 5. Review the merge request
+
+```sh
+workline issues                       # !2  open  fix: … (workline/developer/1 into main)
+git checkout workline/developer/1
+workline route merge-request --target merge-request:2 --ai claude
+```
+
+- The committer, the tester's check and the reviewer read the branch;
+  their findings go on `!2` (`workline issues show !2`).
+- A finding to fix: `workline develop --merge-request 2 --ai claude`, a
+  review round on its branch.
+
+## 6. Merge it yourself
+
+```sh
+git checkout main && git merge --ff-only workline/developer/1
+workline follow          # closes the issues the merged request says it closes
+workline issues          # #1 closed, !1 and !2 merged
+```
+
+You are the forge's guards here: nothing merges unless you run
+`git merge`
+([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md)).
+
+## When a step stalls
+
+- **A state that wakes nobody**: `workline issues show 1` says why on
+  the issue; `workline route reconcile --ai claude` runs what is due.
+- **A run that changed nothing**: run again only after the body or
+  labels change; the line does not ask twice on the same input.
+- **More**: [troubleshooting](troubleshooting.md),
+  [the product owner's](troubleshooting-product-owner.md).

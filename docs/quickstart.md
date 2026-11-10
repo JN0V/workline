@@ -99,6 +99,8 @@ plain script: [triggers.md](triggers.md).
 ## Next
 
 - [Install](install.md) — your machine and CI, in full.
+- [The line with no forge](local-line.md) — need, tests, code, review
+  and merge on your machine.
 - [Concepts](concepts.md) — the words used everywhere.
 - [Roles](roles.md) — what each role does, its settings.
 - [Configuration](config.md) — `.workline/config.yaml`, your config, variables.

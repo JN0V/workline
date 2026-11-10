@@ -151,7 +151,9 @@ To start the product owner on one open issue:
 `workline run-role product-owner --event issue --target issue:<n> --forge github`
 ([try each role once](quickstart.md#try-each-role-once-on-a-real-repository)).
 
-Step by step, in ten minutes: [the quickstart](quickstart.md).
+Step by step, in ten minutes: [the quickstart](quickstart.md). With no
+forge, the whole line from a need to a merge:
+[the line with no forge](local-line.md).
 
 ## In CI
 
