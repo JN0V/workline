@@ -167,6 +167,7 @@ func TestUnbuiltTestsFileAlone(t *testing.T) {
 		"test_old.c":  "int main(void) { return 0; }\nint more(void) { return mul(1, 1); }\n",
 		"AddTest.kt":  "class AddTest {\n    @Test\n    fun `adds three`() { check(add(1, 2, 3) == 6) }\n}\n",
 		"test_done.c": "int main(void) { return 0; }\n",
+		"helpers.h":   "int helper(void);\n", // no error in it: no test
 	}
 	for name, text := range files {
 		if err := os.WriteFile(filepath.Join(repo, name), []byte(text), 0o644); err != nil {
@@ -183,9 +184,11 @@ func TestUnbuiltTestsFileAlone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ch := &change{base: base, head: head, tests: []string{"AddTest.kt", "test_done.c", "test_mul.c", "test_old.c"}}
+	ch := &change{base: base, head: head, tests: []string{"AddTest.kt", "helpers.h", "test_done.c", "test_mul.c", "test_old.c"}}
 	ran := ran{results: map[string]result{"test_done.main": failed}} // its file's test ran
-	got, err := unbuiltTests(repo, ch, ran, []buildError{{rules: 0}, {rules: 1}}, rules)
+	got, err := unbuiltTests(repo, ch, ran, []buildError{
+		{file: "test_mul.c", rules: 0}, {file: "test_old.c", rules: 0}, {file: "test_done.c", rules: 0}, {file: "AddTest.kt", rules: 1},
+	}, rules)
 	if want := []string{"AddTest.kt:adds three", "test_mul.c"}; err != nil || !slices.Equal(got, want) {
 		t.Errorf("unbuiltTests = %q, %v; want %q", got, err, want)
 	}

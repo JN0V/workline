@@ -411,13 +411,19 @@ func brokenTests(errs []buildError) []buildError {
 // the base's own file declares is the base's, in a file the change adds
 // to, never a new one (#1259): told by its file, never by a name another
 // file's test may share. An ecosystem with no test-name (the generic
-// pack's) names no test: each test file the change adds, no row naming
-// a test of it nor the head's report, is one test, named by the file
-// alone, which proves only that the file is there (#1293).
+// pack's) names no test: each test file the change adds that holds one
+// of that ecosystem's errors, no row naming a test of it nor the head's
+// report, is one test, named by the file alone, which proves only that
+// the file is there (#1293). A file the build did not break on (a
+// helper, a fixture) is no test.
 func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []buildRules) ([]string, error) {
 	used := map[int]bool{}
+	broken := map[string]bool{} // the files holding an error of a row with no test-name
 	for _, e := range errs {
 		used[e.rules] = true
+		if e.rules < len(rules) && rules[e.rules].testName == nil {
+			broken[e.file] = true
+		}
 	}
 	ran := func(name string) bool {
 		for id := range head.results {
@@ -435,13 +441,9 @@ func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []
 		}
 		old, err := git(repo, "show", ch.base+":"+file) // an error: a new file
 		isNew := err != nil
-		unnamed, declares := false, false // a used row with no test-name; one naming a test of the file
+		declares := false // a used row names a test of the file
 		for i, r := range rules {
-			if !used[i] {
-				continue
-			}
-			if r.testName == nil {
-				unnamed = true
+			if !used[i] || r.testName == nil {
 				continue
 			}
 			base := testNames(old, r)
@@ -452,7 +454,7 @@ func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []
 				}
 			}
 		}
-		if unnamed && !declares && isNew && len(head.ofFile(file)) == 0 {
+		if broken[file] && !declares && isNew && len(head.ofFile(file)) == 0 {
 			out = append(out, file)
 		}
 	}

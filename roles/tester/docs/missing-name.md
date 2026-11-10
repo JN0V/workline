@@ -94,8 +94,9 @@ flowchart LR
   files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`). A
   test the base's report names, in a file the tests were added to, is
   the base's, never a new one. A row with no `test-name` (C, the
-  generic pack): each test file the change adds is one test, named by
-  its file, which proves only that the file is there; the green proof
+  generic pack): each test file the change adds that the build broke
+  on is one test, named by its file, which proves only that the file is
+  there (a helper with no error in it is no test); the green proof
   then wants a test of it, green
   ([#1293](https://github.com/JN0V/workline/issues/1293)).
 - **Beside code**, the head builds and runs those tests: they must pass
