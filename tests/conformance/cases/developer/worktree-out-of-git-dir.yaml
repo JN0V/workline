@@ -2,14 +2,15 @@ case: developer/worktree-out-of-git-dir
 about: >
   Claude Code edits no file under a .git folder: it takes it for a
   sensitive one. With no WORKLINE_RUNS_DIR, a run's folder lies in the
-  clone's .git, so the developer checks its worktree out in a folder of
-  its own outside it, linked from the run: claude edits there, its code
-  is proven and pushed (#1304).
+  clone's .git, so the developer checks its worktree out in a temporary
+  folder of its own outside it, its path in the run: claude edits there,
+  its code is proven and pushed, and no tree is left behind (#1304).
 given:
   repo: tested-draft
   setup:
+    - "mkdir ../tmp"
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
-  env: {PATH: "$FIXTURES/claude:$PATH", WORKLINE_RUNS_DIR: ""}
+  env: {PATH: "$FIXTURES/claude:$PATH", TMPDIR: "$WORK/tmp"}
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:
@@ -33,3 +34,5 @@ expect:
     workline/developer/3:
       lib.sh: "mul()"
       tests/test_mul.sh: "mul 2 3"
+  trees-left: 0
+  dirs-empty: ["../tmp"]
