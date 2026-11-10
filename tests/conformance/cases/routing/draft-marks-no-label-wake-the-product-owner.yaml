@@ -26,7 +26,7 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: state-timeout, level: info, where: "#9", message: "its drafts got no answer in 24 h (acts.ask.wait): the product-owner takes them as written"}
+    - {rule: state-timeout, level: info, where: "#9", message: "its drafts got no answer in 24 h (acts.ask.wait): the product owner takes them as written"}
   forge:
     issues:
       - id: 9

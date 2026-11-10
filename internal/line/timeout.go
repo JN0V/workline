@@ -11,7 +11,6 @@ package line
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -62,13 +61,13 @@ func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec
 	st, _, _ := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
 	if open && (st == nil || st.Assumed < s.Round) && !s.Due(w, st, now) {
 		waits = questionWaits(w, s, is.ID)
-		next = "its reporter's answer in a comment wakes the " + strings.ReplaceAll(backlog.Keeper, "-", " ")
+		next = "its reporter's answer in a comment wakes the " + roleSaid(backlog.Keeper)
 	}
 	switch {
 	case open && s.Due(w, st, now):
 		key = fmt.Sprintf("ask=%d", s.Round)
 		said = fmt.Sprintf("its question of %s got no answer in %s (acts.ask.wait): the %s takes its assumption",
-			day(s.Since), w.Say(), backlog.Keeper)
+			day(s.Since), w.Say(), roleSaid(backlog.Keeper))
 	case !backlog.Readied(is) && backlog.OnlyDrafts(is, st):
 		at, since, known := w.D == 0 && !w.Never, time.Time{}, false
 		if !at {
@@ -80,11 +79,11 @@ func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec
 		}
 		if at || known && w.Passed(since, now) {
 			key = "drafts=" + bodyHash(is.Body)
-			said = fmt.Sprintf("its drafts got no answer in %s (acts.ask.wait): the %s takes them as written", w.Say(), backlog.Keeper)
+			said = fmt.Sprintf("its drafts got no answer in %s (acts.ask.wait): the %s takes them as written", w.Say(), roleSaid(backlog.Keeper))
 		} else if waits == "" {
 			waits = draftsWait(w, since, known, is.ID)
 			next = fmt.Sprintf("a person labels it `%s` to take them, or edits them, which wakes the %s",
-				backlog.AcceptedLabel(b), strings.ReplaceAll(backlog.Keeper, "-", " "))
+				backlog.AcceptedLabel(b), roleSaid(backlog.Keeper))
 		}
 	}
 	if key != "" && key == rec.Timeout {
@@ -140,7 +139,7 @@ func questionWaits(w backlog.Delay, s backlog.Silence, id int) string {
 		return fmt.Sprintf("its question of %s waits on its reporter, until it is answered (acts.ask.wait: %s)", day(s.Since), backlog.WaitNever)
 	}
 	return fmt.Sprintf("its question of %s waits on its reporter: the %s takes its assumption on %s (acts.ask.wait: %s)",
-		day(s.Since), backlog.Keeper, day(s.Since.Add(w.D)), w.Say())
+		day(s.Since), roleSaid(backlog.Keeper), day(s.Since.Add(w.D)), w.Say())
 }
 
 // draftsWait is what the line says of drafts waiting on a person's yes
@@ -155,7 +154,7 @@ func draftsWait(w backlog.Delay, since time.Time, known bool, id int) string {
 		return fmt.Sprintf("its drafts, since %s, wait on a person's yes (acts.ask.wait: %s)", day(since), backlog.WaitNever)
 	}
 	return fmt.Sprintf("its drafts wait on a person's yes: the %s takes them as written on %s (acts.ask.wait: %s)",
-		backlog.Keeper, day(since.Add(w.D)), w.Say())
+		roleSaid(backlog.Keeper), day(since.Add(w.D)), w.Say())
 }
 
 // day is a moment as the line says it.

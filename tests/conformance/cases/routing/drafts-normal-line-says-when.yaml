@@ -26,4 +26,4 @@ expect:
     issues:
       - id: 9
         labels: [workline:to-refine, workline:draft]
-        comment-contains: "- **Why**: its drafts wait on a person's yes: the product-owner takes them as written on 2099-10-02 09:00 UTC (acts.ask.wait: 24 h).\n- **Next**: a person labels it `workline:accepted` to take them, or edits them, which wakes the product owner."
+        comment-contains: "- **Why**: its drafts wait on a person's yes: the product owner takes them as written on 2099-10-02 09:00 UTC (acts.ask.wait: 24 h).\n- **Next**: a person labels it `workline:accepted` to take them, or edits them, which wakes the product owner."

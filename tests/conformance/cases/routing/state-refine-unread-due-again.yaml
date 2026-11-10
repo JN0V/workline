@@ -44,4 +44,4 @@ expect:
   findings:
     - {rule: state-unread-body, where: "#19", message: "the product owner's state says it never read this issue: woken again, once a body"}
     - {rule: state-acted, where: "#20"}
-    - {rule: state-waits, where: "#21", message: "waits on its reporter: the product-owner takes its assumption on"}
+    - {rule: state-waits, where: "#21", message: "waits on its reporter: the product owner takes its assumption on"}
