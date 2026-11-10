@@ -530,10 +530,13 @@ func Post(runDir, repo string) int {
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "a declared test is none of the tests proven red", Findings: misses, Again: true})
 	}
 	tested = matched
+	// A test named by its file alone proves only the file (#1293): said
+	// in the plan, the Draft and the record.
+	alone := slices.DeleteFunc(slices.Clone(newTests), func(id string) bool { return !slices.Contains(order, id) })
 	// Each scenario has its row, the tests red on the base and linted: the
 	// issue moves to the state its tests lead to, ready (ADR-0059,
 	// decision 3), said on it; no agent decides it.
-	intents = append(intents, intent.Intention{Kind: "verification", Value: map[string]any{"issue": t.Issue, "text": testPlan(t, tested, said)}})
+	intents = append(intents, intent.Intention{Kind: "verification", Value: map[string]any{"issue": t.Issue, "text": testPlan(t, tested, said, alone)}})
 	moved, undo, err := testsDone(runDir, repo, t, intents, len(said), planSaid(t, tested))
 	if err != nil {
 		return fail(err)
@@ -541,7 +544,7 @@ func Post(runDir, repo string) int {
 	mr := map[string]any{
 		"key": fmt.Sprintf("issue-%d", t.Issue), "draft": true,
 		"title": fmt.Sprintf("test: the acceptance tests of #%d", t.Issue),
-		"body":  draftBody(t, tested, said, assumed(notes), proof),
+		"body":  draftBody(t, tested, said, alone, assumed(notes), proof),
 		// The tests frozen to whoever builds (ADR-0055, guards): kept in
 		// workline's own comment on the Draft once it is opened.
 		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Tests: newTests, Errored: erroredOf(runDir, newTests), Scenarios: t.Scenarios, Covers: tested, RedUnproven: unprovenOf(*proof)}.intention()["comment"],
@@ -948,17 +951,26 @@ func assumed(notes []string) []string {
 	return out
 }
 
+// aloneSaid marks ids, when one of them is a test file alone.
+func aloneSaid(ids, alone []string) string {
+	if slices.ContainsFunc(ids, func(id string) bool { return slices.Contains(alone, id) }) {
+		return " (by its file alone)"
+	}
+	return ""
+}
+
 // codes are ids, each in a code span.
 func codes(ids []string) string { return "`" + strings.Join(ids, "`, `") + "`" }
 
 // testPlan is the issue's Verification the tester writes from its tests
 // (ADR-0066), as a human tester writes the test plan: each scenario and
-// the tests its agent declared prove it, or why none can.
-func testPlan(t task, tested map[string][]string, said map[string]string) string {
+// the tests its agent declared prove it, or why none can; a test file
+// alone, the file is all it proves.
+func testPlan(t task, tested map[string][]string, said map[string]string, alone []string) string {
 	var b strings.Builder
 	for _, sc := range t.Scenarios {
 		if ids, ok := tested[sc.Name]; ok {
-			fmt.Fprintf(&b, "- **%s:** %s.\n", sc.Name, codes(ids))
+			fmt.Fprintf(&b, "- **%s:** %s%s.\n", sc.Name, codes(ids), aloneSaid(ids, alone))
 		} else if n, ok := said[sc.Name]; ok {
 			fmt.Fprintf(&b, "- **%s:** no test can check it: %s\n", sc.Name, strings.ReplaceAll(strings.TrimSpace(n), "\n", " "))
 		}
@@ -990,8 +1002,8 @@ func planSaid(t task, tested map[string][]string) string {
 
 // draftBody is the Draft's description: the issue it refers to, each
 // scenario and the tests declared for it, what the tests assume, what the
-// proof said.
-func draftBody(t task, tested map[string][]string, said map[string]string, assumes []string, proof *verdict.Verdict) string {
+// proof said; a test file alone, that the file is all it proves.
+func draftBody(t task, tested map[string][]string, said map[string]string, alone, assumes []string, proof *verdict.Verdict) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Refs #%d\n\nThe acceptance tests of #%d, written before the code: %s. "+
 		"Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n",
@@ -1002,8 +1014,12 @@ func draftBody(t task, tested map[string][]string, said map[string]string, assum
 	b.WriteString("## Tests\n\nWhich test covers which scenario, as the tester declared it, each test red on the base.\n\n| Scenario | Test |\n|---|---|\n")
 	for _, sc := range t.Scenarios {
 		if ids, ok := tested[sc.Name]; ok {
-			fmt.Fprintf(&b, "| %s | %s |\n", sc.Name, codes(ids))
+			fmt.Fprintf(&b, "| %s | %s%s |\n", sc.Name, codes(ids), aloneSaid(ids, alone))
 		}
+	}
+	if len(alone) > 0 {
+		fmt.Fprintf(&b, "\n**By its file alone**: %s. Its build broke on the base and its build-errors row names no test (no `test-name`), "+
+			"so only the file is proven; the code's change must run a test of it, green.\n", codes(alone))
 	}
 	if len(said) > 0 {
 		b.WriteString("\n**Not tested**, no test can check it; a builder may object:\n\n")

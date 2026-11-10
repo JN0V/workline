@@ -1,0 +1,33 @@
+case: tester/write-declared-build-broke-generic
+about: >
+  Build broke, no test-name (#1293): a C test whose build breaks on the
+  base, no report written. Its build-errors row names no test, as the
+  generic pack's, so the test file the change adds counts as one test,
+  named by the file. The agent declares that file for Multiply: it is
+  covered, the Draft opens and says only the file is proven; the record
+  freezes the file as its test.
+given:
+  repo: c-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-red-yes.yaml"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", build-errors: [{error: '^(?P<file>[^\s:]+\.c):\d+:\d+: error: (?P<message>.+)$', missing-name: ['^implicit declaration of function']}]}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Multiply:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA C test in tests/.\n\n## Scope\n\n- `src/calc.c`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-c-declared"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base (1 not built there, a missing name the issue names)"
+  no-findings: [{rule: no-new-test}]
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["| Multiply | `tests/test_mul.c` (by its file alone) |", "**By its file alone**: `tests/test_mul.c`", "only the file is proven"]
+        comment-contains: ["By its file alone", '"tests":["tests/test_mul.c"]', '"covers":{"Multiply":["tests/test_mul.c"]}']

@@ -18,13 +18,13 @@ func TestAssumedOnTheDraft(t *testing.T) {
 	if want := []string{"stubDrop() — read in the stub", "a clock helper\nset first"}; !slices.Equal(got, want) {
 		t.Fatalf("assumed %q, want %q", got, want)
 	}
-	body := draftBody(task{Issue: 3}, nil, nil, got, &verdict.Verdict{Summary: "red"})
+	body := draftBody(task{Issue: 3}, nil, nil, nil, got, &verdict.Verdict{Summary: "red"})
 	for _, w := range []string{"**Assumed**", "- stubDrop() — read in the stub\n", "- a clock helper set first\n"} {
 		if !strings.Contains(body, w) {
 			t.Errorf("the Draft lacks %q:\n%s", w, body)
 		}
 	}
-	if body := draftBody(task{Issue: 3}, nil, nil, nil, &verdict.Verdict{Summary: "red"}); strings.Contains(body, "Assumed") {
+	if body := draftBody(task{Issue: 3}, nil, nil, nil, nil, &verdict.Verdict{Summary: "red"}); strings.Contains(body, "Assumed") {
 		t.Errorf("nothing assumed, yet said:\n%s", body)
 	}
 }

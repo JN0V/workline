@@ -98,11 +98,11 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	slices.Sort(old)
 	// A frozen id missing: blocking when it is a report's test case (it
 	// converges) or when no new test of the head could be it; one named
-	// from its file, or a record the red run wrote with no class, failed
+	// from its file, or by its file alone, or a record the red run wrote with no class, failed
 	// (a file it could not collect), is the judge's.
 	var doubt *renamed
 	for _, t := range missing {
-		if (named(rec, t) || slices.Contains(rec.Errored, t)) && len(added) > 0 {
+		if (named(rec, t) || fileAlone(rec, t) || slices.Contains(rec.Errored, t)) && len(added) > 0 {
 			if doubt == nil {
 				doubt = &renamed{Candidates: added, Runs: len(runs)}
 			}
@@ -186,8 +186,37 @@ func named(r record, t string) bool {
 	return i > 0 && r.Files[t[:i]] != "" && t[i+1:] != ""
 }
 
+// fileAlone says whether t is a test the red proof named by its file
+// alone (the file one the record freezes): its build broke on the base,
+// and its ecosystem has no test-name to name its tests by (#1293).
+func fileAlone(r record, t string) bool {
+	return r.Files[t] != ""
+}
+
+// ofFile is the ids of results that are a test of file, sorted: an id
+// one of whose dotted parts, its name too, is the file by its name
+// without extension, the words before it the folders' last ones, or
+// none (`test_mul.main`, `tests.test_mul.main`, `tests/test_mul.c.main`
+// or, a runner naming a test by its file, `tests.test_mul` for
+// `tests/test_mul.c`). A guess: its miss is the judge's, never a block.
+func (r ran) ofFile(file string) []string {
+	var out []string
+	for id := range r.results {
+		if ofFile(id, file) {
+			out = append(out, id)
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
+func ofFile(id, file string) bool {
+	return fileQualified(idWords(id), file)
+}
+
 // frozenIn is the head's ids the record's test t is. An id from a report
-// is itself; one the red proof named from its file, its build broken on
+// is itself; one named by its file alone, each id of a test of that file
+// (ofFile); one the red proof named from its file, its build broken on
 // the base (file:name, the file one the record freezes), is each id that
 // holds name as a whole part: after a dot or at the start, before the
 // end or a mark that is no word's nor a dot's (a parameter's `[`, a
@@ -201,13 +230,14 @@ func (r record) frozenIn(t string, ids map[string]bool) []string {
 	if ids[t] {
 		return []string{t}
 	}
-	if !named(r, t) {
+	alone := fileAlone(r, t)
+	if !alone && !named(r, t) {
 		return nil
 	}
 	i := strings.LastIndex(t, ":")
 	var out []string
 	for id := range ids {
-		if namedAs(id, t[i+1:], t[:i]) {
+		if alone && ofFile(id, t) || !alone && namedAs(id, t[i+1:], t[:i]) {
 			out = append(out, id)
 		}
 	}
@@ -264,16 +294,27 @@ func qualifiedBy(qualifier, file string) bool {
 	if len(q) == 0 {
 		return false
 	}
-	stem := path.Base(file)
-	if k := strings.Index(stem, "."); k > 0 {
-		stem = stem[:k]
-	}
 	dirs := idWords(path.Dir(file))
 	if len(dirs) > 0 && (endsWith(q, dirs) || endsWith(dirs, q)) {
 		return true
 	}
-	for k, w := range q {
-		if w != stem {
+	return fileQualified(q, file)
+}
+
+// fileQualified says whether a qualifier's words are file's: a module or
+// class that is the file, or a class named after it (qualifiedBy).
+func fileQualified(q []string, file string) bool {
+	stem := path.Base(file)
+	if k := strings.Index(stem, "."); k > 0 {
+		stem = stem[:k]
+	}
+	words := idWords(stem) // a stem of one word, or several: `test-mul`'s
+	if len(words) == 0 {
+		return false
+	}
+	dirs := idWords(path.Dir(file))
+	for k := range q {
+		if len(q)-k < len(words) || !slices.Equal(q[k:k+len(words)], words) {
 			continue
 		}
 		if endsWith(dirs, q[:k]) || unicode.IsUpper([]rune(stem)[0]) && apart(q[:k], dirs) {

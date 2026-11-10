@@ -410,7 +410,11 @@ func brokenTests(errs []buildError) []buildError {
 // head's report does not name: they did not build, as file:name. A test
 // the base's own file declares is the base's, in a file the change adds
 // to, never a new one (#1259): told by its file, never by a name another
-// file's test may share.
+// file's test may share. An ecosystem with no test-name (the generic
+// pack's) names no test: each test file the change adds, none of whose
+// tests the head's report names, is one test, named by the file alone,
+// which proves only that the file is there (#1293); one it adds to is
+// the base's, its new tests untold.
 func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []buildRules) ([]string, error) {
 	used := map[int]bool{}
 	for _, e := range errs {
@@ -430,9 +434,16 @@ func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []
 		if err != nil {
 			return nil, err
 		}
-		old, _ := git(repo, "show", ch.base+":"+file) // none: a new file
+		old, err := git(repo, "show", ch.base+":"+file) // an error: a new file
+		isNew := err != nil
 		for i, r := range rules {
 			if !used[i] {
+				continue
+			}
+			if r.testName == nil {
+				if isNew && !slices.Contains(out, file) && len(head.ofFile(file)) == 0 {
+					out = append(out, file)
+				}
 				continue
 			}
 			base := testNames(old, r)

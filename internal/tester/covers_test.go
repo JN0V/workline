@@ -95,6 +95,14 @@ func TestDeclaredIn(t *testing.T) {
 	if got, others := declaredIn("one", []string{file + ":one", other + ":one"}, []string{file, other}); got != nil || len(others) != 2 {
 		t.Errorf("one name in two files: %v %v", got, others)
 	}
+	// A file alone, its ecosystem naming no test (#1293): the file, or a
+	// test of it by file:name, is it; another file is not.
+	c := "tests/test_mul.c"
+	for id, want := range map[string][]string{c: {c}, c + ":mul_works": {c}, "tests/test_div.c": nil, "test_mul": nil, "mul_works": nil} {
+		if got, others := declaredIn(id, []string{c}, []string{c}); !slices.Equal(got, want) || others != nil {
+			t.Errorf("file alone: declaredIn(%q) = %v %v, want %v", id, got, others, want)
+		}
+	}
 }
 
 // An objection naming a declared test is on the scenario it covers; one
