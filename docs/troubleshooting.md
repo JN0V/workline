@@ -222,4 +222,6 @@ The [merge policy](merge-policy.md) acts only with `merge:` in
   uncommitted changes, a conflict, or a branch moved since it was
   weighed; commit or stash, rebase, or run the line again.
 - `verdict-not-kept`: `follow --verdict` with no `merge:` set, or on a
-  forge without auto-merge.
+  forge without auto-merge; on the local forge, `route merge-request`
+  could not keep its verdict in the clone: the request waits, run the
+  line again.

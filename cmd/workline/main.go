@@ -1478,12 +1478,14 @@ func routeCmd(args []string) int {
 			return 1
 		}
 	} else if event == "merge-request" && t != nil && t.Kind == "merge-request" && !*dryRun && !*gatesOnly && inputs[line.WarnInput] != line.WarnOnly {
+		// Keeping it is a side act: a failure is said, the run's status
+		// stays the line's.
 		said, err := keepLocalVerdict(abs, spec, inputs["range"], res)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "workline:", err)
-			return 1
-		}
-		if said != "" {
+		switch {
+		case err != nil:
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "verdict-not-kept", Level: "warn", Where: fmt.Sprintf("!%d", t.ID),
+				Message: fmt.Sprintf("the line's verdict is not kept in the clone (%v): `workline follow` finds none for this head, and it waits", err)})
+		case said != "":
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "verdict-kept", Where: fmt.Sprintf("!%d", t.ID), Message: said + "; `workline follow` weighs it"})
 		}
 	}
