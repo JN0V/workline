@@ -626,7 +626,11 @@ whose result moves the issue to the next. The table is the routing's
   Until then the line says it waits (`state-waits`): on its reporter,
   or a person's yes on its drafts, and the day the product owner takes
   its assumption, never silent
-  ([#1082](https://github.com/JN0V/workline/issues/1082)).
+  ([#1082](https://github.com/JN0V/workline/issues/1082)). Its comment
+  on the issue, written after the product owner's run, says the same:
+  what waits, why, and what of a person ends it — a yes on its drafts
+  or on what it proposes, or the reporter's answer
+  ([#1195](https://github.com/JN0V/workline/issues/1195)).
   Its drafts' own body — the one its state's digest names —, or the
   reviewer's review of it with nothing important open, make the step
   due no sooner: the product owner could write nothing. A person's edit

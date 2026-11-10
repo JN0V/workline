@@ -26,7 +26,7 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: state-waits, level: info, where: "#9", message: "its question of 2099-01-01 09:00 UTC waits on its reporter: the product-owner takes its assumption on 2099-01-02 09:00 UTC (acts.ask.wait: 24 h)"}
+    - {rule: state-waits, level: info, where: "#9", message: "its question of 2099-01-01 09:00 UTC waits on its reporter: the product owner takes its assumption on 2099-01-02 09:00 UTC (acts.ask.wait: 24 h)"}
   no-findings: [{rule: state-acted}, {rule: state-timeout}, {rule: state-wakes}]
   forge:
     issues:

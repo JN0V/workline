@@ -80,7 +80,9 @@ Need or Validation draft no person accepted, waits for an answer
 - **An answer before the delay** cancels it: no assumption.
 - **While it waits**, the line says so on each reconcile: on whom, and
   the day the assumption is taken
-  ([#1082](https://github.com/JN0V/workline/issues/1082)). Drafts
+  ([#1082](https://github.com/JN0V/workline/issues/1082)). Its comment
+  on the issue says it too, with what a person does to end the wait
+  ([#1195](https://github.com/JN0V/workline/issues/1195)). Drafts
   waiting call no agent; a person's comment, edit or label, or an
   important finding of the reviewer's, still does
   ([#1127](https://github.com/JN0V/workline/issues/1127)). Drafts not

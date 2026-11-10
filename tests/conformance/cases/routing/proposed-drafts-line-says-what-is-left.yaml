@@ -1,0 +1,30 @@
+case: routing/proposed-drafts-line-says-what-is-left
+about: >
+  The product owner proposed its Validation draft, the Scope still
+  missing: the drafts are not taken as written while the issue lacks
+  more than them. The line's comment says what keeps it from ready and
+  the yes that moves it, never only who it last woke (#1195).
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:draft, workline:proposed]
+        labeled: {"workline:draft": "2026-10-01T09:00:00Z"}
+        body: "When I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {route: issue, target: {issue: 9}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine, workline:draft, workline:proposed]
+        comment-contains: "**workline's line** waits for a person on this issue.\n\n- **Why**: the product owner proposes what it wrote, which a person decides: Validation is still a draft: accept it (workline:accepted) or edit it; Scope is missing.\n- **Next**: a person labels it `workline:accepted` to do it, which wakes the product owner, or takes `workline:proposed` off to set it aside."

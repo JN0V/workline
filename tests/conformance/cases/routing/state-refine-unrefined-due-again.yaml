@@ -51,7 +51,7 @@ expect:
   findings:
     - {rule: state-unrefined, where: "#9", message: "left it lacking Scope, nothing asked: woken again, 1 of 2"}
     - {rule: refine-capped, where: "#10", message: "read it 3 times on the same text"}
-    - {rule: state-waits, where: "#11", message: "waits on its reporter: the product-owner takes its assumption on"}
+    - {rule: state-waits, where: "#11", message: "waits on its reporter: the product owner takes its assumption on"}
     - {rule: state-acted, where: "#12"}
   forge:
     issues:

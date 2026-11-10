@@ -1,0 +1,29 @@
+case: routing/drafts-normal-line-says-when
+about: >
+  At normal, drafts inside the delay wait (ADR-0060): the line's comment
+  on the issue says they wait on a person's yes, and the day the product
+  owner takes them as written, never only who it last woke (#1195).
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: "workline-jn0v[bot]"
+        insider: false
+        labels: [workline:to-refine, workline:draft]
+        labeled: {"workline:draft": "2099-10-01T09:00:00Z"}
+        body: "## Need\n\n<!-- workline:draft -->\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {route: issue, target: {issue: 9}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine, workline:draft]
+        comment-contains: "- **Why**: its drafts wait on a person's yes: the product owner takes them as written on 2099-10-02 09:00 UTC (acts.ask.wait: 24 h).\n- **Next**: a person labels it `workline:accepted` to take them, or edits them, which wakes the product owner."

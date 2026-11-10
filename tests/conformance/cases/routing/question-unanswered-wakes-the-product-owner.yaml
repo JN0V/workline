@@ -27,7 +27,7 @@ expect:
   status: pass
   agent-calls: 1
   findings:
-    - {rule: state-timeout, level: info, where: "#9", message: "its question of 2026-10-01 23:50 UTC got no answer in 24 h (acts.ask.wait): the product-owner takes its assumption"}
+    - {rule: state-timeout, level: info, where: "#9", message: "its question of 2026-10-01 23:50 UTC got no answer in 24 h (acts.ask.wait): the product owner takes its assumption"}
   forge:
     issues:
       - id: 9
