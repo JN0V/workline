@@ -161,7 +161,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 |---|---|---|
 | `base` | `main` | where `workline review` starts without `--base` |
 | `ignore` | `*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
-| `lenses` | `[correctness, edge-cases, tests, intent, claims, comments]` | in this order, in turn, on a merge request; a lens with nothing to read skipped; `comments` asked whenever `story-words` flags a comment |
+| `lenses` | `[correctness, edge-cases, tests, intent, claims, comments]` | in this order, in turn, on a merge request; a lens with nothing to read skipped; `comments` takes no turn, asked whenever `story-words` flags a comment |
 | `lenses-per-push` | `1` | `--input lenses=all` asks every one, on the whole change: the templates pass it when the merge request becomes ready |
 | `commits-per-push` | `5` | after ready: new commits a lens that warns reads a push, the oldest first; the rest at the next push, said; none left when what its own pipeline runs changes; `0`: every one ([more](docs/ready.md#after-ready-only-what-is-new)) |
 | `pipeline-paths` | none | what else the merge request's own pipeline runs, besides `.github/`, `.gitlab-ci.yml` and `.workline/`, as `[ci/, scripts/ci/]`: a change to it skips no commit on the record ([more](docs/run.md#3-the-record)) |
@@ -171,7 +171,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `spec-rounds` | `5` | on the forge: reviews in a row leaving a finding open, then a question to a person (1 to 20) |
 | `specs-per-run` | `5` | on the forge: the specs a night reads, the rest next night (1 to 20; [a spec](docs/spec.md#on-the-forge)) |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
-| `story-words` | `used to`, `the bug was`, `previously` | a comment that may tell the code's history: a guess the `comments` lens judges; with no agent, a warning |
+| `story-words` | `used to`, `the bug was`, `previously` | a comment that may tell the code's history: a guess the `comments` lens judges; with no agent, or no lens with `hints: bug-story`, a warning |
 | `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}` (below) |
 | `judge-at-least` | `context` | `model` or `provider`: the judge's independence |
 | `judge-at-least-by-role` | `{developer: model}` | a higher floor for a change a role's commits made: the [developer](../developer/README.md)'s code judged by another model |

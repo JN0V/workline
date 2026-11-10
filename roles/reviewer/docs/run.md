@@ -42,7 +42,8 @@ flowchart LR
    - a block over `comment-block-max` lines (`long-comment`, a warning);
    - a story of the code (`story-words`), a guess never blocking ([Rule A of ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-a-a-guess-may-only-pass)):
      the `comments` lens judges each comment flagged, on the push adding
-     it, its turn or not; with no agent, `bug-story` warns.
+     it; with no agent, or no lens set to judge it (`hints: bug-story`),
+     `bug-story` warns.
 
    While a rule blocks, no agent is asked; one the project sets to `warn`
    (`enforce`) only warns ([#550](https://github.com/JN0V/workline/issues/550)).
@@ -92,7 +93,9 @@ flowchart LR
 
 The lenses (`lenses/<lens>.md`, a project's own in
 `.workline/roles/reviewer/lenses/`): correctness, edge cases, tests,
-intent, claims ([#126](https://github.com/JN0V/workline/issues/126)).
+intent, claims ([#126](https://github.com/JN0V/workline/issues/126)), and
+comments, asked only when `story-words` flags a comment, beside the lens
+in turn, never in its place.
 Every one on a machine; on a merge request one a push, in turn
 (`lenses-per-push`), with a block's lens when the push changes its file
 ([more](judge.md#a-block-stands-until-a-commit-answers-it)), every one
