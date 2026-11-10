@@ -1756,7 +1756,12 @@ func issuesWrite(l *forge.Local, root, what, id, body, bodyFile string, add, rem
 	}
 	text = strings.TrimSpace(text)
 	if what == "open" {
-		n, err := l.Open(strings.TrimSpace(id), text, add)
+		title := strings.TrimSpace(id)
+		if title == "" {
+			fmt.Fprintln(os.Stderr, "workline: open needs a title")
+			return 64
+		}
+		n, err := l.Open(title, text, add)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "workline:", err)
 			return 1
