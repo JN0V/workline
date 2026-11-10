@@ -693,6 +693,14 @@ func (a *applier) refining(c backlog.Proposal) error {
 				return err
 			}
 		}
+		if c.TooBig && !st.SplitTests {
+			// A bug predicted past its normal (#1212): its tests first,
+			// then the line asks its split, before the developer.
+			st.SplitTests = true
+			if err := f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false); err != nil {
+				return err
+			}
+		}
 		add, remove := []string{backlog.LabelReady}, backlog.ReadyRemoves(*is)
 		// Where the project routes the tester, an issue with named
 		// scenarios goes to its tests first: the tester's result makes it

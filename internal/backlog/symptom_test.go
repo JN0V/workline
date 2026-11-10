@@ -28,9 +28,10 @@ func TestBugSplitWaitsForItsTests(t *testing.T) {
 		{"bug, a person's yes", []string{"bug"}, func(int) (bool, error) { return false, nil }, "ann", ""},
 		{"bug, no tester known", []string{"bug"}, nil, "", ""},
 		{"feature", []string{"enhancement"}, func(int) (bool, error) { return false, nil }, "", ""},
+		{"bug, its tests crossed its size", []string{"bug", LabelBlocked}, func(int) (bool, error) { return false, nil }, "", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			p := &Plan{issues: map[int]forge.Issue{3: {ID: 3, Labels: tc.labels}}, config: Config{Tested: tc.tested}}
+			p := &Plan{issues: map[int]forge.Issue{3: {ID: 3, Labels: tc.labels}}, config: Config{Tested: tc.tested, Sized: 3, SizeAsked: true}}
 			c := Proposal{Do: "split", Issue: 3, Into: into, Ticked: tc.ticked}
 			rule, why := p.checkSplitRename(".", &c)
 			if rule == "sources-unknown" {
@@ -38,6 +39,37 @@ func TestBugSplitWaitsForItsTests(t *testing.T) {
 			}
 			if rule != tc.rule {
 				t.Fatalf("rule = %q (%s), want %q", rule, why, tc.rule)
+			}
+		})
+	}
+}
+
+// A ready `too-big` holds on a bug in refine, sized in this run, its
+// tests not yet written: they go first, then its split is asked (#1212).
+func TestReadyTooBigWaitsForTests(t *testing.T) {
+	untested := func(int) (bool, error) { return false, nil }
+	for _, tc := range []struct {
+		name    string
+		labels  []string
+		body    string
+		sized   int
+		tested  func(int) (bool, error)
+		dropped string // in why, "" when it holds
+	}{
+		{"bug in refine", []string{"bug", LabelToRefine}, "", 3, untested, ""},
+		{"feature", []string{"enhancement", LabelToRefine}, "", 3, untested, "only a bug"},
+		{"no tester", []string{"bug", LabelToRefine}, "", 3, nil, "only a bug"},
+		{"not sized here", []string{"bug", LabelToRefine}, "", 4, untested, "not asked"},
+		{"a part", []string{"bug", LabelToRefine}, "Part of #1.", 3, untested, "never split again"},
+		{"tests written", []string{"bug", LabelToRefine}, "", 3, func(int) (bool, error) { return true, nil }, "written already"},
+		{"Drafts unread", []string{"bug", LabelToRefine}, "", 3, func(int) (bool, error) { return false, errors.New("down") }, "could not be read"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			is := forge.Issue{ID: 3, Labels: tc.labels, Body: tc.body}
+			p := &Plan{issues: map[int]forge.Issue{3: is}, config: Config{Tested: tc.tested, Sized: tc.sized}}
+			why := p.splitAfterTests(is, Proposal{Do: "ready", Issue: 3, TooBig: true})
+			if tc.dropped == "" && why != "" || !strings.Contains(why, tc.dropped) {
+				t.Errorf("why = %q, want %q", why, tc.dropped)
 			}
 		})
 	}

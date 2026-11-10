@@ -125,9 +125,9 @@ in QA does, rerunning the reproduction once the fixes merged.
 
 - **Before the split**: a bug goes to its tests first. The tester
   writes the reporter's symptom as red tests on the bug's Draft; the
-  product owner splits it after
+  line then asks the product owner its split, before the developer
   ([split](../../../docs/spec/backlog-acts/split.md#split-on-size)).
-- **Once every part is closed**: the line runs the tester on the
+- **Once every part is closed**, no person's yes on it: the line runs the tester on the
   parent, no agent, given `symptom`, before the product owner.
   - The Draft's test files, as its commits changed them since the
     record's base, are merged over the default branch's current commit.

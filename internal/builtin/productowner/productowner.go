@@ -900,7 +900,7 @@ func Pre(runDir, repo string) int {
 				review += predictSaid(b, open, d.is, d.st, cfg.SplitOff(), testsFirst(b, d.is, cfg.Tester))
 			}
 			if slices.Contains(d.is.Labels, backlog.LabelBlocked) && d.is.ID == issueEvent() {
-				review += blockedSaid(runDir, d.is, d.comments, cfg.SplitOff(), testsFirst(b, d.is, cfg.Tester), func() string { return spentSaid(b, open, d.is, d.comments) })
+				review += blockedSaid(runDir, d.is, d.comments, cfg.SplitOff(), func() string { return spentSaid(b, open, d.is, d.comments) })
 				if unrefinedRead(runDir) {
 					// Blocked on its own read in refine, its text rewritten
 					// and nothing decided on it: back to refine in the same
@@ -2018,7 +2018,7 @@ var blockWhy = regexp.MustCompile(`(?m)^- \*\*Why\*\*: (.+)$`)
 // why it was blocked, what is new, and what it may decide (ADR-0059,
 // amended): back to the state it came from or to refine, or kept
 // blocked, its reason said afresh.
-func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool, first string, spent func() string) string {
+func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool, spent func() string) string {
 	input := func(name string) string {
 		data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", name))
 		return strings.TrimSpace(string(data))
@@ -2058,14 +2058,24 @@ func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool
 		if tier != "" {
 			grant = fmt.Sprintf(" (its size tier is %s already, `%s`: a tier only goes up, and past %s it is a person's, so no `size`)", tier, backlog.TierLabel(tier), backlog.TierLarge)
 		}
+		if role == engine.SizePredicted {
+			// Predicted past its normal at refine, a bug readied for its
+			// tests first (#1212): written now, its split is asked.
+			split := "split it" + strings.TrimPrefix(splitSaid(is, splitOff), "; or split it")
+			if noSplit(is, splitOff, "") != "" {
+				split = "no split" + splitSaid(is, splitOff)
+			}
+			return fmt.Sprintf("Blocked (%s), on its size: you predicted it past its normal at refine, and readied it for its tests first; the tester wrote them, on its Draft, so it is split or granted now, before the developer takes it. Read again because %s. Spent on it so far: %s. Decide one, its `why` one plain line: %s%s; or, its tests showing it within its normal after all, `unblock` it, %s; or `blocked`, `person: true`: a person decides. Never `ready` on it.\n",
+				backlog.LabelBlocked, news, spent(), split, strings.Replace(grant, "the same way", where, 1), where)
+		}
 		rule := ""
-		if tier == "" && noSplit(is, splitOff, first) == "" {
+		if tier == "" && noSplit(is, splitOff, "") == "" {
 			// Both offered: which one, said once (ADR-0064, §3).
 			rule = fmt.Sprintf(" Split or grant: split when its parts each pass their own scenarios apart; when none can — one cause, a change no half of proves — grant it, never split it. Its %s or %s saying its parts fail apart is evidence to weigh, not the test.",
 				work.Name(work.Need), work.Name(work.Scope))
 		}
 		return fmt.Sprintf("Blocked (%s), on its size. What crossed: %s. Read again because %s. Spent on it so far: %s. A crossing measures one run of the %s, not the need: a run again on the same input crosses the same, and sent back as it is, the issue waits for a person. Decide one, its `why` one plain line: narrow its %s — `refine` with `scope`, the %[6]s rewritten whole to the fewer files its need needs, and `sources` — then `unblock` it, %[7]s%[8]s%[10]s; or `blocked`, why its need cannot be narrowed, `person: true`: a person splits it, grants it `%[9]s`, or raises the setting the line names.%[11]s Never `ready` on it.\n",
-			backlog.LabelBlocked, why, news, spent(), strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where, grant, backlog.LabelSizeXLarge, splitSaid(is, splitOff, first), rule)
+			backlog.LabelBlocked, why, news, spent(), strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where, grant, backlog.LabelSizeXLarge, splitSaid(is, splitOff), rule)
 	}
 	alone := ""
 	if unrefinedRead(runDir) {

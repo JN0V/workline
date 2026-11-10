@@ -152,6 +152,10 @@ type State struct {
 	// Size is the tier the role granted, once (ADR-0064, §3): its label
 	// taken off is a person's, never granted again.
 	Size string `yaml:"size,omitempty"`
+	// SplitTests: the role predicted this bug past its normal at refine,
+	// and readied it for its tests first (#1212): once the tester's
+	// Draft holds them, the line asks it its split before the developer.
+	SplitTests bool `yaml:"split-after-tests,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -236,9 +240,10 @@ func FormatState(s State) string {
 		Told      int               `yaml:"told,omitempty"`
 		Kind      string            `yaml:"kind,omitempty"`
 		Size      string            `yaml:"size,omitempty"`
+		SplitTest bool              `yaml:"split-after-tests,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Revised, s.Plain, s.Deleted,
 		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Retest, s.Silent, s.Unread,
-		s.Assumed, s.AssumedAt, s.Told, s.Kind, s.Size})
+		s.Assumed, s.AssumedAt, s.Told, s.Kind, s.Size, s.SplitTests})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
 	// role tells them, never its record.
@@ -609,7 +614,9 @@ type Proposal struct {
 	// Tier: the size tier granted, large alone (ADR-0064, §3). TooBig,
 	// on a split: the issue past its size, measured by a run that
 	// crossed it or predicted at ready; split then turns on, off as it
-	// is by default, and a part is never split again (§3, §4).
+	// is by default, and a part is never split again (§3, §4). On a
+	// ready, a bug's predicted past it with no Draft yet: its tests
+	// first, then its split asked (State.SplitTests, #1212).
 	Tier   string `yaml:"tier,omitempty"`
 	TooBig bool   `yaml:"too-big,omitempty"`
 	// Obsolete (ADR-0024): Announced, on the engine's closing, the day of
@@ -1946,6 +1953,33 @@ func (p *Plan) bugParent(c *Proposal, st *State) {
 	c.Why = strings.TrimSuffix(strings.TrimSpace(c.Why), ".") + "; its closing is a person's: " + why
 }
 
+// splitAfterTests says why a ready's `too-big` does not hold on is, ""
+// when it does (#1212): a bug the run was told to size in refine, which
+// may be split, its tests not yet written. Readied so, it goes to its
+// tests, and the line asks its split once they are.
+func (p *Plan) splitAfterTests(is forge.Issue, c Proposal) string {
+	if kind, _ := KindOf(is.Labels); kind != KindBug || p.config.Tested == nil {
+		return "only a bug goes to its tests before its split, where the line runs the tester"
+	}
+	if c.Issue != p.config.Sized || !slices.Contains(is.Labels, LabelToRefine) {
+		return fmt.Sprintf("#%d's size was not asked in this run, in refine", c.Issue)
+	}
+	if p.config.SplitOff() {
+		return "this project allows no splits"
+	}
+	if partOf(is.Body) > 0 {
+		return "a part of a split is never split again"
+	}
+	tested, err := p.config.Tested(c.Issue)
+	switch {
+	case err != nil:
+		return "the tester's Drafts could not be read (" + err.Error() + ")"
+	case tested:
+		return "its tests are written already: split it now, or grant it"
+	}
+	return ""
+}
+
 // unshown splits sources into the code the run did not give for an
 // issue, each path neither in, nor holding, one its state or its title
 // and body name, and the code it gave. A quote is asked only of code the
@@ -2327,6 +2361,13 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		if rule, why := p.checkNoTest(f, role, is, c); rule != "" {
 			return rule, why
 		}
+		if c.TooBig {
+			if why := p.splitAfterTests(is, *c); why != "" {
+				c.TooBig = false // readied all the same, no split asked after its tests
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "too-big-ready-dropped", Level: "info", Where: c.where(),
+					Message: "`too-big` left out of its `ready`: " + why})
+			}
+		}
 	case "ask":
 		if strings.TrimSpace(c.Questions) == "" {
 			return "ask-empty", "nothing asked: the question was empty"
@@ -2496,16 +2537,18 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 		// never split again for it.
 		return "split-depth", fmt.Sprintf("it is a part of #%d already: a part is never split for its size; grant it `size` `%s`, or leave it to a person", parent, TierLarge)
 	}
-	if kind, _ := KindOf(is.Labels); kind == KindBug && p.config.Tested != nil && c.Ticked == "" {
+	if kind, _ := KindOf(is.Labels); kind == KindBug && p.config.Tested != nil && c.Ticked == "" && !p.sizeAsked(c.Issue) {
 		// A bug goes to its tests first (#1212): the tester writes the
 		// reporter's symptom as a red test on its Draft, then it is
 		// split; at its closing, that test is run on the default branch.
+		// Blocked and asked on its size, it may be split with none: the
+		// tester's own run crossed it, and each part gets its tests.
 		tested, err := p.config.Tested(c.Issue)
 		switch {
 		case err != nil:
 			return "bug-tests-unread", fmt.Sprintf("#%d is a bug, split once its reproduction test is written, and the tester's Drafts could not be read (%v): not split", c.Issue, err)
 		case !tested:
-			return "bug-tests-first", fmt.Sprintf("#%d is a bug: it is split once the tester wrote its reproduction test, on its Draft; `ready` it for its tests first, and its split is asked again if a run on it crosses its size", c.Issue)
+			return "bug-tests-first", fmt.Sprintf("#%d is a bug: it is split once the tester wrote its reproduction test, on its Draft; `ready` it with `too-big: true`: it goes to its tests, and the line asks its split once they are written", c.Issue)
 		}
 	}
 	if len(c.Into) < 2 || len(c.Into) > maxChildren {

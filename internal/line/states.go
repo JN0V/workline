@@ -416,6 +416,9 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "hops-capped", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
 		return nil, &StateWrite{Issue: is.ID, Record: blocking(now, s.Name, why, comments), Blocked: why}, nil
 	}
+	if w := splitAfterTests(res, cfg, s, is, now, comments); w != nil {
+		return nil, w, nil
+	}
 	if why, err := waits(cfg, b, s, open, t); err != nil {
 		return nil, nil, err
 	} else if why != "" {

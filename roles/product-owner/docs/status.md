@@ -143,7 +143,8 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   default branch; a bug split after its tests
   ([#1212](https://github.com/JN0V/workline/issues/1212)): routing's
   `parent-bug-*`, `parent-feature-not-proven-proposes`,
-  `size-split-bug-tests-first`;
+  `size-split-bug-*`, `size-ready-bug-too-big-goes-to-tests`,
+  `size-split-asked-once-tests-written`;
   [tried](https://github.com/JN0V/workline/pull/1318) on the Python
   trial copy.
 - **What an issue waits on**, a link taken off once its reason is gone:

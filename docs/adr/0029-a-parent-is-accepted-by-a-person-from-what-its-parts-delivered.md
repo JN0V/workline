@@ -159,8 +159,11 @@ merged to the default branch was dropped, language-specific and against
 
 - **Tests before the split**: a bug is split only once the tester's
   Draft of it holds its tests, the reporter's symptom red
-  (`bug-tests-first`). The cost, accepted: one tester run for each
-  split bug, and a later split.
+  (`bug-tests-first`). Predicted past its size at ready, it is readied
+  `too-big`; its tests written, the line asks its split before the
+  developer. The cost, accepted: one tester run for each split bug, and
+  a later split. A bug whose tests themselves cross the size is split
+  with none, its closing then a person's.
 - **Its Draft over the default branch**: every part closed, the line
   runs the tester on the parent, no agent: the Draft's tests merged over
   the default branch's current commit, through the green proof. What it

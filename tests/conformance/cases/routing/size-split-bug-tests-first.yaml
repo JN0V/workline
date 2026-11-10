@@ -2,9 +2,10 @@ case: routing/size-split-bug-tests-first
 about: >
   A bug goes to its tests before its split (#1212): the line wakes the
   product owner on bug #3, in refine, its size predicted at ready. Its
-  task offers no split yet: the tester writes the reporter's symptom as
-  a red test on the bug's Draft first. The agent splits it anyway,
-  `too-big: true`: the split is dropped, said, nothing is opened.
+  task offers no split yet: `ready` with `too-big: true`, the tester
+  writing the reporter's symptom as a red test on the bug's Draft first.
+  The agent splits it anyway, `too-big: true`: the split is dropped,
+  said, nothing is opened.
 given:
   repo: tested
   setup:
@@ -26,7 +27,7 @@ expect:
   findings:
     - {rule: bug-tests-first, where: "#3", message: "#3 is a bug: it is split once the tester wrote its reproduction test"}
   run-files:
-    in/task.md: {contains: ["Its size, before `ready`", "(no `split`: a bug is split once the tester wrote its reproduction test, on its Draft"], not-contains: ["`split` it with `too-big: true`"]}
+    in/task.md: {contains: ["Its size, before `ready`", "`ready` it with `too-big: true`: a bug is split once the tester wrote its reproduction test, on its Draft", "the line asks you its split once they are written"], not-contains: ["`split` it with `too-big: true`"]}
   forge:
     issues:
       - {id: 3, comment-lacks: ["split: [4, 5]"]}
