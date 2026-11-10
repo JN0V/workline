@@ -147,6 +147,26 @@ type round struct {
 	// Disputed: those sent that still block, the tester holding no test
 	// needed: its issue blocked for a person.
 	Disputed []Asked `json:"disputed,omitempty"`
+	// RecordUnread: why a reviewer comment's findings were not read: its
+	// record missing beside a table, or not parsing (#705). Said, not silent.
+	RecordUnread string `json:"record-unread,omitempty"`
+}
+
+// recordUnread says why a reviewer comment's findings record cannot be
+// read, "" when it reads, or when the comment shows no finding either.
+func recordUnread(comment string) string {
+	m := reviewerFindings.FindStringSubmatch(comment)
+	if m == nil {
+		if strings.Contains(comment, "|---") {
+			return "its comment shows a table but holds no findings record (workline:findings): no finding read from the table's words"
+		}
+		return ""
+	}
+	var list []map[string]any
+	if err := json.Unmarshal([]byte(m[1]), &list); err != nil {
+		return "its findings record does not parse: " + err.Error()
+	}
+	return ""
 }
 
 // reviewRows reads the findings of the reviewer's comment from its hidden
@@ -365,6 +385,10 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		if r.ChecksUnread != "" {
 			v.Findings = append(v.Findings, checksUnread(where, r.ChecksUnread))
 		}
+		if r.RecordUnread != "" && newReview {
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "findings-record-unread", Level: "warn", Where: where,
+				Message: "the reviewer's findings were not read, none asked: " + r.RecordUnread})
+		}
 		if r.Sent > 0 && newReview {
 			v.Findings = append(v.Findings, testsSent(where, r.Sent))
 		}
@@ -548,6 +572,9 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 		}
 		asked, nits := reviewRows(c)
 		r.Asked, r.Nits = append(r.Asked, asked...), r.Nits+nits
+		if why := recordUnread(c); why != "" && r.RecordUnread == "" {
+			r.RecordUnread = why
+		}
 		if m := reviewerRuns.FindStringSubmatch(c); m != nil {
 			n, _ := strconv.Atoi(m[1])
 			r.Runs += n
