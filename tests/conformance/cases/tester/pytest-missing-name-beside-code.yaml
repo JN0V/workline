@@ -1,0 +1,22 @@
+case: tester/pytest-missing-name-beside-code
+about: >
+  A Python change with its code and its test, run by `python -m pytest`,
+  the root on the import path: on the base the test imports `money`,
+  which pkg.pricing lacks, so pytest cannot collect it, by that name
+  only; the head imports it and runs the test green. Red, then green
+  (#1283).
+given:
+  repo: python-tested
+  setup:
+    - git checkout -q -b feat/money
+    - |
+      printf 'def tax(amount):\n    return amount * 0.2\n\n\ndef money(amount):\n    return "%%.2f" %% amount\n' > pkg/pricing.py
+    - |
+      printf 'from pkg.pricing import money\n\n\ndef test_money():\n    assert money(1) == "1.00"\n' > tests/test_pricing.py && git add . && git commit -qm "feat: money"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh -m {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base, green on the head (1 not built there, a missing name the change's code adds)"
+  no-findings: [{rule: tests-not-built}]

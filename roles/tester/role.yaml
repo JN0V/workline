@@ -79,7 +79,7 @@ settings:
   code-lines-max: 1500
   # Runs the project's tests and writes a JUnit XML report; {report} is
   # replaced by test-report's path. Unset: the check blocks,
-  # setting-missing, never a pass. E.g. `pytest --junitxml={report}`,
+  # setting-missing, never a pass. E.g. `python -m pytest --junitxml={report}`,
   # `gotestsum --junitfile {report} ./...`, `npx jest --reporters=jest-junit`.
   test-command: ""
   # Where the command writes the report, from the repository's root: a
@@ -94,7 +94,7 @@ settings:
   # The Draft's red proof on the folders holding its tests alone
   # ({packages}), on the base and with the tests, writing test-report;
   # unset: test-command, the whole suite, on each. E.g.
-  # `gotestsum --junitfile {report} -- {packages}`, `pytest
+  # `gotestsum --junitfile {report} -- {packages}`, `python -m pytest
   # --junitxml={report} {packages}`.
   draft-command: ""
   # The file marking a build module's folder, by its name alone (`*`
@@ -126,12 +126,14 @@ settings:
   # naming what the code lacks (the name in a group `name`, else the
   # first quoted word), and the tests a file declares. Each error a
   # missing name the base lacks and the issue names: red at once. Any
-  # other broken build goes to the judge with the raw facts; its yes is
-  # red, its no build-broken, anything else red unproven
-  # (docs/missing-name.md). An absolute path, or a file:// URI, under the
-  # checkout is read from the root. Go's, Kotlin's (Gradle's `e:` lines,
-  # Kotlin 2 and 1), javac's and Gradle's build files here; data, until
-  # the language packs take them.
+  # other build broken on the base goes to the judge with the raw facts;
+  # its yes is red, its no build-broken, anything else red unproven
+  # (docs/missing-name.md). On the head, a test of the change that does
+  # not build, but for a missing name, is build-broken at once. An absolute path, or a file:// URI, under the
+  # checkout is read from the root. A message on a later line, read by
+  # message-line (pytest's `E` line). Go's, Kotlin's (Gradle's `e:`
+  # lines, Kotlin 2 and 1), javac's, Gradle's build files and pytest's
+  # collection errors here; data, until the language packs take them.
   build-errors:
     - error: '^(?:\./)?(?P<file>[^\s:]+\.go):\d+:\d+: (?P<message>.+)$'
       missing-name:
@@ -152,6 +154,11 @@ settings:
       name-line: '^\s*symbol:\s+\w+\s+(?P<name>\w+)'
       test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|protected|private|static|final)\s+)*void\s+(\w+)\s*\('
     - error: '^(?:Build|Settings) file ''(?P<file>[^'']+)'' line: \d+(?P<message>)$'
+    - error: '^_+ ERROR collecting (?P<file>\S+\.py) _+(?P<message>)$'
+      message-line: '^E\s+(?P<message>[\w.]+: .+)$'
+      missing-name:
+        - '^ImportError: cannot import name ''(?P<name>[^'']+)'''
+      test-name: '(?m)^\s*(?:async\s+)?def (test\w*)\s*\('
   # The judge of a broken build may read the base before it answers
   # (ADR-0045): its rounds of reads, and the lines served, all rounds
   # together. 0 rounds: it answers from the facts alone.

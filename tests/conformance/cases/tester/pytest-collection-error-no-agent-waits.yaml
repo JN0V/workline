@@ -1,0 +1,20 @@
+case: tester/pytest-collection-error-no-agent-waits
+about: >
+  The tests alone, in a flat-layout Python project run by plain `pytest`,
+  which cannot import the project: pytest cannot collect the new test
+  file, `No module named 'pkg'`, and writes one errored record of it. The
+  role's default build-errors read pytest's error, its message on the `E`
+  line below the file; it is no name the code lacks, so it is not red
+  proven: no agent judges it, a person reads it, the error quoted (#1283).
+given:
+  repo: python-tested
+  setup:
+    - git checkout -q -b workline/issue-7
+    - |
+      printf 'from pkg.pricing import money\n\n\ndef test_money():\n    assert money(1) == "1.00"\n' > tests/test_pricing.py && git add . && git commit -qm "test: money"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: human
+  findings: [{rule: red-unproven, where: tests/test_pricing.py, message: "No module named 'pkg'"}]

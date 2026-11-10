@@ -231,7 +231,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern, `**` spanning folders, each file it names read. Removed before each run, but a file git tracks, in a nested repository, or through a folder linked outside the root, as Bazel's `bazel-testlogs/*/*/test.xml`: kept, read only if the run rewrites it into a JUnit report ([#1175](https://github.com/JN0V/workline/issues/1175), [#1185](https://github.com/JN0V/workline/issues/1185), [#1189](https://github.com/JN0V/workline/issues/1189)) |
 | `test-paths` | none: the generic ones | the test files, as patterns; every role reads them, the one definition of a test file ([ADR-0065](../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)). Unset: `test/`, `tests/`, `Tests/`, `__tests__/` folders, `test_*`, `*_test.*`, `*_spec.*`, `*.test.*`, `*.spec.*`, said by `workline doctor`. The only files `test write` may add; a new one beside the Scope is not listed beyond it by the developer ([its bounds](../developer/docs/bounds.md#what-it-checks)) |
 | `test-homes` | none: the generic ones | where a test's code lives, for the developer's Scope: `[{tests: "**/src/test/kotlin/**", code: "**/src/main/kotlin/**"}]`, each `**` filling the next; unset, the folder holding a `test/` or `tests/` folder; in none, the test's own folder |
-| `build-errors` | Go, Kotlin, Java, Gradle | how a broken build's errors and missing names read, by ecosystem ([page](docs/missing-name.md)) |
+| `build-errors` | Go, Kotlin, Java, Gradle, pytest | how a broken build's errors and missing names read, by ecosystem ([page](docs/missing-name.md)) |
 | `judge-read-rounds`, `judge-read-lines-max` | 2, 400 | what the judge of a broken build may read of the base before it answers ([page](docs/missing-name.md#the-judge)) |
 | `code-lines-max` | 1500 | lines of the code the issue names and of the tests given to the agent, all files together, fewer when long lines would pass the context budget; a longer file gives the pieces the issue names in it, inside its declarations; the files the test and the Scope include or import, two steps deep, as declarations ([the code picker](../../docs/spec/code-picker.md)); a fifth kept for a test beside when the code would fill it; files past it are named with their size |
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
@@ -244,7 +244,7 @@ The command, by ecosystem:
 | Runner | `test-command` |
 |---|---|
 | Go | `gotestsum --junitfile {report} ./...` |
-| pytest | `pytest --junitxml={report}` |
+| pytest | `python -m pytest --junitxml={report}`: the root on the import path, as a project not installed needs |
 | Jest | `JEST_JUNIT_OUTPUT_FILE={report} npx jest --reporters=jest-junit` |
 | cargo nextest | `cargo nextest run --profile ci`, `test-report` set to its JUnit path |
 | Maven | `mvn test`, `test-report: "**/target/surefire-reports/*.xml"` |

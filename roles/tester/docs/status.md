@@ -86,9 +86,13 @@ Cases in `tests/conformance/cases/tester/`:
   [#1227](https://github.com/JN0V/workline/issues/1227); tried on the
   Kotlin/Android copy and in Go, on
   [#1252](https://github.com/JN0V/workline/pull/1252#tried)). Go's,
-  Kotlin's, javac's and Gradle's errors read by default
-  (`build-errors`; Kotlin's tried on an Android project,
-  [#1181](https://github.com/JN0V/workline/pull/1181#tried)).
+  Kotlin's, javac's, Gradle's and pytest's collection errors read by
+  default (`build-errors`; Kotlin's tried on an Android project,
+  [#1181](https://github.com/JN0V/workline/pull/1181#tried); pytest's
+  on the Python copy, [#1283](https://github.com/JN0V/workline/issues/1283)).
+  A change's test file that does not build on the head, but for a
+  missing name, is `build-broken`, never the code's red; on the base,
+  a module pytest cannot import is the judge's, its no `build-broken`.
 - **Tests from the criteria** (`workline test write --issue <n>`): one
   test a scenario, named after it; a ready issue only, with named
   scenarios; new test files only; a scenario said untestable in a note;

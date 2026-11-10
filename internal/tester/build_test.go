@@ -13,8 +13,8 @@ import (
 // one a missing name only in a test of the change.
 func TestBuildErrorsGo(t *testing.T) {
 	rules := defaultBuildErrors(t)
-	if len(rules) != 4 {
-		t.Fatalf("role.yaml's build-errors: %d rows, want Go, Kotlin, Java, Gradle", len(rules))
+	if len(rules) != 5 {
+		t.Fatalf("role.yaml's build-errors: %d rows, want Go, Kotlin, Java, Gradle, pytest", len(rules))
 	}
 	rules = rules[:1]
 	out := "# example.com/m/a [example.com/m/a.test]\n" +
@@ -79,6 +79,7 @@ func defaultBuildErrors(t *testing.T) []buildRules {
 				Error       string   `yaml:"error"`
 				MissingName []string `yaml:"missing-name"`
 				NameLine    string   `yaml:"name-line"`
+				MessageLine string   `yaml:"message-line"`
 				TestName    string   `yaml:"test-name"`
 			} `yaml:"build-errors"`
 		} `yaml:"settings"`
@@ -95,6 +96,65 @@ func defaultBuildErrors(t *testing.T) []buildRules {
 		t.Fatalf("role.yaml's build-errors: %v", err)
 	}
 	return rules
+}
+
+// pytest 9.2's collection errors (#1283): the file on its header line,
+// its message on the first `E` line under it, the frames between read
+// as no error. A name the module lacks is missing; a module not found,
+// or a syntax error, is not.
+func TestBuildErrorsPytest(t *testing.T) {
+	rules := defaultBuildErrors(t)
+	out := "==================================== ERRORS ====================================\n" +
+		"_____________________ ERROR collecting tests/test_calc.py ______________________\n" +
+		"ImportError while importing test module '/tmp/x/tests/test_calc.py'.\n" +
+		"Traceback:\n" +
+		"/usr/lib/python3.12/importlib/__init__.py:90: in import_module\n" +
+		"    return _bootstrap._gcd_import(name[level:], package, level)\n" +
+		"tests/test_calc.py:1: in <module>\n" +
+		"    from pkg.calc import add\n" +
+		"E   ModuleNotFoundError: No module named 'pkg'\n" +
+		"____________________ ERROR collecting tests/test_pricing.py ____________________\n" +
+		"tests/test_pricing.py:1: in <module>\n" +
+		"    from pkg.pricing import money\n" +
+		"E   ImportError: cannot import name 'money' from 'pkg.pricing' (/tmp/x/pkg/pricing.py)\n" +
+		"_ ERROR collecting tests/test_syntax.py _\n" +
+		"E     File \"/tmp/x/tests/test_syntax.py\", line 3\n" +
+		"E       def oops(\n" +
+		"E   SyntaxError: '(' was never closed\n" +
+		"=========================== short test summary info ============================\n" +
+		"ERROR tests/test_calc.py\n" +
+		"ERROR tests/test_pricing.py\n"
+	type read struct {
+		file, msg, name string
+		missing         bool
+	}
+	var got []read
+	errs := buildErrorsIn(out, []string{"tests/test_calc.py", "tests/test_pricing.py", "tests/test_syntax.py"}, rules)
+	for _, e := range errs {
+		got = append(got, read{e.file, e.msg, e.name, e.missing})
+	}
+	want := []read{
+		{"tests/test_calc.py", "ModuleNotFoundError: No module named 'pkg'", "", false},
+		{"tests/test_pricing.py", "ImportError: cannot import name 'money' from 'pkg.pricing' (/tmp/x/pkg/pricing.py)", "money", true},
+		{"tests/test_syntax.py", "SyntaxError: '(' was never closed", "", false},
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("read %+v, want %+v", got, want)
+	}
+	if !strings.HasSuffix(errs[0].line, "ERROR collecting tests/test_calc.py ______________________ E   ModuleNotFoundError: No module named 'pkg'") {
+		t.Errorf("the error not quoted with its message: %q", errs[0].line)
+	}
+	if names := testNames("def helper():\n    pass\n\ndef test_money():\n    pass\n\nclass TestX:\n    async def test_async(self):\n        pass\n", rules[len(rules)-1]); !slices.Equal(names, []string{"test_money", "test_async"}) {
+		t.Errorf("test names %v", names)
+	}
+}
+
+// A message-line without its group is said.
+func TestBuildErrorsMessageLineInvalid(t *testing.T) {
+	_, err := compileBuildErrors([]BuildErrors{{Error: `^(?P<file>\S+) (?P<message>)$`, MessageLine: `^E (.+)$`}})
+	if err == nil || !strings.Contains(err.Error(), "message-line") {
+		t.Errorf("got %v", err)
+	}
 }
 
 // The JVM's errors as Gradle 8.12 printed them on an Android project
