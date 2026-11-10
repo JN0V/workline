@@ -1,0 +1,27 @@
+case: product-owner/parent-item-quoted-by-part-no-test
+about: >
+  A split parent's item quoted in its part's Validation is not proved by
+  that quote alone (#1279): the split's draft is written before any test.
+  One part closed by hand, with no Verification: its item reads not
+  proved, its Verification naming no test for the scenario. The other
+  part's Verification declares a test the code at this commit does not
+  hold: its item reads not proved, said in a finding.
+given:
+  repo: backlog-tested
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Sales export", body: "Export a day's sales as CSV.\n\n## Verification\n\n- An export of 3 sales writes 3 rows.\n- An empty day writes a header only.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Write one row per sale", body: "Part of #9.\n\n## Need\n\n<!-- workline:draft -->\n\nEvery sale exported, so a report counts what was sold.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Three sales:** Given a day of 3 sales, When I export it, Then an export of 3 sales writes 3 rows.", labels: [], parent: 9, closed: true, reason: completed}
+      - {id: 12, title: "Export an empty day", body: "Part of #9.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Empty day:** Given a day with no sale, When I export it, Then an empty day writes a header only.\n\n---\n\n## Verification\n\n<!-- workline:verification=tester -->\n\n- **Empty day:** `TestEmptyDayWritesAHeader`.\n\nWritten by the tester from its tests.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#21", text: "fix(export): header on an empty day"}]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: proof-test-missing, where: "#9", message: "its Verification rests on `TestEmptyDayWritesAHeader` as proof, and the code at this commit holds no such test"}
+    - {rule: parent-to-accept, where: "#9", message: "not proved: 2 Verification item(s)"}
+  forge:
+    issues:
+      - {id: 9, closed: false, comment-contains: "- **Not proved**: \"An export of 3 sales writes 3 rows.\" — quoted in #11's Validation, its scenario \"Three sales\", but its Verification names no test for that scenario."}
+      - {id: 9, comment-contains: "- **Not proved**: \"An empty day writes a header only.\" — quoted in #12's Validation, its scenario \"Empty day\", proved by `TestEmptyDayWritesAHeader` in its Verification, closed by pull request #21, but the code holds no test `TestEmptyDayWritesAHeader`: a test named is no proof until it is there."}
+      - {id: 9, comment-lacks: "- Proved"}

@@ -48,16 +48,82 @@ func TestVerificationItems(t *testing.T) {
 
 func TestProofIsAQuote(t *testing.T) {
 	done := Part{ID: 11, Issue: forge.Issue{Closed: true, Reason: "completed", Body: "## Verification\n\nA **test** writes `three` rows."}}
-	if proof("A test writes three rows;", []Part{done}) == "" {
+	if proof("A test writes three rows;", []Part{done}).where == "" {
 		t.Error("a quote, emphasis, case and final punctuation aside, should prove the item")
 	}
-	if proof("A test writes four rows.", []Part{done}) != "" {
+	if proof("A test writes four rows.", []Part{done}).where != "" {
 		t.Error("other words prove nothing")
 	}
 	refused := done
 	refused.Issue.Reason = "not_planned"
-	if proof("A test writes three rows.", []Part{refused}) != "" {
+	if proof("A test writes three rows.", []Part{refused}).where != "" {
 		t.Error("a part not delivered proves nothing")
+	}
+}
+
+func TestProofInAPartsValidation(t *testing.T) {
+	part := func(body string) []Part {
+		return []Part{{ID: 11, Issue: forge.Issue{Closed: true, Reason: "completed", Body: body}}}
+	}
+	const item = "An export of 3 sales writes 3 rows."
+	cases := []struct{ about, body, where, short string }{
+		{"the tester's line names the test",
+			"## Validation\n\n- **Three sales:** Then an export of 3 sales writes 3 rows.\n\n## Verification\n\n- **Three sales:** `t.test_three`.",
+			"quoted in #11's Validation, its scenario \"Three sales\", proved by `t.test_three` in its Verification", ""},
+		{"the tester's note after its list is no test",
+			"## Validation\n\n- **Three sales:** Then an export of 3 sales writes 3 rows.\n\n## Verification\n\n- **Three sales:** `t.test_three`,\n  `t.test_rows`.\n\nThey are on `workline/tester/issue-11`.",
+			"quoted in #11's Validation, its scenario \"Three sales\", proved by `t.test_three`, `t.test_rows` in its Verification", ""},
+		{"a wrapped scenario",
+			"## Validation\n\n- **Three sales:** Given a day of 3 sales, When I export it,\n  Then an export of 3 sales writes 3 rows.\n\n## Verification\n\n- **Three sales:** `t.test_three`.",
+			"quoted in #11's Validation, its scenario \"Three sales\", proved by `t.test_three` in its Verification", ""},
+		{"Gherkin, its steps below its name",
+			"## Validation\n\nScenario: Three sales\n  Given a day of 3 sales\n  When I export it\n  Then an export of 3 sales writes 3 rows.\n\n## Verification\n\n- **Three sales:** `t.test_three`.",
+			"quoted in #11's Validation, its scenario \"Three sales\", proved by `t.test_three` in its Verification", ""},
+		{"no Verification: a draft's words, no test",
+			"## Validation\n\n- **Three sales:** Then an export of 3 sales writes 3 rows.",
+			"quoted in #11's Validation, its scenario \"Three sales\"", "its Verification names no test for that scenario"},
+		{"no test can check it",
+			"## Validation\n\n- **Three sales:** Then an export of 3 sales writes 3 rows.\n\n## Verification\n\n- **Three sales:** no test can check it: the export needs a printer",
+			"quoted in #11's Validation, its scenario \"Three sales\"", "its Verification says no test can check it (the export needs a printer): a person judges"},
+		{"a quote in no scenario",
+			"## Validation\n\nAn export of 3 sales writes 3 rows.",
+			"quoted in #11's Validation", "in no scenario of it: no test is declared for it"},
+	}
+	for _, c := range cases {
+		got := proof(item, part(c.body))
+		if got.where != c.where || got.short != c.short {
+			t.Errorf("%s: proof = %q, short %q; want %q, short %q", c.about, got.where, got.short, c.where, c.short)
+		}
+	}
+	if got := proof("An empty day writes a header only.", part(cases[0].body)); got.where != "" {
+		t.Errorf("a scenario that quotes another item proves nothing, got %q", got.where)
+	}
+}
+
+func TestPartsDeclaredTestReadFromCode(t *testing.T) {
+	body := "## Validation\n\n- **Three sales:** Then an export of 3 sales writes 3 rows.\n\n## Verification\n\n- **Three sales:** `tests.test_export.test_three`."
+	parent := forge.Issue{ID: 9, Body: "## Verification\n\n- An export of 3 sales writes 3 rows."}
+	parts := []Part{{ID: 11, Issue: forge.Issue{Closed: true, Reason: "completed", Body: body}}}
+	held := func(names ...string) TestFinder {
+		return func(name string) (string, error) {
+			if slices.Contains(names, name) {
+				return "tests/test_export.py", nil
+			}
+			return "", nil
+		}
+	}
+	ev := ReadEvidence(parent, parts, "product-owner", held("test_three"), testdef.Def{})
+	if len(ev.Unproved) != 0 || !strings.Contains(ev.Body, "- Proved: \"An export of 3 sales writes 3 rows.\"") || !strings.Contains(ev.Body, "`tests.test_export.test_three` in tests/test_export.py, read from the code") {
+		t.Errorf("a declared test the code holds, by its own name, proves the item:\n%s", ev.Body)
+	}
+	ev = ReadEvidence(parent, parts, "product-owner", held(), testdef.Def{})
+	if len(ev.Unproved) != 1 || len(ev.NoTest) != 1 || !strings.Contains(ev.Body, "but the code holds no test `tests.test_export.test_three`") {
+		t.Errorf("a declared test the code no longer holds leaves the item not proved:\n%s", ev.Body)
+	}
+	parts[0].Issue.Body = "## Validation\n\n- **Three sales:** Then an export of 3 sales writes 3 rows."
+	ev = ReadEvidence(parent, parts, "product-owner", held(), testdef.Def{})
+	if len(ev.Unproved) != 1 || strings.Contains(ev.Body, "- Proved") {
+		t.Errorf("a quote in a part's Validation with no test declared proves nothing:\n%s", ev.Body)
 	}
 }
 

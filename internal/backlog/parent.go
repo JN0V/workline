@@ -129,8 +129,9 @@ type Evidence struct {
 
 // ReadEvidence writes a parent's report from its parts: what each became
 // and what closed it; each item of its Verification proved by a part
-// delivered that quotes it — in its own Verification, or in the text of
-// the pull request or commit that closed it — and, when it names a test,
+// delivered that quotes it — in its own Verification, in the scenario of
+// its Validation the split gave the item (#1279), or in the text of the
+// pull request or commit that closed it — and, when it names a test,
 // that test found in the code by tests (nil: not looked for); or said not
 // proved.
 func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinder, def testdef.Def) Evidence {
@@ -184,13 +185,38 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 	if len(items) == 0 {
 		fmt.Fprintf(&b, "\nThis issue has no %s of its own: nothing to prove its parts against; a person judges from the parts alone.\n", proofs)
 	} else {
-		fmt.Fprintf(&b, "\n**Its %[1]s**, each item against the parts delivered — proved when a part's %[1]s, or what closed it, quotes it, and a test it names is in the code:\n\n", proofs)
+		fmt.Fprintf(&b, "\n**Its %[1]s**, each item against the parts delivered — proved when a part's %[1]s, the scenario of its %[2]s that delivers it, or what closed it, quotes it, and a test it names, or that part's %[1]s declares for that scenario, is in the code:\n\n", proofs, work.Name(work.Validation))
 		for _, item := range items {
-			where := proof(item, parts)
+			q := proof(item, parts)
+			where := q.where
+			if q.short != "" {
+				// Quoted where the split gave it, but no test declared for
+				// it: a draft's words are no proof (#1279).
+				ev.Unproved = append(ev.Unproved, item)
+				fmt.Fprintf(&b, "- %s: \"%s\" — %s, but %s.\n", notYet, item, where, q.short)
+				continue
+			}
 			if where != "" && tests != nil {
 				var in, missing, unread []string
+				// The tests the item names, then those the part's
+				// Verification declares for the scenario quoting it.
+				type look struct {
+					name string
+					find func() (string, error)
+				}
+				var looks []look
 				for _, name := range TestNames(item, def) {
-					path, err := tests(name)
+					looks = append(looks, look{name, func() (string, error) { return tests(name) }})
+				}
+				for _, id := range q.tests {
+					if slices.Contains(TestNames(item, def), id) {
+						continue
+					}
+					looks = append(looks, look{id, func() (string, error) { return declaredTest(tests, id) }})
+				}
+				for _, l := range looks {
+					name := l.name
+					path, err := l.find()
 					switch {
 					case err != nil:
 						unread = append(unread, "`"+name+"`")
@@ -265,13 +291,24 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 	return ev
 }
 
-// proof says which part delivered quotes a Verification item, and where;
-// "" when none does.
-func proof(item string, parts []Part) string {
+// quoted is where a part delivered quotes a parent's Verification item.
+type quoted struct {
+	where string   // where it is quoted; "" when no part delivered quotes it
+	tests []string // the tests the part's Verification declares for the scenario quoting it, to find in the code
+	short string   // why a quote in a part's Validation proves nothing: no test declared for it
+}
+
+// proof says which part delivered quotes a Verification item, and where:
+// in its Verification, in the scenario of its Validation the split gave
+// it — proved only by the tests the part's Verification declares for that
+// scenario (#1279) —, or in what closed it. A quote that proves wins over
+// one that does not.
+func proof(item string, parts []Part) quoted {
 	want := plain(item)
 	if want == "" {
-		return ""
+		return quoted{}
 	}
+	var weak quoted
 	for _, p := range parts {
 		if !p.Delivered() {
 			continue
@@ -280,16 +317,125 @@ func proof(item string, parts []Part) string {
 		if len(p.Closers) > 0 {
 			closed = ", closed by " + closerName(p.Closers[0])
 		}
-		if s := work.ByMeaning(p.Issue.Body)[work.Verification]; strings.Contains(plain(s.Text), want) {
-			return fmt.Sprintf("quoted in #%d's %s%s", p.ID, s.Heading, closed)
+		sections := work.ByMeaning(p.Issue.Body)
+		if s := sections[work.Verification]; strings.Contains(plain(s.Text), want) {
+			return quoted{where: fmt.Sprintf("quoted in #%d's %s%s", p.ID, s.Heading, closed)}
+		}
+		if s := sections[work.Validation]; strings.Contains(plain(s.Text), want) {
+			q := scenarioProof(want, s.Text, sections[work.Verification])
+			q.where = fmt.Sprintf("quoted in #%d's %s%s%s", p.ID, s.Heading, q.where, closed)
+			if q.short == "" {
+				return q
+			}
+			if weak.where == "" {
+				weak = q
+			}
+			continue
 		}
 		for _, c := range p.Closers {
 			if strings.Contains(plain(c.Text), want) {
-				return fmt.Sprintf("quoted by %s, which closed #%d", closerName(c), p.ID)
+				return quoted{where: fmt.Sprintf("quoted by %s, which closed #%d", closerName(c), p.ID)}
 			}
 		}
 	}
-	return ""
+	return weak
+}
+
+// noTestCan opens the tester's line for a scenario no test can check:
+// "- **Empty day:** no test can check it: <why>".
+const noTestCan = "no test can check it"
+
+// scenarioProof is, for an item a part's Validation quotes, the scenario
+// that quotes it and the tests the part's Verification declares for that
+// scenario, each in a code span: where reads ", its scenario "Three
+// sales", proved by `tests.test_x` in its Verification". Short says why
+// none proves it: the quote in no scenario, no line for it, no test named,
+// or no test can check it.
+func scenarioProof(want, validation string, verification work.Section) quoted {
+	name := ""
+	for _, sc := range work.Scenarios(validation) {
+		if strings.Contains(plain(sc.Name+" "+sc.Text), want) {
+			name = sc.Name
+			break
+		}
+	}
+	if name == "" {
+		return quoted{short: "in no scenario of it: no test is declared for it"}
+	}
+	q := quoted{where: fmt.Sprintf(", its scenario \"%s\"", name)}
+	heading := verification.Heading
+	if heading == "" {
+		heading = work.Name(work.Verification)
+	}
+	for _, line := range declared(verification.Text) {
+		label, text, _ := strings.Cut(line, "\x00")
+		if plain(label) != plain(name) {
+			continue
+		}
+		if why, ok := strings.CutPrefix(strings.TrimSpace(text), noTestCan); ok {
+			q.short = fmt.Sprintf("its %s says no test can check it", heading)
+			if why = strings.TrimRight(strings.TrimLeft(why, " :"), " ."); why != "" {
+				q.short += " (" + why + ")"
+			}
+			q.short += ": a person judges"
+			return q
+		}
+		for _, m := range codeSpan.FindAllStringSubmatch(text, -1) {
+			if id := strings.TrimSpace(m[1]); !strings.ContainsAny(id, " \t") && !slices.Contains(q.tests, id) {
+				q.tests = append(q.tests, id)
+			}
+		}
+		break
+	}
+	if len(q.tests) == 0 {
+		q.short = fmt.Sprintf("its %s names no test for that scenario", heading)
+		return q
+	}
+	q.where += fmt.Sprintf(", proved by %s in its %s", "`"+strings.Join(q.tests, "`, `")+"`", heading)
+	return q
+}
+
+// declaredLine is a scenario's line in a Verification, as the tester
+// writes it: its name bold at the head of a list item, then its tests or
+// why none: "- **Three sales:** `tests.test_x`.".
+var declaredLine = regexp.MustCompile(`^\s*(?:[-*+]|\d+[.)])\s+\*\*([^*\n]+?):?\*\*:?\s*(.*)$`)
+
+// declared are a Verification's scenario lines, each its name, a NUL, and
+// its text: the lines indented under it with it, up to a blank line or
+// the next item — never the prose after the list.
+func declared(verification string) []string {
+	var out []string
+	open := false
+	for _, l := range strings.Split(verification, "\n") {
+		l = strings.TrimRight(l, "\r")
+		switch m := declaredLine.FindStringSubmatch(l); {
+		case m != nil:
+			out = append(out, strings.TrimSpace(m[1])+"\x00"+strings.TrimSpace(m[2]))
+			open = true
+		case open && strings.TrimSpace(l) != "" && strings.TrimLeft(l, " \t") != l && !listMark.MatchString(l):
+			out[len(out)-1] += " " + strings.TrimSpace(l)
+		default:
+			open = false
+		}
+	}
+	return out
+}
+
+// listMark opens a list item.
+var listMark = regexp.MustCompile(`^\s*(?:[-*+]|\d+[.)])\s+`)
+
+// declaredTest finds a test a part's Verification declares, by its id as
+// the tester ran it; when the code holds no such name, by the test's own
+// name, its id's last word ("tests.test_x.test_y" is test_y).
+func declaredTest(tests TestFinder, id string) (string, error) {
+	path, err := tests(id)
+	if err != nil || path != "" {
+		return path, err
+	}
+	if last := id[strings.LastIndexAny(id, "./:")+1:]; last != "" && last != id && bareName.MatchString(last) {
+		return tests(last)
+	}
+	return "", nil
 }
 
 // TestFinder says where the code holds a test a Verification item names:

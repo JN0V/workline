@@ -17,7 +17,7 @@ Part of [Acts on the backlog](../backlog-acts.md): breaking an issue into its pa
     into:                                   # 2 to 6 children
       - title: "Keep the last row in the CSV export"
         need: "Every row exported, so a report counts what was sold."   # a draft
-        validation: "The maintainer opens an export of a known day."    # a draft
+        validation: "The maintainer opens an export of a known day."    # a draft, quoting the parent's Verification items it delivers
         scope: "WriteRows in src/export/csv.go."
         sources: [src/export/csv.go]
       - title: "Quote commas in exported cells"
@@ -35,6 +35,13 @@ An issue too big to be one need is broken into its parts (ADR-0022):
   children already is never split again (`already-split`); nor twice in one
   run, nor renamed twice: the first that passes its check is kept
   (`once-a-run`).
+- **The parent's Verification**, when it has one: the product owner
+  quotes each item, word for word, in the scenario of the child's
+  Validation that delivers it, so the parent's comment says it proved
+  once that child closes, by the tests the tester declares for that
+  scenario
+  ([a parent and its parts](parent.md), [#1279](https://github.com/JN0V/workline/issues/1279)).
+  Its judgement, not checked: an item no child quotes reads "not proved".
 - **Each child** is opened through the one way ([Opening issues](opening.md)), keyed by
   the parent and its title, case and spaces aside
   (`split=<parent>/<8 hex>`): a line `Part of #12.`, its sections — Need and Validation as drafts, as `refine`

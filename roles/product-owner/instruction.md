@@ -266,7 +266,11 @@ refused, and the issue waits for a person.
 each proved by its own scenarios, that a change could finish one at a
 time: propose `split` with 2 to 6 children, each a short title and its
 sections, as `refine` writes them (`need` and `validation` drafts from
-the issue's words, `scope` and `sources` from the code). The issue keeps
+the issue's words, `scope` and `sources` from the code). When the issue
+has a Verification, give each of its items to the part that delivers it:
+quote the item word for word in the scenario of that part's `validation`
+that proves it, so the parent's comment can say it proved once the part
+closes; keep that quote when you refine the part. The issue keeps
 its need and lists its children; one the task says is split already is
 not split again, nor closed — a person accepts it. Split only what is truly several
 needs, not a need with steps. A child that cannot start before another
