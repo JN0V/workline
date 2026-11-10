@@ -126,9 +126,9 @@ type State struct {
 	// NoTest is the tester's "no test possible" the role was last given,
 	// by its digest (NoTest): read once, not again until it changes.
 	NoTest string `yaml:"no-test,omitempty"`
-	// Retest is the tester's "no test possible", by its digest, the role
-	// sent the issue back to its tests unchanged for (#1053): the tester
-	// tries again, once (Retested).
+	// Retest is the tester's "no test possible" the role sent the issue
+	// back to its tests unchanged for, by its key (RetestKey: the word and
+	// the body it read, #1053): the tester tries again, once (Retested).
 	Retest string `yaml:"retest,omitempty"`
 	// Silent is why the role read the issue and wrote nothing on it,
 	// though it lacks a section: said on the issue until the role acts

@@ -177,18 +177,23 @@ func (p *Plan) checkNoTest(f forge.Backlog, role string, is forge.Issue, c *Prop
 		return "", ""
 	}
 	rec, _ := testerRecord(comments)
-	if slices.ContainsFunc(p.Decisions, func(d Decision) bool {
-		if d.Mode != Act || d.Act.Do != "refine" || d.Act.Issue != c.Issue || d.Act.ToReporter {
-			return false
-		}
-		// Done, not proposed to its reporter, and writing another body.
-		body, _, _ := Refine(is.Body, d.Act, role)
-		return BodyDigest(body) != rec.Body
-	}) {
+	if p.rewrites(is, c.Issue, role, rec.Body) {
 		return "", ""
 	}
 	return "no-test-unanswered", "not moved to ready: the tester found no test possible for it as it stands, and no proof is picked; " +
 		"a ready alone sends it back to its tests unchanged: pick its proof, or rewrite its " + work.Name(work.Validation) + " so a test checks it"
+}
+
+// rewrites says whether a refine of this run, done and not proposed to
+// its reporter, writes another body than the one the tester read.
+func (p *Plan) rewrites(is forge.Issue, issue int, role, read string) bool {
+	return slices.ContainsFunc(p.Decisions, func(d Decision) bool {
+		if d.Mode != Act || d.Act.Do != "refine" || d.Act.Issue != issue || d.Act.ToReporter {
+			return false
+		}
+		body, _, _ := Refine(is.Body, d.Act, role)
+		return BodyDigest(body) != read
+	})
 }
 
 // RetestSpent says whether the tester's "no test possible" on an issue
@@ -204,20 +209,22 @@ func RetestSpent(comments []string) bool {
 // word after a retest (Proof.Retried). It records the word it answers.
 func (p *Plan) checkRetest(is forge.Issue, comments []string, role string, c *Proposal) (rule, why string) {
 	rec, ok := testerRecord(comments)
-	_, digest, _ := NoTest(comments)
+	key, _ := RetestKey(comments)
 	switch {
 	case c.Proof != nil:
 		return "retest-with-proof", "not moved to ready: a retest sends it to its tests, a proof kind past them: one or the other"
 	case !ok || rec.Kind != KindNone:
 		return "retest-not-asked", "not moved to ready: a retest answers the tester's \"no test possible\"; the tester said none on it — a ready alone sends it to its tests"
+	case rec.Body != "" && rec.Body != BodyDigest(is.Body), p.rewrites(is, c.Issue, role, rec.Body):
+		// Rewritten since the tester read it, or in this run: a ready
+		// alone sends it to its tests, no retest spent on it.
+		c.Retest = false
+		return "", ""
 	case RetestSpent(comments):
 		return "retest-spent", "not moved to ready: it was sent back to its tests unchanged once, and the tester found no test possible again; " +
 			"pick its proof, or rewrite its " + work.Name(work.Validation) + " so a test checks it"
-	case rec.Body != "" && rec.Body != BodyDigest(is.Body):
-		c.Retest = false // rewritten since the tester read it: a ready alone sends it to its tests
-		return "", ""
 	}
-	c.Retested = digest
+	c.Retested = key
 	return "", ""
 }
 
@@ -284,18 +291,32 @@ func NoTest(comments []string) (reason, digest string, ok bool) {
 	return p.Reason, hex.EncodeToString(sum[:])[:12], true
 }
 
+// RetestKey is what a retest answers (#1053): the tester's "no test
+// possible" (NoTest's digest) on the body it read. A later word with the
+// same reason on another body is another word: a stale retest never
+// answers it. False when the tester's last word is another.
+func RetestKey(comments []string) (string, bool) {
+	rec, _ := testerRecord(comments)
+	_, digest, ok := NoTest(comments)
+	if !ok {
+		return "", false
+	}
+	sum := sha256.Sum256([]byte(digest + "\x00" + rec.Body))
+	return hex.EncodeToString(sum[:])[:12], true
+}
+
 // Retested says whether the product owner sent an issue back to its tests
 // unchanged after the tester's "no test possible" (#1053): its state's
 // retest answers the tester's word as it stands. The tester's own reason —
 // code missing from its task, a run that failed — is no reason to change
 // the issue's text; it is tried again, once (Proof.Retried).
 func Retested(comments []string, role string) bool {
-	_, digest, ok := NoTest(comments)
+	key, ok := RetestKey(comments)
 	if !ok {
 		return false
 	}
 	st, found, err := ReadState(comments, role)
-	return found && err == nil && st.Retest == digest
+	return found && err == nil && st.Retest == key
 }
 
 // NoTestStands says whether the tester's "no test possible" on an issue

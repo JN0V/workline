@@ -777,7 +777,7 @@ func (a *applier) recordRetest(t forge.Target, digest string) error {
 	if err != nil {
 		return err
 	}
-	if _, now, ok := backlog.NoTest(comments); !ok || now != digest {
+	if now, ok := backlog.RetestKey(comments); !ok || now != digest {
 		return fmt.Errorf("#%d: the tester's word on it changed since the plan read it: no retest kept", t.ID)
 	}
 	st, _, err := backlog.ReadState(comments, a.role)

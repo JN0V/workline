@@ -333,11 +333,14 @@ The tester found no test possible and sent the issue back to refine
   ([#1053](https://github.com/JN0V/workline/issues/1053)): the reason
   is the tester's own — code missing from its task, a run that failed —
   not the issue's. `ready` with `retest: true` sends it to its tests as
-  it stands; the state keeps the word it answers (`retest`), and the
-  tester asks its agent again (`backlog.Retested`). The tester's next
+  it stands; the state keeps the word it answers, with the body the
+  tester read (`retest`, `backlog.RetestKey`), and the tester asks its
+  agent again (`backlog.Retested`). The tester's next
   "no test possible" is recorded `retried`: a second retest is refused
   (`retest-spent`), as is one beside a `proof` (`retest-with-proof`) or
-  with no "no test possible" to answer (`retest-not-asked`).
+  with no "no test possible" to answer (`retest-not-asked`). On a text
+  rewritten since the tester read it, or by a refine of the same run,
+  it is a plain `ready`.
 
 ```yaml
 - ready: {issue: 12, retest: true, why: "The tester lacked the counter's code, not a scenario."}

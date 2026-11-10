@@ -132,3 +132,61 @@ func TestCheckNoTestLiftedOnlyByARefineThatRewrites(t *testing.T) {
 		}
 	}
 }
+
+// noTestSaid is the tester's "no test possible" on a body, retried or not.
+func noTestSaid(reason, body string, retried bool) string {
+	r := ""
+	if retried {
+		r = `,"retried":true`
+	}
+	return "**The tester** finds no test possible.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"" + reason + "\",\"body\":\"" + body + "\"" + r +
+		"} -->\n<!-- workline:sticky=tester/issue -->"
+}
+
+func TestCheckRetest(t *testing.T) {
+	is := forge.Issue{ID: 9, Body: "## Need\n\nEvery sale counted.\n\n## Validation\n\n- **Three rows:** Given three sales, When Ann exports, Then she counts three."}
+	read := BodyDigest(is.Body)
+	rewrite := Proposal{Do: "refine", Issue: 9, Validation: "- **Four rows:** Given four sales, When Ann exports, Then she counts four.", Revise: []string{"Validation"}}
+	cases := []struct {
+		name     string
+		comments []string
+		d        []Decision
+		proof    *Proof
+		rule     string
+		retest   bool
+	}{
+		{"answered", []string{noTestSaid("no code.", read, false)}, nil, nil, "", true},
+		{"a proof beside it", []string{noTestSaid("no code.", read, false)}, nil, &Proof{Kind: KindSuite, Reason: "covered"}, "retest-with-proof", true},
+		{"no tester word", nil, nil, nil, "retest-not-asked", true},
+		{"spent", []string{noTestSaid("no code.", read, true)}, nil, nil, "retest-spent", true},
+		{"rewritten since", []string{noTestSaid("no code.", "0ldb0dy0ld00", false)}, nil, nil, "", false},
+		{"rewritten in this run", []string{noTestSaid("no code.", read, false)}, []Decision{{Mode: Act, Act: rewrite}}, nil, "", false},
+	}
+	for _, c := range cases {
+		p := &Plan{Decisions: c.d}
+		pr := &Proposal{Do: "ready", Issue: 9, Retest: true, Proof: c.proof}
+		rule, _ := p.checkRetest(is, c.comments, "product-owner", pr)
+		if rule != c.rule || (rule == "" && pr.Retest != c.retest) {
+			t.Errorf("%s: rule %q retest %v, want %q %v", c.name, rule, pr.Retest, c.rule, c.retest)
+		}
+		if rule == "" && pr.Retest && pr.Retested == "" {
+			t.Errorf("%s: no word recorded as retested", c.name)
+		}
+	}
+}
+
+func TestRetestedNotByAStaleRetest(t *testing.T) {
+	state := func(key string) string {
+		return FormatState(State{Confirmed: "d8c4dff", Retest: key}) + "\n" + StateMarker("product-owner")
+	}
+	first := []string{noTestSaid("no code.", "b0dy00000001", false)}
+	key, _ := RetestKey(first)
+	if !Retested(append([]string{state(key)}, first...), "product-owner") {
+		t.Fatal("the word retested reads as not retested")
+	}
+	// The same reason, on a rewritten body: another word, not retested.
+	later := []string{state(key), noTestSaid("no code.", "b0dy00000002", false)}
+	if Retested(later, "product-owner") {
+		t.Error("a stale retest answers a later word on another body")
+	}
+}
