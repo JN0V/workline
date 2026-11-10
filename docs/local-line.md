@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline/main.go, internal/forge/local.go, internal/forge/local_merge.go, internal/doctor/tests.go]
-checked: 423b18ffa
+checked: 7340efb36
 verified: agent:claude-code
 ---
 # The whole line with no forge
