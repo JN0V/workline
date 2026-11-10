@@ -124,8 +124,9 @@ workline route merge-request --target merge-request:2 --ai claude
 
 - The committer, the tester's check and the reviewer read the branch;
   their findings go on `!2` (`workline issues show !2`).
-- **The line's verdict** on the branch's head is kept in the clone, for
-  the merge (step 6). A commit since needs a new run.
+- **The line's verdict** on the branch's head is kept in the clone, with
+  a `merge:` setting, for the merge (step 6). A commit since needs a new
+  run.
 - A finding to fix: `workline develop --merge-request 2 --ai claude`, a
   review round on its branch.
 
