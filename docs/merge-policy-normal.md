@@ -74,7 +74,8 @@ merge: {autonomy: normal}   # a project's choice, never a default
 
 - **A fifth kind, `code`**: the developer's pull request for an issue
   its labels call a fix, every gate passed and no finding of
-  the reviewer's open that blocks or is Important.
+  the reviewer's open that blocks or is Important; findings it cannot
+  read from the reviewer's record hold it.
 - **A fix, once the reviewer read its head**: the reviewer's summary
   names the pull request's head, read by its lenses, or its record
   covers a head rebased since; else it waits for the reviewer, 24 h

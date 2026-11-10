@@ -31,7 +31,7 @@ given:
         pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
         comments:
           - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
-          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| blocks | correctness | `lib.sh:2` | Important: mul adds. |\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| blocks | correctness | `lib.sh:2` | Important: mul adds. |\n\n<!-- workline:findings [{\"lens\":\"correctness\",\"holds\":\"blocks\",\"where\":\"lib.sh:2\",\"severity\":\"Important\",\"text\":\"mul adds.\"}] -->\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass

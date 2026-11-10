@@ -284,7 +284,9 @@ Step 5, the triggers (2026-10-29,
 Step 6, the review loop (2026-10-29,
 [the review loop](../../roles/developer/docs/review-loop.md)):
 
-- **The findings are read from the reviewer's comment**, its table:
+- **The findings are read from the reviewer's comment**, its table
+  (since [#705](https://github.com/JN0V/workline/issues/705), its hidden
+  findings record, the table's words free to change):
   a row that blocks, or warns and is Important, is asked; a nit is
   counted. Kept by lens, file and title, round after round, to tell a
   finding still there.

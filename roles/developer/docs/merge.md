@@ -61,7 +61,9 @@ a feature or a task merges too, and the yes moves to the milestone's
   - its record on the pull request read whole, its rounds not ended by a block;
   - its head's verdict passed, its checks not red;
   - no finding of the reviewer's open that blocks or is Important: a
-    nit holds nothing.
+    nit holds nothing. Its findings are read from the comment's hidden
+    findings record: a comment with a table and no record, or a record
+    that does not parse, holds the pull request for a person's yes.
 - **A fix the reviewer read at its head**
   ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)):
   - the reviewer's summary comment names the pull request's head, and

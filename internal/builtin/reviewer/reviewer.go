@@ -2418,6 +2418,7 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 		empty = "Nothing but nits on the commits reviewed."
 	}
 	b.WriteString(findingsTable(table, empty, short))
+	b.WriteString(findingsRecord(table, nits, short))
 	if len(v.Questions) > 0 {
 		b.WriteString("**Questions for a person**\n\nNot defects, not judged: choices the change leaves to a person; a reply here is enough, the reviewer does not wait for it.\n\n")
 		for _, q := range v.Questions {
@@ -2468,6 +2469,54 @@ func apartNits(v Review) (Review, []verdict.Finding) {
 	}
 	v.Findings = rest
 	return v, nits
+}
+
+// findingJSON is a finding as the hidden findings record keeps it, what
+// the developer's round reads: never the table's words (#705).
+type findingJSON struct {
+	Lens     string `json:"lens"`
+	Holds    string `json:"holds"` // blocks, or warns
+	Where    string `json:"where,omitempty"`
+	Severity string `json:"severity,omitempty"` // Important or Nit; none, a rule's
+	Text     string `json:"text"`
+}
+
+// findingsRecord is the hidden line holding the findings the table shows
+// and the nits, each with its severity and text; "" when there is none.
+func findingsRecord(v Review, nits []verdict.Finding, short map[string]string) string {
+	var list []findingJSON
+	blocks := func(f verdict.Finding) bool { return status([]verdict.Finding{f}) == verdict.Block }
+	add := func(f verdict.Finding, msg string) {
+		holds := "warns"
+		if blocks(f) {
+			holds = "blocks"
+		}
+		sev := ""
+		for _, p := range []string{"Important", "Nit"} {
+			if rest, ok := strings.CutPrefix(msg, p+": "); ok {
+				sev, msg = p, rest
+				break
+			}
+		}
+		list = append(list, findingJSON{Lens: f.Rule, Holds: holds, Where: f.Where, Severity: sev, Text: msg})
+	}
+	for _, f := range v.Findings {
+		if f.Rule == "decision" {
+			continue
+		}
+		msg := f.Message
+		if m, ok := short[f.Rule+"\x00"+f.Where]; ok {
+			msg = m
+		}
+		add(f, msg)
+	}
+	for _, f := range nits {
+		add(f, f.Message)
+	}
+	if len(list) == 0 {
+		return ""
+	}
+	return "<!-- workline:findings " + hidden(list) + " -->\n"
 }
 
 // findingsTable is the findings as a table, what blocks first (#226), the
