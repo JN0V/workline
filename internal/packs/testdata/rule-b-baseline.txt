@@ -1,0 +1,82 @@
+# Rule B's baseline (ADR-0065, "Rule B: no ecosystem pattern in the
+# engine"): today's Go files of internal/ whose string literals hold a
+# language pack's marker, extension or path pattern, read by
+# TestRuleBNoEcosystemPatternInTheEngine in ../ruleb_test.go.
+#
+# One line a file and a token: `<file> <token> <literals holding it>`.
+# It only shrinks: a literal more fails the test, as does a line counting
+# more than the code holds. Move the pattern to a pack, then lower or
+# remove its line; never add one: put a new pattern in a pack, or a
+# `// converges: <reason>` comment on its line.
+internal/agent/claude.go package.json 1
+internal/agent/prompt.go .go 9
+internal/builtin/documentalist/cite.go .go 1
+internal/builtin/documentalist/part.go .go 2
+internal/builtin/documentalist/parts.go .go 1
+internal/builtin/reviewer/reads.go .go 1
+internal/builtin/reviewer/rules.go .cjs 1
+internal/builtin/reviewer/rules.go .go 1
+internal/builtin/reviewer/rules.go .java 1
+internal/builtin/reviewer/rules.go .js 1
+internal/builtin/reviewer/rules.go .jsx 1
+internal/builtin/reviewer/rules.go .kt 1
+internal/builtin/reviewer/rules.go .kts 1
+internal/builtin/reviewer/rules.go .mjs 1
+internal/builtin/reviewer/rules.go .py 1
+internal/builtin/reviewer/rules.go .ts 1
+internal/builtin/reviewer/rules.go .tsx 1
+internal/codenav/codenav.go .cjs 1
+internal/codenav/codenav.go .go 1
+internal/codenav/codenav.go .java 1
+internal/codenav/codenav.go .js 1
+internal/codenav/codenav.go .jsx 1
+internal/codenav/codenav.go .kt 1
+internal/codenav/codenav.go .kts 1
+internal/codenav/codenav.go .mjs 1
+internal/codenav/codenav.go .py 1
+internal/codenav/codenav.go .ts 1
+internal/codenav/codenav.go .tsx 1
+internal/codepick/imports.go .cjs 1
+internal/codepick/imports.go .go 1
+internal/codepick/imports.go .java 1
+internal/codepick/imports.go .js 3
+internal/codepick/imports.go .jsx 2
+internal/codepick/imports.go .kt 1
+internal/codepick/imports.go .kts 1
+internal/codepick/imports.go .mjs 2
+internal/codepick/imports.go .py 6
+internal/codepick/imports.go .ts 4
+internal/codepick/imports.go .tsx 3
+internal/codepick/imports.go go.mod 1
+internal/doctor/tests.go src/main 1
+internal/doctor/tests.go src/test 1
+internal/linters/check.go .cjs 1
+internal/linters/check.go .go 1
+internal/linters/check.go .js 1
+internal/linters/check.go .jsx 1
+internal/linters/check.go .mjs 1
+internal/linters/check.go .py 1
+internal/linters/check.go .ts 1
+internal/linters/check.go .tsx 1
+internal/linters/seen.go package.json 2
+internal/tester/coverage.go .js 2
+internal/tester/coverage.go .mjs 1
+internal/tester/coverage.go build.gradle 1
+internal/tester/coverage.go go.mod 1
+internal/tester/coverage.go package.json 1
+internal/tester/coverage.go pom.xml 1
+internal/tester/coverage.go pyproject.toml 3
+internal/tester/coverage.go setup.cfg 3
+internal/tester/coverage.go setup.py 1
+internal/tester/curate.go go.mod 1
+internal/tester/notrun.go .cjs 1
+internal/tester/notrun.go .js 1
+internal/tester/notrun.go .mjs 1
+internal/tester/notrun.go .ts 1
+internal/tester/notrun.go package.json 1
+internal/tester/notrun.go pyproject.toml 1
+internal/tester/notrun.go pytest.ini 1
+internal/tester/notrun.go setup.cfg 1
+internal/tester/notrun.go tox.ini 1
+internal/tester/removal.go .go 1
+internal/tester/tester.go build.gradle.kts 1
