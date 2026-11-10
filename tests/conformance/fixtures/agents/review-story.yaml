@@ -1,0 +1,11 @@
+# The reviewer's lenses asked together, on the `reviewed` fixture once a
+# commit adds "// The bug was a missing nil check.": the comments lens
+# flags the comment, quoting its line.
+calls:
+  - - finding:
+        lens: comments
+        severity: important
+        title: The comment tells the bug it fixed
+        why: the comment tells the bug it fixed, not what Double does
+        fix: say what Double does; the bug belongs in the commit message
+        cause: {path: calc/calc.go, quote: "// The bug was a missing nil check."}

@@ -22,7 +22,7 @@ flowchart LR
 
 ## What goes on a line
 
-- **The rules' findings** (`bug-story`, `internal-code`, `long-comment`)
+- **The rules' findings** (`internal-code`, `long-comment`, `bug-story` with no agent)
   and **each lens's important finding on the change**, one comment each:
   two lenses on one line, two comments, each resolved apart.
 - **Each comment** says what it does to the merge request, `**blocks**` or

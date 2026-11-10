@@ -62,15 +62,35 @@ func comment(file, line string) (text string, ok, whole bool) {
 	return "", false, false
 }
 
+// Hint is a comment a guess flags for a lens to judge (ADR-0065, Rule
+// A): where it starts, the words that made the guess, the comment whole.
+type Hint struct {
+	Rule    string `json:"rule"`
+	Where   string `json:"where"`
+	Word    string `json:"word"`
+	Comment string `json:"comment"`
+}
+
+// storyRule is the rule whose guess, a word of story-words in a comment,
+// a lens judges when an agent is there (its `hints`); with none, it warns.
+const storyRule = "bug-story"
+
 // mechanical runs the rules no judgement is needed for on the comments a
-// change adds: a bug's story, a code internal to the project, a block too
-// long. A line the change did not add is not looked at.
+// change adds: a code internal to the project, a block too long; and the
+// guess of a bug's story, which only warns. A line the change did not add
+// is not looked at.
 func mechanical(c Change, s Settings, codes committer.Settings) ([]verdict.Finding, error) {
+	out, _, err := rules(c, s, codes)
+	return out, err
+}
+
+// rules is mechanical, with the comments the story guess flags as hints.
+func rules(c Change, s Settings, codes committer.Settings) ([]verdict.Finding, []Hint, error) {
 	var story []*regexp.Regexp
 	for _, w := range s.StoryWords {
 		re, err := regexp.Compile("(?i)" + w)
 		if err != nil {
-			return nil, fmt.Errorf("story-words %q: %w", w, err)
+			return nil, nil, fmt.Errorf("story-words %q: %w", w, err)
 		}
 		story = append(story, re)
 	}
@@ -80,6 +100,7 @@ func mechanical(c Change, s Settings, codes committer.Settings) ([]verdict.Findi
 	}
 	sort.Strings(files)
 	var out []verdict.Finding
+	var hints []Hint
 	// A story may run over the lines of one comment ("Fields used / to
 	// drop"): it is looked for in the comment's lines joined.
 	tells := func(f string, lines []Line) {
@@ -96,8 +117,11 @@ func mechanical(c Change, s Settings, codes committer.Settings) ([]verdict.Findi
 						at = lines[i].At
 					}
 				}
-				out = append(out, verdict.Finding{Rule: "bug-story", Where: fmt.Sprintf("%s:%d", f, at),
-					Message: fmt.Sprintf("the comment tells the code's history (%q): say what the code does now; how it was, and the bug, belong in the commit message", strings.TrimSpace(joined[loc[0]:loc[1]]))})
+				word := strings.TrimSpace(joined[loc[0]:loc[1]])
+				where := fmt.Sprintf("%s:%d", f, at)
+				out = append(out, verdict.Finding{Rule: storyRule, Level: "warn", Where: where,
+					Message: fmt.Sprintf("the comment may tell the code's history (%q), a guess by a word list (story-words) that no lens judged: if it does, say what the code does now; how it was, and the bug, belong in the commit message", word)})
+				hints = append(hints, Hint{Rule: storyRule, Where: where, Word: word, Comment: strings.TrimSpace(joined)})
 				return
 			}
 		}
@@ -129,7 +153,7 @@ func mechanical(c Change, s Settings, codes committer.Settings) ([]verdict.Findi
 			}
 			found, err := committer.InternalCodes(text, codes)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			for _, code := range found {
 				out = append(out, verdict.Finding{Rule: "internal-code", Where: fmt.Sprintf("%s:%d", f, l.At),
@@ -138,5 +162,5 @@ func mechanical(c Change, s Settings, codes committer.Settings) ([]verdict.Findi
 		}
 		flush()
 	}
-	return out, nil
+	return out, hints, nil
 }

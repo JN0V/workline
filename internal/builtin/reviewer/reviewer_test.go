@@ -84,7 +84,7 @@ func TestStoryOverTwoLines(t *testing.T) {
 		{"a.go", 9, "func Args() {}"},
 	}}}
 	found, err := mechanical(c, Settings{StoryWords: []string{`\bused to\b`}}, committer.Settings{})
-	if err != nil || len(found) != 1 || found[0].Rule != "bug-story" || found[0].Where != "a.go:7" {
+	if err != nil || len(found) != 1 || found[0].Rule != "bug-story" || found[0].Level != "warn" || found[0].Where != "a.go:7" {
 		t.Errorf("a story over two lines of one comment: %v %v", found, err)
 	}
 }

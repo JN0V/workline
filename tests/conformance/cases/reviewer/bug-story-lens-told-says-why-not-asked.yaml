@@ -1,0 +1,11 @@
+case: reviewer/bug-story-lens-told-says-why-not-asked
+about: "A run told to ask the comments lens, on a change whose comments no story word flags: the lens is not asked, and the summary says why (ADR-0065, Rule A)."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Double returns twice n.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: comments}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "comments (no comment a story word flags)"

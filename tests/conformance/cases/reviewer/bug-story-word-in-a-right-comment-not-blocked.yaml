@@ -1,0 +1,13 @@
+case: reviewer/bug-story-word-in-a-right-comment-not-blocked
+about: "A comment saying what the code does, a story word in it (`previously`), with an agent: the word list's guess is no finding; the comments lens is asked with the others, given the comment flagged, and finds nothing (ADR-0065, Rule A)."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Last returns the previously saved value.\\nfunc Last(n int) int { return n }\\n' >> calc/calc.go && git commit -qam 'feat: give the last value'"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: bug-story}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["## Lens: comments", "`calc/calc.go:20` (\"previously\"): Last returns the previously saved value."]}

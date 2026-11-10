@@ -3,10 +3,10 @@ about: "The merge request of #550: a project with no agent sets a rule to warn, 
 given:
   repo: reviewed
   setup:
-    - "printf '\\n// Double returns twice n.\\n// The bug was an overflow here.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+    - "printf '\\n// Double returns twice n (PROJ-12).\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
   config:
     routing: {events: {merge-request: [reviewer]}}
-    roles: {reviewer: {enforce: {bug-story: warn}}}
+    roles: {reviewer: {enforce: {internal-code: warn}}}
   forge:
     issues: []
     merge-requests:
@@ -18,7 +18,7 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: bug-story, level: warn, where: "calc/calc.go:21"}
+    - {rule: internal-code, level: warn, where: "calc/calc.go:20"}
     - {rule: record-unread, level: warn}
     - {rule: not-reviewed, level: warn}
-  summary-file: ["bug-story", "record-unread"]
+  summary-file: ["internal-code", "record-unread"]
