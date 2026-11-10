@@ -170,6 +170,8 @@ the candidate's issue, ships the version:
   sets with their own token never counts.
 - **GitLab**: in hand in the merge request's pipeline, where
   `workline:merge` reads it; nothing kept elsewhere.
+- **The local forge**: in the clone, `.git/workline/verdicts/`, kept by
+  `workline route merge-request` itself.
 - No verdict on the head yet: auto-merge waits for it.
 - **A draft's verdict** is a review to come (`waits`): the rules and
   gates passed, the AI review waits for it to be marked ready. GitHub's
@@ -214,8 +216,11 @@ the candidate's issue, ships the version:
 - **Another forge** (`cmd:`): the operations `merge-state`, `auto-merge`,
   `guarded`, `accept`, `keep-verdict` and `verdict`
   ([forge command](spec/forge-command.md)); at `normal`, more
-  ([set up](merge-policy-normal.md#set-up)). The local forge has no
-  auto-merge: said, nothing turned on.
+  ([set up](merge-policy-normal.md#set-up)).
+- **The local forge** (`forge: local`): nothing to set up. It has no
+  auto-merge, so `workline follow` merges itself what the policy says
+  yes to, in the clone, nothing pushed
+  ([the line with no forge](local-line.md#6-the-merge)).
 
 ## What the summary says
 

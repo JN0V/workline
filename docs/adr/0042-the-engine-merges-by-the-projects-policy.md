@@ -563,8 +563,54 @@ accepted-whole-by-a-non-writer-reads-nothing,
 accepted-whole-older-verdict-stays-off; TestShortRulesKeptWhole,
 TestTheYesEachLabelItsOwn.
 
+## Amendment (2026-11-10, [#1322]): the local forge merges itself
+
+- **The gap**: with `forge: local`, the policy said "the forge has no
+  auto-merge" and nothing merged. A fix the policy says yes to waited
+  for the person's `git merge`, where on GitHub it merges alone.
+- **Use, complete, replace**: the local forge has no auto-merge to turn
+  on, so the engine completes it. The weigh is the same — the verdict,
+  the levels, `code` for a fix at `normal` —; only the last act
+  differs: where a forge's auto-merge would be turned on, `follow`
+  merges.
+- **The merge**: the head weighed, into its base, a merge commit naming
+  the request (`See merge request !<n>`, read back for a revert), in
+  the clone; nothing pushed, no remote read. A base checked out moves
+  with its files by a fast-forward to that commit, whole or not at all.
+- **Refused, said, nothing merged**: a branch moved since it was
+  weighed, a conflict with the base, a base checked out with
+  uncommitted changes. A worktree is never left mid-merge.
+- **The same run**: the request is then written merged and the issues
+  it closes closed, as for a person's `git merge` ([#1282]).
+- **Where the verdict lives**: `.git/workline/verdicts/<head>.json`,
+  kept by `workline route merge-request` itself on the local forge (no
+  job between), or by `follow --verdict <file>`. A new head has none
+  until the line runs on it.
+- **Workline's own, with no App**: a role's branch
+  (`workline/<role>/<task>`) is workline's; its commits are told by their
+  trailers and trees, never their committer: in the clone, the roles
+  commit under the person's name. The marks of the reverts read and the
+  demotion issues are kept in the clone; a demotion issue closed is the
+  person's close.
+- **A person's yes**: `workline issues label !<n> --add
+  workline:accepted` records the head it was given on; a commit after it
+  takes it off, as a push does. A label written by hand in the file
+  covers no head.
+- **`enterprising`**: the local forge cuts no release candidate for a
+  person to try: features and tasks wait, as at `normal`, said.
+- **The limit**: whoever writes in the clone can write its files — a
+  verdict, a label. The guard is against a slip, not against the person,
+  who owns the clone ([ADR-0016]).
+
+Conformance: merge/local-fix-merges-alone, local-feature-waits,
+local-persons-yes-merges, local-red-line-holds, local-new-head-waits,
+local-no-policy-no-merge, local-dirty-base-merges-nothing,
+local-route-keeps-its-verdict; TestLocalAutoMergeMerges,
+TestLocalAutoMergeRefuses, TestLocalMergeStateAndVerdict.
+
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
+[ADR-0016]: 0016-writes-go-where-the-project-lives.md
 [ADR-0017]: 0017-the-release-manager.md
 [ADR-0018]: 0018-the-product-owner.md
 [ADR-0020]: 0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md
@@ -590,3 +636,5 @@ TestTheYesEachLabelItsOwn.
 [#438]: https://github.com/JN0V/workline/issues/438
 [#1043]: https://github.com/JN0V/workline/issues/1043
 [#1107]: https://github.com/JN0V/workline/issues/1107
+[#1282]: https://github.com/JN0V/workline/issues/1282
+[#1322]: https://github.com/JN0V/workline/issues/1322
