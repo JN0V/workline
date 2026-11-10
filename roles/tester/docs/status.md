@@ -160,7 +160,8 @@ Cases in `tests/conformance/cases/tester/`:
   is needed, its answer said on the reviewed pull request too. Cases
   `tester/objection-missing-test-added`,
   `objection-missing-test-added-as-a-diff`,
-  `objection-missing-none-needed`. Tried: its pull request's
+  `objection-missing-none-needed`,
+  `objection-missing-two-files-refused`. Tried: its pull request's
   `## Tried`.
 - **Its moment** (step 4): on `schedule`, one ready issue a run, the
   first in the backlog's order with named scenarios and no open Draft;

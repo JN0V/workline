@@ -647,8 +647,8 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 			p = intent.Intention{Kind: "patch", Value: map[string]any{"file": files[0], "content": content}}
 			patches[i] = p
 		}
-		if missing && len(files) == 1 && a.Record.Files[files[0]] != "" {
-			a.File = files[0] // a test missing goes in any of its tests
+		if missing && i == 0 && len(files) == 1 && a.Record.Files[files[0]] != "" {
+			a.File = files[0] // a test missing goes in any of its tests, one: the first patch's
 			act.Test = a.File
 		}
 		if len(files) != 1 || files[0] != a.File {

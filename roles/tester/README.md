@@ -147,7 +147,7 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
   the review found a behaviour with no test, on code; the developer
   sends it, naming no scenario. The agent reads every scenario and
   answers:
-  - *added*: the test in any of its tests of the issue, the file whole
+  - *added*: the test in one of its tests of the issue, the file whole
     or a diff, proven as a rewrite;
   - *none needed*: its reason.
   - Its answer is said on the pull request whose review found it too.
