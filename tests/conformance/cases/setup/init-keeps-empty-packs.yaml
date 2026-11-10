@@ -1,0 +1,16 @@
+case: setup/init-keeps-empty-packs
+about: >
+  An empty list is a choice too (ADR-0065; #1230): the project writes
+  `packs: []`, to keep the generic test paths alone; init detects go and
+  leaves the list empty.
+given:
+  repo: basic
+  setup:
+    - "printf 'module example.com/app\\n' > go.mod && git add go.mod && git commit -qm 'build: module'"
+  config:
+    packs: []
+run: {init: true, ai: none}
+expect:
+  status: pass
+  files:
+    .workline/config.yaml: {contains: "packs: []", lacks: "- go"}

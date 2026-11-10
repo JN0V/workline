@@ -1,0 +1,13 @@
+# JavaScript and TypeScript tested with Jest or a runner of its shape
+# (ADR-0065, "Language packs"): __tests__/ folders, *.test.* and *.spec.*
+# files.
+about: JavaScript or TypeScript projects with a package.json
+detect:
+  files: [package.json]
+  extensions: [.js, .jsx, .mjs, .cjs, .ts, .tsx]
+test-paths:
+  - "**/__tests__/**"
+  - "**/[^.]*.test.*"
+  - "**/[^.]*.spec.*"
+  - "**/test/**"
+  - "**/tests/**"

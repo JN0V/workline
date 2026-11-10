@@ -53,6 +53,7 @@ import (
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/line"
+	"github.com/JN0V/workline/internal/packs"
 	"github.com/JN0V/workline/internal/release"
 	wlreport "github.com/JN0V/workline/internal/report"
 	"github.com/JN0V/workline/internal/review"
@@ -2630,6 +2631,12 @@ func initCmd(args []string) int {
 			config += "; the project's default autonomy is " + level + ", as the project set it"
 		}
 	}
+	listed, err := initPacks(root, rolesDir)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	config += "; " + listed
 	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "init", AI: *ai, DefaultAI: userDefaultAI()})
 	if *asJSON {
 		out, _ := json.MarshalIndent(struct {
@@ -2663,6 +2670,34 @@ func initCmd(args []string) int {
 		fmt.Fprintf(os.Stderr, "%d docs are suspect already: code they describe changed since they were last edited. The next push lists them; `workline docs` has them judged, or a merge request.\n", len(suspect))
 	}
 	return exitFor(res.Status)
+}
+
+// initPacks lists, in the project's config, the language packs whose
+// marker files the repository holds outside its test and aside folders
+// (ADR-0065), unless it lists some already, and says what it did.
+func initPacks(root, rolesDir string) (string, error) {
+	all, err := packs.Available(root)
+	if err != nil {
+		return "", err
+	}
+	files, err := packs.Files(root)
+	if err != nil {
+		return "", err
+	}
+	tests, _ := role.TestDef(rolesDir, root) // unread: the generic one, which doctor says
+	detected := packs.Names(packs.Detected(files, all, tests.Aside))
+	listed, changed, err := routing.SetPacks(root, detected)
+	switch {
+	case err != nil:
+		return "", err
+	case changed:
+		return "language packs listed: " + strings.Join(listed, ", ") + " (.workline/config.yaml)", nil
+	case len(listed) > 0:
+		return "language packs " + strings.Join(listed, ", ") + ", as the project listed them", nil
+	case listed != nil: // `packs: []`
+		return "no language pack, as the project listed them: every role reads the generic pack", nil
+	}
+	return "no language pack detected: every role reads the generic pack", nil
 }
 
 // importIssues moves a file — a roadmap, a backlog — to the forge's

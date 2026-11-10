@@ -15,8 +15,8 @@ variables. The commands and options: [usage.md](usage.md).
 `WORKLINE_AI` (the git hooks); the project's `ai`; yours; else `none`.
 **Which forge**: `--forge`, else the project's `forge`, else `none`.
 **A role's settings**: the role's defaults (its `role.yaml`, listed on its
-[page](roles.md)), its [autonomy](autonomy.md) level, then the
-project's `settings`.
+[page](roles.md)), the listed [packs](packs.md), its
+[autonomy](autonomy.md) level, then the project's `settings`.
 
 | Key of `.workline/config.yaml` | Holds |
 |---|---|
@@ -37,6 +37,7 @@ project's `settings`.
 | `routing.wip` | `<state>: <issues>`, a state's WIP limit, laid over the shipped `ready: 5`; `0` lifts it ([room in the next state](spec/routing.md#room-in-the-next-state)) |
 | `routing.revisit` | the days a blocked issue waits, nothing new on it, before the product owner reads it again; `7` shipped, `0` never ([blocked, read again](spec/routing.md#blocked-read-again)) |
 | `routing.stale` | `<state>: <days>`, a state's age limit, laid over the shipped `ready: 30`, `tests: 14`; `0` lifts it ([staleness](spec/routing.md#staleness)) |
+| `packs` | the [language packs](packs.md) every role reads, as `[go, kotlin-gradle]`; written by `workline init` |
 | `board` | `ready`, `doing`, `refine`, `tests`, `blocked`: a column's name, over the names workline matches; `project`: a GitHub project's number, when several are linked ([boards](boards.md)) |
 | `gitlab.bots` | usernames GitLab does not name bots that are: the service account or line account holding workline's token; its comments, labels and reactions are a bot's, never a person's ([why](ci-gitlab.md#what-the-template-does)) |
 

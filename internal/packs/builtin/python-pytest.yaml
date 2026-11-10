@@ -1,0 +1,13 @@
+# Python tested with pytest (ADR-0065, "Language packs"): test_*.py and
+# *_test.py files, tests/ folders, and conftest.py, pytest's fixtures.
+about: Python projects tested with pytest
+detect:
+  files: [pyproject.toml, setup.py, setup.cfg, pytest.ini, tox.ini, requirements.txt]
+  extensions: [.py]
+test-paths:
+  - "**/test_*.py"
+  - "**/*_test.py"
+  - "**/tests/**"
+  - "**/test/**"
+  - "**/conftest.py"
+test-command: "pytest --junitxml={report}"

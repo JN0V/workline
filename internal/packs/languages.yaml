@@ -1,0 +1,22 @@
+# The programming languages `workline doctor` names when no pack listed
+# knows them, by file extension: a short subset of GitHub linguist's
+# languages.yml (https://github.com/github-linguist/linguist), data, never
+# engine code. A language is known to a pack whose detect.extensions holds
+# one of its extensions; `file` names the pack a person would write.
+- {name: C, file: c, extensions: [.c, .h]}
+- {name: C#, file: csharp, extensions: [.cs]}
+- {name: C++, file: cpp, extensions: [.cpp, .cc, .cxx, .hpp, .hh, .hxx, .ino]}
+- {name: Dart, file: dart, extensions: [.dart]}
+- {name: Elixir, file: elixir, extensions: [.ex, .exs]}
+- {name: Go, file: go, extensions: [.go]}
+- {name: Java, file: java, extensions: [.java]}
+- {name: JavaScript, file: javascript, extensions: [.js, .jsx, .mjs, .cjs]}
+- {name: Kotlin, file: kotlin, extensions: [.kt, .kts]}
+- {name: PHP, file: php, extensions: [.php]}
+- {name: Python, file: python, extensions: [.py]}
+- {name: Ruby, file: ruby, extensions: [.rb]}
+- {name: Rust, file: rust, extensions: [.rs]}
+- {name: Scala, file: scala, extensions: [.scala]}
+- {name: Shell, file: shell, extensions: [.sh, .bash]}
+- {name: Swift, file: swift, extensions: [.swift]}
+- {name: TypeScript, file: typescript, extensions: [.ts, .tsx]}

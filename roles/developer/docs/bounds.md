@@ -71,7 +71,8 @@ is beyond it: listed, never refused.
   folder or under a Scope folder (`mul_test.go` beside `mul.go`). A
   test file is one the project's
   [one definition](../../tester/README.md#settings) names: the tester's
-  `test-paths`, else the built-in generic patterns
+  `test-paths`, else the listed [packs'](../../../docs/packs.md) with
+  the built-in generic patterns, else those alone
   ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)).
   A Scope `src` holds no test at the root;
 - a new test file beside the Scope
@@ -83,9 +84,10 @@ is beyond it: listed, never refused.
     `app/src/test/kotlin/x/FakeRepo.kt` beside a Scope
     `app/src/main/kotlin/x/Repo.kt`, with
     `{tests: "**/src/test/kotlin/**", code: "**/src/main/kotlin/**"}`;
-  - unset, the generic homes: the folder holding its `test` or `tests`
-    folder, else its own: `Storage/test/test_name/test_name.cpp`
-    beside a Scope `Storage/include/Storage.h`;
+  - unset, the listed packs' homes, then the generic ones: the folder
+    holding its `test` or `tests` folder, else its own:
+    `Storage/test/test_name/test_name.cpp` beside a Scope
+    `Storage/include/Storage.h`;
   - a test the definition misses is code: beyond the Scope, listed;
     `workline doctor` says how to set `test-paths`;
   - one named like a class of the main code is beside it too: the

@@ -178,24 +178,11 @@ func SetProjectAutonomy(repo, level string) (string, bool, error) {
 
 // setLevel sets `autonomy` under the keys named, made when missing.
 func setLevel(repo string, under []string, level, comment string) (string, bool, error) {
-	file := filepath.Join(repo, ".workline", "config.yaml")
-	data, err := os.ReadFile(file)
-	if err != nil && !os.IsNotExist(err) {
+	c, err := readConfig(repo)
+	if err != nil {
 		return "", false, err
 	}
-	var doc yaml.Node
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return "", false, fmt.Errorf(".workline/config.yaml: %w", err)
-	}
-	var kept []byte // a file of comments alone, which the parser drops: kept above
-	if len(doc.Content) == 0 {
-		kept = bytes.TrimRight(data, " \n") // `---` or comments
-		doc = yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{{Kind: yaml.MappingNode}}}
-	}
-	top := doc.Content[0]
-	if top.Kind != yaml.MappingNode {
-		return "", false, fmt.Errorf(".workline/config.yaml: not a mapping")
-	}
+	top := c.doc.Content[0]
 	// A key there with nothing under it (`roles:`, `roles: ~`) becomes a
 	// mapping; one holding a value of its own is the person's: refused.
 	child := func(m *yaml.Node, key, where string) (*yaml.Node, error) {
@@ -237,20 +224,92 @@ func setLevel(repo string, under []string, level, comment string) (string, bool,
 	default:
 		return v.Value, false, nil // the project's choice
 	}
-	var out bytes.Buffer
-	if len(kept) > 0 && !bytes.Equal(kept, []byte("---")) {
-		out.Write(append(kept, '\n'))
-	}
-	enc := yaml.NewEncoder(&out)
-	enc.SetIndent(2)
-	if err := enc.Encode(&doc); err != nil {
-		return "", false, err
-	}
-	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
-		return "", false, err
-	}
-	if err := os.WriteFile(file, out.Bytes(), 0o644); err != nil {
+	if err := c.write(); err != nil {
 		return "", false, err
 	}
 	return level, true, nil
+}
+
+// SetPacks lists the language packs in the project's
+// .workline/config.yaml (ADR-0065), unless `packs:` holds a list
+// already, `packs: []` too (the person's choice: the generic pack
+// alone), or none were given: then the file is left as it is. The
+// packs listed are empty, not nil, for `packs: []`. It returns the packs
+// listed afterwards, and whether the file changed.
+func SetPacks(repo string, names []string) ([]string, bool, error) {
+	c, err := readConfig(repo)
+	if err != nil {
+		return nil, false, err
+	}
+	top := c.doc.Content[0]
+	switch v := value(top, "packs"); {
+	case v != nil && v.Kind == yaml.SequenceNode:
+		listed := []string{}
+		for _, n := range v.Content {
+			listed = append(listed, n.Value)
+		}
+		return listed, false, nil // the project's choice
+	case v != nil && (v.Kind != yaml.ScalarNode || v.Tag != "!!null") && v.Kind != yaml.SequenceNode:
+		return nil, false, fmt.Errorf(".workline/config.yaml: packs is not a list: packs not set")
+	case len(names) == 0:
+		return nil, false, nil
+	}
+	list := &yaml.Node{Kind: yaml.SequenceNode}
+	for _, n := range names {
+		list.Content = append(list.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: n})
+	}
+	if v := value(top, "packs"); v != nil {
+		*v = *list // `packs:` or `packs: ~`, nothing written
+	} else {
+		top.Content = append(top.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: "packs",
+			HeadComment: "The language packs every role reads (ADR-0065), detected by `workline init`: docs/packs.md."}, list)
+	}
+	if err := c.write(); err != nil {
+		return nil, false, err
+	}
+	return names, true, nil
+}
+
+// config is the project's .workline/config.yaml, read to be edited.
+type config struct {
+	file string
+	doc  yaml.Node
+	kept []byte // a file of comments alone, which the parser drops: kept above
+}
+
+// readConfig reads the project's config, a mapping, empty when missing.
+func readConfig(repo string) (*config, error) {
+	c := &config{file: filepath.Join(repo, ".workline", "config.yaml")}
+	data, err := os.ReadFile(c.file)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	if err := yaml.Unmarshal(data, &c.doc); err != nil {
+		return nil, fmt.Errorf(".workline/config.yaml: %w", err)
+	}
+	if len(c.doc.Content) == 0 {
+		c.kept = bytes.TrimRight(data, " \n") // `---` or comments
+		c.doc = yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{{Kind: yaml.MappingNode}}}
+	}
+	if c.doc.Content[0].Kind != yaml.MappingNode {
+		return nil, fmt.Errorf(".workline/config.yaml: not a mapping")
+	}
+	return c, nil
+}
+
+// write writes the config back.
+func (c *config) write() error {
+	var out bytes.Buffer
+	if len(c.kept) > 0 && !bytes.Equal(c.kept, []byte("---")) {
+		out.Write(append(c.kept, '\n'))
+	}
+	enc := yaml.NewEncoder(&out)
+	enc.SetIndent(2)
+	if err := enc.Encode(&c.doc); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(c.file), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(c.file, out.Bytes(), 0o644)
 }

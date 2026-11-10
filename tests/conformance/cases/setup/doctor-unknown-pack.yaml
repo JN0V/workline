@@ -1,0 +1,12 @@
+case: setup/doctor-unknown-pack
+about: >
+  A pack listed that does not exist (ADR-0065; #1230): never skipped, the
+  config refused, as a key nothing reads is (principle 12).
+given:
+  repo: basic
+  config:
+    packs: [cobol]
+run: {doctor: true}
+expect:
+  findings:
+    - {rule: config-invalid, level: error, message: "packs lists \"cobol\": no built-in pack nor .workline/packs/cobol.yaml"}

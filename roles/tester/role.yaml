@@ -111,16 +111,18 @@ settings:
   # The test files: those a change adds or changes are laid on the base
   # for the red proof; the change's other files are its code. The one
   # definition of a test file every role reads (ADR-0065): unset, the
-  # built-in generic patterns (internal/testdef/generic.yaml: test/,
-  # tests/, Tests/, __tests__/ folders, test_*, *_test.*, *_spec.*,
-  # *.test.*, *.spec.*), which `workline doctor` says. A test they miss is code to the developer: beyond its Scope, listed.
+  # test-paths of the language packs the project lists (packs: in
+  # .workline/config.yaml, docs/packs.md) with the built-in generic
+  # pack's, else the generic pack's alone (internal/packs/builtin/generic.yaml: test/, tests/, Tests/,
+  # __tests__/ folders, test_*, *_test.*, *_spec.*, *.test.*, *.spec.*),
+  # which `workline doctor` says. A test they miss is code to the developer: beyond its Scope, listed.
   # E.g. ["**/src/test/**", "**/src/androidTest/**"], ["spec/**"].
   test-paths: []
   # Where a test's code lives, for the developer: a new test file whose
   # code folder holds a Scope path is beside the Scope, not listed beyond it. Each maps a test's
   # folder (`tests`) onto its code's (`code`), each `**` filling the next;
-  # a test in none lives beside its code. Unset, the generic ones: the
-  # folder holding a test/ or tests/ folder.
+  # a test in none lives beside its code. Unset, the listed packs', then
+  # the generic ones: the folder holding a test/ or tests/ folder.
   # E.g. [{tests: "**/src/test/**", code: "**/src/main/**"}].
   test-homes: []
   # A build broken by a new test, read by ecosystem: an error line of

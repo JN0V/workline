@@ -1,0 +1,16 @@
+case: setup/doctor-test-command-from-pack
+about: >
+  A listed pack's suggested test-command (ADR-0065; #1230): the tester is
+  routed, no test-command set, python-pytest listed: the doctor's fix
+  gives the pack's command, not the fixed examples.
+given:
+  repo: documented
+  config:
+    forge: local
+    packs: [python-pytest]
+    routing: {events: {merge-request: [tester]}}
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: test-command-missing, where: tester, fix: "as the packs listed suggest: `pytest --junitxml={report}`"}

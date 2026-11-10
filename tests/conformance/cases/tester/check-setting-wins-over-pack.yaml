@@ -1,0 +1,46 @@
+case: tester/check-setting-wins-over-pack
+about: >
+  Setting wins (ADR-0065; #1230): the project's pack says its tests are
+  under checks/; the tester's test-paths, set, say spec/. A change adds
+  spec/sub.sh and the code it checks: the tester reads its setting, the
+  spec a test, red on the base, green on the head. The pack alone would
+  call spec/sub.sh code, and the generic pack too.
+given:
+  repo: tested
+  setup:
+    - |
+      cat > run-tests.sh <<'RUN'
+      #!/bin/sh
+      report=$1 failed=0
+      mkdir -p "$(dirname "$report")"
+      {
+        echo '<?xml version="1.0" encoding="UTF-8"?>'
+        echo '<testsuites><testsuite name="checks">'
+        for t in spec/*.sh; do
+          [ -f "$t" ] || continue
+          name=$(basename "$t" .sh)
+          if sh "$t" >/dev/null 2>&1; then
+            echo "<testcase classname=\"checks\" name=\"$name\" time=\"0.01\"/>"
+          else
+            failed=1
+            echo "<testcase classname=\"checks\" name=\"$name\" time=\"0.01\"><failure message=\"$t failed\"/></testcase>"
+          fi
+        done
+        echo '</testsuite></testsuites>'
+      } > "$report"
+      exit $failed
+      RUN
+      mkdir -p .workline/packs
+      printf 'about: shell projects whose checks live in checks/\ndetect:\n  extensions: [.sh]\ntest-paths: ["checks/**"]\n' > .workline/packs/shell-checks.yaml
+      git add run-tests.sh .workline/packs && git commit -qm 'build: run the checks'
+    - git checkout -q -b change
+    - |
+      printf 'sub() { echo $(($1 - $2)); }\n' >> lib.sh && mkdir -p spec && printf '. ./lib.sh\n[ "$(sub 5 3)" = 2 ]\n' > spec/sub.sh && git add . && git commit -qm "feat: subtract"
+  config:
+    packs: [shell-checks]
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["spec/**"]}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base, green on the head"
+  no-findings: [{rule: test-green-on-base}, {rule: test-red-on-head}]
