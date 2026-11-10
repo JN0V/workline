@@ -139,7 +139,8 @@ You are the forge's guards here: nothing merges unless you run
 
 - **A state that wakes nobody**: `workline issues show 1` says why on
   the issue; `workline route reconcile --ai claude` runs what is due.
-- **A run that changed nothing**: run again only after the body or
-  labels change; the line does not ask twice on the same input.
+- **A run that changed nothing**: run again after the body or labels
+  change, or after you answer with `workline issues comment`; the line
+  does not ask twice on the same input.
 - **More**: [troubleshooting](troubleshooting.md),
   [the product owner's](troubleshooting-product-owner.md).
