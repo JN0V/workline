@@ -132,11 +132,11 @@ wants every open issue due, waiting or done, said.
   split), and every part is closed now. An agent claiming the mark on
   another issue is dropped (`parent-not-split`); a part open again
   drops the yes (`parent-part-open`).
-- **A yes put early** ([#1213](https://github.com/JN0V/workline/issues/1213)):
-  `workline:accepted` put before the closing is proposed is checked the
-  same way. All parts closed by the role's run, it closes the parent. A
-  part still open, it is taken off, with a line to put it on again once
-  the closing is proposed: never left on to stand for a later act.
+- **A yes left on with no closing proposed** ([#1213](https://github.com/JN0V/workline/issues/1213)):
+  put early, or a yes to another act (the split, say) never taken off,
+  it is never read as a yes to what the parts delivered. It is taken
+  off, said; all parts closed, the closing is proposed, for a new yes.
+  Never left on to stand for a later act.
 - **In refine too**: a parent left in refine after a split for its
   size is told the same way, when its own step is not due.
 

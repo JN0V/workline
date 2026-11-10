@@ -84,8 +84,8 @@ move
 Once all its parts are closed, the comment and a finding
 (`parent-to-accept`) ask a person to accept it, and the closing is
 proposed: `workline:accepted` closes it. The role never closes it alone.
-A yes put before that stands only once all parts are closed: with a part
-still open, the role takes it off and says to put it on again.
+A yes put before that is never one to what the parts delivered: the
+role takes it off, says so, and asks again once all parts are closed.
 The line wakes the product owner on a parent as its parts close, even
 with no state label
 ([routing](../../../docs/spec/routing.md#a-parent-told-as-its-parts-close)).
