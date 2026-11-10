@@ -5,10 +5,13 @@ about: >
   adds two tests to a test file the base holds, and changes no line
   already there: they are proven red on the base, by a missing name the
   issue names, and the Draft opens. The base's own test in that file is
-  not taken for a new one, so it is not frozen (#1259).
+  not taken for a new one, so it is not frozen; a test of the same name
+  in another file of the base's hides none of the new ones (#1259).
 given:
   repo: python-tested
   setup:
+    - |
+      printf 'from pkg.calc import add\n\n\ndef test_two_by_three():\n    assert add(3, 3) == 6\n' > tests/test_sum.py && git add tests && git commit -qm "test: a sum"
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh -m {report}"}}}

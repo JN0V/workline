@@ -7,7 +7,7 @@
 # define, is the import's error. A file not collected stops the run, as
 # pytest does: each such file one record, no class, errored, its error
 # printed as pytest prints it. Else each `def test_*` passes, but one
-# holding `assert False`.
+# holding `assert False`, failed, or `pytest.skip(`, skipped.
 set -eu
 # Hermetic: ignore the machine's git config and global hooks.
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
@@ -54,11 +54,13 @@ for f in tests/test_*.py; do
     continue
   fi
   cases="$cases$(awk -v mod="$mod" '
-    function out() { if (name != "") { if (bad) printf "<testcase classname=\"%s\" name=\"%s\" time=\"0.01\"><failure message=\"assert False\"/></testcase>", mod, name
+    function out() { if (name != "") { if (skip) printf "<testcase classname=\"%s\" name=\"%s\" time=\"0.01\"><skipped/></testcase>", mod, name
+                                       else if (bad) printf "<testcase classname=\"%s\" name=\"%s\" time=\"0.01\"><failure message=\"assert False\"/></testcase>", mod, name
                                        else printf "<testcase classname=\"%s\" name=\"%s\" time=\"0.01\"/>", mod, name } }
-    /^def test_/ { out(); name = $2; sub(/\(.*/, "", name); bad = 0; next }
+    /^def test_/ { out(); name = $2; sub(/\(.*/, "", name); bad = 0; skip = 0; next }
     /^[^ \t]/ { out(); name = "" }
     /assert False/ { bad = 1 }
+    /pytest\.skip\(/ { skip = 1 }
     END { out() }' "$f")"
 done
 if [ $n -gt 0 ]; then

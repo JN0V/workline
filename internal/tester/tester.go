@@ -297,7 +297,7 @@ func prove(repo, base string, s Settings) proven {
 	// Tests alone, broken by a missing name: no report names the tests
 	// that did not build, so their files do, as file:name.
 	if !onHead && byName {
-		names, err := unbuiltTests(repo, ch, headRun, baseRun, errs, rules)
+		names, err := unbuiltTests(repo, ch, headRun, errs, rules)
 		if err != nil {
 			return refused(refuse("the red-first check did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}))
 		}
@@ -362,6 +362,24 @@ func prove(repo, base string, s Settings) proven {
 		}
 		v.Summary += fmt.Sprintf(" (%d not built there, %s)", missing, why)
 	}
+	// The tests alone skip none of the base's: a test that ran on the
+	// base and is skipped with them was changed by them, whatever lines
+	// they kept (#1259: a skip inserted in a test of a file shared with
+	// the base). An inserted line that leaves it running is the
+	// reviewer's to judge.
+	if !onHead {
+		var skippedNow []string
+		for id, r := range baseRun.results {
+			if now, ok := redRun.results[id]; ok && r != skipped && now == skipped {
+				skippedNow = append(skippedNow, id)
+			}
+		}
+		slices.Sort(skippedNow)
+		for _, id := range skippedNow {
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "base-test-skipped", Where: id,
+				Message: "ran on the base, and is skipped with the change's tests: a test already there is never skipped nor weakened; add the new tests beside it"})
+		}
+	}
 	for _, f := range v.Findings {
 		if f.Level == "" {
 			v.Status = verdict.Block
@@ -390,19 +408,18 @@ func brokenTests(errs []buildError) []buildError {
 // unbuiltTests is the tests the change's test files declare, by the
 // test-name of the ecosystems whose errors broke the build, that the
 // head's report does not name: they did not build, as file:name. A test
-// the base's report names is the base's, in a file the change adds to,
-// never a new one (#1259).
-func unbuiltTests(repo string, ch *change, head, base ran, errs []buildError, rules []buildRules) ([]string, error) {
+// the base's own file declares is the base's, in a file the change adds
+// to, never a new one (#1259): told by its file, never by a name another
+// file's test may share.
+func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []buildRules) ([]string, error) {
 	used := map[int]bool{}
 	for _, e := range errs {
 		used[e.rules] = true
 	}
 	ran := func(name string) bool {
-		for _, r := range []ran{head, base} {
-			for id := range r.results {
-				if id == name || strings.HasSuffix(id, "."+name) {
-					return true
-				}
+		for id := range head.results {
+			if id == name || strings.HasSuffix(id, "."+name) {
+				return true
 			}
 		}
 		return false
@@ -413,12 +430,14 @@ func unbuiltTests(repo string, ch *change, head, base ran, errs []buildError, ru
 		if err != nil {
 			return nil, err
 		}
+		old, _ := git(repo, "show", ch.base+":"+file) // none: a new file
 		for i, r := range rules {
 			if !used[i] {
 				continue
 			}
+			base := testNames(old, r)
 			for _, name := range testNames(content, r) {
-				if !ran(name) {
+				if !ran(name) && !slices.Contains(base, name) {
 					out = append(out, file+":"+name)
 				}
 			}

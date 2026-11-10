@@ -471,6 +471,11 @@ where a test lives is judgement, a frozen test is the rule that converges.
 - **Only added**: a patch to a file the base holds keeps each of its
   lines, in order; one changed or removed blocks, `test-line-changed`,
   naming the line. A rewrite after an objection is held alike.
+- **Inserted in a base test**: kept lines do not prove the test kept.
+  A base test that ran on the base and is skipped with the tests laid
+  blocks, `base-test-skipped`, a fact of the reports. An inserted line
+  that leaves it running (an early `return`) is the reviewer's to
+  judge on the Draft: telling a test's body apart is language knowledge.
 - **What is frozen**: the tester's own lines, a whole new file or the
   runs it added to one already there, read from the record's blob
   against the base's, no new field. Another's commit that keeps each
@@ -478,8 +483,9 @@ where a test lives is judgement, a frozen test is the rule that converges.
   changes a run blocks, `tester-test-changed`, naming its first line.
   Language-blind: a skip mark put before a frozen test passes this
   guard, and the green proof fails it, the test not green.
-- **New tests**: a base test in that file, unbuilt with the change's
-  tests by a missing name, is the base's, never counted new nor frozen.
+- **New tests**: a test the base's own version of that file declares,
+  unbuilt with the change's tests by a missing name, is the base's,
+  never counted new nor frozen; told by its file, not its name alone.
 - **Left as they are**: the developer's bounds still refuse any edit to
   a frozen file, a shared one whole; the curator still keeps a frozen
   file whole while its Draft is open.

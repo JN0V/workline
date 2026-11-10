@@ -110,6 +110,7 @@ workline test write --issue 42 --ai claude
 | `no-named-scenario` | its Validation names no scenario: asked of the product owner, never invented |
 | `scenario-without-test` | no test names a scenario, and no note says why none can; asked again once with the names first |
 | `test-line-changed` | a patch changes or removes a line of a test file the base holds |
+| `base-test-skipped` | a test that ran on the base is skipped with the tests laid on it |
 | `intention-refused` | a patch reaches a file outside `test-paths` |
 | `test-green-on-base` | a test is not proven red |
 | `no-new-test` | the report names no test of the files written: the project's runner did not run them, the filter that may skip them named (a PlatformIO `test_filter`); the next run gives the agent this reason |
