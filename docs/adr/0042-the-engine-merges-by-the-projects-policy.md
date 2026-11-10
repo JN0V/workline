@@ -583,8 +583,8 @@ TestTheYesEachLabelItsOwn.
 - **The same run**: the request is then written merged and the issues
   it closes closed, as for a person's `git merge` ([#1282]).
 - **Where the verdict lives**: `.git/workline/verdicts/<head>.json`,
-  kept by `workline route merge-request` itself on the local forge (no
-  job between), or by `follow --verdict <file>`. A new head has none
+  kept by `workline route merge-request` itself on the local forge with
+  a merge policy (no job between), or by `follow --verdict <file>`. A new head has none
   until the line runs on it.
 - **Workline's own, with no App**: a role's branch
   (`workline/<role>/<task>`) is workline's; its commits are told by their

@@ -171,7 +171,7 @@ the candidate's issue, ships the version:
 - **GitLab**: in hand in the merge request's pipeline, where
   `workline:merge` reads it; nothing kept elsewhere.
 - **The local forge**: in the clone, `.git/workline/verdicts/`, kept by
-  `workline route merge-request` itself.
+  `workline route merge-request` itself when `merge:` is set.
 - No verdict on the head yet: auto-merge waits for it.
 - **A draft's verdict** is a review to come (`waits`): the rules and
   gates passed, the AI review waits for it to be marked ready. GitHub's
