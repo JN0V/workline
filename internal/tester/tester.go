@@ -411,10 +411,9 @@ func brokenTests(errs []buildError) []buildError {
 // the base's own file declares is the base's, in a file the change adds
 // to, never a new one (#1259): told by its file, never by a name another
 // file's test may share. An ecosystem with no test-name (the generic
-// pack's) names no test: each test file the change adds, none of whose
-// tests the head's report names, is one test, named by the file alone,
-// which proves only that the file is there (#1293); one it adds to is
-// the base's, its new tests untold.
+// pack's) names no test: each test file the change adds, no row naming
+// a test of it nor the head's report, is one test, named by the file
+// alone, which proves only that the file is there (#1293).
 func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []buildRules) ([]string, error) {
 	used := map[int]bool{}
 	for _, e := range errs {
@@ -436,22 +435,25 @@ func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []
 		}
 		old, err := git(repo, "show", ch.base+":"+file) // an error: a new file
 		isNew := err != nil
+		unnamed, declares := false, false // a used row with no test-name; one naming a test of the file
 		for i, r := range rules {
 			if !used[i] {
 				continue
 			}
 			if r.testName == nil {
-				if isNew && !slices.Contains(out, file) && len(head.ofFile(file)) == 0 {
-					out = append(out, file)
-				}
+				unnamed = true
 				continue
 			}
 			base := testNames(old, r)
 			for _, name := range testNames(content, r) {
+				declares = true
 				if !ran(name) && !slices.Contains(base, name) {
 					out = append(out, file+":"+name)
 				}
 			}
+		}
+		if unnamed && !declares && isNew && len(head.ofFile(file)) == 0 {
+			out = append(out, file)
 		}
 	}
 	return out, nil

@@ -1,13 +1,9 @@
 #!/bin/sh
-# A small C project with a stand-in for its compiler that needs none:
-# run-tests.sh "builds" each tests/test_*.c, a call to a function
-# src/*.c does not define being gcc's error (`tests/test_x.c:4:12: error:
-# implicit declaration of function 'mul'`); a test that does not build
-# writes no report at all, as a make target that stops at the compile. A
-# file built is one test, named by its file as a one-test binary's runner
-# names it (classname tests, name test_x); one calling FAIL fails. Its
-# build-errors row, the case's, has no test-name: no language pack names a
-# C test (#1293).
+# A small C project with a stand-in for its compiler: run-tests.sh
+# "builds" each tests/test_*.c, a call src/*.c does not define being
+# gcc's implicit-declaration error, and then writes no report. A file
+# built is one test named by its file (tests.test_x); one calling FAIL
+# fails. The case's build-errors row has no test-name (#1293).
 set -eu
 # Hermetic: ignore the machine's git config and global hooks.
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
