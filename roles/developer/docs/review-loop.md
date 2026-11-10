@@ -84,6 +84,20 @@ step 6).
   the finding as its why; [the tester](../../tester/README.md)
   rewrites it, and the next round takes the rewrite. Its Draft closed:
   nothing to object to, the rounds run out to a person.
+- **A test finding on code is the tester's**
+  ([#1265](https://github.com/JN0V/workline/issues/1265)): the tests
+  lens finds a behaviour with no test, on a line of code, and the
+  tester's Draft is open.
+  - **Sent, not asked**: an objection of kind `missing` on a line of
+    the Draft's tests, naming the pull request; the agent is told it,
+    not asked to fix it. The tester adds the test or says why none is
+    needed; a test added is taken by the next round.
+  - **Once**: the record keeps it sent; a review raising it again asks
+    no one.
+  - **Alone**: no agent, no round counted; the rounds never run out on
+    test findings.
+  - **The developer's still**: one on a test file, or asked again from
+    the record when a round resumes.
 - **A finding on its line**: its row shows only a title; the round
   reads it whole from the reviewer's comment on that line. Only
   workline's own account's comment is read.
@@ -145,7 +159,8 @@ failed — is marked ready for review once its rounds make it green
   goes in the round's comment, the fix aims at its root cause. Without
   it, the answer is refused.
 - **Past the last round**, no agent: the reviewer and the developer do
-  not agree. Its issue goes `workline:blocked`, the reason on it and on
+  not agree on the code findings left; test findings still go to the
+  tester, never counted against them. Its issue goes `workline:blocked`, the reason on it and on
   the pull request
   ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#6-disagreements-end-at-the-product-owner-then-blocked));
   no person is asked, no label on the pull request. No round runs after

@@ -288,6 +288,17 @@ hold:
   `developer/green-draft-made-ready`, `green-draft-capped-stays-draft`,
   `red-check-round-keeps-draft`, `routing/reconcile-lists-a-green-draft`.
   Tried: its pull request's `## Tried`.
+- **A test finding on code goes to the tester** ([#1265](https://github.com/JN0V/workline/issues/1265)):
+  the tests lens asked missing tests of the developer, who may not
+  write acceptance tests; past the last round, the issue was blocked.
+  Now each goes to the tester's Draft, an objection of kind `missing`,
+  once; alone, no agent and no round counted
+  ([the review loop](review-loop.md#a-round)). Cases
+  `developer/round-sends-a-test-finding-to-the-tester`,
+  `round-splits-code-and-test-findings`,
+  `round-five-test-findings-not-blocked`,
+  `round-asks-no-test-finding-sent-before`. Tried: its pull request's
+  `## Tried`.
 
 - **The merge** (step 7): at `normal`, `workline follow` merges its
   pull request with no person's yes, the kind `code`, when the issue it
