@@ -329,11 +329,25 @@ The tester found no test possible and sent the issue back to refine
   ([#1053](https://github.com/JN0V/workline/issues/1053)) — or asks; a
   `ready` with no proof beside that rewrite goes to
   `workline:needs-tests`.
-- **Never back unchanged**
+- **Or back unchanged, once**
+  ([#1053](https://github.com/JN0V/workline/issues/1053)): the reason
+  is the tester's own — code missing from its task, a run that failed —
+  not the issue's. `ready` with `retest: true` sends it to its tests as
+  it stands; the state keeps the word it answers (`retest`), and the
+  tester asks its agent again (`backlog.Retested`). The tester's next
+  "no test possible" is recorded `retried`: a second retest is refused
+  (`retest-spent`), as is one beside a `proof` (`retest-with-proof`) or
+  with no "no test possible" to answer (`retest-not-asked`).
+
+```yaml
+- ready: {issue: 12, retest: true, why: "The tester lacked the counter's code, not a scenario."}
+```
+
+- **Never back unchanged otherwise**
   ([#815](https://github.com/JN0V/workline/issues/815)): the tester's
   record holds the digest of the body it read. While the body is that
-  one and no kind is picked (`backlog.NoTestStands`), a `ready` with no
-  proof is refused (`no-test-unanswered`) unless a refine of the same
+  one, no kind picked and no retest sent (`backlog.NoTestStands`), a
+  `ready` with no proof is refused (`no-test-unanswered`) unless a refine of the same
   run rewrites it; neither the spec review nor `workline:accepted`
   moves it. Left with nothing, the issue is said on it
   (`no-test-waits`), and the line moves it to `workline:blocked`, the
