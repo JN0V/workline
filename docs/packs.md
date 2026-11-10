@@ -25,7 +25,7 @@ One YAML file a language or ecosystem:
 | `detect` | `files`: marker names, at any depth (`go.mod`); `extensions`: the languages it knows, for `workline doctor` |
 | `test-paths` | the test files, as patterns, added to the generic ones: the tester's `test-paths` when it sets none |
 | `test-homes` | where a test's code lives, read before the generic homes: the tester's `test-homes` when it sets none |
-| `test-command` | a suggested test command, never run unless you set it |
+| `test-command` | a suggested test command, given by `workline doctor` when the tester has none; never run unless you set it |
 | `aside` | folders beside the code, ranked after it: the generic pack's only, for now |
 
 - **A field it does not read** is refused, with the pack's name: never
@@ -88,3 +88,4 @@ test-command: "flutter test --machine | tojunit > {report}"
   extensions: the pack built in to list, else the file to write.
 - Which test paths every role reads: the tester's, the packs' with the
   generic ones, or the generic ones alone.
+- No `test-command` set: the listed packs' suggested ones.

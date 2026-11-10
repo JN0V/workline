@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/packs"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/testdef"
@@ -52,7 +53,8 @@ func testFiles(r *Report, o Options, cfg *role.ProjectConfig) {
 
 // testCommand says a tester or developer routed with no test-command: the
 // tester's check refuses each run, the developer's code stays a Draft
-// unproven; said before the first run, with the setting (#1284).
+// unproven; said before the first run, with the setting (#1284), the
+// listed packs' suggested test-command where they give one (ADR-0065).
 func testCommand(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Config) {
 	var routed []string
 	for _, steps := range line.Events {
@@ -73,10 +75,21 @@ func testCommand(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Co
 		return
 	}
 	slices.Sort(routed)
+	examples := "as `pytest --junitxml={report}` or `gotestsum --junitfile {report} ./...`"
+	listed, _ := packs.Listed(o.Repo, cfg.Packs) // read whole by LoadProjectConfig already
+	var suggested []string
+	for _, p := range listed {
+		if p.TestCommand != "" && !slices.Contains(suggested, p.TestCommand) {
+			suggested = append(suggested, p.TestCommand)
+		}
+	}
+	if len(suggested) > 0 {
+		examples = "as the packs listed suggest: `" + strings.Join(suggested, "` or `") + "`"
+	}
 	r.add(Check{Area: "repository", Rule: "test-command-missing", Where: "tester", Level: Warn,
 		Message: fmt.Sprintf("no test-command is set (the tester's, which the developer's proof runs too), and %s routed: the tester refuses each run, the developer's code stays an unproven Draft",
 			map[bool]string{true: "the " + routed[0] + " is", false: "the developer and the tester are"}[len(routed) == 1]),
 		Fix: "set the command running the project's tests in its own language and writing a JUnit XML report to {report}, in .workline/config.yaml, " +
-			"as `pytest --junitxml={report}` or `gotestsum --junitfile {report} ./...`: " +
+			examples + ": " +
 			"roles: {tester: {settings: {test-command: \"<command>\"}}}   # roles/tester/README.md#settings"})
 }
