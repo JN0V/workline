@@ -111,23 +111,37 @@ func TestCoveredBy(t *testing.T) {
 	}
 }
 
-// A rewrite keeps its scenario's declared tests, or names the new ones;
-// one that drops them with no entry is refused.
+// A rewrite keeps its scenarios' declared tests, or names the new ones,
+// for any scenario of the record; one that drops them with no entry is
+// refused.
 func TestRecovered(t *testing.T) {
 	r := record{Tests: []string{"tests.test_b"}, Covers: map[string][]string{"By zero": {"tests.test_a"}, "Two": {"tests.test_b"}}}
-	if why := r.recovered("By zero", nil, []string{"tests.test_c"}, "tests/test_a.sh"); why == "" {
+	if why := r.recovered(nil, []string{"tests.test_c"}, "tests/test_a.sh"); why == "" {
 		t.Error("a rewrite dropping its scenario's test is kept")
 	}
 	r = record{Tests: []string{"tests.test_b", "tests.test_c"}, Covers: map[string][]string{"By zero": {"tests.test_a"}, "Two": {"tests.test_b"}}}
 	entry := []intent.Intention{{Kind: "covers", Value: map[string]any{"scenario": "By zero", "tests": "test_c"}}}
-	if why := r.recovered("By zero", entry, []string{"tests.test_c"}, "tests/test_a.sh"); why != "" {
+	if why := r.recovered(entry, []string{"tests.test_c"}, "tests/test_a.sh"); why != "" {
 		t.Fatal(why)
 	}
 	if got := r.Covers["By zero"]; !slices.Equal(got, []string{"tests.test_c"}) {
 		t.Errorf("By zero now %v", got)
 	}
 	old := record{Tests: []string{"tests.test_c"}}
-	if why := old.recovered("By zero", nil, []string{"tests.test_c"}, "tests/test_a.sh"); why != "" || old.Covers != nil {
+	if why := old.recovered(nil, []string{"tests.test_c"}, "tests/test_a.sh"); why != "" || old.Covers != nil {
 		t.Errorf("a record with no covers: %q %v", why, old.Covers)
+	}
+	// One test, two scenarios, renamed: each scenario's entry names it.
+	both := record{Tests: []string{"tests.test_new"}, Scenarios: []Scenario{{Name: "Enabled console"}, {Name: "Restart"}},
+		Covers: map[string][]string{"Enabled console": {"tests.test_old"}, "Restart": {"tests.test_old"}}}
+	entries := []intent.Intention{
+		{Kind: "covers", Value: map[string]any{"scenario": "Enabled console", "tests": "test_new"}},
+		{Kind: "covers", Value: map[string]any{"scenario": "restart", "tests": "test_new"}},
+	}
+	if why := both.recovered(entries, []string{"tests.test_new"}, "tests/test_console.py"); why != "" {
+		t.Fatal(why)
+	}
+	if got := both.Covers["Restart"]; !slices.Equal(got, []string{"tests.test_new"}) {
+		t.Errorf("Restart now %v", got)
 	}
 }

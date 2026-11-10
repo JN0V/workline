@@ -146,7 +146,7 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
   The agent reads the scenario first, then answers in the thread:
   - *kept*, with its reason;
   - *rewritten*: its own commit on the branch, `Refs` the thread. It
-    must be red on the base, and keep its scenario's declared tests,
+    must be red on the base, and keep its scenarios' declared tests,
     or name the new ones in a `covers` entry. The record
     and the reply follow only once the commit is pushed.
   - Either keeps a hidden line for the [weekly sample](../../docs/weekly-sample.md).

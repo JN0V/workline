@@ -275,21 +275,35 @@ func SameTest(a, b string) bool {
 var answerMends = map[string]bool{"scenario-without-test": true, "covers-unreadable": true, "covers-unknown-scenario": true, "covers-empty": true}
 
 // recovered keeps the record's covers true once file is rewritten on an
-// objection to scenario: a covers entry of the answer for it names its
-// tests now, each found among the rewrite's new tests; every scenario
-// keeps those of its ids the record still holds. Why the rewrite is
-// refused, "" when it is not: an id declared and not found, or a
+// objection: a covers entry of the answer for a scenario of the record
+// names its tests now, each found among the rewrite's new tests; every
+// scenario keeps those of its ids the record still holds. Why the rewrite
+// is refused, "" when it is not: an id declared and not found, or a
 // scenario left with none of its tests. A record with no covers, written
 // before, has none to keep; one whose test ids its run lost keeps them.
-func (r *record) recovered(scenario string, intents []intent.Intention, newTests []string, file string) string {
+func (r *record) recovered(intents []intent.Intention, newTests []string, file string) string {
+	var names []string
+	for _, sc := range r.Scenarios {
+		names = append(names, sc.Name)
+	}
+	for sc := range r.Covers {
+		if !slices.Contains(names, sc) {
+			names = append(names, sc)
+		}
+	}
 	entries, _ := coversOf(intents)
 	now := map[string][]string{}
 	for _, c := range entries {
-		if !sameScenario(c.Scenario, scenario) {
+		i := slices.IndexFunc(names, func(n string) bool { return sameScenario(c.Scenario, n) })
+		if i < 0 {
 			continue
 		}
+		scenario := names[i]
 		for _, id := range c.Tests {
-			ids, _ := declaredIn(id, newTests, []string{file})
+			ids, others := declaredIn(id, newTests, []string{file})
+			if len(others) > 0 {
+				return fmt.Sprintf("`%s`, declared for %s, ends several of the rewrite's tests (%s): declare the one meant by a longer id", id, scenario, codes(others))
+			}
 			if len(ids) == 0 {
 				return fmt.Sprintf("`%s`, declared for %s, is none of the rewrite's tests red on the base (%s)", id, scenario, sample(newTests))
 			}
