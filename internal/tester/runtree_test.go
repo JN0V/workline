@@ -9,8 +9,8 @@ import (
 	"github.com/JN0V/workline/internal/agent"
 )
 
-// A run folder under .git has its agent's tree out of it, linked from
-// the run, and removed with its link (#1304); one elsewhere has it in.
+// A run folder under .git has its agent's tree out of it, its path in a
+// file of the run, removed with that file (#1304); one elsewhere has it in.
 func TestRunTreeOutOfGitDir(t *testing.T) {
 	repo, _ := gitRepo(t, map[string]string{"lib.sh": "add() { :; }\n"})
 	t.Setenv("TMPDIR", t.TempDir())
@@ -37,19 +37,19 @@ func TestRunTreeOutOfGitDir(t *testing.T) {
 		if under := strings.Contains(filepath.ToSlash(tree)+"/", "/.git/"); under {
 			t.Errorf("%s: its worktree %s lies under .git", c.runDir, tree)
 		}
-		st, err := os.Lstat(filepath.Join(c.runDir, agent.WorktreeDir))
-		if err != nil {
-			t.Fatal(err)
+		_, err := os.Stat(agent.TreeAt(c.runDir, agent.WorktreeDir))
+		if got := err == nil; got != c.linked {
+			t.Errorf("%s: its path in the run %v, want %v", c.runDir, got, c.linked)
 		}
-		if got := st.Mode()&os.ModeSymlink != 0; got != c.linked {
-			t.Errorf("%s: linked out %v, want %v", c.runDir, got, c.linked)
+		if got := tree != filepath.Join(c.runDir, agent.WorktreeDir); got != c.linked {
+			t.Errorf("%s: out of the run %v, want %v", c.runDir, got, c.linked)
 		}
 		RemoveRunTree(repo, c.runDir, agent.WorktreeDir, tree)
 		if _, err := os.Lstat(tree); err == nil {
 			t.Errorf("%s: its tree left", c.runDir)
 		}
-		if _, err := os.Lstat(filepath.Join(c.runDir, agent.WorktreeDir)); err == nil {
-			t.Errorf("%s: its link left", c.runDir)
+		if _, err := os.Lstat(agent.TreeAt(c.runDir, agent.WorktreeDir)); err == nil {
+			t.Errorf("%s: its path left in the run", c.runDir)
 		}
 	}
 }

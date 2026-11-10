@@ -133,8 +133,8 @@ what each agent gets: [the agent](agent.md)).
   there, its path in `WORKLINE_WORKTREE`, and edits in place.
 - **Never under `.git/`**: a run's folder there (the default, no
   `WORKLINE_RUNS_DIR`) has its worktree in a temporary folder of its
-  own, linked from the run: Claude Code edits no file under `.git/`
-  ([#1304](https://github.com/JN0V/workline/issues/1304)).
+  own, its path in the run's `worktree.at`: Claude Code edits no file
+  under `.git/` ([#1304](https://github.com/JN0V/workline/issues/1304)).
 - **What is taken**: the diff against that commit, new files in,
   whatever the agent committed, a deleted file a deletion; one patch a
   file, held to the rules above. A file's mode is not read.
