@@ -11,6 +11,7 @@ package line
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -52,14 +53,16 @@ func (t *tally) askWait() backlog.Delay {
 // record holds that key already. waits: what the line says of a wait on
 // a person within the delay, or with none (acts.ask.wait: never), the
 // day it times out (#1082): never silent while it waits; "" when
-// nothing waits on a person, or the delay passed.
-func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec Record) (key, said, waits string, err error) {
+// nothing waits on a person, or the delay passed. next: what of a
+// person ends that wait, said with it on the issue (#1195).
+func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec Record) (key, said, waits, next string, err error) {
 	w := t.askWait()
 	now := clock().UTC()
 	s, open := backlog.Unanswered(notes, backlog.Keeper)
 	st, _, _ := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
 	if open && (st == nil || st.Assumed < s.Round) && !s.Due(w, st, now) {
 		waits = questionWaits(w, s, is.ID)
+		next = "its reporter's answer in a comment wakes the " + strings.ReplaceAll(backlog.Keeper, "-", " ")
 	}
 	switch {
 	case open && s.Due(w, st, now):
@@ -71,7 +74,7 @@ func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec
 		if !at {
 			trail, err := b.Trail(is.ID, backlog.LabelDraft)
 			if err != nil {
-				return "", "", "", err
+				return "", "", "", "", err
 			}
 			since, known = backlog.DraftsSince(trail.Labeled, notes, is)
 		}
@@ -80,15 +83,17 @@ func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec
 			said = fmt.Sprintf("its drafts got no answer in %s (acts.ask.wait): the %s takes them as written", w.Say(), backlog.Keeper)
 		} else if waits == "" {
 			waits = draftsWait(w, since, known, is.ID)
+			next = fmt.Sprintf("a person labels it `%s` to take them, or edits them, which wakes the %s",
+				backlog.AcceptedLabel(b), strings.ReplaceAll(backlog.Keeper, "-", " "))
 		}
 	}
 	if key != "" && key == rec.Timeout {
 		key, said = "", "" // woken once for it already
 	}
 	if key != "" {
-		waits = "" // due, not waiting
+		waits, next = "", "" // due, not waiting
 	}
-	return key, said, waits, nil
+	return key, said, waits, next, nil
 }
 
 // draftsHeld says whether refine's step on issue, due on a new body or
@@ -127,6 +132,8 @@ func draftsHeld(is forge.Issue, labeled string, comments []string, notes []forge
 // reporter, the delay w not passed, or none: the day it times out.
 func questionWaits(w backlog.Delay, s backlog.Silence, id int) string {
 	switch {
+	case w.Never && !s.Dated:
+		return fmt.Sprintf("its question waits on its reporter, until it is answered (acts.ask.wait: %s)", backlog.WaitNever)
 	case !s.Dated:
 		return fmt.Sprintf("its question waits on #%d's reporter: the forge does not date it, so no assumption is taken until it is answered", id)
 	case w.Never:
@@ -140,6 +147,8 @@ func questionWaits(w backlog.Delay, s backlog.Silence, id int) string {
 // since since (known), the delay w not passed, or none.
 func draftsWait(w backlog.Delay, since time.Time, known bool, id int) string {
 	switch {
+	case w.Never && !known:
+		return fmt.Sprintf("its drafts wait on a person's yes (acts.ask.wait: %s)", backlog.WaitNever)
 	case !known:
 		return fmt.Sprintf("its drafts wait on a person's yes on #%d: the forge does not say since when, so they are not taken as written until one is given", id)
 	case w.Never:

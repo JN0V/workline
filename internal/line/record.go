@@ -217,6 +217,11 @@ type StateWrite struct {
 	// as read, a person's edit made meanwhile kept as news, never taken
 	// for the role's own write.
 	Parent bool `json:"parent,omitempty"`
+	// Wait: the product owner's delay (acts.ask.wait) on its step, as the
+	// setting writes it, read where the record is written, maybe a job
+	// with no roles folder: what waits on a person after its run is said
+	// with the day it ends (#1195). "" for another role's step.
+	Wait string `json:"wait,omitempty"`
 }
 
 // recordV is the version every record is written with (Record.V).
@@ -562,10 +567,11 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 			next = "the line gives it at the next run"
 		}
 		body = backlog.Said("workline's line", "saw the "+who+" say it lacks code", w.Record.Needs.Said, next) + "\n" + body
-	case role == backlog.Keeper && after != nil && backlog.Proposed(*after):
-		// Its run proposed what a person decides: said, why and what
-		// comes next, never only who it last woke (#1195).
-		if said := proposalWaits(f, w.Issue); said != "" {
+	case role == backlog.Keeper && after != nil:
+		// Its run left what a person decides — a proposal, a question or
+		// drafts —: said, why and what comes next, never only who it last
+		// woke (#1195).
+		if said := personWaits(f, cfg, *after, w.Wait); said != "" {
 			body = said + "\n" + body
 		}
 	}
@@ -593,23 +599,61 @@ func WriteStates(f forge.Forge, repo string, res *Result) error {
 	return nil
 }
 
-// proposalWaits is the line's word on an issue whose product owner's
-// proposal waits on a person: what it proposes, and the yes that does
-// it; "" when its comments do not read or hold none.
-func proposalWaits(f forge.Forge, id int) string {
+// personWaits is the line's word on an issue the product owner's run
+// left waiting on a person, its delay wait as the setting writes it (""
+// its default): why, and what of a person ends it. In this order: what
+// its proposal offers; its question or drafts, with the day they time
+// out — or none, at cautious; what else keeps a proposed issue from
+// ready, its drafts among them. "" when nothing waits on a person, or
+// its comments do not read.
+func personWaits(f forge.Forge, cfg *routing.Config, is forge.Issue, wait string) string {
 	b, ok := f.(forge.Backlog)
 	if !ok {
 		return ""
 	}
-	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
+	notes, err := b.Notes(forge.Target{Kind: "issue", ID: is.ID})
 	if err != nil {
 		return ""
 	}
-	offers := backlog.Proposes(comments, backlog.Keeper)
-	if len(offers) == 0 {
-		return ""
+	comments := forge.Bodies(notes)
+	yes := fmt.Sprintf("a person labels it `%s` to do it, which wakes the product owner, or takes `%s` off to set it aside",
+		backlog.AcceptedLabel(f), backlog.ProposedLabel(f))
+	proposed := backlog.Proposed(is)
+	if offers := backlog.Proposes(comments, backlog.Keeper); proposed && len(offers) > 0 {
+		return backlog.Said("workline's line", "waits for a person on this issue",
+			"the product owner proposes what a person decides: "+strings.Join(offers, " "), yes)
 	}
-	return backlog.Said("workline's line", "waits for a person on this issue",
-		"the product owner proposes what a person decides: "+strings.Join(offers, " "),
-		fmt.Sprintf("a person labels it `%s` to do it, which wakes the product owner, or takes `%s` off to set it aside", backlog.AcceptedLabel(f), backlog.ProposedLabel(f)))
+	if s, ok := cfg.StateOf(is.Labels); ok && s.Name == refineState {
+		// In refine, a question or drafts wait on a person's answer.
+		var setting any // unset: the default delay
+		if wait != "" {
+			setting = wait
+		}
+		if w, err := backlog.ReadWait(setting); err == nil {
+			t := newTally()
+			t.wait = &w
+			if _, _, waits, next, err := timedOut(b, t, is, notes, Record{}); err == nil && waits != "" {
+				return backlog.Said("workline's line", "waits for a person on this issue", waits, next)
+			}
+		}
+	}
+	if st, found, err := backlog.ReadState(comments, backlog.Keeper); proposed && found && err == nil {
+		if left := backlog.NotReady(is, st, false); len(left) > 0 {
+			return backlog.Said("workline's line", "waits for a person on this issue",
+				"the product owner proposes what it wrote, which a person decides: "+strings.Join(left, "; "), yes)
+		}
+	}
+	return ""
+}
+
+// waitWord is a delay as acts.ask.wait writes it, read back by
+// backlog.ReadWait.
+func waitWord(w backlog.Delay) string {
+	switch {
+	case w.Never:
+		return backlog.WaitNever
+	case w.D == 0:
+		return "0"
+	}
+	return w.D.String()
 }

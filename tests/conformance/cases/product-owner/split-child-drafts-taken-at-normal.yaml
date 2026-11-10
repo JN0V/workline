@@ -1,0 +1,31 @@
+case: product-owner/split-child-drafts-taken-at-normal
+about: >
+  A split's child the line's App opened, its Need and Validation the
+  product owner's drafts, is the project's (#1195): at normal, its drafts
+  unanswered past the delay are taken as written with no agent and the
+  child moves to ready, the assumption written on it; never a proposal
+  waiting for a person's yes.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: "workline-jn0v[bot]"
+        insider: false
+        labels: [workline:to-refine, workline:draft]
+        labeled: {"workline:draft": "2026-10-01T09:00:00Z"}
+        body: "## Need\n\n<!-- workline:draft -->\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: reporter-outside}]
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        body-lacks: "<!-- workline:draft -->"
+        body-contains: ["## Assumptions"]

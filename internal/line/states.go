@@ -284,7 +284,7 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	if !ok && s.Name == refineState && name == backlog.Keeper {
 		// A question, or drafts, waiting on a person past the product
 		// owner's delay: woken once, to take its assumption (ADR-0060).
-		key, said, waits, err := timedOut(b, t, is, notes, rec)
+		key, said, waits, _, err := timedOut(b, t, is, notes, rec)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -750,6 +750,9 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	passed(res, f, cfg, &st) // its run took the issue to its backstop: a person's (ADR-0064, §5)
 	st.write.After = true    // its body and labels as its run left them (ADR-0063, §3)
 	st.write.Parent = st.parent
+	if st.role == backlog.Keeper {
+		st.write.Wait = waitWord(newTallyFor(o).askWait()) // what waits on a person after it, said with its day (#1195)
+	}
 	keepState(res, cfg, f, spec, o, st.write, st.role)
 }
 
