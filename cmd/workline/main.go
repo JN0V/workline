@@ -1484,7 +1484,7 @@ func routeCmd(args []string) int {
 			return 1
 		}
 		if said != "" {
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "verdict-kept", Where: t.String(), Message: said + "; `workline follow` weighs it"})
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "verdict-kept", Where: fmt.Sprintf("!%d", t.ID), Message: said + "; `workline follow` weighs it"})
 		}
 	}
 	if *asJSON {
