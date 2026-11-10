@@ -130,6 +130,18 @@ flowchart LR
   `internal/codepick`, `internal/tester` (`coverage.go`, `notrun.go`),
   the reviewer's and the documentalist's comment tables, the tester's
   role.yaml defaults.
+- **Built in [#1230], the format first**: `internal/packs`, its
+  built-in packs (`go`, `kotlin-gradle`, `java-maven`,
+  `python-pytest`, `js-jest`, `generic`), `packs:` written by
+  `workline init`, `doctor`'s drift and languages with none.
+  - **Its fields so far**: `detect`, `test-paths`, `test-homes`, a
+    suggested `test-command`; `aside` the generic pack's only. A field
+    it does not read is refused.
+  - **A pack's field is a setting's default**: the listed packs'
+    union, under the project's settings, over the role's defaults.
+  - **A project's file replaces a built-in pack of its name whole**:
+    no merge, one file says it all.
+  - **The other tables move next**, [#1309].
 
 ### The four changes
 
@@ -377,6 +389,7 @@ One pull request a step, conformance cases first.
 [#1211]: https://github.com/JN0V/workline/issues/1211
 [#1214]: https://github.com/JN0V/workline/issues/1214
 [#1233]: https://github.com/JN0V/workline/issues/1233
+[#1309]: https://github.com/JN0V/workline/issues/1309
 [#1226]: https://github.com/JN0V/workline/issues/1226
 [#1227]: https://github.com/JN0V/workline/issues/1227
 [#1228]: https://github.com/JN0V/workline/issues/1228

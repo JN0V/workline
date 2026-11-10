@@ -1,5 +1,5 @@
 ---
-sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/doctor.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/doctor/workflows.go, internal/forge/gitlab_hook.go]
+sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/doctor.go, internal/doctor/packs.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/doctor/workflows.go, internal/forge/gitlab_hook.go]
 checked: de02c96b
 verified: agent:claude-code
 ---
@@ -52,6 +52,9 @@ Adopts this repository; run it again to do what is left.
   ([at the adoption](../roles/documentalist/docs/push.md)). Without an
   agent, lists them, proposing the sources a doc's name matches (a code
   folder or file of that name), for you to review, never written.
+- Lists the [language packs](packs.md) whose marker files the
+  repository holds (`go.mod`, `settings.gradle.kts`…) as `packs:`,
+  unless the project lists some already.
 - `--review` also adds the reviewer to the project's merge-request line
   ([ADR-0020](adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)).
 - Asks whether a person is the project's Product Owner (`--human-po
@@ -80,6 +83,8 @@ changes nothing.
 - With an `autonomy` set: the level each role runs at and where it
   comes from; a role with no levels, that it changes nothing for it
   ([autonomy](autonomy.md)).
+- The [language packs](packs.md) listed, the languages no pack listed
+  knows, and a pack the marker files call for that is not listed.
 - The tester or the developer routed with no `test-command`: said, with
   the setting to add
   ([#1284](https://github.com/JN0V/workline/issues/1284)).

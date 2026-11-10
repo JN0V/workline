@@ -71,7 +71,8 @@ is beyond it: listed, never refused.
   folder or under a Scope folder (`mul_test.go` beside `mul.go`). A
   test file is one the project's
   [one definition](../../tester/README.md#settings) names: the tester's
-  `test-paths`, else the built-in generic patterns
+  `test-paths`, else the listed [packs'](../../../docs/packs.md), else
+  the built-in generic patterns
   ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)).
   A Scope `src` holds no test at the root;
 - a new test file beside the Scope

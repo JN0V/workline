@@ -51,7 +51,7 @@ person unlinked is no longer one. An issue whose state lists a split
 - **A test named as proof** (ADR-0029, amended): an item that names a
   test in a code span — a test file by its path, as the project's one
   definition of a test file names it (the tester's `test-paths`, else the
-  generic patterns,
+  listed [packs'](../../packs.md), else the generic patterns,
   [ADR-0065](../../adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)),
   one test in it as `path::name`, or any name right after the words
   "test", "test case" or "conformance case" — never "case" alone, prose's
