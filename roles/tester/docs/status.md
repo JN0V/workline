@@ -95,8 +95,9 @@ Cases in `tests/conformance/cases/tester/`:
   a module pytest cannot import is the judge's, its no `build-broken`.
 - **Tests from the criteria** (`workline test write --issue <n>`): one
   test a scenario, named after it; a ready issue only, with named
-  scenarios; new test files only; a scenario said untestable in a note;
-  proven red before the Draft opens; no agent, nothing written.
+  scenarios; a new test file or one already there, lines added only;
+  a scenario said untestable in a note; proven red before the Draft
+  opens; no agent, nothing written.
 - **An answer that does not read**, asked again once with the reader's
   error; each refusal written on the issue, at night too
   ([#761](https://github.com/JN0V/workline/issues/761)); a real agent's
