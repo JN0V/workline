@@ -25,6 +25,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
@@ -763,17 +764,13 @@ func (a answer) toReview(text string) []intent.Intention {
 	if a.Kind != "missing" || a.From == 0 {
 		return nil
 	}
-	on := ""
-	if a.Found != "" {
-		on = " on `" + a.Found + "`"
-	}
 	return []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": a.From, "sticky": TesterAnswerKey + a.Thread,
-		"body": fmt.Sprintf("**The tester** answers a test finding of this review%s, sent to its Draft ([the thread](%s)): %s", on, a.URL, text)}}}
+		"body": reviewer.TesterAnswer(a.Found, a.URL, text)}}}
 }
 
 // TesterAnswerKey starts the sticky key of a test missing's answer on
 // the reviewed pull request, its thread's id after it.
-const TesterAnswerKey = "tester-answer-"
+const TesterAnswerKey = reviewer.TesterAnswerKey
 
 // otherFiles are the record's tests but file, sorted, each in code.
 func otherFiles(r record, file string) []string {

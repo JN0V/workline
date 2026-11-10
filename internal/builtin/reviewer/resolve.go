@@ -22,7 +22,8 @@ type lensesRead struct {
 // answered are the reviewer's own open threads on this run's side that
 // the code now answers, as a block goes (judge.md): its keyed line gone
 // from the head, or its lens read the file again (a test file touching it,
-// for the tests lens) and found it no more. A thread a person opened or
+// for the tests lens) and found it no more; or the tester's answer that
+// no test is needed for it, weighed, holds (#1303). A thread a person opened or
 // spoke in is left; one unread is said, never an error.
 func answered(repo string, s Settings, st state, lines []forge.LineComment, r lensesRead) ([]string, *verdict.Finding) {
 	t := mergeRequest()
@@ -92,7 +93,9 @@ func answered(repo string, s Settings, st state, lines []forge.LineComment, r le
 		// it again: its warning waits for a run that reads cleanly.
 		failed := slices.Contains(facets(st), by) && !slices.Contains(r.lenses, by)
 		warnFixed := !s.AIFindings.Blocks(by) && !failed && fixedWarn(fixed, by, t)
-		if gone(linesOf(t.Path), t.Path, by, keys[0]) || readAgain(repo, s, st, r, lensOf, by, t.Path) || warnFixed {
+		// A finding the tester's answer settled, its reason weighed (#1303).
+		weighed := settledAt(st.Record.Weighed, by, fmt.Sprintf("%s:%d", t.Path, t.Line))
+		if gone(linesOf(t.Path), t.Path, by, keys[0]) || readAgain(repo, s, st, r, lensOf, by, t.Path) || warnFixed || weighed {
 			out = append(out, t.ID)
 		}
 	}

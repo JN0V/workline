@@ -43,6 +43,9 @@ type Record struct {
 	// them the summary comment no longer holds. Never on a machine.
 	Judged []Answered `json:"judged,omitempty"`
 	Gone   int        `json:"judged-gone,omitempty"`
+	// Weighed are the tester's "none needed" answers the judge weighed,
+	// so that an answer is weighed once (#1303).
+	Weighed []Weighed `json:"weighed,omitempty"`
 	// comment is the side's own comment the record was read from on a
 	// merge request, whole: a draft's run keeps it as it is, its record
 	// alone written anew (ADR-0050). "" elsewhere, or with none yet.
@@ -118,6 +121,9 @@ func keyOf(side string) string {
 var (
 	recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)?( read=all)?( retried=once)?(?: failed=([\w.,-]+))?(?: left-by=([\w.,-]+))? -->`)
 	blocksLine = regexp.MustCompile(`<!-- workline:blocks (.*?) -->`)
+	// weighedLine reads the tester's answers weighed, a line of their own
+	// after the blocks; an engine before them wrote none (#1303).
+	weighedLine = regexp.MustCompile(`<!-- workline:weighed (.*?) -->`)
 	// judgedHead opens the lines of the findings judged, saying how many
 	// the comment no longer holds; an engine before them wrote none.
 	judgedHead = regexp.MustCompile(`<!-- workline:judged-lines gone=(\d+) -->`)
@@ -158,6 +164,9 @@ func (r Record) String() string {
 	s := fmt.Sprintf("<!-- workline:record reviewed=%s%s runs=%d%s -->", strings.Join(r.Reviewed, ","), patches, r.Runs, owed)
 	if len(r.Blocks) > 0 {
 		s += "\n<!-- workline:blocks " + hidden(r.Blocks) + " -->"
+	}
+	if len(r.Weighed) > 0 {
+		s += "\n<!-- workline:weighed " + hidden(r.Weighed) + " -->"
 	}
 	return s
 }
@@ -234,6 +243,9 @@ func parseRecord(text string) (Record, error) {
 			return Record{Judged: r.Judged, Gone: r.Gone}, fmt.Errorf("the findings that blocked do not read: %v", err)
 		}
 	}
+	if w := weighedLine.FindStringSubmatch(text); w != nil && json.Unmarshal([]byte(w[1]), &r.Weighed) != nil {
+		r.Weighed = nil // weighed again, never a record lost for it
+	}
 	return r, nil
 }
 
@@ -255,7 +267,7 @@ func ids(list string) []string {
 // none had to read (#588), and names who left the rest (recorded, #591).
 func (r Record) add(commits, patches []string) Record {
 	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll, Retried: r.Retried,
-		Judged: slices.Clone(r.Judged), Gone: r.Gone}
+		Judged: slices.Clone(r.Judged), Gone: r.Gone, Weighed: slices.Clone(r.Weighed)}
 	for _, c := range commits {
 		if !slices.Contains(out.Reviewed, c) {
 			out.Reviewed = append(out.Reviewed, c)
@@ -565,6 +577,7 @@ func MergeSummary(body, read, found string) string {
 	merged.Patches = union(now.Patches, ours.Patches)
 	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)
 	merged.Judged, merged.Gone = slices.Clone(now.Judged), now.Gone
+	merged.Weighed = unionWeighed(now.Weighed, ours.Weighed)
 	for _, j := range ours.Judged {
 		if !slices.Contains(was.Judged, j) && !slices.Contains(merged.Judged, j) {
 			merged.Judged = append(merged.Judged, j)
@@ -597,6 +610,7 @@ func MergeInto(found, body, read, marker string) string {
 	merged.Patches = union(now.Patches, ours.Patches)
 	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)
 	merged.Judged = slices.Clone(now.Judged)
+	merged.Weighed = unionWeighed(now.Weighed, ours.Weighed)
 	for _, j := range ours.Judged {
 		if !slices.Contains(was.Judged, j) && !slices.Contains(merged.Judged, j) {
 			merged.Judged = append(merged.Judged, j)
@@ -644,8 +658,10 @@ func keptReview(text, side string, rec Record) string {
 		return ""
 	}
 	end := loc[1]
-	if m := blocksLine.FindStringIndex(text[end:]); m != nil && strings.TrimSpace(text[end:end+m[0]]) == "" {
-		end += m[1]
+	for _, line := range []*regexp.Regexp{blocksLine, weighedLine} {
+		if m := line.FindStringIndex(text[end:]); m != nil && strings.TrimSpace(text[end:end+m[0]]) == "" {
+			end += m[1]
+		}
 	}
 	body := text[:loc[0]] + rec.String() + text[end:]
 	return strings.TrimSpace(strings.Replace(body, forge.Marker("sticky=reviewer/"+keyOf(side)), "", 1))
