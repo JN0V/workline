@@ -33,7 +33,7 @@ var codeRoles = []string{"tester", "developer"}
 // who opened and pushed it: its commits, the pages it changes, the issue
 // it closes and the reviewer's findings, then as any of workline's own.
 func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal, hand map[string]kept, waits func(level, why string) (*inLine, error)) (*inLine, error) {
-	who, err := notCoded(o.Repo, w.baseTip, w.tip, n.committer)
+	who, err := notCoded(o.Repo, w.baseTip, w.tip, n.committer, n.local)
 	if err != nil {
 		return nil, err
 	}
@@ -188,9 +188,9 @@ func unreproduced(repo, baseTip, tip string, d developer.Merge) (string, error) 
 // notCoded names the first commit of the branch, past base, that is not
 // the developer's nor the tester's: not committed under the name
 // workline's jobs commit with, or with no trailer naming one of them; ""
-// when every one is. A committer "" is a forge that names none, the local
-// one: the trailer alone tells, every commit in the clone the person's.
-func notCoded(repo, baseTip, tip, committer string) (string, error) {
+// when every one is. On the local forge, which names no committer, the
+// trailer alone tells, every commit in the clone the person's.
+func notCoded(repo, baseTip, tip, committer string, local bool) (string, error) {
 	out, err := git(repo, nil, "log", "--reverse", "--format=%H%x1f%cn", baseTip+".."+tip)
 	if err != nil {
 		return "", err
@@ -201,7 +201,7 @@ func notCoded(repo, baseTip, tip, committer string) (string, error) {
 			continue
 		}
 		by := ownTrailer(repo, c)
-		if committer != "" && name != committer || by == "" || slices.ContainsFunc(strings.Split(by, ","), func(r string) bool { return !slices.Contains(codeRoles, strings.TrimSpace(r)) }) {
+		if !local && name != committer || by == "" || slices.ContainsFunc(strings.Split(by, ","), func(r string) bool { return !slices.Contains(codeRoles, strings.TrimSpace(r)) }) {
 			return commitSaid(repo, c) + ", committed by " + name, nil
 		}
 	}

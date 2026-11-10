@@ -229,7 +229,7 @@ func lostTitle(tip string) string {
 // kind) with the issue holding it. What holds: each open demotion issue the
 // App opened, and one closed by anyone but a person who may push and
 // merge. Then it marks the base's tip as read, with the issues held.
-func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result) (map[string]string, error) {
+func demotions(f forge.Forge, o FollowOptions, baseTip, app string, local bool, res *Result) (map[string]string, error) {
 	b, ok := f.(forge.Backlog)
 	switch {
 	case !ok:
@@ -261,7 +261,7 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 	}
 	var fresh []demotion
 	if from == "" {
-		own, err := mergedAlone(b, o.Repo, baseTip, app)
+		own, err := mergedAlone(b, o.Repo, baseTip, app, local)
 		if err != nil {
 			return nil, err
 		}
@@ -308,7 +308,7 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 			case err != nil:
 				notes = nil // no merge request of that number here
 			}
-			alone, ok := ownNote(notes, "merge-alone=", app)
+			alone, ok := ownNote(notes, "merge-alone=", app, local)
 			switch {
 			case ok && slices.Contains(mergeKinds, alone):
 				kind = alone
@@ -326,7 +326,7 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 	var issues []int
 	unrecorded := false
 	for _, d := range fresh {
-		if err := demote(f, &d, app, res); err != nil {
+		if err := demote(f, &d, app, local, res); err != nil {
 			return nil, err
 		}
 		if d.issue == 0 {
@@ -349,7 +349,7 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 		return nil, err
 	}
 	for _, is := range open {
-		if _, ok := demotedKind(is.Title); ok && byApp(is.Author, app) && strings.Contains(is.Body, "<!-- workline:merge-demoted=") {
+		if _, ok := demotedKind(is.Title); ok && byApp(is.Author, app, local) && strings.Contains(is.Body, "<!-- workline:merge-demoted=") {
 			issues = append(issues, is.ID)
 		}
 	}
@@ -357,7 +357,7 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 	issues = slices.Compact(issues)
 	var kept []int
 	for _, id := range issues {
-		kind, hold, err := holds(f, id, app, res)
+		kind, hold, err := holds(f, id, app, local, res)
 		if err != nil {
 			return nil, err
 		}
@@ -390,7 +390,7 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 // comments cannot be read — refused, not answered — may be one: it counts
 // as one, failing closed; only one the forge says is not there (another
 // repository's number, in a copy) is passed.
-func mergedAlone(b forge.Backlog, repo, baseTip, app string) (bool, error) {
+func mergedAlone(b forge.Backlog, repo, baseTip, app string, local bool) (bool, error) {
 	history, err := commits(repo, baseTip, "", mergeWindow)
 	if err != nil {
 		return false, err
@@ -412,7 +412,7 @@ func mergedAlone(b forge.Backlog, repo, baseTip, app string) (bool, error) {
 		case err != nil:
 			return true, nil // unread: it may be one
 		}
-		if _, ok := ownNote(notes, "merge-alone=", app); ok {
+		if _, ok := ownNote(notes, "merge-alone=", app, local); ok {
 			return true, nil
 		}
 	}
@@ -423,7 +423,7 @@ func mergedAlone(b forge.Backlog, repo, baseTip, app string) (bool, error) {
 // App opened, open; or closed by anyone but a person who may push and merge
 // — a bot, someone with no write access, a hand the forge does not name —,
 // said. Closed by such a person, it is lifted, said.
-func holds(f forge.Forge, id int, app string, res *Result) (string, bool, error) {
+func holds(f forge.Forge, id int, app string, local bool, res *Result) (string, bool, error) {
 	where := fmt.Sprintf("#%d", id)
 	is, err := f.Issue(id)
 	if err != nil {
@@ -435,7 +435,7 @@ func holds(f forge.Forge, id int, app string, res *Result) (string, bool, error)
 		return kindAll, true, nil
 	}
 	kind, ok := demotedKind(is.Title)
-	if !ok || !byApp(is.Author, app) {
+	if !ok || !byApp(is.Author, app, local) {
 		return "", false, nil // never one of the App's demotions
 	}
 	which := "its " + kind + " merge requests"
@@ -469,7 +469,7 @@ func holds(f forge.Forge, id int, app string, res *Result) (string, bool, error)
 // demote opens a demotion's issue as workline's own — one of that title by
 // anyone else is never taken for it, and the demotion stays unrecorded —,
 // and tells the merge request reverted.
-func demote(f forge.Forge, d *demotion, app string, res *Result) error {
+func demote(f forge.Forge, d *demotion, app string, local bool, res *Result) error {
 	where := short(d.revert)
 	if d.request > 0 {
 		where = forge.MergeRef(f, d.request)
@@ -491,7 +491,7 @@ func demote(f forge.Forge, d *demotion, app string, res *Result) error {
 	id, err := f.OpenIssue(title, body, forge.Marker("merge-demoted="+d.revert))
 	if err == nil {
 		var is *forge.Issue
-		if is, err = f.Issue(id); err == nil && !byApp(is.Author, app) {
+		if is, err = f.Issue(id); err == nil && !byApp(is.Author, app, local) {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "demotion-unrecorded", Level: "warn", Where: where,
 				Message: fmt.Sprintf("%s: %s wait for a person's yes, but #%d, of that title, is @%s's, not workline's: it is not taken for it, and this is read again next run", short(d.revert), which, id, is.Author)})
 			return nil

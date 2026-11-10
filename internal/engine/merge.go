@@ -625,7 +625,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 		if err != nil {
 			return "", err
 		}
-		n = &normal{alone: o.Alone}
+		n = &normal{alone: o.Alone, local: local}
 		if n.app, n.committer, err = forge.App(f); err != nil {
 			if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
 				return "", err
@@ -639,7 +639,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 			if n.steers, err = steering(o.Repo, tip); err != nil {
 				return "", err
 			}
-			if n.demoted, err = demotions(f, o, tip, n.app, res); err != nil {
+			if n.demoted, err = demotions(f, o, tip, n.app, local, res); err != nil {
 				return "", err
 			}
 		}

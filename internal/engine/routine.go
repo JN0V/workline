@@ -69,16 +69,19 @@ var kindSays = map[string]string{
 // a person's yes again, each with the issue that keeps it.
 type normal struct {
 	app, committer string
-	steers         func(path string) bool
-	alone          []string
-	demoted        map[string]string
+	// local: the local forge, which keeps no author and names no
+	// committer: a role's branch is workline's (#1322).
+	local   bool
+	steers  func(path string) bool
+	alone   []string
+	demoted map[string]string
 }
 
 // whose says where workline's own merge request comes from: its App on a
 // forge; a role's branch of this clone on the local forge, which names no
 // App (#1322).
 func (n *normal) whose() string {
-	if n.app == forge.LocalApp {
+	if n.local {
 		return "from a role's branch of this clone"
 	}
 	return "opened and pushed by its App"
@@ -87,8 +90,8 @@ func (n *normal) whose() string {
 // byApp says whether author is workline's App: on the local forge, which
 // keeps no author, what it holds with none is workline's or the person's,
 // both of the clone (forge.OwnAccount).
-func byApp(author, app string) bool {
-	return app != "" && (author == app || app == forge.LocalApp && author == "")
+func byApp(author, app string, local bool) bool {
+	return app != "" && (author == app || local && author == "")
 }
 
 // asked says whether a kind waits for a person's yes until the project
@@ -116,9 +119,9 @@ func routineCandidate(o FollowOptions, n *normal, mr forge.MergeRequest) bool {
 // notOwn names the first commit of the branch, past base, that is not
 // workline's own: not committed under the name workline's jobs commit
 // with, or not workline's own by its tree (OwnCommit); "" when every one
-// is. A committer "" is a forge that names none, the local one, whose
-// roles commit under the clone's own name: the tree alone tells.
-func notOwn(repo, baseTip, tip, committer string) (string, error) {
+// is. On the local forge, which names no committer, roles commit under
+// the clone's own name: the tree alone tells.
+func notOwn(repo, baseTip, tip, committer string, local bool) (string, error) {
 	out, err := git(repo, nil, "log", "--reverse", "--format=%H%x1f%cn", baseTip+".."+tip)
 	if err != nil {
 		return "", err
@@ -128,7 +131,7 @@ func notOwn(repo, baseTip, tip, committer string) (string, error) {
 		if !ok {
 			continue
 		}
-		if committer != "" && name != committer || OwnCommit(repo, c, baseTip) == "" {
+		if !local && name != committer || OwnCommit(repo, c, baseTip) == "" {
 			return commitSaid(repo, c) + ", committed by " + name, nil
 		}
 	}
@@ -343,7 +346,7 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 	if strings.HasPrefix(mr.Branch, developer.Branch) {
 		return weighCode(f, m, o, w, n, hand, waits)
 	}
-	who, err := notOwn(o.Repo, w.baseTip, tip, n.committer)
+	who, err := notOwn(o.Repo, w.baseTip, tip, n.committer, n.local)
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +450,7 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 		head, when = "**To merge with no person's yes, once its checks pass**", " Its head's checks still run: the forge merges it once they pass, and one that fails holds it."
 	}
 	hold := "To hold it, mark it a draft or turn auto-merge off."
-	if n.app == forge.LocalApp {
+	if n.local {
 		hold = "Merged into " + mr.Base + " in this clone, nothing pushed."
 	}
 	whose := n.whose()
@@ -474,10 +477,10 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 // ownNote finds, among a merge request's comments, the one the App wrote
 // whose marker starts with key: the marker's value after key, and whether
 // there is one. Anyone else's comment ending with a marker is theirs.
-func ownNote(notes []forge.Note, key, app string) (string, bool) {
+func ownNote(notes []forge.Note, key, app string, local bool) (string, bool) {
 	for _, n := range notes {
 		last, engine := backlog.EngineMarker(n.Body)
-		if !engine || !byApp(n.Author, app) {
+		if !engine || !byApp(n.Author, app, local) {
 			continue
 		}
 		if v, ok := strings.CutPrefix(last, "<!-- workline:"+key); ok {

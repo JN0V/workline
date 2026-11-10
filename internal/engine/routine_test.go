@@ -204,11 +204,42 @@ func TestOwnNote(t *testing.T) {
 		{Body: "Quoting <!-- workline:merge-alone=derived --> in a sentence.", Author: "workline-app[bot]", Bot: true},
 		{Body: "**Merging with no person's yes**\n\n<!-- workline:merge-alone=docs -->", Author: "workline-app[bot]", Bot: true},
 	}
-	if kind, ok := ownNote(notes, "merge-alone=", "workline-app[bot]"); !ok || kind != "docs" {
+	if kind, ok := ownNote(notes, "merge-alone=", "workline-app[bot]", false); !ok || kind != "docs" {
 		t.Errorf("merge-alone: %q, %v; want docs, the App's", kind, ok)
 	}
-	if _, ok := ownNote(notes, "merge-alone=", ""); ok {
+	if _, ok := ownNote(notes, "merge-alone=", "", false); ok {
 		t.Errorf("read with no App")
+	}
+	// A note with no author is the App's on the local forge alone, not on
+	// a forge whose App is named as the local one's (#1322).
+	if kind, ok := ownNote(notes, "merge-alone=", forge.LocalApp, true); !ok || kind != "records" {
+		t.Errorf("local: %q, %v; want records, the clone's", kind, ok)
+	}
+	if _, ok := ownNote(notes, "merge-alone=", forge.LocalApp, false); ok {
+		t.Errorf("another forge's App named %s took a note with no author", forge.LocalApp)
+	}
+}
+
+// A commit a person committed, with a role's trailer, is workline's own on
+// the local forge alone: a forge that names no committer fails closed
+// (#1322).
+func TestNotCodedCommitter(t *testing.T) {
+	repo, run, write := gitRepo(t)
+	write("a", "a\n")
+	run("add", "a")
+	run("commit", "-q", "-m", "base")
+	base := run("rev-parse", "HEAD")
+	write("a", "b\n")
+	run("commit", "-q", "-am", "fix: b\n\n"+OwnTrailer+": developer")
+	tip := run("rev-parse", "HEAD")
+	if who, err := notCoded(repo, base, tip, "", true); err != nil || who != "" {
+		t.Errorf("local: %q, %v; want every commit the developer's", who, err)
+	}
+	if who, err := notCoded(repo, base, tip, "", false); err != nil || who == "" {
+		t.Errorf("a forge naming no committer: %q, %v; want the commit named", who, err)
+	}
+	if who, err := notOwn(repo, base, tip, "", false); err != nil || who == "" {
+		t.Errorf("notOwn, a forge naming no committer: %q, %v; want the commit named", who, err)
 	}
 }
 
@@ -262,7 +293,7 @@ func TestMarkAndIssuesHoldDemotions(t *testing.T) {
 	// past the App's is read, the tip's ignored.
 	f := forgeWith(own + ", " + forged)
 	res := &Result{}
-	demoted, err := demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res)
+	demoted, err := demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", false, res)
 	if err != nil || demoted[kindRecords] != "#1" || demoted[kindAll] != "" {
 		t.Fatalf("past the App's mark: %v, %v, %+v; want records held by #1", demoted, err, res.Findings)
 	}
@@ -272,20 +303,20 @@ func TestMarkAndIssuesHoldDemotions(t *testing.T) {
 	// Read again: nothing past the mark; #1, open and the App's, holds —
 	// whatever a mark says, as one the App set on a later tip leaving it out.
 	res = &Result{}
-	if demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res); err != nil || demoted[kindRecords] != "#1" || len(res.Findings) != 0 {
+	if demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", false, res); err != nil || demoted[kindRecords] != "#1" || len(res.Findings) != 0 {
 		t.Errorf("read again: %v, %v, %+v; want #1 still held, nothing said, no second issue", demoted, err, res.Findings)
 	}
 	if err := forge.Mark(f, tip, "reverts read; held:"); err != nil {
 		t.Fatal(err)
 	}
-	if demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", &Result{}); err != nil || demoted[kindRecords] != "#1" {
+	if demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", false, &Result{}); err != nil || demoted[kindRecords] != "#1" {
 		t.Errorf("a mark leaving #1 out: %v, %v; want #1 held, open and the App's", demoted, err)
 	}
 
 	// No mark of the App's on the last 100: every kind waits, an issue says it.
 	f = forgeWith(forged)
 	res = &Result{}
-	demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res)
+	demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", false, res)
 	if err != nil || demoted[kindAll] != "#1" || !slices.ContainsFunc(res.Findings, func(x verdict.Finding) bool { return x.Rule == "merge-record-lost" }) {
 		t.Errorf("no mark of the App's: %v, %v, %+v; want every kind held by #1, said", demoted, err, res.Findings)
 	}
@@ -298,7 +329,7 @@ func TestMarkAndIssuesHoldDemotions(t *testing.T) {
 	}
 	f = &forge.Fake{Path: state, Repo: repo}
 	res = &Result{}
-	demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res)
+	demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", false, res)
 	if err != nil || len(demoted) != 0 || !slices.ContainsFunc(res.Findings, func(x verdict.Finding) bool { return x.Rule == "merge-read-first" }) {
 		t.Errorf("a first install: %v, %v, %+v; want nothing held, said", demoted, err, res.Findings)
 	}
@@ -315,7 +346,7 @@ func TestMarkAndIssuesHoldDemotions(t *testing.T) {
 		t.Fatal(err)
 	}
 	res = &Result{}
-	if demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res); err != nil || demoted[kindAll] != "#1" {
+	if demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", false, res); err != nil || demoted[kindAll] != "#1" {
 		t.Errorf("a merge request unread: %v, %v, %+v; want every kind held by #1", demoted, err, res.Findings)
 	}
 }
