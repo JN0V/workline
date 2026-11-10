@@ -179,7 +179,10 @@ func (c claude) Propose(req Request) (Call, error) {
 		return call, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), []byte("[]\n"), 0o644)
 	}
 	if !parsed {
-		answer.Result = out.String() // not the JSON asked for: read it as the answer itself
+		// Not the JSON asked for, out of a worktree too: what it read and
+		// ran may be in it, never kept nor read as its answer (#1245).
+		// Its answer unread, as any answer the engine cannot read.
+		return call, fmt.Errorf("%w: the agent's words could not be read: its output held no result message, and none of it is kept", ErrInvalidOutput)
 	}
 	// The answer as it came, kept for audit: what the engine reads of it
 	// may drop what it holds (claims are judged, never applied).
