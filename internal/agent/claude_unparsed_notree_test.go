@@ -80,3 +80,18 @@ exit 1
 		t.Errorf("the error does not say claude's stderr: %v", err)
 	}
 }
+
+// Plain words read, no tools: Given an agent with no tools (a judge) whose
+// output is plain text rather than Claude Code's JSON, When its answer is
+// read, Then that text is kept as its answer: nothing but its words can be
+// in it.
+func TestPlainOutputReadWithNoTools(t *testing.T) {
+	runDir, err := readTreeRun(t, "echo 'yes: the doc matches'\n", false)
+	if !errors.Is(err, ErrInvalidOutput) {
+		t.Fatalf("plain text read as YAML: %v", err)
+	}
+	data, rerr := os.ReadFile(filepath.Join(runDir, "out", "agent-answer.txt"))
+	if rerr != nil || !strings.Contains(string(data), "yes: the doc matches") {
+		t.Errorf("the plain answer is not kept: %q, %v", data, rerr)
+	}
+}

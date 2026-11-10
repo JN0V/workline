@@ -182,11 +182,16 @@ func (c claude) Propose(req Request) (Call, error) {
 		call.Mended = []string{"the agent's closing words could not be read: its output held no result message, and none of it is kept"}
 		return call, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), []byte("[]\n"), 0o644)
 	}
-	if !parsed {
-		// Not the JSON asked for, out of a worktree too: what it read and
-		// ran may be in it, never kept nor read as its answer (#1245).
-		// Its answer unread, as any answer the engine cannot read.
+	if !parsed && reads != "" {
+		// Not the JSON asked for, from a read tree: what it read may be in
+		// it, never kept nor read as its answer (#1245). Its answer
+		// unread, as any answer the engine cannot read.
 		return call, fmt.Errorf("%w: the agent's words could not be read: its output held no result message, and none of it is kept", ErrInvalidOutput)
+	}
+	if !parsed {
+		// Not the JSON asked for, with no tools: nothing but its own words
+		// can be in it, read as the answer itself (a judge's plain verdict).
+		answer.Result = out.String()
 	}
 	// The answer as it came, kept for audit: what the engine reads of it
 	// may drop what it holds (claims are judged, never applied).
