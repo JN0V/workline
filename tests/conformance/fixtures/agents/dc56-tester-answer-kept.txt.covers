@@ -1,0 +1,3 @@
+- covers: {scenario: "Disabled console", tests: ["test_disabled_console"]}
+- covers: {scenario: "Enabled console", reason: "kept as today: the existing suite guards it."}
+- covers: {scenario: "Restart", reason: "kept as today: the existing suite guards it."}
