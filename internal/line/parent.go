@@ -102,10 +102,11 @@ func parentStep(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issu
 			Message: said + ": the " + backlog.Keeper + " says what they delivered, with no agent"})
 		step := &stateStep{role: backlog.Keeper, write: StateWrite{Issue: is.ID, Record: now}, from: s, rec: rec,
 			since: never, tier: backlog.SizeTier(is.Labels), ai: "none", parent: true}
-		if kind, _ := backlog.KindOf(is.Labels); kind == backlog.KindBug && len(left) == 0 && slices.Contains(cfg.Events[IssueEvent], testerRole) {
+		if kind, _ := backlog.KindOf(is.Labels); kind == backlog.KindBug && len(left) == 0 && !backlog.Accepted(is) && slices.Contains(cfg.Events[IssueEvent], testerRole) {
 			// A bug's, every part closed (#1212): the tester runs its
 			// reproduction test over the default branch first, and the
-			// product owner reads what it found at the closing.
+			// product owner reads what it found at the closing. A
+			// person's yes on it closes it as they said: no proof read.
 			step.first, step.firstInputs = testerRole, map[string]string{backlog.SymptomInput: partList(closed)}
 			step.inputs = map[string]string{backlog.SymptomAfterInput: clock().UTC().Format(time.RFC3339)}
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-parent-symptom", Level: "info", Where: where,

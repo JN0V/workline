@@ -1,0 +1,41 @@
+case: routing/parent-bug-accepted-skips-its-symptom
+about: >
+  A bug's parent a person accepted (#1212): its closing was proposed,
+  both parts of #4 closed, and a person labels it workline:accepted.
+  Their yes closes it, named: the tester's run of its reproduction test
+  over the default branch would prove what nobody reads, so it is not
+  run.
+given:
+  repo: tested
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [product-owner, tester]}}
+  forge:
+    sub-issues: true
+    issues:
+      - id: 4
+        title: "Time-lapse counts"
+        labels: [bug, workline:proposed, workline:accepted]
+        author: ann
+        insider: true
+        body: "## Need\n\nThe time-lapse counter is right.\n\n## Verification\n\n- Counts only frames saved."
+        label-events: [{label: workline:accepted, added: true, author: dev, insider: true, created: "2026-11-08T18:00:00Z"}]
+        comments:
+          - "```yaml\nsources: [src/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [6, 7]\nlabel: workline:proposed\nproposed:\n  - act: close-completed\n    line: 'Close #4 as completed: its 2 parts are closed'\n    proposal: {do: close, issue: 4, reason: completed, quote: null, why: its 2 parts are closed, parent: true}\n    since: '2026-11-08'\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** waits for a person on this issue.\n\n<!-- workline:line-record {\"state\":\"\",\"body\":\"7cbc981adecb\",\"hops\":0,\"v\":1,\"labels\":\"-\",\"parts\":\"6,7\"} -->\n<!-- workline:sticky=line/state -->"
+      - {id: 6, title: "Count only frames saved", body: "Part of #4.", labels: [], parent: 4, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#13", text: "fix: count frames saved"}]}
+      - {id: 7, title: "Number restored frames", body: "Part of #4.", labels: [], parent: 4, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#14", text: "fix: number restored frames"}]}
+run: {route: reconcile, open-merge-request: true, ai: "fake:blocked-three"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-parent, level: info, where: "#4", message: "a parent, 2 of its 2 parts closed, a person's yes on it"}
+    - {rule: done-as-accepted, where: "#4", message: "Closed #4 as completed"}
+  no-findings: [{rule: state-parent-symptom}]
+  forge:
+    issues:
+      - id: 4
+        closed: true
+        comment-contains: ["Accepted: its parts are closed", "@dev having accepted it (workline:accepted)"]
+        comment-lacks: ["symptom"]

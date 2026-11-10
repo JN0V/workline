@@ -796,9 +796,9 @@ blocked; its parts close in their own runs.
   line last read it (the record's `parts`). The product owner is woken
   on it with no agent (`state-parent`): it writes what the parts
   delivered and, all closed, proposes the closing.
-- **A bug's, all its parts closed**: the tester runs first, with no
-  agent, given `symptom`: its Draft's tests over the default branch
-  (`state-parent-symptom`). Green, the product owner closes it alone
+- **A bug's, all its parts closed**, no person's yes on it: the tester
+  runs first, with no agent, given `symptom`: its Draft's tests over the
+  default branch (`state-parent-symptom`). Green, the product owner closes it alone
   past `cautious`
   ([a bug's parent](backlog-acts/parent.md); [#1212](https://github.com/JN0V/workline/issues/1212)).
 - **Nothing new**: it waits, said in the job's summary

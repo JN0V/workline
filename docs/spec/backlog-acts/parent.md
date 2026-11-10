@@ -94,8 +94,9 @@ person unlinked is no longer one. An issue whose state lists a split
   - **Its test**: the tester's, the reporter's symptom, written red on
     the bug's Draft before its split
     ([split](split.md#split-on-size)).
-  - **Its proof**: every part closed, the tester runs those tests over
-    the default branch's commit, three runs out of three, with no agent;
+  - **Its proof**: every part closed, and no person's yes on it, the
+    tester runs those tests over the default branch's commit, three runs
+    out of three, with no agent;
     said on the parent, `<!-- workline:sticky=tester/symptom -->`
     ([the tester](../../../roles/tester/docs/green-proof.md#a-bugs-parent)).
   - **Green**, run once all its parts were closed, and the level
