@@ -138,7 +138,8 @@ Cases in `tests/conformance/cases/tester/`:
   them: only lines added, `test-line-changed` else; the base's tests of
   that file never taken for new ones; the guard freezes the tester's
   lines, others added beside them pass
-  ([#1259](https://github.com/JN0V/workline/issues/1259)).
+  ([#1259](https://github.com/JN0V/workline/issues/1259)); tried on a
+  Python copy, on [#1290](https://github.com/JN0V/workline/pull/1290#tried).
 - **Objections** (`workline test answer --merge-request <n>`): kept
   with the reason; rewritten on the branch, `Refs` the thread, still red
   on the base, else refused; the need itself back to the product owner;
