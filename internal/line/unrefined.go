@@ -22,6 +22,17 @@ import (
 // issue is blocked for a person.
 const RefineRetries = 2
 
+// unrefinedWhy opens the reason the line gives an issue it blocks for
+// being left unrefined: its record says so when it is read again (#1206).
+const unrefinedWhy = "the product owner read it"
+
+// unrefinedBlock says whether the line blocked the issue of rec from
+// refine for being left unrefined, not on a run's size: the block a
+// rewrite of its text lifts (#1206).
+func unrefinedBlock(rec Record) bool {
+	return rec.State == BlockedState && rec.From == refineState && rec.SizeOf == "" && rec.Backstop == 0 && strings.HasPrefix(rec.Why, unrefinedWhy+" ")
+}
+
 // unrefined says what an issue in refine lacks when the product owner's
 // last read of its body left it so, nothing waiting on a person: ""
 // when it was not read on this body, is complete, or waits on a person —
@@ -113,11 +124,11 @@ func codeSaid(shown []string) string {
 // instead, the code it was given said (shown).
 func refineAgain(rec Record, lacks string, sources, shown []string) (Record, string, string) {
 	if rec.Given != "" && rec.Given == givenKey(sources) {
-		return rec, "", fmt.Sprintf("the product owner read it on this text with %s, and left it lacking %s, nothing asked: read again, it would get the same; a person names the files it is about in a comment, or completes it",
+		return rec, "", fmt.Sprintf(unrefinedWhy+" on this text with %s, and left it lacking %s, nothing asked: read again, it would get the same; a person names the files it is about in a comment, or completes it",
 			codeSaid(shown), lacks)
 	}
 	if rec.Retry >= RefineRetries {
-		return rec, "", fmt.Sprintf("the product owner read it %d times on the same text and left it lacking %s, nothing asked: a person completes it, or names its files in a comment",
+		return rec, "", fmt.Sprintf(unrefinedWhy+" %d times on the same text and left it lacking %s, nothing asked: a person completes it, or names its files in a comment",
 			rec.Retry+1, lacks)
 	}
 	rec.Retry++

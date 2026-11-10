@@ -751,7 +751,8 @@ only then.
   to that state or to refine, or `blocked`, the reason afresh, for a
   person when only one can lift it
   ([refine](backlog-acts/refine.md#a-blocked-issue-read-again)). Its
-  text rewritten with neither, it goes back to refine in the same run
+  text rewritten with neither, on a block the line made of its own
+  read in refine, it goes back to refine in the same run
   ([#1206](https://github.com/JN0V/workline/issues/1206)).
 - **Unblocked, never on the same input**
   ([#1157](https://github.com/JN0V/workline/issues/1157)): the record

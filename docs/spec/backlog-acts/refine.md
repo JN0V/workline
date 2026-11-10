@@ -385,12 +385,16 @@ from.
   label. Either on an issue not blocked is dropped (`not-blocked`); a
   `ready` on a blocked one too (`blocked-first`).
 - **Or a `close`**, by its own rules.
-- **A `refine` alone**, its text rewritten and no `unblock`, `blocked`,
-  `close` nor `split` on it: the engine moves it back to refine in the
-  same run, said as an `unblock`. The read it was blocked on is gone,
-  so it is read again in refine as it stands, not left blocked a week
-  more ([#1206](https://github.com/JN0V/workline/issues/1206)). A refine
-  proposed or dropped moves nothing.
+- **A `refine` alone**, on an issue the line blocked from refine for
+  the product owner's own read left lacking, its text rewritten and no
+  `unblock`, `blocked`, `close` nor `split` on it: the engine moves it
+  back to refine in the same run, said as an `unblock`. The read it was
+  blocked on is gone, so it is read again in refine as it stands, not
+  left blocked a week more
+  ([#1206](https://github.com/JN0V/workline/issues/1206)). A refine
+  proposed or dropped moves nothing; nor does any refine on a block a
+  person or another role made, or one on a run's size: a rewrite does
+  not lift those.
 - **The developer's ask for its Scope**, from before
   [#1228](https://github.com/JN0V/workline/issues/1228) made the Scope a hint
   ([ADR-0059, amended](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)):

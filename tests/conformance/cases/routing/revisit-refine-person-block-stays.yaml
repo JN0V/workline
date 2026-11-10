@@ -1,0 +1,34 @@
+case: routing/revisit-refine-person-block-stays
+about: >
+  #9 was blocked by a person or another role, not by the line on the
+  product owner's read in refine (#1206). Read again a week on, the
+  product owner rewrites its guessed Scope and decides nothing else: a
+  rewrite does not lift a block it did not cause. #9 stays blocked.
+given:
+  repo: backlog
+  env: {WORKLINE_CLOCK: "2026-11-12T08:00:00Z"}
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        author: ann
+        insider: true
+        labels: [workline:blocked]
+        body: "## Need\n\nA user exporting rows loses the last one.\n\n## Validation\n\n- **Three rows:** Given three rows, When I export them, Then the file holds three.\n\n---\n\n## Scope\n\nGuessed: the export loop is not in the code given.\n- `src/export/`: the export loop must write every row."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"v\":1,\"state\":\"blocked\",\"body\":\"000000000000\",\"hops\":1,\"from\":\"refine\",\"since\":\"2026-11-04T08:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, open-merge-request: true, ai: "fake:refine-blocked-scope"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: state-revisit, level: info, where: "#9", message: "blocked, read again by the product-owner"}
+  forge:
+    issues:
+      - id: 9
+        labels: ["workline:blocked"]
+        body-contains: "`src/export/csv.go`: `WriteRows` stops one row short."
+        comment-lacks: ["Moved #9 out of Blocked"]

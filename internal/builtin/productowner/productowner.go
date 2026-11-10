@@ -888,11 +888,15 @@ func Pre(runDir, repo string) int {
 			}
 			if slices.Contains(d.is.Labels, backlog.LabelBlocked) && d.is.ID == issueEvent() {
 				review += blockedSaid(runDir, d.is, d.comments, cfg.SplitOff(), func() string { return spentSaid(b, open, d.is, d.comments) })
-				// Its text rewritten and nothing decided on it: back to
-				// refine in the same run, not blocked a week more (#1206).
-				fallback = append(fallback, intent.Intention{Kind: "unblock", Value: map[string]any{
-					"issue": d.is.ID, "to": "refine", "own": true, "if-refined": true,
-					"why": "its text rewritten on this read, nothing else decided on it: the read it was blocked on is gone, so it is read again in refine as it stands now"}})
+				if unrefinedRead(runDir) {
+					// Blocked on its own read in refine, its text rewritten
+					// and nothing decided on it: back to refine in the same
+					// run, not blocked a week more (#1206). Never on a block
+					// a person or another role made: a rewrite lifts none.
+					fallback = append(fallback, intent.Intention{Kind: "unblock", Value: map[string]any{
+						"issue": d.is.ID, "to": "refine", "own": true, "if-refined": true,
+						"why": "its text rewritten on this read, nothing else decided on it: the read it was blocked on is gone, so it is read again in refine as it stands now"}})
+				}
 			} else if files := backlog.ScopeAsked(d.comments); len(files) > 0 && slices.Contains(d.is.Labels, backlog.LabelToRefine) {
 				// The developer's first step sent it back to ask for files
 				// outside the Scope (ADR-0063, §9): widened, or ready as it is.
@@ -1987,6 +1991,14 @@ func readyOpen(is forge.Issue, st *backlog.State, cfg backlog.Config) bool {
 
 // blockWhy reads why a role blocked an issue, from the last comment
 // saying it blocks it (backlog.Said's way); "" when none says.
+// unrefinedRead says whether the line woke the product owner on a
+// blocked issue it had blocked from refine on that role's own read, left
+// lacking (engine.RevisitUnrefinedInput).
+func unrefinedRead(runDir string) bool {
+	data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", engine.RevisitUnrefinedInput))
+	return strings.TrimSpace(string(data)) == "true"
+}
+
 var blockWhy = regexp.MustCompile(`(?m)^- \*\*Why\*\*: (.+)$`)
 
 // blockedSaid tells the agent, on a blocked issue the line woke it on,
@@ -2042,14 +2054,19 @@ func blockedSaid(runDir string, is forge.Issue, comments []string, splitOff bool
 		return fmt.Sprintf("Blocked (%s), on its size. What crossed: %s. Read again because %s. Spent on it so far: %s. A crossing measures one run of the %s, not the need: a run again on the same input crosses the same, and sent back as it is, the issue waits for a person. Decide one, its `why` one plain line: narrow its %s — `refine` with `scope`, the %[6]s rewritten whole to the fewer files its need needs, and `sources` — then `unblock` it, %[7]s%[8]s%[10]s; or `blocked`, why its need cannot be narrowed, `person: true`: a person splits it, grants it `%[9]s`, or raises the setting the line names.%[11]s Never `ready` on it.\n",
 			backlog.LabelBlocked, why, news, spent(), strings.ReplaceAll(role, "-", " "), work.Name(work.Scope), where, grant, backlog.LabelSizeXLarge, splitSaid(is, splitOff), rule)
 	}
+	alone := ""
+	if unrefinedRead(runDir) {
+		// Blocked on its own read in refine: a rewrite lifts it (#1206).
+		alone = " A `refine` with neither beside it sends it back to refine, read again as rewritten."
+	}
 	if files := backlog.ScopeAsked(comments); len(files) > 0 && slices.Contains(to, "ready") {
 		// The developer asks for files outside the Scope (#921): its
 		// Scope is the product owner's to widen, or to keep as it is.
 		return fmt.Sprintf("Blocked (%s): %s. Read again because %s. The developer's pull request needs `%s`, outside the issue's %s; its comment says why. Decide one, its `why` one plain line: to widen it, `refine` with `scope`, the %[5]s rewritten whole with these files in it, and `sources`, then `unblock` it `to: ready`: the developer resumes on its pull request with the new bounds; or `blocked`, why the %[5]s must not take them — another issue's need, a file no developer changes — `person: true` when only a person can decide. Never `ready` on it.\n",
 			backlog.LabelBlocked, why, news, strings.Join(files, "`, `"), work.Name(work.Scope))
 	}
-	return fmt.Sprintf("Blocked (%s): %s. Read again because %s. Decide one, its `why` one plain line: `unblock` it, %s, when what blocked it is gone; `blocked`, the reason it stays as things are now, `person: true` when only a person can lift it — a decision, an access, a fix outside this repository; or a `close` by the rules above. A `refine` with neither beside it sends it back to refine, read again as rewritten. Never `ready` on it.\n",
-		backlog.LabelBlocked, why, news, where)
+	return fmt.Sprintf("Blocked (%s): %s. Read again because %s. Decide one, its `why` one plain line: `unblock` it, %s, when what blocked it is gone; `blocked`, the reason it stays as things are now, `person: true` when only a person can lift it — a decision, an access, a fix outside this repository; or a `close` by the rules above.%s Never `ready` on it.\n",
+		backlog.LabelBlocked, why, news, where, alone)
 }
 
 // keptMissing are the new test files the developer kept beside the

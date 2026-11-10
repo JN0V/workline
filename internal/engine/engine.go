@@ -100,6 +100,13 @@ const (
 	SizeInput        = "size"
 )
 
+// RevisitUnrefinedInput, `true`, tells the product owner woken on a
+// blocked issue that the line blocked it from refine on that role's own
+// read, left lacking (#951, #980): its text rewritten, the cause is
+// gone, and the issue goes back to refine in the same run (#1206). Never
+// on a block a person or another role made, nor one on a run's size.
+const RevisitUnrefinedInput = "revisit-unrefined"
+
 // SizeTierInput is the input the line gives every run on an issue with
 // a size tier (ADR-0064, §3): large or x-large. Every size target of the
 // run — its token cap, its context budget, the code and change given at
