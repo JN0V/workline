@@ -68,7 +68,7 @@ func testCommand(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Co
 	}
 	slices.Sort(routed)
 	r.add(Check{Area: "repository", Rule: "test-command-missing", Where: "tester", Level: Warn,
-		Message: fmt.Sprintf("no test-command is set, and %s routed: the tester refuses each run, the developer's code stays an unproven Draft",
+		Message: fmt.Sprintf("no test-command is set (the tester's, which the developer's proof runs too), and %s routed: the tester refuses each run, the developer's code stays an unproven Draft",
 			map[bool]string{true: "the " + routed[0] + " is", false: "the developer and the tester are"}[len(routed) == 1]),
 		Fix: "set the command running the project's tests and writing a JUnit XML report to {report}, in .workline/config.yaml: " +
 			"roles: {tester: {settings: {test-command: \"pytest --junitxml={report}\"}}}   # roles/tester/README.md#settings"})

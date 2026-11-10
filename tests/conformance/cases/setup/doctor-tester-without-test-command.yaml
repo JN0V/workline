@@ -11,4 +11,4 @@ run: {doctor: true}
 expect:
   status: pass
   findings:
-    - {rule: test-command-missing, where: tester, message: "no test-command is set, and the developer and the tester are routed"}
+    - {rule: test-command-missing, where: tester, message: "no test-command is set (the tester's, which the developer's proof runs too), and the developer and the tester are routed"}
