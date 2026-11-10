@@ -71,7 +71,7 @@ func TestBackstopStopsRounds(t *testing.T) {
 	for n := 1; n <= 6; n++ {
 		at := start.Add(time.Duration(i+n) * period)
 		// The reviewer asks a fix, a new review on the pull request.
-		body := fmt.Sprintf("**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| **blocks** | correctness | `lib.sh:2` | Important: review %d still asks a fix. |\n\n<!-- workline:record reviewed=1111111 runs=%d -->", n, n+1)
+		body := fmt.Sprintf("**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| **blocks** | correctness | `lib.sh:2` | Important: review %d still asks a fix. |\n\n<!-- workline:findings [{\"lens\":\"correctness\",\"holds\":\"blocks\",\"where\":\"lib.sh:2\",\"severity\":\"Important\",\"text\":\"review %[1]d still asks a fix.\"}] -->\n<!-- workline:record reviewed=1111111 runs=%d -->", n, n+1)
 		if err := f.Sticky(forge.Target{Kind: "merge-request", ID: mr.ID}, body, forge.Marker("sticky=reviewer/summary"), true); err != nil {
 			t.Fatal(err)
 		}
