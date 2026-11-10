@@ -1490,6 +1490,12 @@ func (p *Plan) tickedAct(c Proposal) (Proposal, string) {
 	if c.Do == "ready" {
 		return c, "" // the drafts accepted: ready, as the engine checks it
 	}
+	if c.Do == "close" && c.Parent {
+		// A yes on a split parent before its closing was proposed (#1213):
+		// it stands while all its parts are closed (checkParent), or is
+		// taken off, said.
+		return c, ""
+	}
 	return c, "no such proposal in its issue's state"
 }
 

@@ -222,16 +222,17 @@ func SuggestFromActs(level string, done, undone int) (string, string) {
 	return "", ""
 }
 
-// unaccept takes a person's yes off a parent whose closing it was given
-// to, a part open again since (#1208): said in the role's comment, the
-// closing proposed again once all its parts are closed.
+// unaccept takes a person's yes off a parent with a part open: one given
+// to its closing, a part open again since (#1208), or one put before its
+// closing was proposed (#1213). Said in the role's comment, with what to
+// do: put it on again once the closing is proposed, all its parts closed.
 func (p *Plan) unaccept(c Proposal, why string) {
 	if p.Unaccepted == nil {
 		p.Unaccepted = map[int]string{}
 	}
 	p.Unaccepted[c.Issue] = why
 	now := clock.Now().UTC()
-	line := fmt.Sprintf("Took `%s` off #%d, put by %s: %s; its closing is proposed again once all its parts are closed.", LabelAccepted, c.Issue, c.Ticked, strings.TrimSuffix(why, "."))
+	line := fmt.Sprintf("Took `%s` off #%d, put by %s: %s; put it on again once its closing is proposed, all its parts closed.", LabelAccepted, c.Issue, c.Ticked, strings.TrimSuffix(why, "."))
 	p.Record.Did = append(p.Record.Did, Did{Issue: c.Issue, Act: "unaccept", Level: p.config.Level, Day: now.Format(dateLayout), Line: line,
 		At: p.config.Read.At, Body: p.config.Read.Bodies[c.Issue]})
 }
