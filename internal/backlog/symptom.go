@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/forge"
 )
@@ -27,6 +28,12 @@ const SymptomKey = "symptom"
 // whose parts are all closed: the parts, by number, its symptom proven
 // on the default branch with them in.
 const SymptomInput = "symptom"
+
+// SymptomAfterInput is the input the line gives the product owner after
+// the tester's run on a bug's parent: when that run started, RFC 3339. A
+// proof the tester wrote before it, its run having failed, proves
+// nothing now.
+const SymptomAfterInput = "symptom-after"
 
 // Symptom is the tester's proof of a bug's parent: its Draft's tests,
 // laid over the default branch's commit, green three runs out of three
@@ -45,6 +52,8 @@ type Symptom struct {
 	// Tests: the ids its Draft's record keeps.
 	Tests []string `json:"tests,omitempty"`
 	Green bool     `json:"green"`
+	// Ran: when the tester's run started, RFC 3339.
+	Ran string `json:"ran,omitempty"`
 	// Why: what it found, said to a person: the tests green, or why not.
 	Why string `json:"why"`
 }
@@ -89,6 +98,21 @@ func ReadSymptom(f forge.Forge, id int) (s Symptom, found bool, err error) {
 		return Symptom{}, false, nil
 	}
 	return s, true, nil
+}
+
+// Since is s, said not green when it was written before after, RFC 3339
+// ("" for any): the tester's run that the line started then failed, and
+// left an older proof in its place.
+func (s Symptom) Since(after string) Symptom {
+	from, err := time.Parse(time.RFC3339, after)
+	if after == "" || err != nil {
+		return s
+	}
+	if ran, err := time.Parse(time.RFC3339, s.Ran); err != nil || ran.Before(from) {
+		s.Green = false
+		s.Why = "the tester's proof on it is older than its run now, which wrote none: not read as proof"
+	}
+	return s
 }
 
 // Proves says why s does not prove the symptom of a parent whose parts

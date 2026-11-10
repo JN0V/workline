@@ -80,3 +80,19 @@ func TestBugParentReadsItsSymptom(t *testing.T) {
 		})
 	}
 }
+
+// A proof older than the tester's run the line started proves nothing:
+// that run failed, and left it in place.
+func TestSymptomOlderThanItsRunIsNoProof(t *testing.T) {
+	s := Symptom{Issue: 3, Green: true, Ran: "2026-11-10T08:00:00Z", Parts: []int{6}}
+	if got := s.Since("2026-11-10T08:00:00Z"); !got.Green {
+		t.Errorf("written at its run: %+v, want green", got)
+	}
+	if got := s.Since(""); !got.Green {
+		t.Errorf("no run named: %+v, want green", got)
+	}
+	got := s.Since("2026-11-10T09:00:00Z")
+	if got.Green || !strings.Contains(got.Proves([]int{6}), "older than its run") {
+		t.Errorf("written before its run: %+v, want no proof", got)
+	}
+}

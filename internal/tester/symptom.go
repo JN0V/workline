@@ -19,8 +19,10 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
@@ -88,7 +90,7 @@ func symptomPre(runDir, repo string, s Settings, parts []int) int {
 // current commit: the symptom record, green or why not. An error is
 // the forge's or the machine's, never a test's.
 func proveSymptom(repo string, f forge.Forge, id int, parts []int, s Settings) (backlog.Symptom, error) {
-	sym := backlog.Symptom{Issue: id, Parts: slices.Sorted(slices.Values(parts))}
+	sym := backlog.Symptom{Issue: id, Parts: slices.Sorted(slices.Values(parts)), Ran: clock.Now().UTC().Format(time.RFC3339)}
 	mrs, err := f.ListMergeRequests()
 	if errors.Is(err, forge.ErrUnreachable) {
 		return sym, err
@@ -148,15 +150,18 @@ func proveSymptom(repo string, f forge.Forge, id int, parts []int, s Settings) (
 }
 
 // tip is ref's commit as origin holds it now, fetched; the local branch
-// when there is no origin to ask.
+// only when there is no origin to ask: a fetch that fails never falls
+// back on a clone's copy, maybe behind.
 func tip(repo, ref string) (string, error) {
 	if !strings.HasPrefix(ref, "refs/") {
 		ref = "refs/heads/" + ref
 	}
-	if _, err := git(repo, "fetch", "-q", "--no-tags", "origin", ref); err == nil {
-		if out, err := git(repo, "rev-parse", "--verify", "-q", "FETCH_HEAD^{commit}"); err == nil {
-			return strings.TrimSpace(out), nil
+	if _, err := git(repo, "remote", "get-url", "origin"); err == nil {
+		if _, err := git(repo, "fetch", "-q", "--no-tags", "origin", ref); err != nil {
+			return "", fmt.Errorf("origin could not be read (%v)", err)
 		}
+		out, err := git(repo, "rev-parse", "--verify", "-q", "FETCH_HEAD^{commit}")
+		return strings.TrimSpace(out), err
 	}
 	out, err := git(repo, "rev-parse", "--verify", "-q", ref+"^{commit}")
 	if err != nil {

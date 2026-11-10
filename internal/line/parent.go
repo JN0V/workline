@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
@@ -106,6 +107,7 @@ func parentStep(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issu
 			// reproduction test over the default branch first, and the
 			// product owner reads what it found at the closing.
 			step.first, step.firstInputs = testerRole, map[string]string{backlog.SymptomInput: partList(closed)}
+			step.inputs = map[string]string{backlog.SymptomAfterInput: clock().UTC().Format(time.RFC3339)}
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-parent-symptom", Level: "info", Where: where,
 				Message: "a bug's parent, every part closed: the tester runs its reproduction test on the default branch first, with no agent"})
 		}

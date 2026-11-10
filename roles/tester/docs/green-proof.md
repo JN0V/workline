@@ -139,6 +139,10 @@ in QA does, rerunning the reproduction once the fixes merged.
   - No open Draft of the parent: no test of its own.
   - Its tests do not merge over the branch, or are red, flaky or
     missing: not proven, the first finding said.
+  - The branch's commit is fetched from `origin`; a fetch that fails is
+    no proof, never the clone's own copy, maybe behind.
+  - A tester's run that fails leaves its older comment: the product
+    owner reads one older than the run as no proof.
 - **What follows**: green, the parent is closed alone past `cautious`;
   else its closing stays a person's
   ([a bug's parent](../../../docs/spec/backlog-acts/parent.md)).

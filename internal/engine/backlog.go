@@ -984,7 +984,13 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			}
 			return slices.Contains(drafts, tester.TestsBranch+strconv.Itoa(issue)), nil
 		}
-		cfg.Symptom = func(issue int) (backlog.Symptom, bool, error) { return backlog.ReadSymptom(f, issue) }
+		// After the tester's run the line started on it: an older proof,
+		// that run having failed, proves nothing now.
+		after, _ := os.ReadFile(filepath.Join(runDir, "in", "input", backlog.SymptomAfterInput))
+		cfg.Symptom = func(issue int) (backlog.Symptom, bool, error) {
+			s, found, err := backlog.ReadSymptom(f, issue)
+			return s.Since(strings.TrimSpace(string(after))), found, err
+		}
 	}
 	// The board's ready column a ready moves the card to (ADR-0057); a
 	// board out of reach is said and moves nothing.
