@@ -66,6 +66,23 @@ var kinds = []struct{ key, name, word string }{
 	{"missing", "a test missing", "missing"},
 }
 
+// ObjectionsWait says whether one of a Draft's conversations on a line is
+// an objection the tester has not answered, settled nor blocked (#1265):
+// what wakes its answer run where no forge's job does, the local forge's
+// reconcile. The run reads them again, who wrote each among them.
+func ObjectionsWait(threads []forge.Thread) bool {
+	for _, t := range threads {
+		if t.Resolved || len(t.Comments) == 0 || !strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) {
+			continue
+		}
+		last := t.Comments[len(t.Comments)-1].Body
+		if !slices.ContainsFunc([]string{answerMark, unreadMark, settleMark, personMark, blockedMark}, func(m string) bool { return strings.Contains(last, m) }) {
+			return true
+		}
+	}
+	return false
+}
+
 // What an answer run does, decided before any agent.
 const (
 	modeAgent     = "agent"     // the tester's judgement: kept or rewritten

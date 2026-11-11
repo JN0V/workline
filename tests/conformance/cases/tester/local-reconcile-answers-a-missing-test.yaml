@@ -1,0 +1,48 @@
+case: tester/local-reconcile-answers-a-missing-test
+about: >
+  With `forge: local`, a test finding the developer sent to the tester's
+  Draft is answered by the reconciler (#1265): no forge's job runs on a
+  comment in this clone, so `workline route reconcile` runs the tester's
+  answer on `!1`, in a worktree of its head. The test is added on
+  workline/tester/issue-3, the answer written under the objection; main
+  stays checked out and clean.
+given:
+  repo: local-fix
+  setup:
+    - "rm .git/verdict.json"
+    - |
+      cat >> .git/workline/merge-requests/1.md <<'EOF'
+
+      <!-- workline-comment -->
+      The tests of #3, frozen.
+
+      <!-- workline:tester-record {"issue":3,"base":"main","files":{"tests/test_mul_by_zero.sh":"8f123a0bacbd681063880b867df38dd216784b97","tests/test_mul_two_by_three.sh":"2dee0641bd7a79057ade7bff5af43b603125f543"}} -->
+
+      <!-- workline:sticky=tester/tests -->
+
+      <!-- workline-comment -->
+      workline:objection
+      - test: tests/test_mul_by_zero.sh
+      - kind: missing
+      - why: the reviewer's tests lens, on pull request 2, `lib.sh:2`: Important: mul of a negative factor has no test — nothing runs mul -2 3.
+
+      _On `tests/test_mul_by_zero.sh:4`_
+
+      <!-- workline:on-line key=missing-1 path=tests/test_mul_by_zero.sh line=4 -->
+      EOF
+  config:
+    forge: local
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+run:
+  sh: >
+    workline route reconcile --ai "fake:$FIXTURES/agents/tester-answer-missing-added.yaml" --json > out.json;
+    git status --porcelain --untracked-files=no; git rev-parse --abbrev-ref HEAD; git worktree list --porcelain | grep -c '^worktree '
+expect:
+  exit: 0
+  stdout: ["main\n1\n"]
+  branches:
+    workline/tester/issue-3: {tests/test_mul_two_by_three.sh: "mul -2 3"}
+  files:
+    out.json: {contains: ["answer-ran", "Draft answered on its objections"]}
+    .git/workline/merge-requests/1.md: {contains: ["**Added** in `tests/test_mul_two_by_three.sh`", "<!-- workline:reply-to="]}

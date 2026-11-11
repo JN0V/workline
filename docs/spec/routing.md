@@ -980,7 +980,13 @@ each reconcile starts the next one, past an environment's wait timer
   verdict kept (`line-ran`), once a head; a machine error keeps none, the
   next reconcile runs it again. Each round due: run, not said
   (`round-ran`), unless its branch is checked out (`round-not-run`).
-  Both in a worktree of the head, detached, the clone's config laid in
+  Each tester's Draft an objection waits on, unanswered — the review's
+  test findings the developer sent there, or its own objection — its
+  answer run (`answer-ran`, `workline test answer`), where the tester
+  is routed ([#1265](https://github.com/JN0V/workline/issues/1265)).
+  A comment on a line is kept as a comment of its own on the merge
+  request, its place hidden in it; a reply names it. All in a worktree
+  of the head, detached, the clone's config laid in
   it, removed after; counted in `reconcile-max`; none with `--no-apply`.
   A person's comment is one with no workline mark.
 - **An issue whose step is its round**: in the developer's state, its

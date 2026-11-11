@@ -1,5 +1,5 @@
 ---
-sources: [cmd/workline/main.go, internal/forge/local.go, internal/forge/local_merge.go, internal/doctor/tests.go]
+sources: [cmd/workline/main.go, internal/forge/local.go, internal/forge/local_merge.go, internal/forge/local_threads.go, internal/doctor/tests.go]
 checked: 796746533
 verified: agent:claude-code
 ---
@@ -139,6 +139,10 @@ workline issues show !2               # what the line found on it
   (`workline issues comment '!2' --body "…"`), wakes the developer at
   the next reconcile. Its fix is committed on its branch, unless you
   have that branch checked out: then it says so and waits.
+- **A test the review finds missing** goes to the tester, on its Draft
+  `!1`: the next reconcile runs its answer, which adds the test or says
+  why none is needed
+  ([#1265](https://github.com/JN0V/workline/issues/1265)).
 - **Each runs in a worktree of the head**, apart: your checkout is
   never read nor written.
 - **By hand**:

@@ -187,6 +187,72 @@ func localRound(res *Result, cfg *routing.Config, o engine.Options, mr forge.Mer
 	})
 }
 
+// localAnswers runs the tester's answer on each of its open Drafts an
+// objection waits on (#1265): the review's test findings the developer
+// sent there, or the developer's own objection. A forge's job runs it on
+// the comment (ADR-0055); in this clone none does, so the reconciler
+// does, in a worktree of the Draft's head, counted in reconcile-max.
+func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Options, started *int) int {
+	th, ok := f.(forge.Threaded)
+	if !ok || !cfg.Runs("tester") || !runsHere(f, o) {
+		return 0
+	}
+	mrs, err := f.ListMergeRequests()
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "answers-unread", Level: "warn", Where: "merge requests",
+			Message: "the tester's Drafts not read, so no objection on them is answered: " + forge.Said(err)})
+		return 0
+	}
+	answered := 0
+	for _, mr := range mrs {
+		if !strings.HasPrefix(mr.Branch, tester.TestsBranch) {
+			continue
+		}
+		where := fmt.Sprintf("!%d", mr.ID)
+		threads, err := th.Threads(mr.ID)
+		if err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "answers-unread", Level: "warn", Where: where,
+				Message: "its conversations on lines not read, so no objection there is answered: " + forge.Said(err)})
+			continue
+		}
+		if !tester.ObjectionsWait(threads) {
+			continue
+		}
+		if *started >= cfg.ReconcileMax {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-left", Level: "info", Where: where,
+				Message: fmt.Sprintf("an objection waits on the tester's answer, past reconcile-max (%d) this run: the next run answers it", cfg.ReconcileMax)})
+			continue
+		}
+		head := TipOf(o.Repo, mr.Branch)
+		if head == "" {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-not-run", Level: "warn", Where: where,
+				Message: fmt.Sprintf("its branch %s is not in this clone: the objection on it is not answered", mr.Branch)})
+			continue
+		}
+		if at := CheckedOut(o.Repo, mr.Branch); at != "" {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-not-run", Level: "warn", Where: where,
+				Message: fmt.Sprintf("its branch %s is checked out in %s: the objection on it is not answered; check another branch out there, or run `workline test answer --merge-request %d` in it", mr.Branch, at, mr.ID)})
+			continue
+		}
+		*started++
+		answered++
+		inTree(res, o.Repo, head, where, func(tree string) {
+			ao := inTreeOptions(o, tree)
+			ao.Role, ao.Event, ao.Command = "tester", "objection", "workline test answer"
+			ao.Target, ao.Branch = &forge.Target{Kind: "merge-request", ID: mr.ID}, mr.Branch
+			ran := len(res.Steps)
+			_, status := runRole(res, cfg, ao, 0)
+			res.Status = worst(res.Status, status)
+			if status == verdict.Pass {
+				res.Findings = append(res.Findings, CountRuns(nil, 0, runDirs(res.Steps[ran:]))...) // an answer's tokens, on its issue (ADR-0064)
+			}
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-ran", Level: "info", Where: where,
+				Message: fmt.Sprintf("the tester's answer to an objection on it ran on %s: %s", short(head), status)})
+		})
+	}
+	return answered
+}
+
 // TipOf is branch's commit in repo, "" when it is not there.
 func TipOf(repo, branch string) string {
 	out, err := exec.Command("git", "-C", repo, "rev-parse", "-q", "--verify", "refs/heads/"+branch+"^{commit}").Output()
