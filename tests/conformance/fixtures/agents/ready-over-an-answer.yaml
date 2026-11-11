@@ -1,0 +1,4 @@
+# The product owner reads a person's answer to the reviewer's question
+# and moves the issue to ready, writing nothing of it into the spec
+# (#1331): the engine holds that ready once.
+- ready: {issue: 9, why: "Its sections are a person's and the Scope holds every open answer."}

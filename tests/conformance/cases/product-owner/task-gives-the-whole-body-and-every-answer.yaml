@@ -1,0 +1,38 @@
+case: product-owner/task-gives-the-whole-body-and-every-answer
+about: >
+  A rewrite keeps only what it sees (#1331): the product owner rewrites
+  a section whole, so the task gives the issue's body whole, never cut
+  at 3000 characters, and every comment of a person who counts, never
+  only the last five. Here a body of over 3000 characters ends on a
+  person's answer written into the Scope, and Ann wrote seven comments,
+  the first an answer the Scope must keep.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Sales counted"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n- `src/export/csv.go`: rule 1 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 2 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 3 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 4 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 5 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 6 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 7 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 8 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 9 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 10 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 11 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 12 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 13 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 14 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 15 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 16 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 17 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 18 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 19 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 20 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 21 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 22 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 23 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 24 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 25 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 26 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 27 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 28 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 29 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 30 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 31 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 32 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 33 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 34 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 35 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 36 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 37 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 38 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 39 of the writer, kept as the spec says it, word for word.\n- `src/export/csv.go`: rule 40 of the writer, kept as the spec says it, word for word.\n- Same version as the running one: nothing is downloaded, even with downgrades allowed, as Ann answered."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 6\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "First answer: the same version is never reinstalled, even with downgrades allowed.", author: ann, insider: true}
+          - {body: "Answer 2: a detail settled.", author: ann, insider: true}
+          - {body: "Answer 3: a detail settled.", author: ann, insider: true}
+          - {body: "Answer 4: a detail settled.", author: ann, insider: true}
+          - {body: "Answer 5: a detail settled.", author: ann, insider: true}
+          - {body: "Answer 6: a detail settled.", author: ann, insider: true}
+          - {body: "Answer 7: a detail settled.", author: ann, insider: true}
+run: {role: product-owner, event: schedule, ai: fake:refine-scope-from-answer}
+expect:
+  run-files:
+    in/task.md:
+      contains:
+        - "Same version as the running one: nothing is downloaded, even with downgrades allowed, as Ann answered."
+        - "First answer: the same version is never reinstalled"
+        - "Answer 7: a detail settled."
+      not-contains:
+        - "earlier comments left out"
+        - "[…]"

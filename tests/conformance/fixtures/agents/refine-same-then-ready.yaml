@@ -1,0 +1,9 @@
+# The product owner reads a person's answer, drafts the Scope as it is
+# already, and moves the issue to ready (#1331): the refine writes
+# nothing, so the ready is held as with no refine.
+- refine:
+    issue: 9
+    scope: "`src/export/csv.go`: the writer."
+    sources: [src/export/csv.go]
+    why: "The Scope already holds it."
+- ready: {issue: 9, why: "The Scope holds every open answer."}

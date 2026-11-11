@@ -125,6 +125,47 @@ func Unheard(st *State, notes []forge.Note, is forge.Issue) []forge.Note {
 	return nil
 }
 
+// AnswerUnwrittenRule is said of a `ready` held for a person's comment
+// read in its run, nothing of it written into the spec (#1331).
+const AnswerUnwrittenRule = "answer-unwritten"
+
+// answerUnwritten holds the agent's `ready` on an issue whose run read a
+// person's comment and drafts no refine on it, its body as the role last
+// read it (#1331): an answer to the reviewer's question, taken as in the
+// spec already, shipped against it. A refine counts when it drafts a
+// section of the spec, not the tester's Verification alone, and was not
+// dropped before the ready. Held once on those comments: they stay
+// unheard, read once more, the hold said; the role's next `ready` on them
+// is taken. A person's yes (the label) and the engine's own acts are
+// never held.
+func (p *Plan) answerUnwritten(is forge.Issue, c *Proposal) (rule, why string) {
+	if p.ledger == nil || c.Own || c.Ticked != "" || Accepted(is) {
+		return "", ""
+	}
+	dropped := slices.ContainsFunc(p.Decisions, func(d Decision) bool { return d.Act.Do == "refine" && d.Act.Issue == c.Issue && d.Mode == Off })
+	if p.refining[c.Issue] && !dropped {
+		return "", ""
+	}
+	st, notes := p.ledger.States[c.Issue], p.ledger.Notes[c.Issue]
+	fresh := Unheard(st, notes, is)
+	counted := len(Counted(notes, is))
+	if len(fresh) == 0 || st == nil || st.AnswerHeld == counted || st.Body == "" || st.Body != BodyDigest(is.Body) {
+		// Nothing new, held once already, or its body written since the
+		// role last read it: a person may have written their answer there.
+		return "", ""
+	}
+	if p.Held == nil {
+		p.Held = map[int][2]int{}
+	}
+	p.Held[c.Issue] = [2]int{counted - len(fresh), counted}
+	who := "a person"
+	if a := fresh[len(fresh)-1].Author; a != "" {
+		who = "@" + a
+	}
+	return AnswerUnwrittenRule, fmt.Sprintf("not moved to ready: %s wrote on it, read in this run, and nothing was written into its spec; "+
+		"what their comment settles goes into the %s with a `refine` first; it is read once more, and the next `ready` is taken", who, work.Name(work.Scope))
+}
+
 // AnswerUnheard says whether someone who counts — the reporter, a person
 // of the project — wrote after the last round to an issue's reporter, and
 // the role has not read it yet: an answer may change the text last
@@ -649,6 +690,9 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 	for id := range p.Silent {
 		ids = append(ids, id) // its state written by pre in this run, maybe
 	}
+	for id := range p.Held {
+		ids = append(ids, id)
+	}
 	slices.Sort(ids)
 	ids = slices.Compact(ids)
 	proposed := ProposedLabel(f)
@@ -675,6 +719,12 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		}
 		w.st, w.before = st, FormatState(*st)
 		p.stateOf(id, st)
+		if h, ok := p.Held[id]; ok {
+			// Its ready held for a person's comment (#1331): those
+			// comments unheard again, read once more by the next run.
+			n := h[0]
+			st.Heard, st.AnswerHeld = &n, h[1]
+		}
 		if why, ok := p.Silent[id]; ok {
 			st.Silent = why
 		} else if waits := strings.HasPrefix(st.Silent, NoTestSilent) && NoTestStands(*is, comments, role) ||

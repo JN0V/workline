@@ -43,7 +43,8 @@ import (
 const (
 	exitNothing  = 10
 	exitExternal = 3
-	bodyMax      = 3000 // characters of an issue's body given to the agent
+	bodyMax      = 3000  // characters of a comment given to the agent; half, of a related issue's body
+	bodyWholeMax = 20000 // characters of the body of an issue it reads: whole, but for pasted logs
 	commentsMax  = 5    // its last comments given
 	relatedMax   = 6    // other issues on the same code, given whole
 )
@@ -1289,6 +1290,12 @@ func commented(n forge.Note, is forge.Issue, st *backlog.State, notes []forge.No
 		for _, f := range fresh {
 			fmt.Fprintf(&b, "> %s\n\n", strings.ReplaceAll(clip(marker.ReplaceAllString(f.Body, ""), quoteMax), "\n", "\n> "))
 		}
+		if st.AnswerHeld > 0 && st.AnswerHeld == len(backlog.Counted(notes, is)) {
+			// Its ready held for them last run (#1331): read again, line by
+			// line against the spec, before a ready taken this time.
+			fmt.Fprintf(&b, "Your `ready` on it was held last run: you read these comments and wrote nothing of them. Check each against the spec, line by line: "+
+				"what one settles that the spec leaves out or says otherwise goes into the %s with a `refine`. Propose `ready` again only if the spec already says all of it: it is taken this time.\n", work.Name(work.Scope))
+		}
 		return b.String()
 	}
 	on := ""
@@ -1520,22 +1527,39 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		b.WriteString(change)
 	}
 	b.WriteString("\n")
-	fmt.Fprintf(b, "%s\n\n", clip(is.Body, bodyMax))
-	type said struct{ who, text string }
+	// Its body whole (#1331): a section is rewritten whole, and a line
+	// past a cut, a person's answer written there, was lost with it. Only
+	// a body past bodyWholeMax, logs pasted in, is cut.
+	fmt.Fprintf(b, "%s\n\n", clip(is.Body, bodyWholeMax))
+	type said struct {
+		who, text string
+		person    bool // a person's who counts (backlog.Counted)
+	}
 	var kept []said
 	for _, n := range notes {
 		switch {
 		case backlog.Round(n.Body, role):
-			kept = append(kept, said{"", "(The product owner wrote:) " + marker.ReplaceAllString(n.Body, "")})
+			kept = append(kept, said{"", "(The product owner wrote:) " + marker.ReplaceAllString(n.Body, ""), false})
 		default:
 			if _, engine := backlog.EngineMarker(n.Body); !engine {
-				kept = append(kept, said{author(n, is), marker.ReplaceAllString(n.Body, "")}) // a person's, quoting the engine's maybe
+				person := len(backlog.Counted([]forge.Note{n}, is)) == 1
+				kept = append(kept, said{author(n, is), marker.ReplaceAllString(n.Body, ""), person}) // a person's, quoting the engine's maybe
 			}
 		}
 	}
+	// The last commentsMax, and every comment of a person who counts
+	// before them (#1331): an answer left out was rewritten away.
 	if len(kept) > commentsMax {
-		fmt.Fprintf(b, "(%d earlier comments left out)\n\n", len(kept)-commentsMax)
-		kept = kept[len(kept)-commentsMax:]
+		var left []said
+		for i, c := range kept {
+			if c.person || i >= len(kept)-commentsMax {
+				left = append(left, c)
+			}
+		}
+		if out := len(kept) - len(left); out > 0 {
+			fmt.Fprintf(b, "(%d earlier comments left out, none a person's)\n\n", out)
+		}
+		kept = left
 	}
 	for _, c := range kept {
 		fmt.Fprintf(b, "Comment%s:\n> %s\n\n", c.who, strings.ReplaceAll(clip(c.text, bodyMax), "\n", "\n> "))

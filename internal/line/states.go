@@ -290,10 +290,18 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		// A person wrote since the product owner last read the issue — an
 		// answer to the reviewer's question, or to its own (#1331): woken
 		// once for their word, never again on the same comments.
-		if n, unheard := commentsUnheard(is, notes); unheard && n > rec.Heard {
+		n, unheard, held := commentsHeld(is, notes)
+		switch {
+		case unheard && n > rec.Heard:
 			ok = true
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-comment", Level: "info", Where: where,
 				Message: "a person commented since the product owner last read it: woken once, to read their word"})
+		case held && rec.AnswerHeld != n:
+			// Its ready held for their word, nothing of it written in
+			// the spec: woken once more, to read it again.
+			ok, now.AnswerHeld = true, n
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-comment-held", Level: "info", Where: where,
+				Message: "the product owner's ready was held: a person's comment it read is not in the spec; woken once more, to read their word again"})
 		}
 	}
 	personWaits := "" // a question, or drafts, waiting on a person within the delay (#1082)

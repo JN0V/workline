@@ -180,6 +180,10 @@ type Record struct {
 	// for them — an answer to the reviewer's question among them. Kept
 	// from step to step, so a run that reads nothing is no loop.
 	Heard int `json:"heard,omitempty"`
+	// AnswerHeld: the count of those comments when the line woke the
+	// product owner once more, its `ready` held for them (#1331): never
+	// again on the same comments.
+	AnswerHeld int `json:"answer-held,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -428,7 +432,7 @@ func afterWrite(r *Record, is forge.Issue) {
 // before — one, a count started again, for a state further on the line
 // (cfg) than any it reached (#1068).
 func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Parts: rec.Parts, Heard: rec.Heard, Labels: inputLabels(is.Labels), Last: rec.Last}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Parts: rec.Parts, Heard: rec.Heard, AnswerHeld: rec.AnswerHeld, Labels: inputLabels(is.Labels), Last: rec.Last}
 	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec && sameLabels(rec, now) {
 		return rec, false
 	}
