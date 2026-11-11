@@ -48,9 +48,14 @@ func upToDate(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest,
 		return false, nil
 	}
 	msg := fmt.Sprintf("Merge branch '%s' into %s\n\n%s: developer\n", o.Base, mr.Branch, OwnTrailer)
-	commit, err := git(o.Repo, strings.NewReader(msg), "commit-tree", tree, "-p", tip, "-p", baseTip, "-F", "-")
+	args := []string{"commit-tree", tree, "-p", tip, "-p", baseTip, "-F", "-"}
+	if signed, _ := git(o.Repo, nil, "config", "--bool", "--get", "commit.gpgsign"); strings.TrimSpace(signed) == "true" {
+		args = append(args, "-S")
+	}
+	commit, err := git(o.Repo, strings.NewReader(msg), args...)
 	if err != nil {
-		return true, err
+		say("merge-refused", "warn", fmt.Sprintf("behind %s, which merges in clean, but its merge could not be made: %v", o.Base, err))
+		return true, nil
 	}
 	if _, err := git(o.Repo, nil, "push", "-q", "origin", commit+":refs/heads/"+mr.Branch); err != nil {
 		say("merge-refused", "warn", fmt.Sprintf("behind %s, which merges in clean, but the push of that merge was refused: %v", o.Base, err))

@@ -53,19 +53,28 @@ func conflictAt(kept forge.Kept) (head, base string, ok bool) {
 }
 
 // conflictDue says a merge round is due: `follow` said a conflict at head,
-// the branch's head now, and no round failed at it.
-func conflictDue(kept forge.Kept, a Act, head string) (base string, due bool) {
+// the branch's head now, no round failed at it, and git still meets it in
+// repo (a base not fetched here counts it).
+func conflictDue(kept forge.Kept, a Act, repo, head string) (base string, due bool) {
 	h, b, ok := conflictAt(kept)
 	if !ok || head == "" || h != head || a.Conflict == head {
 		return "", false
 	}
+	if _, files, err := MergeTree(repo, head, b); err == nil && len(files) == 0 {
+		return "", false // settled since, or merged clean now
+	}
 	return b, true
 }
 
-// branchHead is a request's branch's head in repo: as fetched from
-// origin, else this clone's own branch (the local forge's); "" neither.
-func branchHead(repo, branch string) string {
-	for _, ref := range []string{"refs/remotes/origin/" + branch, "refs/heads/" + branch} {
+// branchHead is a request's branch's head in repo: this clone's own
+// branch on a forge that keeps them here (the local one), else as
+// fetched from origin; "" neither.
+func branchHead(f forge.Forge, repo, branch string) string {
+	refs := []string{"refs/remotes/origin/" + branch, "refs/heads/" + branch}
+	if forge.KeepsBranches(f) {
+		refs = refs[1:]
+	}
+	for _, ref := range refs {
 		if h, err := gitOut(repo, "rev-parse", "-q", "--verify", ref+"^{commit}"); err == nil && h != "" {
 			return h
 		}

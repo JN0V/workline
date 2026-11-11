@@ -1121,7 +1121,7 @@ func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, s
 	if !st.Mergeable {
 		// Behind its base and held by the forge, its checks green: the
 		// base merged in, by the engine or a merge round (ADR-0067).
-		if acted, err := e.upToDate(st.Checks == "success"); acted || err != nil {
+		if acted, err := e.upToDate(st.Behind && st.Checks == "success"); acted || err != nil {
 			return e, err
 		}
 		return e, heldByConversations(m, mr, tip, st, say, who)

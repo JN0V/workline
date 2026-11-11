@@ -354,7 +354,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	}
 	// Its merge refused for a conflict with its base (ADR-0067): the
 	// round merges the base in, and asks nothing else.
-	if base, due := conflictDue(kept, a, head); due {
+	if base, due := conflictDue(kept, a, repo, head); due {
 		return conflictPre(runDir, repo, s, f, b, mr, a, head, base)
 	}
 	// The review's test findings on code are the tester's (#1265): its
@@ -688,7 +688,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	if a.Handed {
 		return false, nil
 	}
-	if _, due := conflictDue(kept, a, branchHead(repo, mr.Branch)); due {
+	if _, due := conflictDue(kept, a, repo, branchHead(f, repo, mr.Branch)); due {
 		return true, nil // its merge refused for a conflict: a merge round (ADR-0067)
 	}
 	head, _ := gitOut(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/"+mr.Branch)

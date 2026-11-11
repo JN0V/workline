@@ -29,6 +29,7 @@ given:
         auto-merge-at: "2026-01-04T10:05:00Z"
         auto-merge-by: workline-bot
         checks: success
+        behind: true
         pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z"}]
         comments: []
 run: {follow: [--base, main]}

@@ -78,6 +78,9 @@ type MergeState struct {
 	// forge missed (#993): GitHub's acts on an event, never again once
 	// missed.
 	Mergeable bool `json:"mergeable,omitempty"`
+	// Behind: the forge holds it for its base — GitHub's merge state
+	// behind or dirty, GitLab's need_rebase or conflict (ADR-0067).
+	Behind bool `json:"behind,omitempty"`
 	// Labels are its labels set and taken off, oldest first, with who did
 	// each, as Backlog's LabelEvents.
 	Labels []LabelEvent `json:"label-events,omitempty"`

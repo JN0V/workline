@@ -178,6 +178,7 @@ type FakeItem struct {
 	CheckRuns   []CheckRun `json:"check-runs,omitempty"`
 	Pushes      []FakePush `json:"pushes,omitempty"`
 	Clean       bool       `json:"clean,omitempty"`
+	Behind      bool       `json:"behind,omitempty"` // held for its base (ADR-0067)
 	Merged      bool       `json:"merged,omitempty"`
 	// MergedAt: when a merge request was merged, RFC 3339 or YYYY-MM-DD;
 	// MergedAs, the commit it became, a revision of the repository (main,

@@ -74,7 +74,7 @@ func (f *Fake) MergeState(mr MergeRequest) (MergeState, error) {
 	out, _ := exec.Command("git", "-C", f.Repo, "ls-remote", "origin", ref).Output()
 	head, _, _ := strings.Cut(string(out), "\t")
 	st := MergeState{Head: strings.TrimSpace(head), Draft: it.Draft, AutoMerge: it.AutoMerge, AutoMergeAt: it.AutoMergeAt,
-		Checks: it.Checks, Labels: it.LabelEvents, Mergeable: it.Clean}
+		Checks: it.Checks, Labels: it.LabelEvents, Mergeable: it.Clean, Behind: it.Behind}
 	if it.CheckRuns != nil {
 		st.Checks = sumRuns(it.CheckRuns)
 	}
