@@ -14,12 +14,13 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 )
 
 // RefusedKey is the sticky comment's key that says a refused merge, on
 // the merge request and on each issue it closes.
-const RefusedKey = "line/merge-refused"
+const RefusedKey = developer.RefusedKey
 
 // refusedMark is the data line the comment on an issue carries while its
 // merge request's merge is refused, read back by the reconciler.
@@ -80,6 +81,13 @@ func sayRefused(f forge.Forge, mr forge.MergeRequest, tip, due string, err error
 			where = " in `" + strings.Join(c.Files, "`, `") + "`"
 		}
 		waits := fmt.Sprintf("A head that conflicts with %s is not merged: it waits to be brought up to date with %s, %s merged into `%s` or the branch rebased on it. A new head is weighed again, as any head: the line, then the merge policy.", c.Base, c.Base, c.Base, mr.Branch)
+		switch {
+		case c.Failed:
+			// The developer's merge round failed at this head (ADR-0067).
+			waits = fmt.Sprintf("The developer's round could not merge %[1]s in: its issue is blocked for a person, who merges %[1]s into `%[2]s`, settles the conflict and pushes, never a rebase. A new head is weighed again, as any head.", c.Base, mr.Branch)
+		case c.Commit != "":
+			waits = fmt.Sprintf("It waits to be brought up to date with %[1]s: the developer's next review round merges %[1]s in, settles the conflict keeping both changes, and pushes a merge commit, never a rebase; its checks and the reviewer read it, then it merges (ADR-0067).", c.Base)
+		}
 		body = fmt.Sprintf("**Not merged: it conflicts with %s**: its merge was due, %s, but at its head %s, %s and its branch change the same lines%s.\n\n%s\n\n**What a person can do**: bring `%s` up to date with %s, or close this pull request.",
 			c.Base, due, at, c.Base, where, waits, mr.Branch, c.Base)
 		issue = fmt.Sprintf("**Its pull request %s is not merged: it conflicts with %s**: its merge was due, %s, but at its head %s, %s and its branch change the same lines%s.\n\n%s\n\n**What a person can do**: bring `%s` up to date with %s, or close %s.",
@@ -88,7 +96,11 @@ func sayRefused(f forge.Forge, mr forge.MergeRequest, tip, due string, err error
 	unsaid := func(err error) {
 		say("refusal-unsaid", "warn", "its refused merge could not be said on it or its issue: "+forge.Said(err))
 	}
-	if err := f.Sticky(forge.Target{Kind: "merge-request", ID: mr.ID}, backlog.Inert(body), refusedSticky(0), true); err != nil {
+	body = backlog.Inert(body)
+	if c != nil && c.Commit != "" && !c.Failed {
+		body += "\n\n" + developer.ConflictMark(tip, c.Commit) // the merge round's record
+	}
+	if err := f.Sticky(forge.Target{Kind: "merge-request", ID: mr.ID}, body, refusedSticky(0), true); err != nil {
 		unsaid(err)
 		return
 	}

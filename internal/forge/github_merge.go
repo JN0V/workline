@@ -59,7 +59,7 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 		return MergeState{}, err
 	}
 	pr := v.Data.Repository.PullRequest
-	st := MergeState{Head: pr.Head, Draft: pr.Draft, Mergeable: mergeableStates[pr.State]}
+	st := MergeState{Head: pr.Head, Draft: pr.Draft, Mergeable: mergeableStates[pr.State], Behind: pr.State == "BEHIND" || pr.State == "DIRTY"}
 	for _, n := range pr.Timeline.Nodes {
 		st.AutoMergeAt = max(st.AutoMergeAt, n.At)
 	}

@@ -78,6 +78,9 @@ type MergeState struct {
 	// forge missed (#993): GitHub's acts on an event, never again once
 	// missed.
 	Mergeable bool `json:"mergeable,omitempty"`
+	// Behind: the forge holds it for its base — GitHub's merge state
+	// behind or dirty, GitLab's need_rebase or conflict (ADR-0067).
+	Behind bool `json:"behind,omitempty"`
 	// Labels are its labels set and taken off, oldest first, with who did
 	// each, as Backlog's LabelEvents.
 	Labels []LabelEvent `json:"label-events,omitempty"`
@@ -165,6 +168,10 @@ func Refused(err error) bool { return refusal(err) }
 type Conflict struct {
 	Base  string
 	Files []string
+	// Commit: the base's tip git's merge met it at, when the engine merges
+	// the base in itself (ADR-0067); Failed, its merge round failed there.
+	Commit string
+	Failed bool
 }
 
 func (c *Conflict) Error() string {

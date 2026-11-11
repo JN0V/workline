@@ -440,6 +440,9 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 	if st.AutoMerge {
 		return stalled(f, m, mr, tip, st, e, w.say, "with no person's yes, "+why)
 	}
+	if acted, err := e.upToDate(false, "with no person's yes, the project's merge policy `"+o.Merge+"`"); acted || err != nil {
+		return nil, err // in conflict with the base: a merge round, not a merge (ADR-0067)
+	}
 	// The record, where a person sees it and the engine finds it again
 	// when a revert names this merge request.
 	t := forge.Target{Kind: "merge-request", ID: mr.ID}

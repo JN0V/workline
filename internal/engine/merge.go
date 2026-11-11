@@ -640,6 +640,17 @@ type inLine struct {
 	mr     forge.MergeRequest
 	where  string
 	behind bool
+	// up brings it up to date with the base when it conflicts, or, clean
+	// asked, when it merges clean (upToDate): acted, not merged now.
+	up func(clean bool, due string) (bool, error)
+}
+
+// upToDate is e.up, none on a request weighed without it.
+func (e *inLine) upToDate(clean bool, due string) (bool, error) {
+	if e == nil || e.up == nil {
+		return false, nil
+	}
+	return e.up(clean, due)
 }
 
 // mergePolicy runs the project's merge policy on the merge requests into
@@ -806,6 +817,9 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		return nil, nil // its branch is gone
 	}
 	e := &inLine{mr: mr, where: where, behind: !isAncestor(o.Repo, baseTip, tip)}
+	e.up = func(clean bool, due string) (bool, error) {
+		return upToDate(f, o, local, mr, baseTip, tip, say, clean, due)
+	}
 	off := func() error {
 		if !st.AutoMerge {
 			return nil
@@ -1078,6 +1092,9 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 	if st.AutoMerge {
 		return stalled(f, m, mr, tip, st, e, say, fmt.Sprintf("accepted by %s, %s", by, passed))
 	}
+	if acted, err := e.upToDate(false, "a person's yes on it"); acted || err != nil {
+		return nil, err // in conflict with the base: a merge round, not a merge (ADR-0067)
+	}
 	merged, err := m.AutoMerge(mr, tip, true)
 	switch {
 	case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
@@ -1104,6 +1121,11 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 // the forge refuses leaves auto-merge on, for the next run.
 func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
 	if !st.Mergeable {
+		// Behind its base and held by the forge, its checks green: the
+		// base merged in, by the engine or a merge round (ADR-0067).
+		if acted, err := e.upToDate(st.Behind && st.Checks == "success", "its auto-merge on since "+st.AutoMergeAt); acted || err != nil {
+			return e, err
+		}
 		return e, heldByConversations(m, mr, tip, st, say, who)
 	}
 	merged, err := m.AutoMerge(mr, tip, true)

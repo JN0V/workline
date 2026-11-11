@@ -64,6 +64,10 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped)).
   Two green alone may break the base together: main's run says it
   ([below](#a-red-main)).
+- **The developer's request behind its base**: in conflict, or held by
+  the forge, `main` is merged in, by the engine or one developer round;
+  never a rebase
+  ([behind main](../roles/developer/docs/conflict.md)).
 - **Auto-merge a person turned on by hand** is their yes, weighed as the
   label's.
 - **Nothing turned on, said in the job's summary**: a verdict or a check

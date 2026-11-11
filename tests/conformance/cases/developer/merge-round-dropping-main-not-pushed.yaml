@@ -1,0 +1,36 @@
+case: developer/merge-round-dropping-main-not-pushed
+about: >
+  A merge round that drops main's side is never pushed (ADR-0067): its
+  agent settles lib.sh's conflict by keeping its own mul() alone, main's
+  sub() gone. No marker is left, but the proof runs the whole test
+  command on the merge, main's test_sub with it: red. Nothing is pushed,
+  the branch's head stays as it was, and #3 is blocked for a person, the
+  reason said on the request and the issue. One round only: the next
+  reconcile finds nothing due at that head.
+given:
+  repo: local-fix
+  setup:
+    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && printf '. ./lib.sh\\n[ \"$(sub 5 3)\" = 2 ]\\n' > tests/test_sub.sh && git add lib.sh tests/test_sub.sh && git commit -qm 'feat: sub'"
+  env: {EDIT: ours}
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [developer]}}
+run:
+  sh: >
+    workline follow --base main --verdict .git/verdict.json &&
+    workline route reconcile --ai "cmd:sh $FIXTURES/agents/developer-settles-conflict.sh" &&
+    workline route reconcile --ai "cmd:sh $FIXTURES/agents/developer-settles-conflict.sh" &&
+    git rev-parse --short workline/developer/3
+expect:
+  exit: 0
+  stderr:
+    - "conflict-not-settled merge request 2: the merge turns the tests red: tests.test_sub: nothing pushed; #3 blocked for a person"
+    - "reconcile: nothing due"
+  stdout: ["9f34177\n"]
+  files:
+    .git/workline/merge-requests/2.md:
+      contains: ["main not merged in, the merge turns the tests red", "\"merge\":\"failed\"", "\"conflict\":\"9f34177"]
+    .git/workline/issues/3.md:
+      contains: ["workline:blocked", "could not merge main in", "merges main into `workline/developer/3`, settles the conflict and pushes, never a rebase"]

@@ -27,6 +27,7 @@
   forge label; silence is never a yes); principles 1, 4, 6, 12, 13
 - **Research:** [merging.md](../research/merging.md)
 - **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind) (built): at `enterprising`, a feature merges by the policy and the person's yes moves to the milestone's release candidate
+- **Extended by:** [ADR-0067](0067-a-role-request-behind-main-merges-main-in.md) (built): a role request the policy merges, in conflict with its base or held behind it, gets the base merged in, never rebased
 
 ## Context
 

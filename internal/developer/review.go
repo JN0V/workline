@@ -80,6 +80,9 @@ type Round struct {
 	Beyond []Beyond `json:"beyond,omitempty"`
 	// Tester: the review's test findings it sent to the tester (#1265).
 	Tester []string `json:"tester,omitempty"`
+	// Merge: a round that merged the base in (ADR-0067): settled, or
+	// failed, nothing pushed.
+	Merge string `json:"merge,omitempty"`
 }
 
 // Asked is a finding a round asks the agent to fix: a reviewer's row that
@@ -150,6 +153,11 @@ type round struct {
 	// RecordUnread: why a reviewer comment's findings were not read: its
 	// record missing beside a table, or not parsing (#705). Said, not silent.
 	RecordUnread string `json:"record-unread,omitempty"`
+	// Merge: the base's commit a merge round merges in (ADR-0067), its
+	// files in conflict; Base then the merge with their markers, where
+	// its agent's worktree starts.
+	Merge     string   `json:"merge,omitempty"`
+	Conflicts []string `json:"conflicts,omitempty"`
 }
 
 // recordUnread says why a reviewer comment's findings record cannot be
@@ -343,6 +351,11 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	if a.Handed {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "a person has its pull request: the developer runs no more rounds",
 			Findings: []verdict.Finding{{Rule: "review-to-a-person", Level: "info", Where: where, Message: fmt.Sprintf("past round %d, a person of the project takes it from here", a.Round)}}})
+	}
+	// Its merge refused for a conflict with its base (ADR-0067): the
+	// round merges the base in, and asks nothing else.
+	if base, due := conflictDue(kept, a, repo, head); due {
+		return conflictPre(runDir, repo, s, f, b, mr, a, head, base)
 	}
 	// The review's test findings on code are the tester's (#1265): its
 	// issue and bounds read first, when the review asks one.
@@ -675,6 +688,9 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	if a.Handed {
 		return false, nil
 	}
+	if _, due := conflictDue(kept, a, repo, branchHead(f, repo, mr.Branch)); due {
+		return true, nil // its merge refused for a conflict: a merge round (ADR-0067)
+	}
 	head, _ := gitOut(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/"+mr.Branch)
 	r, _, err := readAsked(f, b, kept, repo, a, mr.ID, head)
 	if err == nil && len(r.Asked) == 0 && r.ChecksUnread != "" {
@@ -841,6 +857,8 @@ func texts(l []Asked) []string {
 			out[i] = rewriteLine(a)
 		case keptHolds:
 			out[i] = keptLine(a)
+		case conflictHolds:
+			out[i] = "merge " + a.Where + " in: it " + a.Text
 		default:
 			out[i] = fmt.Sprintf("%s %s `%s`: %s", a.Holds, a.Lens, a.Where, a.Text)
 		}
@@ -867,6 +885,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 	where := fmt.Sprintf("merge request %d", r.MR)
 	if r.Ready {
 		return readyPost(runDir, r)
+	}
+	if r.Merge != "" && r.Backstop == "" {
+		return mergePost(runDir, repo, s, r)
 	}
 	if r.Backstop != "" {
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("at its backstop: its issue #%d blocked, no round run", r.Record.Issue),

@@ -1,0 +1,31 @@
+case: developer/merge-round-markers-left-stops
+about: >
+  A merge round's agent edits only the files in conflict, and leaves no
+  marker (ADR-0067): here it edits NOTES.md, main's file not in conflict,
+  refused and said; and leaves lib.sh's markers as git wrote them. The
+  engine checks the merge's tree before any commit: markers left,
+  nothing pushed, #3 blocked for a person. The agent never commits.
+given:
+  repo: local-fix
+  setup:
+    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && echo notes > NOTES.md && git add lib.sh NOTES.md && git commit -qm 'feat: sub'"
+  env: {EDIT: markers}
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [developer]}}
+run:
+  sh: >
+    workline follow --base main --verdict .git/verdict.json &&
+    printf '#!/bin/sh\necho x >> NOTES.md\nexec sh %s\n' "$FIXTURES/agents/developer-settles-conflict.sh" > ../agent.sh &&
+    workline route reconcile --ai "cmd:sh $PWD/../agent.sh" &&
+    git rev-parse --short workline/developer/3
+expect:
+  exit: 0
+  stderr:
+    - "beyond-the-conflict NOTES.md: refused at apply"
+    - "conflict-not-settled merge request 2: conflict markers are left in lib.sh: nothing pushed; #3 blocked for a person"
+  stdout: ["9f34177\n"]
+  files:
+    .git/workline/issues/3.md: {contains: ["workline:blocked", "conflict markers are left in lib.sh"]}

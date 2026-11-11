@@ -145,6 +145,12 @@ a round waits for the tester, or blocks its issue for a person; a fix
 beyond the Scope is pushed and listed:
 [a round with no fix pushed](review-held.md).
 
+## A merge round
+
+Its merge refused for a conflict with `main`: the round merges `main`
+in and settles the markers only, before any finding
+([behind main](conflict.md)).
+
 ## A Draft made green
 
 Its pull request opened as a Draft — red, not run whole, or its agent
