@@ -1,0 +1,25 @@
+case: developer/local-round-from-main-runs-apart
+about: >
+  With `forge: local`, `workline develop --merge-request 2` run with
+  main checked out (#1328): the round runs in a worktree of `!2`'s head,
+  not in main's tree. Its fix is committed on workline/developer/3; main
+  stays checked out and clean, no worktree left.
+given:
+  repo: local-fix
+  setup:
+    - "rm .git/verdict.json && git checkout -q workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'fix: mul for #3, at once' -m 'Workline-Role: developer' && git checkout -q main"
+  config:
+    forge: local
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run:
+  sh: >
+    workline issues comment '!2' --body "mul still adds: please multiply." &&
+    workline develop --merge-request 2 --ai "fake:$FIXTURES/agents/developer-writes-mul.yaml" &&
+    git status --porcelain && git rev-parse --abbrev-ref HEAD && git worktree list --porcelain | grep -c '^worktree '
+expect:
+  exit: 0
+  stdout: ["main\n1\n"]
+  branches:
+    workline/developer/3: {lib.sh: "$1 * $2"}
+  files:
+    lib.sh: {lacks: "mul()"}

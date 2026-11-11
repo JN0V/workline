@@ -141,9 +141,12 @@ workline issues show !2               # what the line found on it
   have that branch checked out: then it says so and waits.
 - **Each runs in a worktree of the head**, apart: your checkout is
   never read nor written.
-- **By hand**, on the branch checked out:
-  `workline route merge-request --target merge-request:2 --ai claude`,
-  or `workline develop --merge-request 2 --ai claude`.
+- **By hand**:
+  - the line: `git checkout workline/developer/1`, then
+    `workline route merge-request --target merge-request:2 --ai claude`.
+    A doc fix it proposes goes in a comment on `!2`, never in your tree.
+  - a round, from any branch: `workline develop --merge-request 2 --ai claude`.
+    It runs in a worktree of `!2`'s head.
 
 ## 6. The merge
 
