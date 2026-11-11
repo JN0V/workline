@@ -166,10 +166,12 @@ func TestNotText(t *testing.T) {
 	}
 }
 
-// A patch to an executable keeps its mode: git apply reads the index
-// line's mode as the file's, never as one to set (#1330).
+// A patch to an executable keeps its mode, and a text file's index line
+// naming 100755 makes no executable: on disk with core.fileMode, in
+// what is committed either way (#1330).
 func TestPatchKeepsTheMode(t *testing.T) {
 	repo, run, write := gitRepo(t)
+	run("config", "core.fileMode", "true")
 	write("run.sh", "a\n")
 	write("doc.md", "a\n")
 	run("update-index", "--add", "--chmod=+x", "run.sh")
@@ -197,6 +199,11 @@ func TestPatchKeepsTheMode(t *testing.T) {
 		if b, _ := os.ReadFile(filepath.Join(repo, file)); string(b) != "b\n" {
 			t.Errorf("%s holds %q, want the patch's text", file, b)
 		}
+	}
+	run("add", "run.sh", "doc.md")
+	if got := run("ls-files", "-s", "run.sh", "doc.md"); !strings.HasPrefix(got, "100644 ") ||
+		!strings.Contains(got, "\n100755 ") {
+		t.Errorf("the modes staged: %q, want doc.md 100644, run.sh 100755", got)
 	}
 }
 

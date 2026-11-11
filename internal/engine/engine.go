@@ -3208,8 +3208,9 @@ func notText(diff string) string {
 			}
 		case strings.HasPrefix(l, "index "):
 			// The mode an index line gives is the file's, unchanged: an
-			// executable script's text is text to edit (#1330), and git
-			// apply keeps the mode the file has; a link, a submodule not.
+			// executable script's text is text to edit (#1330). What is
+			// committed keeps the index's mode, whatever the line says;
+			// a link, a submodule is not text.
 			if f := strings.Fields(l); len(f) > 2 && f[2] != "100644" && f[2] != "100755" {
 				return "the patch names a file of mode " + f[2] + ": a role writes text files"
 			}
