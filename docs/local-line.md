@@ -112,7 +112,8 @@ workline issues comment 1 --body "Refuse inf too."  # it revises what it propose
 ```
 
 A comment answers the reviewer's questions on the spec the same way:
-the product owner reads it at its next run.
+the product owner reads it at its next run and writes what it settles
+into the Scope.
 
 Its comment on the issue lists every answer
 ([its run](../roles/product-owner/docs/run.md)).

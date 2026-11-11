@@ -1,0 +1,42 @@
+case: product-owner/refine-writes-a-persons-answer-into-the-scope
+about: >
+  A person's answer reaches the spec (#1331): the reviewer asked a
+  person a question, the reporter answered in a comment the product
+  owner has not read. What the answer settles goes into the Scope, the
+  role's at every level (ADR-0060), even one a person wrote: the tester
+  and the developer build from the body, never from its comments. The
+  task says so. #10, with no comment unread, keeps its Scope word for
+  word.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Sales counted"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n**Questions for a person**\n\n- `#9:3` (ambiguous): Does a refunded sale count?\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - {body: "On the reviewer's question: a refunded sale does not count.", author: ann, insider: true}
+      - id: 10
+        title: "Sales counted twice"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts a sale once.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule, ai: fake:refine-scope-from-answer}
+expect:
+  run-files:
+    in/task.md: {contains: "an answer to the reviewer's question — goes into the Scope"}
+  forge:
+    issues:
+      - id: 9
+        body-contains: "## Scope\n\n`src/export/csv.go`: the writer. A refunded sale is not counted, as Ann answered."
+      - id: 10
+        body-contains: "## Scope\n\n`src/export/csv.go`: the writer."
+        body-lacks: "refunded"

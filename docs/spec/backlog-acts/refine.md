@@ -108,7 +108,12 @@ what it can and asks for the rest:
   was given are no longer read, English prose being no fact
   ([#1228](https://github.com/JN0V/workline/issues/1228)) — is the role's to rewrite: once its code is given,
   a refine's new Scope replaces it, never dropped as there already
-  ([#1126](https://github.com/JN0V/workline/issues/1126)).
+  ([#1126](https://github.com/JN0V/workline/issues/1126)). So is a
+  Scope on an issue holding a person's comment the role has not read —
+  an answer to the reviewer's question among them: what it settles goes
+  into the Scope, the tester and the developer building from the body,
+  never from its comments. The task quotes those comments
+  ([#1331](https://github.com/JN0V/workline/issues/1331)).
 - **Each thing said once** (ADR-0039, amended). The text above an
   issue's sections — its description — is read by whose it is, the
   engine telling so, never the agent (`backlog.RolesTop`): a role's when
