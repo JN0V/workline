@@ -159,6 +159,30 @@ func readVerdict(text string) (class, why string) {
 // may not, a request it does not take — rather than not answering.
 func Refused(err error) bool { return refusal(err) }
 
+// Conflict is a merge the forge refused because its branch and its base
+// change the same lines (#1354): which base, and the files, when the
+// forge names them.
+type Conflict struct {
+	Base  string
+	Files []string
+}
+
+func (c *Conflict) Error() string {
+	if len(c.Files) == 0 {
+		return "it conflicts with " + c.Base
+	}
+	return "it conflicts with " + c.Base + " in `" + strings.Join(c.Files, "`, `") + "`"
+}
+
+// Conflicting is the conflict err tells of, nil when it tells none.
+func Conflicting(err error) *Conflict {
+	var c *Conflict
+	if errors.As(err, &c) {
+		return c
+	}
+	return nil
+}
+
 // NotFound says the forge answered that what was asked is not there
 // (HTTP 404): no merge request of that number, as another one's.
 func NotFound(err error) bool { return errors.Is(err, errNotFound) }
