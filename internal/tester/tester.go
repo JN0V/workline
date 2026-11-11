@@ -150,7 +150,8 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 type proven struct {
 	v     *verdict.Verdict
 	added []string
-	// errored: the added ids the red run wrote with no class, failed
+	// errored: the added ids the red run wrote with no class, failed, or
+	// that may be a runner's record of their suite, alone in it
 	errored []string
 	doubt   *doubt
 	errs    []buildError // the errors of the build with the tests on the base
@@ -313,6 +314,7 @@ func prove(repo, base string, s Settings) proven {
 	slices.Sort(added)
 	slices.Sort(unbuilt)
 	slices.Sort(records)
+	slices.Sort(suiteRecords)
 	v := &verdict.Verdict{Status: verdict.Pass}
 	if len(suiteRecords) > 0 {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "suite-record", Level: "info", Where: s.Report,
@@ -401,7 +403,8 @@ func prove(repo, base string, s Settings) proven {
 	}
 	// A new id the red run wrote with no class, failed, may be the
 	// runner's record of a file it could not collect, not a test case: the
-	// green proof hands it to the judge when it is gone (renamed.go).
+	// green proof hands it to the judge when it is gone (renamed.go). So
+	// is a suite record (suiteRecord) kept, alone in its suite.
 	var errored []string
 	for _, id := range added {
 		if redRun.results[id] == failed && (redRun.classless[id] || !onHead && headRun.suiteRecord(id, held)) {

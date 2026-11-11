@@ -66,7 +66,9 @@ func readJUnit(file string, results map[string]result, suites map[string]string,
 			switch {
 			case c.Failure != nil || c.Error != nil:
 				r = failed
-				if erred != nil && c.Failure == nil {
+				// Erred only while no run of it failed: a run in
+				// error after a failure stays a failure.
+				if prev, seen := results[id]; erred != nil && c.Failure == nil && (!seen || prev != failed || erred[id] != "") {
 					erred[id] = name
 				} else if erred != nil {
 					delete(erred, id)
