@@ -1,6 +1,7 @@
 # ADR-0052: v1.0 when the core roles are out of beta
 
-- **Status:** accepted
+- **Status:** accepted; V1 accepted on 2026-11-11
+  ([amendment](#amendment-2026-11-11-1266-v1-accepted))
 - **Date:** 2026-10-26
 - **Decided by:** the maintainer, on 2026-10-26
 - **Builds on:** [ADR-0036] (a role's status is earned by written
@@ -68,6 +69,35 @@ holds the issues that count.
   leave beta, "Nothing buildable in Missing" ([its status.md]), waits
   for the loop where the reviewer finds and the developer fixes.
 - **[#117] and [#264] are in the milestone v1.0.**
+
+## Amendment 2026-11-11 ([#1266]): V1 accepted
+
+- **Decided by:** the maintainer, on 2026-11-11, after round 3 of the
+  acceptance ([its report][round 3]) and the fix of [#1370] in [#1375].
+- **What V1 is**: the product owner, the tester and the developer take a
+  need to a merged change alone, on any repository ([#1266], defined by
+  the maintainer on 2026-11-09). Its Validation is the acceptance round:
+  three real repository copies (Kotlin, C++, Python), a small bug, a big
+  bug and a feature on each.
+- **The three rounds**, one pinned engine each:
+
+  | Round | Reviewed, green | Merged | Silent stalls |
+  |---|---|---|---|
+  | 1 | 5 of 9 | 5 | 3 |
+  | 2 | 9 of 9 | 7 | 2 |
+  | 3 | 9 of 9 | 9 | 0 |
+
+- **Round 3 passes every criterion**: 6 bugs merged by the policy with
+  no person's yes, 3 features after a yes, no fix specific to one
+  language, the tester right the first time on 3, 2 and 3 of 3.
+- **After V1**: optimisation, token savings, new roles ([#1266]); the
+  inspector on GitLab and the upkeep measure of criteria 2 and 3 are
+  among them.
+
+[#1266]: https://github.com/JN0V/workline/issues/1266
+[round 3]: https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764
+[#1370]: https://github.com/JN0V/workline/issues/1370
+[#1375]: https://github.com/JN0V/workline/pull/1375
 
 [#117]: https://github.com/JN0V/workline/issues/117
 [#264]: https://github.com/JN0V/workline/issues/264
