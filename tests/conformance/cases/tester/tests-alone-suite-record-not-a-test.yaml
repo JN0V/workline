@@ -1,0 +1,21 @@
+case: tester/tests-alone-suite-record-not-a-test
+about: >
+  A runner that writes, for a suite that fails, a case of its own beside
+  the suite's tests: red by an error, named after the suite, a name no
+  test file holds (PlatformIO's `native:<suite>`). On the base with the
+  tests it is red; on a green run it is never written. It is the
+  runner's record of the suite, not a test: the red proof counts the
+  real test alone, and says the record was not counted (#1325).
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b workline/issue-7
+    - |
+      printf '. ./lib.sh\n[ "$(mul 2 3)" = 6 ]\n' > tests/test_mul.sh && git add . && git commit -qm "test: multiply"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}; s=$?; if [ $s -ne 0 ]; then sed -i 's|</testsuite>|<testcase classname=\"tests\" name=\"native:tests\"><error message=\"Program errored with 1 code\"/></testcase></testsuite>|' {report}; fi; exit $s"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  findings: [{rule: suite-record, level: info, where: junit.xml}]

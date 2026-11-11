@@ -150,7 +150,8 @@ func Check(repo, base string, s Settings) *verdict.Verdict {
 type proven struct {
 	v     *verdict.Verdict
 	added []string
-	// errored: the added ids the red run wrote with no class, failed
+	// errored: the added ids the red run wrote with no class, failed, or
+	// that may be a runner's record of their suite, alone in it
 	errored []string
 	doubt   *doubt
 	errs    []buildError // the errors of the build with the tests on the base
@@ -294,6 +295,13 @@ func prove(repo, base string, s Settings) proven {
 			unbuilt = append(unbuilt, id)
 		}
 	}
+	// Tests alone: a runner's record of a suite, beside what names the
+	// suite's tests, is no test (#1325).
+	var suiteRecords []string
+	held := heldBy(ch.tests, reader.test)
+	if !onHead {
+		added, suiteRecords = headRun.suiteRecords(added, byName, held)
+	}
 	// Tests alone, broken by a missing name: no report names the tests
 	// that did not build, so their files do, as file:name.
 	if !onHead && byName {
@@ -306,7 +314,13 @@ func prove(repo, base string, s Settings) proven {
 	slices.Sort(added)
 	slices.Sort(unbuilt)
 	slices.Sort(records)
+	slices.Sort(suiteRecords)
 	v := &verdict.Verdict{Status: verdict.Pass}
+	if len(suiteRecords) > 0 {
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "suite-record", Level: "info", Where: s.Report,
+			Message: fmt.Sprintf("%s: red by an error, its name in none of the change's test files, beside its suite's tests: "+
+				"the runner's record of the suite, not a test; not frozen", sample(suiteRecords))})
+	}
 	if len(unbuilt) > 0 && !byName {
 		msg := fmt.Sprintf("%d of the base's tests are not in the report on the base with the change's tests (%s): their build broke there, "+
 			"so a new test is red by a missing name, not by its own assertion", len(unbuilt), sample(unbuilt))
@@ -389,10 +403,11 @@ func prove(repo, base string, s Settings) proven {
 	}
 	// A new id the red run wrote with no class, failed, may be the
 	// runner's record of a file it could not collect, not a test case: the
-	// green proof hands it to the judge when it is gone (renamed.go).
+	// green proof hands it to the judge when it is gone (renamed.go). So
+	// is a suite record (suiteRecord) kept, alone in its suite.
 	var errored []string
 	for _, id := range added {
-		if redRun.classless[id] && redRun.results[id] == failed {
+		if redRun.results[id] == failed && (redRun.classless[id] || !onHead && headRun.suiteRecord(id, held)) {
 			errored = append(errored, id)
 		}
 	}
@@ -539,6 +554,7 @@ type ran struct {
 	results   map[string]result
 	suite     map[string]string
 	classless map[string]bool
+	erred     map[string]string // the name of each case red by an error alone (readJUnit)
 	roots     []string // the folder it ran in, its links resolved too: an error's absolute path below it is from the root
 	reports   []string // the report files read, this run's
 }
@@ -553,6 +569,54 @@ func (r ran) buildRecord(id string) bool {
 		}
 	}
 	return r.classless[id] || id == "TestMain" || strings.HasSuffix(id, ".TestMain")
+}
+
+// suiteRecord says whether id may be a runner's record of its suite, not
+// a test: red by an error alone, its name, past a parameter's mark, in
+// none of the change's test files (PlatformIO's `native:<suite>`, a
+// collection error's module).
+func (r ran) suiteRecord(id string, held func(string) bool) bool {
+	name, ok := r.erred[id]
+	return ok && r.results[id] == failed && !held(name)
+}
+
+// suiteRecords splits added, the new ids of the tests alone, into tests
+// and a runner's records of a suite: a suiteRecord beside what names that
+// suite's tests (another new case of its suite that is none, or, the
+// build broken by a missing name, the tests named from their files).
+// Alone, it is the only word of its tests: kept, marked errored.
+func (r ran) suiteRecords(added []string, byName bool, held func(string) bool) (tests, records []string) {
+	named := map[string]bool{} // suites a new case that is no record names
+	for _, id := range added {
+		if !r.suiteRecord(id, held) {
+			named[r.suite[id]] = true
+		}
+	}
+	for _, id := range added {
+		if r.suiteRecord(id, held) && (byName || named[r.suite[id]]) {
+			records = append(records, id)
+			continue
+		}
+		tests = append(tests, id)
+	}
+	return tests, records
+}
+
+// heldBy says whether a test's name, cut at a parameter's mark, is in one
+// of files, read by read.
+func heldBy(files []string, read func(string) string) func(string) bool {
+	return func(name string) bool {
+		if i := strings.IndexAny(name, "[("); i > 0 {
+			name = name[:i]
+		}
+		name = strings.TrimSpace(name)
+		for _, f := range files {
+			if strings.Contains(read(f), name) {
+				return true
+			}
+		}
+		return name == ""
+	}
 }
 
 // run checks rev out apart, the files given laid on it as from holds them,
@@ -689,12 +753,12 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 			&verdict.Finding{Rule: "report-missing", Where: s.Report,
 				Message: fmt.Sprintf("the test command wrote no report %s (%s); %s", where, said, errorLines(out.String(), s.BuildErrors, 10))}
 	}
-	rep := ran{output: out.String(), results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}, reports: found}
+	rep := ran{output: out.String(), results: map[string]result{}, suite: map[string]string{}, classless: map[string]bool{}, erred: map[string]string{}, reports: found}
 	if runErr != nil {
 		rep.failure = runErr.Error()
 	}
 	for _, f := range found {
-		if err := readJUnit(f, rep.results, rep.suite, rep.classless); err != nil {
+		if err := readJUnit(f, rep.results, rep.suite, rep.classless, rep.erred); err != nil {
 			rel, _ := filepath.Rel(tree, f)
 			return ran{}, &verdict.Finding{Rule: "report-missing", Where: s.Report,
 				Message: fmt.Sprintf("the report %s %s is not JUnit XML: %v", rel, where, err)}

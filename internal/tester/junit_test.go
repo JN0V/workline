@@ -31,7 +31,7 @@ func TestReadJUnitAsRunnersWriteIt(t *testing.T) {
 		if err := os.WriteFile(file, []byte(body), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if err := readJUnit(file, got, nil, nil); err != nil {
+		if err := readJUnit(file, got, nil, nil, nil); err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
 	}
@@ -42,5 +42,25 @@ func TestReadJUnitAsRunnersWriteIt(t *testing.T) {
 	}
 	if len(got) != len(want) {
 		t.Errorf("%d tests read, want %d: %v", len(got), len(want), got)
+	}
+}
+
+// A case red by an error alone is erred, its name kept; one with a
+// failure in any of its runs is not, whatever their order (#1325).
+func TestReadJUnitErredWhateverTheOrder(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "r.xml")
+	body := `<testsuite name="s"><testcase classname="s" name="native:s"><error/></testcase>` +
+		`<testcase classname="s" name="a"><failure/></testcase><testcase classname="s" name="a"><error/></testcase>` +
+		`<testcase classname="s" name="b"><error/></testcase><testcase classname="s" name="b"><failure/></testcase>` +
+		`<testcase classname="s" name="c"/><testcase classname="s" name="c"><error/></testcase></testsuite>`
+	if err := os.WriteFile(file, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	erred := map[string]string{}
+	if err := readJUnit(file, map[string]result{}, nil, nil, erred); err != nil {
+		t.Fatal(err)
+	}
+	if len(erred) != 2 || erred["s.native:s"] != "native:s" || erred["s.c"] != "c" {
+		t.Errorf("erred %v, want s.native:s and s.c", erred)
 	}
 }

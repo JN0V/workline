@@ -228,6 +228,7 @@ workline test check --base origin/main
 | `setting-invalid` | yes | `test-report` leaves the repository's root, a `module-files` name holds a `/`, or `build-errors` does not compile |
 | `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML; its error lines quoted. With the change's tests and no error a row reads, the agent is asked once more ([missing name](docs/missing-name.md)) |
 | `tests-not-built` | no, warns | tests the base ran are not in the report of the base with the change's tests: their build broke there |
+| `suite-record` | no, informs | the change's tests alone: a new case is the runner's record of its suite, not a test, not frozen |
 | `no-new-test` | no, warns | the change touches test files, but no new test is in the report |
 | `red-unproven` | no, warns; `human` with no agent | the build broke on the base past the fast path, and the judge did not settle it: the Draft opens marked, the developer starts ([broken build](docs/missing-name.md#the-judge)) |
 | `build-broken` | yes | the build broke on the base with the change's tests, and the judge says it is not by what the issue adds, its line quoted ([broken build](docs/missing-name.md)); writing an issue's tests, after the agent is asked once more with the error, then a machine error the line runs again ([the record](../../docs/spec/routing.md#once-a-state-the-record)) |
@@ -237,6 +238,11 @@ workline test check --base origin/main
   only red on the base is asked; green is the code's job. When they
   break the build, the runner's record of it (gotestsum's `TestMain`)
   is not a new test: `tests-not-built` says so.
+- **A runner's record of a suite** (PlatformIO's `native:<suite>`): a
+  case red by an error, a name none of the change's test files holds,
+  beside the suite's tests. Not a test, never frozen: `suite-record`
+  says so
+  ([#1325](https://github.com/JN0V/workline/issues/1325)).
 - **A broken build is read, then judged**: each compiler error a name
   the base lacks and the issue names is red at once; any other goes to
   the judge, whose yes is red and no `build-broken`

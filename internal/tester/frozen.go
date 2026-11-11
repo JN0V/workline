@@ -47,7 +47,9 @@ type record struct {
 	Tests []string `json:"tests,omitempty"`
 	// Errored: those of Tests the red run wrote with no class, failed —
 	// maybe the runner's record of a file it could not collect, not a
-	// test case: gone on the code, the judge reads it, never a block.
+	// test case —, or red by an error alone, alone in its suite, a name
+	// no test file holds (a suite's record, #1325): gone on the code, the
+	// judge reads it, never a block.
 	Errored []string `json:"errored,omitempty"`
 	// Scenarios: the issue's, as the run that wrote the tests read them,
 	// for the auditor (ADR-0046); none in a record written before.
