@@ -230,7 +230,7 @@ the candidate's issue, ships the version:
 | `merge-refused` | the forge refused to merge now one whose auto-merge it left: auto-merge left on |
 | `held-by-conversations`, `conversations-unread` | auto-merge on, checks green, not merged: the open conversations that hold it, or why they could not be read |
 | `verdict-kept`, `verdict-missing`, `review-to-come` | the verdict kept; one not judged yet; marked ready, the draft's verdict still on its head |
-| `verdict-red`, `review-short`, `checks-red` | nothing turned on, why |
+| `verdict-red`, `review-short`, `checks-red` | nothing turned on, why; a person's yes does not lift a red verdict |
 | `review-read-whole` | a review not whole, taken by the reading of who put `workline:accepted-whole` |
 | `accepted-reset` | a push after the yes: the yes and auto-merge off |
 | `vetoed`, `draft`, `auto-merge-off` | the forge's veto, or the label taken off |
