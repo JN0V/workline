@@ -54,8 +54,10 @@ keep their ids.
 
 ### In conflict: one developer round
 
-- **Said on the request** by `follow`, the files named, with a record
-  the round reads: the head and the base it was read at.
+- **Said on the request and its issue** by `follow`, in the refused
+  merge's one comment ([#1354]): the files named, and a record the
+  round reads, the head and the base it was read at; edited when the
+  round fails.
 - **A round is due** (the reconciler's): it starts from the branch's head
   with the base merged in, git's conflict markers in its files.
 - **Its task: settle the markers only**, keeping both intents. An edit
@@ -110,3 +112,4 @@ keep their ids.
 [ADR-0054]: 0054-the-developer-takes-a-ready-issue-to-a-pull-request.md
 [ADR-0055]: 0055-the-tester-writes-the-acceptance-tests-before-the-code.md
 [#1266]: https://github.com/JN0V/workline/issues/1266
+[#1354]: https://github.com/JN0V/workline/issues/1354

@@ -42,5 +42,5 @@ expect:
       tests/test_sub.sh: "sub 5 3"
   files:
     .git/workline/merge-requests/2.md:
-      contains: ["**Conflicts with main**", "workline:conflict head=", "main merged in, its conflicts settled (`lib.sh`), the tests green", "\"merge\":\"settled\""]
+      contains: ["**Not merged: it conflicts with main**", "the developer's next review round merges main in", "workline:conflict head=", "main merged in, its conflicts settled (`lib.sh`), the tests green", "\"merge\":\"settled\""]
       lacks: ["<<<<<<<", "Merging with no person's yes"]

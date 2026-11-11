@@ -19,7 +19,8 @@ import (
 // for the developer's merge round; merging clean, merged in by the engine
 // when clean is asked — the forge holding it, not only its merge to come.
 // acted: the request is not to be merged now.
-func upToDate(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest, baseTip, tip string, say func(rule, level, msg string), clean bool) (bool, error) {
+// due says why its merge is due, as the refused merge's comment says it.
+func upToDate(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest, baseTip, tip string, say func(rule, level, msg string), clean bool, due string) (bool, error) {
 	if !mr.Here || !strings.HasPrefix(mr.Branch, developer.Branch) || isAncestor(o.Repo, baseTip, tip) {
 		return false, nil
 	}
@@ -29,19 +30,19 @@ func upToDate(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest,
 		return false, nil
 	}
 	if len(files) > 0 {
-		t := forge.Target{Kind: "merge-request", ID: mr.ID}
-		marker := forge.Marker("sticky=" + developer.ConflictKey)
-		body := developer.ConflictSaid(o.Base, mr.Branch, tip, baseTip, files)
-		kept, err := forge.ReadKept(f, t)
+		// Said in the refused merge's one comment (#1354), its record the
+		// merge round reads; once that round failed here, a person's.
+		failed, err := developer.ConflictFailed(f, mr, tip)
 		if err != nil {
 			return true, err
 		}
-		if now, ok := kept.Last(marker); !ok || !strings.Contains(now, strings.TrimSpace(body)) {
-			if err := forge.KeepOwn(f, t, body, marker, true); err != nil {
-				return true, err
-			}
+		c := &forge.Conflict{Base: o.Base, Files: files, Commit: baseTip, Failed: failed}
+		sayRefused(f, mr, tip, due, c, say)
+		next := "the developer's next round merges " + o.Base + " in and settles it"
+		if failed {
+			next = "the developer's round failed at this head: a person settles it"
 		}
-		say("merge-conflict", "warn", fmt.Sprintf("it conflicts with %s in %s: not merged; the developer's next round merges %[1]s in and settles it", o.Base, strings.Join(files, ", ")))
+		say("merge-conflict", "warn", fmt.Sprintf("it conflicts with %s in %s: not merged; %s", o.Base, strings.Join(files, ", "), next))
 		return true, nil
 	}
 	if !clean || local {
@@ -62,5 +63,23 @@ func upToDate(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest,
 		return true, nil
 	}
 	say("merged-from-base", "", fmt.Sprintf("behind %s and held by the forge, it merges clean: %[1]s merged into %s, a merge commit pushed, nothing rewritten; its checks run on the new head", o.Base, mr.Branch))
+	sayUpdated(f, mr, o.Base, commit, say)
 	return true, nil
+}
+
+// sayUpdated edits the refused merge's comments on mr and its issues,
+// when it holds one: brought up to date with base at head, its checks to
+// run on it.
+func sayUpdated(f forge.Forge, mr forge.MergeRequest, base, head string, say func(rule, level, msg string)) {
+	t := forge.Target{Kind: "merge-request", ID: mr.ID}
+	if b, ok := f.(forge.Backlog); ok {
+		comments, err := b.Comments(t)
+		if err != nil || !strings.Contains(strings.Join(comments, "\n"), refusedSticky(0)) {
+			return
+		}
+	}
+	body := fmt.Sprintf("**Brought up to date**: %s merged into its branch by the engine, a merge commit at %s, nothing rewritten; its checks run on it, then the merge policy weighs it again.", base, short(head))
+	if err := f.Sticky(t, body, refusedSticky(0), false); err != nil {
+		say("refusal-unsaid", "warn", "the merge refused before could not be said brought up to date: "+forge.Said(err))
+	}
 }

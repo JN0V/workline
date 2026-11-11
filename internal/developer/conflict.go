@@ -25,26 +25,34 @@ import (
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// ConflictKey is the sticky `follow` says a conflict with the base in, on
-// the request; its record names the head and the base it was read at.
-const ConflictKey = "merge/conflict"
+// RefusedKey is the sticky `follow` says a refused merge in, on the
+// request (#1354): a conflict's carries the record a merge round reads.
+const RefusedKey = "line/merge-refused"
 
 var conflictRecord = regexp.MustCompile(`<!-- workline:conflict head=([0-9a-f]{40,64}) base=([0-9a-f]{40,64}) -->`)
 
-// ConflictSaid is the comment saying that head, the request's, conflicts
-// with base, the tip of its base branch named baseName, in files: what
-// comes next, and the record the next round reads.
-func ConflictSaid(baseName, branch, head, base string, files []string) string {
-	return fmt.Sprintf("**Conflicts with %[1]s**: this request merges by the project's policy, but git's merge of %[1]s meets a conflict in `%[2]s`. "+
-		"The developer's next review round merges %[1]s in, settles the conflict keeping both changes, and pushes a merge commit; its checks and the reviewer read it, then it merges. "+
-		"To settle it by hand: merge %[1]s into `%[3]s` and push, never a rebase.\n\n<!-- workline:conflict head=%[4]s base=%[5]s -->\n",
-		baseName, strings.Join(files, "`, `"), branch, head, base)
+// ConflictMark is the record of a conflict of head with base, the tip of
+// its base branch, the next merge round reads.
+func ConflictMark(head, base string) string {
+	return fmt.Sprintf("<!-- workline:conflict head=%s base=%s -->", head, base)
+}
+
+// ConflictFailed says a merge round failed at head, as the developer's
+// record on mr keeps it: no second one there, a person's.
+func ConflictFailed(f forge.Forge, mr forge.MergeRequest, head string) (bool, error) {
+	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: mr.ID})
+	if err != nil {
+		return false, err
+	}
+	body, ok := kept.Last(forge.Marker("sticky=developer/" + RecordKey))
+	a, read := ReadAct(body)
+	return ok && read && a.Conflict == head, nil
 }
 
 // conflictAt reads the conflict `follow` said on the request: the head and
 // the base it was read at; ok false when none.
 func conflictAt(kept forge.Kept) (head, base string, ok bool) {
-	body, read := kept.Last(forge.Marker("sticky=" + ConflictKey))
+	body, read := kept.Last(forge.Marker("sticky=" + RefusedKey))
 	m := conflictRecord.FindStringSubmatch(body)
 	if !read || m == nil {
 		return "", "", false

@@ -168,6 +168,10 @@ func Refused(err error) bool { return refusal(err) }
 type Conflict struct {
 	Base  string
 	Files []string
+	// Commit: the base's tip git's merge met it at, when the engine merges
+	// the base in itself (ADR-0067); Failed, its merge round failed there.
+	Commit string
+	Failed bool
 }
 
 func (c *Conflict) Error() string {

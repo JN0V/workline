@@ -20,7 +20,7 @@ run:
 expect:
   exit: 0
   stderr:
-    - "auto-merge-refused !2"
+    - "merge-conflict !2"
     - "it conflicts with main in `lib.sh`"
     - "waits on its pull request #2, its merge refused at its head"
     - "it waits to be brought up to date with main"

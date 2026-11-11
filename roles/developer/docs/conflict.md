@@ -29,7 +29,9 @@ force-pushed.
 - **Only when the policy would merge it** (`workline follow`): the
   developer's request, its verdict passed, accepted or a fix.
 - **In conflict**: git's merge of `main`, in memory, meets a conflict.
-  Said on the request (`**Conflicts with main**`), the files named.
+  Said on the request and its issue, in the refused merge's comment
+  (`**Not merged: it conflicts with main**`), the files named; edited
+  when the round fails, or the engine brings it up to date.
 - **Clean, held by the forge** (a base that must be up to date): the
   engine merges `main` in alone, no agent, and pushes the merge.
 - **Not yet**: every request behind `main` at each push to `main`.

@@ -16,7 +16,7 @@ run:
     workline follow --base main --verdict .git/verdict.json
 expect:
   exit: 0
-  stderr: ["auto-merge-refused !2", "merged-at-once !2"]
+  stderr: ["merge-conflict !2", "merged-at-once !2"]
   files:
     lib.sh: {contains: "mul()"}
     .git/workline/merge-requests/2.md:
