@@ -489,6 +489,10 @@ time" and "The order" above are replaced:
   queue goes on: GitHub's merge queue in an organisation, GitLab's merge
   train. GitLab projects keep merged-results pipelines.
 - **Gone**: the line's order, `fork-behind`, the first in line's update.
+- **Since**: on the local forge, with no run on `main` for a net, a role
+  request behind `main` whose files `main` changed is merged only once
+  proven on `main` merged into it
+  ([ADR-0067's amendment](0067-a-role-request-behind-main-merges-main-in.md#amendment-2026-11-11-1370-on-the-local-forge-a-clean-merge-is-proven)).
 
 Conformance: merge/behind-main-merges-as-it-is,
 accepted-all-turned-on-at-once, gitlab-accepted-turned-on;
@@ -578,6 +582,9 @@ TestTheYesEachLabelItsOwn.
   the request (`See merge request !<n>`, read back for a revert), in
   the clone; nothing pushed, no remote read. A base checked out moves
   with its files by a fast-forward to that commit, whole or not at all.
+- **Behind `main`, which changed its files**: the engine's merge of
+  `main` into it first, proven on the tests, then weighed as a new head
+  ([ADR-0067's amendment](0067-a-role-request-behind-main-merges-main-in.md#amendment-2026-11-11-1370-on-the-local-forge-a-clean-merge-is-proven)).
 - **Refused, said, nothing merged**: a branch moved since it was
   weighed, a conflict with the base, a base checked out with
   uncommitted changes. A worktree is never left mid-merge.

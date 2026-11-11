@@ -157,8 +157,12 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 // a head rebased with no new change, on which the reviewer writes no
 // summary (reviewer.ReviewedAll).
 func unreviewed(repo string, w weighed, d developer.Merge) string {
-	tip := reviewedTip(repo, w.tip, w.baseTip)
-	why := d.Unreviewed(tip)
+	tip, why := w.tip, d.Unreviewed(w.tip)
+	if why != "" {
+		if past := reviewedTip(repo, w.tip, w.baseTip); past != w.tip {
+			tip, why = past, d.Unreviewed(past)
+		}
+	}
 	if why == "" || d.Summary == "" || d.Owed {
 		return why
 	}

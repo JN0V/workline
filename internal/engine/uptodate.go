@@ -65,7 +65,7 @@ func upToDate(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest,
 		return true, nil
 	}
 	say("merged-from-base", "", fmt.Sprintf("behind %s and held by the forge, it merges clean: %[1]s merged into %s, a merge commit pushed, nothing rewritten; its checks run on the new head", o.Base, mr.Branch))
-	sayUpdated(f, mr, o.Base, commit, say)
+	sayUpdated(f, mr, o.Base, commit, "its checks run on it", say)
 	return true, nil
 }
 
@@ -87,10 +87,21 @@ type redMerged struct {
 	Base, BaseTip string
 	Files         []string // changed by both since the branch left the base
 	Proof         string
+	// Unproven: the test command did not run whole, no test said red;
+	// tried again at the next follow, never marked.
+	Unproven bool
 }
 
 func (r *redMerged) Error() string {
-	return fmt.Sprintf("its tests are red with %s merged in: %s", r.Base, r.Proof)
+	return fmt.Sprintf("%s with %s merged in: %s", r.state(), r.Base, r.Proof)
+}
+
+// state says what the run on the merge found.
+func (r *redMerged) state() string {
+	if r.Unproven {
+		return "its tests could not be run whole"
+	}
+	return "its tests are red"
 }
 
 // redMark is kept in the refused merge's comment: the tests were red on
@@ -135,7 +146,10 @@ func changedByBoth(repo, tip, baseTip string) ([]string, error) {
 // and runs the test command whole on it: green, its branch moves to that
 // merge, which the next reconcile's line reviews as any new head, then
 // the policy merges it; red, nothing moves, said on it and its issue,
-// not run again until its head or the base moves. acted: not merged now.
+// not run again until its head or the base moves; not run whole (a
+// timeout, no test-command), the same but tried again at the next follow.
+// A merge of the base a person made by hand is up to date already, and
+// not proven here. acted: not merged now.
 func provenUpToDate(f forge.Forge, o FollowOptions, mr forge.MergeRequest, tree, baseTip, tip string, say func(rule, level, msg string), due string) (bool, error) {
 	both, err := changedByBoth(o.Repo, tip, baseTip)
 	if err != nil {
@@ -167,9 +181,13 @@ func provenUpToDate(f forge.Forge, o FollowOptions, mr forge.MergeRequest, tree,
 	}
 	p := developer.ProveMerge(o.RolesDir, o.Repo, commit)
 	if p.Result != developer.Green {
-		red := &redMerged{Base: o.Base, BaseTip: baseTip, Files: both, Proof: p.Said()}
+		red := &redMerged{Base: o.Base, BaseTip: baseTip, Files: both, Proof: p.Said(), Unproven: p.Result != developer.Red}
 		sayRefused(f, mr, tip, due, red, say)
-		say("merge-red", "warn", fmt.Sprintf("behind %[1]s, which changed %[2]s since its branch left it: with %[1]s merged in, %[3]s; not merged, its branch left as it is, said on it", o.Base, files, p.Said()))
+		rule, then := "merge-red", "said on it"
+		if red.Unproven {
+			rule, then = "merge-unproven", "tried again at the next follow"
+		}
+		say(rule, "warn", fmt.Sprintf("behind %[1]s, which changed %[2]s since its branch left it: with %[1]s merged in, %[3]s; not merged, its branch left as it is, %[4]s", o.Base, files, p.Said(), then))
 		return true, nil
 	}
 	if _, err := git(o.Repo, nil, "update-ref", "refs/heads/"+mr.Branch, commit, tip); err != nil {
@@ -177,7 +195,7 @@ func provenUpToDate(f forge.Forge, o FollowOptions, mr forge.MergeRequest, tree,
 		return true, nil
 	}
 	say("merged-from-base", "", fmt.Sprintf("behind %[1]s, which changed %[2]s since its branch left it: %[1]s merged into %[3]s, a merge commit, nothing rewritten; the tests green on it (%[4]s); its line runs on the new head at the next reconcile, then the policy weighs it again", o.Base, files, mr.Branch, p.Said()))
-	sayUpdated(f, mr, o.Base, commit, say)
+	sayUpdated(f, mr, o.Base, commit, "the tests green on it; its line reviews it at the next reconcile", say)
 	return true, nil
 }
 
@@ -201,9 +219,9 @@ func checkedOutAt(repo, branch string) (string, error) {
 }
 
 // sayUpdated edits the refused merge's comments on mr and its issues,
-// when it holds one: brought up to date with base at head, its checks to
-// run on it.
-func sayUpdated(f forge.Forge, mr forge.MergeRequest, base, head string, say func(rule, level, msg string)) {
+// when it holds one: brought up to date with base at head; next, what
+// reads it then.
+func sayUpdated(f forge.Forge, mr forge.MergeRequest, base, head, next string, say func(rule, level, msg string)) {
 	t := forge.Target{Kind: "merge-request", ID: mr.ID}
 	if b, ok := f.(forge.Backlog); ok {
 		comments, err := b.Comments(t)
@@ -211,7 +229,7 @@ func sayUpdated(f forge.Forge, mr forge.MergeRequest, base, head string, say fun
 			return
 		}
 	}
-	body := fmt.Sprintf("**Brought up to date**: %s merged into its branch by the engine, a merge commit at %s, nothing rewritten; its checks run on it, then the merge policy weighs it again.", base, short(head))
+	body := fmt.Sprintf("**Brought up to date**: %s merged into its branch by the engine, a merge commit at %s, nothing rewritten; %s, then the merge policy weighs it again.", base, short(head), next)
 	if err := f.Sticky(t, body, refusedSticky(0), false); err != nil {
 		say("refusal-unsaid", "warn", "the merge refused before could not be said brought up to date: "+forge.Said(err))
 	}

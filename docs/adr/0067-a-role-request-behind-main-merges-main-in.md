@@ -115,9 +115,13 @@ keep their ids.
   - **Green**: the branch moves to the merge, never forced; the next
     reconcile's line reads it as any new head, then the policy merges
     it. A person's yes stays, as for any clean merge of the engine.
-  - **Red, or not run whole**: nothing moves, nothing merges; said on
-    the request and its issue, the tests named. Not run again until the
-    head or `main` moves.
+  - **Red**: nothing moves, nothing merges; said on the request and its
+    issue, the tests named. Not run again until the head or `main`
+    moves.
+  - **Not run whole** (a timeout, no test command): the same, said so,
+    and tried again at the next `follow`.
+- **A merge of `main` a person made**: the head holds `main`, up to
+  date: not proven here, the line reads it as any person's commit.
 - **The review it needs**: the engine's own clean merge adds no line to
   read, its tree git's merge of its parents (`OwnMerge`). A fix merging
   alone needs the reviewer's verdict on the head it merged into, not on
