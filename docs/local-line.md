@@ -172,6 +172,12 @@ workline issues          # #1 closed, !1 and !2 merged
 - **Into `main` in this clone**: a merge commit naming `!2`; nothing is
   pushed. `main` checked out with uncommitted changes, or a conflict:
   nothing merges, the reason said on `!2` and on its issue.
+- **Behind `main`, which changed one of its files**: no run checks
+  `main` here, so `follow` merges `main` into its branch and runs your
+  `test-command` on that merge. Green: the branch moves there, the next
+  reconcile reviews it, the next `follow` merges it. Red: nothing moves,
+  the test named on `!2` and its issue
+  ([#1370](https://github.com/JN0V/workline/issues/1370)).
 - **A conflict with `main`** names its files: the next reconcile's
   developer round merges `main` in, never a rebase
   ([behind main](../roles/developer/docs/conflict.md)). One that fails

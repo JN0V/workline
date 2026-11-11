@@ -10,6 +10,7 @@ package engine
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -93,12 +94,22 @@ func sayRefused(f forge.Forge, mr forge.MergeRequest, tip, due string, err error
 		issue = fmt.Sprintf("**Its pull request %s is not merged: it conflicts with %s**: its merge was due, %s, but at its head %s, %s and its branch change the same lines%s.\n\n%s\n\n**What a person can do**: bring `%s` up to date with %s, or close %s.",
 			ref, c.Base, due, at, c.Base, where, waits, mr.Branch, c.Base, ref)
 	}
+	var red *redMerged
+	if errors.As(err, &red) {
+		body = fmt.Sprintf("**Not merged: its tests are red with %[1]s merged in**: its merge was due, %[2]s, but %[1]s changed `%[3]s` since its branch left it, and the tests run on %[1]s merged into its head %[4]s: %[5]s.\n\nTwo changes green apart are not green together: nothing is merged, its branch is left as it is. A new head, or %[1]s moving, tries it again.\n\n**What a person can do**: merge %[1]s into `%[6]s` and fix the tests, or close this pull request.",
+			red.Base, due, strings.Join(red.Files, "`, `"), at, red.Proof, mr.Branch)
+		issue = fmt.Sprintf("**Its pull request %[1]s is not merged: its tests are red with %[2]s merged in**: its merge was due, %[3]s, but at its head %[4]s: %[5]s.\n\n**What a person can do**: merge %[2]s into `%[6]s` and fix the tests, or close %[1]s.",
+			ref, red.Base, due, at, red.Proof, mr.Branch)
+	}
 	unsaid := func(err error) {
 		say("refusal-unsaid", "warn", "its refused merge could not be said on it or its issue: "+forge.Said(err))
 	}
 	body = backlog.Inert(body)
 	if c != nil && c.Commit != "" && !c.Failed {
 		body += "\n\n" + developer.ConflictMark(tip, c.Commit) // the merge round's record
+	}
+	if red != nil {
+		body += "\n\n" + redMark(tip, red.BaseTip) // not proven again at this head and base
 	}
 	if err := f.Sticky(forge.Target{Kind: "merge-request", ID: mr.ID}, body, refusedSticky(0), true); err != nil {
 		unsaid(err)

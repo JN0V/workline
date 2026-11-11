@@ -72,6 +72,9 @@ type Settings struct {
 	// Level is its autonomy level, LevelFrom where it comes from
 	// (ADR-0060, §3): what its levels lay is Rounds; its task says both.
 	Level, LevelFrom string
+	// rolesDir: where the tester's role is read for the proof, "" the
+	// one the engine gives a role's run (ProveMerge's, from follow).
+	rolesDir string
 }
 
 // SettingsFrom reads the settings.

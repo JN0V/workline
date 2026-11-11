@@ -81,7 +81,8 @@ merge: {autonomy: normal}   # a project's choice, never a default
   read from the reviewer's record hold it.
 - **A fix, once the reviewer read its head**: the reviewer's summary
   names the pull request's head, read by its lenses, or its record
-  covers a head rebased since; else it waits for the reviewer, 24 h
+  covers a head rebased since, or the engine's own clean merge of the
+  base since; else it waits for the reviewer, 24 h
   after the push where the line runs it, then for a person's yes, said
   on it
   ([ADR-0065](adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence),

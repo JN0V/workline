@@ -34,6 +34,12 @@ force-pushed.
   when the round fails, or the engine brings it up to date.
 - **Clean, held by the forge** (a base that must be up to date): the
   engine merges `main` in alone, no agent, and pushes the merge.
+- **Clean, on the local forge, `main` having changed one of its files**:
+  no check runs on `main` there, so the engine merges `main` in, runs
+  the whole test command on the merge, and moves the branch there only
+  green; the next reconcile reviews it, then it merges. Red: nothing
+  moves, said on the request and its issue
+  ([#1370](https://github.com/JN0V/workline/issues/1370)).
 - **Not yet**: every request behind `main` at each push to `main`.
 
 ## The merge round

@@ -221,7 +221,7 @@ func followSettings(o *engine.FollowOptions) (gone bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	o.IsDoc, o.Release = s.IsDoc, rs.IsBranch
+	o.IsDoc, o.Release, o.RolesDir = s.IsDoc, rs.IsBranch, rolesDir
 	line, err := routing.Load(o.Repo)
 	if err != nil {
 		return false, err

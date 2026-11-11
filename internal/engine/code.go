@@ -157,11 +157,12 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 // a head rebased with no new change, on which the reviewer writes no
 // summary (reviewer.ReviewedAll).
 func unreviewed(repo string, w weighed, d developer.Merge) string {
-	why := d.Unreviewed(w.tip)
+	tip := reviewedTip(repo, w.tip, w.baseTip)
+	why := d.Unreviewed(tip)
 	if why == "" || d.Summary == "" || d.Owed {
 		return why
 	}
-	all, err := reviewer.ReviewedAll(repo, w.baseTip, w.tip, d.Summary)
+	all, err := reviewer.ReviewedAll(repo, w.baseTip, tip, d.Summary)
 	switch {
 	case err != nil:
 		return why + " (what it read could not be compared with the head: " + err.Error() + ")"
@@ -169,6 +170,24 @@ func unreviewed(repo string, w weighed, d developer.Merge) string {
 		return ""
 	}
 	return why
+}
+
+// reviewedTip is the commit of tip a review must read: tip, or, past the
+// engine's own clean merges of the base into it (OwnMerge, ADR-0067),
+// the head they merged into. Such a merge adds no line to read — its
+// tree is git's merge of its parents —, as the line judges it (#1370).
+func reviewedTip(repo, tip, baseTip string) string {
+	for range 10 {
+		if !OwnMerge(repo, tip, baseTip) {
+			break
+		}
+		parent, err := git(repo, nil, "rev-parse", tip+"^1")
+		if err != nil {
+			break
+		}
+		tip = parent
+	}
+	return tip
 }
 
 // pushedAt is when the forge says head was pushed, its last push.
