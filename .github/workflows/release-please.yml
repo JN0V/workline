@@ -15,7 +15,11 @@ on:
   push:
     branches: [main]
 permissions: {}
-concurrency: {group: release-please, cancel-in-progress: false}
+# The group's name changed once: a run of 2026-11-09 (42671557306) stuck in
+# `waiting` on the environment, which no API call cancels, approves nor
+# deletes, held the old name `release-please` and every later run queued
+# behind it. Rename again if a run sticks the same way.
+concurrency: {group: release-please-main, cancel-in-progress: false}
 
 jobs:
   release-please:
