@@ -1,0 +1,34 @@
+case: merge/local-conflict-said-where-read
+about: >
+  With `forge: local` at `normal`, the developer's fix `!2` is green and
+  reviewed, and the policy says yes, but main changed the same lines
+  since its branch left it (#1354). `workline follow` merges nothing and
+  says so where a person reads: on `!2` and on #3, the issue it closes,
+  that it conflicts with main, in which file, that it waits to be
+  brought up to date with main, and what a person can do. No comment
+  says it merged. The reconciler then says #3 waits on that conflict,
+  not on a review.
+given:
+  repo: local-fix
+  config: {forge: local, merge: {autonomy: normal}}
+  setup:
+    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && git commit -qam 'feat: sub'"
+run:
+  sh: >
+    workline follow --base main --verdict .git/verdict.json;
+    workline route reconcile --ai none --input reconcile=list
+expect:
+  exit: 0
+  stderr:
+    - "auto-merge-refused !2"
+    - "it conflicts with main in `lib.sh`"
+    - "waits on its pull request #2, its merge refused at its head"
+    - "it waits to be brought up to date with main"
+  files:
+    lib.sh: {lacks: "mul()"}
+    .git/MERGE_HEAD: {exists: false}
+    .git/workline/merge-requests/2.md:
+      contains: ["state: open", "**Not merged: it conflicts with main**", "`lib.sh`", "brought up to date with main", "**What a person can do**", "<!-- workline:sticky=line/merge-refused -->"]
+      lacks: ["Merged into main in this clone"]
+    .git/workline/issues/3.md:
+      contains: ["state: open", "**Its pull request !2 is not merged: it conflicts with main**", "`lib.sh`", "brought up to date with main", "<!-- workline:sticky=line/merge-refused mr=2 -->"]

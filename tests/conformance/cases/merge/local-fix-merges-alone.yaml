@@ -26,5 +26,5 @@ expect:
   files:
     lib.sh: {contains: "mul()"}
     .git/workline/issues/3.md: {contains: ["state: closed", "Closed by !2, merged into main."], lacks: "workline:developing"}
-    .git/workline/merge-requests/2.md: {contains: ["state: merged", "Merging with no person's yes", "Merged into main in this clone, nothing pushed.", "workline:merge-alone=code"]}
+    .git/workline/merge-requests/2.md: {contains: ["state: merged", "Merging with no person's yes", "It goes into main in this clone, nothing pushed; a merge refused is said on it.", "workline:merge-alone=code"]}
   issues-listed: ["!2    merged"]

@@ -9,11 +9,14 @@ package line
 
 import (
 	"fmt"
+	"os/exec"
 	"slices"
+	"strings"
 	"time"
 
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/developer"
+	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
@@ -64,13 +67,47 @@ func closedByMR(t *tally, id int) (forge.MergeRequest, bool) {
 // its agent failed, its rounds handed off: developer.DraftHolder). A
 // change to the issue's body is the developer's review round's on mr
 // (developer.RoundDue): said by the reconciler when due.
-func mrWaits(res *Result, b forge.Backlog, doing routing.State, is forge.Issue, mr forge.MergeRequest) {
+func mrWaits(res *Result, b forge.Backlog, repo string, doing routing.State, is forge.Issue, mr forge.MergeRequest) {
 	msg := fmt.Sprintf("its claim, %s, waits on its pull request #%d: its review, its checks, then its merge", doing.Label, mr.ID)
+	if r, ok := refusedOn(b, repo, is.ID, mr); ok {
+		// Its merge was due and the forge refused it: said, never a
+		// review it does not wait on (#1354).
+		msg = fmt.Sprintf("its claim, %s, waits on its pull request #%d, its merge refused at its head %s: %s", doing.Label, mr.ID, short(r.Head), r.Said)
+		if r.Conflict != "" {
+			msg += fmt.Sprintf("; it waits to be brought up to date with %s", r.Conflict)
+		}
+	}
 	if mr.Draft {
 		msg = fmt.Sprintf("its claim, %s, waits on its pull request #%d, a Draft: ", doing.Label, mr.ID) + draftHolder(b, mr)
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
 		Message: msg + "; a change to its body is the developer's, at a review round on it"})
+}
+
+// refusedOn is the refused merge of merge request mr that issue id's
+// comments say, false when none does, they cannot be read, or mr's
+// branch is at another head in repo since: the claim then reads as
+// waiting on its review, its checks and its merge. A ready mr only: a
+// Draft's comments are not read.
+func refusedOn(b forge.Backlog, repo string, id int, mr forge.MergeRequest) (engine.Refusal, bool) {
+	if mr.Draft {
+		return engine.Refusal{}, false
+	}
+	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return engine.Refusal{}, false
+	}
+	r, ok := engine.ReadRefusal(comments, mr.ID)
+	if !ok {
+		return r, false
+	}
+	for _, ref := range []string{"refs/remotes/origin/" + mr.Branch, "refs/heads/" + mr.Branch} {
+		out, err := exec.Command("git", "-C", repo, "rev-parse", "-q", "--verify", ref+"^{commit}").Output()
+		if err == nil {
+			return r, strings.TrimSpace(string(out)) == r.Head
+		}
+	}
+	return r, true
 }
 
 // draftHolder says who acts next on mr, the developer's Draft.
@@ -107,7 +144,7 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 		return nil, nil, false, err
 	}
 	if mr, ok := closedByMR(t, is.ID); ok {
-		mrWaits(res, b, doing, is, mr)
+		mrWaits(res, b, t.repo, doing, is, mr)
 		return nil, nil, true, nil
 	}
 	rec, had, _, _, notes, err := readRecordAll(b, is.ID)

@@ -991,7 +991,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 			return e, nil
 		}
 		say("fork-yes", "", fmt.Sprintf("from a fork: the line kept no verdict of its run and read no review of it; %s's yes on its head carries it, its checks all green", by))
-		return armed(m, mr, tip, st, e, say, by, "its checks passed")
+		return armed(f, m, mr, tip, st, e, say, by, "its checks passed")
 	}
 	v, err := verdictOf(m, hand, tip)
 	if err != nil {
@@ -1019,7 +1019,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 			// reviewer could not make whole, never a check (#1107).
 			read := fmt.Sprintf("read whole by @%s (%s)", whole.Author, notWhole)
 			say("review-read-whole", "warn", fmt.Sprintf("its review is not whole, the change too large for the reviewer's parts or its tokens; `%s`: %s, whose reading stands for the reviewer's", whole.Label, read))
-			return armed(m, mr, tip, st, e, say, by, read)
+			return armed(f, m, mr, tip, st, e, say, by, read)
 		}
 		rule := map[string]string{verdictRed: "verdict-red", verdictShort: "review-short"}[v.class]
 		then := "auto-merge stays off"
@@ -1044,7 +1044,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say(rule, "warn", fmt.Sprintf("accepted by %s, but %s; %s", by, v.why, then))
 		return nil, nil
 	}
-	return armed(m, mr, tip, st, e, say, by, "its head's verdict passed")
+	return armed(f, m, mr, tip, st, e, say, by, "its head's verdict passed")
 }
 
 // forkGuarded names the files a fork's change touches, past base, that
@@ -1071,12 +1071,12 @@ func forkGuarded(repo, base, tip string) string {
 
 // armed holds the yes on a head that passed (passed says how), then turns
 // auto-merge on, or merges it now when the forge would.
-func armed(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), by, passed string) (*inLine, error) {
+func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), by, passed string) (*inLine, error) {
 	if err := m.Accept(tip, true, "accepted by "+by+", "+passed); err != nil {
 		return nil, err
 	}
 	if st.AutoMerge {
-		return stalled(m, mr, tip, st, e, say, fmt.Sprintf("accepted by %s, %s", by, passed))
+		return stalled(f, m, mr, tip, st, e, say, fmt.Sprintf("accepted by %s, %s", by, passed))
 	}
 	merged, err := m.AutoMerge(mr, tip, true)
 	switch {
@@ -1084,12 +1084,15 @@ func armed(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeStat
 		return nil, err
 	case err != nil:
 		say("auto-merge-refused", "warn", fmt.Sprintf("accepted by %s, %s, but the forge refused to turn auto-merge on: %s", by, passed, forge.Said(err)))
+		sayRefused(f, mr, tip, "a person's yes on it", err, say)
 		return nil, nil
 	case merged:
 		say("merged-at-once", "", fmt.Sprintf("accepted by %s, %s: merged at once, the forge's rules met already", by, passed))
+		sayUnrefused(f, mr, tip, true, say)
 		return nil, nil
 	}
 	say("auto-merge-on", "", fmt.Sprintf("accepted by %s, %s: auto-merge turned on, the forge merges it once its checks pass", by, passed))
+	sayUnrefused(f, mr, tip, false, say)
 	return e, nil
 }
 
@@ -1099,7 +1102,7 @@ func armed(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeStat
 // a check ending, a push — and never again once it missed one (#993);
 // GitLab's merges once the head's pipeline succeeds, the same now. A merge
 // the forge refuses leaves auto-merge on, for the next run.
-func stalled(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
+func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
 	if !st.Mergeable {
 		return e, heldByConversations(m, mr, tip, st, say, who)
 	}
@@ -1109,9 +1112,11 @@ func stalled(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeSt
 		return nil, err
 	case err != nil:
 		say("merge-refused", "warn", fmt.Sprintf("%s; auto-merge on since %s, the forge's rules met, but it refused to merge it now: %s; auto-merge left on", who, st.AutoMergeAt, forge.Said(err)))
+		sayRefused(f, mr, tip, "its auto-merge on since "+st.AutoMergeAt, err, say)
 		return e, nil
 	case merged:
 		say("merged-at-once", "", fmt.Sprintf("%s; auto-merge on since %s, but the forge had not merged it, its rules met: merged now", who, st.AutoMergeAt))
+		sayUnrefused(f, mr, tip, true, say)
 		return nil, nil
 	}
 	return e, nil

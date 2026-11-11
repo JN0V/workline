@@ -1,0 +1,24 @@
+case: merge/local-conflict-new-head-not-said
+about: >
+  With `forge: local` at `normal`, `!2` conflicts with main and
+  `workline follow` says it on #3 (#1354). A new head is then pushed to
+  its branch: the reconciler no longer says #3 waits on that conflict,
+  which was said of the head before; the comments name that head.
+given:
+  repo: local-fix
+  config: {forge: local, merge: {autonomy: normal}}
+  setup:
+    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && git commit -qam 'feat: sub'"
+run:
+  sh: >
+    workline follow --base main --verdict .git/verdict.json;
+    git checkout -q workline/developer/3 && echo '# mul' >> lib.sh &&
+    git commit -qam 'fix: a note on mul' -m 'Workline-Role: developer' && git checkout -q main &&
+    workline route reconcile --ai none --input reconcile=list
+expect:
+  exit: 0
+  stderr: ["auto-merge-refused !2", "waits on its pull request #2: its review, its checks, then its merge"]
+  stderr-lacks: ["its merge refused at its head"]
+  files:
+    .git/workline/issues/3.md:
+      contains: ["**Its pull request !2 is not merged: it conflicts with main**: its merge was due, with no person's yes, the project's merge policy `normal`, but at its head"]

@@ -265,11 +265,19 @@ func (l *Local) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) {
 	if _, err := git(l.Repo, "merge-base", "--is-ancestor", head, base); err == nil {
 		return true, nil // its base holds it already
 	}
-	out, err := exec.Command("git", "-C", l.Repo, "merge-tree", "--write-tree", "--no-messages", base, head).Output()
+	out, err := exec.Command("git", "-C", l.Repo, "merge-tree", "--write-tree", "--name-only", "--no-messages", base, head).Output()
 	var ee *exec.ExitError
 	switch {
 	case errors.As(err, &ee) && ee.ExitCode() == 1:
-		return refuse("it conflicts with %s: rebase %s on it", it.Base, it.Branch)
+		// The tree, then the files that conflict, one a line.
+		c := &Conflict{Base: it.Base}
+		_, files, _ := strings.Cut(strings.TrimSpace(string(out)), "\n")
+		for f := range strings.Lines(files) {
+			if f = strings.TrimSpace(f); f != "" {
+				c.Files = append(c.Files, f)
+			}
+		}
+		return false, fmt.Errorf("%w: %w", errRefused, c)
 	case err != nil:
 		return false, fmt.Errorf("git merge-tree (2.38 or later): %v", err)
 	}
