@@ -575,6 +575,8 @@ func why(r Refusal) string {
 		return "a link leading out of the worktree: nothing outside the repository is the developer's, so refused and reverted"
 	case "not-text":
 		return "not a text file (a link, a binary, a submodule): the developer writes text files, so refused and reverted; a person must do it"
+	case conflictRule:
+		return "a file not in conflict: a round merging the base in settles its conflicts' markers and changes nothing else (ADR-0067)"
 	case "acceptance-test-edit":
 		return "an acceptance test the tester froze: read-only to the developer, which objects to it on its line instead; the tester keeps or rewrites it (ADR-0055)"
 	}

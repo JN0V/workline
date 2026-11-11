@@ -1512,8 +1512,9 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			return err
 		}
 	}
-	if ownBranch && len(st.Written) > 0 && !st.Pushed {
-		if err := commitOnOwnBranch(f, st, ownMessage); err != nil {
+	merge := ownMerge(runDir)
+	if ownBranch && (len(st.Written) > 0 || merge != nil) && !st.Pushed {
+		if err := commitOnOwnBranch(f, st, ownMessage, merge); err != nil {
 			if errors.Is(err, forge.ErrUnreachable) {
 				res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while pushing to the role's branch; resume with: workline apply %s", runDir)
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
@@ -1728,6 +1729,20 @@ func ownPush(runDir string) string {
 	return strings.TrimSpace(mr.Push)
 }
 
+// baseMerge is a merge of the base the role asks committed on its own
+// branch (ADR-0067): the base's commit merged in, and the tree the merge
+// settled, its conflicts' markers gone.
+type baseMerge struct{ Base, Tree string }
+
+// ownMerge is out/merge-request.yaml's `merge:` and `tree:`, nil none.
+func ownMerge(runDir string) *baseMerge {
+	var mr struct{ Merge, Tree string }
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err != nil || yaml.Unmarshal(data, &mr) != nil || mr.Merge == "" || mr.Tree == "" {
+		return nil
+	}
+	return &baseMerge{Base: mr.Merge, Tree: mr.Tree}
+}
+
 // ownReady says the role asks its own Draft, the merge request it
 // targets, marked ready for review: out/merge-request.yaml's `ready:
 // true` (the developer's, #969).
@@ -1764,8 +1779,10 @@ func markOwnReady(f forge.Forge, st runState) error {
 // branch, the role's own (workline/<role>/…, in this repository), on top
 // of what others pushed, and pushes it without force: the working tree
 // must be at that branch's tip, else nothing is committed. Another's
-// branch is never written to (ADR-0051).
-func commitOnOwnBranch(f forge.Forge, st runState, message string) error {
+// branch is never written to (ADR-0051). A merge of the base (ADR-0067)
+// is committed whole, its tree the role's, its parents the tip and the
+// base's commit, never a rewrite; the working tree moved to it.
+func commitOnOwnBranch(f forge.Forge, st runState, message string, merge *baseMerge) error {
 	mr, err := f.MergeRequest(st.Target.ID)
 	if err != nil {
 		return err
@@ -1791,15 +1808,12 @@ func commitOnOwnBranch(f forge.Forge, st runState, message string) error {
 	if strings.TrimSpace(tip) != strings.TrimSpace(head) {
 		return fmt.Errorf("the working tree is at %s, not at %s's tip %s: check the branch out first; nothing is committed", short(head), mr.Branch, short(tip))
 	}
-	steps := [][]string{
-		append([]string{"add", "--"}, st.Written...),
-		{"commit", "-q", "-m", message, "-m", st.trailers()},
-	}
-	for _, s := range steps {
-		if _, err := git(st.Repo, nil, s...); err != nil {
-			_, _ = git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
+	if merge != nil {
+		if err := commitMerge(f, st, mr, message, *merge); err != nil {
 			return err
 		}
+	} else if err := commitWritten(st, message); err != nil {
+		return err
 	}
 	if forge.KeepsBranches(f) {
 		if on, _ := git(st.Repo, nil, "symbolic-ref", "-q", "--short", "HEAD"); strings.TrimSpace(on) == mr.Branch {
@@ -1810,6 +1824,54 @@ func commitOnOwnBranch(f forge.Forge, st runState, message string) error {
 	}
 	if _, err := git(st.Repo, nil, "push", "-q", "origin", "HEAD:refs/heads/"+mr.Branch); err != nil {
 		return fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+	}
+	return nil
+}
+
+// commitMerge commits the role's merge of the base on HEAD: the base's
+// commit in its base branch's history, never another branch's, nothing
+// written by a patch beside it. The working tree moves to it as a
+// fast-forward would: git refuses it whole, or makes it whole.
+func commitMerge(f forge.Forge, st runState, mr forge.MergeRequest, message string, m baseMerge) error {
+	if len(st.Written) > 0 {
+		return errors.New("a merge of the base is committed alone: patches beside it are not")
+	}
+	baseRef := "refs/heads/" + mr.Base
+	if !forge.KeepsBranches(f) {
+		if _, err := git(st.Repo, nil, "fetch", "-q", "origin", mr.Base); err != nil {
+			return fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+		}
+		baseRef = "FETCH_HEAD"
+	}
+	if !isAncestor(st.Repo, m.Base, baseRef) {
+		return fmt.Errorf("%s is not in %s's history: only the base is merged in", short(m.Base), mr.Base)
+	}
+	if kind, err := git(st.Repo, nil, "cat-file", "-t", m.Tree); err != nil || strings.TrimSpace(kind) != "tree" {
+		return fmt.Errorf("the merge's tree %s is not in this clone", short(m.Tree))
+	}
+	args := []string{"commit-tree", m.Tree, "-p", "HEAD", "-p", m.Base, "-F", "-"}
+	if signed, _ := git(st.Repo, nil, "config", "--bool", "--get", "commit.gpgsign"); strings.TrimSpace(signed) == "true" {
+		args = append(args, "-S") // as `git commit` signs
+	}
+	commit, err := git(st.Repo, strings.NewReader(message+"\n\n"+st.trailers()+"\n"), args...)
+	if err != nil {
+		return err
+	}
+	_, err = git(st.Repo, nil, "merge", "--ff-only", "-q", strings.TrimSpace(commit))
+	return err
+}
+
+// commitWritten commits what the patches wrote on HEAD.
+func commitWritten(st runState, message string) error {
+	steps := [][]string{
+		append([]string{"add", "--"}, st.Written...),
+		{"commit", "-q", "-m", message, "-m", st.trailers()},
+	}
+	for _, s := range steps {
+		if _, err := git(st.Repo, nil, s...); err != nil {
+			_, _ = git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
+			return err
+		}
 	}
 	return nil
 }

@@ -345,6 +345,15 @@ hold:
   tried on the sandbox
   ([#883](https://github.com/JN0V/workline/pull/883#tried)), a feature
   merged alone not.
+- **Behind main** ([#1353](https://github.com/JN0V/workline/issues/1353),
+  [ADR-0067](../../../docs/adr/0067-a-role-request-behind-main-merges-main-in.md)):
+  its merge refused for a conflict, one round merges `main` in, the
+  markers settled, the engine's two-parent commit pushed with no force;
+  clean and held by the forge, the engine merges it in alone. Cases
+  `merge/local-conflict-merged-in-by-a-round`,
+  `merge/behind-held-merged-in-clean`,
+  `merge-round-dropping-main-not-pushed`,
+  `merge-round-markers-left-stops`. Tried: its pull request's `## Tried`.
 
 ## Measured
 

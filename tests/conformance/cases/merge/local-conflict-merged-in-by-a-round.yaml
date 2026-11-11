@@ -1,0 +1,46 @@
+case: merge/local-conflict-merged-in-by-a-round
+about: >
+  A role request behind main, in conflict with it, is brought up to date
+  by a merge, never a rebase (ADR-0067, #1353). `!2`, the developer's
+  fix for bug #3, adds mul() after add() in lib.sh; main meanwhile added
+  sub() there, its test, and NOTES.md. `workline follow` would merge
+  `!2` by the policy, but git's merge of main meets a conflict in
+  lib.sh: not merged, said on `!2` with its record. The reconciler then
+  runs the developer's merge round: its agent's worktree holds the merge
+  with the markers, it keeps both functions, and the engine commits the
+  merge, two parents, the branch's head first, main second. main's own
+  changes are in it, the tests green on it; nothing is rewritten.
+given:
+  repo: local-fix
+  setup:
+    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && printf '. ./lib.sh\\n[ \"$(sub 5 3)\" = 2 ]\\n' > tests/test_sub.sh && echo notes > NOTES.md && git add lib.sh NOTES.md tests/test_sub.sh && git commit -qm 'feat: sub'"
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [developer]}}
+run:
+  sh: >
+    workline follow --base main --verdict .git/verdict.json &&
+    workline route reconcile --ai "cmd:sh $FIXTURES/agents/developer-settles-conflict.sh" &&
+    git rev-list --parents -n 1 workline/developer/3 | wc -w &&
+    git merge-base --is-ancestor main workline/developer/3 && echo main-in &&
+    git merge-base --is-ancestor 9f34177 workline/developer/3 && echo head-kept &&
+    git rev-parse --abbrev-ref HEAD
+expect:
+  exit: 0
+  stderr:
+    - "merge-conflict !2 (warn): it conflicts with main in lib.sh: not merged; the developer's next round merges main in and settles it"
+    - "1 review round due, run: merge request 2"
+    - "proof-green merge request 2: 4 tests passed"
+  stderr-lacks: ["merged-at-once", "Merged into main in this clone"]
+  stdout: ["3\nmain-in\nhead-kept\nmain\n"]
+  branches:
+    workline/developer/3:
+      lib.sh: "sub() { echo $(($1 - $2)); }\nmul() { echo $(($1 * $2)); }"
+      NOTES.md: "notes"
+      tests/test_sub.sh: "sub 5 3"
+  files:
+    .git/workline/merge-requests/2.md:
+      contains: ["**Conflicts with main**", "workline:conflict head=", "main merged in, its conflicts settled (`lib.sh`), the tests green", "\"merge\":\"settled\""]
+      lacks: ["<<<<<<<", "Merging with no person's yes"]

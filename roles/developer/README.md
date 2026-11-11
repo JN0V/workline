@@ -59,6 +59,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   failed on the base showed it; a feature waits for a person's yes. The
   issue's labels tell which, never the
   agent ([the merge](docs/merge.md)).
+- **Behind main, in conflict**: one round merges `main` in, settling
+  the markers only; never a rebase ([behind main](docs/conflict.md)).
 - **With no agent**: names the issue it would take; claims nothing.
 
 **Measured** on planted issues and a copy of a real repository:
