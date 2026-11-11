@@ -1,0 +1,39 @@
+case: merge/local-route-says-its-block-on-the-request
+about: >
+  With `forge: local`, no job's check shows the line's verdict on the
+  merge request. The merge-request line blocks `!1` (the committer
+  refuses its commit): the request says the line blocks its head, which
+  step, its findings and what a person can do (#1327). A person's yes
+  on it then: `workline follow`'s text says why it does not merge.
+given:
+  repo: basic
+  setup:
+    - "git checkout -qb workline/developer/1 && echo one > one.txt && git add one.txt && git commit -qm 'fix: write the first file of the series, the one the rest of the work depends on'"
+    - |
+      mkdir -p .git/workline/merge-requests && cat > .git/workline/merge-requests/1.md <<'MR'
+      ---
+      title: "fix: write one"
+      state: open
+      labels: []
+      branch: workline/developer/1
+      base: main
+      ---
+
+      Closes #1
+      MR
+  config:
+    forge: local
+    merge: {autonomy: cautious}
+    routing: {events: {merge-request: [committer]}}
+run:
+  sh: >
+    workline route merge-request --target merge-request:1 --ai none;
+    workline issues label '!1' --add workline:accepted &&
+    git checkout -q main && workline follow --base main
+expect:
+  exit: 0
+  stderr: ["verdict-red", "the line's verdict on its head is block (committer block)"]
+  files:
+    .git/workline/merge-requests/1.md:
+      contains: ["**The line blocks this head**", "- **committer**: block", "  - `subject-length`", "**What a person can do**", "<!-- workline:line-verdict -->"]
+    one.txt: {exists: false}

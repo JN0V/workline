@@ -1480,7 +1480,7 @@ func routeCmd(args []string) int {
 	} else if event == "merge-request" && t != nil && t.Kind == "merge-request" && !*dryRun && !*gatesOnly && inputs[line.WarnInput] != line.WarnOnly {
 		// Keeping it is a side act: a failure is said, the run's status
 		// stays the line's.
-		said, err := keepLocalVerdict(abs, spec, inputs["range"], res)
+		said, err := keepLocalVerdict(abs, spec, inputs["range"], t.ID, res)
 		switch {
 		case err != nil:
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "verdict-not-kept", Level: "warn", Where: fmt.Sprintf("!%d", t.ID),
@@ -1576,7 +1576,9 @@ func writeVerdict(repo, file, rng string, res *line.Result) error {
 // merge policy (#1322): no job between them to hand a file over. Another
 // forge, a project with no merge policy, or CI — whose clone is thrown
 // away — keeps nothing, and the route goes on as before.
-func keepLocalVerdict(repo, spec, rng string, res *line.Result) (string, error) {
+// The verdict is said on the merge request too: no job's check shows it
+// there (#1327).
+func keepLocalVerdict(repo, spec, rng string, id int, res *line.Result) (string, error) {
 	if spec != "local" || forge.InCI() != "" {
 		return "", nil
 	}
@@ -1596,7 +1598,14 @@ func keepLocalVerdict(repo, spec, rng string, res *line.Result) (string, error) 
 		return "", err
 	}
 	kept, err := engine.KeepVerdict(m, v)
-	return kept.Message, err
+	if err != nil {
+		return "", err
+	}
+	if err := engine.SayVerdict(f, id, v); err != nil {
+		// Kept all the same: only the comment failed.
+		return kept.Message + "; not said on the merge request: " + err.Error(), nil
+	}
+	return kept.Message, nil
 }
 
 // headVerdict is the line's verdict on the head it judged.
@@ -1614,7 +1623,16 @@ func headVerdict(repo, rng string, res *line.Result) (engine.HeadVerdict, error)
 	} // a full id not fetched here: the source head of a merge result
 	v := engine.HeadVerdict{Head: head, Status: res.Status, Findings: res.Findings}
 	for _, s := range res.Steps {
-		v.Steps = append(v.Steps, engine.StepStatus{Name: s.Name, Status: s.Status})
+		st := engine.StepStatus{Name: s.Name, Status: s.Status}
+		if s.Status != verdict.Pass {
+			switch {
+			case s.Result != nil:
+				st.Findings = engine.Blocking(s.Result.Findings)
+			case s.Gate != nil:
+				st.Findings = engine.Blocking(s.Gate.Findings)
+			}
+		}
+		v.Steps = append(v.Steps, st)
 	}
 	return v, nil
 }

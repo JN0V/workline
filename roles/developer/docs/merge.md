@@ -77,7 +77,12 @@ a feature or a task merges too, and the yes moves to the milestone's
     [ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus));
   - past it, or with no reviewer in the line: it waits for a person's
     yes, said on it (`merge-waits=unreviewed`), the comment edited at
-    each head: a team merges no change nobody read.
+    each head: a team merges no change nobody read. A forge that keeps
+    no push time (the local one) never has the delay said past;
+  - the line's verdict on the head red (a role before the reviewer
+    blocked): `verdict-red`, never "no review", and a person's yes does
+    not lift it
+    ([#1327](https://github.com/JN0V/workline/issues/1327)).
 - **A fix, its bug reproduced first**
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
   - its record names the tester's Draft its code started from, and
