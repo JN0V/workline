@@ -86,7 +86,9 @@ is on each issue; you answer there
   "left to a person" in the summary, and said in its own comment on the
   issue: who wrote, why it stops, what comes next.
 - **Who counts**: the reporter and the project's people; their comment
-  on any issue is read first. A bot's, a stranger's or a "+1" comment
+  on any issue is read first; on one in refine, an answer to the
+  reviewer's question too, its next run woken for it, what it settles
+  written into the Scope. A bot's, a stranger's or a "+1" comment
   never brings an issue back.
 - Accepting many issues from the list is quick: read what you accept.
 - **The same label on a pull request** is a yes to merge it, where the

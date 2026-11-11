@@ -111,6 +111,10 @@ workline issues label 1 --add workline:accepted   # yes: it moves the issue on a
 workline issues comment 1 --body "Refuse inf too."  # it revises what it proposes
 ```
 
+A comment answers the reviewer's questions on the spec the same way:
+the product owner reads it at its next run and writes what it settles
+into the Scope.
+
 Its comment on the issue lists every answer
 ([its run](../roles/product-owner/docs/run.md)).
 

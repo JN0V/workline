@@ -339,7 +339,10 @@ the issue.
 
 **A person's comment on any other issue** — one with nothing proposed
 waiting — is their word: the task says so, and it is read first. Do
-what it asks or allows.
+what it asks or allows. What it settles that the body leaves open — a
+value, a bound, a choice, an answer to the reviewer's question —, write
+into the Scope with a `refine`, its whole new text: the tester and the
+developer build from the body, never from the comments.
 
 **An issue brought back by a comment** (the task says who, when, and
 quotes it): treat it as any issue at your level — complete what it

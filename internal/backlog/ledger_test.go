@@ -40,7 +40,9 @@ func TestInert(t *testing.T) {
 }
 
 // Only the reporter's and the project's people's comments count; a bot's,
-// a stranger's, an unnamed author's, the engine's, a bare "+1" do not.
+// a stranger's, an unnamed author's, the engine's, a bare "+1" do not. An
+// unnamed author the forge says is of the project counts: the local
+// forge's person (#1331).
 func TestCounted(t *testing.T) {
 	is := forge.Issue{Author: "zed"}
 	notes := []forge.Note{
@@ -52,12 +54,13 @@ func TestCounted(t *testing.T) {
 		{Body: "+1", Author: "ann", Insider: true},
 		{Body: " 👍 ", Author: "zed"},
 		{Body: "Who?"},
+		{Body: "Here, in the clone.", Insider: true},
 	}
 	var got []string
 	for _, n := range Counted(notes, is) {
 		got = append(got, n.Body)
 	}
-	if !slices.Equal(got, []string{"Mine.", "Ours."}) {
+	if !slices.Equal(got, []string{"Mine.", "Ours.", "Here, in the clone."}) {
 		t.Errorf("counted %q", got)
 	}
 }

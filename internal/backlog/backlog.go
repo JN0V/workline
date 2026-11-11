@@ -2296,6 +2296,16 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					}
 				}
 			}
+			if p.ledger != nil && len(Unheard(st, p.ledger.Notes[c.Issue], is)) > 0 && !c.ToReporter {
+				// A person's comment it reads now, an answer to the
+				// reviewer's question among them (#1331): what it settles
+				// goes into the Scope, the role's at every level
+				// (ADR-0060): the tester and the developer build from the
+				// body, never from its comments.
+				if s := work.ByMeaning(is.Body)[work.Scope].Heading; s != "" && !slices.Contains(c.Revise, s) {
+					c.Revise = append(c.Revise, s)
+				}
+			}
 			if (slices.Contains(is.Labels, LabelBlocked) || slices.Contains(is.Labels, LabelToRefine)) && len(ScopeAsked(comments)) > 0 && !c.ToReporter {
 				// The developer blocked it, or sent it back to refine, to
 				// ask for files outside its Scope (#921, ADR-0063 §9): the

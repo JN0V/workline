@@ -371,9 +371,12 @@ func Pre(runDir, repo string) int {
 					"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
 			}
 		} else if r, cleared := backlog.SpecCleared(is, comments); found && err == nil && cfg.SpecReview && cleared &&
-			!backlog.Readied(is) && !noTestStands && len(backlog.NotReady(is, st, false)) == 0 && len(backlog.SplitInto(is, st)) == 0 {
+			!backlog.Readied(is) && !noTestStands && len(backlog.NotReady(is, st, false)) == 0 && len(backlog.SplitInto(is, st)) == 0 &&
+			len(backlog.Unheard(st, notes, is)) == 0 {
 			// Never a split parent, read for its parts (#1208): its parts
-			// are what is built, a review before its split no ready.
+			// are what is built, a review before its split no ready. Nor
+			// one holding a person's comment not read yet (#1331): the
+			// agent writes what it settles first.
 			// The reviewer read its spec as it is and found no important
 			// finding open: the hold lifts, and the engine moves it to
 			// ready, with no agent (#128).
@@ -938,7 +941,7 @@ func Pre(runDir, repo string) int {
 			if a := answers[d.is.ID]; a != nil {
 				review += revise(d.is, d.st, a, revisions)
 			} else if hn, ok := heard[d.is.ID]; ok {
-				review += commented(hn, d.is, d.st)
+				review += commented(hn, d.is, d.st, d.notes)
 			}
 			// The issues it cites, open or closed: a closed one is history,
 			// never work to come.
@@ -1267,9 +1270,26 @@ func revise(is forge.Issue, st *backlog.State, a *backlog.Answer, max int) strin
 // words —, and read as any issue at the role's level unless the comment
 // says otherwise. One whose body changed since it was set aside is back
 // for that change, not the comment: the plain wording.
-func commented(n forge.Note, is forge.Issue, st *backlog.State) string {
+func commented(n forge.Note, is forge.Issue, st *backlog.State, notes []forge.Note) string {
 	if st.Aside == "" || st.Aside != backlog.BodyDigest(is.Body) {
-		return fmt.Sprintf("A person commented since you last read it (@%s, the last comments below): read their word first — what it says decides.\n", n.Author)
+		// The comments it has not read, quoted (#1331): left among the
+		// issue's comments below, an answer was taken as settled already.
+		fresh := backlog.Unheard(st, notes, is)
+		if len(fresh) == 0 {
+			fresh = []forge.Note{n}
+		}
+		by := ""
+		if n.Author != "" {
+			by = " (@" + n.Author + ")"
+		}
+		var b strings.Builder
+		fmt.Fprintf(&b, "A person commented since you last read it%s: read their word first — what it says decides. "+
+			"What it settles that the body leaves open — a value, a bound, a choice, an answer to the reviewer's question — goes into the %s with a `refine`, its whole new text: the tester and the developer build from the body, never from its comments. Not read before:\n",
+			by, work.Name(work.Scope))
+		for _, f := range fresh {
+			fmt.Fprintf(&b, "> %s\n\n", strings.ReplaceAll(clip(marker.ReplaceAllString(f.Body, ""), quoteMax), "\n", "\n> "))
+		}
+		return b.String()
 	}
 	on := ""
 	if len(n.Created) >= len("2006-01-02") {

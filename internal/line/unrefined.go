@@ -72,6 +72,19 @@ func unreadBody(notes []forge.Note) bool {
 	return !found || st.Judged == "" && st.Body == ""
 }
 
+// commentsUnheard is how many of a person's comments issue is holds
+// (backlog.Counted), and whether the product owner's state says it has
+// not read them all (#1331): an answer to the reviewer's question, or to
+// its own. No state: none unheard, its first read due anyway.
+func commentsUnheard(is forge.Issue, notes []forge.Note) (int, bool) {
+	counted := len(backlog.Counted(notes, is))
+	st, found, err := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
+	if !found || err != nil {
+		return counted, false
+	}
+	return counted, backlog.Heard(st, counted) < counted
+}
+
 // noTestUnsettled says whether the product owner left an issue in refine
 // for a person after the tester's "no test possible" (#1053): its word
 // on it says so, and that "no test possible" still stands on its text,

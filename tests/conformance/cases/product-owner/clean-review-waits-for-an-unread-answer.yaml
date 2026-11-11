@@ -1,0 +1,41 @@
+case: product-owner/clean-review-waits-for-an-unread-answer
+about: >
+  A clean spec review moves an issue to ready with no agent (#128), but
+  not while it holds a person's comment the product owner has not read
+  (#1331): an answer to the reviewer's question is written into the
+  spec first. #9 holds Ann's answer, unread, and stays in refine with no
+  agent; #10, its review as clean and no comment unread, moves.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner, reviewer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Sales counted"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b99f0b294f8c\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n**Questions for a person**\n\n- `#9:3` (ambiguous): Does a refunded sale count?\n\n<!-- workline:spec-review body=b99f0b294f8c round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - {body: "On the reviewer's question: a refunded sale does not count.", author: ann, insider: true}
+      - id: 10
+        title: "Sales counted twice"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts a sale once.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b512289d60a0\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=b512289d60a0 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine]
+      - id: 10
+        labels: [workline:ready]

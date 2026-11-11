@@ -82,14 +82,16 @@ var plusOne = regexp.MustCompile(`^(?:[+-]1|:[+-]1:|:thumbsup:|:thumbsdown:|👍
 
 // Counted are an issue's comments that count (ADR-0038): its reporter's
 // and the project's people's — never a bot's, an outsider's, an author
-// the forge does not name, the engine's own, nor a bare "+1".
+// the forge neither names nor says is of the project, the engine's own,
+// nor a bare "+1". The local forge names no author: whoever writes in
+// the clone is of the project (#1331).
 func Counted(notes []forge.Note, is forge.Issue) []forge.Note {
 	var out []forge.Note
 	for _, n := range notes {
 		if _, engine := EngineMarker(n.Body); engine || strings.Contains(n.Body, "<!-- workline:") {
 			continue
 		}
-		if n.Bot || n.Author == "" || (n.Author != is.Author && !n.Insider) || plusOne.MatchString(strings.TrimSpace(n.Body)) {
+		if n.Bot || n.Author == "" && !n.Insider || (n.Author != is.Author && !n.Insider) || plusOne.MatchString(strings.TrimSpace(n.Body)) {
 			continue
 		}
 		out = append(out, n)
