@@ -17,8 +17,7 @@ import (
 type Own struct {
 	logins []string // its logins
 	app    string   // GitHub: the App's id, as a comment names the App that wrote it
-	all    bool     // every comment: the local forge's, kept in the clone, the person's own
-	said   bool     // the comments the forge says are its own (Note.Own): a command's
+	said   bool     // the comments the forge says are its own (Note.Own): a command's, the local forge's
 	// unsigned: a comment whose author is not given, the simulated
 	// forge's body alone, is its own; never on a real forge, which names
 	// every comment's author.
@@ -29,8 +28,6 @@ type Own struct {
 // Wrote says whether workline's own account wrote n.
 func (o Own) Wrote(n Note) bool {
 	switch {
-	case o.all:
-		return true
 	case o.said:
 		return n.Own
 	case o.app != "" && n.App == o.app:
@@ -279,9 +276,12 @@ func (f *Fake) own() (Own, error) {
 	return Own{logins: []string{fakeBot}, unsigned: true, name: fakeBot, app: strings.TrimSpace(os.Getenv("WORKLINE_APP_ID"))}, nil
 }
 
-// own: the local forge keeps no author: every comment in the clone is
-// the person's, workline's on their behalf.
-func (l *Local) own() (Own, error) { return Own{all: true, name: "this clone's"}, nil }
+// own: the local forge keeps no author: workline's comments are those
+// carrying its mark (Notes), the others the person's, which a role reads
+// as a person's (#1324).
+func (l *Local) own() (Own, error) {
+	return Own{said: true, name: "this clone's comments carrying workline's mark"}, nil
+}
 
 // own: the comments the command says workline's own account wrote
 // (`own`, docs/spec/forge-command.md).
