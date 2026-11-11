@@ -67,7 +67,10 @@ flowchart LR
   - **A record with no class, failed, on the red run** is kept marked
     `errored`: maybe the runner's record of a file it could not collect
     (pytest's collection error), not a test case. Gone on the code, it
-    goes to the judge too.
+    goes to the judge too. So is one red by an error, its name in none
+    of the tester's files, alone in its suite; beside the suite's
+    tests, it is not frozen at all
+    ([#1325](https://github.com/JN0V/workline/issues/1325)).
   - **Not found by that name, while the head has other new tests**: the
     match is a guess, so the judge decides
     ([rule A](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-a-a-guess-may-only-pass)).

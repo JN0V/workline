@@ -1,0 +1,28 @@
+case: tester/write-suite-record-not-frozen
+about: >
+  The tester writes two tests; on the base the runner writes, beside
+  them, its record of the suite that failed: red by an error, a name no
+  test file holds (PlatformIO's `native:<suite>`). Only the tests
+  written in the tester's files are frozen: a green run never writes
+  the record, so freezing it would block every fix (#1325).
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}; s=$?; if [ $s -ne 0 ]; then sed -i 's|</testsuite>|<testcase classname=\"tests\" name=\"native:tests\"><error message=\"Program errored with 1 code\"/></testcase></testsuite>|' {report}; fi; exit $s"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: suite-record, level: info, where: junit.xml}]
+  forge:
+    merge-requests:
+      - id: 1
+        comment-contains: ['"tests":["tests.test_mul_by_zero","tests.test_mul_two_by_three"],"scenarios"']
