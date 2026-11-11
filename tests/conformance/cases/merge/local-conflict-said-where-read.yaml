@@ -31,4 +31,4 @@ expect:
       contains: ["state: open", "**Not merged: it conflicts with main**", "`lib.sh`", "brought up to date with main", "**What a person can do**", "<!-- workline:sticky=line/merge-refused -->"]
       lacks: ["Merged into main in this clone"]
     .git/workline/issues/3.md:
-      contains: ["state: open", "**Its pull request !2 is not merged: it conflicts with main**", "`lib.sh`", "brought up to date with main", "<!-- workline:sticky=line/merge-refused -->"]
+      contains: ["state: open", "**Its pull request !2 is not merged: it conflicts with main**", "`lib.sh`", "brought up to date with main", "<!-- workline:sticky=line/merge-refused mr=2 -->"]

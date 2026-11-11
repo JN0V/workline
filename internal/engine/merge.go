@@ -1076,7 +1076,7 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 		return nil, err
 	}
 	if st.AutoMerge {
-		return stalled(m, mr, tip, st, e, say, fmt.Sprintf("accepted by %s, %s", by, passed))
+		return stalled(f, m, mr, tip, st, e, say, fmt.Sprintf("accepted by %s, %s", by, passed))
 	}
 	merged, err := m.AutoMerge(mr, tip, true)
 	switch {
@@ -1084,13 +1084,16 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 		return nil, err
 	case err != nil:
 		say("auto-merge-refused", "warn", fmt.Sprintf("accepted by %s, %s, but the forge refused to turn auto-merge on: %s", by, passed, forge.Said(err)))
-		return nil, sayRefused(f, mr, tip, "a person's yes on it", err)
+		sayRefused(f, mr, tip, "a person's yes on it", err, say)
+		return nil, nil
 	case merged:
 		say("merged-at-once", "", fmt.Sprintf("accepted by %s, %s: merged at once, the forge's rules met already", by, passed))
-		return nil, sayUnrefused(f, mr, tip, true)
+		sayUnrefused(f, mr, tip, true, say)
+		return nil, nil
 	}
 	say("auto-merge-on", "", fmt.Sprintf("accepted by %s, %s: auto-merge turned on, the forge merges it once its checks pass", by, passed))
-	return e, sayUnrefused(f, mr, tip, false)
+	sayUnrefused(f, mr, tip, false, say)
+	return e, nil
 }
 
 // stalled weighs a merge request the policy merges whose auto-merge is on
@@ -1099,7 +1102,7 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 // a check ending, a push — and never again once it missed one (#993);
 // GitLab's merges once the head's pipeline succeeds, the same now. A merge
 // the forge refuses leaves auto-merge on, for the next run.
-func stalled(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
+func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
 	if !st.Mergeable {
 		return e, heldByConversations(m, mr, tip, st, say, who)
 	}
@@ -1109,9 +1112,11 @@ func stalled(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeSt
 		return nil, err
 	case err != nil:
 		say("merge-refused", "warn", fmt.Sprintf("%s; auto-merge on since %s, the forge's rules met, but it refused to merge it now: %s; auto-merge left on", who, st.AutoMergeAt, forge.Said(err)))
+		sayRefused(f, mr, tip, "its auto-merge on since "+st.AutoMergeAt, err, say)
 		return e, nil
 	case merged:
 		say("merged-at-once", "", fmt.Sprintf("%s; auto-merge on since %s, but the forge had not merged it, its rules met: merged now", who, st.AutoMergeAt))
+		sayUnrefused(f, mr, tip, true, say)
 		return nil, nil
 	}
 	return e, nil

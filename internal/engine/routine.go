@@ -438,7 +438,7 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 		return nil, err
 	}
 	if st.AutoMerge {
-		return stalled(m, mr, tip, st, e, w.say, "with no person's yes, "+why)
+		return stalled(f, m, mr, tip, st, e, w.say, "with no person's yes, "+why)
 	}
 	// The record, where a person sees it and the engine finds it again
 	// when a revert names this merge request.
@@ -467,13 +467,16 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 		return nil, err
 	case err != nil:
 		w.say("auto-merge-refused", "warn", fmt.Sprintf("workline's own %s, its head's verdict passed, but the forge refused to turn auto-merge on: %s", kind, forge.Said(err)))
-		return nil, sayRefused(f, mr, tip, "with no person's yes, the project's merge policy `"+o.Merge+"`", err)
+		sayRefused(f, mr, tip, "with no person's yes, the project's merge policy `"+o.Merge+"`", err, w.say)
+		return nil, nil
 	case merged:
 		w.say("merged-at-once", "", fmt.Sprintf("with no person's yes, %s: merged at once, the forge's rules met already", why))
-		return nil, sayUnrefused(f, mr, tip, true)
+		sayUnrefused(f, mr, tip, true, w.say)
+		return nil, nil
 	}
 	w.say("auto-merge-on", "", fmt.Sprintf("with no person's yes, %s: auto-merge turned on, the forge merges it once its checks pass", why))
-	return e, sayUnrefused(f, mr, tip, false)
+	sayUnrefused(f, mr, tip, false, w.say)
+	return e, nil
 }
 
 // ownNote finds, among a merge request's comments, the one the App wrote

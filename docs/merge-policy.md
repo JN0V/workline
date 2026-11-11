@@ -238,7 +238,8 @@ the candidate's issue, ships the version:
 | `merge-unguarded`, `merge-token`, `merge-unsupported` | a base, a token or a forge it cannot act with |
 | `checks-unread` | its head's checks could not be read: only the line's verdict counts |
 | `merge-state-unread`, `verdict-unread` | its state or its head's verdict could not be read: left as it is |
-| `auto-merge-refused`, `label-not-made` | the forge refused to turn auto-merge on, or to make the label; a refusal is said on the request and its issue, a conflict's files named ([#1354](https://github.com/JN0V/workline/issues/1354)) |
+| `auto-merge-refused`, `label-not-made` | the forge refused to turn auto-merge on, or to make the label |
+| `refusal-unsaid` | a refused merge, said on the request and its issue (a conflict's files named, [#1354](https://github.com/JN0V/workline/issues/1354)), could not be written there |
 
 ## A red main
 
