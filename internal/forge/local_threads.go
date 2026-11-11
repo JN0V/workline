@@ -37,8 +37,14 @@ func (l *Local) Review(id int, head, body string, comments []LineComment) (Revie
 			}) {
 				p.State = LineOpen
 			} else {
-				it.Comments = append(it.Comments, fmt.Sprintf("%s%s%s:%d`_\n\n<!-- workline:on-line key=%s path=%s line=%d -->",
-					strings.TrimSpace(c.Body), localWhere, c.Path, c.Line, c.Key, c.Path, c.Line))
+				// Its key's mark as on a forge (withKey), read back by the
+				// reviewer resolving or weighing its own, after the place.
+				key := ""
+				if c.Key != "" {
+					key = "\n" + lineMarker(c.Key)
+				}
+				it.Comments = append(it.Comments, fmt.Sprintf("%s%s%s:%d`_\n\n<!-- workline:on-line key=%s path=%s line=%d -->%s",
+					strings.TrimSpace(c.Body), localWhere, c.Path, c.Line, c.Key, c.Path, c.Line, key))
 			}
 			r.Placed = append(r.Placed, p)
 		}
@@ -60,7 +66,11 @@ func (l *Local) Threads(id int) ([]Thread, error) {
 		if m := localLine.FindStringSubmatch(n.Body); m != nil {
 			line, _ := strconv.Atoi(m[3])
 			first := n
-			first.Body, _, _ = strings.Cut(n.Body, localWhere)
+			body, rest, _ := strings.Cut(n.Body, localWhere)
+			first.Body = body
+			if k := lineKey.FindString(rest); k != "" {
+				first.Body += "\n\n" + k // its key, as a forge's comment holds it
+			}
 			tid := strconv.Itoa(i + 1)
 			at[tid] = len(out)
 			// Where a person reads it: the merge request's file in the clone.

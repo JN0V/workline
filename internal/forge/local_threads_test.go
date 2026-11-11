@@ -2,6 +2,7 @@ package forge
 
 import (
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -37,8 +38,13 @@ func TestLocalThreads(t *testing.T) {
 		t.Fatalf("Threads = %+v, %v", threads, err)
 	}
 	th := threads[0]
-	if th.ID != "2" || th.Path != "tests/t.sh" || th.Line != 4 || th.Comments[0].Body != c.Body {
+	if th.ID != "2" || th.Path != "tests/t.sh" || th.Line != 4 || !strings.HasPrefix(th.Comments[0].Body, c.Body) {
 		t.Fatalf("thread = %+v", th)
+	}
+	// Its key read back as on a forge: the reviewer resolves and weighs
+	// its own by it.
+	if keys := LineKeys(th.Comments[0].Body); len(keys) != 1 || keys[0] != "missing-1" {
+		t.Fatalf("keys = %v in %q", keys, th.Comments[0].Body)
 	}
 	if err := l.Reply(id, th.ID, "Added."); err != nil {
 		t.Fatal(err)

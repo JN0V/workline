@@ -14,6 +14,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/developer"
@@ -218,6 +220,20 @@ func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Opti
 		if !tester.ObjectionsWait(threads) {
 			continue
 		}
+		target := forge.Target{Kind: "merge-request", ID: mr.ID}
+		tried, said, err := answerTried(f, target)
+		if err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "answers-unread", Level: "warn", Where: where,
+				Message: "its comments not read, so no objection there is answered: " + forge.Said(err)})
+			continue
+		}
+		if said {
+			// Its answer ran on these comments and wrote none: said on the
+			// Draft already; a new comment, or the command, runs it again.
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-waits", Level: "info", Where: where,
+				Message: fmt.Sprintf("the tester's answer ran on its objection and wrote none, as said on it: a comment there runs it again, or `workline test answer --merge-request %d`", mr.ID)})
+			continue
+		}
 		if *started >= cfg.ReconcileMax {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "reconcile-left", Level: "info", Where: where,
 				Message: fmt.Sprintf("an objection waits on the tester's answer, past reconcile-max (%d) this run: the next run answers it", cfg.ReconcileMax)})
@@ -235,13 +251,13 @@ func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Opti
 			continue
 		}
 		*started++
-		answered++
+		status := ""
 		inTree(res, o.Repo, head, where, func(tree string) {
 			ao := inTreeOptions(o, tree)
 			ao.Role, ao.Event, ao.Command = "tester", "objection", "workline test answer"
-			ao.Target, ao.Branch = &forge.Target{Kind: "merge-request", ID: mr.ID}, mr.Branch
+			ao.Target, ao.Branch = &target, mr.Branch
 			ran := len(res.Steps)
-			_, status := runRole(res, cfg, ao, 0)
+			_, status = runRole(res, cfg, ao, 0)
 			res.Status = worst(res.Status, status)
 			if status == verdict.Pass {
 				res.Findings = append(res.Findings, CountRuns(nil, 0, runDirs(res.Steps[ran:]))...) // an answer's tokens, on its issue (ADR-0064)
@@ -249,8 +265,58 @@ func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Opti
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-ran", Level: "info", Where: where,
 				Message: fmt.Sprintf("the tester's answer to an objection on it ran on %s: %s", short(head), status)})
 		})
+		if after, err := th.Threads(mr.ID); err == nil && !tester.ObjectionsWait(after) {
+			answered++
+			continue
+		}
+		// Ran and answered nothing: said on the Draft, never run again on
+		// the same comments, each reconcile spending a run (#1265).
+		body := fmt.Sprintf("**workline's line** ran the tester's answer on an objection here, and it wrote none (%s). "+
+			"Run `workline test answer --merge-request %d` to see why; a new comment here has the next reconcile run it again.\n\n<!-- workline:answer-tried n=%d -->",
+			status, mr.ID, tried.n)
+		if err := f.Sticky(target, body, answerMarker, true); err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-not-said", Level: "warn", Where: where,
+				Message: "its answer wrote nothing, and that is not said on it: " + forge.Said(err)})
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-none", Level: "warn", Where: where,
+			Message: fmt.Sprintf("the tester's answer to its objection wrote none (%s): said on it, not run again until a comment there", status)})
 	}
 	return answered
+}
+
+// answerMarker keys the line's word on a Draft whose objection its
+// answer run left unanswered.
+var answerMarker = forge.Marker("sticky=line/answer")
+
+// attempt is a Draft's comments as the line counts them for its answer
+// run: how many, its own word left out.
+type attempt struct{ n int }
+
+var answerTriedAt = regexp.MustCompile(`<!-- workline:answer-tried n=(\d+) -->`)
+
+// answerTried counts the Draft's comments, its own word left out, and
+// says whether that word names the same count: its answer ran on these
+// comments and wrote none.
+func answerTried(f forge.Forge, t forge.Target) (attempt, bool, error) {
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return attempt{}, false, nil
+	}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return attempt{}, false, err
+	}
+	a, said := attempt{}, -1
+	for _, c := range comments {
+		if strings.Contains(c, answerMarker) {
+			if m := answerTriedAt.FindStringSubmatch(c); m != nil {
+				said, _ = strconv.Atoi(m[1])
+			}
+			continue
+		}
+		a.n++
+	}
+	return a, said == a.n, nil
 }
 
 // TipOf is branch's commit in repo, "" when it is not there.

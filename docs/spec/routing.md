@@ -984,6 +984,8 @@ each reconcile starts the next one, past an environment's wait timer
   test findings the developer sent there, or its own objection — its
   answer run (`answer-ran`, `workline test answer`), where the tester
   is routed ([#1265](https://github.com/JN0V/workline/issues/1265)).
+  One that wrote no answer is said on the Draft (`answer-none`), not run
+  again until a comment is added there (`answer-waits`).
   A comment on a line is kept as a comment of its own on the merge
   request, its place hidden in it; a reply names it. All in a worktree
   of the head, detached, the clone's config laid in
