@@ -121,7 +121,7 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 	if n != nil {
 		p.Test, p.Runs = n.Test, max(1, n.Runs)
 	}
-	ts, err := testerSettings(repo)
+	ts, err := testerSettingsIn(s.rolesDir, repo)
 	if err != nil {
 		p.Result, p.Why = Unproven, err.Error()
 		return p, nil
@@ -201,7 +201,16 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 // its test command and report are the project's tests, one setting for
 // both roles.
 func testerSettings(repo string) (tester.Settings, error) {
-	r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), "tester")
+	return testerSettingsIn("", repo)
+}
+
+// testerSettingsIn are the tester's settings, its role read in rolesDir,
+// "" the one the engine gives a role's run.
+func testerSettingsIn(rolesDir, repo string) (tester.Settings, error) {
+	if rolesDir == "" {
+		rolesDir = os.Getenv("WORKLINE_ROLES_DIR")
+	}
+	r, err := role.Load(rolesDir, "tester")
 	if err != nil {
 		return tester.Settings{}, fmt.Errorf("the tester's role, whose test-command the proof runs: %w", err)
 	}
@@ -425,4 +434,35 @@ func plural(n int) string {
 		return ""
 	}
 	return "s"
+}
+
+// ProveMerge runs the project's test command whole on at, a merge of the
+// base into a request made by the engine, on a fresh checkout of it: the
+// proof that two changes green apart are green together (#1370). Whole,
+// never the proof-command's folders: a clash may sit in a file neither
+// change touched. The developer's proof-seconds bound it. rolesDir: where
+// the roles are read, as the engine resolves them.
+func ProveMerge(rolesDir, repo, at string) Proof {
+	var s Settings
+	if r, err := role.Load(rolesDir, "developer"); err == nil {
+		if cfg, err := role.LoadProjectConfig(repo); err == nil {
+			s = SettingsFrom(r.MergedSettings(cfg))
+		}
+	}
+	s.ProofCommand, s.rolesDir = "", rolesDir
+	p, _ := prove(repo, at, nil, nil, nil, s)
+	return p
+}
+
+// Said is the proof in a few words: its tests passed, or what failed.
+func (p Proof) Said() string {
+	switch {
+	case p.Result == Green:
+		return fmt.Sprintf("%d test%s passed", p.Passed, plural(p.Passed))
+	case len(p.Red) > 0:
+		return fmt.Sprintf("%d test%s red: %s", len(p.Red), plural(len(p.Red)), strings.Join(p.Red, ", "))
+	case p.Why != "":
+		return p.Why
+	}
+	return p.Result
 }

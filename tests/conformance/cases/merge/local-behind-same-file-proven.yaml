@@ -1,0 +1,44 @@
+case: merge/local-behind-same-file-proven
+about: >
+  With `forge: local`, a request reviewed green on a head behind main is
+  not merged as it is when main has changed one of its files since
+  (#1370): two green changes could make main red together. `!2`, the
+  developer's fix for bug #3, adds mul() to lib.sh; main meanwhile added
+  sub() at the top of lib.sh, no conflict. `workline follow` merges main
+  into `!2`'s branch, a merge commit, the branch's head first, and runs
+  the test command whole on it: green, the branch moves there, nothing
+  merged into main yet. The reconciler's line then reviews that new
+  head, the reviewer reading nothing new, and the next `follow` merges
+  it: main holds sub() and mul().
+given:
+  repo: local-fix
+  setup:
+    - "printf 'sub() { echo $(($1 - $2)); }\\nadd() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'feat: sub'"
+    - "rm .git/verdict.json"
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {merge-request: [committer, reviewer]}}
+run:
+  sh: >
+    workline route reconcile --ai "fake:$FIXTURES/agents/review-nothing.yaml" &&
+    workline follow --base main &&
+    git merge-base --is-ancestor workline/developer/3 main || echo not-merged;
+    git rev-list --parents -n 1 workline/developer/3 | wc -w &&
+    workline route reconcile --ai "fake:$FIXTURES/agents/review-nothing.yaml" &&
+    workline follow --base main
+expect:
+  exit: 0
+  stderr:
+    - "merged-from-base !2: behind main, which changed lib.sh since its branch left it: main merged into workline/developer/3, a merge commit, nothing rewritten; the tests green on it (3 tests passed)"
+    - "its line runs on the new head at the next reconcile"
+    - "merged-at-once !2"
+    - "issue-closed"
+  stdout: ["not-merged\n3\n"]
+  branches:
+    main:
+      lib.sh: "sub() { echo $(($1 - $2)); }\nadd() { echo $(($1 + $2)); }\nmul() { echo $(($1 * $2)); }"
+  files:
+    .git/workline/issues/3.md: {contains: "state: closed"}
+    .git/workline/merge-requests/2.md: {contains: "state: merged"}

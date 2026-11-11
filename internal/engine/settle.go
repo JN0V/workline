@@ -30,6 +30,9 @@ type FollowOptions struct {
 	// request regenerating them is `derived` at `normal` only then; nil,
 	// never.
 	Derive func(dir string, docs map[string]string) bool
+	// RolesDir is where the roles are read: the tester's test command,
+	// run on a local request's merge with its base (#1370).
+	RolesDir string
 	// Merge is the project's merge policy, its level (`merge: {autonomy:
 	// cautious}`); "" none: no merge request's auto-merge is touched
 	// (ADR-0042, merge.go).

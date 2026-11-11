@@ -1,0 +1,23 @@
+case: merge/local-behind-other-files-merges
+about: >
+  With `forge: local`, a request behind main whose files main has not
+  changed since its branch left it merges as it is (#1370): `!2`, the
+  developer's fix for bug #3, changes lib.sh; main meanwhile changed
+  README.md alone. `workline follow` merges `!2` at once, no merge of
+  main into its branch, no test run.
+given:
+  repo: local-fix
+  setup:
+    - "echo more >> README.md && git commit -qam 'docs: more'"
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run: {follow: [--base, main, --verdict, .git/verdict.json], forge: local}
+expect:
+  status: pass
+  findings:
+    - {rule: merged-at-once, where: "!2"}
+  no-findings: [{rule: merged-from-base}, {rule: merge-red}]
+  branches:
+    main: {lib.sh: "mul()", README.md: "more"}

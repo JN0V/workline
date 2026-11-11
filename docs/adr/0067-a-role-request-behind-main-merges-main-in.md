@@ -41,7 +41,9 @@ keep their ids.
 
 - **Only when the policy would merge it** and git's merge of the base
   meets a conflict, or, clean, when the forge holds it behind its base.
-  The same on every forge (local, GitHub, GitLab): plain git.
+  The same on every forge (local, GitHub, GitLab): plain git; on the
+  local forge, a clean merge is proven first
+  ([amended](#amendment-2026-11-11-1370-on-the-local-forge-a-clean-merge-is-proven)).
 - **Not chosen for V1: eager.** Updating every request behind main at
   each push to main runs every request's checks for nothing in conflict.
   Deferred after V1.
@@ -97,6 +99,40 @@ keep their ids.
   developer/merge-round-dropping-main-not-pushed,
   developer/merge-round-markers-left-stops.
 
+## Amendment (2026-11-11, [#1370]): on the local forge, a clean merge is proven
+
+- **The gap**: the local forge holds no branch behind and runs nothing
+  on `main`. V1 round 3 merged TG-2's `!6`, green on an older `main`,
+  after `!5` changed the same file: no test ran on what landed. On
+  GitHub or GitLab, `main`'s own run is the net ([ADR-0042]'s 2026-10-21
+  amendment); here there is none.
+- **When**: the policy would merge a role request of the local forge,
+  behind `main`, merging clean, and `main` changed one of its files
+  since they parted. Its files untouched by `main`, it merges as it is.
+- **What**: the engine's clean merge as above, a commit apart; the
+  test command runs whole on it, on a fresh checkout, no agent, 0
+  tokens; the developer's `proof-seconds` bound it.
+  - **Green**: the branch moves to the merge, never forced; the next
+    reconcile's line reads it as any new head, then the policy merges
+    it. A person's yes stays, as for any clean merge of the engine.
+  - **Red**: nothing moves, nothing merges; said on the request and its
+    issue, the tests named. Not run again until the head or `main`
+    moves.
+  - **Not run whole** (a timeout, no test command): the same, said so,
+    and tried again at the next `follow`.
+- **A merge of `main` a person made**: the head holds `main`, up to
+  date: not proven here, the line reads it as any person's commit.
+- **The review it needs**: the engine's own clean merge adds no line to
+  read, its tree git's merge of its parents (`OwnMerge`). A fix merging
+  alone needs the reviewer's verdict on the head it merged into, not on
+  the merge: the same on every forge.
+- **Not chosen**: proving every request behind `main`, its files
+  untouched by it (the issue's scope; a clash across files stays
+  `main`'s to say, as on a forge); a developer round on a red merge.
+
+Conformance: merge/local-behind-same-file-proven,
+local-behind-merged-red-held, local-behind-other-files-merges.
+
 ## Not chosen
 
 - **A rebase**: rewrites the reviewed and the tester's commits, and
@@ -113,3 +149,4 @@ keep their ids.
 [ADR-0055]: 0055-the-tester-writes-the-acceptance-tests-before-the-code.md
 [#1266]: https://github.com/JN0V/workline/issues/1266
 [#1354]: https://github.com/JN0V/workline/issues/1354
+[#1370]: https://github.com/JN0V/workline/issues/1370

@@ -1,0 +1,39 @@
+case: merge/local-behind-merged-red-held
+about: >
+  With `forge: local`, two changes green apart can be red together
+  (#1370). `!2`, the developer's fix for bug #3, adds mul() to lib.sh,
+  green and reviewed; main meanwhile added sub() at the top of lib.sh and
+  a test that lib.sh defines two functions, green on main. git merges
+  them with no conflict, but the test turns red on the merge.
+  `workline follow` merges nothing and moves no branch: it says on `!2`
+  and on #3 that the tests are red with main merged in, which test, and
+  what a person can do. A second `follow`, neither moved, does not run
+  the tests again.
+given:
+  repo: local-fix
+  setup:
+    - "printf 'sub() { echo $(($1 - $2)); }\\nadd() { echo $(($1 + $2)); }\\n' > lib.sh && printf '[ \"$(grep -c \"()\" lib.sh)\" = 2 ]\\n' > tests/test_two_functions.sh && git add lib.sh tests && git commit -qm 'feat: sub'"
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run:
+  sh: >
+    head=$(git rev-parse workline/developer/3);
+    workline follow --base main --verdict .git/verdict.json &&
+    workline follow --base main &&
+    test "$(git rev-parse workline/developer/3)" = "$head" && echo branch-kept &&
+    git merge-base --is-ancestor workline/developer/3 main || echo not-merged
+expect:
+  exit: 0
+  stderr:
+    - "merge-red !2 (warn): behind main, which changed lib.sh since its branch left it: with main merged in, 1 test red: tests.test_two_functions; not merged, its branch left as it is, said on it"
+    - "merge-red !2 (warn): behind main, which changed lib.sh since its branch left it: its tests were red with main merged in, at this head and this main; not merged, said on it"
+  stderr-lacks: ["merged-at-once", "merged-from-base"]
+  stdout: ["branch-kept\nnot-merged\n"]
+  files:
+    lib.sh: {lacks: "mul()"}
+    .git/workline/merge-requests/2.md:
+      contains: ["state: open", "**Not merged: its tests are red with main merged in**", "`lib.sh`", "tests.test_two_functions", "**What a person can do**", "workline:merge-red head="]
+    .git/workline/issues/3.md:
+      contains: ["state: open", "**Its pull request !2 is not merged: its tests are red with main merged in**", "tests.test_two_functions"]

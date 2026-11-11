@@ -71,6 +71,9 @@ a feature or a task merges too, and the yes moves to the milestone's
   - or a rebase since: the record in that comment covers every commit
     of the head, by its change's patch id, as the reviewer reads it; the
     reviewer, finding nothing new, writes no summary then;
+  - or the engine's own clean merge of `main` since: it adds no line to
+    read, so the review of the head it merged into counts
+    ([ADR-0067](../../../docs/adr/0067-a-role-request-behind-main-merges-main-in.md#amendment-2026-11-11-1370-on-the-local-forge-a-clean-merge-is-proven));
   - the reviewer in the merge-request line, its verdict not on the head
     yet: it waits for the reviewer, no person asked, until 24 h after
     the push (the question's delay,

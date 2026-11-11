@@ -67,7 +67,9 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **The developer's request behind its base**: in conflict, or held by
   the forge, `main` is merged in, by the engine or one developer round;
   never a rebase
-  ([behind main](../roles/developer/docs/conflict.md)).
+  ([behind main](../roles/developer/docs/conflict.md)). On the local
+  forge, where no run checks `main`, one whose files `main` changed is
+  merged only once the tests pass on `main` merged into it.
 - **Auto-merge a person turned on by hand** is their yes, weighed as the
   label's.
 - **Nothing turned on, said in the job's summary**: a verdict or a check
