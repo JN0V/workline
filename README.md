@@ -72,9 +72,10 @@ pull requests and nightly gardening of workline and of another project;
 - What each role does and does not, its settings and costs: its page, or
   [all the roles](docs/roles.md).
 - A planned role links to its issue, which holds its design.
-- v1.0 waits for the six core roles, the tester and the developer to
-  be out of beta; the other planned roles start after
-  ([ADR-0052](docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)).
+- V1, the product owner, the tester and the developer taking a need to
+  a merged change on any repository, was accepted on 2026-11-11; the
+  other planned roles start after
+  ([ADR-0052](docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-11-1266-v1-accepted)).
 - The auditor widening to every role: [#205](https://github.com/JN0V/workline/issues/205).
 - Why these roles, in this order: [the roles panorama](docs/research/roles-panorama.md).
 
