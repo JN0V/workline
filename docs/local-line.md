@@ -120,22 +120,30 @@ Its comment on the issue lists every answer
 
 ## 5. Review the merge request
 
+No forge runs a job on a push here: the reconciler does, from `main`.
+
 ```sh
-workline issues                       # !2  open  fix: … (workline/developer/1 into main)
-git checkout workline/developer/1
-workline route merge-request --target merge-request:2 --ai claude
+workline route reconcile --ai claude  # reviews !2's new head, runs a round due
+workline issues show !2               # what the line found on it
 ```
 
-- The committer, the tester's check and the reviewer read the branch;
-  their findings go on `!2` (`workline issues show !2`).
-- **The line's verdict** on the branch's head is kept in the clone, with
-  a `merge:` setting, for the merge (step 6). A commit since needs a new
-  run.
+- **The merge-request line** runs on each developer's request, not a
+  draft, whose head has no verdict yet: the committer, the tester's
+  check and the reviewer. Their findings go on `!2`.
+- **The line's verdict** on that head is kept in the clone, for the
+  merge (step 6). A new head is reviewed at the next reconcile.
 - **A block is said on `!2`**: which step blocked, its findings, what
   you can do, in one comment edited at each run
   ([#1327](https://github.com/JN0V/workline/issues/1327)).
-- A finding to fix: `workline develop --merge-request 2 --ai claude`, a
-  review round on its branch.
+- **A review round**: a finding, or your comment
+  (`workline issues comment '!2' --body "…"`), wakes the developer at
+  the next reconcile. Its fix is committed on its branch, unless you
+  have that branch checked out: then it says so and waits.
+- **Each runs in a worktree of the head**, apart: your checkout is
+  never read nor written.
+- **By hand**, on the branch checked out:
+  `workline route merge-request --target merge-request:2 --ai claude`,
+  or `workline develop --merge-request 2 --ai claude`.
 
 ## 6. The merge
 
@@ -153,7 +161,7 @@ workline issues          # #1 closed, !1 and !2 merged
 - **A feature or a task waits for your yes**, said on `!2`:
   `workline issues label !2 --add workline:accepted`, then `follow`.
 - **Only the head that passed**: a commit since waits for the next
-  `route merge-request`.
+  reconcile's review.
 - **Into `main` in this clone**: a merge commit naming `!2`; nothing is
   pushed. `main` checked out with uncommitted changes, or a conflict:
   nothing merges, the reason said.

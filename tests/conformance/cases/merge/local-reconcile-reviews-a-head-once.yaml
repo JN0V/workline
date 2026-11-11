@@ -1,0 +1,22 @@
+case: merge/local-reconcile-reviews-a-head-once
+about: >
+  With `forge: local`, the reconciler runs the merge-request line on a
+  developer's head with no verdict kept (#1324), once: the next
+  reconcile finds the verdict it kept on that head and runs nothing.
+  The tester's Draft, `!1`, is not reviewed: a draft merges never.
+given:
+  repo: local-fix
+  setup:
+    - "rm .git/verdict.json"
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    routing: {events: {merge-request: [committer, reviewer]}}
+run:
+  sh: >
+    workline route reconcile --ai "fake:$FIXTURES/agents/review-nothing.yaml" 2>/dev/null &&
+    workline route reconcile --ai "fake:$FIXTURES/agents/review-nothing.yaml" --json
+expect:
+  exit: 0
+  stdout: ["\"summary\": \"reconcile: nothing due (1 issue on the line acted on already)\"", "\"agent-calls\": 0"]
+  stdout-lacks: ["line-ran", "!1"]

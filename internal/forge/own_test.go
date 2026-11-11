@@ -267,10 +267,10 @@ func TestKeptLastAndUnread(t *testing.T) {
 	if body, ok := k.Last(marker); !ok || body != "edited "+marker {
 		t.Fatalf("an edit by its own account not read: %q %v", body, ok)
 	}
-	// The local forge's every comment is the person's own; a command's,
-	// those it says are.
-	if o, _ := (&Local{}).own(); !o.Wrote(Note{Body: "x"}) {
-		t.Fatal("a local comment not taken for its own")
+	// The local forge's own are those its notes say carry workline's mark,
+	// a person's comment not (#1324); a command's, those it says are.
+	if o, _ := (&Local{}).own(); o.Wrote(Note{Body: "x", Insider: true}) || !o.Wrote(Note{Body: "x " + marker, Own: true}) {
+		t.Fatal("a local comment not read by its mark")
 	}
 	if o, _ := (&command{}).own(); o.Wrote(Note{Author: "workline-bot", Bot: true}) || !o.Wrote(Note{Own: true}) {
 		t.Fatal("a command's comments not read by its word")

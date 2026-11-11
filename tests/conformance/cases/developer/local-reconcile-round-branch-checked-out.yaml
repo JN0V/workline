@@ -1,0 +1,24 @@
+case: developer/local-reconcile-round-branch-checked-out
+about: >
+  With `forge: local`, a round due on `!2` whose branch the person has
+  checked out is not run by the reconciler (#1324): its commit could not
+  move that branch, and would be lost with its worktree. Said, with what
+  to do; no agent asked, the person's tree as it was.
+given:
+  repo: local-fix
+  setup:
+    - "rm .git/verdict.json && git checkout -q workline/developer/3"
+  config:
+    forge: local
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [developer], merge-request: [committer]}}
+run:
+  sh: >
+    workline issues comment '!2' --body "mul: please name it multiply." &&
+    workline route reconcile --ai "fake:$FIXTURES/agents/developer-writes-mul.yaml" --json > out.json;
+    grep -c '^  "agent-calls": 0' out.json; git status --porcelain --untracked-files=no; git rev-parse --abbrev-ref HEAD
+expect:
+  exit: 0
+  stdout: ["1\nworkline/developer/3\n"]
+  files:
+    out.json: {contains: ["round-not-run", "is checked out in", "run `workline develop --merge-request 2` in it"], lacks: "round-ran"}

@@ -290,12 +290,13 @@ func (l *Local) Comments(t Target) ([]string, error) {
 }
 
 // Notes: the local forge keeps no author; whoever writes in the clone is
-// of the project, as its issues' authors are.
+// of the project, as its issues' authors are. workline's own carry its
+// mark, as each comment a role writes does; the person's carry none.
 func (l *Local) Notes(t Target) ([]Note, error) {
 	comments, err := l.Comments(t)
 	notes := make([]Note, 0, len(comments))
 	for i, c := range comments {
-		notes = append(notes, Note{Body: c, Insider: true, ID: strconv.Itoa(i + 1)})
+		notes = append(notes, Note{Body: c, Insider: true, ID: strconv.Itoa(i + 1), Own: strings.Contains(c, "<!-- workline:")})
 	}
 	return notes, err
 }

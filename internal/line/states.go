@@ -934,6 +934,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		}
 	}
 	issued := started
+	lines := localLines(res, cfg, f, o, &issued) // a forge kept here: no job reviews a push (#1324)
 	rounds := roundsDue(res, cfg, f, spec, o, &issued)
 	switch {
 	case list:
@@ -942,16 +943,25 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			res.Summary += " #" + strconv.Itoa(n)
 		}
 		res.Reviews = rounds
-	case started == 0:
+	case started == 0 && lines == 0 && len(rounds) == 0:
 		res.Summary = fmt.Sprintf("%s: nothing due (%d %s on the line acted on already)", ReconcileEvent, quiet, plural(quiet, "issue", "issues"))
+	case started == 0:
+		res.Summary = fmt.Sprintf("%s: no issue's step due (%s)", ReconcileEvent, res.Status)
 	default:
 		res.Summary = fmt.Sprintf("%s: %d %s due, %s run (%s)", ReconcileEvent, started, plural(started, "issue", "issues"), plural(started, "its step", "their steps"), res.Status)
 	}
 	if stales > 0 {
 		res.Summary += fmt.Sprintf("; %d stale %s back to refine", stales, plural(stales, "issue", "issues"))
 	}
+	if lines > 0 {
+		res.Summary += fmt.Sprintf("; %d merge-request %s run on a new head", lines, plural(lines, "line", "lines"))
+	}
 	if len(rounds) > 0 {
-		res.Summary += fmt.Sprintf("; %d review %s due:", len(rounds), plural(len(rounds), "round", "rounds"))
+		said := "due"
+		if runsHere(f, o) {
+			said = "due, run"
+		}
+		res.Summary += fmt.Sprintf("; %d review %s %s:", len(rounds), plural(len(rounds), "round", "rounds"), said)
 		for _, r := range rounds {
 			res.Summary += fmt.Sprintf(" merge request %d", r.ID)
 		}
@@ -965,8 +975,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 // person's comment its last round did not read (ADR-0054, step 6). Read
 // only where the project routes the developer; counted in reconcile-max
 // with the issues' steps (started). In CI (list), its job starts each
-// round's own run; on a machine, each is said with its command: a round
-// works on its branch, checked out.
+// round's own run; on a forge kept in this clone, each is run here, in a
+// worktree of its head (localRound); on another machine, each is said
+// with its command: a round works on its branch, checked out.
 func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o engine.Options, started *int) []Review {
 	if !cfg.Runs("developer") {
 		return nil
@@ -1004,7 +1015,10 @@ func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o e
 		}
 		*started++
 		due = append(due, Review{ID: mr.ID, Branch: mr.Branch})
-		if o.Inputs[ReconcileInput] != "list" {
+		switch {
+		case runsHere(f, o): // no job starts it: run here, apart from the checkout (#1324)
+			localRound(res, cfg, o, mr)
+		case o.Inputs[ReconcileInput] != "list":
 			roundSaid(res, mr)
 		}
 	}

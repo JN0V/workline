@@ -1,0 +1,31 @@
+case: developer/local-reconcile-runs-a-persons-round
+about: >
+  With `forge: local`, no job starts the developer's review round, so
+  the reconciler runs it (#1324): a person comments on `!2`, the
+  developer's request for bug #3, whose mul still adds. `workline route
+  reconcile` finds the round due and runs it, in a worktree of the
+  request's head: its fix is committed on workline/developer/3, the
+  person's checkout, main, left as it was.
+given:
+  repo: local-fix
+  setup:
+    - "rm .git/verdict.json && git checkout -q workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'fix: mul for #3, at once' -m 'Workline-Role: developer' && git checkout -q main"
+  config:
+    forge: local
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [developer]}}
+run:
+  sh: >
+    workline issues comment '!2' --body "mul still adds: please multiply." &&
+    workline route reconcile --ai "fake:$FIXTURES/agents/developer-writes-mul.yaml" &&
+    git status --porcelain && git rev-parse --abbrev-ref HEAD && git worktree list --porcelain | grep -c '^worktree '
+expect:
+  exit: 0
+  stderr: ["1 review round due, run: merge request 2", "round-ran !2: its review round ran on"]
+  stderr-lacks: ["review-round-due"]
+  stdout: ["main\n1\n"]
+  branches:
+    workline/developer/3: {lib.sh: "$1 * $2"}
+  files:
+    lib.sh: {lacks: "mul()"}
+    .git/workline/merge-requests/2.md: {contains: ["mul still adds: please multiply.", "\"heard\":[\"3\"]"]}
