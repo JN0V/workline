@@ -35,7 +35,9 @@ step 6).
 - **A fresh run**, woken by the reviewer's verdict, the gates' report,
   a project check red or a person's comment on a pull request from
   `workline/developer/<n>`:
-  `workline develop --merge-request <n>`.
+  `workline develop --merge-request <n>`. With no forge
+  ([`forge: local`](../../../docs/local-line.md#5-review-the-merge-request)),
+  the reconciler runs it, in a worktree of the head.
 - **No memory**: it reads its record on the pull request (the rounds
   before, the reviewer's runs read, the gates' report read, the
   comments heard), the reviewer's comment and its comments on lines,

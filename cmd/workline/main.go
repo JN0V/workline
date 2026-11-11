@@ -1621,20 +1621,7 @@ func headVerdict(repo, rng string, res *line.Result) (engine.HeadVerdict, error)
 	case len(head) != 40 || strings.Trim(head, "0123456789abcdef") != "":
 		return engine.HeadVerdict{}, fmt.Errorf("the head judged, %s, is no commit here", head)
 	} // a full id not fetched here: the source head of a merge result
-	v := engine.HeadVerdict{Head: head, Status: res.Status, Findings: res.Findings}
-	for _, s := range res.Steps {
-		st := engine.StepStatus{Name: s.Name, Status: s.Status}
-		if s.Status != verdict.Pass {
-			switch {
-			case s.Result != nil:
-				st.Findings = engine.Blocking(s.Result.Findings)
-			case s.Gate != nil:
-				st.Findings = engine.Blocking(s.Gate.Findings)
-			}
-		}
-		v.Steps = append(v.Steps, st)
-	}
-	return v, nil
+	return res.HeadVerdict(head), nil
 }
 
 func itemCmd(args []string) int {

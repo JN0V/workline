@@ -3283,12 +3283,13 @@ func dropWorktree(repo, runDir string) {
 
 // RunsDir is where repo's runs are kept: WORKLINE_RUNS_DIR when set — in
 // CI, somewhere an artifact can carry them to the job that applies —, else
-// its git folder's workline/runs.
+// its git folder's workline/runs: the main clone's, which its worktrees
+// share, so a run made in one outlives it (#1324).
 func RunsDir(repo string) string {
 	if d := os.Getenv(forge.RunsDirEnv); d != "" {
 		return d
 	}
-	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--absolute-git-dir").Output(); err == nil {
+	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--path-format=absolute", "--git-common-dir").Output(); err == nil {
 		return filepath.Join(strings.TrimSpace(string(out)), "workline", "runs")
 	}
 	return filepath.Join(repo, ".workline", "runs")

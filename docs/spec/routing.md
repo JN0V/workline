@@ -969,6 +969,15 @@ each reconcile starts the next one, past an environment's wait timer
   `reconcile-max`; listed in `reviews`, number and branch, for the CI
   job, else said with its command (`review-round-due`;
   [#891](https://github.com/JN0V/workline/issues/891)).
+- **The local forge's pull requests**
+  ([#1324](https://github.com/JN0V/workline/issues/1324)): no job runs
+  on a push nor a comment there, so the reconciler, on a person's
+  machine, runs them itself. Each open developer's request, not a
+  draft, whose head has no verdict kept: its merge-request line, its
+  verdict kept (`line-ran`), once a head. Each round due: run, not said
+  (`round-ran`). Both in a worktree of the head, detached, the clone's
+  config laid in it, removed after; counted in `reconcile-max`. A
+  person's comment is one with no workline mark.
 - **An issue whose step is its round**: in the developer's state, its
   own pull request open from `workline/developer/<n>`, an issue is no
   new claim (`state-round`), as one back to ready from a Scope ask.

@@ -1,0 +1,29 @@
+case: merge/local-reconcile-reviews-a-fix
+about: >
+  With `forge: local`, no job runs the merge-request line on a push, so
+  the reconciler does (#1324): `!2`, the developer's fix of bug #3, has
+  no verdict kept on its head. `workline route reconcile` runs the line
+  on that head, in a worktree apart, and keeps its verdict in the clone;
+  `workline follow` then merges it with no person's act, and closes #3.
+  main stays checked out, its tree untouched.
+given:
+  repo: local-fix
+  setup:
+    - "rm .git/verdict.json"
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    routing: {events: {merge-request: [committer, reviewer]}}
+run:
+  sh: >
+    workline route reconcile --ai "fake:$FIXTURES/agents/review-nothing.yaml" &&
+    workline follow --base main &&
+    git status --porcelain && git rev-parse --abbrev-ref HEAD && git worktree list --porcelain | grep -c '^worktree '
+expect:
+  exit: 0
+  stderr: ["1 merge-request line run on a new head", "line-ran !2: its merge-request line ran on", "the line's verdict on", "merged-at-once", "issue-closed"]
+  stdout: ["main\n1\n"]
+  files:
+    lib.sh: {contains: "mul()"}
+    .git/workline/issues/3.md: {contains: "state: closed"}
+    .git/workline/merge-requests/2.md: {contains: "state: merged"}
