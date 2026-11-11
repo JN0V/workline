@@ -1,0 +1,30 @@
+case: developer/local-refused-round-reads-nothing
+about: >
+  With `forge: local` (#1329): a person comments on `!2`; a round refused
+  before it ran, its branch checked out in another worktree, reads
+  nothing. The next round, from main, reads the comment and pushes its
+  fix; a new comment after it is read by the round after that.
+given:
+  repo: local-fix
+  setup:
+    - "rm .git/verdict.json && git checkout -q workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'fix: mul for #3, at once' -m 'Workline-Role: developer' && git checkout -q main"
+  config:
+    forge: local
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+run:
+  sh: >
+    workline issues comment '!2' --body "mul still adds: please multiply." &&
+    git worktree add -q ../other workline/developer/3 &&
+    { workline develop --merge-request 2 --ai "fake:$FIXTURES/agents/developer-writes-mul.yaml"; echo "refused $?"; } &&
+    git worktree remove ../other &&
+    workline develop --merge-request 2 --ai "fake:$FIXTURES/agents/developer-writes-mul.yaml" --json > first.json &&
+    workline issues comment '!2' --body "please add a test for mul by one." &&
+    workline develop --merge-request 2 --ai "fake:$FIXTURES/agents/developer-writes-mul.yaml" --json > second.json;
+    echo "second $?"
+expect:
+  stdout: ["refused 64"]
+  stderr: ["its branch workline/developer/3 is checked out in"]
+  files:
+    first.json: {contains: "round 1 of 5 on merge request 2, its fix pushed", lacks: "nothing new since its last round"}
+    second.json: {contains: "round 2 of 5 on merge request 2", lacks: "nothing new since its last round"}
+    .git/workline/merge-requests/2.md: {contains: "\"heard\":[\"3\",\""}
