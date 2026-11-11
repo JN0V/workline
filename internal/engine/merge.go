@@ -73,29 +73,16 @@ func SayVerdict(f forge.Forge, id int, v HeadVerdict) error {
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The line blocks this head** (`%s`): it does not merge, a person's yes neither, until the line passes on a new head.\n", short(v.Head))
+	// Each step that did not pass, its findings: a passing step's
+	// findings with no level (a doc suspect) block nothing.
 	said := false
-	stepOf := map[verdict.Finding]bool{}
 	for _, s := range v.Steps {
-		for _, fd := range s.Findings {
-			stepOf[fd] = true
-		}
 		if s.Status == verdict.Pass {
 			continue
 		}
 		said = true
 		fmt.Fprintf(&b, "\n- **%s**: %s", s.Name, s.Status)
 		sayFindings(&b, s.Findings)
-	}
-	// The line's own blocks, no step's: a release held, for one.
-	var own []verdict.Finding
-	for _, fd := range Blocking(v.Findings) {
-		if !stepOf[fd] {
-			own = append(own, fd)
-		}
-	}
-	if len(own) > 0 && said {
-		b.WriteString("\n- **the line**: block")
-		sayFindings(&b, own)
 	}
 	if !said {
 		fmt.Fprintf(&b, "\n- %s", v.red())
