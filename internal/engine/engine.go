@@ -1469,6 +1469,27 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	// Its own Draft marked ready, asked by the role (the developer's,
 	// green, #969): after its push, before its comments say it.
 	ready := ownReady(runDir) && onTarget
+	// Patches that go in a comment (ADR-0051) are written in a worktree
+	// of the head apart, never in the checkout, which a person may be
+	// working in (#1328); a resumed run writes them there again.
+	commentRepo := st.Repo
+	if onTarget && !ownBranch && !st.Pushed && slices.ContainsFunc(intents, func(in intent.Intention) bool { return in.Kind == "patch" }) {
+		tree, err := os.MkdirTemp("", "workline-patches-")
+		if err == nil {
+			_ = os.Remove(tree) // git makes it
+			err = tester.Worktree(st.Repo, "HEAD", tree)
+		}
+		if err != nil {
+			return fmt.Errorf("a worktree for the patches to comment: %w", err)
+		}
+		defer tester.RemoveWorktree(st.Repo, tree)
+		ap.tree, commentRepo = tree, tree
+		for i, in := range intents {
+			if in.Kind == "patch" {
+				delete(done, i)
+			}
+		}
+	}
 	var order, after []int
 	for i, in := range intents {
 		if (ownBranch || ready) && in.Kind != "patch" {
@@ -1605,7 +1626,9 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	// On a merge request, what the patches wrote goes in a comment, never
 	// on its branch (ADR-0051).
 	if f != nil && st.Target != nil && st.Target.Kind == "merge-request" && !st.OpenMergeRequest && len(st.Written) > 0 && !st.Pushed {
-		finding, err := pushToMergeRequest(f, st, runDir)
+		at := st
+		at.Repo = commentRepo // the worktree the patches were written in
+		finding, err := pushToMergeRequest(f, at, runDir)
 		if errors.Is(err, forge.ErrUnreachable) {
 			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while pushing to the merge request; resume with: workline apply %s", runDir)
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
@@ -2644,7 +2667,10 @@ func invalid(r *role.Role, in []intent.Intention, line *routing.Config) ([]strin
 // applier carries out intentions. This version knows the local ones.
 type applier struct {
 	repo, runDir string
-	targets      map[string]string
+	// tree: where the patches are written, when not in repo: a worktree
+	// apart, for patches that go in a comment (#1328).
+	tree    string
+	targets map[string]string
 	writes       []string    // paths the role may write
 	written      []string    // files changed by this run's patches
 	handoffs     []any       // next roles asked for, recorded for routing
@@ -3121,6 +3147,7 @@ func (a *applier) allowed(path string) bool {
 
 // patch applies a unified diff, or replaces one file with {file, content}.
 func (a *applier) patch(v any) error {
+	root := cmp.Or(a.tree, a.repo) // a worktree apart, when the patches go in a comment
 	if m, ok := v.(map[string]any); ok {
 		file, _ := m["file"].(string)
 		content, ok := m["content"].(string)
@@ -3130,13 +3157,13 @@ func (a *applier) patch(v any) error {
 		if !a.allowed(file) {
 			return fmt.Errorf("%s is outside what this role may write", file)
 		}
-		if link := throughLink(a.repo, file); link != "" {
+		if link := throughLink(root, file); link != "" {
 			return fmt.Errorf("%s is a link: nothing is written through it", link)
 		}
 		// A folder the base lacks is made, as git apply makes it for a
 		// diff (#989): no link on the way, checked above, and within
 		// the repository, as allowed reads the path.
-		full := filepath.Join(a.repo, file)
+		full := filepath.Join(root, file)
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 			return err
 		}
@@ -3155,7 +3182,7 @@ func (a *applier) patch(v any) error {
 		return errors.New(why)
 	}
 	// -z: each path whole, as git reads it, a space or a quote in it too.
-	files, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "--numstat", "-z", "-")
+	files, err := git(root, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "--numstat", "-z", "-")
 	if err != nil {
 		return fmt.Errorf("unreadable diff: %w", err)
 	}
@@ -3171,7 +3198,7 @@ func (a *applier) patch(v any) error {
 		if !a.allowed(f[2]) {
 			return fmt.Errorf("%s is outside what this role may write", f[2])
 		}
-		if link := throughLink(a.repo, f[2]); link != "" {
+		if link := throughLink(root, f[2]); link != "" {
 			return fmt.Errorf("%s is a link: nothing is written through it", link)
 		}
 		touched = append(touched, f[2])
@@ -3179,7 +3206,7 @@ func (a *applier) patch(v any) error {
 	// --recount: a diff is applied as its lines read. Agents often get the
 	// counts of a hunk header wrong, and git would drop the lines past them.
 	// --unidiff-zero: a role's own diff may hold no context (intent.Merge).
-	if _, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "-"); err != nil {
+	if _, err := git(root, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "-"); err != nil {
 		return err
 	}
 	a.written = append(a.written, touched...)
