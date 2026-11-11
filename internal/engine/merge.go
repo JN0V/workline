@@ -74,30 +74,51 @@ func SayVerdict(f forge.Forge, id int, v HeadVerdict) error {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The line blocks this head** (`%s`): it does not merge, a person's yes neither, until the line passes on a new head.\n", short(v.Head))
 	said := false
+	stepOf := map[verdict.Finding]bool{}
 	for _, s := range v.Steps {
+		for _, fd := range s.Findings {
+			stepOf[fd] = true
+		}
 		if s.Status == verdict.Pass {
 			continue
 		}
 		said = true
 		fmt.Fprintf(&b, "\n- **%s**: %s", s.Name, s.Status)
-		for i, fd := range s.Findings {
-			if i == saidFindings {
-				fmt.Fprintf(&b, "\n  - and %d more, in the line's output", len(s.Findings)-i)
-				break
-			}
-			where := ""
-			if fd.Where != "" {
-				where = " on `" + fd.Where + "`"
-			}
-			fmt.Fprintf(&b, "\n  - `%s`%s: %s", fd.Rule, where, clipSaid(fd.Message))
+		sayFindings(&b, s.Findings)
+	}
+	// The line's own blocks, no step's: a release held, for one.
+	var own []verdict.Finding
+	for _, fd := range Blocking(v.Findings) {
+		if !stepOf[fd] {
+			own = append(own, fd)
 		}
+	}
+	if len(own) > 0 && said {
+		b.WriteString("\n- **the line**: block")
+		sayFindings(&b, own)
 	}
 	if !said {
 		fmt.Fprintf(&b, "\n- %s", v.red())
 	}
-	b.WriteString("\n\n**What a person can do**: mend what each finding says, in a new push, which runs the line again; " +
-		"a finding that does not fit is answered where its message says (an objection on the tester's line, a reply to the reviewer).")
+	fmt.Fprintf(&b, "\n\n**What a person can do**: mend what each finding says in a new commit, then run the line again on it "+
+		"(`workline route merge-request --target merge-request:%d`); a finding that does not fit is answered where its message says "+
+		"(an objection on the tester's line, a reply to the reviewer).", id)
 	return f.Sticky(t, b.String(), marker, true)
+}
+
+// sayFindings adds fs to b, a bullet each, saidFindings at most.
+func sayFindings(b *strings.Builder, fs []verdict.Finding) {
+	for i, fd := range fs {
+		if i == saidFindings {
+			fmt.Fprintf(b, "\n  - and %d more, in the line's output", len(fs)-i)
+			return
+		}
+		where := ""
+		if fd.Where != "" {
+			where = " on `" + fd.Where + "`"
+		}
+		fmt.Fprintf(b, "\n  - `%s`%s: %s", fd.Rule, where, clipSaid(fd.Message))
+	}
 }
 
 // clipSaid is s on one line, cut to saidMessage runes.

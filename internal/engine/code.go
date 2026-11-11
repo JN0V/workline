@@ -82,7 +82,9 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 	// A head the line blocks is said so, never "no review": its reviewer
 	// may not have run, a role before it blocking (#1327).
 	if v, err := verdictOf(m, hand, w.tip); err == nil && v.class == verdictRed {
-		if err := w.takeBack(v.why); err != nil {
+		// Held by the yes not given on this head, auto-merge left as it
+		// is for the next head the line passes, as admit holds it.
+		if err := m.Accept(w.tip, false, v.why); err != nil {
 			return nil, err
 		}
 		w.say("verdict-red", "warn", fmt.Sprintf("%s, but %s: it merges once the line passes on a new head, a person's yes neither", d.Says(), v.why))

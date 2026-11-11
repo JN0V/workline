@@ -1601,7 +1601,11 @@ func keepLocalVerdict(repo, spec, rng string, id int, res *line.Result) (string,
 	if err != nil {
 		return "", err
 	}
-	return kept.Message, engine.SayVerdict(f, id, v)
+	if err := engine.SayVerdict(f, id, v); err != nil {
+		// Kept all the same: only the comment failed.
+		return kept.Message + "; not said on the merge request: " + err.Error(), nil
+	}
+	return kept.Message, nil
 }
 
 // headVerdict is the line's verdict on the head it judged.
