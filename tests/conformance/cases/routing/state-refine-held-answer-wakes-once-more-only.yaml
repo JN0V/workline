@@ -1,0 +1,30 @@
+case: routing/state-refine-held-answer-wakes-once-more-only
+about: >
+  No loop on a held ready (#1331): the line woke the product owner once
+  more for Ann's answer after its ready was held (the record's
+  `answer-held`), and its state still says so: that run read nothing.
+  Not due again on the same comments.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner, reviewer], issue: [product-owner, reviewer, tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        labeled: {"workline:to-refine": "2026-11-01T19:59:38Z"}
+        author: ann
+        insider: true
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nSessions feel right to the users.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: efbae4cec0e6\nanswered: efbae4cec0e6\nheard: 0\nanswer-held: 1\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Scope -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"efbae4cec0e6\",\"labeled\":\"2026-11-01T19:59:38Z\",\"hops\":1,\"spec\":\"66ca06d13480\",\"asked\":\"efbae4cec0e6\",\"revise\":\"66ca06d13480\",\"heard\":1,\"answer-held\":1} -->\n<!-- workline:sticky=line/state -->"
+          - {body: "On the reviewer's question: a refunded sale does not count.", author: ann, insider: true}
+run: {route: issue, target: {issue: 9}, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-acted, level: info, where: "#9"}]
+  no-findings: [{rule: state-comment-held}, {rule: state-comment}]

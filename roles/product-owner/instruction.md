@@ -117,7 +117,8 @@ the share of its words already said, and leaves it out past a limit.
 rewritten, but one the task says the reviewer's findings lie in and is
 yours to rewrite: give its whole new text in `refine`, answering each
 finding. The Scope is always yours, even when a person wrote it: answer
-a finding there by rewriting it, never by asking. A finding in the
+a finding there by rewriting it, never by asking. A rewrite keeps every
+choice a person's comment settled: their word stands over yours. A finding in the
 Verification is the tester's: leave it, ask no one. Only a person's
 Need, Validation, example or steps are theirs to change.
 

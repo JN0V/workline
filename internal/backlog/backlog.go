@@ -156,6 +156,11 @@ type State struct {
 	// and readied it for its tests first (#1212): once the tester's
 	// Draft holds them, the line asks it its split before the developer.
 	SplitTests bool `yaml:"split-after-tests,omitempty"`
+	// AnswerHeld is how many comments of a person who counts the issue
+	// held when the role's `ready` on it was held (#1331): a person's
+	// comment read in that run, nothing written into the spec. Those
+	// comments stay unheard, read once more; its next `ready` is taken.
+	AnswerHeld int `yaml:"answer-held,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -241,9 +246,10 @@ func FormatState(s State) string {
 		Kind      string            `yaml:"kind,omitempty"`
 		Size      string            `yaml:"size,omitempty"`
 		SplitTest bool              `yaml:"split-after-tests,omitempty"`
+		Held      int               `yaml:"answer-held,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Revised, s.Plain, s.Deleted,
 		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Retest, s.Silent, s.Unread,
-		s.Assumed, s.AssumedAt, s.Told, s.Kind, s.Size, s.SplitTests})
+		s.Assumed, s.AssumedAt, s.Told, s.Kind, s.Size, s.SplitTests, s.AnswerHeld})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
 	// role tells them, never its record.
@@ -596,6 +602,8 @@ type Proposal struct {
 	// Hearsay, the engine's: the words it quotes are only in a comment by
 	// someone outside the project — proposed, never done alone (ADR-0038).
 	Hearsay bool `yaml:"hearsay,omitempty"`
+	// Own, the engine's: an act pre falls back on, never the agent's.
+	Own bool `yaml:"-"`
 	// Ordering: the priority set (1 to 4); a milestone left because it is
 	// released (From, the engine's); and, the engine's, the issue's
 	// priority and milestone before the run, written in the report.
@@ -753,6 +761,10 @@ type Plan struct {
 	// a part open again (checkParent), each with why: the yes taken off,
 	// said on the issue, so it never stands for a later act (#1208).
 	Unaccepted map[int]string `yaml:"unaccepted,omitempty"`
+	// Held are the issues whose `ready` was held for a person's comment
+	// read in this run, nothing written into the spec (#1331): the
+	// comments the role had heard before it, and those counted now.
+	Held map[int][2]int `yaml:"held,omitempty"`
 	// Elsewhere are the open issues a run woken for one issue did not
 	// visit that bear the role's label (#804): counted among those
 	// waiting, from the listing, their records unread.
@@ -785,6 +797,8 @@ type Plan struct {
 	pages     *[2]string
 	decisions map[int]string
 	closed    map[int]bool
+	// refining are the issues the agent drafts a refine on in this run.
+	refining map[int]bool
 }
 
 // Setting is a kind of act's mode and cap.
@@ -929,6 +943,12 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	p.firstNamed = map[int][]string{}
 	p.askedNow = map[int]int{}
 	p.drops = map[int][]string{}
+	p.refining = map[int]bool{}
+	for _, c := range closes {
+		if c.Do == "refine" && !c.Own {
+			p.refining[c.Issue] = true
+		}
+	}
 	dropped := func(c Proposal, rule, msg string) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: c.where(), Message: msg})
 		if c.Issue > 0 {
@@ -2355,6 +2375,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 				return "not-ready", "not moved to ready: " + strings.Join(missing, "; ") + later
 			}
 			c.Assumed, c.Written = names, written
+		}
+		if rule, why := p.answerUnwritten(is, c); rule != "" {
+			return rule, why
 		}
 		if unread, own := ScenariosUnread(is, p.ledger.States[c.Issue]); unread && p.config.Tester && c.Proof == nil && !Readied(is) {
 			// No test could name a scenario: ready, it would skip its

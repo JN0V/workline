@@ -661,7 +661,10 @@ whose result moves the issue to the next. The table is the routing's
   (`state-comment`; `heard` in the record, their count when the line
   woke it): a run that leaves them unread is no loop. On the local
   forge, which names no author, a comment counts as a person of the
-  project's.
+  project's. Its run's `ready` held for them, nothing written into the
+  spec (`answer-held` in its state), the step is due once more
+  (`state-comment-held`; `answer-held` in the record), never again on
+  the same comments.
 - **Left unrefined, due again**
   ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-an-issue-left-unrefined-is-woken-again)):
   in refine, acted on, the product owner's state shows it read the body

@@ -77,12 +77,21 @@ func unreadBody(notes []forge.Note) bool {
 // not read them all (#1331): an answer to the reviewer's question, or to
 // its own. No state: none unheard, its first read due anyway.
 func commentsUnheard(is forge.Issue, notes []forge.Note) (int, bool) {
-	counted := len(backlog.Counted(notes, is))
+	counted, unheard, _ := commentsHeld(is, notes)
+	return counted, unheard
+}
+
+// commentsHeld is commentsUnheard, and whether the product owner's last
+// run held its `ready` for those comments, nothing of them written into
+// the spec (#1331): they are read once more.
+func commentsHeld(is forge.Issue, notes []forge.Note) (counted int, unheard, held bool) {
+	counted = len(backlog.Counted(notes, is))
 	st, found, err := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
 	if !found || err != nil {
-		return counted, false
+		return counted, false, false
 	}
-	return counted, backlog.Heard(st, counted) < counted
+	unheard = backlog.Heard(st, counted) < counted
+	return counted, unheard, unheard && st.AnswerHeld == counted
 }
 
 // noTestUnsettled says whether the product owner left an issue in refine

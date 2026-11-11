@@ -1,0 +1,31 @@
+case: product-owner/ready-taken-after-its-hold
+about: >
+  A held ready is read once more, then taken (#1331): the product
+  owner's last run held its `ready` on Ann's answer, written nowhere in
+  the spec (`answer-held: 1`, her comment unheard). This run's task
+  quotes her answer again and says the ready was held; the agent checks
+  the spec and proposes `ready` again: taken, never held twice.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Sales counted"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b99f0b294f8c\nheard: 0\nanswer-held: 1\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n**Questions for a person**\n\n- `#9:3` (ambiguous): Does a refunded sale count?\n\n<!-- workline:spec-review body=b99f0b294f8c round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - {body: "On the reviewer's question: a refunded sale does not count.", author: ann, insider: true}
+run: {role: product-owner, event: schedule, ai: fake:ready-over-an-answer}
+expect:
+  no-findings: [{rule: answer-unwritten}]
+  run-files:
+    in/task.md: {contains: "Your `ready` on it was held last run"}
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        comment-contains: "heard: 1\n"
