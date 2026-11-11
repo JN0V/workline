@@ -957,7 +957,11 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		res.Summary += fmt.Sprintf("; %d merge-request %s run on a new head", lines, plural(lines, "line", "lines"))
 	}
 	if len(rounds) > 0 {
-		res.Summary += fmt.Sprintf("; %d review %s due:", len(rounds), plural(len(rounds), "round", "rounds"))
+		said := "due"
+		if runsHere(f, o) {
+			said = "due, run"
+		}
+		res.Summary += fmt.Sprintf("; %d review %s %s:", len(rounds), plural(len(rounds), "round", "rounds"), said)
 		for _, r := range rounds {
 			res.Summary += fmt.Sprintf(" merge request %d", r.ID)
 		}

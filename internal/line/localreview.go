@@ -44,9 +44,42 @@ func (r *Result) HeadVerdict(head string) engine.HeadVerdict {
 }
 
 // runsHere says the reconciler runs the merge requests' events itself:
-// a forge kept in this clone, on a person's machine, not listing.
+// a forge kept in this clone, on a person's machine, not listing, its
+// acts applied (a run that applies nothing starts none).
 func runsHere(f forge.Forge, o engine.Options) bool {
-	return forge.KeepsBranches(f) && forge.InCI() == "" && o.Inputs[ReconcileInput] != "list"
+	return forge.KeepsBranches(f) && forge.InCI() == "" && o.Inputs[ReconcileInput] != "list" && !o.NoApply && !o.DryRun
+}
+
+// machineError says the line's findings hold a machine error: an agent
+// out of reach, its answer unread, the engine failing. Its red is no
+// verdict on the head: the next reconcile runs it again.
+func machineError(findings []verdict.Finding) string {
+	for _, f := range findings {
+		switch f.Rule {
+		case "agent-unavailable", "engine-error", "agent-invalid-output", "config-invalid":
+			return f.Rule
+		}
+	}
+	return ""
+}
+
+// checkedOut says where branch is checked out, in repo or one of its
+// worktrees; "" nowhere.
+func checkedOut(repo, branch string) string {
+	out, err := exec.Command("git", "-C", repo, "worktree", "list", "--porcelain").Output()
+	if err != nil {
+		return ""
+	}
+	tree := ""
+	for _, l := range strings.Split(string(out), "\n") {
+		if t, ok := strings.CutPrefix(l, "worktree "); ok {
+			tree = t
+		}
+		if l == "branch refs/heads/"+branch {
+			return tree
+		}
+	}
+	return ""
 }
 
 // localLines runs the merge-request line on each open, ready developer's
@@ -96,10 +129,12 @@ func localLines(res *Result, cfg *routing.Config, f forge.Forge, o engine.Option
 			res.Findings = append(res.Findings, r.Findings...)
 			res.AgentCalls += r.AgentCalls
 			res.Calls = append(res.Calls, r.Calls...)
-			if r.Status == verdict.BlockedExternal { // an agent or a forge out of reach: no verdict, run again
-				res.Status = worst(res.Status, r.Status)
+			if why := machineError(r.Findings); r.Status == verdict.BlockedExternal || why != "" { // no verdict: run again
+				if why == "" {
+					why = r.Status
+				}
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "line-ran", Level: "warn", Where: where,
-					Message: fmt.Sprintf("its merge-request line stopped on %s: %s; no verdict kept, it runs again at the next reconcile", short(head), r.Summary)})
+					Message: fmt.Sprintf("its merge-request line failed on %s (%s): %s; no verdict kept, it runs again at the next reconcile", short(head), why, r.Summary)})
 				return
 			}
 			v := r.HeadVerdict(head)
@@ -128,6 +163,13 @@ func localRound(res *Result, cfg *routing.Config, o engine.Options, mr forge.Mer
 	if head == "" {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "round-not-run", Level: "warn", Where: where,
 			Message: fmt.Sprintf("its branch %s is not in this clone: its review round is not run", mr.Branch)})
+		return
+	}
+	// Its commit moves the branch: git moves none checked out elsewhere,
+	// and the round's work would be lost with its worktree.
+	if at := checkedOut(o.Repo, mr.Branch); at != "" {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "round-not-run", Level: "warn", Where: where,
+			Message: fmt.Sprintf("its branch %s is checked out in %s: its review round is not run; check another branch out there, or run `workline develop --merge-request %d` in it", mr.Branch, at, mr.ID)})
 		return
 	}
 	inTree(res, o.Repo, head, where, func(tree string) {

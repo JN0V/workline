@@ -21,7 +21,7 @@ run:
     git status --porcelain && git rev-parse --abbrev-ref HEAD && git worktree list --porcelain | grep -c '^worktree '
 expect:
   exit: 0
-  stderr: ["1 review round due: merge request 2", "round-ran !2: its review round ran on"]
+  stderr: ["1 review round due, run: merge request 2", "round-ran !2: its review round ran on"]
   stderr-lacks: ["review-round-due"]
   stdout: ["main\n1\n"]
   branches:

@@ -137,7 +137,8 @@ workline issues show !2               # what the line found on it
   ([#1327](https://github.com/JN0V/workline/issues/1327)).
 - **A review round**: a finding, or your comment
   (`workline issues comment '!2' --body "…"`), wakes the developer at
-  the next reconcile. Its fix is committed on its branch.
+  the next reconcile. Its fix is committed on its branch, unless you
+  have that branch checked out: then it says so and waits.
 - **Each runs in a worktree of the head**, apart: your checkout is
   never read nor written.
 - **By hand**, on the branch checked out:
