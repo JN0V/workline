@@ -1443,7 +1443,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
 				return true, nil
 			}
-			if ap.tree != "" && in.Kind == "patch" {
+			if ap.tree != "" && in.Kind == "patch" && errors.Is(err, errNotApplied) {
 				// Made on a checkout with changes not committed, it does
 				// not apply on its head: said, the rest still applied.
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "patch-not-applied", Level: "warn",
@@ -3154,6 +3154,10 @@ func (a *applier) allowed(path string) bool {
 	return pathglob.Any(a.writes, clean)
 }
 
+// errNotApplied: a diff, read and allowed, that git does not apply on the
+// files as they are.
+var errNotApplied = errors.New("the diff does not apply")
+
 // patch applies a unified diff, or replaces one file with {file, content}.
 func (a *applier) patch(v any) error {
 	root := cmp.Or(a.tree, a.repo) // a worktree apart, when the patches go in a comment
@@ -3216,7 +3220,7 @@ func (a *applier) patch(v any) error {
 	// counts of a hunk header wrong, and git would drop the lines past them.
 	// --unidiff-zero: a role's own diff may hold no context (intent.Merge).
 	if _, err := git(root, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "-"); err != nil {
-		return err
+		return fmt.Errorf("%w: %w", errNotApplied, err)
 	}
 	a.written = append(a.written, touched...)
 	return nil
