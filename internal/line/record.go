@@ -174,6 +174,12 @@ type Record struct {
 	// parent.go, #1208): one closed since, or a yes put on, wakes it
 	// again. Kept through every state.
 	Parts string `json:"parts,omitempty"`
+	// Heard: in refine, how many of a person's comments on the issue
+	// there were when the line last woke the product owner (#1331): one
+	// written since, its state saying it has not read it, wakes it once
+	// for them — an answer to the reviewer's question among them. Kept
+	// through every state, so a run that reads nothing is no loop.
+	Heard int `json:"heard,omitempty"`
 }
 
 // StateWrite is what the line writes on an issue once its step ran:
@@ -422,7 +428,7 @@ func afterWrite(r *Record, is forge.Issue) {
 // before — one, a count started again, for a state further on the line
 // (cfg) than any it reached (#1068).
 func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Parts: rec.Parts, Labels: inputLabels(is.Labels), Last: rec.Last}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Parts: rec.Parts, Heard: rec.Heard, Labels: inputLabels(is.Labels), Last: rec.Last}
 	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec && sameLabels(rec, now) {
 		return rec, false
 	}

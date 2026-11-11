@@ -286,6 +286,16 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		st, _, _ := backlog.ReadState(comments, name) // one that does not read gives none to rewrite
 		ok = len(backlog.Unrevised(is, st, comments)) > 0
 	}
+	if !ok && s.Name == refineState && name == backlog.Keeper && had {
+		// A person wrote since the product owner last read the issue — an
+		// answer to the reviewer's question, or to its own (#1331): woken
+		// once for their word, never again on the same comments.
+		if n, unheard := commentsUnheard(is, notes); unheard && n > rec.Heard {
+			ok = true
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-comment", Level: "info", Where: where,
+				Message: "a person commented since the product owner last read it: woken once, to read their word"})
+		}
+	}
 	personWaits := "" // a question, or drafts, waiting on a person within the delay (#1082)
 	if !ok && s.Name == refineState && name == backlog.Keeper {
 		// A question, or drafts, waiting on a person past the product
@@ -341,7 +351,8 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 			Message: "the product owner's state says it never read this issue: woken again, once a body"})
 	}
 	if ok && s.Name == refineState && role == backlog.Keeper {
-		now.Given = givenNow(comments) // the code this read gets: the same next time wakes it no more (#980)
+		now.Given = givenNow(comments)            // the code this read gets: the same next time wakes it no more (#980)
+		now.Heard, _ = commentsUnheard(is, notes) // the comments this read gets: woken for those no more (#1331)
 	}
 	if ok && reviewed {
 		now.Asked = now.Body // the reviewer runs after the product owner: never due again for this alone
