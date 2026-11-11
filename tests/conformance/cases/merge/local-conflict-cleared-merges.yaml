@@ -1,0 +1,27 @@
+case: merge/local-conflict-cleared-merges
+about: >
+  With `forge: local` at `normal`, `!2` conflicts with main: `workline
+  follow` says it on `!2` and on #3 (#1354). Once main no longer
+  conflicts with it, the next `follow` merges it, and the same comments
+  now say it merged: none says it waits on a conflict any more.
+given:
+  repo: local-fix
+  config: {forge: local, merge: {autonomy: normal}}
+  setup:
+    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && git commit -qam 'feat: sub'"
+run:
+  sh: >
+    workline follow --base main --verdict .git/verdict.json;
+    git reset -q --hard HEAD~1 &&
+    workline follow --base main --verdict .git/verdict.json
+expect:
+  exit: 0
+  stderr: ["auto-merge-refused !2", "merged-at-once !2"]
+  files:
+    lib.sh: {contains: "mul()"}
+    .git/workline/merge-requests/2.md:
+      contains: ["state: merged", "**Merged**: at its head", "<!-- workline:sticky=line/merge-refused -->"]
+      lacks: ["**Not merged"]
+    .git/workline/issues/3.md:
+      contains: ["state: closed", "**Its pull request !2 is merged**"]
+      lacks: ["is not merged"]

@@ -167,7 +167,10 @@ workline issues          # #1 closed, !1 and !2 merged
   reconcile's review.
 - **Into `main` in this clone**: a merge commit naming `!2`; nothing is
   pushed. `main` checked out with uncommitted changes, or a conflict:
-  nothing merges, the reason said.
+  nothing merges, the reason said on `!2` and on its issue.
+- **A conflict with `main`** names its files: `!2` waits to be brought
+  up to date with `main`. You can merge `main` into its branch, or close
+  `!2` ([#1354](https://github.com/JN0V/workline/issues/1354)).
 - **No `merge:` setting**: you merge with git, then `follow` closes the
   issue:
 

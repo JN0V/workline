@@ -12,8 +12,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/developer"
+	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
@@ -66,11 +67,31 @@ func closedByMR(t *tally, id int) (forge.MergeRequest, bool) {
 // (developer.RoundDue): said by the reconciler when due.
 func mrWaits(res *Result, b forge.Backlog, doing routing.State, is forge.Issue, mr forge.MergeRequest) {
 	msg := fmt.Sprintf("its claim, %s, waits on its pull request #%d: its review, its checks, then its merge", doing.Label, mr.ID)
+	if r, ok := refusedOn(b, is.ID, mr.ID); ok && !mr.Draft {
+		// Its merge was due and the forge refused it: said, never a
+		// review it does not wait on (#1354).
+		msg = fmt.Sprintf("its claim, %s, waits on its pull request #%d, its merge refused at its head %s: %s", doing.Label, mr.ID, short(r.Head), r.Said)
+		if r.Conflict != "" {
+			msg += fmt.Sprintf("; it waits to be brought up to date with %s", r.Conflict)
+		}
+	}
 	if mr.Draft {
 		msg = fmt.Sprintf("its claim, %s, waits on its pull request #%d, a Draft: ", doing.Label, mr.ID) + draftHolder(b, mr)
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
 		Message: msg + "; a change to its body is the developer's, at a review round on it"})
+}
+
+// refusedOn is the refused merge of merge request mr that issue id's
+// comments say, false when none does or they cannot be read: the claim
+// then reads as waiting on its review, its checks and its merge.
+func refusedOn(b forge.Backlog, id, mr int) (engine.Refusal, bool) {
+	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return engine.Refusal{}, false
+	}
+	r, ok := engine.ReadRefusal(comments)
+	return r, ok && r.MR == mr
 }
 
 // draftHolder says who acts next on mr, the developer's Draft.

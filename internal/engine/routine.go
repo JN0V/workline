@@ -451,7 +451,9 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 	}
 	hold := "To hold it, mark it a draft or turn auto-merge off."
 	if n.local {
-		hold = "Merged into " + mr.Base + " in this clone, nothing pushed."
+		// Said before the clone merges it: a merge it refuses is said in
+		// a comment of its own (#1354).
+		hold = "It goes into " + mr.Base + " in this clone, nothing pushed; a merge refused is said on it."
 	}
 	whose := n.whose()
 	body := fmt.Sprintf("%s: the project's merge policy is `%s`, and this is workline's own %s: %s. %s, every commit its own, and the line passed on its head (%s), every agent's review whole.%s %s Reverted, workline's %s merge requests wait for a person's yes again.",
@@ -465,13 +467,13 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 		return nil, err
 	case err != nil:
 		w.say("auto-merge-refused", "warn", fmt.Sprintf("workline's own %s, its head's verdict passed, but the forge refused to turn auto-merge on: %s", kind, forge.Said(err)))
-		return nil, nil
+		return nil, sayRefused(f, mr, tip, "with no person's yes, the project's merge policy `"+o.Merge+"`", err)
 	case merged:
 		w.say("merged-at-once", "", fmt.Sprintf("with no person's yes, %s: merged at once, the forge's rules met already", why))
-		return nil, nil
+		return nil, sayUnrefused(f, mr, tip, true)
 	}
 	w.say("auto-merge-on", "", fmt.Sprintf("with no person's yes, %s: auto-merge turned on, the forge merges it once its checks pass", why))
-	return e, nil
+	return e, sayUnrefused(f, mr, tip, false)
 }
 
 // ownNote finds, among a merge request's comments, the one the App wrote
