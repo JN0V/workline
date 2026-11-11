@@ -1,8 +1,8 @@
-case: routing/question-answered-in-time-wakes-none
+case: routing/question-answered-in-time-no-timeout
 about: >
   An answer in time cancels the delay (ADR-0060): the reporter answered
-  3 h after the question, so no delay passes on it; the reconciler wakes
-  no role for it.
+  3 h after the question, so no delay passes on it. The answer itself,
+  not yet read, wakes the product owner once (#1331): never a timeout.
 given:
   repo: backlog
   config:
@@ -24,5 +24,6 @@ run: {route: reconcile, ai: none, input: {reconcile: list}}
 expect:
   status: pass
   agent-calls: 0
-  summary: "reconcile: 0 issues due:"
+  summary: "reconcile: 1 issue due: #9"
+  findings: [{rule: state-comment, where: "#9"}]
   no-findings: [{rule: state-timeout}]

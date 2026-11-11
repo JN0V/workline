@@ -178,7 +178,7 @@ type Record struct {
 	// there were when the line last woke the product owner (#1331): one
 	// written since, its state saying it has not read it, wakes it once
 	// for them — an answer to the reviewer's question among them. Kept
-	// through every state, so a run that reads nothing is no loop.
+	// from step to step, so a run that reads nothing is no loop.
 	Heard int `json:"heard,omitempty"`
 }
 
