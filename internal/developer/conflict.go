@@ -68,8 +68,16 @@ func conflictDue(kept forge.Kept, a Act, repo, head string) (base string, due bo
 	if !ok || head == "" || h != head || a.Conflict == head {
 		return "", false
 	}
-	if _, files, err := MergeTree(repo, head, b); err == nil && len(files) == 0 {
+	_, files, err := MergeTree(repo, head, b)
+	switch {
+	case err == nil && len(files) == 0:
 		return "", false // settled since, or merged clean now
+	case err != nil:
+		// A base not fetched here: the round fetches it. Any other
+		// failure would fail each round alike: not due.
+		if _, missing := gitOut(repo, "cat-file", "-e", b+"^{commit}"); missing == nil {
+			return "", false
+		}
 	}
 	return b, true
 }
@@ -115,8 +123,9 @@ func MergeTree(repo, head, base string) (tree string, files []string, err error)
 	return tree, files, nil
 }
 
-// markerLine is a line git's merge writes around a conflict.
-var markerLine = regexp.MustCompile(`(?m)^(<<<<<<<|>>>>>>>)( |$)|^=======$`)
+// markerLine is a line git's merge opens or closes a conflict with: a
+// bare ======= alone is no conflict (a Markdown heading's underline).
+var markerLine = regexp.MustCompile(`(?m)^(<<<<<<<|>>>>>>>)( |$)`)
 
 // markersLeft are the files of files whose content in tree still holds a
 // conflict's marker; one that cannot be read counts.
