@@ -31,10 +31,82 @@ type HeadVerdict struct {
 	Findings []verdict.Finding `json:"findings,omitempty"`
 }
 
-// StepStatus is a step of the line, and how it ended.
+// StepStatus is a step of the line, and how it ended; Findings, those of
+// its findings that block, when it did not pass.
 type StepStatus struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
+	Name     string            `json:"name"`
+	Status   string            `json:"status"`
+	Findings []verdict.Finding `json:"findings,omitempty"`
+}
+
+// Blocking is the findings of fs that block: no level, or block.
+func Blocking(fs []verdict.Finding) []verdict.Finding {
+	var out []verdict.Finding
+	for _, f := range fs {
+		if f.Level == "" || f.Level == "block" {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+// verdictMarker marks the comment saying the line's verdict on a merge
+// request's head, edited at each head.
+const verdictMarker = "line-verdict"
+
+// Said at most, a step's findings and a finding's message, in runes.
+const (
+	saidFindings = 10
+	saidMessage  = 600
+)
+
+// SayVerdict says the line's verdict on its head on merge request id,
+// where a person reads it (#1327): blocked, each step that blocked, its
+// findings, each saying what lifts it, and what a person can do. Kept in
+// one comment edited at each head; a pass is said there only once a block
+// was, so a merge request the line passed carries no comment of it.
+func SayVerdict(f forge.Forge, id int, v HeadVerdict) error {
+	t := forge.Target{Kind: "merge-request", ID: id}
+	marker := forge.Marker(verdictMarker)
+	if v.Status == verdict.Pass {
+		return f.Sticky(t, fmt.Sprintf("**The line passed** on its head (`%s`): no step blocks it.", short(v.Head)), marker, false)
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "**The line blocks this head** (`%s`): it does not merge, a person's yes neither, until the line passes on a new head.\n", short(v.Head))
+	said := false
+	for _, s := range v.Steps {
+		if s.Status == verdict.Pass {
+			continue
+		}
+		said = true
+		fmt.Fprintf(&b, "\n- **%s**: %s", s.Name, s.Status)
+		for i, fd := range s.Findings {
+			if i == saidFindings {
+				fmt.Fprintf(&b, "\n  - and %d more, in the line's output", len(s.Findings)-i)
+				break
+			}
+			where := ""
+			if fd.Where != "" {
+				where = " on `" + fd.Where + "`"
+			}
+			fmt.Fprintf(&b, "\n  - `%s`%s: %s", fd.Rule, where, clipSaid(fd.Message))
+		}
+	}
+	if !said {
+		fmt.Fprintf(&b, "\n- %s", v.red())
+	}
+	b.WriteString("\n\n**What a person can do**: mend what each finding says, in a new push, which runs the line again; " +
+		"a finding that does not fit is answered where its message says (an objection on the tester's line, a reply to the reviewer).")
+	return f.Sticky(t, b.String(), marker, true)
+}
+
+// clipSaid is s on one line, cut to saidMessage runes.
+func clipSaid(s string) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if r := []rune(s); len(r) > saidMessage {
+		return string(r[:saidMessage]) + "…"
+	}
+	return s
 }
 
 // WriteVerdict writes a head's verdict to file, as JSON.
