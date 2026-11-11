@@ -131,13 +131,19 @@ const AnswerUnwrittenRule = "answer-unwritten"
 
 // answerUnwritten holds the agent's `ready` on an issue whose run read a
 // person's comment and drafts no refine on it, its body as the role last
-// read it (#1331): an answer to the
-// reviewer's question, taken as in the spec already, shipped against it.
-// Held once on those comments: they stay unheard, read once more, the
-// hold said; the role's next `ready` on them is taken. A person's yes
-// (the label) and the engine's own acts are never held.
+// read it (#1331): an answer to the reviewer's question, taken as in the
+// spec already, shipped against it. A refine counts when it drafts a
+// section of the spec, not the tester's Verification alone, and was not
+// dropped before the ready. Held once on those comments: they stay
+// unheard, read once more, the hold said; the role's next `ready` on them
+// is taken. A person's yes (the label) and the engine's own acts are
+// never held.
 func (p *Plan) answerUnwritten(is forge.Issue, c *Proposal) (rule, why string) {
-	if p.ledger == nil || c.Own || c.Ticked != "" || Accepted(is) || p.refining[c.Issue] {
+	if p.ledger == nil || c.Own || c.Ticked != "" || Accepted(is) {
+		return "", ""
+	}
+	dropped := slices.ContainsFunc(p.Decisions, func(d Decision) bool { return d.Act.Do == "refine" && d.Act.Issue == c.Issue && d.Mode == Off })
+	if p.refining[c.Issue] && !dropped {
 		return "", ""
 	}
 	st, notes := p.ledger.States[c.Issue], p.ledger.Notes[c.Issue]

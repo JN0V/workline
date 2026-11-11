@@ -945,8 +945,8 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	p.drops = map[int][]string{}
 	p.refining = map[int]bool{}
 	for _, c := range closes {
-		if c.Do == "refine" && !c.Own {
-			p.refining[c.Issue] = true
+		if c.Do == "refine" && !c.Own && strings.TrimSpace(c.Need+c.Example+c.Steps+c.Validation+c.Scope) != "" {
+			p.refining[c.Issue] = true // a section of the spec drafted: not the tester's Verification alone
 		}
 	}
 	dropped := func(c Proposal, rule, msg string) {

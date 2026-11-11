@@ -114,14 +114,16 @@ what it can and asks for the rest:
   into the Scope, the tester and the developer building from the body,
   never from its comments. The task quotes those comments
   ([#1331](https://github.com/JN0V/workline/issues/1331)). It gives
-  the issue's body whole and every comment of a person who counts:
+  the issue's body whole (cut past 20,000 characters only, for pasted
+  logs) and every comment of a person who counts:
   only the role's and others' beyond the last five are left out, as a
   section rewritten whole loses what its writer could not see.
 - **An answer read before ready**
   ([#1331](https://github.com/JN0V/workline/issues/1331)): the agent's
-  `ready` on an issue whose run read a person's comment, with no refine
-  drafted on it and its body as the role last read it, is held once
-  (`answer-unwritten`). The issue stays in
+  `ready` on an issue whose run read a person's comment, its body as the
+  role last read it, is held once (`answer-unwritten`) unless the run
+  drafts a section of the spec on it (not the Verification alone) that
+  is not dropped before the ready. The issue stays in
   refine, those comments unheard again (`heard`), the hold kept in the
   state (`answer-held`, their count). The next run quotes them again
   and says the ready was held; its `ready` is taken. Never held: the

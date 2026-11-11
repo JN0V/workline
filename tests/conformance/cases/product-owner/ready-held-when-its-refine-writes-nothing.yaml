@@ -1,0 +1,34 @@
+case: product-owner/ready-held-when-its-refine-writes-nothing
+about: >
+  A refine that writes nothing lifts no hold (#1331): given Ann's answer
+  to the reviewer's question, the product owner's agent drafts the Scope
+  as it already reads, dropped (`nothing-to-refine`), and proposes
+  `ready`. Nothing of her answer reached the spec: the ready is held as
+  with no refine, her comment unheard again (`heard: 0`), the hold kept
+  in the state (`answer-held: 1`).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Sales counted"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b99f0b294f8c\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n**Questions for a person**\n\n- `#9:3` (ambiguous): Does a refunded sale count?\n\n<!-- workline:spec-review body=b99f0b294f8c round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - {body: "On the reviewer's question: a refunded sale does not count.", author: ann, insider: true}
+run: {role: product-owner, event: schedule, ai: fake:refine-same-then-ready}
+expect:
+  findings: [{rule: answer-unwritten, where: "#9"}]
+  run-files:
+    in/task.md: {contains: "a refunded sale does not count"}
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine]
+        comment-contains: "heard: 0\n"
+      - id: 9
+        comment-contains: "answer-held: 1\n"

@@ -43,7 +43,8 @@ import (
 const (
 	exitNothing  = 10
 	exitExternal = 3
-	bodyMax      = 3000 // characters of a comment given to the agent; half, of a related issue's body
+	bodyMax      = 3000  // characters of a comment given to the agent; half, of a related issue's body
+	bodyWholeMax = 20000 // characters of the body of an issue it reads: whole, but for pasted logs
 	commentsMax  = 5    // its last comments given
 	relatedMax   = 6    // other issues on the same code, given whole
 )
@@ -1527,8 +1528,9 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	}
 	b.WriteString("\n")
 	// Its body whole (#1331): a section is rewritten whole, and a line
-	// past a cut, a person's answer written there, was lost with it.
-	fmt.Fprintf(b, "%s\n\n", strings.TrimSpace(is.Body))
+	// past a cut, a person's answer written there, was lost with it. Only
+	// a body past bodyWholeMax, logs pasted in, is cut.
+	fmt.Fprintf(b, "%s\n\n", clip(is.Body, bodyWholeMax))
 	type said struct {
 		who, text string
 		person    bool // a person's who counts (backlog.Counted)
