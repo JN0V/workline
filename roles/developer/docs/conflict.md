@@ -3,7 +3,7 @@ sources:
   - internal/developer/conflict.go
   - internal/engine/uptodate.go
   - internal/engine/engine.go
-checked: f3049abd
+checked: bc755346
 verified: agent:claude-code
 ---
 # A pull request behind main
