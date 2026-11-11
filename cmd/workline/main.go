@@ -1298,7 +1298,20 @@ func developCmd(args []string) int {
 		return 1
 	}
 	absRoles, _ := filepath.Abs(rolesDir)
-	res := engine.Run(engine.Options{Repo: abs, RolesDir: absRoles, Role: "developer", Event: event, AI: *ai,
+	runIn := abs
+	if event == "review" && !*noApply && forge.InCI() == "" {
+		// A round commits on its branch: on another checkout, it runs in a
+		// worktree of its head, or is refused before its agent (#1328).
+		tree, done, why := roundTree(abs, projectForge(abs, *forgeSpec), *mr)
+		if why != "" {
+			return misuse(fs, fmt.Sprintf("merge-request #%d: %s; nothing run", *mr, why))
+		}
+		if tree != "" {
+			defer done()
+			runIn = tree
+		}
+	}
+	res := engine.Run(engine.Options{Repo: runIn, RolesDir: absRoles, Role: "developer", Event: event, AI: *ai,
 		Forge: *forgeSpec, Target: target, NoApply: *noApply, OpenMergeRequest: event == "issue", Command: "workline develop", Inputs: inputs})
 	if !*noApply && res.Status == verdict.Pass {
 		res.Findings = append(res.Findings, line.CountRuns(nil, 0, []string{res.RunDir})...) // a review round's tokens, on its issue (ADR-0064)
@@ -1310,6 +1323,53 @@ func developCmd(args []string) int {
 		report(res)
 	}
 	return exitFor(res.Status)
+}
+
+// roundTree is where a review round on merge request id runs, from repo:
+// "" here, its branch checked out, or where the forge or the request
+// cannot be read (the round says it); a worktree of its head, done
+// removing it, when the forge keeps its branches in this clone and
+// another branch is checked out. why refuses it before its agent: its
+// branch checked out in another worktree, or, on a forge elsewhere, the
+// checkout not at its branch's tip.
+func roundTree(repo, spec string, id int) (tree string, done func(), why string) {
+	f, err := forge.Open(spec, repo)
+	if err != nil || f == nil {
+		return "", nil, ""
+	}
+	mr, err := f.MergeRequest(id)
+	if err != nil || !mr.Here || !strings.HasPrefix(mr.Branch, developer.Branch) {
+		return "", nil, ""
+	}
+	head, err := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
+	if err != nil {
+		return "", nil, ""
+	}
+	if !forge.KeepsBranches(f) {
+		if exec.Command("git", "-C", repo, "fetch", "-q", "origin", mr.Branch).Run() != nil {
+			return "", nil, "" // out of reach: its push says so
+		}
+		tip, err := exec.Command("git", "-C", repo, "rev-parse", "FETCH_HEAD").Output()
+		if err == nil && strings.TrimSpace(string(tip)) != strings.TrimSpace(string(head)) {
+			return "", nil, fmt.Sprintf("the working tree is at %.7s, not at %s's tip %.7s: run `git switch %s` first", head, mr.Branch, tip, mr.Branch)
+		}
+		return "", nil, ""
+	}
+	tip := line.TipOf(repo, mr.Branch)
+	if tip == "" {
+		return "", nil, ""
+	}
+	if on, _ := exec.Command("git", "-C", repo, "symbolic-ref", "-q", "--short", "HEAD").Output(); strings.TrimSpace(string(on)) == mr.Branch {
+		return "", nil, ""
+	}
+	if at := line.CheckedOut(repo, mr.Branch); at != "" {
+		return "", nil, fmt.Sprintf("its branch %s is checked out in %s: run it there", mr.Branch, at)
+	}
+	tree, done, err = line.HeadTree(repo, tip)
+	if err != nil {
+		return "", nil, err.Error()
+	}
+	return tree, done, ""
 }
 
 // testRun runs the tester on one target (ADR-0055). On an issue, write

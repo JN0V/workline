@@ -1,0 +1,30 @@
+case: developer/round-off-its-branch-refused-first
+about: >
+  On a forge that keeps its branches elsewhere, `workline develop
+  --merge-request 2` with main checked out, not the pull request's
+  branch (#1328): refused before its agent runs, saying which branch to
+  check out; nothing written, nothing pushed.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3 && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - {id: 3, title: "Multiply two numbers", labels: ["workline:developing"], body: "## Need\n\nI want to multiply.\n"}
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"round\":1,\"review-runs\":1} -->\n<!-- workline:sticky=developer/code -->"
+          - {body: "mul still adds: please multiply.", author: alice, insider: true}
+run:
+  sh: workline develop --merge-request 2 --ai "fake:$FIXTURES/agents/developer-writes-mul.yaml" --forge "fake:$PWD/../forge.json"
+expect:
+  exit: 64
+  stderr: ["merge-request #2: the working tree is at", "not at workline/developer/3's tip", "run `git switch workline/developer/3` first; nothing run"]
+  files:
+    lib.sh: {lacks: "mul()"}

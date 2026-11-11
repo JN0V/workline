@@ -1,0 +1,20 @@
+case: documentalist/patch-in-a-comment-leaves-the-checkout
+about: >
+  On a merge request, the documentalist's fix goes in a comment
+  (ADR-0051), and only there (#1328): it is written in a worktree of the
+  head apart, diffed, and the worktree removed. The checkout the line ran
+  in, a person's on their machine, holds no change after it.
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  applied: [patch]
+  findings: [{rule: patch-as-comment, message: "pushes nothing"}]
+  forge: {merge-requests: [{id: 1, comments: 1, comment-contains: ["+Access tokens last two hours."]}]}
+  files:
+    docs/tech/auth.md: {contains: "Access tokens last one hour.", lacks: "two hours"}

@@ -63,9 +63,9 @@ func machineError(findings []verdict.Finding) string {
 	return ""
 }
 
-// checkedOut says where branch is checked out, in repo or one of its
+// CheckedOut says where branch is checked out, in repo or one of its
 // worktrees; "" nowhere.
-func checkedOut(repo, branch string) string {
+func CheckedOut(repo, branch string) string {
 	out, err := exec.Command("git", "-C", repo, "worktree", "list", "--porcelain").Output()
 	if err != nil {
 		return ""
@@ -104,7 +104,7 @@ func localLines(res *Result, cfg *routing.Config, f forge.Forge, o engine.Option
 			continue
 		}
 		where := fmt.Sprintf("!%d", mr.ID)
-		head := tipOf(o.Repo, mr.Branch)
+		head := TipOf(o.Repo, mr.Branch)
 		if head == "" {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "line-not-run", Level: "warn", Where: where,
 				Message: fmt.Sprintf("its branch %s is not in this clone: its line is not run", mr.Branch)})
@@ -159,7 +159,7 @@ func localLines(res *Result, cfg *routing.Config, f forge.Forge, o engine.Option
 // person's checkout.
 func localRound(res *Result, cfg *routing.Config, o engine.Options, mr forge.MergeRequest) {
 	where := fmt.Sprintf("!%d", mr.ID)
-	head := tipOf(o.Repo, mr.Branch)
+	head := TipOf(o.Repo, mr.Branch)
 	if head == "" {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "round-not-run", Level: "warn", Where: where,
 			Message: fmt.Sprintf("its branch %s is not in this clone: its review round is not run", mr.Branch)})
@@ -167,7 +167,7 @@ func localRound(res *Result, cfg *routing.Config, o engine.Options, mr forge.Mer
 	}
 	// Its commit moves the branch: git moves none checked out elsewhere,
 	// and the round's work would be lost with its worktree.
-	if at := checkedOut(o.Repo, mr.Branch); at != "" {
+	if at := CheckedOut(o.Repo, mr.Branch); at != "" {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "round-not-run", Level: "warn", Where: where,
 			Message: fmt.Sprintf("its branch %s is checked out in %s: its review round is not run; check another branch out there, or run `workline develop --merge-request %d` in it", mr.Branch, at, mr.ID)})
 		return
@@ -187,8 +187,8 @@ func localRound(res *Result, cfg *routing.Config, o engine.Options, mr forge.Mer
 	})
 }
 
-// tipOf is branch's commit in repo, "" when it is not there.
-func tipOf(repo, branch string) string {
+// TipOf is branch's commit in repo, "" when it is not there.
+func TipOf(repo, branch string) string {
 	out, err := exec.Command("git", "-C", repo, "rev-parse", "-q", "--verify", "refs/heads/"+branch+"^{commit}").Output()
 	if err != nil {
 		return ""
@@ -211,25 +211,34 @@ func inTreeOptions(o engine.Options, tree string) engine.Options {
 // inTree runs do in a worktree of repo at head, detached, removed after;
 // one that could not be made is said, do not run.
 func inTree(res *Result, repo, head, where string, do func(tree string)) {
+	dir, done, err := HeadTree(repo, head)
+	if err != nil {
+		res.Status = worst(res.Status, verdict.Block)
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "tree-not-made", Where: where, Message: err.Error()})
+		return
+	}
+	defer done()
+	do(dir)
+}
+
+// HeadTree checks head out in a worktree of repo apart, detached, repo's
+// .workline/config.yaml laid in it; done removes it. A round or a line
+// run there leaves the person's checkout as it was (#1328).
+func HeadTree(repo, head string) (tree string, done func(), err error) {
 	dir, err := os.MkdirTemp("", "workline-review-")
 	if err == nil {
 		_ = os.Remove(dir) // git makes it
 		err = tester.Worktree(repo, head, dir)
 	}
 	if err != nil {
-		res.Status = worst(res.Status, verdict.Block)
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "tree-not-made", Where: where,
-			Message: fmt.Sprintf("its head %s could not be checked out apart: %v", short(head), err)})
-		return
+		return "", nil, fmt.Errorf("its head %s could not be checked out apart: %v", short(head), err)
 	}
-	defer tester.RemoveWorktree(repo, dir)
+	done = func() { tester.RemoveWorktree(repo, dir) }
 	if err := sameConfig(repo, dir); err != nil {
-		res.Status = worst(res.Status, verdict.Block)
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "tree-not-made", Where: where,
-			Message: fmt.Sprintf("the project's config could not be laid in its head %s's tree: %v", short(head), err)})
-		return
+		done()
+		return "", nil, fmt.Errorf("the project's config could not be laid in its head %s's tree: %v", short(head), err)
 	}
-	do(dir)
+	return dir, done, nil
 }
 
 // sameConfig lays repo's .workline/config.yaml, as the reconciler read
