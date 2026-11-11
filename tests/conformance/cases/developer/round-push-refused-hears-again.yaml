@@ -32,7 +32,7 @@ given:
 run:
   sh: >
     workline develop --merge-request 2 --ai "fake:$FIXTURES/agents/developer-writes-mul.yaml" --forge "fake:$PWD/../forge.json" --json > first.json;
-    grep -c '"heard"' ../forge.json;
+    grep -c heard ../forge.json;
     rm ../origin.git/hooks/pre-receive && git fetch -q origin && git reset -q --hard origin/workline/developer/3 &&
     workline develop --merge-request 2 --ai "fake:$FIXTURES/agents/developer-writes-mul.yaml" --forge "fake:$PWD/../forge.json" --json > second.json;
     echo "second $?"
