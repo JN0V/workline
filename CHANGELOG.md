@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.75.0](https://github.com/JN0V/workline/compare/v0.74.0...v0.75.0) (2026-11-11)
+
+
+### Features
+
+* **developer:** merge main into a request in conflict with it ([#1368](https://github.com/JN0V/workline/issues/1368)) ([2204f48](https://github.com/JN0V/workline/commit/2204f48b0a328b06e1f7ace8f6090322a75ee45f))
+
+
+### Bug Fixes
+
+* **line:** say a refused merge where a person reads ([#1365](https://github.com/JN0V/workline/issues/1365)) ([6f81f2d](https://github.com/JN0V/workline/commit/6f81f2d50513984d7ef6e50067662c5c0c239abb))
+* **merge:** prove a local request behind main on the merge ([#1375](https://github.com/JN0V/workline/issues/1375)) ([791374d](https://github.com/JN0V/workline/commit/791374d9a82acc9d66a0a3f55d6d29833f1571b5))
+* **product-owner:** keep a person's answers in the spec ([#1363](https://github.com/JN0V/workline/issues/1363)) ([828b32c](https://github.com/JN0V/workline/commit/828b32c08bba57021518a6671d278079c49a7e79))
+* **tester:** answer a Draft's objections on the local forge ([#1367](https://github.com/JN0V/workline/issues/1367)) ([c0e69cf](https://github.com/JN0V/workline/commit/c0e69cfc504bd6d22e11a671100e658bd11ab189))
+
 ## [0.74.0](https://github.com/JN0V/workline/compare/v0.73.0...v0.74.0) (2026-11-11)
 
 
