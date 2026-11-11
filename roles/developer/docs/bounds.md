@@ -138,7 +138,9 @@ what each agent gets: [the agent](agent.md)).
   An interrupted run's tree is removed with its run, 50 runs later.
 - **What is taken**: the diff against that commit, new files in,
   whatever the agent committed, a deleted file a deletion; one patch a
-  file, held to the rules above. A file's mode is not read.
+  file, held to the rules above. A file's mode is not read: an
+  executable script edited keeps its mode
+  ([#1330](https://github.com/JN0V/workline/issues/1330)).
 - **Not its code**: the empty files `claude` creates for its sandbox
   (`.env*`, `package.json` and 15 more), removed once it ran
   ([the agent](agent.md#claude)). An empty file the agent writes, such

@@ -3187,8 +3187,9 @@ func (a *applier) patch(v any) error {
 }
 
 // notText says why a diff does more than change text files: a rename or a
-// copy — whose source git's count does not name —, a mode changed, a link,
-// a submodule or an executable made, a binary patch; "" when it does not.
+// copy — whose source git's count does not name —, a mode changed, a link
+// or a submodule touched, an executable made or deleted, a binary patch;
+// "" when it does not: an executable's text edited is text.
 // Read from git's own extended headers, which a hunk's lines never start.
 func notText(diff string) string {
 	for _, l := range strings.Split(diff, "\n") {
@@ -3206,7 +3207,11 @@ func notText(diff string) string {
 				return "the patch makes or deletes a file of mode " + mode + ": a role writes text files"
 			}
 		case strings.HasPrefix(l, "index "):
-			if f := strings.Fields(l); len(f) > 2 && f[2] != "100644" {
+			// The mode an index line gives is the file's, unchanged: an
+			// executable script's text is text to edit (#1330). What is
+			// committed keeps the index's mode, whatever the line says;
+			// a link, a submodule is not text.
+			if f := strings.Fields(l); len(f) > 2 && f[2] != "100644" && f[2] != "100755" {
 				return "the patch names a file of mode " + f[2] + ": a role writes text files"
 			}
 		case strings.HasPrefix(l, "GIT binary patch") || strings.HasPrefix(l, "Binary files "):

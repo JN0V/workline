@@ -144,6 +144,69 @@ func TestWrittenDiffAppliesWhole(t *testing.T) {
 	}
 }
 
+// An executable's text edited is text: its index line names its mode,
+// unchanged; a mode changed, a link, a submodule, an executable made or
+// deleted are not (#1330).
+func TestNotText(t *testing.T) {
+	hunk := "--- a/bin/run\n+++ b/bin/run\n@@ -1 +1 @@\n-a\n+b\n"
+	for head, refused := range map[string]bool{
+		"index 7898192..6178079 100644":                 false,
+		"index 7898192..6178079 100755":                 false,
+		"index 7898192..6178079":                        false,
+		"index 7898192..6178079 120000":                 true,
+		"index 7898192..6178079 160000":                 true,
+		"old mode 100644\nnew mode 100755":              true,
+		"old mode 100755\nnew mode 100644":              true,
+		"new file mode 100755\nindex 0000000..6178079":  true,
+		"deleted file mode 100755\nindex 7898192..0000": true,
+	} {
+		if why := notText("diff --git a/bin/run b/bin/run\n" + head + "\n" + hunk); (why != "") != refused {
+			t.Errorf("%q: notText = %q, want refused %v", head, why, refused)
+		}
+	}
+}
+
+// A patch to an executable keeps its mode, and a text file's index line
+// naming 100755 makes no executable: on disk with core.fileMode, in
+// what is committed either way (#1330).
+func TestPatchKeepsTheMode(t *testing.T) {
+	repo, run, write := gitRepo(t)
+	run("config", "core.fileMode", "true")
+	write("run.sh", "a\n")
+	write("doc.md", "a\n")
+	run("update-index", "--add", "--chmod=+x", "run.sh")
+	run("add", "doc.md")
+	run("commit", "-qm", "chore: start")
+	if err := os.Chmod(filepath.Join(repo, "run.sh"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	a := &applier{repo: repo, writes: []string{"**"}}
+	for file, mode := range map[string]string{"run.sh": "100755", "doc.md": "100755"} {
+		diff := "diff --git a/" + file + " b/" + file + "\nindex 7898192..6178079 " + mode +
+			"\n--- a/" + file + "\n+++ b/" + file + "\n@@ -1 +1 @@\n-a\n+b\n"
+		if err := a.patch(diff); err != nil {
+			t.Fatalf("%s: %v", file, err)
+		}
+	}
+	for file, want := range map[string]os.FileMode{"run.sh": 0o100, "doc.md": 0} {
+		st, err := os.Stat(filepath.Join(repo, file))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := st.Mode() & 0o100; got != want {
+			t.Errorf("%s: its owner's executable bit %o, want %o", file, got, want)
+		}
+		if b, _ := os.ReadFile(filepath.Join(repo, file)); string(b) != "b\n" {
+			t.Errorf("%s holds %q, want the patch's text", file, b)
+		}
+	}
+	run("add", "run.sh", "doc.md")
+	if got := run("ls-files", "-s", "run.sh", "doc.md"); !strings.HasPrefix(got, "100644 ") ||
+		!strings.Contains(got, "\n100755 ") {
+		t.Errorf("the modes staged: %q, want doc.md 100644, run.sh 100755", got)
+	}
+}
+
 // A judge's question pre asks again (ADR-0045) is one answered before pre
 // ran whose answer pre took away; past the rounds, it is answered as not
 // asked, so pre settles it.
