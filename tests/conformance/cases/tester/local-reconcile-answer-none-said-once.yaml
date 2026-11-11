@@ -1,0 +1,40 @@
+case: tester/local-reconcile-answer-none-said-once
+about: >
+  With `forge: local`, an answer run that writes no answer is said on
+  the Draft and not run again on the same comments (#1265): here `!1`
+  keeps no tester's record, so its answer cannot tell its tests. The
+  first reconcile runs it and says so on `!1` (`answer-none`); the second
+  runs no tester (`answer-waits`), spending nothing each pass.
+given:
+  repo: local-fix
+  setup:
+    - "rm .git/verdict.json"
+    - |
+      cat >> .git/workline/merge-requests/1.md <<'EOF'
+
+      <!-- workline-comment -->
+      workline:objection
+      - test: tests/test_mul_by_zero.sh
+      - kind: missing
+      - why: the reviewer's tests lens, on pull request 2, `lib.sh:2`: Important: mul of a negative factor has no test.
+
+      _On `tests/test_mul_by_zero.sh:4`_
+
+      <!-- workline:on-line key=missing-1 path=tests/test_mul_by_zero.sh line=4 -->
+      EOF
+  config:
+    forge: local
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+run:
+  sh: >
+    workline route reconcile --ai "fake:$FIXTURES/agents/tester-answer-missing-added.yaml" --json > first.json;
+    workline route reconcile --ai "fake:$FIXTURES/agents/tester-answer-missing-added.yaml" --json > second.json;
+    grep -c '"name": "tester"' second.json || true
+expect:
+  exit: 0
+  stdout: ["0\n"]
+  files:
+    first.json: {contains: ["answer-ran", "answer-none"]}
+    second.json: {contains: ["answer-waits"], lacks: "answer-ran"}
+    .git/workline/merge-requests/1.md: {contains: ["ran the tester's answer on an objection here, and it wrote none", "<!-- workline:answer-tried n=1 -->"]}

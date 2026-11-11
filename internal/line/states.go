@@ -942,7 +942,8 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		}
 	}
 	issued := started
-	lines := localLines(res, cfg, f, o, &issued) // a forge kept here: no job reviews a push (#1324)
+	lines := localLines(res, cfg, f, o, &issued)     // a forge kept here: no job reviews a push (#1324)
+	answers := localAnswers(res, cfg, f, o, &issued) // nor answers an objection on a Draft (#1265)
 	rounds := roundsDue(res, cfg, f, spec, o, &issued)
 	switch {
 	case list:
@@ -951,7 +952,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			res.Summary += " #" + strconv.Itoa(n)
 		}
 		res.Reviews = rounds
-	case started == 0 && lines == 0 && len(rounds) == 0:
+	case started == 0 && lines == 0 && answers == 0 && len(rounds) == 0:
 		res.Summary = fmt.Sprintf("%s: nothing due (%d %s on the line acted on already)", ReconcileEvent, quiet, plural(quiet, "issue", "issues"))
 	case started == 0:
 		res.Summary = fmt.Sprintf("%s: no issue's step due (%s)", ReconcileEvent, res.Status)
@@ -963,6 +964,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	}
 	if lines > 0 {
 		res.Summary += fmt.Sprintf("; %d merge-request %s run on a new head", lines, plural(lines, "line", "lines"))
+	}
+	if answers > 0 {
+		res.Summary += fmt.Sprintf("; %d %s on its objections", answers, plural(answers, "Draft answered", "Drafts answered"))
 	}
 	if len(rounds) > 0 {
 		said := "due"
