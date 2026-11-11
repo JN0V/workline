@@ -1338,7 +1338,7 @@ func roundTree(repo, spec string, id int) (tree string, done func(), why string)
 		return "", nil, ""
 	}
 	mr, err := f.MergeRequest(id)
-	if err != nil || !strings.HasPrefix(mr.Branch, developer.Branch) {
+	if err != nil || !mr.Here || !strings.HasPrefix(mr.Branch, developer.Branch) {
 		return "", nil, ""
 	}
 	head, err := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()

@@ -1443,9 +1443,18 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
 				return true, nil
 			}
+			if ap.tree != "" && in.Kind == "patch" {
+				// Made on a checkout with changes not committed, it does
+				// not apply on its head: said, the rest still applied.
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "patch-not-applied", Level: "warn",
+					Message: fmt.Sprintf("a patch to comment does not apply on the head judged, apart from the checkout's uncommitted changes: %v", err)})
+				return false, nil
+			}
 			return false, fmt.Errorf("apply %s: %w", in.Kind, err)
 		}
-		st.Applied = append(st.Applied, i)
+		if !slices.Contains(st.Applied, i) {
+			st.Applied = append(st.Applied, i)
+		}
 		for _, w := range ap.written { // a resumed run adds to what the first attempt wrote
 			if !slices.Contains(st.Written, w) {
 				st.Written = append(st.Written, w)
@@ -2669,24 +2678,24 @@ type applier struct {
 	repo, runDir string
 	// tree: where the patches are written, when not in repo: a worktree
 	// apart, for patches that go in a comment (#1328).
-	tree    string
-	targets map[string]string
-	writes       []string    // paths the role may write
-	written      []string    // files changed by this run's patches
-	handoffs     []any       // next roles asked for, recorded for routing
-	forge        forge.Forge // nil when the project has no forge
-	target       *forge.Target
-	runID, role  string
-	index        int           // position of the intention being applied, for its marker
-	plan         *backlog.Plan // what becomes of the acts on the backlog, nil without any
-	settings     map[string]any
-	opens        *backlog.Openings // the run's issues opened, made on the first
-	capped       int               // findings not opened as issues, past issues-max
-	findings     []verdict.Finding // what the applying says
-	model        string            // the model whose answer is applied, as an announcement records it
-	own          string            // the run's own trailers: its role, the agents and models that answered
-	scheme       *scale.Scheme     // where the project keeps each axis, detected at the first act writing one (ADR-0040)
-	ensured      map[string]bool   // the labels this run made sure the project has
+	tree        string
+	targets     map[string]string
+	writes      []string    // paths the role may write
+	written     []string    // files changed by this run's patches
+	handoffs    []any       // next roles asked for, recorded for routing
+	forge       forge.Forge // nil when the project has no forge
+	target      *forge.Target
+	runID, role string
+	index       int           // position of the intention being applied, for its marker
+	plan        *backlog.Plan // what becomes of the acts on the backlog, nil without any
+	settings    map[string]any
+	opens       *backlog.Openings // the run's issues opened, made on the first
+	capped      int               // findings not opened as issues, past issues-max
+	findings    []verdict.Finding // what the applying says
+	model       string            // the model whose answer is applied, as an announcement records it
+	own         string            // the run's own trailers: its role, the agents and models that answered
+	scheme      *scale.Scheme     // where the project keeps each axis, detected at the first act writing one (ADR-0040)
+	ensured     map[string]bool   // the labels this run made sure the project has
 }
 
 func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d", a.runID, a.index)) }
