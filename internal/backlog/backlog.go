@@ -886,14 +886,16 @@ func InCommit(repo, path string) bool {
 	return path != "" && exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() == nil
 }
 
-// Ignored are the paths of paths the repository's ignore rules match,
+// Ignored are those of paths the repository's ignore rules match,
 // as git reads them: a build's outputs, `app/build/…`, none when they
 // cannot be read.
 func Ignored(repo string, paths []string) []string {
 	if len(paths) == 0 {
 		return nil
 	}
-	cmd := exec.Command("git", "-C", repo, "check-ignore", "-z", "--stdin")
+	// The repository's rules alone, never a machine's own excludes: the
+	// same on a laptop and in CI.
+	cmd := exec.Command("git", "-C", repo, "-c", "core.excludesFile=/dev/null", "check-ignore", "-z", "--stdin")
 	cmd.Stdin = strings.NewReader(strings.Join(paths, "\x00") + "\x00")
 	// Exit 1: none is ignored; any other failure reads as none as well.
 	out, _ := cmd.Output()
