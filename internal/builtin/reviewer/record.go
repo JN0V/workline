@@ -326,16 +326,14 @@ func standing(repo string, s Settings, st state, blocks []Block) []Block {
 // commits a lens reads change: each is asked, whosever turn it is, so that
 // a commit that may answer a block is never recorded unread by its lens,
 // the block then held until its line changed (ADR-0020, amended). A lens
-// with nothing to read in this change (skip) is not. A claim's block is
-// asked again on any commit (#1415): its cause may lie in a file the
-// change never touches, its answer in another.
+// with nothing to read in this change (skip) is not.
 func answering(blocks []Block, files []File, skip map[string]string) []string {
 	var out []string
 	for _, b := range blocks {
 		if _, ok := skip[b.Lens]; ok || slices.Contains(out, b.Lens) {
 			continue
 		}
-		if rereads(b, files) {
+		if slices.Contains(paths(files), b.Cause.Path) {
 			out = append(out, b.Lens)
 		}
 	}
@@ -373,14 +371,8 @@ func reread(repo string, s Settings, st state, c candidates, related []Finding, 
 		if strings.HasPrefix(b.Cause.Path, "#") {
 			return issueOf(st, b.Cause.Path) != nil
 		}
-		return rereads(b, files)
+		return slices.Contains(paths(files), b.Cause.Path)
 	}), nil
-}
-
-// rereads says whether the new commits' files bring a block's lens to read
-// it again: its cause's file among them; a claim's block, any (#1415).
-func rereads(b Block, files []File) bool {
-	return slices.Contains(paths(files), b.Cause.Path) || b.Side == onClaim && len(files) > 0
 }
 
 // span is what since finds of a range.

@@ -171,8 +171,7 @@ none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-ac
      ([#1415](https://github.com/JN0V/workline/issues/1415)): a finding
      of the claims lens is the change's wherever its cause lies, a kept
      line below the lines it added too; on a line the diff does not
-     show, it stays in the summary. Its block is read again on any new
-     commit, its answer in another file maybe.
+     show, it stays in the summary.
    - **Elsewhere**: an issue, once, labelled `needs-triage`, with the
      product owner's state; never on the merge request. Its key is the
      file and the cause's line; an issue open or closed holds it, none
