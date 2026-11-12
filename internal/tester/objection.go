@@ -710,7 +710,7 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 			return fail(err)
 		}
 		if lacks {
-			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no test written: it lacks code, said in the thread" + left,
+			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no test written: it lacks code, said in the thread" + whysSaid(a) + left,
 				Findings: []verdict.Finding{{Rule: "lacks-code", Level: "warn", Where: a.URL, Message: reason}}})
 		}
 		if missing {
