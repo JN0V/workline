@@ -14,9 +14,6 @@ trial-34 i1-status expected-end
 # Validation, then the same silent park. Partly the fake's: it answers a
 # draft with `ready`, never a rewrite.
 trial-5-fresh i1-status expected-end
-# The product owner's answer unreadable twice in its run: the same tick's
-# second reconcile asks it a third time, on the same input (#1090).
-trial-35-po-unread same-tick-twice
 # Replayed, the trial's first product owner answer, read through the
 # engine's reader, then the silent park: the spec reviewer that woke it
 # again in the trial is not on the simulator's line, and an act refused
