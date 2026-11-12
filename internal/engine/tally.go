@@ -47,8 +47,9 @@ func (t RunTally) Started() time.Time {
 	return at
 }
 
-// TallyOf reads a run folder: its out/run.yaml and out/calls.jsonl.
-func TallyOf(dir string) RunTally {
+// tallyOf reads a run folder: its out/run.yaml and out/calls.jsonl; an
+// error when its calls are there but could not be read whole.
+func tallyOf(dir string) (RunTally, error) {
 	t := RunTally{Run: filepath.Base(dir)}
 	if _, role, ok := strings.Cut(t.Run, "-"); ok {
 		t.Role = role
@@ -66,8 +67,11 @@ func TallyOf(dir string) RunTally {
 		}
 	}
 	file, err := os.Open(filepath.Join(dir, "out", "calls.jsonl"))
+	if errors.Is(err, os.ErrNotExist) {
+		return t, nil
+	}
 	if err != nil {
-		return t
+		return t, err
 	}
 	defer func() { _ = file.Close() }()
 	sc := bufio.NewScanner(file)
@@ -84,16 +88,16 @@ func TallyOf(dir string) RunTally {
 		t.TokensOut += c.TokensOut
 		t.Seconds += c.Seconds
 	}
-	return t
+	return t, sc.Err()
 }
 
 // keepTally adds the run in dir to its runs folder's tally, before the
 // folder is dropped; a run that called no agent spent nothing, and is
-// left out.
+// left out. An error: the folder is kept.
 func keepTally(base, dir string) error {
-	t := TallyOf(dir)
-	if t.Calls == 0 {
-		return nil
+	t, err := tallyOf(dir)
+	if err != nil || t.Calls == 0 {
+		return err
 	}
 	line, err := json.Marshal(t)
 	if err != nil {
@@ -141,7 +145,8 @@ func Tallies(base string) ([]RunTally, error) {
 	for _, e := range entries {
 		if e.IsDir() && !seen[e.Name()] {
 			seen[e.Name()] = true
-			out = append(out, TallyOf(filepath.Join(base, e.Name())))
+			t, _ := tallyOf(filepath.Join(base, e.Name())) // a folder kept: what could be read of it
+			out = append(out, t)
 		}
 	}
 	return out, nil
