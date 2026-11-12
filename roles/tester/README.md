@@ -5,7 +5,7 @@ sources:
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
   - ci/github/workline-gardening.yml
-checked: ccbfd55d
+checked: 01e06784
 verified: agent:claude-code
 ---
 # Tester
@@ -151,10 +151,14 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
 - **A test missing** ([#1265](https://github.com/JN0V/workline/issues/1265)):
   the review found a behaviour with no test, on code; the developer
   sends it, naming no scenario. The agent reads every scenario and
+  the finding's file as the pull request has it
+  ([#1416](https://github.com/JN0V/workline/issues/1416)), and
   answers:
   - *added*: the test in one of its tests of the issue, the file whole
     or a diff, proven as a rewrite;
-  - *none needed*: its reason.
+  - *none needed*: its reason;
+  - *lacks code* (`needs:`): the files it lacks, never read as *none
+    needed*.
   - Its answer is said on the pull request whose review found it too,
     naming the finding's line and title: the developer reads it there,
     and the reviewer's judge weighs a *none needed*
