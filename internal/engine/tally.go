@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -76,9 +77,14 @@ func tallyOf(dir string) (RunTally, error) {
 	defer func() { _ = file.Close() }()
 	sc := bufio.NewScanner(file)
 	sc.Buffer(make([]byte, 1<<20), 1<<24)
+	unread := 0
 	for sc.Scan() {
 		var c agent.Call
+		if len(strings.TrimSpace(sc.Text())) == 0 {
+			continue
+		}
 		if json.Unmarshal(sc.Bytes(), &c) != nil {
+			unread++
 			continue
 		}
 		t.Calls++
@@ -88,7 +94,13 @@ func tallyOf(dir string) (RunTally, error) {
 		t.TokensOut += c.TokensOut
 		t.Seconds += c.Seconds
 	}
-	return t, sc.Err()
+	if err := sc.Err(); err != nil {
+		return t, err
+	}
+	if unread > 0 {
+		return t, fmt.Errorf("%s: %d calls unread", filepath.Join(dir, "out", "calls.jsonl"), unread)
+	}
+	return t, nil
 }
 
 // keepTally adds the run in dir to its runs folder's tally, before the

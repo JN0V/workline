@@ -65,3 +65,22 @@ func TestPrunedRunsKeepTheirTokens(t *testing.T) {
 		t.Errorf("fresh %d after a second prune, want %d", again, fresh)
 	}
 }
+
+// A run whose calls cannot all be read is never dropped: its tokens
+// would be lost with it.
+func TestDamagedCallsKeepTheirRun(t *testing.T) {
+	base := t.TempDir()
+	dir := filepath.Join(base, "20260105T090000.000000000-reviewer")
+	if err := os.MkdirAll(filepath.Join(dir, "out"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "out", "calls.jsonl"), []byte("{\"tokens-in\":10}\n{\"tokens-in\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := keepTally(base, dir); err == nil {
+		t.Fatal("a damaged calls file kept nothing and said nothing")
+	}
+	if _, err := os.Stat(filepath.Join(base, TallyFile)); err == nil {
+		t.Error("a damaged run was put in the tally")
+	}
+}
