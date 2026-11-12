@@ -152,6 +152,9 @@ routing:
   routing, the same workflow's `review` jobs on GitHub,
   `WORKLINE_TASK=review` on GitLab
   ([the review loop](review-loop.md#what-wakes-it)).
+  - Merged or closed before the GitHub `review` job runs, its branch
+    maybe deleted: no round, said, the run green
+    ([#1420](https://github.com/JN0V/workline/issues/1420)).
 - **The round's issue next**: once `review-apply` applied, it asks
   the line whether the issue's new state is due, and starts that run.
   Blocked on a Scope ask, the product owner reads it at once

@@ -572,6 +572,7 @@ jobs:
         id: round
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           PR: ${{ github.event.issue.number || inputs['pull-request'] || github.event.workflow_run.pull_requests[0].number }}
@@ -581,6 +582,12 @@ jobs:
           printf '%s' "$PR" | grep -Eqx '[0-9]+' || { echo "::error title=workline::not a pull request number: $PR"; exit 64; }
           branch=$BRANCH
           case "$branch" in workline/developer/*) ;; *) echo "pull request $PR is not the developer's: no round"; exit 0;; esac
+          # Merged or closed since it was read, its branch maybe deleted
+          # (#1420): nothing to review, said, the run green.
+          state=$(gh pr view "$PR" --json state --jq .state 2>/dev/null) || state=
+          case "$state" in MERGED|CLOSED) echo "pull request $PR is $(printf '%s' "$state" | tr A-Z a-z) meanwhile: no round"; exit 0;; esac
+          git rev-parse -q --verify "origin/$branch^{commit}" >/dev/null ||
+            { echo "pull request $PR: its branch $branch is gone, merged or closed meanwhile: no round"; exit 0; }
           # Its branch's head: the fix is laid and proven there.
           git checkout -q -B "$branch" "origin/$branch"   # fetched by the checkout, which keeps no token
           echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
