@@ -113,7 +113,8 @@ flags read by the person before any proposal is trusted.
 1. **Where a run's line is kept** when CI throws the run away: on the
    forge (a comment kept on the report issue), on a ref of the repository
    (`refs/workline/runs`, written by the step holding the token), or in
-   CI artifacts (gone after their retention).
+   CI artifacts (gone after their retention). Settled for a run's
+   tokens: CI artifacts, 14 days (amendment of 2026-11-12).
 2. The name: process engineer, or another.
 3. The window (a quarter), the cadence (weekly), the token budget.
 
@@ -139,3 +140,28 @@ as in a factory ([roles panorama](../research/roles-panorama.md)). It
 comes fifth in the roadmap
 ([#89](https://github.com/JN0V/workline/issues/89)), after the auditor is
 widened ([#205](https://github.com/JN0V/workline/issues/205)).
+
+## Amendment 2026-11-12: a run's tally is a CI artifact
+
+- **Decided by:** a panel of three agents, 2–1, on 2026-11-12, for the
+  weekly measure of [#610](https://github.com/JN0V/workline/issues/610);
+  settles Open, point 1, for the tokens.
+- **What is kept**: a run's tally, one line a run that called an agent:
+  role, target, calls, fresh, in, cached and out tokens, seconds. No
+  prompt, no diff, no answer. `workline sample --tally <file>` writes it
+  from the runs whose folder the job holds.
+- **Where**: a CI artifact of the job, kept 14 days (GitHub
+  `retention-days: 14`, one `workline-tally-<job>` a job calling an
+  agent; GitLab `expire_in: 2 weeks`, in the artifacts of the job after
+  each judge, which receives its runs folder). Whole run folders keep
+  their short retention: they may hold prompts.
+- **Read by the weekly sample**: its job gathers the tallies of the last
+  two weeks as its runs folder's tally, then counts the week. This
+  project's runs only: a fork's pull request runs without the agent's
+  token, and what it uploads is anyone's text, never read. The row the
+  sample posts on its issue is the lasting record.
+- **Fallback, not built**: a ref of the repository
+  (`refs/workline/runs`, written by the job holding the token), if
+  artifacts prove too short or a forge keeps none.
+- **Still open**: the rest of a run's line (event, commit, status,
+  findings, acts), which the process engineer will read.
