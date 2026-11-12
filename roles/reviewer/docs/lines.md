@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/resolve.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/forge/threads.go, internal/engine/review.go]
-checked: 3ec4d022
+checked: 6aeb82bd
 judged: 39dcb7b
 verified: agent:claude-code
 ---
