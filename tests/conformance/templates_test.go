@@ -1795,7 +1795,8 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 		t.Errorf("workline:gates: GitLab is not given its Code Quality report: %v", reports)
 	}
 	judge, _ := top["workline:judge"].(map[string]any)
-	if !strings.Contains(fmt.Sprint(judge["script"]), "--gates-from gates.json") || fmt.Sprint(judge["needs"]) != "[workline:gates]" {
+	// workline:base's artifacts too: the tests' ids it read (#1407).
+	if needs, _ := judge["needs"].([]any); !strings.Contains(fmt.Sprint(judge["script"]), "--gates-from gates.json") || len(needs) == 0 || fmt.Sprint(needs[0]) != "workline:gates" {
 		t.Errorf("workline:judge: does not read the gates' verdicts from their job (needs %v)", judge["needs"])
 	}
 	for _, r := range judge["rules"].([]any) {
