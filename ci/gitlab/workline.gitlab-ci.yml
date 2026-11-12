@@ -647,10 +647,12 @@ workline:objection:apply:
 
 # The line of states (ADR-0059): the project's issue webhook, pointed at
 # its own trigger URL with WORKLINE_TASK=issue, starts a pipeline on every
-# issue change, and on every comment where the reviewer is routed on
-# issue; workline:issue reads the event ($TRIGGER_PAYLOAD) and, when it
-# put a state's label on an issue, or is the reviewer's comment on the
-# spec of an issue in refine (#846), and that issue's step is due,
+# issue change, and on every comment where the reviewer or the product
+# owner is routed on issue; workline:issue reads the event
+# ($TRIGGER_PAYLOAD) and, when it put a state's label on an issue, is
+# the reviewer's comment on the spec of an issue in refine (#846), or a
+# person's comment or body edit on an issue on the line (#1414), and
+# that issue's step is due,
 # starts its own pipeline, WORKLINE_TASK=develop and ISSUE_IID, with the
 # job's token, and with it each issue whose step waited for the room
 # that move freed (#960): any other event exits at once. A pipeline schedule with

@@ -1,0 +1,20 @@
+case: setup/doctor-gitlab-issue-hook-notes-off-product-owner
+about: >
+  The product owner routed on issue, no reviewer, and the webhook to the
+  project's own trigger URL on issue events alone: a person's answer to
+  a blocked issue starts nothing, the product owner reads it an hour
+  later at best (#1414). The doctor warns, naming `workline setup`,
+  which turns the note events on.
+given:
+  repo: documented
+  config:
+    routing: {events: {issue: [product-owner, tester, developer]}}
+  forge:
+    merge-requests: []
+    hooks: [{id: 4, url: "https://gitlab.example/api/v4/projects/1/ref/main/trigger/pipeline?token={token}&variables[WORKLINE_TASK]=issue", issues_events: true, token: glptt-hidden-from-everyone-000}]
+    triggers: [{id: 2, description: "workline: the issue webhook (ADR-0059)", token: glptt-hidden-from-everyone-000, owner: someone}]
+run: {doctor: true, forge: gitlab}
+expect:
+  status: pass
+  checks:
+    - {rule: issue-hook-notes-off, level: warn, message: "a person's answer", fix: "workline setup --yes"}

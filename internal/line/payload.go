@@ -4,9 +4,11 @@ package line
 // a pipeline whose event is in the file $TRIGGER_PAYLOAD (ADR-0059,
 // decision 8): the engine reads it itself. A state's label put on an
 // issue names that issue; so does the reviewer's comment on the spec of
-// an issue in refine, which the product owner reads next (#846). Any
-// other event — another comment, an edit, a label that is no state —
-// runs nothing, at once.
+// an issue in refine, which the product owner reads next (#846), and a
+// person's comment or body edit on an issue on the line, an answer the
+// line may wait on (#1414). Any other event — the engine's other
+// comments, an edit of an issue off the line, a label that is no state
+// — runs nothing, at once.
 
 import (
 	"cmp"
@@ -37,6 +39,8 @@ type payload struct {
 		Note         string `json:"note"`
 		NoteableType string `json:"noteable_type"`
 	} `json:"object_attributes"`
+	// Labels: on an issue event, the issue's labels after it.
+	Labels *[]title `json:"labels"`
 	// Issue: on a note event, the issue commented on, its labels as they
 	// were then.
 	Issue *struct {
@@ -47,7 +51,8 @@ type payload struct {
 		Username string `json:"username"`
 	} `json:"user"`
 	Changes struct {
-		Labels *struct {
+		Description *json.RawMessage `json:"description"`
+		Labels      *struct {
 			Previous []title `json:"previous"`
 			Current  []title `json:"current"`
 		} `json:"labels"`
@@ -77,6 +82,15 @@ func readPayload(raw string, cfg *routing.Config) (int, string, error) {
 		return 0, fmt.Sprintf("a %q event, not an issue's: nothing to run", p.Kind), nil
 	}
 	if p.Changes.Labels == nil {
+		// A body edited on an issue on the line (#1414): a person's answer
+		// to a draft or a block, perhaps; the line reads the issue and
+		// says whether its step is due, with no agent.
+		if p.Changes.Description != nil {
+			if onLine(p.Labels, cfg) {
+				return p.Attrs.IID, "", nil
+			}
+			return 0, fmt.Sprintf("#%d's body edited, the issue on no state: nothing to run", p.Attrs.IID), nil
+		}
 		return 0, fmt.Sprintf("#%d changed, its labels did not: nothing to run", p.Attrs.IID), nil
 	}
 	var before []string
@@ -98,18 +112,26 @@ func readPayload(raw string, cfg *routing.Config) (int, string, error) {
 
 // readNote is the issue a comment names: the reviewer's on the spec of an
 // issue in refine, whose step it makes due again (#128), the product
-// owner reading it then (#846); 0 and why not, else. Any other comment —
-// the engine's own records and states, a person's — runs nothing: the
-// issue's step is what it was before it (one event, at most one run;
-// #813). Who wrote it is not read here: the line reads the issue and its
-// record, and a step not due runs nothing.
+// owner reading it then (#846); a person's on an issue on the line, an
+// answer the line may wait on, a block's or a draft's (#1414); 0 and why
+// not, else. The engine's other comments — its records and states, each
+// holding a workline marker — run nothing: the issue's step is what it
+// was before them (one event, at most one run; #813). Who wrote it is not
+// read further: the line reads the issue and its record, and a step not
+// due runs nothing.
 func readNote(p payload, cfg *routing.Config) (int, string) {
 	if p.Attrs.NoteableType != "Issue" || p.Issue == nil {
 		return 0, fmt.Sprintf("a comment on a %s, not on an issue: nothing to run", cmp.Or(p.Attrs.NoteableType, "thing unnamed"))
 	}
 	n := p.Issue.IID
 	if !strings.Contains(p.Attrs.Note, backlog.SpecMarker) {
-		return 0, fmt.Sprintf("#%d got a comment, not the reviewer's on its spec: nothing to run", n)
+		if strings.Contains(p.Attrs.Note, "<!-- workline:") {
+			return 0, fmt.Sprintf("#%d got a comment, not the reviewer's on its spec: nothing to run", n)
+		}
+		if onLine(p.Issue.Labels, cfg) {
+			return n, ""
+		}
+		return 0, fmt.Sprintf("#%d got a person's comment, the issue on no state: nothing to run", n)
 	}
 	if p.Issue.Labels == nil { // an event naming no labels: the line reads the issue and says
 		return n, ""
@@ -120,4 +142,15 @@ func readNote(p payload, cfg *routing.Config) (int, string) {
 		}
 	}
 	return 0, fmt.Sprintf("#%d got the reviewer's comment on its spec, not in %s: nothing to run", n, refineState)
+}
+
+// onLine says whether an issue bearing labels is on the line: one of
+// them a state's; labels not named, the line reads the issue and says.
+func onLine(labels *[]title, cfg *routing.Config) bool {
+	if labels == nil {
+		return true
+	}
+	return slices.ContainsFunc(cfg.States, func(s routing.State) bool {
+		return slices.ContainsFunc(*labels, func(l title) bool { return l.Title == s.Label })
+	})
 }
