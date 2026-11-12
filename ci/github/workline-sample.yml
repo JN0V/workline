@@ -54,9 +54,12 @@ jobs:
   read:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    # issues and pull-requests read: the acts the other roles recorded there.
-    permissions: {contents: read, issues: read, pull-requests: read}
-    env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
+    # issues and pull-requests read: the acts the other roles recorded
+    # there; actions read: the tallies the line's jobs kept.
+    permissions: {contents: read, issues: read, pull-requests: read, actions: read}
+    env:
+      HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"
+      WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
     outputs:
       drawn: ${{ steps.sample.outputs.drawn }}
     steps:
@@ -73,6 +76,30 @@ jobs:
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
         run: npm install -g @anthropic-ai/claude-code
+
+      # The week's tokens (ADR-0052, criterion 3): the tallies the jobs
+      # calling an agent kept 14 days (ADR-0019, open point 1), gathered as
+      # the runs folder's tally. This repository's runs only: a fork's pull
+      # request runs with no agent token, and what it uploads is anyone's.
+      # The jobs' names are the templates'.
+      - name: The line's tallies, from its jobs' artifacts
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          dir=$RUNNER_TEMP/workline-tallies; mkdir -p "$dir" "$WORKLINE_RUNS_DIR"
+          for job in judge review warn curator read; do
+            gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?name=workline-tally-$job&per_page=100" \
+              --jq '.artifacts[] | select((.expired | not) and .workflow_run.head_repository_id == .workflow_run.repository_id) | .id' ||
+              echo "::warning title=workline::the tallies of the jobs named $job could not be listed: the week's tokens leave them out" >&2
+          done > "$dir/ids"
+          n=0
+          while read -r id; do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "$dir/$id.zip" && unzip -p "$dir/$id.zip" workline-tally.jsonl >> "$WORKLINE_RUNS_DIR/tally.jsonl"; then
+              n=$((n + 1))
+            else
+              echo "::warning title=workline::the tally $id could not be read: the week's tokens leave it out"
+            fi
+          done < "$dir/ids"
+          echo "workline: $n tallies gathered"
 
       - name: The sample, read (writes nothing)
         id: sample
@@ -100,6 +127,18 @@ jobs:
             3) echo "::warning title=workline::the judge or the forge could not be reached; what was drawn is listed for a person" ;;
             *) exit 1 ;;
           esac
+      # What this job's agent calls spent, a line a run: role, target,
+      # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
+      # weekly sample's tokens (ADR-0019, open point 1); the run folders
+      # keep their day. Never in a cancelled run (a newer push's), whose
+      # spend is lost; nor in a merge queue's, which asks no agent. The
+      # first release after v0.75.0; an engine before it keeps none, said.
+      - name: The runs' tally
+        if: "!cancelled() && github.event_name != 'merge_group'"
+        run: 'workline sample --tally workline-tally.jsonl || echo "workline: no tally kept"'
+      - uses: actions/upload-artifact@v4
+        if: "!cancelled() && github.event_name != 'merge_group'"
+        with: {name: "workline-tally-${{ github.job }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14, overwrite: true}
 
   write:
     needs: read

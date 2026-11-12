@@ -141,7 +141,9 @@ with the variable `WORKLINE_TASK` set to `sample`.
   Another week than the last whole one: set `WORKLINE_SAMPLE_WEEK`
   (`2026-W40`) on the schedule, then play it.
 - Its reading job holds `WORKLINE_GITLAB_TOKEN`, as gardening's does: it
-  reads every role's acts on the issues and merge requests.
+  reads every role's acts on the issues and merge requests, and the
+  week's tokens each applying job kept in `workline-tally.jsonl`, 2 weeks
+  ([tokens in CI](weekly-sample.md#what-it-writes)).
 
 ### 5. Protect main
 

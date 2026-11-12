@@ -1,0 +1,21 @@
+case: routing/payload-person-note-off-line-runs-nothing
+about: >
+  GitLab's webhook on note events (#1414): a person's comment on an
+  issue that bears no state's label is no answer the line waits on: it
+  runs nothing, at once, no forge read, no agent. The next reconcile
+  reads the issue as before.
+given:
+  repo: tested
+  env:
+    TRIGGER_PAYLOAD: '{"object_kind":"note","event_type":"note","user":{"username":"ann"},"object_attributes":{"note":"Same here.","noteable_type":"Issue","action":"create"},"issue":{"iid":3,"labels":[{"title":"bug"}]}}'
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - {id: 3, title: "Multiply", labels: ["bug"], body: "## Need\n\nI want to multiply.\n"}
+run: {route: issue, open-merge-request: true, ai: "fake:unblock-three", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #3 got a person's comment, the issue on no state: nothing to run"
+  agent-calls: 0
+  steps: []

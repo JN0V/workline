@@ -157,6 +157,11 @@ kind has any, drawn the same on a rerun.
 - **A squash**: each merge request's head is fetched from the forge's ref
   for it, to read the commit a `checked` names and who moved it there.
 - **Writes nothing**; `--out <file>` keeps the result.
+- **`workline sample --tally <file>`** writes only what the runs folder's
+  runs spent on agent calls, one line a run that called one, no prompt
+  nor diff: a CI job's artifact, read by the week's tokens
+  ([in CI](weekly-sample.md#what-it-writes)). No file when none called
+  an agent.
 - **`workline sample --apply <file> --forge <forge>`** (default: the
   project's `forge`), with no agent:
   - comments the week on one tracking issue, its acts numbered, labelled

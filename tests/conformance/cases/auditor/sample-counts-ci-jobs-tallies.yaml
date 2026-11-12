@@ -1,0 +1,28 @@
+case: auditor/sample-counts-ci-jobs-tallies
+about: "In CI, each job's runs folder is gone a day after (ADR-0019): `workline sample --tally <file>` writes what its runs' agent calls spent, one line a run that called an agent, no prompt nor diff, for an artifact kept two weeks; a job whose runs called none writes no file; the lines its runs folder's own tally holds (in the sample's job, the tallies it gathered) are not written again. The weekly sample, given those lines gathered as its runs folder's tally, counts the week's tokens from them (#610)."
+given:
+  repo: vouched
+  setup:
+    - "d=../job-review/20260106T100000.000000000-developer && mkdir -p $d/out && printf 'role: developer\\ntarget: {kind: merge-request, id: 1}\\n' > $d/out/run.yaml && printf 'prompt: never kept\\n' > $d/out/task.md && printf '{\"tokens-in\":20000,\"tokens-cached\":5000,\"tokens-out\":3000}\\n{\"tokens-in\":10000,\"tokens-cached\":5000,\"tokens-out\":2000}\\n' > $d/out/calls.jsonl"
+    - "d=../job-review/20260106T100500.000000000-committer && mkdir -p $d/out"
+    - "printf '{\"run\":\"20260105T080000.000000000-gathered\",\"calls\":1,\"fresh\":99000}\\n' > ../job-review/tally.jsonl"
+    - "d=../job-garden/20260107T090000.000000000-documentalist && mkdir -p $d/out && printf 'role: documentalist\\ntarget: {kind: merge-request, id: 2}\\n' > $d/out/run.yaml && printf '{\"tokens-in\":4000,\"tokens-cached\":1000,\"tokens-out\":500}\\n' > $d/out/calls.jsonl"
+    - "d=../job-quiet/20260107T100000.000000000-committer && mkdir -p $d/out"
+  forge:
+    issues:
+      - {id: 4, title: "Subtract two numbers", body: "A feature.", labels: [enhancement]}
+    merge-requests:
+      - {id: 1, title: "Subtract two numbers", branch: workline/developer/4, base: main, labels: []}
+      - {id: 2, title: "docs: bring the guide in line", branch: docs-guide, base: main, labels: []}
+run:
+  sh: >
+    w=$(cd .. && pwd);
+    for job in review garden quiet; do WORKLINE_RUNS_DIR="$w/job-$job" workline sample --tally "$w/tally-$job.jsonl" > /dev/null || exit 1; done;
+    [ ! -e "$w/tally-quiet.jsonl" ] || { echo "a job with no agent call wrote a tally"; exit 1; };
+    ! grep -q prompt "$w"/tally-*.jsonl || { echo "a prompt in a tally"; exit 1; };
+    ! grep -q gathered "$w"/tally-*.jsonl || { echo "a tally gathered, written again"; exit 1; };
+    mkdir -p "$w/weekly" && cat "$w"/tally-*.jsonl > "$w/weekly/tally.jsonl";
+    WORKLINE_RUNS_DIR="$w/weekly" workline sample --week 2026-W02 --judge none --forge "fake:$w/forge.json" --json | grep -o 'tokens: [^"]*'
+expect:
+  exit: 0
+  stdout: ["tokens: 28.5k fresh tokens over 2 runs: upkeep 3.5k (12%), product 25k (87%)\n"]

@@ -182,6 +182,9 @@ Runs are kept in `.git/workline/runs/` (the last
 An older run's folder is dropped, what its agent calls spent kept first:
 one line a run in `tally.jsonl`, beside them, never pruned. The weekly
 sample sums a week's tokens from both ([its tokens](weekly-sample.md#what-it-writes)).
+In CI, a job's runs folder (`WORKLINE_RUNS_DIR`) goes with the job, its
+artifacts short-lived; `workline sample --tally <file>` writes its runs'
+lines for an artifact kept 14 days.
 
 
 ## Environment

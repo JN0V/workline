@@ -1,8 +1,9 @@
 case: tester/write-kept-as-today-said
 about: >
   A scenario of behaviour kept as it is today (#794): its test would pass
-  on the base and be refused, so the tester says it not tested, the
-  existing suite guarding it; the other scenario's test is proven red,
+  on the base and be refused, so the tester says it not tested. Its
+  reason names no existing test: the Draft says plainly that none was
+  found to guard it (#1359); the other scenario's test is proven red,
   the Draft opened, the issue ready.
 given:
   repo: tested
@@ -27,4 +28,4 @@ expect:
     merge-requests:
       - id: 1
         draft: true
-        body-contains: ["Not tested", "kept as today: the existing suite guards it"]
+        body-contains: ["Not tested", "kept as today: no existing test was found that checks it"]

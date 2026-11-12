@@ -82,6 +82,17 @@ jobs:
             exit 0
           fi
           exit "$status"
+      # What this job's agent calls spent, a line a run: role, target,
+      # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
+      # weekly sample's tokens (ADR-0019, open point 1); the run folders
+      # keep their day. Never in a cancelled run (a newer push's), whose
+      # spend is lost; nor in a merge queue's, which asks no agent.
+      - name: The runs' tally
+        if: "!cancelled() && github.event_name != 'merge_group'"
+        run: 'workline sample --tally workline-tally.jsonl || echo "workline: no tally kept"'
+      - uses: actions/upload-artifact@v4
+        if: "!cancelled() && github.event_name != 'merge_group'"
+        with: {name: "workline-tally-${{ github.job }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14, overwrite: true}
 
   # Every night, proposed or not: it also tends the pull requests gardening
   # opened before (ADR-0034, amended).
@@ -248,6 +259,17 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: workline-curator, path: curator-history.json, if-no-files-found: ignore, retention-days: 90}
+      # What this job's agent calls spent, a line a run: role, target,
+      # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
+      # weekly sample's tokens (ADR-0019, open point 1); the run folders
+      # keep their day. Never in a cancelled run (a newer push's), whose
+      # spend is lost; nor in a merge queue's, which asks no agent.
+      - name: The runs' tally
+        if: "!cancelled() && github.event_name != 'merge_group'"
+        run: 'workline sample --tally workline-tally.jsonl || echo "workline: no tally kept"'
+      - uses: actions/upload-artifact@v4
+        if: "!cancelled() && github.event_name != 'merge_group'"
+        with: {name: "workline-tally-${{ github.job }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14, overwrite: true}
 
   dry-run-post:
     needs: dry-run

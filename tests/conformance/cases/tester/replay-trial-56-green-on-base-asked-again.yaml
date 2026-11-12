@@ -79,4 +79,4 @@ expect:
     out/feedback.md: {contains: ["test-green-on-base", "test_enabled_console_and_restart", "kept as today"]}
   forge:
     merge-requests:
-      - {id: 1, branch: workline/tester/issue-56, draft: true, body-contains: ["test_disabled_console", "Not tested", "kept as today: the existing suite guards it"]}
+      - {id: 1, branch: workline/tester/issue-56, draft: true, body-contains: ["test_disabled_console", "Not tested", "kept as today: no existing test was found that checks it"]}

@@ -1908,6 +1908,20 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 		judge.Permissions["contents"] != "read" {
 		t.Errorf("workline-develop.yml, judge: not on a person's state label, or holds a write token: %q %v", judge.If, judge.Permissions)
 	}
+	// A person's comment or body edit on an issue on the line wakes it,
+	// asked first whether due (#1414): never the App's, never one on a
+	// pull request, a comment only from the project's people or the
+	// issue's author. Neither wakes the reconciler (#1397).
+	issues, _ := wf.On["issues"].(map[string]any)
+	if !strings.Contains(fmt.Sprint(issues["types"]), "edited") || !strings.Contains(judge.If, "github.event.action == 'edited'") ||
+		!strings.Contains(judge.If, "github.event_name == 'issue_comment' && !github.event.issue.pull_request && github.event.sender.type != 'Bot'") ||
+		!strings.Contains(judge.If, "author_association") || !strings.Contains(judge.If, "github.event.issue.user.login") ||
+		strings.Count(judge.If, "contains(join(github.event.issue.labels.*.name, ' '), 'workline:')") != 2 {
+		t.Errorf("workline-develop.yml, judge: a person's comment or edit on an issue on the line does not wake it, or wakes it from anyone: %v %q", issues, judge.If)
+	}
+	if due := wf.Jobs["reconcile-due"].If; strings.Contains(due, "issue_comment") || strings.Contains(due, "edited") {
+		t.Errorf("workline-develop.yml, reconcile-due: a comment or an edit would start the reconciler: %q", due)
+	}
 	// The night's states moved, their next steps started by the
 	// gardening's apply, which may start runs.
 	gdata, err := os.ReadFile("../../ci/github/workline-gardening.yml")
@@ -2095,8 +2109,11 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	if review.Needs != "whose" || review.If != "needs.whose.outputs.branch != ''" || !strings.Contains(whose.Steps[0].Run, "workline/developer/*)") {
 		t.Errorf("workline-develop.yml, review: runs on a pull request whose branch is not the developer's: needs %q, if %q", review.Needs, review.If)
 	}
-	if strings.Contains(wf.Jobs["judge"].If, "issue_comment") || !strings.Contains(wf.Jobs["judge"].If, "github.event_name == 'issues'") {
-		t.Errorf("workline-develop.yml, judge: a comment would take an issue: %q", wf.Jobs["judge"].If)
+	// A comment takes an issue only on an issue, never on a pull request
+	// (#1414): the round has it.
+	if strings.Count(wf.Jobs["judge"].If, "issue_comment") != 1 || !strings.Contains(wf.Jobs["judge"].If, "github.event_name == 'issue_comment' && !github.event.issue.pull_request") ||
+		!strings.Contains(wf.Jobs["judge"].If, "github.event_name == 'issues'") {
+		t.Errorf("workline-develop.yml, judge: a comment on a pull request would take an issue: %q", wf.Jobs["judge"].If)
 	}
 	ran := false
 	for _, s := range review.Steps {

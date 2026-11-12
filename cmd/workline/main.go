@@ -915,6 +915,7 @@ func sampleCmd(args []string) int {
 	apply := fs.String("apply", "", "write the result in this file to the forge: the tracking issue, and a merge request putting back a false `checked`")
 	forgeSpec := fs.String("forge", "", "the forge the acts are drawn from, and --apply writes to: github, gitlab, local, cmd:…, fake:<file>, none (default: the project's `forge` setting)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
+	tally := fs.String("tally", "", "only write to this file what the runs folder's runs spent on agent calls, a line each run that called one, for a CI artifact the weekly sample reads (no file when none did)")
 	var summaryFiles multi
 	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the sample to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	if code, done := parseOnly(fs, args); done {
@@ -923,6 +924,22 @@ func sampleCmd(args []string) int {
 	root, err := gitRoot(*repo)
 	if err != nil {
 		return notInRepo()
+	}
+	if *tally != "" {
+		if *apply != "" || *out != "" || *week != "" || *since != "" {
+			return misuse(fs, "--tally writes the runs' tally alone: no --apply, --out, --week nor --since with it")
+		}
+		n, err := engine.WriteTally(engine.RunsDir(root), *tally)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		runs := "runs"
+		if n == 1 {
+			runs = "run"
+		}
+		fmt.Printf("%d %s that called an agent, tallied\n", n, runs)
+		return 0
 	}
 	var res *sample.Result
 	spec := *forgeSpec

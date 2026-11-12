@@ -123,7 +123,9 @@ write run the default branch's workflow, never a pull request's own
      ([the bounds on the pull request](../roles/developer/docs/bounds.md#on-the-pull-request)).
    - [workline-sample.yml](../ci/github/workline-sample.yml): the
      [weekly sample](ci.md#the-weekly-sample), from the first release
-     after v0.2.1.
+     after v0.2.1. It reads the week's tokens from the `workline-tally-*`
+     artifacts the jobs calling an agent keep 14 days (`actions: read`;
+     [tokens in CI](weekly-sample.md#what-it-writes)).
 2. **The agent's token**, if you want one: Settings → Secrets and variables
    → Actions → New repository secret. The templates call Claude when
    `CLAUDE_CODE_OAUTH_TOKEN` is set (`claude setup-token`), and no agent
