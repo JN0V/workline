@@ -3,15 +3,16 @@ about: >
   The tester's Draft holds tests alone, so its new tests are in the
   folders that hold them: a draft-command naming {packages} runs those
   folders alone, on the base and with the tests, never the whole suite
-  twice (#979: 10 of a run's 11 min on workline). The test-command here
-  fails whole: the proof passing shows it was not run. The Draft says
+  twice (#979: 10 of a run's 11 min on workline). The test-command
+  runs once, before the agent (#1333); the proof-scope finding shows
+  the proof ran the draft-command. The Draft says
   where the proof ran.
 given:
   repo: tested
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   config:
-    roles: {tester: {settings: {test-command: "false", test-paths: ["**/test_*.sh"],
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["**/test_*.sh"],
       draft-command: "sh \"$FIXTURES/bin/run-folders\" {report} {packages}"}}}
   forge:
     issues:
