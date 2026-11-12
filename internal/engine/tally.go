@@ -163,3 +163,37 @@ func Tallies(base string) ([]RunTally, error) {
 	}
 	return out, nil
 }
+
+// WriteTally writes to file the tally of the runs whose folder base still
+// holds that called an agent, a line each, as TallyFile holds them: what
+// a CI job keeps once its runs folder is gone (ADR-0019), no prompt nor
+// diff. The lines of base's own tally are not written again: in the
+// weekly sample's job, they are the tallies it gathered. None called an
+// agent: no file, and 0.
+func WriteTally(base, file string) (int, error) {
+	entries, err := os.ReadDir(base)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return 0, err
+	}
+	var out []byte
+	n := 0
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		t, _ := tallyOf(filepath.Join(base, e.Name())) // what could be read of it, as Tallies
+		if t.Calls == 0 {
+			continue
+		}
+		line, err := json.Marshal(t)
+		if err != nil {
+			return 0, err
+		}
+		out = append(append(out, line...), '\n')
+		n++
+	}
+	if n == 0 {
+		return 0, nil
+	}
+	return n, os.WriteFile(file, out, 0o644)
+}

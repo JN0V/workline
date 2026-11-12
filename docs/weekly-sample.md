@@ -88,7 +88,16 @@ roles:
   (`ci`, `build`, no type) is unknown, and said. The upkeep share is
   the measure of [ADR-0052](adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)'s
   third criterion ([#610](https://github.com/JN0V/workline/issues/610)).
-  In CI, a job sees only its own runs.
+  The builder's own sessions are not counted: no record of the line
+  holds them.
+- **In CI**, a job's run folders go with its short-lived artifacts:
+  each job calling an agent keeps its runs' tally (`workline sample
+  --tally`: role, target, tokens, seconds; no prompt, no diff) 14 days,
+  as an artifact (GitHub, `workline-tally-<job>`; GitLab, the applying
+  job's `workline-tally.jsonl`). The sample's job gathers them as its runs
+  folder's tally, this project's own only, never a fork's
+  ([ADR-0019](adr/0019-the-line-evaluates-itself.md#amendment-2026-11-12-a-runs-tally-is-a-ci-artifact)).
+  The weekly comment is the lasting record.
 - **What could not be drawn** is listed, with why: the findings judged
   whose lines a merge request's summary comment no longer holds, past its
   size; a comment written before the lines, its last run's alone.
