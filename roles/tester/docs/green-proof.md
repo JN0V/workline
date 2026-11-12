@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/green.go, internal/tester/symptom.go, internal/tester/frozen.go, internal/tester/renamed.go, internal/tester/tester.go]
+sources: [internal/tester/green.go, internal/tester/runcache.go, internal/tester/symptom.go, internal/tester/frozen.go, internal/tester/renamed.go, internal/tester/tester.go]
 checked: 4b0fd7a4
 verified: agent:claude-code
 ---
@@ -91,6 +91,19 @@ flowchart LR
 - **The base once**: the merge base of the record's base and the head,
   to tell the builder's own new tests (required green too) from the
   base's.
+  - **Its test ids alone are read**, so a run of the same tree is
+    reused ([#1338](https://github.com/JN0V/workline/issues/1338)):
+    - the ids a run found are kept in the main clone's
+      `.git/workline/test-ids/`, keyed by the tree's hash, the command
+      and the report;
+    - kept only when the command exited 0, its report read: the whole
+      suite ran;
+    - written by each run of a clean tree: the tester's red proof on
+      the base, the head's first run here (merged up to date, its tree
+      is the next base);
+    - found, the base is not run again, said on the run's error output;
+      the head's three runs always are.
+    - A fresh clone, as in CI, keeps none: the base runs.
 - **The head three times**, one run after the other, in one fresh
   checkout. Each run is `test-command`, its report read as JUnit XML.
 - **Never again until green**: three runs, not "until it passes".
