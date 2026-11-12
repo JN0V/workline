@@ -89,7 +89,7 @@ type Block struct {
 	Where string `json:"where"`
 	Title string `json:"title"` // its severity and title, as its row reads beside its comment on the line (#277)
 	Cause Quote  `json:"cause"`
-	Side  string `json:"side,omitempty"` // where its cause was found, onHead or onRemoved: looked for there alone (#570); none in a record before it
+	Side  string `json:"side,omitempty"` // where its cause was found, onHead, onRemoved or onClaim: looked for there alone (#570); none in a record before it
 }
 
 // SummaryKey keys the reviewer's one comment on a merge request; WarnKey,

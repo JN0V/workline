@@ -167,6 +167,11 @@ none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-ac
      further down is the change's too when, in the same function, it uses
      a name a removed line tested or assigned (`if p < 1` removed, then
      `from := (p - 1) * size`). Its comment goes where the removal shows.
+   - **A claim it does not hold**
+     ([#1415](https://github.com/JN0V/workline/issues/1415)): a finding
+     of the claims lens is the change's wherever its cause lies, a kept
+     line below the lines it added too; on a line the diff does not
+     show, it stays in the summary.
    - **Elsewhere**: an issue, once, labelled `needs-triage`, with the
      product owner's state; never on the merge request. Its key is the
      file and the cause's line; an issue open or closed holds it, none
