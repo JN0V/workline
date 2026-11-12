@@ -1,0 +1,38 @@
+case: merge/accepted-held-by-a-conversation-said
+about: "A yes on a green pull request that a conversation holds says so the run it turns auto-merge on (#1417): its checks are green, main requires every conversation resolved, and one of the reviewer's is open. The run that arms it says what holds it, in its findings and on the pull request, not a later run that may never come (#1039)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    conversations-required: [main]
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        checks: success
+        comments: []
+        threads:
+          - {path: src/auth/token.go, line: 3, body: "**workline reviewer** · warns · tests\n\n**Important: The longer session is untested**\n\n<!-- workline:line=tests/0123456789ab -->"}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: auto-merge-on, where: "#7", message: "accepted by @dana, its head's verdict passed: auto-merge turned on"}
+    - {rule: held-by-conversations, where: "#7", message: "auto-merge on, its checks green, but the forge does not merge it: 1 conversation on its lines not resolved holds it, main requires every conversation resolved: [src/auth/token.go:3](https://forge.example/merge-requests/7#thread-1)"}
+  not-pushed: [feat/sessions]
+  forge:
+    merge-requests:
+      - id: 7
+        auto-merge: true
+        merged: false
+        comments: 1
+        comment-contains: ["**Held by 1 conversation on its lines not resolved**"]

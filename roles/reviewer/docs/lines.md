@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/resolve.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/forge/threads.go, internal/engine/review.go]
-checked: 3ec4d022
+checked: 6aeb82bd
 judged: 39dcb7b
 verified: agent:claude-code
 ---
@@ -91,7 +91,10 @@ flowchart LR
   goes ([judge](judge.md#a-block-stands-until-a-commit-answers-it)):
   - its line is no longer at the head: changed, or removed;
   - or its lens reads the file again and finds it no more, its judge's
-    no included; for the tests lens, a test file touching it counts;
+    no included; for the tests lens, a test file touching it counts: in
+    its folder, named after it in a folder mirroring its own
+    (`src/test/…/GridTest.kt` for `src/main/…/Grid.kt`), or naming it
+    ([#1417](https://github.com/JN0V/workline/issues/1417));
   - or, a warning only, the developer's round answered it with a fix
     pushed, its tests green, and the next run does not raise it again
     ([#1050](https://github.com/JN0V/workline/issues/1050)): a warning

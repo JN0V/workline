@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -51,6 +52,72 @@ func TestTestsTouching(t *testing.T) {
 	}
 	if got := testsTouching(repo, "HEAD", "docs/shipping.md", nil, 20); !strings.Contains(got, "nothing says which files are tests") {
 		t.Errorf("no setting, not said:\n%s", got)
+	}
+}
+
+// A test named after a file, by the affixes most ecosystems use, touches
+// it wherever it lives (#1417); one merely starting with its name does not.
+func TestNamedAfter(t *testing.T) {
+	for _, c := range []struct {
+		test, stem string
+		want       bool
+	}{
+		{"app/src/test/kotlin/app/GridLinesTest.kt", "GridLines", true},
+		{"Tests/GridTests.swift", "Grid", true},
+		{"calc/grid_test.go", "grid", true},
+		{"tests/test_grid.py", "grid", true},
+		{"web/grid.spec.ts", "grid", true},
+		{"web/grid.service.spec.ts", "grid.service", true},
+		{"app/src/test/kotlin/app/GridLinesTest.kt", "Grid", false},
+		{"tests/test_contest.py", "test", false},
+		{"tests/grid.py", "grid", false},
+	} {
+		if got := namedAfter(c.test, c.stem); got != c.want {
+			t.Errorf("namedAfter(%q, %q) = %v, want %v", c.test, c.stem, got, c.want)
+		}
+	}
+}
+
+// Of the tests named after a file elsewhere, those in a folder mirroring
+// its own touch it only (#1417): Gradle's mirror tree, app_a's tests for
+// app_a's models, a top tests/ for src/; never another module's, even
+// alone, nor a sibling package's, nor any folder's for a file at the root.
+func TestTestFilesNamedAfterMirrored(t *testing.T) {
+	repo := t.TempDir()
+	for _, name := range []string{
+		"app/src/main/kotlin/x/Grid.kt", "app/src/test/kotlin/x/GridTest.kt", "lib/src/test/kotlin/y/GridTest.kt",
+		"app_a/models.py", "app_a/tests/test_models.py", "app_b/tests/test_models.py",
+		"app/src/main/kotlin/x/Widget.kt", "lib/src/test/kotlin/x/WidgetTest.kt",
+		"main.go", "cmd/x/main_test.go", "src/grid.py", "tests/test_grid.py",
+		"internal/doctor/board.go", "internal/forge/board_test.go",
+	} {
+		p := filepath.Join(repo, name)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "start"}} {
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v: %s", args, err, out)
+		}
+	}
+	patterns := []string{"**/test/**", "**/tests/**", "**/*_test.go"}
+	for file, want := range map[string][]string{
+		"app/src/main/kotlin/x/Grid.kt":   {"app/src/test/kotlin/x/GridTest.kt"},
+		"app_a/models.py":                 {"app_a/tests/test_models.py"},
+		"src/grid.py":                     {"tests/test_grid.py"},
+		"app/src/main/kotlin/x/Widget.kt": nil,
+		"main.go":                         nil,
+		"internal/doctor/board.go":        nil,
+	} {
+		if got := testFiles(repo, "HEAD", file, patterns); !slices.Equal(got, want) {
+			t.Errorf("testFiles(%s) = %v, want %v", file, got, want)
+		}
 	}
 }
 
