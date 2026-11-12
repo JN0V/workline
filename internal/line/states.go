@@ -788,7 +788,16 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-ready-held", Level: "warn", Where: fmt.Sprintf("#%d", st.write.Issue),
 			Message: "the move to ready with no agent did not happen: the product owner's agent reads the review at the next run"})
 	}
-	st.write.Record.Spent = spend(st.write.Record.Spent, res.Steps[first:])
+	spentBefore := st.write.Record.Spent
+	st.write.Record.Spent = spend(spentBefore, res.Steps[first:])
+	for role, ns := range st.write.Record.Spent {
+		if n := len(ns) - len(spentBefore[role]); n > 0 {
+			if st.write.Own == nil {
+				st.write.Own = map[string]int{}
+			}
+			st.write.Own[role] = n
+		}
+	}
 	passed(res, f, cfg, &st) // its run took the issue to its backstop: a person's (ADR-0064, §5)
 	st.write.After = true    // its body and labels as its run left them (ADR-0063, §3)
 	st.write.Parent = st.parent

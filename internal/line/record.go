@@ -204,6 +204,9 @@ type StateWrite struct {
 	Stale   string `json:"stale,omitempty"`
 	Kept    string `json:"kept,omitempty"`
 	Seen    string `json:"seen,omitempty"`
+	// Own: the runs the step itself added to Record.Spent, by role: the
+	// rest of each list is what the record had when the step read it.
+	Own map[string]int `json:"own,omitempty"`
 	// Retest, RetestKept: see the comment above (wip.go).
 	Retest     string `json:"retest,omitempty"`
 	RetestKept string `json:"retest-kept,omitempty"`
@@ -585,16 +588,17 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 			body = said + "\n" + body
 		}
 	}
-	keepCounted(f, t, &w.Record, &body)
+	keepCounted(f, t, &w.Record, w.Own, &body)
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
 }
 
 // keepCounted keeps in the record about to be written the runs counted
 // on the issue since the step read its record: the tokens of the runs
 // the comment now holds, the step's record having none of them, are added
-// to rec and its body's record. A comment it cannot read again leaves
+// to rec and its body's record, found after the runs the step read, by
+// own, the runs it added itself. A comment it cannot read again leaves
 // the record as it is.
-func keepCounted(f forge.Forge, t forge.Target, rec *Record, body *string) {
+func keepCounted(f forge.Forge, t forge.Target, rec *Record, own map[string]int, body *string) {
 	b, ok := f.(forge.Backlog)
 	if !ok {
 		return
@@ -621,8 +625,10 @@ func keepCounted(f forge.Forge, t forge.Target, rec *Record, body *string) {
 		spent[role] = slices.Clone(ns)
 	}
 	for role, ns := range now.Spent {
-		if have := len(spent[role]); len(ns) > have {
-			spent[role] = append(spent[role], ns[have:]...)
+		// What the step read of this role's list: its own runs are no
+		// part of it, and a counted run's tokens come after it.
+		if read := len(spent[role]) - own[role]; read >= 0 && len(ns) > read {
+			spent[role] = append(spent[role], ns[read:]...)
 		}
 	}
 	rec.Spent = spent
