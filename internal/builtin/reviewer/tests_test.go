@@ -81,7 +81,7 @@ func TestNamedAfter(t *testing.T) {
 // Of the tests named after a file elsewhere, those in a folder mirroring
 // its own touch it only (#1417): Gradle's mirror tree, app_a's tests for
 // app_a's models, a top tests/ for src/; never another module's, even
-// alone, nor any folder's for a file at the root.
+// alone, nor a sibling package's, nor any folder's for a file at the root.
 func TestTestFilesNamedAfterMirrored(t *testing.T) {
 	repo := t.TempDir()
 	for _, name := range []string{
@@ -89,6 +89,7 @@ func TestTestFilesNamedAfterMirrored(t *testing.T) {
 		"app_a/models.py", "app_a/tests/test_models.py", "app_b/tests/test_models.py",
 		"app/src/main/kotlin/x/Widget.kt", "lib/src/test/kotlin/x/WidgetTest.kt",
 		"main.go", "cmd/x/main_test.go", "src/grid.py", "tests/test_grid.py",
+		"internal/doctor/board.go", "internal/forge/board_test.go",
 	} {
 		p := filepath.Join(repo, name)
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
@@ -112,6 +113,7 @@ func TestTestFilesNamedAfterMirrored(t *testing.T) {
 		"src/grid.py":                     {"tests/test_grid.py"},
 		"app/src/main/kotlin/x/Widget.kt": nil,
 		"main.go":                         nil,
+		"internal/doctor/board.go":        nil,
 	} {
 		if got := testFiles(repo, "HEAD", file, patterns); !slices.Equal(got, want) {
 			t.Errorf("testFiles(%s) = %v, want %v", file, got, want)

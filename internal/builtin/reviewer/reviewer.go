@@ -1841,17 +1841,29 @@ func namedAfter(test, stem string) bool {
 
 // mirrors says whether a test's folder mirrors a code folder: past the
 // folders they share, one test folder below the code's own (app/tests/
-// for app/), or the same folders under another root, the first apart
-// (src/test/kotlin/x for src/main/kotlin/x, tests/ for src/).
+// for app/), or the same folders under a test root instead of the
+// code's (src/test/kotlin/x for src/main/kotlin/x, tests/ for src/). A
+// sibling package is no test root: internal/forge/ never mirrors
+// internal/doctor/.
 func mirrors(code, test string) bool {
 	cs, ts := folders(code), folders(test)
 	for len(cs) > 0 && len(ts) > 0 && cs[0] == ts[0] {
 		cs, ts = cs[1:], ts[1:]
 	}
-	if len(cs) == 0 {
-		return len(ts) <= 1
+	if len(ts) == 0 || !testRoot(ts[0]) {
+		return false
 	}
-	return len(ts) > 0 && slices.Equal(cs[1:], ts[1:])
+	if len(cs) == 0 {
+		return len(ts) == 1
+	}
+	return slices.Equal(cs[1:], ts[1:])
+}
+
+// testRoot says whether a folder's name says it holds tests: test,
+// tests, __tests__, spec, androidTest, commonTest.
+func testRoot(name string) bool {
+	n := strings.ToLower(name)
+	return strings.Contains(n, "test") || strings.Contains(n, "spec")
 }
 
 // folders are a folder's names from the root; the root's, none.
