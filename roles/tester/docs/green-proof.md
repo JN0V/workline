@@ -103,7 +103,14 @@ flowchart LR
       is the next base);
     - found, the base is not run again, said on the run's error output;
       the head's three runs always are.
-    - A fresh clone, as in CI, keeps none: the base runs.
+    - A fresh clone keeps none: the base runs.
+  - **In CI**, the templates carry the folder from the tester's run to
+    each pull request's guard, and to its next push, where no other
+    branch writes ([#1407](https://github.com/JN0V/workline/issues/1407)):
+    GitHub's cache, GitLab's artifacts
+    ([GitHub](../../../docs/github/jobs.md),
+    [GitLab](../../../docs/gitlab/template.md)); never a run where the
+    developer ran. A file of another tree, command or report is not read.
 - **The head three times**, one run after the other, in one fresh
   checkout. Each run is `test-command`, its report read as JUnit XML.
 - **Never again until green**: three runs, not "until it passes".

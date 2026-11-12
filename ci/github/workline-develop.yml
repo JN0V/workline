@@ -146,6 +146,23 @@ jobs:
           npm install -g @anthropic-ai/claude-code
           command -v bwrap >/dev/null && command -v socat >/dev/null ||
             { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends bubblewrap socat; }
+      # The tests a tree holds, by their ids (#1407): the tester's red
+      # proof runs the base, the default branch's tip; the ids it finds are
+      # kept in the default branch's cache, newest first, which every pull
+      # request reads: the guard on the developer's then reads the base's
+      # rather than run it again (roles/tester/docs/green-proof.md).
+      # None left by another job on a runner that keeps .git: a pull
+      # request's code could have written them.
+      - name: No test ids but those restored
+        if: steps.due.outputs.due == 'true'
+        run: rm -rf .git/workline/test-ids
+      - uses: actions/cache/restore@v4
+        if: steps.due.outputs.due == 'true'
+        with: {path: .git/workline/test-ids, key: "workline-test-ids-${{ github.run_id }}-${{ github.run_attempt }}", restore-keys: workline-test-ids-}
+      - name: The test ids read
+        id: ids
+        if: steps.due.outputs.due == 'true'
+        run: echo "sum=$(cat .git/workline/test-ids/*.json 2>/dev/null | sha256sum | cut -c1-64)" >> "$GITHUB_OUTPUT"
       - name: The issue line (proposals only)
         id: line
         if: steps.due.outputs.due == 'true'
@@ -167,6 +184,22 @@ jobs:
           echo "proposed=$(jq '((.pending // []) | length > 0) or ((.states // []) | length > 0)' line.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      # Kept only when the tester ran, the developer not: the guard's
+      # base is never read from a run of the code it guards. A run a
+      # person's label starts may not write the cache (#853): the next
+      # pull request's guard then runs the base.
+      - name: The test ids found
+        id: found
+        if: "!cancelled() && steps.line.outcome != 'skipped' && github.event_name != 'issues'"
+        env: {READ: "${{ steps.ids.outputs.sum }}"}
+        run: |
+          ls .git/workline/test-ids/*.json >/dev/null 2>&1 || exit 0
+          jq -e 'any(.steps[]?; .name == "tester") and all(.steps[]?; .name | startswith("developer") | not)' line.json >/dev/null 2>&1 || exit 0
+          [ "$(cat .git/workline/test-ids/*.json | sha256sum | cut -c1-64)" = "$READ" ] || echo "new=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/save@v4
+        if: "!cancelled() && steps.found.outputs.new == 'true'"
+        with: {path: .git/workline/test-ids, key: "workline-test-ids-${{ github.run_id }}-${{ github.run_attempt }}"}
 
       - uses: actions/upload-artifact@v4
         if: steps.line.outputs.proposed == 'true'

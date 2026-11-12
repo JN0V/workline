@@ -221,6 +221,24 @@ jobs:
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true' && github.event_name == 'pull_request' && steps.pr.outputs.draft != 'true'
         run: npm install -g @anthropic-ai/claude-code
+      # The tests a tree holds, by their ids (#1407): those the tester's
+      # red proof on the default branch, or this pull request's run before,
+      # found by the same command. The tester's guard then reads the base's
+      # rather than run it; the head's three runs always run. Read by a
+      # prefix: the newest this pull request kept, else the default
+      # branch's. A pull request's cache is its own, the default branch's
+      # written by its runs alone (roles/tester/docs/green-proof.md).
+      # None left by another job on a runner that keeps .git.
+      - name: No test ids but those restored
+        if: github.event_name == 'pull_request'
+        run: rm -rf .git/workline/test-ids
+      - uses: actions/cache/restore@v4
+        if: github.event_name == 'pull_request'
+        with: {path: .git/workline/test-ids, key: "workline-test-ids-${{ github.run_id }}-${{ github.run_attempt }}", restore-keys: workline-test-ids-}
+      - name: The test ids read
+        id: ids
+        if: github.event_name == 'pull_request'
+        run: echo "sum=$(cat .git/workline/test-ids/*.json 2>/dev/null | sha256sum | cut -c1-64)" >> "$GITHUB_OUTPUT"
       # The gates' verdicts, from their job: the line never runs a gate
       # here, and errs on one whose verdict is not there.
       - uses: actions/download-artifact@v4
@@ -284,6 +302,19 @@ jobs:
           echo "status=$status" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      # The ids the guard found, kept for this pull request's next run when
+      # any is new.
+      - name: The test ids found
+        id: found
+        if: "!cancelled() && github.event_name == 'pull_request'"
+        env: {READ: "${{ steps.ids.outputs.sum }}"}
+        run: |
+          ls .git/workline/test-ids/*.json >/dev/null 2>&1 || exit 0
+          [ "$(cat .git/workline/test-ids/*.json | sha256sum | cut -c1-64)" = "$READ" ] || echo "new=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/save@v4
+        if: "!cancelled() && steps.found.outputs.new == 'true'"
+        with: {path: .git/workline/test-ids, key: "workline-test-ids-${{ github.run_id }}-${{ github.run_attempt }}"}
 
       # Applied by workline-apply.yml, from the default branch: said when
       # this branch has no workflow run after this one.
