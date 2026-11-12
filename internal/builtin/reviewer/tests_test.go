@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -77,13 +78,17 @@ func TestNamedAfter(t *testing.T) {
 	}
 }
 
-// Of the tests named after a file elsewhere, the nearest touch it only
-// (#1417): Gradle's mirror tree, and app_a's tests for app_a's models.
-func TestTestFilesNamedAfterNearest(t *testing.T) {
+// Of the tests named after a file elsewhere, those in a folder mirroring
+// its own touch it only (#1417): Gradle's mirror tree, app_a's tests for
+// app_a's models, a top tests/ for src/; never another module's, even
+// alone, nor any folder's for a file at the root.
+func TestTestFilesNamedAfterMirrored(t *testing.T) {
 	repo := t.TempDir()
 	for _, name := range []string{
 		"app/src/main/kotlin/x/Grid.kt", "app/src/test/kotlin/x/GridTest.kt", "lib/src/test/kotlin/y/GridTest.kt",
 		"app_a/models.py", "app_a/tests/test_models.py", "app_b/tests/test_models.py",
+		"app/src/main/kotlin/x/Widget.kt", "lib/src/test/kotlin/x/WidgetTest.kt",
+		"main.go", "cmd/x/main_test.go", "src/grid.py", "tests/test_grid.py",
 	} {
 		p := filepath.Join(repo, name)
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
@@ -100,13 +105,16 @@ func TestTestFilesNamedAfterNearest(t *testing.T) {
 			t.Fatalf("git %v: %v: %s", args, err, out)
 		}
 	}
-	patterns := []string{"**/test/**", "**/tests/**"}
-	for file, want := range map[string]string{
-		"app/src/main/kotlin/x/Grid.kt": "app/src/test/kotlin/x/GridTest.kt",
-		"app_a/models.py":               "app_a/tests/test_models.py",
+	patterns := []string{"**/test/**", "**/tests/**", "**/*_test.go"}
+	for file, want := range map[string][]string{
+		"app/src/main/kotlin/x/Grid.kt":   {"app/src/test/kotlin/x/GridTest.kt"},
+		"app_a/models.py":                 {"app_a/tests/test_models.py"},
+		"src/grid.py":                     {"tests/test_grid.py"},
+		"app/src/main/kotlin/x/Widget.kt": nil,
+		"main.go":                         nil,
 	} {
-		if got := testFiles(repo, "HEAD", file, patterns); len(got) != 1 || got[0] != want {
-			t.Errorf("testFiles(%s) = %v, want [%s]", file, got, want)
+		if got := testFiles(repo, "HEAD", file, patterns); !slices.Equal(got, want) {
+			t.Errorf("testFiles(%s) = %v, want %v", file, got, want)
 		}
 	}
 }

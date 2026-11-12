@@ -1793,28 +1793,22 @@ func plural(n int, one, many string) string {
 }
 
 // testFiles are the test files at the head (the `tests` setting) that
-// touch a file: in its folder, then those named after it or naming it as
-// a word. Named after it, a test in a tree of its own is found
-// (src/test/…/GridTest.kt for src/main/…/Grid.kt), though it never names
-// the file as a word (#1417): of those, the nearest to the file only, so
-// app_b's test_models.py never stands for app_a's.
+// touch a file: in its folder, then those named after it in a folder
+// mirroring its own, then those naming it as a word. Named after it, a
+// test in a tree of its own is found (src/test/…/GridTest.kt for
+// src/main/…/Grid.kt), though it never names the file as a word (#1417);
+// another module's or app's, never.
 func testFiles(repo, head, file string, patterns []string) []string {
 	dir, stem := path.Dir(file), strings.TrimSuffix(path.Base(file), path.Ext(file))
 	var near, far []string
-	shared := -1
 	if out, err := git(repo, "ls-tree", "-r", "--name-only", head); err == nil {
 		for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
 			switch {
 			case f == "" || !pathglob.Any(patterns, f):
 			case path.Dir(f) == dir:
 				near = append(near, f)
-			case namedAfter(f, stem):
-				switch n := sharedFolders(dir, path.Dir(f)); {
-				case n > shared:
-					far, shared = []string{f}, n
-				case n == shared:
-					far = append(far, f)
-				}
+			case namedAfter(f, stem) && mirrors(dir, path.Dir(f)):
+				far = append(far, f)
 			}
 		}
 	}
@@ -1845,14 +1839,27 @@ func namedAfter(test, stem string) bool {
 	return slices.ContainsFunc(testAffixes, func(a string) bool { return name == stem+a || name == a+stem })
 }
 
-// sharedFolders is how many leading folders two folders share.
-func sharedFolders(a, b string) int {
-	as, bs := strings.Split(a, "/"), strings.Split(b, "/")
-	n := 0
-	for n < len(as) && n < len(bs) && as[n] == bs[n] && as[n] != "." {
-		n++
+// mirrors says whether a test's folder mirrors a code folder: past the
+// folders they share, one test folder below the code's own (app/tests/
+// for app/), or the same folders under another root, the first apart
+// (src/test/kotlin/x for src/main/kotlin/x, tests/ for src/).
+func mirrors(code, test string) bool {
+	cs, ts := folders(code), folders(test)
+	for len(cs) > 0 && len(ts) > 0 && cs[0] == ts[0] {
+		cs, ts = cs[1:], ts[1:]
 	}
-	return n
+	if len(cs) == 0 {
+		return len(ts) <= 1
+	}
+	return len(ts) > 0 && slices.Equal(cs[1:], ts[1:])
+}
+
+// folders are a folder's names from the root; the root's, none.
+func folders(dir string) []string {
+	if dir == "." || dir == "" {
+		return nil
+	}
+	return strings.Split(dir, "/")
 }
 
 // testsTouching is what a judge reading tests is shown besides: the test
