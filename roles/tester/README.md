@@ -5,7 +5,7 @@ sources:
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
   - ci/github/workline-gardening.yml
-checked: ccbfd55d
+checked: 01e06784
 verified: agent:claude-code
 ---
 # Tester
