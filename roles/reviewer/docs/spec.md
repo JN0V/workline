@@ -119,7 +119,10 @@ routing:
 - **The hold** is the product owner's: its `ready` waits until the
   reviewer read the body as it is and no important finding is open, then
   the engine moves it, with no agent
-  ([backlog acts](../../../docs/spec/backlog-acts/refine.md)).
+  ([backlog acts](../../../docs/spec/backlog-acts/refine.md)). Not while
+  the product owner's own question waits, nor after it moved the issue
+  back to refine on that body
+  ([a spec read before ready](../../../docs/spec/backlog-acts/spec-review.md)).
 - **The answer**: the product owner's next refine rewrites the sections
   the findings lie in that are its own; a person's, it asks the reporter.
   The body changed, the reviewer reads it again: one round more.
