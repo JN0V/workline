@@ -1,0 +1,31 @@
+case: product-owner/needs-a-module-folder
+about: >
+  #1410: the product owner said it lacked the code of the module folder
+  `core/timelapse`, its build file aside; the line ran it again at once
+  with that folder as its `needs` input. Run again, it is given the
+  module's code, below the folder, not nothing: it need not name the
+  same folder again and be blocked.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/traceglass/." .
+      printf 'plugins { kotlin("jvm") }\n' > core/timelapse/build.gradle.kts
+      git add . && git commit -qm 'feat: TraceGlass, reduced, from the Kotlin trial'
+  forge:
+    issues:
+      - {id: 24, title: "The time-lapse counter runs on while the camera is off", body: "## Need\n\nWhile recording a time-lapse I want the counter to show the snapshots really taken.\n\n## Example\n\n1. Start a time-lapse, one snapshot every 5 seconds.\n2. Switch to another app for a minute, then come back.\n3. The counter reads 13, but only 2 snapshots were saved.\n", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run:
+  role: product-owner
+  event: issue
+  target: {issue: 24}
+  input: {needs: "core/timelapse"}
+  ai: fake:proposes-nothing
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["## The code you said you lacked", "### `core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/SnapshotStorage.kt`"]
+    in/code-given:
+      contains: ["core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/SnapshotStorage.kt"]

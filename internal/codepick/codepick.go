@@ -354,9 +354,17 @@ func (p *Picker) namedFiles(a Ask) []string {
 			named = append(named, f)
 		}
 	}
+	// Each word's files in turn: two folders named share the bound, the
+	// first not taking it whole.
+	var each [][]string
 	for _, w := range a.Paths {
-		for _, f := range p.wordFiles(strings.TrimSpace(work.LineOff(w)), a.Tests.Patterns()) {
-			add(f)
+		each = append(each, p.wordFiles(strings.TrimSpace(work.LineOff(w)), a.Tests.Patterns()))
+	}
+	for i := 0; slices.ContainsFunc(each, func(fs []string) bool { return i < len(fs) }); i++ {
+		for _, fs := range each {
+			if i < len(fs) {
+				add(fs[i])
+			}
 		}
 	}
 	for _, m := range pathLike.FindAllString(a.Text, -1) {
@@ -648,10 +656,20 @@ func (p *Picker) Pick(a Ask) Pick {
 	// 1b. The files the agent asked for, whole, or their first lines.
 	// With a depth, a test whole while it fits, the others as named
 	// files are given (3): their declarations, then whole if they fit.
-	var asked, askedTests []string
+	// A folder asked for is its files, as a folder named is (#1410).
+	var askedFiles []string
 	for _, w := range a.Needs {
-		f := work.InRepo(strings.TrimSpace(work.LineOff(w)), p.files)
-		if f == "" || skip(f) || len(p.Lines(f)) == 0 {
+		w = strings.TrimSpace(work.LineOff(w))
+		if f := work.InRepo(w, p.files); f != "" {
+			askedFiles = append(askedFiles, f)
+			continue
+		}
+		fs := p.wordFiles(w, a.Tests.Patterns())
+		askedFiles = append(askedFiles, fs[:min(len(fs), namedMax)]...)
+	}
+	var asked, askedTests []string
+	for _, f := range askedFiles {
+		if skip(f) || len(p.Lines(f)) == 0 || slices.Contains(asked, f) || slices.Contains(askedTests, f) {
 			continue
 		}
 		file(f).Named = true
@@ -1105,7 +1123,9 @@ func wordRe(n string) *regexp.Regexp {
 
 // wordFiles are the files a word names: a file, the files a pattern
 // matches, or a folder's own files, its tests aside when it holds code
-// too (the tester's rule, #791, #801).
+// too (the tester's rule, #791, #801), then the code files below it,
+// the nearest first: a module's folder holds its build file, its code
+// sits folders below (`core/x/src/main/kotlin/…`, #1410).
 func (p *Picker) wordFiles(w string, tests []string) []string {
 	notTest := func(fs []string) []string {
 		if code := slices.DeleteFunc(slices.Clone(fs), func(f string) bool { return len(tests) > 0 && pathglob.Any(tests, f) }); len(code) > 0 {
@@ -1120,13 +1140,18 @@ func (p *Picker) wordFiles(w string, tests []string) []string {
 	if dir == "." || strings.HasPrefix(dir, "../") || path.IsAbs(dir) {
 		return nil
 	}
-	var out []string
+	var out, below []string
 	for _, f := range p.files {
-		if path.Dir(f) == dir && (len(tests) == 0 || !pathglob.Any(tests, f)) {
+		switch {
+		case len(tests) > 0 && pathglob.Any(tests, f):
+		case path.Dir(f) == dir:
 			out = append(out, f)
+		case strings.HasPrefix(f, dir+"/") && codenav.Of(f) != nil:
+			below = append(below, f)
 		}
 	}
-	return out
+	slices.SortStableFunc(below, func(x, y string) int { return strings.Count(x, "/") - strings.Count(y, "/") })
+	return append(out, below...)
 }
 
 func sortedKeys(m map[string][][2]int) []string {
