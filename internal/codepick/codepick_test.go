@@ -268,3 +268,38 @@ func TestBytesBound(t *testing.T) {
 		t.Fatalf("the cut is not said: %+v", pk.Files[0].Given)
 	}
 }
+
+// A module's folder named: its build file, then its code folders below,
+// its tests and resources aside, each folder named sharing the bound;
+// a folder asked for alike (#1410).
+func TestModuleFolder(t *testing.T) {
+	dir := repo(t, map[string]string{
+		"core/x/build.gradle.kts":                            "plugins { kotlin(\"jvm\") }\n",
+		"core/x/src/main/kotlin/a/x/Store.kt":                "package a.x\n\nclass Store {\n    fun save() = 1\n}\n",
+		"core/x/src/main/res/values/strings.xml":             "<resources/>\n",
+		"core/x/src/test/kotlin/a/x/StoreTest.kt":            "package a.x\n\nclass StoreTest\n",
+		"feature/x/build.gradle.kts":                         "plugins { kotlin(\"jvm\") }\n",
+		"feature/x/src/main/kotlin/a/x/feature/FileStore.kt": "package a.x.feature\n\nclass FileStore\n",
+	})
+	pk, _ := pick(t, dir, Ask{Text: "the counter runs on", Paths: []string{"core/x", "feature/x"}, Budget: 600})
+	want := []string{"core/x/build.gradle.kts", "feature/x/build.gradle.kts", "core/x/src/main/kotlin/a/x/Store.kt", "feature/x/src/main/kotlin/a/x/feature/FileStore.kt"}
+	if got := pk.Paths(); !slices.Equal(got, want) {
+		t.Errorf("a module's folders named give %v, want %v", got, want)
+	}
+	pk, _ = pick(t, dir, Ask{Text: "the counter runs on", Needs: []string{"core/x", "feature/x", "core/x/build.gradle.kts"}, Budget: 600})
+	want = []string{"core/x/build.gradle.kts", "feature/x/build.gradle.kts", "core/x/src/main/kotlin/a/x/Store.kt", "feature/x/src/main/kotlin/a/x/feature/FileStore.kt"}
+	if got := pk.Paths(); !slices.Equal(got, want) {
+		t.Errorf("module folders asked for give %v, want %v", got, want)
+	}
+}
+
+// A function a long file defines, named, is given past the file's
+// first lines and its bytes bound (#1332).
+func TestNamedFunctionInALongFile(t *testing.T) {
+	dir := repo(t, map[string]string{"pkg/spec.py": filler(1000, "X_%04d = 'a constant of some forty bytes'") +
+		"\n\ndef round_trip(rows):\n    return list(rows)\n\n" + filler(300, "Y_%04d = 'a constant of some forty bytes'")})
+	_, out := pick(t, dir, Ask{Text: "`round_trip` loses a row", Paths: []string{"pkg/spec.py"}, Budget: 600, Bytes: 16000})
+	if !strings.Contains(out, "def round_trip(rows):") {
+		t.Errorf("the function named is not given:\n%.2000s", out)
+	}
+}

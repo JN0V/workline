@@ -27,8 +27,12 @@ flowchart LR
   a person's comments; for the product owner, the lines of the file an
   issue was imported from that name its item, never that file.
 - **Paths named outright**: the Scope's words in backticks, the product
-  owner's `sources`. A folder gives its own files, a pattern the files it
-  matches, the tests aside when code matches too.
+  owner's `sources`. A folder gives its own files, then the code files
+  below it, the nearest first, 12 at most: a module's folder holds its build file,
+  its code sits under `src/main/<language>/<package>/`
+  ([#1410](https://github.com/JN0V/workline/issues/1410)). A pattern
+  gives the files it matches; the tests aside when code matches too.
+  Several paths share the bound on files named, in turn.
 - **Paths in the text**: a file the commit holds, or the one file with
   that name; for the product owner, a link to a file on the forge too.
 - **Names**: the words written as code, as the reviewer's judge reads
@@ -107,7 +111,8 @@ The files the tester's or the product owner's agent said it lacked at
 its last run (the line's `needs` input; the product owner's for the
 issue the run is about, the smallest in bytes first,
 [#1146](https://github.com/JN0V/workline/issues/1146)) come right after
-the definitions (between 2 and 3): whole, else their first lines.
+the definitions (between 2 and 3): whole, else their first lines. A
+folder said lacking gives its files as a folder named does.
 
 **The tester's declarations** (its `Depth`, 2): what a new test builds
 against, so that it asks once, not a header at a time (the C++ copy's
