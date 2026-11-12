@@ -1,4 +1,4 @@
-# Auditor — where it stands (2026-10-17)
+# Auditor — where it stands (2026-11-12)
 
 **In one line:** re-checks, each week, one in ten of every role's acts,
 per kind (`workline sample`): the docs the documentalist vouched for, the
@@ -7,8 +7,10 @@ rewrites, the tester's acts, the developer's code, each against what it
 was done on. The
 docs' sample tried on a GitLab sandbox, its first scheduled run on
 workline on 2026-10-05; the tester's acts read by a real judge on stub
-acts ([#669](https://github.com/JN0V/workline/pull/669)), the others'
-with no real agent yet. Beta.
+acts ([#669](https://github.com/JN0V/workline/pull/669)); every role's
+acts read by a real judge on workline each week since W42
+([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275)).
+Beta.
 
 A try since 2026-10-13 is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
@@ -28,21 +30,31 @@ hold:
    owner's issue folded in. The weekly sample's other gaps are parked
    ([#108](https://github.com/JN0V/workline/issues/108)): a judge of
    another provider, a week not run caught up.
-2. **The main issue validated on real use**: open.
-   [#155](https://github.com/JN0V/workline/issues/155) collects the weeks;
-   no Validation signed by the maintainer yet.
-3. **AI verdicts measured**: open. Its verdicts are kept and counted
-   ([#276](https://github.com/JN0V/workline/issues/276)): the count, a
-   comment on [#155](https://github.com/JN0V/workline/issues/155), no
-   week answered yet; a `checked` found false on a forge is untried
-   ([#155](https://github.com/JN0V/workline/issues/155) collects it when
-   one turns up). Planted: six evaluation cases, a wrong act and its
-   right twin for a reviewer's dropped finding, a committer's rewrite and
-   a tester's tests, 30 of 30 in five runs (2026-10-29,
-   [amendment](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-auditor-measured));
-   a product owner's act and a doc not planted yet. Its own issues closed
-   as not planned are counted in the count's comment. The bar:
-   [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#leaving-beta).
+2. **The main issue validated on real use**: awaits the maintainer.
+   The bar ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#leaving-beta)):
+   a week on workline lists verdicts for the acts of at least three
+   roles, and the maintainer agrees with each false one. W45 lists
+   verdicts for the product owner, the reviewer and the committer, 9
+   false ([W45](https://github.com/JN0V/workline/issues/155#issuecomment-6742605949)).
+   The maintainer would sign it with a 👍 on W45, or a 👎 naming the
+   rows they contest. [#205](https://github.com/JN0V/workline/issues/205),
+   the main issue, and [#155](https://github.com/JN0V/workline/issues/155),
+   where the weeks are written, are parked since 2026-11-09.
+3. **AI verdicts measured**: open, in two parts
+   ([the bar](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#leaving-beta)).
+   - **Planted**: six evaluation cases, a wrong act and its right twin
+     for a reviewer's dropped finding, a committer's rewrite and a
+     tester's tests, 30 of 30 in five runs (2026-10-29,
+     [amendment](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-auditor-measured)).
+     Left: a product owner's closing and a false doc (kept for 1.0,
+     [#1379](https://github.com/JN0V/workline/issues/1379)).
+   - **Real use**: awaits the maintainer. The bar is 60 verdicts the
+     maintainer answered over four weeks, at most one contested. W42 to W45 read
+     90 acts, none answered yet
+     ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275)).
+     They would sign it with a 👍 or a 👎 on each week's comment. Its
+     own issues closed as not planned are counted in the same comment:
+     none opened yet.
 
 ## Built
 
@@ -117,10 +129,15 @@ hold:
 
 ## Missing
 
-Nothing to build; tries on real use:
-
-- **The weeks, read**
-  ([#155](https://github.com/JN0V/workline/issues/155)).
-- **A product owner's act read on GitHub's edit history**, live: its
-  record's fields are written from the first run of an engine holding
-  them.
+- **A product owner's closing and a false doc, planted** in its
+  evaluation (kept for 1.0,
+  [#1379](https://github.com/JN0V/workline/issues/1379)): a measure for
+  criterion 3, not a gap in what is built, so criterion 1 holds.
+- **Tries on real use**:
+  - **the weeks, read** by the maintainer, W42 to W45 waiting (parked,
+    [#155](https://github.com/JN0V/workline/issues/155));
+  - **a product owner's act read on GitHub's edit history**, live
+    (parked, [#155](https://github.com/JN0V/workline/issues/155));
+  - **the developer's code re-checked by a real judge**: 4 drawn in W45,
+    none read yet (parked,
+    [#155](https://github.com/JN0V/workline/issues/155)).

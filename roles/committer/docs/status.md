@@ -1,4 +1,4 @@
-# Committer — where it stands (2026-10-19)
+# Committer — where it stands (2026-11-12)
 
 **In one line:** runs on every commit and push of workline's author, and
 on each merge request in CI; its rewrites tried with Claude on refused
@@ -39,6 +39,9 @@ of
      meaning, or a subject still over 72 characters.
    - Not measured: the judgement on a code with no dash
      (`possible-internal-code`) has no case.
+   - On real use: the auditor's weekly sample drew one rewrite in
+     W42 to W45; it stands, no answer from the maintainer yet
+     ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275)).
 
 ## Built
 
@@ -84,5 +87,8 @@ its evaluation in
 
 ## Missing
 
+Nothing to build: criterion 1 still holds on 2026-11-12.
+
 - **Tries on real use**: a hook that reads `pre-push`'s input after
-  workline's line; husky or lefthook. No issue yet.
+  workline's line; husky or lefthook (parked,
+  [#1380](https://github.com/JN0V/workline/issues/1380)).

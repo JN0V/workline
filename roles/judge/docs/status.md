@@ -1,4 +1,4 @@
-# Judge — where it stands (2026-10-15)
+# Judge — where it stands (2026-11-12)
 
 **In one line:** asked on real use by the documentalist (a fix it
 vouches for), the reviewer (each important finding) and the product owner
@@ -41,7 +41,10 @@ Built on 2026-10-15, by the maintainer, against the three criteria of
    ([ADR-0045, amended](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#amendment-2026-10-14-on-by-default)). Also
    inside the other roles' measures: the documentalist's `drifted` cases
    ([ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)),
-   the reviewer's bench.
+   the reviewer's bench. Read again by the auditor's weekly sample,
+   W42 to W45: of 42 findings the judge dropped, 25 stand, 1 false,
+   8 unproven, 8 not read; no answer from the maintainer yet
+   ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275)).
 
 ## Built
 
@@ -64,6 +67,8 @@ No cases folder of its own: it is asked inside the other roles' cases.
   `obsolete-judge-disagrees-kept`.
 
 ## Missing
+
+Nothing to build: criterion 1 still holds on 2026-11-12.
 
 - **Parked**: a judge of another provider
   ([#80](https://github.com/JN0V/workline/issues/80)).
