@@ -1,0 +1,3 @@
+# The tester's agent answering a test the review finds missing (#1416):
+# it names the code it lacks.
+- note: "needs: grid.sh — I lack what grid prints, and won't guess it."
