@@ -30,16 +30,17 @@ GitLab is needed:
 - **What it needs**: any tier, Free included; a Maintainer to create the
   hook and the trigger token. `workline setup --yes`, run in the
   project's clone with a Maintainer's token, creates both: the hook on
-  issue events, and on note events where the reviewer is routed on
-  `issue`; `workline doctor` checks them
+  issue events, and on note events where the reviewer or the product
+  owner is routed on `issue`; `workline doctor` checks them
   ([the commands](commands-setup.md#workline-setup)). On a self-managed instance, an administrator allows
   webhooks to reach the local network (Admin → Network → Outbound
   requests), as the hook calls GitLab itself (untried).
 - **Every issue change fires it**: a title edit, a new issue, a label
   the engine itself sets; with note events, every comment, on a merge
   request too. The engine exits at once on any other event than a
-  state's label put on an issue, or the reviewer's comment on a spec in
-  refine; a chain of the engine's labels stops at the hop cap.
+  state's label put on an issue, the reviewer's comment on a spec in
+  refine, or a person's comment or body edit on an issue on the line; a
+  chain of the engine's labels stops at the hop cap.
 
 ### The line of states on it
 
@@ -62,9 +63,13 @@ the template's jobs ([workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.ym
   as Ready freed when the developer takes an issue
   ([#960](https://github.com/JN0V/workline/issues/960)).
 - **The reviewer's comment on a spec**, on an issue in refine, starts
-  the product owner's step again, to read it: the one comment that
-  names an issue. The engine's other comments, and a person's, start
-  nothing ([#846](https://github.com/JN0V/workline/issues/846)).
+  the product owner's step again, to read it
+  ([#846](https://github.com/JN0V/workline/issues/846)). The engine's
+  other comments start nothing.
+- **A person's comment or body edit** on an issue bearing a state's
+  label names it: the answer to a block or a draft is read at once, not
+  at the hourly reconcile, when the step is due; else nothing runs
+  ([#1414](https://github.com/JN0V/workline/issues/1414)).
 - **Hourly**, a pipeline schedule with `WORKLINE_TASK=reconcile` runs
   `workline:reconcile`: each due issue an event missed, its own
   pipeline; each developer's merge request a review round is due on,

@@ -28,8 +28,9 @@ shows; then prints `workline doctor`.
   it also creates the webhook that starts the line on an issue's label,
   and its trigger token ([GitLab alone](gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)):
   - a Maintainer's token; another is refused, said;
-  - on note events too where the reviewer is routed on `issue`: its
-    comment on a spec wakes the product owner at once;
+  - on note events too where the reviewer or the product owner is
+    routed on `issue`: the reviewer's comment on a spec, or a person's
+    answer on an issue, wakes the product owner at once;
   - run again, it creates nothing more, or turns a hook's issue (and
     note) events back on; a hook GitLab disabled, or on another branch, is
     said, for you to mend in Settings → Webhooks;
@@ -108,7 +109,7 @@ changes nothing.
   ([the environment](gitlab/environment.md#workline-doctor)).
 - On GitLab, with a role of the line routed: whether the issue webhook
   starts it at once — the hook to the project's trigger URL, its issue
-  events on (its note events too, the reviewer routed on `issue`), not disabled, on the default branch, workline's trigger
+  events on (its note events too, the reviewer or the product owner routed on `issue`), not disabled, on the default branch, workline's trigger
   token; a token that may not read them (a Maintainer's may) is said.
 - With the product owner or the developer routed: the forge's board,
   its columns matched to ready, doing and done, and to refine, tests and
