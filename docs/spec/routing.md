@@ -728,7 +728,9 @@ whose result moves the issue to the next. The table is the routing's
 [ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-blocked-is-read-again):
 a blocked issue wakes no role by its state; the reconciler, with no
 agent, tells whether there is news on it, and wakes the product owner
-only then.
+only then. A person's comment or body edit on it asks the same at once,
+by the event: the template's `Due` step on GitHub, the note or issue
+webhook on GitLab ([#1414](https://github.com/JN0V/workline/issues/1414)).
 
 - **`revisit`** (7): the days a blocked issue waits with nothing new
   before the product owner reads it again; `0`: never, a person moves

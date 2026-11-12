@@ -98,6 +98,11 @@ const developer = 30
 // project_<id>_bot_<random>, group_<id>_bot_<random> (GitLab's naming).
 var botName = regexp.MustCompile(`^(project|group)_\d+_bot(_|$)`)
 
+// GitLabBotName says whether username is a project's or a group's access
+// token user by its name alone, as a webhook's event names it: the
+// engine's own writes come from one (#1414).
+func GitLabBotName(username string) bool { return botName.MatchString(username) }
+
 // insider says whether username is a person of the project. The members
 // are read once a run: a token that may not list them (401, 403: the
 // job's own) fails loud with ErrAuthorsUnknown rather than taking every
