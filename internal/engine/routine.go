@@ -479,7 +479,7 @@ func admit(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal,
 	}
 	w.say("auto-merge-on", "", fmt.Sprintf("with no person's yes, %s: auto-merge turned on, the forge merges it once its checks pass", why))
 	sayUnrefused(f, mr, tip, false, w.say)
-	return e, heldNow(m, mr, tip, st, w.say, "with no person's yes, "+why)
+	return e, heldByConversations(m, mr, tip, st, w.say, "with no person's yes, "+why) // said now, as a yes's (#1417)
 }
 
 // ownNote finds, among a merge request's comments, the one the App wrote

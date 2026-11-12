@@ -1110,17 +1110,9 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 	}
 	say("auto-merge-on", "", fmt.Sprintf("accepted by %s, %s: auto-merge turned on, the forge merges it once its checks pass", by, passed))
 	sayUnrefused(f, mr, tip, false, say)
-	return e, heldNow(m, mr, tip, st, say, fmt.Sprintf("accepted by %s, %s", by, passed))
-}
-
-// heldNow says what holds a merge request whose auto-merge was just
-// turned on, its checks green, the forge not merging it at once: the run
-// that arms it says so, not a later one that may never come (#1417).
-func heldNow(m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, say func(rule, level, msg string), who string) error {
-	if st.Checks != "success" {
-		return nil // the forge merges it once they pass, or a later run says what holds it
-	}
-	return heldByConversations(m, mr, tip, st, say, who)
+	// Its checks green, the forge not merging it at once: the run that
+	// arms it says what holds it, not a later one that may never come (#1417).
+	return e, heldByConversations(m, mr, tip, st, say, fmt.Sprintf("accepted by %s, %s", by, passed))
 }
 
 // stalled weighs a merge request the policy merges whose auto-merge is on
