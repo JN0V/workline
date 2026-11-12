@@ -585,7 +585,51 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 			body = said + "\n" + body
 		}
 	}
+	keepCounted(f, t, &w.Record, &body)
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
+}
+
+// keepCounted keeps in the record about to be written the runs counted
+// on the issue since the step read its record: the tokens of the runs
+// the comment now holds, the step's record having none of them, are added
+// to rec and its body's record. A comment it cannot read again leaves
+// the record as it is.
+func keepCounted(f forge.Forge, t forge.Target, rec *Record, body *string) {
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return
+	}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return
+	}
+	_, now, had := recordCommentIn(comments)
+	if !had {
+		return
+	}
+	var added []string
+	for _, id := range now.Counted {
+		if !slices.Contains(rec.Counted, id) {
+			added = append(added, id)
+		}
+	}
+	if len(added) == 0 {
+		return
+	}
+	spent := map[string][]int{}
+	for role, ns := range rec.Spent {
+		spent[role] = slices.Clone(ns)
+	}
+	for role, ns := range now.Spent {
+		if have := len(spent[role]); len(ns) > have {
+			spent[role] = append(spent[role], ns[have:]...)
+		}
+	}
+	rec.Spent = spent
+	rec.Counted = append(slices.Clone(rec.Counted), added...)
+	if recordLine.MatchString(*body) {
+		*body = withRecord(*body, *rec)
+	}
 }
 
 // WriteStates writes what a line judged with no write token left on its
