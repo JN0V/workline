@@ -1,0 +1,32 @@
+case: routing/tests-needs-other-code-given-once
+about: >
+  #1410: a role given the folder it said it lacked names another file,
+  not given yet: a folder's files led it there. The line runs it again
+  once more in the same step, given that file, rather than block at
+  once. Said lacking again, the issue moves to Blocked, as before: three
+  calls at most.
+given:
+  repo: go-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA Go test.\n\n## Scope\n\n- A `Mul` function beside `Add`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-needs-folder-then-file"}
+expect:
+  agent-calls: 3
+  findings:
+    - {rule: state-given, level: info, where: "#3", message: "the tester said it lacks code: run again at once, given calc"}
+    - {rule: state-given, level: info, where: "#3", message: "the tester said it lacks other code than it was given: run again at once, given go.mod"}
+    - {rule: needs-spent, level: warn, where: "#3", message: "the tester said again it lacks code in its state tests"}
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked"]}
