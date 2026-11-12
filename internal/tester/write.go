@@ -186,6 +186,13 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	// The test command run on the base first, a minute at most: one that
+	// cannot run there proves nothing after the agent either, its tokens
+	// spent for nothing (#1333). The project's to mend, not the issue's.
+	if f := Runs(repo, strings.TrimSpace(head), s, RunsWithin); f != nil {
+		f.Message += "; the agent is not asked: mend what the command needs (a tool, an SDK, a variable) or the test-command setting, then run again"
+		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the test command cannot run on the base", Findings: []verdict.Finding{*f}})
+	}
 	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels, Body: backlog.BodyDigest(is.Body), Author: is.Author,
 		Text: is.Title + "\n" + is.Body, Retried: backlog.Retested(comments, "product-owner")}
 	if v := strings.TrimSpace(sections[work.Verification].Text); v != "" && !backlog.TestersToWrite(is.Body, po) {

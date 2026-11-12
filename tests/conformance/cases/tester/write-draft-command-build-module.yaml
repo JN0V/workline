@@ -5,14 +5,16 @@ about: >
   the module holding the new tests, `./mod`, as a Gradle or Maven
   project's command takes it. The tests lie in mod/src/test/, which
   test-paths names as a folder: no folder there holds them directly. The
-  test-command fails whole: the proof passing shows it was not run.
+  test-command runs once, before the agent (#1333): it exits 0 and writes no report,
+  as a project with no test yet; the proof passing shows it ran the
+  draft-command alone.
 given:
   repo: tested
   setup:
     - "mkdir -p mod/src/test && printf 'plugins {}\\n' > mod/build.gradle.kts && git add mod && git commit -qm 'build: a module'"
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   config:
-    roles: {tester: {settings: {test-command: "false", test-paths: ["**/src/test/**"],
+    roles: {tester: {settings: {test-command: "true", test-paths: ["**/src/test/**"],
       module-files: [build.gradle.kts, build.gradle],
       draft-command: "sh \"$FIXTURES/bin/run-modules\" {report} {packages}"}}}
   forge:

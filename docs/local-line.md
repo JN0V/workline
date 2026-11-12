@@ -62,7 +62,7 @@ roles:
   fix ([the merge policy](merge-policy.md)). Left out, you merge.
 
 ```sh
-workline doctor          # says a missing test-command, with the setting to add
+workline doctor          # says a missing test-command, or one that cannot run here
 git add .workline/config.yaml && git commit -m "chore: adopt workline"
 export WORKLINE_RUNS_DIR=~/.cache/workline-runs   # outside the clone: see below
 ```

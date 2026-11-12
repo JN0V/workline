@@ -64,6 +64,11 @@ workline test write --issue 42 --ai claude
   ([writing an issue](../product-owner/docs/writing.md)):
   `- **Old debt:** Given …, When …, Then …`; a `**Scenario: Old debt**`
   or `Scenario: Old debt` line with its steps below is read too.
+- **The test command runs first**, on the base, a minute at most: one
+  that fails with no report (an SDK not found, a tool missing) stops the
+  run before the agent, its error lines quoted (`test-command-fails`);
+  `workline doctor` runs it on HEAD the same way
+  ([#1333](https://github.com/JN0V/workline/issues/1333)).
 - **What the agent reads**: the scenarios, the Need, a person's
   Verification and the reviewer's findings on it, the Scope, the code the issue names, found by [the code
   picker](../../docs/spec/code-picker.md) (the Scope's files, a folder's
@@ -225,6 +230,7 @@ workline test check --base origin/main
 | `test-green-on-base` | yes | a new test passes, or is skipped, on the base |
 | `test-red-on-head` | yes | the change holds code, and a new test fails, is skipped, or did not run on the head |
 | `setting-missing` | yes | `test-command` or `test-report` is not set |
+| `test-command-fails` | yes | writing an issue's tests: the test command, run on the base before the agent, failed with no report |
 | `setting-invalid` | yes | `test-report` leaves the repository's root, a `module-files` name holds a `/`, or `build-errors` does not compile |
 | `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML; its error lines quoted. With the change's tests and no error a row reads, the agent is asked once more ([missing name](docs/missing-name.md)) |
 | `tests-not-built` | no, warns | tests the base ran are not in the report of the base with the change's tests: their build broke there |
