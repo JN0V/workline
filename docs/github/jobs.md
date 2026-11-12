@@ -25,6 +25,11 @@ Part of [workline on GitHub Actions](../ci-github.md): each job's rights, its lo
   ([more](../../roles/reviewer/docs/ready.md)). An edit runs nothing: after
   fixing a refused title, re-run `judge` or push
   ([the squash title](../../roles/committer/docs/squash-title.md)).
+- `judge` reads and keeps the tests' ids the tester's guard reads, so it
+  does not run the base again, in the Actions cache: its pull request's
+  own, else the default branch's, which `workline-develop.yml` writes
+  after the tester's run alone
+  ([the green proof](../../roles/tester/docs/green-proof.md#what-it-runs)).
 - On a merge queue's group (`merge_group`), `gates` runs the gates on
   the merged result and `judge` gives their verdict: no agent, nothing
   applied; with the merge policy, `queue` sets the App's yes on the
