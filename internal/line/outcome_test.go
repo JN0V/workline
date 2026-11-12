@@ -86,3 +86,21 @@ func TestALostRunIsOneMachineError(t *testing.T) {
 		t.Fatal("a record with no error has errors")
 	}
 }
+
+// Code said lacking is new when it names none of what was given, an
+// anchor or a folder's slash aside (#1410).
+func TestSaysNew(t *testing.T) {
+	for _, c := range []struct {
+		given, said string
+		want        bool
+	}{
+		{"core/x, feature/x", "core/x/src/main/kotlin/A.kt", true},
+		{"core/x, feature/x", "feature/x/", false},
+		{"src/a.go", "./src/a.go#Run, src/b.go", false},
+		{"calc", "", false},
+	} {
+		if got := saysNew(c.given, c.said); got != c.want {
+			t.Errorf("saysNew(%q, %q) = %v, want %v", c.given, c.said, got, c.want)
+		}
+	}
+}

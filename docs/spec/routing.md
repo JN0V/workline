@@ -573,7 +573,7 @@ whose result moves the issue to the next. The table is the routing's
   role runs again in the same step, given it (`state-given`; its task
   says so, the tester's and the product owner's get those files). Given
   them, it may name other files, none given yet (a folder's files led
-  it to one): it runs once more, given those
+  it to one): it runs once more, given those too
   ([#1410](https://github.com/JN0V/workline/issues/1410)). Said
   lacking again, the step itself moves the issue to
   `workline:blocked` for a person to name its files (`needs-spent`).

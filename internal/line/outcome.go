@@ -107,15 +107,19 @@ func withLast(last map[string]LastRun, role string, l *LastRun) map[string]LastR
 
 // saysNew says whether what an agent said it lacks names none of what it
 // was given for its last saying: each a path, the two lists split on
-// commas.
+// commas, an anchor (`a.go#F`) or a folder's slash aside.
 func saysNew(given, said string) bool {
+	bare := func(w string) string {
+		w, _, _ = strings.Cut(strings.TrimSpace(w), "#")
+		return strings.TrimSuffix(strings.TrimPrefix(w, "./"), "/")
+	}
 	was := map[string]bool{}
 	for _, w := range strings.Split(given, ",") {
-		was[strings.TrimSpace(w)] = true
+		was[bare(w)] = true
 	}
 	some := false
 	for _, w := range strings.Split(said, ",") {
-		if w = strings.TrimSpace(w); w == "" {
+		if w = bare(w); w == "" {
 			continue
 		}
 		if was[w] {

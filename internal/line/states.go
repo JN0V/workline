@@ -688,7 +688,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: fmt.Sprintf("#%d", st.write.Issue),
 				Message: fmt.Sprintf("the %s said it lacks other code than it was given: run again at once, given %s", st.role, said)})
 			in = maps.Clone(in)
-			in[NeedsInput] = said
+			in[NeedsInput] += ", " + said // what led it there given still
 			o.Inputs = in
 			steps = len(res.Steps)
 			_, status = runRole(res, cfg, o, 0)
