@@ -73,7 +73,8 @@ reads refined issues and keeps what it found in one comment on each, `<!-- workl
   unanswered, no assumption taken for it
   ([ADR-0060](../../adr/0060-the-person-is-on-the-loop.md));
   or moved back to refine on the body as it is (its state's last `did`
-  of `ready` or `unready` an `unready` of that body's digest). A
+  of `ready` or `unready` an `unready` of that body's digest; `did`
+  keeps 35 days of acts). A
   person's comment since is read by the agent first, whose own `ready`
   is taken; the body changed and reviewed again, the engine readies it.
 - **At once, on `issue`** ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md),
