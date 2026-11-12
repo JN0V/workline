@@ -4,15 +4,16 @@ about: >
   folders that hold them: a draft-command naming {packages} runs those
   folders alone, on the base and with the tests, never the whole suite
   twice (#979: 10 of a run's 11 min on workline). The test-command
-  runs once, before the agent (#1333); the proof-scope finding shows
-  the proof ran the draft-command. The Draft says
+  runs once, before the agent (#1333): it exits 0 and writes no report,
+  as a project with no test yet; the proof passing shows it ran the
+  draft-command alone. The Draft says
   where the proof ran.
 given:
   repo: tested
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   config:
-    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["**/test_*.sh"],
+    roles: {tester: {settings: {test-command: "true", test-paths: ["**/test_*.sh"],
       draft-command: "sh \"$FIXTURES/bin/run-folders\" {report} {packages}"}}}
   forge:
     issues:

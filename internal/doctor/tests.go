@@ -33,7 +33,7 @@ func testCommandRuns(r *Report, o Options, merged map[string]any) {
 			Message: "the test command runs on HEAD, a minute at most watched: `" + s.Command + "`"})
 		return
 	}
-	r.add(Check{Area: "repository", Rule: "test-command-fails", Where: "tester", Level: Warn,
+	r.add(Check{Area: "repository", Rule: f.Rule, Where: "tester", Level: Warn,
 		Message: fmt.Sprintf("the test command `%s` does not run on HEAD: the tester stops before its agent, the developer's code stays an unproven Draft; %s", s.Command, f.Message),
 		Fix:     "run it in a fresh clone, mend what it lacks (a tool, an SDK, a variable a gitignored file held) or the test-command setting in .workline/config.yaml   # roles/tester/README.md#settings"})
 }

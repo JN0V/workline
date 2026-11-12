@@ -723,6 +723,9 @@ func RemoveWorktree(repo, tree string) {
 	}
 }
 
+// exitedZero is a run's failure when it wrote no report and exited 0.
+const exitedZero = "it exited 0"
+
 // runIn runs the test command in tree and reads its report.
 func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 	if why := reportInTree(s.Report); why != "" {
@@ -747,7 +750,7 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 	}
 	found := freshReports(tree, s.Report, kept)
 	if len(found) == 0 {
-		said := "it exited 0"
+		said := exitedZero
 		if runErr != nil {
 			said = runErr.Error()
 		}

@@ -88,7 +88,7 @@ changes nothing.
 - The tester or the developer routed with no `test-command`: said, with
   the setting to add
   ([#1284](https://github.com/JN0V/workline/issues/1284)); set, it is
-  run on HEAD in a checkout apart, a minute at most, and one that ends
+  run on HEAD in a checkout apart, a minute at most, and one that fails
   with no report is a warning, its error lines quoted
   ([#1333](https://github.com/JN0V/workline/issues/1333)).
 - For each language the repository holds: which tools read it (lint,
