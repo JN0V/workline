@@ -21,8 +21,8 @@ import (
 
 // Tokens are the fresh tokens (agent.Call.Fresh) of the runs started in
 // the window, by the work each was on, as catch-and-cost.md splits merge
-// requests: product (a feature, a bug, or a feat, fix, refactor, perf,
-// test, ci, build merge request), upkeep (a task, or a docs, chore, style
+// requests: product (a feature, a bug, or a feat, fix, refactor, perf or
+// test merge request), upkeep (a task, or a docs, chore, style
 // one), a release apart; a run whose work is not recorded is unknown,
 // and said, never guessed.
 type Tokens struct {
@@ -49,7 +49,12 @@ func (t *Tokens) Words() string {
 		}
 		return s
 	}
-	share := func(n int) string { return fmt.Sprintf("%s (%d%%)", line.Tokens(n), n*100/t.Total()) }
+	share := func(n int) string {
+		if t.Total() == 0 { // calls that failed, or an agent that says no tokens
+			return line.Tokens(n)
+		}
+		return fmt.Sprintf("%s (%d%%)", line.Tokens(n), n*100/t.Total())
+	}
 	s := fmt.Sprintf("%s fresh tokens over %s: upkeep %s, product %s", line.Tokens(t.Total()), plural(t.Runs, "run"), share(t.Upkeep), share(t.Product))
 	if t.Release > 0 {
 		s += ", releases " + share(t.Release)
@@ -159,34 +164,46 @@ func (w *works) issue(id int) workKind {
 // a chore whose subject starts with "release".
 var conventional = regexp.MustCompile(`^([a-z]+)(\([^)]*\))?!?:\s*(\S*)`)
 
-// mr: the issue it closes tells it (line.ClosedIssue); else its title's
-// type.
+// mr: the issue it closes tells it (line.ClosedIssue); else, or when
+// that issue has no kind, its title's type.
 func (w *works) mr(id int) workKind {
 	if k, ok := w.mrs[id]; ok {
 		return k
 	}
-	k := workKind{}
 	mr, err := w.f.MergeRequest(id)
-	switch {
-	case err != nil:
-		k.why = "its merge request unread"
-	case line.ClosedIssue(mr) > 0:
-		k = w.issue(line.ClosedIssue(mr))
-	default:
-		m := conventional.FindStringSubmatch(strings.ToLower(strings.TrimSpace(mr.Title)))
-		switch {
-		case m == nil:
-			k.why = "its merge request closes no issue, its title no type"
-		case m[1] == "chore" && strings.HasPrefix(m[3], "release"):
-			k.kind = release
-		case slices.Contains([]string{"feat", "fix", "refactor", "perf", "test", "ci", "build"}, m[1]):
-			k.kind = product
-		case slices.Contains([]string{"docs", "chore", "style"}, m[1]):
-			k.kind = upkeep
-		default:
-			k.why = "its merge request closes no issue, its type `" + m[1] + "` neither product nor upkeep"
+	if err != nil {
+		w.mrs[id] = workKind{why: "its merge request unread"}
+		return w.mrs[id]
+	}
+	var k workKind
+	if n := line.ClosedIssue(mr); n > 0 {
+		if k = w.issue(n); k.kind != "" {
+			w.mrs[id] = k
+			return k
 		}
+	}
+	m := conventional.FindStringSubmatch(strings.ToLower(strings.TrimSpace(mr.Title)))
+	switch {
+	case m == nil:
+		k.why = "its merge request's title has no type, " + orNoIssue(k.why)
+	case m[1] == "chore" && strings.HasPrefix(m[3], "release"):
+		k = workKind{kind: release}
+	case slices.Contains([]string{"feat", "fix", "refactor", "perf", "test"}, m[1]):
+		k = workKind{kind: product}
+	case slices.Contains([]string{"docs", "chore", "style"}, m[1]):
+		k = workKind{kind: upkeep}
+	default:
+		k.why = "its merge request's type `" + m[1] + "` is neither product nor upkeep, " + orNoIssue(k.why)
 	}
 	w.mrs[id] = k
 	return k
+}
+
+// orNoIssue is why the issue a merge request closes did not tell its
+// work, else that it closes none.
+func orNoIssue(why string) string {
+	if why == "" {
+		return "it closes no issue"
+	}
+	return why
 }
