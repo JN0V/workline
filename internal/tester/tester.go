@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -96,6 +97,12 @@ type Settings struct {
 	// curator-proof-seconds.
 	deadline time.Time
 	budget   string
+	// whole, when set, runs the test command past suite-max-seconds: the
+	// curator's measure times the corpus, and warns over it.
+	whole bool
+	// tests, when set, are the change's test files: a run stopped at its
+	// time says which of them no report written by then holds (#1425).
+	tests []string
 	// packages, when set, are the folders a run of Command takes in its
 	// {packages}: those of them its tree holds.
 	packages []string
@@ -167,6 +174,7 @@ func prove(repo, base string, s Settings) proven {
 	if err != nil {
 		return refused(refuse("the red-first check did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}))
 	}
+	s.tests = ch.tests
 	baseRun, f := run(repo, ch.base, nil, "", s, "on the base "+short(ch.base))
 	if f != nil {
 		return refused(refuse("the red-first check did not run", *f))
@@ -736,17 +744,28 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 	if err != nil {
 		return ran{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
 	}
+	// One run on one tree stops at suite-max-seconds, whatever the
+	// proof's other budgets: a test that hangs costs one suite's time,
+	// not the whole proof's (#1425).
+	deadline, budget := s.deadline, s.budget
+	if s.SuiteMaxSeconds > 0 && !s.whole {
+		if stop := time.Now().Add(time.Duration(s.SuiteMaxSeconds) * time.Second); deadline.IsZero() || stop.Before(deadline) {
+			deadline, budget = stop, "suite-max-seconds"
+		}
+	}
 	if forge.InCI() != "" {
 		// A phase line in the job's log: a run that hangs says where (#1197).
 		stops := ""
-		if !s.deadline.IsZero() {
-			stops = ", stopped at " + s.deadline.UTC().Format("15:04:05") + " UTC"
+		if !deadline.IsZero() {
+			stops = ", stopped at " + deadline.UTC().Format("15:04:05") + " UTC"
 		}
 		fmt.Fprintf(os.Stderr, "workline: tester: running the tests %s (%s UTC%s)\n", where, time.Now().UTC().Format("15:04:05"), stops)
 	}
-	out, late, runErr := shell(tree, strings.ReplaceAll(s.Command, "{report}", report), s.deadline)
+	out, late, runErr := shell(tree, strings.ReplaceAll(s.Command, "{report}", report), deadline)
 	if late {
-		return ran{}, overTime(where, s.budget)
+		f := overTime(where, budget)
+		f.Message += stoppedAt(tree, s, kept, out.String())
+		return ran{}, f
 	}
 	found := freshReports(tree, s.Report, kept)
 	if len(found) == 0 {
@@ -804,6 +823,35 @@ func overTime(where, budget string) *verdict.Finding {
 	}
 	return &verdict.Finding{Rule: "proof-over-time", Where: budget,
 		Message: "the proof ran past its time budget " + where + ": stopped; no proof, nothing proposed"}
+}
+
+// stoppedAt says where a run stopped at its time was, for the agent run
+// again to mend its own test (#1425): the change's test files no report
+// written by then holds, when the runner had written some (one per class,
+// as Gradle's and Maven's), and the command's last lines.
+func stoppedAt(tree string, s Settings, kept map[string]keptFile, out string) string {
+	said := ""
+	if found := freshReports(tree, s.Report, kept); len(found) > 0 && len(s.tests) > 0 {
+		var ids []string
+		for _, f := range found {
+			results, suites := map[string]result{}, map[string]string{}
+			_ = readJUnit(f, results, suites, nil, nil) // one the stop cut holds nothing
+			for id := range results {
+				ids = append(ids, id, suites[id])
+			}
+		}
+		var open []string
+		for _, file := range s.tests {
+			stem := strings.TrimSuffix(path.Base(file), path.Ext(file))
+			if !slices.ContainsFunc(ids, func(id string) bool { return strings.Contains(id, stem) }) {
+				open = append(open, "`"+file+"`")
+			}
+		}
+		if len(open) > 0 {
+			said = fmt.Sprintf("; of the change's tests, no report written by then holds %s: a test there did not end", strings.Join(open, ", "))
+		}
+	}
+	return said + "; its last lines: " + clipRunes(tail(out, 15), quoteMax)
 }
 
 // uncached is env with Go told to run each test, never to replay a

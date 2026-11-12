@@ -75,7 +75,7 @@ checkout apart:
 | `curator-runs` | 2 | runs a measure: two tell a flaky test on one commit |
 | `curator-slowest` | 10 | the slowest tests named |
 | `curator-window` | 12 | measures a test must stay green to count as never red |
-| `suite-max-seconds` | 600 | the corpus's time over which it warns; a Draft's red-first proof stops at three times it, its test command's process group killed (Linux and macOS); 0, none |
+| `suite-max-seconds` | 600 | the corpus's time over which the measure warns; a proof's run of the tests stops at it, a Draft's whole proof at three times it, its test command's process group killed (Linux and macOS); 0, none |
 | `coverage-report` | none | the coverage file the command writes |
 
 ## Its cost, on workline
