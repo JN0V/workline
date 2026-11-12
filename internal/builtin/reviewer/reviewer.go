@@ -1793,26 +1793,49 @@ func plural(n int, one, many string) string {
 }
 
 // testFiles are the test files at the head (the `tests` setting) that
-// touch a file: in its folder, then those naming it as a word.
+// touch a file: in its folder, then those named after it or naming it as
+// a word. Named after it, a test in a tree of its own is found
+// (src/test/…/GridTest.kt for src/main/…/Grid.kt), though it never names
+// the file as a word (#1417).
 func testFiles(repo, head, file string, patterns []string) []string {
 	dir, stem := path.Dir(file), strings.TrimSuffix(path.Base(file), path.Ext(file))
 	var near, far []string
-	if out, err := git(repo, "ls-tree", "-r", "--name-only", head, "--", dir+"/"); err == nil {
+	if out, err := git(repo, "ls-tree", "-r", "--name-only", head); err == nil {
 		for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
-			if f != "" && path.Dir(f) == dir && pathglob.Any(patterns, f) {
+			switch {
+			case f == "" || !pathglob.Any(patterns, f):
+			case path.Dir(f) == dir:
 				near = append(near, f)
+			case namedAfter(f, stem):
+				far = append(far, f)
 			}
 		}
 	}
 	if out, err := git(repo, "grep", "-l", "-w", "-F", "-e", stem, head, "--"); err == nil { // none: git grep fails
 		for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
 			f = strings.TrimPrefix(f, head+":")
-			if f != "" && path.Dir(f) != dir && pathglob.Any(patterns, f) {
+			if f != "" && path.Dir(f) != dir && pathglob.Any(patterns, f) && !slices.Contains(far, f) {
 				far = append(far, f)
 			}
 		}
 	}
 	return append(near, far...)
+}
+
+// testAffixes are what most ecosystems add to a file's name to name its
+// test: GridTest.kt, GridTests.swift, grid_test.go, test_grid.py,
+// grid.spec.ts.
+var testAffixes = []string{"test", "tests", "spec", "_test", "_tests", "_spec", "-test", "-spec", ".test", ".spec", "test_", "test-"}
+
+// namedAfter says whether a test file is named after a file's stem: its
+// own stem, cases aside, that stem with a test affix before or after it.
+func namedAfter(test, stem string) bool {
+	name := path.Base(test)
+	name, stem = strings.ToLower(strings.TrimSuffix(name, path.Ext(name))), strings.ToLower(stem)
+	if stem == "" {
+		return false
+	}
+	return slices.ContainsFunc(testAffixes, func(a string) bool { return name == stem+a || name == a+stem })
 }
 
 // testsTouching is what a judge reading tests is shown besides: the test

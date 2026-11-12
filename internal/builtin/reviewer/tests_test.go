@@ -54,6 +54,29 @@ func TestTestsTouching(t *testing.T) {
 	}
 }
 
+// A test named after a file, by the affixes most ecosystems use, touches
+// it wherever it lives (#1417); one merely starting with its name does not.
+func TestNamedAfter(t *testing.T) {
+	for _, c := range []struct {
+		test, stem string
+		want       bool
+	}{
+		{"app/src/test/kotlin/app/GridLinesTest.kt", "GridLines", true},
+		{"Tests/GridTests.swift", "Grid", true},
+		{"calc/grid_test.go", "grid", true},
+		{"tests/test_grid.py", "grid", true},
+		{"web/grid.spec.ts", "grid", true},
+		{"web/grid.service.spec.ts", "grid.service", true},
+		{"app/src/test/kotlin/app/GridLinesTest.kt", "Grid", false},
+		{"tests/test_contest.py", "test", false},
+		{"tests/grid.py", "grid", false},
+	} {
+		if got := namedAfter(c.test, c.stem); got != c.want {
+			t.Errorf("namedAfter(%q, %q) = %v, want %v", c.test, c.stem, got, c.want)
+		}
+	}
+}
+
 // A lens's front matter is read empty, closed on the last line, or not at
 // all; left open, it is refused.
 func TestReadLensFrontMatter(t *testing.T) {
