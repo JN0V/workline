@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
 )
 
@@ -85,7 +86,11 @@ func readPayload(raw string, cfg *routing.Config) (int, string, error) {
 		// A body edited on an issue on the line (#1414): a person's answer
 		// to a draft or a block, perhaps; the line reads the issue and
 		// says whether its step is due, with no agent.
+		// The engine's own edit, by its access token's user, is none.
 		if p.Changes.Description != nil {
+			if forge.GitLabBotName(p.User.Username) {
+				return 0, fmt.Sprintf("#%d's body edited by %s, a bot: nothing to run", p.Attrs.IID, p.User.Username), nil
+			}
 			if onLine(p.Labels, cfg) {
 				return p.Attrs.IID, "", nil
 			}
@@ -127,6 +132,9 @@ func readNote(p payload, cfg *routing.Config) (int, string) {
 	if !strings.Contains(p.Attrs.Note, backlog.SpecMarker) {
 		if strings.Contains(p.Attrs.Note, "<!-- workline:") {
 			return 0, fmt.Sprintf("#%d got a comment, not the reviewer's on its spec: nothing to run", n)
+		}
+		if forge.GitLabBotName(p.User.Username) {
+			return 0, fmt.Sprintf("#%d got a comment by %s, a bot: nothing to run", n, p.User.Username)
 		}
 		if onLine(p.Issue.Labels, cfg) {
 			return n, ""

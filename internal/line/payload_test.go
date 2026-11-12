@@ -35,6 +35,13 @@ func TestReadPayloadNotes(t *testing.T) {
 		data, _ := json.Marshal(ev)
 		return string(data)
 	}
+	noteBy := func(user, body string, labels []string) string {
+		var ev map[string]any
+		_ = json.Unmarshal([]byte(note(body, "Issue", labels)), &ev)
+		ev["user"] = map[string]any{"username": user}
+		data, _ := json.Marshal(ev)
+		return string(data)
+	}
 	for _, c := range []struct {
 		name, raw string
 		want      int
@@ -46,6 +53,7 @@ func TestReadPayloadNotes(t *testing.T) {
 		{"the line's record", note("<!-- workline:sticky=line/state -->", "Issue", []string{"workline:to-refine"}), 0, "not the reviewer's on its spec"},
 		{"a person's comment on the line", note("Looks right to me.", "Issue", []string{"workline:to-refine"}), 7, ""},
 		{"a person's comment, no labels named", note("src/a.kt, src/b.kt", "Issue", nil), 7, ""},
+		{"a bot's comment with no marker", noteBy("project_3_bot_x", "Done.", []string{"workline:to-refine"}), 0, "a bot"},
 		{"a person's comment off the line", note("Looks right to me.", "Issue", []string{"bug"}), 0, "the issue on no state"},
 		{"on a merge request", note(spec, "MergeRequest", nil), 0, "a comment on a MergeRequest, not on an issue"},
 	} {
@@ -71,6 +79,7 @@ func TestReadPayloadBodyEdits(t *testing.T) {
 	}{
 		{"edited on the line", `{"object_kind":"issue","object_attributes":{"iid":4},"labels":[{"title":"workline:blocked"}],"changes":{"description":{"previous":"a","current":"b"}}}`, 4, ""},
 		{"edited, no labels named", `{"object_kind":"issue","object_attributes":{"iid":4},"changes":{"description":{"previous":"a","current":"b"}}}`, 4, ""},
+		{"edited by the engine's access token", `{"object_kind":"issue","user":{"username":"project_12_bot_ab12"},"object_attributes":{"iid":4},"labels":[{"title":"workline:blocked"}],"changes":{"description":{"previous":"a","current":"b"}}}`, 0, "a bot"},
 		{"edited off the line", `{"object_kind":"issue","object_attributes":{"iid":4},"labels":[{"title":"bug"}],"changes":{"description":{"previous":"a","current":"b"}}}`, 0, "the issue on no state"},
 		{"its title changed", `{"object_kind":"issue","object_attributes":{"iid":4},"labels":[{"title":"workline:blocked"}],"changes":{"title":{"previous":"a","current":"b"}}}`, 0, "its labels did not"},
 	} {
