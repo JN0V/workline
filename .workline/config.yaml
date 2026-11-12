@@ -63,12 +63,14 @@ roles:
       # branches (issue #264): every package but tests/evaluation, whose
       # tests measure agents, not the code; the conformance suite in, so a
       # new case is a test too, red until the engine does what it says.
-      # gotestsum pinned, run by Go, its JUnit report the check reads.
-      test-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- $(go list ./... | grep -v /tests/evaluation)
+      # gotestsum pinned, run by Go, its JUnit report the check reads;
+      # -timeout 20m as the test job's: the simulator alone takes 12 min
+      # on a busy runner, past Go's default 10 (#1430).
+      test-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m $(go list ./... | grep -v /tests/evaluation)
       # The Draft's red proof on the packages of its tests alone: the
       # whole suite twice took 10 of a run's 11 min (#979); the pull
       # request's test job runs it all.
-      draft-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}
+      draft-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m {packages}
       # Go's build errors, the role's default, and a conformance case the
       # suite cannot read: red for no reason, so the build is said broken.
       build-errors:
@@ -82,21 +84,21 @@ roles:
           test-name: '(?m)^case: (\S+)$'
       # The curator's measures (`workline test measure`, the gardening's
       # curator job): the whole suite, its coverage profile too.
-      curator-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -coverprofile=cover.out ./...
+      curator-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m -coverprofile=cover.out ./...
       coverage-report: cover.out
       # Its removals (`workline test curate`): the unit tests only, the
       # conformance cases running a built engine the profile does not
       # see; a folder's tests and its mutants, Gremlins pinned.
       curator-paths: ["internal/**/*_test.go", "cmd/**/*_test.go"]
       curator-keep: [tests/conformance/pending.txt]
-      curator-proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -coverprofile=cover.out {packages}
+      curator-proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m -coverprofile=cover.out {packages}
       curator-mutation-command: go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash -s -o {report} {package}
   developer:
     settings:
       # Its proof on the packages its code and the acceptance tests touch
       # (#703), a conformance case running ./tests/conformance; the pull
       # request's own test job runs them all.
-      proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}
+      proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m {packages}
   reviewer:
     settings:
       # The role's list, plus the judge's replay set: questions and answers
