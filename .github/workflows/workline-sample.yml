@@ -87,13 +87,13 @@ jobs:
       # What this job's agent calls spent, a line a run: role, target,
       # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
       # weekly sample's tokens (ADR-0019, open point 1); the run folders
-      # keep their day. Also after a cancel: what was spent was spent;
-      # never in a merge queue's run, which asks no agent.
+      # keep their day. Never in a cancelled run (a newer push's), whose
+      # spend is lost; nor in a merge queue's, which asks no agent.
       - name: The runs' tally
-        if: "always() && github.event_name != 'merge_group'"
+        if: "!cancelled() && github.event_name != 'merge_group'"
         run: 'workline sample --tally workline-tally.jsonl || echo "workline: no tally kept"'
       - uses: actions/upload-artifact@v4
-        if: "always() && github.event_name != 'merge_group'"
+        if: "!cancelled() && github.event_name != 'merge_group'"
         with: {name: "workline-tally-${{ github.job }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14, overwrite: true}
 
   write:
