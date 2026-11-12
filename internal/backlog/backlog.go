@@ -886,6 +886,28 @@ func InCommit(repo, path string) bool {
 	return path != "" && exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() == nil
 }
 
+// Ignored are those of paths the repository's ignore rules match,
+// as git reads them: a build's outputs, `app/build/…`, none when they
+// cannot be read.
+func Ignored(repo string, paths []string) []string {
+	if len(paths) == 0 {
+		return nil
+	}
+	// The repository's rules alone, never a machine's own excludes: the
+	// same on a laptop and in CI.
+	cmd := exec.Command("git", "-C", repo, "-c", "core.excludesFile=/dev/null", "check-ignore", "-z", "--stdin")
+	cmd.Stdin = strings.NewReader(strings.Join(paths, "\x00") + "\x00")
+	// Exit 1: none is ignored; any other failure reads as none as well.
+	out, _ := cmd.Output()
+	var ignored []string
+	for _, p := range strings.Split(string(out), "\x00") {
+		if p != "" {
+			ignored = append(ignored, p)
+		}
+	}
+	return ignored
+}
+
 // Tracked are the files of the commit the run is on, nil when they
 // cannot be read.
 func Tracked(repo string) []string {
@@ -2218,8 +2240,12 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			// Each path the Scope writes, the developer's bounds (ADR-0065,
 			// change 2): a file or folder the commit holds, a glob matching
 			// one, or a new file on a line `New:`.
-			for _, u := range work.Unfound(c.Scope, append(Tracked(repo), onBranch...)) {
-				if missing == "" {
+			// A path the repository ignores is one a build writes, a value
+			// in the Scope, never a file to change (#1411).
+			unfound := work.Unfound(c.Scope, append(Tracked(repo), onBranch...))
+			ignored := Ignored(repo, unfound)
+			for _, u := range unfound {
+				if missing == "" && !slices.Contains(ignored, u) {
 					missing = u
 				}
 			}

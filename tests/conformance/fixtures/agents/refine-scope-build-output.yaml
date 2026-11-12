@@ -1,0 +1,12 @@
+# A refine whose Scope names the workflow it changes and, in its text, a
+# path the build writes (#1411); another naming only an unknown path.
+- refine:
+    issue: 9
+    scope: "- `.github/workflows/ci.yml`: after the build step, upload `build/export.zip` as an artifact, `retention-days: 7`."
+    verification: "A CI run lists the artifact."
+    why: "Need and Validation are there; Verification and Scope are not."
+- refine:
+    issue: 12
+    scope: "- `src/export/xml.go`: the writer."
+    verification: "A test writes a row as XML."
+    why: "Need and Validation are there; Verification and Scope are not."

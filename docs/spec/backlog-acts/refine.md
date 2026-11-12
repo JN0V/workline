@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/assume.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/work/scope.go, internal/backlog/scenarios.go, internal/backlog/verification.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: 3f424301
+checked: db6103ad
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -79,7 +79,10 @@ what it can and asks for the rest:
   a file or folder the commit holds, a glob matching one of its files,
   or a file to create on a line `New:`. A Scope naming only new files,
   each on a `New:` line, needs no `sources`. A word with no `/` (a name,
-  `os.Getenv`) is no path to check. A file the developer asked the Scope widened with, on its
+  `os.Getenv`) is no path to check, nor one the repository's ignore
+  rules match: a file the build writes, `app/build/outputs/…`, is a
+  value in the Scope
+  ([#1411](https://github.com/JN0V/workline/issues/1411)). A file the developer asked the Scope widened with, on its
   blocked issue, is kept though the commit does not hold it: its pull
   request adds it ([#1061](https://github.com/JN0V/workline/issues/1061)).
   That widening left out, an `unblock` beside it is refused
