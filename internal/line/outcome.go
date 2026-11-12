@@ -105,6 +105,27 @@ func withLast(last map[string]LastRun, role string, l *LastRun) map[string]LastR
 	return next
 }
 
+// saysNew says whether what an agent said it lacks names none of what it
+// was given for its last saying: each a path, the two lists split on
+// commas.
+func saysNew(given, said string) bool {
+	was := map[string]bool{}
+	for _, w := range strings.Split(given, ",") {
+		was[strings.TrimSpace(w)] = true
+	}
+	some := false
+	for _, w := range strings.Split(said, ",") {
+		if w = strings.TrimSpace(w); w == "" {
+			continue
+		}
+		if was[w] {
+			return false
+		}
+		some = true
+	}
+	return some
+}
+
 // needsCode says whether an outcome is a needs-input of the engine: the
 // code its agent said it lacked.
 func needsCode(o verdict.Outcome) bool {

@@ -28,7 +28,7 @@ flowchart LR
   issue was imported from that name its item, never that file.
 - **Paths named outright**: the Scope's words in backticks, the product
   owner's `sources`. A folder gives its own files, then the code files
-  below it, the nearest first: a module's folder holds its build file,
+  below it, the nearest first, 12 at most: a module's folder holds its build file,
   its code sits under `src/main/<language>/<package>/`
   ([#1410](https://github.com/JN0V/workline/issues/1410)). A pattern
   gives the files it matches; the tests aside when code matches too.
