@@ -66,29 +66,59 @@ func guardedSaid(repo, base string, s Settings, said map[string]string) {
 	}
 }
 
-// guardIn says whether name is a test of the base: one of its test files,
-// a file's name without its extension, or a whole word one of them holds,
-// the name's last part (`test_late` of `tests.test_pricing.test_late`),
-// its parameters aside. A part under 4 characters is too common to read.
+// guardIn says whether name is a test of the base: one of its test files
+// (its path, its name, or its name without the extension), or a whole
+// word one of them holds. The word is the name's last part, its
+// parameters aside (`test_late` of `tests.test_pricing.test_late`); a
+// part that is the test files' extension is passed over (`java` of
+// `NoSuchTest.java`); a Go subtest or a suite's case is read by each side
+// of its `/` too (`TestAdd` of `TestAdd/sub_case`). A part under 4
+// characters is too common to read.
 func guardIn(repo, base, name string, files []string) bool {
 	if len(files) == 0 {
 		return false
 	}
-	part := name
-	if i := strings.IndexAny(part, "(["); i > 0 {
-		part = part[:i]
-	}
-	part = part[strings.LastIndexAny(part, "./:#")+1:]
-	part = strings.TrimSpace(part)
+	exts := map[string]bool{}
 	for _, f := range files {
-		if f == name || strings.TrimSuffix(path.Base(f), path.Ext(f)) == part && part != "" {
+		if f == name || path.Base(f) == name || strings.HasSuffix(f, "/"+name) {
+			return true
+		}
+		if e := path.Ext(f); e != "" {
+			exts[strings.ToLower(e[1:])] = true
+		}
+	}
+	id := name
+	if i := strings.IndexAny(id, "(["); i > 0 {
+		id = id[:i]
+	}
+	segs := strings.FieldsFunc(id, func(r rune) bool { return strings.ContainsRune(".:#", r) })
+	for len(segs) > 1 && exts[strings.ToLower(strings.TrimSpace(segs[len(segs)-1]))] {
+		segs = segs[:len(segs)-1] // a file's extension, not a name
+	}
+	if len(segs) == 0 || exts[strings.ToLower(strings.TrimSpace(segs[len(segs)-1]))] {
+		return false
+	}
+	part := strings.TrimSpace(segs[len(segs)-1])
+	for _, f := range files {
+		if strings.TrimSuffix(path.Base(f), path.Ext(f)) == part {
 			return true
 		}
 	}
-	if len(part) < 4 {
-		return false
+	parts := []string{part}
+	if i := strings.Index(part, "/"); i > 0 {
+		parts = append(parts, part[:i], part[strings.LastIndex(part, "/")+1:])
 	}
-	out, err := git(repo, "grep", "-l", "-F", "-w", "-e", part, base)
+	for _, p := range parts {
+		if len(p) >= 4 && grepped(repo, base, p, files) {
+			return true
+		}
+	}
+	return false
+}
+
+// grepped says whether one of the base's test files holds word whole.
+func grepped(repo, base, word string, files []string) bool {
+	out, err := git(repo, "grep", "-l", "-F", "-w", "-e", word, base)
 	if err != nil {
 		return false // none holds it (exit 1), or unread: no guard said
 	}
