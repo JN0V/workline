@@ -60,7 +60,12 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	// the runner's cache, not a new compile (Go: 1 s, not 4.5 s, on
 	// workline's tester package). A test that a run before it breaks is
 	// flaky too: it fails on a person's second run.
-	tree, done, f := checkout(repo, "HEAD")
+	head, err := git(repo, "rev-parse", "--verify", "HEAD")
+	if err != nil {
+		return *refuse("the green proof did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}), nil
+	}
+	head = strings.TrimSpace(head) // the commit run: its ids kept by its tree, even if HEAD moves meanwhile
+	tree, done, f := checkout(repo, head)
 	if f != nil {
 		return *refuse("the green proof did not run", *f), nil
 	}
@@ -75,7 +80,7 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	}
 	// The head's tests, kept as its first run found them: once merged up
 	// to date, its tree is the next pull request's base.
-	keepIDs(repo, "HEAD", s.Command, s.Report, runs[0])
+	keepIDs(repo, head, s.Command, s.Report, runs[0])
 	ids := map[string]bool{}
 	for _, r := range runs {
 		for id := range r.results {
