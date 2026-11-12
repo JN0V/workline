@@ -15,7 +15,8 @@ real repository: the eight steps of
 [ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)
 built; beta; routed where a project lists it, in workline's own line
 since [#696](https://github.com/JN0V/workline/issues/696), its pull
-requests merged there since 2026-11-04 (a fix,
+requests merged there since 2026-11-01
+([#821](https://github.com/JN0V/workline/pull/821) the first; a fix,
 [#1244](https://github.com/JN0V/workline/pull/1244), by the policy).
 In the V1 acceptance, it took 9 issues on three repositories to a
 merge
@@ -46,13 +47,17 @@ hold:
    maintainer**. [#696](https://github.com/JN0V/workline/issues/696)'s
    Validation: a maintainer reads a pull request the developer opened
    for a `ready` issue, its Verification proved in it, and merges it or
-   sends it back. The maintainer would sign that one of these meets it:
-   - on workline's own line, its fixes merged by the policy with no
-     person's yes, e.g. [#1244](https://github.com/JN0V/workline/pull/1244)
-     (2026-11-09), and a `feat`,
-     [#1141](https://github.com/JN0V/workline/pull/1141); none read by
-     a person before its merge;
-   - in V1 round 3, 9 of 9 issues merged on Kotlin, C++ and Python
+   sends it back; the auditor's sample then re-checks it. The
+   maintainer would sign it from:
+   - **read by a person**: [#914](https://github.com/JN0V/workline/pull/914),
+     the developer's pull request for
+     [#608](https://github.com/JN0V/workline/issues/608) on GitHub, accepted and
+     merged by the maintainer on 2026-11-03;
+   - **merged by the policy**, no person's yes: fixes such as
+     [#1244](https://github.com/JN0V/workline/pull/1244) (2026-11-09)
+     and [#1141](https://github.com/JN0V/workline/pull/1141); these meet
+     neither "read by a person" nor the auditor's re-check yet;
+   - **beside it, not on GitHub**: in V1 round 3, 9 of 9 issues merged on Kotlin, C++ and Python
      copies, 3 features after a person's yes
      ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764);
      rounds [1](https://github.com/JN0V/workline/issues/1266#issuecomment-6779607472)

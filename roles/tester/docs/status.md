@@ -9,7 +9,7 @@ ready issue a night, an objection wakes its answer; on the closing pull
 request, each new test passes three runs out of three; a weekly job
 measures the corpus, no agent (`workline test measure`), and proposes
 a few redundant tests removed, proven with no agent (`workline test
-curate`). Steps 1 to 7 of
+curate`). Steps 1 to 8 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan);
 beta; in workline's own line since
 [#264](https://github.com/JN0V/workline/issues/264), woken by an issue's
@@ -44,19 +44,21 @@ hold:
    built; [Missing](#missing) keeps gaps the V1 rounds found, each an
    open issue.
 2. **The main issue validated on real use**: awaits the maintainer.
-   [#264](https://github.com/JN0V/workline/issues/264), on workline and
-   on a copy of a real repository: a bug shown by a red test first, then
-   green.
+   [#264](https://github.com/JN0V/workline/issues/264)'s Validation
+   today holds eight scenarios on test sets by module, corpus growth and
+   gardening; none is "a bug shown red first, then green", which this
+   page held as its aim.
    - **The evidence**: V1 round 3, 6 bugs on Kotlin, C++ and Python
      copies, each red on its base in the tester's Draft, then green and
      merged by the policy
      ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764));
      on workline, its Drafts opened by the line, such as
      [#1306](https://github.com/JN0V/workline/pull/1306) on 2026-11-10.
-   - **What the maintainer would sign**: that these meet #264's
-     Validation. #264 itself is blocked on a wider spec (test plans,
-     corpus growth) its line found no test for; that spec is not this
-     criterion's.
+   - **What the maintainer would sign**: the evidence covers red
+     first, then green, only. The maintainer would first narrow #264's
+     Validation to that, or name another main issue, then sign it from
+     the evidence above. [#264](https://github.com/JN0V/workline/issues/264) is blocked: its line found no test for
+     its wider scenarios.
 3. **AI verdicts measured**: awaits the maintainer: whether the
    measures below, with no second model, are enough. On real use: right
    the first time on 8 of 9 issues in each of rounds 1 and 3 and 9 of 9

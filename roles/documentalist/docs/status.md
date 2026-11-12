@@ -43,9 +43,12 @@ hold:
    [#464](https://github.com/JN0V/workline/issues/464): a merge request,
    a night's gardening, and nothing false staying past a week's docs
    pull request, in two weeks on two repositories
-   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
-   #464 is parked until after V1, so no open issue holds it.
-   - **What the maintainer would sign**: reopen #464, or name another
+   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr):
+   it was "nothing false landing", as the issue still reads).
+   [#464](https://github.com/JN0V/workline/issues/464) is parked until
+   after V1, so no open issue holds it.
+   - **What the maintainer would sign**: reopen
+     [#464](https://github.com/JN0V/workline/issues/464), or name another
      issue, then sign its Validation from workline's weekly docs pull
      requests (for example
      [#1217](https://github.com/JN0V/workline/pull/1217) to

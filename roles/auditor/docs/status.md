@@ -7,8 +7,10 @@ rewrites, the tester's acts, the developer's code, each against what it
 was done on. The
 docs' sample tried on a GitLab sandbox, its first scheduled run on
 workline on 2026-10-05; the tester's acts read by a real judge on stub
-acts ([#669](https://github.com/JN0V/workline/pull/669)); every role's
-acts read by a real judge on workline each week since W42
+acts ([#669](https://github.com/JN0V/workline/pull/669)); the product
+owner's, the reviewer's and the committer's acts read by a real judge
+on workline each week since W42, the developer's and the
+documentalist's drawn, not read yet
 ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275)).
 Beta.
 
@@ -138,6 +140,6 @@ hold:
     [#155](https://github.com/JN0V/workline/issues/155));
   - **a product owner's act read on GitHub's edit history**, live
     (parked, [#155](https://github.com/JN0V/workline/issues/155));
-  - **the developer's code re-checked by a real judge**: 4 drawn in W45,
+  - **the developer's code re-checked by a real judge**: 4 drawn from W42 to W45,
     none read yet (parked,
     [#155](https://github.com/JN0V/workline/issues/155)).
