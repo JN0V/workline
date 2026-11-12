@@ -286,9 +286,10 @@ func TestModuleFolder(t *testing.T) {
 	if got := pk.Paths(); !slices.Equal(got, want) {
 		t.Errorf("a module's folders named give %v, want %v", got, want)
 	}
-	pk, _ = pick(t, dir, Ask{Text: "the counter runs on", Needs: []string{"core/x"}, Budget: 600})
-	if got := pk.Paths(); !slices.Contains(got, "core/x/src/main/kotlin/a/x/Store.kt") {
-		t.Errorf("a module's folder asked for gives %v, not its code", got)
+	pk, _ = pick(t, dir, Ask{Text: "the counter runs on", Needs: []string{"core/x", "feature/x", "core/x/build.gradle.kts"}, Budget: 600})
+	want = []string{"core/x/build.gradle.kts", "feature/x/build.gradle.kts", "core/x/src/main/kotlin/a/x/Store.kt", "feature/x/src/main/kotlin/a/x/feature/FileStore.kt"}
+	if got := pk.Paths(); !slices.Equal(got, want) {
+		t.Errorf("module folders asked for give %v, want %v", got, want)
 	}
 }
 

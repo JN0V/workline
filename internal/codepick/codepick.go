@@ -360,12 +360,8 @@ func (p *Picker) namedFiles(a Ask) []string {
 	for _, w := range a.Paths {
 		each = append(each, p.wordFiles(strings.TrimSpace(work.LineOff(w)), a.Tests.Patterns()))
 	}
-	for i := 0; slices.ContainsFunc(each, func(fs []string) bool { return i < len(fs) }); i++ {
-		for _, fs := range each {
-			if i < len(fs) {
-				add(fs[i])
-			}
-		}
+	for _, f := range inTurn(each) {
+		add(f)
 	}
 	for _, m := range pathLike.FindAllString(a.Text, -1) {
 		w := strings.TrimRight(strings.TrimPrefix(strings.Trim(m, "`'\""), "./"), ".,;:/")
@@ -374,6 +370,20 @@ func (p *Picker) namedFiles(a Ask) []string {
 		}
 	}
 	return named
+}
+
+// inTurn are lists' items taken in turn, each list's first, then each
+// one's second…
+func inTurn(each [][]string) []string {
+	var out []string
+	for i := 0; slices.ContainsFunc(each, func(fs []string) bool { return i < len(fs) }); i++ {
+		for _, fs := range each {
+			if i < len(fs) {
+				out = append(out, fs[i])
+			}
+		}
+	}
+	return out
 }
 
 // codeNames are the names a text writes as code worth a search: an
@@ -657,20 +667,33 @@ func (p *Picker) Pick(a Ask) Pick {
 	// With a depth, a test whole while it fits, the others as named
 	// files are given (3): their declarations, then whole if they fit.
 	// A folder asked for is its files, as a folder named is (#1410).
-	var askedFiles []string
+	// Several folders take turns, namedMax of their files at most.
+	var each [][]string
+	inFolder, askedByName := map[string]bool{}, map[string]bool{}
 	for _, w := range a.Needs {
 		w = strings.TrimSpace(work.LineOff(w))
 		if f := work.InRepo(w, p.files); f != "" {
-			askedFiles = append(askedFiles, f)
+			each, askedByName[f] = append(each, []string{f}), true
 			continue
 		}
 		fs := p.wordFiles(w, a.Tests.Patterns())
-		askedFiles = append(askedFiles, fs[:min(len(fs), namedMax)]...)
+		for _, f := range fs {
+			inFolder[f] = true
+		}
+		each = append(each, fs)
+	}
+	for f := range askedByName {
+		delete(inFolder, f) // asked for by its name: never bounded
 	}
 	var asked, askedTests []string
-	for _, f := range askedFiles {
-		if skip(f) || len(p.Lines(f)) == 0 || slices.Contains(asked, f) || slices.Contains(askedTests, f) {
+	seen, fromFolders := map[string]bool{}, 0
+	for _, f := range inTurn(each) {
+		if seen[f] || skip(f) || len(p.Lines(f)) == 0 || inFolder[f] && fromFolders >= namedMax {
 			continue
+		}
+		seen[f] = true
+		if inFolder[f] {
+			fromFolders++
 		}
 		file(f).Named = true
 		switch {
@@ -1124,7 +1147,7 @@ func wordRe(n string) *regexp.Regexp {
 // wordFiles are the files a word names: a file, the files a pattern
 // matches, or a folder's own files, its tests aside when it holds code
 // too (the tester's rule, #791, #801), then the code files below it,
-// the nearest first: a module's folder holds its build file, its code
+// the nearest first, namedMax at most: a module's folder holds its build file, its code
 // sits folders below (`core/x/src/main/kotlin/…`, #1410).
 func (p *Picker) wordFiles(w string, tests []string) []string {
 	notTest := func(fs []string) []string {
@@ -1151,7 +1174,7 @@ func (p *Picker) wordFiles(w string, tests []string) []string {
 		}
 	}
 	slices.SortStableFunc(below, func(x, y string) int { return strings.Count(x, "/") - strings.Count(y, "/") })
-	return append(out, below...)
+	return append(out, below[:min(len(below), namedMax)]...)
 }
 
 func sortedKeys(m map[string][][2]int) []string {
