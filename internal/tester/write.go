@@ -560,6 +560,9 @@ func Post(runDir, repo string) int {
 	// A test named by its file alone proves only the file (#1293): said
 	// in the plan, the Draft and the record.
 	alone := slices.DeleteFunc(slices.Clone(newTests), func(id string) bool { return !slices.Contains(order, id) })
+	// A scenario kept as today is guarded only by a test the base holds,
+	// named: else said plainly that none guards it (#1359).
+	guardedSaid(repo, t.Base, s, said)
 	// Each scenario has its row, the tests red on the base and linted: the
 	// issue moves to the state its tests lead to, ready (ADR-0059,
 	// decision 3), said on it; no agent decides it.
@@ -1190,7 +1193,8 @@ func toMend(findings []verdict.Finding) ([]verdict.Finding, bool) {
 		switch f.Message {
 		case greenOnBase:
 			told[i].Message += "; if its scenario describes what the base already does, write no test for it: " +
-				"its covers entry gives the reason, \"kept as today: the existing suite guards it\"; " +
+				"its covers entry gives the reason, \"kept as today: guarded by `<the existing test that checks it>`\", " +
+				"or, none found, \"kept as today: no existing test checks it\"; " +
 				"else make it check what the issue asks, so that it fails on the base"
 		case skippedOnBase:
 			told[i].Message += "; make it run on the base, and fail there: a test that skips itself when what the issue adds is missing checks nothing yet"

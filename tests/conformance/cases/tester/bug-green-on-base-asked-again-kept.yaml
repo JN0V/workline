@@ -34,4 +34,4 @@ expect:
       - id: 1
         branch: workline/tester/issue-3
         draft: true
-        body-contains: ["Not tested", "kept as today: the existing suite guards it"]
+        body-contains: ["Not tested", "kept as today: no existing test was found that checks it"]

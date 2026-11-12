@@ -55,8 +55,12 @@ For each:
   a test for it.
 - A scenario of behaviour kept as it is today ("as today", "unchanged",
   "still"): its test would pass today, and is refused. Write none: its
-  `covers` entry's reason, "kept as today: the existing suite guards
-  it". Test the other scenarios as above. Told a test of yours passes
+  `covers` entry's reason, "kept as today: guarded by `<the existing
+  test>`", naming the test of the project you read that checks it,
+  as the report names it or its file. None found: "kept as today: no
+  existing test checks it". Never say a test guards it unread: the
+  engine looks for the name in the project's tests, and says plainly
+  none guards it when it is not there. Test the other scenarios as above. Told a test of yours passes
   on the base: keep its scenario so, if it describes what the base
   already does; else make the test check what the issue asks.
 

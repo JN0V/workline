@@ -190,8 +190,11 @@ refusal is written on the issue too
   `none` does
   ([#794](https://github.com/JN0V/workline/issues/794)).
 - **A scenario kept as today** ("as today", "unchanged"): the agent
-  says it not tested in a note, the existing suite guarding it; its test
-  would pass on the base and be refused.
+  says it not tested, naming the existing test that guards it; its test
+  would pass on the base and be refused. A name the base's tests do not
+  hold, or none, and the Draft says plainly that no existing test was
+  found to check it
+  ([#1359](https://github.com/JN0V/workline/issues/1359)).
 - **An answer that does not read** (a list item indented one space
   too far): asked again once, with the reader's error; still
   unreadable, refused and said, no third call
