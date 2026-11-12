@@ -1,4 +1,4 @@
-# Tester — where it stands (2026-10-29)
+# Tester — where it stands (2026-11-12)
 
 **In one line:** `workline test write --issue <n>` has the agent write
 a test for each named scenario of a ready issue, proves them red on the
@@ -9,11 +9,14 @@ ready issue a night, an objection wakes its answer; on the closing pull
 request, each new test passes three runs out of three; a weekly job
 measures the corpus, no agent (`workline test measure`), and proposes
 a few redundant tests removed, proven with no agent (`workline test
-curate`). Steps 1 to 7 of
+curate`). Steps 1 to 8 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan);
 beta; in workline's own line since
-[#264](https://github.com/JN0V/workline/issues/264), its first real
-night awaited.
+[#264](https://github.com/JN0V/workline/issues/264), woken by an issue's
+state since [#764](https://github.com/JN0V/workline/pull/764); it wrote
+the tests of the V1 acceptance round's 9 issues on three real
+repository copies, right the first time on 8 of 9 in round 3
+([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)).
 
 A try is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)):
@@ -37,20 +40,35 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; step 8 below (step 7
-   built).
-2. **The main issue validated on real use**: open.
-   [#264](https://github.com/JN0V/workline/issues/264), on workline and
-   on a copy of a real repository: a bug shown by a red test first, then
-   green. Routed on workline's own line (`schedule`, one ready issue a
-   night, a Draft; `merge-request`, its guard), tried with a stub agent
-   on [#676](https://github.com/JN0V/workline/pull/676): awaiting its
-   first real night. Woken by `workline:needs-tests` on 2026-11-01:
-   one issue's tests written and proven in 12.5 min; two fresh issues
-   left in Tests, a test of behaviour kept "as today" refused, or none
-   written ([tried](https://github.com/JN0V/workline/pull/795#tried),
-   [#794](https://github.com/JN0V/workline/issues/794)).
-3. **AI verdicts measured**: in part. Seven evaluation cases with known
+1. **Nothing buildable in Missing**: open. The plan's eight steps are
+   built; [Missing](#missing) keeps gaps the V1 rounds found, each an
+   open issue.
+2. **The main issue validated on real use**: awaits the maintainer.
+   [#264](https://github.com/JN0V/workline/issues/264)'s Validation
+   today holds eight scenarios on test sets by module, corpus growth and
+   gardening; none is "a bug shown red first, then green", which this
+   page held as its aim.
+   - **The evidence**: V1 round 3, 6 bugs on Kotlin, C++ and Python
+     copies, each red on its base in the tester's Draft, then green and
+     merged by the policy
+     ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764));
+     on workline, its Drafts opened by the line, such as
+     [#1306](https://github.com/JN0V/workline/pull/1306) on 2026-11-10.
+   - **What the maintainer would sign**: the evidence covers red
+     first, then green, only. The maintainer would first narrow #264's
+     Validation to that, or name another main issue, then sign it from
+     the evidence above. [#264](https://github.com/JN0V/workline/issues/264) is blocked: its line found no test for
+     its wider scenarios.
+3. **AI verdicts measured**: awaits the maintainer: whether the
+   measures below, with no second model, are enough. On real use: right
+   the first time on 8 of 9 issues in each of rounds 1 and 3 and 9 of 9
+   in round 2
+   ([round 1](https://github.com/JN0V/workline/issues/1266#issuecomment-6779607472),
+   [round 2](https://github.com/JN0V/workline/issues/1266#issuecomment-6796923928),
+   [round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)),
+   recorded in
+   [ADR-0052's amendment](../../../docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-11-1266-v1-accepted).
+   Seven evaluation cases with known
    answers (`tests/evaluation/cases/tester/`): `test write` (a bug, a
    name the base lacks, a scenario no test can check), `test answer` (a
    right objection, a wrong one), `test curate` (a true duplicate, a
@@ -249,32 +267,68 @@ Cases in `tests/conformance/cases/tester/`:
   tests written on the real harness; a second run, the copy's pattern
   reading `const struct`, reaches a Draft, red on a missing name, in
   one call; symlinks out of the copy denied; Go #1081 still passes.
+- **In the line**: an issue labelled `workline:needs-tests` wakes the
+  tester, no job of the project's own
+  ([#764](https://github.com/JN0V/workline/pull/764)); on a repository
+  with no forge, `workline route reconcile` runs it
+  ([#1287](https://github.com/JN0V/workline/pull/1287)), as in the V1
+  rounds
+  ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)).
+- **Objections on the local forge**: a Draft's line threads listed and
+  answered at the next reconcile
+  ([#1367](https://github.com/JN0V/workline/pull/1367)).
+- **A runner's record of a suite never frozen**
+  ([#1342](https://github.com/JN0V/workline/pull/1342)).
 - **Settings** `test-command`, `test-report`, `test-paths`,
   `code-lines-max`, `objection-exchanges`
   ([README](../README.md#settings)).
 
 ## Missing
 
-- **The developer beside a frozen test**: its bounds still refuse any
-  edit to a file the tester froze, a shared one whole, though the guard
-  passes lines added beside the frozen ones.
-- **A case the conformance suite cannot read** is told by workline's
-  own `build-errors` line, not by the role: another project's suite
-  that fails a malformed test file alike reads as red.
-- **A Draft a person closed** is not remembered as refused: a later
-  scheduled run may take its issue again.
-- **Objections on a forge command** (`cmd:`): it lists no thread, and
-  `no-threads` blocks.
-- **A test's flakiness over time on pull requests**: each push to the
-  ready pull request runs the three again; their runs are not fed to the
-  curator's history, which reads the weekly measure only.
-- **Job 3**, a test adapted after a change, with the reason, once the
-  developer is built.
-- **The curator's removals**: a tester's test merged while its issue is
-  still open is not told apart (only open Drafts' records are read); a
-  mutation report other than Gremlins' or the schema's is not read.
+Gaps found on real use and in the V1 rounds
+([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)),
+kept for 1.0:
+
+- **A person's comment on a Draft** is read by no role
+  (kept for 1.0, [#1358](https://github.com/JN0V/workline/issues/1358)).
+- **"The existing suite guards it"** names no test, and was false 3 of 3
+  times (kept for 1.0, [#1359](https://github.com/JN0V/workline/issues/1359)).
+- **Frozen tests under a runner's own names** judged again on every head
+  (kept for 1.0, [#1373](https://github.com/JN0V/workline/issues/1373)).
+- **A test under a display name** may escape being frozen
+  (kept for 1.0, [#1348](https://github.com/JN0V/workline/issues/1348)).
+- **A new test hidden** by a same-named test in another file
+  (kept for 1.0, [#1291](https://github.com/JN0V/workline/issues/1291)).
 - **A missing name in Rust**: its errors span several lines, which
   `build-errors` does not read
-  ([the page](missing-name.md#other-languages)).
-- **Not in the line, nor in the CI templates**: a project runs the
-  command in its own job.
+  ([the page](missing-name.md#other-languages)); build errors move to
+  language packs
+  (kept for 1.0, [#1319](https://github.com/JN0V/workline/issues/1319)).
+
+Parked, none seen in the V1 rounds:
+
+- **The developer beside a frozen test**: its bounds still refuse any
+  edit to a file the tester froze, a shared one whole, though the guard
+  passes lines added beside the frozen ones
+  (parked, [#1388](https://github.com/JN0V/workline/issues/1388)).
+- **A case the conformance suite cannot read** is told by workline's
+  own `build-errors` line, not by the role: another project's suite
+  that fails a malformed test file alike reads as red
+  (parked, [#1388](https://github.com/JN0V/workline/issues/1388)).
+- **A Draft a person closed** is not remembered as refused: a later
+  scheduled run may take its issue again
+  (parked, [#1388](https://github.com/JN0V/workline/issues/1388)).
+- **Objections on a forge command** (`cmd:`): it lists no thread, and
+  `no-threads` blocks; the local forge lists them since
+  [#1367](https://github.com/JN0V/workline/pull/1367)
+  (parked, [#1388](https://github.com/JN0V/workline/issues/1388)).
+- **Job 3**, a test adapted after a change, with the reason
+  (parked, [#1388](https://github.com/JN0V/workline/issues/1388)).
+- **A test's flakiness over time on pull requests**: each push to the
+  ready pull request runs the three again; their runs are not fed to the
+  curator's history, which reads the weekly measure only
+  (parked, [#91](https://github.com/JN0V/workline/issues/91)).
+- **The curator's removals**: a tester's test merged while its issue is
+  still open is not told apart (only open Drafts' records are read); a
+  mutation report other than Gremlins' or the schema's is not read
+  (parked, [#91](https://github.com/JN0V/workline/issues/91)).

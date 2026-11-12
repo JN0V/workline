@@ -1,4 +1,4 @@
-# Product owner — where it stands (2026-10-26)
+# Product owner — where it stands (2026-11-12)
 
 **In one line:** refocused by
 [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md):
@@ -9,7 +9,11 @@ and reads a person's answer there. Milestones, priorities, splits,
 renames, links, obsolete issues and changed needs are off by default,
 their code kept; its acts done alone are drawn by the weekly sample of
 every role's. Tried on both sandboxes; its second trial
-on real use (2026-10-17 to 10-24) did not meet its aim. Beta.
+on real use (2026-10-17 to 10-24) did not meet its aim. In the V1
+acceptance, it refined the 9 issues of each round on three repository
+copies; round 3 merged all 9
+([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)).
+Beta.
 
 Each try: up to 2026-10-13 in [tried.md](tried.md), an archive (the first
 nights of the trial, 2026-10-08 to 10-12, among them); since, in its pull
@@ -22,46 +26,52 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: met once
-   [ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)
-   is built (in parts, [#435](https://github.com/JN0V/workline/issues/435):
-   two built). Missing holds only that decision and
-   [ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
-   next to build; the rest are tries on real use, or parked as issues.
-2. **The main issue validated on real use**: open. The trial of
+1. **Nothing buildable in Missing**: **open**. The two decisions it
+   waited on are parked until after V1:
+   [ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)'s
+   rest ([#435](https://github.com/JN0V/workline/issues/435)) and
+   [ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md)
+   ([#475](https://github.com/JN0V/workline/issues/475)). Left: the
+   role's bugs the V1 rounds and the trials found, kept for 1.0
+   ([Missing](#missing-in-the-order-to-build-it), 1).
+2. **The main issue validated on real use**: **awaits the
+   maintainer**. No open issue holds its Validation: the trial of
    [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
-   measures the proposals on each issue — accepted unchanged, edited,
-   revised, set aside, ignored —; the maintainer validates it from them.
-   - **Second trial, 2026-10-17 to 10-24: not met** (the maintainer,
-     2026-10-26). None of its 11 proposals was answered; 3 of 5 acts
-     drawn by the weekly sample were judged false
-     ([#155](https://github.com/JN0V/workline/issues/155), week 42); it
-     sent too many emails
-     ([#548](https://github.com/JN0V/workline/issues/548)).
-   - **The line of states, 2026-11-01**: it re-checked the 26 ready
-     issues once, 15 kept and 11 proposed back to refine, and readied
-     two fresh issues on their label, woken at once
-     ([tried](https://github.com/JN0V/workline/pull/795#tried)).
-   - **Back to refine done alone, 2026-11-01**: the 11 moves waiting
-     done by the role's own run, no agent, each reason in its comment
-     ([tried](https://github.com/JN0V/workline/pull/799#tried)).
-   - **The builder's part rewritten, 2026-11-02**: a person's
-     Verification rewritten to answer the reviewer, no person asked; an
-     issue left waiting on one by the release before moved on to its
-     tests
+   has none.
+   - **What the maintainer would sign**: that the V1 rounds validate
+     the role on real use. Refine to ready alone, the reporter asked
+     when needed, on Kotlin, C++ and Python copies: 9 of 9 merged in
+     round 3
+     ([round 1](https://github.com/JN0V/workline/issues/1266#issuecomment-6779607472),
+     [round 2](https://github.com/JN0V/workline/issues/1266#issuecomment-6796923928),
+     [round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764);
+     V1 accepted in
+     [ADR-0052](../../../docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-11-1266-v1-accepted)).
+   - **Against it**: the second trial on workline, 2026-10-17 to 10-24,
+     not met (the maintainer, 2026-10-26): none of its 11 proposals
+     answered; 3 of 5 acts drawn by the weekly sample judged false
+     ([#155](https://github.com/JN0V/workline/issues/155), week 42); too
+     many emails ([#548](https://github.com/JN0V/workline/issues/548),
+     fixed).
+   - **On workline's line since**: the 26 ready issues re-checked, 11
+     sent back to refine alone
+     ([tried](https://github.com/JN0V/workline/pull/795#tried),
+     [tried](https://github.com/JN0V/workline/pull/799#tried)); a
+     person's Verification rewritten to answer the reviewer
      ([tried](https://github.com/JN0V/workline/pull/870#tried)).
-   - **Next**: drafts that repeat left out and
-     [#548](https://github.com/JN0V/workline/issues/548) (this page's
-     Built); a third trial
-     only once a person can answer the proposals.
-3. **AI verdicts measured on the acts on by default**: in part. An evident
-   duplicate: `keeps-a-planted-backlog`, 5 in 5 on Sonnet. Left: refine
-   (drafts accepted unchanged in the trial; rated blind, the new drafts
-   won 6 of 6 but were accepted as is once,
-   [tried](tried.md#2026-10-09--issues-a-person-reads-old-and-new-blind-sonnet)),
-   ready (moved alone and not undone), and the kind once
-   [ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)
-   builds it (9 of 10 right, labels hidden).
+3. **AI verdicts measured on the acts on by default**: **open**.
+   - Measured: an evident duplicate, `keeps-a-planted-backlog`, 5 in 5
+     on Sonnet; the kind, 9 of 10 right with labels hidden; split or
+     grant on its size, the evaluation's `product-owner/size-*`
+     ([#1224](https://github.com/JN0V/workline/pull/1224#tried)).
+   - **Against it**: the weekly sample, W42 to W45, judged false 12 of
+     13 `ready` and 7 of 8 `refine` drawn; `kind` 4 of 5 stand. No row
+     answered by the maintainer
+     ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275));
+     the sample is parked until after V1
+     ([#155](https://github.com/JN0V/workline/issues/155)).
+   - Left: refine and ready measured on known answers, or the sample's
+     false rows read again by the maintainer.
 
 ## Built
 
@@ -218,84 +228,63 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   `ready-puts-a-feature-in-the-next-milestone`; not tried for real
   ([#883](https://github.com/JN0V/workline/pull/883#tried)).
 
+- **A person's answer reaches the spec**, to the reporter or to the
+  spec reviewer, kept across later rewrites
+  ([#1345](https://github.com/JN0V/workline/pull/1345),
+  [#1363](https://github.com/JN0V/workline/pull/1363)); held in V1
+  round 3
+  ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)).
+- **The Verification is the tester's**: the product owner writes none
+  ([#1277](https://github.com/JN0V/workline/pull/1277#tried)).
+- **A no-test issue retested once**, unchanged; a rewritten blocked
+  issue back to refine
+  ([#1299](https://github.com/JN0V/workline/pull/1299),
+  [#1301](https://github.com/JN0V/workline/pull/1301)).
+- **The developer takes the ready issue it readied**: the pick of
+  [ADR-0054](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md)
+  ([#117](https://github.com/JN0V/workline/issues/117), closed).
+
 ## Missing, in the order to build it
 
-1. **Issue sections and kinds, in parts**
+1. **Bugs seen in real use**, kept for 1.0:
+   - its code input misses the sources a Scope needs, one Kotlin Scope
+     wrong in V1 round 3 (kept for 1.0,
+     [#1332](https://github.com/JN0V/workline/issues/1332));
+   - a refine dropped for one missing path, never retried (kept for
+     1.0, [#1355](https://github.com/JN0V/workline/issues/1355));
+   - an answer on a Validation question written in the Scope, the
+     reviewer holding again (kept for 1.0,
+     [#1356](https://github.com/JN0V/workline/issues/1356));
+   - answers to the spec reviewer missed or read twice (kept for 1.0,
+     [#1346](https://github.com/JN0V/workline/issues/1346));
+   - a person's long answer cut at 3,000 characters (kept for 1.0,
+     [#1364](https://github.com/JN0V/workline/issues/1364));
+   - a question to the reporter never timing out on a local forge
+     (kept for 1.0, [#1337](https://github.com/JN0V/workline/issues/1337));
+   - an answer unreadable twice asked again in the same tick (kept for
+     1.0, [#1090](https://github.com/JN0V/workline/issues/1090));
+   - the role started twice in one tick after naming code (kept for
+     1.0, [#1091](https://github.com/JN0V/workline/issues/1091)).
+2. **Issue sections and kinds, the rest**
    ([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
-   [examples](proposed-headings.md),
-   [#435](https://github.com/JN0V/workline/issues/435)): established
-   section names, a bug readied only with its steps, the kind label set
-   by the role. Built: sections read by meaning; each thing said once,
-   not tried live with a real agent.
-2. **Priority and effort where the forge keeps them, proposed**
+   [examples](proposed-headings.md)): established section names, a bug
+   readied only with its steps. Built: sections read by meaning, each
+   thing said once, the kind set by the role ([the kind](kind.md))
+   (parked, [#435](https://github.com/JN0V/workline/issues/435)).
+3. **Priority and effort where the forge keeps them**
    ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
-   [examples](priority-and-effort.md),
-   [#475](https://github.com/JN0V/workline/issues/475)): six steps,
-   conformance first, then a live try on a new jn0v-lab repository.
-   - **Step 1 built**: the levels read by name through one table
-     (`internal/scale`), no behaviour change.
-   - **Step 2 built, off by default**: where each axis is kept, found when
-     the settings ask (`priority`, `effort`); the forge's words created,
-     ranked on GitLab; a value in two places writes nothing. Tried on the
-     GitLab sandbox, judged and not applied (its pull request's Tried).
-   - **Step 3 built, off by default**: the effort estimated beside the
-     priority (the act `effort`, off), each value set once, only where
-     empty, read again when applied; the grid's order and Next's cells,
-     the Urgents said apart, estimates stuck on one value said, with the
-     settings; the reviewer reads the specs in that order.
-   - **Step 4 built, off by default**: GitHub's Priority and Effort
-     fields found before any label, read and written by option name;
-     members-only values on a public repository never shown nor
-     proposed; a token not shown to read them writes nothing there. Tried
-     live on [jn0v-lab/workline-priority-try](https://github.com/jn0v-lab/workline-priority-try)
-     with a member's token (its pull request's Tried); the job's own
-     token and an App's not tried: the first needs a token with the
-     `workflow` scope to add a workflow there, the second the App
-     installed on jn0v-lab.
-   - **Step 5 built, off by default**: GitLab's weight found for the
-     effort where the issues carry one (Premium, Ultimate), read in
-     bands, written 1, 3 or 5 and read back, never a parent's; Free
-     keeps the labels. Tried on the GitLab sandbox, Free only
-     ([#488](https://github.com/JN0V/workline/pull/488)'s Tried); Premium
-     not tried, no project at hand. A
-     project's own bands ("another scale sets its bands") not built.
-   - **Next**: step 6, workline's labels renamed.
-3. **Tries on real use**, nothing to build (no issue yet):
-   - **answers on the issue**: the trial, measured (To leave beta, 2); a
-     real agent's revision after a comment; an outsider's and a bot's
-     comment, live; the night's summary, its plain wording and a body's
-     footer kept out, live; the prompt's writing rules read by the
-     maintainer on a real night;
-   - **a person's word first**: on GitLab; the `ready` wording with a real
-     agent;
-   - **issues a person reads**: an Example written by a real agent; on
-     GitLab;
-   - **what no person wrote**, a role's text on top taken into the Need
-     by a real agent, and a repeat left out, on a real night;
-   - **refining**: a real outsider's issue, a reporter's own `agreed`, the
-     gardening template on GitLab with a release holding this;
-   - **autonomy**: a real agent's rename undone, `ready` taken off and a
-     split's child closed, live; `workline init`'s question on a terminal;
-   - **sources and imports**: a file the agent was not shown named as a
-     source; a real agent's answer to a closed issue in an import's plan;
-     a real agent's import with `skip`s — DomoticsCore's roadmap, its map
-     read against its 56 issues — and a `skip`'s tokens; an import in
-     GitHub Actions;
-   - **ordering**: a person's priority kept, live; milestones live, on
-     GitHub and GitLab, and by due date on GitLab;
-   - **a parent**: a test named as proof read live on GitLab;
-   - **what an issue waits on**: a GitLab Premium link, a link taken off
-     on GitLab, a real agent's `undepend` accepted, all live;
-   - **next and stuck**: an issue stuck past 14 days, live; the night's
-     summary read for
-     [#164](https://github.com/JN0V/workline/issues/164)'s Validation;
-   - **off by default, once turned on**: closing as obsolete (a real delay
-     of days; the label taken off, an exempt label, a judge's no, live; 7
-     days and 3 a run measured); a
-     changed need (a real agent proposing `unready` only when it should,
-     an imported file's lines changed live, GitLab,
-     [#165](https://github.com/JN0V/workline/issues/165)'s Validation).
-4. **Parked**, closed as not planned with `workline:parked`, reopened when
+   [examples](priority-and-effort.md)): steps 1 to 5 built, off by
+   default (Built); step 6, workline's labels renamed, and a project's
+   own bands, not built; GitHub's fields with the job's token or an
+   App's, and GitLab Premium's weight, not tried (parked,
+   [#475](https://github.com/JN0V/workline/issues/475)).
+4. **Tries on real use**, nothing to build: answers on the issue, a
+   person's word first, issues a person reads, what no person wrote,
+   refining, autonomy, sources and imports, ordering, a parent, what an
+   issue waits on, next and stuck, the acts off by default once turned
+   on (parked,
+   [#1377](https://github.com/JN0V/workline/issues/1377)).
+5. **Parked**, closed as not planned with `workline:parked`, reopened when
    real use asks: a yes in a reply or by a bot
    ([#290](https://github.com/JN0V/workline/issues/290)); splits on GitLab
    ([#291](https://github.com/JN0V/workline/issues/291)); the forge's own
@@ -309,8 +298,6 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
    verdict on a sampled act
    ([#296](https://github.com/JN0V/workline/issues/296)); a pull request
    closed unmerged no longer a start
-   ([#297](https://github.com/JN0V/workline/issues/297)).
-5. **Open elsewhere**: the Forgejo sample's backlog operations
-   ([#65](https://github.com/JN0V/workline/issues/65)); the developer role
-   taking the `next-ready` issue
-   ([#117](https://github.com/JN0V/workline/issues/117)).
+   ([#297](https://github.com/JN0V/workline/issues/297)); the Forgejo
+   sample's backlog operations
+   ([#65](https://github.com/JN0V/workline/issues/65)).

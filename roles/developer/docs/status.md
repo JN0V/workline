@@ -1,4 +1,4 @@
-# Developer — where it stands (2026-10-30)
+# Developer — where it stands (2026-11-12)
 
 **In one line:** `workline develop` picks the first ready issue nobody
 took and, with an agent set, claims it with a label and a comment
@@ -14,8 +14,14 @@ yes; a feature or a task waits for one. Measured on planted issues and a copy of
 real repository: the eight steps of
 [ADR-0054's plan](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#build-plan)
 built; beta; routed where a project lists it, in workline's own line
-since [#696](https://github.com/JN0V/workline/issues/696), its first
-pull request awaited.
+since [#696](https://github.com/JN0V/workline/issues/696), its pull
+requests merged there since 2026-11-01
+([#821](https://github.com/JN0V/workline/pull/821) the first; a fix,
+[#1244](https://github.com/JN0V/workline/pull/1244), by the policy).
+In the V1 acceptance, it took 9 issues on three repositories to a
+merge
+([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764);
+[V1 accepted](../../../docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-11-1266-v1-accepted)).
 
 A try is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)):
@@ -32,23 +38,44 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open; the plan's eight steps are
-   built, what [Missing](#missing) lists is not.
-2. **The main issue validated on real use**: open. A maintainer reads a
-   pull request the developer opened for a `ready` issue, its
-   Verification proved in it, and merges it or sends it back
-   ([#696](https://github.com/JN0V/workline/issues/696)): routed on
-   workline's own line, the first pull request awaits a maintainer.
-   On the line of states, 2026-11-01: an issue's tests to a pull
-   request in 2 min, red after 4 review rounds
-   ([tried](https://github.com/JN0V/workline/pull/795#tried)).
-3. **Observable**: its acts read by the auditor
+1. **Nothing buildable in Missing**: open. Two items are kept for
+   1.0: its review rounds on GitLab
+   ([#1381](https://github.com/JN0V/workline/issues/1381)) and a bug in
+   its pick ([#1382](https://github.com/JN0V/workline/issues/1382)); the
+   rest of [Missing](#missing) is parked or tries.
+2. **The main issue validated on real use**: **awaits the
+   maintainer**. [#696](https://github.com/JN0V/workline/issues/696)'s
+   Validation: a maintainer reads a pull request the developer opened
+   for a `ready` issue, its Verification proved in it, and merges it or
+   sends it back; the auditor's sample then re-checks it. The
+   maintainer would sign it from:
+   - **read by a person**: [#914](https://github.com/JN0V/workline/pull/914),
+     the developer's pull request for
+     [#608](https://github.com/JN0V/workline/issues/608) on GitHub, accepted and
+     merged by the maintainer on 2026-11-03;
+   - **merged by the policy**, no person's yes: fixes such as
+     [#1244](https://github.com/JN0V/workline/pull/1244) (2026-11-09)
+     and [#1141](https://github.com/JN0V/workline/pull/1141); these meet
+     neither "read by a person" nor the auditor's re-check yet;
+   - **beside it, not on GitHub**: in V1 round 3, 9 of 9 issues merged on Kotlin, C++ and Python
+     copies, 3 features after a person's yes
+     ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764);
+     rounds [1](https://github.com/JN0V/workline/issues/1266#issuecomment-6779607472)
+     and [2](https://github.com/JN0V/workline/issues/1266#issuecomment-6796923928)
+     before it).
+3. **Observable**: open, in part met. Its acts are kept for the
+   auditor
    ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)):
    the pick's record from step 1, its refusals at apply in it from
    step 2, its proof and caps reached from step 3; its code's record
    on its pull request from step 4, drawn by the weekly sample (the
    auditor's `sample-draws-the-developers-code`); its review rounds
    from step 6, drawn with it (`sample-draws-the-developers-rounds`).
+   Its code merged on workline is drawn: 4 acts, none re-checked by a
+   judge yet
+   ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275);
+   [#1390](https://github.com/JN0V/workline/issues/1390)). Measured
+   with a real agent on planted issues, 29 of 30 ([Measured](#measured)).
 
 ## Built
 
@@ -353,7 +380,26 @@ hold:
   `merge/local-conflict-merged-in-by-a-round`,
   `merge/behind-held-merged-in-clean`,
   `merge-round-dropping-main-not-pushed`,
-  `merge-round-markers-left-stops`. Tried: its pull request's `## Tried`.
+  `merge-round-markers-left-stops`. Tried: its pull request's `## Tried`
+  ([#1368](https://github.com/JN0V/workline/pull/1368)); in V1 round 3,
+  one merge round settled the C++ feature's conflict with no hand act
+  ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)).
+  So `workline follow` no longer leaves its branch behind main.
+- **The reviewer's findings, whole**
+  ([#705](https://github.com/JN0V/workline/issues/705)): read from the
+  hidden record of the reviewer's comment, never its table's words; a
+  finding on its line read whole from that line's comment
+  ([the review loop](review-loop.md);
+  [#1312](https://github.com/JN0V/workline/pull/1312)). Case
+  `developer/fixes-finding-with-the-table-reworded`.
+- **A claim let go puts ready back**: its card leaves Doing
+  ([#1115](https://github.com/JN0V/workline/pull/1115); the line's
+  states, [#756](https://github.com/JN0V/workline/issues/756)).
+- **Real issues, with `claude` and its tools**: the V1 acceptance, three
+  rounds of 9 issues on Kotlin, C++ and Python copies, a local forge;
+  round 3 merged 9 of 9, each issue's whole line 75k to 445k fresh
+  tokens, every role counted
+  ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)).
 
 ## Measured
 
@@ -417,80 +463,74 @@ column ([the try](https://github.com/JN0V/workline/pull/747#tried)).
 
 ## Missing
 
-- **The bounds under a GitLab pipeline execution policy**: written,
-  not tried; no Ultimate project at hand
-  ([on GitLab](../../../docs/gitlab/bounds.md#ultimate-a-pipeline-execution-policy)).
-- **Its shell boxed in its worktree**: Claude Code's sandbox, writes in
-  the worktree only, no network by default
-  ([#719](https://github.com/JN0V/workline/issues/719)).
+Kept for 1.0, each an open issue:
 
-- **`claude` with tools on a real issue's size**: step 7 of
-  [ADR-0056](../../../docs/adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md)
-  measured planted tasks only, far under the caps
-  ([measured](#step-7-claude-with-tools)).
+- **A failed pipeline or a gate red on GitLab**: the project's checks
+  are read on GitHub only; on GitLab, the merge request's head
+  pipeline and its failed jobs' traces would be the round's input, a
+  pipeline event its wake; its gates show in the Code Quality report,
+  no comment a round reads. So a Draft made green is not marked ready
+  there yet ([#969](https://github.com/JN0V/workline/issues/969)). The
+  reviewer's verdict and a person's comment still wake a round there
+  (kept for 1.0, [#1381](https://github.com/JN0V/workline/issues/1381)).
+- **"Implements #4" on GitHub**: the pick reads `implement` as a
+  closing word, as GitLab does; GitHub does not close on it, so there
+  the issue is skipped as taken though nothing will close it (kept for
+  1.0, a bug, [#1382](https://github.com/JN0V/workline/issues/1382)).
+
+Parked, closed as not planned with `workline:parked`, reopened when
+real use asks:
+
+- **Its shell boxed in its worktree**: Claude Code's sandbox, writes in
+  the worktree only, no network by default (parked,
+  [#719](https://github.com/JN0V/workline/issues/719)).
 - **A test runner named like a test**: `run-tests.sh` beside the Scope
   passes the bounds as the agent's own test, so its agent can rewrite
-  the runner the proof calls
-  ([#715](https://github.com/JN0V/workline/issues/715)).
+  the runner the proof calls (parked,
+  [#715](https://github.com/JN0V/workline/issues/715)).
 - **The issue's kind from the forge's types and the project's labels**:
   read from a fixed list of labels only
-  ([the merge](merge.md#not-yet)).
-
-- **The reviewer's full text**: a round reads the reviewer's summary
-  table, where a finding with a comment on its line reads short (its
-  title); the line's comment, with the why and the fix, is not read.
-- **A failed pipeline on GitLab**: the project's checks are read on
-  GitHub only; on GitLab, the merge request's head pipeline and its
-  failed jobs' traces would be the round's input, and a pipeline
-  event its wake ([#917](https://github.com/JN0V/workline/issues/917)).
-  So a Draft made green is not marked ready there yet
-  ([#969](https://github.com/JN0V/workline/issues/969)).
-- **A gate red on GitLab**: its gates show in the Code Quality report,
-  no comment a round reads; the reviewer's verdict and a person's
-  comment still wake one there.
+  ([the merge](merge.md#not-yet); parked,
+  [#1383](https://github.com/JN0V/workline/issues/1383)).
 - **A finding the developer holds wrong**: said in its round's
-  comment; no thread with the reviewer, who decides on its next run.
-
-- **The auditor's draw of its code, by a real judge**: drawn and
-  re-checked on a planted act only
-  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row));
-  none merged yet to read: workline's weekly sample draws the first
-  ([#696](https://github.com/JN0V/workline/issues/696)).
-- **`workline follow` on its branch**: the branch holds the tester's
-  commit, which `follow` reads as a person's; it leaves the branch as it
-  is rather than bring it up to date.
-- **Two runs coding at once**: the claim is read again just before
-  apply, not held by the forge; two runs whose agents code at the same
-  time, or two ready issues with overlapping Scopes, can still both be
-  taken ([the triggers](triggers.md#two-runs-on-one-issue)).
-
-- **The claim on GitLab** by assignment, where the token's user is a
-  service account that can be assigned: a label for now, on every forge.
-- **A claim left behind**: let go after `claim-hours` with no pull
-  request, said on the issue ([the pick](pick.md#letting-a-claim-go));
-  its card stays in Doing until the line's states
-  ([#756](https://github.com/JN0V/workline/issues/756)).
+  comment; no thread with the reviewer, who decides on its next run
+  (parked, [#1384](https://github.com/JN0V/workline/issues/1384)).
+- **Two runs coding at once, and the claim on GitLab by assignment**:
+  the claim is read again just before apply, not held by the forge;
+  two runs whose agents code at the same time can still both take an
+  issue ([the triggers](triggers.md#two-runs-on-one-issue)); a label
+  on every forge, where a GitLab service account could be assigned
+  (parked, [#1385](https://github.com/JN0V/workline/issues/1385)).
 - **A refused patch asked again**: today it is left out and the rest
-  applied; asking the agent again with the refusal would save a round.
-  So for a diff that does not apply: unproven, a Draft
-  ([measured](#measured);
+  applied; so for a diff that does not apply: unproven, a Draft
+  ([measured](#measured); parked,
   [#692](https://github.com/JN0V/workline/issues/692)).
 - **A test of its own with no tester's Draft**: asked by the issue's
-  Verification, the agent wrote none ([measured](#measured);
+  Verification, the agent wrote none ([measured](#measured); parked,
   [#693](https://github.com/JN0V/workline/issues/693)).
 - **Scope files with accented names, or listed twice**: git quotes
   `café.sh`, so the agent is not shown it; a folder and its file both in
-  the Scope show the file twice
-  ([#695](https://github.com/JN0V/workline/issues/695)).
-- **A new file in a new folder**: the engine writes a `{file, content}`
-  patch only where its folder exists; a diff creates it.
-- **The proof's other parts**: the project's gates and the commands
-  the issue's Verification names
+  the Scope show the file twice (parked,
+  [#695](https://github.com/JN0V/workline/issues/695)).
+- **A new file in a new folder**, from an agent with no tools: the
+  engine writes a `{file, content}` patch only where its folder exists;
+  a diff creates it (parked,
+  [#1386](https://github.com/JN0V/workline/issues/1386)).
+- **The proof's other parts, and a run's time as one cap**: the
+  project's gates and the commands the issue's Verification names
   ([ADR-0054](../../../docs/adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md#it-proves-locally-first))
-  do not run in it yet; the pull request's checks run the gates.
-- **A run's time as one cap**: the agent's wait (`ai-max-seconds`) and
-  the tests' (`proof-seconds`) are two caps whose defaults sum to the
-  ADR's 30 min a run; a project raising one is not held to the sum.
-- **"Implements #4" on GitHub**: the pick reads `implement` as a
-  closing word, as GitLab does; GitHub does not close on it, so there
-  the issue is skipped as taken though nothing will close it.
+  do not run in it; the pull request's checks run the gates. The
+  agent's wait (`ai-max-seconds`) and the tests' (`proof-seconds`) are
+  two caps whose defaults sum to the ADR's 30 min a run; a project
+  raising one is not held to the sum (parked,
+  [#1387](https://github.com/JN0V/workline/issues/1387)).
+
+Tries on real use (parked,
+[#1390](https://github.com/JN0V/workline/issues/1390)):
+
+- **The bounds under a GitLab pipeline execution policy**: written,
+  not tried; no Ultimate project at hand
+  ([on GitLab](../../../docs/gitlab/bounds.md#ultimate-a-pipeline-execution-policy)).
+- **The auditor's draw of its code, by a real judge**: drawn on
+  workline's merges, 4 acts, none re-checked yet
+  ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275)).

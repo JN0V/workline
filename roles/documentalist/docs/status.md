@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-21)
+# Documentalist — where it stands (2026-11-12)
 
 **In one line:** usable every day on a GitHub or GitLab repository that
 takes merge requests: docs judged on each one and gardened at night, by
@@ -21,7 +21,9 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: **met** (2026-10-18). A doc judged
+1. **Nothing buildable in Missing**: **open**, one bug kept for 1.0
+   ([#1361](https://github.com/JN0V/workline/issues/1361)); met on
+   2026-10-18 before it. A doc judged
    on its change alone is read in parts at night (Built:
    [#462](https://github.com/JN0V/workline/issues/462)); moving its
    `checked` is built, on since its bars held at the second measure
@@ -36,14 +38,23 @@ hold:
    examples said unverified, or checked by the project's command), a
    model reading them parked
    ([#353](https://github.com/JN0V/workline/issues/353)).
-2. **The main issue validated on real use**: open.
-   [#464](https://github.com/JN0V/workline/issues/464) holds the
-   Validation: a merge request, a night's gardening, and nothing false
-   staying past a week's docs pull request, in two weeks on two
-   repositories
+2. **The main issue validated on real use**: **awaits the
+   maintainer**. Its Validation was held by
+   [#464](https://github.com/JN0V/workline/issues/464): a merge request,
+   a night's gardening, and nothing false staying past a week's docs
+   pull request, in two weeks on two repositories
    ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr):
-   it was "nothing false landing"). The maintainer signs it after those
-   weeks.
+   it was "nothing false landing", as the issue still reads).
+   [#464](https://github.com/JN0V/workline/issues/464) is parked until
+   after V1, so no open issue holds it.
+   - **What the maintainer would sign**: reopen
+     [#464](https://github.com/JN0V/workline/issues/464), or name another
+     issue, then sign its Validation from workline's weekly docs pull
+     requests (for example
+     [#1217](https://github.com/JN0V/workline/pull/1217) to
+     [#1220](https://github.com/JN0V/workline/pull/1220), merged
+     2026-11-08 and 11-09) and a second repository's weeks, not gathered
+     yet.
 3. **AI verdicts measured**: **met** (2026-10-17). Step 4 of
    [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)
    holds, at the third run, on the held-out set: the bars and runs in
@@ -231,39 +242,44 @@ its evaluation in
   merge's `normal-reader-*`, `alone-*`.
 - **Staying on the task**: the evaluation's `stays-on-the-task`.
 
+- **The merge policy on the developer's pull requests**, at `normal`:
+  a reproduced bug's fix, reviewed at its head, merges with no person's
+  yes, pushed with the App; a feature or a task waits for one. On
+  workline: [#1244](https://github.com/JN0V/workline/pull/1244), for
+  [#750](https://github.com/JN0V/workline/issues/750), merged by the
+  policy on 2026-11-09; on three repository copies, 6 bugs in V1 round 3
+  ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)).
+
 ## Missing, in the order it matters
 
-1. **The weekly sample's first weeks**, watched
-   ([#155](https://github.com/JN0V/workline/issues/155)).
-2. **No commit for a doc only read, to count**: two weeks of real use,
-   commits to people's pull requests changing only record lines, 0
-   ([#463](https://github.com/JN0V/workline/issues/463)'s Verification).
-3. **workline's own docs far behind**, gardened nightly in parts since
-   [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
-   yet.
-4. **A doc read in parts, to watch**: it no longer waits for a person
-   when its parts support every line (`parts-move-checked`, on). How
-   often real docs earn it. The shipped engine, a quote placed one line
-   either side, measured: both bars and all four planted defects fixed,
-   5 runs of 5
-   ([ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-the-shipped-engine-measured);
-   [#482](https://github.com/JN0V/workline/issues/482)).
-5. **To watch**: Sonnet citing lines a line off in long docs (now placed
-   by their quote); a partial claim settled by another part; the first
-   nightly's two faults, with a second task's tokens. No issue yet.
-6. **The merge policy, what is left**: at `normal`, the developer
-   role's pull requests, pushed with the App, built with that role
-   ([#117](https://github.com/JN0V/workline/issues/117); decided on
-   [#322](https://github.com/JN0V/workline/issues/322#issuecomment-6186910822)).
-   An auto-merge the forge left is merged by the next `follow`
-   ([#993](https://github.com/JN0V/workline/issues/993)): seen on GitHub;
-   on GitLab, a merge request `mergeable` with "merge when the pipeline
-   succeeds" on, merged by the hourly reconcile schedule's
-   `workline:follow`, not tried live.
-7. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
-   CLI on a free plan unmeasured (the owner must turn Copilot Free on). No
-   issue yet.
-8. **Tries on real use** (no issue yet):
+1. **A large doc's "a person judges it"**, said again at every head of
+   a merge request with nothing to do, seen in V1 round 3 (kept for
+   1.0, [#1361](https://github.com/JN0V/workline/issues/1361)).
+2. **The weekly sample's first weeks**, watched: the sample ran W42 to
+   W45, no row answered yet
+   ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275))
+   (parked, [#155](https://github.com/JN0V/workline/issues/155)).
+3. **To watch over two weeks of real use**, nothing to build:
+   - commits to people's pull requests changing only record lines, 0
+     ([#463](https://github.com/JN0V/workline/issues/463)'s
+     Verification);
+   - workline's own docs far behind, gardened in parts since
+     [#27](https://github.com/JN0V/workline/pull/27);
+   - how often a doc read in parts earns its `checked`
+     (`parts-move-checked`, on;
+     [ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-the-shipped-engine-measured));
+   - Sonnet citing lines a line off in long docs; a partial claim
+     settled by another part; the first nightly's two faults;
+   - Opus's notes that see more than the task asks (unused); Copilot
+     CLI on a free plan, unmeasured
+   (parked, [#1378](https://github.com/JN0V/workline/issues/1378)).
+4. **Tries on real use**, nothing to build (parked,
+   [#1378](https://github.com/JN0V/workline/issues/1378)):
+    - an auto-merge the forge left, merged by the next `follow`
+      ([#993](https://github.com/JN0V/workline/issues/993)): seen on
+      GitHub; on GitLab, with "merge when the pipeline succeeds" on,
+      merged by the hourly reconcile's `workline:follow`, not tried
+      live;
     - its stale merge requests closed on GitHub and GitLab, and settled
       people's branches pushed there (the App's `workflows` permission),
       each in its CI job;

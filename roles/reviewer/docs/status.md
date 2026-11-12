@@ -1,10 +1,15 @@
-# Reviewer — where it stands (2026-10-21)
+# Reviewer — where it stands (2026-11-12)
 
 **In one line:** reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
 the change's findings told from the rest by where their cause lies, each
 important one judged. It reads a spec too, on a machine and, after the
-product owner refines an issue, on the forge. Released in v0.9.0; beta.
+product owner refines an issue, on the forge. The developer fixes its
+findings in review rounds. In the V1 acceptance round it reviewed every
+request of 9 issues, and their specs in refine, on three real
+repository copies
+([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)).
+Released in v0.9.0; beta.
 
 Each try: up to 2026-10-13 in [tried.md](tried.md), an archive; since, in
 its pull request's `## Tried`
@@ -20,12 +25,23 @@ hold:
    needs, on since 2026-10-14
    ([#362](https://github.com/JN0V/workline/issues/362)); the reviewer
    measured on it, five runs a case, correctness blocking on workline
-   itself ([#360](https://github.com/JN0V/workline/issues/360)); the developer's
-   loop waits for that role
-   ([#117](https://github.com/JN0V/workline/issues/117)).
-2. **The main issue validated on real use**: open. No issue of the role
-   holds a Validation section the maintainer has signed.
-3. **AI verdicts measured**: measured. Five runs a case, every lens
+   itself ([#360](https://github.com/JN0V/workline/issues/360)); the
+   developer's loop is built and ran on real use (Built). Left: the
+   gaps the V1 rounds found, kept for 1.0 in [Missing](#missing).
+2. **The main issue validated on real use**: awaits the maintainer. No
+   issue of the role holds a Validation section the maintainer has
+   signed.
+   - **The evidence**: V1 round 3, every request of 9 issues reviewed
+     at its head and green, the developer's review rounds run by the
+     line
+     ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764));
+     on workline, a developer's pull request fixed in a review round,
+     then merged ([#1141](https://github.com/JN0V/workline/pull/1141)).
+   - **What the maintainer would sign**: a Validation for the role,
+     such as "the reviewer's findings on a real change are fixed in
+     review rounds before the merge", met by the evidence above; or name
+     another.
+3. **AI verdicts measured**: met. Five runs a case, every lens
    together, the judge reading: 55 of 55 planted defects found, no false
    finding verified
    ([the reviewer, measured](../../../docs/research/reviewer-measured.md));
@@ -33,6 +49,10 @@ hold:
    ([the judge, measured](../../../docs/research/judge-measured.md)).
    Its cost:
    [measured](../../../docs/research/code-review.md#the-reviewers-cost-measured).
+   On real use, the auditor's count of its weekly samples: of 42 dropped
+   findings drawn, 25 stand and 1 is false; of 40 kept, 16 stand and 1
+   is false; the rest unproven or not read, no week answered by the
+   maintainer yet ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275)).
 
 **Correctness blocks on workline itself** (the maintainer, 2026-10-15,
 [#360](https://github.com/JN0V/workline/issues/360)):
@@ -239,29 +259,59 @@ its measure in
   ([the code picker](../../../docs/spec/code-picker.md)). Cases
   `reviewer/picker-*`. Tried on
   [#1106](https://github.com/JN0V/workline/pull/1106#tried).
+- **The developer's loop**: a fresh developer run fixes each review,
+  the five whys at round three, a person past round five
+  ([the developer's review loop](../../developer/docs/review-loop.md));
+  the developer reads every finding's full text from the review's
+  record ([#1312](https://github.com/JN0V/workline/pull/1312)); a thread
+  its fix answered resolved
+  ([#1045](https://github.com/JN0V/workline/pull/1045),
+  [#1051](https://github.com/JN0V/workline/pull/1051)); a test finding
+  sent to the tester
+  ([#1300](https://github.com/JN0V/workline/pull/1300)), its "none
+  needed" weighed ([#1316](https://github.com/JN0V/workline/pull/1316)). Ran on
+  workline ([#1141](https://github.com/JN0V/workline/pull/1141)) and in
+  the V1 rounds
+  ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)).
+- **A merge alone only after a review of its head**
+  ([#1264](https://github.com/JN0V/workline/pull/1264)).
+- **A spec read in refine's own run**, not at night
+  ([#787](https://github.com/JN0V/workline/pull/787)).
 
-## Missing, in the order to build it
+## Missing
 
-1. **Correctness blocking by default**, once its first real blocks on
-   workline's pull requests have been watched (above). Measured on
-   [#360](https://github.com/JN0V/workline/issues/360): five runs a case,
-   intent and claims; lenses apart not needed, together missing nothing;
-   the diff alone does not win
-   ([#243](https://github.com/JN0V/workline/issues/243)). Not measured:
-   the finder floor's worth, a decision for a person (no case plants
-   one), one lens a push whichever lens is in turn, the cheaper push over
-   five runs. No issue yet.
-2. **Spec review measured on real use**: more specs, the product
-   owner's real answer read again, on GitLab and in CI (a round over two
-   nights). No issue yet.
-3. **The tests lens outside the change**: untested code the change did not
-   touch. Waits for the inspector's static-analysis results
-   ([#202](https://github.com/JN0V/workline/issues/202)); decided then.
-4. **The developer's loop**: a handoff to the developer, five rounds, then
-   a person. Waits for the developer role, after inspector and security
-   ([#117](https://github.com/JN0V/workline/issues/117)).
-5. **Tries on real use**: a run on ready a rule
-   held, GitLab (the next pipeline with an agent), a
-   block standing on a forge, an issue outside the change written by a
-   real agent, a change read in parts; every lens on ready tried on
-   [#307](https://github.com/JN0V/workline/pull/307). No issue yet.
+Gaps found on real use and in the V1 rounds
+([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)),
+kept for 1.0:
+
+- **The judge drops a defect** the code's comment calls intended
+  (kept for 1.0, [#1357](https://github.com/JN0V/workline/issues/1357)).
+- **`code-lines-max` cuts** a typical Android ViewModel, one lens left,
+  a cut warning on every head
+  (kept for 1.0, [#1334](https://github.com/JN0V/workline/issues/1334)).
+- **Answers to a spec finding** missed or read twice in three edge cases
+  (kept for 1.0, [#1346](https://github.com/JN0V/workline/issues/1346)).
+
+Parked:
+
+- **Correctness blocking by default**, once its first real blocks on
+  workline's pull requests have been counted (above): a default to
+  change, not a gap. Measured on
+  [#360](https://github.com/JN0V/workline/issues/360): five runs a case,
+  intent and claims; lenses apart not needed, together missing nothing;
+  the diff alone does not win
+  ([#243](https://github.com/JN0V/workline/issues/243)). Not measured:
+  the finder floor's worth, a decision for a person (no case plants
+  one), one lens a push whichever lens is in turn, the cheaper push over
+  five runs
+  (parked, [#1389](https://github.com/JN0V/workline/issues/1389)).
+- **The tests lens outside the change**: untested code the change did not
+  touch. Waits for the inspector's static-analysis results; decided then
+  (parked, [#202](https://github.com/JN0V/workline/issues/202)).
+- **Tries on real use**, nothing to build: spec review over more specs,
+  on GitLab and in CI (the V1 rounds read every spec on a local forge);
+  a run on ready a rule held, GitLab (the next pipeline with an agent),
+  a block standing on a forge, an issue outside the change written by a
+  real agent, a change read in parts; every lens on ready tried on
+  [#307](https://github.com/JN0V/workline/pull/307)
+  (parked, [#1391](https://github.com/JN0V/workline/issues/1391)).

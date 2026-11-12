@@ -90,9 +90,12 @@ holds the issues that count.
 - **Round 3 passes every criterion**: 6 bugs merged by the policy with
   no person's yes, 3 features after a yes, no fix specific to one
   language, the tester right the first time on 3, 2 and 3 of 3.
-- **After V1**: optimisation, token savings, new roles ([#1266]); the
-  inspector on GitLab and the upkeep measure of criteria 2 and 3 are
-  among them.
+- **After V1, until v1.0**: the Decision above still rules (the
+  maintainer, 2026-11-12): bug fixes and work that moves a role out of
+  beta only, no new role. The inspector on GitLab and the upkeep
+  measure (criteria 2 and 3) are part of it.
+- **After v1.0**: optimisation, token savings and new roles, the next
+  step [#1266] names for after V1.
 
 [#1266]: https://github.com/JN0V/workline/issues/1266
 [round 3]: https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764
