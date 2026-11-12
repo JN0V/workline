@@ -1796,10 +1796,12 @@ func plural(n int, one, many string) string {
 // touch a file: in its folder, then those named after it or naming it as
 // a word. Named after it, a test in a tree of its own is found
 // (src/test/…/GridTest.kt for src/main/…/Grid.kt), though it never names
-// the file as a word (#1417).
+// the file as a word (#1417): of those, the nearest to the file only, so
+// app_b's test_models.py never stands for app_a's.
 func testFiles(repo, head, file string, patterns []string) []string {
 	dir, stem := path.Dir(file), strings.TrimSuffix(path.Base(file), path.Ext(file))
 	var near, far []string
+	shared := -1
 	if out, err := git(repo, "ls-tree", "-r", "--name-only", head); err == nil {
 		for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
 			switch {
@@ -1807,7 +1809,12 @@ func testFiles(repo, head, file string, patterns []string) []string {
 			case path.Dir(f) == dir:
 				near = append(near, f)
 			case namedAfter(f, stem):
-				far = append(far, f)
+				switch n := sharedFolders(dir, path.Dir(f)); {
+				case n > shared:
+					far, shared = []string{f}, n
+				case n == shared:
+					far = append(far, f)
+				}
 			}
 		}
 	}
@@ -1836,6 +1843,16 @@ func namedAfter(test, stem string) bool {
 		return false
 	}
 	return slices.ContainsFunc(testAffixes, func(a string) bool { return name == stem+a || name == a+stem })
+}
+
+// sharedFolders is how many leading folders two folders share.
+func sharedFolders(a, b string) int {
+	as, bs := strings.Split(a, "/"), strings.Split(b, "/")
+	n := 0
+	for n < len(as) && n < len(bs) && as[n] == bs[n] && as[n] != "." {
+		n++
+	}
+	return n
 }
 
 // testsTouching is what a judge reading tests is shown besides: the test

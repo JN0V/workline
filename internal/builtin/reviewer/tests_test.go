@@ -77,6 +77,40 @@ func TestNamedAfter(t *testing.T) {
 	}
 }
 
+// Of the tests named after a file elsewhere, the nearest touch it only
+// (#1417): Gradle's mirror tree, and app_a's tests for app_a's models.
+func TestTestFilesNamedAfterNearest(t *testing.T) {
+	repo := t.TempDir()
+	for _, name := range []string{
+		"app/src/main/kotlin/x/Grid.kt", "app/src/test/kotlin/x/GridTest.kt", "lib/src/test/kotlin/y/GridTest.kt",
+		"app_a/models.py", "app_a/tests/test_models.py", "app_b/tests/test_models.py",
+	} {
+		p := filepath.Join(repo, name)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "start"}} {
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v: %s", args, err, out)
+		}
+	}
+	patterns := []string{"**/test/**", "**/tests/**"}
+	for file, want := range map[string]string{
+		"app/src/main/kotlin/x/Grid.kt": "app/src/test/kotlin/x/GridTest.kt",
+		"app_a/models.py":               "app_a/tests/test_models.py",
+	} {
+		if got := testFiles(repo, "HEAD", file, patterns); len(got) != 1 || got[0] != want {
+			t.Errorf("testFiles(%s) = %v, want [%s]", file, got, want)
+		}
+	}
+}
+
 // A lens's front matter is read empty, closed on the last line, or not at
 // all; left open, it is refused.
 func TestReadLensFrontMatter(t *testing.T) {
