@@ -1,0 +1,30 @@
+case: routing/blocked-comment-due-for-its-event
+about: >
+  On GitHub, a person's comment on an issue on the line starts the
+  issue's run, which first asks the line, with no agent, whether its
+  step is due (#1414). On a blocked issue, the comment is news: due, the
+  product owner reads it now, not at the next hourly reconcile. Nothing
+  written, no agent asked by the question.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}, revisit: 3650}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a828a06be19\",\"hops\":9,\"from\":\"ready\",\"why\":\"9 state steps\",\"since\":\"2026-10-30T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+          - {body: "It needs src/a.kt and src/b.kt.", author: ann, insider: true}
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:unblock-three", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #3 due, the product-owner: not started"
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked"], comments: 2}

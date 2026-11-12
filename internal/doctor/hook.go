@@ -29,15 +29,17 @@ func IssueHookOf(repo, spec string) forge.IssueHook {
 
 // IssueNotes says whether the issue webhook fires on note events too: the
 // reviewer reads a spec in refine's run (routed on issue), and its comment
-// wakes the product owner at once (#846). Else a comment wakes nothing,
-// and each would start a pipeline for nothing.
+// wakes the product owner at once (#846); the product owner routed on
+// issue reads a person's answer to a block or a draft at once (#1414).
+// Else a comment wakes nothing, and each would start a pipeline for
+// nothing.
 func IssueNotes(repo string) bool {
 	line, err := routing.Load(repo)
 	return err == nil && issueNotes(line)
 }
 
 func issueNotes(line *routing.Config) bool {
-	return line != nil && slices.Contains(line.Events["issue"], "reviewer")
+	return line != nil && (slices.Contains(line.Events["issue"], "reviewer") || slices.Contains(line.Events["issue"], "product-owner"))
 }
 
 func issueHookOf(repo, spec string, cfg *role.ProjectConfig, line *routing.Config) forge.IssueHook {
@@ -100,7 +102,7 @@ func issueHook(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Conf
 			Fix:     "Settings → Webhooks: its URL's /ref/<branch>/, the default branch (" + hookDoc + ")"})
 	case !s.NoteEvents && issueNotes(line):
 		r.add(Check{Area: "repository", Rule: "issue-hook-notes-off", Level: Warn,
-			Message: "the issue webhook does not fire on note events: the reviewer's comment on a spec wakes the product owner only at the hourly reconcile",
+			Message: "the issue webhook does not fire on note events: a comment on an issue — the reviewer's on a spec, a person's answer — wakes the product owner only at the hourly reconcile",
 			Fix:     setup})
 	case !s.Trigger:
 		r.add(Check{Area: "repository", Rule: "issue-hook", Level: Note,
