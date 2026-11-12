@@ -1,0 +1,55 @@
+case: product-owner/clean-review-waits-for-the-question
+about: >
+  A clean spec review moves an issue to ready with no agent (#128), but
+  not while the product owner's own question to a person waits (#1395):
+  its answer, or the assumption taken past the delay (ADR-0060), comes
+  first. #9's question has no answer and no assumption: it stays in
+  refine. #10's question got its assumption, #11's an answer the role
+  read: both move.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner, reviewer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Sales counted once"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts a sale once.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b512289d60a0\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should it be split in two?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=b512289d60a0 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 10
+        title: "Sales counted once, assumed"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts a sale once.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b512289d60a0\nheard: 0\nassumed: 1\nassumed-at: \"2026-10-09T00:00:00Z\"\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should it be split in two?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=b512289d60a0 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 11
+        title: "Sales counted once, answered"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts a sale once.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b512289d60a0\nheard: 1\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should it be split in two?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+          - {body: "One issue: it is one change.", author: ann, insider: true, created: "2026-10-02T08:00:00Z"}
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=b512289d60a0 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: ready-left-open, where: "#9", message: "not moved to ready on the reviewer's clean read: its question to a person waits for an answer, or for its assumption once the delay passed (acts.ask.wait)"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine]}
+      - {id: 10, labels: [workline:ready]}
+      - {id: 11, labels: [workline:ready]}

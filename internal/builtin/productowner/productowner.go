@@ -378,11 +378,18 @@ func Pre(runDir, repo string) int {
 			// are what is built, a review before its split no ready. Nor
 			// one holding a person's comment not read yet (#1331): the
 			// agent writes what it settles first.
+			// Nor one the role left open itself (#1395): its question
+			// unanswered, or moved back to refine on this body.
 			// The reviewer read its spec as it is and found no important
 			// finding open: the hold lifts, and the engine moves it to
 			// ready, with no agent (#128).
-			fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
-				"issue": is.ID, "why": fmt.Sprintf("the reviewer read its spec (round %d): no important finding open", r.Round), "own": true}})
+			if why := backlog.LeftOpen(st, notes, is, role); why != "" {
+				findings = append(findings, verdict.Finding{Rule: "ready-left-open", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
+					Message: "not moved to ready on the reviewer's clean read: " + why})
+			} else {
+				fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
+					"issue": is.ID, "why": fmt.Sprintf("the reviewer read its spec (round %d): no important finding open", r.Round), "own": true}})
+			}
 		}
 		switch {
 		case !found:
