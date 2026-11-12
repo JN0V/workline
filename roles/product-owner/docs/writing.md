@@ -64,7 +64,8 @@ first, the cause folded.
   ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)).
   - A file to create: on a line `New:`, its full path.
   - A path the repository lacks, not on a `New:` line: the Scope is
-    left out, said.
+    left out, said. A path its `.gitignore` matches, a file the build
+    writes, is kept as a value.
 - **Fold only what is long** — a log, a list of more than ten lines — in
   `<details>`.
 - **Never invent**: no real case known, ask the reporter for one.

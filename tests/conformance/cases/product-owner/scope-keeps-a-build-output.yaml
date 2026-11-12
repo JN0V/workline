@@ -1,0 +1,25 @@
+case: product-owner/scope-keeps-a-build-output
+about: >
+  A Scope may name, in its text, a path the build writes (#1411): one the
+  repository's ignore rules match, a value in it, never a file to change.
+  #9's Scope names .github/workflows/ci.yml and build/export.zip, which
+  .gitignore ignores: it is written. #12's names only src/export/xml.go,
+  which the commit lacks, ignored by nothing, and no line marks new: it is
+  left out, the path said.
+given:
+  repo: backlog
+  setup:
+    - "mkdir -p .github/workflows && printf 'on: push\\n' > .github/workflows/ci.yml && printf 'build/\\n' > .gitignore && git add . && GIT_AUTHOR_DATE=2026-01-02T00:00:00Z GIT_COMMITTER_DATE=2026-01-02T00:00:00Z git commit -q -m 'ci: build the export'"
+  forge:
+    issues:
+      - {id: 9, title: "Keep the build in CI", body: "## Need\n\nAnn needs each CI run of .github/workflows/ci.yml to keep the built export, to try it.\n\n## Validation\n\nAnn opens a run and downloads the export.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "XML export", body: "## Need\n\nAnn needs the rows of a day as XML, as src/export/csv.go writes CSV.\n\n## Validation\n\nAnn exports a known day as XML.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-scope-build-output}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Refined #9: Scope."}
+    - {rule: scope-without-files, where: "#12", message: "its Scope named src/export/xml.go, which the repository does not hold, so it was left out: name a path it holds, a glob matching one, or a new file on a line `New:`"}
+  forge:
+    issues:
+      - {id: 9, body-contains: "upload `build/export.zip` as an artifact", comment-contains: "sources: [.github/workflows/ci.yml"}
+      - {id: 12, body-lacks: "## Scope"}
