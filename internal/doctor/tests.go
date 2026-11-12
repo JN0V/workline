@@ -3,6 +3,7 @@ package doctor
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"slices"
 	"strings"
 
@@ -10,7 +11,32 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/testdef"
+	"github.com/JN0V/workline/internal/tester"
 )
+
+// testCommandRuns runs the test command set on HEAD, apart, a minute at
+// most: one that cannot run here, a tool or an SDK missing, is said with
+// its error lines, before a tester's agent spends tokens to find it out
+// (#1333). One still running at the end is taken to run.
+func testCommandRuns(r *Report, o Options, merged map[string]any) {
+	s, err := tester.SettingsFrom(merged)
+	if err != nil {
+		return // the tester's own load says it, where it runs
+	}
+	head, err := exec.Command("git", "-C", o.Repo, "rev-parse", "--verify", "--quiet", "HEAD^{commit}").Output()
+	if err != nil {
+		return // no commit yet: nothing to run it on
+	}
+	f := tester.Runs(o.Repo, strings.TrimSpace(string(head)), s, tester.RunsWithin)
+	if f == nil {
+		r.add(Check{Area: "repository", Rule: "test-command-runs", Where: "tester", Level: OK,
+			Message: "the test command runs on HEAD, a minute at most watched: `" + s.Command + "`"})
+		return
+	}
+	r.add(Check{Area: "repository", Rule: "test-command-fails", Where: "tester", Level: Warn,
+		Message: fmt.Sprintf("the test command `%s` does not run on HEAD: the tester stops before its agent, the developer's code stays an unproven Draft; %s", s.Command, f.Message),
+		Fix:     "run it in a fresh clone, mend what it lacks (a tool, an SDK, a variable a gitignored file held) or the test-command setting in .workline/config.yaml   # roles/tester/README.md#settings"})
+}
 
 // testsFix is how a project says which files are its tests.
 const testsFix = "set the tester's test-paths, and test-homes where a test's code lives, in .workline/config.yaml: roles: {tester: {settings: {test-paths: [\"spec/**\"], test-homes: [{tests: \"**/src/test/**\", code: \"**/src/main/**\"}]}}}   # roles/tester/README.md"
@@ -71,7 +97,9 @@ func testCommand(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Co
 	if err != nil {
 		return // the role's own load says it, where it runs
 	}
-	if c, _ := rl.MergedSettings(cfg)["test-command"].(string); strings.TrimSpace(c) != "" {
+	merged := rl.MergedSettings(cfg)
+	if c, _ := merged["test-command"].(string); strings.TrimSpace(c) != "" {
+		testCommandRuns(r, o, merged)
 		return
 	}
 	slices.Sort(routed)

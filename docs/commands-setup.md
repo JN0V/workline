@@ -1,5 +1,5 @@
 ---
-sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/doctor.go, internal/doctor/packs.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/doctor/workflows.go, internal/forge/gitlab_hook.go]
+sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/doctor.go, internal/doctor/packs.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/doctor/workflows.go, internal/doctor/tests.go, internal/forge/gitlab_hook.go]
 checked: de02c96b
 verified: agent:claude-code
 ---
@@ -87,7 +87,10 @@ changes nothing.
   knows, and a pack the marker files call for that is not listed.
 - The tester or the developer routed with no `test-command`: said, with
   the setting to add
-  ([#1284](https://github.com/JN0V/workline/issues/1284)).
+  ([#1284](https://github.com/JN0V/workline/issues/1284)); set, it is
+  run on HEAD in a checkout apart, a minute at most, and one that ends
+  with no report is a warning, its error lines quoted
+  ([#1333](https://github.com/JN0V/workline/issues/1333)).
 - For each language the repository holds: which tools read it (lint,
   types, security, dependencies), which it lacks, and the gate check to
   add; a warning, never an error ([languages](languages.md)).

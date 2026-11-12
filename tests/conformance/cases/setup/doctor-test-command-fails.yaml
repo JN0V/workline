@@ -1,0 +1,17 @@
+case: setup/doctor-test-command-fails
+about: >
+  The tester is routed and its test-command is set, but cannot run here:
+  it exits non-zero and writes no report. `workline doctor` runs it on
+  HEAD and says so, its error quoted, before a tester's agent spends
+  tokens to find it out (#1333).
+given:
+  repo: documented
+  config:
+    forge: local
+    routing: {events: {issue: [product-owner, tester, developer]}}
+    roles: {tester: {settings: {test-command: "echo 'SDK location not found' >&2; exit 1"}}}
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: test-command-fails, where: tester, message: "SDK location not found"}
