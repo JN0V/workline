@@ -648,6 +648,9 @@ func run(repo, rev string, files []string, from string, s Settings, where string
 	}
 	r, f := runIn(tree, s, where)
 	r.roots = rootsOf(tree)
+	if f == nil && len(files) == 0 {
+		keepIDs(repo, rev, s.Command, s.Report, r)
+	}
 	return r, f
 }
 

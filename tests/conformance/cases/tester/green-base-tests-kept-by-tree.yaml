@@ -1,0 +1,28 @@
+case: tester/green-base-tests-kept-by-tree
+about: >
+  The green proof runs the base once only to tell its tests from the new
+  ones, by their ids (#1338). A run of the same tree by the same command,
+  its command exited 0, found them already: the guard on the next push
+  reads them back, keyed by the tree's hash, and runs the head alone, its
+  three runs as before. Here the guard runs twice on the same pull
+  request: the base runs once, the head six times, seven runs, not eight.
+given:
+  repo: tested-draft
+  setup:
+    - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && git commit -qam 'feat: multiply'"
+  config:
+    roles: {tester: {settings: {test-command: "f=\"$(git rev-parse --git-common-dir)/../suite-runs.txt\"; echo $(( $(cat \"$f\" 2>/dev/null || echo 0) + 1 )) > \"$f\"; sh run-tests.sh {report}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        body: "Closes #3"
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"tests\":[\"tests.test_mul_by_zero\",\"tests.test_mul_two_by_three\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: tester, event: merge-request, target: {merge-request: 1}, then: again}
+expect:
+  status: pass
+  summary: "the tester's 2 tests green on the head, three runs out of three"
+  agent-calls: 0
+  no-findings: [{rule: test-flaky}, {rule: test-red-on-head}]
+  files:
+    suite-runs.txt: {contains: ["7"], lacks: ["8"]}

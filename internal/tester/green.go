@@ -14,6 +14,7 @@ package tester
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"slices"
 	"strings"
@@ -38,9 +39,22 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	if err != nil {
 		return *refuse("the green proof did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}), nil
 	}
-	baseRun, f := run(repo, mb, nil, "", s, "on the base "+short(mb))
-	if f != nil {
-		return *refuse("the green proof did not run", *f), nil
+	// The base's tests by their ids alone: those a run of the same tree
+	// by the same command found, when one is kept (runcache.go), else
+	// one run of it.
+	baseIDs, at, kept := readIDs(repo, mb, s.Command, s.Report)
+	if kept {
+		fmt.Fprintf(os.Stderr, "workline: tester: the base %s's %d tests as a run of the same tree found them at %s UTC, not run again\n",
+			short(mb), len(baseIDs), at.Format("2006-01-02 15:04:05"))
+	} else {
+		baseRun, f := run(repo, mb, nil, "", s, "on the base "+short(mb))
+		if f != nil {
+			return *refuse("the green proof did not run", *f), nil
+		}
+		baseIDs = map[string]bool{}
+		for id := range baseRun.results {
+			baseIDs[id] = true
+		}
 	}
 	// The head's runs share one fresh checkout: a second build there is
 	// the runner's cache, not a new compile (Go: 1 s, not 4.5 s, on
@@ -59,6 +73,9 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 		}
 		runs = append(runs, r)
 	}
+	// The head's tests, kept as its first run found them: once merged up
+	// to date, its tree is the next pull request's base.
+	keepIDs(repo, "HEAD", s.Command, s.Report, runs[0])
 	ids := map[string]bool{}
 	for _, r := range runs {
 		for id := range r.results {
@@ -86,7 +103,7 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	}
 	var added, old []string
 	for id := range ids {
-		switch _, ok := baseRun.results[id]; {
+		switch ok := baseIDs[id]; {
 		case frozen[id]:
 		case ok:
 			old = append(old, id)
