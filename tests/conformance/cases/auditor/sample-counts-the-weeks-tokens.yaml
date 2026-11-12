@@ -1,0 +1,29 @@
+case: auditor/sample-counts-the-weeks-tokens
+about: "The weekly sample counts the fresh tokens the line's runs spent in the week, by kind of work (ADR-0052, criterion 3; #610): a feature or a bug, or a merge request closing one, is product; a task, a docs or chore merge request, upkeep; a release apart; a run on no issue nor merge request is unknown, and said. A run dropped past the runs kept (#1360) is counted from the runs folder's tally; a run of another week, or that called no agent, is not."
+given:
+  repo: vouched
+  setup:
+    - "d=$(git rev-parse --git-common-dir)/workline/runs && mkdir -p $d && printf '{\"run\":\"20260105T080000.000000000-tester\",\"role\":\"tester\",\"target\":{\"kind\":\"issue\",\"id\":6},\"calls\":1,\"fresh\":5000}\\n' > $d/tally.jsonl"
+    - "d=$(git rev-parse --git-common-dir)/workline/runs/20260106T090000.000000000-product-owner && mkdir -p $d/out && printf 'role: product-owner\\ntarget: {kind: issue, id: 3}\\n' > $d/out/run.yaml && printf '{\"tokens-in\":10000,\"tokens-cached\":4000,\"tokens-out\":1000}\\n' > $d/out/calls.jsonl"
+    - "d=$(git rev-parse --git-common-dir)/workline/runs/20260106T100000.000000000-developer && mkdir -p $d/out && printf 'role: developer\\ntarget: {kind: merge-request, id: 1}\\n' > $d/out/run.yaml && printf '{\"tokens-in\":20000,\"tokens-cached\":5000,\"tokens-out\":3000}\\n{\"tokens-in\":10000,\"tokens-cached\":5000,\"tokens-out\":2000}\\n' > $d/out/calls.jsonl"
+    - "d=$(git rev-parse --git-common-dir)/workline/runs/20260107T090000.000000000-documentalist && mkdir -p $d/out && printf 'role: documentalist\\ntarget: {kind: merge-request, id: 2}\\n' > $d/out/run.yaml && printf '{\"tokens-in\":4000,\"tokens-cached\":1000,\"tokens-out\":500}\\n' > $d/out/calls.jsonl"
+    - "d=$(git rev-parse --git-common-dir)/workline/runs/20260108T090000.000000000-reviewer && mkdir -p $d/out && printf 'role: reviewer\\ntarget: {kind: merge-request, id: 5}\\n' > $d/out/run.yaml && printf '{\"tokens-in\":2000,\"tokens-out\":500}\\n' > $d/out/calls.jsonl"
+    - "d=$(git rev-parse --git-common-dir)/workline/runs/20260109T020000.000000000-documentalist && mkdir -p $d/out && printf '{\"tokens-in\":2000}\\n' > $d/out/calls.jsonl"
+    - "d=$(git rev-parse --git-common-dir)/workline/runs/20260109T030000.000000000-committer && mkdir -p $d/out"
+    - "d=$(git rev-parse --git-common-dir)/workline/runs/20260113T090000.000000000-developer && mkdir -p $d/out && printf 'role: developer\\ntarget: {kind: issue, id: 3}\\n' > $d/out/run.yaml && printf '{\"tokens-in\":90000}\\n' > $d/out/calls.jsonl"
+  forge:
+    issues:
+      - {id: 3, title: "Totals are wrong", body: "A bug.", labels: [bug]}
+      - {id: 4, title: "Subtract two numbers", body: "A feature.", labels: [enhancement]}
+      - {id: 6, title: "Rename the helpers", body: "A task.", labels: [task]}
+    merge-requests:
+      - {id: 1, title: "Subtract two numbers", branch: workline/developer/4, base: main, labels: []}
+      - {id: 2, title: "docs: bring the guide in line", branch: docs-guide, base: main, labels: []}
+      - {id: 5, title: "chore(main): release 1.2.0", branch: release-please--branches--main, base: main, labels: []}
+run: {sample: [--week, 2026-W02, --judge, none], then: apply}
+expect:
+  findings:
+    - {rule: sample-tokens, message: "tokens: 45k fresh tokens over 6 runs: upkeep 8.5k (18%), product 32k (71%), releases 2.5k (5%), unknown 2k (4%): documentalist, on no issue nor merge request (1 run, 2k)"}
+  forge:
+    issues:
+      - {id: 7, comment-contains: "#### Tokens, by kind of work\n\n45k fresh tokens over 6 runs: upkeep 8.5k (18%)"}

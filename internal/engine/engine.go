@@ -3349,7 +3349,8 @@ func git(repo string, stdin io.Reader, args ...string) (string, error) {
 	return strings.TrimSpace(out.String()), nil
 }
 
-// keepRuns is how many past runs are kept for inspection.
+// keepRuns is how many past runs are kept for inspection; what an older
+// one's agent calls spent stays in the folder's tally (TallyFile).
 const keepRuns = 50
 
 // newRunDir creates the run's folder inside the repository's git directory,
@@ -3363,10 +3364,20 @@ func newRunDir(repo, roleName string) (string, error) {
 			return "", err
 		}
 	}
-	if old, err := os.ReadDir(base); err == nil && len(old) > keepRuns {
-		for _, e := range old[:len(old)-keepRuns] { // names start with a timestamp, so the oldest come first
-			dropWorktree(repo, filepath.Join(base, e.Name())) // an interrupted run's tree may lie outside it
-			os.RemoveAll(filepath.Join(base, e.Name()))
+	if entries, err := os.ReadDir(base); err == nil {
+		var old []os.DirEntry
+		for _, e := range entries {
+			if e.IsDir() { // the tally is no run
+				old = append(old, e)
+			}
+		}
+		for i := 0; i < len(old)-keepRuns; i++ { // names start with a timestamp, so the oldest come first
+			past := filepath.Join(base, old[i].Name())
+			if keepTally(base, past) != nil {
+				continue // what it spent could not be kept: the folder stays, to be tried again
+			}
+			dropWorktree(repo, past) // an interrupted run's tree may lie outside it
+			_ = os.RemoveAll(past)
 		}
 	}
 	return dir, nil

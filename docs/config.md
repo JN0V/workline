@@ -179,6 +179,10 @@ Runs are kept in `.git/workline/runs/` (the last
 - the claims an accepted answer gave, judged and never applied, in
   `out/claims.yaml`.
 
+An older run's folder is dropped, what its agent calls spent kept first:
+one line a run in `tally.jsonl`, beside them, never pruned. The weekly
+sample sums a week's tokens from both ([its tokens](weekly-sample.md#what-it-writes)).
+
 
 ## Environment
 
