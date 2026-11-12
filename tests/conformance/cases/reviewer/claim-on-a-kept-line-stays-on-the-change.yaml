@@ -1,0 +1,19 @@
+case: reviewer/claim-on-a-kept-line-stays-on-the-change
+about: "A claim of the author's the change does not hold is the change's, wherever the claims lens quotes its cause (#1415): the commit says Average now skips negative values and adds a line above the sum, which it keeps; the finding quoting the sum is on the merge request, in its summary as the diff does not show that line, never an issue about code the default branch lacks. A defect the correctness lens finds on Parse, which the change does not touch, is an issue as before."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|^\\t\\ttotal += v$|\\t\\t// negative values are skipped\\n\\t\\ttotal += v|' calc/calc.go && git commit -qam 'feat: skip negative values' -m 'Average now skips negative values.'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: "claims,correctness"}, target: {merge-request: 5}, ai: "fake:review-claims-kept-line"}
+expect:
+  findings:
+    - {rule: claims, where: "calc/calc.go:10", message: "the author: \"Average now skips negative values.\""}
+  no-findings:
+    - {rule: correctness, where: "calc/calc.go:17"}
+  forge:
+    issues:
+      - {id: 1, title: "Parse drops the conversion error", labels: [needs-triage]}
+    merge-requests:
+      - {id: 5, comment-contains: "Negative values are still summed"}

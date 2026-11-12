@@ -1,0 +1,13 @@
+case: reviewer/claim-block-on-a-kept-line-stands
+about: "A claim's finding quoted on a line the change kept blocks the change (#1415); the review runs again with no new commit: the record keeps its side, the claim's, and the block stands, found again on that line, no agent asked again."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|^\\t\\ttotal += v$|\\t\\t// negative values are skipped\\n\\t\\ttotal += v|' calc/calc.go && git commit -qam 'feat: skip negative values' -m 'Average now skips negative values.'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: claims}, ai: "fake:review-claims-kept-line", then: again}
+expect:
+  status: block
+  agent-calls: 2
+  summary: "only the rules ran; 1 finding of a review before still blocks"
+  files: {.git/workline/reviewer-record: {contains: ["<!-- workline:blocks [{\"lens\":\"claims\"", "\"side\":\"claim\""]}}

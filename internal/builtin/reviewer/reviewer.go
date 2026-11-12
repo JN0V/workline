@@ -97,7 +97,7 @@ type Finding struct {
 	Where    string    `json:"where"`          // the cause's file and line
 	On       int       `json:"on,omitempty"`   // the change's: the line of its quote the change touched, where its comment goes on the forge (#277)
 	Related  bool      `json:"related"`        // the cause lies in the change: the author fixes it
-	Side     string    `json:"side,omitempty"` // the change's: where its cause was found, onHead or onRemoved (#570)
+	Side     string    `json:"side,omitempty"` // the change's: where its cause was found, onHead, onRemoved (#570) or onClaim (#1415)
 	Line     string    `json:"line,omitempty"` // outside the change: the line the cause starts at, as it reads, which keys its issue
 	Also     []Finding `json:"also,omitempty"` // other findings on the same line, grouped under this one, each judged by its own lens
 	Verified string    `json:"verified,omitempty"`
@@ -1560,6 +1560,9 @@ func askJudges(runDir, repo string, s Settings, st state, c *candidates, n *int)
 const (
 	onHead    = "head"
 	onRemoved = "removed"
+	// onClaim: at the head, the change's by a claim of its author's it
+	// does not hold, wherever its cause lies (#1415).
+	onClaim = "claim"
 )
 
 // found reads one finding a lens answered, and finds its quotes again: its
@@ -1567,7 +1570,8 @@ const (
 // removed; its symptom, when it gives one, in its file. Related: its cause
 // lies on a line the change added or removed, on a kept line beside a
 // removal, or on one using what a removed line of its function tested or
-// assigned, the side it lies on said. on, when set, looks on that side
+// assigned, or one a claim of the author's the change does not hold
+// quotes, the side it lies on said. on, when set, looks on that side
 // alone: a block found before is the change's only where it was found
 // (#570). why says why it is dropped.
 func found(repo string, st state, lens string, cites bool, v any, on string) (Finding, string) {
@@ -1636,7 +1640,7 @@ func found(repo string, st state, lens string, cites bool, v any, on string) (Fi
 	if ok {
 		places = locate(strings.Split(text, "\n"), f.Cause.Quote)
 	}
-	head, gone := on != onRemoved, on != onHead
+	head, gone := on != onRemoved, on != onHead && on != onClaim
 	var atHead []func(string, int) bool
 	if head {
 		atHead = []func(string, int) bool{st.Change.addedAt, st.Change.exposedAt}
@@ -1672,6 +1676,14 @@ func found(repo string, st state, lens string, cites bool, v any, on string) (Fi
 		if at := st.Change.reaches(repo, st.Head, f.Cause.Path, p); at > 0 {
 			f.Where, f.Related, f.On, f.Side = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true, at, onHead
 		}
+	}
+	// Then a claim of the author's the change does not hold (#1415): the
+	// change's wherever the lens quotes its cause — a kept line below the
+	// lines it added, a grid drawn above an `.alpha(…)` it did not touch —,
+	// never an issue about code the default branch lacks. On a line the
+	// diff does not show, it stays in the summary.
+	if f.Where == "" && head && (f.Claim != "" || on == onClaim) && len(places) > 0 {
+		f.Where, f.Related, f.Side = fmt.Sprintf("%s:%d", f.Cause.Path, places[0].From), true, onClaim
 	}
 	if f.Where == "" && len(places) > 0 {
 		f.Where = fmt.Sprintf("%s:%d", f.Cause.Path, places[0].From)
