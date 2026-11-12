@@ -159,6 +159,17 @@ jobs:
             exit 0
           fi
           exit "$status"
+      # What this job's agent calls spent, a line a run: role, target,
+      # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
+      # weekly sample's tokens (ADR-0019, open point 1); the run folders
+      # keep their day. The first release after v0.75.0; an engine before
+      # it keeps none, said.
+      - name: The runs' tally
+        if: "!cancelled()"
+        run: 'workline sample --tally workline-tally.jsonl || echo "workline: no tally kept"'
+      - uses: actions/upload-artifact@v4
+        if: "!cancelled()"
+        with: {name: "workline-tally-${{ github.job }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14, overwrite: true}
 
   apply:
     needs: judge
@@ -535,6 +546,17 @@ jobs:
             exit 0
           fi
           exit "${STATUS:-0}"
+      # What this job's agent calls spent, a line a run: role, target,
+      # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
+      # weekly sample's tokens (ADR-0019, open point 1); the run folders
+      # keep their day. The first release after v0.75.0; an engine before
+      # it keeps none, said.
+      - name: The runs' tally
+        if: "!cancelled()"
+        run: 'workline sample --tally workline-tally.jsonl || echo "workline: no tally kept"'
+      - uses: actions/upload-artifact@v4
+        if: "!cancelled()"
+        with: {name: "workline-tally-${{ github.job }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14, overwrite: true}
 
   review-apply:
     needs: review

@@ -103,6 +103,32 @@ variables:
 .workline:summary: &summary         # the summary, at the end of the log and linked from the job's page
   - '[ ! -s workline-summary.md ] || cat workline-summary.md'
   - printf '{"workline":[{"external_link":{"label":"workline summary","url":"%s/artifacts/file/workline-summary.html"}}]}\n' "$CI_JOB_URL" > workline-annotations.json
+# The tally of what the judge's agent calls spent, a line a run: role,
+# target, calls, tokens, seconds; no prompt, no diff. Written from its runs
+# folder by the job after it, which keeps it 2 weeks for the weekly
+# sample's tokens (ADR-0019, open point 1); the run folders keep their
+# day. The first release after v0.75.0; an engine before it keeps none,
+# said.
+.workline:tally: &tally
+  - 'workline sample --tally workline-tally.jsonl || echo "workline: no tally kept"'
+# The week's tokens (ADR-0052, criterion 3): the tallies those jobs
+# kept, read with the bot's token from this project's jobs of the last 15
+# days, as the sample's runs folder's tally. A fork's merge request runs
+# in the fork: none of its jobs is read here.
+.workline:tallies: &tallies
+  - |
+    api="$CI_API_V4_URL/projects/$CI_PROJECT_ID"; h="PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN"
+    since=$(date -u -d '15 days ago' +%Y-%m-%dT%H:%M:%SZ); mkdir -p "$WORKLINE_RUNS_DIR"; n=0; page=1
+    while [ "$page" -le 50 ]; do
+      jobs=$(curl -fsS --header "$h" "$api/jobs?per_page=100&page=$page") || { echo "workline: the jobs could not be listed: the week's tokens leave the rest out"; break; }
+      [ "$(printf '%s' "$jobs" | jq length)" -gt 0 ] || break
+      for id in $(printf '%s' "$jobs" | jq -r --arg since "$since" '.[] | select(.created_at >= $since and (.name | test("^workline:(.+:)?apply$|^workline:sample:write$"))) | .id'); do
+        curl -fsSL --header "$h" "$api/jobs/$id/artifacts/workline-tally.jsonl" >> "$WORKLINE_RUNS_DIR/tally.jsonl" 2>/dev/null && n=$((n + 1))
+      done
+      [ "$(printf '%s' "$jobs" | jq --arg since "$since" '[.[] | select(.created_at < $since)] | length')" = 0 ] || break
+      page=$((page + 1))
+    done
+    echo "workline: $n tallies gathered"
 # kept <file>: a file of .workline-kept/ from main's last successful
 # workline:main, never a cache a branch could write. Read with the bot's
 # token, in workline:base; else the job's, which GitLab takes there on
@@ -305,13 +331,13 @@ workline:apply:
     - *bot
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always
     expose_as: workline applied
-    paths: [workline-summary.html, workline-summary.md]
+    paths: [workline-summary.html, workline-summary.md, workline-tally.jsonl]
     reports: {annotations: workline-annotations.json}
-    expire_in: 1 week
+    expire_in: 2 weeks             # the tally, for the weekly sample
 
 # What only warns, in a child pipeline (ADR-0051): GitLab merges a merge
 # request set to merge once its pipeline succeeds, and waits for
@@ -406,12 +432,12 @@ workline:warn:apply:
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
   allow_failure: true
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always
-    paths: [workline-summary.html, workline-summary.md]
+    paths: [workline-summary.html, workline-summary.md, workline-tally.jsonl]
     reports: {annotations: workline-annotations.json}
-    expire_in: 1 week
+    expire_in: 2 weeks             # the tally, for the weekly sample
 
 # The merge policy, `merge: {autonomy: cautious}` (ADR-0042; the first
 # release after v0.25.0), after the judge: the head's verdict kept, the
@@ -512,12 +538,12 @@ workline:garden:apply:
     # release after v0.73.0.
     - workline size --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
     - exit $status
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always
-    paths: [workline-summary.html, workline-summary.md]
+    paths: [workline-summary.html, workline-summary.md, workline-tally.jsonl]
     reports: {annotations: workline-annotations.json}
-    expire_in: 1 week
+    expire_in: 2 weeks             # the tally, for the weekly sample
 
 # The tester answers an objection (ADR-0055): a comment opened by
 # `workline:objection` on a line of its Draft (branch workline/tester/…).
@@ -604,12 +630,12 @@ workline:objection:apply:
     - status=0
     - workline apply "$run" --from-merge-request "$MR_IID" --head "$head" --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
     - exit $status
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always
-    paths: [workline-summary.html, workline-summary.md]
+    paths: [workline-summary.html, workline-summary.md, workline-tally.jsonl]
     reports: {annotations: workline-annotations.json}
-    expire_in: 1 week
+    expire_in: 2 weeks             # the tally, for the weekly sample
 
 # Your project's setup steps, run by the developer's judges before the
 # agent and the proof: redefine `.workline:setup` in your .gitlab-ci.yml,
@@ -751,12 +777,12 @@ workline:develop:apply:
     - status=0
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html || status=$?
     - exit $status
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always
-    paths: [workline-summary.html, workline-summary.md]
+    paths: [workline-summary.html, workline-summary.md, workline-tally.jsonl]
     reports: {annotations: workline-annotations.json}
-    expire_in: 1 week
+    expire_in: 2 weeks             # the tally, for the weekly sample
 
 # A review round on the developer's own merge request (ADR-0054, step 6):
 # the reviewer's verdict or a person's comment. GitLab starts no pipeline
@@ -829,12 +855,12 @@ workline:review:apply:
     - status=0
     - workline apply "$run" --from-merge-request "$MR_IID" --head "$head" --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
     - exit $status
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always
-    paths: [workline-summary.html, workline-summary.md]
+    paths: [workline-summary.html, workline-summary.md, workline-tally.jsonl]
     reports: {annotations: workline-annotations.json}
-    expire_in: 1 week
+    expire_in: 2 weeks             # the tally, for the weekly sample
 
 # A release's dry run, on each schedule but the sample's (ADR-0050): what
 # would hold the release if it were cut now from the branch's tip. Every
@@ -957,12 +983,12 @@ workline:curator:apply:
     - status=0
     - workline apply "$run" --summary workline-summary.md --summary workline-summary.html || status=$?
     - exit $status
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always
-    paths: [workline-summary.html, workline-summary.md]
+    paths: [workline-summary.html, workline-summary.md, workline-tally.jsonl]
     reports: {annotations: workline-annotations.json}
-    expire_in: 1 week
+    expire_in: 2 weeks             # the tally, for the weekly sample
 
 # At a release's tag (ADR-0050; the first release after v0.37.0), whoever
 # pushed it: the release's line, its gates, no agent, no token, red when it
@@ -1123,13 +1149,14 @@ workline:sample:read:               # the agent reads; nothing is written
   script:
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN   # the acts recorded on issues and merge requests, read
     - *claude
+    - *tallies
     - status=0
     - workline sample ${WORKLINE_SAMPLE_WEEK:+--week "$WORKLINE_SAMPLE_WEEK"} --forge gitlab --out sample.json --summary workline-summary.md --summary workline-summary.html || status=$?
     - '[ "$status" != 1 ]'           # 2 and 3: for a person, on the issue
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always
-    paths: [workline-summary.html, workline-summary.md, sample.json]
+    paths: [workline-summary.html, workline-summary.md, sample.json, workline-tally.jsonl]
     reports: {annotations: workline-annotations.json}
     expire_in: 1 day
 
@@ -1145,6 +1172,6 @@ workline:sample:write:              # writes to the forge; no agent installed
   after_script: *summary
   artifacts:
     when: always
-    paths: [workline-summary.html, workline-summary.md]
+    paths: [workline-summary.html, workline-summary.md, workline-tally.jsonl]
     reports: {annotations: workline-annotations.json}
-    expire_in: 1 week
+    expire_in: 2 weeks             # the tally, for the weekly sample
