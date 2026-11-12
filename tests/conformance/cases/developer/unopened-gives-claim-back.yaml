@@ -4,7 +4,8 @@ about: >
   tester's Draft, conflicts with what main changed since in the same
   lines. The claim is given back at once, the reason in the claim's own
   comment, its record counting the failure: the next run takes the
-  issue again, once. The working tree is left as it was.
+  issue again, once. The working tree is left as it was: its code was
+  written apart, never in the checkout (#1372).
 given:
   repo: tested-draft
   setup:
@@ -31,7 +32,7 @@ expect:
   no-findings: [{rule: engine-error}]
   not-pushed: [workline/developer/3]
   files:
-    lib.sh: {contains: "mul()"}
+    lib.sh: {contains: "sub()", lacks: "mul()"}
   forge:
     issues:
       - id: 3
