@@ -102,6 +102,11 @@ workline issues show 1   # what it wrote, and what it asks of you
 Run the same command after each step until the issue is
 `workline:developing` with its merge request open.
 
+- **Your checkout stays as it is**: the tester's tests and the
+  developer's code are written and committed on their branch in a
+  worktree apart; your branch, and your changes not committed, are
+  never touched ([#1372](https://github.com/JN0V/workline/issues/1372)).
+
 ### Answer the product owner
 
 At `normal`, it proposes its drafts and waits for your yes:
