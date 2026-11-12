@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 )
 
@@ -104,5 +105,21 @@ func TestPlainNoteIsOnItsOwnIssue(t *testing.T) {
 		if body, _ := got[0]["body"].(string); !strings.Contains(body, "the bounds do not hold its scope") {
 			t.Errorf("%s: body %q lost the note", name, body)
 		}
+	}
+}
+
+// Note in the answer: Given a merge round's task, When its agent reads how
+// to say what it kept from each side, Then it is told a note is an item of
+// its answer, never a file it writes (#1371).
+func TestConflictNoteInTheAnswer(t *testing.T) {
+	r := round{MR: 4, Branch: "workline/developer/3", Conflicts: []string{"lib.sh"}}
+	task := conflictTask(r, "main", forge.Issue{ID: 3, Title: "Cycles"}, Bounds{Issue: 3}, Settings{}, "sh run-tests.sh {report}", nil)
+	for _, want := range []string{"In your answer, a `note` a file in conflict", "never a file you write", "Write nothing outside your worktree"} {
+		if !strings.Contains(task, want) {
+			t.Errorf("the task lacks %q:\n%s", want, task)
+		}
+	}
+	if strings.Contains(task, "Answer a `note` a file") {
+		t.Errorf("the task still reads as a file to write:\n%s", task)
 	}
 }

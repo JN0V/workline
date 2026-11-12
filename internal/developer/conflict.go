@@ -271,7 +271,8 @@ func conflictTask(r round, baseName string, is forge.Issue, b Bounds, s Settings
 		"- Never a frozen test: a conflict in one is the tester's; object to it, as below, and leave its markers.\n" +
 		"- No commit, no git command that moves the branch: the engine makes the merge commit, two parents, your branch and " + baseName + ".\n" +
 		"- Run the tests: the engine proves the merge again, the whole test command, and pushes nothing red.\n" +
-		"- Answer a `note` a file, one line: how you settled it.\n\n" +
+		"- In your answer, a `note` a file in conflict, one line: how you settled it. A note is an item of your answer, never a file you write: "+
+		"the engine puts it in the round's comment on the pull request. Write nothing outside your worktree.\n\n" +
 		"One round settles it, or the issue goes to a person.\n\n")
 	t.WriteString(question(is, b, test, testErr, s))
 	return t.String()

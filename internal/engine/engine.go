@@ -1426,6 +1426,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	for _, i := range st.Applied {
 		done[i] = true
 	}
+	commenting := false // the patches, written apart, go in a comment
 	// applyOne applies intention i; stopped when the forge is out of reach.
 	applyOne := func(i int) (stopped bool, err error) {
 		in := intents[i]
@@ -1443,7 +1444,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
 				return true, nil
 			}
-			if ap.tree != "" && in.Kind == "patch" && errors.Is(err, errNotApplied) {
+			if commenting && in.Kind == "patch" && errors.Is(err, errNotApplied) {
 				// Made on a checkout with changes not committed, it does
 				// not apply on its head: said, the rest still applied.
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "patch-not-applied", Level: "warn",
@@ -1492,7 +1493,38 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			return fmt.Errorf("a worktree for the patches to comment: %w", err)
 		}
 		defer tester.RemoveWorktree(st.Repo, tree)
-		ap.tree, commentRepo = tree, tree
+		ap.tree, commentRepo, commenting = tree, tree, true
+		for i, in := range intents {
+			if in.Kind == "patch" {
+				delete(done, i)
+			}
+		}
+	}
+	// So too the files a role proposes in the merge request it opens:
+	// written, then committed on its branch, in a worktree of HEAD apart;
+	// the checkout never leaves its branch, nor holds them (#1372). A
+	// resumed run whose commits are its branch's tip still only pushes
+	// them: nothing written again on a HEAD that may have moved since.
+	pushOnly := false
+	if st.Committed != "" {
+		tip, _ := git(st.Repo, nil, "rev-parse", "--verify", "-q", "refs/heads/"+branchPrefix(st.Role)+slugify(mergeRequestKey(st, runDir)))
+		pushOnly = tip == st.Committed
+	}
+	if st.OpenMergeRequest && st.MergeRequest == 0 && !pushOnly && slices.ContainsFunc(intents, func(in intent.Intention) bool { return in.Kind == "patch" }) {
+		tree, err := os.MkdirTemp("", "workline-propose-")
+		if err == nil {
+			_ = os.Remove(tree) // git makes it
+			// HEAD as it is, never a commit its agent put in its place
+			// in the git store its worktree shares (ADR-0056).
+			if _, err = git(st.Repo, nil, "--no-replace-objects", "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", "--quiet", tree, "HEAD"); err != nil {
+				tester.RemoveWorktree(st.Repo, tree)
+			}
+		}
+		if err != nil {
+			return fmt.Errorf("a worktree for the files to propose: %w", err)
+		}
+		defer tester.RemoveWorktree(st.Repo, tree)
+		ap.tree = tree
 		for i, in := range intents {
 			if in.Kind == "patch" {
 				delete(done, i)
@@ -1570,7 +1602,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	}
 	res.Handoffs = ap.handoffs
 	if st.OpenMergeRequest && len(st.Written) > 0 && st.MergeRequest == 0 {
-		id, tip, err := openMergeRequest(f, st, runDir)
+		id, tip, err := openMergeRequest(f, st, runDir, ap.tree)
 		if tip != "" && tip == st.Committed {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "already-committed", Level: "info", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
 				Message: "nothing new to commit: the run before committed this code here, then stopped; pushed as it is"})
@@ -1590,9 +1622,10 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		}
 		switch {
 		case errors.Is(err, ErrLeftToAPerson):
-			// Theirs now: this run's change stays in the working tree, said.
+			// Theirs now: this run's change, written apart, stays in its
+			// run's answer, said.
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "not-proposed", Level: "warn", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
-				Message: strings.TrimPrefix(err.Error(), ErrLeftToAPerson.Error()+": ") + ": this run's change is not pushed over it; the branch and its merge request are left to them"})
+				Message: strings.TrimPrefix(err.Error(), ErrLeftToAPerson.Error()+": ") + ": this run's change is not pushed over it, kept in " + filepath.Join(runDir, "out", "intentions.yaml") + "; the branch and its merge request are left to them"})
 		case err != nil:
 			// What the role asked done when it does not open (#856): the
 			// developer's claim given back, the reason on its issue.
@@ -2014,13 +2047,14 @@ func DefaultTitle(roleName string) string {
 
 // openMergeRequest commits what the run's patches wrote on the role's branch
 // for this task, force-pushes it, opens its merge request or updates the one
-// open, and puts the working tree back on the branch it was on. The role
-// names the task's key and the title in out/merge-request.yaml.
+// open. It is built in tree, the worktree apart the patches were written
+// in, the checkout never moved (#1372). The role names the task's key and
+// the title in out/merge-request.yaml.
 //
 // A run whose push failed has its commits on the branch still: the tip
 // is returned, kept (runState.Committed), and its resume pushes them as
 // they are, nothing committed again (#739).
-func openMergeRequest(f forge.Forge, st runState, runDir string) (int, string, error) {
+func openMergeRequest(f forge.Forge, st runState, runDir, tree string) (int, string, error) {
 	var mr struct {
 		Key, Title, Body string
 		Draft            bool
@@ -2039,7 +2073,7 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, string, e
 	if mr.Title == "" || len([]rune(mr.Title)) > limit {
 		mr.Title = DefaultTitle(st.Role)
 	}
-	return proposeBranch(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, mr.Draft, st.trailers(), st.Written, mr.Proposal, st.Committed)
+	return proposeBranch(f, st.Repo, tree, st.Role, mr.Key, mr.Title, mr.Body, mr.Draft, st.trailers(), st.Written, mr.Proposal, st.Committed)
 }
 
 // Proposal is how a role's branch is built, beyond the files written
@@ -2124,17 +2158,28 @@ func ProposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 // ProposeBranchFrom is ProposeBranch, the branch built as p says: from
 // p.From, the files written in p's commits.
 func ProposeBranchFrom(f forge.Forge, repo, roleName, key, title, body string, draft bool, trailers string, written []string, p Proposal) (int, error) {
-	id, _, err := proposeBranch(f, repo, roleName, key, title, body, draft, trailers, written, p, "")
+	id, _, err := proposeBranch(f, repo, "", roleName, key, title, body, draft, trailers, written, p, "")
 	return id, err
 }
 
 // proposeBranch is ProposeBranchFrom, also returning the branch's tip once
 // committed. committed, when the branch's tip still, is a failed push's
-// commits: pushed as they are, nothing committed again (#739).
-func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft bool, trailers string, written []string, p Proposal, committed string) (int, string, error) {
+// commits: pushed as they are, nothing committed again (#739). tree, when
+// not "", is a worktree of repo's HEAD, detached, holding the files
+// written: the branch is built there, repo's checkout never moved (#1372).
+func proposeBranch(f forge.Forge, repo, tree, roleName, key, title, body string, draft bool, trailers string, written []string, p Proposal, committed string) (int, string, error) {
 	base, err := git(repo, nil, "symbolic-ref", "--short", "HEAD")
 	if err != nil {
 		return 0, "", errors.New("a merge request is opened from a branch; this run is on a detached HEAD")
+	}
+	// at: where the branch is built; home: the checkout that puts it back.
+	at, home := repo, []string{base}
+	if tree != "" {
+		head, err := git(tree, nil, "rev-parse", "HEAD")
+		if err != nil {
+			return 0, "", err
+		}
+		at, home = tree, []string{"--detach", head}
 	}
 	branch := branchPrefix(roleName) + slugify(key)
 	baseTip, was, err := tips(repo, base, branch, forge.KeepsBranches(f))
@@ -2178,7 +2223,7 @@ func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 	// them back should their merge onto p.From conflict.
 	var saved string
 	if p.From != "" && len(steps) > 0 && steps[0][0] == "checkout" {
-		if saved, err = gitRaw(repo, append([]string{"diff", "--binary", "HEAD", "--"}, written...)...); err != nil {
+		if saved, err = gitRaw(at, append([]string{"diff", "--binary", "HEAD", "--"}, written...)...); err != nil {
 			return 0, "", err
 		}
 	}
@@ -2187,15 +2232,19 @@ func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 			tip, _ = git(repo, nil, "rev-parse", "refs/heads/"+branch)
 		}
 		if i == 0 && saved != "" {
-			if err := mergeOnto(repo, base, s, saved, p.From); err != nil {
+			if err := mergeOnto(at, home, s, saved, p.From); err != nil {
 				return 0, "", err
 			}
 			continue
 		}
-		if _, err := git(repo, nil, s...); err != nil {
+		dir := at
+		if s[0] == "push" {
+			dir = repo // a remote's relative path reads from the clone, never the worktree
+		}
+		if _, err := git(dir, nil, s...); err != nil {
 			// Back where it was: the patches in the working tree, unstaged.
-			git(repo, nil, append([]string{"reset", "-q", "--"}, written...)...)
-			git(repo, nil, "checkout", "-q", base)
+			_, _ = git(at, nil, append([]string{"reset", "-q", "--"}, written...)...)
+			_, _ = git(at, nil, append([]string{"checkout", "-q"}, home...)...)
 			if s[0] == "push" {
 				// Committed, kept on the branch: a resume pushes it.
 				return 0, tip, fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
@@ -2203,18 +2252,20 @@ func proposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft
 			return 0, "", err
 		}
 	}
-	if _, err := git(repo, nil, "checkout", "-q", base); err != nil {
-		return 0, tip, err
+	if len(steps) > 0 && steps[0][0] == "checkout" { // else never moved
+		if _, err := git(at, nil, append([]string{"checkout", "-q"}, home...)...); err != nil {
+			return 0, tip, err
+		}
 	}
 	id, err := f.OpenMergeRequest(branch, base, title, body, draft)
 	return id, tip, err
 }
 
 // mergeOnto runs start, the checkout that carries the files written onto
-// from, merged. A conflict puts the working tree back on base, the files
-// written as they were (saved, their diff from base's tip), and names the
-// files it conflicts on.
-func mergeOnto(repo, base string, start []string, saved, from string) error {
+// from, merged. A conflict puts the working tree back by the checkout of
+// home, the files written as they were (saved, their diff from base's
+// tip), and names the files it conflicts on.
+func mergeOnto(repo string, home, start []string, saved, from string) error {
 	if _, err := git(repo, nil, start...); err != nil {
 		return err // refused: nothing moved
 	}
@@ -2222,7 +2273,7 @@ func mergeOnto(repo, base string, start []string, saved, from string) error {
 	if err != nil || unmerged == "" {
 		return err
 	}
-	back := [][]string{{"reset", "-q"}, {"checkout", "-q", "-f", base}}
+	back := [][]string{{"reset", "-q"}, append([]string{"checkout", "-q", "-f"}, home...)}
 	for _, s := range back {
 		if _, err := git(repo, nil, s...); err != nil {
 			return fmt.Errorf("the code conflicts with %s on %s, and the working tree is not put back: %w", short(from), strings.ReplaceAll(unmerged, "\n", ", "), err)
