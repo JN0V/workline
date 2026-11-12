@@ -114,12 +114,15 @@ variables:
 # files), from the last successful pipeline of <ref> that ran it: the
 # default branch's, or the merge request's own. Never a cache a branch
 # could write: another branch's ids would tell the tester's guard which
-# tests are new. Read with the bot's token, as kept is.
+# tests are new. Read with the bot's token, as kept is. Searching past the
+# last successful pipeline needs GitLab 18.7 or later; before, a ref whose
+# last pipeline did not run <job> gives none, and the base runs.
 .workline:ids: &ids
   - 'ids() { h="JOB-TOKEN: $CI_JOB_TOKEN"; [ -z "${WORKLINE_GITLAB_TOKEN:-}" ] || h="PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN"; u="$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$1/raw/.workline-test-ids"; q="job=$2&search_recent_successful_pipelines=true"; mkdir -p .workline-test-ids; curl -fsSL --header "$h" "$u/index?$q" 2>/dev/null | grep -Ex "[0-9a-f]{64}[.]json" | head -n 64 | while read -r f; do curl -fsSL --header "$h" -o ".workline-test-ids/$f" "$u/$f?$q" 2>/dev/null || rm -f ".workline-test-ids/$f"; done || true; }'
-# The ids read, where the engine reads them: the clone's .git/workline/test-ids.
+# The ids read, where the engine reads them: the clone's .git/workline/test-ids,
+# emptied first: a runner that keeps .git may hold another job's.
 .workline:ids-read: &ids-read
-  - 'if ls .workline-test-ids/*.json >/dev/null 2>&1; then mkdir -p .git/workline/test-ids && cp .workline-test-ids/*.json .git/workline/test-ids/; fi; rm -rf .workline-test-ids'
+  - 'rm -rf .git/workline/test-ids; if ls .workline-test-ids/*.json >/dev/null 2>&1; then mkdir -p .git/workline/test-ids && cp .workline-test-ids/*.json .git/workline/test-ids/; fi; rm -rf .workline-test-ids'
 # The ids this job's runs found, kept as its artifact .workline-test-ids/.
 .workline:ids-keep: &ids-keep
   - 'rm -rf .workline-test-ids; if ls .git/workline/test-ids/*.json >/dev/null 2>&1; then mkdir -p .workline-test-ids && cp .git/workline/test-ids/*.json .workline-test-ids/ && (cd .workline-test-ids && ls *.json > index); fi'
@@ -755,6 +758,7 @@ workline:develop:judge:
     # The tests' ids the tester's red proof finds on the base (#1407),
     # carried from the job before: a merge request's guard reads them.
     - *ids
+    - rm -rf .workline-test-ids
     - ids "$CI_DEFAULT_BRANCH" workline:develop:judge
     - *ids-read
     - status=0
@@ -764,7 +768,7 @@ workline:develop:judge:
     # guards. Otherwise the job before's, read again, carried on.
     - *ids-keep
     - |
-      if ! jq -e 'any(.steps[]?; .name == "tester") and all(.steps[]?; .name != "developer")' line.json >/dev/null 2>&1; then
+      if ! jq -e 'any(.steps[]?; .name == "tester") and all(.steps[]?; .name | startswith("developer") | not)' line.json >/dev/null 2>&1; then
         rm -rf .workline-test-ids; ids "$CI_DEFAULT_BRANCH" workline:develop:judge
         ! ls .workline-test-ids/*.json >/dev/null 2>&1 || (cd .workline-test-ids && ls *.json > index)
       fi

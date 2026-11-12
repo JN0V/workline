@@ -74,14 +74,64 @@ func TestGitHubTestIDsCarriedByTheCache(t *testing.T) {
 		}
 		return step{}
 	}
+	// found runs a step deciding whether the ids are kept, in a folder
+	// holding line (line.json) and, when ids, one kept file; read: the sum
+	// the restore found. Whether it says new=true.
+	found := func(run, line, read string, ids bool) bool {
+		dir := t.TempDir()
+		if line != "" {
+			if err := os.WriteFile(filepath.Join(dir, "line.json"), []byte(line), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if ids {
+			if err := os.MkdirAll(filepath.Join(dir, testIDsPath), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, testIDsPath, strings.Repeat("a", 64)+".json"), []byte("{}"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		cmd := exec.Command("bash", "-e", "-c", run)
+		cmd.Dir = dir
+		cmd.Env = append(os.Environ(), "GITHUB_OUTPUT="+filepath.Join(dir, "out"), "READ="+read)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("%v\n%s", err, out)
+		}
+		out, _ := os.ReadFile(filepath.Join(dir, "out"))
+		return strings.Contains(string(out), "new=true")
+	}
+	// cleared says whether a step empties the folder before the restore:
+	// a runner that keeps .git may hold another job's ids.
+	cleared := func(j job, ctx map[string]any) bool {
+		for _, s := range j.Steps {
+			if s.If != "" && strings.Contains(s.If, "hashFiles") || s.If != "" && !truthy(eval(t, s.If, ctx)) {
+				continue
+			}
+			if strings.HasPrefix(s.Uses, "actions/cache/restore@") && fmt.Sprint(s.With["path"]) == testIDsPath {
+				return false
+			}
+			if strings.TrimSpace(s.Run) == "rm -rf "+testIDsPath {
+				return true
+			}
+		}
+		return false
+	}
 	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
 		// A pull request reads them by a prefix, its own newest else the
 		// default branch's, and keeps what is new under a key of its run.
 		judge := read(dir + "workline.yml").Jobs["judge"]
-		pr := map[string]any{"steps.found.outputs.new": "true", "github.run_id": "11", "github.run_attempt": "1"}
+		pr := map[string]any{"github.run_id": "11", "github.run_attempt": "1"}
 		for k, v := range pullRequestPush {
 			pr[k] = v
 		}
+		if _, saved := cached(judge, pr); len(saved) != 0 {
+			t.Errorf("%sworkline.yml: the test ids kept with nothing new found", dir)
+		}
+		if !cleared(judge, pr) {
+			t.Errorf("%sworkline.yml: the test ids folder not emptied before the restore", dir)
+		}
+		pr["steps.found.outputs.new"] = "true"
 		restored, saved := cached(judge, pr)
 		if len(restored) != 1 || len(saved) != 1 {
 			t.Fatalf("%sworkline.yml: a pull request's judge restores %d and saves %d test-id caches, want one each", dir, len(restored), len(saved))
@@ -92,8 +142,10 @@ func TestGitHubTestIDsCarriedByTheCache(t *testing.T) {
 		if k := expand(t, fmt.Sprint(saved[0].With["key"]), pr); k != "workline-test-ids-11-1" || expand(t, fmt.Sprint(restored[0].With["key"]), pr) != k {
 			t.Errorf("%sworkline.yml: the test ids kept as %q, want the run's own key", dir, k)
 		}
-		if !strings.Contains(ofStep(judge, "found").Run, `= "$READ"`) {
-			t.Errorf("%sworkline.yml: the test ids kept even when none is new", dir)
+		if run := ofStep(judge, "found").Run; !found(run, "", "", true) || found(run, "", "", false) {
+			t.Errorf("%sworkline.yml: new ids not told, or none told new", dir)
+		} else if sum := "$(cat " + testIDsPath + "/*.json | sha256sum | cut -c1-64)"; found(`READ="`+sum+`"; `+run, "", "", true) {
+			t.Errorf("%sworkline.yml: the ids restored, unchanged, kept again", dir)
 		}
 		// A queue's group keeps none: its own scope, read by nothing.
 		group := map[string]any{}
@@ -108,18 +160,34 @@ func TestGitHubTestIDsCarriedByTheCache(t *testing.T) {
 		// only when the tester ran and the developer did not; a person's
 		// label's run may not write the cache (#853).
 		dev := read(dir + "workline-develop.yml").Jobs["judge"]
-		dispatch := map[string]any{"github.event_name": "workflow_dispatch", "steps.due.outputs.due": "true", "steps.found.outputs.new": "true",
+		dispatch := map[string]any{"github.event_name": "workflow_dispatch", "steps.due.outputs.due": "true",
 			"github.run_id": "12", "github.run_attempt": "1"}
+		if _, saved := cached(dev, dispatch); len(saved) != 0 {
+			t.Errorf("%sworkline-develop.yml: the test ids kept with nothing new found", dir)
+		}
+		if !cleared(dev, dispatch) {
+			t.Errorf("%sworkline-develop.yml: the test ids folder not emptied before the restore", dir)
+		}
+		dispatch["steps.found.outputs.new"] = "true"
 		restored, saved = cached(dev, dispatch)
 		if len(restored) != 1 || len(saved) != 1 || fmt.Sprint(restored[0].With["restore-keys"]) != "workline-test-ids-" {
 			t.Errorf("%sworkline-develop.yml: the issue's run restores %d and saves %d test-id caches, want one each, read by the prefix", dir, len(restored), len(saved))
 		}
-		found := ofStep(dev, "found")
-		if !strings.Contains(found.Run, `.name == "tester"`) || !strings.Contains(found.Run, `.name != "developer"`) {
-			t.Errorf("%sworkline-develop.yml: the test ids kept whichever role ran:\n%s", dir, found.Run)
+		keep := ofStep(dev, "found")
+		for line, want := range map[string]bool{
+			`{"steps":[{"name":"tester"}]}`:                                true,
+			`{"steps":[{"name":"developer"}]}`:                             false,
+			`{"steps":[{"name":"tester"},{"name":"developer"}]}`:           false,
+			`{"steps":[{"name":"tester"},{"name":"developer (handoff)"}]}`: false,
+			`{"steps":[{"name":"product-owner"}]}`:                         false,
+			`not json`:                                                     false,
+		} {
+			if got := found(keep.Run, line, "", true); got != want {
+				t.Errorf("%sworkline-develop.yml: after %s, the test ids kept: %v, want %v", dir, line, got, want)
+			}
 		}
 		label := map[string]any{"github.event_name": "issues", "steps.due.outputs.due": "true", "steps.line.outcome": "success"}
-		if truthy(eval(t, found.If, label)) {
+		if truthy(eval(t, keep.If, label)) {
 			t.Errorf("%sworkline-develop.yml: a person's label's run tries to keep the test ids, which it may not (#853)", dir)
 		}
 	}
@@ -132,6 +200,12 @@ func TestGitHubTestIDsCarriedByTheCache(t *testing.T) {
 // its own only when the tester ran, else carries the job before's.
 func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 	top := readGitLab(t)
+	must := func(err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 	for name, job := range top {
 		if j, ok := job.(map[string]any); ok {
 			if _, cache := j["cache"]; cache {
@@ -176,16 +250,16 @@ func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 		t.Fatal(err)
 	}
 	// workline: lists the ids it was given, then finds one tree more.
-	os.WriteFile(filepath.Join(bin, "workline"), []byte("#!/bin/sh\n[ \"$1 $2\" = \"route merge-request\" ] || [ \"$1 $2\" = \"route issue\" ] || exit 0\n"+
-		"ls .git/workline/test-ids > given 2>/dev/null; echo '{}' > \".git/workline/test-ids/$FOUND\"; echo \"$LINE\"\n"), 0o755)
+	must(os.WriteFile(filepath.Join(bin, "workline"), []byte("#!/bin/sh\n[ \"$1 $2\" = \"route merge-request\" ] || [ \"$1 $2\" = \"route issue\" ] || exit 0\n"+
+		"ls .git/workline/test-ids > given 2>/dev/null; echo '{}' > \".git/workline/test-ids/$FOUND\"; echo \"$LINE\"\n"), 0o755))
 	serve := func(ref, job string, files ...string) {
 		d := filepath.Join(store, strings.ReplaceAll(ref, "/", "_"), job)
-		os.MkdirAll(d, 0o755)
-		os.WriteFile(filepath.Join(d, "index"), []byte(strings.Join(append(files, "../../evil.json", "x.json"), "\n")+"\n"), 0o644)
+		must(os.MkdirAll(d, 0o755))
+		must(os.WriteFile(filepath.Join(d, "index"), []byte(strings.Join(append(files, "../../evil.json", "x.json"), "\n")+"\n"), 0o644))
 		for _, f := range files {
-			os.WriteFile(filepath.Join(d, f), []byte("{}"), 0o644)
+			must(os.WriteFile(filepath.Join(d, f), []byte("{}"), 0o644))
 		}
-		os.WriteFile(filepath.Join(d, "x.json"), []byte("{}"), 0o644)
+		must(os.WriteFile(filepath.Join(d, "x.json"), []byte("{}"), 0o644))
 	}
 	serve("main", "workline:develop:judge", key)
 	serve("refs/merge-requests/7/head", "workline:judge", served)
@@ -214,11 +288,17 @@ func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 		slices.Sort(names)
 		return names
 	}
+	// stale leaves another job's ids in dir's .git, as a runner that
+	// keeps .git between jobs does: never read, never kept.
+	stale := func(dir string) {
+		must(os.MkdirAll(filepath.Join(dir, testIDsPath), 0o755))
+		must(os.WriteFile(filepath.Join(dir, testIDsPath, strings.Repeat("0", 64)+".json"), []byte("{}"), 0o644))
+	}
 
 	// A merge request's pipeline: base, then judge in the same folder, as
 	// GitLab hands base's artifacts on.
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	stale(dir)
 	run(dir, "workline:base", "CI_PIPELINE_SOURCE=merge_request_event")
 	urls, _ := os.ReadFile(filepath.Join(store, "urls"))
 	if !strings.Contains(string(urls), "/jobs/artifacts/main/raw/.workline-test-ids/index?job=workline:develop:judge") ||
@@ -240,7 +320,7 @@ func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 	}
 
 	// A merge train reads none: it runs no judge.
-	os.Remove(filepath.Join(store, "urls"))
+	_ = os.Remove(filepath.Join(store, "urls"))
 	run(t.TempDir(), "workline:base", "CI_PIPELINE_SOURCE=merge_request_event", "CI_MERGE_REQUEST_EVENT_TYPE=merge_train")
 	if urls, _ := os.ReadFile(filepath.Join(store, "urls")); strings.Contains(string(urls), "test-ids") {
 		t.Errorf("a merge train reads test ids:\n%s", urls)
@@ -256,7 +336,7 @@ func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 		{`{"steps":[{"name":"developer"}]}`, 1},
 	} {
 		dir := t.TempDir()
-		os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+		stale(dir)
 		run(dir, "workline:develop:judge", "LINE="+c.line, "ai=none")
 		got := ls(filepath.Join(dir, ".workline-test-ids"))
 		if len(got) != c.want+1 || got[0] != key {

@@ -226,6 +226,10 @@ jobs:
       # prefix: the newest this pull request kept, else the default
       # branch's. A pull request's cache is its own, the default branch's
       # written by its runs alone (roles/tester/docs/green-proof.md).
+      # None left by another job on a runner that keeps .git.
+      - name: No test ids but those restored
+        if: github.event_name == 'pull_request'
+        run: rm -rf .git/workline/test-ids
       - uses: actions/cache/restore@v4
         if: github.event_name == 'pull_request'
         with: {path: .git/workline/test-ids, key: "workline-test-ids-${{ github.run_id }}-${{ github.run_attempt }}", restore-keys: workline-test-ids-}
