@@ -34,6 +34,11 @@ Part of [workline on GitLab CI](../ci-gitlab.md): what each job of
     from the merge request's pipeline with the bot's token: GitLab's
     `needs:pipeline:job` gives no failed job's artifacts.
   - `workline:merge` reads the verdict from `workline:judge` alone.
+- **The tests' ids** the tester's guard reads, so it does not run the
+  base again: `workline:base` reads them from the artifacts of the
+  default branch's `workline:develop:judge` and of the merge request's
+  own `workline:judge`, never from GitLab's cache, which every branch
+  shares ([the green proof](../../roles/tester/docs/green-proof.md#what-it-runs)).
 - **The whole history** (`GIT_DEPTH: 0`, over the project's "Git shallow
   clone" setting, 20 commits on a new project): the documentalist compares
   each doc's sources since its `checked`, the release looks for its last
