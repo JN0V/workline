@@ -2,7 +2,8 @@
 # .github/workflows/workline-develop.yml, route `issue: [tester, developer]`
 # in .workline/config.yaml (ADR-0054, ADR-0055). A person's label on an
 # issue runs the role its state wakes: the tester on workline:needs-tests,
-# the developer on workline:ready; the job that moves a state starts the
+# the developer on workline:ready; a person's comment or edit on an issue
+# on the line, when its step is due (#1414); the job that moves a state starts the
 # next step; about hourly, the reconciler starts what an event missed. By hand
 # with no issue, the first ready one nobody took.
 # On its own pull request (workline/developer/…), the reviewer's verdict
@@ -30,19 +31,26 @@ run-name: >-
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'next' && 'workline develop heartbeat') ||
   (github.event_name == 'workflow_dispatch' && inputs.reconcile == 'true' && 'workline develop reconcile') ||
   (github.event_name == 'issues' && github.event.sender.type != 'Bot' && startsWith(github.event.label.name, 'workline:') &&
+  format('workline develop #{0}', github.event.issue.number)) ||
+  (((github.event_name == 'issues' && github.event.action == 'edited') || (github.event_name == 'issue_comment' && !github.event.issue.pull_request)) &&
+  github.event.sender.type != 'Bot' && contains(join(github.event.issue.labels.*.name, ' '), 'workline:') &&
   format('workline develop #{0}', github.event.issue.number)) || github.workflow }}
 on:
   # A person's label on an issue: its state wakes its role (ADR-0059).
   # The engine's own labels wake nothing here: the job that set them
-  # starts the next step, by workflow_dispatch.
-  issues: {types: [labeled]}
+  # starts the next step, by workflow_dispatch. A person's edit of an
+  # issue on the line, or comment on it, may be the answer it waits on,
+  # a draft's or a block's (#1414): its run asks the line first, no
+  # agent, and ends there when nothing is due.
+  issues: {types: [labeled, edited]}
   workflow_dispatch:
     inputs:
       issue: {description: "the issue whose state's step runs; empty: the first ready issue nobody took", required: false, default: ""}
       pull-request: {description: "a review round on this pull request of the developer's, rather than an issue", required: false, default: ""}
       reconcile: {description: "true: the reconciler now, rather than an issue; next: once the heartbeat's wait timer passed", required: false, default: ""}
-  # The reviewer's comment or the gates', written or edited by the App (a
-  # comment the job's own token writes wakes nothing), or a person's.
+  # On the developer's pull request, the reviewer's comment or the
+  # gates', written or edited by the App (a comment the job's own token
+  # writes wakes nothing), or a person's; on an issue, a person's.
   issue_comment: {types: [created, edited]}
   # A project's workflow that failed on the developer's branch: its
   # checks red are a round (#917); all green on its Draft, a round that
@@ -67,7 +75,18 @@ jobs:
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs['pull-request'] == '' && inputs.reconcile == '') ||
       (github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:') && github.event.sender.type != 'Bot' &&
-        github.event.issue.state == 'open' && !github.event.issue.pull_request)
+        github.event.issue.state == 'open' && !github.event.issue.pull_request) ||
+      (github.event_name == 'issues' && github.event.action == 'edited' && github.event.sender.type != 'Bot' &&
+        github.event.issue.state == 'open' && contains(join(github.event.issue.labels.*.name, ' '), 'workline:')) ||
+      (github.event_name == 'issue_comment' && !github.event.issue.pull_request && github.event.sender.type != 'Bot' &&
+        github.event.issue.state == 'open' && contains(join(github.event.issue.labels.*.name, ' '), 'workline:') &&
+        (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) ||
+          github.event.comment.user.login == github.event.issue.user.login))
+    # A person's edit or comment on an issue on the line (#1414): the
+    # step Due below asks the line, no agent; nothing due, the run ends
+    # there. A comment counts from the project's people or the issue's
+    # author, whose answer the line asked for; anyone else's waits for
+    # the reconcile, as before.
     # On the job, after its `if`: another label takes no group. One run an
     # issue, whichever role its state wakes; issues apart run side by side.
     concurrency:

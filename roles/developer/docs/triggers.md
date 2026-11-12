@@ -46,6 +46,11 @@ routing:
   [workline-develop.yml](../../../ci/github/workline-develop.yml). A
   person's `workline:` label wakes it; the engine's own labels never
   do.
+  - **A person's answer**: a comment or a body edit on an issue bearing
+    a `workline:` label starts its run, which asks the line, no agent,
+    whether its step is due: a blocked issue's answer is read at once
+    ([#1414](https://github.com/JN0V/workline/issues/1414)). A comment
+    counts from the project's people or the issue's author.
   - **The next step**: once `apply` applied, it asks the line, no
     agent, whether the issue's new state is due, and starts that run
     (`workflow_dispatch`, which the job's own token may start). Not
