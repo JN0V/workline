@@ -80,6 +80,15 @@ roles:
   ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
   Its former issue of its own, still open, is told where the weeks went,
   and closed.
+- **Tokens, by kind of work**: the fresh tokens the line's runs on the
+  machine spent in the week, from its runs folder, no agent. Product: a
+  feature or a bug, or a merge request closing one or typed `feat`,
+  `fix`, `refactor`, `perf`, `test`, `ci`, `build`. Upkeep: a task, or a
+  `docs`, `chore`, `style` merge request. Releases apart; a run on
+  neither is unknown, and said. The upkeep share is the measure of
+  [ADR-0052](adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)'s
+  third criterion ([#610](https://github.com/JN0V/workline/issues/610)).
+  In CI, a job sees only its own runs.
 - **What could not be drawn** is listed, with why: the findings judged
   whose lines a merge request's summary comment no longer holds, past its
   size; a comment written before the lines, its last run's alone.

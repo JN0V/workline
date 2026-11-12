@@ -86,7 +86,7 @@ func countRun(f forge.Forge, mrID int, dir string) error {
 	if err != nil {
 		return err
 	}
-	issue := closedIssue(mr)
+	issue := ClosedIssue(mr)
 	if issue == 0 {
 		return nil
 	}
@@ -143,10 +143,10 @@ func runFresh(dir string) int {
 	return n
 }
 
-// closedIssue is the issue a merge request closes: the first its title
+// ClosedIssue is the issue a merge request closes: the first its title
 // or description closes, else the one its branch of a role names
 // (workline/developer/<n>, workline/tester/issue-<n>); 0 for none.
-func closedIssue(mr forge.MergeRequest) int {
+func ClosedIssue(mr forge.MergeRequest) int {
 	if ids := forge.Closes(mr.Title, mr.Body); len(ids) > 0 {
 		return ids[0]
 	}

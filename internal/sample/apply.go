@@ -244,7 +244,7 @@ func report(res *Result, falseOnes, moved []Read, mr int) string {
 	hidden := "\n" + hiddenRows(rs) + "\n"
 	if res.Vouched == 0 {
 		fmt.Fprintf(&b, "No doc vouched for by the documentalist in the commits %s: nothing read.\n", res.Window)
-		return b.String() + actsSection(res) + hidden
+		return b.String() + tokensSection(res) + actsSection(res) + hidden
 	}
 	fmt.Fprintf(&b, "%s vouched for by the documentalist in the commits %s (`%.7s..%.7s`); %d read, one in ten.\n\n", plural(res.Vouched, "doc"), res.Window, res.From, res.To, len(res.Reads))
 	b.WriteString("| # | Doc | Vouched for in | `checked` | Verdict | Judge, independence | Panel |\n|---|---|---|---|---|---|---|\n")
@@ -270,7 +270,7 @@ func report(res *Result, falseOnes, moved []Read, mr int) string {
 			fmt.Fprintf(&b, "%s no longer carries that `checked`, or names another repository's: for a person to put back.\n", r.Doc)
 		}
 	}
-	return b.String() + actsSection(res) + hidden
+	return b.String() + tokensSection(res) + actsSection(res) + hidden
 }
 
 // synthesis opens the week's comment, for the maintainer: the acts read
@@ -373,6 +373,16 @@ func renameFormer(f forge.Forge) ([]int, error) {
 		return acts, nil
 	}
 	return acts, b.SetTitle(former, IssueTitle)
+}
+
+// tokensSection is what the week's comment says of the line's tokens, by
+// kind of work: ADR-0052's upkeep share, four weeks in a row under 10%.
+func tokensSection(res *Result) string {
+	if res.Tokens == nil {
+		return ""
+	}
+	w := res.Tokens.Words()
+	return "\n#### Tokens, by kind of work\n\n" + strings.ToUpper(w[:1]) + w[1:] + ".\n"
 }
 
 // actsSection is what the week's comment says of every role's acts: how

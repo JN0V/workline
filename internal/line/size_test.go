@@ -46,10 +46,10 @@ func TestWithRecordSaysTheNewTotal(t *testing.T) {
 	if !strings.Contains(got, " 6.6k fresh tokens spent on it so far.") || !strings.Contains(got, `"reviewer":[1600]`) || strings.Count(got, "line-record") != 1 {
 		t.Errorf("withRecord = %q", got)
 	}
-	if n := closedIssue(forge.MergeRequest{Branch: "workline/tester/issue-7"}); n != 7 {
+	if n := ClosedIssue(forge.MergeRequest{Branch: "workline/tester/issue-7"}); n != 7 {
 		t.Errorf("closedIssue of the tester's branch = %d, want 7", n)
 	}
-	if n := closedIssue(forge.MergeRequest{Branch: "workline/developer/3", Body: "Fixes #4"}); n != 4 {
+	if n := ClosedIssue(forge.MergeRequest{Branch: "workline/developer/3", Body: "Fixes #4"}); n != 4 {
 		t.Errorf("closedIssue = %d, want 4, what its text closes", n)
 	}
 }

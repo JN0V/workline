@@ -24,6 +24,7 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
+	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
@@ -76,9 +77,12 @@ type Result struct {
 	// ADR-0046 completes, an engine before it having kept none: on their
 	// issue as it reads now. Autonomy, the level its acts suggest
 	// (ADR-0033).
-	Older       []string  `json:"older,omitempty"`
-	Autonomy    *Autonomy `json:"autonomy,omitempty"`
-	unreachable bool      // the forge did not answer a read
+	Older    []string  `json:"older,omitempty"`
+	Autonomy *Autonomy `json:"autonomy,omitempty"`
+	// Tokens: what the line's runs on this machine spent in the window,
+	// by kind of work (ADR-0052, criterion 3).
+	Tokens      *Tokens `json:"tokens,omitempty"`
+	unreachable bool    // the forge did not answer a read
 }
 
 // Read is one doc of the sample, and what its reading found.
@@ -263,6 +267,15 @@ func draw(o Options, res *Result) error {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-record-older", Level: "warn", Message: olderWords(res.Older)})
 	}
 	res.Findings = append(res.Findings, autonomyFinding(res.Autonomy)...)
+	tokensFrom, tokensTo := from, to
+	if o.Since != "" {
+		tokensFrom, tokensTo = since, o.Now
+		if tokensTo.IsZero() {
+			tokensTo = time.Now()
+		}
+	}
+	res.Tokens = tokensOf(engine.RunsDir(o.Repo), o.Forge, tokensFrom, tokensTo)
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-tokens", Level: "warn", Message: "tokens: " + res.Tokens.Words()})
 	for _, why := range res.NotDrawn {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-not-drawn", Level: "warn", Message: "not drawn: " + why})
 	}
