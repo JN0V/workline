@@ -54,7 +54,9 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **Open conversations that hold it are said**: auto-merge on, its
   checks green, the forge not merging, and its base requiring every
   conversation resolved: `follow` lists each open one, linked, in its
-  summary and once on the pull request. The reviewer resolves its own
+  summary and once on the pull request, from the run that turns
+  auto-merge on ([#1417](https://github.com/JN0V/workline/issues/1417)).
+  The reviewer resolves its own
   once the code answers them
   ([lines](../roles/reviewer/docs/lines.md#not-repeated-found-again));
   a person resolves theirs
