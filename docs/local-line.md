@@ -62,7 +62,7 @@ roles:
   fix ([the merge policy](merge-policy.md)). Left out, you merge.
 
 ```sh
-workline doctor          # says a missing test-command, with the setting to add
+workline doctor          # says a missing test-command, or one that cannot run here
 git add .workline/config.yaml && git commit -m "chore: adopt workline"
 export WORKLINE_RUNS_DIR=~/.cache/workline-runs   # outside the clone: see below
 ```
@@ -101,6 +101,11 @@ workline issues show 1   # what it wrote, and what it asks of you
 
 Run the same command after each step until the issue is
 `workline:developing` with its merge request open.
+
+- **Your checkout stays as it is**: the tester's tests and the
+  developer's code are written and committed on their branch in a
+  worktree apart; your branch, and your changes not committed, are
+  never touched ([#1372](https://github.com/JN0V/workline/issues/1372)).
 
 ### Answer the product owner
 

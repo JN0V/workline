@@ -1,0 +1,40 @@
+case: product-owner/clean-review-keeps-a-move-back-to-refine
+about: >
+  A clean spec review moves an issue to ready with no agent (#128), but
+  not one the product owner moved back to refine on the body as it is
+  (#1395): a review read before the move is no answer to it. #9 was
+  moved back on this body and stays in refine; #10 was moved back on an
+  earlier body, rewritten and reviewed since: it moves.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner, reviewer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Sales counted once"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts a sale once.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b512289d60a0\nheard: 0\ndid:\n- {act: ready, level: normal, day: '2026-11-01', body: b512289d60a0, line: 'Moved #9 to ready'}\n- {act: unready, level: normal, day: '2026-11-01', body: b512289d60a0, line: 'Moved #9 back to refine: an umbrella of several parts'}\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=b512289d60a0 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 10
+        title: "Sales counted once, rewritten"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nThe monthly report counts a sale once.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b512289d60a0\nheard: 0\ndid:\n- {act: unready, level: normal, day: '2026-11-01', body: '111111111111', line: 'Moved #10 back to refine: an umbrella of several parts'}\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=b512289d60a0 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: ready-left-open, where: "#9", message: "not moved to ready on the reviewer's clean read: the product owner moved it back to refine on 2026-11-01, its body unchanged since"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine]}
+      - {id: 10, labels: [workline:ready]}

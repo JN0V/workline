@@ -1,0 +1,29 @@
+case: tester/write-test-command-fails-before-agent
+about: >
+  The test command cannot run on the base, a setup fault (an SDK not
+  found): it exits non-zero and writes no report. The tester runs it
+  first and stops before its agent, the command's error said; the issue
+  keeps its state, no tokens spent (#1333).
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "echo 'SDK location not found' >&2; exit 1"}}}
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-kept-as-today"}
+expect:
+  status: block
+  agent-calls: 0
+  summary: "the test command cannot run on the base"
+  findings:
+    - {rule: test-command-fails, message: "SDK location not found"}
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:needs-tests"]}

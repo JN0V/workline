@@ -4,13 +4,15 @@ about: >
   draft-command runs no test on the base there (a runner named a folder
   that is not there fails, as this one does), and the test is still
   proven red, with the tests laid on the base (#979). The test-command
-  here fails whole: the proof passing shows it was not run.
+  runs once, before the agent (#1333): it exits 0 and writes no report,
+  as a project with no test yet; the proof passing shows it ran the
+  draft-command alone.
 given:
   repo: tested
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   config:
-    roles: {tester: {settings: {test-command: "false", test-paths: ["**/test_*.sh"],
+    roles: {tester: {settings: {test-command: "true", test-paths: ["**/test_*.sh"],
       draft-command: "sh \"$FIXTURES/bin/run-folders\" {report} {packages}"}}}
   forge:
     issues:

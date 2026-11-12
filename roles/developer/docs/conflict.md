@@ -50,6 +50,9 @@ force-pushed.
 - **Its task**: settle each conflict, keeping both changes; nothing
   else. An edit to another file is refused; a frozen test is the
   tester's, by an objection.
+- **Its note**: a line a file, how it settled it, in its answer, never
+  a file it writes; said in the round's comment on the request
+  ([#1371](https://github.com/JN0V/workline/issues/1371)).
 - **The engine commits it**, two parents, the branch's head first:
   - no marker left in the files in conflict;
   - the whole test command green on the merge, both requests' tests in

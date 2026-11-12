@@ -166,6 +166,37 @@ func SpecCleared(is forge.Issue, comments []string) (*SpecReview, bool) {
 	return r, !r.Stopped && r.Open == 0 && r.Body == BodyDigest(is.Body)
 }
 
+// LeftOpen says why a clean spec review does not move an issue to ready
+// with no agent (#1395): the product owner left it open itself, and its
+// own judgement stands over the reviewer's record. "" when it did not.
+//   - Its question to a person waits: no comment after it, no assumption
+//     taken for it (ADR-0060). An answer, or the assumption written past
+//     the delay, lifts it.
+//   - It moved the issue back to refine on the body as it is: a body
+//     changed lifts it. A person's comment since is read by the agent
+//     first (Unheard), whose own `ready` is taken; a person putting the
+//     label back undoes the move.
+func LeftOpen(st *State, notes []forge.Note, is forge.Issue, role string) string {
+	if s, open := Unanswered(notes, role); open && (st == nil || st.Assumed < s.Round) {
+		return "its question to a person waits for an answer, or for its assumption once the delay passed (acts.ask.wait)"
+	}
+	if st == nil {
+		return ""
+	}
+	for i := len(st.Did) - 1; i >= 0; i-- {
+		switch d := st.Did[i]; d.Act {
+		case "ready":
+			return ""
+		case "unready":
+			if d.Body != "" && d.Body == BodyDigest(is.Body) {
+				return "the product owner moved it back to refine on " + d.Day + ", its body unchanged since"
+			}
+			return ""
+		}
+	}
+	return ""
+}
+
 // SpecOpen is the reviewer's record when it holds important findings open
 // on the body as it is, for the product owner to answer; nil otherwise.
 func SpecOpen(is forge.Issue, comments []string) *SpecReview {

@@ -64,6 +64,34 @@ func TestSpecReviewHoldsAnyHeading(t *testing.T) {
 	}
 }
 
+func TestLeftOpenHoldsTheRolesOwnOpenWork(t *testing.T) {
+	is := forge.Issue{ID: 9, Author: "ann", Body: "## Need\n\nA sale counted once."}
+	digest := BodyDigest(is.Body)
+	ask := forge.Note{Body: "@ann, to refine this issue: Split it?\n\n<!-- workline:" + Keeper + "/ask -->"}
+	answer := forge.Note{Body: "One issue.", Author: "ann"}
+	for _, c := range []struct {
+		name  string
+		st    *State
+		notes []forge.Note
+		held  bool
+	}{
+		{"nothing pending", &State{}, nil, false},
+		{"question open", &State{}, []forge.Note{ask}, true},
+		{"question open, no state", nil, []forge.Note{ask}, true},
+		{"question assumed", &State{Assumed: 1}, []forge.Note{ask}, false},
+		{"question answered", &State{}, []forge.Note{ask, answer}, false},
+		{"moved back on this body", &State{Did: []Did{{Act: "unready", Body: digest}}}, nil, true},
+		{"moved back on an older body", &State{Did: []Did{{Act: "unready", Body: "111111111111"}}}, nil, false},
+		{"moved back by an engine keeping no body", &State{Did: []Did{{Act: "unready"}}}, nil, false},
+		{"readied after the move", &State{Did: []Did{{Act: "unready", Body: digest}, {Act: "ready", Body: digest}}}, nil, false},
+		{"moved back after a ready", &State{Did: []Did{{Act: "ready", Body: digest}, {Act: "unready", Body: digest}, {Act: "refine"}}}, nil, true},
+	} {
+		if got := LeftOpen(c.st, c.notes, is, Keeper); (got != "") != c.held {
+			t.Errorf("%s: LeftOpen = %q, held %v", c.name, got, c.held)
+		}
+	}
+}
+
 func TestSectionAt(t *testing.T) {
 	body := "Intro.\n\n## Need\n\nA.\n\n### Verification\n\nB."
 	for line, want := range map[int]string{1: "", 3: "Need", 5: "Need", 7: "Verification", 9: "Verification"} {

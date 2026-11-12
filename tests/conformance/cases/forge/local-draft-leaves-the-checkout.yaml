@@ -1,0 +1,59 @@
+case: forge/local-draft-leaves-the-checkout
+about: >
+  With `forge: local`, the tester opening its Draft while a person works
+  in the checkout, main checked out, a change not committed (#1372): its
+  tests are written and committed in a worktree apart. The checkout
+  never leaves main (no checkout in its reflog), holds none of the
+  tests, keeps the person's changes as they were, and no worktree is
+  left.
+given:
+  repo: tested
+  setup:
+    - |
+      mkdir -p .git/workline/issues && cat > .git/workline/issues/3.md <<'IS'
+      ---
+      title: "Multiply two numbers"
+      state: open
+      labels: ["workline:needs-tests"]
+      ---
+
+      ## Need
+
+      When I total an order, I want to multiply a price by a count, so I need not add it up by hand.
+
+      ## Validation
+
+      - **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.
+      - **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.
+
+      ---
+
+      ## Verification
+
+      A test a scenario, in tests/.
+
+      ## Scope
+
+      - `lib.sh`: a `mul` function beside `add`.
+      IS
+  config:
+    forge: local
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}}
+run:
+  sh: >
+    printf 'Work in progress.\n' >> README.md && printf 'my notes\n' > notes.txt &&
+    workline route issue --target issue:3 --ai "fake:$FIXTURES/agents/tester-two-scenarios.yaml" > /dev/null &&
+    git status --porcelain | grep -v '^?? .workline/$' && git rev-parse --abbrev-ref HEAD &&
+    echo "checkouts: $(git reflog HEAD | grep -c 'checkout:')" &&
+    echo "worktrees: $(git worktree list --porcelain | grep -c '^worktree ')"
+expect:
+  exit: 0
+  stdout: [" M README.md\n?? notes.txt\nmain\ncheckouts: 0\nworktrees: 1\n"]
+  branches:
+    workline/tester/issue-3: {tests/test_mul_two_by_three.sh: "Scenario: Two by three"}
+  files:
+    tests/test_mul_two_by_three.sh: {exists: false}
+    README.md: {contains: "Work in progress."}
+    notes.txt: {contains: "my notes"}
+    .git/workline/issues/3.md: {contains: "workline:ready", lacks: "workline:needs-tests"}
