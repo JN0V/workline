@@ -12,6 +12,18 @@ import (
 	"time"
 )
 
+// alive reports whether the process still runs. A killed child may linger
+// as a zombie until reaped: where /proc exists, a zombie does not count.
+func alive(pid int) bool {
+	if err := syscall.Kill(pid, 0); err != nil {
+		return err == syscall.EPERM
+	}
+	if st, err := os.ReadFile("/proc/" + strconv.Itoa(pid) + "/stat"); err == nil && strings.Contains(string(st), ") Z ") {
+		return false
+	}
+	return true
+}
+
 // Nothing left
 // Given a test command that starts a long-lived child (a build daemon),
 // When the command ends and the run with it, with a deadline far off or none,
@@ -38,9 +50,7 @@ func TestTestCommandLeavesNoChildBehind(t *testing.T) {
 			defer func() { _ = syscall.Kill(child, syscall.SIGKILL) }()
 			gone := false
 			for end := time.Now().Add(3 * time.Second); time.Now().Before(end); time.Sleep(50 * time.Millisecond) {
-				// A killed child may linger as a zombie until reaped: only
-				// a process still alive and not a zombie counts as left.
-				if st, err := os.ReadFile("/proc/" + strconv.Itoa(child) + "/stat"); err != nil || strings.Contains(string(st), ") Z ") {
+				if !alive(child) {
 					gone = true
 					break
 				}
