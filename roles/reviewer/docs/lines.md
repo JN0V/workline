@@ -94,7 +94,9 @@ flowchart LR
     no included; for the tests lens, a test file touching it counts: in
     its folder, named after it in a folder mirroring its own
     (`src/test/…/GridTest.kt` for `src/main/…/Grid.kt`), or naming it
-    ([#1417](https://github.com/JN0V/workline/issues/1417));
+    ([#1417](https://github.com/JN0V/workline/issues/1417)). A push
+    changing such a test asks the tests lens again, beside the lens in
+    turn, so that it reads it;
   - or, a warning only, the developer's round answered it with a fix
     pushed, its tests green, and the next run does not raise it again
     ([#1050](https://github.com/JN0V/workline/issues/1050)): a warning

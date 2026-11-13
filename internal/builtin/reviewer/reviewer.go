@@ -471,6 +471,9 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	if input(runDir, "lenses") == "" {
 		st.Lenses = union(st.Lenses, answering(st.Standing, files, skip))
+		if !ready {
+			st.Lenses = union(st.Lenses, retested(repo, s, head, rec.Judged, files, skip))
+		}
 		if len(st.Hints) > 0 { // on its turn or not: a guess is judged on the push that adds it
 			st.Lenses = union(st.Lenses, []string{hinted})
 		}
