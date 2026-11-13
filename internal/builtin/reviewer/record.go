@@ -344,13 +344,19 @@ func answering(blocks []Block, files []File, skip map[string]string) []string {
 // that changes a test file touching the file of a finding of theirs a
 // run before judged true (#1417): their conversation is settled only by
 // their reading again (readAgain), and the turn of lenses may give the
-// push another lens. A push changing no such test asks none of them.
+// push another lens. A push changing no such test asks none of them; a
+// finding judged true, then false on a later run, asks nothing.
 func retested(repo string, s Settings, head string, judged []Answered, files []File, skip map[string]string) []string {
 	changed := paths(files)
 	lensOf := lensReader(repo)
-	tested := map[string]bool{}
+	tested, last := map[string]bool{}, map[string]bool{}
 	var out []string
-	for _, j := range judged {
+	for _, j := range slices.Backward(judged) { // a finding's last verdict alone: a later no drops it
+		key := j.Lens + "\x1f" + j.Where + "\x1f" + j.Title
+		if last[key] {
+			continue
+		}
+		last[key] = true
 		if !j.Yes || slices.Contains(out, j.Lens) || !slices.Contains(s.Lenses, j.Lens) {
 			continue
 		}

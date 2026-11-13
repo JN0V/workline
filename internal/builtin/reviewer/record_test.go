@@ -215,3 +215,16 @@ func TestMergeInto(t *testing.T) {
 		t.Fatalf("a record that does not read merged: %q", got)
 	}
 }
+
+// A tests finding judged true, then false on a later run, asks its lens
+// back on no push (#1417): its last verdict alone counts.
+func TestRetestedReadsTheLastVerdict(t *testing.T) {
+	judged := []Answered{
+		{Lens: "tests", Where: "calc/grid.go:3", Title: "grid untested", Yes: true},
+		{Lens: "tests", Where: "calc/grid.go:3", Title: "grid untested", Yes: false},
+	}
+	files := []File{{Path: "calc/grid_test.go"}}
+	if got := retested(t.TempDir(), Settings{Lenses: []string{"tests"}}, "HEAD", judged, files, nil); len(got) != 0 {
+		t.Errorf("retested = %v, want none: the finding's last verdict is a no", got)
+	}
+}
