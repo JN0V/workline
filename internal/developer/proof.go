@@ -156,7 +156,7 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 		// One run stopped at the tester's suite-max-seconds, before the
 		// proof's own seconds (#1425): that setting named, where it hung.
 		p.Ran = o.Runs
-		p.Result, p.Why = Unproven, fmt.Sprintf("a run of the tests ran past %d s: stopped; %s", ts.SuiteMaxSeconds, f.Message)
+		p.Result, p.Why = Unproven, fmt.Sprintf("a run of the tests stopped at suite-max-seconds (%d s): %s", ts.SuiteMaxSeconds, f.Message)
 		return p, &Cap{Setting: "suite-max-seconds", Spent: int(time.Since(start).Seconds()), Allows: ts.SuiteMaxSeconds}
 	case f != nil && f.Rule == "proof-over-time":
 		p.Ran = o.Runs

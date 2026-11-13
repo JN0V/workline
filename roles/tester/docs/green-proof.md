@@ -113,8 +113,7 @@ flowchart LR
     developer ran. A file of another tree, command or report is not read.
 - **The head three times**, one run after the other, in one fresh
   checkout. Each run is `test-command`, its report read as JUnit XML,
-  stopped at `suite-max-seconds`, the test files no report holds yet
-  and the last lines said
+  stopped at `suite-max-seconds`, its last lines said
   ([#1425](https://github.com/JN0V/workline/issues/1425)).
 - **Never again until green**: three runs, not "until it passes".
 - **Why one checkout**: a second run there reuses the runner's build

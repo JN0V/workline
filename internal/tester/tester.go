@@ -851,7 +851,11 @@ func stoppedAt(tree string, s Settings, kept map[string]keptFile, out string) st
 			said = fmt.Sprintf("; of the change's tests, no report written by then holds %s: a test there did not end", strings.Join(open, ", "))
 		}
 	}
-	return said + "; its last lines: " + clipRunes(tail(out, 15), quoteMax)
+	last := []rune(tail(out, 15))
+	if len(last) > quoteMax { // its end kept: the last line names where it hung
+		last = append([]rune("…"), last[len(last)-quoteMax+1:]...)
+	}
+	return said + "; its last lines: " + string(last)
 }
 
 // uncached is env with Go told to run each test, never to replay a
