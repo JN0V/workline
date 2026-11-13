@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/agent"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -425,6 +426,7 @@ func execute(dir, out string, c Check, timeout time.Duration, env []string) (int
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "sh", "-c", strings.ReplaceAll(c.Run, "{out}", out))
+	agent.InGroup(cmd) // killed with what it started (#1335)
 	cmd.Dir = dir
 	cmd.Env = append(forge.ProjectEnv(os.Environ()), env...)
 	logFile := filepath.Join(out, c.ID+".log")
@@ -434,6 +436,7 @@ func execute(dir, out string, c Check, timeout time.Duration, env []string) (int
 		cmd.Stdout, cmd.Stderr = log, log
 	}
 	err := cmd.Run()
+	agent.KillGroup(cmd) // what it forked and left running ends with it (#1335)
 	maskLog(logFile)
 	var exitErr *exec.ExitError
 	switch {

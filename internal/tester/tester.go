@@ -803,14 +803,13 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 		defer cancel()
 	}
 	cmd := exec.CommandContext(ctx, "sh", "-c", line)
-	if !deadline.IsZero() {
-		agent.InGroup(cmd) // stopped with what it started; a detached daemon lives on (#1197)
-	}
+	agent.InGroup(cmd) // stopped with what it started; a detached daemon lives on (#1197)
 	cmd.Dir = dir
 	cmd.Env = uncached(forge.ProjectEnv(os.Environ()))
 	cmd.Stdout, cmd.Stderr = &out, &out
 	cmd.WaitDelay = 5 * time.Second
 	err = cmd.Run() // a test that fails exits non-zero: the report says which
+	agent.KillGroup(cmd) // what it forked and left running ends with it (#1335)
 	// Its secrets masked before a reason quotes or cuts it (#1215).
 	masked := bytes.NewBufferString(forge.Mask(out.String()))
 	return *masked, ctx.Err() != nil, err
