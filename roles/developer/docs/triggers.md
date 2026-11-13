@@ -148,7 +148,9 @@ routing:
 
 - **A review round**, the reviewer's verdict, the gates' report, a
   project workflow failed, all green on its Draft, or a person's comment on a pull request from
-  `workline/developer/<n>`: no
+  `workline/developer/<n>`, a reply in a thread on a line too, noticed
+  on GitHub by `workline-objection.yml`
+  ([#1438](https://github.com/JN0V/workline/issues/1438)): no
   routing, the same workflow's `review` jobs on GitHub,
   `WORKLINE_TASK=review` on GitLab
   ([the review loop](review-loop.md#what-wakes-it)).

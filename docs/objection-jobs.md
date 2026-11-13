@@ -1,5 +1,5 @@
 ---
-sources: [ci/github/workline-objection.yml, ci/github/workline-answer.yml, ci/gitlab/workline.gitlab-ci.yml, internal/engine/fromrun.go]
+sources: [ci/github/workline-objection.yml, ci/github/workline-answer.yml, ci/github/workline-develop.yml, ci/gitlab/workline.gitlab-ci.yml, internal/engine/fromrun.go]
 checked: 8538d558
 ---
 # An objection's jobs
@@ -33,6 +33,15 @@ flowchart LR
   so it holds no token and no secret, runs nothing of the repository.
 - Its end wakes `workline-answer.yml`, which runs as the default branch
   holds it (`workflow_run`).
+
+## A reply on the developer's pull request (GitHub only)
+
+- The same workflow notices a person's reply in a thread on a line of
+  a `workline/developer/*` pull request (job `replied`): no token, no
+  secret, the App's own replies left out.
+- Its end wakes `workline-develop.yml`, as the default branch holds it:
+  the developer's review round, at once rather than at the hourly
+  reconcile ([#1438](https://github.com/JN0V/workline/issues/1438)).
 
 ## head (GitLab only)
 

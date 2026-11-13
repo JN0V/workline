@@ -461,6 +461,8 @@ jobs:
         (contains(github.event.comment.body, 'workline:sticky=reviewer/') || contains(github.event.comment.body, 'workline:sticky=gates/') ||
           (github.event.action == 'created' && github.event.comment.user.type != 'Bot' &&
             contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)))) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline objection' &&
+        github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.pull_requests[0] != null) ||
       (github.event_name == 'workflow_run' && !startsWith(github.event.workflow_run.name, 'workline') &&
         github.event.workflow_run.pull_requests[0] != null)
     runs-on: ubuntu-latest
@@ -475,8 +477,19 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR: ${{ github.event.issue.number || inputs['pull-request'] || github.event.workflow_run.pull_requests[0].number }}
           SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN: ${{ github.event.workflow_run.name }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           printf '%s' "$PR" | grep -Eqx '[0-9]+' || { echo "::error title=workline::not a pull request number: $PR"; exit 64; }
+          # A person's reply in a thread on a line (#1438): noticed by
+          # workline-objection.yml's job replied, which holds no token;
+          # its end is a round, the project's runs not read.
+          if [ "$RUN" = "workline objection" ]; then
+            replied=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs" --jq '[.jobs[] | select(.name == "replied" and .conclusion == "success")] | length') ||
+              { echo "::warning title=workline::workline objection's run $RUN_ID not read: the reconciler asks within the hour"; exit 0; }
+            [ "$replied" -gt 0 ] || { echo "workline objection's run on pull request $PR: no person's reply in a thread noticed: no round"; exit 0; }
+            SHA=
+          fi
           # A project's run ended (#917): a round once all of its runs on
           # that head are done, one of them failed, whichever ends last —
           # a red one first, then a green one, wakes it all the same. All
