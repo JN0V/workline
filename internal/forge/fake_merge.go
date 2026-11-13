@@ -102,6 +102,28 @@ func (f *Fake) Guarded(base string) (string, error) {
 	return s.Unguarded, nil
 }
 
+// Bypass reads the rulesets the file puts on the branch; its default
+// branch is main.
+func (f *Fake) Bypass(branch string) (string, []Ruleset, error) {
+	s, err := f.load()
+	if err != nil {
+		return "", nil, err
+	}
+	if branch == "" {
+		branch = "main"
+	}
+	if s.RulesetsUnread != "" {
+		return branch, nil, fmt.Errorf("%w: %s", ErrUnreachable, s.RulesetsUnread)
+	}
+	var sets []Ruleset
+	for _, r := range s.Rulesets {
+		if r.Branch == branch {
+			sets = append(sets, r.Ruleset)
+		}
+	}
+	return branch, sets, nil
+}
+
 // resolve is a revision of the repository as a commit, "" when it is none.
 func (f *Fake) resolve(rev string) string {
 	out, err := exec.Command("git", "-C", f.Repo, "rev-parse", "--verify", "-q", rev+"^{commit}").Output()
