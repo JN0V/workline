@@ -1,0 +1,4 @@
+# The same answer, naming beside it a file its task did not give (#1440):
+# that file is read at the next run.
+- sources: {issue: 75, sources: ["core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SessionRepository.kt", "feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt"], quote: {path: "core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SessionRepository.kt", text: "suspend fun save(data: SessionData)"}, why: "The session repository's save, and the view model that calls it."}
+- ready: {issue: 75, why: "Need, steps, named scenarios and a Scope naming the file: complete."}

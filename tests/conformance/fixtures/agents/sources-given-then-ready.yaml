@@ -1,0 +1,5 @@
+# The product owner's answer on the Kotlin trial's #75 (#1440), on a bug
+# whose Scope names its file, given whole: it names that same file in
+# `sources`, a line quoted, then `ready`.
+- sources: {issue: 75, sources: ["core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SessionRepository.kt"], quote: {path: "core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SessionRepository.kt", text: "suspend fun save(data: SessionData)"}, why: "The issue is about the session repository's save."}
+- ready: {issue: 75, why: "Need, steps, named scenarios and a Scope naming the file: complete."}

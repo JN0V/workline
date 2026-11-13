@@ -1348,12 +1348,14 @@ func (p *Plan) summary(role string) {
 	// of the engine (ADR-0063, §6), which reads it at the run that
 	// follows. None for an issue this run readied, closed or split.
 	// A Scope written from code the task gave, the sources naming only
-	// that code, settles it too: nothing is left to read (#1089).
+	// that code, settles it too: nothing is left to read (#1089). So do
+	// sources naming only files the issue's own text names, given: they
+	// record what it is about, and lack nothing (#1440).
 	named, settled := map[int][]string{}, map[int]bool{}
 	for _, d := range p.Decisions {
 		switch {
 		case d.Mode != Act:
-		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue]:
+		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue] && !p.namedGiven(d.Act.Issue, d.Act.Sources):
 			named[d.Act.Issue] = append(named[d.Act.Issue], d.Act.Sources...)
 		case d.Act.Do == "ready" || d.Act.Do == "close" || d.Act.Do == "split":
 			settled[d.Act.Issue] = true
@@ -2098,6 +2100,18 @@ func (p *Plan) covered(id int, sources []string) bool {
 	return !slices.ContainsFunc(sources, func(s string) bool {
 		s = RepoPath(s)
 		return !slices.ContainsFunc(files, func(f string) bool { return holds(s, f) })
+	})
+}
+
+// namedGiven says whether each source is a file the issue's own title or
+// body names, and this run gave (#1440): naming it again lacks nothing.
+// A file found beside them, given as an excerpt, is read whole at the
+// next run (#1151).
+func (p *Plan) namedGiven(id int, sources []string) bool {
+	is := p.issues[id]
+	return p.given(id, sources) && !slices.ContainsFunc(sources, func(s string) bool {
+		s, _, _ = strings.Cut(RepoPath(s), "#")
+		return !strings.Contains(is.Title+"\n"+is.Body, s)
 	})
 }
 
