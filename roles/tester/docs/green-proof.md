@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/green.go, internal/tester/runcache.go, internal/tester/symptom.go, internal/tester/frozen.go, internal/tester/renamed.go, internal/tester/tester.go]
-checked: 4b0fd7a4
+checked: 923f08d5
 verified: agent:claude-code
 ---
 # The green proof: three runs out of three
@@ -112,7 +112,10 @@ flowchart LR
     [GitLab](../../../docs/gitlab/template.md)); never a run where the
     developer ran. A file of another tree, command or report is not read.
 - **The head three times**, one run after the other, in one fresh
-  checkout. Each run is `test-command`, its report read as JUnit XML.
+  checkout. Each run is `test-command`, its report read as JUnit XML,
+  stopped at `suite-max-seconds`, the test files no report holds yet
+  and the last lines said
+  ([#1425](https://github.com/JN0V/workline/issues/1425)).
 - **Never again until green**: three runs, not "until it passes".
 - **Why one checkout**: a second run there reuses the runner's build
   cache. On a copy of workline, a Go package: 4.5 s the first run,

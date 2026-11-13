@@ -6,7 +6,7 @@ sources:
   - internal/tester/missing.go
   - internal/tester/fresh.go
   - roles/developer/role.yaml
-checked: 8d58a704
+checked: 923f08d5
 verified: agent:claude-code
 ---
 # The proof and the caps: ready or a Draft
