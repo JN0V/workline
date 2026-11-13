@@ -40,3 +40,8 @@ build-errors:
       - '^Cannot find a parameter with this name: (?P<name>\S+)'
     test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|internal)\s+)?fun\s+(?:`([^`]+)`|(\w+))\s*\('
   - error: '^(?:Build|Settings) file ''(?P<file>[^'']+)'' line: \d+(?P<message>)$'
+  - error: '^(?P<file>\S.*?\.java):\d+: error: (?P<message>.+)$'
+    missing-name:
+      - '^cannot find symbol$'
+    name-line: '^\s*symbol:\s+\w+\s+(?P<name>\w+)'
+    test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|protected|private|static|final)\s+)*void\s+(\w+)\s*\('

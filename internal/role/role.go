@@ -410,7 +410,13 @@ func (r *Role) MergedSettings(c *ProjectConfig) map[string]any {
 	}
 	own := r.Settings
 	if d := c.PackDefaults[r.Name]; len(d) > 0 {
-		own = MergeSettings(own, d) // the packs' over the role's defaults, the project's over both
+		merged := MergeSettings(own, d) // the packs' over the role's defaults, the project's over both
+		// A pack never narrows what the role's default knows: its
+		// build-errors rows come first, the role's others follow.
+		if rows, ok := mergeErrorRows(d["build-errors"], own["build-errors"]); ok {
+			merged["build-errors"] = rows
+		}
+		own = merged
 	}
 	if len(r.Levels) == 0 {
 		return MergeSettings(own, project)
@@ -547,4 +553,28 @@ func TestDef(rolesDir, repo string) (testdef.Def, error) {
 		return d, fmt.Errorf("the tester's role, whose test-paths say which files are tests: %w", err)
 	}
 	return testdef.FromSettings(r.MergedSettings(cfg))
+}
+
+// mergeErrorRows are the pack's build-error rows, then the role's whose
+// error pattern the pack's rows do not hold.
+func mergeErrorRows(pack, role any) ([]any, bool) {
+	p, ok1 := pack.([]any)
+	r, ok2 := role.([]any)
+	if !ok1 || !ok2 {
+		return nil, false
+	}
+	seen := map[any]bool{}
+	for _, x := range p {
+		if m, ok := x.(map[string]any); ok {
+			seen[m["error"]] = true
+		}
+	}
+	out := slices.Clone(p)
+	for _, x := range r {
+		if m, ok := x.(map[string]any); ok && seen[m["error"]] {
+			continue
+		}
+		out = append(out, x)
+	}
+	return out, true
 }
