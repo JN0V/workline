@@ -485,7 +485,8 @@ jobs:
           # workline-objection.yml's job replied, which holds no token;
           # its end is a round, the project's runs not read.
           if [ "$RUN" = "workline objection" ]; then
-            replied=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs" --jq '[.jobs[] | select(.name == "replied" and .conclusion == "success")] | length') || replied=0
+            replied=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs" --jq '[.jobs[] | select(.name == "replied" and .conclusion == "success")] | length') ||
+              { echo "::warning title=workline::workline objection's run $RUN_ID not read: the reconciler asks within the hour"; exit 0; }
             [ "$replied" -gt 0 ] || { echo "workline objection's run on pull request $PR: no person's reply in a thread noticed: no round"; exit 0; }
             SHA=
           fi
