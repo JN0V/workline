@@ -98,8 +98,10 @@ what it can and asks for the rest:
   `needs-code`, [#1089](https://github.com/JN0V/workline/issues/1089);
   so does one in a run the line started again for the code the agent
   said it lacked, on the issue it is about, each file of its `sources`
-  given this time, whole or in part; a first run's is left out as below,
-  [#1146](https://github.com/JN0V/workline/issues/1146)),
+  given this time, whole or in part, a folder by a file below it; a
+  first run's is left out as below,
+  [#1146](https://github.com/JN0V/workline/issues/1146),
+  [#1433](https://github.com/JN0V/workline/issues/1433)),
   is left out, said `scope-unread`: its paths would be a guess,
   and a guessed folder can hold the issue behind an unrelated claim.
   Its paths, checked as above, are kept as the issue's sources, the

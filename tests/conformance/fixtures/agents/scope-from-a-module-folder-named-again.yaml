@@ -1,0 +1,12 @@
+# The same call, naming the same module folders again beside its Scope
+# (#1433).
+- sources: {issue: 39, sources: ["core/timelapse", "feature/timelapse"], why: "The snapshot storage of both modules is what the counter reads."}
+- refine:
+    issue: 39
+    validation: |
+      - **Counter after a pause:** Given a time-lapse taking a snapshot every 5 seconds, When the app is in the background for a minute, Then the counter shows only the snapshots saved.
+    scope: |
+      - `core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/SnapshotStorage.kt`: the count of snapshots saved.
+      - `feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt`: the files counted.
+    sources: ["core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/SnapshotStorage.kt", "feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt"]
+    why: "Validation and Scope were missing; the Scope names the files given below the folders."

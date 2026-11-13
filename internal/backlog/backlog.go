@@ -2051,13 +2051,14 @@ func (p *Plan) unshown(repo string, id int, sources []string) (unshown, shown []
 }
 
 // given says whether this run gave the agent the code of each source
-// named for an issue, a file each (CodeGiven): naming it is no reason
-// to read the issue again (#1089).
+// named for an issue (CodeGiven): a file given, or a folder a file below
+// which was given, a module's (#1433). Naming it is no reason to read
+// the issue again (#1089).
 func (p *Plan) given(id int, sources []string) bool {
 	files := p.config.CodeGiven[id]
 	return len(sources) > 0 && !slices.ContainsFunc(sources, func(s string) bool {
-		s, _, _ = strings.Cut(RepoPath(s), "#")
-		return !slices.Contains(files, s)
+		s = RepoPath(s)
+		return !slices.ContainsFunc(files, func(f string) bool { return holds(s, f) })
 	})
 }
 
@@ -2086,8 +2087,11 @@ func (p *Plan) scopeUnread(repo string, c Proposal) string {
 		return ""
 	}
 	// The code pre gave whole (CodeRead) counts too: files a comment
-	// names, as the developer's ask for its Scope does (#921).
-	given := slices.Contains(p.config.CodeRead, c.Issue) || !p.noCodeGiven(repo, c.Issue)
+	// names, as the developer's ask for its Scope does (#921); so does
+	// the code of a run again for what it named, a module folder's files
+	// given in part, its state keeping no source (#1433).
+	given := slices.Contains(p.config.CodeRead, c.Issue) || !p.noCodeGiven(repo, c.Issue) ||
+		p.config.RunAgain && slices.Contains(p.config.Scope, c.Issue) && len(p.config.CodeGiven[c.Issue]) > 0
 	if !given || p.codeFirst[c.Issue] && !p.given(c.Issue, p.firstNamed[c.Issue]) {
 		return fmt.Sprintf("its %[1]s was left out: no code of #%[2]d was given in this run, so its paths would be a guess. The code they name is read at the next run, and its %[1]s is written from that code", work.Name(work.Scope), c.Issue)
 	}
