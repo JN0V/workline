@@ -28,6 +28,11 @@
 - **Research:** [merging.md](../research/merging.md)
 - **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind) (built): at `enterprising`, a feature merges by the policy and the person's yes moves to the milestone's release candidate
 - **Extended by:** [ADR-0067](0067-a-role-request-behind-main-merges-main-in.md) (built): a role request the policy merges, in conflict with its base or held behind it, gets the base merged in, never rebased
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#8-a-release-is-split-by-its-nature)
+  (proposed): on workline, a fixes-only release ships after the process
+  engineer's step back, with no person's yes; a release adding contract
+  surface keeps it. No build session holds the App's key nor the
+  maintainer's admin token
 
 ## Context
 

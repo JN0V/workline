@@ -22,6 +22,12 @@
   Verification moves to the tester; the product owner keeps the Scope,
   as a hint
 - **Research:** [person-on-the-loop.md](../research/person-on-the-loop.md)
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#8-a-release-is-split-by-its-nature)
+  (proposed): §4's "a version ships on a person's yes" holds for a
+  release adding contract surface; on workline, a fixes-only release
+  ships after the process engineer's step back. §3: the process
+  engineer has a level, starting `cautious`. §1 confirmed: silence never
+  consents to a subtraction
 
 ## Context
 

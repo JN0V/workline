@@ -11,6 +11,9 @@
 - **Rewords:** principle 6 ([PRINCIPLES.md](../PRINCIPLES.md))
 - **Builds on:** [ADR-0011], [ADR-0042], [ADR-0044]; principles 7, 10,
   12, 13
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#7-build-sessions-write-issues-the-line-builds)
+  (proposed): workline's own build sessions hold neither the
+  maintainer's admin token nor the App's key; a role's agent keeps §2
 
 ## Context
 

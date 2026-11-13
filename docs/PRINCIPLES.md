@@ -18,6 +18,9 @@ choice is settled against this page.
    For now, where code would make a role rigid, the AI goes first; its
    independent parts become code later, to save tokens
    ([ADR-0066](adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)).
+   A new role starts as a prompt on the engine's plumbing, safe and
+   observed from day one
+   ([ADR-0068](adr/0068-the-line-steps-back-on-its-own-drift.md#3-prompt-first-code-what-converges)).
 5. **Its checks work without AI.** No model, no quota, no network: every
    check on converging facts still runs and still blocks; the agent stays
    a choice. Relaxed for now: a role need not work with agent `none`
@@ -29,7 +32,10 @@ choice is settled against this page.
    Where the forge splits rights natively, as in CI, the agent's step holds
    no write token; a separate step applies its proposals.
 7. **A rule that matters is a check.** A rule written only in prose is a wish.
-   Every defect that got through ends as a proven, mechanical guard.
+   A defect that got through ends as a case failing without its fix.
+   A new guard — a rule code, a setting, a marker — answers a stated
+   need, like any other mechanism
+   ([ADR-0068](adr/0068-the-line-steps-back-on-its-own-drift.md#1-drift-defined)).
 8. **Stay on the task.** Anything found outside the task's scope is handed
    to the role whose scope it is, not fixed on the spot.
 9. **Cut cascades.** Only direct consequences are handled in a change; the rest

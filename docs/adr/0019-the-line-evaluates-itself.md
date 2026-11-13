@@ -5,6 +5,13 @@
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0015 (the weekly
   sample), ADR-0018 (the product owner; one way in for every role's
   issues), principles 1, 4, 6, 7, 12
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#2-who-steps-back) (proposed):
+  the process engineer starts as a prompt on the engine's plumbing,
+  woken by events (a wake script on each merge, the `step-back` cord),
+  never weekly; its authority is a level, starting `cautious`; as its
+  level allows, it pauses a work area and proposes deletions through the
+  line's normal policy. "Nothing changes the line without a person"
+  holds only for what adds
 
 ## Context
 
