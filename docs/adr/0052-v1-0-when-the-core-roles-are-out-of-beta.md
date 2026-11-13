@@ -9,6 +9,11 @@
 - **Research:** [catch-and-cost.md](../research/catch-and-cost.md)
 - **Tracked by:** the GitHub milestone
   [v1.0](https://github.com/JN0V/workline/milestone/1)
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-replaced)
+  (not built): the "until then" freeze holds until ADR-0068's step 1
+  passes its test (nobody bypasses `main`, the guard guarded), then is
+  superseded; ADR-0068's steps 1 to 3 are its written exception. The
+  v1.0 bar stands until its step 7 decides what replaces it
 
 ## Context
 

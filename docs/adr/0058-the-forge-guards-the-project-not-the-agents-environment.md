@@ -11,6 +11,10 @@
 - **Rewords:** principle 6 ([PRINCIPLES.md](../PRINCIPLES.md))
 - **Builds on:** [ADR-0011], [ADR-0042], [ADR-0044]; principles 7, 10,
   12, 13
+- **Confirmed by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#6-nobody-bypasses-on-main):
+  §1 as written, `main`'s bypass list emptied so whoever pushes meets
+  the guards, the person included; §2's limit and its opt-in isolation
+  stand
 
 ## Context
 
