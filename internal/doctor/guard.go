@@ -1,6 +1,8 @@
 package doctor
 
 import (
+	"cmp"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -82,6 +84,70 @@ func boundsGuard(r *Report, o Options, projectForge string, line *routing.Config
 		r.add(Check{Area: "repository", Rule: "bounds-guard-tier-unread", Level: Warn,
 			Message: "GitLab's tier could not be read (" + g.PlanUnread + "), nor a code owner's approval of the CI files found: on Ultimate, include workline-bounds.gitlab-ci.yml from a pipeline execution policy; on Premium, require a code owner's approval; on Free, read each change to the CI files",
 			Fix:     boundsDoc})
+	}
+}
+
+// noBypassDoc is where a person reads why nobody bypasses the default
+// branch, and the emergency.
+const noBypassDoc = "docs/merge-policy.md#nobody-bypasses-main"
+
+// bypassWords says what a token may do past a ruleset, by GitHub's
+// current_user_can_bypass.
+var bypassWords = map[string]string{
+	"pull_requests_only": "on a pull request (`gh pr merge --admin`)",
+	"always":             "on a pull request and a push",
+	"exempt":             "its rules never applied to it",
+}
+
+// bypassGuard says whether this token's user may merge into the default
+// branch past its rulesets: nobody does, the person included, so every
+// merge goes through its checks and workline/accepted (ADR-0068 §6).
+// One API read a ruleset, no agent; read where the forge keeps rulesets
+// (GitHub), its rulesets only.
+func bypassGuard(r *Report, o Options, projectForge string) {
+	spec := o.Forge
+	if spec == "" {
+		spec = projectForge
+	}
+	if spec == "" && onGitHub(o.Repo) {
+		spec = "github"
+	}
+	f, err := forge.Open(spec, o.Repo)
+	if err != nil {
+		return // said by findingsOnMergeRequests
+	}
+	b, ok := f.(forge.Bypasser)
+	if !ok {
+		return
+	}
+	branch, sets, err := b.Bypass("")
+	if err != nil {
+		where := branch
+		if where == "" {
+			where = "the default branch"
+		}
+		r.add(Check{Area: "repository", Rule: "bypass-unread", Where: branch, Level: Note,
+			Message: "could not read who may bypass " + where + "'s rulesets: " + forge.Said(err), Fix: noBypassDoc})
+		return
+	}
+	var held []string
+	for _, s := range sets {
+		if s.CanBypass == "never" {
+			held = append(held, fmt.Sprintf("%q", s.Name))
+			continue
+		}
+		how := bypassWords[s.CanBypass]
+		if how == "" {
+			how = "GitHub does not say it cannot (" + cmp.Or(s.CanBypass, "unsaid") + ")"
+		}
+		r.add(Check{Area: "repository", Rule: "bypass-allowed", Where: branch, Level: Warn,
+			Message: fmt.Sprintf("this token can bypass %s's ruleset %q %s: a merge can skip its checks, workline/accepted included", branch, s.Name, how),
+			Fix: fmt.Sprintf("empty its bypass list: %s, or `gh api repos/{owner}/{repo}/rulesets/%d` then PUT it back with \"bypass_actors\": []; the emergency: %s",
+				cmp.Or(s.URL, "Settings → Rules → Rulesets"), s.ID, noBypassDoc)})
+	}
+	if len(held) > 0 && len(held) == len(sets) {
+		r.add(Check{Area: "repository", Rule: "no-bypass", Where: branch, Level: OK,
+			Message: fmt.Sprintf("nobody bypasses %s's ruleset %s with this token: every merge goes through its checks", branch, strings.Join(held, ", "))})
 	}
 }
 
