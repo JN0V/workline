@@ -191,9 +191,13 @@ func settled(repo, start string, patches []intent.Intention) (string, error) {
 }
 
 // mergeCommit is the merge of base into head with tree, made apart for
-// the proof: the engine makes the one pushed, with its message.
+// the proof: the engine makes the one pushed, with its message. It needs
+// no identity of the checkout's: a review job's runner has none (#1439).
 func mergeCommit(repo, tree, head, base, msg string) (string, error) {
 	cmd := exec.Command("git", "-C", repo, "commit-tree", tree, "-p", head, "-p", base, "-m", msg)
+	cmd.Env = append(os.Environ(),
+		"GIT_AUTHOR_NAME=workline", "GIT_AUTHOR_EMAIL=workline@localhost",
+		"GIT_COMMITTER_NAME=workline", "GIT_COMMITTER_EMAIL=workline@localhost")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()

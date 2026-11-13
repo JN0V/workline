@@ -1,0 +1,29 @@
+case: merge/conflict-round-with-no-git-identity
+about: >
+  A merge round runs where git has no identity, as a CI runner's review
+  job (#1439). `!2` conflicts with main in lib.sh, as in
+  merge/local-conflict-merged-in-by-a-round; its review round then runs
+  with no author nor committer set. The round's own commits, made apart
+  for its agent and its proof, need none: the merge is settled and
+  proven green, proposed for the apply, never refused by git.
+given:
+  repo: local-fix
+  setup:
+    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && printf '. ./lib.sh\\n[ \"$(sub 5 3)\" = 2 ]\\n' > tests/test_sub.sh && echo notes > NOTES.md && git add lib.sh NOTES.md tests/test_sub.sh && git commit -qm 'feat: sub'"
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [developer]}}
+run:
+  sh: >
+    workline follow --base main --verdict .git/verdict.json &&
+    git checkout -q workline/developer/3 && git config user.useConfigOnly true && { git config --unset-all user.name; git config --unset-all user.email; true; } && { env -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL git var GIT_COMMITTER_IDENT || echo no-identity; } &&
+    env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL
+    workline develop --merge-request 2 --no-apply --ai "cmd:sh $FIXTURES/agents/developer-settles-conflict.sh"
+expect:
+  exit: 0
+  stderr:
+    - "proof-green merge request 2 (info): 4 tests passed"
+  stdout: ["no-identity"]
+  stderr-lacks: ["Author identity unknown", "commit-tree"]
