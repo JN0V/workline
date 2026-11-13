@@ -64,6 +64,27 @@ evidence.
 - **Origin is not in git**: the squash drops session trailers; only the
   pull request says who built.
 
+### What CODEOWNERS would hold
+
+Commits on `main` from 10-16 to `e16e4e7b0`, 534 in all, by the paths
+they touch (`git log -- <paths>`):
+
+| Paths | Commits | Share |
+|---|---|---|
+| `roles/` | 313 | 59% |
+| of them, `status.md` pages | 146 | 27% |
+| of them, `role.yaml` | 79 | 15% |
+| of them, prompts (`instruction.md`, `policy.md`, lenses) | 51 | 10% |
+| [ADR-0068](../adr/0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)'s guarded list | 79 | 15% |
+| of them, `.github/workflows/`, `.github/actions/` | 59 | 11% |
+| of them, `.workline/config.yaml` | 24 | 4% |
+| of them, `AGENTS.md`, `CLAUDE.md`, `PRINCIPLES.md` | 8 | 1% |
+
+- **`roles/**` under CODEOWNERS** would ask the person's yes on most
+  commits; the guarded list, on about one in seven.
+- **Commits, not pull requests**: a pull request holds several; the
+  yeses asked are fewer than the commits counted.
+
 ## What the reviews found
 
 ### The panel, re-checked by its synthesis
