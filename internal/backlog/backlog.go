@@ -1290,10 +1290,12 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				if c.Do == "undepend" {
 					p.recordUndepend(c)
 				}
-				if c.Do == "sources" && c.Ticked == "" && !p.namedGiven(c.Issue, c.Sources) {
+				if c.Do == "sources" && c.Ticked == "" && !(decides(closes, c.Issue) && p.namedGiven(c.Issue, c.Sources)) {
 					// Its code read at the next run: no ask on it now. Sources
-					// naming the issue's own files, given whole, leave nothing
-					// to read: an ask beside them is asked now (#1440).
+					// naming the issue's own files, given whole, beside an act
+					// that decides on it, record what it is about: nothing to
+					// read, an ask beside them asked now (#1440). Alone, they
+					// ask for that code, as the agent's protocol says.
 					p.codeFirst[c.Issue] = true
 					p.firstNamed[c.Issue] = append(p.firstNamed[c.Issue], c.Sources...)
 				}
@@ -1352,8 +1354,8 @@ func (p *Plan) summary(role string) {
 	// follows. None for an issue this run readied, closed or split.
 	// A Scope written from code the task gave, the sources naming only
 	// that code, settles it too: nothing is left to read (#1089). Sources
-	// naming only the issue's own files, given whole, set no codeFirst:
-	// they lack nothing (#1440).
+	// naming only the issue's own files, given whole, beside an act that
+	// decides on it, set no codeFirst: they lack nothing (#1440).
 	named, settled := map[int][]string{}, map[int]bool{}
 	for _, d := range p.Decisions {
 		switch {
@@ -2104,6 +2106,17 @@ func (p *Plan) covered(id int, sources []string) bool {
 		s = RepoPath(s)
 		return !slices.ContainsFunc(files, func(f string) bool { return holds(s, f) })
 	})
+}
+
+// decides says whether the run's proposals hold an act deciding on issue
+// id's text or state, beside its sources (#1440).
+func decides(proposals map[int]Proposal, id int) bool {
+	for _, c := range proposals {
+		if c.Issue == id && slices.Contains([]string{"ready", "refine", "ask", "split", "close", "assume", "blocked", "unblock"}, c.Do) {
+			return true
+		}
+	}
+	return false
 }
 
 // namedGiven says whether each source is a file the issue's own title or
