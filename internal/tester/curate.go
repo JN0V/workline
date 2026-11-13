@@ -482,6 +482,7 @@ func proveRemoval(repo, base string, patches []intent.Intention, touched []strin
 	if s.ProofSeconds > 0 {
 		s.deadline = start.Add(time.Duration(s.ProofSeconds) * time.Second)
 	}
+	s.whole = true // bounded by curator-proof-seconds alone, as before #1425
 	p := &proof{base: base, command: proofCommand(s), mutation: strings.TrimSpace(s.MutationCommand)}
 	if p.mutation == "" { // no tool known for the language: pre let it through
 		p.mutation = "none"

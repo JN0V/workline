@@ -6,7 +6,7 @@ sources:
   - internal/tester/missing.go
   - internal/tester/fresh.go
   - roles/developer/role.yaml
-checked: 8d58a704
+checked: 9cf386a3
 verified: agent:claude-code
 ---
 # The proof and the caps: ready or a Draft
@@ -126,7 +126,7 @@ Step 3 of
 | `ai-max-tokens` | 500000 | the run's agent calls spent it in fresh tokens, as the agent reports them |
 | `ai-max-turns` | 300 | one agent call took them all, as it reports it |
 | `ai-max-seconds` | 3600 | the engine stops waiting and kills the agent |
-| `proof-seconds` | 900 | the tests stopped past it |
+| `proof-seconds` | 900 | the tests stopped past it; each run also at the tester's `suite-max-seconds` ([#1425](https://github.com/JN0V/workline/issues/1425)) |
 
 - **Fresh tokens**: the input not read from cache, cache writes
   included, and the output. An agent that loops reads its context

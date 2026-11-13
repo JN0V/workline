@@ -88,6 +88,7 @@ func Measure(repo, history string, s Settings) Measured {
 		v.Summary = "the measure did not run"
 		return Measured{Verdict: *v}
 	}
+	s.whole = true // timed whole: over suite-max-seconds is a warning here
 	command := s.Command
 	if strings.TrimSpace(s.CuratorCommand) != "" {
 		command = s.CuratorCommand
