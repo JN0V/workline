@@ -31,11 +31,12 @@
 - **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)
   (once its step 1 is built): "never alone, one changing what steers
   agents" keeps applying to the files that define oversight and
-  authority (`CODEOWNERS`, `AGENTS.md`, `CLAUDE.md`, `PRINCIPLES.md`,
-  CI workflows and actions, `.workline/config.yaml`), no longer to role
-  prompts, which take the line's normal path. No autonomous build
-  session holds the App's key nor the maintainer's admin token. Releases
-  are unchanged; a split is next, not decided
+  authority, listed in `CODEOWNERS` (`AGENTS.md`, `CLAUDE.md`,
+  `PRINCIPLES.md`, CI workflows and actions, `.workline/config.yaml`,
+  the reviewer's and the auditor's prompts), no longer to other role
+  prompts, which take the line's normal path. `main`'s bypass list is
+  empty: every merge, the person's too, takes the checks and
+  `workline/accepted`. Releases are unchanged
 
 ## Context
 

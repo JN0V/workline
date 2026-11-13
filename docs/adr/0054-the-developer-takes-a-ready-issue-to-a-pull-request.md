@@ -34,8 +34,9 @@
   stay refused
 - **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)
   (once its step 1 is built): the steering test shared with
-  [ADR-0042] narrows: a role's folder and a file named a prompt or an
-  instruction are no longer refused; agent files and gate files stay
+  [ADR-0042] narrows to the list in `CODEOWNERS`: a role's folder and a
+  file named a prompt or an instruction are no longer refused, save the
+  reviewer's and the auditor's prompts; agent files and gate files stay
 
 ## Context
 

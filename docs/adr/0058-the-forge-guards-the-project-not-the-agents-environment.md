@@ -11,13 +11,10 @@
 - **Rewords:** principle 6 ([PRINCIPLES.md](../PRINCIPLES.md))
 - **Builds on:** [ADR-0011], [ADR-0042], [ADR-0044]; principles 7, 10,
   12, 13
-- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#6-credentials-kept-apart)
-  (not built): workline's autonomous build sessions run as a second OS
-  user, in a container or in a CI job, with their own App's token only:
-  neither the maintainer's admin token nor workline's App key. §2's
-  limit stands for a session in the person's user and for a role's
-  agent; an interactive session on the person's explicit instruction is
-  the person
+- **Confirmed by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#6-nobody-bypasses-on-main):
+  §1 as written, `main`'s bypass list emptied so whoever pushes meets
+  the guards, the person included; §2's limit and its opt-in isolation
+  stand
 
 ## Context
 
