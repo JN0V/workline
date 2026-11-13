@@ -27,6 +27,7 @@ expect:
   summary: "took #3"
   findings:
     - {rule: no-code, level: warn}
+  not-pushed: [workline/developer/3]
   forge:
     issues:
       - id: 3
@@ -34,3 +35,4 @@ expect:
     merge-requests:
       - id: 1
         branch: workline/tester/issue-3
+      - {id: 2, absent: true}
