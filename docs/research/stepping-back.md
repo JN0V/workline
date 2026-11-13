@@ -46,44 +46,35 @@ evidence.
 
 ### Who built it
 
-- **Last 300 merged pull requests** (10-31 → 11-13): 237 opened by
-  sessions under the maintainer's account, 62 by workline's App (34 the
-  developer's, 16 releases, 12 the documentalist's), 1 by an outside
-  contributor.
-- **From 11-09**: 89 merged, 81 of them by sessions (91%), 8 by the App,
-  5 of those the developer's. After 11-09 the developer opened 6: one
-  merged ([#1452](https://github.com/JN0V/workline/pull/1452), 11-13),
-  one closed, four open on 11-13. The line kept building; the sessions
-  built most.
+- **Last 300 merged pull requests** (10-31 → 11-13): 237 by sessions
+  under the maintainer's account, 62 by workline's App (34 the
+  developer's), 1 by an outside contributor. From 11-09, sessions 81 of
+  89, the developer 5.
+- **The line kept building**: after 11-09 the developer opened 6 pull
+  requests, [#1452](https://github.com/JN0V/workline/pull/1452) merged
+  on 11-13, four open.
 - **262 ruleset bypasses** on `main` by the maintainer's account, 10-21
   → 11-13; 17 to 25 a day from 11-08 to 11-12 (the forge's rule-suites
   API).
 - **The sessions' standing orders lived outside the repository**: merge
   after a re-check, panels decide and sign for the maintainer, keep
   going overnight. `AGENTS.md` said the opposite; the later order won.
-- **Origin is not in git**: the squash drops session trailers; only the
-  pull request says who built.
+- **Origin is not in git**: only the pull request says who built.
 
 ### What CODEOWNERS would hold
 
-Commits on `main` from 10-16 to `e16e4e7b0`, 534 in all, by the paths
-they touch (`git log -- <paths>`):
+Commits on `main` from 10-16 to `e16e4e7b0`, each a squashed pull
+request, 534 in all, by the paths they touch (`git log -- <paths>`):
 
 | Paths | Commits | Share |
 |---|---|---|
 | `roles/` | 313 | 59% |
 | of them, `status.md` pages | 146 | 27% |
-| of them, `role.yaml` | 79 | 15% |
 | of them, prompts (`instruction.md`, `policy.md`, lenses) | 51 | 10% |
 | [ADR-0068](../adr/0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)'s guarded list | 79 | 15% |
 | of them, `.github/workflows/`, `.github/actions/` | 59 | 11% |
 | of them, `.workline/config.yaml` | 24 | 4% |
 | of them, `AGENTS.md`, `CLAUDE.md`, `PRINCIPLES.md` | 8 | 1% |
-
-- **`roles/**` under CODEOWNERS** would ask the person's yes on most
-  commits; the guarded list, on about one in seven.
-- **Commits, not pull requests**: a pull request holds several; the
-  yeses asked are fewer than the commits counted.
 
 ## What the reviews found
 
@@ -133,7 +124,6 @@ they touch (`git log -- <paths>`):
   freeze forbids the frame; need
   laundering is open, since the intent lens is asked only of a change
   closing an issue.
-- **Outside practice**: below.
 
 ## The unease backtest
 
@@ -174,14 +164,12 @@ at an instant, have flagged the maintainer's unease before they said it?
 
 **Limits.**
 
-- **About 4 independent situations**, not 8: E4–E8 overlap.
-- **Age leaks**: no control after 10-28, since nearly every later day
-  lies within 2 days of an episode.
+- **About 4 independent situations**, not 8: E4–E8 overlap. **Age
+  leaks**: no control after 10-28, every later day near an episode.
 - **Event-driven unease** (E1–E3) leaves no trace in repository numbers;
   it needs session-level facts.
-- **What would convince**: a forward test with the sheet, the rubric and
-  the thresholds frozen, the baselines pre-registered, situations
-  counted rather than sheets.
+- **What would convince**: a forward test, sheet, rubric, thresholds
+  and baselines frozen first, situations counted rather than sheets.
 
 ## Outside practice
 
@@ -201,13 +189,11 @@ at an instant, have flagged the maintainer's unease before they said it?
 | Each step: what do you expect, then check | [Toyota Kata 5Q](https://public.websites.umich.edu/~jmondisa/TK/KATA_Files/5Q_Card.pdf) | predictions scored at the next step back |
 
 **Where evidence is thin**: no study measures oversight of an AI system
-that builds itself; every lesson above is an analogy. The fitness
-function calibration numbers are a practitioner's, Sensenmann was read
-through an archive excerpt.
+that builds itself; every lesson above is an analogy, two of them read
+second hand (the calibration numbers, Sensenmann).
 
 ## Not settled here
 
 - **Whether the next drift is caught**: the triggers come from one
-  runaway; only the forward test tells.
-- **Cost**: no estimate yet for a simplicity lens on every pull request,
-  a widened auditor, or a process engineer's run per wake.
+  runaway. **Cost**: none estimated for a lens, a wider auditor, a
+  process engineer.
