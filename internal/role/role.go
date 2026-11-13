@@ -563,16 +563,20 @@ func mergeErrorRows(pack, role any) ([]any, bool) {
 	if !ok1 || !ok2 {
 		return nil, false
 	}
-	seen := map[any]bool{}
+	seen := map[string]bool{}
 	for _, x := range p {
 		if m, ok := x.(map[string]any); ok {
-			seen[m["error"]] = true
+			if e, ok := m["error"].(string); ok {
+				seen[e] = true
+			}
 		}
 	}
 	out := slices.Clone(p)
 	for _, x := range r {
-		if m, ok := x.(map[string]any); ok && seen[m["error"]] {
-			continue
+		if m, ok := x.(map[string]any); ok {
+			if e, ok := m["error"].(string); ok && seen[e] {
+				continue
+			}
 		}
 		out = append(out, x)
 	}
