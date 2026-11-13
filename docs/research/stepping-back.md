@@ -53,9 +53,9 @@ evidence.
 - **The line kept building**: after 11-09 the developer opened 6 pull
   requests, [#1452](https://github.com/JN0V/workline/pull/1452) merged
   on 11-13, four open.
-- **262 ruleset bypasses** on `main` by the maintainer's account, 10-21
-  → 11-13; 17 to 25 a day from 11-08 to 11-12 (the forge's rule-suites
-  API).
+- **392 ruleset bypasses** on `main` by the maintainer's account in the
+  month to 11-13, 272 from 10-21; 375 (96%) skipped only the missing
+  label ([the forge read](nobody-bypasses.md)).
 - **The sessions' standing orders lived outside the repository**: merge
   after a re-check, panels decide and sign for the maintainer, keep
   going overnight. `AGENTS.md` said the opposite; the later order won.
@@ -71,10 +71,11 @@ request, 534 in all, by the paths they touch (`git log -- <paths>`):
 | `roles/` | 313 | 59% |
 | of them, `status.md` pages | 146 | 27% |
 | of them, prompts (`instruction.md`, `policy.md`, lenses) | 51 | 10% |
-| [ADR-0068](../adr/0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)'s guarded list | 79 | 15% |
+| [ADR-0068](../adr/0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)'s guarded list | 90 | 17% |
 | of them, `.github/workflows/`, `.github/actions/` | 59 | 11% |
 | of them, `.workline/config.yaml` | 24 | 4% |
 | of them, `AGENTS.md`, `CLAUDE.md`, `PRINCIPLES.md` | 8 | 1% |
+| of them, the reviewer's and the auditor's prompts | 11 | 2% |
 
 ## What the reviews found
 
@@ -184,7 +185,7 @@ at an instant, have flagged the maintainer's unease before they said it?
 | Models share errors across providers; debate converges on them | [Kim et al. 2025](https://arxiv.org/abs/2506.07962); [Wynn et al. 2025](https://arxiv.org/abs/2509.05396) | blind verdicts, then a count; real use as ground truth |
 | A need's size is stated before its design | [Shape Up, ch. 3](https://basecamp.com/shapeup/1.2-chapter-03) | the appetite with the need |
 | Removing a thing with users breaks them; know why it was built | [Hyrum's law](https://www.hyrumslaw.com/); [Chesterton's fence](https://fs.blog/chestertons-fence/) | a deletion says why it was built |
-| An agent never approves or merges its own work | [Copilot coding agent](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/review-copilot-prs) | sessions with no bypass |
+| An agent never approves or merges its own work | [Copilot coding agent](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/review-copilot-prs) | nobody bypasses `main` |
 | A cheap trusted monitor on everything, a scarce judge on the top | [Greenblatt et al. 2024](https://arxiv.org/abs/2312.06942) | a wake script, then the process engineer |
 | Each step: what do you expect, then check | [Toyota Kata 5Q](https://public.websites.umich.edu/~jmondisa/TK/KATA_Files/5Q_Card.pdf) | predictions scored at the next step back |
 
