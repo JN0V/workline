@@ -46,9 +46,15 @@ evidence.
 
 ### Who built it
 
-- **Last 300 merged pull requests** (10-31 → 11-13): 238 opened by
-  sessions under the maintainer's account, 61 by workline's App.
-  workline's developer opened 33, none after 11-09.
+- **Last 300 merged pull requests** (10-31 → 11-13): 237 opened by
+  sessions under the maintainer's account, 62 by workline's App (34 the
+  developer's, 16 releases, 12 the documentalist's), 1 by an outside
+  contributor.
+- **From 11-09**: 89 merged, 81 of them by sessions (91%), 8 by the App,
+  5 of those the developer's. After 11-09 the developer opened 6: one
+  merged ([#1452](https://github.com/JN0V/workline/pull/1452), 11-13),
+  one closed, four open on 11-13. The line kept building; the sessions
+  built most.
 - **262 ruleset bypasses** on `main` by the maintainer's account, 10-21
   → 11-13; 17 to 25 a day from 11-08 to 11-12 (the forge's rule-suites
   API).
