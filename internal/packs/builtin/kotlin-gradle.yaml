@@ -30,3 +30,13 @@ code-navigation:
     param-headers: true
     bases: '\b(?:class|object|interface)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)'
     keywords: "fun val var override companion object data sealed suspend lateinit internal open inline when typealias Unit Int Long Boolean String Any Float Double"
+# build-errors: error lines of the test command's output a new test breaks the build with.
+build-errors:
+  - error: '^e: (?P<file>.+?\.kts?)(?::\d+:\d+:?|: \(\d+, \d+\):) (?P<message>.+)$'
+    missing-name:
+      - '^Unresolved reference ''(?P<name>[^'']+)'''
+      - '^Unresolved reference: (?P<name>\S+)'
+      - '^No parameter with name ''(?P<name>[^'']+)'' found'
+      - '^Cannot find a parameter with this name: (?P<name>\S+)'
+    test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|internal)\s+)?fun\s+(?:`([^`]+)`|(\w+))\s*\('
+  - error: '^(?:Build|Settings) file ''(?P<file>[^'']+)'' line: \d+(?P<message>)$'

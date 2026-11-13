@@ -25,6 +25,7 @@ One YAML file a language or ecosystem:
 | `detect` | `files`: marker names, at any depth (`go.mod`); `extensions`: the languages it knows, for `workline doctor` |
 | `test-paths` | the test files, as patterns, added to the generic ones: the tester's `test-paths` when it sets none |
 | `test-homes` | where a test's code lives, read before the generic homes: the tester's `test-homes` when it sets none |
+| `build-errors` | the rows reading the test command's build errors (the tester's `build-errors` format): the tester's `build-errors` when it sets none, the listed packs' rows joined |
 | `test-command` | a suggested test command, given by `workline doctor` when the tester has none; never run unless you set it |
 | `aside` | folders beside the code, ranked after it: the generic pack's only, for now |
 | `code-navigation` | how a language's functions are found with no build: [below](#code-navigation) |

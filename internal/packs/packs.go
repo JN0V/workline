@@ -67,10 +67,23 @@ type Pack struct {
 	// TestCommand is a suggested test-command, `workline doctor` gives it
 	// when the tester has none; never run unless the person sets it.
 	TestCommand string `yaml:"test-command"`
+	// BuildErrors are the tester's build-errors rows when the project
+	// sets none: error lines of the test command's output.
+	BuildErrors []BuildErrors `yaml:"build-errors"`
 	// Code are its languages' code navigation rows, read by
 	// internal/codenav: how a file's functions and declarations are found
 	// with no build.
 	Code []Code `yaml:"code-navigation"`
+}
+
+// BuildErrors is one row of the tester's build-errors setting, read from
+// a pack as it is from a project's config.
+type BuildErrors struct {
+	Error       string   `yaml:"error"`
+	MissingName []string `yaml:"missing-name"`
+	NameLine    string   `yaml:"name-line"`
+	MessageLine string   `yaml:"message-line"`
+	TestName    string   `yaml:"test-name"`
 }
 
 // Code is how one language's functions are found, and how its
@@ -329,19 +342,37 @@ func OfProject(repo string) ([]Pack, error) {
 
 // TesterDefaults are the tester's settings the listed packs give, each
 // field the union of theirs, then the generic pack's: test-paths,
-// test-homes. A pack adds what its ecosystem knows to what most share,
+// test-homes, build-errors. A pack adds what its ecosystem knows to what most share,
 // never narrows it: a Go project's tests/ folder stays tests. The
 // listed packs' homes come first, the first matching one wins; a listed
 // generic pack, the project's own file, stands for the built-in one.
 func TesterDefaults(listed []Pack) map[string]any {
 	var paths []any
 	var homes []any
+	var errs []any
+	seenE := map[string]bool{}
 	seenP, seenH := map[string]bool{}, map[Home]bool{}
 	all := slices.Clone(listed)
 	if !slices.ContainsFunc(listed, func(p Pack) bool { return p.Name == Generic }) {
 		all = append(all, Builtin()[Generic])
 	}
 	for _, p := range all {
+		for _, b := range p.BuildErrors {
+			if seenE[b.Error] {
+				continue
+			}
+			seenE[b.Error] = true
+			row := map[string]any{"error": b.Error}
+			if len(b.MissingName) > 0 {
+				row["missing-name"] = slices.Clone(b.MissingName)
+			}
+			for k, v := range map[string]string{"name-line": b.NameLine, "message-line": b.MessageLine, "test-name": b.TestName} {
+				if v != "" {
+					row[k] = v
+				}
+			}
+			errs = append(errs, row)
+		}
 		for _, t := range p.TestPaths {
 			if !seenP[t] {
 				seenP[t] = true
@@ -361,6 +392,9 @@ func TesterDefaults(listed []Pack) map[string]any {
 	}
 	if len(homes) > 0 {
 		out["test-homes"] = homes
+	}
+	if len(errs) > 0 {
+		out["build-errors"] = errs
 	}
 	return out
 }

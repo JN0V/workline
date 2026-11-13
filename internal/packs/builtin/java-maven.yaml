@@ -21,3 +21,10 @@ code-navigation:
     bases: '\b(?:extends|implements|with)\s+([A-Z]\w*)'
     param-headers: true
     keywords: "extends implements final abstract synchronized throws instanceof interface record boolean String Integer Object Override"
+# build-errors: error lines of the test command's output a new test breaks the build with.
+build-errors:
+  - error: '^(?P<file>\S.*?\.java):\d+: error: (?P<message>.+)$'
+    missing-name:
+      - '^cannot find symbol$'
+    name-line: '^\s*symbol:\s+\w+\s+(?P<name>\w+)'
+    test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|protected|private|static|final)\s+)*void\s+(\w+)\s*\('
