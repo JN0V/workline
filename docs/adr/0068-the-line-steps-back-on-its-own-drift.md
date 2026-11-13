@@ -1,27 +1,31 @@
 # ADR-0068: The line steps back on its own drift, and its builders go through it
 
 - **Status:** accepted by the maintainer's merge of its pull request;
-  not built. It commits to [build steps 1 to 3](#build-order) and
-  [principles 4 and 7](#3-principles-4-and-7-reworded), which alone
-  take effect at merge. The rest waits for step 1's
-  [test](#6-credentials-kept-apart)
-  ([§9](#9-the-old-brakes-hold-until-step-1-passes)); steps 4 to 7 are
-  [next](#next-each-decided-when-reached), each decided when reached.
+  not built. Only [principles 4 and 7](#3-principles-4-and-7-reworded)
+  take effect at merge. It commits to [build steps 1 to 3](#build-order);
+  the old brakes hold until replaced
+  ([§9](#9-the-old-brakes-hold-until-replaced)); steps 4 to 7 are
+  [next](#next-each-decided-when-reached). Standing orders kept outside
+  the repository are retired at acceptance ([§5](#5-the-persons-assistant-goes-through-the-line)).
 - **Date:** 2026-11-13
 - **Decided by:** the maintainer, in direction, after three independent
   reviews and an adversarial review of this record; its scope narrowed
-  after a further independent review, 2026-11-13
+  after a further independent review; a sessions' own identity and OS
+  isolation replaced by "nobody bypasses" after a check of the forge,
+  2026-11-13
 - **Builds on:** [ADR-0005], [ADR-0018], [ADR-0026], [ADR-0044],
-  [ADR-0064], [ADR-0065], [ADR-0066]; principles 1, 4, 6, 7, 13, 15
+  [ADR-0064], [ADR-0065], [ADR-0066]; principles 1, 4, 6, 7, 10, 13, 15
   ([PRINCIPLES.md](../PRINCIPLES.md))
 - **Amends:** principles 4 and 7, at merge; [ADR-0042] (what never
-  merges alone), [ADR-0054] (the developer's steering bound) and
-  [ADR-0058] (the sessions' credentials), once step 1 is built;
-  [ADR-0052] (its freeze) and [ADR-0063] (its standing stop), once
-  step 1 passes its test
+  merges alone) and [ADR-0054] (the developer's steering bound), once
+  step 1 is built; [ADR-0052] (its freeze), once step 1 passes its
+  test; [ADR-0063] (its standing stop), once step 3 is built
 - **Confirms:** [ADR-0038] and [ADR-0060] §1 (silence is never a yes);
-  [ADR-0044] (the App's key stays with the default branch's runs)
-- **Research:** [stepping-back.md](../research/stepping-back.md)
+  [ADR-0044] (the App's key stays with the default branch's runs);
+  [ADR-0058] §1 and §2 (whoever pushes meets the forge's guards;
+  locally an agent has the person's rights, isolation an opt-in)
+- **Research:** [stepping-back.md](../research/stepping-back.md),
+  [nobody-bypasses.md](../research/nobody-bypasses.md)
 
 ## Context
 
@@ -35,13 +39,14 @@ Measured on `main` at `e16e4e7b0`, the forge read on 2026-11-13
 - **The build sessions drove it, not the line**: sessions under the
   maintainer's account opened 237 of the last 300 merged pull requests
   (10-31 → 11-13), workline's App 62, 34 of them the developer's; from
-  11-09, 81 of the 89 merged. They bypassed `main`'s ruleset 262 times,
-  under standing orders kept outside the repository. workline's roles
-  wrote 0.6% of the Go; no role observes a session ([ADR-0046]).
+  11-09, 81 of the 89 merged. Under standing orders kept outside the
+  repository, they bypassed `main`'s ruleset 392 times in the month to
+  11-13, 375 of them (96%) only for a missing `workline:accepted`
+  label, the other checks green. workline's roles wrote 0.6% of the
+  Go; no role observes a session ([ADR-0046]).
 - **The line kept building, and well**: its developer's [#1452] merged
-  on 11-13, four more were open; on DomoticsCore, 8 of 8 of its code
-  pull requests were accepted, one over-built, which the reviewer
-  missed.
+  on 11-13, four more open; on DomoticsCore, 8 of 8 of its code pull
+  requests accepted, one over-built, missed by the reviewer.
 - **Only the maintainer's unease stepped back**; agent panels, briefed by
   the builder, answered "how", never "whether".
   [A backtest](../research/stepping-back.md#the-unease-backtest): AI
@@ -51,11 +56,13 @@ Measured on `main` at `e16e4e7b0`, the forge read on 2026-11-13
 
 ```mermaid
 flowchart LR
-  sessions["<b>Build sessions</b><br/>own App, no bypass"] --> issues["<b>Issues</b>"]
-  issues --> line["<b>The line</b><br/>builds, reviews, merges"]
-  sessions --> guarded["<b>Guarded files</b><br/>person's yes"]
-  line --> wake["<b>Wake script</b><br/>no AI, prints"]
-  wake --> person["<b>The person</b><br/>reads, pulls the cord"]
+  person["<b>The person</b><br/>and their assistant"] --> issues["<b>Issues</b>"]
+  issues --> line["<b>The line</b><br/>builds, reviews"]
+  person --> prs["<b>Their pull requests</b><br/>their label"]
+  line --> main["<b>main</b><br/>nobody bypasses"]
+  prs --> main
+  main --> wake["<b>Wake script</b><br/>no AI, prints"]
+  wake --> person
 ```
 
 ### 1. Drift, defined
@@ -95,116 +102,122 @@ guard", becomes:
 - **Why**: the old sentence ordered a guard per defect, the source of
   the 531 rule codes; each had its issue, so "answers a need" alone
   would not bite.
-- **Both take effect at merge**: their mechanisms exist. The
-  conformance and evaluation suites hold a case today; principle 4
-  orients the next new role, whose first task checks that `run-role`
-  takes a role made of a prompt and shared `pre`/`post`.
+- **Both take effect at merge**: the suites exist; the next new role's
+  first task checks that `run-role` takes a prompt and shared
+  `pre`/`post`.
 
 ### 4. The guard is guarded
 
-- **Only the files that define oversight and authority** go under
-  CODEOWNERS, with code-owner review:
+- **Only the files that define oversight and authority are guarded.**
+  Their list is `CODEOWNERS`, in the forge's words; the engine reads it
+  as [ADR-0042]'s "never merges alone", so the two are one list:
   - `CODEOWNERS`, `AGENTS.md`, `CLAUDE.md`, `docs/PRINCIPLES.md`;
   - `.github/workflows/**`, `.github/actions/**`: what runs the checks
     and holds the App's key;
   - `.workline/config.yaml`, the only file under `.workline/`: merge
     autonomy, routing, gates, the reviewer's ignore list, and each
     role's level, pinned there in step 1;
+  - the reviewer's and the auditor's prompts (`instruction.md`,
+    `persona.md`, `policy.md`, lenses, kinds): the oversight that reads
+    every other change;
   - the wake script and its triggers (step 3); the process engineer's
     brief, if step 6 builds it.
-- **Role prompts are not guarded**: a role's `instruction.md`,
-  `policy.md`, lenses and `role.yaml` take the line's normal path. The
-  reviewer reads them (step 1 takes them out of workline's ignore list
-  of `*.md` and `docs/**`); the auditor samples the acts; the process
-  engineer, if built, may subtract.
+- **A guarded file merges on the person's label**, never by the policy
+  alone. GitHub's required code-owner review stays off with one owner:
+  an author cannot approve their own pull request, nor an App own a
+  path; a second owner turns it on. On GitLab Premium, Code Owner
+  approval is used, on the CI files at least, since a merge request
+  runs its own `.gitlab-ci.yml` (from the documentation, not tried).
+- **Other role prompts are not guarded**: they take the line's normal
+  path. The reviewer reads them (step 1 takes them out of its ignore
+  list); the auditor samples the acts.
 - **Why**: the person stays on the loop, not in it. Since 10-16, 313 of
-  534 commits on `main` touched `roles/` (59%); the guarded list, 79
-  (15%), 59 of them workflows
-  ([the count](../research/stepping-back.md#what-codeowners-would-hold)).
-  Moving judgement from Go to prompts sends more change into `roles/`;
-  a yes on each would make the person a bottleneck, or a rubber stamp.
-- **[ADR-0042]'s rule narrows**: "a pull request changing what steers
-  agents never merges alone" keeps applying to the guarded list, no
-  longer to role prompts. The steering test the routine merge shares
-  with [ADR-0054]'s developer bounds narrows alike in step 1: a role's
-  folder and a file named a prompt or an instruction leave it; agent
-  files and gate files stay.
-- **Who writes them**: a session under its own App (§5); they merge on
-  the person's code-owner review, an assisted yes (§7).
-- **Escapes it, said**: a role's `levels` table in its `role.yaml`
-  (the wake script prints each change); a facet kept in
-  `~/.config/workline/roles/`; a role prompt the line changes, with the
-  reviewer and the auditor as its net.
+  534 commits touched `roles/` (59%), the guarded list 90 (17%), 59 of
+  them workflows ([the count](../research/stepping-back.md#what-codeowners-would-hold));
+  a yes on each prompt would make the person a bottleneck, or a stamp.
+- **[ADR-0042]'s "what steers agents never merges alone" narrows** to
+  that list, and [ADR-0054]'s steering bound alike: other role folders
+  and files named a prompt leave it; agent and gate files stay.
+- **Escapes it, said**: a role's `levels` table (printed by the wake
+  script); a facet in `~/.config/workline/roles/`; a role prompt the
+  line changes, the reviewer and the auditor as its net; an ADR,
+  printed, not guarded (160 of 534 commits touch `docs/adr/`).
 - **Outcome measures are never builders' goals**: no brief cites them.
 
-### 5. Build sessions write issues; the line builds
+### 5. The person's assistant goes through the line
 
-- **Sessions no longer code workline directly.** They write issues, as
-  the person does, under their own App; the line builds them.
-- **Paused from 2026-11-13**, the trial's hourly line too, until steps
-  1 and 2 are done. This record pauses no role: the line keeps building
-  workline's own issues.
+- **On explicit instruction, the assistant is a contributor.** The
+  person, locally with their own assistant (any agent, or none), works
+  the normal way: workline's local roles run on the commits; the person
+  pushes and accepts with the label. In `AGENTS.md` (step 2): never
+  `--admin`, never a ruleset edit, never the label on its own.
+- **A body of work goes to the line as issues**: a series of changes,
+  a night's run, a fleet of subagents write issues; the line builds
+  them. The difference, a specific act or a body of work, is kept for
+  traceability only: who instructed what, on which item.
+- **Paused, from acceptance until step 2**: sessions building workline
+  on their own under standing orders; the person instructs it.
+  **Not paused**: the line's roles; the person's assisted work on
+  explicit instruction, steps 1 to 3 included.
+- **Standing orders kept outside the repository** (merge after a
+  re-check, panels sign, keep going overnight) are retired at
+  acceptance; the maintainer's assistant removes them.
 - **Fallback, when the line is broken and cannot fix itself**: the
-  person opens it; a session's pull request waits for the person's yes.
-- **Their standing orders move into `AGENTS.md`**, versioned and
-  visible; the out-of-repository orders that contradict it are deleted,
-  since a session reloads them.
-- **What it costs**: longer latency per item; when CI is broken,
-  sessions get stuck instead of forcing.
+  person's pull request fixes it, on their label; when even the label
+  cannot merge, §6's emergency.
+- **What it costs**: 141 of the last 300 merges were the maintainer's
+  account's, with no label; each now takes it. When CI is broken, work
+  waits instead of forcing.
 
-### 6. Credentials, kept apart
+### 6. Nobody bypasses on `main`
 
-An **autonomous session** works without the person reading each act: a
-background run, an overnight loop, a fleet of subagents, a scheduled
-job. An **interactive session** is the person at the keyboard, in their
-own OS user, each act on their explicit instruction: the person acting
-([§7](#7-a-persons-yes-is-assisted-never-delegated)), under their
-account. Where a session runs tells which, never what it says.
-
-- **On a person's machine**: autonomous sessions run as a second OS
-  user (say `workline-builder`), or in a rootless container whose only
-  mounts are the working copy and the session's token.
-  - **Its credentials**: a git credential helper and `GH_TOKEN`, set per
-    session, mint a one-hour installation token of the sessions' App,
-    whose key that user alone reads.
-  - **Out of its reach**: the person's `gh` login, keyring, SSH keys and
-    browser; workline's App key. The person's home is `0700`; the
-    keyring answers on the person's own session bus only.
-- **In CI or a remote session**: the job holds only the sessions' App
-  token, a secret of its own environment. workline's App key stays in
-  the environment only the default branch may use ([ADR-0044]); no
-  session's job declares it, and the workflows that do are guarded.
-- **On the forge**: the sessions' App is on no bypass list and owns no
-  path; `main` requires a pull request, its checks, and code-owner
-  review on the guarded list. The admin bypass is the person's alone.
-- **Enforced**: the kernel's rights between two users, or the
-  container's mounts; the forge's ruleset, code owners, environments.
-- **Convention, said**: that autonomous work starts as the second user,
-  never in the person's shell, with no copy of their token.
-  [ADR-0058] §2's limit stands for a session in the person's user, and
-  for a role's agent.
-- **Caught after the fact**: the wake script prints the ruleset bypasses
-  and the share of pull requests opened by the person's account against
-  the sessions' App.
-- **The test**, from an autonomous session's shell, and alike from its
-  CI job: `gh auth status` shows the sessions' App only; a push to
-  `main` is refused; reading the person's `gh` config, keyring or
-  workline's App key fails; no token in the environment bypasses the
-  ruleset.
+- **`main`'s ruleset has an empty bypass list**, the person included.
+  Every merge goes through the same required checks and
+  `workline/accepted`, which only workline's App sets, on a head the
+  policy or the person's `workline:accepted` label accepts: [ADR-0058]
+  §1 as written. Only `main`: the release branch keeps workline's App
+  on its bypass list, an allow-list of who pushes there.
+- **Nothing legitimate needs a bypass**: the App's merges, releases,
+  gardening, a labelled pull request ([the forge read](../research/nobody-bypasses.md)).
+- **The emergency, written** in [the merge policy](../merge-policy.md)
+  (step 1): when no head can get `workline/accepted` (say `follow`
+  broken on `main`, so its own fix cannot merge), the person
+  deliberately edits the ruleset: adds themself, merges, removes
+  themself.
+- **Detected**: the wake script prints a change of the ruleset (its
+  public `updated_at`) and a merged head without the App's successful
+  `workline/accepted`; `workline doctor` checks
+  `current_user_can_bypass: never`.
+- **Locally, nothing changes**: the assistant has the person's rights,
+  isolation an opt-in ([ADR-0058] §2; principle 10).
+- **The honest limit**: a session holding the person's token can still
+  set the label or edit the ruleset. It can no longer force without
+  breaking a written rule, and leaves a trace. With no forge, nothing
+  enforces who merges (principle 12).
+- **An optional guard, untested, a follow-up**: the daily login as a
+  fine-grained token without Administration; rulesets edited in the
+  browser only. Never required.
+- **On GitLab Premium**, from its documentation, not tried: `main`
+  protected with "Allowed to push and merge: No one", "Pipelines must
+  succeed", Code Owner approval required; the emergency is a Maintainer
+  changing the protection, recorded in the project's audit events.
+- **The test** of step 1, with the person's token: `doctor`'s check
+  passes; `gh pr merge --admin` without `workline/accepted` and a push
+  to `main` are refused. On GitLab: a Maintainer's push to `main` and a
+  merge on a failed pipeline are refused.
 
 ### 7. A person's yes is assisted, never delegated
 
-Where a person's yes is asked (a guarded file, a session's fallback
-pull request), they need not read the change line by line:
+Where a person's yes is asked (a guarded file, a pull request of
+theirs), they need not read the change line by line:
 
 - **How it goes**: their own assistant (any agent, or none) gives an
   independent analysis; they look closer at the sharp points, then say
   yes. The assistant may act in their name, on that instruction.
 - **It is the person's yes when** given for that item, at that moment,
   on their explicit instruction, never a standing order ("the panel
-  signs for me"): standing orders are what ran away; on an analysis not
-  from the session or role that wrote the change; traced, who
-  instructed it on which summary.
+  signs for me"); on an analysis not from whoever wrote the change;
+  traced, who instructed it on which summary.
 - **Silence is never a yes** to merge, release or delete
   ([ADR-0060] §1, [ADR-0038]).
 
@@ -220,25 +233,24 @@ It never blocks a merge (principle 15).
 | A role's prompt, `levels` table or default level changed; words per prompt | prompts steer the line |
 | The same area fixed again and again; a fix reopened | symptoms without cause |
 | A pull request merged closing no issue; issues opened by builders | need laundering |
-| Ruleset bypasses; pull requests by the person's account against the sessions' App | the credentials' split |
+| `main`'s ruleset changed; a merged head without the App's `workline/accepted`; pull requests by the person's account against the line's | nobody bypasses |
 | The cord: a `step-back` label anyone may set | the person's unease, or a role's |
 
-- **What real use runs** is logged in each project's run records:
-  which settings, acts and commands fire. A mechanism that never fires
-  is a deletion candidate.
-- **Its limit**: a tripwire for honest drift; a mechanism hidden inside
+- **What real use runs** is logged in each project's run records; a
+  setting, act or command that never fires is a deletion candidate.
+- **Its limit**: a tripwire for honest drift; a mechanism hidden in
   existing code escapes it.
 
-### 9. The old brakes hold until step 1 passes
+### 9. The old brakes hold until replaced
 
-- **[ADR-0052]'s freeze and [ADR-0063]'s standing stop stay in force**
-  until step 1 passes [§6's test](#6-credentials-kept-apart). Merging
-  this record lifts neither.
-- **Then both are superseded**: sessions go through the line with no
-  bypass; a fix repeated in one area is a trigger (step 3) and anyone's
-  cord. [ADR-0063]'s other working agreements stand.
-- **[ADR-0052]'s v1.0 bar stands** until step 7 decides what replaces
-  it.
+- **[ADR-0052]'s freeze stays** until step 1 passes
+  [§6's test](#6-nobody-bypasses-on-main). Steps 1 to 3 are its written
+  exception: the person builds them with their assistant (§5), the
+  guarded files on their label.
+- **[ADR-0063]'s standing stop stays** until step 3 is built, which
+  brings its replacement: a fix repeated in one area is a trigger, and
+  anyone's cord. Its other working agreements stand.
+- **[ADR-0052]'s v1.0 bar stands** until step 7.
 
 ## Not chosen
 
@@ -246,18 +258,20 @@ It never blocks a merge (principle 15).
   included: a wall moves the proxy, as [ADR-0064] found for size.
 - **A clock**: the wake runs on merges, never on a calendar.
 - **`roles/**` under CODEOWNERS**: a yes on most commits (§4).
-- **A bot account or workline's App for the sessions**: a machine user
-  counts as a person's yes; the App signs the acceptance.
+- **A sessions' own App or bot, a second OS user or a container as a
+  requirement**: it bends the person's machine so the forge holds;
+  [ADR-0058] §2 keeps isolation an opt-in.
+- **Required code-owner review with one owner** on GitHub: a guarded
+  file could never merge, or the bypass would come back.
 
 ## Consequences and risks
 
-- **No teeth until step 1 passes its test**, and partly convention
-  after it on a person's machine (§6); the old brakes hold until then.
-- **The person's yes, sized**: about 15% of commits, mostly workflows;
+- **Teeth at step 1 are the forge's**; the label and the ruleset edit
+  stay in reach of the person's token, printed (§6).
+- **The person's yes, sized**: about 17% of commits, mostly workflows;
   if it slows the line, a record revisits the list.
-- **Throughput**: the line merged 5 of the 89 pull requests merged from
-  11-09, the sessions 81; latency per item grows until the line takes
-  their share.
+- **Throughput**: from 11-09 the developer merged 5 of 89, the
+  sessions 81; latency grows until the line takes their share.
 - **Prompts reviewed by an agent**: the reviewer has never read prose;
   its first rounds on role prompts are unmeasured.
 - **In-sample**: the triggers come from one runaway.
@@ -266,14 +280,13 @@ It never blocks a merge (principle 15).
 
 Each an issue through the product owner. Decided:
 
-1. **The sessions' App, credentials apart, CODEOWNERS** on §4's list:
-   the person's one-time setup (§6); the steering test narrowed, role
-   prompts out of the reviewer's ignore list, each role's level pinned
-   in `.workline/config.yaml`. Done when §6's test passes, on the
-   machine and in CI.
-2. **`AGENTS.md`**: the sessions' rules (§5 to §7); their
-   out-of-repository orders listed, those contradicting it deleted.
-   Sessions resume.
+1. **Nobody bypasses, CODEOWNERS** on §4's list: `main`'s bypass list
+   emptied; the emergency written; `doctor`'s check; the steering test
+   reading `CODEOWNERS`; role prompts out of the reviewer's ignore
+   list; each role's level pinned in `.workline/config.yaml`. Done when
+   §6's test passes.
+2. **`AGENTS.md`**: the assistant's rules (§5 to §7). Sessions resume
+   under them.
 3. **The wake script**, print only (§8), with its conformance cases.
 
 ## Next, each decided when reached
@@ -283,12 +296,11 @@ real-use round on steps 1 to 3.
 
 4. **A simplicity lens** in the reviewer, advisory first, calibrated on
    past pull requests.
-5. **The auditor's draw** of a person's own changes, a session's
+5. **The auditor's draw** of a person's own changes, an assistant's
    included ([ADR-0046]).
 6. **The process engineer** ([ADR-0019], [#89]): reads the wake script
    and the auditor, runs five whys, at a level ([ADR-0060] §3); with
-   it, whether a fixes-only release ships after its step back
-   ([ADR-0060] §4).
+   it, a fixes-only release's yes ([ADR-0060] §4).
 7. **What replaces [ADR-0052]'s v1.0 bar**: criteria from real use,
    defects per processed issue preferred to a fix share.
 
@@ -296,8 +308,8 @@ real-use round on steps 1 to 3.
 
 Each part of its step's issue, none blocking.
 
-- **The second user or the container first**, and how each reads on
-  GitLab's CI and the local forge (step 1).
+- **Whether workline's App can read** the ruleset's history and the
+  rule suites, or the wake script reads `updated_at` only (step 3).
 - **The steering test on a project other than workline**: its role
   folders, its files named a prompt (step 1).
 - **"Again and again", "an area"**: read from files and the forge,
