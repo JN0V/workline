@@ -100,7 +100,9 @@ comments, asked only when `story-words` flags a comment, beside the lens
 in turn, never in its place.
 Every one on a machine; on a merge request one a push, in turn
 (`lenses-per-push`), with a block's lens when the push changes its file
-([more](judge.md#a-block-stands-until-a-commit-answers-it)), every one
+([more](judge.md#a-block-stands-until-a-commit-answers-it)), and the
+tests lens when it changes the test of a file it found untested
+([more](lines.md)), every one
 with `--input lenses=all`, once when it becomes ready ([below](#every-lens-once-when-it-becomes-ready));
 none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 

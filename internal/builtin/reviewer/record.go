@@ -340,6 +340,42 @@ func answering(blocks []Block, files []File, skip map[string]string) []string {
 	return out
 }
 
+// retested are the lenses whose judge reads tests, asked again on a push
+// that changes a test file touching the file of a finding of theirs a
+// run before judged true (#1417): their conversation is settled only by
+// their reading again (readAgain), and the turn of lenses may give the
+// push another lens. A push changing no such test asks none of them.
+func retested(repo string, s Settings, head string, judged []Answered, files []File, skip map[string]string) []string {
+	changed := paths(files)
+	lensOf := lensReader(repo)
+	tested := map[string]bool{}
+	var out []string
+	for _, j := range judged {
+		if !j.Yes || slices.Contains(out, j.Lens) || !slices.Contains(s.Lenses, j.Lens) {
+			continue
+		}
+		if _, ok := skip[j.Lens]; ok {
+			continue
+		}
+		path, _, ok := fileLine(j.Where)
+		if !ok {
+			continue
+		}
+		if l, err := lensOf(j.Lens); err != nil || l.Judge.Reads != "tests" {
+			continue
+		}
+		hit, seen := tested[path]
+		if !seen {
+			hit = slices.ContainsFunc(testFiles(repo, head, path, s.Tests), func(f string) bool { return slices.Contains(changed, f) })
+			tested[path] = hit
+		}
+		if hit {
+			out = append(out, j.Lens)
+		}
+	}
+	return out
+}
+
 // reread leaves out the standing blocks a review read again (#326): a
 // whole one, their lens answering, given the cause's file among those the
 // new commits change, or its issue. Found again and blocking, it is the
