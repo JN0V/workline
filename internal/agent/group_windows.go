@@ -12,3 +12,6 @@ func killGroup(*exec.Cmd) error { return nil }
 
 // InGroup leaves cmd as it starts on Windows, as inGroup does.
 func InGroup(*exec.Cmd) {}
+
+// KillGroup does nothing on Windows, as InGroup.
+func KillGroup(*exec.Cmd) {}
