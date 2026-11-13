@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/green.go, internal/tester/runcache.go, internal/tester/symptom.go, internal/tester/frozen.go, internal/tester/renamed.go, internal/tester/tester.go]
-checked: 923f08d5
+checked: 9cf386a3
 verified: agent:claude-code
 ---
 # The green proof: three runs out of three
