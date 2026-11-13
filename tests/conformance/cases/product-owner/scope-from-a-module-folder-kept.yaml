@@ -2,7 +2,7 @@ case: product-owner/scope-from-a-module-folder-kept
 about: >
   #1433, the Kotlin trial's #39: an issue naming no code, the product
   owner named the module folders core/timelapse and feature/timelapse,
-  no line quoted: its state keeps no source. Run again with those folders, it is given the files below them and writes a Scope from them: kept, not dropped as unread, nor the issue blocked for a person.
+  no line quoted: its state keeps no source. Run again with those folders, cut, it writes a Scope naming only the file it was given: kept, not dropped as unread, nor the issue blocked.
 given:
   repo: backlog
   setup:
@@ -11,8 +11,8 @@ given:
       printf 'plugins { kotlin("jvm") }\n' > core/timelapse/build.gradle.kts
       printf 'plugins { kotlin("jvm") }\n' > feature/timelapse/build.gradle.kts
       git add . && git commit -qm 'feat: TraceGlass, reduced, from the Kotlin trial'
-  # Cut as the trial's 16 kB cut its 9 files: FileSnapshotStorage.kt
-  # not given, so not every file named is given whole.
+  # Cut as the trial's 16 kB cut its 12 files: SnapshotStorage.kt given,
+  # FileSnapshotStorage.kt not.
   config:
     roles: {product-owner: {settings: {code-bytes-max: 1500}}}
   forge:
@@ -23,7 +23,7 @@ run:
   event: issue
   target: {issue: 39}
   input: {needs: "core/timelapse, feature/timelapse"}
-  ai: fake:scope-from-a-module-folder
+  ai: fake:scope-from-a-module-folder-read
 expect:
   status: pass
   agent-calls: 1

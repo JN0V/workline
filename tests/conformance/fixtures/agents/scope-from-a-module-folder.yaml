@@ -1,6 +1,6 @@
 # The product owner's second call on the Kotlin trial's #39 (#1433), run
-# again for the module folders it named: given the files below them, it
-# writes a Scope from them, naming no sources act.
+# again for the module folders it named, naming no sources act: its
+# Scope names both modules' files, one of them not given.
 - refine:
     issue: 39
     validation: |
@@ -9,4 +9,4 @@
       - `core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/SnapshotStorage.kt`: the count of snapshots saved.
       - `feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt`: the files counted.
     sources: ["core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/SnapshotStorage.kt", "feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt"]
-    why: "Validation and Scope were missing; the Scope names the files given below the folders."
+    why: "Validation and Scope were missing; the Scope is written from the code given below the folders."

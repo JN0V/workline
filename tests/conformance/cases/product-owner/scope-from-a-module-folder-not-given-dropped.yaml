@@ -2,7 +2,7 @@ case: product-owner/scope-from-a-module-folder-not-given-dropped
 about: >
   #1433, the Kotlin trial's #39: an issue naming no code, the product
   owner named the module folders core/timelapse and feature/timelapse,
-  no line quoted: its state keeps no source. Read again with no code given (no run again for those folders), a Scope naming their files is a guess: still left out.
+  no line quoted: its state keeps no source. Read again with no run again for those folders, no code given, a Scope naming their files is a guess: still left out.
 given:
   repo: backlog
   setup:
@@ -11,8 +11,7 @@ given:
       printf 'plugins { kotlin("jvm") }\n' > core/timelapse/build.gradle.kts
       printf 'plugins { kotlin("jvm") }\n' > feature/timelapse/build.gradle.kts
       git add . && git commit -qm 'feat: TraceGlass, reduced, from the Kotlin trial'
-  # Cut as the trial's 16 kB cut its 9 files: FileSnapshotStorage.kt
-  # given in part, so not every file named is given whole.
+  # The same budget; nothing is given at all.
   config:
     roles: {product-owner: {settings: {code-bytes-max: 1500}}}
   forge:
