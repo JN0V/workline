@@ -162,6 +162,18 @@ func (p Pick) Paths() []string {
 	return out
 }
 
+// WholePaths are the files given whole, here, the test aside: those a
+// role read all of (#1440).
+func (p Pick) WholePaths() []string {
+	var out []string
+	for _, f := range p.Files {
+		if !f.Test && len(f.Decls) == 0 && f.Whole() {
+			out = append(out, f.Path)
+		}
+	}
+	return out
+}
+
 // Bytes are the bytes of the code and the test given.
 func (p Pick) Bytes() int {
 	n := 0

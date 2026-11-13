@@ -1,0 +1,4 @@
+# The same answer on a file the issue names but its task gave only in
+# part (#1440): that file is given whole at the next run.
+- sources: {issue: 75, sources: ["feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt"], quote: {path: "feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt", text: "class FileSnapshotStorage("}, why: "The issue is about the snapshot storage."}
+- ready: {issue: 75, why: "Need, steps, named scenarios and a Scope naming the file: complete."}

@@ -1046,6 +1046,9 @@ func Pre(runDir, repo string) int {
 			if given := pk.Paths(); len(given) > 0 {
 				t.codeGiven = append(t.codeGiven, strconv.Itoa(pickedFor[i])+" "+strings.Join(given, " "))
 			}
+			if whole := pk.WholePaths(); len(whole) > 0 {
+				t.codeWhole = append(t.codeWhole, strconv.Itoa(pickedFor[i])+" "+strings.Join(whole, " "))
+			}
 		}
 		slices.SortFunc(t.codeRead, func(a, b string) int { x, _ := strconv.Atoi(a); y, _ := strconv.Atoi(b); return x - y })
 		if noCode {
@@ -1150,6 +1153,9 @@ func Pre(runDir, repo string) int {
 	if err := os.WriteFile(filepath.Join(runDir, "in", backlog.CodeGivenFile), []byte(strings.Join(t.codeGiven, "\n")), 0o644); err != nil {
 		return fail(err)
 	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", backlog.CodeWholeFile), []byte(strings.Join(t.codeWhole, "\n")), 0o644); err != nil {
+		return fail(err)
+	}
 	if len(fallback) > 0 {
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 			return fail(err)
@@ -1198,6 +1204,9 @@ type taskBuilt struct {
 	// codeGiven are the files given, a line an issue read: its number,
 	// then the paths (backlog.CodeGivenFile).
 	codeGiven []string
+	// codeWhole are those of them given whole, the same way
+	// (backlog.CodeWholeFile).
+	codeWhole []string
 	// cuts are what code-lines-max left out of the code each issue names,
 	// said to the person (#1159).
 	cuts []verdict.Finding

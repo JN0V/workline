@@ -117,6 +117,10 @@ type Config struct {
 	// leave nothing to read again (#1089). Set by the caller, from what
 	// pre wrote (CodeGivenFile).
 	CodeGiven map[int][]string
+	// CodeWhole are those of CodeGiven given whole, by issue (#1440):
+	// sources naming only those, and the issue's own, lack nothing. Set
+	// by the caller, from what pre wrote (CodeWholeFile).
+	CodeWhole map[int][]string
 	// RunAgain: the run is one the line started again at once for the
 	// code its agent said it lacked (the input `needs`, ADR-0063 §6),
 	// those files given to the issue the event is about (#1146). Set by
@@ -171,6 +175,10 @@ const CodeReadFile = "code-read"
 // CodeGivenFile is where, in the run's folder, pre lists the files whose
 // code it gave the agent: a line an issue, its number then the paths.
 const CodeGivenFile = "code-given"
+
+// CodeWholeFile is where pre lists, the same way, the files of
+// CodeGivenFile it gave whole (#1440).
+const CodeWholeFile = "code-whole"
 
 // Detects says whether the settings ask where the project keeps an axis:
 // the forge's labels are then read to find it (Where).

@@ -2104,14 +2104,15 @@ func (p *Plan) covered(id int, sources []string) bool {
 }
 
 // namedGiven says whether each source is a file the issue's own title or
-// body names, and this run gave (#1440): naming it again lacks nothing.
-// A file found beside them, given as an excerpt, is read whole at the
-// next run (#1151).
+// body names, and this run gave whole (#1440): naming it again lacks
+// nothing. A file given in part, or found beside them as an excerpt, is
+// read whole at the next run (#1151).
 func (p *Plan) namedGiven(id int, sources []string) bool {
-	is := p.issues[id]
-	return p.given(id, sources) && !slices.ContainsFunc(sources, func(s string) bool {
+	is, whole := p.issues[id], p.config.CodeWhole[id]
+	words := PathLike.FindAllString(is.Title+"\n"+is.Body, -1)
+	return len(sources) > 0 && !slices.ContainsFunc(sources, func(s string) bool {
 		s, _, _ = strings.Cut(RepoPath(s), "#")
-		return !strings.Contains(is.Title+"\n"+is.Body, s)
+		return !slices.Contains(whole, s) || !slices.ContainsFunc(words, func(w string) bool { return RepoPath(w) == s })
 	})
 }
 

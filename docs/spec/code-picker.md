@@ -164,11 +164,14 @@ A binary file gives nothing: no line, and `logo.png` names neither
 ## Read again only for code not given
 
 - **The product owner's pre** lists the files it gave, by issue
-  (`code-given` in the run's folder).
+  (`code-given` in the run's folder), and those it gave whole
+  (`code-whole`).
 - **A `sources` naming only those, beside a Scope**: the Scope written
   in the same run stands, no `needs-code`, nothing read again
   ([refining](backlog-acts/refine.md)). Without a Scope, or beside an
-  `ask`, the issue is read again as before.
+  `ask`, the issue is read again as before, unless every file named is
+  one the issue's own text names, given whole: that records what it is
+  about, nothing to read ([#1440](https://github.com/JN0V/workline/issues/1440)).
 - **Naming code not given** is still read again, with that code
   (`needs-code`, the "name the code, be read again" protocol of agents
   with no tools).

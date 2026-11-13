@@ -1035,16 +1035,25 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	}
 	// The files whose code it gave, by issue: sources naming only those
 	// leave nothing to read again (#1089).
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", backlog.CodeGivenFile)); err == nil && !st.Unasked {
-		cfg.CodeGiven = map[int][]string{}
+	byIssue := func(name string) map[int][]string {
+		data, err := os.ReadFile(filepath.Join(runDir, "in", name))
+		if err != nil || st.Unasked {
+			return nil
+		}
+		out := map[int][]string{}
 		for _, line := range strings.Split(string(data), "\n") {
 			if f := strings.Fields(line); len(f) > 1 {
 				if n, err := strconv.Atoi(f[0]); err == nil {
-					cfg.CodeGiven[n] = append(cfg.CodeGiven[n], f[1:]...)
+					out[n] = append(out[n], f[1:]...)
 				}
 			}
 		}
+		return out
 	}
+	cfg.CodeGiven = byIssue(backlog.CodeGivenFile)
+	// Those given whole: sources naming only the issue's own lack
+	// nothing (#1440).
+	cfg.CodeWhole = byIssue(backlog.CodeWholeFile)
 	// The agent's notes: the reason said on an issue it left with nothing
 	// (ADR-0059, decision 1).
 	for _, in := range intents {
