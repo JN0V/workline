@@ -1,0 +1,48 @@
+case: developer/pr-from-a-draft-already-green
+about: >
+  A person made the tester's Draft green themselves (#1434): only they
+  may change the file the issue is about, so they pushed the code to
+  the Draft. The developer takes #3 again; its agent finds the work
+  done and writes nothing. Its tests are green on the Draft's head: its
+  pull request is opened from that head as it is, no commit added, not
+  held 24 hours as a claim that wrote no code.
+given:
+  repo: tested-draft
+  setup:
+    - "printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && GIT_AUTHOR_NAME=Alice GIT_AUTHOR_EMAIL=alice@example.invalid git commit -q -am 'feat: mul, by hand'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "proven green, its pull request ready"
+  no-findings: [{rule: no-code}, {rule: engine-error}]
+  pushed:
+    workline/developer/3:
+      lib.sh: "mul()"
+  pushed-log:
+    workline/developer/3:
+      - "test: the acceptance tests of #3"
+      - "feat: mul, by hand"
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:developing"]
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        draft: false
+        body-contains: ["Closes #3", "The developer's code for #3, proven"]

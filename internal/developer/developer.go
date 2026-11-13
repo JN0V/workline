@@ -985,7 +985,17 @@ func Post(runDir, repo string) int {
 	if len(unread) > 0 {
 		v.Findings = append(v.Findings, unreadFinding(where, unread, len(patches) > 0))
 	}
-	if len(patches) == 0 {
+	// Its agent wrote nothing on a tester's Draft a person may have made
+	// green themselves, with a change only they may make (#1434): proven
+	// on the Draft's head as it is, green opens its pull request from it.
+	var draft *drafted
+	if len(patches) == 0 && a.From != "" {
+		p, u, caps, found := proven(runDir, repo, on, where, nil, a.Acceptance, flakyOf(b.Proof, s), s)
+		if p.Result == Green && len(caps) == 0 && u.failed == "" {
+			draft = &drafted{p, u, caps, found}
+		}
+	}
+	if len(patches) == 0 && draft == nil {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: fmt.Sprintf("its agent wrote no code: nothing to prove, no pull request; blocked for a person after %d hours on the same body, said on the issue", s.ClaimHours)})
 		a.NoCode = true
@@ -995,7 +1005,15 @@ func Post(runDir, repo string) int {
 		if len(a.Beyond) > 0 {
 			v.Findings = append(v.Findings, beyondFinding(where, a.Beyond))
 		}
-		p, u, caps, found := proven(runDir, repo, on, where, patches, a.Acceptance, flakyOf(b.Proof, s), s)
+		var p Proof
+		var u Used
+		var caps []Cap
+		var found []verdict.Finding
+		if draft != nil {
+			p, u, caps, found = draft.p, draft.u, draft.caps, draft.found
+		} else {
+			p, u, caps, found = proven(runDir, repo, on, where, patches, a.Acceptance, flakyOf(b.Proof, s), s)
+		}
 		if p.Result == Red && len(p.Red) == 0 && len(caps) == 0 && !objects(kept) {
 			// Its code does not build, or breaks the run, no test red, and
 			// no objection to a frozen test beside it, the tester's: the
@@ -1202,6 +1220,15 @@ func proven(runDir, repo, on, where string, patches []intent.Intention, also []s
 	}
 	found = append(found, unreported(where, u, s)...)
 	return p, u, caps, append(found, proofFindings(where, p, caps)...)
+}
+
+// drafted is the proof of a tester's Draft its agent wrote nothing on,
+// green as it is (#1434).
+type drafted struct {
+	p     Proof
+	u     Used
+	caps  []Cap
+	found []verdict.Finding
 }
 
 // objects says whether what its agent proposed, held to the bounds,
