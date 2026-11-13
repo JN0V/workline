@@ -17,10 +17,11 @@
   owner's acts, drawn for a person)
 - **Builds on:** [ADR-0005], [ADR-0014] (step 4), [ADR-0019], [ADR-0036];
   [research: auditing a sample of agent acts][research]
-- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#2-who-steps-back) (proposed):
-  every change in the repository is drawn, a build session's included,
-  no longer left out as "a person's own coding agent"; the auditor also
-  samples the process engineer
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#2-who-steps-back) (not built):
+  a person's own changes, a build session's included, are drawn where
+  the project sets it (on workline only for now), no longer left out as
+  "a person's own coding agent"; the auditor also samples the process
+  engineer
 
 ## Context
 

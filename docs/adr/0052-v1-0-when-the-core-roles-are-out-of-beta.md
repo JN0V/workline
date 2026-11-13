@@ -10,7 +10,7 @@
 - **Tracked by:** the GitHub milestone
   [v1.0](https://github.com/JN0V/workline/milestone/1)
 - **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#8-a-release-is-split-by-its-nature)
-  (proposed): the v1.0 bar and its "until then" freeze go; workline
+  (not built): the v1.0 bar and its "until then" freeze go; workline
   stays 0.x until real use judges it stable, by criteria still to
   define
 

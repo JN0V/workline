@@ -18,6 +18,10 @@
   product owner, the tester and the reviewer, where the agent has them);
   [routing.md](../spec/routing.md#once-a-state-the-record)
 - **Research:** [line-liveness.md](../research/line-liveness.md)
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#what-it-needs-in-code-and-what-goes)
+  (not built): the standing stop on fixes goes; a fix repeated in one
+  area wakes the process engineer, who judges. The other working
+  agreements stand
 - **Amended:**
   - [2026-11-05](#amendment-2026-11-05-the-testers-read-tools-first):
     the tester's read tools before step 9, the token ceiling measured;
