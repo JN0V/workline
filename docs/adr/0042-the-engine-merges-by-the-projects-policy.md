@@ -28,13 +28,14 @@
 - **Research:** [merging.md](../research/merging.md)
 - **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind) (built): at `enterprising`, a feature merges by the policy and the person's yes moves to the milestone's release candidate
 - **Extended by:** [ADR-0067](0067-a-role-request-behind-main-merges-main-in.md) (built): a role request the policy merges, in conflict with its base or held behind it, gets the base merged in, never rebased
-- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#8-a-release-is-split-by-its-nature)
-  (not built): a setting, on workline only for now. A fixes-only release
-  ships after the process engineer's step back, with no person's yes; a
-  feature release keeps it, and so does every release until the first
-  step back. A pull request changing what steers agents still never
-  merges alone. No autonomous build session holds the App's key nor the
-  maintainer's admin token
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)
+  (once its step 1 is built): "never alone, one changing what steers
+  agents" keeps applying to the files that define oversight and
+  authority (`CODEOWNERS`, `AGENTS.md`, `CLAUDE.md`, `PRINCIPLES.md`,
+  CI workflows and actions, `.workline/config.yaml`), no longer to role
+  prompts, which take the line's normal path. No autonomous build
+  session holds the App's key nor the maintainer's admin token. Releases
+  are unchanged; a split is next, not decided
 
 ## Context
 

@@ -5,15 +5,10 @@
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0015 (the weekly
   sample), ADR-0018 (the product owner; one way in for every role's
   issues), principles 1, 4, 6, 7, 12
-- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#2-who-steps-back) (not built):
-  the process engineer starts as a prompt on the engine's plumbing,
-  woken by events (a wake script on each merge, the `step-back` cord);
-  the weekly run, the window report and the self-pause after ignored
-  windows go; the counts are facts it may read. Its authority is a
-  level: at `cautious` a digest and issues, from `normal` a pause.
-  "Nothing changes the line without a person" becomes: adding goes
-  through the product owner at its level, changing direction is the
-  person's
+- **To be revisited by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)
+  (step 6, next, not decided): a process engineer as a prompt, reading
+  the wake script and the auditor, at a level; this record stands until
+  that step is decided
 
 ## Context
 

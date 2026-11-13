@@ -20,7 +20,7 @@ choice is settled against this page.
    ([ADR-0066](adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)).
    A new role starts as a prompt on the engine's plumbing, safe and
    observed from day one
-   ([ADR-0068](adr/0068-the-line-steps-back-on-its-own-drift.md#3-prompt-first-code-what-converges)).
+   ([ADR-0068](adr/0068-the-line-steps-back-on-its-own-drift.md#2-prompt-first-code-what-converges)).
 5. **Its checks work without AI.** No model, no quota, no network: every
    check on converging facts still runs and still blocks; the agent stays
    a choice. Relaxed for now: a role need not work with agent `none`
@@ -36,7 +36,7 @@ choice is settled against this page.
    failing without its fix. The case is the default; a rule code, a
    setting or a marker (a label or comment the engine reads) is added
    only where a case cannot hold the defect, and its issue says why
-   ([ADR-0068](adr/0068-the-line-steps-back-on-its-own-drift.md#11-principles-4-and-7-reworded)).
+   ([ADR-0068](adr/0068-the-line-steps-back-on-its-own-drift.md#3-principles-4-and-7-reworded)).
 8. **Stay on the task.** Anything found outside the task's scope is handed
    to the role whose scope it is, not fixed on the spot.
 9. **Cut cascades.** Only direct consequences are handled in a change; the rest

@@ -9,10 +9,11 @@
 - **Research:** [catch-and-cost.md](../research/catch-and-cost.md)
 - **Tracked by:** the GitHub milestone
   [v1.0](https://github.com/JN0V/workline/milestone/1)
-- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#8-a-release-is-split-by-its-nature)
-  (not built): the v1.0 bar and its "until then" freeze go; workline
-  stays 0.x until real use judges it stable, by criteria still to
-  define
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-step-1-passes)
+  (not built): the "until then" freeze holds until ADR-0068's step 1
+  passes its test (the build sessions' own identity, no bypass, the
+  guard guarded), then is superseded. The v1.0 bar stands until its
+  step 7 decides what replaces it
 
 ## Context
 
