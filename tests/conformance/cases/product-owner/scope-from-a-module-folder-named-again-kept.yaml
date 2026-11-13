@@ -26,7 +26,7 @@ run:
 expect:
   status: pass
   agent-calls: 1
-  no-findings: [{rule: scope-unread, where: "#39"}]
+  no-findings: [{rule: scope-unread, where: "#39"}, {rule: needs-code, where: "#39"}]
   forge:
     issues:
       - {id: 39, body-contains: "## Scope"}

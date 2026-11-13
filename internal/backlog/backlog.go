@@ -1357,7 +1357,7 @@ func (p *Plan) summary(role string) {
 			named[d.Act.Issue] = append(named[d.Act.Issue], d.Act.Sources...)
 		case d.Act.Do == "ready" || d.Act.Do == "close" || d.Act.Do == "split":
 			settled[d.Act.Issue] = true
-		case d.Act.Do == "refine" && strings.TrimSpace(d.Act.Scope) != "" && (p.given(d.Act.Issue, p.firstNamed[d.Act.Issue]) || p.readAgain[d.Act.Issue]):
+		case d.Act.Do == "refine" && strings.TrimSpace(d.Act.Scope) != "" && (p.given(d.Act.Issue, p.firstNamed[d.Act.Issue]) || p.readAgain[d.Act.Issue] && p.covered(d.Act.Issue, p.firstNamed[d.Act.Issue])):
 			settled[d.Act.Issue] = true
 		}
 	}
@@ -2078,8 +2078,27 @@ func (p *Plan) scopeRead(repo string, c Proposal) bool {
 	if work.Guessed(c.Scope) {
 		return true
 	}
-	named := PathsIn(repo, c.Scope)
-	return len(named) > 0 && !slices.ContainsFunc(named, func(n string) bool { return !slices.Contains(files, n) })
+	read := 0
+	for _, m := range PathLike.FindAllString(c.Scope, -1) { // every path, never PathsIn's first few
+		if n := RepoPath(m); strings.Contains(n, "/") && InCommit(repo, n) {
+			if !slices.Contains(files, n) {
+				return false
+			}
+			read++
+		}
+	}
+	return read > 0
+}
+
+// covered says whether each source named for an issue is a file this run
+// gave, or a folder a file given lies below: what a Scope standing on the
+// code given (scopeRead) settles, nothing left to read (#1433).
+func (p *Plan) covered(id int, sources []string) bool {
+	files := p.config.CodeGiven[id]
+	return !slices.ContainsFunc(sources, func(s string) bool {
+		s = RepoPath(s)
+		return !slices.ContainsFunc(files, func(f string) bool { return holds(s, f) })
+	})
 }
 
 // noCodeGiven says whether the run gave no code for an issue: its state
