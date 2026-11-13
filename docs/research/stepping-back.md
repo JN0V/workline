@@ -1,6 +1,6 @@
 # Stepping back — did workline run away, who should have seen it, and how others keep a builder from drifting (2026-11-13)
 
-**Question.** In seven weeks workline grew to about 108k lines of Go.
+**Question.** In seven weeks workline grew to about 111k lines of Go.
 Was it a runaway, who drove it, could anything but the maintainer's
 unease have caught it, and what do other fields do so a person stays on
 the loop without reading every change?
@@ -21,7 +21,8 @@ decision.
   advisory before blocking, planted faults to measure it, deletion by
   usage, and never the person's silence read as health.
 
-Read-only, on `origin/main` at `77c94e87f` and the forge. Method: five
+Read-only, on `origin/main` at `e16e4e7b0` (git measures,
+re-measured there) and the forge on 2026-11-13. Method: five
 panel reviews of the code and its history, a synthesis that re-checked
 their conflicting claims, a red team, three reviews of the decisions
 (adversarial, completeness, outside practice), and a blind backtest.
@@ -32,16 +33,16 @@ evidence.
 
 | Measure | Value | How |
 |---|---|---|
-| Age | 51 days, 2026-09-23 → 11-13; 1,380 commits | `git log` |
-| Non-test Go | 13,856 (09-30) → 66,752 (10-21) → 108,069 (11-13) | `git ls-tree` per date |
-| Net production Go, 8 ISO weeks | +110.6k, of which workline's roles wrote 690 lines (0.6%) | first-parent commits on `main` |
+| Age | 51 days, 2026-09-23 → 11-13; 1,411 commits | `git log` |
+| Non-test Go | 13,856 (09-30) → 66,752 (10-21) → 110,989 (11-13) | `git ls-tree` per date |
+| Net production Go, the whole history (8 ISO weeks) | +111.0k, of which workline's roles wrote 690 lines (0.6%) | first-parent commits on `main`, added minus deleted |
 | Deleted / added | about 16%; 5 commits remove more than 100 net lines, none after 10-30 | `git log --numstat` |
 | Role settings | 20 → 118, never fell | `roles/*/role.yaml` |
 | Rule codes | 50 → 531, never fell | distinct `Rule: "…"` literals |
 | ADRs | 66 in 7 weeks, 13,473 lines | `docs/adr/` |
 | Fix share of merged PRs | W40 14%, W43 23%, W45 62% (101 of 163), W46 57% | PR titles by ISO week |
 | A fix, since 11-01 | median +57 net lines, p90 +224 | per commit |
-| Under [ADR-0052](../adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)'s freeze (from 10-26) | 111 `feat` commits; Go 66,752 → 110,979; 38 settings and 254 rule codes added | same |
+| Under [ADR-0052](../adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)'s freeze (from 10-26) | 111 `feat` commits; Go 66,752 → 110,989; 38 settings and 254 rule codes added | same |
 
 ### Who built it
 
@@ -69,7 +70,7 @@ evidence.
 - **Few dead symbols** (2 by staticcheck), **many mechanisms with no
   user outside workline**: product owner acts off by default, 18
   settings with no conformance case.
-- **It corrects by adding**: 10 `refactor` commits in 1,380.
+- **It corrects by adding**: 10 `refactor` commits in 1,411.
 - **Claims found wrong or overstated**: "non-V1 roles maintained at full
   intensity" (7 of 158 fixes since 11-01); "guessing code takes the
   fixes, fact code lasts" (103 fixes touch the kernel, 105 the chain's
@@ -90,8 +91,9 @@ evidence.
 ### The three reviews of the decisions
 
 - **Adversarial**: only the sessions' identity has teeth, and a bot
-  account or the existing App is the wrong identity (a bot with write
-  access counts as a person's yes; the App signs the acceptance). The
+  account or the existing App is the wrong identity (a machine user with write
+  access counts as a person's yes, though the engine refuses a bot's
+  label; the App signs the acceptance). The
   person's token stays on the machine
   ([ADR-0058](../adr/0058-the-forge-guards-the-project-not-the-agents-environment.md)).
   "Silence as consent" broke
@@ -100,7 +102,8 @@ evidence.
   Principle 7 itself orders the growth.
 - **Completeness**: a session's pull request cannot merge by the policy
   at `normal` without a person's label; the release's yes is required by
-  two accepted ADRs; ADR-0052's freeze forbids the frame; need
+  two accepted ADRs; [ADR-0052](../adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)'s
+  freeze forbids the frame; need
   laundering is open, since the intent lens is asked only of a change
   closing an issue.
 - **Outside practice**: below.
