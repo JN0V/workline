@@ -947,15 +947,30 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 			past = append(past[:5], fmt.Sprintf("and %d more", n-5))
 		}
 		st.Advisories = append(st.Advisories, verdict.Finding{Rule: verdict.CutRule, Level: "warn",
-			Message: fmt.Sprintf("%d of the files changed given to the reviewer's agent by their hunks, not whole, past code-lines-max (%d lines in all): %s; raise %s",
-				n, s.CodeLinesMax, strings.Join(past, ", "), verdict.Setting("reviewer", "code-lines-max"))})
+			Message: fmt.Sprintf("%d of the files changed given to the reviewer's agent by their hunks, not whole, past code-lines-max (%d lines in all): %s; the lenses %s did not run on the whole of them, only on what their hunks show; raise %s",
+				n, s.CodeLinesMax, strings.Join(past, ", "), strings.Join(st.Lenses, ", "), verdict.Setting("reviewer", "code-lines-max"))})
 	}
 	if len(hunked) > 0 {
-		diff, err := git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", "--find-renames", st.lensFrom(), st.lensTo(), "--"}, pathspec(hunked)...)...)
-		if err != nil {
-			return "", err
+		// Each by whole functions where they fit (#1334), else 5 lines of context.
+		var plain []File
+		var wide strings.Builder
+		for _, f := range hunked {
+			if d, ok := withFunctions(repo, st.lensFrom(), st.lensTo(), f, s.CodeLinesMax/4); ok {
+				wide.WriteString(d)
+				continue
+			}
+			plain = append(plain, f)
 		}
-		units = append(units, fileDiffs(diff)...)
+		if wide.Len() > 0 {
+			units = append(units, fileDiffs(wide.String())...)
+		}
+		if len(plain) > 0 {
+			diff, err := git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", "--find-renames", st.lensFrom(), st.lensTo(), "--"}, pathspec(plain)...)...)
+			if err != nil {
+				return "", err
+			}
+			units = append(units, fileDiffs(diff)...)
+		}
 	}
 	floor := func(size int) string {
 		if !s.FinderFloor { // a floor on candidates, never on what is shown; from the size of what is read
