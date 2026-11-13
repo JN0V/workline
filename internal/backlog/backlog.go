@@ -1290,8 +1290,11 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				if c.Do == "undepend" {
 					p.recordUndepend(c)
 				}
-				if c.Do == "sources" && c.Ticked == "" {
-					p.codeFirst[c.Issue] = true // its code read at the next run: no ask on it now
+				if c.Do == "sources" && c.Ticked == "" && !p.namedGiven(c.Issue, c.Sources) {
+					// Its code read at the next run: no ask on it now. Sources
+					// naming the issue's own files, given whole, leave nothing
+					// to read: an ask beside them is asked now (#1440).
+					p.codeFirst[c.Issue] = true
 					p.firstNamed[c.Issue] = append(p.firstNamed[c.Issue], c.Sources...)
 				}
 				if c.Do == "ask" {
@@ -1348,14 +1351,14 @@ func (p *Plan) summary(role string) {
 	// of the engine (ADR-0063, §6), which reads it at the run that
 	// follows. None for an issue this run readied, closed or split.
 	// A Scope written from code the task gave, the sources naming only
-	// that code, settles it too: nothing is left to read (#1089). So do
-	// sources naming only files the issue's own text names, given: they
-	// record what it is about, and lack nothing (#1440).
+	// that code, settles it too: nothing is left to read (#1089). Sources
+	// naming only the issue's own files, given whole, set no codeFirst:
+	// they lack nothing (#1440).
 	named, settled := map[int][]string{}, map[int]bool{}
 	for _, d := range p.Decisions {
 		switch {
 		case d.Mode != Act:
-		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue] && !p.namedGiven(d.Act.Issue, d.Act.Sources):
+		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue]:
 			named[d.Act.Issue] = append(named[d.Act.Issue], d.Act.Sources...)
 		case d.Act.Do == "ready" || d.Act.Do == "close" || d.Act.Do == "split":
 			settled[d.Act.Issue] = true

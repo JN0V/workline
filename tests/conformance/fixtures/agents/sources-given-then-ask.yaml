@@ -1,0 +1,4 @@
+# The same answer, a question beside it instead of a ready (#1440): the
+# code it names was given whole, so the question is asked now.
+- sources: {issue: 75, sources: ["core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SessionRepository.kt"], quote: {path: "core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SessionRepository.kt", text: "suspend fun save(data: SessionData)"}, why: "The issue is about the session repository's save."}
+- ask: {issue: 75, questions: "Which error should the person see: a toast or a dialog?", why: "The expected result says an error is said, not how."}

@@ -1,0 +1,28 @@
+case: product-owner/sources-given-ask-asked-now
+about: >
+  #1440, the Kotlin trial's #75: a complete bug, its Scope naming its
+  file, given whole to the product owner. It names that same file in
+  `sources`, and asks a question beside it: nothing is left to read, so
+  the question is asked now, not held for a run that never comes.
+given:
+  repo: backlog
+  setup:
+    - |
+      cp -R "$FIXTURES/code/traceglass/." .
+      git add . && git commit -qm 'feat: TraceGlass, reduced, from the Kotlin trial'
+  # The reviewer reads the spec before ready, as on the trial: its
+  # ready waits, spec-not-reviewed.
+  config:
+    routing:
+      events: {issue: [product-owner, reviewer]}
+  forge:
+    issues:
+      - {id: 75, title: "A session that cannot be written is lost silently", body: "## Need\n\nA person whose session file cannot be written loses the session silently.\n\n## Steps to reproduce\n\n1. Fill the disk.\n2. Save a session.\n\n- **Expected:** an error is said.\n- **Actual:** nothing is said.\n- **Version:** 1.4.0.\n\n## Validation\n\n- **Disk full:** Given a full disk, When a session is saved, Then an error is said.\n\n---\n\n## Scope\n\n- `core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/SessionRepository.kt`: `save`.\n", author: ann, insider: true, labels: [bug, workline:to-refine]}
+run: {role: product-owner, event: issue, target: {issue: 75}, ai: "fake:sources-given-then-ask"}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: needs-code, where: "#75"}, {rule: code-first, where: "#75"}]
+  forge:
+    issues:
+      - {id: 75, comment-contains: "Which error should the person see"}
