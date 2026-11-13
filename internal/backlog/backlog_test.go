@@ -1,6 +1,7 @@
 package backlog
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -234,5 +235,41 @@ func TestScopeKeptOnARunAgainOnly(t *testing.T) {
 	}
 	if why := plan(true).scopeUnread(repo, c); why != "" {
 		t.Errorf("a run again, every named file given: its Scope was left out: %s", why)
+	}
+}
+
+// A Scope written at a run again stands on the code given only when every
+// file it names was given (#1433): a sixth file, past the five a text's
+// sources keep, is read too.
+func TestScopeReadChecksEveryFile(t *testing.T) {
+	repo := t.TempDir()
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	var given []string
+	scope := ""
+	for i := 1; i <= 6; i++ {
+		f := fmt.Sprintf("core/m/F%d.kt", i)
+		if err := os.MkdirAll(filepath.Join(repo, "core/m"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(repo, f), []byte("class F\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if i <= 5 {
+			given = append(given, f)
+		}
+		scope += "- `" + f + "`\n"
+	}
+	for _, c := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=T", "-c", "user.email=t@x.invalid", "commit", "-qm", "x"}} {
+		if out, err := exec.Command("git", append([]string{"-C", repo}, c...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", c, err, out)
+		}
+	}
+	p := &Plan{config: Config{Scope: []int{7}, CodeGiven: map[int][]string{7: given}, RunAgain: true}}
+	if p.scopeRead(repo, Proposal{Do: "refine", Issue: 7, Scope: scope}) {
+		t.Error("a Scope naming a sixth file not given stands on the code given; want it not to")
+	}
+	if !p.scopeRead(repo, Proposal{Do: "refine", Issue: 7, Scope: "Guessed: `core/m/F6.kt` was not given.\n\n" + scope}) {
+		t.Error("the same Scope, its guess said on a line Guessed:, does not stand; want it to")
 	}
 }
