@@ -1,0 +1,16 @@
+case: setup/doctor-bypass-unread
+about: >
+  A forge that does not answer for main's rulesets: the doctor says it
+  could not read who may bypass them, never taken for nobody.
+given:
+  repo: documented
+  forge:
+    merge-requests: []
+    rulesets-unread: "HTTP 502"
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: bypass-unread, level: note, message: "could not read who may bypass main's rulesets: HTTP 502"}
+  no-checks:
+    - {rule: no-bypass}

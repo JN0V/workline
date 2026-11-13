@@ -1,0 +1,20 @@
+case: setup/doctor-bypass-none
+about: >
+  Nobody bypasses main's checks, the person included (ADR-0068 §6): the
+  doctor reads each ruleset on the default branch, as the token's user
+  sees it. Every one saying `never`, the check passes: a merge into main
+  goes through its checks and workline/accepted.
+given:
+  repo: documented
+  forge:
+    merge-requests: []
+    rulesets:
+      - {id: 7, name: "main: pull requests with green checks", branch: main, can-bypass: never}
+      - {id: 8, name: "release branch: the App alone pushes", branch: release-please--main, can-bypass: always}
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: no-bypass, where: main, level: ok, message: "nobody bypasses main's ruleset \"main: pull requests with green checks\" with this token"}
+  no-checks:
+    - {rule: bypass-allowed}
