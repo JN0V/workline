@@ -29,6 +29,10 @@ type command struct {
 // is unreachable, never waited for forever.
 const commandTimeout = 2 * time.Minute
 
+// waitDelay bounds the wait for a command's output after its timeout: a
+// child that still holds it does not hold the run.
+const waitDelay = time.Second
+
 // call runs one operation with its arguments and decodes the answer into v.
 func (c *command) call(op string, args map[string]any, v any) error {
 	req := map[string]any{"operation": op}
@@ -47,9 +51,11 @@ func (c *command) call(op string, args map[string]any, v any) error {
 	cmd.Dir = c.repo
 	cmd.Env = append(os.Environ(), "WORKLINE_FORGE_OPERATION="+op)
 	cmd.Stdin = &in
+	inGroup(cmd)
+	cmd.WaitDelay = waitDelay
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
-	if err := cmd.Run(); err != nil {
+	if err := finished(ctx, cmd.Run()); err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return fmt.Errorf("%w: the forge command did not answer %s within %s", ErrUnreachable, op, commandTimeout)
 		}
@@ -122,9 +128,11 @@ func CheckCommand(repo, script string) (state, detail string) {
 	cmd.Dir = repo
 	cmd.Env = append(os.Environ(), "WORKLINE_FORGE_OPERATION=ping")
 	cmd.Stdin = &in
+	inGroup(cmd)
+	cmd.WaitDelay = waitDelay
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
-	if err := cmd.Run(); err != nil {
+	if err := finished(ctx, cmd.Run()); err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return ProbeFailing, fmt.Sprintf("it did not answer within %s", probeTimeout)
 		}
@@ -158,6 +166,16 @@ func CheckCommand(repo, script string) (state, detail string) {
 		return ProbeRefused, a.Error
 	}
 	return ProbeReachable, ""
+}
+
+// finished takes a command that exited 0 but left a child on its output,
+// so that waitDelay expired, for a success: its answer is written, and the
+// child is not its failure.
+func finished(ctx context.Context, err error) error {
+	if errors.Is(err, exec.ErrWaitDelay) && ctx.Err() == nil {
+		return nil
+	}
+	return err
 }
 
 func lastLine(s string) string {
