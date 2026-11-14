@@ -58,8 +58,10 @@ func readJUnit(file string, results map[string]result, suites map[string]string,
 			name := strings.TrimSuffix(c.Name, "()")
 			// A name ending in `()`, or written as words (a display
 			// name, spaces in it), is a method's, whatever text it
-			// carries: a runner's record of a suite is one token.
-			method := name != c.Name || strings.ContainsAny(name, " \t")
+			// carries: a runner's record of a suite is one token, or
+			// a path or package, which has a separator even with a
+			// space in it.
+			method := name != c.Name || (strings.ContainsAny(name, " \t") && !strings.ContainsAny(name, "/\\"))
 			id := name
 			if c.Class != "" {
 				id = c.Class + "." + name
