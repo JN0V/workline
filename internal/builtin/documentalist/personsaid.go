@@ -33,18 +33,36 @@ const personMarker = "workline:doc-too-large"
 
 // personSaid is what a run said of the docs left to a person.
 type personSaid struct {
-	repo  string
-	on    bool
-	prior map[string]keptRecord // said at an earlier head, by doc
-	now   map[string]keptRecord // said or still standing, by doc
-	head  string
-	skip  bool // the run decided no doc's line: nothing is written
+	repo    string
+	on      bool
+	prior   map[string]keptRecord // said at an earlier head, by doc
+	now     map[string]keptRecord // said or still standing, by doc
+	head    string
+	skip    bool            // the run decided no doc's line: nothing is written
+	decided map[string]bool // docs whose line this run decided
 }
 
 // unreconsidered says the run decided no doc's line, so what is kept stands.
 func (p *personSaid) unreconsidered() { p.skip = true }
 
 // keep carries a doc's earlier record, for a doc this run did not reconsider.
+func (p *personSaid) decide(doc string) {
+	if p.decided == nil {
+		p.decided = map[string]bool{}
+	}
+	p.decided[doc] = true
+}
+
+// keepUndecided carries the record of every doc whose line this run did not
+// decide (no finding reached it), so that a head skipping it forgets nothing.
+func (p *personSaid) keepUndecided() {
+	for doc := range p.prior {
+		if !p.decided[doc] {
+			p.keep(doc)
+		}
+	}
+}
+
 func (p *personSaid) keep(doc string) {
 	if r, ok := p.prior[doc]; ok {
 		if _, done := p.now[doc]; !done {
@@ -98,6 +116,7 @@ func parsePersonSaid(body string) map[string]keptRecord {
 // that they are unchanged since. A text not leaving the doc to a person
 // is returned as it is.
 func (p *personSaid) line(doc string, d *Doc, text string) string {
+	p.decide(doc)
 	if !strings.Contains(text, personJudges) || !p.on || d == nil {
 		return text
 	}

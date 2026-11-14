@@ -1638,6 +1638,9 @@ func (r *preRun) leaveForNextRound() error {
 			f.Message += "\n" + sd.said
 		}
 		if sd == nil || r.judged[f.Where] != nil && sd.note == "" {
+			if sd != nil {
+				said.decide(f.Where)
+			}
 			continue
 		}
 		if sd.earlier {
@@ -1653,6 +1656,7 @@ func (r *preRun) leaveForNextRound() error {
 			continue
 		}
 		if sd.tooLarge && s.JudgeInParts && asked && f.Rule != "due" {
+			said.decide(f.Where)
 			f.Message += "\n(to be judged in parts in a later round: this round asks something else)"
 			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 			continue
@@ -1661,6 +1665,7 @@ func (r *preRun) leaveForNextRound() error {
 			f.Message += "\n" + said.line(f.Where, sd.doc, "(too large to be put before the agent — the doc with what changed in its sources, or with its sources as they are now: "+personJudges+")")
 			continue
 		}
+		said.decide(f.Where)
 		if asked {
 			f.Message += "\n(not put before the agent in this round: over ai-max-calls or the task's size, or the round judges docs in parts or writes records)"
 			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
@@ -1669,6 +1674,7 @@ func (r *preRun) leaveForNextRound() error {
 	r.findings = slices.DeleteFunc(r.findings, func(f verdict.Finding) bool {
 		return f.Rule == "" || r.readerOnly && !slices.Contains(readerShown, f.Rule) && f.Rule != "too-large-to-read" && f.Rule != "reader-declined-unread"
 	})
+	said.keepUndecided()
 	if err := said.write(runDir); err != nil {
 		return err
 	}
