@@ -1258,7 +1258,18 @@ func settlementDiff(repo, commit string) string {
 	fence := "~~~"
 	for _, l := range strings.Split(diff, "\n") {
 		if strings.HasPrefix(l, "+") {
-			run := len(l[1:]) - len(strings.TrimLeft(l[1:], "~"))
+			// The longest run anywhere: a closing fence may be indented.
+			run, cur := 0, 0
+			for _, r := range l[1:] {
+				if r == '~' {
+					cur++
+					if cur > run {
+						run = cur
+					}
+				} else {
+					cur = 0
+				}
+			}
 			for len(fence) <= run {
 				fence += "~"
 			}
