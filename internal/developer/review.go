@@ -650,7 +650,11 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 			continue
 		}
 		r.Heard = append(r.Heard, n.ID)
-		r.Asked = append(r.Asked, Asked{Key: "person|" + n.ID, Where: "@" + n.Author, Text: strings.TrimSpace(n.Body), Holds: "a person"})
+		who := "a person"
+		if n.Author != "" {
+			who = "@" + n.Author
+		}
+		r.Asked = append(r.Asked, Asked{Key: "person|" + n.ID, Where: who, Text: strings.TrimSpace(n.Body), Holds: "a person"})
 	}
 	if r.Body, err = issueRewritten(f, a); err != nil {
 		return r, false, err

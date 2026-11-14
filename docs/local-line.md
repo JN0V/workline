@@ -151,6 +151,13 @@ workline issues show !2               # what the line found on it
   ([#1265](https://github.com/JN0V/workline/issues/1265)).
 - **Each runs in a worktree of the head**, apart: your checkout is
   never read nor written.
+- **The config it takes** is your clone's `.workline/config.yaml`, laid
+  in that worktree, even an uncommitted change: the
+  merge request's branch may hold another, committed one. This is
+  intended: the runs take the line you run. In CI the line reads the
+  config committed on the head.
+- **A comment names you**: a review round names the author of your
+  comment as the clone's `git config user.name`.
 - **By hand**:
   - the line: `git checkout workline/developer/1`, then
     `workline route merge-request --target merge-request:2 --ai claude`.
