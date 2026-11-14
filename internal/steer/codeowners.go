@@ -6,10 +6,10 @@ import (
 	"strings"
 )
 
-// CodeownersPlaces are where the forges look for CODEOWNERS: the root,
-// GitHub's .github/, both forges' docs/, GitLab's .gitlab/. The engine
-// reads the first found.
-var CodeownersPlaces = []string{"CODEOWNERS", ".github/CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"}
+// CodeownersPlaces are where the forges look for CODEOWNERS, in the order
+// GitHub reads them: .github/, the root, docs/; then GitLab's .gitlab/.
+// The engine reads the first found.
+var CodeownersPlaces = []string{".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"}
 
 // Codeowners is a CODEOWNERS file, read as GitHub and GitLab read it.
 type Codeowners struct {
