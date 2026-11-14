@@ -1,8 +1,13 @@
 package wake
 
 import (
+	"errors"
+	"os/exec"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/JN0V/workline/internal/forge"
 )
 
 // A bug is told by its label, scoped or not, whatever its case; a title
@@ -56,5 +61,44 @@ func TestIssueKeepsAWeek(t *testing.T) {
 	body, changed, _ = Issue(late, body)
 	if !changed || strings.Contains(body, "ADR added: `a`") || !strings.Contains(body, "x, by 4") {
 		t.Errorf("a week on: changed %v\n%s", changed, body)
+	}
+}
+
+// stubForge lists one merge, its closing links unread.
+type stubForge struct {
+	forge.Forge
+	as string
+}
+
+func (s stubForge) MergedSince(time.Time) ([]forge.MergeRequest, error) {
+	return []forge.MergeRequest{{ID: 12, MergedAs: s.as, Author: "alice"}}, nil
+}
+func (stubForge) Closes([]int) (map[int][]forge.Issue, error) {
+	return nil, errors.New("rate limited")
+}
+func (stubForge) Labelled(string) ([]forge.Target, error) { return nil, nil }
+
+// The issues each merge closes unread, no merge is said to close none,
+// nor a fix counted: the read is said unread instead.
+func TestClosesUnreadAccusesNone(t *testing.T) {
+	repo := t.TempDir()
+	for _, args := range [][]string{{"init", "-q", "-b", "main"}, {"commit", "-q", "--allow-empty", "-m", "a"}, {"commit", "-q", "--allow-empty", "-m", "b"}} {
+		cmd := exec.Command("git", append([]string{"-C", repo, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "core.hooksPath=/dev/null"}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	head, _ := gitIn(repo).commit("HEAD")
+	r, err := Read(Options{Repo: repo, After: "HEAD", Forge: stubForge{as: head}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range r.Entries {
+		if e.Kind == Need {
+			t.Errorf("accused: %+v", e)
+		}
+	}
+	if !strings.Contains(strings.Join(r.Unread, "\n"), "rate limited") || strings.Contains(r.Facts, "closing a bug") {
+		t.Errorf("unread %q, facts %q", r.Unread, r.Facts)
 	}
 }

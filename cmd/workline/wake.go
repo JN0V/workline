@@ -60,11 +60,14 @@ func wakeCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 64
 	}
-	now, id := "", 0
+	now, id, unread := "", 0, false
 	if *issue {
 		open, err := b.Issues()
 		if err != nil {
+			// Its issue unread, it is left as it is: a body built without
+			// what it kept would lose the week's triggers.
 			r.Unread = append(r.Unread, "the wake's issue: "+forge.Said(err))
+			unread = true
 		}
 		for _, is := range open {
 			if is.Title == wake.Title && !is.Closed {
@@ -92,6 +95,8 @@ func wakeCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline: the label "+wake.Label+" not created:", forge.Said(err))
 	}
 	switch {
+	case unread:
+		fmt.Fprintln(os.Stderr, "workline: the wake's issue could not be read: left as it is")
 	case !changed && id != 0:
 		fmt.Fprintf(os.Stderr, "workline: nothing new nor gone: issue #%d left as it is\n", id)
 	case !changed:

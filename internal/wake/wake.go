@@ -214,8 +214,11 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 	} else {
 		r.Unread = append(r.Unread, "the merge requests merged: this forge does not list them")
 	}
+	// Closes unread, nothing is said of what the merges close: no merge
+	// taken for one closing no issue, no fix counted.
 	closes := map[int][]forge.Issue{}
 	w, woken := f.(forge.Woken)
+	closesRead := woken
 	if woken && len(merged) > 0 {
 		ids := make([]int, 0, len(merged))
 		for _, mr := range merged {
@@ -224,7 +227,7 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 		var err error
 		if closes, err = w.Closes(ids); err != nil {
 			unread("the issues each merge closes", err)
-			closes = map[int][]forge.Issue{}
+			closes, closesRead = map[int][]forge.Issue{}, false
 		}
 	}
 	ref := func(id int) string { return forge.MergeRef(f, id) }
@@ -282,7 +285,7 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 			continue
 		}
 		seen[mr.MergedAs] = true
-		if woken && len(closes[mr.ID]) == 0 {
+		if closesRead && len(closes[mr.ID]) == 0 {
 			add(Need, fmt.Sprintf("none:%d", mr.ID), fmt.Sprintf("closes no issue: %s, by `%s`", ref(mr.ID), orNone(mr.Author)))
 		}
 		if !accepted {
@@ -347,6 +350,9 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 	} else {
 		r.Unread = append(r.Unread, "what each merge closes, and the cord: this forge does not say")
 	}
+	if !closesRead {
+		closes = nil
+	}
 	r.Facts = facts(g, after, at, merged, closes)
 }
 
@@ -370,7 +376,11 @@ func facts(g git, after string, at time.Time, merged []forge.MergeRequest, close
 			fixes++
 		}
 	}
-	return s + fmt.Sprintf("; %d merge %s, %d by people's accounts, %d by apps; %d closing a bug.", len(merged), plural(len(merged), "request", "requests"), people, apps, fixes)
+	s += fmt.Sprintf("; %d merge %s, %d by people's accounts, %d by apps", len(merged), plural(len(merged), "request", "requests"), people, apps)
+	if closes == nil {
+		return s + "."
+	}
+	return s + fmt.Sprintf("; %d closing a bug.", fixes)
 }
 
 // isBug says whether labels say a bug: `bug`, or a scoped one ending so
