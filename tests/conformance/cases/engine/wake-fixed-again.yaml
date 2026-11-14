@@ -1,0 +1,22 @@
+case: engine/wake-fixed-again
+about: "An issue a merge closed, then reopened, or closed by two merges, is listed as fixed again at the next merge, read from the forge's closing links, never from titles (ADR-0068 §8, #1461)."
+given:
+  repo: basic
+  setup:
+    - "printf 'a\\n' > a.txt && git add . && git commit -q -m 'fix: a'"
+    - "printf 'b\\n' > b.txt && git add . && git commit -q -m 'fix: b'"
+    - "printf 'c\\n' > c.txt && git add . && git commit -q -m 'feat: c'"
+  forge:
+    issues:
+      - {id: 5, title: "a breaks", body: "x", labels: [bug]}
+      - {id: 6, title: "b breaks", body: "x", labels: [bug], closed: true}
+      - {id: 7, title: "c is wanted", body: "x", labels: [], closed: true}
+    merge-requests:
+      - {id: 9, title: "fix it", branch: f9, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~2", closes: [5, 6], labels: []}
+      - {id: 10, title: "fix it again", branch: f10, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~1", closes: [6], labels: []}
+      - {id: 11, title: "c", branch: f11, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main", closes: [7], labels: []}
+run: {cli: [wake, --forge, "fake:../forge.json", --range, "main~1..main"]}
+expect:
+  exit: 0
+  stdout: ["### Symptoms without cause", "fixed again: #5, closed by #9, open again", "fixed again: #6, closed by #9 and #10"]
+  stdout-lacks: ["#7,", "**Not read**"]

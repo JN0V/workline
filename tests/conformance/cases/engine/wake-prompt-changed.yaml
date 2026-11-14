@@ -1,0 +1,25 @@
+case: engine/wake-prompt-changed
+about: "A merge that changes a role's prompt, its levels table or its default level gets it listed, with the prompt's words before and after; its README and docs are no prompt (ADR-0068 §8, #1461)."
+given:
+  repo: basic
+  setup:
+    - |
+      mkdir -p roles/keeper/docs
+      printf 'name: keeper\nsettings:\n  autonomy: normal\nlevels:\n  autonomy:\n    cautious: {rounds: 1}\n' > roles/keeper/role.yaml
+      printf 'Keep the line.\n' > roles/keeper/instruction.md
+      printf '# Keeper\n' > roles/keeper/README.md
+      printf '# How\n' > roles/keeper/docs/how.md
+      git add . && git commit -q -m 'feat: a keeper'
+    - |
+      mkdir -p roles/keeper/lenses
+      printf 'name: keeper\nsettings:\n  autonomy: enterprising\nlevels:\n  autonomy:\n    cautious: {rounds: 2}\n' > roles/keeper/role.yaml
+      printf 'Keep the line, and keep it short.\n' > roles/keeper/instruction.md
+      printf 'Read twice.\n' > roles/keeper/lenses/twice.md
+      printf '# Keeper, the role\n' > roles/keeper/README.md
+      printf '# How, again\n' > roles/keeper/docs/how.md
+      git add . && git commit -q -m 'feat: a keeper bolder'
+run: {cli: [wake, --range, "main~1..main"]}
+expect:
+  exit: 0
+  stdout: ["### Prompts that steer the line", "prompt changed: `roles/keeper/instruction.md`, 3 → 7 words", "prompt added: `roles/keeper/lenses/twice.md`, 0 → 2 words", "levels table changed: `keeper`", "default level changed: `keeper`, `normal` → `enterprising`"]
+  stdout-lacks: ["roles/keeper/README.md", "roles/keeper/docs/how.md"]
