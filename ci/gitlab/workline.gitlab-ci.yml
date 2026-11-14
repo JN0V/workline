@@ -122,7 +122,7 @@ variables:
     while [ "$page" -le 50 ]; do
       jobs=$(curl -fsS --header "$h" "$api/jobs?per_page=100&page=$page") || { echo "workline: the jobs could not be listed: the week's tokens leave the rest out"; break; }
       [ "$(printf '%s' "$jobs" | jq length)" -gt 0 ] || break
-      for id in $(printf '%s' "$jobs" | jq -r --arg since "$since" '.[] | select(.created_at >= $since and (.name | test("^workline:(.+:)?apply$|^workline:sample:write$"))) | .id'); do
+      for id in $(printf '%s' "$jobs" | jq -r --arg since "$since" '.[] | select(.created_at >= $since and (.name | test("^workline:(.+:)?(apply|judge)$|^workline:sample:(read|write)$"))) | .id'); do
         curl -fsSL --header "$h" "$api/jobs/$id/artifacts/workline-tally.jsonl" >> "$WORKLINE_RUNS_DIR/tally.jsonl" 2>/dev/null && n=$((n + 1))
       done
       [ "$(printf '%s' "$jobs" | jq --arg since "$since" '[.[] | select(.created_at < $since)] | length')" = 0 ] || break
@@ -336,13 +336,13 @@ workline:judge:
   # An agent out of reach (3) warns, not taken for the change's fault: a
   # person judges what it would have (ADR-0010).
   allow_failure: {exit_codes: [3]}
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always                    # steps that passed before one blocked are still applied
     expose_as: workline summary
-    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json, workline-verdict.json, .workline-test-ids/]
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, workline-tally.jsonl, line.json, workline-verdict.json, .workline-test-ids/]
     reports: {codequality: gl-code-quality.json, annotations: workline-annotations.json}
-    expire_in: 1 day
+    expire_in: 2 weeks            # the tally, for the weekly sample
 
 workline:apply:
   extends: .workline
@@ -539,12 +539,12 @@ workline:garden:judge:
     - workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns, as on a merge request
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always
-    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json]
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, workline-tally.jsonl, line.json]
     reports: {annotations: workline-annotations.json}
-    expire_in: 1 day
+    expire_in: 2 weeks            # the tally, for the weekly sample
 
 workline:garden:apply:
   extends: .workline:garden
@@ -633,10 +633,11 @@ workline:objection:judge:
     - jq -r '(.pending // [])[0] // empty | split("/") | last' answer.json > answer-run   # a run left to apply, by name; none when it stopped before
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the objection waits for the next
+  after_script: *tally
   artifacts:
     when: always
-    paths: [.workline-runs/, answer.json, answer-run, answer-head]
-    expire_in: 1 day
+    paths: [.workline-runs/, workline-tally.jsonl, answer.json, answer-run, answer-head]
+    expire_in: 2 weeks            # the tally, for the weekly sample
 
 workline:objection:apply:
   extends: .workline:objection
@@ -802,12 +803,12 @@ workline:develop:judge:
       fi
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the issue waits for the next run
-  after_script: *summary
+  after_script: [*summary, *tally]
   artifacts:
     when: always
-    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json, .workline-test-ids/]
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, workline-tally.jsonl, line.json, .workline-test-ids/]
     reports: {annotations: workline-annotations.json}
-    expire_in: 1 day
+    expire_in: 2 weeks            # the tally, for the weekly sample
 
 workline:develop:apply:
   extends: .workline:develop
@@ -878,10 +879,11 @@ workline:review:judge:
     - jq -r '(.pending // [])[0] // empty | split("/") | last' round.json > round-run   # a run left to apply, by name
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the review waits for the next verdict
+  after_script: *tally
   artifacts:
     when: always
-    paths: [.workline-runs/, round.json, round-run, round-head]
-    expire_in: 1 day
+    paths: [.workline-runs/, workline-tally.jsonl, round.json, round-run, round-head]
+    expire_in: 2 weeks            # the tally, for the weekly sample
 
 workline:review:apply:
   extends: .workline:review
@@ -1008,9 +1010,10 @@ workline:curator:judge:
     - jq -r '.summary // empty' curate.json
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the next week weighs again
+  after_script: *tally
   artifacts:
     when: always
-    paths: [.workline-runs/, curate.json, curate-run, curator-history.json]
+    paths: [.workline-runs/, workline-tally.jsonl, curate.json, curate-run, curator-history.json]
     expire_in: 90 days
 
 workline:curator:apply:

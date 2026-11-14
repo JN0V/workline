@@ -22,8 +22,8 @@ import (
 // Tokens are the fresh tokens (agent.Call.Fresh) of the runs started in
 // the window, by the work each was on, as catch-and-cost.md splits merge
 // requests: product (a feature, a bug, or a feat, fix, refactor, perf or
-// test merge request), upkeep (a task, or a docs, chore, style
-// one), a release apart; a run whose work is not recorded is unknown,
+// test merge request), upkeep (a task, or a docs, chore, style,
+// ci or build one, the sample's own calls), a release apart; a run whose work is not recorded is unknown,
 // and said, never guessed.
 type Tokens struct {
 	Runs    int `json:"runs"`
@@ -86,6 +86,9 @@ func tokensOf(runsDir string, f forge.Forge, from, to time.Time) *Tokens {
 		}
 		t.Runs++
 		k := w.of(r.Target)
+		if r.Role == "sample" { // the weekly sample's own judge calls
+			k = workKind{kind: upkeep}
+		}
 		switch k.kind {
 		case product:
 			t.Product += r.Fresh
@@ -190,7 +193,7 @@ func (w *works) mr(id int) workKind {
 		k = workKind{kind: release}
 	case slices.Contains([]string{"feat", "fix", "refactor", "perf", "test"}, m[1]):
 		k = workKind{kind: product}
-	case slices.Contains([]string{"docs", "chore", "style"}, m[1]):
+	case slices.Contains([]string{"docs", "chore", "style", "ci", "build"}, m[1]):
 		k = workKind{kind: upkeep}
 	default:
 		k.why = "its merge request's type `" + m[1] + "` is neither product nor upkeep, " + orNoIssue(k.why)
