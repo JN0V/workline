@@ -261,9 +261,14 @@ func caseGroups(files, pkgs []string) string {
 // validGroup: a folder name safe in a regexp and a shell quote.
 func validGroup(g string) bool {
 	for _, r := range g {
-		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_') {
+		if !groupRune(r) {
 			return false
 		}
 	}
 	return true
+}
+
+// groupRune: a letter, a digit, '-' or '_'.
+func groupRune(r rune) bool {
+	return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_'
 }
