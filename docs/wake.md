@@ -48,6 +48,9 @@ After each merge, the wake prints where the line may be drifting
   never commented on.
 - **Each trigger is kept 7 days**, the newest read of it: someone
   reading once a week reads each one.
+- **Under the forge's size limit**: past it, the oldest triggers are
+  left out, and the issue says how many. An edit the forge refuses
+  anyway is a warning on the CI run, not only a log line.
 - **No merge skipped**: a read starts where the issue's last read ended,
   when that is earlier on the branch than `--range`'s start: a run the
   forge dropped from its queue is read by the next.
