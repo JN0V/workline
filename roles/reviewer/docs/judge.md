@@ -56,6 +56,9 @@ else whether the quoted code fails:
   included, up to `code-lines-max` lines: a part an earlier push did is
   refused, not reported missing;
 - claims: whether the code quoted contradicts the claim quoted;
+- simplicity: whether the code quoted adds what the issue's Need and
+  Verification do not need, and the smaller change the finding names
+  closes the issue as well; shown the issue, as intent's judge;
 - two findings on one line are each judged by their own lens's question
   ([#229](https://github.com/JN0V/workline/issues/229)); a refused one is
   dropped alone, the rest still shown.
