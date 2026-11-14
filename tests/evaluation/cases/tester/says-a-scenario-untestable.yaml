@@ -30,7 +30,7 @@ run: {role: tester, event: issue, target: "issue:4", open-merge-request: true}
 grade:
   - {status: pass}
   - {agent-calls-max: 1}
-  - {sh: "git --git-dir=../origin.git grep -q 'Up from three' workline/tester/issue-4 -- '*_test.go'"}
+  - {sh: "python3 -c 'import json; m = json.load(open(\"../forge.json\")).get(\"merge-requests\", []); assert len(m) == 1 and \"| Up from three | `\" in m[0][\"body\"]'"}
   - {sh: "test $(git --git-dir=../origin.git diff main workline/tester/issue-4 -- '*_test.go' | grep -c '^+func Test') -eq 1"}
   - {sh: "! git --git-dir=../origin.git grep -q 'Fair to the customer' workline/tester/issue-4 -- '*_test.go'"}
   - {sh: "python3 -c 'import json; m = json.load(open(\"../forge.json\")).get(\"merge-requests\", []); assert len(m) == 1 and \"Not tested\" in m[0][\"body\"] and \"Fair to the customer\" in m[0][\"body\"]'"}

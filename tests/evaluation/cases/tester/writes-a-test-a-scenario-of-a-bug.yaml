@@ -30,8 +30,8 @@ run: {role: tester, event: issue, target: "issue:4", open-merge-request: true}
 grade:
   - {status: pass}
   - {agent-calls-max: 1}
-  - {sh: "git --git-dir=../origin.git grep -q 'Up from three' workline/tester/issue-4 -- '*_test.go'"}
-  - {sh: "git --git-dir=../origin.git grep -q 'Up from eight' workline/tester/issue-4 -- '*_test.go'"}
+  - {sh: "python3 -c 'import json,re,subprocess; m = json.load(open(\"../forge.json\"))[\"merge-requests\"]; assert len(m) == 1; c = re.search(\"[|] Up from three [|]([^|]*)[|]\", m[0][\"body\"]).group(1); ids = re.findall(\"[`]([^`]+)[`]\", c); assert ids; d = subprocess.run([\"git\", \"--git-dir=../origin.git\", \"diff\", \"main\", \"workline/tester/issue-4\", \"--\", \"*_test.go\"], capture_output=True, text=True).stdout; assert all(re.search(\"^[+]func \" + i.split(\".\")[-1].split(\"/\")[0] + \"[(]\", d, re.M) for i in ids)'"}
+  - {sh: "python3 -c 'import json,re,subprocess; m = json.load(open(\"../forge.json\"))[\"merge-requests\"]; assert len(m) == 1; c = re.search(\"[|] Up from eight [|]([^|]*)[|]\", m[0][\"body\"]).group(1); ids = re.findall(\"[`]([^`]+)[`]\", c); assert ids; d = subprocess.run([\"git\", \"--git-dir=../origin.git\", \"diff\", \"main\", \"workline/tester/issue-4\", \"--\", \"*_test.go\"], capture_output=True, text=True).stdout; assert all(re.search(\"^[+]func \" + i.split(\".\")[-1].split(\"/\")[0] + \"[(]\", d, re.M) for i in ids)'"}
   - {sh: "test $(git --git-dir=../origin.git diff main workline/tester/issue-4 -- '*_test.go' | grep -c '^+func Test') -eq 2"}
   - {sh: "! git --git-dir=../origin.git diff main workline/tester/issue-4 | grep -q '^+.*Add('"}
   - {sh: "python3 -c 'import json; m = json.load(open(\"../forge.json\")).get(\"merge-requests\", []); assert len(m) == 1 and m[0][\"draft\"]'"}

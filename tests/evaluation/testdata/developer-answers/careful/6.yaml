@@ -9,3 +9,4 @@
     content: |
       . ./lib.sh
       [ "$(sub 5 2)" = 3 ]
+- note: "money.sh's refund has the same swapped subtraction; it is beyond this issue's Scope, so left as it is, for another issue."
