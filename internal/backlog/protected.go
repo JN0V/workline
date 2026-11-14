@@ -67,7 +67,7 @@ func PersonOnly(body string) bool {
 		}
 	}
 	for _, w := range strings.FieldsFunc(work.Plain(text), func(r rune) bool {
-		return !(r == '_' || r == '-' || r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z')
+		return r != '_' && r != '-' && (r < '0' || r > '9') && (r < 'a' || r > 'z') && (r < 'A' || r > 'Z')
 	}) {
 		if bareFiles[w] {
 			return false
