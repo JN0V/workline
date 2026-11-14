@@ -251,6 +251,7 @@ jobs:
       - uses: ./.github/actions/engine
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # only its workline/accepted is a yes
           BEFORE: ${{ github.event.before }}
         run: |
           workline wake --forge github --range "$BEFORE..$GITHUB_SHA" --issue > wake.md ||
