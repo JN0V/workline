@@ -149,7 +149,7 @@ func TestNoVerdictReadsAPack(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() && (d.Name() == ".git" || d.Name() == "testdata") {
+		if d.IsDir() && (strings.HasPrefix(d.Name(), ".") && p != root || d.Name() == "testdata") {
 			return filepath.SkipDir
 		}
 		if d.IsDir() || !strings.HasSuffix(p, ".go") || strings.HasSuffix(p, "_test.go") {
