@@ -2,7 +2,7 @@ case: product-owner/sources-named-beside-the-code-given
 about: >
   #1151, the C++ trial's #55 at its second read, replayed: its Scope a
   guess on WebUI.h. The product owner's recorded answer names
-  ProviderRegistry.h, where `enableComponent()` calls `begin()`, not
+  Core.cpp, where `enableComponent()` calls `begin()`, not
   given, beside WebUI.h and the test, the issue's own, no line quoted.
   The file not given is named without a quote, the issue read again
   with it; the two given stay, its state named them already.
@@ -18,9 +18,9 @@ given:
 run: {role: product-owner, event: issue, target: {issue: 55}, ai: fake:sources-named-beside-the-code-given}
 expect:
   findings:
-    - {rule: done, where: "#55", message: "Named the code #55 is about: DomoticsCore-WebUI/include/DomoticsCore/WebUI/ProviderRegistry.h, DomoticsCore-WebUI/include/DomoticsCore/WebUI.h,"}
-    - {rule: needs-code, where: "#55", message: "DomoticsCore-WebUI/include/DomoticsCore/WebUI/ProviderRegistry.h"}
+    - {rule: done, where: "#55", message: "Named the code #55 is about: DomoticsCore-Core/src/Core.cpp, DomoticsCore-WebUI/include/DomoticsCore/WebUI.h,"}
+    - {rule: needs-code, where: "#55", message: "DomoticsCore-Core/src/Core.cpp"}
   no-findings: [{rule: no-quote, where: "#55"}, {rule: sources-unquoted, where: "#55"}]
   forge:
     issues:
-      - {id: 55, comment-contains: "sources: [DomoticsCore-WebUI/include/DomoticsCore/WebUI/ProviderRegistry.h, DomoticsCore-WebUI/include/DomoticsCore/WebUI.h, DomoticsCore-WebUI/test/test_webui_component_toggle/test_webui_component_toggle.cpp]\n"}
+      - {id: 55, comment-contains: "sources: [DomoticsCore-Core/src/Core.cpp, DomoticsCore-WebUI/include/DomoticsCore/WebUI.h, DomoticsCore-WebUI/test/test_webui_component_toggle/test_webui_component_toggle.cpp]\n"}

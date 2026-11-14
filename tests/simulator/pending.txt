@@ -25,13 +25,13 @@ trial-5-fresh i1-status expected-end
 # and it goes on to its tests; its developer's agent wrote no code, so
 # past claim-hours on the same body it waits on a person, blocked, never
 # run again on that input.
-trial-3-replay expected-end
+trial-3-replay i1-status expected-end
 trial-4-replay i1-status expected-end
 trial-5-replay i1-status expected-end
 trial-16-replay i1-status expected-end
 trial-19-replay i1-status expected-end
 trial-20-replay i1-status expected-end
-trial-33-replay expected-end
+trial-33-replay i1-status expected-end
 trial-34-replay expected-end
 trial-35-replay i1-status expected-end
 trial-36-replay i1-status expected-end
