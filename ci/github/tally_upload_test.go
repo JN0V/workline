@@ -21,13 +21,18 @@ type tallyStep struct {
 	overwrite bool
 }
 
-// tallySteps reads every workflow the templates ship and the project's own.
-func tallySteps(t *testing.T) []tallyStep {
+// tallySteps reads every workflow the templates ship (ci/github/*.yml).
+// With withProject it reads the project's own workflows too
+// (.github/workflows/*.yml).
+func tallySteps(t *testing.T, withProject bool) []tallyStep {
 	t.Helper()
 	files, _ := filepath.Glob("*.yml")
-	more, _ := filepath.Glob(filepath.Join("..", "..", ".github", "workflows", "*.yml"))
+	if withProject {
+		more, _ := filepath.Glob(filepath.Join("..", "..", ".github", "workflows", "*.yml"))
+		files = append(files, more...)
+	}
 	var out []tallyStep
-	for _, file := range append(files, more...) {
+	for _, file := range files {
 		data, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatal(err)
@@ -69,7 +74,7 @@ func tallySteps(t *testing.T) []tallyStep {
 // Then that run's tokens are counted: the steps that write and upload the
 // job's tally run in a cancelled run too.
 func TestTallyStepsRunInACancelledRun(t *testing.T) {
-	for _, s := range tallySteps(t) {
+	for _, s := range tallySteps(t, true) {
 		rest := strings.ReplaceAll(s.cond, "!cancelled()", "")
 		if !strings.Contains(rest, "always()") && !strings.Contains(rest, "cancelled()") {
 			t.Errorf("%s: the tally step runs `if: %s`, which never runs in a cancelled run", s.where, s.cond)
@@ -81,17 +86,23 @@ func TestTallyStepsRunInACancelledRun(t *testing.T) {
 // Given a job re-run in the same workflow run,
 // When the weekly sample runs,
 // Then both attempts' tokens are counted: each attempt uploads its own
-// artifact, none overwrites another's.
+// artifact, none overwrites another's. It reads the templates the
+// project ships (ci/github/*.yml) only.
 func TestTallyArtifactsKeepEveryAttempt(t *testing.T) {
-	for _, s := range tallySteps(t) {
+	uploads := 0
+	for _, s := range tallySteps(t, false) {
 		if !s.upload {
 			continue
 		}
+		uploads++
 		if s.overwrite {
 			t.Errorf("%s: the tally artifact %q overwrites the one an earlier attempt uploaded", s.where, s.name)
 		}
 		if !strings.Contains(s.name, "run_attempt") {
 			t.Errorf("%s: the tally artifact %q is named the same in every attempt of a run", s.where, s.name)
 		}
+	}
+	if uploads == 0 {
+		t.Error("no tally artifact upload found in the templates")
 	}
 }
