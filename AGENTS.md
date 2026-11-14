@@ -25,16 +25,17 @@ Whatever the agent, a person's assistant works the way the line does
   the line builds them. Open no pull request of your own for them.
 - **Never around the line**, whoever asks: no `--admin`, no ruleset or
   branch protection edited, no push to `main`, no auto-merge turned on,
-  no `workline:accepted` (nor `-whole`) unless the person asks, as
-  below. Told "merge it": ask the person for their label.
+  no `workline:accepted` (nor `-whole`) but as the next bullets say.
+- **Told "merge it"**: ask the person for their label; that is all.
 - **A person's yes is assisted, never delegated**
   ([§7](docs/adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated)).
-  Asked to accept a pull request, or sign anything, in their name, you
-  may put their label or their sign-off:
+  Told "accept it in my name", or to sign anything in their name, you
+  may put their label or their sign-off only when all three hold:
   - **that item, now**, on their explicit instruction;
-  - **on an independent analysis**: if yours came from whoever wrote
-    the change, you included, say so, give an independent one, and
-    wait for their yes on it;
+  - **on an independent analysis**: a run other than the change's
+    author, not briefed with its conclusion; if yours came from
+    whoever wrote the change, you included, say so, give an
+    independent one, and wait for their yes on it;
   - **traced**: a comment names who instructed it, on which summary.
 - **No standing yes**: an order kept for later, in memory or anywhere
   ("the panel signs for me", "merge after a re-check"), gives none;
