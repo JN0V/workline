@@ -11,7 +11,11 @@ on:
   schedule: [{cron: "41 3 * * *"}]
 permissions: {contents: read}
 jobs:
-  test:
+  # The line simulator runs beside the other tests, so the wall time is
+  # the longer of the two (#1516). `test`, the check main's ruleset
+  # requires, waits for both and fails unless both passed.
+  rest:
+    name: test (all but the simulator)
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
@@ -21,7 +25,25 @@ jobs:
         with: {go-version-file: go.mod}
       - uses: ./.github/actions/tests   # the tools the tests need: the proofs' jobs take the same
       - run: go vet ./...
-      - run: go test -count=1 -timeout 20m ./...   # the line simulator alone takes 6 to 7 minutes
+      - run: go test -count=1 -timeout 20m $(go list ./... | grep -v '/tests/simulator$')
+  simulator:
+    name: test (simulator)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      - uses: ./.github/actions/tests
+      - run: go test -count=1 -timeout 20m ./tests/simulator/
+  test:
+    if: always() && github.event_name != 'schedule'
+    needs: [rest, simulator]
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "$REST" = success && test "$SIM" = success
+        env: {REST: "${{ needs.rest.result }}", SIM: "${{ needs.simulator.result }}"}
   seeds:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
