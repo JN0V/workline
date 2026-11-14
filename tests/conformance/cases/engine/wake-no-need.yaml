@@ -1,20 +1,22 @@
 case: engine/wake-no-need
-about: "A merge request merged that closes no issue is listed under laundered needs, by who opened it; one merged before the range is not (ADR-0068 §8, #1461)."
+about: "A merge request merged that closes no issue is listed under laundered needs, by who opened it; one merged before the range is not (ADR-0068 §8, #1461), nor an app's, counted in the facts (#1478)."
 given:
   repo: basic
   setup:
     - "printf 'a\\n' > a.txt && git add . && git commit -q -m 'feat: a'"
     - "printf 'b\\n' > b.txt && git add . && git commit -q -m 'feat: b'"
     - "printf 'c\\n' > c.txt && git add . && git commit -q -m 'feat: c'"
+    - "printf 'd\\n' > d.txt && git add . && git commit -q -m 'chore: release'"
   forge:
     issues:
       - {id: 3, title: "c is wanted", body: "x", labels: [], closed: true}
     merge-requests:
-      - {id: 11, title: "a", branch: f11, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~2", author: bob, labels: []}
-      - {id: 12, title: "b", branch: f12, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~1", author: alice, labels: []}
-      - {id: 13, title: "c", branch: f13, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main", author: carol, closes: [3], labels: []}
-run: {cli: [wake, --forge, "fake:../forge.json", --range, "main~2..main"]}
+      - {id: 11, title: "a", branch: f11, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~3", author: bob, labels: []}
+      - {id: 12, title: "b", branch: f12, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~2", author: alice, labels: []}
+      - {id: 13, title: "c", branch: f13, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~1", author: carol, closes: [3], labels: []}
+      - {id: 14, title: "release", branch: f14, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main", author: "release-app[bot]", bot: true, labels: []}
+run: {cli: [wake, --forge, "fake:../forge.json", --range, "main~3..main"]}
 expect:
   exit: 0
-  stdout: ["### Laundered needs", "closes no issue: #12, by `alice`"]
-  stdout-lacks: ["#11", "#13", "bob", "carol"]
+  stdout: ["### Laundered needs", "closes no issue: #12, by `alice`", "1 by apps"]
+  stdout-lacks: ["#11", "#13", "#14", "bob", "carol", "release-app"]
