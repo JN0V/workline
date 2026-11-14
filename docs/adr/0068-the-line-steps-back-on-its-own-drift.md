@@ -119,8 +119,8 @@ guard", becomes:
     autonomy, routing, gates, the reviewer's ignore list, and each
     role's level, pinned there in step 1;
   - the reviewer's and the auditor's prompts (`instruction.md`,
-    `persona.md`, `policy.md`, lenses, kinds): the oversight that reads
-    every other change;
+    `persona.md`, `policy.md`, lenses, kinds) and settings
+    (`role.yaml`): the oversight that reads every other change;
   - the wake script and its triggers (step 3); the process engineer's
     brief, if step 6 builds it.
 - **A guarded file merges on the person's label**, never by the policy
