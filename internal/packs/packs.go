@@ -385,9 +385,10 @@ func TesterDefaults(listed []Pack) map[string]any {
 	}
 	for _, p := range all {
 		for _, e := range p.BuildErrors {
-			if !seenE[e.Error] {
-				seenE[e.Error] = true
-				errs = append(errs, e.row())
+			row := e.row()
+			if k := fmt.Sprint(row); !seenE[k] {
+				seenE[k] = true
+				errs = append(errs, row)
 			}
 		}
 		for _, t := range p.TestPaths {
