@@ -1353,6 +1353,9 @@ func (p *Plan) summary(role string) {
 	for _, d := range p.Decisions {
 		switch {
 		case d.Mode != Act:
+		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue] && p.given(d.Act.Issue, d.Act.Sources):
+			// Only files the task gave: naming them records what the
+			// issue is about, nothing is left to read (#1440).
 		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue]:
 			named[d.Act.Issue] = append(named[d.Act.Issue], d.Act.Sources...)
 		case d.Act.Do == "ready" || d.Act.Do == "close" || d.Act.Do == "split":
