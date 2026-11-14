@@ -138,8 +138,10 @@ none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-ac
     as well; its judge is shown the issue.
   - It judges how much, never whether: what the issue does not ask at
     all, and a part of the Need left undone, stay intent's.
-  - Advisory: it warns until its false alarms are counted on past pull
-    requests; `ai-findings` set by lens leaves it out.
+  - Advisory: `severity: nit` in its front matter shows each finding as
+    a nit, never judged, never asked of the developer, until its false
+    alarms are counted on past pull requests
+    ([#1497](https://github.com/JN0V/workline/issues/1497)).
 - **Claims** (`cites: claim`): each finding quotes the author's claim ("no
   change in behaviour"), found again in what they said, or is dropped
   (`finding-unfounded`), and its cause the line contradicting it.

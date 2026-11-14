@@ -100,7 +100,7 @@ Step by step, with every rule: [a run on code](docs/run.md).
    what its own pipeline runs (`.github/`, `.workline/`) skips none.
 4. **The lenses**: correctness, edge cases, tests, intent (the issue the
    change closes), claims (what its author says), simplicity (more than
-   the issue needs, a warning only), in one call; a project adds its own
+   the issue needs, nits only), in one call; a project adds its own
    in `.workline/roles/reviewer/lenses/`.
 5. **The quotes**: each cause found again in the code, the issue or the
    author's words; not found, dropped.
@@ -184,10 +184,11 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 - **`ai-findings` by lens**: a lens not named warns; of findings on one
   line, a verified one from a blocking lens leads.
 - **`lenses`**: intent and simplicity have nothing to read when the
-  change closes no issue, and are skipped; simplicity warns until its
-  false alarms are counted on past pull requests
-  ([ADR-0068](../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)):
-  set `ai-findings` by lens, never `block` for every lens.
+  change closes no issue, and are skipped; simplicity's findings are
+  nits, never judged nor asked of the developer, until its false alarms
+  are counted on past pull requests
+  ([ADR-0068](../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached),
+  [#1497](https://github.com/JN0V/workline/issues/1497)).
 
 ### Caps
 

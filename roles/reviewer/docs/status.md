@@ -213,8 +213,9 @@ its measure in
   floor**: `intent-*`, `claim-contradicted-is-a-finding-on-the-line`,
   `merge-request-body-given-as-testimony`, `decision-*`, `diff-alone-*`,
   `finder-floor-nothing-found-is-clean`.
-- **Simplicity, a warning only**: more than the issue needs, judged
-  against it, until its false alarms are counted
+- **Simplicity, nits only**: more than the issue needs, against it,
+  never judged nor asked of the developer until its false alarms are
+  counted
   ([ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)):
   `simplicity-*`, two planted cases in the evaluation
   ([tried](https://github.com/JN0V/workline/pull/1496)).
