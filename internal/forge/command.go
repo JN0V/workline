@@ -55,7 +55,7 @@ func (c *command) call(op string, args map[string]any, v any) error {
 	cmd.WaitDelay = waitDelay
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
-	if err := cmd.Run(); err != nil {
+	if err := finished(cmd.Run()); err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return fmt.Errorf("%w: the forge command did not answer %s within %s", ErrUnreachable, op, commandTimeout)
 		}
@@ -132,7 +132,7 @@ func CheckCommand(repo, script string) (state, detail string) {
 	cmd.WaitDelay = waitDelay
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
-	if err := cmd.Run(); err != nil {
+	if err := finished(cmd.Run()); err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return ProbeFailing, fmt.Sprintf("it did not answer within %s", probeTimeout)
 		}
@@ -166,6 +166,16 @@ func CheckCommand(repo, script string) (state, detail string) {
 		return ProbeRefused, a.Error
 	}
 	return ProbeReachable, ""
+}
+
+// finished takes a command that exited 0 but left a child on its output,
+// so that waitDelay expired, for a success: its answer is written, and the
+// child is not its failure.
+func finished(err error) error {
+	if errors.Is(err, exec.ErrWaitDelay) {
+		return nil
+	}
+	return err
 }
 
 func lastLine(s string) string {
