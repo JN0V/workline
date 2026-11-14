@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.77.0](https://github.com/JN0V/workline/compare/v0.76.0...v0.77.0) (2026-11-14)
+
+
+### Features
+
+* **reviewer:** a simplicity lens that warns, planted cases ([#1496](https://github.com/JN0V/workline/issues/1496)) ([d99ef5a](https://github.com/JN0V/workline/commit/d99ef5adb24844fbac7f2639f77d41d5b0846a97))
+* **tester:** default effort high ([#1538](https://github.com/JN0V/workline/issues/1538)) ([77705d2](https://github.com/JN0V/workline/commit/77705d22a73692a14af9d2ce25bbd20b5f73a215))
+
+
+### Bug Fixes
+
+* forcing Claude's xhigh effort is refused as unknown ([#1542](https://github.com/JN0V/workline/issues/1542)) ([935c20d](https://github.com/JN0V/workline/commit/935c20d12fe50c2a00c67c460b4f6a9f9e8b0a41))
+* internal/packs tests read the agents' worktrees under ([#1522](https://github.com/JN0V/workline/issues/1522)) ([3aaf7d1](https://github.com/JN0V/workline/commit/3aaf7d1d5a319df0a3c13087155bcae7d1b37f88))
+* **line:** a question to the reporter never times out on a ([#1473](https://github.com/JN0V/workline/issues/1473)) ([e3571f0](https://github.com/JN0V/workline/commit/e3571f0e9fa1013fadb798e1b1257faf77fa8b3f))
+* **tester:** a test under a display name may escape being ([#1545](https://github.com/JN0V/workline/issues/1545)) ([4034cbb](https://github.com/JN0V/workline/commit/4034cbba993c2e44b882177a5b964fcb404833c7))
+* the judge on Opus asks bare grep reads and gets no verdict ([#1543](https://github.com/JN0V/workline/issues/1543)) ([ecedafb](https://github.com/JN0V/workline/commit/ecedafb2a7e30f330748e57094000ae5cbc79deb))
+* **wake:** keep the wake's issue under the forge's size limit ([#1511](https://github.com/JN0V/workline/issues/1511)) ([8125fe8](https://github.com/JN0V/workline/commit/8125fe89b6e99a1c9bbcce733c34cc01e6dbb00d))
+* **wake:** leave apps' routine merges out of closes no issue ([#1512](https://github.com/JN0V/workline/issues/1512)) ([450e12b](https://github.com/JN0V/workline/commit/450e12bcc0c8066906d1a38620cb2d57ac8f6176))
+* **wake:** take only workline's App's workline/accepted as a yes ([#1509](https://github.com/JN0V/workline/issues/1509)) ([02e8d26](https://github.com/JN0V/workline/commit/02e8d26d87a9104c2cded98aab5d079b32dc6e52))
+
 ## [0.76.0](https://github.com/JN0V/workline/compare/v0.75.0...v0.76.0) (2026-11-14)
 
 
