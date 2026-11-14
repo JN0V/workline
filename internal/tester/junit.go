@@ -56,9 +56,10 @@ func readJUnit(file string, results map[string]result, suites map[string]string,
 	walk = func(s suite) {
 		for _, c := range s.Cases {
 			name := strings.TrimSuffix(c.Name, "()")
-			// A name ending in `()` is a method's, whatever text it
-			// carries: never a runner's record of a suite.
-			method := name != c.Name
+			// A name ending in `()`, or written as words (a display
+			// name, spaces in it), is a method's, whatever text it
+			// carries: a runner's record of a suite is one token.
+			method := name != c.Name || strings.ContainsAny(name, " \t")
 			id := name
 			if c.Class != "" {
 				id = c.Class + "." + name
