@@ -51,6 +51,7 @@ stars and dates were checked against the GitHub API that day.
 | [reliable-schedule.md](reliable-schedule.md) | How a periodic job runs on time on GitHub Actions with nothing outside the forge and no runner held |
 | [qa-campaigns.md](qa-campaigns.md) | How test campaigns are planned and played on a release candidate: test runs, simulated inputs, hardware-in-the-loop, AI explorers |
 | [line-liveness.md](line-liveness.md) | How controllers, workflow engines and supervisors keep every item moving or saying why, retry their own failures, stop loops, and test it |
+| [skills.md](skills.md) | Which public skills and directories fit optional know-how, who loads the Agent Skills format, how an agent without it gets one, and what to try first |
 
 ### Measured
 
