@@ -1,0 +1,21 @@
+case: setup/doctor-guarded-list-codeowners
+about: >
+  The doctor says which list the engine reads as what never merges by
+  the policy alone (ADR-0068 §4): at `normal`, the project's
+  .github/CODEOWNERS. Its exclusion (`!pattern`) is said: the engine
+  never takes one to unlist a path, so it holds more, never less.
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "mkdir -p .github && printf '/AGENTS.md @owner\\n/docs/ @owner\\n!/docs/guide.md\\n' > .github/CODEOWNERS"
+  forge:
+    merge-requests: []
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: guarded-list, where: .github/CODEOWNERS, level: ok, message: "the paths .github/CODEOWNERS lists"}
+    - {rule: guarded-list-read-past, where: .github/CODEOWNERS, level: note, message: "excludes paths"}
+  no-checks:
+    - {rule: guarded-list-none}

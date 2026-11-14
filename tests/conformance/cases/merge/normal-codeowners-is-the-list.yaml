@@ -1,0 +1,31 @@
+case: merge/normal-codeowners-is-the-list
+about: "CODEOWNERS is the one list of what never merges alone (ADR-0068 §4): at `normal`, workline's own pull requests — opened, pushed and committed by its App —, green, each only recording a doc read. CODEOWNERS lists AGENTS.md and docs/PRINCIPLES.md. One records docs/PRINCIPLES.md: it waits for a person's label, said. One records docs/tech/auth.md, a page AGENTS.md links to but CODEOWNERS does not list: it merges alone."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "printf '# What never merges alone\\n/CODEOWNERS @owner\\n/AGENTS.md @owner\\n/docs/PRINCIPLES.md @owner\\n' > CODEOWNERS && printf 'Read [the auth notes](docs/tech/auth.md) first.\\n' > AGENTS.md && printf -- '---\\nchecked: 111\\n---\\n1. People at both ends.\\n' > docs/PRINCIPLES.md && git add CODEOWNERS AGENTS.md docs/PRINCIPLES.md && git commit -qm 'docs: what never merges alone' && git push -q origin main"
+    - "git checkout -qb workline/documentalist/linked && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/linked && git checkout -q main"
+    - "git checkout -qb workline/documentalist/listed && sed -i '/^checked:/a judged: 1a2b3c4' docs/PRINCIPLES.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the principles judged' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/listed && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/documentalist/linked", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/documentalist/listed", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 9, branch: workline/documentalist/linked, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/linked, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+      - {id: 13, branch: workline/documentalist/listed, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/listed, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings:
+    - {rule: auto-merge-on, where: "#9", message: "with no person's yes, workline's own records"}
+    - {rule: waits-for-a-yes, where: "#13", message: "it changes docs/PRINCIPLES.md, which CODEOWNERS lists"}
+  no-findings: [{rule: waits-for-a-yes, where: "#9"}, {rule: auto-merge-on, where: "#13"}, {rule: merged-at-once, where: "#13"}]
+  forge:
+    merge-requests:
+      - {id: 9, auto-merge: true, comments: 1, comment-contains: ["workline:merge-alone=records"]}
+      - {id: 13, auto-merge: false, comments: 0}

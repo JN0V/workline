@@ -303,8 +303,9 @@ type checker struct {
 	b     Bounds
 	at    string // the commit the rules are read at; "" the checkout
 	gates []string
-	roles string // the role folders, when in the repository
 	repo  string
+	// steer says whether a path never merges alone: CODEOWNERS's list,
+	// else the files that steer agents (internal/steer).
 	steer func(string) bool
 	// unread is why the gates or the steering files could not be read:
 	// every file is refused then, rather than one let past.
@@ -315,7 +316,8 @@ func newChecker(repo string, b Bounds) checker { return newCheckerAt(repo, b, ""
 
 // Guarded says, for a file, the rule that keeps a change to it from
 // being trusted to its own run — "gate-file" (CI, workline's config, a
-// gate's script or config), "steering-file" (what steers agents), or
+// gate's script or config), "steering-file" (what CODEOWNERS lists, an
+// agent file), or
 // "bounds-unread" when those could not be read —, the rules read at the
 // commit at; "" for any other file.
 func Guarded(repo, at string) func(string) string {
@@ -330,8 +332,8 @@ func Guarded(repo, at string) func(string) string {
 }
 
 // newCheckerAt reads the rules at the commit at: the gates, the files
-// that steer agents, the role folders, a Scope's folders; "" reads them
-// in the checkout, the steering files at HEAD.
+// that never merge alone, a Scope's folders; "" reads them in the
+// checkout, the steering files at HEAD.
 func newCheckerAt(repo string, b Bounds, at string) checker {
 	c := checker{b: b, repo: repo, at: at, steer: func(string) bool { return false }}
 	c.gates, c.unread = gateFiles(repo, at)
@@ -342,12 +344,7 @@ func newCheckerAt(repo string, b Bounds, at string) checker {
 	if s, err := steer.Files(repo, tip); err != nil {
 		c.unread = errors.Join(c.unread, fmt.Errorf("the files that steer agents: %w", err))
 	} else {
-		c.steer = s
-	}
-	if d := os.Getenv("WORKLINE_ROLES_DIR"); d != "" {
-		if rel, err := filepath.Rel(repo, d); err == nil && rel != "." && !strings.HasPrefix(rel, "..") {
-			c.roles = filepath.ToSlash(rel)
-		}
+		c.steer = func(p string) bool { return s(p) != "" }
 	}
 	return c
 }
@@ -361,7 +358,7 @@ func (c checker) rule(p string) string {
 		return "gate-file"
 	case c.unread != nil:
 		return "bounds-unread"
-	case c.steer(p) || c.roles != "" && under(p, []string{c.roles}) || c.roleFolder(p):
+	case c.steer(p) || steer.Agent(p):
 		return "steering-file"
 	case c.b.Frozen[p] > 0:
 		return "acceptance-test-edit"
@@ -511,25 +508,6 @@ func (c checker) isDir(p string) bool {
 	return path.Ext(p) == ""
 }
 
-// roleFolder says whether p is in a role's folder of the repository: a
-// `roles/<name>/` holding a role.yaml, a role's facets the engine gives
-// its agent, and its pages beside them.
-func (c checker) roleFolder(p string) bool {
-	parts := strings.Split(p, "/")
-	for i := 0; i+2 < len(parts); i++ {
-		if parts[i] != "roles" {
-			continue
-		}
-		if c.repo == "" {
-			return true
-		}
-		if kindAt(c.repo, c.at, path.Join(path.Join(parts[:i+2]...), "role.yaml")) != "" {
-			return true
-		}
-	}
-	return false
-}
-
 // kindAt says what p is at rev, a commit, or in the checkout when rev is
 // "": "file", "dir", or "" when it is not there.
 func kindAt(repo, rev, p string) string {
@@ -570,7 +548,7 @@ func why(r Refusal) string {
 	case "gate-file":
 		return "a gate's definition or the CI's: only a person changes it (docs/spec/gates.md, protection); a person must do it"
 	case "steering-file":
-		return "a file that steers agents or a role's folder: never the developer's, whatever the scope; a person must do it"
+		return "a file that steers agents, or one CODEOWNERS lists: never the developer's, whatever the scope; a person must do it"
 	case "symlink-out":
 		return "a link leading out of the worktree: nothing outside the repository is the developer's, so refused and reverted"
 	case "not-text":

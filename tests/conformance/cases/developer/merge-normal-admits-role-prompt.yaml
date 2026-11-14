@@ -1,0 +1,49 @@
+case: developer/merge-normal-admits-role-prompt
+about: >
+  Another role's prompt takes the line's normal path (ADR-0068 §4): the
+  project's CODEOWNERS lists AGENTS.md and the reviewer's instruction,
+  not the tester's. At `normal`, the developer's fix for #3, a `bug`,
+  also changes `roles/tester/instruction.md`; workline's own, its
+  head's verdict passed, the reviewer's verdict on its head, no finding
+  open but a nit. A file named an instruction no longer holds it: it
+  merges with no person's yes, as any fix.
+given:
+  repo: tested-draft
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git checkout -q main && printf '/CODEOWNERS @owner\\n/AGENTS.md @owner\\n/roles/reviewer/instruction.md @owner\\n' > CODEOWNERS && git add CODEOWNERS && git commit -qm 'chore: what never merges alone' && git checkout -q workline/tester/issue-3 && git rebase -q main && git checkout -q -b workline/developer/3 && GIT_COMMITTER_NAME=workline-bot git commit -q --amend --no-edit && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && mkdir -p roles/tester && printf 'Say the product.\\n' > roles/tester/instruction.md && git add roles/tester/instruction.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'fix: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/developer/3 && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    issues:
+      - id: 3
+        title: "mul gives a sum"
+        labels: ["bug", "workline:developing"]
+        body: "## Need\n\nmul 2 3 gives 5.\n\n## Scope\n\n- `lib.sh`: `mul`.\n"
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        author: workline-bot
+        bot: true
+        title: "mul gives a sum"
+        body: "Closes #3"
+        labels: []
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"from\":\"workline/tester/issue-3\",\"acceptance\":[\"tests.test_mul_two_by_three\",\"tests.test_mul_by_zero\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | naming | `lib.sh:2` | Nit: a one-letter name. |\n\n<!-- workline:at head=728696a50df8835a8bcff4120140f215022b3cf5 run=7 -->\n<!-- workline:findings [{\"lens\":\"naming\",\"holds\":\"warns\",\"where\":\"lib.sh:2\",\"severity\":\"Nit\",\"text\":\"a one-letter name.\"}] -->\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: auto-merge-on, where: "#2", message: "with no person's yes, workline's own code — the developer's code for #3, a fix: its issue labelled `bug` —"}
+  no-findings: [{rule: waits-for-a-yes}, {rule: merge-app-unknown}]
+  not-pushed: [workline/developer/3]
+  summary-file: ["accepted into main, #2", "auto-merge turned on for 1"]
+  forge:
+    merge-requests:
+      - {id: 2, auto-merge: true, labels: [], comment-contains: ["Merging with no person's yes", "workline's own code", "a fix: its issue labelled `bug`", "workline:merge-alone=code"]}
+    statuses:
+      - {commit: "workline/developer/3", name: workline/accepted, state: success, by: workline-bot, description: "with no person's yes: workline's own code"}

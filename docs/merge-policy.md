@@ -132,6 +132,9 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
     merges it by hand;
   - unlabelled, `follow` says it waits for a yes
     ([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-04-1043-a-fork-goes-by-its-yes-and-its-checks)).
+- **One changing a guarded file**, one the project's `CODEOWNERS`
+  lists, at every level
+  ([what never merges alone](merge-policy-normal.md#what-never-merges-alone)).
 - **Any other** with no label, whoever opened it — but, at `normal` and
   `enterprising`, workline's own routine work. A bot's own auto-merge (a dependency
   bot's) is left to it.

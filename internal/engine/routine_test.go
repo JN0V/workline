@@ -91,9 +91,10 @@ func TestRoutineKind(t *testing.T) {
 	}
 }
 
-// The pages agents are told to read are never workline's to change alone:
-// an agent file, a page it links to, a folder it links to whole, a file it
-// imports and what that one links to, a prompt or a template by name.
+// With no CODEOWNERS, the pages agents are told to read are never
+// workline's to change alone: an agent file, a page it links to, a folder
+// it links to whole, a file it imports and what that one links to; a file
+// named a prompt no longer (ADR-0068 §4).
 func TestSteering(t *testing.T) {
 	repo, run, write := gitRepo(t)
 	for p, s := range map[string]string{
@@ -119,10 +120,10 @@ func TestSteering(t *testing.T) {
 	}
 	for p, want := range map[string]bool{
 		"AGENTS.md": true, "docs/PRINCIPLES.md": true, "docs/adr/0001-x.md": true, "docs/spec/contract.md": true,
-		"team/RULES.md": true, "team/style.md": true, "docs/review-prompt.md": true, "sub/claude.md": true,
-		"docs/guide.md": false, "docs/spec/other.md": false, "docs/adr-notes.md": false,
+		"team/RULES.md": true, "team/style.md": true, "sub/claude.md": true,
+		"docs/guide.md": false, "docs/spec/other.md": false, "docs/adr-notes.md": false, "docs/review-prompt.md": false,
 	} {
-		if got := steers(p); got != want {
+		if got := steers(p) != ""; got != want {
 			t.Errorf("%s steers agents: %v, want %v", p, got, want)
 		}
 	}
