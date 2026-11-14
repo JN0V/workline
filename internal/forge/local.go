@@ -9,7 +9,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
+	wlclock "github.com/JN0V/workline/internal/clock"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -43,11 +45,19 @@ type LocalItem struct {
 	Events   []LocalEvent `yaml:"events,omitempty"`
 	Body     string       `yaml:"-"`
 	Comments []string     `yaml:"-"`
+	// Dates are when each comment was written, RFC 3339, in step with
+	// Comments; "" for one written before the file dated them. A comment
+	// with none yet is dated when the item is saved.
+	Dates []string `yaml:"-"`
 }
 
 // commentLine starts each comment in an item's file. It is not a marker
 // (Marker), so no comment's own marker is taken for it.
 const commentLine = "<!-- workline-comment -->"
+
+// commentDated starts a comment's line once it is dated: the line, then
+// " at=" and its time, RFC 3339.
+const commentDated = "<!-- workline-comment at="
 
 func kindDir(kind string) string {
 	if kind == "merge-request" {
@@ -178,8 +188,15 @@ func (l *Local) save(kind string, it *LocalItem) error {
 	if body := strings.Trim(it.Body, "\n"); body != "" {
 		b.WriteString(body + "\n")
 	}
-	for _, c := range it.Comments {
-		b.WriteString("\n" + commentLine + "\n" + strings.Trim(c, "\n") + "\n")
+	for len(it.Dates) < len(it.Comments) {
+		it.Dates = append(it.Dates, wlclock.Now().UTC().Format(time.RFC3339))
+	}
+	for i, c := range it.Comments {
+		line := commentLine
+		if d := it.Dates[i]; d != "" {
+			line = commentDated + d + " -->"
+		}
+		b.WriteString("\n" + line + "\n" + strings.Trim(c, "\n") + "\n")
 	}
 	tmp := p + ".tmp"
 	if err := os.WriteFile(tmp, []byte(b.String()), 0o644); err != nil {
@@ -212,6 +229,12 @@ func parseLocal(s string) (*LocalItem, error) {
 	for _, line := range strings.Split(rest, "\n") {
 		if line == commentLine {
 			parts = append(parts, "")
+			it.Dates = append(it.Dates, "")
+			continue
+		}
+		if at, ok := strings.CutPrefix(line, commentDated); ok && strings.HasSuffix(at, " -->") {
+			parts = append(parts, "")
+			it.Dates = append(it.Dates, strings.TrimSuffix(at, " -->"))
 			continue
 		}
 		parts[len(parts)-1] += line + "\n"
@@ -293,12 +316,19 @@ func (l *Local) Comments(t Target) ([]string, error) {
 // of the project, as its issues' authors are. workline's own carry its
 // mark, as each comment a role writes does; the person's carry none.
 func (l *Local) Notes(t Target) ([]Note, error) {
-	comments, err := l.Comments(t)
-	notes := make([]Note, 0, len(comments))
-	for i, c := range comments {
-		notes = append(notes, Note{Body: c, Insider: true, ID: strconv.Itoa(i + 1), Own: strings.Contains(c, "<!-- workline:")})
+	it, err := l.Item(t.Kind, t.ID)
+	if err != nil {
+		return nil, err
 	}
-	return notes, err
+	notes := make([]Note, 0, len(it.Comments))
+	for i, c := range it.Comments {
+		n := Note{Body: c, Insider: true, ID: strconv.Itoa(i + 1), Own: strings.Contains(c, "<!-- workline:")}
+		if i < len(it.Dates) {
+			n.Created = it.Dates[i]
+		}
+		notes = append(notes, n)
+	}
+	return notes, nil
 }
 
 // LabelEvents: the local forge keeps no history: it does not say who set
@@ -402,7 +432,10 @@ func (l *Local) Open(title, body string, labels []string) (int, error) {
 // Answer adds a person's comment after the others, as written: no
 // marker, so two alike are two comments, as on a forge (#1284).
 func (l *Local) Answer(t Target, body string) error {
-	return l.change(t, func(it *LocalItem) { it.Comments = append(it.Comments, body) })
+	return l.change(t, func(it *LocalItem) {
+		it.Comments = append(it.Comments, body)
+		it.Dates = append(it.Dates[:len(it.Comments)-1], "") // a person's comment is left undated, as written
+	})
 }
 
 func (l *Local) KeepIssue(title, body string, create bool) (int, error) {
