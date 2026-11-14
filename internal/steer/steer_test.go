@@ -42,7 +42,7 @@ func commit(t *testing.T, files map[string]string) (string, string) {
 func TestFilesReadsCodeowners(t *testing.T) {
 	repo, tip := commit(t, map[string]string{
 		".github/CODEOWNERS": "# oversight\n/AGENTS.md @owner\n/docs/PRINCIPLES.md @owner\n/.github/workflows/ @owner\n" +
-			"/roles/reviewer/instruction.md @owner\n/roles/reviewer/lenses/ @owner\n",
+			"/roles/reviewer/instruction.md @owner\n/roles/reviewer/lenses/ @owner\n/roles/auditor/kinds @owner\n",
 		"AGENTS.md":          "Read [the guide](docs/guide.md).\n",
 		"docs/guide.md":      "A guide.\n",
 		"docs/PRINCIPLES.md": "1. People.\n",
@@ -57,6 +57,8 @@ func TestFilesReadsCodeowners(t *testing.T) {
 		".github/CODEOWNERS": ListedWhy, "CODEOWNERS": ListedWhy, // the list itself, wherever the forges read it
 		"docs/guide.md": "", "roles/tester/instruction.md": "", "docs/review-prompt.md": "",
 		"roles/reviewer/README.md": "", "sub/CLAUDE.md": "",
+		"roles/auditor/kinds/split.md": ListedWhy, // a folder named with no trailing `/`: all of it
+		"roles/auditor/kindsx.md":      "",
 	} {
 		if got := held(p); got != want {
 			t.Errorf("%s: %q, want %q", p, got, want)
@@ -77,6 +79,7 @@ func TestFilesWithNoCodeowners(t *testing.T) {
 		t.Fatal(err)
 	}
 	for p, want := range map[string]string{"AGENTS.md": AgentsWhy, "docs/guide.md": AgentsWhy, "sub/claude.md": AgentsWhy,
+		"CODEOWNERS": ListedWhy, ".github/CODEOWNERS": ListedWhy, // a list added, or one deleted where the rules are read at the head
 		"docs/review-prompt.md": "", "roles/tester/instruction.md": ""} {
 		if got := held(p); got != want {
 			t.Errorf("%s: %q, want %q", p, got, want)

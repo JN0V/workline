@@ -72,9 +72,29 @@ func ParseCodeowners(p string, data []byte) *Codeowners {
 // that matches it decides. Required, an owner whose approval is
 // required: not only in an optional section (`^[…]`).
 func (c *Codeowners) Owns(file string) (owned, required bool) {
+	return c.owns(file, func(pattern, f string) bool { return codeownersMatch(pattern, f) })
+}
+
+// Holds says whether a file has an owner, a rule naming a folder with
+// no trailing `/` taking everything under it too, as GitHub reads it
+// (gitignore's rules): the engine's guard reads a pattern the widest
+// way a forge does, holding more, never less.
+func (c *Codeowners) Holds(file string) bool {
+	owned, _ := c.owns(file, func(pattern, f string) bool {
+		for p := path.Clean(f); p != "." && p != "/"; p = path.Dir(p) {
+			if codeownersMatch(pattern, p) {
+				return true
+			}
+		}
+		return false
+	})
+	return owned
+}
+
+func (c *Codeowners) owns(file string, match func(pattern, file string) bool) (owned, required bool) {
 	last := map[int]bool{} // by section, the last matching rule's owner
 	for _, r := range c.rules {
-		if codeownersMatch(r.pattern, file) {
+		if match(r.pattern, file) {
 			last[r.section] = r.owned
 		}
 	}

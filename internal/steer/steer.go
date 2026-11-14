@@ -31,6 +31,13 @@ var (
 	importDoc = regexp.MustCompile(`(?m)(?:^|\s)@([\w./-]+)`)
 )
 
+// IsCodeowners says whether a path is a CODEOWNERS file where the forges
+// read one: always held, with a list or none, so no change adds,
+// moves or deletes the list unseen.
+func IsCodeowners(p string) bool {
+	return slices.Contains(CodeownersPlaces, path.Clean(p))
+}
+
 // What a held path is, said after it: "it changes X, which …".
 const (
 	ListedWhy = "which CODEOWNERS lists"
@@ -41,15 +48,15 @@ const (
 // alone, and why ("" for any other path). The project's CODEOWNERS, the
 // first found of CodeownersPlaces, is the list: a path it gives an owner,
 // and a CODEOWNERS file itself, never anything else (ADR-0068 §4). With
-// none, the files that steer agents: an agent file itself, a page one
-// links to or imports — a folder linked, all of it —, followed through
-// the files they import.
+// none, a CODEOWNERS file added, and the files that steer agents: an
+// agent file itself, a page one links to or imports — a folder linked,
+// all of it —, followed through the files they import.
 func Files(repo, tip string) (func(path string) string, error) {
 	for _, p := range CodeownersPlaces {
 		if text, ok := blob(repo, tip, p); ok {
 			co := ParseCodeowners(p, []byte(text))
 			return func(f string) string {
-				if owned, _ := co.Owns(f); owned || slices.Contains(CodeownersPlaces, path.Clean(f)) {
+				if co.Holds(f) || IsCodeowners(f) {
 					return ListedWhy
 				}
 				return ""
@@ -110,6 +117,9 @@ func Files(repo, tip string) (func(path string) string, error) {
 		}
 	}
 	return func(p string) string {
+		if IsCodeowners(p) {
+			return ListedWhy
+		}
 		if Agent(p) {
 			return AgentsWhy
 		}

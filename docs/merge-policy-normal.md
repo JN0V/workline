@@ -81,8 +81,9 @@ merge: {autonomy: normal}   # a project's choice, never a default
   person's `workline:accepted`, whatever its kind
   ([ADR-0068 §4](adr/0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)).
   workline's own list: [CODEOWNERS](../CODEOWNERS).
-- **One list**: the engine holds every path `CODEOWNERS` gives an owner,
-  and `CODEOWNERS` itself, nothing else. It reads the first found:
+- **One list**: the engine holds every path `CODEOWNERS` gives an owner
+  (a folder named with or without a trailing `/`, all of it), and a
+  `CODEOWNERS` file itself, added or deleted, nothing else. It reads the first found:
   `CODEOWNERS`, `.github/`, `docs/`, `.gitlab/`; on the base, never the
   pull request's own copy.
 - **Other role prompts take the normal path**: the reviewer reads them,
