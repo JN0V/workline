@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline/wake.go, internal/wake, internal/forge/wake.go, .github/workflows/workline-apply.yml]
-checked: f59514d9
+checked: 1e8ca02f
 verified: agent:claude-code
 ---
 # The wake
