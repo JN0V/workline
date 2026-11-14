@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/curate.go, internal/tester/removal.go, roles/tester/role.yaml, ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 010bf37f
+checked: 9cf386a3
 verified: agent:claude-code
 ---
 # The curator's removals

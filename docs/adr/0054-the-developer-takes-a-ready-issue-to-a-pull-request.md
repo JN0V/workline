@@ -32,6 +32,11 @@
   paths are a hint, not bounds; a file beyond them is listed on the pull
   request, judged by the reviewer; gate, steering and frozen-test files
   stay refused
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)
+  (built, [#1459](https://github.com/JN0V/workline/issues/1459)): the steering test shared with
+  [ADR-0042] narrows to the list in `CODEOWNERS`: a role's folder and a
+  file named a prompt or an instruction are no longer refused, save the
+  reviewer's and the auditor's prompts and settings; agent files and gate files stay
 
 ## Context
 

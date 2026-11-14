@@ -89,7 +89,7 @@ type Block struct {
 	Where string `json:"where"`
 	Title string `json:"title"` // its severity and title, as its row reads beside its comment on the line (#277)
 	Cause Quote  `json:"cause"`
-	Side  string `json:"side,omitempty"` // where its cause was found, onHead or onRemoved: looked for there alone (#570); none in a record before it
+	Side  string `json:"side,omitempty"` // where its cause was found, onHead, onRemoved or onClaim: looked for there alone (#570); none in a record before it
 }
 
 // SummaryKey keys the reviewer's one comment on a merge request; WarnKey,
@@ -335,6 +335,48 @@ func answering(blocks []Block, files []File, skip map[string]string) []string {
 		}
 		if slices.Contains(paths(files), b.Cause.Path) {
 			out = append(out, b.Lens)
+		}
+	}
+	return out
+}
+
+// retested are the lenses whose judge reads tests, asked again on a push
+// that changes a test file touching the file of a finding of theirs a
+// run before judged true (#1417): their conversation is settled only by
+// their reading again (readAgain), and the turn of lenses may give the
+// push another lens. A push changing no such test asks none of them; a
+// finding judged true, then false on a later run, asks nothing.
+func retested(repo string, s Settings, head string, judged []Answered, files []File, skip map[string]string) []string {
+	changed := paths(files)
+	lensOf := lensReader(repo)
+	tested, last := map[string]bool{}, map[string]bool{}
+	var out []string
+	for _, j := range slices.Backward(judged) { // a finding's last verdict alone: a later no drops it
+		key := j.Lens + "\x1f" + j.Where + "\x1f" + j.Title
+		if last[key] {
+			continue
+		}
+		last[key] = true
+		if !j.Yes || slices.Contains(out, j.Lens) || !slices.Contains(s.Lenses, j.Lens) {
+			continue
+		}
+		if _, ok := skip[j.Lens]; ok {
+			continue
+		}
+		path, _, ok := fileLine(j.Where)
+		if !ok {
+			continue
+		}
+		if l, err := lensOf(j.Lens); err != nil || l.Judge.Reads != "tests" {
+			continue
+		}
+		hit, seen := tested[path]
+		if !seen {
+			hit = slices.ContainsFunc(testFiles(repo, head, path, s.Tests), func(f string) bool { return slices.Contains(changed, f) })
+			tested[path] = hit
+		}
+		if hit {
+			out = append(out, j.Lens)
 		}
 	}
 	return out

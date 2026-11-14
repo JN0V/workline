@@ -1,0 +1,25 @@
+case: routing/stale-file-to-create-not-gone
+about: >
+  File to create: an issue waits in Ready past its limit, and its Scope
+  names a file still to be written, on a line `New:`. The file is not
+  in the repository yet, by design: it is not reported stale, the
+  issue stays in Ready and nothing is said of it.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply a list"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-09-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply a list.\n\n## Scope\n\n- `lib.sh`: `add()`.\n- New: `src/multiply.sh`, the multiply function.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: state-stale}, {rule: stale-unknown}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready"], comments: 0}

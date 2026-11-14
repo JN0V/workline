@@ -742,6 +742,9 @@ type Plan struct {
 	// firstNamed are the sources each codeFirst issue was named this
 	// run: all given by the task, its Scope written now stands (#1089).
 	firstNamed map[int][]string
+	// readAgain are the issues whose Scope, written at a run again for
+	// the code they named, stands on the code given (scopeRead, #1433).
+	readAgain map[int]bool
 	// drops are the agent's acts this run dropped on each issue, each with
 	// why: said on an issue nothing else refined (#951).
 	drops map[int][]string
@@ -886,6 +889,28 @@ func InCommit(repo, path string) bool {
 	return path != "" && exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() == nil
 }
 
+// Ignored are those of paths the repository's ignore rules match,
+// as git reads them: a build's outputs, `app/build/…`, none when they
+// cannot be read.
+func Ignored(repo string, paths []string) []string {
+	if len(paths) == 0 {
+		return nil
+	}
+	// The repository's rules alone, never a machine's own excludes: the
+	// same on a laptop and in CI.
+	cmd := exec.Command("git", "-C", repo, "-c", "core.excludesFile=/dev/null", "check-ignore", "-z", "--stdin")
+	cmd.Stdin = strings.NewReader(strings.Join(paths, "\x00") + "\x00")
+	// Exit 1: none is ignored; any other failure reads as none as well.
+	out, _ := cmd.Output()
+	var ignored []string
+	for _, p := range strings.Split(string(out), "\x00") {
+		if p != "" {
+			ignored = append(ignored, p)
+		}
+	}
+	return ignored
+}
+
 // Tracked are the files of the commit the run is on, nil when they
 // cannot be read.
 func Tracked(repo string) []string {
@@ -941,6 +966,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	p.readChanges(changes)
 	p.codeFirst = map[int]bool{}
 	p.firstNamed = map[int][]string{}
+	p.readAgain = map[int]bool{}
 	p.askedNow = map[int]int{}
 	p.drops = map[int][]string{}
 	p.refining = map[int]bool{}
@@ -1331,7 +1357,7 @@ func (p *Plan) summary(role string) {
 			named[d.Act.Issue] = append(named[d.Act.Issue], d.Act.Sources...)
 		case d.Act.Do == "ready" || d.Act.Do == "close" || d.Act.Do == "split":
 			settled[d.Act.Issue] = true
-		case d.Act.Do == "refine" && strings.TrimSpace(d.Act.Scope) != "" && p.given(d.Act.Issue, p.firstNamed[d.Act.Issue]):
+		case d.Act.Do == "refine" && strings.TrimSpace(d.Act.Scope) != "" && (p.given(d.Act.Issue, p.firstNamed[d.Act.Issue]) || p.readAgain[d.Act.Issue] && p.covered(d.Act.Issue, p.firstNamed[d.Act.Issue])):
 			settled[d.Act.Issue] = true
 		}
 	}
@@ -2039,6 +2065,42 @@ func (p *Plan) given(id int, sources []string) bool {
 	})
 }
 
+// scopeRead says whether a Scope written at a run again for the code its
+// issue named stands on the code given (#1433): each file it names given,
+// or its paths marked a guess (`Guessed:`), which holds nothing back
+// (#970). A module folder named is given by its files, cut or not: the
+// Scope's own files are what must have been read.
+func (p *Plan) scopeRead(repo string, c Proposal) bool {
+	files := p.config.CodeGiven[c.Issue]
+	if !p.config.RunAgain || !slices.Contains(p.config.Scope, c.Issue) || len(files) == 0 {
+		return false
+	}
+	if work.Guessed(c.Scope) {
+		return true
+	}
+	read := 0
+	for _, m := range PathLike.FindAllString(c.Scope, -1) { // every path, never PathsIn's first few
+		if n := RepoPath(m); strings.Contains(n, "/") && InCommit(repo, n) {
+			if !slices.Contains(files, n) {
+				return false
+			}
+			read++
+		}
+	}
+	return read > 0
+}
+
+// covered says whether each source named for an issue is a file this run
+// gave, or a folder a file given lies below: what a Scope standing on the
+// code given (scopeRead) settles, nothing left to read (#1433).
+func (p *Plan) covered(id int, sources []string) bool {
+	files := p.config.CodeGiven[id]
+	return !slices.ContainsFunc(sources, func(s string) bool {
+		s = RepoPath(s)
+		return !slices.ContainsFunc(files, func(f string) bool { return holds(s, f) })
+	})
+}
+
 // noCodeGiven says whether the run gave no code for an issue: its state
 // names no sources, nor its title and body a file of the commit — the
 // task listed the repository's folders, nothing to quote from.
@@ -2064,9 +2126,19 @@ func (p *Plan) scopeUnread(repo string, c Proposal) string {
 		return ""
 	}
 	// The code pre gave whole (CodeRead) counts too: files a comment
-	// names, as the developer's ask for its Scope does (#921).
-	given := slices.Contains(p.config.CodeRead, c.Issue) || !p.noCodeGiven(repo, c.Issue)
-	if !given || p.codeFirst[c.Issue] && !p.given(c.Issue, p.firstNamed[c.Issue]) {
+	// names, as the developer's ask for its Scope does (#921); so does a
+	// run again for the code it named whose Scope stands on the files
+	// given, module folders named, cut or not, its state keeping no
+	// source (#1433).
+	again := p.scopeRead(repo, c)
+	if again {
+		if p.readAgain == nil {
+			p.readAgain = map[int]bool{}
+		}
+		p.readAgain[c.Issue] = true
+	}
+	given := slices.Contains(p.config.CodeRead, c.Issue) || !p.noCodeGiven(repo, c.Issue) || again
+	if !given || p.codeFirst[c.Issue] && !p.given(c.Issue, p.firstNamed[c.Issue]) && !again {
 		return fmt.Sprintf("its %[1]s was left out: no code of #%[2]d was given in this run, so its paths would be a guess. The code they name is read at the next run, and its %[1]s is written from that code", work.Name(work.Scope), c.Issue)
 	}
 	return ""
@@ -2218,8 +2290,12 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			// Each path the Scope writes, the developer's bounds (ADR-0065,
 			// change 2): a file or folder the commit holds, a glob matching
 			// one, or a new file on a line `New:`.
-			for _, u := range work.Unfound(c.Scope, append(Tracked(repo), onBranch...)) {
-				if missing == "" {
+			// A path the repository ignores is one a build writes, a value
+			// in the Scope, never a file to change (#1411).
+			unfound := work.Unfound(c.Scope, append(Tracked(repo), onBranch...))
+			ignored := Ignored(repo, unfound)
+			for _, u := range unfound {
+				if missing == "" && !slices.Contains(ignored, u) {
 					missing = u
 				}
 			}

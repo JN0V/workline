@@ -1,0 +1,33 @@
+case: reviewer/tests-thread-resolved-off-its-lens-turn
+about: "A tests-lens conversation is resolved when a later push adds the test it asks for, though the turn of lenses gives that push another lens (#1417): after the run on ready, each push asks one lens in turn, here edge-cases. The new commit changes calc/src/test/kotlin/calc/GridTest.kt alone, the test of the file the tests lens's kept finding is on: the tests lens is asked again too, reads it, finds nothing, and the conversation no longer holds the merge. Before, the tests lens waited for its turn, and a person resolved it."
+given:
+  repo: kotlin-tested
+  setup:
+    - "git checkout -q -b feature && printf 'package calc\\n\\nfun computeGrid(width: Int): List<Int> = listOf(width / 3, 2 * width / 3)\\n' > calc/src/main/kotlin/calc/Grid.kt && git add calc && git commit -qm 'feat: a grid in thirds'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\nimport org.junit.jupiter.api.Test\\n\\nclass GridTest {\\n    @Test\\n    fun `thirds of nine`() {\\n        check(computeGrid(9) == listOf(3, 6))\\n    }\\n}\\n' > calc/src/test/kotlin/calc/GridTest.kt && git add calc && git commit -qm 'fix: the review findings, round 1'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer, the lenses that warn** — 1 finding on the change; lenses: correctness, edge-cases, tests, intent, claims, comments.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 read=all -->
+            <!-- workline:judged {"lens":"tests","where":"calc/src/main/kotlin/calc/Grid.kt:3","at":"@reviewed@","yes":true,"title":"computeGrid is untested"} -->
+
+            <!-- workline:sticky=reviewer/warn -->
+        threads:
+          - {path: calc/src/main/kotlin/calc/Grid.kt, line: 3, body: "**workline reviewer** · warns · tests\n\n**Important: computeGrid is untested**\n\n<!-- workline:line=tests/f9a7b8499476 -->"}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, warn: only}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  summary: "lenses: edge-cases, tests"
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: ["**Resolved**: 1 conversation"]
+        threads:
+          - {path: calc/src/main/kotlin/calc/Grid.kt, line: 3, resolved: true}

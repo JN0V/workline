@@ -1,0 +1,6 @@
+# The agent names a folder it lacks; given its files, it names another
+# file, not given yet; given that, it names it again (#1410).
+calls:
+  - [{note: "needs: calc — the code a test of Mul is written beside"}]
+  - [{note: "needs: go.mod — the module path the test imports"}]
+  - [{note: "needs: go.mod — the module path the test imports"}]

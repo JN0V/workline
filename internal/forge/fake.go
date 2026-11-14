@@ -78,6 +78,11 @@ type FakeState struct {
 	// what of the branches' rules the token cannot read (Conversations).
 	ConversationsRequired []string `json:"conversations-required,omitempty"`
 	ConversationsUnread   string   `json:"conversations-unread,omitempty"`
+	// Rulesets are the rulesets on the branches, as GitHub's, each with
+	// what this token may do past it (Bypass); RulesetsUnread, why the
+	// forge does not answer them.
+	Rulesets       []FakeRuleset `json:"rulesets,omitempty"`
+	RulesetsUnread string        `json:"rulesets-unread,omitempty"`
 	// Tips are the runs on each branch's tip, by branch, as Tip reads
 	// them; TipsUnread, why the forge does not answer them.
 	Tips       map[string][]CheckRun `json:"tips,omitempty"`
@@ -101,6 +106,12 @@ type FakeState struct {
 	// Budget is the token's API budget the forge says (Budgeted); none,
 	// never low.
 	Budget *FakeBudget `json:"budget,omitempty"`
+}
+
+// FakeRuleset is a ruleset on a branch.
+type FakeRuleset struct {
+	Ruleset
+	Branch string `json:"branch"`
 }
 
 // FakeCheck is a check written on a commit.
@@ -185,6 +196,10 @@ type FakeItem struct {
 	// main~1) — what MergedSince lists.
 	MergedAt string `json:"merged-at,omitempty"`
 	MergedAs string `json:"merged-as,omitempty"`
+	// MergedHead: the revision its head was at when it merged (HeadSHA);
+	// Closes, the issues it closes as the forge links them (Woken).
+	MergedHead string `json:"merged-head,omitempty"`
+	Closes     []int  `json:"closes,omitempty"`
 	// Closing: who closed an issue, as Closing reads it.
 	Closing *LabelEvent `json:"closing,omitempty"`
 	// Rank: a label's, where the forge ranks them (GitLab's prioritized

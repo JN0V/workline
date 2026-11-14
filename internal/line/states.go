@@ -681,6 +681,19 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		steps = len(res.Steps)
 		_, status = runRole(res, cfg, o, 0)
 		out, given = outcomeOf(res.Steps[steps:], status), true
+		if said := oneLine(out.Said); needsCode(out) && status != verdict.BlockedExternal && saysNew(in[NeedsInput], said) && sameState(f, cfg, st) {
+			// Given what it named, it names other code, none of it given
+			// yet: a folder's files led it to the file it needs (#1410).
+			// Run again once more, given that; said again, it is blocked.
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: fmt.Sprintf("#%d", st.write.Issue),
+				Message: fmt.Sprintf("the %s said it lacks other code than it was given: run again at once, given %s", st.role, said)})
+			in = maps.Clone(in)
+			in[NeedsInput] += ", " + said // what led it there given still
+			o.Inputs = in
+			steps = len(res.Steps)
+			_, status = runRole(res, cfg, o, 0)
+			out = outcomeOf(res.Steps[steps:], status)
+		}
 	}
 	res.Status = worst(res.Status, status)
 	if status == verdict.BlockedExternal {

@@ -1,0 +1,20 @@
+case: setup/doctor-bypass-allowed
+about: >
+  The admin role back on main's bypass list (ADR-0068 §6): the token's
+  user may merge a pull request past its checks, `gh pr merge --admin`.
+  The doctor warns, names the ruleset, and says how to empty its list
+  and where the emergency is written.
+given:
+  repo: documented
+  forge:
+    merge-requests: []
+    rulesets:
+      - {id: 7, name: "main: pull requests with green checks", branch: main, can-bypass: pull_requests_only}
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: bypass-allowed, where: main, level: warn, message: "this token can bypass main's ruleset \"main: pull requests with green checks\" on a pull request", fix: "bypass_actors"}
+    - {rule: bypass-allowed, fix: "docs/merge-policy.md#nobody-bypasses-main"}
+  no-checks:
+    - {rule: no-bypass}

@@ -1,15 +1,18 @@
 package doctor
 
 import (
+	"cmp"
+	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/steer"
 )
 
 // boundsDoc is where a person reads how to guard the bounds' job.
@@ -85,6 +88,70 @@ func boundsGuard(r *Report, o Options, projectForge string, line *routing.Config
 	}
 }
 
+// noBypassDoc is where a person reads why nobody bypasses the default
+// branch, and the emergency.
+const noBypassDoc = "docs/merge-policy.md#nobody-bypasses-main"
+
+// bypassWords says what a token may do past a ruleset, by GitHub's
+// current_user_can_bypass.
+var bypassWords = map[string]string{
+	"pull_requests_only": "on a pull request (`gh pr merge --admin`)",
+	"always":             "on a pull request and a push",
+	"exempt":             "its rules never applied to it",
+}
+
+// bypassGuard says whether this token's user may merge into the default
+// branch past its rulesets: nobody does, the person included, so every
+// merge goes through its checks and workline/accepted (ADR-0068 §6).
+// One API read a ruleset, no agent; read where the forge keeps rulesets
+// (GitHub), its rulesets only.
+func bypassGuard(r *Report, o Options, projectForge string) {
+	spec := o.Forge
+	if spec == "" {
+		spec = projectForge
+	}
+	if spec == "" && onGitHub(o.Repo) {
+		spec = "github"
+	}
+	f, err := forge.Open(spec, o.Repo)
+	if err != nil {
+		return // said by findingsOnMergeRequests
+	}
+	b, ok := f.(forge.Bypasser)
+	if !ok {
+		return
+	}
+	branch, sets, err := b.Bypass("")
+	if err != nil {
+		where := branch
+		if where == "" {
+			where = "the default branch"
+		}
+		r.add(Check{Area: "repository", Rule: "bypass-unread", Where: branch, Level: Note,
+			Message: "could not read who may bypass " + where + "'s rulesets: " + forge.Said(err), Fix: noBypassDoc})
+		return
+	}
+	var held []string
+	for _, s := range sets {
+		if s.CanBypass == "never" {
+			held = append(held, fmt.Sprintf("%q", s.Name))
+			continue
+		}
+		how := bypassWords[s.CanBypass]
+		if how == "" {
+			how = "GitHub does not say it cannot (" + cmp.Or(s.CanBypass, "unsaid") + ")"
+		}
+		r.add(Check{Area: "repository", Rule: "bypass-allowed", Where: branch, Level: Warn,
+			Message: fmt.Sprintf("this token can bypass %s's ruleset %q %s: a merge can skip its checks, workline/accepted included", branch, s.Name, how),
+			Fix: fmt.Sprintf("empty its bypass list: %s, or `gh api repos/{owner}/{repo}/rulesets/%d` then PUT it back with \"bypass_actors\": []; the emergency: %s",
+				cmp.Or(s.URL, "Settings → Rules → Rulesets"), s.ID, noBypassDoc)})
+	}
+	if len(held) > 0 && len(held) == len(sets) {
+		r.add(Check{Area: "repository", Rule: "no-bypass", Where: branch, Level: OK,
+			Message: fmt.Sprintf("nobody bypasses %s's ruleset %s with this token: every merge goes through its checks", branch, strings.Join(held, ", "))})
+	}
+}
+
 // routesRole says whether the line runs the role on an event.
 func routesRole(line *routing.Config, name string) bool {
 	if line == nil {
@@ -116,110 +183,62 @@ func ciFiles(repo string) []string {
 	return files
 }
 
-// coRule is a CODEOWNERS rule: its pattern, its section, whether it
-// names an owner (its own, or its section's default ones).
-type coRule struct {
-	pattern string
-	section int
-	owned   bool
-}
-
-var sectionHeader = regexp.MustCompile(`^\^?\[[^\]]*\](\[\d+\])?\s*(.*)$`)
-
 // ownerless are the files no CODEOWNERS rule gives an owner whose
 // approval is required, GitLab's three places read, the first found. In
 // each section the last rule that matches decides; an optional section
 // (`^[…]`) requires no approval, a section's default owners stand for a
-// rule naming none. An exclusion (`!pattern`) the doctor does not read:
-// said in unread, never taken for owned.
+// rule naming none (steer.Codeowners). An exclusion (`!pattern`) the
+// doctor does not read: said in unread, never taken for owned.
 func ownerless(repo string, files []string) (bare []string, unread string) {
-	var rules []coRule
-	optional := map[int]bool{}
+	var co *steer.Codeowners
 	for _, p := range []string{"CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"} {
-		data, err := os.ReadFile(filepath.Join(repo, p))
-		if err != nil {
-			continue
+		if data, err := os.ReadFile(filepath.Join(repo, p)); err == nil {
+			co = steer.ParseCodeowners(p, data)
+			break // GitLab reads the first file it finds
 		}
-		section, defaults := 0, false
-		for l := range strings.Lines(string(data)) {
-			l = strings.TrimSpace(l)
-			switch {
-			case l == "" || strings.HasPrefix(l, "#"):
-				continue
-			case strings.HasPrefix(l, "!"):
-				return files, p + " excludes paths (`!`), which the doctor does not read"
-			case strings.HasPrefix(l, "[") || strings.HasPrefix(l, "^["):
-				m := sectionHeader.FindStringSubmatch(l)
-				if m == nil {
-					return files, p + " holds a section header the doctor cannot read: " + l
-				}
-				section++
-				optional[section] = strings.HasPrefix(l, "^")
-				defaults = strings.TrimSpace(m[2]) != ""
-				continue
-			}
-			f := strings.Fields(l)
-			rules = append(rules, coRule{pattern: f[0], section: section, owned: len(f) > 1 || defaults})
-		}
-		break // GitLab reads the first file it finds
+	}
+	if co == nil {
+		return files, ""
+	}
+	if co.Unread != "" {
+		return files, co.Path + " " + co.Unread + " (the doctor does not read it)"
 	}
 	for _, file := range files {
-		last := map[int]bool{} // by section, the last matching rule's owner
-		for _, r := range rules {
-			if codeownersMatch(r.pattern, file) {
-				last[r.section] = r.owned
-			}
-		}
-		owned := false
-		for s, o := range last {
-			owned = owned || (o && !optional[s])
-		}
-		if !owned {
+		if _, required := co.Owns(file); !required {
 			bare = append(bare, file)
 		}
 	}
 	return bare, ""
 }
 
-// codeownersMatch says whether a CODEOWNERS pattern takes the file: a
-// leading `/` anchors it at the root, a trailing `/` takes a folder's
-// files, a name without `/` matches at any depth, `*` and `**` glob.
-func codeownersMatch(pattern, file string) bool {
-	if pattern == "*" || pattern == "/**" || pattern == "**" {
-		return true
-	}
-	anchored := strings.HasPrefix(pattern, "/")
-	p := strings.TrimPrefix(pattern, "/")
-	if strings.HasSuffix(p, "/") {
-		p += "**"
-	}
-	if !anchored && !strings.Contains(strings.TrimSuffix(p, "/**"), "/") {
-		p = "**/" + p
-	}
-	return globMatch(p, file)
-}
+// guardedDoc is where a person reads what never merges by the policy
+// alone, and why CODEOWNERS is its list.
+const guardedDoc = "docs/merge-policy-normal.md#what-never-merges-alone"
 
-// globMatch matches a path to a pattern whose `**` spans folders.
-func globMatch(pattern, name string) bool {
-	if !strings.Contains(pattern, "**") {
-		ok, _ := path.Match(pattern, name)
-		return ok
+// guardedList says which list the engine reads as what never merges by
+// the policy alone, nor is the developer's to change (ADR-0068 §4): the
+// project's CODEOWNERS, the first found where the forges read it, else
+// the files that steer agents. Where the policy merges, or the
+// developer runs.
+func guardedList(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Config) {
+	byPolicy := cfg.Merge != nil && (cfg.Merge.Autonomy == "normal" || cfg.Merge.Autonomy == "enterprising")
+	if !byPolicy && !routesRole(line, "developer") {
+		return
 	}
-	before, after, _ := strings.Cut(pattern, "**")
-	if !strings.HasPrefix(name, before) {
-		return false
-	}
-	rest := strings.TrimPrefix(name, before)
-	after = strings.TrimPrefix(after, "/")
-	if after == "" {
-		return true
-	}
-	for i := 0; i <= len(rest); i++ {
-		if i == 0 || rest[i-1] == '/' {
-			if globMatch(after, rest[i:]) {
-				return true
-			}
+	for _, p := range steer.CodeownersPlaces {
+		data, err := os.ReadFile(filepath.Join(o.Repo, p))
+		if err != nil {
+			continue
 		}
+		r.add(Check{Area: "repository", Rule: "guarded-list", Where: p, Level: OK,
+			Message: "what never merges by the policy alone, nor is the developer's to change: the paths " + p + " lists, and it; a person's `workline:accepted` merges them"})
+		if co := steer.ParseCodeowners(p, data); co.Unread != "" {
+			r.add(Check{Area: "repository", Rule: "guarded-list-read-past", Where: p, Level: Note,
+				Message: p + " " + co.Unread + ": the engine holds every path its other rules list all the same, the exclusion unread", Fix: guardedDoc})
+		}
+		return
 	}
-	return false
+	r.add(Check{Area: "repository", Rule: "guarded-list-none", Level: Note,
+		Message: "no CODEOWNERS: what never merges by the policy alone is the files that steer agents (AGENTS.md, CLAUDE.md…) and the pages they link; CI and workline's config are held apart",
+		Fix:     "list the files that define oversight and authority in CODEOWNERS (" + guardedDoc + ")"})
 }

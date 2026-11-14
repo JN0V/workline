@@ -49,7 +49,7 @@ func (f *Fake) MergedSince(since time.Time) ([]MergeRequest, error) {
 			as = strings.TrimSpace(string(sha))
 		}
 		out = append(out, MergeRequest{ID: m.ID, Branch: m.Branch, Base: m.Base, Here: !m.Fork, Title: m.Title, Author: m.Author, Bot: m.Bot,
-			Head: fmt.Sprintf("refs/pull/%d/head", m.ID), MergedAs: as, MergedAt: at.UTC().Format(time.RFC3339)})
+			Head: fmt.Sprintf("refs/pull/%d/head", m.ID), MergedAs: as, MergedAt: at.UTC().Format(time.RFC3339), HeadSHA: f.resolve(m.MergedHead)})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
@@ -100,6 +100,28 @@ func (f *Fake) Guarded(base string) (string, error) {
 		return "", err
 	}
 	return s.Unguarded, nil
+}
+
+// Bypass reads the rulesets the file puts on the branch; its default
+// branch is main.
+func (f *Fake) Bypass(branch string) (string, []Ruleset, error) {
+	s, err := f.load()
+	if err != nil {
+		return "", nil, err
+	}
+	if branch == "" {
+		branch = "main"
+	}
+	if s.RulesetsUnread != "" {
+		return branch, nil, fmt.Errorf("%w: %s", ErrUnreachable, s.RulesetsUnread)
+	}
+	var sets []Ruleset
+	for _, r := range s.Rulesets {
+		if r.Branch == branch {
+			sets = append(sets, r.Ruleset)
+		}
+	}
+	return branch, sets, nil
 }
 
 // resolve is a revision of the repository as a commit, "" when it is none.

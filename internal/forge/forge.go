@@ -426,6 +426,10 @@ type MergeRequest struct {
 	// rebased — and when, RFC 3339.
 	MergedAs string
 	MergedAt string
+	// HeadSHA is the commit its head was at when it merged, as MergedSince
+	// reads it: where workline/accepted was set; "" when the forge does
+	// not say.
+	HeadSHA string
 }
 
 // Squash is how a merge request lands on its base when the forge squashes

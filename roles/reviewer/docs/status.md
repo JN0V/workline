@@ -213,6 +213,12 @@ its measure in
   floor**: `intent-*`, `claim-contradicted-is-a-finding-on-the-line`,
   `merge-request-body-given-as-testimony`, `decision-*`, `diff-alone-*`,
   `finder-floor-nothing-found-is-clean`.
+- **Simplicity, nits only**: more than the issue needs, against it,
+  never judged nor asked of the developer until its false alarms are
+  counted
+  ([ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)):
+  `simplicity-*`, two planted cases in the evaluation
+  ([tried](https://github.com/JN0V/workline/pull/1496)).
 - **A full review within a token budget**:
   `lenses-asked-together-in-one-call`, `lens-given-each-file-once`,
   `judge-shown-the-change-near-the-cause`,
@@ -291,6 +297,11 @@ kept for 1.0:
   (kept for 1.0, [#1334](https://github.com/JN0V/workline/issues/1334)).
 - **Answers to a spec finding** missed or read twice in three edge cases
   (kept for 1.0, [#1346](https://github.com/JN0V/workline/issues/1346)).
+
+- **Simplicity's false alarms counted** on 20 to 50 past pull requests,
+  before it may block; tried on 11
+  ([#1496](https://github.com/JN0V/workline/pull/1496),
+  [#1497](https://github.com/JN0V/workline/issues/1497)).
 
 Parked:
 

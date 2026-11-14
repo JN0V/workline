@@ -25,7 +25,9 @@ is a finding, its cause the issue's words, quoted, its `path` the issue's
 number (`"#4"`). A behaviour the issue leaves open, that the change had to
 choose, is a `finding` holding `decision`, never an item of its own. Do not
 ask more than the issue does; what commits reviewed before may have done
-is not missing.
+is not missing. How much the change builds for what the issue asks — a
+type, an option, a layer more than it needs — is the simplicity lens's,
+not yours: you judge whether it does what is asked, not its size.
 
 **Beyond the Scope.** The Scope is the product owner's hint of the files,
 not a fence: the developer may change a file beyond it, and lists it under

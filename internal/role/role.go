@@ -548,3 +548,18 @@ func TestDef(rolesDir, repo string) (testdef.Def, error) {
 	}
 	return testdef.FromSettings(r.MergedSettings(cfg))
 }
+
+// PackBuiltinNames are the language's own names (its built-in
+// exceptions) the project's listed packs give: a Scope naming one names
+// no code of the project's. None when the packs cannot be read.
+func PackBuiltinNames(repo string) []string {
+	listed, err := packs.OfProject(repo)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, p := range listed {
+		out = append(out, p.BuiltinNames...)
+	}
+	return out
+}

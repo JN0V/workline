@@ -22,6 +22,10 @@
   Verification moves to the tester; the product owner keeps the Scope,
   as a hint
 - **Research:** [person-on-the-loop.md](../research/person-on-the-loop.md)
+- **Confirmed by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated):
+  §1, silence is never a yes to merge, release or delete. §3's level
+  for a process engineer and §4's yes on a fixes-only release are its
+  step 6, next, not decided
 
 ## Context
 

@@ -5,6 +5,10 @@
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0015 (the weekly
   sample), ADR-0018 (the product owner; one way in for every role's
   issues), principles 1, 4, 6, 7, 12
+- **To be revisited by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)
+  (step 6, next, not decided): a process engineer as a prompt, reading
+  the wake script and the auditor, at a level; this record stands until
+  that step is decided
 
 ## Context
 

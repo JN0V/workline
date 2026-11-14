@@ -1,0 +1,11 @@
+# The reviewer's lenses asked together, on the `reviewed` fixture once a
+# commit closing #4 adds an options type and a second mean for an empty
+# list: the simplicity lens quotes the type the issue's Need does not need.
+calls:
+  - - finding:
+        lens: simplicity
+        severity: important
+        title: An options type the issue does not need
+        why: "#4 asks that an empty list give 0; a type and a second function let a caller choose what it gives, which no part of the Need asks"
+        cause: {path: calc/calc.go, quote: "type Options struct {"}
+        fix: return 0 at the top of Average when values is empty, and drop Options and AverageOr

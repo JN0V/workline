@@ -56,6 +56,8 @@ Nobody waits for it; nothing in it holds a merge request.
   merge request whose base holds the red commit, once a red spell: a
   check red there for it is the base's. No merge request waits for
   another to merge ([the merge policy](merge-policy.md#a-red-main)).
+- **The wake**, beside it: where the line may be drifting, read with no
+  AI, in an issue of its own ([the wake](wake.md)).
 - **No agent, no secret** where the tools run; the issue and the
   comments are written by a job allowed to write issues and comments, no
   AI key.

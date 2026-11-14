@@ -19,6 +19,8 @@
   summary); principles 1, 4, 13, 14
 - **Research:** [surfacing-proposals.md](../research/surfacing-proposals.md)
 - **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus): a question unanswered past its level's delay (`acts.ask.wait`) becomes a written assumption; silence stays no yes to close, merge or release
+- **Confirmed by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated):
+  silence is never a yes to merge, release or delete
 
 ## Context
 

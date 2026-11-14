@@ -10,6 +10,45 @@ test-paths:
   - "**/tests/**"
   - "**/test/**"
   - "**/conftest.py"
+# builtin-names: the language's own names, never in the project's code.
+builtin-names:
+  - BaseException
+  - Exception
+  - ArithmeticError
+  - AssertionError
+  - AttributeError
+  - EOFError
+  - FileExistsError
+  - FileNotFoundError
+  - FloatingPointError
+  - ImportError
+  - IndentationError
+  - IndexError
+  - IsADirectoryError
+  - KeyError
+  - KeyboardInterrupt
+  - LookupError
+  - ModuleNotFoundError
+  - NameError
+  - NotADirectoryError
+  - NotImplementedError
+  - OSError
+  - OverflowError
+  - PermissionError
+  - RecursionError
+  - RuntimeError
+  - StopIteration
+  - SyntaxError
+  - SystemExit
+  - TimeoutError
+  - TypeError
+  - UnicodeDecodeError
+  - UnicodeEncodeError
+  - UnicodeError
+  - ValueError
+  - ZeroDivisionError
+  - JSONDecodeError
+  - TOMLDecodeError
 test-command: "pytest --junitxml={report}"
 # code-navigation: how a file's functions are found and its declarations
 # outlined, with no build.

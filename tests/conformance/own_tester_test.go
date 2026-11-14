@@ -67,3 +67,38 @@ func TestOwnTesterHasGoWhereItRuns(t *testing.T) {
 		}
 	}
 }
+
+// Each of workline's own settings that runs go test sets a -timeout, as the
+// test job does: Go's default 10 min stopped the simulator on a busy runner,
+// its tests then said missing or flaky, and green pull requests blocked
+// (#1430).
+func TestOwnGoTestCommandsSetATimeout(t *testing.T) {
+	data, err := os.ReadFile("../../.workline/config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cfg struct {
+		Roles map[string]struct {
+			Settings map[string]any `yaml:"settings"`
+		} `yaml:"roles"`
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		t.Fatal(err)
+	}
+	seen := 0
+	for role, r := range cfg.Roles {
+		for key, v := range r.Settings {
+			cmd, ok := v.(string)
+			if !ok || !strings.Contains(cmd, "gotestsum") {
+				continue
+			}
+			seen++
+			if !strings.Contains(cmd, " -timeout ") {
+				t.Errorf("%s's %s runs go test with Go's default 10 min timeout: %s", role, key, cmd)
+			}
+		}
+	}
+	if seen == 0 {
+		t.Fatal("no setting runs go test: the guard reads nothing")
+	}
+}

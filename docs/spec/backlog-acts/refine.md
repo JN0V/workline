@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/assume.go, internal/backlog/proof.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/work/scenarios.go, internal/work/scope.go, internal/backlog/scenarios.go, internal/backlog/verification.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: 3f424301
+checked: db6103ad
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -79,7 +79,10 @@ what it can and asks for the rest:
   a file or folder the commit holds, a glob matching one of its files,
   or a file to create on a line `New:`. A Scope naming only new files,
   each on a `New:` line, needs no `sources`. A word with no `/` (a name,
-  `os.Getenv`) is no path to check. A file the developer asked the Scope widened with, on its
+  `os.Getenv`) is no path to check, nor one the repository's ignore
+  rules match: a file the build writes, `app/build/outputs/…`, is a
+  value in the Scope
+  ([#1411](https://github.com/JN0V/workline/issues/1411)). A file the developer asked the Scope widened with, on its
   blocked issue, is kept though the commit does not hold it: its pull
   request adds it ([#1061](https://github.com/JN0V/workline/issues/1061)).
   That widening left out, an `unblock` beside it is refused
@@ -95,8 +98,12 @@ what it can and asks for the rest:
   `needs-code`, [#1089](https://github.com/JN0V/workline/issues/1089);
   so does one in a run the line started again for the code the agent
   said it lacked, on the issue it is about, each file of its `sources`
-  given this time, whole or in part; a first run's is left out as below,
-  [#1146](https://github.com/JN0V/workline/issues/1146)),
+  given this time, whole or in part
+  ([#1146](https://github.com/JN0V/workline/issues/1146)); so does one
+  there whose own files were all given, or whose guessed paths a line
+  `Guessed:` says, module folders named and cut or not
+  ([#1433](https://github.com/JN0V/workline/issues/1433)); a first
+  run's is left out as below),
   is left out, said `scope-unread`: its paths would be a guess,
   and a guessed folder can hold the issue behind an unrelated claim.
   Its paths, checked as above, are kept as the issue's sources, the

@@ -344,7 +344,13 @@ func TestGitLabStoredBaseCarriedAndPruned(t *testing.T) {
 		}
 		return dir, log.String()
 	}
-	headers := func() string { h, _ := os.ReadFile(filepath.Join(store, "headers")); return strings.TrimSpace(string(h)) }
+	// Each token a pipeline read with, once (the test ids too, #1407).
+	headers := func() string {
+		h, _ := os.ReadFile(filepath.Join(store, "headers"))
+		l := strings.Split(strings.TrimSpace(string(h)), "\n")
+		slices.Sort(l)
+		return strings.Join(slices.Compact(l), "\n")
+	}
 	dir, _ := pipeline("bot", []string{"workline:base", "workline:main"}, "CI_PIPELINE_SOURCE=push")
 	got, _ := os.ReadFile(filepath.Join(dir, ".workline-kept", "commits"))
 	want := append([]string{"head", "c01", "c02"}, before[3:19]...)

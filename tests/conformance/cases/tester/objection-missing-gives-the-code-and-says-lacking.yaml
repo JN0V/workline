@@ -1,0 +1,47 @@
+case: tester/objection-missing-gives-the-code-and-says-lacking
+about: >
+  A test the review finds missing, its cause in a file only the
+  developer's branch holds (#1416): the tester is given that file as the
+  pull request has it. Its agent naming code it lacks all the same, the
+  answer reads "Lacks code", in the thread and on the pull request,
+  never "None needed", which the developer would take for a test held
+  needless.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
+    - "git checkout -q -b workline/developer/3 main && printf 'grid() {\\n  echo \"thirds at 300 600\"\\n}\\n' > grid.sh && git add grid.sh && git commit -qm 'feat: a grid' && git push -q origin workline/developer/3 && git checkout -q workline/tester/issue-3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:developing"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+        threads:
+          - {id: "7", path: tests/test_mul_by_zero.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_by_zero.sh\n- kind: missing\n- why: the reviewer's tests lens, on pull request 2, `grid.sh:2`: Important: the grid's lines have no test — nothing checks thirds at 300 and 600."}
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+run: {test: [answer, --merge-request, "1", --no-apply], ai: "fake:tester-answer-missing-needs", then: resume}
+expect:
+  status: pass
+  agent-calls: 1
+  not-pushed: [workline/tester/issue-3]
+  run-files:
+    in/task.md: {contains: ["## The code the finding is on, `grid.sh`, as pull request 2 has it", "echo \"thirds at 300 600\"", "- **Lacks code**: a `note` opening `needs:`"]}
+  forge:
+    merge-requests:
+      - id: 1
+        threads:
+          - {path: tests/test_mul_by_zero.sh, replies: 1, replies-contain: ["**Lacks code**: needs: grid.sh", "\"act\":\"lacks-code\""]}
+      - id: 2
+        comment-contains: ["**The tester** answers a test finding of this review on `grid.sh:2`, “the grid's lines have no test”", "**Lacks code**"]
+        comment-lacks: "**None needed**"

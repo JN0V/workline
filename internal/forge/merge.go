@@ -130,6 +130,28 @@ type QueueGuard interface {
 	AcceptedOn(head string) (ok bool, why string, err error)
 }
 
+// Ruleset is a set of rules on a branch, and whether this token may
+// merge or push past it.
+type Ruleset struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	URL  string `json:"url,omitempty"`
+	// CanBypass is GitHub's current_user_can_bypass for this token's
+	// user: never, pull_requests_only, always or exempt; "" unsaid.
+	CanBypass string `json:"can-bypass"`
+	// Updated is when it last changed, RFC 3339: the wake script prints a
+	// change (ADR-0068 §6); "" when the forge does not say.
+	Updated string `json:"updated,omitempty"`
+}
+
+// Bypasser is a forge whose branches hold rulesets that may let some
+// merge or push past them (GitHub, ADR-0068 §6). Bypass reads the
+// rulesets on the branch, the default one when none is named, and the
+// branch read.
+type Bypasser interface {
+	Bypass(branch string) (string, []Ruleset, error)
+}
+
 // The statuses workline sets on a head on GitHub, by its App's token: the
 // line's verdict, and the yes the merge policy holds (ADR-0042).
 const (
@@ -461,4 +483,7 @@ func Closing(f any, id int) (who LabelEvent, ok bool, err error) {
 
 // Every forge with an auto-merge workline speaks is a Merger; the local
 // forge has none.
-var _ = []Merger{&github{}, &gitlab{}, &command{}, &Fake{}}
+var (
+	_ = []Merger{&github{}, &gitlab{}, &command{}, &Fake{}}
+	_ = []Bypasser{&github{}, &Fake{}}
+)

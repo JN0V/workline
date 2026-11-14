@@ -1,6 +1,7 @@
 # ADR-0063: Every open issue is due, waiting or done, decided by one function
 
-- **Status:** accepted (2026-11-04)
+- **Status:** accepted (2026-11-04); its standing stop lifted on
+  2026-11-14 ([amendment](#amendment-2026-11-14-the-standing-stop-is-lifted))
 - **Date:** 2026-11-04
 - **Decided by:** the maintainer, on 2026-11-04, after a review by
   seven independent readers: the five questions under
@@ -18,11 +19,19 @@
   product owner, the tester and the reviewer, where the agent has them);
   [routing.md](../spec/routing.md#once-a-state-the-record)
 - **Research:** [line-liveness.md](../research/line-liveness.md)
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-replaced)
+  (steps 1 to 3 built): the standing stop is lifted on 2026-11-14,
+  after [#1466](https://github.com/JN0V/workline/pull/1466)
+  ([amendment](#amendment-2026-11-14-the-standing-stop-is-lifted)): a
+  fix repeated in one area is a [wake](../wake.md) trigger and anyone's
+  `step-back` cord. The other working agreements stand
 - **Amended:**
   - [2026-11-05](#amendment-2026-11-05-the-testers-read-tools-first):
     the tester's read tools before step 9, the token ceiling measured;
   - [2026-11-08](#amendment-2026-11-08-a-persons-labels-are-input-a-roles-own-write-is-not):
-    §3's input, a person's labels in, the role's own write out
+    §3's input, a person's labels in, the role's own write out;
+  - [2026-11-14](#amendment-2026-11-14-the-standing-stop-is-lifted):
+    the standing stop lifted, [ADR-0068]'s steps 1 to 3 built
 - **To be amended by:** [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#the-four-changes), once built: §8's
   picker frozen, its tables in packs
 - **Amended by:** [ADR-0065, change 2](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence),
@@ -537,7 +546,10 @@ Each role's run ends with one outcome, beside its finding codes:
 
 Ways of working that hold while this is built, and after.
 
-- **A standing stop**: three fixes to one package within 48 h, or a
+- **A standing stop**, lifted on 2026-11-14 and superseded by
+  [the wake](../wake.md)
+  ([amendment](#amendment-2026-11-14-the-standing-stop-is-lifted)):
+  three fixes to one package within 48 h, or a
   core ADR amended three times in a week, stops the fixing. A root-cause
   review first, then a red simulator trace before any fix. The auditor
   counts, weekly, amendments per ADR and fix pull requests per package.
@@ -876,6 +888,7 @@ from the runs' `calls.jsonl`):
 [ADR-0057]: 0057-workline-finds-the-forges-board-and-moves-its-cards.md
 [ADR-0059]: 0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md
 [ADR-0060]: 0060-the-person-is-on-the-loop.md
+[ADR-0068]: 0068-the-line-steps-back-on-its-own-drift.md
 
 ## Amendment (2026-11-08): a person's labels are input, a role's own write is not
 
@@ -910,3 +923,26 @@ Built on `due`, the record of today, ahead of steps 6–8: the
 record's `labels` field is what the step log's input digest will take
 in. **Steps 6–8** (the view, `Next` in shadow, `Next` decides) **stay
 unbuilt**; this amendment changes their input, not their order.
+
+## Amendment 2026-11-14: the standing stop is lifted
+
+- **Decided by:** the maintainer, on 2026-11-14.
+- **[ADR-0068]'s steps 1 to 3 are built**
+  ([its build order](0068-the-line-steps-back-on-its-own-drift.md#build-order)):
+  - step 1, nobody bypasses `main` and the guard guarded:
+    [#1458](https://github.com/JN0V/workline/issues/1458) in
+    [#1463](https://github.com/JN0V/workline/pull/1463),
+    [#1459](https://github.com/JN0V/workline/issues/1459) in
+    [#1464](https://github.com/JN0V/workline/pull/1464) and
+    [#1467](https://github.com/JN0V/workline/pull/1467);
+  - step 2, the assistant's rules in `AGENTS.md`:
+    [#1460](https://github.com/JN0V/workline/issues/1460) in
+    [#1465](https://github.com/JN0V/workline/pull/1465);
+  - step 3, the wake script:
+    [#1461](https://github.com/JN0V/workline/issues/1461) in
+    [#1466](https://github.com/JN0V/workline/pull/1466), merged on
+    2026-11-14.
+- **The standing stop no longer rules**: a fix repeated in one area is
+  a [wake](../wake.md) trigger and anyone's `step-back` cord
+  ([ADR-0068 §9](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-replaced)).
+- **What still stands**: the other [working agreements](#working-agreements).
