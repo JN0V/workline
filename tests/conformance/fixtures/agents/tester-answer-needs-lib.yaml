@@ -1,0 +1,3 @@
+# The tester's agent answering a test the review finds missing: it names
+# lib.sh as the code it lacks, at each call, given or not.
+- note: "needs: lib.sh — I lack the mul a test of a negative factor calls, and will not guess it."
