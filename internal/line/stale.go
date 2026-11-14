@@ -113,16 +113,21 @@ func (x *scopeIndex) gone(body string) ([]string, error) {
 	return out, nil
 }
 
-// scopeWordsHeld are a Scope's words but those of a line `New:`: files
-// still to be written are not in the code yet, by design.
+// scopeWordsHeld are a Scope's words but the paths of a line `New:`:
+// files still to be written are not in the code yet, by design. The
+// code names on such a line are still checked.
 func scopeWordsHeld(scope string) []string {
-	var kept []string
+	var out []string
 	for _, line := range strings.Split(scope, "\n") {
-		if !work.MarksNew(line) {
-			kept = append(kept, line)
+		isNew := work.MarksNew(line)
+		for _, w := range work.ScopeWords(line) {
+			if isNew && scopeKind(w) == "path" {
+				continue
+			}
+			out = append(out, w)
 		}
 	}
-	return work.ScopeWords(strings.Join(kept, "\n"))
+	return out
 }
 
 // builtin says whether w, a code name, is one the project's listed
