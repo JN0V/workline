@@ -42,6 +42,10 @@ includes=""
 for i in DomoticsCore-*/include; do includes="$includes -I$i"; done
 bin=$(mktemp -d)
 trap 'rm -rf "$bin"' EXIT
+# The built suites, keyed by the content of their sources: kept in
+# $WORKLINE_SUITE_CACHE when given, else for this run only.
+cache=${WORKLINE_SUITE_CACHE:-$bin/cache}
+mkdir -p "$cache"
 status=0
 export GOTOOLCHAIN=local GOFLAGS=-mod=mod
 {
@@ -53,9 +57,28 @@ export GOTOOLCHAIN=local GOFLAGS=-mod=mod
       suite=$(basename "$dir")
       echo "<testsuite name=\"$c/$suite\">"
       srcs=$(ls "$c"/src/*.cpp 2>/dev/null)
+      # the key: the suite's files, the component's sources, every
+      # component's headers and Unity, by name and content
+      key=$({
+        echo "$c/$suite"
+        find "$dir" "$c/src" DomoticsCore-*/include tools/unity -type f 2>/dev/null | LC_ALL=C sort | while read -r f; do
+          echo "$f"
+          cat "$f"
+        done
+      } | sha256sum | cut -d' ' -f1)
+      exe="$cache/$suite-$key"
+      built=""
+      if [ -x "$exe" ]; then
+        built=1
       # shellcheck disable=SC2086
-      if g++ -std=c++17 -Itools/unity $includes -o "$bin/$suite" "$dir"*.cpp $srcs >"$bin/build" 2>&1; then
-        "$bin/$suite" >"$bin/out" 2>&1
+      elif g++ -std=c++17 -Itools/unity $includes -o "$exe.$$.tmp" "$dir"*.cpp $srcs >"$bin/build" 2>&1; then
+        mv "$exe.$$.tmp" "$exe"
+        built=1
+      else
+        rm -f "$exe.$$.tmp"
+      fi
+      if [ -n "$built" ]; then
+        "$exe" >"$bin/out" 2>&1
         while IFS=: read -r name verdict; do
           case $verdict in
             PASS) echo "<testcase classname=\"$c/$suite\" name=\"$name\" file=\"$dir$suite.cpp\" time=\"0.01\"/>" ;;
