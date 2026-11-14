@@ -54,7 +54,10 @@ hold:
      maintainer answered over four weeks, at most one contested. W42 to W45 read
      90 acts, none answered yet
      ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275)).
-     They would sign it with a 👍 or a 👎 on each week's comment. Its
+     They would sign it with a 👍 or a 👎 on each week's comment; the
+     ratings agents posted in their name on 2026-11-12 are relabelled,
+     not counted
+     ([ADR-0068 §7](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated)). Its
      own issues closed as not planned are counted in the same comment:
      none opened yet.
 

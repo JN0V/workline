@@ -316,6 +316,8 @@ Each part of its step's issue, none blocking.
   never from titles or commit types, which the judged choose (step 3).
 - **Sign-offs already posted in the maintainer's name** by agent panels
   ([#155]): relabelled, not counted for a role's criteria (step 2).
+  Done in [#1460](https://github.com/JN0V/workline/issues/1460): the
+  four weeks agents rated on 2026-11-12, their 👎 taken off.
 - **Cost**: each step's issue states its tokens and wait ([ADR-0051]).
 
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
