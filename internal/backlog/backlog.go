@@ -1885,6 +1885,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 			return rule, why
 		}
 	}
+	if c.Do == "ready" && PersonOnly(p.issues[c.Issue].Body) {
+		return "scope-person-only", "its Scope names only the CI's files, which only a person changes: a person makes that change, so it waits on a person rather than spend a tester's and a developer's run"
+	}
 	if author := p.issues[c.Issue].Author; c.Do == "ask" && Bot(author) {
 		// Nobody answers a bot's issue: what it lacks is the project's to
 		// say (#429).

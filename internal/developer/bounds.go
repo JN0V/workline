@@ -188,7 +188,7 @@ func testerIssue(branch string) int {
 
 // ciFiles are the files and folders a CI runs from: GitHub's workflows and
 // actions, GitLab's pipeline, workline's own settings and gates.
-var ciFiles = []string{".workline", ".github/workflows", ".github/actions", ".gitlab-ci.yml", ".gitlab/ci"}
+var ciFiles = backlog.CIFiles
 
 // gateFiles are the files a gate's checks run or read their config from,
 // as .workline/config.yaml declares them: a word of a check's command

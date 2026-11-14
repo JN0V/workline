@@ -786,6 +786,15 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 	for _, p := range b.Scope {
 		fmt.Fprintf(&t, "- `%s`\n", p)
 	}
+	var person []string
+	for _, p := range b.Scope {
+		if backlog.Protected(p) {
+			person = append(person, "`"+p+"`")
+		}
+		}
+	if len(person) > 0 {
+		t.WriteString("\nA person makes the change to " + strings.Join(person, ", ") + ": it is the CI's, which only a person changes, so it is not yours; leave it out and say in your answer what it needs.\n\n")
+	}
 	t.WriteString(testsBeside(b.tests()))
 	t.WriteString("\nRead any file you need, and change any file the change needs: the " + scopeName + " is a hint, not a fence. " +
 		"For each file you change beyond it, give one line of why in the file `" + BeyondFile + "` of your worktree, YAML, `path/to/file: why the change needs it`; " +
