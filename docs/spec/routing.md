@@ -993,7 +993,7 @@ each reconcile starts the next one, past an environment's wait timer
   again until a comment is added there (`answer-waits`).
   A comment on a line is kept as a comment of its own on the merge
   request, its place hidden in it; a reply names it. All in a worktree
-  of the head, detached, the clone's config laid in
+  of the head, detached, the clone's config laid in, even an uncommitted one (intended)
   it, removed after; counted in `reconcile-max`; none with `--no-apply`.
   A person's comment is one with no workline mark.
 - **An issue whose step is its round**: in the developer's state, its

@@ -312,17 +312,23 @@ func (l *Local) Comments(t Target) ([]string, error) {
 	return it.Comments, nil
 }
 
-// Notes: the local forge keeps no author; whoever writes in the clone is
-// of the project, as its issues' authors are. workline's own carry its
-// mark, as each comment a role writes does; the person's carry none.
+// Notes: the local forge keeps no author per comment; whoever writes in the
+// clone is of the project, so a person's comment is the clone's git
+// user.name. workline's own carry its mark, as each comment a role writes
+// does, and no author.
 func (l *Local) Notes(t Target) ([]Note, error) {
 	it, err := l.Item(t.Kind, t.ID)
 	if err != nil {
 		return nil, err
 	}
 	notes := make([]Note, 0, len(it.Comments))
+	out, _ := exec.Command("git", "-C", l.Repo, "config", "user.name").Output()
+	person := strings.TrimSpace(string(out))
 	for i, c := range it.Comments {
 		n := Note{Body: c, Insider: true, ID: strconv.Itoa(i + 1), Own: strings.Contains(c, "<!-- workline:")}
+		if !n.Own {
+			n.Author = person
+		}
 		if i < len(it.Dates) {
 			n.Created = it.Dates[i]
 		}
