@@ -1,6 +1,7 @@
 package forge
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -53,19 +54,6 @@ func TestGitHubLabelled(t *testing.T) {
 	}
 }
 
-// An app's successful status is read from the head's statuses, the query
-// keeping only an app's (GitHub types its account Bot).
-func TestGitHubAppStatus(t *testing.T) {
-	log := ghStub(t, "*commits/c0ffee/statuses*) echo 42 ;;\n*commits/bad/statuses*) ;;\n")
-	g := &github{repo: t.TempDir()}
-	yes, err := g.AppStatus("c0ffee", Accepted)
-	no, err2 := g.AppStatus("bad", Accepted)
-	calls, _ := os.ReadFile(log)
-	if !yes || no || err != nil || err2 != nil || !strings.Contains(string(calls), `.creator.type == "Bot"`) {
-		t.Errorf("%v %v, %v %v; calls:\n%s", yes, no, err, err2, calls)
-	}
-}
-
 // GitLab's closing links are each merge request's closes_issues; the cord,
 // its open issues then its open merge requests bearing the label.
 func TestGitLabWoken(t *testing.T) {
@@ -97,5 +85,16 @@ func TestGitLabWoken(t *testing.T) {
 	items, err := g.Labelled("step-back")
 	if err != nil || len(items) != 2 || items[0] != (Target{Kind: "issue", ID: 7}) || items[1] != (Target{Kind: "merge-request", ID: 9}) {
 		t.Errorf("labelled %+v, %v", items, err)
+	}
+}
+
+// With no App named, the yes is not read: never taken for any app's.
+func TestGitHubAppStatusNoAppNamed(t *testing.T) {
+	t.Setenv("WORKLINE_APP", "")
+	log := ghStub(t, "*commits/c0ffee/statuses*) echo 42 ;;\n")
+	yes, err := (&github{repo: t.TempDir()}).AppStatus("c0ffee", Accepted)
+	calls, _ := os.ReadFile(log)
+	if yes || !errors.Is(err, ErrUnreachable) || len(calls) != 0 {
+		t.Errorf("%v, %v; calls:\n%s", yes, err, calls)
 	}
 }

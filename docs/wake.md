@@ -74,7 +74,9 @@ workline wake --forge github --range <before>..<after> --issue   # keep the issu
 - **On GitHub**: the job `wake` of
   [workline-apply.yml](../.github/workflows/workline-apply.yml), on a
   push to `main`, with `issues: write`, `pull-requests: read` and
-  `statuses: read`; the App's token when there is one.
+  `statuses: read`; the App's token when there is one, and its slug
+  in `WORKLINE_APP`: a `workline/accepted` only that App set is a yes,
+  another app's is not; with none named, the yes is said unread.
 - **GitLab and other CI**: the same command after a push to the default
   branch, `--forge gitlab`; GitLab keeps no `workline/accepted`, so that
   trigger is not read there. Not in the templates yet.
