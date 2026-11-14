@@ -106,7 +106,8 @@ roles:
   answers the week it follows, or the week it names (`2026-W41: not 3`).
   It is yours: an assistant puts it only on three conditions: your
   instruction for that item, now (that week), an independent analysis
-  (a run other than the one that drew the sample), and the act traced
+  (a run other than the one that drew the sample, not briefed with its
+  conclusion), and the act traced
   in a comment; never for a panel of agents
   ([ADR-0068 §7](adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated)).
   The count, one comment on the same issue, is written again each week

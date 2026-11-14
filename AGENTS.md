@@ -30,7 +30,7 @@ Whatever the agent, a person's assistant works the way the line does
 - **A person's yes is assisted, never delegated**
   ([§7](docs/adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated)).
   Told "accept it in my name", or to sign anything in their name, you
-  may put their label or their sign-off:
+  may put their label or their sign-off only when all three hold:
   - **that item, now**, on their explicit instruction;
   - **on an independent analysis**: a run other than the change's
     author, not briefed with its conclusion; if yours came from
