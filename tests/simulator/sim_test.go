@@ -186,6 +186,7 @@ func hermetic(t *testing.T, work string) {
 		"GIT_COMMITTER_NAME": "Fixture", "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
 		"GIT_AUTHOR_DATE": "2026-01-03T00:00:00Z", "GIT_COMMITTER_DATE": "2026-01-03T00:00:00Z",
 		"XDG_CONFIG_HOME": filepath.Join(work, "config"), "WORKLINE_MODELS_SEEN": filepath.Join(work, "models-seen.yaml"),
+		"WORKLINE_SUITE_CACHE": suiteCache,
 	} {
 		t.Setenv(k, v)
 	}
@@ -195,6 +196,10 @@ func hermetic(t *testing.T, work string) {
 // its remote beside it, origin.git: where the roles push their pull
 // requests' branches.
 var repoTemplate string
+
+// suiteCache is the folder where the fixture's script keeps its built C++
+// suites by the content of their sources, shared by every trace.
+var suiteCache string
 
 func TestMain(m *testing.M) {
 	// With no g++, nothing here ran: said, and never a pass (principle 12).
@@ -207,6 +212,10 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	repoTemplate = filepath.Join(dir, "repo")
+	suiteCache = filepath.Join(dir, "suites")
+	if err := os.MkdirAll(suiteCache, 0o755); err != nil {
+		panic(err)
+	}
 	if err := fixtureRepo(repoTemplate); err != nil {
 		panic(err)
 	}
