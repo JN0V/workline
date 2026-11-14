@@ -1,0 +1,11 @@
+case: auditor/documentalist-checked-true
+about: "Control: the same doc made true. docs/tech/auth.md says access tokens last two hours, the code holds `const TokenTTL = 7200` and its comment says two hours too, and the documentalist vouched for it at that commit. The auditor finds nothing false: the `checked` stands, no false alarm."
+given:
+  repo: vouched
+  setup:
+    - "C=$(git log -1 --format=%h --grep='tokens last two hours') && git reset -q --hard $C && sed -i 's/Tokens last one hour\\./Tokens last two hours./' src/auth/token.go && GIT_AUTHOR_DATE=2025-12-30T12:00:00Z GIT_COMMITTER_DATE=2025-12-30T12:00:00Z git commit -qam 'docs(auth): the comment says two hours'"
+    - "C=$(git rev-parse --short HEAD) && sed -i 's/Access tokens last one hour\\./Access tokens last two hours./' docs/tech/auth.md && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && sed -i '3a verified: agent:documentalist' docs/tech/auth.md && git add docs/tech/auth.md && GIT_AUTHOR_DATE=2025-12-31T10:00:00Z GIT_COMMITTER_DATE=2025-12-31T10:00:00Z git commit -q -m 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist\nWorkline-Model: claude:claude-sonnet-5'"
+run: {role: auditor, sample: [--week, 2026-W01]}
+grade:
+  - finding: {rule: vouched-true, where: docs/tech/auth.md}
+  - no-finding: {rule: vouched-false, where: docs/tech/auth.md}
