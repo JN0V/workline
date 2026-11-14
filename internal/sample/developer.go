@@ -22,6 +22,7 @@ type devAct struct {
 	record   developer.Act
 	recorded bool
 	first    string // its oldest commit on the head
+	mr       int    // its merge request
 	merge    string // how the merge policy decided on it, "" a person's yes
 }
 
@@ -74,7 +75,7 @@ func developerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act,
 			return nil, nil, err
 		}
 		out = append(out, Act{Role: devRole, Kind: "code", Ref: ref, Commit: tip, Day: day, By: by, Line: subject, key: tip,
-			developer: &devAct{record: r, recorded: ok, first: first, merge: said}})
+			developer: &devAct{mr: m.ID, record: r, recorded: ok, first: first, merge: said}})
 	}
 	return out, unread, nil
 }
@@ -87,7 +88,13 @@ func (rd *reader) developerMaterial(a *Act, m *material) string {
 		return "its record was not read with it"
 	}
 	if !d.recorded {
-		return fmt.Sprintf("the developer's record of its code on %s cannot be read", a.Ref)
+		why := ""
+		if kept, err := forge.ReadKept(rd.o.Forge, forge.Target{Kind: "merge-request", ID: d.mr}); err == nil {
+			if err := kept.Unread(forge.Marker("sticky=developer/" + developer.RecordKey)); err != nil {
+				why = ": " + err.Error()
+			}
+		}
+		return fmt.Sprintf("the developer's record of its code on %s cannot be read%s", a.Ref, why)
 	}
 	m.author, m.acted = actedBy(a.By)
 	is, err := rd.o.Forge.Issue(d.record.Issue)
