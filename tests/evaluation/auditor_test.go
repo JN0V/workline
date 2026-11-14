@@ -22,7 +22,7 @@ func TestAuditorCasesWithBlindJudge(t *testing.T) {
 		n++
 		planted := false
 		for _, g := range c.Grade {
-			if w, ok := g["finding"].(map[string]any); ok && w["rule"] == "act-false" {
+			if w, ok := g["finding"].(map[string]any); ok && (w["rule"] == "act-false" || w["rule"] == "vouched-false") {
 				planted = true
 			}
 		}
