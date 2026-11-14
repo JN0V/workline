@@ -335,7 +335,10 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-review-pending", Level: "info", Where: where,
 			Message: "its drafts wait on their spec review, not yet on this text: the reviewer reads them, the product owner is not called"})
 	}
-	if !ok && s.Name == refineState && name == backlog.Keeper {
+	if !ok && s.Name == refineState && name == backlog.Keeper && !(had && ranWithin(rec, ErrorBackoff)) {
+		// Not within the minutes of its last run: what it left unread
+		// waits for the next tick, never a second step on the same tick
+		// (ADR-0063, step 1; #1091).
 		// Read on this body and left unrefined, nothing waiting on a
 		// person (#951): not acted; woken again, then blocked — at once
 		// when its code is the same as last read (#980).
