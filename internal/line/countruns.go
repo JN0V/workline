@@ -91,25 +91,40 @@ func countRun(f forge.Forge, mrID int, dir string) error {
 		return nil
 	}
 	t := forge.Target{Kind: "issue", ID: issue}
+	id := runID(dir)
+	// The record is read again just before the write: a line step may
+	// have written it since, and what it wrote stays. The forge has no
+	// compare-and-set; the window left is the one between this last read
+	// and the write.
 	comments, err := b.Comments(t)
 	if err != nil {
 		return err
 	}
-	body, rec, had := recordCommentIn(comments)
-	if !had {
-		return nil
+	for try := 0; ; try++ {
+		body, rec, had := recordCommentIn(comments)
+		if !had || slices.Contains(rec.Counted, id) {
+			return nil
+		}
+		fresh, err := b.Comments(t)
+		if err != nil {
+			return err
+		}
+		if now, _, _ := recordCommentIn(fresh); now != body {
+			if try >= 3 {
+				// Never write the older record over a newer one.
+				return fmt.Errorf("the issue's record kept changing while counting")
+			}
+			comments = fresh // written meanwhile: counted on that one
+			continue
+		}
+		rec.Spent = maps.Clone(rec.Spent)
+		if rec.Spent == nil {
+			rec.Spent = map[string][]int{}
+		}
+		rec.Spent[run.Role] = append(slices.Clone(rec.Spent[run.Role]), spent)
+		rec.Counted = append(slices.Clone(rec.Counted), id)
+		return f.Sticky(t, backlog.Inert(withRecord(body, rec)), forge.Marker("sticky="+recordKey), false)
 	}
-	id := runID(dir)
-	if slices.Contains(rec.Counted, id) {
-		return nil
-	}
-	rec.Spent = maps.Clone(rec.Spent)
-	if rec.Spent == nil {
-		rec.Spent = map[string][]int{}
-	}
-	rec.Spent[run.Role] = append(slices.Clone(rec.Spent[run.Role]), spent)
-	rec.Counted = append(slices.Clone(rec.Counted), id)
-	return f.Sticky(t, backlog.Inert(withRecord(body, rec)), forge.Marker("sticky="+recordKey), false)
 }
 
 // runDirs are the run folders of steps.

@@ -204,6 +204,9 @@ type StateWrite struct {
 	Stale   string `json:"stale,omitempty"`
 	Kept    string `json:"kept,omitempty"`
 	Seen    string `json:"seen,omitempty"`
+	// Own: the runs the step itself added to Record.Spent, by role: the
+	// rest of each list is what the record had when the step read it.
+	Own map[string]int `json:"own,omitempty"`
 	// Retest, RetestKept: see the comment above (wip.go).
 	Retest     string `json:"retest,omitempty"`
 	RetestKept string `json:"retest-kept,omitempty"`
@@ -585,7 +588,54 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 			body = said + "\n" + body
 		}
 	}
+	keepCounted(f, t, &w.Record, w.Own, &body)
 	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
+}
+
+// keepCounted keeps in the record about to be written the runs counted
+// on the issue since the step read its record: the tokens of the runs
+// the comment now holds, the step's record having none of them, are added
+// to rec and its body's record, found after the runs the step read, by
+// own, the runs it added itself. A comment it cannot read again leaves
+// the record as it is.
+func keepCounted(f forge.Forge, t forge.Target, rec *Record, own map[string]int, body *string) {
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return
+	}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return
+	}
+	_, now, had := recordCommentIn(comments)
+	if !had {
+		return
+	}
+	var added []string
+	for _, id := range now.Counted {
+		if !slices.Contains(rec.Counted, id) {
+			added = append(added, id)
+		}
+	}
+	if len(added) == 0 {
+		return
+	}
+	spent := map[string][]int{}
+	for role, ns := range rec.Spent {
+		spent[role] = slices.Clone(ns)
+	}
+	for role, ns := range now.Spent {
+		// What the step read of this role's list: its own runs are no
+		// part of it, and a counted run's tokens come after it.
+		if read := len(spent[role]) - own[role]; read >= 0 && len(ns) > read {
+			spent[role] = append(spent[role], ns[read:]...)
+		}
+	}
+	rec.Spent = spent
+	rec.Counted = append(slices.Clone(rec.Counted), added...)
+	if recordLine.MatchString(*body) {
+		*body = withRecord(*body, *rec)
+	}
 }
 
 // WriteStates writes what a line judged with no write token left on its
