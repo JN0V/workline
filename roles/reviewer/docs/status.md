@@ -213,6 +213,10 @@ its measure in
   floor**: `intent-*`, `claim-contradicted-is-a-finding-on-the-line`,
   `merge-request-body-given-as-testimony`, `decision-*`, `diff-alone-*`,
   `finder-floor-nothing-found-is-clean`.
+- **Simplicity, a warning only**: more than the issue needs, judged
+  against it, until its false alarms are counted
+  ([ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)):
+  `simplicity-*`, two planted cases in the evaluation.
 - **A full review within a token budget**:
   `lenses-asked-together-in-one-call`, `lens-given-each-file-once`,
   `judge-shown-the-change-near-the-cause`,

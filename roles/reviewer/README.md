@@ -99,8 +99,9 @@ Step by step, with every rule: [a run on code](docs/run.md).
    warn read five new commits a push, the rest at the next. A change to
    what its own pipeline runs (`.github/`, `.workline/`) skips none.
 4. **The lenses**: correctness, edge cases, tests, intent (the issue the
-   change closes), claims (what its author says), in one call; a project
-   adds its own in `.workline/roles/reviewer/lenses/`.
+   change closes), claims (what its author says), simplicity (more than
+   the issue needs, a warning only), in one call; a project adds its own
+   in `.workline/roles/reviewer/lenses/`.
 5. **The quotes**: each cause found again in the code, the issue or the
    author's words; not found, dropped.
 6. **Whose finding**: a cause in the change goes to its author; elsewhere,
@@ -163,7 +164,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 |---|---|---|
 | `base` | `main` | where `workline review` starts without `--base` |
 | `ignore` | `*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
-| `lenses` | `[correctness, edge-cases, tests, intent, claims, comments]` | in this order, in turn, on a merge request; a lens with nothing to read skipped; `comments` takes no turn, asked whenever `story-words` flags a comment |
+| `lenses` | `[correctness, edge-cases, tests, intent, claims, simplicity, comments]` | in this order, in turn, on a merge request; a lens with nothing to read skipped; `comments` takes no turn, asked whenever `story-words` flags a comment |
 | `lenses-per-push` | `1` | `--input lenses=all` asks every one, on the whole change: the templates pass it when the merge request becomes ready |
 | `commits-per-push` | `5` | after ready: new commits a lens that warns reads a push, the oldest first; the rest at the next push, said; none left when what its own pipeline runs changes; `0`: every one ([more](docs/ready.md#after-ready-only-what-is-new)) |
 | `pipeline-paths` | none | what else the merge request's own pipeline runs, besides `.github/`, `.gitlab-ci.yml` and `.workline/`, as `[ci/, scripts/ci/]`: a change to it skips no commit on the record ([more](docs/run.md#3-the-record)) |
@@ -182,8 +183,11 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 
 - **`ai-findings` by lens**: a lens not named warns; of findings on one
   line, a verified one from a blocking lens leads.
-- **`lenses`**: intent has nothing to read when the change closes no issue,
-  and is skipped.
+- **`lenses`**: intent and simplicity have nothing to read when the
+  change closes no issue, and are skipped; simplicity warns until its
+  false alarms are counted on past pull requests
+  ([ADR-0068](../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)):
+  set `ai-findings` by lens, never `block` for every lens.
 
 ### Caps
 
