@@ -1,0 +1,20 @@
+case: auditor/product-owner-closing-has-the-code
+about: "Control: the product owner closed #40 as obsolete, saying the code does it, and the code does: a commit of the week holds the discount at 90 percent (`if percent > 90`). The auditor finds the closing true: the act stands, no false alarm."
+given:
+  repo: shop
+  setup:
+    - "sed -i 's/percent > 100 {/percent > 90 {/; s/percent = 100$/percent = 90/; s/between 0 and 100/between 0 and 90/' shop/cart.go && GIT_AUTHOR_DATE=2026-01-05T09:00:00Z GIT_COMMITTER_DATE=2026-01-05T09:00:00Z git commit -qam 'fix(cart): hold the discount at 90 percent'"
+  forge:
+    issues:
+      - id: 40
+        title: "Cap the discount at 90 percent"
+        body: "### Need\nA discount of 100 percent gives the goods away.\n\n### Scope\nDiscount holds the percent at 90 at most: Discount(1000, 100) gives 100, not 0.\n"
+        labels: []
+        closed: true
+        comments:
+          - "```yaml\nsources: [shop/cart.go]\nconfirmed: d8c4dff\ndid:\n- {act: close-obsolete, level: normal, day: '2026-01-07', line: 'Closed #40 as obsolete: the code does it'}\nclosed: close-obsolete\n```\n\n<!-- workline:sticky=product-owner/state -->"
+    merge-requests: []
+run: {role: auditor, sample: [--week, 2026-W02]}
+grade:
+  - finding: {rule: act-stands, where: "#40"}
+  - no-finding: {rule: act-false, where: "#40"}

@@ -1,0 +1,18 @@
+case: auditor/product-owner-closing-lacks-the-code
+about: "Planted: the product owner closed #40 as obsolete, saying the code does it. The issue asks that Discount hold the percent at 90 at most; the code holds it at 100 (`if percent > 100`), so a 100 percent discount still leaves nothing. The auditor finds the closing false, with the code's words."
+given:
+  repo: shop
+  forge:
+    issues:
+      - id: 40
+        title: "Cap the discount at 90 percent"
+        body: "### Need\nA discount of 100 percent gives the goods away.\n\n### Scope\nDiscount holds the percent at 90 at most: Discount(1000, 100) gives 100, not 0.\n"
+        labels: []
+        closed: true
+        comments:
+          - "```yaml\nsources: [shop/cart.go]\nconfirmed: d8c4dff\ndid:\n- {act: close-obsolete, level: normal, day: '2026-01-07', line: 'Closed #40 as obsolete: the code does it'}\nclosed: close-obsolete\n```\n\n<!-- workline:sticky=product-owner/state -->"
+    merge-requests: []
+run: {role: auditor, sample: [--week, 2026-W02]}
+grade:
+  - finding: {rule: act-false, where: "#40", message: "shop/cart.go"}
+  - no-finding: {rule: act-stands, where: "#40"}
