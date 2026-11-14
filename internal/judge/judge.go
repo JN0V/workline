@@ -209,6 +209,10 @@ func answerReading(a Answer, data []byte) (Answer, error) {
 			if r, ok := readOf(it["read"]); ok {
 				a.Reads = append(a.Reads, r)
 			}
+		case it["grep"] != nil || it["name"] != nil || it["path"] != nil: // a read given bare
+			if r, ok := readOf(it); ok {
+				a.Reads = append(a.Reads, r)
+			}
 		case it["quote"] != nil && a.Quote == nil:
 			if m, ok := it["quote"].(map[string]any); ok {
 				a.Quote = &Quote{Path: strings.TrimSpace(fmt.Sprint(m["path"])), Text: text(m["text"])}
