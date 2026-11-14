@@ -1,9 +1,12 @@
 ---
 # Asked only of a change saying it closes an issue (`Closes #4`), the
 # issue's Need, Verification and Scope given to it, as to intent; its
-# judge is shown the issue and the change. Advisory: it warns until its
-# false alarms are counted on past pull requests (ADR-0068, step 4).
+# judge is shown the issue and the change. Advisory until its false
+# alarms are counted on past pull requests (ADR-0068, step 4; #1497):
+# `severity: nit` shows each finding as a nit, never judged, never asked
+# of the developer; calibrated, the line goes and the judge below asks.
 needs: issue
+severity: nit
 judge:
   question: >-
     Is this finding about the change's size true, judged against the issue
@@ -29,5 +32,7 @@ place and the few lines.
 
 Judge how much, never whether: what the issue does not ask at all — a file
 beyond its Scope, a feature creeping in — and a part of the Need left
-undone are the intent lens's. Code the Need needs is no finding, however
+undone are the intent lens's. An option on the behaviour the Need asks
+(a knob on how it works) is yours; a behaviour the issue never asks, an
+option or not, is a feature slipped in: intent's. Code the Need needs is no finding, however
 long; nor a test, a name or a comment: no style preference.
