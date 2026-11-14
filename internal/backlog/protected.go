@@ -58,6 +58,21 @@ func PersonOnly(body string) bool {
 	if len(paths) == 0 {
 		return false
 	}
+	// A file with no slash nor dot (Makefile, Dockerfile) is no CI file, and
+	// ScopePaths drops it: its presence means the Scope is not all CI.
+	text := work.ByMeaning(body)[work.Scope].Text
+	for _, w := range work.ScopeWords(text) {
+		if !strings.ContainsAny(w, "/.") {
+			return false
+		}
+	}
+	for _, w := range strings.FieldsFunc(work.Plain(text), func(r rune) bool {
+		return !(r == '_' || r == '-' || r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z')
+	}) {
+		if bareFiles[w] {
+			return false
+		}
+	}
 	for _, p := range paths {
 		if !Protected(p) {
 			return false
@@ -65,3 +80,6 @@ func PersonOnly(body string) bool {
 	}
 	return true
 }
+
+// bareFiles are files commonly named with no slash nor dot.
+var bareFiles = map[string]bool{"Makefile": true, "Dockerfile": true, "LICENSE": true, "Jenkinsfile": true, "Procfile": true, "Gemfile": true, "Rakefile": true, "Vagrantfile": true, "Containerfile": true, "CODEOWNERS": true}
