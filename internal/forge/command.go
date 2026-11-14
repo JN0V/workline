@@ -29,6 +29,10 @@ type command struct {
 // is unreachable, never waited for forever.
 const commandTimeout = 2 * time.Minute
 
+// waitDelay bounds the wait for a command's output after its timeout: a
+// child that still holds it does not hold the run.
+const waitDelay = time.Second
+
 // call runs one operation with its arguments and decodes the answer into v.
 func (c *command) call(op string, args map[string]any, v any) error {
 	req := map[string]any{"operation": op}
@@ -47,6 +51,8 @@ func (c *command) call(op string, args map[string]any, v any) error {
 	cmd.Dir = c.repo
 	cmd.Env = append(os.Environ(), "WORKLINE_FORGE_OPERATION="+op)
 	cmd.Stdin = &in
+	inGroup(cmd)
+	cmd.WaitDelay = waitDelay
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	if err := cmd.Run(); err != nil {
@@ -122,6 +128,8 @@ func CheckCommand(repo, script string) (state, detail string) {
 	cmd.Dir = repo
 	cmd.Env = append(os.Environ(), "WORKLINE_FORGE_OPERATION=ping")
 	cmd.Stdin = &in
+	inGroup(cmd)
+	cmd.WaitDelay = waitDelay
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	if err := cmd.Run(); err != nil {
