@@ -81,8 +81,9 @@ func (g *github) Closes(mrs []int) (map[int][]Issue, error) {
 					Nodes []node `json:"nodes"`
 				} `json:"closingIssuesReferences"`
 			}
-			if raw == nil || decode(raw, &pr) != nil {
-				continue
+			if raw == nil || string(raw) == "null" || decode(raw, &pr) != nil {
+				// A merge unread is never taken for one closing nothing.
+				return out, fmt.Errorf("%w: GitHub gave no closing links for #%d", ErrUnreachable, id)
 			}
 			for _, n := range pr.Refs.Nodes {
 				if here != "" && n.Repository.Name != "" && n.Repository.Name != here {

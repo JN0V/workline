@@ -31,11 +31,16 @@ func TestGitHubCloses(t *testing.T) {
 		`{"number":6,"state":"CLOSED","repository":{"nameWithOwner":"x/y"},"labels":{"nodes":[]}}]}},` +
 		`"p11":{"closingIssuesReferences":{"nodes":[]}},"p12":null}}}`
 	log := ghStub(t, "*graphql*) echo '"+answer+"' ;;\n")
-	got, err := (&github{repo: t.TempDir()}).Closes([]int{10, 11, 12})
+	got, err := (&github{repo: t.TempDir()}).Closes([]int{10, 11})
 	calls, _ := os.ReadFile(log)
 	if err != nil || len(got[10]) != 1 || got[10][0].ID != 5 || got[10][0].Closed || got[10][0].Labels[0] != "bug" || len(got[11]) != 0 ||
-		strings.Count(string(calls), "graphql") != 1 || !strings.Contains(string(calls), "p12: pullRequest(number: 12)") {
+		strings.Count(string(calls), "graphql") != 1 || !strings.Contains(string(calls), "p11: pullRequest(number: 11)") {
 		t.Errorf("%+v, %v; calls:\n%s", got, err, calls)
+	}
+	// A pull request GitHub answers null for is an error, never one
+	// closing nothing.
+	if _, err := (&github{repo: t.TempDir()}).Closes([]int{10, 11, 12}); err == nil || !strings.Contains(err.Error(), "#12") {
+		t.Errorf("p12 null: %v", err)
 	}
 }
 
