@@ -1,0 +1,24 @@
+case: engine/wake-new-contract
+about: "A merge that adds a role, a setting, a command or a rule code gets each one listed under the contract's growth; what was there before is not (ADR-0068 §8, #1461)."
+given:
+  repo: basic
+  setup:
+    - |
+      mkdir -p roles/keeper cmd/tool internal/check
+      printf 'name: keeper\nsettings:\n  a: 1\n' > roles/keeper/role.yaml
+      printf 'package main\n\nvar commands = []cmd{\n\t{name: "run"},\n}\n' > cmd/tool/cli.go
+      printf 'package check\n\nvar f = Finding{Rule: "old-rule"}\n' > internal/check/check.go
+      git add . && git commit -q -m 'feat: a keeper'
+    - |
+      mkdir -p roles/scout
+      printf 'name: keeper\nsettings:\n  a: 1\n  b: 2\n' > roles/keeper/role.yaml
+      printf 'name: scout\nsettings:\n  depth: 3\n' > roles/scout/role.yaml
+      printf 'package main\n\nvar commands = []cmd{\n\t{name: "run"},\n\t{name: "scout"},\n}\n' > cmd/tool/cli.go
+      printf 'package check\n\nvar f = Finding{Rule: "old-rule"}\nvar g = Finding{Rule: "too-deep"}\n' > internal/check/check.go
+      printf 'package check\n\nvar h = Finding{Rule: "test-only"}\n' > internal/check/check_test.go
+      git add . && git commit -q -m 'feat: a scout'
+run: {cli: [wake, --range, "main~1..main"]}
+expect:
+  exit: 0
+  stdout: ["role added: `scout`", "setting added: `scout.depth`", "setting added: `keeper.b`", "rule code added: `too-deep`", "command added: `scout`"]
+  stdout-lacks: ["`old-rule`", "`keeper.a`", "`run`", "test-only", "role added: `keeper`"]

@@ -37,6 +37,7 @@ func init() {
 		{name: "docs", args: "[options]", about: "judge the docs made suspect since they were last judged, then review each change", run: docsCmd},
 		{name: "sample", args: "[options] | --apply <file> [options]", about: "draw and read the week's sample of the docs the documentalist vouched for; --apply writes it to the forge", run: sampleCmd},
 		{name: "size", args: "[options]", about: "measure the normal size of an issue from the line's records on the issues done, and keep it in one comment on the forge; an issue stops at 4× its normal, its backstop", run: sizeCmd},
+		{name: "wake", args: "[--range <before>..<after>] [options]", about: "after a merge to the default branch, print where the line may be drifting, with no AI; --issue keeps it in one issue", run: wakeCmd},
 		{name: "follow", args: "[options]", about: "with the merge policy, turn auto-merge on for what a person accepted; --gardening: rebuild the roles' merge requests on their base's new tip", run: followCmd},
 		{name: "init", args: "[options]", about: "adopt this repository: route pre-push, have each doc's sources proposed", run: initCmd},
 		{name: "setup", args: "[options]", about: "set workline up on this machine, asking what to enable", run: setupCmd},
