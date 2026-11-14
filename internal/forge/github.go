@@ -846,11 +846,12 @@ func (g *github) MergedSince(since time.Time) ([]MergeRequest, error) {
 		Title   string `json:"title"`
 		Author  string `json:"author"`
 		Bot     bool   `json:"bot"`
+		HeadSHA string `json:"head"`
 	}
 	var all []MergeRequest
 	for page := 1; page <= 100; page++ {
 		out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls?state=closed&sort=updated&direction=desc&per_page=100&page=%d", page), "--jq",
-			`.[] | {id: .number, merged: (.merged_at // ""), as: (.merge_commit_sha // ""), updated: .updated_at, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name), title: .title, author: .user.login, bot: (.user.type == "Bot")}`)
+			`.[] | {id: .number, merged: (.merged_at // ""), as: (.merge_commit_sha // ""), updated: .updated_at, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name), title: .title, author: .user.login, bot: (.user.type == "Bot"), head: (.head.sha // "")}`)
 		if err != nil {
 			return nil, err
 		}
@@ -861,7 +862,7 @@ func (g *github) MergedSince(since time.Time) ([]MergeRequest, error) {
 		for _, p := range found {
 			if at, err := time.Parse(time.RFC3339, p.Merged); err == nil && !at.Before(since) {
 				all = append(all, MergeRequest{ID: p.ID, Branch: p.Branch, Base: p.Base, Here: p.Here, Title: p.Title, Author: p.Author, Bot: p.Bot,
-					Head: fmt.Sprintf("refs/pull/%d/head", p.ID), MergedAs: p.As, MergedAt: p.Merged})
+					Head: fmt.Sprintf("refs/pull/%d/head", p.ID), MergedAs: p.As, MergedAt: p.Merged, HeadSHA: p.HeadSHA})
 			}
 		}
 		if len(found) < 100 {

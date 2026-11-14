@@ -98,6 +98,11 @@ const developer = 30
 // project_<id>_bot_<random>, group_<id>_bot_<random> (GitLab's naming).
 var botName = regexp.MustCompile(`^(project|group)_\d+_bot(_|$)`)
 
+// GitLabBotName says whether username is a project's or a group's access
+// token user by its name alone, as a webhook's event names it: the
+// engine's own writes come from one (#1414).
+func GitLabBotName(username string) bool { return botName.MatchString(username) }
+
 // insider says whether username is a person of the project. The members
 // are read once a run: a token that may not list them (401, 403: the
 // job's own) fails loud with ErrAuthorsUnknown rather than taking every
@@ -1438,7 +1443,7 @@ func (g *gitlab) MergedSince(since time.Time) ([]MergeRequest, error) {
 				}
 			}
 			all = append(all, MergeRequest{ID: m.IID, Branch: m.Source, Base: m.Target, Here: m.SourceProject == m.TargetProject,
-				Title: m.Title, Author: m.Author.Username, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID), MergedAs: as, MergedAt: m.MergedAt})
+				Title: m.Title, Author: m.Author.Username, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID), MergedAs: as, MergedAt: m.MergedAt, HeadSHA: m.SHA})
 		}
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })

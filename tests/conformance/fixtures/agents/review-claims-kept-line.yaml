@@ -1,0 +1,20 @@
+# The claims lens, on the `reviewed` fixture once a commit saying "Average
+# now skips negative values." adds a comment above the sum (#1415): the
+# claim's cause is quoted on the sum, a line the change kept; the
+# correctness lens quotes a defect on Parse, which the change does not
+# touch.
+- finding:
+    lens: claims
+    severity: important
+    title: Negative values are still summed
+    why: the mean of [-2, 4] is still 1, not 4
+    seen: "A person averaging values with a negative one gets it counted, though the change says it is skipped."
+    claim: Average now skips negative values.
+    cause: {path: calc/calc.go, quote: "total += v"}
+- finding:
+    lens: correctness
+    severity: important
+    title: Parse drops the conversion error
+    why: "\"x\" reads as 0"
+    seen: "A count typed wrong reads as zero, and nobody is told."
+    cause: {path: calc/calc.go, quote: "n, _ := strconv.Atoi(s)"}

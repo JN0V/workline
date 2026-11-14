@@ -1,5 +1,5 @@
 case: merge/normal-agents-pages-wait
-about: "A page agents are told to read is never changed alone (#322): at `normal`, workline's own pull requests — opened, pushed and committed by its App —, green. One changes a page AGENTS.md links to; one CLAUDE.md, an agent file itself, whose commit is never workline's own; one a doc named a prompt. Each waits for a person's label, said: what steers agents is the person's to accept (ADR-0042, amended)."
+about: "With no CODEOWNERS, a page agents are told to read is never changed alone (#322): at `normal`, workline's own pull requests — opened, pushed and committed by its App —, green. One changes a page AGENTS.md links to; one CLAUDE.md, an agent file itself, whose commit is never workline's own: each waits for a person's label, said: what steers agents is the person's to accept (ADR-0042, amended). One changes a doc named a prompt, which no agent file links: a name no longer holds it, it merges alone (ADR-0068 §4)."
 given:
   repo: documented
   config: {merge: {autonomy: normal}}
@@ -28,10 +28,10 @@ expect:
   findings:
     - {rule: waits-for-a-yes, where: "#9", message: "it changes docs/tech/auth.md, which agents are told to read"}
     - {rule: waits-for-a-yes, where: "#13", message: "(\"docs: a word for agents\"), committed by workline-bot is not workline's own"}
-    - {rule: waits-for-a-yes, where: "#14", message: "it changes docs/review-prompt.md, which agents are told to read"}
-  no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}]
+    - {rule: auto-merge-on, where: "#14", message: "with no person's yes, workline's own records"}
+  no-findings: [{rule: auto-merge-on, where: "#9"}, {rule: auto-merge-on, where: "#13"}, {rule: waits-for-a-yes, where: "#14"}, {rule: merged-at-once}]
   forge:
     merge-requests:
       - {id: 9, auto-merge: false, comments: 0}
       - {id: 13, auto-merge: false, comments: 0}
-      - {id: 14, auto-merge: false, comments: 0}
+      - {id: 14, auto-merge: true, comments: 1, comment-contains: ["workline:merge-alone=records"]}

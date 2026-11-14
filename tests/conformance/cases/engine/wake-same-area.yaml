@@ -1,0 +1,25 @@
+case: engine/wake-same-area
+about: "Files fixed again and again, by three merges closing a bug in 14 days, are listed at the next merge: a fix is a merge closing an issue the forge labels a bug, never a title nor a commit's type (ADR-0068 §8, #1461)."
+given:
+  repo: basic
+  setup:
+    - "printf 'package main\\n\\n// one\\nfunc main() {}\\n' > main.go && git add . && git commit -q -m 'chore: one'"
+    - "printf 'package main\\n\\n// two\\nfunc main() {}\\n' > main.go && printf 'more\\n' >> README.md && git add . && git commit -q -m 'chore: two'"
+    - "printf 'package main\\n\\n// three\\nfunc main() {}\\n' > main.go && git add . && git commit -q -m 'feat: three'"
+    - "printf 'package main\\n\\n// four\\nfunc main() {}\\n' > main.go && git add . && git commit -q -m 'fix: four'"
+  forge:
+    issues:
+      - {id: 31, title: "one", body: "x", labels: [bug], closed: true}
+      - {id: 32, title: "two", body: "x", labels: ["type::Bug"], closed: true}
+      - {id: 33, title: "three", body: "x", labels: [bug], closed: true}
+      - {id: 34, title: "four", body: "x", labels: [enhancement], closed: true}
+    merge-requests:
+      - {id: 21, title: "one", branch: f21, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~3", closes: [31], labels: []}
+      - {id: 22, title: "two", branch: f22, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~2", closes: [32], labels: []}
+      - {id: 23, title: "three", branch: f23, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~1", closes: [33], labels: []}
+      - {id: 24, title: "four", branch: f24, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main", closes: [34], labels: []}
+run: {cli: [wake, --forge, "fake:../forge.json", --range, "main~1..main"]}
+expect:
+  exit: 0
+  stdout: ["the same area fixed again: `main.go`, by 3 merges in 14 days (#21, #22, #23)", "3 closing a bug"]
+  stdout-lacks: ["`README.md`", "#24)"]

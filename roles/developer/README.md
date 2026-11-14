@@ -36,8 +36,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   the board's doing column ([boards](../../docs/boards.md)).
 - **Writes the code**, with an agent, in a worktree of the code: it
   reads, edits and runs the tests there ([the agent](docs/agent.md)).
-  Its diff is held to its bounds: a frozen acceptance test, a file
-  that steers agents or a gate's are reverted, no agent judging; on its
+  Its diff is held to its bounds: a frozen acceptance test, a file the
+  project's `CODEOWNERS` lists, an agent file or a gate's are reverted,
+  no agent judging; another role's prompt is not; on its
   pull request, the same bounds are a check, whoever pushed
   ([the bounds](docs/bounds.md)). A test that does not fit, it objects
   to on the tester's Draft. The Scope is a hint: a file beyond it is

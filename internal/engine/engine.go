@@ -399,6 +399,18 @@ func proposedTask(runDir string) string {
 	return slugify(mr.Key)
 }
 
+// proposedFrom is the commit the role's branch starts from, as it named
+// it in out/merge-request.yaml: a branch opened from it as it is, with
+// nothing written on it (#1434). "" when it names none.
+func proposedFrom(runDir string) string {
+	var mr Proposal
+	data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml"))
+	if err != nil || yaml.Unmarshal(data, &mr) != nil {
+		return ""
+	}
+	return mr.From
+}
+
 // writeWaiting writes in/waiting.yaml: for each of the role's tasks
 // waiting for review, the files its change touches — an open merge
 // request's, from where its branch left this commit to its tip; one an
@@ -1601,7 +1613,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		}
 	}
 	res.Handoffs = ap.handoffs
-	if st.OpenMergeRequest && len(st.Written) > 0 && st.MergeRequest == 0 {
+	if st.OpenMergeRequest && (len(st.Written) > 0 || proposedFrom(runDir) != "") && st.MergeRequest == 0 {
 		id, tip, err := openMergeRequest(f, st, runDir, ap.tree)
 		if tip != "" && tip == st.Committed {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "already-committed", Level: "info", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
@@ -2210,8 +2222,10 @@ func proposeBranch(f forge.Forge, repo, tree, roleName, key, title, body string,
 			start = []string{"checkout", "-q", "-m", "-B", branch, p.From}
 		}
 		steps = append(steps, start)
-		for _, c := range p.commits(title, written) {
-			steps = append(steps, append([]string{"add", "--"}, c.Files...), []string{"commit", "-q", "-m", c.Message, "-m", trailers})
+		if len(written) > 0 { // none: the branch is p.From as it is (#1434)
+			for _, c := range p.commits(title, written) {
+				steps = append(steps, append([]string{"add", "--"}, c.Files...), []string{"commit", "-q", "-m", c.Message, "-m", trailers})
+			}
 		}
 	} else {
 		tip = committed // on the branch already: nothing new to commit
@@ -2222,7 +2236,7 @@ func proposeBranch(f forge.Forge, repo, tree, roleName, key, title, body string,
 	// What the files written change from the base's tip, kept to put
 	// them back should their merge onto p.From conflict.
 	var saved string
-	if p.From != "" && len(steps) > 0 && steps[0][0] == "checkout" {
+	if p.From != "" && len(written) > 0 && len(steps) > 0 && steps[0][0] == "checkout" {
 		if saved, err = gitRaw(at, append([]string{"diff", "--binary", "HEAD", "--"}, written...)...); err != nil {
 			return 0, "", err
 		}

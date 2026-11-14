@@ -226,6 +226,10 @@ type answer struct {
 	// which the reviewer reads the answer by, its line moved or not.
 	Found string `json:"found,omitempty"`
 	Title string `json:"title,omitempty"`
+	// Code: the file Found is in, as the pull request From has it,
+	// often its branch's alone (#1416); CodeUnread, why it is not.
+	Code       string `json:"code,omitempty"`
+	CodeUnread string `json:"code-unread,omitempty"`
 }
 
 // reviewedOnWords finds, in a test missing's why, the pull request whose
@@ -244,6 +248,39 @@ func reviewedOn(why string) (n int, found, title string) {
 }
 
 const answerFile = "answer.json"
+
+// foundCode is the file a test missing's finding is on, as the pull
+// request whose review found it has it (#1416): the builder's branch,
+// fetched with the checkout, holds it when the tester's Draft does not.
+// Cut past code-lines-max, said; why when it cannot be read.
+func foundCode(f forge.Forge, repo string, mr int, file string, s Settings) (code, unread string) {
+	m, err := f.MergeRequest(mr)
+	if err != nil {
+		return "", fmt.Sprintf("pull request %d could not be read: %v", mr, err)
+	}
+	var refs []string
+	if m.Branch != "" {
+		refs = append(refs, "origin/"+m.Branch, m.Branch)
+	}
+	if m.Head != "" {
+		refs = append(refs, m.Head)
+	}
+	for _, ref := range refs {
+		text, err := git(repo, "show", ref+":"+file)
+		if err != nil {
+			continue
+		}
+		limit := s.CodeLinesMax
+		if limit <= 0 {
+			limit = 1500
+		}
+		if lines := strings.Split(strings.TrimRight(text, "\n"), "\n"); len(lines) > limit {
+			text = strings.Join(lines[:limit], "\n") + fmt.Sprintf("\n… cut: %d lines past code-lines-max (%d)", len(lines)-limit, limit)
+		}
+		return strings.TrimRight(text, "\n"), ""
+	}
+	return "", fmt.Sprintf("`%s` is not on pull request %d's branch, %s, as this checkout has it", file, mr, m.Branch)
+}
 
 // answerPre finds the first objection waiting for the tester's answer and
 // decides who answers it.
@@ -397,6 +434,9 @@ func answerPre(runDir, repo string, s Settings) int {
 	if a.Kind == "missing" {
 		a.Scenarios = scenarios
 		a.From, a.Found, a.Title = reviewedOn(o.Why)
+		if a.From > 0 && a.Found != "" {
+			a.Code, a.CodeUnread = foundCode(f, repo, a.From, work.LineOff(a.Found), s)
+		}
 	}
 	if line, err := routing.Load(repo); err == nil {
 		a.Line = line.States
@@ -464,6 +504,12 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 	fmt.Fprintf(&b, "## The test, `%s`, as it stands\n\n````\n%s\n````\n", a.File, strings.TrimRight(string(data), "\n"))
 	if a.Kind == "missing" {
 		fmt.Fprintf(&b, "Your other tests of #%d: %s.\n", a.Issue, strings.Join(otherFiles(a.Record, a.File), ", "))
+		switch file := work.LineOff(a.Found); {
+		case a.Code != "":
+			fmt.Fprintf(&b, "\n## The code the finding is on, `%s`, as pull request %d has it\n\n````\n%s\n````\n", file, a.From, a.Code)
+		case a.CodeUnread != "":
+			fmt.Fprintf(&b, "\n## The code the finding is on\n\nNot given: %s.\n", a.CodeUnread)
+		}
 	}
 	head := b.String()
 	b.Reset()
@@ -472,7 +518,8 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 			"The reviewer found a behaviour of the change with no test, its cause in the code: you are the one who writes the acceptance tests.\n\n" +
 			"- **Added**: the test, in this file or another of your tests above, as a `patch` (the file whole with `file` and `content`, or a diff of it), and a `note`, why. " +
 			"It checks a scenario's Then, and fails on the code before the change.\n" +
-			"- **None needed**: a `note`, why no acceptance test is needed (a scenario's test covers it already, naming it; or it is no behaviour a scenario asks).\n")
+			"- **None needed**: a `note`, why no acceptance test is needed (a scenario's test covers it already, naming it; or it is no behaviour a scenario asks).\n" +
+			"- **Lacks code**: a `note` opening `needs:`, the files you lack and why, when the code given does not let you write it.\n")
 	} else {
 		b.WriteString("\n## Your answer\n\n" +
 			"- **Kept**: a `note`, the reason the test holds for the scenario.\n" +
@@ -651,10 +698,20 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		if missing {
 			word = "**None needed**: "
 		}
+		// A note naming the code it lacks is no answer that the test
+		// holds, nor that none is needed (#1416): said as lacking.
+		_, _, lacks := needsOf(notes)
+		if lacks {
+			word, act.Act = "**Lacks code**: ", "lacks-code"
+		}
 		out := []intent.Intention{reply(word + reason + why + "\n" + act.line())}
 		out = append(out, a.toReview(word+reason)...)
 		if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), out); err != nil {
 			return fail(err)
+		}
+		if lacks {
+			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no test written: it lacks code, said in the thread" + whysSaid(a) + left,
+				Findings: []verdict.Finding{{Rule: "lacks-code", Level: "warn", Where: a.URL, Message: reason}}})
 		}
 		if missing {
 			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no test needed, the reason in the thread" + whysSaid(a) + left})

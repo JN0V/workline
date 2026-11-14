@@ -48,6 +48,9 @@
 #          whatever its verdict, holds issues: write and no AI key: what
 #          that run found kept in one issue, edited only when what it lists
 #          changes, never commented on.
+#   wake   on a push to main, holds issues: write and no AI key: where
+#          the line may be drifting, read with no AI, kept in one issue
+#          (ADR-0068 §8); it never fails, nothing waits for it.
 #   follow on a push to main, holds the write token and no AI key: the
 #          tester's Draft of an issue a merge closed is closed, and the
 #          closed issues' state labels taken off (#999).
@@ -221,6 +224,38 @@ jobs:
           workline apply --main "$RUNNER_TEMP/main/main.json" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+
+  wake:
+    # A push to main: where the line may be drifting, read from git and the
+    # forge with no AI, kept in one issue edited in place (ADR-0068 §8,
+    # docs/wake.md). Print only: nothing waits for it, it fails no check,
+    # and what the forge does not answer is said in the issue. A push
+    # carries no run of its own to be cancelled: the second clause holds.
+    if: github.event_name == 'push' && github.event.workflow_run.conclusion != 'cancelled'
+    # One at a time: each run reads the issue the one before left.
+    concurrency: {group: "workline-wake", cancel-in-progress: false}
+    runs-on: ubuntu-latest
+    environment: workline-app
+    continue-on-error: true
+    permissions: {contents: read, pull-requests: read, issues: write, statuses: read}
+    steps:
+      - id: app
+        if: vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      # The base: its config says the forge and the merge policy.
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: ./.github/actions/engine
+      - env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          workline wake --forge github --range "$BEFORE..$GITHUB_SHA" --issue > wake.md ||
+            echo "::warning title=workline::the wake read nothing; its log says why"
+          cat wake.md >> "$GITHUB_STEP_SUMMARY"
 
   follow:
     # A push to main; with the merge policy, a pull request's run too, once

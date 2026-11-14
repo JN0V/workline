@@ -1,0 +1,34 @@
+case: routing/payload-person-note-wakes-blocked
+about: >
+  GitLab's webhook on note events (#1414): a person's comment on a
+  blocked issue — the answer the line asked for — names that issue, as
+  a state's label does. The comment is news on it: its step is due, and
+  the job starts the product owner's pipeline at once, not at the next
+  hourly reconcile. No agent asked.
+given:
+  repo: tested
+  env:
+    TRIGGER_PAYLOAD: '{"object_kind":"note","event_type":"note","user":{"username":"ann"},"object_attributes":{"note":"It needs src/a.kt and src/b.kt.","noteable_type":"Issue","action":"create"},"issue":{"iid":3,"labels":[{"title":"workline:blocked"}]}}'
+  config:
+    routing: {events: {issue: [product-owner]}, revisit: 3650}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a828a06be19\",\"hops\":9,\"from\":\"ready\",\"why\":\"9 state steps\",\"since\":\"2026-10-30T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+          - {body: "It needs src/a.kt and src/b.kt.", author: ann, insider: true}
+run: {route: issue, open-merge-request: true, ai: "fake:unblock-three", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "issue: #3 due, the product-owner: not started"
+  agent-calls: 0
+  findings:
+    - {rule: state-revisit, level: info, where: "#3", message: "blocked, read again by the product-owner: a comment was written or edited on it"}
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked"], comments: 2}

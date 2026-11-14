@@ -1,0 +1,12 @@
+case: engine/wake-adr-listed
+about: "A merge that adds or changes an ADR is listed under the contract's growth, read from git alone; with no forge, what needs one is said unread, not taken for nothing found (ADR-0068 §8, #1461)."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p docs/adr && printf '# ADR-0001\\n' > docs/adr/0001-first.md && printf '# Decisions\\n' > docs/adr/README.md && git add . && git commit -q -m 'docs: a first decision'"
+    - "printf '# ADR-0001, amended\\n' > docs/adr/0001-first.md && printf '# ADR-0002\\n' > docs/adr/0002-second.md && printf '# Decisions, two\\n' > docs/adr/README.md && git add . && git commit -q -m 'docs: a second decision'"
+run: {cli: [wake, --range, "main~1..main"]}
+expect:
+  exit: 0
+  stdout: ["### Growth of the contract", "ADR changed: `docs/adr/0001-first.md`", "ADR added: `docs/adr/0002-second.md`", "**Not read**", "the forge, with none named"]
+  stdout-lacks: ["docs/adr/README.md", "workline:wake"]

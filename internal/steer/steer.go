@@ -1,7 +1,9 @@
-// Package steer tells the files that steer agents: AGENTS.md, CLAUDE.md
-// and their likes, a page one links to or imports, a file named a prompt,
-// an instruction or a template. What the routine merge keeps for a
-// person (ADR-0042) and what the developer may never touch (ADR-0054).
+// Package steer tells the files that never merge by the policy alone
+// (ADR-0042, amended by ADR-0068 §4) and that the developer may never
+// touch (ADR-0054): the paths the project's CODEOWNERS lists, the files
+// that define oversight and authority; with no CODEOWNERS, the files that
+// steer agents, AGENTS.md, CLAUDE.md and their likes, and the pages one
+// links to or imports.
 package steer
 
 import (
@@ -17,9 +19,11 @@ import (
 // told to read.
 var agentNames = []string{"agents.md", "claude.md", "gemini.md", "copilot-instructions.md"}
 
-// steersByName are words in a file's name that make it one agents follow:
-// a prompt, an instruction, a template.
-var steersByName = []string{"prompt", "instruction", "template"}
+// Agent says whether a path is an agent file, by its name: AGENTS.md,
+// CLAUDE.md and their likes, wherever it is.
+func Agent(p string) bool {
+	return slices.Contains(agentNames, strings.ToLower(path.Base(p)))
+}
 
 var (
 	mdLink    = regexp.MustCompile(`\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)`)
@@ -27,18 +31,45 @@ var (
 	importDoc = regexp.MustCompile(`(?m)(?:^|\s)@([\w./-]+)`)
 )
 
-// Files is, at tip, what says whether a page steers agents: an agent
-// file itself, a page one links to or imports — a folder linked, all of it
-// —, followed through the files they import, or a file named a prompt, an
-// instruction or a template.
-func Files(repo, tip string) (func(path string) bool, error) {
+// IsCodeowners says whether a path is a CODEOWNERS file where the forges
+// read one: always held, with a list or none, so no change adds,
+// moves or deletes the list unseen.
+func IsCodeowners(p string) bool {
+	return slices.Contains(CodeownersPlaces, path.Clean(p))
+}
+
+// What a held path is, said after it: "it changes X, which …".
+const (
+	ListedWhy = "which CODEOWNERS lists"
+	AgentsWhy = "which agents are told to read"
+)
+
+// Files is, at tip, what says whether a path never merges by the policy
+// alone, and why ("" for any other path). The project's CODEOWNERS, the
+// first found of CodeownersPlaces, is the list: a path it gives an owner,
+// and a CODEOWNERS file itself, never anything else (ADR-0068 §4). With
+// none, a CODEOWNERS file added, and the files that steer agents: an
+// agent file itself, a page one links to or imports — a folder linked,
+// all of it —, followed through the files they import.
+func Files(repo, tip string) (func(path string) string, error) {
+	for _, p := range CodeownersPlaces {
+		if text, ok := blob(repo, tip, p); ok {
+			co := ParseCodeowners(p, []byte(text))
+			return func(f string) string {
+				if co.Holds(f) || IsCodeowners(f) {
+					return ListedWhy
+				}
+				return ""
+			}, nil
+		}
+	}
 	out, err := git(repo, "ls-tree", "-r", "--name-only", tip)
 	if err != nil {
 		return nil, err
 	}
 	var queue []string
 	for _, p := range strings.Split(out, "\n") {
-		if slices.Contains(agentNames, strings.ToLower(path.Base(p))) {
+		if Agent(p) {
 			queue = append(queue, p)
 		}
 	}
@@ -85,17 +116,19 @@ func Files(repo, tip string) (func(path string) bool, error) {
 			add(m[1], true)
 		}
 	}
-	return func(p string) bool {
-		name := strings.ToLower(path.Base(p))
-		if slices.Contains(agentNames, name) || slices.ContainsFunc(steersByName, func(w string) bool { return strings.Contains(name, w) }) {
-			return true
+	return func(p string) string {
+		if IsCodeowners(p) {
+			return ListedWhy
+		}
+		if Agent(p) {
+			return AgentsWhy
 		}
 		for l := range linked {
 			if p == l || l == "." || strings.HasPrefix(p, l+"/") {
-				return true
+				return AgentsWhy
 			}
 		}
-		return false
+		return ""
 	}, nil
 }
 

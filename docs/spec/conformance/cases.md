@@ -69,8 +69,9 @@ saying so.
 - `cli: [<argument>...]` instead of `role` — `workline` with these
   arguments, as typed, in the repository, with `given.env`: help, misuse, a
   hook (`[hook, commit-msg, .git/COMMIT_EDITMSG]`); checked by `exit`,
-  `stdout`, `stderr`, `stderr-lacks`, `files`, and `summary-file` for the
-  `workline-summary.md` its arguments name;
+  `stdout`, `stderr`, `stderr-lacks`, `files`, `summary-file` for the
+  `workline-summary.md` its arguments name, and `forge` for what it wrote
+  on the simulated forge, `fake:../forge.json` from the repository;
 - `sh: <line>` instead of `role` — a shell line in the repository, the
   engine first on `PATH` as `workline`: what a person types around it
   (`workline hooks install --global && git push`), checked as `cli` is;

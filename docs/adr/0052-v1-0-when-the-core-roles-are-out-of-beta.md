@@ -1,7 +1,8 @@
 # ADR-0052: v1.0 when the core roles are out of beta
 
 - **Status:** accepted; V1 accepted on 2026-11-11
-  ([amendment](#amendment-2026-11-11-1266-v1-accepted))
+  ([amendment](#amendment-2026-11-11-1266-v1-accepted)); its freeze
+  lifted on 2026-11-14 ([amendment](#amendment-2026-11-14-the-freeze-is-lifted))
 - **Date:** 2026-10-26
 - **Decided by:** the maintainer, on 2026-10-26
 - **Builds on:** [ADR-0036] (a role's status is earned by written
@@ -9,6 +10,12 @@
 - **Research:** [catch-and-cost.md](../research/catch-and-cost.md)
 - **Tracked by:** the GitHub milestone
   [v1.0](https://github.com/JN0V/workline/milestone/1)
+- **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-replaced)
+  (step 1 built): the "until then" freeze held until ADR-0068's step 1 passed its
+  test (nobody bypasses `main`, the guard guarded); lifted on
+  2026-11-14, after [#1463] and [#1464]
+  ([amendment](#amendment-2026-11-14-the-freeze-is-lifted)). The v1.0
+  bar stands until its step 7 decides what replaces it
 
 ## Context
 
@@ -91,11 +98,29 @@ holds the issues that count.
   no person's yes, 3 features after a yes, no fix specific to one
   language, the tester right the first time on 3, 2 and 3 of 3.
 - **After V1, until v1.0**: the Decision above still rules (the
-  maintainer, 2026-11-12): bug fixes and work that moves a role out of
+  maintainer, 2026-11-12; lifted on 2026-11-14, below): bug fixes and work that moves a role out of
   beta only, no new role. The inspector on GitLab and the upkeep
   measure (criteria 2 and 3) are part of it.
 - **After v1.0**: optimisation, token savings and new roles, the next
   step [#1266] names for after V1.
+
+## Amendment 2026-11-14: the freeze is lifted
+
+- **Decided by:** the maintainer, on 2026-11-14.
+- **[ADR-0068]'s step 1 passed its test**
+  ([§6](0068-the-line-steps-back-on-its-own-drift.md#6-nobody-bypasses-on-main)):
+  - nobody bypasses `main` ([#1458], built in [#1463]): a real
+    `gh pr merge --admin` without `workline/accepted` was refused; a
+    labelled pull request then merged through workline's App;
+  - the guard guarded ([#1459], built in [#1464]): the files that
+    define oversight and authority listed in `CODEOWNERS`, merged on
+    the person's label only.
+- **The "until then" list no longer rules**: the line takes its work
+  by its own policy, a guarded file on the person's label
+  ([ADR-0068 §9](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-replaced)).
+- **What still stands**: the v1.0 bar until ADR-0068's step 7;
+  [ADR-0063]'s standing stop until its step 3 ([#1461]), lifted on
+  2026-11-14 ([its amendment](0063-every-open-issue-is-due-waiting-or-done.md#amendment-2026-11-14-the-standing-stop-is-lifted)).
 
 [#1266]: https://github.com/JN0V/workline/issues/1266
 [round 3]: https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764
@@ -108,3 +133,10 @@ holds the issues that count.
 [ADR-0036]: 0036-a-roles-status-is-earned-by-written-criteria.md
 [ADR-0051]: 0051-a-check-sits-where-its-catch-is-worth-its-cost.md
 [#610]: https://github.com/JN0V/workline/issues/610
+[ADR-0063]: 0063-every-open-issue-is-due-waiting-or-done.md
+[ADR-0068]: 0068-the-line-steps-back-on-its-own-drift.md
+[#1458]: https://github.com/JN0V/workline/issues/1458
+[#1459]: https://github.com/JN0V/workline/issues/1459
+[#1461]: https://github.com/JN0V/workline/issues/1461
+[#1463]: https://github.com/JN0V/workline/pull/1463
+[#1464]: https://github.com/JN0V/workline/pull/1464

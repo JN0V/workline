@@ -1,6 +1,6 @@
 ---
 sources: [internal/tester/measure.go, internal/tester/coverage.go, ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 7f7b4f32
+checked: 9cf386a3
 verified: agent:claude-code
 ---
 # The curator's measures
@@ -75,7 +75,7 @@ checkout apart:
 | `curator-runs` | 2 | runs a measure: two tell a flaky test on one commit |
 | `curator-slowest` | 10 | the slowest tests named |
 | `curator-window` | 12 | measures a test must stay green to count as never red |
-| `suite-max-seconds` | 600 | the corpus's time over which it warns; a Draft's red-first proof stops at three times it, its test command's process group killed (Linux and macOS); 0, none |
+| `suite-max-seconds` | 600 | the corpus's time over which the measure warns; every other run of the tests stops at it (red-first, green, the developer's proof), a Draft's whole proof at three times it, its test command's process group killed (Linux and macOS); 0, none |
 | `coverage-report` | none | the coverage file the command writes |
 
 ## Its cost, on workline

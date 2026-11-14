@@ -67,6 +67,10 @@ type Pack struct {
 	// TestCommand is a suggested test-command, `workline doctor` gives it
 	// when the tester has none; never run unless the person sets it.
 	TestCommand string `yaml:"test-command"`
+	// BuiltinNames are the language's own names (its built-in exceptions
+	// and standard library's): a Scope naming one is no stale name, the
+	// code never holds it.
+	BuiltinNames []string `yaml:"builtin-names"`
 	// Code are its languages' code navigation rows, read by
 	// internal/codenav: how a file's functions and declarations are found
 	// with no build.

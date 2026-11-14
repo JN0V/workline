@@ -146,7 +146,8 @@ What else a case can give, run and expect, and how each is checked, is in
   (`{head, at}`, a head a revision of the repository), `clean` (merged at
   once); one merged, `merged-at` and `merged-as` (the commit it became,
   a revision), its head under `refs/pull/<id>/head` of `origin`, as
-  the weekly sample lists them; `job-token: true` is a CI job's own token; `unguarded: <why>` a
+  the weekly sample lists them; `merged-head` (the revision its head was
+  at) and `closes` (the issues it closes), as the wake reads them; `job-token: true` is a CI job's own token; `unguarded: <why>` a
   base that holds no yes; `statuses` the statuses on commits (`{commit,
   name, state, description, by}`, a commit a revision, `by` workline's
   token's user `workline-bot` or another); `fixtures/verdict.sh` writes a

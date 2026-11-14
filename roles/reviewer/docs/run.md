@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 8538d558
+checked: 44518314
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -95,12 +95,14 @@ flowchart LR
 
 The lenses (`lenses/<lens>.md`, a project's own in
 `.workline/roles/reviewer/lenses/`): correctness, edge cases, tests,
-intent, claims ([#126](https://github.com/JN0V/workline/issues/126)), and
-comments, asked only when `story-words` flags a comment, beside the lens
+intent, claims ([#126](https://github.com/JN0V/workline/issues/126)),
+simplicity, and comments, asked only when `story-words` flags a comment, beside the lens
 in turn, never in its place.
 Every one on a machine; on a merge request one a push, in turn
 (`lenses-per-push`), with a block's lens when the push changes its file
-([more](judge.md#a-block-stands-until-a-commit-answers-it)), every one
+([more](judge.md#a-block-stands-until-a-commit-answers-it)), and the
+tests lens when it changes the test of a file it found untested
+([more](lines.md)), every one
 with `--input lenses=all`, once when it becomes ready ([below](#every-lens-once-when-it-becomes-ready));
 none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 
@@ -127,6 +129,19 @@ none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-ac
     change does past the Scope.
   - No issue closed: not asked, said in the summary; one that cannot be
     read: not asked, said (`issue-unread`).
+- **Simplicity** (`needs: issue`, [ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)): read with
+  the same issue as intent; is the change more complicated than its Need
+  requires?
+  - A finding quotes what the change adds that the Need and the
+    Verification do not ask — a public function, an overload, an
+    option, a layer — and names the smaller change that closes the issue
+    as well; its judge is shown the issue.
+  - It judges how much, never whether: what the issue does not ask at
+    all, and a part of the Need left undone, stay intent's.
+  - Advisory: `severity: nit` in its front matter shows each finding as
+    a nit, never judged, never asked of the developer, until its false
+    alarms are counted on past pull requests
+    ([#1497](https://github.com/JN0V/workline/issues/1497)).
 - **Claims** (`cites: claim`): each finding quotes the author's claim ("no
   change in behaviour"), found again in what they said, or is dropped
   (`finding-unfounded`), and its cause the line contradicting it.
@@ -167,6 +182,11 @@ none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-ac
      further down is the change's too when, in the same function, it uses
      a name a removed line tested or assigned (`if p < 1` removed, then
      `from := (p - 1) * size`). Its comment goes where the removal shows.
+   - **A claim it does not hold**
+     ([#1415](https://github.com/JN0V/workline/issues/1415)): a finding
+     of the claims lens is the change's wherever its cause lies, a kept
+     line below the lines it added too; on a line the diff does not
+     show, it stays in the summary.
    - **Elsewhere**: an issue, once, labelled `needs-triage`, with the
      product owner's state; never on the merge request. Its key is the
      file and the cause's line; an issue open or closed holds it, none

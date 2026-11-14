@@ -5,7 +5,7 @@ sources:
   - ci/github/workline-objection.yml
   - ci/github/workline-answer.yml
   - ci/github/workline-gardening.yml
-checked: ccbfd55d
+checked: 01e06784
 verified: agent:claude-code
 ---
 # Tester
@@ -151,10 +151,14 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
 - **A test missing** ([#1265](https://github.com/JN0V/workline/issues/1265)):
   the review found a behaviour with no test, on code; the developer
   sends it, naming no scenario. The agent reads every scenario and
+  the finding's file as the pull request has it
+  ([#1416](https://github.com/JN0V/workline/issues/1416)), and
   answers:
   - *added*: the test in one of its tests of the issue, the file whole
     or a diff, proven as a rewrite;
-  - *none needed*: its reason.
+  - *none needed*: its reason;
+  - *lacks code* (`needs:`): the files it lacks, never read as *none
+    needed*.
   - Its answer is said on the pull request whose review found it too,
     naming the finding's line and title: the developer reads it there,
     and the reviewer's judge weighs a *none needed*
@@ -273,7 +277,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
 | `ai-max-turns` | 40 | the turns of an agent that reads the project itself (`claude`), told in its task and enforced by the engine (`claude --max-turns`); reached before it answered: asked again once, then a machine error the line retries, never "no test possible" ([#1194](https://github.com/JN0V/workline/issues/1194)) |
 | `objection-exchanges` | 3 | the tester's answers in an objection's thread before the product owner settles it |
-| `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](docs/curator.md#settings)) and removals ([page](docs/removals.md#settings)); a Draft's proof stops at three times `suite-max-seconds`: its test command and the processes it started are killed on Linux and macOS, the command alone on Windows; a build daemon that detaches, as Gradle's, lives on ([#1197](https://github.com/JN0V/workline/issues/1197)) |
+| `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](docs/curator.md#settings)) and removals ([page](docs/removals.md#settings)); each run of the tests (red-first, green, the developer's proof; not the curator's) stops at `suite-max-seconds`, the whole Draft's proof at three times it, the retry told the change's test files with no report by then and the last lines ([#1425](https://github.com/JN0V/workline/issues/1425)): its test command and the processes it started are killed on Linux and macOS, the command alone on Windows; a build daemon that detaches, as Gradle's, lives on ([#1197](https://github.com/JN0V/workline/issues/1197)) |
 
 The command, by ecosystem:
 

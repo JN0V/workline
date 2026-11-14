@@ -54,7 +54,9 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **Open conversations that hold it are said**: auto-merge on, its
   checks green, the forge not merging, and its base requiring every
   conversation resolved: `follow` lists each open one, linked, in its
-  summary and once on the pull request. The reviewer resolves its own
+  summary and once on the pull request, from the run that turns
+  auto-merge on ([#1417](https://github.com/JN0V/workline/issues/1417)).
+  The reviewer resolves its own
   once the code answers them
   ([lines](../roles/reviewer/docs/lines.md#not-repeated-found-again));
   a person resolves theirs
@@ -130,6 +132,9 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
     merges it by hand;
   - unlabelled, `follow` says it waits for a yes
     ([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-04-1043-a-fork-goes-by-its-yes-and-its-checks)).
+- **One changing a guarded file**, one the project's `CODEOWNERS`
+  lists, at every level
+  ([what never merges alone](merge-policy-normal.md#what-never-merges-alone)).
 - **Any other** with no label, whoever opened it — but, at `normal` and
   `enterprising`, workline's own routine work. A bot's own auto-merge (a dependency
   bot's) is left to it.
@@ -197,6 +202,19 @@ the candidate's issue, ships the version:
   - on GitLab, whoever can run a pipeline can read the project bot's
     token, so a person who may push could act as it.
 
+## Nobody bypasses `main`
+
+- **`main`'s ruleset has an empty bypass list**, the person included:
+  `gh pr merge --admin` and a push to `main` are refused; a person's
+  merge is the label
+  ([ADR-0068 §6](adr/0068-the-line-steps-back-on-its-own-drift.md#6-nobody-bypasses-on-main)).
+- **`workline doctor` checks it**: a token that can bypass the default
+  branch's rulesets is a warning.
+- **The emergency**, no head able to get `workline/accepted`: add
+  yourself to the bypass list, merge the fix, remove yourself.
+- **How, on GitHub and GitLab Premium**:
+  [nobody bypasses `main`](merge-policy-no-bypass.md).
+
 ## Set up
 
 - **GitHub**: the [templates](ci-github.md) — `workline-apply.yml`'s
@@ -212,7 +230,8 @@ the candidate's issue, ships the version:
     `workline-app`; a merge made with the job's own token starts no
     workflow on `main` — nothing is turned on then, said;
   - a ruleset on the base requiring the checks, and `workline/accepted`
-    from the App; "Require branches to be up to date" left off.
+    from the App; "Require branches to be up to date" left off; its
+    bypass list empty ([nobody bypasses `main`](merge-policy-no-bypass.md)).
 - **GitLab**: the [template](ci-gitlab.md)'s `workline:merge` job, after
   the judge; the project bot's token; `workline:follow` on the hourly
   reconcile schedule too. Merged results pipelines on

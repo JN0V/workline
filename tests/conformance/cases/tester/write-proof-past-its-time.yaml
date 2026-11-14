@@ -1,15 +1,17 @@
 case: tester/write-proof-past-its-time
 about: >
-  A Draft's red-first proof whose test command hangs stops at three
-  times suite-max-seconds (#1197): the run blocks with proof-over-time,
-  a machine error the line retries; no Draft opens, and the run never
-  waits on the command past its deadline.
+  A Draft's red-first proof whose test command hangs stops each run of
+  the tests at suite-max-seconds (#1197, #1425): the run blocks with
+  proof-over-time, a machine error the line retries, its message, which
+  the retry's task carries, holding the command's last lines (the test
+  it was running); no Draft opens, and the run never waits on the
+  command past its deadline.
 given:
   repo: go-tested
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   config:
-    roles: {tester: {settings: {test-command: "sleep 30; sh run-tests.sh {report}", suite-max-seconds: 1}}}
+    roles: {tester: {settings: {test-command: "echo 'CalcTest > hangs STARTED'; sleep 30; sh run-tests.sh {report}", suite-max-seconds: 1}}}
   forge:
     issues:
       - id: 3
@@ -19,7 +21,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-go-missing-name"}
 expect:
   status: block
-  findings: [{rule: proof-over-time, where: suite-max-seconds}]
+  findings: [{rule: proof-over-time, where: suite-max-seconds, message: "its last lines: CalcTest > hangs STARTED"}]
   not-pushed: [workline/tester/issue-3]
   forge:
     merge-requests:

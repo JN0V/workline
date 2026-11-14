@@ -1,0 +1,13 @@
+# The same call, as the trial's was: its Scope says on a line Guessed:
+# which of its paths it could not read (#1433, #970).
+- refine:
+    issue: 39
+    validation: |
+      - **Counter after a pause:** Given a time-lapse taking a snapshot every 5 seconds, When the app is in the background for a minute, Then the counter shows only the snapshots saved.
+    scope: |
+      Guessed: `FileSnapshotStorage.kt` was not given, so its path is a guess.
+      
+      - `core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/SnapshotStorage.kt`: the count of snapshots saved.
+      - `feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt`: the files counted.
+    sources: ["core/timelapse/src/main/kotlin/io/github/jn0v/traceglass/core/timelapse/SnapshotStorage.kt", "feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt"]
+    why: "Validation and Scope were missing; the Scope is written from the code given below the folders."

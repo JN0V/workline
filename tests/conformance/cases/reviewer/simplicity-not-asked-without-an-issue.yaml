@@ -1,0 +1,12 @@
+case: reviewer/simplicity-not-asked-without-an-issue
+about: "The simplicity lens weighs a change against the need it closes (ADR-0068, step 4): a change closing no issue has none, so the lens is not asked, its tokens not spent, and the summary says so."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count' -m 'Refs #4.'"]
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}]
+  summary: "simplicity (the change closes no issue)"
+  run-files:
+    in/parts/1-lenses/task.md: {contains: "## Lens: claims", not-contains: "## Lens: simplicity"}

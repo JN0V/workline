@@ -34,7 +34,8 @@ step 6).
 
 - **A fresh run**, woken by the reviewer's verdict, the gates' report,
   a project check red or a person's comment on a pull request from
-  `workline/developer/<n>`:
+  `workline/developer/<n>`, in its conversation or in a thread on a
+  line ([#1438](https://github.com/JN0V/workline/issues/1438)):
   `workline develop --merge-request <n>`. With no forge
   ([`forge: local`](../../../docs/local-line.md#5-review-the-merge-request)),
   the reconciler runs it, in a worktree of the head.

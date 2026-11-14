@@ -47,6 +47,9 @@ roles:
         runs-kept: "sed -n 's/^const keepRuns = \\([0-9]*\\)$/\\1/p' internal/engine/engine.go"
   product-owner:
     settings:
+      # Its level, pinned here where a person reads it (ADR-0068 §4): a
+      # change to the role's default never moves it unseen.
+      autonomy: normal
       # The week's trial of ADR-0038: fifteen issues read a night, ten
       # completed and ten readied at most, so the backlog is seen in a few
       # nights; proposals-max (10) still bounds what waits on a person.
@@ -63,12 +66,18 @@ roles:
       # branches (issue #264): every package but tests/evaluation, whose
       # tests measure agents, not the code; the conformance suite in, so a
       # new case is a test too, red until the engine does what it says.
-      # gotestsum pinned, run by Go, its JUnit report the check reads.
-      test-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- $(go list ./... | grep -v /tests/evaluation)
+      # gotestsum pinned, run by Go, its JUnit report the check reads;
+      # -timeout 20m as the test job's: the simulator alone takes 12 min
+      # on a busy runner, past Go's default 10 (#1430).
+      test-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m $(go list ./... | grep -v /tests/evaluation)
       # The Draft's red proof on the packages of its tests alone: the
       # whole suite twice took 10 of a run's 11 min (#979); the pull
       # request's test job runs it all.
-      draft-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}
+      draft-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m {packages}
+      # Each run of the tests stops here: the whole suite takes 8 to 11
+      # min on a runner, past the role's 600 s, so every green proof
+      # stopped on the base (#1441). 25 min leaves room for a busy runner.
+      suite-max-seconds: 1500
       # Go's build errors, the role's default, and a conformance case the
       # suite cannot read: red for no reason, so the build is said broken.
       build-errors:
@@ -82,21 +91,23 @@ roles:
           test-name: '(?m)^case: (\S+)$'
       # The curator's measures (`workline test measure`, the gardening's
       # curator job): the whole suite, its coverage profile too.
-      curator-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -coverprofile=cover.out ./...
+      curator-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m -coverprofile=cover.out ./...
       coverage-report: cover.out
       # Its removals (`workline test curate`): the unit tests only, the
       # conformance cases running a built engine the profile does not
       # see; a folder's tests and its mutants, Gremlins pinned.
       curator-paths: ["internal/**/*_test.go", "cmd/**/*_test.go"]
       curator-keep: [tests/conformance/pending.txt]
-      curator-proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -coverprofile=cover.out {packages}
+      curator-proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m -coverprofile=cover.out {packages}
       curator-mutation-command: go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash -s -o {report} {package}
   developer:
     settings:
+      # Its level, pinned here (ADR-0068 §4), as the product owner's.
+      autonomy: normal
       # Its proof on the packages its code and the acceptance tests touch
       # (#703), a conformance case running ./tests/conformance; the pull
       # request's own test job runs them all.
-      proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- {packages}
+      proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m {packages}
   reviewer:
     settings:
       # The role's list, plus the judge's replay set: questions and answers
@@ -104,9 +115,11 @@ roles:
       # and the evaluation's results, a row a run (a measure's 107 rows
       # were a lens call past the role's budget, #360); the line simulator's
       # traces, real issues exported as they were; real code frozen for the
-      # code picker's cases, kept as its project wrote it (#1089).
-      ignore: ["*.md", "**/*.md", "docs/**", "LICENSE*", "**/*.txt", "CHANGELOG*", "tests/evaluation/judge-replay/**", "tests/evaluation/results.tsv",
-        "tests/simulator/traces/**", "tests/conformance/fixtures/code/**"]
+      # code picker's cases, kept as its project wrote it (#1089). Pages
+      # for people only, never a prompt: the role prompts, their facets and
+      # skills are read as code (ADR-0068 §4).
+      ignore: ["*.md", "docs/**", "roles/*/README.md", "roles/*/docs/**", ".github/**/*.md", "tests/**/*.md", "LICENSE*", "**/*.txt", "CHANGELOG*",
+        "tests/evaluation/judge-replay/**", "tests/evaluation/results.tsv", "tests/simulator/traces/**", "tests/conformance/fixtures/code/**"]
       # A verified correctness finding blocks here first (2026-10-15, #360):
       # five runs a case held 29 merges of 70, all on true findings, none
       # falsely. The role's default stays warn until real blocks here are

@@ -105,7 +105,9 @@ write run the default branch's workflow, never a pull request's own
      tester: an objection to one of its tests, on its Draft's line, wakes
      its answer; the first notices it with no token, the second answers
      from the default branch ([tester](../roles/tester/README.md#frozen-tests-and-objections),
-     [what each job holds](objection-jobs.md)).
+     [what each job holds](objection-jobs.md)). With the developer, the
+     first also notices a person's reply in a thread on its pull request,
+     whose end wakes the review round.
    - [workline-develop.yml](../ci/github/workline-develop.yml), with the
      tester and the developer routed on `issue`: the line of states
      ([ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)),

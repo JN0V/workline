@@ -185,7 +185,8 @@ settings:
   # {report} -- -coverprofile=cover.out ./...`); the runs a measure, two to
   # tell a flaky test on one commit; the slowest tests named; the window of
   # measures a test never red is counted over (twelve: a quarter, weekly);
-  # the corpus's time over which it warns, in seconds (0: none).
+  # the corpus's time over which it warns, in seconds (0: none), and where
+  # every run of the tests but the curator's stops (#1425).
   curator-command: ""
   curator-runs: 2
   curator-slowest: 10

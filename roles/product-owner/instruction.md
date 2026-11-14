@@ -93,7 +93,8 @@ a `verification` you give is left out. What each holds:
   beyond these paths, with why.
   A file to create goes on its own line starting `New:`, its full path
   in backticks after it. A path the repository lacks, not on a `New:`
-  line, leaves the `scope` out. With no code given for it, write no
+  line, leaves the `scope` out, unless its ignore rules match it: a
+  file the build writes. With no code given for it, write no
   `scope`: propose `sources` instead; the issue is read again with that
   code, and its `scope` written then. When the code given still does
   not show where the change goes — a file not given —, start

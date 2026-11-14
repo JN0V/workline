@@ -7,7 +7,7 @@ sources:
   - internal/line/budget.go
   - ci/github/workline-develop.yml
   - ci/gitlab/workline.gitlab-ci.yml
-checked: abaf9b8b
+checked: c1990cb1
 verified: agent:claude-code
 ---
 # The triggers
@@ -46,6 +46,11 @@ routing:
   [workline-develop.yml](../../../ci/github/workline-develop.yml). A
   person's `workline:` label wakes it; the engine's own labels never
   do.
+  - **A person's answer**: a comment or a body edit on an issue bearing
+    a `workline:` label starts its run, which asks the line, no agent,
+    whether its step is due: a blocked issue's answer is read at once
+    ([#1414](https://github.com/JN0V/workline/issues/1414)). A comment
+    counts from the project's people or the issue's author.
   - **The next step**: once `apply` applied, it asks the line, no
     agent, whether the issue's new state is due, and starts that run
     (`workflow_dispatch`, which the job's own token may start). Not
@@ -62,11 +67,12 @@ routing:
   - **Hourly**, the `reconcile` job starts what an event missed, at most
     `reconcile-max` issues a run, the one waiting longest first, each
     its own run. Each reconcile
-    starts the next, 55 minutes on: [the heartbeat](../../../docs/github/heartbeat.md),
-    an environment to create once.
+    starts the next, 55 minutes on by default: [the heartbeat](../../../docs/github/heartbeat.md),
+    an environment to create once, its period yours to set.
   - **Not on the heartbeat alone**: the schedule, or a `workline:` label
     on an issue, each hop of the line, starts it when no heartbeat waits
-    and 55 minutes passed since the last that succeeded, read from the
+    and the gap (55 minutes, or the variable
+    `WORKLINE_RECONCILE_GAP_MINUTES`) passed since the last that succeeded, read from the
     workflow's runs. One at a time
     ([#789](https://github.com/JN0V/workline/issues/789),
     [#853](https://github.com/JN0V/workline/issues/853)). Its cost: a
@@ -143,10 +149,15 @@ routing:
 
 - **A review round**, the reviewer's verdict, the gates' report, a
   project workflow failed, all green on its Draft, or a person's comment on a pull request from
-  `workline/developer/<n>`: no
+  `workline/developer/<n>`, a reply in a thread on a line too, noticed
+  on GitHub by `workline-objection.yml`
+  ([#1438](https://github.com/JN0V/workline/issues/1438)): no
   routing, the same workflow's `review` jobs on GitHub,
   `WORKLINE_TASK=review` on GitLab
   ([the review loop](review-loop.md#what-wakes-it)).
+  - Merged or closed before the GitHub `review` job runs, its branch
+    maybe deleted: no round, said, the run green
+    ([#1420](https://github.com/JN0V/workline/issues/1420)).
 - **The round's issue next**: once `review-apply` applied, it asks
   the line whether the issue's new state is due, and starts that run.
   Blocked on a Scope ask, the product owner reads it at once

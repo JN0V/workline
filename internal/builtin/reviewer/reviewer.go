@@ -97,7 +97,7 @@ type Finding struct {
 	Where    string    `json:"where"`          // the cause's file and line
 	On       int       `json:"on,omitempty"`   // the change's: the line of its quote the change touched, where its comment goes on the forge (#277)
 	Related  bool      `json:"related"`        // the cause lies in the change: the author fixes it
-	Side     string    `json:"side,omitempty"` // the change's: where its cause was found, onHead or onRemoved (#570)
+	Side     string    `json:"side,omitempty"` // the change's: where its cause was found, onHead, onRemoved (#570) or onClaim (#1415)
 	Line     string    `json:"line,omitempty"` // outside the change: the line the cause starts at, as it reads, which keys its issue
 	Also     []Finding `json:"also,omitempty"` // other findings on the same line, grouped under this one, each judged by its own lens
 	Verified string    `json:"verified,omitempty"`
@@ -471,6 +471,9 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	if input(runDir, "lenses") == "" {
 		st.Lenses = union(st.Lenses, answering(st.Standing, files, skip))
+		if !ready {
+			st.Lenses = union(st.Lenses, retested(repo, s, head, rec.Judged, files, skip))
+		}
 		if len(st.Hints) > 0 { // on its turn or not: a guess is judged on the push that adds it
 			st.Lenses = union(st.Lenses, []string{hinted})
 		}
@@ -1163,6 +1166,9 @@ type Lens struct {
 		Question string `yaml:"question"` // empty: judgeQuestion
 		Reads    string `yaml:"reads"`    // tests: the tests that touch the cause's file; issue: the issues the change closes; code: the code a spec's finding stands on
 	} `yaml:"judge"`
+	// nit: its findings are nits, never judged nor asked of the developer,
+	// a lens advisory until it is calibrated (ADR-0068, step 4).
+	Severity string `yaml:"severity"`
 }
 
 // readLens reads a lens's file, its front matter apart from its text.
@@ -1198,6 +1204,9 @@ func readLens(repo, name string) (Lens, error) {
 	}
 	if l.Hints != "" && l.Hints != storyRule {
 		return l, fmt.Errorf("lens %q: hints %q: only `%s` is known", name, l.Hints, storyRule)
+	}
+	if l.Severity != "" && l.Severity != "nit" {
+		return l, fmt.Errorf("lens %q: severity %q: only `nit` is known", name, l.Severity)
 	}
 	return l, nil
 }
@@ -1416,6 +1425,9 @@ func lensFindings(repo string, s Settings, st state, ls []string, answers []inte
 			return err
 		}
 		f, why := found(repo, st, lens, l.Cites == "claim", a.Value, "")
+		if l.Severity == "nit" && f.Severity == "important" {
+			f.Severity = "nit"
+		}
 		if why != "" {
 			c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-unfounded", Level: "warn",
 				Message: fmt.Sprintf("dropped, from the %s lens: %q — %s", lens, f.Title, why)})
@@ -1560,6 +1572,9 @@ func askJudges(runDir, repo string, s Settings, st state, c *candidates, n *int)
 const (
 	onHead    = "head"
 	onRemoved = "removed"
+	// onClaim: at the head, the change's by a claim of its author's it
+	// does not hold, wherever its cause lies (#1415).
+	onClaim = "claim"
 )
 
 // found reads one finding a lens answered, and finds its quotes again: its
@@ -1567,7 +1582,8 @@ const (
 // removed; its symptom, when it gives one, in its file. Related: its cause
 // lies on a line the change added or removed, on a kept line beside a
 // removal, or on one using what a removed line of its function tested or
-// assigned, the side it lies on said. on, when set, looks on that side
+// assigned, or one a claim of the author's the change does not hold
+// quotes, the side it lies on said. on, when set, looks on that side
 // alone: a block found before is the change's only where it was found
 // (#570). why says why it is dropped.
 func found(repo string, st state, lens string, cites bool, v any, on string) (Finding, string) {
@@ -1636,7 +1652,7 @@ func found(repo string, st state, lens string, cites bool, v any, on string) (Fi
 	if ok {
 		places = locate(strings.Split(text, "\n"), f.Cause.Quote)
 	}
-	head, gone := on != onRemoved, on != onHead
+	head, gone := on != onRemoved, on != onHead && on != onClaim
 	var atHead []func(string, int) bool
 	if head {
 		atHead = []func(string, int) bool{st.Change.addedAt, st.Change.exposedAt}
@@ -1672,6 +1688,14 @@ func found(repo string, st state, lens string, cites bool, v any, on string) (Fi
 		if at := st.Change.reaches(repo, st.Head, f.Cause.Path, p); at > 0 {
 			f.Where, f.Related, f.On, f.Side = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true, at, onHead
 		}
+	}
+	// Then a claim of the author's the change does not hold (#1415): the
+	// change's wherever the lens quotes its cause — a kept line below the
+	// lines it added, a grid drawn above an `.alpha(…)` it did not touch —,
+	// never an issue about code the default branch lacks. On a line the
+	// diff does not show, it stays in the summary.
+	if f.Where == "" && head && (f.Claim != "" || on == onClaim) && len(places) > 0 {
+		f.Where, f.Related, f.Side = fmt.Sprintf("%s:%d", f.Cause.Path, places[0].From), true, onClaim
 	}
 	if f.Where == "" && len(places) > 0 {
 		f.Where = fmt.Sprintf("%s:%d", f.Cause.Path, places[0].From)
@@ -1793,26 +1817,85 @@ func plural(n int, one, many string) string {
 }
 
 // testFiles are the test files at the head (the `tests` setting) that
-// touch a file: in its folder, then those naming it as a word.
+// touch a file: in its folder, then those named after it in a folder
+// mirroring its own, then those naming it as a word. Named after it, a
+// test in a tree of its own is found (src/test/…/GridTest.kt for
+// src/main/…/Grid.kt), though it never names the file as a word (#1417);
+// another module's or app's, never.
 func testFiles(repo, head, file string, patterns []string) []string {
 	dir, stem := path.Dir(file), strings.TrimSuffix(path.Base(file), path.Ext(file))
 	var near, far []string
-	if out, err := git(repo, "ls-tree", "-r", "--name-only", head, "--", dir+"/"); err == nil {
+	if out, err := git(repo, "ls-tree", "-r", "--name-only", head); err == nil {
 		for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
-			if f != "" && path.Dir(f) == dir && pathglob.Any(patterns, f) {
+			switch {
+			case f == "" || !pathglob.Any(patterns, f):
+			case path.Dir(f) == dir:
 				near = append(near, f)
+			case namedAfter(f, stem) && mirrors(dir, path.Dir(f)):
+				far = append(far, f)
 			}
 		}
 	}
 	if out, err := git(repo, "grep", "-l", "-w", "-F", "-e", stem, head, "--"); err == nil { // none: git grep fails
 		for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
 			f = strings.TrimPrefix(f, head+":")
-			if f != "" && path.Dir(f) != dir && pathglob.Any(patterns, f) {
+			if f != "" && path.Dir(f) != dir && pathglob.Any(patterns, f) && !slices.Contains(far, f) {
 				far = append(far, f)
 			}
 		}
 	}
 	return append(near, far...)
+}
+
+// testAffixes are what most ecosystems add to a file's name to name its
+// test: GridTest.kt, GridTests.swift, grid_test.go, test_grid.py,
+// grid.spec.ts.
+var testAffixes = []string{"test", "tests", "spec", "_test", "_tests", "_spec", "-test", "-spec", ".test", ".spec", "test_", "test-"}
+
+// namedAfter says whether a test file is named after a file's stem: its
+// own stem, cases aside, that stem with a test affix before or after it.
+func namedAfter(test, stem string) bool {
+	name := path.Base(test)
+	name, stem = strings.ToLower(strings.TrimSuffix(name, path.Ext(name))), strings.ToLower(stem)
+	if stem == "" {
+		return false
+	}
+	return slices.ContainsFunc(testAffixes, func(a string) bool { return name == stem+a || name == a+stem })
+}
+
+// mirrors says whether a test's folder mirrors a code folder: past the
+// folders they share, one test folder below the code's own (app/tests/
+// for app/), or the same folders under a test root instead of the
+// code's (src/test/kotlin/x for src/main/kotlin/x, tests/ for src/). A
+// sibling package is no test root: internal/forge/ never mirrors
+// internal/doctor/.
+func mirrors(code, test string) bool {
+	cs, ts := folders(code), folders(test)
+	for len(cs) > 0 && len(ts) > 0 && cs[0] == ts[0] {
+		cs, ts = cs[1:], ts[1:]
+	}
+	if len(ts) == 0 || !testRoot(ts[0]) {
+		return false
+	}
+	if len(cs) == 0 {
+		return len(ts) == 1
+	}
+	return slices.Equal(cs[1:], ts[1:])
+}
+
+// testRoot says whether a folder's name says it holds tests: test,
+// tests, __tests__, spec, androidTest, commonTest.
+func testRoot(name string) bool {
+	n := strings.ToLower(name)
+	return strings.Contains(n, "test") || strings.Contains(n, "spec")
+}
+
+// folders are a folder's names from the root; the root's, none.
+func folders(dir string) []string {
+	if dir == "." || dir == "" {
+		return nil
+	}
+	return strings.Split(dir, "/")
 }
 
 // testsTouching is what a judge reading tests is shown besides: the test

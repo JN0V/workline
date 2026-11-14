@@ -57,7 +57,8 @@ a feature or a task merges too, and the yes moves to the milestone's
   - workline's own, as the forge says it: opened and pushed by its App,
     every commit committed by it, each the tester's or the developer's
     by its `Workline-Role` trailer;
-  - no file agents are told to read;
+  - no file [that never merges alone](../../../docs/merge-policy-normal.md#what-never-merges-alone):
+    one `CODEOWNERS` lists, else one agents are told to read;
   - its record on the pull request read whole, its rounds not ended by a block;
   - its head's verdict passed, its checks not red;
   - no finding of the reviewer's open that blocks or is Important: a

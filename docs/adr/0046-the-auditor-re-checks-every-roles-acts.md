@@ -17,6 +17,9 @@
   owner's acts, drawn for a person)
 - **Builds on:** [ADR-0005], [ADR-0014] (step 4), [ADR-0019], [ADR-0036];
   [research: auditing a sample of agent acts][research]
+- **To be revisited by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)
+  (step 5, next, not decided): drawing a person's own changes, a build
+  session's included
 
 ## Context
 

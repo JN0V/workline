@@ -12,6 +12,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/steer"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -449,10 +450,6 @@ func OwnCommit(repo, commit, base string) string {
 	return role
 }
 
-// agentFiles are the files that steer agents, by name: a role's prompt
-// or a project's instructions, never a doc page whatever its extension.
-var agentFiles = []string{"agents.md", "claude.md", "gemini.md", "copilot-instructions.md"}
-
 // docPage says whether a path is a doc page the roles write: Markdown, not
 // under a tool's folder (.workline, .github, .claude, .cursor), not a file
 // that steers agents (AGENTS.md, CLAUDE.md…), and in a role's folder only
@@ -473,7 +470,7 @@ func docPage(path string) bool {
 			}
 		}
 	}
-	return !slices.Contains(agentFiles, parts[len(parts)-1])
+	return !steer.Agent(lower)
 }
 
 // rolePage says whether a path in a role's folder, `roles/<name>/…`, is
@@ -1110,7 +1107,9 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 	}
 	say("auto-merge-on", "", fmt.Sprintf("accepted by %s, %s: auto-merge turned on, the forge merges it once its checks pass", by, passed))
 	sayUnrefused(f, mr, tip, false, say)
-	return e, nil
+	// Its checks green, the forge not merging it at once: the run that
+	// arms it says what holds it, not a later one that may never come (#1417).
+	return e, heldByConversations(m, mr, tip, st, say, fmt.Sprintf("accepted by %s, %s", by, passed))
 }
 
 // stalled weighs a merge request the policy merges whose auto-merge is on

@@ -65,6 +65,8 @@ stars and dates were checked against the GitHub API that day.
 | [moments.md](moments.md) | How long a developer waits at each moment, the budgets others keep, where a check is skipped |
 | [catch-and-cost.md](catch-and-cost.md) | What each check of workline's own line catches and costs a product pull request, per period, and the circles that recur |
 | [round6-root-causes.md](round6-root-causes.md) | Why the tester and the line kept taking fixes: six root causes behind round 6's defects, the changes each calls for, and the panel's decision |
+| [stepping-back.md](stepping-back.md) | Whether workline's growth ran away and who drove it, whether AI judges catch a maintainer's unease, and how other fields keep a builder from drifting |
+| [nobody-bypasses.md](nobody-bypasses.md) | What `main`'s bypass list served (96% a missing label), what an empty one breaks, and the GitLab Premium equivalent |
 
 ## Method
 

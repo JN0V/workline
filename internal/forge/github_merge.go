@@ -301,6 +301,41 @@ func (g *github) Guarded(base string) (string, error) {
 	return fmt.Sprintf("%s does not require the status %s: a push after the yes could merge before follow takes the yes back; require it, from the GitHub App, in a ruleset", base, Accepted), nil
 }
 
+// Bypass reads the rulesets on the branch, each once, and what this
+// token's user may do past them: GitHub says it on each ruleset
+// (current_user_can_bypass), which any token reading the repository
+// reads (ADR-0068 §6).
+func (g *github) Bypass(branch string) (string, []Ruleset, error) {
+	if branch == "" {
+		out, err := g.api("repos/{owner}/{repo}", "--jq", ".default_branch")
+		if err != nil {
+			return "", nil, err
+		}
+		branch = strings.TrimSpace(string(out))
+	}
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/rules/branches/"+url.PathEscape(branch), "--jq", `.[].ruleset_id`)
+	if err != nil && !errors.Is(err, errNotFound) {
+		return branch, nil, err
+	}
+	var sets []Ruleset
+	for _, id := range strings.Fields(string(out)) {
+		if slices.ContainsFunc(sets, func(r Ruleset) bool { return fmt.Sprint(r.ID) == id }) {
+			continue
+		}
+		out, err := g.api("repos/{owner}/{repo}/rulesets/"+id, "--jq",
+			`{id, name, url: (._links.html.href // ""), "can-bypass": (.current_user_can_bypass // ""), updated: (.updated_at // "")}`)
+		if err != nil {
+			return branch, sets, err
+		}
+		var r Ruleset
+		if err := decode(out, &r); err != nil {
+			return branch, sets, err
+		}
+		sets = append(sets, r)
+	}
+	return branch, sets, nil
+}
+
 // pullQuery asks a pull request's node id, whether GitHub would merge it
 // now, and the merge methods its repository allows, for the auto-merge
 // mutations.
