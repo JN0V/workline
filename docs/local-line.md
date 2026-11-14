@@ -35,9 +35,10 @@ workline init --review   # routes pre-push and the reviewer; proposes each doc's
 
 ## 2. Route the line
 
-Write `.workline/config.yaml` (`init` wrote its routing; replace it):
+Edit `.workline/config.yaml`: keep the `packs:` line `init` wrote (for a Python repository, `packs: [python-pytest]`), and set the rest as below:
 
 ```yaml
+packs: [python-pytest]   # keep the line init wrote, whatever it is
 forge: local
 routing:
   events:

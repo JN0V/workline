@@ -251,7 +251,7 @@ func repository(r *Report, o Options) {
 	if len(judged) > 0 {
 		r.add(Check{Area: "repository", Rule: "docs-judged", Where: where, Level: OK,
 			Message: "docs are judged " + strings.Join(judged, "; ")})
-	} else {
+	} else if cfg.Forge != "local" { // no forge, no CI: the reconciler judges from main
 		r.add(Check{Area: "repository", Rule: "docs-judged-nowhere", Where: where, Level: Warn,
 			Message: "the documentalist runs on no merge request in CI, and no gardening: docs go stale unseen, unless someone runs `workline docs`",
 			Fix:     "copy the CI templates (ci/github, ci/gitlab)"})
@@ -260,7 +260,9 @@ func repository(r *Report, o Options) {
 		r.add(Check{Area: "repository", Rule: "docs-counted-at-push", Where: where, Level: OK,
 			Message: "the push counts the docs its commits make suspect"})
 	}
-	ciTemplates(r, o, line)
+	if cfg.Forge != "local" {
+		ciTemplates(r, o, line)
+	}
 	findingsOnMergeRequests(r, o, cfg.Forge)
 	tokensScoped(r, o, cfg.Forge)
 	boundsGuard(r, o, cfg.Forge, line)
