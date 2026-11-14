@@ -213,10 +213,10 @@ func guardPre(runDir, repo string, s Settings) int {
 	kind, num, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
 	id, _ := strconv.Atoi(num)
 	if os.Getenv("WORKLINE_JUDGED") == "answered" {
-		if v, ok, err := renameAnswered(runDir); err != nil {
+		if v, matched, ok, err := renameAnswered(runDir); err != nil {
 			return fail(err)
 		} else if ok {
-			return greenEnd(runDir, id, v)
+			return greenEnd(runDir, id, v, matched)
 		}
 	}
 	if kind != "merge-request" || id <= 0 {
@@ -297,8 +297,16 @@ func guardPre(runDir, repo string, s Settings) int {
 		v = g
 		if doubt != nil {
 			doubt.Verdict = g
+			if k, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: id}); err == nil {
+				if body, ok := k.Last(forge.Marker("sticky=tester/green")); ok {
+					doubt.remembered(matchedBefore(body))
+				}
+			}
+			if len(doubt.Missing) == 0 {
+				return greenEnd(runDir, id, doubt.Verdict, doubt.Matched)
+			}
 			if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
-				return greenEnd(runDir, id, doubt.unproven("no agent judges it"))
+				return greenEnd(runDir, id, doubt.unproven("no agent judges it"), doubt.Matched)
 			}
 			if err := doubt.ask(runDir); err != nil {
 				return fail(err)
