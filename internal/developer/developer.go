@@ -342,7 +342,7 @@ func overlap(a, b []string) string {
 func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string, changed Diffs) map[int][]string {
 	closing := map[int][]forge.MergeRequest{}
 	for _, m := range mrs {
-		for _, n := range forge.Closes(m.Title, m.Body) {
+		for _, n := range forge.ClosesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
 			closing[n] = append(closing[n], m)
 		}
 	}
@@ -471,7 +471,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 		if n := testerIssue(m.Branch); n != 0 {
 			tested[n] = true
 		}
-		for _, n := range forge.Closes(m.Title, m.Body) {
+		for _, n := range forge.ClosesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
 			if _, ok := closer[n]; !ok {
 				closer[n] = m.ID
 			}
