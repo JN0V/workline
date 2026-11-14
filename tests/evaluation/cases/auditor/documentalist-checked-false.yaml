@@ -1,0 +1,9 @@
+case: auditor/documentalist-checked-false
+about: "Planted: a doc the documentalist vouched for says what its source does not. docs/tech/auth.md says access tokens last one hour; at the commit its `checked` names, the code holds `const TokenTTL = 7200`, two hours (the comment above it still says one hour, no evidence). The auditor finds the `checked` false, with the doc's words and the code's."
+given:
+  repo: vouched
+run: {role: auditor, sample: [--week, 2026-W01]}
+grade:
+  - finding: {rule: vouched-false, where: docs/tech/auth.md, message: "Access tokens last one hour"}
+  - finding: {rule: vouched-false, where: docs/tech/auth.md, message: "TokenTTL = 7200"}
+  - no-finding: {rule: vouched-true, where: docs/tech/auth.md}

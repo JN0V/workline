@@ -716,15 +716,36 @@ type claimed struct {
 	} `yaml:"source"`
 }
 
+// opensFalse tells a note that is a "false" verdict: its first word is
+// "false", alone or followed by a separator (":", "-", ".", "," ...), never by
+// more words ("False positives were checked" is not one).
+func opensFalse(text string) bool {
+	t := strings.ToLower(strings.TrimSpace(text))
+	if !strings.HasPrefix(t, "false") {
+		return false
+	}
+	rest := strings.TrimSpace(t[len("false"):])
+	if rest == "" {
+		return true
+	}
+	r := []rune(rest)[0]
+	return strings.ContainsRune(":-–—.,;!", r)
+}
+
 // check reads the answer's claims against the doc and its sources: a
 // passage the doc holds, and a source's words found outside a comment at the
 // commit `checked` names, or a name the code no longer had then.
 func check(repo string, d *documentalist.Doc, content string, answer []intent.Intention, r *Read) {
 	notes, claims := 0, 0
+	saidFalse := ""
 	for _, in := range answer {
 		switch in.Kind {
 		case "note":
 			notes++
+			text := strings.TrimSpace(fmt.Sprint(in.Value))
+			if opensFalse(text) && saidFalse == "" {
+				saidFalse = text
+			}
 			continue
 		case "claim":
 		default:
@@ -787,6 +808,9 @@ func check(repo string, d *documentalist.Doc, content string, answer []intent.In
 		r.Verdict = "false"
 	case claims > 0:
 		r.Verdict = "unproven"
+	case saidFalse != "":
+		r.Verdict = "unproven"
+		r.Unproven = append(r.Unproven, Proof{Why: "said false, " + oneLine(saidFalse, 200) + ", with no passage quoted"})
 	case notes == 0:
 		r.Verdict, r.Why = "not-read", "the judge answered nothing; for a person"
 	default:
