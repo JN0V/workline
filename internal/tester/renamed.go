@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -34,11 +36,12 @@ const FrozenUnproven = "frozen-unproven"
 // renamed is what the judge reads, and the proof's verdict kept while it
 // reads.
 type renamed struct {
-	Missing    []string        `json:"missing"`
-	Candidates []string        `json:"candidates"`
-	Runs       int             `json:"runs"`
-	Facts      string          `json:"facts"`
-	Verdict    verdict.Verdict `json:"verdict"`
+	Missing    []string          `json:"missing"`
+	Candidates []string          `json:"candidates"`
+	Runs       int               `json:"runs"`
+	Matched    map[string]string `json:"matched,omitempty"` // frozen test -> the report's name, kept from earlier heads
+	Facts      string            `json:"facts"`
+	Verdict    verdict.Verdict   `json:"verdict"`
 }
 
 // The judge's material, bounded.
@@ -135,17 +138,17 @@ func (d *renamed) ask(runDir string) error {
 
 // renameAnswered is the proof settled by the judge's answer, pre run again
 // (WORKLINE_JUDGED=answered); false when no question was kept.
-func renameAnswered(runDir string) (verdict.Verdict, bool, error) {
+func renameAnswered(runDir string) (verdict.Verdict, map[string]string, bool, error) {
 	dir := filepath.Join(runDir, "in", "judge", renamedKey)
 	data, err := os.ReadFile(filepath.Join(dir, "state.json"))
 	if os.IsNotExist(err) {
-		return verdict.Verdict{}, false, nil
+		return verdict.Verdict{}, nil, false, nil
 	} else if err != nil {
-		return verdict.Verdict{}, false, err
+		return verdict.Verdict{}, nil, false, err
 	}
 	var d renamed
 	if err := json.Unmarshal(data, &d); err != nil {
-		return verdict.Verdict{}, false, fmt.Errorf("the green proof kept for its judge cannot be read: %w", err)
+		return verdict.Verdict{}, nil, false, fmt.Errorf("the green proof kept for its judge cannot be read: %w", err)
 	}
 	var a redAnswer
 	data, err = os.ReadFile(filepath.Join(dir, "answer.yaml"))
@@ -155,37 +158,44 @@ func renameAnswered(runDir string) (verdict.Verdict, bool, error) {
 	who := fmt.Sprintf("independence: %s, %s", a.Level, a.Model)
 	switch {
 	case err != nil:
-		return d.unproven("the judge gave no answer"), true, nil
+		return d.unproven("the judge gave no answer"), d.Matched, true, nil
 	case a.Error != "":
-		return d.unproven("the judge did not answer: " + a.Error), true, nil
+		return d.unproven("the judge did not answer: " + a.Error), d.Matched, true, nil
 	case len(a.Reads) > 0:
-		return d.unproven("the judge asked to read, and no read is served"), true, nil
+		return d.unproven("the judge asked to read, and no read is served"), d.Matched, true, nil
 	case a.Unsure:
-		return d.unproven("the judge cannot tell" + said(a.Why)), true, nil
+		return d.unproven("the judge cannot tell" + said(a.Why)), d.Matched, true, nil
 	case a.Yes == nil:
-		return d.unproven("the judge said neither yes, no nor unsure"), true, nil
+		return d.unproven("the judge said neither yes, no nor unsure"), d.Matched, true, nil
 	case !*a.Yes:
 		v := d.Verdict
 		v.Findings = clone(v.Findings)
 		for _, t := range d.Missing {
 			v.Findings = append(v.Findings, missingFinding(t, d.Runs, a.Why+" ("+who+")"))
 		}
-		return settled(v), true, nil
+		return settled(v), d.Matched, true, nil
 	}
 	v := d.Verdict
 	v.Findings = clone(v.Findings)
+	matched := map[string]string{}
+	for t, n := range d.Matched {
+		matched[t] = n
+	}
+	for t, n := range matchedBy(d.Missing, d.Candidates, a.Why) {
+		matched[t] = n
+	}
 	for _, t := range d.Missing {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "frozen-test-judged", Level: "info", Where: t,
 			Message: fmt.Sprintf("not in the head's reports under its name, and the judge says it ran under another: %s (%s)", a.Why, who)})
 	}
-	return v, true, nil
+	return v, matched, true, nil
 }
 
 // greenEnd ends pre with v. A frozen test the judge said ran under
 // another name, or did not settle, is written on merge request mr too, in
 // the tester's one comment there (principle 14), applied though the run
 // blocks; the verdict is post's to give (saidPost).
-func greenEnd(runDir string, mr int, v verdict.Verdict) int {
+func greenEnd(runDir string, mr int, v verdict.Verdict, matched map[string]string) int {
 	var lines []string
 	for _, f := range v.Findings {
 		if f.Rule == FrozenUnproven || f.Rule == "frozen-test-judged" {
@@ -196,6 +206,11 @@ func greenEnd(runDir string, mr int, v verdict.Verdict) int {
 		return final(runDir, v)
 	}
 	body := "**The tester's green proof**: " + v.Summary + ".\n\nA test it froze is not in the head's reports under its name:\n\n" + strings.Join(lines, "\n") + "\n"
+	if len(matched) > 0 {
+		if data, err := json.Marshal(matched); err == nil {
+			body += "\n" + matchedMarker + string(data) + " -->\n"
+		}
+	}
 	said := []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": mr, "sticky": "green", "on-block": true, "body": body}}}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), said); err != nil {
 		return fail(err)
@@ -225,4 +240,76 @@ func (d *renamed) unproven(why string) verdict.Verdict {
 	}
 	v.Summary += ", a frozen test unproven"
 	return v
+}
+
+// matchedMarker opens, in the tester's green comment, what the judge
+// matched: each frozen test to the name a report gave it. A later head
+// that reports the same name needs no judge call.
+const matchedMarker = "<!-- workline:frozen-matched "
+
+var matchedData = regexp.MustCompile(`(?s)` + regexp.QuoteMeta(matchedMarker) + `(\{.*?\}) -->`)
+
+// matchedBefore reads the matches an earlier green comment kept.
+func matchedBefore(body string) map[string]string {
+	m := matchedData.FindStringSubmatch(body)
+	out := map[string]string{}
+	if m != nil {
+		_ = json.Unmarshal([]byte(m[1]), &out)
+	}
+	return out
+}
+
+// matchedBy reads, in the judge's why, the report name each missing test
+// ran as: a head's new test written as code in the same line or sentence
+// as the test's own name, when it is the only one there.
+func matchedBy(missing, candidates []string, why string) map[string]string {
+	out := map[string]string{}
+	var segs []string
+	for _, l := range strings.Split(why, "\n") {
+		segs = append(segs, strings.Split(l, ". ")...)
+	}
+	for _, t := range missing {
+		short := t
+		if i := strings.LastIndex(t, ":"); i >= 0 {
+			short = t[i+1:]
+		}
+		for _, seg := range segs {
+			if !strings.Contains(seg, short) && !(len(missing) == 1 && len(segs) == 1) {
+				continue
+			}
+			var found []string
+			for _, m := range codeNames.FindAllStringSubmatch(seg, -1) {
+				if n := strings.TrimSpace(m[1]); n != t && n != short && slices.Contains(candidates, n) && !slices.Contains(found, n) {
+					found = append(found, n)
+				}
+			}
+			if len(found) == 1 {
+				out[t] = found[0]
+				break
+			}
+		}
+	}
+	return out
+}
+
+// remembered takes from d each missing test an earlier head's judge
+// matched to a name the head's reports hold still, with no new call: its
+// info finding is added to d.Verdict. It leaves in d.Missing those to ask.
+func (d *renamed) remembered(before map[string]string) {
+	var left []string
+	v := d.Verdict
+	v.Findings = clone(v.Findings)
+	for _, t := range d.Missing {
+		if n, ok := before[t]; ok && slices.Contains(d.Candidates, n) {
+			if d.Matched == nil {
+				d.Matched = map[string]string{}
+			}
+			d.Matched[t] = n
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "frozen-test-judged", Level: "info", Where: t,
+				Message: fmt.Sprintf("not in the head's reports under its name, and the judge said on an earlier head it ran under another: `%s`, still reported", n)})
+			continue
+		}
+		left = append(left, t)
+	}
+	d.Missing, d.Verdict = left, v
 }
