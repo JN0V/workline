@@ -1253,9 +1253,20 @@ func settlementDiff(repo, commit string) string {
 	n := 0
 	header, open := false, false
 	file := ""
+	// A fence longer than any run of tildes opening an added line, so no
+	// line the agent wrote closes it.
+	fence := "~~~"
+	for _, l := range strings.Split(diff, "\n") {
+		if strings.HasPrefix(l, "+") {
+			run := len(l[1:]) - len(strings.TrimLeft(l[1:], "~"))
+			for len(fence) <= run {
+				fence += "~"
+			}
+		}
+	}
 	closeFence := func() {
 		if open {
-			b.WriteString("~~~\n")
+			b.WriteString(fence + "\n")
 			open = false
 		}
 	}
@@ -1275,7 +1286,7 @@ func settlementDiff(repo, commit string) string {
 				continue
 			}
 			if !open {
-				fmt.Fprintf(&b, "\n`%s`:\n\n~~~\n", file)
+				fmt.Fprintf(&b, "\n`%s`:\n\n%s\n", file, fence)
 				open = true
 			}
 			b.WriteString(l[1:] + "\n")
