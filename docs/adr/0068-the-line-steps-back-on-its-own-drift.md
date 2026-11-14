@@ -1,8 +1,8 @@
 # ADR-0068: The line steps back on its own drift, and its builders go through it
 
 - **Status:** accepted by the maintainer's merge of its pull request;
-  step 1 built, its test the person's ([§6](#6-nobody-bypasses-on-main));
-  steps 2 and 3 not built. Only [principles 4 and 7](#3-principles-4-and-7-reworded)
+  step 1 built, its test ([§6](#6-nobody-bypasses-on-main)) passed on
+  2026-11-14 ([#1463], [#1464]); steps 2 and 3 not built. Only [principles 4 and 7](#3-principles-4-and-7-reworded)
   take effect at merge. It commits to [build steps 1 to 3](#build-order);
   the old brakes hold until replaced
   ([§9](#9-the-old-brakes-hold-until-replaced)); steps 4 to 7 are
@@ -19,8 +19,8 @@
   ([PRINCIPLES.md](../PRINCIPLES.md))
 - **Amends:** principles 4 and 7, at merge; [ADR-0042] (what never
   merges alone) and [ADR-0054] (the developer's steering bound), once
-  step 1 is built; [ADR-0052] (its freeze), once step 1 passes its
-  test; [ADR-0063] (its standing stop), once step 3 is built
+  step 1 is built; [ADR-0052] (its freeze), lifted on 2026-11-14
+  when step 1 passed its test; [ADR-0063] (its standing stop), once step 3 is built
 - **Confirms:** [ADR-0038] and [ADR-0060] §1 (silence is never a yes);
   [ADR-0044] (the App's key stays with the default branch's runs);
   [ADR-0058] §1 and §2 (whoever pushes meets the forge's guards;
@@ -119,8 +119,8 @@ guard", becomes:
     autonomy, routing, gates, the reviewer's ignore list, and each
     role's level, pinned there in step 1;
   - the reviewer's and the auditor's prompts (`instruction.md`,
-    `persona.md`, `policy.md`, lenses, kinds): the oversight that reads
-    every other change;
+    `persona.md`, `policy.md`, lenses, kinds) and settings
+    (`role.yaml`): the oversight that reads every other change;
   - the wake script and its triggers (step 3); the process engineer's
     brief, if step 6 builds it.
 - **A guarded file merges on the person's label**, never by the policy
@@ -244,10 +244,11 @@ It never blocks a merge (principle 15).
 
 ### 9. The old brakes hold until replaced
 
-- **[ADR-0052]'s freeze stays** until step 1 passes
-  [§6's test](#6-nobody-bypasses-on-main). Steps 1 to 3 are its written
-  exception: the person builds them with their assistant (§5), the
-  guarded files on their label.
+- **[ADR-0052]'s freeze held** until step 1 passed
+  [§6's test](#6-nobody-bypasses-on-main), steps 1 to 3 its written
+  exception. Lifted on 2026-11-14: `main` bypassed by nobody ([#1463]),
+  the guarded list in `CODEOWNERS` ([#1464])
+  ([its amendment](0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-14-the-freeze-is-lifted)).
 - **[ADR-0063]'s standing stop stays** until step 3 is built, which
   brings its replacement: a fix repeated in one area is a trigger, and
   anyone's cord. Its other working agreements stand.
@@ -343,3 +344,5 @@ Each part of its step's issue, none blocking.
 [#89]: https://github.com/JN0V/workline/issues/89
 [#155]: https://github.com/JN0V/workline/issues/155
 [#1452]: https://github.com/JN0V/workline/pull/1452
+[#1463]: https://github.com/JN0V/workline/pull/1463
+[#1464]: https://github.com/JN0V/workline/pull/1464

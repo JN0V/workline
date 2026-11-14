@@ -33,7 +33,7 @@
   agents" keeps applying to the files that define oversight and
   authority, listed in `CODEOWNERS` (`AGENTS.md`, `CLAUDE.md`,
   `PRINCIPLES.md`, CI workflows and actions, `.workline/config.yaml`,
-  the reviewer's and the auditor's prompts), no longer to other role
+  the reviewer's and the auditor's prompts and settings), no longer to other role
   prompts, which take the line's normal path. `main`'s bypass list is
   empty: every merge, the person's too, takes the checks and
   `workline/accepted`. Releases are unchanged
