@@ -93,7 +93,11 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 	var pkgs []string
 	if strings.Contains(scope.Command, "{packages}") {
 		if pkgs = Packages(tree, scope.Files, s.Paths, s.ModuleFiles); len(pkgs) > 0 {
-			s.Command = strings.ReplaceAll(scope.Command, "{packages}", strings.Join(pkgs, " "))
+			args := strings.Join(pkgs, " ")
+			if run := caseGroups(scope.Files, pkgs); run != "" {
+				args += " -run '" + run + "'"
+			}
+			s.Command = strings.ReplaceAll(scope.Command, "{packages}", args)
 		}
 	}
 	s.Command = strings.ReplaceAll(s.Command, "{test}", scope.Test)
@@ -223,4 +227,43 @@ func pkgArg(dir string) string {
 		return "."
 	}
 	return "./" + dir
+}
+
+// conformancePkg and conformanceTest: the folder holding the conformance
+// cases (`cases/<group>/<case>.yaml`) and the test that runs each as a
+// subtest named `<group>/<case>`.
+const (
+	conformancePkg  = "tests/conformance"
+	conformanceTest = "TestConformance"
+)
+
+// caseGroups is the `-run` pattern for the conformance groups the files
+// touch, "" unless every file is a case of the one package run: a change
+// to anything else runs the package whole (the test job runs all cases).
+func caseGroups(files, pkgs []string) string {
+	if len(pkgs) != 1 || pkgs[0] != "./"+conformancePkg || len(files) == 0 {
+		return ""
+	}
+	var groups []string
+	for _, f := range files {
+		rest, ok := strings.CutPrefix(path.Clean(f), conformancePkg+"/cases/")
+		group, name, found := strings.Cut(rest, "/")
+		if !ok || !found || name == "" || group == "" || !validGroup(group) {
+			return ""
+		}
+		groups = append(groups, group)
+	}
+	slices.Sort(groups)
+	groups = slices.Compact(groups)
+	return "^" + conformanceTest + "$/^(" + strings.Join(groups, "|") + ")$"
+}
+
+// validGroup: a folder name safe in a regexp and a shell quote.
+func validGroup(g string) bool {
+	for _, r := range g {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_') {
+			return false
+		}
+	}
+	return true
 }
