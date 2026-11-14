@@ -274,7 +274,7 @@ func matchedBy(missing, candidates []string, why string) map[string]string {
 			short = t[i+1:]
 		}
 		for _, seg := range segs {
-			if !strings.Contains(seg, short) && !(len(missing) == 1 && len(segs) == 1) {
+			if !strings.Contains(seg, short) && (len(missing) != 1 || len(segs) != 1) {
 				continue
 			}
 			var found []string
