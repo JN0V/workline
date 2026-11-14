@@ -350,7 +350,7 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unrefined", Level: "info", Where: where, Message: said})
 		}
 	}
-	if !ok && s.Name == refineState && name == backlog.Keeper && had && rec.Unread != rec.Body && unreadBody(notes) {
+	if !ok && s.Name == refineState && name == backlog.Keeper && had && rec.Unread != rec.Body && unreadBody(notes) && !ranWithin(rec, ErrorBackoff) {
 		// Woken on this body, and its state says the product owner never
 		// read it (#1041): that run read nothing. Woken again, once a body.
 		ok, now = true, rec
@@ -1084,4 +1084,13 @@ func movedToReady(findings []verdict.Finding, id int) bool {
 	return slices.ContainsFunc(findings, func(f verdict.Finding) bool {
 		return f.Where == where && strings.HasPrefix(f.Rule, "done") && strings.Contains(f.Message, "to ready")
 	})
+}
+
+// ranWithin says whether the line's last run on an issue (rec.Ran) was
+// less than d ago: the same reconcile, or an event right after. What the
+// run left unread waits for the next tick, never a third call on the same
+// input at once (#1090).
+func ranWithin(rec Record, d time.Duration) bool {
+	t, err := time.Parse(time.RFC3339, rec.Ran)
+	return err == nil && clock().UTC().Sub(t) < d
 }
