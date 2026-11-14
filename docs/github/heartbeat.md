@@ -19,7 +19,11 @@ times a day here ([research](../research/reliable-schedule.md)). So in
 reconcile starts the next one:
 
 - **At its end**, even when it failed, it starts a run of the workflow
-  (`workflow_dispatch`, which the job's own token may start).
+  (`workflow_dispatch`, which the job's own token may start), unless
+  the line is idle: no issue due, no review round due, none waiting on
+  a time (a question's delay). It then says "no heartbeat" and why in
+  its summary; the schedule or a `workline:` label starts the next
+  reconcile, which starts the heartbeat again.
 - **That run's `heartbeat` job waits** the wait timer of the
   environment `workline-heartbeat`: in GitHub, on no runner, no minute
   billed. Then the `reconcile` job runs.
@@ -85,7 +89,7 @@ gh api -X PUT repos/OWNER/REPO/environments/workline-heartbeat -F wait_timer=5
 
 ## What it costs
 
-- **A day**: 24 runs, each a heartbeat job of a few seconds and the
+- **A day**: at most 24 runs (none while the line is idle), each a heartbeat job of a few seconds and the
   reconcile job.
 - **API calls**: the reconcile's own, 1 to read when it last ran, and
   2 for the next heartbeat ([the budget](calls.md#the-api-budget)).

@@ -78,6 +78,10 @@ type Result struct {
 	Woke   map[int]string `json:"woke,omitempty"`
 	Forge  string         `json:"forge,omitempty"`
 	Due    []int          `json:"due,omitempty"`
+	// Waiting: the issues waiting on a time, a question's delay before
+	// the product owner takes its assumption (ADR-0060): not due now,
+	// but the next reconcile must look again.
+	Waiting []int `json:"waiting,omitempty"`
 	// Reviews: the developer's merge requests the reconciler found a
 	// review round due on, for a CI job starting each one's run.
 	Reviews []Review `json:"reviews,omitempty"`
