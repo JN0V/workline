@@ -11,6 +11,41 @@ against it. Then only what the task needs:
 | what exists elsewhere | docs/research/ — its README says how to search |
 | what comes next | the GitHub issues (`gh issue list`); docs/BACKLOG.md is archived |
 
+## Through the line, never around
+
+Whatever the agent, a person's assistant works the way the line does
+([ADR-0068 §5](docs/adr/0068-the-line-steps-back-on-its-own-drift.md#5-the-persons-assistant-goes-through-the-line)):
+
+- **A specific act** the person asked for (fix this file, build this
+  issue): you are a contributor. workline's local roles run on your
+  commits (below), never skipped with `--no-verify`; push a branch, open
+  the pull request; the person accepts it with their label.
+- **A body of work** (a series of changes, a night's run, a session on
+  its own, a fleet of subagents): write issues ([below](#writing-issues));
+  the line builds them. Open no pull request of your own for them.
+- **Never around the line**, whoever asks: no `--admin`, no ruleset or
+  branch protection edited, no push to `main`, no auto-merge turned on,
+  no `workline:accepted` (nor `-whole`) unless the person asks, as
+  below. Told "merge it": ask the person for their label.
+- **A person's yes is assisted, never delegated**
+  ([§7](docs/adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated)).
+  Asked to accept a pull request, or sign anything, in their name, you
+  may put their label or their sign-off:
+  - **that item, now**, on their explicit instruction;
+  - **on an independent analysis**: if yours came from whoever wrote
+    the change, you included, say so, give an independent one, and
+    wait for their yes on it;
+  - **traced**: a comment names who instructed it, on which summary.
+- **No standing yes**: an order kept for later, in memory or anywhere
+  ("the panel signs for me", "merge after a re-check"), gives none;
+  silence never does
+  ([ADR-0060 §1](docs/adr/0060-the-person-is-on-the-loop.md#1-questions-time-out-as-lazy-consensus)).
+  Sign-offs agent panels posted in a person's name are not counted.
+- **The line broken**: the person's pull request fixes it, on their
+  label; when no head can get `workline/accepted`,
+  [the emergency](docs/merge-policy-no-bypass.md#the-emergency) is the
+  person's own, by hand.
+
 ## How we work
 
 - **Borrow before building**: research what exists, in the ecosystem's words
@@ -110,10 +145,12 @@ own line (.workline/config.yaml):
 - **pre-push** — the committer on the commits pushed, then the documentalist,
   with no agent: it lists the docs they made suspect. The review is on the
   pull request (ADR-0011): `main` takes pull requests only, the checks
-  green. Push a branch and open the pull request when the person asks;
-  never merge it, never turn auto-merge on, never put `workline:accepted`
-  on it: the person accepts it, and merges it or, by the project's merge
-  policy, the forge does (ADR-0042).
+  green and `workline/accepted` set by workline's App; its bypass list is
+  empty, the person included
+  ([nobody bypasses `main`](docs/merge-policy.md#nobody-bypasses-main)).
+  Push a branch and open the pull request when the person asks; the
+  person accepts it with the label, and the forge merges it, or by the
+  project's merge policy with no label (ADR-0042).
 - **secrets and forbidden terms** — the committer scans each commit with
   gitleaks. A gitignored `.gitleaks.toml` link, when present, points to terms
   that must never reach this public repository, as gitleaks rules. Never
