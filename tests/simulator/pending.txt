@@ -40,4 +40,4 @@ trial-36-replay i1-status expected-end
 # left unrefined, on a new input, which ADR-0063 says it must not do
 # (#1091); then refine-capped, no status, blocked for the week, read
 # again at its end (its K ticks from there not over: quiet).
-trial-37-replay same-tick-twice i1-status expected-end
+trial-37-replay i1-status expected-end
