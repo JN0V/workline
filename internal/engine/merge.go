@@ -555,7 +555,7 @@ func ownRebuild(repo, covered, tip, base string) bool {
 	return err == nil && own == tree
 }
 
-// pushedAfter says what was pushed to a merge request after the yes given
+// pushedAfterAt says what was pushed to a merge request after the yes given
 // at yes, "" nothing but workline's own: the yes covers the head it was
 // given on, as approvals reset on a push (ADR-0042). The head it was given
 // on is the last pushed before it, as the forge says; a forge that does
@@ -563,13 +563,7 @@ func ownRebuild(repo, covered, tip, base string) bool {
 // checked by its tree, never taken on its trailer: `follow`'s update
 // (OwnMerge, ownRebuild), or a commit changing only the lines workline
 // writes in the docs (ownRecord), as a merge of the base settles them.
-func pushedAfter(o FollowOptions, branch string, st forge.MergeState, yes, baseTip, tip string) (string, error) {
-	said, _, err := pushedAfterAt(o, branch, st, yes, baseTip, tip)
-	return said, err
-}
-
-// pushedAfterAt is pushedAfter, the commit that was pushed too ("" when
-// none is one commit).
+// It gives the commit that was pushed too ("" when none is one commit).
 func pushedAfterAt(o FollowOptions, branch string, st forge.MergeState, yes, baseTip, tip string) (string, string, error) {
 	repo := o.Repo
 	own := func(c string) bool {
@@ -1243,7 +1237,7 @@ func settlementDiff(repo, commit string) string {
 	cmd := exec.Command("git", "-C", repo, "merge-tree", "--write-tree", "-z", "--no-messages", parts[1], parts[2])
 	raw, err := cmd.Output()
 	var ee *exec.ExitError
-	if err != nil && !(errors.As(err, &ee) && ee.ExitCode() == 1) {
+	if err != nil && (!errors.As(err, &ee) || ee.ExitCode() != 1) {
 		return ""
 	}
 	tree, _, _ := strings.Cut(string(raw), "\x00")
