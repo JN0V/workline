@@ -1,4 +1,4 @@
-after refine, the trial went on to tests, the simulator stopped; unused: 1 developer, 15 product-owner, 5 tester
+after refine, the trial went on to tests, the simulator stopped; unused: 1 developer, 16 product-owner, 5 tester
 The trial's product owner was woken again by the spec reviewer's findings, between its
 answers; the simulator's line has no reviewer. The product owner's first answer names the
 code it lacks, given at once, run again in its step (ADR-0063, step 2); after its second answer, read
