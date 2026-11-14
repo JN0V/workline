@@ -1,0 +1,34 @@
+case: tester/green-frozen-renamed-judged-kept-on-later-head
+about: >
+  Matched once: a frozen test named from its file (file:name) is in no
+  head report under that name, and the judge matches it to a name the
+  reports give. A later head reports that same name: the test is
+  matched with no judge call, so the two runs together call the judge
+  once.
+given:
+  repo: tested-draft
+  setup:
+    - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && git commit -qam 'feat: multiply'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-renamed-ran.yaml"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        body: "Closes #3"
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"tests\":[\"tests/test_mul_by_zero.sh:mulByZero\",\"tests.test_mul_two_by_three\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+run:
+  role: tester
+  event: merge-request
+  target: {merge-request: 1}
+  ai: "fake:tester-two-scenarios"
+  then: again
+  again-after: ["printf 'half() { echo $(($1 / 2)); }\\n' >> lib.sh && git commit -qam 'feat: halve'"]
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: frozen-test-judged, level: info, where: "tests/test_mul_by_zero.sh:mulByZero", message: "ran under another"}]
+  no-findings:
+    - {rule: frozen-test-missing, where: "tests/test_mul_by_zero.sh:mulByZero"}
+    - {rule: frozen-unproven, where: "tests/test_mul_by_zero.sh:mulByZero"}
