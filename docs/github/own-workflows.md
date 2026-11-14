@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/actions/tests/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 8538d558
+checked: 2e07991c
 verified: agent:claude-code
 judged: 220b6dc
 ---
@@ -36,6 +36,9 @@ engine:
   main's whole-repository checks are
   `route main`'s, once a merge ([main after a merge](../main-after-merge.md));
   gardening installs lychee, for the links to other sites, at night;
+- gardening's backlog runs every two hours too, at :47 UTC, one at a
+  time, for a push of six hours; run by hand, its input `skip` leaves
+  roles out (`documentalist`: the backlog alone);
 - a project never runs, in a commit's checks, the pin that commit ships: a
   pull request moving the templates to a version not yet tagged would
   download nothing, as on each release from v0.2.0 to v0.2.3
