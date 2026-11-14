@@ -130,7 +130,7 @@ func readTree(g git, before, after string, add func(kind, key, text string)) err
 		switch {
 		case isADR(c.path):
 			add(Contract, "adr:"+c.path, fmt.Sprintf("ADR %s: `%s`", c.verb(), c.path))
-		case strings.HasSuffix(c.path, ".go") && !strings.HasSuffix(c.path, "_test.go"):
+		case strings.HasSuffix(c.path, engineSource) && !strings.HasSuffix(c.path, engineTests):
 			goChanged = true
 			cmdChanged = cmdChanged || strings.HasPrefix(c.path, "cmd/")
 		}
@@ -148,12 +148,12 @@ func readTree(g git, before, after string, add func(kind, key, text string)) err
 		readRole(g, from, after, name, add)
 	}
 	if goChanged {
-		for _, code := range added(g.literals(from, ruleCode, "*.go"), g.literals(after, ruleCode, "*.go")) {
+		for _, code := range added(g.literals(from, ruleCode, engineGlob), g.literals(after, ruleCode, engineGlob)) {
 			add(Contract, "rule:"+code, fmt.Sprintf("rule code added: `%s`", code))
 		}
 	}
 	if cmdChanged {
-		for _, name := range added(g.literals(from, command, "cmd/*.go"), g.literals(after, command, "cmd/*.go")) {
+		for _, name := range added(g.literals(from, command, commandGlob), g.literals(after, command, commandGlob)) {
 			add(Contract, "command:"+name, fmt.Sprintf("command added: `%s`", name))
 		}
 	}
@@ -413,6 +413,16 @@ func isPrompt(rest string) bool {
 	return strings.HasSuffix(rest, ".md") && rest != "README.md" && !strings.HasPrefix(rest, "docs/")
 }
 
+// The contract is read as workline's engine lays it out, in Go: its rule
+// codes and commands are its own source's literals, whatever the language
+// of a project the line runs on.
+const (
+	engineSource = ".go"      // converges: workline's own engine is Go; a project's language is never read here
+	engineTests  = "_test.go" // converges: the engine's own tests, left out of its contract
+	engineGlob   = "*.go"     // converges: workline's own engine is Go
+	commandGlob  = "cmd/*.go" // converges: workline's commands, in its own Go source
+)
+
 var (
 	ruleCode = regexp.MustCompile(`Rule: +"([^"]+)"`)
 	command  = regexp.MustCompile(`\{name: +"([a-z][a-z0-9-]*)"`)
@@ -591,7 +601,7 @@ func (g git) literals(rev string, re *regexp.Regexp, glob string) []string {
 	if rev == emptyTree {
 		return nil
 	}
-	out, _ := g.run("grep", "-h", "-o", "-E", re.String(), rev, "--", glob, ":!*_test.go")
+	out, _ := g.run("grep", "-h", "-o", "-E", re.String(), rev, "--", glob, ":!*"+engineTests)
 	var all []string
 	for _, m := range re.FindAllStringSubmatch(out, -1) {
 		all = append(all, m[1])

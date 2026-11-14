@@ -1,5 +1,5 @@
 case: engine/wake-no-need
-about: "A merge request merged that closes no issue is listed under need laundering, by who opened it; one merged before the range is not (ADR-0068 §8, #1461)."
+about: "A merge request merged that closes no issue is listed under laundered needs, by who opened it; one merged before the range is not (ADR-0068 §8, #1461)."
 given:
   repo: basic
   setup:
@@ -16,5 +16,5 @@ given:
 run: {cli: [wake, --forge, "fake:../forge.json", --range, "main~2..main"]}
 expect:
   exit: 0
-  stdout: ["### Need laundering", "closes no issue: #12, by `alice`"]
+  stdout: ["### Laundered needs", "closes no issue: #12, by `alice`"]
   stdout-lacks: ["#11", "#13", "bob", "carol"]

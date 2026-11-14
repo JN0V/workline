@@ -29,7 +29,7 @@ var sections = []struct{ kind, title string }{
 	{Contract, "Growth of the contract"},
 	{Prompt, "Prompts that steer the line"},
 	{Symptom, "Symptoms without cause"},
-	{Need, "Need laundering"},
+	{Need, "Laundered needs"},
 	{Bypass, "Nobody bypasses"},
 	{Cord, "The cord"},
 }
