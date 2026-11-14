@@ -49,7 +49,7 @@ func (f *Fake) MergedSince(since time.Time) ([]MergeRequest, error) {
 			as = strings.TrimSpace(string(sha))
 		}
 		out = append(out, MergeRequest{ID: m.ID, Branch: m.Branch, Base: m.Base, Here: !m.Fork, Title: m.Title, Author: m.Author, Bot: m.Bot,
-			Head: fmt.Sprintf("refs/pull/%d/head", m.ID), MergedAs: as, MergedAt: at.UTC().Format(time.RFC3339)})
+			Head: fmt.Sprintf("refs/pull/%d/head", m.ID), MergedAs: as, MergedAt: at.UTC().Format(time.RFC3339), HeadSHA: f.resolve(m.MergedHead)})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil

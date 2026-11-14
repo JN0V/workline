@@ -196,6 +196,10 @@ type FakeItem struct {
 	// main~1) — what MergedSince lists.
 	MergedAt string `json:"merged-at,omitempty"`
 	MergedAs string `json:"merged-as,omitempty"`
+	// MergedHead: the revision its head was at when it merged (HeadSHA);
+	// Closes, the issues it closes as the forge links them (Woken).
+	MergedHead string `json:"merged-head,omitempty"`
+	Closes     []int  `json:"closes,omitempty"`
 	// Closing: who closed an issue, as Closing reads it.
 	Closing *LabelEvent `json:"closing,omitempty"`
 	// Rank: a label's, where the forge ranks them (GitLab's prioritized

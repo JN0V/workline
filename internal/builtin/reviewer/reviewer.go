@@ -1166,6 +1166,9 @@ type Lens struct {
 		Question string `yaml:"question"` // empty: judgeQuestion
 		Reads    string `yaml:"reads"`    // tests: the tests that touch the cause's file; issue: the issues the change closes; code: the code a spec's finding stands on
 	} `yaml:"judge"`
+	// nit: its findings are nits, never judged nor asked of the developer,
+	// a lens advisory until it is calibrated (ADR-0068, step 4).
+	Severity string `yaml:"severity"`
 }
 
 // readLens reads a lens's file, its front matter apart from its text.
@@ -1201,6 +1204,9 @@ func readLens(repo, name string) (Lens, error) {
 	}
 	if l.Hints != "" && l.Hints != storyRule {
 		return l, fmt.Errorf("lens %q: hints %q: only `%s` is known", name, l.Hints, storyRule)
+	}
+	if l.Severity != "" && l.Severity != "nit" {
+		return l, fmt.Errorf("lens %q: severity %q: only `nit` is known", name, l.Severity)
 	}
 	return l, nil
 }
@@ -1419,6 +1425,9 @@ func lensFindings(repo string, s Settings, st state, ls []string, answers []inte
 			return err
 		}
 		f, why := found(repo, st, lens, l.Cites == "claim", a.Value, "")
+		if l.Severity == "nit" && f.Severity == "important" {
+			f.Severity = "nit"
+		}
 		if why != "" {
 			c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-unfounded", Level: "warn",
 				Message: fmt.Sprintf("dropped, from the %s lens: %q — %s", lens, f.Title, why)})

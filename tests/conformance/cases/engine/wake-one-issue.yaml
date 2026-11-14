@@ -1,0 +1,24 @@
+case: engine/wake-one-issue
+about: "The wake keeps one issue: a later merge's triggers are added to it, edited in place, never commented on nor opened twice; a trigger is kept 7 days; nothing new leaves it as it is; the step-back label is made when missing (ADR-0068 §8, #1461)."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p docs/adr && printf '# ADR-0001\\n' > docs/adr/0001-first.md && git add . && git commit -q -m 'docs: a decision'"
+  forge:
+    issues:
+      - id: 1
+        title: "workline: where the line may be drifting"
+        labels: []
+        body: '**1 trigger met**. <!-- workline:wake {"entries":[{"kind":"contract","key":"contract:adr:docs/adr/0000-old.md","text":"ADR added: `docs/adr/0000-old.md`","at":"abc","day":"2026-01-01"},{"kind":"contract","key":"contract:adr:docs/adr/9999-gone.md","text":"ADR added: `docs/adr/9999-gone.md`","at":"abc","day":"2025-12-20"}]} -->'
+    merge-requests: []
+run:
+  sh: "workline wake --forge fake:../forge.json --issue && workline wake --forge fake:../forge.json --issue"
+expect:
+  exit: 0
+  stderr: ["issue #1 kept", "issue #1 left as it is"]
+  forge:
+    issues:
+      - {id: 1, body-contains: ["ADR added: `docs/adr/0000-old.md`", "ADR added: `docs/adr/0001-first.md`", "<!-- workline:wake "], body-lacks: "9999-gone", comments: 0, posted: 0, edits: 1}
+      - {id: 2, absent: true}
+    labels:
+      - {id: 1, title: step-back}

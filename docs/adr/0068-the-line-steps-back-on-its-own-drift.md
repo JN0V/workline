@@ -2,7 +2,8 @@
 
 - **Status:** accepted by the maintainer's merge of its pull request;
   step 1 built, its test ([§6](#6-nobody-bypasses-on-main)) passed on
-  2026-11-14 ([#1463], [#1464]); steps 2 and 3 not built. Only [principles 4 and 7](#3-principles-4-and-7-reworded)
+  2026-11-14 ([#1463], [#1464]); steps 2 and 3 built ([#1465],
+  [#1466]). Only [principles 4 and 7](#3-principles-4-and-7-reworded)
   take effect at merge. It commits to [build steps 1 to 3](#build-order);
   the old brakes hold until replaced
   ([§9](#9-the-old-brakes-hold-until-replaced)); steps 4 to 7 are
@@ -20,7 +21,8 @@
 - **Amends:** principles 4 and 7, at merge; [ADR-0042] (what never
   merges alone) and [ADR-0054] (the developer's steering bound), once
   step 1 is built; [ADR-0052] (its freeze), lifted on 2026-11-14
-  when step 1 passed its test; [ADR-0063] (its standing stop), once step 3 is built
+  when step 1 passed its test; [ADR-0063] (its standing stop), lifted
+  on 2026-11-14 when step 3 was built
 - **Confirms:** [ADR-0038] and [ADR-0060] §1 (silence is never a yes);
   [ADR-0044] (the App's key stays with the default branch's runs);
   [ADR-0058] §1 and §2 (whoever pushes meets the forge's guards;
@@ -249,9 +251,11 @@ It never blocks a merge (principle 15).
   exception. Lifted on 2026-11-14: `main` bypassed by nobody ([#1463]),
   the guarded list in `CODEOWNERS` ([#1464])
   ([its amendment](0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-14-the-freeze-is-lifted)).
-- **[ADR-0063]'s standing stop stays** until step 3 is built, which
+- **[ADR-0063]'s standing stop held** until step 3 was built, which
   brings its replacement: a fix repeated in one area is a trigger, and
-  anyone's cord. Its other working agreements stand.
+  anyone's cord. Lifted on 2026-11-14, after [#1466]
+  ([its amendment](0063-every-open-issue-is-due-waiting-or-done.md#amendment-2026-11-14-the-standing-stop-is-lifted)).
+  Its other working agreements stand.
 - **[ADR-0052]'s v1.0 bar stands** until step 7.
 
 ## Not chosen
@@ -297,7 +301,8 @@ Listed, not decided; each its own record or amendment, after a
 real-use round on steps 1 to 3.
 
 4. **A simplicity lens** in the reviewer, advisory first, calibrated on
-   past pull requests.
+   past pull requests. Built ([#1496]): its findings nits until
+   calibrated ([#1497]).
 5. **The auditor's draw** of a person's own changes, an assistant's
    included ([ADR-0046]).
 6. **The process engineer** ([ADR-0019], [#89]): reads the wake script
@@ -346,3 +351,7 @@ Each part of its step's issue, none blocking.
 [#1452]: https://github.com/JN0V/workline/pull/1452
 [#1463]: https://github.com/JN0V/workline/pull/1463
 [#1464]: https://github.com/JN0V/workline/pull/1464
+[#1465]: https://github.com/JN0V/workline/pull/1465
+[#1466]: https://github.com/JN0V/workline/pull/1466
+[#1496]: https://github.com/JN0V/workline/pull/1496
+[#1497]: https://github.com/JN0V/workline/issues/1497

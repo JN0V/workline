@@ -139,6 +139,9 @@ type Ruleset struct {
 	// CanBypass is GitHub's current_user_can_bypass for this token's
 	// user: never, pull_requests_only, always or exempt; "" unsaid.
 	CanBypass string `json:"can-bypass"`
+	// Updated is when it last changed, RFC 3339: the wake script prints a
+	// change (ADR-0068 §6); "" when the forge does not say.
+	Updated string `json:"updated,omitempty"`
 }
 
 // Bypasser is a forge whose branches hold rulesets that may let some

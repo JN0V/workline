@@ -51,6 +51,8 @@ so its own fix cannot merge:
 
 The ruleset's history and the rule suites keep each step; the
 emergency is a deliberate edit, never a flag on a routine command.
+[The wake](wake.md) prints the ruleset's change at the next merge, and
+a head merged without the App's `workline/accepted`.
 
 ## On GitLab Premium
 

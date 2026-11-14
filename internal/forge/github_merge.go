@@ -323,7 +323,7 @@ func (g *github) Bypass(branch string) (string, []Ruleset, error) {
 			continue
 		}
 		out, err := g.api("repos/{owner}/{repo}/rulesets/"+id, "--jq",
-			`{id, name, url: (._links.html.href // ""), "can-bypass": (.current_user_can_bypass // "")}`)
+			`{id, name, url: (._links.html.href // ""), "can-bypass": (.current_user_can_bypass // ""), updated: (.updated_at // "")}`)
 		if err != nil {
 			return branch, sets, err
 		}
