@@ -1618,7 +1618,8 @@ func (r *preRun) leaveForNextRound() error {
 	said := newPersonSaid(r.repo)
 	for i := range r.findings {
 		if r.adopting || r.readerOnly {
-			break // adoption said itself what it left for the next round; the reader's round leaves nothing
+			said.unreconsidered() // no doc's line was decided: what was kept stands
+			break                 // adoption said itself what it left for the next round; the reader's round leaves nothing
 		}
 		f := &r.findings[i]
 		// Only the docs this run could put before the agent are left for its
@@ -1641,6 +1642,7 @@ func (r *preRun) leaveForNextRound() error {
 		}
 		if sd.earlier {
 			f.Rule = "" // what the earlier round said of it stands: left out below
+			said.keep(f.Where)
 			continue
 		}
 		if sd.note != "" {

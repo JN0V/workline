@@ -38,6 +38,19 @@ type personSaid struct {
 	prior map[string]keptRecord // said at an earlier head, by doc
 	now   map[string]keptRecord // said or still standing, by doc
 	head  string
+	skip  bool // the run decided no doc's line: nothing is written
+}
+
+// unreconsidered says the run decided no doc's line, so what is kept stands.
+func (p *personSaid) unreconsidered() { p.skip = true }
+
+// keep carries a doc's earlier record, for a doc this run did not reconsider.
+func (p *personSaid) keep(doc string) {
+	if r, ok := p.prior[doc]; ok {
+		if _, done := p.now[doc]; !done {
+			p.now[doc] = r
+		}
+	}
 }
 
 // newPersonSaid reads, on a person's merge request, what the comment
@@ -106,7 +119,7 @@ func (p *personSaid) line(doc string, d *Doc, text string) string {
 
 // write tells post, when what the comment keeps changes, what it keeps.
 func (p *personSaid) write(runDir string) error {
-	if !p.on || hiddenJSON(p.sorted(p.now)) == hiddenJSON(p.sorted(p.prior)) {
+	if !p.on || p.skip || hiddenJSON(p.sorted(p.now)) == hiddenJSON(p.sorted(p.prior)) {
 		return nil
 	}
 	data, err := yaml.Marshal(p.sorted(p.now))
