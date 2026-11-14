@@ -1,0 +1,27 @@
+case: developer/refused-at-apply-sent-to-a-person
+about: >
+  Refused at apply: the Scope names a CI workflow, a file the line may
+  not write, and the developer's only change is that one. Its code is
+  refused as protected, so nothing is written: the issue goes to a
+  person in the same run, its claim off, not after the claim kept
+  24 hours.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - {id: 2, title: "Add a CI workflow", labels: ["workline:ready"], body: "## Need\n\nI want a CI workflow.\n\n## Scope\n\n- `.github/workflows/ci.yml`: run on push.\n"}
+run: {develop: [], ai: "fake:developer-protected-only"}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: gate-file, level: warn, where: .github/workflows/ci.yml}
+  files:
+    .github/workflows/ci.yml: {exists: false}
+  forge:
+    issues:
+      - id: 2
+        labels: ["workline:blocked"]
+        comment-contains: ["`.github/workflows/ci.yml`", "a person"]
+        comment-lacks: ["24 hours after it was taken"]
