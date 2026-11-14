@@ -27,6 +27,7 @@ One YAML file a language or ecosystem:
 | `test-homes` | where a test's code lives, read before the generic homes: the tester's `test-homes` when it sets none |
 | `test-command` | a suggested test command, given by `workline doctor` when the tester has none; never run unless you set it |
 | `aside` | folders beside the code, ranked after it: the generic pack's only, for now |
+| `build-errors` | the rows the tester reads a build a new test breaks with (the shape of its `build-errors` setting): the tester's default, a setting set wins |
 | `code-navigation` | how a language's functions are found with no build: [below](#code-navigation) |
 
 - **A field it does not read** is refused, with the pack's name: never

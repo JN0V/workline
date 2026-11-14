@@ -75,6 +75,42 @@ type Pack struct {
 	// internal/codenav: how a file's functions and declarations are found
 	// with no build.
 	Code []Code `yaml:"code-navigation"`
+	// BuildErrors are the rows the tester reads a build broken by a new
+	// test with, the tester's build-errors setting when the project sets
+	// none: the shape of that setting (docs/packs.md).
+	BuildErrors []BuildError `yaml:"build-errors"`
+}
+
+// BuildError is one build-errors row: an error line of the test command's
+// output, the messages naming what the code lacks, and the tests a file
+// declares.
+type BuildError struct {
+	Error       string   `yaml:"error"`
+	MissingName []string `yaml:"missing-name,omitempty"`
+	NameLine    string   `yaml:"name-line,omitempty"`
+	MessageLine string   `yaml:"message-line,omitempty"`
+	TestName    string   `yaml:"test-name,omitempty"`
+}
+
+func (b BuildError) row() map[string]any {
+	m := map[string]any{"error": b.Error}
+	if len(b.MissingName) > 0 {
+		names := make([]any, len(b.MissingName))
+		for i, n := range b.MissingName {
+			names[i] = n
+		}
+		m["missing-name"] = names
+	}
+	if b.NameLine != "" {
+		m["name-line"] = b.NameLine
+	}
+	if b.MessageLine != "" {
+		m["message-line"] = b.MessageLine
+	}
+	if b.TestName != "" {
+		m["test-name"] = b.TestName
+	}
+	return m
 }
 
 // Code is how one language's functions are found, and how its
@@ -340,12 +376,20 @@ func OfProject(repo string) ([]Pack, error) {
 func TesterDefaults(listed []Pack) map[string]any {
 	var paths []any
 	var homes []any
+	var errs []any
+	seenE := map[string]bool{}
 	seenP, seenH := map[string]bool{}, map[Home]bool{}
 	all := slices.Clone(listed)
 	if !slices.ContainsFunc(listed, func(p Pack) bool { return p.Name == Generic }) {
 		all = append(all, Builtin()[Generic])
 	}
 	for _, p := range all {
+		for _, e := range p.BuildErrors {
+			if !seenE[e.Error] {
+				seenE[e.Error] = true
+				errs = append(errs, e.row())
+			}
+		}
 		for _, t := range p.TestPaths {
 			if !seenP[t] {
 				seenP[t] = true
@@ -365,6 +409,9 @@ func TesterDefaults(listed []Pack) map[string]any {
 	}
 	if len(homes) > 0 {
 		out["test-homes"] = homes
+	}
+	if len(errs) > 0 {
+		out["build-errors"] = errs
 	}
 	return out
 }
