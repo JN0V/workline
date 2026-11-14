@@ -462,7 +462,9 @@ jobs:
       # failed: its run waits the environment's wait timer, in minutes.
       # No such environment, or no wait timer (a private repository on
       # GitHub's free plan has none), no heartbeat: said, the schedule and
-      # the events run the reconciler as they can.
+      # the events run the reconciler as they can. An idle line (no issue
+      # due, no review round due, none waiting on a time) starts none: the
+      # schedule or a `workline:` label starts it again (job reconcile-due).
       - name: The next reconcile, by the heartbeat
         if: always()
         env: {GH_TOKEN: "${{ github.token }}"}
@@ -472,6 +474,12 @@ jobs:
           case "$wait" in ''|*[!0-9]*) wait=0 ;; esac
           if [ "$wait" -lt 5 ]; then
             echo "no heartbeat: no environment workline-heartbeat with a wait timer of 5 minutes or more; the schedule and the line's events start the next reconcile, when GitHub runs them" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # The reconcile's own list; none read (it failed), the line is not
+          # called idle.
+          if [ -s due.json ] && jq -e '((.due // []) + (.reviews // []) + (.waiting // [])) | length == 0' due.json >/dev/null 2>&1; then
+            echo "no heartbeat: the line is idle, nothing due and nothing waiting on a time; the schedule or a workline: label starts the next reconcile" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           if gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f reconcile=next; then

@@ -402,6 +402,7 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		// Acted on, and what it lacks is a person's: said, with the day
 		// the product owner takes its assumption, never silent (#1082).
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: where, Message: personWaits})
+		res.Waiting = append(res.Waiting, is.ID) // a time pending: the heartbeat goes on
 		return nil, nil, nil
 	}
 	if !ok && s.Name == refineState && name == backlog.Keeper {
