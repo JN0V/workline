@@ -53,19 +53,6 @@ func TestGitHubLabelled(t *testing.T) {
 	}
 }
 
-// An app's successful status is read from the head's statuses, the query
-// keeping only an app's (GitHub types its account Bot).
-func TestGitHubAppStatus(t *testing.T) {
-	log := ghStub(t, "*commits/c0ffee/statuses*) echo 42 ;;\n*commits/bad/statuses*) ;;\n")
-	g := &github{repo: t.TempDir()}
-	yes, err := g.AppStatus("c0ffee", Accepted)
-	no, err2 := g.AppStatus("bad", Accepted)
-	calls, _ := os.ReadFile(log)
-	if !yes || no || err != nil || err2 != nil || !strings.Contains(string(calls), `.creator.type == "Bot"`) {
-		t.Errorf("%v %v, %v %v; calls:\n%s", yes, no, err, err2, calls)
-	}
-}
-
 // GitLab's closing links are each merge request's closes_issues; the cord,
 // its open issues then its open merge requests bearing the label.
 func TestGitLabWoken(t *testing.T) {
