@@ -1,0 +1,12 @@
+case: reviewer/role-prompt-is-read
+about: "Reviewer reads a role prompt: a pull request changing a tester's prompt is code to the reviewer, which runs with no AI and reads the prompt, so it says the change waits for a person's review rather than that no code changed."
+given:
+  repo: reviewed
+  setup:
+    - "mkdir -p roles/tester && printf 'Write the tests first.\\n' > roles/tester/instruction.md && git add roles && git commit -qm 'feat: a tester prompt'"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: not-reviewed, level: warn}
