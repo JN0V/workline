@@ -24,6 +24,7 @@ import (
 	"github.com/JN0V/workline/internal/board"
 	wlclock "github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
@@ -49,6 +50,9 @@ type scopeIndex struct {
 	err   error
 	said  bool // the index could not be read, said once
 	names map[string]bool
+	// builtins are the listed packs' built-in names, read once.
+	builtins []string
+	packed   bool
 }
 
 func newScopeIndex(repo string) *scopeIndex {
@@ -77,7 +81,7 @@ func scopeKind(w string) string {
 // Markdown holds as a word (docs and decision records keep old names).
 func (x *scopeIndex) gone(body string) ([]string, error) {
 	var out []string
-	for _, w := range work.ScopeWords(work.ByMeaning(body)[work.Scope].Text) {
+	for _, w := range scopeWordsHeld(work.ByMeaning(body)[work.Scope].Text) {
 		kind := scopeKind(w)
 		if kind == "" || slices.Contains(out, w) {
 			continue
@@ -94,6 +98,9 @@ func (x *scopeIndex) gone(body string) ([]string, error) {
 				out = append(out, w)
 			}
 		case "name":
+			if x.builtin(w) {
+				continue
+			}
 			held, err := x.holds(w)
 			if err != nil {
 				return nil, err
@@ -104,6 +111,30 @@ func (x *scopeIndex) gone(body string) ([]string, error) {
 		}
 	}
 	return out, nil
+}
+
+// scopeWordsHeld are a Scope's words but those of a line `New:`: files
+// still to be written are not in the code yet, by design.
+func scopeWordsHeld(scope string) []string {
+	var kept []string
+	for _, line := range strings.Split(scope, "\n") {
+		if !work.MarksNew(line) {
+			kept = append(kept, line)
+		}
+	}
+	return work.ScopeWords(strings.Join(kept, "\n"))
+}
+
+// builtin says whether w, a code name, is one the project's listed
+// language packs give as the language's own (`builtin-names`): the
+// whole word, or its last part. A pack that cannot be read gives none.
+func (x *scopeIndex) builtin(w string) bool {
+	if !x.packed {
+		x.packed = true
+		x.builtins = role.PackBuiltinNames(x.repo)
+	}
+	name := strings.TrimSuffix(w, "()")
+	return slices.Contains(x.builtins, name) || slices.Contains(x.builtins, name[strings.LastIndex(name, ".")+1:])
 }
 
 func (x *scopeIndex) load() error {
