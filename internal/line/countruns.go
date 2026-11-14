@@ -109,7 +109,11 @@ func countRun(f forge.Forge, mrID int, dir string) error {
 		if err != nil {
 			return err
 		}
-		if now, _, _ := recordCommentIn(fresh); now != body && try < 3 {
+		if now, _, _ := recordCommentIn(fresh); now != body {
+			if try >= 3 {
+				// Never write the older record over a newer one.
+				return fmt.Errorf("the issue's record kept changing while counting")
+			}
 			comments = fresh // written meanwhile: counted on that one
 			continue
 		}
