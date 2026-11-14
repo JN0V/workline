@@ -34,11 +34,12 @@ events: [issue, schedule, merge-request, objection, curate]
 requires: [git]
 
 # Turning a person's scenario into a test that fails for the right reason,
-# in the project's own framework, is judgement on code.
+# in the project's own framework, is judgement on code; high effort keeps
+# the answer's format (docs/research/models-measured.md, #1536).
 model:
   capability: coding
   tier: standard
-  effort: medium
+  effort: high
   timeout: 10m
 
 context:
