@@ -102,7 +102,10 @@ func Counted(notes []forge.Note, is forge.Issue) []forge.Note {
 // countsAnswer says whether a comment, not the engine's, is one that
 // counts: a person's, the reporter's or the project's.
 func countsAnswer(n forge.Note, is forge.Issue) bool {
-	return !(n.Bot || n.Author == "" && !n.Insider || (n.Author != is.Author && !n.Insider) || plusOne.MatchString(strings.TrimSpace(n.Body)))
+	return !n.Bot &&
+		(n.Author != "" || n.Insider) &&
+		(n.Author == is.Author || n.Insider) &&
+		!plusOne.MatchString(strings.TrimSpace(n.Body))
 }
 
 // Heard is how many counted comments the state says the role read; a
