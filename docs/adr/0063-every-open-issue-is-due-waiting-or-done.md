@@ -19,9 +19,9 @@
   [routing.md](../spec/routing.md#once-a-state-the-record)
 - **Research:** [line-liveness.md](../research/line-liveness.md)
 - **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-replaced)
-  (not built): the standing stop holds until ADR-0068's step 3, the
-  wake script, is built, then is superseded: a fix repeated in one area
-  is a wake script trigger and anyone's `step-back` cord. The other
+  (step 3 built, [#1461](https://github.com/JN0V/workline/issues/1461)):
+  the standing stop is superseded: a fix repeated in one area is a
+  [wake](../wake.md) trigger and anyone's `step-back` cord. The other
   working agreements stand
 - **Amended:**
   - [2026-11-05](#amendment-2026-11-05-the-testers-read-tools-first):
@@ -542,7 +542,9 @@ Each role's run ends with one outcome, beside its finding codes:
 
 Ways of working that hold while this is built, and after.
 
-- **A standing stop**: three fixes to one package within 48 h, or a
+- **A standing stop**, superseded by [the wake](../wake.md)
+  ([ADR-0068 §9](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-replaced)):
+  three fixes to one package within 48 h, or a
   core ADR amended three times in a week, stops the fixing. A root-cause
   review first, then a red simulator trace before any fix. The auditor
   counts, weekly, amendments per ADR and fix pull requests per package.
