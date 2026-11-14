@@ -50,6 +50,10 @@ Part of [workline on GitHub Actions](../ci-github.md): each job's rights, its lo
   `workline-app`. `follow`'s merge into a pull request runs its checks
   again only with the App's token; the merge policy acts only with it,
   and needs "Allow auto-merge" (Settings → General).
+- **`wake`**, workline's own, on a push to `main`: `issues: write`,
+  `pull-requests: read`, `statuses: read`, the App's token when there is
+  one; it prints where the line may drift and never fails
+  ([the wake](../wake.md)).
 - `apply` reads the pull request's run as data, only the agents'
   proposals ([more](../commands.md#workline-apply)), whatever `judge`
   concluded: one the reviewer holds still gets its comment

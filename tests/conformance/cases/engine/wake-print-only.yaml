@@ -1,0 +1,25 @@
+case: engine/wake-print-only
+about: "Triggers met, the wake still exits 0, sets no status on any head, merges nothing and calls no agent: it prints, nothing waits for it (ADR-0068 §8, principle 15, #1461)."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p docs/adr .workline && printf 'merge: {autonomy: normal}\\n' > .workline/config.yaml && printf '# ADR-0001\\n' > docs/adr/0001-first.md && git add . && git commit -q -m 'docs: a decision'"
+  env:
+    WORKLINE_AI: "cmd:touch agent-called"
+  forge:
+    issues:
+      - {id: 7, title: "this grows", body: "x", labels: [step-back]}
+    merge-requests:
+      - {id: 9, title: "open", branch: f9, base: main, labels: [], clean: true}
+      - {id: 10, title: "a decision", branch: f10, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main", merged-head: "main", labels: []}
+run: {cli: [wake, --forge, "fake:../forge.json", --range, "main~1..main", --issue]}
+expect:
+  exit: 0
+  stdout: ["ADR added: `docs/adr/0001-first.md`", "closes no issue: #10", "merged without the App's", "`step-back` on issue #7"]
+  files:
+    agent-called: {exists: false}
+  forge:
+    merge-requests:
+      - {id: 9, merged: false, auto-merge: false, labels: []}
+    statuses:
+      - {commit: main, name: workline/accepted, absent: true}

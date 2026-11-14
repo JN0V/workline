@@ -264,6 +264,8 @@ func repository(r *Report, o Options) {
 	findingsOnMergeRequests(r, o, cfg.Forge)
 	tokensScoped(r, o, cfg.Forge)
 	boundsGuard(r, o, cfg.Forge, line)
+	bypassGuard(r, o, cfg.Forge)
+	guardedList(r, o, cfg, line)
 	boards(r, o, cfg, line)
 	issueHook(r, o, cfg, line)
 	levels(r, o, cfg, line)

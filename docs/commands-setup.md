@@ -99,8 +99,15 @@ changes nothing.
   resolved before a merge, and how workline's findings reach pull
   requests ([#412](https://github.com/JN0V/workline/issues/412)). A rule
   it cannot read — classic branch protection, without an admin's token —
-  is said. `--forge` names the forge; by default the project's `forge`,
-  else GitHub when its workflows run workline.
+  is said. Whether this token can bypass the default branch's rulesets:
+  nobody should, a warning names each one it can
+  ([nobody bypasses `main`](merge-policy-no-bypass.md)). `--forge` names
+  the forge; by default the project's `forge`, else GitHub when its
+  workflows run workline.
+- Where the merge policy merges alone, or the developer runs: which
+  list holds a file from a merge by the policy alone, the project's
+  `CODEOWNERS` or, with none, the files that steer agents
+  ([what never merges alone](merge-policy-normal.md#what-never-merges-alone)).
 - On GitLab (`--forge gitlab`, the project's `forge`, or a
   `.gitlab-ci.yml` naming workline): whether workline's tokens are
   scoped to the environment `workline`, read from the project's

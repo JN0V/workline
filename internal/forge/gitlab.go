@@ -1443,7 +1443,7 @@ func (g *gitlab) MergedSince(since time.Time) ([]MergeRequest, error) {
 				}
 			}
 			all = append(all, MergeRequest{ID: m.IID, Branch: m.Source, Base: m.Target, Here: m.SourceProject == m.TargetProject,
-				Title: m.Title, Author: m.Author.Username, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID), MergedAs: as, MergedAt: m.MergedAt})
+				Title: m.Title, Author: m.Author.Username, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID), MergedAs: as, MergedAt: m.MergedAt, HeadSHA: m.SHA})
 		}
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })

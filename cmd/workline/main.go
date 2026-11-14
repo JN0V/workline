@@ -2602,7 +2602,7 @@ func doctorCmd(args []string) int {
 	fs := newFlags("doctor")
 	repo := fs.String("repo", ".", "repository to look at; outside one, the machine only")
 	asJSON := fs.Bool("json", false, "print the report as JSON")
-	forgeSpec := fs.String("forge", "", "the forge whose rules are read: whether the default branch requires every conversation resolved (default: the project's `forge` setting; github when the repository's GitHub workflows run workline)")
+	forgeSpec := fs.String("forge", "", "the forge whose rules are read: whether the default branch requires every conversation resolved, who may bypass its rulesets (default: the project's `forge` setting; github when the repository's GitHub workflows run workline)")
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}

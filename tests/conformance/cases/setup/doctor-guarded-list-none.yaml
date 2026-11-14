@@ -1,0 +1,17 @@
+case: setup/doctor-guarded-list-none
+about: >
+  With no CODEOWNERS, the doctor says what the engine holds from a merge
+  by the policy alone (ADR-0068 §4): the files that steer agents and the
+  pages they link; how to list the files that define oversight.
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  forge:
+    merge-requests: []
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: guarded-list-none, level: note, message: "no CODEOWNERS", fix: "CODEOWNERS"}
+  no-checks:
+    - {rule: guarded-list}

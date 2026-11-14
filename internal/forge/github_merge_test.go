@@ -127,6 +127,28 @@ func TestGitHubGuarded(t *testing.T) {
 	}
 }
 
+// Who may bypass the default branch is read from each ruleset on it,
+// once each though GitHub lists it a rule (ADR-0068 §6).
+func TestGitHubBypass(t *testing.T) {
+	bin := t.TempDir()
+	log := filepath.Join(bin, "calls")
+	script := "#!/bin/sh\necho \"$*\" >> " + log + "\ncase \"$*\" in\n" +
+		"*rules/branches/main*) printf '7\\n7\\n8\\n' ;;\n" +
+		"*rulesets/7*) echo '{\"id\":7,\"name\":\"main\",\"url\":\"https://github.com/o/r/rules/7\",\"can-bypass\":\"never\"}' ;;\n" +
+		"*rulesets/8*) echo '{\"id\":8,\"name\":\"tags\",\"url\":\"\",\"can-bypass\":\"pull_requests_only\"}' ;;\n" +
+		"*default_branch*) echo main ;;\n*) exit 1 ;;\nesac\n"
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	branch, sets, err := (&github{repo: t.TempDir()}).Bypass("")
+	calls, _ := os.ReadFile(log)
+	if err != nil || branch != "main" || len(sets) != 2 || sets[0].CanBypass != "never" || sets[1].ID != 8 || sets[1].CanBypass != "pull_requests_only" ||
+		strings.Count(string(calls), "rulesets/7") != 1 {
+		t.Errorf("%q %+v, %v; calls:\n%s", branch, sets, err, calls)
+	}
+}
+
 // A merge queue's group takes the yes the head queued holds (ADR-0050):
 // the App's own status on it, the newest first; one set by anyone else is
 // filtered out by the query, as GitHub's own filter would.

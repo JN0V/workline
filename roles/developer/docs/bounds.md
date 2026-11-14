@@ -44,8 +44,12 @@ first rule that matches refuses the whole patch, whatever the Scope:
 |---|---|
 | `outside-repo` | a path out of the repository (`../x`, `/etc/x`) |
 | `gate-file` | under `.workline/`, `.github/workflows/`, `.github/actions/`, `.gitlab/ci/`, or `.gitlab-ci.yml`; a script a gate's check runs; a check's `config` |
-| `steering-file` | a file that steers agents: AGENTS.md, CLAUDE.md, a page they link, a prompt; a file in a role's folder (`roles/<name>/`, its `role.yaml` there) |
+| `steering-file` | a path the project's `CODEOWNERS` lists, the files that define oversight ([what never merges alone](../../../docs/merge-policy-normal.md#what-never-merges-alone)); an agent file (AGENTS.md, CLAUDE.md…); with no `CODEOWNERS`, a page an agent file links to or imports |
 | `acceptance-test-edit` | a test the tester froze on its open Draft ([the hand-over](../../tester/docs/hand-over.md)) |
+
+Another role's prompt, a role's folder, a file named a prompt are
+applied: the reviewer reads them
+([ADR-0068 §4](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)).
 
 Any other file is applied. One the Scope does not hold, as read below,
 is beyond it: listed, never refused.

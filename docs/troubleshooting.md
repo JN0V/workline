@@ -192,6 +192,10 @@ The line of states says why on the issue and in the run's summary
   person resolves the rest. `workline follow` lists the open ones that
   hold an auto-merge
   ([#1039](https://github.com/JN0V/workline/issues/1039)).
+- **`gh pr merge --admin` refused**, "Repository rule violations": by
+  design, nobody bypasses `main`. Put `workline:accepted` on it; in an
+  emergency, the written way round
+  ([nobody bypasses `main`](merge-policy-no-bypass.md#the-emergency)).
 
 ## Nothing merges
 

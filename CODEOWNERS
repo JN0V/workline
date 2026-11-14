@@ -1,0 +1,40 @@
+# What never merges by the line's policy alone: a pull request changing one
+# of these waits for the person's `workline:accepted` label. workline reads
+# this list (ADR-0068 §4); GitHub's required code-owner review stays off,
+# since an author cannot approve their own pull request.
+# Every other file, role prompts included, takes the line's normal path.
+
+# This list, the agents' rules, the principles.
+/CODEOWNERS @JN0V
+/AGENTS.md @JN0V
+/CLAUDE.md @JN0V
+/docs/PRINCIPLES.md @JN0V
+
+# What runs the checks and holds the App's key.
+/.github/workflows/ @JN0V
+/.github/actions/ @JN0V
+
+# Merge autonomy, routing, gates, the reviewer's ignore list, each role's level.
+/.workline/config.yaml @JN0V
+
+# The oversight that reads every other change: the reviewer's and the
+# auditor's prompts and settings.
+/roles/reviewer/instruction.md @JN0V
+/roles/reviewer/persona.md @JN0V
+/roles/reviewer/policy.md @JN0V
+/roles/reviewer/lenses/ @JN0V
+/roles/reviewer/kinds/ @JN0V
+/roles/reviewer/role.yaml @JN0V
+/roles/auditor/instruction.md @JN0V
+/roles/auditor/persona.md @JN0V
+/roles/auditor/policy.md @JN0V
+/roles/auditor/lenses/ @JN0V
+/roles/auditor/kinds/ @JN0V
+/roles/auditor/role.yaml @JN0V
+
+# The wake script and its triggers (ADR-0068 §8): what prints the line's
+# drift, and the cases that hold it.
+/internal/wake/ @JN0V
+/internal/forge/wake.go @JN0V
+/cmd/workline/wake.go @JN0V
+/tests/conformance/cases/engine/wake-*.yaml @JN0V

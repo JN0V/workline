@@ -1,5 +1,5 @@
 ---
-sources: [internal/engine/routine.go, internal/engine/code.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go]
+sources: [internal/engine/routine.go, internal/engine/code.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go, internal/steer/steer.go]
 checked: 6163e1c4
 verified: agent:claude-code
 reader: efab3a2a0b35
@@ -26,8 +26,8 @@ merge: {autonomy: normal}   # a project's choice, never a default
   - on the local forge, with no App: a role's branch, every commit a
     role's by its trailer and tree, whatever its committer — the roles
     commit under your name there;
-  - only docs of the documentalist's that agents are not told to read
-    (not [AGENTS.md](../AGENTS.md), [CLAUDE.md](../CLAUDE.md), a page they link to, a prompt…);
+  - only docs of the documentalist's, none of
+    [what never merges alone](#what-never-merges-alone);
   - in a role's folder, only its README and `docs/` pages, never what
     the agent is given — persona, knowledge, instruction, policy, lenses
     ([the layout](spec/role-contract.md#layout));
@@ -64,7 +64,8 @@ merge: {autonomy: normal}   # a project's choice, never a default
   request whose comments it cannot read counts as such a merge
   ([#1018](https://github.com/JN0V/workline/issues/1018)).
 - **Never alone**: the release tool's, a fork's, a person's, another
-  bot's, a Draft; with a person's token, nothing.
+  bot's, a Draft, one changing a guarded file
+  ([below](#what-never-merges-alone)); with a person's token, nothing.
 - **The governance line**: a change an AI wrote and an AI reviewed merges
   with no person's approval — past the two-person rule of SLSA and SOC 2.
 - **The App's key, out of a pull request's own run**: none opens a
@@ -72,6 +73,30 @@ merge: {autonomy: normal}   # a project's choice, never a default
 - **Tried on workline's own repository first**
   ([#322](https://github.com/JN0V/workline/issues/322); the
   [criteria](adr/0042-the-engine-merges-by-the-projects-policy.md#the-veto-what-never-merges-alone-the-criteria)).
+
+## What never merges alone
+
+- **The files that define oversight and authority**, listed in the
+  project's `CODEOWNERS`: a pull request changing one waits for a
+  person's `workline:accepted`, whatever its kind
+  ([ADR-0068 §4](adr/0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)).
+  workline's own list: [CODEOWNERS](../CODEOWNERS).
+- **One list**: the engine holds every path `CODEOWNERS` gives an owner
+  (a folder named with or without a trailing `/`, all of it), and a
+  `CODEOWNERS` file itself, added or deleted, nothing else. It reads the first found:
+  `CODEOWNERS`, `.github/`, `docs/`, `.gitlab/`; on the base, never the
+  pull request's own copy.
+- **Other role prompts take the normal path**: the reviewer reads them,
+  the auditor samples the acts.
+- **With no `CODEOWNERS`**: the files that steer agents —
+  [AGENTS.md](../AGENTS.md), CLAUDE.md and their likes, the pages they
+  link to or import. `workline doctor` says which list it reads.
+- **GitHub's required code-owner review stays off** with one owner: an
+  author cannot approve their own pull request. A second owner may turn
+  it on.
+- **CI and workline's config** are held apart, whatever the list says:
+  never workline's routine docs, never the developer's
+  ([its bounds](../roles/developer/docs/bounds.md)).
 
 ## The developer's code: a fix alone, a feature with a yes
 

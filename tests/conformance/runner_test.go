@@ -678,7 +678,12 @@ func runCase(t *testing.T, c *caseFile) []string {
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
 	if c.Run.CLI != nil || c.Run.Sh != "" {
-		return runCLI(engineBin, c, repo, env)
+		p := runCLI(engineBin, c, repo, env)
+		if c.Expect.Forge != nil { // what a command wrote on the simulated forge, the wake's issue
+			p = append(p, compareForge(c.Expect.Forge, forgeFile)...)
+			p = append(p, compareStatuses(c.Expect.Forge.Statuses, forgeFile, repo)...)
+		}
+		return p
 	}
 	roles := rolesDir
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}

@@ -1,0 +1,26 @@
+case: engine/wake-nobody-bypasses
+about: "With the merge policy, as the merged tree sets it, a head merged without the App's workline/accepted and the default branch's ruleset changed since the last merge are each printed; a head the App accepted is not (ADR-0068 §6 and §8, #1461)."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p .workline && printf 'merge: {autonomy: normal}\\n' > .workline/config.yaml && printf 'a\\n' > a.txt && git add . && git commit -q -m 'feat: pushed'"
+    - "printf 'b\\n' > b.txt && git add . && git commit -q -m 'feat: accepted'"
+    - "printf 'c\\n' > c.txt && git add . && git commit -q -m 'feat: not accepted'"
+  forge:
+    issues:
+      - {id: 1, title: "b", body: "x", labels: [], closed: true}
+      - {id: 2, title: "c", body: "x", labels: [], closed: true}
+    merge-requests:
+      - {id: 40, title: "b", branch: f40, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main~1", merged-head: "main~1", closes: [1], labels: []}
+      - {id: 41, title: "c", branch: f41, base: main, merged: true, merged-at: "2026-01-03", merged-as: "main", merged-head: "main", closes: [2], labels: []}
+    statuses:
+      - {commit: "main~1", name: workline/accepted, state: success, by: workline-bot}
+      - {commit: "main", name: workline/accepted, state: success, by: alice}
+    rulesets:
+      - {id: 7, name: "main", can-bypass: never, branch: main, updated: "2026-01-02T12:00:00Z"}
+      - {id: 8, name: "tags", can-bypass: never, branch: main, updated: "2025-12-01T00:00:00Z"}
+run: {cli: [wake, --forge, "fake:../forge.json", --range, "main~3..main"]}
+expect:
+  exit: 0
+  stdout: ["### Nobody bypasses", "merged without the App's `workline/accepted`: #41, head `", "ruleset changed: `main` on main, at 2026-01-02T12:00:00Z"]
+  stdout-lacks: ["#40", "`tags`", "no merge request"]
