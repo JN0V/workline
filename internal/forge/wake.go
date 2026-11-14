@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"slices"
 	"strings"
 )
@@ -126,11 +127,17 @@ func (g *github) Labelled(label string) ([]Target, error) {
 	return all, nil
 }
 
-// AppStatus says whether an app set the status name on head, successful:
-// GitHub names the one who set it, an app's account typed Bot.
+// AppStatus says whether workline's App set the status name on head,
+// successful: GitHub names the one who set it, and only the App the
+// workflow names (WORKLINE_APP) counts; another app's is no yes. With no
+// App named, it is not read: the wake's reader is not the one who set it.
 func (g *github) AppStatus(head, name string) (bool, error) {
+	app := strings.TrimSpace(os.Getenv("WORKLINE_APP"))
+	if app == "" {
+		return false, fmt.Errorf("%w: no App named: give the job workline's App slug in WORKLINE_APP", ErrUnreachable)
+	}
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/commits/"+head+"/statuses?per_page=100",
-		"--jq", fmt.Sprintf(`.[] | select(.context == %q and .state == "success" and .creator.type == "Bot") | .id`, name))
+		"--jq", fmt.Sprintf(`.[] | select(.context == %q and .state == "success" and .creator.login == %q) | .id`, name, app+"[bot]"))
 	if err != nil {
 		return false, err
 	}

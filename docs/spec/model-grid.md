@@ -19,7 +19,7 @@ In `role.yaml`:
 model:
   capability: writing     # coding | reasoning | writing | classification
   tier: light             # light | standard | frontier
-  effort: low             # none | low | medium | high | max
+  effort: low             # none | low | medium | high | xhigh | max
 ```
 
 - **capability** — what the decision is mostly about. Writing a commit message
@@ -57,7 +57,7 @@ grid:
     frontier: {claude: opus,   codex: <model>, agy: <model>}
 
 effort:                           # our level -> the agent's own value
-  claude: {none: low, low: low, medium: medium, high: high, max: max}
+  claude: {none: low, low: low, medium: medium, high: high, xhigh: xhigh, max: max}
   codex:  {none: minimal, low: low, medium: medium, high: high, max: xhigh}
   agy:    {none: low, low: low, medium: medium, high: high, max: high}
 ```
@@ -165,5 +165,8 @@ other agent (docs/usage.md).*
 - Benchmarks measure a model inside one harness. The same model scores
   differently under Claude Code and under Codex.
 - Arena rankings measure preference in conversation, not work in a repository.
+- A lower tier is not fewer tokens: on 2026-11-14 Sonnet read as much as
+  Opus or more, and failed more; per success it cost more tokens on the
+  developer's cases ([models, measured](../research/models-measured.md)).
 - Subscriptions and API keys do not offer the same models. An agent declares
   which one it uses, and the grid only offers what that billing can reach.

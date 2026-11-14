@@ -103,7 +103,7 @@ var bypassWords = map[string]string{
 // bypassGuard says whether this token's user may merge into the default
 // branch past its rulesets: nobody does, the person included, so every
 // merge goes through its checks and workline/accepted (ADR-0068 §6).
-// One API read a ruleset, no agent; read where the forge keeps rulesets
+// Three API reads and one a ruleset (the default branch, the rules on it), no agent; read where the forge keeps rulesets
 // (GitHub), its rulesets only.
 func bypassGuard(r *Report, o Options, projectForge string) {
 	spec := o.Forge
@@ -122,15 +122,6 @@ func bypassGuard(r *Report, o Options, projectForge string) {
 		return
 	}
 	branch, sets, err := b.Bypass("")
-	if err != nil {
-		where := branch
-		if where == "" {
-			where = "the default branch"
-		}
-		r.add(Check{Area: "repository", Rule: "bypass-unread", Where: branch, Level: Note,
-			Message: "could not read who may bypass " + where + "'s rulesets: " + forge.Said(err), Fix: noBypassDoc})
-		return
-	}
 	var held []string
 	for _, s := range sets {
 		if s.CanBypass == "never" {
@@ -145,6 +136,21 @@ func bypassGuard(r *Report, o Options, projectForge string) {
 			Message: fmt.Sprintf("this token can bypass %s's ruleset %q %s: a merge can skip its checks, workline/accepted included", branch, s.Name, how),
 			Fix: fmt.Sprintf("empty its bypass list: %s, or `gh api repos/{owner}/{repo}/rulesets/%d` then PUT it back with \"bypass_actors\": []; the emergency: %s",
 				cmp.Or(s.URL, "Settings → Rules → Rulesets"), s.ID, noBypassDoc)})
+	}
+	if err != nil {
+		where := branch
+		if where == "" {
+			where = "the default branch"
+		}
+		r.add(Check{Area: "repository", Rule: "bypass-unread", Where: branch, Level: Note,
+			Message: "could not read who may bypass " + where + "'s rulesets: " + forge.Said(err), Fix: noBypassDoc})
+		return
+	}
+	if len(sets) == 0 {
+		r.add(Check{Area: "repository", Rule: "bypass-no-ruleset", Where: branch, Level: Note,
+			Message: "no ruleset protects " + cmp.Or(branch, "the default branch") + ": nothing here says who may bypass it, a classic branch protection's bypass is not read",
+			Fix:     noBypassDoc})
+		return
 	}
 	if len(held) > 0 && len(held) == len(sets) {
 		r.add(Check{Area: "repository", Rule: "no-bypass", Where: branch, Level: OK,

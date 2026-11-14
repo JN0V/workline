@@ -74,6 +74,10 @@ roles:
       # whole suite twice took 10 of a run's 11 min (#979); the pull
       # request's test job runs it all.
       draft-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m {packages}
+      # Each run of the tests stops here: the whole suite takes 8 to 11
+      # min on a runner, past the role's 600 s, so every green proof
+      # stopped on the base (#1441). 25 min leaves room for a busy runner.
+      suite-max-seconds: 1500
       # Go's build errors, the role's default, and a conformance case the
       # suite cannot read: red for no reason, so the build is said broken.
       build-errors:
@@ -145,6 +149,11 @@ routing:
   # The reconciler starts 8 steps a run, not the default 3: on
   # 2026-11-03 the backlog kept new issues waiting 3 h behind 3 a run.
   reconcile-max: 8
+  # The push of 2026-11-14, six hours: Ready holds 10, not the shipped 5,
+  # so the tester and the product owner keep filling it while the
+  # developer works; an issue whose Scope overlaps an open pull request is
+  # still counted apart. Reverted with the push's pull request.
+  wip: {ready: 10}
   events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, "gate:lint", tester, reviewer, inspector],
     schedule: [documentalist, product-owner, reviewer], issue: [product-owner, reviewer, tester, developer]}
 

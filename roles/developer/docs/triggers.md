@@ -67,11 +67,12 @@ routing:
   - **Hourly**, the `reconcile` job starts what an event missed, at most
     `reconcile-max` issues a run, the one waiting longest first, each
     its own run. Each reconcile
-    starts the next, 55 minutes on: [the heartbeat](../../../docs/github/heartbeat.md),
-    an environment to create once.
+    starts the next, 55 minutes on by default: [the heartbeat](../../../docs/github/heartbeat.md),
+    an environment to create once, its period yours to set.
   - **Not on the heartbeat alone**: the schedule, or a `workline:` label
     on an issue, each hop of the line, starts it when no heartbeat waits
-    and 55 minutes passed since the last that succeeded, read from the
+    and the gap (55 minutes, or the variable
+    `WORKLINE_RECONCILE_GAP_MINUTES`) passed since the last that succeeded, read from the
     workflow's runs. One at a time
     ([#789](https://github.com/JN0V/workline/issues/789),
     [#853](https://github.com/JN0V/workline/issues/853)). Its cost: a

@@ -29,7 +29,7 @@ After each merge, the wake prints where the line may be drifting
 | Growth of the contract | adds or changes an ADR; adds a role, a setting of a role, a command, a rule code |
 | Prompts that steer the line | changes a role's prompt (its words before → after), its `levels` table or its default level |
 | Symptoms without cause | lands while one file is fixed by 3 merges in 14 days; an issue a merge closed is open again, or closed by two merges |
-| Laundered needs | merges a merge request that closes no issue |
+| Laundered needs | merges a merge request that closes no issue, an app's routine one left out |
 | Nobody bypasses | merges a head without the App's `workline/accepted` (with a `merge:` policy); follows a change of the default branch's ruleset |
 | The cord | finds the label `step-back` on an open issue or merge request |
 
@@ -48,6 +48,9 @@ After each merge, the wake prints where the line may be drifting
   never commented on.
 - **Each trigger is kept 7 days**, the newest read of it: someone
   reading once a week reads each one.
+- **Under the forge's size limit**: past it, the oldest triggers are
+  left out, and the issue says how many. An edit the forge refuses
+  anyway is a warning on the CI run, not only a log line.
 - **No merge skipped**: a read starts where the issue's last read ended,
   when that is earlier on the branch than `--range`'s start: a run the
   forge dropped from its queue is read by the next.
@@ -74,7 +77,9 @@ workline wake --forge github --range <before>..<after> --issue   # keep the issu
 - **On GitHub**: the job `wake` of
   [workline-apply.yml](../.github/workflows/workline-apply.yml), on a
   push to `main`, with `issues: write`, `pull-requests: read` and
-  `statuses: read`; the App's token when there is one.
+  `statuses: read`; the App's token when there is one, and its slug
+  in `WORKLINE_APP`: a `workline/accepted` only that App set is a yes,
+  another app's is not; with none named, the yes is said unread.
 - **GitLab and other CI**: the same command after a push to the default
   branch, `--forge gitlab`; GitLab keeps no `workline/accepted`, so that
   trigger is not read there. Not in the templates yet.

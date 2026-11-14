@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 )
@@ -69,17 +70,58 @@ func Issue(r *Result, now string) (body string, changed, any bool) {
 	// The head read moved, the issue is edited: the next read starts there.
 	changed = !sameEntries(entries, prev.Entries) || prev.Head != "" && prev.Head != r.Head
 
+	body = render(r, entries, 0)
+	if len(body) <= limit {
+		return body, changed, any
+	}
+	// Past the forge's limit, the oldest triggers are left out, of the
+	// list and of the record, as few as keep the body under it: said in
+	// the issue, never a body the forge refuses.
+	order := make([]int, len(entries))
+	for i := range order {
+		order[i] = i
+	}
+	slices.SortStableFunc(order, func(a, b int) int { return strings.Compare(entries[b].Day, entries[a].Day) })
+	keep := func(k int) []Entry {
+		in := map[int]bool{}
+		for _, i := range order[:k] {
+			in[i] = true
+		}
+		var kept []Entry
+		for i, e := range entries {
+			if in[i] {
+				kept = append(kept, e)
+			}
+		}
+		return kept
+	}
+	k := sort.Search(len(entries)+1, func(k int) bool {
+		return len(render(r, keep(k), len(entries)-k)) > limit
+	}) - 1
+	return render(r, keep(max(k, 0)), len(entries)-max(k, 0)), changed, any
+}
+
+// limit is the size the issue's body stays under: GitHub refuses one
+// past 65,536 characters; the margin is for what is escaped on the way.
+const limit = 60000
+
+// render is the issue's body listing entries, left saying how many
+// triggers it left out to stay under the forge's limit.
+func render(r *Result, entries []Entry, left int) string {
 	var b strings.Builder
-	if any {
+	if total := len(entries) + left; total > 0 {
 		var counts []string
 		for _, s := range sections {
 			if n := count(entries, s.kind); n > 0 {
 				counts = append(counts, fmt.Sprintf("%s %d", strings.ToLower(s.title), n))
 			}
 		}
-		fmt.Fprintf(&b, "**%d %s met** in the 7 days to %s: %s.\n\n", len(entries), plural(len(entries), "trigger", "triggers"), r.Day, strings.Join(counts, ", "))
+		fmt.Fprintf(&b, "**%d %s met** in the 7 days to %s: %s.\n\n", total, plural(total, "trigger", "triggers"), r.Day, strings.Join(counts, ", "))
 	} else {
 		fmt.Fprintf(&b, "**No trigger met** in the 7 days to %s.\n\n", r.Day)
+	}
+	if left > 0 {
+		fmt.Fprintf(&b, "**%d oldest %s left out** of this issue, listed and kept: past the forge's size limit.\n\n", left, plural(left, "trigger", "triggers"))
 	}
 	fmt.Fprintf(&b, "Where the line may be drifting, read after each merge to the default branch, with no AI ([ADR-0068 §8](%s)). Nothing here holds a merge. To step back, put the label `%s` on any issue or merge request. workline keeps this issue: edited in place, never commented on; each trigger is listed 7 days.\n\n", adrLink, Label)
 	for _, s := range sections {
@@ -112,9 +154,10 @@ func Issue(r *Result, now string) (body string, changed, any bool) {
 		}
 		b.WriteString("\n")
 	}
+	// json.Marshal escapes `>`: no `-->` ends the comment early.
 	kept, _ := json.Marshal(state{Entries: entries, Head: r.Head})
-	fmt.Fprintf(&b, "%s%s -->\n", Marker, strings.ReplaceAll(string(kept), "--", `--`))
-	return b.String(), changed, any
+	fmt.Fprintf(&b, "%s%s -->\n", Marker, kept)
+	return b.String()
 }
 
 func count(es []Entry, kind string) int {

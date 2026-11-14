@@ -41,7 +41,7 @@ type claude struct{ model, effort string }
 // Until the model grid is generated (docs/spec/model-grid.md), Claude's own
 // aliases stand for the tiers.
 var claudeTier = map[string]string{"light": "haiku", "standard": "sonnet", "frontier": "opus"}
-var claudeEffort = map[string]string{"none": "low", "low": "low", "medium": "medium", "high": "high", "max": "max"}
+var claudeEffort = map[string]string{"none": "low", "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "max"}
 
 func (c claude) Propose(req Request) (Call, error) {
 	call := Call{Agent: "claude", Tier: req.tier(), Effort: req.Role.Model.Effort}

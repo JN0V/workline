@@ -44,7 +44,12 @@ When no head can get `workline/accepted`, say `follow` broken on `main`
 so its own fix cannot merge:
 
 1. **Add yourself**: the ruleset's bypass list, "Repository admin", "For
-   pull requests only". Say why on the fix's pull request.
+   pull requests only". Say why on the fix's pull request. By command:
+   read the ruleset with `gh api repos/{owner}/{repo}/rulesets/<id>`,
+   then PUT it back with
+   `"bypass_actors": [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "pull_request"}]`
+   (`gh api -X PUT repos/{owner}/{repo}/rulesets/<id> --input ruleset.json`;
+   5 is the Repository admin role).
 2. **Merge the fix**: `gh pr merge <number> --squash --admin`.
 3. **Remove yourself**: empty the list again, as above;
    `workline doctor` says `no-bypass` again.

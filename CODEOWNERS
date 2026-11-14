@@ -36,5 +36,6 @@
 # drift, and the cases that hold it.
 /internal/wake/ @JN0V
 /internal/forge/wake.go @JN0V
+/internal/forge/wake*_test.go @JN0V
 /cmd/workline/wake.go @JN0V
 /tests/conformance/cases/engine/wake-*.yaml @JN0V

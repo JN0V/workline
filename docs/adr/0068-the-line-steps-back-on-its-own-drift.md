@@ -301,7 +301,8 @@ Listed, not decided; each its own record or amendment, after a
 real-use round on steps 1 to 3.
 
 4. **A simplicity lens** in the reviewer, advisory first, calibrated on
-   past pull requests.
+   past pull requests. Built ([#1496]): its findings nits until
+   calibrated ([#1497]).
 5. **The auditor's draw** of a person's own changes, an assistant's
    included ([ADR-0046]).
 6. **The process engineer** ([ADR-0019], [#89]): reads the wake script
@@ -352,3 +353,5 @@ Each part of its step's issue, none blocking.
 [#1464]: https://github.com/JN0V/workline/pull/1464
 [#1465]: https://github.com/JN0V/workline/pull/1465
 [#1466]: https://github.com/JN0V/workline/pull/1466
+[#1496]: https://github.com/JN0V/workline/pull/1496
+[#1497]: https://github.com/JN0V/workline/issues/1497

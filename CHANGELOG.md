@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.76.0](https://github.com/JN0V/workline/compare/v0.75.0...v0.76.0) (2026-11-14)
+
+
+### Features
+
+* **doctor:** nobody bypasses main, checked and written ([#1463](https://github.com/JN0V/workline/issues/1463)) ([9adbe0b](https://github.com/JN0V/workline/commit/9adbe0b2eaa2d9f9e1888071ac3eeffc9184509d))
+* guard reviewer/auditor settings, lift ADR-0052's freeze ([#1467](https://github.com/JN0V/workline/issues/1467)) ([5604a95](https://github.com/JN0V/workline/commit/5604a9551198c61ad8cbc3e73ded0c6e2573a617))
+* guarded files in CODEOWNERS merge on the person's label ([#1464](https://github.com/JN0V/workline/issues/1464)) ([a1d796b](https://github.com/JN0V/workline/commit/a1d796bf45a1e5836fb775fe2c047c1a6c9c6ade))
+* **sample:** weekly upkeep tokens, pruned runs kept ([#1393](https://github.com/JN0V/workline/issues/1393)) ([730a2b6](https://github.com/JN0V/workline/commit/730a2b66b75702570c5a8bb5d77d0752de1c4217))
+* workline wake prints where the line drifts, after a merge ([#1466](https://github.com/JN0V/workline/issues/1466)) ([2fde3fc](https://github.com/JN0V/workline/commit/2fde3fc274dc7ac638fcba3cf8a749825103fbd8))
+
+
+### Bug Fixes
+
+* a person's answer on an issue wakes its step at once ([#1427](https://github.com/JN0V/workline/issues/1427)) ([c09fcbf](https://github.com/JN0V/workline/commit/c09fcbf0e67c15104d0db12b03c13a157da83d5e))
+* a thread a test named after its file answers is resolved ([#1429](https://github.com/JN0V/workline/issues/1429)) ([5161324](https://github.com/JN0V/workline/commit/5161324e293ff47f9b4aa26834ee09164017f23e))
+* build daemons started by a test command outlive the run ([#1452](https://github.com/JN0V/workline/issues/1452)) ([e16e4e7](https://github.com/JN0V/workline/commit/e16e4e7b09dfa711ce5069ce1e26068b991a4e09))
+* **ci:** a person's reply in a review thread wakes the round ([#1447](https://github.com/JN0V/workline/issues/1447)) ([ec63668](https://github.com/JN0V/workline/commit/ec636688f93789ab39e6de36238081288cad829b))
+* **ci:** carry the tester's test ids between CI jobs ([#1408](https://github.com/JN0V/workline/issues/1408)) ([4ebddbb](https://github.com/JN0V/workline/commit/4ebddbb36fbfa2628fed5e41835a6bdf2a205c90))
+* **ci:** end a round on a merged pull request green ([#1437](https://github.com/JN0V/workline/issues/1437)) ([3f3ebc8](https://github.com/JN0V/workline/commit/3f3ebc8b3ece322499ccdaa62764a86e3545256d))
+* **codepick:** a module folder gives the code below it ([#1428](https://github.com/JN0V/workline/issues/1428)) ([400d9ff](https://github.com/JN0V/workline/commit/400d9ff1009a5a8f748f1723a2c95c6146945869))
+* **developer:** merge round commits need no git identity ([#1442](https://github.com/JN0V/workline/issues/1442)) ([bd025e5](https://github.com/JN0V/workline/commit/bd025e589344a5102582d6fc39b9f87df9d3d150))
+* **developer:** open the pull request of a green Draft ([#1445](https://github.com/JN0V/workline/issues/1445)) ([a38c792](https://github.com/JN0V/workline/commit/a38c792d2fd431c36f965e7400dd1155f572244b))
+* **internal:** stale-unknown flags built-in names and ([#1472](https://github.com/JN0V/workline/issues/1472)) ([458b4da](https://github.com/JN0V/workline/commit/458b4da64f9a7655bc664c8d7bca537dd11de0cc))
+* keep a role's work out of the person's checkout ([#1402](https://github.com/JN0V/workline/issues/1402)) ([e9ab4e4](https://github.com/JN0V/workline/commit/e9ab4e459533a7139da93ba07ec816c58fd1d5e1))
+* **product-owner:** keep a Scope from a module folder's files ([#1448](https://github.com/JN0V/workline/issues/1448)) ([77c94e8](https://github.com/JN0V/workline/commit/77c94e87faa9d43b415c1a2ca697c82d2098fa53))
+* **product-owner:** keep a Scope naming a build output ([#1432](https://github.com/JN0V/workline/issues/1432)) ([c81ba12](https://github.com/JN0V/workline/commit/c81ba12d7e9b4ee7e13a648278c2ec1e46d76d21))
+* **product-owner:** no ready on a clean review left open ([#1399](https://github.com/JN0V/workline/issues/1399)) ([28e3f4c](https://github.com/JN0V/workline/commit/28e3f4c7d780e6592508fa4f94a4cc3977ce4074))
+* **reviewer:** ask the tests lens again on a push to its test ([#1446](https://github.com/JN0V/workline/issues/1446)) ([481934c](https://github.com/JN0V/workline/commit/481934cbaa9916cb0056a46d6bea3693aabfb794))
+* **reviewer:** keep a claim's finding on the change it claims ([#1435](https://github.com/JN0V/workline/issues/1435)) ([ca5bb4f](https://github.com/JN0V/workline/commit/ca5bb4fe134a9e082b990d2609254611a13be388))
+* **tester:** give a missing test's code, say when it lacks code ([#1436](https://github.com/JN0V/workline/issues/1436)) ([3617f0c](https://github.com/JN0V/workline/commit/3617f0cb0d707aead9439a3a693b7093623fee76))
+* **tester:** give the line's go test runs a 20 min timeout ([#1431](https://github.com/JN0V/workline/issues/1431)) ([718f159](https://github.com/JN0V/workline/commit/718f159b2daa2fb925ef7b1059e9e68fc8c31e16))
+* **tester:** name the test that guards a kept scenario ([#1403](https://github.com/JN0V/workline/issues/1403)) ([8d05376](https://github.com/JN0V/workline/commit/8d0537694589eec85d8f1215b563379cc9641784))
+* **tester:** run the test command before its agent ([#1394](https://github.com/JN0V/workline/issues/1394)) ([0a3aeb9](https://github.com/JN0V/workline/commit/0a3aeb9b651558d8ddfc3d9c2b57ef0b5f4e6a7e))
+* **tester:** stop a hung run at suite-max-seconds and say where ([#1441](https://github.com/JN0V/workline/issues/1441)) ([ee4a070](https://github.com/JN0V/workline/commit/ee4a070baa46dc04722026749f4c6f1f8540e4f4))
+
+
+### Performance
+
+* **tester:** the guard reuses the base's test ids by tree ([#1404](https://github.com/JN0V/workline/issues/1404)) ([54dce7c](https://github.com/JN0V/workline/commit/54dce7c6dbbbfff567eb69d0f19cc1f85ef90bab))
+
 ## [0.75.0](https://github.com/JN0V/workline/compare/v0.74.0...v0.75.0) (2026-11-11)
 
 
