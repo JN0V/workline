@@ -1,0 +1,92 @@
+case: reviewer/simplicity-page-builds-a-pager
+about: "Simplicity, over-built (ADR-0068, step 4): #9 asks that a page hold at most 100 items. The change caps it, right and tested, but through a new public Pager type, its constructor and a method, the cap a setting no part of the Need asks for: one line in Page, a min, closes the issue as well. Nothing breaks; only the issue says it is more than needed. Its plain twin is simplicity-page-caps-its-size."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/page.go <<'GO'
+      package shop
+
+      // Pager cuts items into pages of at most its own number of items.
+      type Pager struct {
+      	max int
+      }
+
+      // NewPager is a pager whose pages hold at most max items; a max below 1
+      // is taken as 100.
+      func NewPager(max int) *Pager {
+      	if max < 1 {
+      		max = 100
+      	}
+      	return &Pager{max: max}
+      }
+
+      // Page returns page p of the items, counted from 1, size items a page
+      // and at most the pager's; nil past the last page, or for a page or a
+      // size below 1. A Pager not made by NewPager holds 100.
+      func (pg *Pager) Page(items []Item, p, size int) []Item {
+      	limit := pg.max
+      	if limit < 1 {
+      		limit = 100
+      	}
+      	if p < 1 || size < 1 {
+      		return nil
+      	}
+      	size = min(size, limit)
+      	from := (p - 1) * size
+      	if from >= len(items) {
+      		return nil
+      	}
+      	return items[from:min(from+size, len(items))]
+      }
+
+      // Page returns page p of the items, counted from 1, size items a page
+      // and at most 100; nil past the last page, or for a page or a size
+      // below 1.
+      func Page(items []Item, p, size int) []Item {
+      	return NewPager(100).Page(items, p, size)
+      }
+      GO
+      cat >> shop/page_test.go <<'GO'
+
+      func TestPageHoldsAtMost100(t *testing.T) {
+      	items := make([]Item, 150)
+      	if got := Page(items, 1, 1000); len(got) != 100 {
+      		t.Errorf("page 1 of 1000: %d items, want 100", len(got))
+      	}
+      	if got := Page(items, 2, 1000); len(got) != 50 {
+      		t.Errorf("page 2 of 1000: %d items, want 50", len(got))
+      	}
+      }
+
+      func TestPager(t *testing.T) {
+      	items := make([]Item, 5)
+      	if got := NewPager(2).Page(items, 1, 10); len(got) != 2 {
+      		t.Errorf("a pager of 2: %d items", len(got))
+      	}
+      	if got := NewPager(0).Page(make([]Item, 150), 1, 1000); len(got) != 100 {
+      		t.Errorf("a pager of 0: %d items, want 100", len(got))
+      	}
+      	if got := (&Pager{}).Page(make([]Item, 150), 1, 1000); len(got) != 100 {
+      		t.Errorf("a zero pager: %d items, want 100", len(got))
+      	}
+      }
+      GO
+      git commit -qam 'feat(page): a page holds at most 100 items' -m 'Closes #9.'
+  forge:
+    issues:
+      - id: 9
+        title: A page holds at most 100 items
+        body: "## Need\n\nA caller asking for a page of 1000 items gets at most 100, so one page never holds the whole catalogue.\n\n## Verification\n\nA test of Page on 150 items, a page size of 1000: page 1 holds 100 items, page 2 holds 50.\n\n## Scope\n\nshop/page.go, shop/page_test.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: simplicity
+      kind: over-built
+      at:
+        - {file: shop/page.go, lines: [3, 34], text: "type Pager struct {"}
+        - {file: shop/page.go, lines: [39, 41], text: "return NewPager(100).Page(items, p, size)"}

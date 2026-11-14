@@ -76,7 +76,10 @@ settings:
   # one no draft (--input draft=false) its record does not say every lens
   # read (#359). `comments` takes no turn: it is asked only when
   # story-words flags a comment the new commits add, beside the lens in turn.
-  lenses: [correctness, edge-cases, tests, intent, claims, comments]
+  # `simplicity` (ADR-0068, step 4) is advisory until its false alarms are
+  # counted on past pull requests (#1497): its lens says `severity: nit`,
+  # so its findings are nits, never judged, blocking nor asked.
+  lenses: [correctness, edge-cases, tests, intent, claims, simplicity, comments]
   lenses-per-push: 1
   # On a merge request, after ready (ADR-0050): the new commits a push's
   # lenses that warn read, those changing code counted, the oldest first;
