@@ -49,7 +49,7 @@ func unrefined(is forge.Issue, notes []forge.Note) (lacks string, sources []stri
 	if len(backlog.Unheard(st, notes, is)) > 0 {
 		return "", nil // a person wrote since its read: theirs is read next
 	}
-	if _, asked := backlog.Unanswered(notes, backlog.Keeper); asked {
+	if _, asked := backlog.Unanswered(notes, backlog.Keeper, is); asked {
 		return "", nil // its question waits on its reporter: the delay wakes it (ADR-0060)
 	}
 	missing := backlog.Missing(is.Body)

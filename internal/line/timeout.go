@@ -57,7 +57,7 @@ func (t *tally) askWait() backlog.Delay {
 func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec Record) (key, said, waits, next string, err error) {
 	w := t.askWait()
 	now := clock().UTC()
-	s, open := backlog.Unanswered(notes, backlog.Keeper)
+	s, open := backlog.Unanswered(notes, backlog.Keeper, is)
 	st, _, _ := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
 	if open && (st == nil || st.Assumed < s.Round) && !s.Due(w, st, now) {
 		waits = questionWaits(w, s, is.ID)
