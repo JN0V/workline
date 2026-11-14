@@ -1249,44 +1249,41 @@ func settlementDiff(repo, commit string) string {
 		return ""
 	}
 	const max = 200
-	var lines []string
+	var b strings.Builder
 	n := 0
+	header, open := false, false
+	file := ""
+	closeFence := func() {
+		if open {
+			b.WriteString("~~~\n")
+			open = false
+		}
+	}
 	for _, l := range strings.Split(diff, "\n") {
 		switch {
-		case strings.HasPrefix(l, "+++ "):
-			f := strings.TrimPrefix(strings.TrimPrefix(l, "+++ "), "b/")
-			lines = append(lines, "", "`"+f+"`:", "")
-			lines = append(lines, "~~~")
-			lines = append(lines, "\x00")
-		case strings.HasPrefix(l, "+"):
-			if n++; n <= max {
-				lines = append(lines, l[1:])
+		case strings.HasPrefix(l, "diff --git "):
+			closeFence()
+			header, file = true, ""
+		case header && strings.HasPrefix(l, "+++ "):
+			if f := strings.TrimPrefix(l, "+++ "); f != "/dev/null" {
+				file = strings.TrimPrefix(f, "b/")
 			}
+		case strings.HasPrefix(l, "@@"):
+			header = false
+		case !header && strings.HasPrefix(l, "+"):
+			if n++; n > max {
+				continue
+			}
+			if !open {
+				fmt.Fprintf(&b, "\n`%s`:\n\n~~~\n", file)
+				open = true
+			}
+			b.WriteString(l[1:] + "\n")
 		}
 	}
+	closeFence()
 	if n == 0 {
 		return ""
-	}
-	// Close each file's fence: the marker line opens it, the next file's
-	// header (or the end) closes it.
-	var b strings.Builder
-	open := false
-	for _, l := range lines {
-		switch l {
-		case "\x00":
-			open = true
-		case "":
-			if open {
-				b.WriteString("~~~\n")
-				open = false
-			}
-			b.WriteString("\n")
-		default:
-			b.WriteString(l + "\n")
-		}
-	}
-	if open {
-		b.WriteString("~~~\n")
 	}
 	if n > max {
 		fmt.Fprintf(&b, "\n(%d more lines)\n", n-max)
