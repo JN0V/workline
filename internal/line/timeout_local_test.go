@@ -40,7 +40,7 @@ func TestLocalQuestionTimesOut(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, open := backlog.Unanswered(notes, backlog.Keeper)
+	s, open := backlog.Unanswered(notes, backlog.Keeper, forge.Issue{ID: id})
 	if !open || !s.Dated {
 		t.Fatalf("the local forge's question is not dated: open=%v dated=%v", open, s.Dated)
 	}
