@@ -11,8 +11,8 @@ on:
   # 18:07 UTC, so that it lands before Monday's workday though GitHub may
   # start a run hours late (#607; ADR-0051). Off the hour: GitHub may drop
   # a run scheduled at its start, when busiest. The push of 2026-11-14:
-  # the backlog every two hours too, at :47, reverted with its pull request.
-  schedule: [{cron: "17 2 * * *"}, {cron: "7 18 * * 0"}, {cron: "47 */2 * * *"}]
+  # the backlog hourly too, at :47, reverted with its pull request.
+  schedule: [{cron: "17 2 * * *"}, {cron: "7 18 * * 0"}, {cron: "47 * * * *"}]
   workflow_dispatch:
     inputs:
       skip: {description: "roles left out, comma-separated (documentalist: the backlog alone); empty: every role", required: false, default: ""}
@@ -67,10 +67,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Nightly and every two hours the backlog, the tester's one issue
+          # Nightly and hourly the backlog, the tester's one issue
           # and the developer's; weekly the docs alone; run by hand, all
           # but the roles its input `skip` names.
-          SKIP: "${{ (github.event.schedule == '17 2 * * *' || github.event.schedule == '47 */2 * * *') && 'documentalist' || github.event.schedule == '7 18 * * 0' && 'product-owner,reviewer,tester,developer' || inputs.skip || '' }}"
+          SKIP: "${{ (github.event.schedule == '17 2 * * *' || github.event.schedule == '47 * * * *') && 'documentalist' || github.event.schedule == '7 18 * * 0' && 'product-owner,reviewer,tester,developer' || inputs.skip || '' }}"
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           status=0
@@ -218,7 +218,7 @@ jobs:
   # few redundant tests of one folder removed, proven with no agent, and
   # apply opens the pull request (step 7).
   curator:
-    if: vars.WORKLINE_CURATOR == 'on' && github.event.schedule != '17 2 * * *' && github.event.schedule != '47 */2 * * *'
+    if: vars.WORKLINE_CURATOR == 'on' && github.event.schedule != '17 2 * * *' && github.event.schedule != '47 * * * *'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     # actions: the last run's artifact, the history; pull-requests: the

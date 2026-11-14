@@ -125,6 +125,13 @@ roles:
       # falsely. The role's default stays warn until real blocks here are
       # watched; the other lenses warn.
       ai-findings: {correctness: block}
+      # The push of 2026-11-14: each backlog run reads up to ten specs,
+      # not five, so a run can fill Ready to its limit (10); the run of
+      # 18:12 UTC readied 5, Ready back to 2 within the hour. Ten at about
+      # 41k tokens a spec, the dearest measured, fit 450k. Reverted with
+      # the push's pull request.
+      specs-per-run: 10
+      ai-max-tokens: 450000
 routing:
   # Before a push, the committer checks the commits leaving the machine, and
   # the documentalist has the docs they made suspect judged. On a pull
