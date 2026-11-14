@@ -63,3 +63,10 @@ code-navigation:
     hash-comments: true
     bases: '^\s*class\s+\w+\(\s*(?:[\w.]+\.)?([A-Z]\w*)'
     keywords: "def elif None True False self cls lambda pass from import async await with yield global nonlocal raise except finally assert del str"
+# build-errors: the tester's rows reading a build a new test breaks.
+build-errors:
+    - error: '^_+ ERROR collecting (?P<file>\S+\.py) _+(?P<message>)$'
+      message-line: '^E\s+(?P<message>[\w.]+: .+)$'
+      missing-name:
+        - '^ImportError: cannot import name ''(?P<name>[^'']+)'''
+      test-name: '(?m)^\s*(?:async\s+)?def (test\w*)\s*\('
