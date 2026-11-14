@@ -1,0 +1,27 @@
+case: routing/stale-builtin-name-not-gone
+about: >
+  Built-in name: an issue waits in Ready past its limit, and its Scope
+  names a built-in exception of the language the project lists a pack
+  for (Python's `ZeroDivisionError`), which no file of the repository
+  holds. The name is the language's, not the code's: it is not
+  reported stale, the issue stays in Ready and nothing is said of it.
+given:
+  repo: tested
+  config:
+    packs: [python-pytest]
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Divide a list"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-09-01T09:00:00Z"}
+        body: "## Need\n\nI want a clear error on a division by zero.\n\n## Scope\n\n- `lib.sh`: raises `ZeroDivisionError`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: state-stale}, {rule: stale-unknown}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:ready"], comments: 0}
