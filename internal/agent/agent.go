@@ -142,7 +142,7 @@ func Parse(spec string) (Agent, error) {
 	case strings.HasPrefix(spec, "claude:"):
 		model, effort, _ := strings.Cut(strings.TrimPrefix(spec, "claude:"), "@")
 		if _, ok := claudeEffort[effort]; effort != "" && !ok {
-			return nil, fmt.Errorf("agent %q: unknown effort %q (known: none, low, medium, high, max)", spec, effort)
+			return nil, fmt.Errorf("agent %q: unknown effort %q (known: none, low, medium, high, xhigh, max)", spec, effort)
 		}
 		if model == "" && effort == "" {
 			return nil, fmt.Errorf("agent %q: name a model, an effort, or both (claude:sonnet@high)", spec)
