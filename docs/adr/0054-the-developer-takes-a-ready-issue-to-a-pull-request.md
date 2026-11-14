@@ -36,7 +36,7 @@
   (built, [#1459](https://github.com/JN0V/workline/issues/1459)): the steering test shared with
   [ADR-0042] narrows to the list in `CODEOWNERS`: a role's folder and a
   file named a prompt or an instruction are no longer refused, save the
-  reviewer's and the auditor's prompts; agent files and gate files stay
+  reviewer's and the auditor's prompts and settings; agent files and gate files stay
 
 ## Context
 

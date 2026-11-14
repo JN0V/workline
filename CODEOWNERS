@@ -18,17 +18,19 @@
 /.workline/config.yaml @JN0V
 
 # The oversight that reads every other change: the reviewer's and the
-# auditor's prompts.
+# auditor's prompts and settings.
 /roles/reviewer/instruction.md @JN0V
 /roles/reviewer/persona.md @JN0V
 /roles/reviewer/policy.md @JN0V
 /roles/reviewer/lenses/ @JN0V
 /roles/reviewer/kinds/ @JN0V
+/roles/reviewer/role.yaml @JN0V
 /roles/auditor/instruction.md @JN0V
 /roles/auditor/persona.md @JN0V
 /roles/auditor/policy.md @JN0V
 /roles/auditor/lenses/ @JN0V
 /roles/auditor/kinds/ @JN0V
+/roles/auditor/role.yaml @JN0V
 
 # The wake script and its triggers (ADR-0068 §8): what prints the line's
 # drift, and the cases that hold it.
