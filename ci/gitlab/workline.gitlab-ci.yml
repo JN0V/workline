@@ -857,7 +857,7 @@ workline:review:head:
   stage: .pre
   script:
     - |
-      state=$(curl -fsS --header "PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$MR_IID" 2>/dev/null | sed -n 's/.*"state" *: *"\([a-z]*\)".*/\1/p' | head -n 1) || state=
+      state=$(curl -fsS --header "PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$MR_IID" 2>/dev/null | jq -r .state) || state=
       case "$state" in
         merged|closed) echo "workline: merge request $MR_IID is $state meanwhile: no round"; : > review-head; exit 0;;
       esac
