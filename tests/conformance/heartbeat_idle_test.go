@@ -15,7 +15,9 @@ import (
 // GitHub runs it, `gh` a stand-in whose environment has a wait timer of
 // 55 minutes: it reads what the reconcile's `route reconcile` listed
 // (due.json). A line with an issue due, or a review round due, gets its
-// heartbeat; an idle line gets none, and the summary says why.
+// heartbeat; an idle line gets none, and the summary says why. The step
+// is read from the workflow shipped in ci/github, the copy the project
+// edits; the workflow installed under .github is not read.
 //
 // Idle line
 // Given no issue and no review round due, and none waiting on a time,
@@ -35,7 +37,7 @@ func TestHeartbeatNotStartedWhenTheLineIsIdle(t *testing.T) {
 		{"a review round due", map[string]any{"status": "pass", "summary": "reconcile: 0 issues due:; 1 review round due",
 			"reviews": []map[string]any{{"id": 7, "branch": "workline/developer/5"}}}, true},
 	}
-	for _, f := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
+	for _, f := range []string{"../../ci/github/workline-develop.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
