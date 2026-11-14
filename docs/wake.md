@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline/wake.go, internal/wake, internal/forge/wake.go, .github/workflows/workline-apply.yml]
-checked: 4d940353
+checked: 24aada55
 verified: agent:claude-code
 ---
 # The wake
@@ -30,7 +30,7 @@ After each merge, the wake prints where the line may be drifting
 | Prompts that steer the line | changes a role's prompt (its words before → after), its `levels` table or its default level |
 | Symptoms without cause | lands while one file is fixed by 3 merges in 14 days; an issue a merge closed is open again, or closed by two merges |
 | Laundered needs | merges a merge request that closes no issue |
-| Nobody bypasses | merges a head without the App's `workline/accepted` (with a `merge:` policy); lands a commit with no merge request; follows a change of the default branch's ruleset |
+| Nobody bypasses | merges a head without the App's `workline/accepted` (with a `merge:` policy); follows a change of the default branch's ruleset |
 | The cord | finds the label `step-back` on an open issue or merge request |
 
 - **A fix** is a merge closing an issue the forge labels a bug: `bug`,
