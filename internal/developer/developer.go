@@ -791,8 +791,8 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		"For each file you change beyond it, give one line of why in the file `" + BeyondFile + "` of your worktree, YAML, `path/to/file: why the change needs it`; " +
 		"the engine reads it and takes it out of your diff, and the pull request lists those files for the reviewer, who judges each. " +
 		"Stay on the issue: a fix it does not ask, found on the way, belongs in another issue, said in your answer. " +
-		"Never, whatever the change needs: the files that steer agents (AGENTS.md, CLAUDE.md, a page they link, a prompt), " +
-		"a role's folder, `.workline/` (but the files named here), the CI's workflows, a gate's definition: such a change is reverted.\n")
+		"Never, whatever the change needs: the files the project's CODEOWNERS lists, agent files (AGENTS.md, CLAUDE.md…) and, with no CODEOWNERS, the pages they link, " +
+		"`.workline/` (but the files named here), the CI's workflows, a gate's definition: such a change is reverted.\n")
 	if frozen := b.acceptance(); len(frozen) > 0 {
 		t.WriteString("\n## The tester's acceptance tests: frozen\n\nIn your worktree, read-only to you; make them pass. A change to one is reverted.\n\n")
 		for _, f := range frozen {

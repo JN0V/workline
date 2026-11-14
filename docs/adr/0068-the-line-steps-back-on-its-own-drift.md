@@ -1,7 +1,8 @@
 # ADR-0068: The line steps back on its own drift, and its builders go through it
 
 - **Status:** accepted by the maintainer's merge of its pull request;
-  not built. Only [principles 4 and 7](#3-principles-4-and-7-reworded)
+  step 1 built, its test the person's ([§6](#6-nobody-bypasses-on-main));
+  steps 2 and 3 not built. Only [principles 4 and 7](#3-principles-4-and-7-reworded)
   take effect at merge. It commits to [build steps 1 to 3](#build-order);
   the old brakes hold until replaced
   ([§9](#9-the-old-brakes-hold-until-replaced)); steps 4 to 7 are
@@ -311,11 +312,15 @@ Each part of its step's issue, none blocking.
 - **Whether workline's App can read** the ruleset's history and the
   rule suites, or the wake script reads `updated_at` only (step 3).
 - **The steering test on a project other than workline**: its role
-  folders, its files named a prompt (step 1).
+  folders, its files named a prompt (step 1). Answered in [#1459](https://github.com/JN0V/workline/issues/1459):
+  its `CODEOWNERS` when it has one; else its agent files and the pages
+  they link or import; a role's folder or a file's name, never.
 - **"Again and again", "an area"**: read from files and the forge,
   never from titles or commit types, which the judged choose (step 3).
 - **Sign-offs already posted in the maintainer's name** by agent panels
   ([#155]): relabelled, not counted for a role's criteria (step 2).
+  Done in [#1460](https://github.com/JN0V/workline/issues/1460): the
+  four weeks agents rated on 2026-11-12, their 👎 taken off.
 - **Cost**: each step's issue states its tokens and wait ([ADR-0051]).
 
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md

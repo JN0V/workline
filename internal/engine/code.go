@@ -45,7 +45,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		return nil, err
 	}
 	if page != "" {
-		return waits("", "the developer's, but it changes "+page+", which agents are told to read")
+		return waits("", "the developer's, but it changes "+page)
 	}
 	d, err := developer.ReadMerge(f, w.mr)
 	if err != nil {
@@ -248,8 +248,8 @@ func notCoded(repo, baseTip, tip, committer string, local bool) (string, error) 
 }
 
 // steersAny names the first file the branch changes since it left base
-// that agents are told to read; "" when there is none.
-func steersAny(repo, baseTip, tip string, steers func(string) bool) (string, error) {
+// that never merges by the policy alone, and why; "" when there is none.
+func steersAny(repo, baseTip, tip string, steers func(string) string) (string, error) {
 	from, err := git(repo, nil, "merge-base", baseTip, tip)
 	if err != nil {
 		return "", err
@@ -259,8 +259,8 @@ func steersAny(repo, baseTip, tip string, steers func(string) bool) (string, err
 		return "", err
 	}
 	for _, p := range strings.Split(strings.TrimSuffix(files, "\x00"), "\x00") {
-		if p != "" && steers(p) {
-			return p, nil
+		if why := steers(p); p != "" && why != "" {
+			return p + ", " + why, nil
 		}
 	}
 	return "", nil

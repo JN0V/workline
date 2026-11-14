@@ -47,6 +47,9 @@ roles:
         runs-kept: "sed -n 's/^const keepRuns = \\([0-9]*\\)$/\\1/p' internal/engine/engine.go"
   product-owner:
     settings:
+      # Its level, pinned here where a person reads it (ADR-0068 §4): a
+      # change to the role's default never moves it unseen.
+      autonomy: normal
       # The week's trial of ADR-0038: fifteen issues read a night, ten
       # completed and ten readied at most, so the backlog is seen in a few
       # nights; proposals-max (10) still bounds what waits on a person.
@@ -95,6 +98,8 @@ roles:
       curator-mutation-command: go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash -s -o {report} {package}
   developer:
     settings:
+      # Its level, pinned here (ADR-0068 §4), as the product owner's.
+      autonomy: normal
       # Its proof on the packages its code and the acceptance tests touch
       # (#703), a conformance case running ./tests/conformance; the pull
       # request's own test job runs them all.
@@ -106,9 +111,11 @@ roles:
       # and the evaluation's results, a row a run (a measure's 107 rows
       # were a lens call past the role's budget, #360); the line simulator's
       # traces, real issues exported as they were; real code frozen for the
-      # code picker's cases, kept as its project wrote it (#1089).
-      ignore: ["*.md", "**/*.md", "docs/**", "LICENSE*", "**/*.txt", "CHANGELOG*", "tests/evaluation/judge-replay/**", "tests/evaluation/results.tsv",
-        "tests/simulator/traces/**", "tests/conformance/fixtures/code/**"]
+      # code picker's cases, kept as its project wrote it (#1089). Pages
+      # for people only, never a prompt: the role prompts, their facets and
+      # skills are read as code (ADR-0068 §4).
+      ignore: ["*.md", "docs/**", "roles/*/README.md", "roles/*/docs/**", ".github/**/*.md", "tests/**/*.md", "LICENSE*", "**/*.txt", "CHANGELOG*",
+        "tests/evaluation/judge-replay/**", "tests/evaluation/results.tsv", "tests/simulator/traces/**", "tests/conformance/fixtures/code/**"]
       # A verified correctness finding blocks here first (2026-10-15, #360):
       # five runs a case held 29 merges of 70, all on true findings, none
       # falsely. The role's default stays warn until real blocks here are

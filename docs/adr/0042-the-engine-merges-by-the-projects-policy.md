@@ -29,7 +29,7 @@
 - **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind) (built): at `enterprising`, a feature merges by the policy and the person's yes moves to the milestone's release candidate
 - **Extended by:** [ADR-0067](0067-a-role-request-behind-main-merges-main-in.md) (built): a role request the policy merges, in conflict with its base or held behind it, gets the base merged in, never rebased
 - **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)
-  (once its step 1 is built): "never alone, one changing what steers
+  (built, [#1459](https://github.com/JN0V/workline/issues/1459)): "never alone, one changing what steers
   agents" keeps applying to the files that define oversight and
   authority, listed in `CODEOWNERS` (`AGENTS.md`, `CLAUDE.md`,
   `PRINCIPLES.md`, CI workflows and actions, `.workline/config.yaml`,
