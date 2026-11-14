@@ -1,0 +1,59 @@
+case: routing/local-question-timeout-listed
+about: >
+  With `forge: local` (#1337), the forge dates the comments it keeps: a
+  question to the reporter unanswered past the delay is a timeout, as on a
+  forge. The reconciler lists the issue due, no agent asked, nothing
+  written; one whose question is inside the delay is not listed.
+given:
+  repo: backlog
+  config:
+    forge: local
+    routing: {events: {issue: [product-owner]}}
+  setup:
+    - |
+      mkdir -p .git/workline/issues
+      for pair in "7:2026-10-01T23:50:00Z" "8:2099-10-01T23:50:00Z"; do
+        id=${pair%%:*}; at=${pair#*:}
+        cat > .git/workline/issues/$id.md <<EOT
+      ---
+      title: workline version --verbose=false
+      state: open
+      labels: ['workline:to-refine']
+      ---
+
+      ## Need
+
+      When I run \`workline version --verbose=false\`, I want the plain line, so my scripts read it.
+
+      ## Validation
+
+      - **Plain line:** Given workline installed, When I run \`workline version --verbose=false\`, Then it prints one line.
+
+      ---
+
+      ## Verification
+
+      A test runs the command and reads one line.
+
+      ## Scope
+
+      src/export/csv.go
+
+      <!-- workline-comment at=$at -->
+      Should \`--verbose=false\` print the plain line, as \`--short\` does?
+
+      <!-- workline:product-owner/ask -->
+
+      <!-- workline-comment at=$at -->
+      **workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).
+
+      <!-- workline:line-record {"state":"refine","body":"206c8bcea856","hops":1} -->
+      <!-- workline:sticky=line/state -->
+      EOT
+      done
+run: {route: reconcile, ai: "fake:assume-plain-line", input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: state-timeout, where: "#7"}]
+  no-findings: [{rule: state-timeout, where: "#8"}]
