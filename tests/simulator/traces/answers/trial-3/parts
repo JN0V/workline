@@ -1,4 +1,4 @@
-after tests: the trial went to blocked, the simulator to ready; unused: 1 product-owner
+after refine, the trial went on to tests, the simulator stopped; unused: 1 developer, 2 product-owner, 1 tester
 The product owner's first answer names the code it lacks, given at once, run again in its step
 (ADR-0063, step 2), whose answer readies it. The tester's answer, refused at once by the
 engine, is asked again in the same run with what refused it, and its next answer is the
@@ -6,3 +6,4 @@ fake's: the tests go on to ready, where the trial blocked them. The developer's 
 answer writes no code: past claim-hours on the same body, the line blocks #3 for a person,
 and the product owner reads it again a week later, taking one of its later answers; the
 other came after the trial's block.
+Since #1440 its first answer, naming only files the fixture gives, leaves nothing to read: no run again in its step, acted on, nothing more to run (the silent park, #1082).

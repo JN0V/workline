@@ -42,7 +42,7 @@ const (
 	// the Scope names, in its component's test folder (#1061, ADR-0063
 	// §9): its fix is the next call's.
 	testBeside outcome = "test-beside"
-	replayed     outcome = "replayed"
+	replayed   outcome = "replayed"
 	// replayedUnread: the trial's answer, which the engine's reader could
 	// not read: a machine error, counted against the budget.
 	replayedUnread outcome = "replayed-unread"
@@ -256,15 +256,42 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 				h, _ = a.goFile(d)
 			}
 		}
-		code, _ := os.ReadFile(filepath.Join(a.work, "repo", h))
-		line := ""
-		for _, l := range strings.Split(string(code), "\n") {
-			if l = strings.TrimSpace(l); len(l) > 12 && !strings.HasPrefix(l, "#") {
-				line = l
-				break
+		firstLine := func(file string) string {
+			code, _ := os.ReadFile(filepath.Join(a.work, "repo", file))
+			for _, l := range strings.Split(string(code), "\n") {
+				if l = strings.TrimSpace(l); len(l) > 12 && !strings.HasPrefix(l, "#") {
+					return l
+				}
 			}
+			return ""
 		}
-		return kind, fmt.Sprintf("- sources: {issue: ISSUE, sources: [%q], quote: {path: %q, text: %q}, why: \"no code was given: the file the title names\"}\n", h, h, line)
+		line := firstLine(h)
+		named := []string{h}
+		if line != "" && strings.Contains(string(task), line) {
+			// The file the Scope names is given already: naming it alone
+			// is no need for code (#1440). A source file the task did not
+			// name is the one it lacks, named beside it.
+			root := filepath.Join(a.work, "repo")
+			exts := []string{".go", ".h", ".cpp"}
+			if _, ok := headerFound(task, "## Scope"); !ok {
+				exts = []string{".mod"} // a Go issue: never a header, which would make it C++'s
+			}
+			_ = filepath.WalkDir(root, func(g string, e os.DirEntry, _ error) error {
+				rel, err := filepath.Rel(root, g)
+				if err != nil || e.IsDir() || len(named) > 1 || !slices.Contains(exts, filepath.Ext(g)) || strings.HasSuffix(g, "_test.go") || strings.HasPrefix(rel, ".") || strings.Contains(string(task), filepath.ToSlash(rel)) {
+					return nil
+				}
+				named = append(named, filepath.ToSlash(rel))
+				return nil
+			})
+		}
+		return kind, fmt.Sprintf("- sources: {issue: ISSUE, sources: [%s], quote: {path: %q, text: %q}, why: \"no code was given: the file the title names\"}\n", strings.Join(slices.Collect(func(yield func(string) bool) {
+			for _, n := range named {
+				if !yield(fmt.Sprintf("%q", n)) {
+					return
+				}
+			}
+		}), ", "), h, line)
 	case kind == needsEngine && role == "tester":
 		// A tester short of code (#1047, #1059): the header the Scope
 		// names, said lacking, never "no test possible".

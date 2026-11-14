@@ -1,4 +1,5 @@
-none; unused: 6 product-owner
+none; unused: 7 product-owner
 The trial's #33 never left refine either. Its first answer names the heap suite: the code
 it lacks, given at once, run again in its step (ADR-0063, step 2), whose answer asks the reporter; no
 status follows (#1082), so the later answers are never asked for.
+Since #1440 its first answer, naming only files the fixture gives, leaves nothing to read: no run again in its step, acted on, nothing more to run (the silent park, #1082).
