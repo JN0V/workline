@@ -56,6 +56,9 @@ func readJUnit(file string, results map[string]result, suites map[string]string,
 	walk = func(s suite) {
 		for _, c := range s.Cases {
 			name := strings.TrimSuffix(c.Name, "()")
+			// A name ending in `()` is a method's, whatever text it
+			// carries: never a runner's record of a suite.
+			method := name != c.Name
 			id := name
 			if c.Class != "" {
 				id = c.Class + "." + name
@@ -68,7 +71,7 @@ func readJUnit(file string, results map[string]result, suites map[string]string,
 				r = failed
 				// Erred only while no run of it failed: a run in
 				// error after a failure stays a failure.
-				if prev, seen := results[id]; erred != nil && c.Failure == nil && (!seen || prev != failed || erred[id] != "") {
+				if prev, seen := results[id]; erred != nil && c.Failure == nil && !method && (!seen || prev != failed || erred[id] != "") {
 					erred[id] = name
 				} else if erred != nil {
 					delete(erred, id)
