@@ -110,6 +110,11 @@ func wakeCmd(args []string) int {
 		n, err := f.KeepIssue(wake.Title, backlog.Inert(body), any)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "workline: the wake's issue not kept:", forge.Said(err))
+			// On GitHub Actions, a warning on the run too: a log line
+			// alone is read by nobody.
+			if os.Getenv("GITHUB_ACTIONS") == "true" {
+				fmt.Fprintln(os.Stderr, "::warning title=workline::the wake's issue not kept: "+strings.Join(strings.Fields(forge.Said(err)), " "))
+			}
 			return 0
 		}
 		fmt.Fprintf(os.Stderr, "workline: issue #%d kept\n", n)
