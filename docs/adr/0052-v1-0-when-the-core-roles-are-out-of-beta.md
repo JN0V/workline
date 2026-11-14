@@ -119,7 +119,8 @@ holds the issues that count.
   by its own policy, a guarded file on the person's label
   ([ADR-0068 §9](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-replaced)).
 - **What still stands**: the v1.0 bar until ADR-0068's step 7;
-  [ADR-0063]'s standing stop until its step 3 ([#1461]).
+  [ADR-0063]'s standing stop until its step 3 ([#1461]), lifted on
+  2026-11-14 ([its amendment](0063-every-open-issue-is-due-waiting-or-done.md#amendment-2026-11-14-the-standing-stop-is-lifted)).
 
 [#1266]: https://github.com/JN0V/workline/issues/1266
 [round 3]: https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764
