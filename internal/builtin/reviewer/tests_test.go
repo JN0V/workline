@@ -137,6 +137,7 @@ func TestReadLensFrontMatter(t *testing.T) {
 		{"---\njudge:\n  question: Asked?\n", "", "", "not closed"},
 		{"---\njudge: {reads: lint}\n---\n", "", "", "only `tests`"},
 		{"---\nsubject: plan\n---\n", "", "", "only `spec`"},
+		{"---\nseverity: important\n---\n", "", "", "only `nit`"},
 	} {
 		os.WriteFile(filepath.Join(dir, "l.md"), []byte(c.text), 0o644)
 		l, err := readLens(t.TempDir(), "l")
