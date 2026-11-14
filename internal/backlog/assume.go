@@ -117,9 +117,10 @@ type Silence struct {
 }
 
 // Unanswered is the role's last question to an issue's reporter when no
-// comment came after it; false when there is none, or the last round was
+// counted comment came after it (a bot's, an outsider's or a "+1" does
+// not answer, ADR-0038); false when there is none, or the last round was
 // a proposal to an outsider, whose issue is theirs.
-func Unanswered(notes []forge.Note, role string) (Silence, bool) {
+func Unanswered(notes []forge.Note, role string, is forge.Issue) (Silence, bool) {
 	var s Silence
 	open, round := false, 0
 	for _, n := range notes {
@@ -130,7 +131,7 @@ func Unanswered(notes []forge.Note, role string) (Silence, bool) {
 			open = strings.HasPrefix(last, "<!-- workline:"+role+"/ask")
 			s = Silence{Round: round, Questions: askedIn(n.Body)}
 			s.Since, s.Dated = readTime(n.Created)
-		case !engine:
+		case !engine && !strings.Contains(n.Body, "<!-- workline:") && countsAnswer(n, is):
 			open = false
 		}
 	}
@@ -148,8 +149,8 @@ func (s Silence) Due(w Delay, st *State, now time.Time) bool {
 
 // SilenceDue is the question of an issue due for an assumption at now,
 // read from its comments; false when none is.
-func SilenceDue(notes []forge.Note, role string, w Delay, now time.Time) (Silence, bool) {
-	s, open := Unanswered(notes, role)
+func SilenceDue(notes []forge.Note, role string, is forge.Issue, w Delay, now time.Time) (Silence, bool) {
+	s, open := Unanswered(notes, role, is)
 	if !open {
 		return s, false
 	}
@@ -326,7 +327,7 @@ func (p *Plan) checkAssume(f forge.Backlog, role string, c *Proposal) (rule, why
 		return "assume-empty", "nothing assumed: the assumption was empty"
 	}
 	w, now := p.config.Wait, clock.Now()
-	s, open := Unanswered(notes, role)
+	s, open := Unanswered(notes, role, is)
 	switch round := p.askedNow[c.Issue]; {
 	case round > 0 && !w.Never && w.D == 0:
 		// Asked in this run, at a level that goes on at once.

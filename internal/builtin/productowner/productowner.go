@@ -548,7 +548,7 @@ func Pre(runDir, repo string) int {
 		// role's assumption; drafts no person accepted past it, all the
 		// issue lacks, taken as written with no agent; an answer after an
 		// assumption marks it, and is read as asking to revise.
-		silence, silent := backlog.Unanswered(notes, role)
+		silence, silent := backlog.Unanswered(notes, role, is)
 		silent = silent && silence.Due(cfg.Wait, st, now) && (st.Told < silence.Round || is.ID == issueEvent()) && !aside
 		if silent {
 			timedOut[is.ID] = silence

@@ -695,7 +695,7 @@ func personWaits(f forge.Forge, cfg *routing.Config, is forge.Issue, wait string
 	}
 	if offers := backlog.Proposes(comments, backlog.Keeper); proposed && len(offers) > 0 {
 		why, then := "the product owner proposes what a person decides: "+strings.Join(offers, " "), yes
-		q, open := backlog.Unanswered(notes, backlog.Keeper)
+		q, open := backlog.Unanswered(notes, backlog.Keeper, is)
 		st, _, _ := backlog.ReadState(comments, backlog.Keeper)
 		if open && (st == nil || st.Assumed < q.Round) && waits != "" {
 			// a question too, not yet assumed: timedOut says it first, never dropped
