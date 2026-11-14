@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"slices"
 	"strings"
 	"time"
@@ -563,6 +564,13 @@ func ownRebuild(repo, covered, tip, base string) bool {
 // (OwnMerge, ownRebuild), or a commit changing only the lines workline
 // writes in the docs (ownRecord), as a merge of the base settles them.
 func pushedAfter(o FollowOptions, branch string, st forge.MergeState, yes, baseTip, tip string) (string, error) {
+	said, _, err := pushedAfterAt(o, branch, st, yes, baseTip, tip)
+	return said, err
+}
+
+// pushedAfterAt is pushedAfter, the commit that was pushed too ("" when
+// none is one commit).
+func pushedAfterAt(o FollowOptions, branch string, st forge.MergeState, yes, baseTip, tip string) (string, string, error) {
 	repo := o.Repo
 	own := func(c string) bool {
 		if ownTrailer(repo, c) == "" {
@@ -583,40 +591,40 @@ func pushedAfter(o FollowOptions, branch string, st forge.MergeState, yes, baseT
 	}
 	if covered != "" {
 		if covered == tip {
-			return "", nil
+			return "", "", nil
 		}
 		if _, err := git(repo, nil, "cat-file", "-e", covered+"^{commit}"); err != nil {
 			git(repo, nil, "fetch", "-q", "origin", covered) // gone from the branch, maybe still on the forge
 		}
 		if !isAncestor(repo, covered, tip) {
 			if strings.HasPrefix(branch, "workline/") && ownRebuild(repo, covered, tip, baseTip) {
-				return "", nil
+				return "", "", nil
 			}
-			return fmt.Sprintf("its branch was rewritten (%s, over %s)", short(tip), short(covered)), nil
+			return fmt.Sprintf("its branch was rewritten (%s, over %s)", short(tip), short(covered)), "", nil
 		}
 		// The base's commits a merge of it brings are no push to judge.
 		out, err := git(repo, nil, "rev-list", "--reverse", covered+".."+tip, "^"+baseTip)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		for _, c := range strings.Fields(out) {
 			if !own(c) {
-				return commitSaid(repo, c) + " was pushed", nil
+				return commitSaid(repo, c) + " was pushed", c, nil
 			}
 		}
-		return "", nil
+		return "", "", nil
 	}
 	out, err := git(repo, nil, "log", "--reverse", "--format=%H%x1f%cI", baseTip+".."+tip)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	for _, l := range strings.Split(out, "\n") {
 		c, at, ok := strings.Cut(l, "\x1f")
 		if ok && later(at, yes) && !own(c) {
-			return commitSaid(repo, c) + " was committed", nil
+			return commitSaid(repo, c) + " was committed", c, nil
 		}
 	}
-	return "", nil
+	return "", "", nil
 }
 
 // ownTrailer is the role a commit's trailer names, "".
@@ -901,17 +909,17 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	// Each yes covers the head it was given on, weighed on its own: a
 	// stale one is taken off alone while another covers the head (#1107).
 	var stale []*forge.LabelEvent
-	pushed := ""
+	pushed, pushedC := "", ""
 	for _, g := range []*forge.LabelEvent{plain, whole} {
 		if g == nil {
 			continue
 		}
-		p, err := pushedAfter(o, mr.Branch, st, g.Created, baseTip, tip)
+		p, pc, err := pushedAfterAt(o, mr.Branch, st, g.Created, baseTip, tip)
 		if err != nil {
 			return nil, err
 		}
 		if p != "" {
-			stale, pushed = append(stale, g), p
+			stale, pushed, pushedC = append(stale, g), p, pc
 		}
 	}
 	t := forge.Target{Kind: "merge-request", ID: mr.ID}
@@ -957,6 +965,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		}
 		body := fmt.Sprintf("**workline took %s off**: %s after %s accepted this merge request, on %s. A yes covers the head it was given on, so its auto-merge is off. %s to accept the head as it is now (%s).",
 			took, pushed, by, yes.Created, again, short(tip))
+		body += settlementDiff(o.Repo, pushedC)
 		if err := f.Comment(t, body, forge.Marker("merge-reset="+tip)); err != nil {
 			return nil, err
 		}
@@ -1215,4 +1224,78 @@ func heldByConversations(m forge.Merger, mr forge.MergeRequest, tip string, st f
 		say("held-not-said", "warn", "could not say on it what holds it: "+forge.Said(err))
 	}
 	return nil
+}
+
+// settlementDiff is what a merge commit's author wrote to settle its
+// conflicts, as a comment's text: the lines the commit's tree has over the
+// tree git's own merge of its two parents gives, file by file; "" when the
+// commit is no merge, or git's merge is the commit's tree.
+func settlementDiff(repo, commit string) string {
+	if commit == "" {
+		return ""
+	}
+	out, err := git(repo, nil, "rev-list", "--parents", "-n", "1", commit)
+	parts := strings.Fields(out)
+	if err != nil || len(parts) != 3 {
+		return ""
+	}
+	// git's own merge, its conflicts written as markers in the files.
+	cmd := exec.Command("git", "-C", repo, "merge-tree", "--write-tree", "-z", "--no-messages", parts[1], parts[2])
+	raw, err := cmd.Output()
+	var ee *exec.ExitError
+	if err != nil && !(errors.As(err, &ee) && ee.ExitCode() == 1) {
+		return ""
+	}
+	tree, _, _ := strings.Cut(string(raw), "\x00")
+	if tree == "" {
+		return ""
+	}
+	diff, err := git(repo, nil, "diff", "-U0", "--no-color", "--no-renames", "--no-ext-diff", tree, commit)
+	if err != nil || diff == "" {
+		return ""
+	}
+	const max = 200
+	var lines []string
+	n := 0
+	for _, l := range strings.Split(diff, "\n") {
+		switch {
+		case strings.HasPrefix(l, "+++ "):
+			f := strings.TrimPrefix(strings.TrimPrefix(l, "+++ "), "b/")
+			lines = append(lines, "", "`"+f+"`:", "")
+			lines = append(lines, "~~~")
+			lines = append(lines, "\x00")
+		case strings.HasPrefix(l, "+"):
+			if n++; n <= max {
+				lines = append(lines, l[1:])
+			}
+		}
+	}
+	if n == 0 {
+		return ""
+	}
+	// Close each file's fence: the marker line opens it, the next file's
+	// header (or the end) closes it.
+	var b strings.Builder
+	open := false
+	for _, l := range lines {
+		switch l {
+		case "\x00":
+			open = true
+		case "":
+			if open {
+				b.WriteString("~~~\n")
+				open = false
+			}
+			b.WriteString("\n")
+		default:
+			b.WriteString(l + "\n")
+		}
+	}
+	if open {
+		b.WriteString("~~~\n")
+	}
+	if n > max {
+		fmt.Fprintf(&b, "\n(%d more lines)\n", n-max)
+	}
+	return "\n\nWhat the agent wrote to settle the conflict, over git's own merge:\n" + b.String()
 }
