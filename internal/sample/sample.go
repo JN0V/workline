@@ -721,10 +721,15 @@ type claimed struct {
 // commit `checked` names, or a name the code no longer had then.
 func check(repo string, d *documentalist.Doc, content string, answer []intent.Intention, r *Read) {
 	notes, claims := 0, 0
+	saidFalse := ""
 	for _, in := range answer {
 		switch in.Kind {
 		case "note":
 			notes++
+			text := strings.TrimSpace(fmt.Sprint(in.Value))
+			if w, _, _ := strings.Cut(text, ":"); strings.ToLower(strings.Trim(strings.TrimSpace(w), "*`\"'")) == "false" && saidFalse == "" {
+				saidFalse = text
+			}
 			continue
 		case "claim":
 		default:
@@ -787,6 +792,9 @@ func check(repo string, d *documentalist.Doc, content string, answer []intent.In
 		r.Verdict = "false"
 	case claims > 0:
 		r.Verdict = "unproven"
+	case saidFalse != "":
+		r.Verdict = "unproven"
+		r.Unproven = append(r.Unproven, Proof{Why: "said false, " + oneLine(saidFalse, 200) + ", with no passage quoted"})
 	case notes == 0:
 		r.Verdict, r.Why = "not-read", "the judge answered nothing; for a person"
 	default:
