@@ -19,7 +19,7 @@ In `role.yaml`:
 model:
   capability: writing     # coding | reasoning | writing | classification
   tier: light             # light | standard | frontier
-  effort: low             # none | low | medium | high | max
+  effort: low             # none | low | medium | high | xhigh | max
 ```
 
 - **capability** — what the decision is mostly about. Writing a commit message
@@ -57,7 +57,7 @@ grid:
     frontier: {claude: opus,   codex: <model>, agy: <model>}
 
 effort:                           # our level -> the agent's own value
-  claude: {none: low, low: low, medium: medium, high: high, max: max}
+  claude: {none: low, low: low, medium: medium, high: high, xhigh: xhigh, max: max}
   codex:  {none: minimal, low: low, medium: medium, high: high, max: xhigh}
   agy:    {none: low, low: low, medium: medium, high: high, max: high}
 ```
