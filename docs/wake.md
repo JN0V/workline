@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline/wake.go, internal/wake, internal/forge/wake.go, .github/workflows/workline-apply.yml]
-checked: 24aada55
+checked: 4a2a981c
 verified: agent:claude-code
 ---
 # The wake
@@ -48,11 +48,15 @@ After each merge, the wake prints where the line may be drifting
   never commented on.
 - **Each trigger is kept 7 days**, the newest read of it: someone
   reading once a week reads each one.
+- **No merge skipped**: a read starts where the issue's last read ended,
+  when that is earlier on the branch than `--range`'s start: a run the
+  forge dropped from its queue is read by the next.
 - **The cord**: anyone, a person or a role, puts `step-back` on an issue
   or a merge request; the next merge lists it. The wake makes the label
   when it is missing.
 - **What was not read** is said under *Not read*, never taken for
-  nothing found: no forge, a read refused. Closing links unread, no
+  nothing found: no forge, a read refused, a forge that keeps no
+  rulesets or no `workline/accepted` (GitLab). Closing links unread, no
   merge is said to close none; its issue unread, the issue is left as it
   is.
 
