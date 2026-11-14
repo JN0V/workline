@@ -104,6 +104,10 @@ changes nothing.
   ([nobody bypasses `main`](merge-policy-no-bypass.md)). `--forge` names
   the forge; by default the project's `forge`, else GitHub when its
   workflows run workline.
+- Where the merge policy merges alone, or the developer runs: which
+  list holds a file from a merge by the policy alone, the project's
+  `CODEOWNERS` or, with none, the files that steer agents
+  ([what never merges alone](merge-policy-normal.md#what-never-merges-alone)).
 - On GitLab (`--forge gitlab`, the project's `forge`, or a
   `.gitlab-ci.yml` naming workline): whether workline's tokens are
   scoped to the environment `workline`, read from the project's
