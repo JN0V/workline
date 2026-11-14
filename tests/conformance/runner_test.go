@@ -20,6 +20,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -441,9 +442,9 @@ type itemWant struct {
 	Merged          *bool               `yaml:"merged"`     // a merge request the forge merged
 	BodyContains    texts               `yaml:"body-contains"`
 	BodyLacks       texts               `yaml:"body-lacks"`
-	Comments        *int                `yaml:"comments"` // how many
-	Posted          *int                `yaml:"posted"`   // comments posted, each mailing the issue's followers; an edit posts none
-	Edits           *int                `yaml:"edits"`    // times its body was rewritten, as the forge's edit history counts them
+	Comments        *int                `yaml:"comments"`      // how many
+	Posted          *int                `yaml:"posted"`        // comments posted, each mailing the issue's followers; an edit posts none
+	Edits           *int                `yaml:"edits"`         // times its body was rewritten, as the forge's edit history counts them
 	CommentsRead    *int                `yaml:"comments-read"` // times its comments were listed, each an API call on a real forge (#804)
 	CommentContains texts               `yaml:"comment-contains"`
 	CommentLacks    texts               `yaml:"comment-lacks"`
@@ -530,6 +531,7 @@ func TestConformance(t *testing.T) {
 			continue
 		}
 		t.Run(c.Case, func(t *testing.T) {
+			t.Parallel()
 			problems := runCase(t, &c)
 			switch {
 			case pending[c.Case] && len(problems) == 0:
@@ -585,6 +587,9 @@ func forgeReads(state map[string]any) error {
 // engines are the engines built with build tags of the tests, by their tags.
 var engines = map[string]string{}
 
+// enginesMu guards engines: the cases run in parallel.
+var enginesMu sync.Mutex
+
 // engineFor is the engine a case runs: the suite's, or, for a case naming
 // engine-tags, one built from this source with those Go build tags — a
 // change only the tests make, which no shipped engine has (the table of a
@@ -595,6 +600,9 @@ func engineFor(tags []string) (string, error) {
 	if len(tags) == 0 {
 		return engineBin, nil
 	}
+	// Held through the build, so cases with the same tags build it once.
+	enginesMu.Lock()
+	defer enginesMu.Unlock()
 	key := strings.Join(tags, ",")
 	if bin, ok := engines[key]; ok {
 		return bin, nil
