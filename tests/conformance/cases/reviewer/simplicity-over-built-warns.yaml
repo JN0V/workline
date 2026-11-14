@@ -1,0 +1,41 @@
+case: reviewer/simplicity-over-built-warns
+about: "A change saying `Closes #4` is read by the simplicity lens too (ADR-0068, step 4): given #4, it quotes what the change adds that the Need does not need, judged by its own question, shown the issue. It is advisory: with ai-findings set by lens, correctness blocking, its verified finding warns and the change passes."
+given:
+  repo: reviewed
+  setup:
+    - |
+      cat >> calc/calc.go <<'GO'
+
+      // Options says what AverageOr gives for an empty list.
+      type Options struct {
+      	Empty int
+      }
+
+      // AverageOr returns the mean of the values, or opts.Empty for none.
+      func AverageOr(values []int, opts Options) int {
+      	if len(values) == 0 {
+      		return opts.Empty
+      	}
+      	return Average(values)
+      }
+      GO
+      git commit -qam 'feat: a mean for an empty list' -m 'Closes #4.'
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}}
+  forge:
+    issues:
+      - id: 4
+        title: The mean of an empty list is 0
+        body: "## Need\n\nThe mean of an empty list gives 0 instead of a crash.\n\n## Verification\n\nA test of Average on [].\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-simplicity"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: simplicity, where: "calc/calc.go:21", level: warn, message: "Important: An options type the issue does not need"}
+  run-files:
+    in/parts/1-lenses/task.md: {contains: "## Lens: simplicity"}
+    in/judge/01/question.yaml: {contains: "the change's size"}
