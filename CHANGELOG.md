@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.77.1](https://github.com/JN0V/workline/compare/v0.77.0...v0.77.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **internal:** a forge command's timeout waits for its children ([#1525](https://github.com/JN0V/workline/issues/1525)) ([6500c50](https://github.com/JN0V/workline/commit/6500c50224edae4cbe3dcee5d7fd9216272591b0))
+* **internal:** code-lines-max cuts a typical Android ViewModel ([#1453](https://github.com/JN0V/workline/issues/1453)) ([02b1f10](https://github.com/JN0V/workline/commit/02b1f10a5ff86a36c395f50394955f2c97f2d8a4))
+* **line:** a product owner is started twice in one tick after ([#1569](https://github.com/JN0V/workline/issues/1569)) ([c195c97](https://github.com/JN0V/workline/commit/c195c9737679418b117c86815982182e57100d6a))
+* **line:** a product owner's answer unreadable twice is asked ([#1424](https://github.com/JN0V/workline/issues/1424)) ([ae2eed4](https://github.com/JN0V/workline/commit/ae2eed4cf7d7de5381f812e2875010317a042201))
+* **line:** a token count can undo the line's record written ([#1422](https://github.com/JN0V/workline/issues/1422)) ([a95c5bb](https://github.com/JN0V/workline/commit/a95c5bbad0f3fc8c27870daf911c1c0e9d0af739))
+* local review rounds name no author and lay an uncommitted ([#1546](https://github.com/JN0V/workline/issues/1546)) ([93a0372](https://github.com/JN0V/workline/commit/93a03723581c5b64170351a96fb0a4081fb61ab1))
+* local-line.md drops the packs line; doctor warns of CI ([#1471](https://github.com/JN0V/workline/issues/1471)) ([1b4dfaf](https://github.com/JN0V/workline/commit/1b4dfafbf3b73a5b883c00160ac8e401653a03c5))
+* **tester:** frozen tests under a runner's own names are ([#1553](https://github.com/JN0V/workline/issues/1553)) ([a664807](https://github.com/JN0V/workline/commit/a66480759c1baffd817ea061a8b5e58f9998a308))
+
 ## [0.77.0](https://github.com/JN0V/workline/compare/v0.76.0...v0.77.0) (2026-11-14)
 
 
