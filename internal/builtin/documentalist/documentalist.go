@@ -1615,6 +1615,7 @@ func (r *preRun) leaveForNextRound() error {
 	asked := r.task != "" || r.partsAsked > 0 || r.recording
 	var left strings.Builder
 	saidOnce := map[string]bool{}
+	said := newPersonSaid(r.repo)
 	for i := range r.findings {
 		if r.adopting || r.readerOnly {
 			break // adoption said itself what it left for the next round; the reader's round leaves nothing
@@ -1643,7 +1644,7 @@ func (r *preRun) leaveForNextRound() error {
 			continue
 		}
 		if sd.note != "" {
-			f.Message += "\n" + sd.note
+			f.Message += "\n" + said.line(f.Where, sd.doc, sd.note)
 			if sd.deferred {
 				fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 			}
@@ -1655,7 +1656,7 @@ func (r *preRun) leaveForNextRound() error {
 			continue
 		}
 		if sd.tooLarge {
-			f.Message += "\n(too large to be put before the agent — the doc with what changed in its sources, or with its sources as they are now: " + personJudges + ")"
+			f.Message += "\n" + said.line(f.Where, sd.doc, "(too large to be put before the agent — the doc with what changed in its sources, or with its sources as they are now: "+personJudges+")")
 			continue
 		}
 		if asked {
@@ -1666,6 +1667,9 @@ func (r *preRun) leaveForNextRound() error {
 	r.findings = slices.DeleteFunc(r.findings, func(f verdict.Finding) bool {
 		return f.Rule == "" || r.readerOnly && !slices.Contains(readerShown, f.Rule) && f.Rule != "too-large-to-read" && f.Rule != "reader-declined-unread"
 	})
+	if err := said.write(runDir); err != nil {
+		return err
+	}
 	// Once each finding says what became of its doc: those left to a person.
 	if i, ok := personIssue(r.findings, r.repo); ok && !r.readerOnly {
 		file := filepath.Join(runDir, "in", "fallback.yaml")
@@ -1751,7 +1755,7 @@ func (r *preRun) writeTask() error {
 }
 
 // personJudges ends the note of a doc no agent can judge: a person does.
-const personJudges = "a person judges it"
+const personJudges = "a person judges it: reads it against its sources, then moves `checked`"
 
 // suspectTask writes the question for the agent: each suspect doc, with line
 // numbers, what changed in its sources, and the commits its `checked` must
@@ -2211,6 +2215,14 @@ func Post(runDir, repo string) int {
 		v.Summary = "docs to check — see the findings"
 	default:
 		v.Summary = "docs are up to date"
+	}
+	if c, ok, err := personComment(runDir); err != nil {
+		return fail(err)
+	} else if ok && v.Status != verdict.Block {
+		// What was said of the docs left to a person, kept for the next head.
+		if err := writeIntents(filepath.Join(runDir, "out", "intentions.yaml"), append(intents, c)); err != nil {
+			return fail(err)
+		}
 	}
 	if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
 		return fail(err)
