@@ -199,13 +199,11 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 		inRange[c] = true
 	}
 	var merged []forge.MergeRequest
-	listed := false
 	if m, ok := f.(forge.Merged); ok {
 		all, err := m.MergedSince(at.Add(-Window - 24*time.Hour))
 		if err != nil {
 			unread("the merge requests merged", err)
 		}
-		listed = err == nil
 		for _, mr := range all {
 			if _, ok := window[mr.MergedAs]; ok && mr.MergedAs != "" {
 				merged = append(merged, mr)
@@ -275,16 +273,13 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 		}
 	}
 
-	// The range's own merges: a need stated, the App's yes, a merge
-	// request at all. The App's yes is read where the project's merge
+	// The range's own merges: a need stated, the App's yes. The App's yes is read where the project's merge
 	// policy, as the merged tree holds it, asks for it (`merge:`).
 	accepted := g.mergePolicy(after)
-	seen := map[string]bool{}
 	for _, mr := range merged {
 		if !inRange[mr.MergedAs] {
 			continue
 		}
-		seen[mr.MergedAs] = true
 		if closesRead && len(closes[mr.ID]) == 0 {
 			add(Need, fmt.Sprintf("none:%d", mr.ID), fmt.Sprintf("closes no issue: %s, by `%s`", ref(mr.ID), orNone(mr.Author)))
 		}
@@ -303,13 +298,6 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 				unread(fmt.Sprintf("%s's status on %s", forge.Accepted, ref(mr.ID)), err)
 			case !yes:
 				add(Bypass, fmt.Sprintf("unaccepted:%d", mr.ID), fmt.Sprintf("merged without the App's `%s`: %s, head `%s`", forge.Accepted, ref(mr.ID), short(mr.HeadSHA)))
-			}
-		}
-	}
-	if listed {
-		for _, c := range g.rangeCommits(before, after) {
-			if !seen[c] {
-				add(Bypass, "pushed:"+c, fmt.Sprintf("on the default branch with no merge request: `%s`", short(c)))
 			}
 		}
 	}

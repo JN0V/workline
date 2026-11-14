@@ -1,5 +1,5 @@
 case: engine/wake-nobody-bypasses
-about: "With the merge policy, as the merged tree sets it, a head merged without the App's workline/accepted, a commit with no merge request, and the default branch's ruleset changed since the last merge are each printed; a head the App accepted is not (ADR-0068 §6 and §8, #1461)."
+about: "With the merge policy, as the merged tree sets it, a head merged without the App's workline/accepted and the default branch's ruleset changed since the last merge are each printed; a head the App accepted is not (ADR-0068 §6 and §8, #1461)."
 given:
   repo: basic
   setup:
@@ -22,5 +22,5 @@ given:
 run: {cli: [wake, --forge, "fake:../forge.json", --range, "main~3..main"]}
 expect:
   exit: 0
-  stdout: ["### Nobody bypasses", "merged without the App's `workline/accepted`: #41, head `", "on the default branch with no merge request: `", "ruleset changed: `main` on main, at 2026-01-02T12:00:00Z"]
-  stdout-lacks: ["#40", "`tags`"]
+  stdout: ["### Nobody bypasses", "merged without the App's `workline/accepted`: #41, head `", "ruleset changed: `main` on main, at 2026-01-02T12:00:00Z"]
+  stdout-lacks: ["#40", "`tags`", "no merge request"]
