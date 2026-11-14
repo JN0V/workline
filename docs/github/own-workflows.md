@@ -31,7 +31,9 @@ engine:
   [one action](../../.github/actions/tests/action.yml), in test.yml and in
   each job where a role runs the tests: the developer's and the tester's
   proofs, the curator's measures;
-- test.yml runs the tests alone: main's whole-repository checks are
+- test.yml runs the tests alone, the line simulator in a job beside the
+  rest; its `test` job, the check `main` requires, waits for both.
+  main's whole-repository checks are
   `route main`'s, once a merge ([main after a merge](../main-after-merge.md));
   gardening installs lychee, for the links to other sites, at night;
 - a project never runs, in a commit's checks, the pin that commit ships: a
