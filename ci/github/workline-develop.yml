@@ -361,7 +361,8 @@ jobs:
         env: {GH_TOKEN: "${{ github.token }}", GAP_MINUTES: "${{ vars.WORKLINE_RECONCILE_GAP_MINUTES }}"}
         run: |
           gap=${GAP_MINUTES:-55}
-          case "$gap" in ''|*[!0-9]*) echo "::warning title=workline::WORKLINE_RECONCILE_GAP_MINUTES=$gap is not a number of minutes: 55 taken"; gap=55;; esac
+          if [[ "$gap" =~ ^0*[1-9][0-9]{0,3}$ ]]; then gap=$((10#$gap)); else
+            echo "::warning title=workline::WORKLINE_RECONCILE_GAP_MINUTES=$gap is not 1 to 9999 minutes: 55 taken"; gap=55; fi
           wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
           # Newest first, read on past a page of the issues' own runs until
           # a reconciler's run that succeeded: one call, most often.

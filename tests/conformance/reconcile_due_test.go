@@ -57,6 +57,9 @@ func TestReconcileDueReadsTheReconcilersRuns(t *testing.T) {
 		{"the last 10 min ago, a gap of 5", one(run(beat, "completed", "success", 10*time.Minute)), true, "5"},
 		{"the last 3 min ago, a gap of 5", one(run(beat, "completed", "success", 3*time.Minute)), false, "5"},
 		{"the last 10 min ago, a gap not a number", one(run(beat, "completed", "success", 10*time.Minute)), false, "soon"},
+		{"the last 10 min ago, a gap of 08", one(run(beat, "completed", "success", 10*time.Minute)), true, "08"},
+		{"the last 10 min ago, a gap of 0", one(run(beat, "completed", "success", 10*time.Minute)), false, "0"},
+		{"the last 10 min ago, a gap too long", one(run(beat, "completed", "success", 10*time.Minute)), false, "99999999999999999999"},
 	}
 	for _, f := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
 		data, err := os.ReadFile(f)
@@ -133,6 +136,9 @@ exit 0
 			}
 			if c.pages == nil && !strings.Contains(string(out), "::warning title=workline::this workflow's runs not read") {
 				t.Errorf("%s, %s: the failed read not said: %s", f, c.name, out)
+			}
+			if bad := slices.Contains([]string{"soon", "0", "99999999999999999999"}, c.gap); bad != strings.Contains(string(out), "WORKLINE_RECONCILE_GAP_MINUTES="+c.gap+" is not 1 to 9999 minutes: 55 taken") {
+				t.Errorf("%s, %s: the gap %q, a warning said: %v, want %v: %s", f, c.name, c.gap, !bad, bad, out)
 			}
 		}
 	}
