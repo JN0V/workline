@@ -77,15 +77,17 @@ func TestPatchNamingNoFileIsRefused(t *testing.T) {
 
 func TestRuleOrder(t *testing.T) {
 	c := checker{b: Bounds{Issue: 3, Scope: []string{"src/lib.go", "AGENTS.md"}, Frozen: map[string]int{"src/lib_test.go": 3}},
-		steer: func(p string) bool { return p == "AGENTS.md" }, roles: ".workline/roles"}
+		steer: func(p string) bool { return p == "AGENTS.md" || p == "roles/reviewer/policy.md" }}
 	for p, want := range map[string]string{
 		"src/lib.go":                "",
 		"src/lib_more_test.go":      "",
 		"tests/test_lib.sh":         "", // beside AGENTS.md, at the root
 		"src/lib_test.go":           "acceptance-test-edit",
 		"AGENTS.md":                 "steering-file",
-		"roles/developer/policy.md": "steering-file",
-		"src/roles/x/persona.md":    "steering-file",
+		"roles/reviewer/policy.md":  "steering-file", // listed
+		"sub/CLAUDE.md":             "steering-file", // an agent file, by its name
+		"roles/developer/policy.md": "",              // a role's prompt, not listed (ADR-0068 §4)
+		"src/roles/x/persona.md":    "",
 		".workline/config.yaml":     "gate-file",
 		".github/workflows/ci.yml":  "gate-file",
 		"README.md":                 "", // beyond the Scope: applied, listed

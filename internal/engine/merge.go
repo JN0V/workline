@@ -12,6 +12,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/steer"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -449,10 +450,6 @@ func OwnCommit(repo, commit, base string) string {
 	return role
 }
 
-// agentFiles are the files that steer agents, by name: a role's prompt
-// or a project's instructions, never a doc page whatever its extension.
-var agentFiles = []string{"agents.md", "claude.md", "gemini.md", "copilot-instructions.md"}
-
 // docPage says whether a path is a doc page the roles write: Markdown, not
 // under a tool's folder (.workline, .github, .claude, .cursor), not a file
 // that steers agents (AGENTS.md, CLAUDE.md…), and in a role's folder only
@@ -473,7 +470,7 @@ func docPage(path string) bool {
 			}
 		}
 	}
-	return !slices.Contains(agentFiles, parts[len(parts)-1])
+	return !steer.Agent(lower)
 }
 
 // rolePage says whether a path in a role's folder, `roles/<name>/…`, is
