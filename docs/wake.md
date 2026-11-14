@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline/wake.go, internal/wake, internal/forge/wake.go, .github/workflows/workline-apply.yml]
-checked: 238e988c
+checked: 4d940353
 verified: agent:claude-code
 ---
 # The wake
@@ -52,7 +52,9 @@ After each merge, the wake prints where the line may be drifting
   or a merge request; the next merge lists it. The wake makes the label
   when it is missing.
 - **What was not read** is said under *Not read*, never taken for
-  nothing found: no forge, a read refused.
+  nothing found: no forge, a read refused. Closing links unread, no
+  merge is said to close none; its issue unread, the issue is left as it
+  is.
 
 ## Run it
 
