@@ -229,8 +229,9 @@ jobs:
     # A push to main: where the line may be drifting, read from git and the
     # forge with no AI, kept in one issue edited in place (ADR-0068 §8,
     # docs/wake.md). Print only: nothing waits for it, it fails no check,
-    # and what the forge does not answer is said in the issue.
-    if: github.event_name == 'push'
+    # and what the forge does not answer is said in the issue. A push
+    # carries no run of its own to be cancelled: the second clause holds.
+    if: github.event_name == 'push' && github.event.workflow_run.conclusion != 'cancelled'
     # One at a time: each run reads the issue the one before left.
     concurrency: {group: "workline-wake", cancel-in-progress: false}
     runs-on: ubuntu-latest
