@@ -30,9 +30,12 @@ func TestChangedHeaderOrUnityNewBuild(t *testing.T) {
 				t.Fatal(err)
 			}
 			_, err = f.WriteString("\n// changed\n")
-			f.Close()
+			cerr := f.Close()
 			if err != nil {
 				t.Fatal(err)
+			}
+			if cerr != nil {
+				t.Fatal(cerr)
 			}
 			if n, _, err := suiteRun(t, repo, shim, cache, log); err != nil || n != 1 {
 				t.Errorf("after a changed %s: %d g++, want 1 (%v)", name, n, err)
