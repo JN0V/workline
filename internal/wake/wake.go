@@ -305,7 +305,9 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 		if !inRange[mr.MergedAs] {
 			continue
 		}
-		if closesRead && len(closes[mr.ID]) == 0 {
+		// An app's merge closing no issue is its routine (a release, a
+		// record): counted in the facts, never a need laundered.
+		if closesRead && len(closes[mr.ID]) == 0 && !mr.ByBot() {
 			add(Need, fmt.Sprintf("none:%d", mr.ID), fmt.Sprintf("closes no issue: %s, by `%s`", ref(mr.ID), orNone(mr.Author)))
 		}
 		if !accepted {
