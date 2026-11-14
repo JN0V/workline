@@ -29,3 +29,10 @@
 /roles/auditor/policy.md @JN0V
 /roles/auditor/lenses/ @JN0V
 /roles/auditor/kinds/ @JN0V
+
+# The wake script and its triggers (ADR-0068 §8): what prints the line's
+# drift, and the cases that hold it.
+/internal/wake/ @JN0V
+/internal/forge/wake.go @JN0V
+/cmd/workline/wake.go @JN0V
+/tests/conformance/cases/engine/wake-*.yaml @JN0V
