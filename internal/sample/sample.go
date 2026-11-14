@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
@@ -716,6 +717,15 @@ type claimed struct {
 	} `yaml:"source"`
 }
 
+// opensFalse tells a note whose first word is "false", whatever follows it
+// ("False.", "False - the doc is wrong", "false: ...").
+func opensFalse(text string) bool {
+	w := strings.FieldsFunc(strings.ToLower(text), func(r rune) bool {
+		return !unicode.IsLetter(r)
+	})
+	return len(w) > 0 && w[0] == "false"
+}
+
 // check reads the answer's claims against the doc and its sources: a
 // passage the doc holds, and a source's words found outside a comment at the
 // commit `checked` names, or a name the code no longer had then.
@@ -727,7 +737,7 @@ func check(repo string, d *documentalist.Doc, content string, answer []intent.In
 		case "note":
 			notes++
 			text := strings.TrimSpace(fmt.Sprint(in.Value))
-			if w, _, _ := strings.Cut(text, ":"); strings.ToLower(strings.Trim(strings.TrimSpace(w), "*`\"'")) == "false" && saidFalse == "" {
+			if opensFalse(text) && saidFalse == "" {
 				saidFalse = text
 			}
 			continue
