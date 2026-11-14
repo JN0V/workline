@@ -37,7 +37,11 @@ var sections = []struct{ kind, title string }{
 // state is what the issue's marker holds.
 type state struct {
 	Entries []Entry `json:"entries"`
+	Head    string  `json:"head,omitempty"` // the commit the last read ended at
 }
+
+// KeptHead is the commit the issue's last read ended at, "" when none.
+func KeptHead(body string) string { return readState(body).Head }
 
 // Issue is the body of the wake's issue, from this read and the issue's
 // body now ("" when none is open): the triggers met in the last 7 days,
@@ -62,7 +66,8 @@ func Issue(r *Result, now string) (body string, changed, any bool) {
 		entries = append(entries, e)
 	}
 	any = len(entries) > 0
-	changed = !sameEntries(entries, prev.Entries)
+	// The head read moved, the issue is edited: the next read starts there.
+	changed = !sameEntries(entries, prev.Entries) || prev.Head != "" && prev.Head != r.Head
 
 	var b strings.Builder
 	if any {
@@ -107,7 +112,7 @@ func Issue(r *Result, now string) (body string, changed, any bool) {
 		}
 		b.WriteString("\n")
 	}
-	kept, _ := json.Marshal(state{Entries: entries})
+	kept, _ := json.Marshal(state{Entries: entries, Head: r.Head})
 	fmt.Fprintf(&b, "%s%s -->\n", Marker, strings.ReplaceAll(string(kept), "--", `--`))
 	return b.String(), changed, any
 }

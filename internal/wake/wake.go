@@ -113,6 +113,28 @@ func Read(o Options) (*Result, error) {
 	return r, nil
 }
 
+// From is where a read starts: kept, the commit the last read ended at,
+// when it is a commit of after's history before before (or before is
+// none); else before.
+func From(repo, kept, before, after string) string {
+	if kept == "" {
+		return before
+	}
+	g := gitIn(repo)
+	k, err := g.commit(kept)
+	if err != nil {
+		return before
+	}
+	a, err := g.commit(after)
+	if err != nil || k == a || !g.ancestor(k, a) {
+		return before
+	}
+	if b, err := g.commit(before); before != "" && err == nil && !g.ancestor(k, b) {
+		return before
+	}
+	return k
+}
+
 // readTree reads what the range changed of the contract and the prompts,
 // from the trees at before and after.
 func readTree(g git, before, after string, add func(kind, key, text string)) error {
@@ -276,6 +298,9 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 	// The range's own merges: a need stated, the App's yes. The App's yes is read where the project's merge
 	// policy, as the merged tree holds it, asks for it (`merge:`).
 	accepted := g.mergePolicy(after)
+	if _, ok := f.(forge.AppStatuses); accepted && !ok {
+		r.Unread = append(r.Unread, "the App's `"+forge.Accepted+"` on each merged head: this forge keeps none (GitLab: its protection holds the merge)")
+	}
 	for _, mr := range merged {
 		if !inRange[mr.MergedAs] {
 			continue
@@ -320,6 +345,8 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 				add(Bypass, fmt.Sprintf("ruleset:%d:%s", s.ID, s.Updated), fmt.Sprintf("ruleset changed: `%s` on %s, at %s", s.Name, orNone(branch), s.Updated))
 			}
 		}
+	} else {
+		r.Unread = append(r.Unread, "the default branch's rulesets: this forge keeps none the wake reads")
 	}
 
 	// The cord.
@@ -520,6 +547,12 @@ func (g git) run(args ...string) (string, error) {
 func (g git) commit(rev string) (string, error) {
 	out, err := g.run("rev-parse", "--verify", "-q", rev+"^{commit}")
 	return strings.TrimSpace(out), err
+}
+
+// ancestor says whether a is a commit of b's history.
+func (g git) ancestor(a, b string) bool {
+	_, err := g.run("merge-base", "--is-ancestor", a, b)
+	return err == nil
 }
 
 func (g git) date(c string) (time.Time, error) {

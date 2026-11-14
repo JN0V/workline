@@ -54,7 +54,7 @@ func TestIssueKeepsAWeek(t *testing.T) {
 	if !changed || !strings.Contains(body, "ADR added: `a`") || !strings.Contains(body, "x, by 4") || strings.Contains(body, "x, by 3") {
 		t.Errorf("again: changed %v\n%s", changed, body)
 	}
-	if _, changed, _ = Issue(&Result{Head: "ccccccc3", Day: "2026-01-05", Entries: again.Entries}, body); changed {
+	if _, changed, _ = Issue(&Result{Head: "bbbbbbb2", Day: "2026-01-05", Entries: again.Entries}, body); changed {
 		t.Error("the same read changed the issue")
 	}
 	late := &Result{Head: "ddddddd4", Day: "2026-01-09", Entries: []Entry{}}
@@ -100,5 +100,37 @@ func TestClosesUnreadAccusesNone(t *testing.T) {
 	}
 	if !strings.Contains(strings.Join(r.Unread, "\n"), "rate limited") || strings.Contains(r.Facts, "closing a bug") {
 		t.Errorf("unread %q, facts %q", r.Unread, r.Facts)
+	}
+}
+
+// A read starts where the last one ended when that is earlier on the
+// branch: a run dropped from the forge's queue leaves no merge unread.
+func TestFromTheLastRead(t *testing.T) {
+	repo := t.TempDir()
+	run := func(args ...string) string {
+		cmd := exec.Command("git", append([]string{"-C", repo, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "core.hooksPath=/dev/null"}, args...)...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	run("init", "-q", "-b", "main")
+	var c []string
+	for _, m := range []string{"a", "b", "c", "d"} {
+		run("commit", "-q", "--allow-empty", "-m", m)
+		c = append(c, run("rev-parse", "HEAD"))
+	}
+	for _, x := range []struct{ kept, before, want string }{
+		{c[0], c[2], c[0]}, // a run dropped: from the last read
+		{c[2], c[2], c[2]}, // the last read was the run before
+		{"", c[2], c[2]},   // no issue yet
+		{c[3], c[2], c[2]}, // the same head read again
+		{"0000000000000000000000000000000000000000", c[2], c[2]},
+		{c[0], "", c[0]},
+	} {
+		if got := From(repo, x.kept, x.before, c[3]); got != x.want {
+			t.Errorf("From(%.7s, %.7s) = %.7s, want %.7s", x.kept, x.before, got, x.want)
+		}
 	}
 }

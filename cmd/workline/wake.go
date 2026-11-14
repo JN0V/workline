@@ -55,26 +55,31 @@ func wakeCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline: --issue needs a forge (--forge github, gitlab…) to keep its issue")
 		return 64
 	}
-	r, err := wake.Read(wake.Options{Repo: root, Before: before, After: after, Forge: f})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "workline:", err)
-		return 64
-	}
 	now, id, unread := "", 0, false
+	var readErr error
 	if *issue {
 		open, err := b.Issues()
-		if err != nil {
-			// Its issue unread, it is left as it is: a body built without
-			// what it kept would lose the week's triggers.
-			r.Unread = append(r.Unread, "the wake's issue: "+forge.Said(err))
-			unread = true
-		}
+		readErr, unread = err, err != nil
 		for _, is := range open {
 			if is.Title == wake.Title && !is.Closed {
 				now, id = is.Body, is.ID
 				break
 			}
 		}
+	}
+	// The range starts where the issue's last read ended, when that is
+	// earlier on the branch: a run the forge dropped from its queue leaves
+	// no merge unread.
+	before = wake.From(root, wake.KeptHead(now), before, after)
+	r, err := wake.Read(wake.Options{Repo: root, Before: before, After: after, Forge: f})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
+	if readErr != nil {
+		// Its issue unread, it is left as it is: a body built without
+		// what it kept would lose the week's triggers.
+		r.Unread = append(r.Unread, "the wake's issue: "+forge.Said(readErr))
 	}
 	body, changed, any := wake.Issue(r, now)
 	if *asJSON {
