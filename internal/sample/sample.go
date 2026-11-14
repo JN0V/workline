@@ -21,7 +21,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
@@ -717,13 +716,20 @@ type claimed struct {
 	} `yaml:"source"`
 }
 
-// opensFalse tells a note whose first word is "false", whatever follows it
-// ("False.", "False - the doc is wrong", "false: ...").
+// opensFalse tells a note that is a "false" verdict: its first word is
+// "false", alone or followed by a separator (":", "-", ".", "," ...), never by
+// more words ("False positives were checked" is not one).
 func opensFalse(text string) bool {
-	w := strings.FieldsFunc(strings.ToLower(text), func(r rune) bool {
-		return !unicode.IsLetter(r)
-	})
-	return len(w) > 0 && w[0] == "false"
+	t := strings.ToLower(strings.TrimSpace(text))
+	if !strings.HasPrefix(t, "false") {
+		return false
+	}
+	rest := strings.TrimSpace(t[len("false"):])
+	if rest == "" {
+		return true
+	}
+	r := []rune(rest)[0]
+	return strings.ContainsRune(":-–—.,;!", r)
 }
 
 // check reads the answer's claims against the doc and its sources: a
