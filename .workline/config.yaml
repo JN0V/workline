@@ -74,6 +74,10 @@ roles:
       # whole suite twice took 10 of a run's 11 min (#979); the pull
       # request's test job runs it all.
       draft-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m {packages}
+      # Each run of the tests stops here: the whole suite takes 8 to 11
+      # min on a runner, past the role's 600 s, so every green proof
+      # stopped on the base (#1441). 25 min leaves room for a busy runner.
+      suite-max-seconds: 1500
       # Go's build errors, the role's default, and a conformance case the
       # suite cannot read: red for no reason, so the build is said broken.
       build-errors:
