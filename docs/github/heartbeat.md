@@ -8,7 +8,7 @@ From [the developer's triggers](../../roles/developer/docs/triggers.md#when-an-i
 
 ```mermaid
 flowchart LR
-  rec["<b>reconcile</b><br/>what an event missed"] -- "starts" --> beat["<b>heartbeat</b><br/>waits 55 min, no runner"]
+  rec["<b>reconcile</b><br/>what an event missed"] -- "starts" --> beat["<b>heartbeat</b><br/>waits its timer, no runner"]
   beat --> rec
   sched["<b>schedule, a label</b>"] -. "only if it stopped" .-> rec
 ```
@@ -31,7 +31,8 @@ reconcile starts the next one:
 - **One a branch**: a new heartbeat cancels the one waiting.
 - **The schedule and a `workline:` label** ask the job `reconcile-due`:
   - not due while a heartbeat or a reconciler's run is queued, waiting
-    or running, nor within 55 minutes of the last that succeeded;
+    or running, nor within the gap after the last that succeeded
+    ([55 minutes, or your own](#a-shorter-or-longer-period));
   - due, the heartbeat stopped: it starts a reconcile, `workline develop
     reconcile`, which starts the heartbeat again.
 - **When it last ran**: read from the workflow's runs, named
@@ -59,9 +60,28 @@ gh api -X POST repos/OWNER/REPO/environments/workline-heartbeat/deployment-branc
 - **Without the environment**: each reconcile says "no heartbeat" in
   its summary; the schedule and the line's events run it, as GitHub
   can.
+- **A shorter or longer period**: see [below](#a-shorter-or-longer-period).
 - **To stop it**: delete the environment, or take its wait timer off.
   The heartbeat waiting is then rejected, its run failed, and no
   reconcile starts another.
+
+## A shorter or longer period
+
+Two settings space reconciles; change both, to the same minutes:
+
+- **The environment's wait timer**: the heartbeat's wait (above).
+- **The repository variable `WORKLINE_RECONCILE_GAP_MINUTES`**: the gap
+  `reconcile-due` asks for after the last reconcile; 55 when unset.
+
+```sh
+gh variable set WORKLINE_RECONCILE_GAP_MINUTES --body 5
+gh api -X PUT repos/OWNER/REPO/environments/workline-heartbeat -F wait_timer=5
+```
+
+- **The variable alone does little**: the heartbeat still waits its
+  timer; the variable only lets a label or the schedule start one sooner.
+- **A shorter period costs more**: each reconcile's calls and runner
+  minutes, 12 times an hour at 5 minutes.
 
 ## What it costs
 

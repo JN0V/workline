@@ -13,7 +13,8 @@
 #   judge, review          the agent and a read token.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
 #   heartbeat              no token; the environment workline-heartbeat, its wait
-#                          timer (55 min) the gap between two reconciles (#845).
+#                          timer the gap between two reconciles (#845): 55 min,
+#                          or the variable WORKLINE_RECONCILE_GAP_MINUTES.
 # Why each part: roles/developer/docs/triggers.md.
 name: workline develop
 # A run of an issue's step named for it, `workline develop #<n>`: a start
@@ -305,7 +306,7 @@ jobs:
 
   # The heartbeat (#845): the reconciler's next run, started by the last
   # one, waits here for the wait timer of the environment
-  # workline-heartbeat (55 minutes), holding no runner, then runs the job
+  # workline-heartbeat (55 minutes by default), holding no runner, then runs the job
   # reconcile. One a branch: a new one cancels the one waiting.
   heartbeat:
     if: github.event_name == 'workflow_dispatch' && inputs.reconcile == 'next'
@@ -320,8 +321,9 @@ jobs:
 
   # Whether a reconcile is due, on the schedule or an issue labelled, the
   # line's every hop: the heartbeat stopped (#789, #845). Not while a
-  # reconciler's run or a heartbeat is queued, waiting or running, nor 55
-  # minutes after the last that succeeded. Read from this workflow's runs,
+  # reconciler's run or a heartbeat is queued, waiting or running, nor
+  # within the gap after the last that succeeded: the repository variable
+  # WORKLINE_RECONCILE_GAP_MINUTES, 55 when unset. Read from this workflow's runs,
   # one call: a run an event starts may not write the Actions cache
   # (#853). Due, it starts the reconciler's own run, which the next event
   # sees. One at a time: the next asks once this one started that run.
@@ -334,9 +336,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {actions: write}
     steps:
-      - name: Due, 55 minutes after the last
-        env: {GH_TOKEN: "${{ github.token }}"}
+      - name: Due, ${{ vars.WORKLINE_RECONCILE_GAP_MINUTES || '55' }} minutes after the last
+        env: {GH_TOKEN: "${{ github.token }}", GAP_MINUTES: "${{ vars.WORKLINE_RECONCILE_GAP_MINUTES }}"}
         run: |
+          gap=${GAP_MINUTES:-55}
+          case "$gap" in ''|*[!0-9]*) echo "::warning title=workline::WORKLINE_RECONCILE_GAP_MINUTES=$gap is not a number of minutes: 55 taken"; gap=55;; esac
           wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
           # Newest first, read on past a page of the issues' own runs until
           # a reconciler's run that succeeded: one call, most often.
@@ -353,7 +357,7 @@ jobs:
             echo "a reconcile on its way ($going): not due" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
           fi
           last=$(jq -r 'map(select(.conclusion == "success") | .updated_at) | max // empty' runs.json)
-          if [ -n "$last" ] && ago=$(( $(date -u +%s) - $(date -u -d "$last" +%s) )) && [ "$ago" -lt 3300 ]; then
+          if [ -n "$last" ] && ago=$(( $(date -u +%s) - $(date -u -d "$last" +%s) )) && [ "$ago" -lt $((gap * 60)) ]; then
             echo "the last reconcile ended at $last, $((ago / 60)) min ago: not due" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
           fi
           if gh workflow run "$wf" -R "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f reconcile=true; then
@@ -383,7 +387,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         # The branch's head as the job starts, not the commit the run was
-        # started on: a heartbeat's waited 55 minutes, and a fix merged
+        # started on: a heartbeat's waited its timer, and a fix merged
         # meanwhile acts now (#898).
         with: {ref: "${{ github.ref }}", fetch-depth: 0, persist-credentials: false}
       - uses: ./.github/actions/engine
