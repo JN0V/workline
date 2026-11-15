@@ -1902,6 +1902,14 @@ func commitMerge(f forge.Forge, st runState, mr forge.MergeRequest, message stri
 	if err != nil {
 		return err
 	}
+	// The checkout's config, laid there uncommitted for the run, gives way to
+	// the one the merge brings: the base's setting that was fixed (#1513).
+	const cfg = ".workline/config.yaml"
+	if _, err := git(st.Repo, nil, "ls-files", "--error-unmatch", cfg); err != nil {
+		if _, err := git(st.Repo, nil, "cat-file", "-e", m.Tree+":"+cfg); err == nil {
+			_ = os.Remove(filepath.Join(st.Repo, cfg))
+		}
+	}
 	_, err = git(st.Repo, nil, "merge", "--ff-only", "-q", strings.TrimSpace(commit))
 	return err
 }

@@ -25,6 +25,14 @@ import (
 // acted: the request is not to be merged now.
 // due says why its merge is due, as the refused merge's comment says it.
 func upToDate(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest, baseTip, tip string, say func(rule, level, msg string), clean bool, due string) (bool, error) {
+	return upToDateAs(f, o, local, mr, baseTip, tip, say, clean, false, due)
+}
+
+// upToDateAs is upToDate; blocked: the request's verdict blocks on a rule
+// the base may have fixed (#1513), so the base is merged in when it merges
+// clean, whatever it changed, with no proof of the tests: the line runs on
+// the new head. Never twice: once the base is in, the request is up to date.
+func upToDateAs(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest, baseTip, tip string, say func(rule, level, msg string), clean, blocked bool, due string) (bool, error) {
 	if !mr.Here || !strings.HasPrefix(mr.Branch, developer.Branch) || isAncestor(o.Repo, baseTip, tip) {
 		return false, nil
 	}
@@ -49,10 +57,13 @@ func upToDate(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest,
 		say("merge-conflict", "warn", fmt.Sprintf("it conflicts with %s in %s: not merged; %s", o.Base, strings.Join(files, ", "), next))
 		return true, nil
 	}
+	if local && blocked {
+		return mergedForBlock(f, o, mr, tree, baseTip, tip, say)
+	}
 	if local {
 		return provenUpToDate(f, o, mr, tree, baseTip, tip, say, due)
 	}
-	if !clean {
+	if !clean && !blocked {
 		return false, nil
 	}
 	commit, err := ownMergeCommit(o.Repo, tree, tip, baseTip, o.Base, mr.Branch)
@@ -233,4 +244,27 @@ func sayUpdated(f forge.Forge, mr forge.MergeRequest, base, head, next string, s
 	if err := f.Sticky(t, body, refusedSticky(0), false); err != nil {
 		say("refusal-unsaid", "warn", "the merge refused before could not be said brought up to date: "+forge.Said(err))
 	}
+}
+
+// mergedForBlock merges the base into the branch of a request of the local
+// forge whose verdict blocks on a setting the base may have fixed (#1513):
+// a merge commit, nothing rewritten, no test run here; its line runs on
+// the new head at the next reconcile.
+func mergedForBlock(f forge.Forge, o FollowOptions, mr forge.MergeRequest, tree, baseTip, tip string, say func(rule, level, msg string)) (bool, error) {
+	if at, _ := checkedOutAt(o.Repo, mr.Branch); at != "" {
+		say("merge-refused", "warn", fmt.Sprintf("blocked, behind %[1]s: %[1]s is to be merged into it, but %[2]s is checked out in %[3]s; check another branch out there, and the next `workline follow` merges %[1]s in", o.Base, mr.Branch, at))
+		return true, nil
+	}
+	commit, err := ownMergeCommit(o.Repo, tree, tip, baseTip, o.Base, mr.Branch)
+	if err != nil {
+		say("merge-refused", "warn", fmt.Sprintf("blocked, behind %[1]s, but the merge of %[1]s into it could not be made: %[2]v", o.Base, err))
+		return true, nil
+	}
+	if _, err := git(o.Repo, nil, "update-ref", "refs/heads/"+mr.Branch, commit, tip); err != nil {
+		say("merge-refused", "warn", fmt.Sprintf("blocked, behind %[1]s, but %[2]s moved meanwhile: %[3]v", o.Base, mr.Branch, err))
+		return true, nil
+	}
+	say("merged-from-base", "", fmt.Sprintf("its verdict blocks, and %[1]s moved since its branch left it, perhaps fixing the block: %[1]s merged into %[2]s, a merge commit, nothing rewritten; its line runs on the new head at the next reconcile", o.Base, mr.Branch))
+	sayUpdated(f, mr, o.Base, commit, "its line runs on it at the next reconcile", say)
+	return true, nil
 }

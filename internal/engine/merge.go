@@ -640,6 +640,9 @@ type inLine struct {
 	// up brings it up to date with the base when it conflicts, or, clean
 	// asked, when it merges clean (upToDate): acted, not merged now.
 	up func(clean bool, due string) (bool, error)
+	// takeBase merges the base in for a verdict blocked on a rule it may
+	// have fixed (#1513), or says a conflict: acted, not merged now.
+	takeBase func(due string) (bool, error)
 }
 
 // upToDate is e.up, none on a request weighed without it.
@@ -816,6 +819,9 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	e := &inLine{mr: mr, where: where, behind: !isAncestor(o.Repo, baseTip, tip)}
 	e.up = func(clean bool, due string) (bool, error) {
 		return upToDate(f, o, local, mr, baseTip, tip, say, clean, due)
+	}
+	e.takeBase = func(due string) (bool, error) {
+		return upToDateAs(f, o, local, mr, baseTip, tip, say, true, true, due)
 	}
 	off := func() error {
 		if !st.AutoMerge {

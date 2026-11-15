@@ -87,6 +87,13 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		if err := m.Accept(w.tip, false, v.why); err != nil {
 			return nil, err
 		}
+		// Blocked on a setting main may have fixed since: main merged in,
+		// the line runs again on the new head (#1513).
+		if baseFixable(v) && w.e != nil && w.e.takeBase != nil {
+			if acted, err := w.e.takeBase("its verdict blocks on " + v.why); acted || err != nil {
+				return nil, err
+			}
+		}
 		w.say("verdict-red", "warn", fmt.Sprintf("%s, but %s: it merges once the line passes on a new head, a person's yes neither", d.Says(), v.why))
 		return nil, nil
 	}
@@ -278,4 +285,10 @@ func featureMilestone(f forge.Forge, repo string, issue int) (string, error) {
 		return "", err
 	}
 	return title, b.SetMilestone(issue, title)
+}
+
+// baseFixable says whether a blocked verdict's cause is one the base may
+// change: the proof's time budget, a setting read from the config.
+func baseFixable(v kept) bool {
+	return strings.Contains(v.why, "proof-over-time")
 }
