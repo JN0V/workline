@@ -296,16 +296,23 @@ func linkOut(name, to string) bool {
 	return p == ".." || strings.HasPrefix(p, "../")
 }
 
-// byPerson says every commit since from that changed name carries no
-// Workline-Role trailer: a person's, not an agent's. The agent's commits
-// carry it, so a file the agent touched too is still the agent's.
+// byPerson says every commit since from that changed name is a person's:
+// it carries no Workline-Role trailer and neither its author nor its
+// committer is a bot (the engine commits the agent's work as workline's
+// App, an identity the agent does not set). A file the agent touched too
+// is still the agent's.
 func byPerson(repo, from, head, name string) bool {
-	out, err := gitOut(repo, "log", "--no-merges", "--format=C%(trailers:key=Workline-Role,valueonly,separator=%x2C)", from+".."+head, "--", name)
+	out, err := gitOut(repo, "log", "--no-merges", "--format=C%ae%x1f%ce%x1f%(trailers:key=Workline-Role,valueonly,separator=%x2C)", from+".."+head, "--", name)
 	if err != nil || strings.TrimSpace(out) == "" {
 		return false
 	}
 	for _, l := range strings.Split(out, "\n") {
-		if l = strings.TrimSpace(l); l != "" && l != "C" {
+		if l = strings.TrimSpace(l); l == "" {
+			continue
+		}
+		f := strings.Split(strings.TrimPrefix(l, "C"), "\x1f")
+		if len(f) != 3 || strings.TrimSpace(f[2]) != "" ||
+			strings.Contains(strings.ToLower(f[0]), "[bot]") || strings.Contains(strings.ToLower(f[1]), "[bot]") {
 			return false
 		}
 	}
