@@ -890,6 +890,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	var retests []retested
 	var dues []dueStep
 	revisited, _ := revisits(cfg)
+	if t.say {
+		testerBlocksSaid(res, b, t) // every open pull request, claimed issue or not (#1502)
+	}
 	for i, is := range issues {
 		s, name, _ := cfg.Wakes(is.Labels, IssueEvent)
 		if revisited && s.Name == BlockedState && name == "" {

@@ -149,12 +149,6 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 		return nil, nil, false, err
 	}
 	if mr, ok := closedByMR(t, is.ID); ok {
-		if t.say {
-			if err := testerBlockSaid(b, t.repo, mr); err != nil {
-				res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unsaid", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
-					Message: "the tester block on its pull request was not said: " + forge.Said(err)})
-			}
-		}
 		mrWaits(res, b, t.repo, doing, is, mr)
 		return nil, nil, true, nil
 	}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 // testerStep is how the verdict names the tester's step.
@@ -50,4 +51,23 @@ func testerBlockSaid(b forge.Backlog, repo string, mr forge.MergeRequest) error 
 		"No role reads this step: a person decides whether the proof can run here, or the developer changes the code.",
 		short(head), why)
 	return f.Comment(forge.Target{Kind: "merge-request", ID: mr.ID}, backlog.Inert(body), forge.Marker("tester-block="+head))
+}
+
+// testerBlocksSaid says the tester block of every open pull request the
+// forge lists, whatever its issue's state: a pull request whose issue
+// holds no claim label, or whose closing reference is not found, is not
+// left silent. A forge that lists none says nothing.
+func testerBlocksSaid(res *Result, b forge.Backlog, t *tally) {
+	if _, ok := b.(forge.Merger); !ok {
+		return
+	}
+	if err := t.mergeRequests(b, "the tester block of a pull request"); err != nil {
+		return
+	}
+	for _, mr := range t.mrs {
+		if err := testerBlockSaid(b, t.repo, mr); err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unsaid", Level: "warn", Where: fmt.Sprintf("!%d", mr.ID),
+				Message: "the tester block on its pull request was not said: " + forge.Said(err)})
+		}
+	}
 }
