@@ -298,7 +298,7 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		// once for their word, never again on the same comments.
 		n, unheard, held := commentsHeld(is, notes)
 		switch {
-		case unheard && n > rec.Heard:
+		case unheard && (n > rec.Heard || rec.HeardLast != "" && rec.HeardLast != commentsLast(is, notes)) && !oldRecord(comments, rec):
 			ok = true
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-comment", Level: "info", Where: where,
 				Message: "a person commented since the product owner last read it: woken once, to read their word"})
@@ -372,7 +372,8 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	}
 	if ok && s.Name == refineState && role == backlog.Keeper {
 		now.Given = givenNow(comments)            // the code this read gets: the same next time wakes it no more (#980)
-		now.Heard, _ = commentsUnheard(is, notes) // the comments this read gets: woken for those no more (#1331)
+		now.Heard, _ = commentsUnheard(is, notes)
+		now.HeardLast = commentsLast(is, notes) // the comments this read gets: woken for those no more (#1331)
 	}
 	if ok && reviewed {
 		now.Asked = now.Body // the reviewer runs after the product owner: never due again for this alone

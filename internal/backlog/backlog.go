@@ -110,7 +110,10 @@ type State struct {
 	// Heard are the comments of its reporter and the project's people the
 	// role read; Revisions, the times it revised its drafts for them.
 	Heard     *int `yaml:"heard,omitempty"`
-	Revisions int  `yaml:"revisions,omitempty"`
+	// HeardLast is the id of the last counted comment read: which ones
+	// were read, not only how many (a comment deleted, a new one written).
+	HeardLast string `yaml:"heard-last,omitempty"`
+	Revisions int    `yaml:"revisions,omitempty"`
 	// Rules is the role's way of reading an issue when it last read it
 	// (Reading): an issue it left with nothing is read again once they
 	// change.
@@ -232,6 +235,7 @@ func FormatState(s State) string {
 		Label     string            `yaml:"label,omitempty"`
 		Aside     string            `yaml:"aside,omitempty"`
 		Heard     *int              `yaml:"heard,omitempty"`
+		HeardLast string            `yaml:"heard-last,omitempty"`
 		Revisions int               `yaml:"revisions,omitempty"`
 		Rules     int               `yaml:"rules,omitempty"`
 		Left      string            `yaml:"left,omitempty"`
@@ -248,7 +252,7 @@ func FormatState(s State) string {
 		SplitTest bool              `yaml:"split-after-tests,omitempty"`
 		Held      int               `yaml:"answer-held,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Revised, s.Plain, s.Deleted,
-		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Retest, s.Silent, s.Unread,
+		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.HeardLast, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Retest, s.Silent, s.Unread,
 		s.Assumed, s.AssumedAt, s.Told, s.Kind, s.Size, s.SplitTests, s.AnswerHeld})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the

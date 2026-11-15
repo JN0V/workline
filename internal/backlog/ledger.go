@@ -122,13 +122,47 @@ func Heard(st *State, counted int) int {
 	return *st.Heard
 }
 
+// LastID is the id of the n-th counted comment, the last one read when n
+// were: "" when n is 0 or the forge names no id.
+func LastID(counted []forge.Note, n int) string {
+	if n <= 0 || n > len(counted) {
+		return ""
+	}
+	return counted[n-1].ID
+}
+
+// SetHeard says the role read the first n counted comments of notes: the
+// count and which the last one was.
+func (st *State) SetHeard(n int, notes []forge.Note, is forge.Issue) {
+	st.Heard, st.HeardLast = &n, LastID(Counted(notes, is), n)
+}
+
+// HeardIn is Heard on the counted comments themselves: when the state
+// names the last comment it read and that one is not where it was, a
+// comment was deleted and another written, and those after it are unread.
+func HeardIn(st *State, counted []forge.Note) int {
+	h := Heard(st, len(counted))
+	if st == nil || st.HeardLast == "" || h <= 0 || h > len(counted) || counted[h-1].ID == st.HeardLast {
+		return h
+	}
+	for i, n := range counted {
+		if n.ID == st.HeardLast {
+			return i + 1
+		}
+	}
+	if len(counted) < h {
+		return h // only some deleted
+	}
+	return h - 1
+}
+
 // Unheard are the counted comments the role has not read yet: a person's
 // word on the issue since it last read it (ADR-0038). Which comment is the
 // role's is told by its marker, never by its author: the role may write
 // with a person's token.
 func Unheard(st *State, notes []forge.Note, is forge.Issue) []forge.Note {
 	counted := Counted(notes, is)
-	if h := Heard(st, len(counted)); h < len(counted) {
+	if h := HeardIn(st, counted); h < len(counted) {
 		return counted[h:]
 	}
 	return nil
@@ -731,8 +765,8 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		if h, ok := p.Held[id]; ok {
 			// Its ready held for a person's comment (#1331): those
 			// comments unheard again, read once more by the next run.
-			n := h[0]
-			st.Heard, st.AnswerHeld = &n, h[1]
+			st.SetHeard(h[0], p.ledger.Notes[id], *is)
+			st.AnswerHeld = h[1]
 		}
 		if why, ok := p.Silent[id]; ok {
 			st.Silent = why
@@ -762,7 +796,8 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			if err != nil {
 				return err
 			}
-			st.Label, st.Proposed, st.Aside, st.Heard = "", nil, BodyDigest(is.Body), &n
+			st.Label, st.Proposed, st.Aside = "", nil, BodyDigest(is.Body)
+			st.SetHeard(n, p.ledger.Notes[id], *is)
 		case Accepted(*is) && p.Unaccepted[id] == "":
 			// Their yes, on every plan: the role takes its label off itself.
 			for _, l := range []string{st.Label, LabelProposed, scopedProposed} {

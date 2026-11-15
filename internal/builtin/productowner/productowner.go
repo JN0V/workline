@@ -303,6 +303,11 @@ func Pre(runDir, repo string) int {
 				p = nil
 			}
 		}
+		if !unheard && agreed == "" {
+			// An answer with no proposal waiting — to the reviewer's
+			// question — is read first as well (#1346).
+			unheard = len(backlog.Unheard(st, notes, is)) > 0
+		}
 		if found && err == nil && agreed != "" && !backlog.Accepted(is) {
 			// Its reporter, or a person of the project, replied `agreed` to
 			// the text last proposed: the engine writes what the body still
@@ -599,7 +604,8 @@ func Pre(runDir, repo string) int {
 				Message: fmt.Sprintf("@%s wrote on it; its proposal was revised %d times already: left to a person, said in its comment there", fresh[len(fresh)-1].Author, st.Revisions)})
 			left := *st
 			n := len(counted)
-			left.Heard, left.Left = &n, fresh[len(fresh)-1].Author
+			left.SetHeard(n, notes, is)
+			left.Left = fresh[len(fresh)-1].Author
 			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 				"issue": is.ID, "sticky": "state", "update-only": true, "body": backlog.FormatState(left)}})
 			rest = append(rest, d)
@@ -978,7 +984,8 @@ func Pre(runDir, repo string) int {
 			}
 			read := *d.st
 			counted := len(backlog.Counted(d.notes, d.is))
-			read.Judged, read.Comments, read.Heard, read.Rules = commit, 0, &counted, backlog.Reading
+			read.Judged, read.Comments, read.Rules = commit, 0, backlog.Reading
+			read.SetHeard(counted, d.notes, d.is)
 			if answers[d.is.ID] != nil {
 				read.Revisions++
 			}
