@@ -25,15 +25,14 @@ Called **the tick** below, to keep it apart from
 
 The night of 2026-11-14 to 15, on this repository ([#1611]):
 
-- **The backlog cron** `47 * * * *` fired 2 times out of 9.
+- **Crons missed**: backlog (`47 * * * *`) fired 2 times out of 9,
+  develop (:41) once, merge (:53) twice; the simulator's at 03:41
+  never. The nightly, due 02:17 UTC, starts ~7 h late ([#607]).
 - **Ready emptied** at about 02:45 UTC; the line sat idle until 07:13
-  UTC. Again no backlog run from 07:13 to 08:50 UTC.
-- **The simulator's cron** at 03:41 never ran; the develop cron at :41
-  ran once, the merge cron at :53 twice.
-- **The nightly run**, due at 02:17 UTC, starts about 7 h late, as in
-  October ([#607]).
+  UTC, then again from 07:13 to 08:50 UTC.
 - **The heartbeat never missed**: an environment's wait timer, each run
-  starting the next, every ~15 minutes as set
+  starting the next, every ~15 minutes that night; 5 minutes since
+  2026-11-15
   ([ADR-0059's amendment](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-02-the-reconciler-starts-its-next-run)).
   It reconciles issues only.
 - **GitHub says so**: `schedule` "can be delayed", "some queued jobs may
@@ -94,21 +93,25 @@ flowchart LR
 The open point: a whole reconcile is about 20 calls; 12 an hour is
 about 240 of the job token's 1,000.
 
-- **Decided**: the tick does one listing a tick, the per-issue reads at
-  a gap.
-  - **Every tick**: the open issues (1 page), the runs going and
-    recent, by name (1 page, which also gives when each job last ran),
-    the open pull requests for review rounds (1 page).
-  - **At the reconcile's gap** (`WORKLINE_RECONCILE_GAP_MINUTES`, 15 by
-    default today): the per-issue reads, a blocked issue's revisit and
+- **Decided**: a few listings a tick, the per-issue reads at a gap.
+  - **Every tick, 7 to 11 calls**: the open issues and the open pull
+    requests (1 page each); one listing of runs per workflow with a
+    timed job, filtered by event and branch: develop (1 to 5 pages, as
+    `reconcile-due` reads its own runs today), gardening, merge,
+    sample, and test (its seeds; it also runs on every pull request).
+    One page of 100 runs is not enough alone: 288 ticks a day fill it
+    in ~8 h, the issues' runs sooner.
+  - **At the reconcile's gap** (`WORKLINE_RECONCILE_GAP_MINUTES`: 55
+    when unset in the workflows and the template, 15 on this
+    repository): the per-issue reads, a blocked issue's revisit and
     the like.
   - **A dispatch** a job due, 1 call; the next tick, 1 call.
 - **The rule**: the tick's calls an hour stay under a quarter of the
-  job token's hour. Each tick says its count in its summary; past the
-  quarter, it warns, and the reconcile's gap is the knob, not the
-  tick's period.
+  job token's hour; the listings alone are 84 to 132, derived. Each
+  tick says its count in its summary; past the quarter, it warns, and
+  the reconcile's gap is the knob, not the tick's period.
 - **Measured in slice 2**, on this repository, a night and a day; the
-  numbers go in its pull request's `## Tried`, none assumed here.
+  numbers go in its pull request's `## Tried`.
 
 ### 4. Where the times live
 
@@ -119,13 +122,14 @@ about 240 of the job token's 1,000.
 - **A workflow's `schedule:`** keeps the same time as its fallback;
   `doctor` says when the two differ.
 - **Not set**: a job keeps today's default times
-  ([#1611]'s table); none is invented.
+  ([#1611]'s table); none is invented. A job set `off` is not timed.
 
 ### 5. When a job last ran
 
 - **In CI, from the forge's runs**, as `reconcile-due` reads them today:
   runs named by job (`run-name` on GitHub, the pipeline's `name` on
-  GitLab), newest first; the last that succeeded, or one going.
+  GitLab), newest first; the last that succeeded, or one going. One
+  listing per workflow, read on past a page ([§3](#3-api-cost)).
   Not the Actions cache ([#853]).
 - **On a machine, from its own record**, kept under the clone's
   `.git/workline/`, never committed: the forge's runs do not tell what
@@ -144,6 +148,17 @@ about 240 of the job token's 1,000.
 - **A timed job counts as waiting**: a line with a nightly run never
   stops its tick; otherwise only a cron restarts it before 02:17, and
   the cron is what failed.
+- **So [#1397]'s idle stop never applies by default**: [§4](#4-where-the-times-live)
+  keeps the default times; every line has a timed job, its tick runs
+  for ever.
+- **Its cost on a private repository**: each job billed, rounded up to
+  the minute. Today's heartbeat run bills 2 jobs (`heartbeat`, a few
+  seconds; `reconcile`, 56 to 78 s): 2 to 3 minutes a tick, 17,280 to
+  25,920 a month of 8,640 ticks; [§1](#1-one-wake-same-everywhere)'s
+  one job a tick, 8,640 at least. GitHub Team includes 3,000. A
+  project sets a longer wait timer (15 minutes, a third), or sets its
+  timed jobs `off`, and the idle stop applies again. Public repositories
+  are not billed.
 - **The tick stopped anyway** (the timer removed, a dispatch failed):
   any fallback cron or `workline:` label starts a tick, which says in
   its summary that it had stopped, and since when.
@@ -152,13 +167,18 @@ about 240 of the job token's 1,000.
 
 - **One pipeline schedule** every 5 minutes, `WORKLINE_TASK=tick`,
   replaces the per-task schedules; the engine says what is due.
-- **Its schedules are not measured here**: [ADR-0059]'s amendment says
-  they run on time; GitLab runs them at its own schedule worker's pace.
-  Slice 6 measures a day of them.
-- **If they miss**: the chained form, as on GitHub (a delayed job,
-  `when: delayed`, `start_in: 5 minutes`, holds no runner while it
-  waits, then triggers the next pipeline). Decided then, by that
-  measure.
+- **Schedules run no more often than GitLab's schedule worker**
+  ([limits](https://docs.gitlab.com/administration/cicd/limits/#maximum-scheduled-pipeline-frequency)):
+  - **Self-managed**: `3-59/10 * * * *` by default, every 10 minutes;
+    an administrator sets `pipeline_schedule_worker_cron`.
+  - **GitLab.com** ([settings](https://docs.gitlab.com/user/gitlab_com/)):
+    `*/5 * * * *`, but 24 pipelines a schedule a day on Free (hourly),
+    288 on paid tiers.
+  - **Not measured here**: slice 6 measures a day of them.
+- **Where they fall short** (Free, a default worker, misses): the
+  chained form, as on GitHub (a delayed job, `when: delayed`,
+  `start_in: 5 minutes`, holds no runner while it waits, then triggers
+  the next pipeline). Decided by that measure.
 
 ### 8. Crons demoted to fallback
 
@@ -178,19 +198,17 @@ about 240 of the job token's 1,000.
   reconcile alone; it is the line's tick. Its 55 minutes become 5;
   its "GitLab unchanged" becomes [§7](#7-gitlab); its cost of a day
   becomes [§3](#3-api-cost)'s and [the consequences](#consequences)'.
-- **Unchanged**: events still move the line; the tick is a safety net
-  for them and the driver of time, never the only path an issue moves.
+- **Unchanged**: events still move the line; the tick is their safety
+  net and the driver of time.
 
 ## Alternatives
 
 What exists elsewhere ([research](../research/reliable-schedule.md#what-exists)):
 
-- **An outside scheduler** (a hosted cron service, a cloud's scheduler)
-  calling `workflow_dispatch`: a personal token outside the forge;
-  refused, nothing outside the forge.
-- **A self-hosted cron** or server: the same token outside, and a
-  machine to keep up. A person may still run the tick from one
-  ([§1](#1-one-wake-same-everywhere)); the line never needs it.
+- **An outside scheduler** (a hosted cron, a cloud's scheduler, a
+  self-hosted server) calling `workflow_dispatch`: a personal token
+  outside the forge, a machine to keep up; refused. A person may still
+  run the tick from one ([§1](#1-one-wake-same-everywhere)).
 - **More crons, the first that runs does the work** ([#607]): still
   GitHub's scheduler; 2 of 9 fired.
 - **A job that sleeps**: a runner held all day; a private repository's
@@ -204,10 +222,10 @@ What exists elsewhere ([research](../research/reliable-schedule.md#what-exists))
 
 - **A role due starts within 5 minutes**, not hours; the nightly
   within 5 minutes of 02:17.
-- **Runs**: 288 ticks a day, one short job each. Free on a public
-  repository; a private one on a paid plan pays each tick's minute,
-  and sets a longer wait timer if it must. GitHub Free on a private
-  repository has no wait timer: the crons alone, as today, said.
+- **Runs**: 288 ticks a day; free on a public repository; a private
+  one pays [§6](#6-the-tick-does-not-stop-while-a-time-is-waiting)'s
+  minutes. GitHub Free on a private repository has no wait timer: the
+  crons alone, as today, said.
 - **Tokens**: no agent a tick; agents only for the jobs due, as today.
 - **API**: [§3](#3-api-cost)'s quarter, measured.
 - **The template** carries the same tick for projects (slice 6).
@@ -220,10 +238,8 @@ From [#1611], in order:
 
 1. [#1549]: the engine says Ready is below target; a backlog run
    starts. Its dispatch moves to the tick in slice 2.
-2. **The tick**: the heartbeat becomes it, a 5-minute wait timer on
-   `workline-heartbeat`; one engine command lists every job due, with
-   `--json`; the workflow dispatches only those. No agent when nothing
-   is due.
+2. **The tick**: the heartbeat becomes it; one engine command lists
+   every job due, with `--json`; the workflow dispatches only those.
 3. **Timed jobs behind it**: nightly, weekly docs, weekly sample,
    simulator's seeds; their times in `.workline/config.yaml`.
 4. **Merge's safety net** behind it.
