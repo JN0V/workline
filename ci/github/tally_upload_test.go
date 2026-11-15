@@ -21,16 +21,12 @@ type tallyStep struct {
 	overwrite bool
 }
 
-// tallySteps reads every workflow the templates ship (ci/github/*.yml).
-// With withProject it reads the project's own workflows too
-// (.github/workflows/*.yml).
-func tallySteps(t *testing.T, withProject bool) []tallyStep {
+// tallySteps reads every workflow template the project ships
+// (ci/github/*.yml). It never reads the project's own workflows
+// (.github/workflows/*.yml): those are not the developer's to change.
+func tallySteps(t *testing.T) []tallyStep {
 	t.Helper()
 	files, _ := filepath.Glob("*.yml")
-	if withProject {
-		more, _ := filepath.Glob(filepath.Join("..", "..", ".github", "workflows", "*.yml"))
-		files = append(files, more...)
-	}
 	var out []tallyStep
 	for _, file := range files {
 		data, err := os.ReadFile(file)
@@ -72,9 +68,10 @@ func tallySteps(t *testing.T, withProject bool) []tallyStep {
 // Given a reviewer run cancelled by a newer push after its agent answered,
 // When the weekly sample runs,
 // Then that run's tokens are counted: the steps that write and upload the
-// job's tally run in a cancelled run too.
+// job's tally run in a cancelled run too. It reads the templates the
+// project ships (ci/github/*.yml) only.
 func TestTallyStepsRunInACancelledRun(t *testing.T) {
-	for _, s := range tallySteps(t, true) {
+	for _, s := range tallySteps(t) {
 		rest := strings.ReplaceAll(s.cond, "!cancelled()", "")
 		if !strings.Contains(rest, "always()") && !strings.Contains(rest, "cancelled()") {
 			t.Errorf("%s: the tally step runs `if: %s`, which never runs in a cancelled run", s.where, s.cond)
@@ -90,7 +87,7 @@ func TestTallyStepsRunInACancelledRun(t *testing.T) {
 // project ships (ci/github/*.yml) only.
 func TestTallyArtifactsKeepEveryAttempt(t *testing.T) {
 	uploads := 0
-	for _, s := range tallySteps(t, false) {
+	for _, s := range tallySteps(t) {
 		if !s.upload {
 			continue
 		}
