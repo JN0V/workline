@@ -157,6 +157,7 @@ func typedDue(res *Result, name string, s routing.State, is forge.Issue, rec Rec
 	wait := func(why string, until time.Time) (bool, Record, map[string]string, *StateWrite, bool) {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: where,
 			Message: why + ": run again from " + until.UTC().Format("2006-01-02 15:04 UTC")})
+		res.Waiting = append(res.Waiting, is.ID) // an error backoff pending: the heartbeat goes on
 		return false, rec, nil, nil, true
 	}
 	blocked := func(rule, why string) (bool, Record, map[string]string, *StateWrite, bool) {
