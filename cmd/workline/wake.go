@@ -11,6 +11,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/stall"
 	"github.com/JN0V/workline/internal/wake"
 )
 
@@ -73,15 +74,21 @@ func wakeCmd(args []string) int {
 	// earlier on the branch: a run the forge dropped from its queue leaves
 	// no merge unread.
 	before = wake.From(root, wake.KeptHead(now), before, after)
-	rc, err := routing.Load(root)
+	// A broken routing does not stop the wake: the age limit is the
+	// default one, the error said under what it did not read.
+	hours, rcErr := stall.DefaultHours, error(nil)
+	if rc, err := routing.Load(root); err != nil {
+		rcErr = err
+	} else {
+		hours = rc.Stalled()
+	}
+	r, err := wake.Read(wake.Options{Repo: root, Before: before, After: after, Forge: f, Branch: developer.Branch, StalledHours: hours})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 64
 	}
-	r, err := wake.Read(wake.Options{Repo: root, Before: before, After: after, Forge: f, Branch: developer.Branch, StalledHours: rc.Stalled()})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "workline:", err)
-		return 64
+	if rcErr != nil {
+		r.Unread = append(r.Unread, fmt.Sprintf("the routing's settings (%v): the stalled pull requests read at the default %d h", rcErr, hours))
 	}
 	if readErr != nil {
 		// Its issue unread, it is left as it is: a body built without
