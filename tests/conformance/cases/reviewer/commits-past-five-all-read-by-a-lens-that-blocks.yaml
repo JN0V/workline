@@ -1,5 +1,5 @@
 case: reviewer/commits-past-five-all-read-by-a-lens-that-blocks
-about: "Five new commits a push caps the lenses that warn only (ADR-0050, step 6): a lens the project blocks on reads every new commit, and a finding that blocked an earlier push still holds the head's verdict while the head still has it. The push brings seven commits elsewhere; correctness, in turn on the verdict's run, reads all seven and not the cause's file again: the block stands."
+about: "Five new commits a push caps the lenses that warn only (ADR-0050, step 6): a lens the project blocks on reads every new commit, and a finding that blocked an earlier push still holds the head's verdict while the head still has it. The push brings seven commits elsewhere; correctness, in turn on the verdict's run, reads all seven and reads the standing block again whichever file the commits change (#1598), finding nothing: the block is answered."
 given:
   repo: reviewed
   setup:
@@ -25,12 +25,11 @@ given:
             <!-- workline:sticky=reviewer/summary -->
 run: {route: merge-request, warn-apart: true, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
 expect:
-  status: block
+  status: pass
   calls: [{task: part, for: 1-correctness}]
-  findings: [{rule: correctness, level: block, where: "calc/calc.go:11", message: "Average divides by one less than the count"}]
-  no-findings: [{rule: commits-left}]
+  no-findings: [{rule: commits-left}, {rule: correctness}]
   run-files:
     in/parts/1-correctness/task.md: {contains: ["### calc/f1.go", "### calc/f7.go", "feat: add f7"]}
   forge:
     merge-requests:
-      - {id: 5, comments: 1, comment-contains: [" runs=6 read=all -->", "| **blocks** | correctness |", "1 finding of a review before still blocks"]}
+      - {id: 5, comments: 1, comment-contains: [" runs=6 read=all -->", "No finding on the commits reviewed"]}
