@@ -38,13 +38,13 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open. Two items are kept for
-   1.0: its review rounds on GitLab
-   ([#1381](https://github.com/JN0V/workline/issues/1381)) and a bug in
-   its pick ([#1382](https://github.com/JN0V/workline/issues/1382)); the
+1. **Nothing buildable in Missing**: open. A bug in its pick is kept
+   for 1.0 ([#1382](https://github.com/JN0V/workline/issues/1382)), its
+   review rounds on GitLab after it
+   ([#1381](https://github.com/JN0V/workline/issues/1381)); the
    rest of [Missing](#missing) is parked or tries.
 2. **The main issue validated on real use**: **awaits the
-   maintainer**. [#696](https://github.com/JN0V/workline/issues/696)'s
+   maintainer**; v1.0 needs it ([ADR-0052](../../../docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted)). [#696](https://github.com/JN0V/workline/issues/696)'s
    Validation: a maintainer reads a pull request the developer opened
    for a `ready` issue, its Verification proved in it, and merges it or
    sends it back; the auditor's sample then re-checks it. The
@@ -463,7 +463,8 @@ column ([the try](https://github.com/JN0V/workline/pull/747#tried)).
 
 ## Missing
 
-Kept for 1.0, each an open issue:
+Each an open issue, on either side of 1.0
+([ADR-0052](../../../docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted)):
 
 - **A failed pipeline or a gate red on GitLab**: the project's checks
   are read on GitHub only; on GitLab, the merge request's head
@@ -472,7 +473,7 @@ Kept for 1.0, each an open issue:
   no comment a round reads. So a Draft made green is not marked ready
   there yet ([#969](https://github.com/JN0V/workline/issues/969)). The
   reviewer's verdict and a person's comment still wake a round there
-  (kept for 1.0, [#1381](https://github.com/JN0V/workline/issues/1381)).
+  (after 1.0, [#1381](https://github.com/JN0V/workline/issues/1381)).
 - **"Implements #4" on GitHub**: the pick reads `implement` as a
   closing word, as GitLab does; GitHub does not close on it, so there
   the issue is skipped as taken though nothing will close it (kept for

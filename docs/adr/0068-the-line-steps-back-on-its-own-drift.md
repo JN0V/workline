@@ -257,7 +257,9 @@ It never blocks a merge (principle 15).
   anyone's cord. Lifted on 2026-11-14, after [#1466]
   ([its amendment](0063-every-open-issue-is-due-waiting-or-done.md#amendment-2026-11-14-the-standing-stop-is-lifted)).
   Its other working agreements stand.
-- **[ADR-0052]'s v1.0 bar stands** until step 7.
+- **[ADR-0052]'s v1.0 bar** became the V1 accepted on 2026-11-15; its
+  other criteria wait for step 7
+  ([its amendment](0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted)).
 
 ## Not chosen
 
@@ -309,8 +311,10 @@ real-use round on steps 1 to 3.
 6. **The process engineer** ([ADR-0019], [#89]): reads the wake script
    and the auditor, runs five whys, at a level ([ADR-0060] §3); with
    it, a fixes-only release's yes ([ADR-0060] §4).
-7. **What replaces [ADR-0052]'s v1.0 bar**: criteria from real use,
-   defects per processed issue preferred to a fix share.
+7. **The bar after 1.0**: criteria from real use, defects per
+   processed issue preferred to a fix share; the criteria [ADR-0052]
+   moved after 1.0 are its candidates
+   ([its amendment](0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted)).
 
 ## Open questions
 

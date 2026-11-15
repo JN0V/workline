@@ -48,7 +48,7 @@ hold:
      for a reviewer's dropped finding, a committer's rewrite and a
      tester's tests, 30 of 30 in five runs (2026-10-29,
      [amendment](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-auditor-measured)).
-     Left: a product owner's closing and a false doc (kept for 1.0,
+     Left: a product owner's closing and a false doc (after 1.0,
      [#1379](https://github.com/JN0V/workline/issues/1379)).
    - **Real use**: awaits the maintainer. The bar is 60 verdicts the
      maintainer answered over four weeks, at most one contested. W42 to W45 read
@@ -135,7 +135,7 @@ hold:
 ## Missing
 
 - **A product owner's closing and a false doc, planted** in its
-  evaluation (kept for 1.0,
+  evaluation (after 1.0,
   [#1379](https://github.com/JN0V/workline/issues/1379)): a measure for
   criterion 3, not a gap in what is built, so criterion 1 holds.
 - **Tries on real use**:

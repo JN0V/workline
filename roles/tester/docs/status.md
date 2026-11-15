@@ -43,7 +43,8 @@ hold:
 1. **Nothing buildable in Missing**: open. The plan's eight steps are
    built; [Missing](#missing) keeps gaps the V1 rounds found, each an
    open issue.
-2. **The main issue validated on real use**: awaits the maintainer.
+2. **The main issue validated on real use**: awaits the maintainer;
+   v1.0 needs it ([ADR-0052](../../../docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted)).
    [#264](https://github.com/JN0V/workline/issues/264)'s Validation
    today holds eight scenarios on test sets by module, corpus growth and
    gardening; none is "a bug shown red first, then green", which this
@@ -287,7 +288,7 @@ Cases in `tests/conformance/cases/tester/`:
 
 Gaps found on real use and in the V1 rounds
 ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)),
-kept for 1.0:
+each said before or after 1.0:
 
 - **A person's comment on a Draft** is read by no role
   (kept for 1.0, [#1358](https://github.com/JN0V/workline/issues/1358)).
@@ -303,7 +304,7 @@ kept for 1.0:
   `build-errors` does not read
   ([the page](missing-name.md#other-languages)); build errors move to
   language packs
-  (kept for 1.0, [#1319](https://github.com/JN0V/workline/issues/1319)).
+  (after 1.0, [#1319](https://github.com/JN0V/workline/issues/1319)).
 
 Parked, none seen in the V1 rounds:
 

@@ -35,7 +35,7 @@ hold:
    role's bugs the V1 rounds and the trials found, kept for 1.0
    ([Missing](#missing-in-the-order-to-build-it), 1).
 2. **The main issue validated on real use**: **awaits the
-   maintainer**. No open issue holds its Validation: the trial of
+   maintainer**; v1.0 needs it ([ADR-0052](../../../docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted)). No open issue holds its Validation: the trial of
    [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
    has none.
    - **What the maintainer would sign**: that the V1 rounds validate
@@ -255,7 +255,7 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
    - an answer on a Validation question written in the Scope, the
      reviewer holding again (kept for 1.0,
      [#1356](https://github.com/JN0V/workline/issues/1356));
-   - answers to the spec reviewer missed or read twice (kept for 1.0,
+   - answers to the spec reviewer missed or read twice (after 1.0,
      [#1346](https://github.com/JN0V/workline/issues/1346));
    - a person's long answer cut at 3,000 characters (kept for 1.0,
      [#1364](https://github.com/JN0V/workline/issues/1364));
