@@ -51,6 +51,18 @@ type Config struct {
 	// person alone moving it out. News wakes it sooner: a comment, its
 	// body edited, an issue it waits on closed.
 	Revisit *int `yaml:"revisit"`
+	// StalledHours: the hours a developer's pull request keeps its head,
+	// its verdict not a pass, before the wake and the reconcile say it
+	// stalled (ADR-0068, section 8); nil, 12; 0, never.
+	StalledHours *int `yaml:"stalled-hours"`
+}
+
+// Stalled is the age limit of a stalled pull request, in hours; 0, none.
+func (c *Config) Stalled() int {
+	if c.StalledHours == nil {
+		return 12
+	}
+	return *c.StalledHours
 }
 
 // Load returns the shipped routing with the project's changes applied.
@@ -111,6 +123,12 @@ func Load(repo string) (*Config, error) {
 				return nil, role.ConfigErrorf("routing.revisit is %d: a number of days, 0 for never", *p.Revisit)
 			}
 			c.Revisit = p.Revisit
+		}
+		if p.StalledHours != nil {
+			if *p.StalledHours < 0 {
+				return nil, role.ConfigErrorf("routing.stalled-hours is %d: a number of hours, 0 for never", *p.StalledHours)
+			}
+			c.StalledHours = p.StalledHours
 		}
 		if err := checkStale(p.Stale, c.States); err != nil {
 			return nil, role.ConfigErrorf("%s", err)
