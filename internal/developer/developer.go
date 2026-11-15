@@ -798,7 +798,7 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		"the engine reads it and takes it out of your diff, and the pull request lists those files for the reviewer, who judges each. " +
 		"Stay on the issue: a fix it does not ask, found on the way, belongs in another issue, said in your answer. " +
 		"Never, whatever the change needs: the files the project's CODEOWNERS lists, agent files (AGENTS.md, CLAUDE.md…) and, with no CODEOWNERS, the pages they link, " +
-		"`.workline/` (but the files named here), the CI's workflows, a gate's definition: such a change is reverted.\n")
+		"`.workline/` (but only the answer files named here; any other `.workline/` file, even one the " + scopeName + " names, is a person's), the CI's workflows, a gate's definition: such a change is reverted.\n")
 	if len(person) > 0 {
 		t.WriteString("\nA person makes the part of the " + scopeName + " that is a CI file, never you: `" + strings.Join(person, "`, `") + "`. Leave it, and say in your answer what it needs.\n")
 	}
