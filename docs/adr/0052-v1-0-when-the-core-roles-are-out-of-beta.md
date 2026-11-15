@@ -2,7 +2,9 @@
 
 - **Status:** accepted; V1 accepted on 2026-11-11
   ([amendment](#amendment-2026-11-11-1266-v1-accepted)); its freeze
-  lifted on 2026-11-14 ([amendment](#amendment-2026-11-14-the-freeze-is-lifted))
+  lifted on 2026-11-14 ([amendment](#amendment-2026-11-14-the-freeze-is-lifted));
+  v1.0 is the V1 accepted, its other criteria after 1.0, on 2026-11-15
+  ([amendment](#amendment-2026-11-15-v10-is-the-v1-accepted))
 - **Date:** 2026-10-26
 - **Decided by:** the maintainer, on 2026-10-26
 - **Builds on:** [ADR-0036] (a role's status is earned by written
@@ -14,8 +16,9 @@
   (step 1 built): the "until then" freeze held until ADR-0068's step 1 passed its
   test (nobody bypasses `main`, the guard guarded); lifted on
   2026-11-14, after [#1463] and [#1464]
-  ([amendment](#amendment-2026-11-14-the-freeze-is-lifted)). The v1.0
-  bar stands until its step 7 decides what replaces it
+  ([amendment](#amendment-2026-11-14-the-freeze-is-lifted)). Its step
+  7 now decides the bar after 1.0
+  ([amendment](#amendment-2026-11-15-v10-is-the-v1-accepted))
 
 ## Context
 
@@ -122,7 +125,63 @@ holds the issues that count.
   [ADR-0063]'s standing stop until its step 3 ([#1461]), lifted on
   2026-11-14 ([its amendment](0063-every-open-issue-is-due-waiting-or-done.md#amendment-2026-11-14-the-standing-stop-is-lifted)).
 
+## Amendment 2026-11-15: v1.0 is the V1 accepted
+
+- **Decided by:** the maintainer, on 2026-11-15.
+- **v1.0 is the V1 accepted in [#1266]**: the product owner, the tester
+  and the developer, with the reviewer and the committer and judge they
+  rely on, take a need to a merged change on any repository
+  ([above](#amendment-2026-11-11-1266-v1-accepted)).
+- **Why**: V1 is the stage the line set out to close.
+- **Moved after 1.0**, to the bar [ADR-0068's step 7](0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)
+  decides for after 1.0 (a 1.x or 2.0 bar):
+  - all eight roles out of beta (criterion 1 and its amendment);
+  - the inspector validated on a real GitLab (criterion 2);
+  - upkeep under 10% of tokens for 4 weeks, by [#610] (criterion 3).
+- **What 1.0 still requires**:
+  1. **The maintainer signs "validated on real use"** (criterion 2 of
+     [ADR-0036]) in the status.md of the product owner, the tester,
+     the developer and the reviewer. Their other criteria to leave
+     beta may stay open at 1.0.
+  2. **[#1556] fixed**: the release's yes survives `main` moving, so
+     the release pull request can be accepted.
+  3. **The small items below** marked before, fixed.
+  4. **The release**: a `Release-As: 1.0.0` footer reaches `main`
+     through a pull request, then the maintainer's label on the
+     release.
+- **The small items**, against V1's goal (the chain alone, on any
+  repository, a person's word never lost):
+
+  | Issue | Side | Why |
+  |---|---|---|
+  | [#1291] | before | a tester's test lost unfrozen, silently |
+  | [#1355] | before | an issue stalls in refine, silently |
+  | [#1356] | before | a person's answer brings the same hold back |
+  | [#1358] | before | a person's comment on a Draft unanswered at merge |
+  | [#1364] | before | a person's long answer cut |
+  | [#1382] | before | the developer skips an issue on GitHub |
+  | [#1346] | before | an answer given with `workline:accepted` never reaches the Scope |
+  | [#1381] | after | GitLab parity, with the inspector's GitLab bar |
+  | [#1319] | after | language packs: V1 passed on three languages without |
+  | [#1357] | after | a judge's miss, caught at a feature's yes |
+  | [#1361] | after | the documentalist's noise, outside the chain |
+  | [#1379] | after | the auditor's measure, outside the chain |
+  | [#264] | after | its wider scenarios; its red-first part is the tester's signature |
+
 [#1266]: https://github.com/JN0V/workline/issues/1266
+[#1556]: https://github.com/JN0V/workline/issues/1556
+[#1291]: https://github.com/JN0V/workline/issues/1291
+[#1355]: https://github.com/JN0V/workline/issues/1355
+[#1356]: https://github.com/JN0V/workline/issues/1356
+[#1358]: https://github.com/JN0V/workline/issues/1358
+[#1364]: https://github.com/JN0V/workline/issues/1364
+[#1382]: https://github.com/JN0V/workline/issues/1382
+[#1381]: https://github.com/JN0V/workline/issues/1381
+[#1319]: https://github.com/JN0V/workline/issues/1319
+[#1346]: https://github.com/JN0V/workline/issues/1346
+[#1357]: https://github.com/JN0V/workline/issues/1357
+[#1361]: https://github.com/JN0V/workline/issues/1361
+[#1379]: https://github.com/JN0V/workline/issues/1379
 [round 3]: https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764
 [#1370]: https://github.com/JN0V/workline/issues/1370
 [#1375]: https://github.com/JN0V/workline/pull/1375

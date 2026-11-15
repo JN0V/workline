@@ -21,7 +21,7 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: **open**, one bug kept for 1.0
+1. **Nothing buildable in Missing**: **open**, one bug, after 1.0
    ([#1361](https://github.com/JN0V/workline/issues/1361)); met on
    2026-10-18 before it. A doc judged
    on its change alone is read in parts at night (Built:

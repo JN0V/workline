@@ -27,8 +27,9 @@ hold:
    measured on it, five runs a case, correctness blocking on workline
    itself ([#360](https://github.com/JN0V/workline/issues/360)); the
    developer's loop is built and ran on real use (Built). Left: the
-   gaps the V1 rounds found, kept for 1.0 in [Missing](#missing).
-2. **The main issue validated on real use**: awaits the maintainer. No
+   gaps the V1 rounds found, in [Missing](#missing).
+2. **The main issue validated on real use**: awaits the maintainer;
+   v1.0 needs it ([ADR-0052](../../../docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted)). No
    issue of the role holds a Validation section the maintainer has
    signed.
    - **The evidence**: V1 round 3, every request of 9 issues reviewed
@@ -288,15 +289,13 @@ its measure in
 
 Gaps found on real use and in the V1 rounds
 ([round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)),
-kept for 1.0:
+each said before or after 1.0:
 
 - **The judge drops a defect** the code's comment calls intended
-  (kept for 1.0, [#1357](https://github.com/JN0V/workline/issues/1357)).
-- **`code-lines-max` cuts** a typical Android ViewModel, one lens left,
-  a cut warning on every head
-  (kept for 1.0, [#1334](https://github.com/JN0V/workline/issues/1334)).
-- **Answers to a spec finding** missed or read twice in three edge cases
-  (kept for 1.0, [#1346](https://github.com/JN0V/workline/issues/1346)).
+  (after 1.0, [#1357](https://github.com/JN0V/workline/issues/1357)).
+- **Answers to a spec finding** missed: one given with
+  `workline:accepted` never reaches the Scope; two rarer edge cases
+  (before 1.0, [#1346](https://github.com/JN0V/workline/issues/1346)).
 
 - **Simplicity's false alarms counted** on 20 to 50 past pull requests,
   before it may block; tried on 11
