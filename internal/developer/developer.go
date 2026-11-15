@@ -995,6 +995,14 @@ func Post(runDir, repo string) int {
 			draft = &drafted{p, u, caps, found}
 		}
 	}
+	if len(patches) == 0 && draft == nil && onlyProtected(refused) {
+		// Its only changes were refused as a person's to make: nothing
+		// to wait 24 hours for, the issue goes to a person at once (#1418).
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
+			Message: "its agent's only changes were refused as protected: nothing to prove, no pull request; blocked for a person at once, said on the issue"})
+		v.Summary += "; blocked for a person"
+		return writeBlockedProtected(runDir, repo, a, s, told, refused, v)
+	}
 	if len(patches) == 0 && draft == nil {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: fmt.Sprintf("its agent wrote no code: nothing to prove, no pull request; blocked for a person after %d hours on the same body, said on the issue", s.ClaimHours)})
@@ -1338,4 +1346,47 @@ func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, t
 		}
 	}
 	return out, nil
+}
+
+// onlyProtected says whether every refusal is a file only a person
+// changes (a gate's or the CI's, a steering file), and there is one.
+func onlyProtected(refused []Refusal) bool {
+	if len(refused) == 0 {
+		return false
+	}
+	for _, r := range refused {
+		if r.Rule != "gate-file" && r.Rule != "steering-file" {
+			return false
+		}
+	}
+	return true
+}
+
+// writeBlockedProtected claims the issue and blocks it for a person in
+// the same run, the refused files and why said on it (#1418).
+func writeBlockedProtected(runDir, repo string, a Act, s Settings, told []intent.Intention, refused []Refusal, v verdict.Verdict) int {
+	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
+	if line, err := routing.Load(repo); err == nil {
+		if ad, rm, err := line.Move("blocked"); err == nil {
+			add, remove = ad, rm
+		}
+	}
+	if !slices.Contains(remove, s.ClaimLabel) {
+		remove = append(remove, s.ClaimLabel)
+	}
+	var b strings.Builder
+	for _, r := range refused {
+		fmt.Fprintf(&b, "`%s`: %s; ", r.File, why(r))
+	}
+	say := backlog.Said(who, "blocks this issue",
+		"its agent's only changes were refused at apply: "+strings.TrimSuffix(b.String(), "; "),
+		"a person makes the change, or decides it, then moves the issue back by its label")
+	out := slices.Concat(claimOf(a, s), told, []intent.Intention{
+		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
+		{Kind: "comment", Value: map[string]any{"issue": a.Issue, "body": say}},
+	})
+	if code := writeIntents(runDir, "", out); code != 0 {
+		return code
+	}
+	return writeVerdict(runDir, v)
 }

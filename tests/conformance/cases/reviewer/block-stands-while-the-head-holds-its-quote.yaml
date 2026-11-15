@@ -1,5 +1,5 @@
 case: reviewer/block-stands-while-the-head-holds-its-quote
-about: "A merge request rewrites a line of main; on ready, correctness blocks on the new line, quoting a part both lines hold (#570). The author pushes a commit elsewhere, the new line left as it was: its quote is still on a line the head holds, and the block stands."
+about: "A merge request rewrites a line of main; on ready, correctness blocks on the new line, quoting a part both lines hold (#570). The author pushes a commit elsewhere, the new line left as it was: the standing block is read again whichever file the commit changes (#1598), the lens finds the line again, and the block stands on its finding, its verdict kept."
 given:
   repo: reviewed
   setup: ["sed -i 's|return total / len(values)|return total / len(values) + 1|' calc/calc.go && git commit -qam 'fix: average over one more'"]
@@ -21,11 +21,11 @@ run:
   again-after: ["printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"]
 expect:
   status: block
-  agent-calls: 2
-  calls: [{task: part, for: 1-correctness}, {task: judge, for: judge/01}]
-  findings: [{rule: correctness, level: block, where: "calc/calc.go:11", message: "no commit since answers it"}]
+  agent-calls: 3
+  calls: [{task: part, for: 1-correctness}, {task: judge, for: judge/01}, {task: part, for: 1-correctness}]
+  findings: [{rule: correctness, level: block, where: "calc/calc.go:11", message: "Average comes out one more than the mean"}]
   forge:
     merge-requests:
       - id: 5
         comments: 1
-        comment-contains: ["no lens that blocks on this push", "| **blocks** | correctness | `calc/calc.go:11`", "1 finding of a review before still blocks", "<!-- workline:blocks "]
+        comment-contains: ["its verdict kept, not judged again", "| **blocks** | correctness | `calc/calc.go:11`", "<!-- workline:blocks "]

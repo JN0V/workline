@@ -57,6 +57,9 @@ type tally struct {
 	// effort: the project's effort scheme read, once a run, for the
 	// issues' backstops (backstop.go).
 	effort bool
+	// say: the reconcile writes what it finds on a pull request, not
+	// listing (testerblock.go).
+	say bool
 }
 
 func newTally() *tally { return &tally{proofs: map[int]bool{}, moved: map[int]bool{}} }

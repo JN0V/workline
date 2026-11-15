@@ -761,9 +761,15 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 		}
 		fmt.Fprintf(os.Stderr, "workline: tester: running the tests %s (%s UTC%s)\n", where, time.Now().UTC().Format("15:04:05"), stops)
 	}
+	began := time.Now()
 	out, late, runErr := shell(tree, strings.ReplaceAll(s.Command, "{report}", report), deadline)
 	if late {
 		f := overTime(where, budget)
+		if budget == "suite-max-seconds" {
+			// The cap, the time it took, the setting to raise (#1503).
+			f.Message = fmt.Sprintf("the run %s stopped at the cap suite-max-seconds (%d s) after %d s: the suite takes longer; raise suite-max-seconds in the tester's settings (roles.tester.settings)",
+				where, s.SuiteMaxSeconds, int(time.Since(began).Seconds()))
+		}
 		f.Message += stoppedAt(tree, s, kept, out.String())
 		return ran{}, f
 	}

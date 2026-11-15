@@ -31,14 +31,14 @@ func (f worksForge) MergeRequest(id int) (forge.MergeRequest, error) {
 }
 
 // A merge request's work: its closed issue's kind first, else its
-// title's type; ci and build are neither product nor upkeep.
+// title's type; a type that is neither (bump) is unknown.
 func TestWorkOfAMergeRequest(t *testing.T) {
 	f := worksForge{
 		issues: map[int][]string{1: {"bug"}, 2: {}, 3: {"chore"}},
 		mrs: map[int]forge.MergeRequest{
 			10: {Title: "docs: a fix", Body: "Fixes #1"},
 			11: {Title: "refactor: split it", Body: "Closes #2"},
-			12: {Title: "ci: cache the build"},
+			12: {Title: "bump: cache the build"},
 			13: {Title: "Tidy up", Body: "Closes #2"},
 			14: {Title: "chore(main): release 1.0.0"},
 			15: {Title: "test: more", Body: "Closes #3"},

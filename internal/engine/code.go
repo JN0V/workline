@@ -62,7 +62,8 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
 		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `%s`: the developer's fix of a reproduced bug merges once every gate passes, a feature or a task waits for a person's yes.\n\n- To accept this one, put the label `%s`.\n- A bug? Change the label on #%d.",
 			d.Says(), o.Merge, backlog.AcceptedLabel(f), d.Issue)
-		if err := f.Comment(t, body, forge.Marker("merge-waits="+d.Kind)); err != nil {
+		body += headTrouble(o, m, hand, w)
+		if err := f.Sticky(t, body, forge.Marker("merge-waits="+d.Kind), true); err != nil {
 			return nil, err
 		}
 		return waits("", d.Says())
@@ -72,7 +73,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
 		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `enterprising`, but a release candidate was refused: features and tasks wait for a person's yes on each pull request until a person closes %s.\n\n- To accept this one, put the label `%s`.",
 			d.Says(), n.demoted[kindFeature], backlog.AcceptedLabel(f))
-		if err := f.Comment(t, body, forge.Marker("merge-waits="+d.Kind)); err != nil {
+		if err := f.Sticky(t, body, forge.Marker("merge-waits="+d.Kind), true); err != nil {
 			return nil, err
 		}
 		return waits("warn", fmt.Sprintf("%s, but features and tasks wait for a person's yes since a release candidate was refused (%s)", d.Says(), n.demoted[kindFeature]))
@@ -150,6 +151,20 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		}
 	}
 	return admit(f, m, o, w, n, hand, waits, kindCode, d.Says())
+}
+
+// headTrouble says, for the wait's comment, what a person's yes alone will
+// not mend on the head: a verdict red, at which step, a conflict with the
+// base. "" when neither.
+func headTrouble(o FollowOptions, m forge.Merger, hand map[string]kept, w weighed) string {
+	var out string
+	if v, err := verdictOf(m, hand, w.tip); err == nil && v.class == verdictRed {
+		out += fmt.Sprintf("\n\n**The verdict on this head is red**: %s. The label alone will not merge it: it merges once the line passes on a new head.", v.why)
+	}
+	if clash, err := conflicts(o.Repo, w.baseTip, w.tip); err == nil && clash {
+		out += "\n\n**It conflicts with main**: the label alone will not merge it, it is to be brought up to date with its base."
+	}
+	return out
 }
 
 // unreviewed says why no review reads the head, "" when one does: the

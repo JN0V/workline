@@ -46,7 +46,7 @@ on:
 permissions: {}
 
 env:
-  WORKLINE_VERSION: v0.77.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  WORKLINE_VERSION: v0.78.1          # a release of workline: update it to take a newer one (x-release-please-version)
   # the job summary (--summary) needs the first release after v0.16.0
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
@@ -105,15 +105,15 @@ jobs:
       # What this job's agent calls spent, a line a run: role, target,
       # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
       # weekly sample's tokens (ADR-0019, open point 1); the run folders
-      # keep their day. Never in a cancelled run (a newer push's), whose
-      # spend is lost; nor in a merge queue's, which asks no agent. The
+      # keep their day. Also in a cancelled run (a newer push's), (#1413), named so, not always(); in each
+      # attempt of a re-run, its own artifact; not in a merge queue's, which asks no agent. The
       # first release after v0.75.0; an engine before it keeps none, said.
       - name: The runs' tally
-        if: "!cancelled() && github.event_name != 'merge_group'"
+        if: "(success() || failure() || cancelled()) && github.event_name != 'merge_group'"
         run: 'workline sample --tally workline-tally.jsonl || echo "workline: no tally kept"'
       - uses: actions/upload-artifact@v4
-        if: "!cancelled() && github.event_name != 'merge_group'"
-        with: {name: "workline-tally-${{ github.job }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14, overwrite: true}
+        if: "(success() || failure() || cancelled()) && github.event_name != 'merge_group'"
+        with: {name: "workline-tally-${{ github.job }}-${{ github.run_attempt }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14}
 
   # Every night, proposed or not: it also tends the pull requests gardening
   # opened before (ADR-0034, amended).
@@ -128,8 +128,9 @@ jobs:
     # issues: the product owner's acts (comments, labels, closings,
     # reactions) on each issue.
     # actions: the next steps of the states the night moved, started
-    # (ADR-0059).
-    permissions: {contents: write, pull-requests: write, issues: write, actions: write}
+    # (ADR-0059). statuses: the line's verdicts, read by the reconcile
+    # (ADR-0068 §8).
+    permissions: {contents: write, pull-requests: write, issues: write, actions: write, statuses: read}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''
@@ -193,7 +194,10 @@ jobs:
       # needs-tests: their next steps started now, by the line's workflow
       # (workline-develop.yml), not at the reconciler's next hour
       # (ADR-0059). No agent; none started without that workflow.
-      - env: {GH_TOKEN: "${{ github.token }}"}
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          # Read only: reconcile=list writes nothing, and this token is not the App's.
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # the App whose statuses keep the verdicts read back
         run: |
           gh workflow view workline-develop.yml >/dev/null 2>&1 || exit 0
           workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --json > due.json || exit 0
@@ -315,15 +319,15 @@ jobs:
       # What this job's agent calls spent, a line a run: role, target,
       # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
       # weekly sample's tokens (ADR-0019, open point 1); the run folders
-      # keep their day. Never in a cancelled run (a newer push's), whose
-      # spend is lost; nor in a merge queue's, which asks no agent. The
+      # keep their day. Also in a cancelled run (a newer push's), (#1413), named so, not always(); in each
+      # attempt of a re-run, its own artifact; not in a merge queue's, which asks no agent. The
       # first release after v0.75.0; an engine before it keeps none, said.
       - name: The runs' tally
-        if: "!cancelled() && github.event_name != 'merge_group'"
+        if: "(success() || failure() || cancelled()) && github.event_name != 'merge_group'"
         run: 'workline sample --tally workline-tally.jsonl || echo "workline: no tally kept"'
       - uses: actions/upload-artifact@v4
-        if: "!cancelled() && github.event_name != 'merge_group'"
-        with: {name: "workline-tally-${{ github.job }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14, overwrite: true}
+        if: "(success() || failure() || cancelled()) && github.event_name != 'merge_group'"
+        with: {name: "workline-tally-${{ github.job }}-${{ github.run_attempt }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14}
 
   dry-run-post:
     needs: dry-run

@@ -11,6 +11,7 @@ package line
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -264,6 +265,36 @@ func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Opti
 			}
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-ran", Level: "info", Where: where,
 				Message: fmt.Sprintf("the tester's answer to an objection on it ran on %s: %s", short(head), status)})
+			out := outcomeOf(res.Steps[ran:], status)
+			if status != verdict.Pass || !needsCode(out) {
+				return
+			}
+			// It said it lacks code (#1443): run again at once, given the
+			// files it named; lacking again, a person is asked to name them.
+			said := oneLine(out.Said)
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: where,
+				Message: fmt.Sprintf("the tester said it lacks code: its answer runs again at once, given %s", said)})
+			in := maps.Clone(ao.Inputs)
+			if in == nil {
+				in = map[string]string{}
+			}
+			in[NeedsInput] = said
+			ao.Inputs = in
+			ran = len(res.Steps)
+			_, status = runRole(res, cfg, ao, 0)
+			res.Status = worst(res.Status, status)
+			if status == verdict.Pass {
+				res.Findings = append(res.Findings, CountRuns(nil, 0, runDirs(res.Steps[ran:]))...)
+			}
+			if again := outcomeOf(res.Steps[ran:], status); status == verdict.Pass && needsCode(again) {
+				why := fmt.Sprintf("the tester said again it lacks code, given what it named: %s; a person names the files it needs in a comment here", oneLine(again.Said))
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "needs-spent", Level: "warn", Where: where, Message: why})
+				body := "**workline's line** asks a person: " + why + ".\n\n" + needsSpentMarker
+				if err := f.Sticky(target, body, needsSpentMarker, true); err != nil {
+					res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-not-said", Level: "warn", Where: where,
+						Message: "the tester lacks code, and that is not said on the Draft: " + forge.Said(err)})
+				}
+			}
 		})
 		if after, err := th.Threads(mr.ID); err == nil && !tester.ObjectionsWait(after) {
 			answered++
@@ -283,6 +314,10 @@ func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Opti
 	}
 	return answered
 }
+
+// needsSpentMarker keys the line's word asking a person to name the files
+// the tester's answer lacks.
+var needsSpentMarker = forge.Marker("sticky=line/needs-spent")
 
 // answerMarker keys the line's word on a Draft whose objection its
 // answer run left unanswered.

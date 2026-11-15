@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.78.1](https://github.com/JN0V/workline/compare/v0.78.0...v0.78.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **engine:** "Waiting for a person's yes" does not say ([#1606](https://github.com/JN0V/workline/issues/1606)) ([e7a58ef](https://github.com/JN0V/workline/commit/e7a58efc94dd7c9ac50c5748892925678e36e10a))
+* **internal:** the product owner moves a developing ([#1607](https://github.com/JN0V/workline/issues/1607)) ([f3595c5](https://github.com/JN0V/workline/commit/f3595c5e9393ed476d9cc7188c9d4e5b1b1b1e44))
+
+## [0.78.0](https://github.com/JN0V/workline/compare/v0.77.1...v0.78.0) (2026-11-15)
+
+
+### Features
+
+* **internal:** show only the settlement diff when a ([#1554](https://github.com/JN0V/workline/issues/1554)) ([2099252](https://github.com/JN0V/workline/commit/209925286c577cec7047aac785cc2f3b29504748))
+
+
+### Bug Fixes
+
+* weekly upkeep share misses ci/build work, the ([#1585](https://github.com/JN0V/workline/issues/1585)) ([dc96051](https://github.com/JN0V/workline/commit/dc96051ac3bb89cc4291ff5d23cf1bbb8e502909))
+
+## [0.77.1](https://github.com/JN0V/workline/compare/v0.77.0...v0.77.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* a verdict blocked at the tester's green proof ([#1591](https://github.com/JN0V/workline/issues/1591)) ([eaab391](https://github.com/JN0V/workline/commit/eaab39128db9c683bca10b0df96c799b5bf9e2e9))
+* **gitlab:** gitLab: a review round on a merged request goes ([#1580](https://github.com/JN0V/workline/issues/1580)) ([c045fba](https://github.com/JN0V/workline/commit/c045fbade45adee2bbea252da5239a35a9e918b1))
+* **internal:** a bot's comment ends the product owner's wait ([#1574](https://github.com/JN0V/workline/issues/1574)) ([9a9875a](https://github.com/JN0V/workline/commit/9a9875aedc8652f4b8524e7be58670523633370c))
+* **internal:** a change refused at apply waits 24 hours ([#1590](https://github.com/JN0V/workline/issues/1590)) ([3a6997b](https://github.com/JN0V/workline/commit/3a6997bc9bc308f447bf1689883e7a0f01c84b3e))
+* **internal:** a forge command's timeout waits for its children ([#1525](https://github.com/JN0V/workline/issues/1525)) ([6500c50](https://github.com/JN0V/workline/commit/6500c50224edae4cbe3dcee5d7fd9216272591b0))
+* **internal:** a tester's Lacks code answer is said, but ([#1592](https://github.com/JN0V/workline/issues/1592)) ([126e71c](https://github.com/JN0V/workline/commit/126e71c001c2230bcca001a73742b9a3f4602fb2))
+* **internal:** code-lines-max cuts a typical Android ViewModel ([#1453](https://github.com/JN0V/workline/issues/1453)) ([02b1f10](https://github.com/JN0V/workline/commit/02b1f10a5ff86a36c395f50394955f2c97f2d8a4))
+* **internal:** naming code it was given blocks a ready bug as ([#1561](https://github.com/JN0V/workline/issues/1561)) ([a21762c](https://github.com/JN0V/workline/commit/a21762c1ba9effb199850786cce63268af1577ec))
+* **line:** a product owner is started twice in one tick after ([#1569](https://github.com/JN0V/workline/issues/1569)) ([c195c97](https://github.com/JN0V/workline/commit/c195c9737679418b117c86815982182e57100d6a))
+* **line:** a product owner's answer unreadable twice is asked ([#1424](https://github.com/JN0V/workline/issues/1424)) ([ae2eed4](https://github.com/JN0V/workline/commit/ae2eed4cf7d7de5381f812e2875010317a042201))
+* **line:** a token count can undo the line's record written ([#1422](https://github.com/JN0V/workline/issues/1422)) ([a95c5bb](https://github.com/JN0V/workline/commit/a95c5bbad0f3fc8c27870daf911c1c0e9d0af739))
+* local review rounds name no author and lay an uncommitted ([#1546](https://github.com/JN0V/workline/issues/1546)) ([93a0372](https://github.com/JN0V/workline/commit/93a03723581c5b64170351a96fb0a4081fb61ab1))
+* local-line.md drops the packs line; doctor warns of CI ([#1471](https://github.com/JN0V/workline/issues/1471)) ([1b4dfaf](https://github.com/JN0V/workline/commit/1b4dfafbf3b73a5b883c00160ac8e401653a03c5))
+* **tester:** frozen tests under a runner's own names are ([#1553](https://github.com/JN0V/workline/issues/1553)) ([a664807](https://github.com/JN0V/workline/commit/a66480759c1baffd817ea061a8b5e58f9998a308))
+* the green proof stops at suite-max-seconds, below ([#1589](https://github.com/JN0V/workline/issues/1589)) ([0b5769c](https://github.com/JN0V/workline/commit/0b5769cdf001795108e296f717bbc9c035b9f6f3))
+* the heartbeat re-dispatches every period with ([#1572](https://github.com/JN0V/workline/issues/1572)) ([cb6cec3](https://github.com/JN0V/workline/commit/cb6cec34d5e0f09f7384aeb62495070dc0984b5d))
+
 ## [0.77.0](https://github.com/JN0V/workline/compare/v0.76.0...v0.77.0) (2026-11-14)
 
 

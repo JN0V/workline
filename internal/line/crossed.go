@@ -105,6 +105,7 @@ func sizeRetry(res *Result, rec Record, issue int) (inputs map[string]string, sp
 	case !again:
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: where,
 			Message: fmt.Sprintf("the %s's last run on it failed (%s): run again from %s", backlog.Keeper, errs.Kind, until.UTC().Format("2006-01-02 15:04 UTC"))})
+		res.Waiting = append(res.Waiting, issue) // an error backoff pending: the heartbeat goes on
 		return nil, nil, true
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-retry", Level: "info", Where: where,

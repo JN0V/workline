@@ -128,7 +128,13 @@ type candidate struct {
 // acts drawn for a person.
 func Draw(o Options) *Result {
 	res := &Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}, Reads: []Read{}}
-	if err := draw(o, res); err != nil {
+	err := draw(o, res)
+	// What its judge spent is kept as a run of the sample, for the next
+	// week's tokens: its folder is gone on return (#1413).
+	if kerr := engine.KeepCalls(engine.RunsDir(o.Repo), "sample", res.Calls); kerr != nil && err == nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-calls-kept", Level: "warn", Message: "the sample's own calls could not be kept in the runs folder's tally: " + kerr.Error()})
+	}
+	if err != nil {
 		res.Status, res.Summary = verdict.Block, err.Error()
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "engine-error", Message: err.Error()})
 	}

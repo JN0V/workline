@@ -1883,7 +1883,7 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 		Concurrency map[string]any `yaml:"concurrency"`
 		Jobs        map[string]struct {
 			If          string            `yaml:"if"`
-			Needs       string            `yaml:"needs"`
+			Needs       any               `yaml:"needs"`
 			Environment any               `yaml:"environment"`
 			Concurrency map[string]any    `yaml:"concurrency"`
 			Permissions map[string]string `yaml:"permissions"`
@@ -1989,10 +1989,20 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 	}
 	if fmt.Sprint(env["name"]) != "workline-heartbeat" || env["deployment"] != false || len(beat.Permissions) != 0 ||
 		beat.Concurrency["cancel-in-progress"] != true || !strings.Contains(fmt.Sprint(beat.Concurrency["group"]), "workline-heartbeat-") ||
-		!strings.Contains(beat.If, "inputs.reconcile == 'next'") || rec.Needs != "heartbeat" ||
+		!strings.Contains(beat.If, "inputs.reconcile == 'next'") || !strings.Contains(fmt.Sprint(rec.Needs), "heartbeat") ||
 		!strings.Contains(rec.If, "needs.heartbeat.result == 'success' || needs.heartbeat.result == 'skipped'") ||
 		!strings.Contains(rec.If, "inputs.reconcile == 'next'") || !rearmed {
 		t.Errorf("workline-develop.yml: no heartbeat starting the next reconcile after the environment's wait timer: %q %v %v %q", beat.If, beat.Environment, beat.Concurrency, rec.If)
+	}
+	// The reconciler reads the line's verdicts as the App that keeps them
+	// (#1506): its slug from the job identity, which alone holds the key.
+	named := false
+	for _, st := range rec.Steps {
+		named = named || st.Env["WORKLINE_APP"] == "${{ needs.identity.outputs.app }}"
+	}
+	if id := wf.Jobs["identity"]; !named || rec.Permissions["statuses"] != "read" || !strings.Contains(fmt.Sprint(rec.Needs), "identity") ||
+		environmentOf(id.Environment) != "workline-app" {
+		t.Errorf("workline-develop.yml, reconcile: the verdicts read with no App named: env named %v, statuses %q, needs %v", named, rec.Permissions["statuses"], rec.Needs)
 	}
 	// A heartbeat's run starts no issue's step.
 	if !strings.Contains(judge.If, "inputs.reconcile == ''") {
@@ -2061,7 +2071,7 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 		On      map[string]any `yaml:"on"`
 		Jobs    map[string]struct {
 			If          string            `yaml:"if"`
-			Needs       string            `yaml:"needs"`
+			Needs       any               `yaml:"needs"`
 			Permissions map[string]string `yaml:"permissions"`
 			Steps       []struct {
 				Run string            `yaml:"run"`
@@ -2106,8 +2116,8 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	if !started || wf.Jobs["reconcile"].Permissions["pull-requests"] != "read" {
 		t.Errorf("workline-develop.yml, reconcile: does not start the review rounds due, cannot read the pull requests, or does not trust the App's records: %v", wf.Jobs["reconcile"].Permissions)
 	}
-	if review.Needs != "whose" || review.If != "needs.whose.outputs.branch != ''" || !strings.Contains(whose.Steps[0].Run, "workline/developer/*)") {
-		t.Errorf("workline-develop.yml, review: runs on a pull request whose branch is not the developer's: needs %q, if %q", review.Needs, review.If)
+	if fmt.Sprint(review.Needs) != "whose" || review.If != "needs.whose.outputs.branch != ''" || !strings.Contains(whose.Steps[0].Run, "workline/developer/*)") {
+		t.Errorf("workline-develop.yml, review: runs on a pull request whose branch is not the developer's: needs %v, if %q", review.Needs, review.If)
 	}
 	// A comment takes an issue only on an issue, never on a pull request
 	// (#1414): the round has it.

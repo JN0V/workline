@@ -23,6 +23,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/stall"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -33,6 +34,11 @@ const IssueEvent = "issue"
 // ReconcileEvent walks every open issue and starts the steps due
 // (ADR-0059): hourly in CI, a command on a person's machine.
 const ReconcileEvent = "reconcile"
+
+// SameTick is how close two runs of one issue are to be the same tick:
+// the second starts no step (ADR-0063, step 1; #1091). Unrelated to
+// ErrorBackoff, which spaces the retries of a machine error.
+const SameTick = time.Minute
 
 // ReconcileInput, `list`, makes the reconciler, or the issue line, say
 // the issues due and start none: a CI job then starts each one's own
@@ -335,7 +341,10 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-review-pending", Level: "info", Where: where,
 			Message: "its drafts wait on their spec review, not yet on this text: the reviewer reads them, the product owner is not called"})
 	}
-	if !ok && s.Name == refineState && name == backlog.Keeper {
+	if !ok && s.Name == refineState && name == backlog.Keeper && (!had || !ranWithin(rec, SameTick)) {
+		// Not within the same tick as its last run (SameTick, not the
+		// error backoff): what it left unread waits for the next tick, never a second step on the same tick
+		// (ADR-0063, step 1; #1091).
 		// Read on this body and left unrefined, nothing waiting on a
 		// person (#951): not acted; woken again, then blocked — at once
 		// when its code is the same as last read (#980).
@@ -357,6 +366,9 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		now.Unread = rec.Body
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unread-body", Level: "info", Where: where,
 			Message: "the product owner's state says it never read this issue: woken again, once a body"})
+	}
+	if !ok && s.Name == refineState && name == backlog.Keeper && had && rec.Unread != rec.Body && unreadBody(notes) && ranWithin(rec, ErrorBackoff) {
+		res.Waiting = append(res.Waiting, is.ID) // woken again after the backoff: the heartbeat goes on
 	}
 	if ok && s.Name == refineState && role == backlog.Keeper {
 		now.Given = givenNow(comments)            // the code this read gets: the same next time wakes it no more (#980)
@@ -402,6 +414,7 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		// Acted on, and what it lacks is a person's: said, with the day
 		// the product owner takes its assumption, never silent (#1082).
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-waits", Level: "info", Where: where, Message: personWaits})
+		res.Waiting = append(res.Waiting, is.ID) // a time pending: the heartbeat goes on
 		return nil, nil, nil
 	}
 	if !ok && s.Name == refineState && name == backlog.Keeper {
@@ -874,6 +887,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	skip := strings.Split(o.Inputs[SkipInput], ",")
 	started, quiet, stales := 0, 0, 0
 	x, t := newScopeIndex(o.Repo), newTallyFor(o)
+	t.say = !list
 	type retested struct {
 		at    int // in issues
 		write StateWrite
@@ -881,6 +895,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	var retests []retested
 	var dues []dueStep
 	revisited, _ := revisits(cfg)
+	if t.say {
+		testerBlocksSaid(res, b, t) // every open pull request, claimed issue or not (#1502)
+	}
 	for i, is := range issues {
 		s, name, _ := cfg.Wakes(is.Labels, IssueEvent)
 		if revisited && s.Name == BlockedState && name == "" {
@@ -1000,8 +1017,34 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			res.Summary += fmt.Sprintf(" merge request %d", r.ID)
 		}
 	}
+	if said := stalledSaid(f, o, cfg); said != "" {
+		res.Summary += "; " + said
+	}
 	lateSaid(res, o.Inputs[LastInput], clock())
 	return res
+}
+
+// stalledSaid lists the developer's pull requests whose head has not
+// moved for routing.stalled-hours, their verdict not a pass: its age and
+// the verdict's step (ADR-0068, section 8). Read with no agent. What the
+// forge did not give is said "not read", never dropped.
+func stalledSaid(f forge.Forge, o engine.Options, cfg *routing.Config) string {
+	prs, notRead, err := stall.Read(o.Repo, f, developer.Branch, cfg.Stalled())
+	if err != nil {
+		return "the stalled pull requests not read: " + forge.Said(err)
+	}
+	var said []string
+	if len(prs) > 0 {
+		var parts []string
+		for _, p := range prs {
+			parts = append(parts, p.Said(f))
+		}
+		said = append(said, fmt.Sprintf("%d stalled pull %s: %s", len(prs), plural(len(prs), "request", "requests"), strings.Join(parts, "; ")))
+	}
+	for _, n := range notRead {
+		said = append(said, "a stall not read: "+n)
+	}
+	return strings.Join(said, "; ")
 }
 
 // roundsDue are the developer's merge requests a review round is due on

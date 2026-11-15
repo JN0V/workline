@@ -103,6 +103,11 @@ func TestGitHubAppKeyOutOfPullRequestRuns(t *testing.T) {
 			if env := environmentOf(job.Environment); env != "workline-app" {
 				t.Errorf("%s, job %s: uses the App's key outside the environment workline-app (%q)", name, jobName, env)
 			}
+			// No `deployment: false`: GitHub's docs do not say the branch
+			// rule still holds without a deployment (ADR-0044, Not chosen).
+			if e, ok := job.Environment.(map[string]any); ok && e["deployment"] == false {
+				t.Errorf("%s, job %s: holds the App's key in workline-app with no deployment, its branch rule unsure", name, jobName)
+			}
 			if _, ok := wf.On["workflow_run"]; ok && reachedOnRun(wf.Jobs, jobName) {
 				for _, p := range readsRunAsData(job) {
 					t.Errorf("%s, job %s: %s", name, jobName, p)

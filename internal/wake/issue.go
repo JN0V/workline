@@ -32,6 +32,7 @@ var sections = []struct{ kind, title string }{
 	{Symptom, "Symptoms without cause"},
 	{Need, "Laundered needs"},
 	{Bypass, "Nobody bypasses"},
+	{Stalled, "Stalled pull requests"},
 	{Cord, "The cord"},
 }
 

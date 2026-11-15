@@ -1,0 +1,25 @@
+case: routing/local-moving-pull-request-not-stalled
+about: >
+  With `forge: local`, two developer's pull requests have a red
+  verdict kept on their heads and nothing is due: `!2`'s head has not
+  moved for 12 h, `!3`'s head is 1 h old, a new head made lately. The
+  reconcile lists `!2` as stalled and does not list `!3`.
+given:
+  repo: local-fix
+  env: {WORKLINE_CLOCK: "2026-01-03T12:00:00Z"}
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    routing: {events: {merge-request: [committer, reviewer]}}
+  setup:
+    - "mkdir -p .git/workline/verdicts && printf '{\"class\":\"red\",\"why\":\"the line\\047s verdict on its head is block (reviewer block): review-finding\"}\\n' > .git/workline/verdicts/$(git rev-parse workline/developer/3).json"
+    - "git checkout -q -b workline/developer/4 main && echo '# other' > other.sh && git add other.sh && GIT_AUTHOR_DATE=2026-01-03T11:00:00Z GIT_COMMITTER_DATE=2026-01-03T11:00:00Z git commit -q -m 'feat: other' -m 'Workline-Role: developer' && git checkout -q main"
+    - "printf -- '---\\ntitle: other\\nstate: open\\nlabels: []\\nbranch: workline/developer/4\\nbase: main\\n---\\n\\nAnother fix.\\n' > .git/workline/merge-requests/3.md"
+    - "printf '{\"class\":\"red\",\"why\":\"the line\\047s verdict on its head is block (reviewer block): review-finding\"}\\n' > .git/workline/verdicts/$(git rev-parse workline/developer/4).json"
+run:
+  sh: >
+    workline route reconcile --ai "fake:$FIXTURES/agents/review-nothing.yaml" --json
+expect:
+  exit: 0
+  stdout: ["stalled", "!2", "12 h"]
+  stdout-lacks: ["!3"]

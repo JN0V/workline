@@ -1,0 +1,26 @@
+case: tester/green-stop-on-base-said
+about: >
+  The green proof's run of the base stops at suite-max-seconds (1 s
+  here, the test command sleeping past it): the pull request carries a
+  comment naming the cap, the time it took and the setting to raise,
+  suite-max-seconds, never the job's log alone.
+given:
+  repo: tested-draft
+  setup:
+    - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && git commit -qam 'feat: multiply'"
+  config:
+    roles: {tester: {settings: {test-command: "sleep 30; sh run-tests.sh {report}", suite-max-seconds: 1}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        body: "Closes #3"
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"tests\":[\"tests.test_mul_by_zero\",\"tests.test_mul_two_by_three\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: tester, event: merge-request, target: {merge-request: 1}}
+expect:
+  agent-calls: 0
+  findings: [{rule: proof-over-time, where: suite-max-seconds}]
+  forge:
+    merge-requests:
+      - id: 1
+        comment-contains: ["suite-max-seconds", "1 s"]

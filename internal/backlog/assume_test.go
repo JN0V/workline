@@ -34,7 +34,8 @@ func TestReadWait(t *testing.T) {
 
 func TestUnansweredCountsFromTheQuestionsComment(t *testing.T) {
 	ask := forge.Note{Body: "@ann, to refine this issue: which?\n\n<!-- workline:product-owner/ask -->", Created: "2026-10-01T23:50:00Z"}
-	s, open := Unanswered([]forge.Note{ask}, "product-owner")
+	ann := forge.Issue{Author: "ann"}
+	s, open := Unanswered([]forge.Note{ask}, "product-owner", ann)
 	if !open || s.Round != 1 || !s.Dated || s.Since.Format(time.RFC3339) != "2026-10-01T23:50:00Z" {
 		t.Fatalf("Unanswered = %+v, %v", s, open)
 	}
@@ -45,12 +46,12 @@ func TestUnansweredCountsFromTheQuestionsComment(t *testing.T) {
 	if s.Due(w, &State{Assumed: 1}, s.Since.Add(48*time.Hour)) {
 		t.Error("a question taken already is due again")
 	}
-	if _, open := Unanswered([]forge.Note{ask, {Body: "CSV.", Author: "ann"}}, "product-owner"); open {
+	if _, open := Unanswered([]forge.Note{ask, {Body: "CSV.", Author: "ann"}}, "product-owner", ann); open {
 		t.Error("a question answered is still open")
 	}
 	undated := ask
 	undated.Created = ""
-	if s, _ := Unanswered([]forge.Note{undated}, "product-owner"); s.Due(Delay{}, nil, time.Now()) {
+	if s, _ := Unanswered([]forge.Note{undated}, "product-owner", ann); s.Due(Delay{}, nil, time.Now()) {
 		t.Error("a question the forge does not date timed out")
 	}
 }

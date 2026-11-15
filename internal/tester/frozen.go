@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"sort"
@@ -22,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -295,6 +297,9 @@ func guardPre(runDir, repo string, s Settings) int {
 		g, doubt := green(repo, r, s)
 		g.Summary = v.Summary + "; " + g.Summary
 		v = g
+		if code, said := stopSaid(runDir, id, v); said {
+			return code
+		}
 		if doubt != nil {
 			doubt.Verdict = g
 			if k, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: id}); err == nil {
@@ -371,4 +376,35 @@ func blobsOf(dir, rev string, files []string) (map[string]string, error) {
 		out[f] = strings.TrimSpace(b)
 	}
 	return out, nil
+}
+
+// stopSaid says, on the pull request, a green proof stopped at
+// suite-max-seconds: the cap, the time it took and the setting to raise.
+// The stop is the suite's time, not a finding of the change's: it asks the
+// author to mend nothing (#1503). false when the proof did not stop so.
+func stopSaid(runDir string, mr int, v verdict.Verdict) (int, bool) {
+	if mr <= 0 {
+		return 0, false
+	}
+	for _, f := range v.Findings {
+		if f.Rule != "proof-over-time" || f.Where != "suite-max-seconds" {
+			continue
+		}
+		body := "**The tester's green proof** stopped: " + f.Message + "\n\nNothing in the change is at fault: the proof did not finish, so it proves nothing yet. " +
+			"The person who owns the project's settings raises `suite-max-seconds`; the proof then runs again.\n"
+		said := []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": mr, "sticky": "green", "on-block": true, "body": body}}}
+		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), said); err != nil {
+			return fail(err), true
+		}
+		v.Final = true
+		data, err := json.Marshal(v)
+		if err != nil {
+			return fail(err), true
+		}
+		if err := os.WriteFile(filepath.Join(runDir, "in", saidFile), data, 0o644); err != nil {
+			return fail(err), true
+		}
+		return 0, true
+	}
+	return 0, false
 }

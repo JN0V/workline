@@ -1353,6 +1353,9 @@ func (p *Plan) summary(role string) {
 	for _, d := range p.Decisions {
 		switch {
 		case d.Mode != Act:
+		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue] && p.given(d.Act.Issue, d.Act.Sources):
+			// Only files the task gave: naming them records what the
+			// issue is about, nothing is left to read (#1440).
 		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue]:
 			named[d.Act.Issue] = append(named[d.Act.Issue], d.Act.Sources...)
 		case d.Act.Do == "ready" || d.Act.Do == "close" || d.Act.Do == "split":
@@ -2443,6 +2446,10 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		}
 	case "ready":
 		c.Assumed, c.Written, c.Retested = nil, "", ""
+		if slices.Contains(is.Labels, StateLabel("doing")) {
+			// The line is building it: one state label, never a second.
+			return "developing", fmt.Sprintf("not moved to ready: #%d is developing", c.Issue)
+		}
 		if missing := NotReady(is, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
 			// Drafts no person accepted, past the level's delay: taken as
 			// assumptions, the issue goes on (ADR-0060).

@@ -134,3 +134,20 @@ func TestFromTheLastRead(t *testing.T) {
 		}
 	}
 }
+
+// A stalled pull request is listed under its own section and counted in
+// the triggers met.
+func TestIssueListsAStalledPullRequest(t *testing.T) {
+	r := &Result{Head: "aaaaaaa1", Day: "2026-01-03", Entries: []Entry{
+		{Kind: Stalled, Key: "stalled:2", Text: "!2: head unmoved for 12 h, verdict at the reviewer's step (red)", At: "aaaaaaa1", Day: "2026-01-03"},
+	}}
+	body, changed, any := Issue(r, "")
+	for _, want := range []string{"**1 trigger met**", "stalled pull requests 1", "### Stalled pull requests", "!2: head unmoved for 12 h"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("no %q in\n%s", want, body)
+		}
+	}
+	if !changed || !any {
+		t.Errorf("changed %v any %v", changed, any)
+	}
+}

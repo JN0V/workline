@@ -177,7 +177,7 @@ func SpecCleared(is forge.Issue, comments []string) (*SpecReview, bool) {
 //     first (Unheard), whose own `ready` is taken; a person putting the
 //     label back undoes the move.
 func LeftOpen(st *State, notes []forge.Note, is forge.Issue, role string) string {
-	if s, open := Unanswered(notes, role); open && (st == nil || st.Assumed < s.Round) {
+	if s, open := Unanswered(notes, role, is); open && (st == nil || st.Assumed < s.Round) {
 		return "its question to a person waits for an answer, or for its assumption once the delay passed (acts.ask.wait)"
 	}
 	if st == nil {
