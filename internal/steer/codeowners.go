@@ -21,17 +21,35 @@ var (
 var CodeownersPlaces = []string{".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"}
 
 // PlacesOf is where the forge the repository runs on reads CODEOWNERS, in
-// its order: GitLab's when the pipeline is GitLab's or origin is a GitLab
-// host, else GitHub's.
+// its order: GitLab's when the pipeline is GitLab's or origin's host is a GitLab
+// one (its name starting with "gitlab"), else GitHub's.
 func PlacesOf(repo string) []string {
 	if os.Getenv("GITLAB_CI") == "true" {
 		return gitlabPlaces
 	}
 	if out, err := exec.Command("git", "-C", repo, "remote", "get-url", "origin").Output(); err == nil &&
-		strings.Contains(strings.ToLower(string(out)), "gitlab") {
+		strings.HasPrefix(originHost(string(out)), "gitlab") {
 		return gitlabPlaces
 	}
 	return githubPlaces
+}
+
+// originHost is the lowercase host of a remote URL (https://, ssh:// or
+// scp-like git@host:path), without user, port or path: only the host says the
+// forge, never an owner or repository name.
+func originHost(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if i := strings.Index(raw, "://"); i >= 0 {
+		raw = raw[i+3:]
+		raw, _, _ = strings.Cut(raw, "/")
+	} else {
+		raw, _, _ = strings.Cut(raw, ":")
+	}
+	if i := strings.LastIndex(raw, "@"); i >= 0 {
+		raw = raw[i+1:]
+	}
+	raw, _, _ = strings.Cut(raw, ":")
+	return strings.ToLower(raw)
 }
 
 // Codeowners is a CODEOWNERS file, read as GitHub and GitLab read it.
