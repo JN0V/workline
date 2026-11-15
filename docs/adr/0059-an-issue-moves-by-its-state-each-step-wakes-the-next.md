@@ -29,6 +29,11 @@
   [change 2, amended](0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)
   2026-11-09: the [2026-11-03 amendment](#amendment-2026-11-03-a-fix-outside-the-scope-asks-the-product-owner)
   reversed, a file outside the Scope applied and listed, no scope-ask
+  [ADR-0069](0069-one-wake-every-five-minutes-starts-what-is-due.md#what-changes-in-adr-0059),
+  once built: §8's night for upkeep and hourly reconciler, and the
+  [2026-11-02 heartbeat](#amendment-2026-11-02-the-reconciler-starts-its-next-run),
+  superseded: one tick every 5 minutes starts every job due, crons a
+  fallback only
 
 ## Context
 
@@ -147,6 +152,11 @@ Built first, whatever else.
 - **Stale goes back to Refine**, with the reason.
 
 ### 8. Event-driven, the night for upkeep
+
+Superseded in part, once built, by
+[ADR-0069](0069-one-wake-every-five-minutes-starts-what-is-due.md#what-changes-in-adr-0059):
+the night and the hourly reconciler give way to one tick every 5
+minutes.
 
 - **The state machine lives in the engine**: one table, state → role →
   next state, in the routing's file, read by a pure function.
@@ -347,6 +357,10 @@ the step.
   mostly exits at once, as every issue change does already.
 
 ## Amendment (2026-11-02): the reconciler starts its next run
+
+Superseded, once built, by
+[ADR-0069](0069-one-wake-every-five-minutes-starts-what-is-due.md#what-changes-in-adr-0059):
+the heartbeat becomes the line's tick, every 5 minutes, for every job.
 
 Settles [#845](https://github.com/JN0V/workline/issues/845): §8 says
 hourly; GitHub ran the schedule 4 to 6 times a day, gaps of 3 to 7 h,
