@@ -302,7 +302,7 @@ func linkOut(name, to string) bool {
 // App, an identity the agent does not set). A file the agent touched too
 // is still the agent's.
 func byPerson(repo, from, head, name string) bool {
-	out, err := gitOut(repo, "log", "--no-merges", "--format=C%ae%x1f%ce%x1f%(trailers:key=Workline-Role,valueonly,separator=%x2C)", from+".."+head, "--", name)
+	out, err := gitOut(repo, "log", "--no-merges", "--format=C%ae%x1f%ce%x1f%(trailers:key=Workline-Role,separator=%x2C)", from+".."+head, "--", name)
 	if err != nil || strings.TrimSpace(out) == "" {
 		return false
 	}
@@ -311,10 +311,19 @@ func byPerson(repo, from, head, name string) bool {
 			continue
 		}
 		f := strings.Split(strings.TrimPrefix(l, "C"), "\x1f")
-		if len(f) != 3 || strings.TrimSpace(f[2]) != "" ||
-			strings.Contains(strings.ToLower(f[0]), "[bot]") || strings.Contains(strings.ToLower(f[1]), "[bot]") {
+		// The trailer is read with its key, so an empty value still
+		// marks the commit; the engine's own commit identities
+		// (workline@localhost, workline@invalid) are the agent's too.
+		if len(f) != 3 || strings.TrimSpace(f[2]) != "" || agentEmail(f[0]) || agentEmail(f[1]) {
 			return false
 		}
 	}
 	return true
+}
+
+// agentEmail says an address is one the engine commits with: workline's
+// App ("[bot]") or its local identities ("workline@…").
+func agentEmail(e string) bool {
+	e = strings.ToLower(strings.TrimSpace(e))
+	return strings.Contains(e, "[bot]") || strings.HasPrefix(e, "workline@")
 }
