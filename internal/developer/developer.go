@@ -462,6 +462,13 @@ func RepoFiles(repo string) []string { return repoFiles(repo) }
 // letGo are the claims this run lets go: held no more, taken at a next
 // run. passed are the issues offered it passed over, why each.
 func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string, changed Diffs) (id int, passed []Passed) {
+	return pickSkipping(issues, nil, mrs, s, only, testsFirst, letGo, proofs, files, changed)
+}
+
+// pickSkipping is pick over the whole list, so the overlap and dependency
+// waits see every issue, never choosing one of skip (a Scope of guarded
+// files only, #1505).
+func pickSkipping(issues []forge.Issue, skip map[int]bool, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string, changed Diffs) (id int, passed []Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
@@ -480,7 +487,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 	held := Held(issues, mrs, s.ClaimLabel, letGo, files, changed)
 	backlog.Order(issues)
 	for _, is := range issues {
-		if only != 0 && is.ID != only || !backlog.Offered(is, open) {
+		if only != 0 && is.ID != only || skip[is.ID] || !backlog.Offered(is, open) {
 			continue
 		}
 		why, next := "", ""
@@ -605,8 +612,8 @@ func Pre(runDir, repo string) int {
 	}
 	// An issue whose Scope names only files a person writes is not taken
 	// (#1505): no tester nor developer run starts on it.
-	pickable, guarded := withoutGuardedOnly(repo, issues, s.ClaimLabel, only)
-	id, passed := pick(pickable, mrs, s, only, line.Runs("tester"), letGo, proofs, repoFiles(repo), Changed(repo, forge.KeepsBranches(f)))
+	skip, guarded := guardedOnly(repo, issues, s.ClaimLabel, only)
+	id, passed := pickSkipping(issues, skip, mrs, s, only, line.Runs("tester"), letGo, proofs, repoFiles(repo), Changed(repo, forge.KeepsBranches(f)))
 	passed = append(guarded, passed...)
 	for _, p := range passed {
 		findings = append(findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
@@ -1395,23 +1402,22 @@ func writeBlockedProtected(runDir, repo string, a Act, s Settings, told []intent
 	return writeVerdict(runDir, v)
 }
 
-// withoutGuardedOnly is issues less the ready, unclaimed ones whose Scope
-// names only guarded files (backlog.ScopeSplit, #1505), and those, each
-// passed over with why: the person writes them.
-func withoutGuardedOnly(repo string, issues []forge.Issue, claimLabel string, only int) ([]forge.Issue, []Passed) {
-	var out []forge.Issue
+// guardedOnly is the ready, unclaimed issues whose Scope names only
+// guarded files (backlog.ScopeSplit, #1505), or whose guard cannot be
+// read, and those, each passed over with why: the person writes them.
+func guardedOnly(repo string, issues []forge.Issue, claimLabel string, only int) (map[int]bool, []Passed) {
+	skip := map[int]bool{}
 	var passed []Passed
 	for _, is := range issues {
 		if (only == 0 || is.ID == only) && !is.Closed && slices.Contains(is.Labels, backlog.LabelReady) && !slices.Contains(is.Labels, claimLabel) {
 			if g, o, err := backlog.ScopeSplit(repo, is); err != nil {
+				skip[is.ID] = true
 				passed = append(passed, Passed{Issue: is.ID, Why: "the files a person writes could not be read (" + err.Error() + "): no run starts on it"})
-				continue
 			} else if len(g) > 0 && len(o) == 0 {
+				skip[is.ID] = true
 				passed = append(passed, Passed{Issue: is.ID, Why: "its " + work.Name(work.Scope) + " names only files a person writes (" + strings.Join(g, ", ") + "): no run starts on it"})
-				continue
 			}
 		}
-		out = append(out, is)
 	}
-	return out, passed
+	return skip, passed
 }
