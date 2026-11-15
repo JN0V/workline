@@ -1885,6 +1885,11 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 			return rule, why
 		}
 	}
+	if c.Do == "ready" {
+		if scope := work.ByMeaning(p.issues[c.Issue].Body)[work.Scope].Text; ScopeOnlyCI(scope) {
+			return "scope-protected", fmt.Sprintf("its %s names only files the CI runs from, which only a person changes: a person makes that change, so it waits before ready", work.Name(work.Scope))
+		}
+	}
 	if author := p.issues[c.Issue].Author; c.Do == "ask" && Bot(author) {
 		// Nobody answers a bot's issue: what it lacks is the project's to
 		// say (#429).
