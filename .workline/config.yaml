@@ -63,13 +63,15 @@ roles:
   tester:
     settings:
       # Its red-first proof, at night, and the green proof on its own
-      # branches (issue #264): every package but tests/evaluation, whose
-      # tests measure agents, not the code; the conformance suite in, so a
-      # new case is a test too, red until the engine does what it says.
+      # branches (issue #264): every package, as the test job runs them.
+      # tests/evaluation in: its tests that call an agent skip without
+      # WORKLINE_EVAL, and a test frozen there must run on the head
+      # (#1570). The conformance suite in, so a new case is a test too,
+      # red until the engine does what it says.
       # gotestsum pinned, run by Go, its JUnit report the check reads;
       # -timeout 20m as the test job's: the simulator alone takes 12 min
       # on a busy runner, past Go's default 10 (#1430).
-      test-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m $(go list ./... | grep -v /tests/evaluation)
+      test-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m ./...
       # The Draft's red proof on the packages of its tests alone: the
       # whole suite twice took 10 of a run's 11 min (#979); the pull
       # request's test job runs it all.
