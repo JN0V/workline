@@ -295,6 +295,7 @@ jobs:
       - id: room
         env:
           GH_TOKEN: ${{ github.token }}
+          # Read only: reconcile=list writes nothing, and this token is not the App's.
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # the App whose statuses keep the verdicts read back
           ISSUE: ${{ github.event.issue.number || inputs.issue }}
         run: |
@@ -377,7 +378,7 @@ jobs:
   identity:
     if: github.event_name == 'workflow_dispatch' && (inputs.reconcile == 'true' || inputs.reconcile == 'next') && vars.WORKLINE_APP_ID != ''
     runs-on: ubuntu-latest
-    environment: {name: workline-app, deployment: false}   # the App's key: the default branch only (ADR-0044)
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
     permissions: {}
     outputs:
       app: ${{ steps.app.outputs.app-slug }}

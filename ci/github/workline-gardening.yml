@@ -196,6 +196,7 @@ jobs:
       # (ADR-0059). No agent; none started without that workflow.
       - env:
           GH_TOKEN: ${{ github.token }}
+          # Read only: reconcile=list writes nothing, and this token is not the App's.
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # the App whose statuses keep the verdicts read back
         run: |
           gh workflow view workline-develop.yml >/dev/null 2>&1 || exit 0
