@@ -886,6 +886,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	skip := strings.Split(o.Inputs[SkipInput], ",")
 	started, quiet, stales := 0, 0, 0
 	x, t := newScopeIndex(o.Repo), newTallyFor(o)
+	t.say = !list
 	type retested struct {
 		at    int // in issues
 		write StateWrite
@@ -893,6 +894,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	var retests []retested
 	var dues []dueStep
 	revisited, _ := revisits(cfg)
+	if t.say {
+		testerBlocksSaid(res, b, t) // every open pull request, claimed issue or not (#1502)
+	}
 	for i, is := range issues {
 		s, name, _ := cfg.Wakes(is.Labels, IssueEvent)
 		if revisited && s.Name == BlockedState && name == "" {
