@@ -15,8 +15,9 @@
 #                          .github/actions/workline-setup/action.yml, when you have it.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
 #   heartbeat              no token; the environment workline-heartbeat, its wait
-#                          timer the gap between two reconciles (#845): 55 min,
-#                          or the variable WORKLINE_RECONCILE_GAP_MINUTES.
+#                          timer the gap between two reconciles (#845); the variable
+#                          WORKLINE_RECONCILE_GAP_MINUTES only gates a reconcile
+#                          started by the schedule or an event, not the heartbeat's.
 # Why each part: roles/developer/docs/triggers.md.
 name: workline develop
 # A run of an issue's step named for it, `workline develop #<n>`: a start
