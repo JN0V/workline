@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/wake"
 )
 
@@ -71,7 +73,12 @@ func wakeCmd(args []string) int {
 	// earlier on the branch: a run the forge dropped from its queue leaves
 	// no merge unread.
 	before = wake.From(root, wake.KeptHead(now), before, after)
-	r, err := wake.Read(wake.Options{Repo: root, Before: before, After: after, Forge: f})
+	rc, err := routing.Load(root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
+	r, err := wake.Read(wake.Options{Repo: root, Before: before, After: after, Forge: f, Branch: developer.Branch, StalledHours: rc.Stalled()})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 64
