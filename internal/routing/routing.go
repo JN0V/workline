@@ -11,6 +11,7 @@ import (
 
 	"github.com/JN0V/workline"
 	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/stall"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -53,14 +54,14 @@ type Config struct {
 	Revisit *int `yaml:"revisit"`
 	// StalledHours: the hours a developer's pull request keeps its head,
 	// its verdict not a pass, before the wake and the reconcile say it
-	// stalled (ADR-0068, section 8); nil, 12; 0, never.
+	// stalled (ADR-0068, section 8); nil, stall.DefaultHours; 0, never.
 	StalledHours *int `yaml:"stalled-hours"`
 }
 
 // Stalled is the age limit of a stalled pull request, in hours; 0, none.
 func (c *Config) Stalled() int {
 	if c.StalledHours == nil {
-		return 12
+		return stall.DefaultHours
 	}
 	return *c.StalledHours
 }
