@@ -1,0 +1,30 @@
+case: routing/doing-comment-wakes-the-product-owner
+about: >
+  A person comments on an issue in development, its pull request
+  open, asking for a re-slice: the reconciler finds the comment new
+  and wakes the product owner on it, which reads the ask in its
+  task at its next run. The developer's claim wakes nobody on a
+  comment today.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}, revisit: 3650}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:developing"]
+        author: ann
+        insider: true
+        body: "## Need\n\nI want to multiply.\n"
+        comments:
+          - {body: "Please send this back for a re-slice: the pull request delivers only one part of it.", author: ann, insider: true}
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply"
+        body: "Closes #3"
+run: {route: reconcile, open-merge-request: true, ai: "fake:note-not-now"}
+expect:
+  run-files:
+    in/task.md: {contains: "send this back for a re-slice"}

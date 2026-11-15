@@ -1,0 +1,36 @@
+case: product-owner/split-closes-the-part-its-pull-request-delivers
+about: >
+  An issue in development, its pull request open, is split on a
+  person's ask for a re-slice: the pull request's `Closes` line names
+  one of its parts, no longer the parent. The other part stays open
+  on the line, to refine, and the parent stays open, split into
+  its parts, for a person to accept from them.
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {split: {mode: act}}}}}
+  forge:
+    issues:
+      - id: 9
+        title: "Export fixes"
+        body: "The export drops its last row, and a comma splits a cell."
+        author: ann
+        insider: true
+        labels: ["workline:developing"]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "Re-slice this: the pull request delivers only the last-row part.", author: ann, insider: true}
+    merge-requests:
+      - id: 2
+        branch: workline/developer/9
+        title: "fix: export fixes"
+        body: "Closes #9"
+run: {role: product-owner, event: schedule, ai: fake:split-two}
+expect:
+  forge:
+    merge-requests:
+      - {id: 2, body-contains: "Closes #1", body-lacks: "Closes #9"}
+    issues:
+      - {id: 9, closed: false, comment-contains: "split: [10, 11]"}
+      - {id: 10, closed: false, labels: [workline:to-refine, workline:draft]}
+      - {id: 11, closed: false, labels: [workline:to-refine, workline:draft]}
