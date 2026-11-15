@@ -99,6 +99,9 @@ step 6).
     no one.
   - **Alone**: no agent, no round counted; the rounds never run out on
     test findings.
+  - **Only disputes count**: past round 5 means five rounds that each
+    answered a blocking finding of the reviewer; a round on a red check,
+    a tester's rewrite or a warning alone is no dispute, and runs on.
   - **None needed, still blocking**: the tester answers on the pull
     request that no test is needed; the reviewer's judge weighs the
     reason, and a reason that holds lifts the block

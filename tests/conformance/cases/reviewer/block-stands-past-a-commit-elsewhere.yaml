@@ -1,5 +1,5 @@
 case: reviewer/block-stands-past-a-commit-elsewhere
-about: "The reviewer blocked a merge request on its commit; the author pushes a commit elsewhere, its cause left as it was (#326). The lens in turn reads the new commit and finds nothing, but it did not read the cause again: the block stands."
+about: "The reviewer blocked a merge request on its commit; the author pushes a commit elsewhere, its cause left as it was (#326). The standing block is read again whichever file the commit changes (#1598): the lens finds nothing, the block is answered."
 given:
   repo: reviewed
   setup:
@@ -23,10 +23,9 @@ given:
             <!-- workline:sticky=reviewer/summary -->
 run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
 expect:
-  status: block
+  status: pass
   agent-calls: 1
-  calls: [{task: part, for: 1-edge-cases}]
-  findings: [{rule: correctness, level: block, where: "calc/calc.go:11", message: "Average divides by one less than the count"}]
+  no-findings: [{rule: correctness}]
   forge:
     merge-requests:
-      - {id: 5, comments: 1, comment-contains: [" runs=2 -->", "| **blocks** | correctness |", "1 finding of a review before still blocks", "<!-- workline:blocks "]}
+      - {id: 5, comments: 1, comment-contains: [" runs=2 -->", "No finding on the commits reviewed"]}

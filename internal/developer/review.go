@@ -434,7 +434,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		}
 		return writeIntents(runDir, "fallback.yaml", toTesterOnly(r, bounds, repo))
 	}
-	if a.Round >= s.Rounds {
+	if disputes(a) >= s.Rounds {
 		r.Person = true
 		if err := writeIn(runDir, roundFile, r); err != nil {
 			return fail(err)
@@ -832,7 +832,7 @@ func handOff(r round, b Bounds, repo string) []intent.Intention {
 		a.ChecksAt = r.ChecksAt
 	}
 	add, remove := blockedMove(repo)
-	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree",
+	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree, a dispute over a blocking finding",
 		a.Round, r.MR, len(r.Asked), plural(len(r.Asked)))
 	return append(tests,
 		intent.Intention{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
@@ -1302,4 +1302,20 @@ func writeVerdict(runDir string, v verdict.Verdict) int {
 		return fail(err)
 	}
 	return 0
+}
+
+// disputes counts the rounds that answered a blocking finding of the
+// reviewer: a red check, a tester's rewrite or a warning alone is no
+// dispute (#1598). A record with no round listed counts its round number.
+func disputes(a Act) int {
+	if len(a.Rounds) == 0 {
+		return a.Round
+	}
+	n := 0
+	for _, x := range a.Rounds {
+		if slices.ContainsFunc(x.Asked, func(t string) bool { return strings.HasPrefix(t, "blocks ") }) {
+			n++
+		}
+	}
+	return n
 }

@@ -1,5 +1,5 @@
 case: reviewer/block-stands-on-a-removed-line-while-the-change-removes-it
-about: "A merge request removes a line of main; on ready, correctness blocks quoting that line, which the head no longer holds (#570). The author pushes a commit elsewhere, the removal left as it was: a block found on a removed line is looked for among the lines the change removes, and stands."
+about: "A merge request removes a line of main; on ready, correctness blocks quoting that line, which the head no longer holds (#570). The author pushes a commit elsewhere, the removal left as it was: the standing block is read again whichever file the commit changes (#1598), the lens finds the removed line again, and the block stands on its finding, its verdict kept."
 given:
   repo: reviewed
   setup: ["sed -i '/total += v/d' calc/calc.go && git commit -qam 'refactor: drop the sum'"]
@@ -21,11 +21,11 @@ run:
   again-after: ["printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"]
 expect:
   status: block
-  agent-calls: 2
-  calls: [{task: part, for: 1-correctness}, {task: judge, for: judge/01}]
-  findings: [{rule: correctness, level: block, message: "no commit since answers it"}]
+  agent-calls: 3
+  calls: [{task: part, for: 1-correctness}, {task: judge, for: judge/01}, {task: part, for: 1-correctness}]
+  findings: [{rule: correctness, level: block, message: "Average no longer sums the values"}]
   forge:
     merge-requests:
       - id: 5
         comments: 1
-        comment-contains: ["no lens that blocks on this push", "| **blocks** | correctness |", "1 finding of a review before still blocks", "<!-- workline:blocks "]
+        comment-contains: ["its verdict kept, not judged again", "| **blocks** | correctness |", "<!-- workline:blocks "]

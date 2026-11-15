@@ -333,7 +333,7 @@ func answering(blocks []Block, files []File, skip map[string]string) []string {
 		if _, ok := skip[b.Lens]; ok || slices.Contains(out, b.Lens) {
 			continue
 		}
-		if slices.Contains(paths(files), b.Cause.Path) {
+		if len(files) > 0 { // a fix may lie in any file, not only its cause's (#1598)
 			out = append(out, b.Lens)
 		}
 	}
@@ -413,7 +413,7 @@ func reread(repo string, s Settings, st state, c candidates, related []Finding, 
 		if strings.HasPrefix(b.Cause.Path, "#") {
 			return issueOf(st, b.Cause.Path) != nil
 		}
-		return slices.Contains(paths(files), b.Cause.Path)
+		return len(files) > 0 // a fix may lie in another file than its cause's (#1598)
 	}), nil
 }
 
