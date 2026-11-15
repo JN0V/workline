@@ -132,8 +132,7 @@ holds the issues that count.
   and the developer, with the reviewer and the committer and judge they
   rely on, take a need to a merged change on any repository
   ([above](#amendment-2026-11-11-1266-v1-accepted)).
-- **Why**: V1 is the stage the line set out to close; the Decision's
-  three criteria measure what comes after it.
+- **Why**: V1 is the stage the line set out to close.
 - **Moved after 1.0**, to the bar [ADR-0068's step 7](0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)
   decides for after 1.0 (a 1.x or 2.0 bar):
   - all eight roles out of beta (criterion 1 and its amendment);
@@ -146,13 +145,12 @@ holds the issues that count.
      beta may stay open at 1.0.
   2. **[#1556] fixed**: the release's yes survives `main` moving, so
      the release pull request can be accepted.
-  3. **The small items below**, fixed before 1.0 or after it, as
-     listed.
+  3. **The small items below** marked before, fixed.
   4. **The release**: a `Release-As: 1.0.0` footer reaches `main`
      through a pull request, then the maintainer's label on the
      release.
-- **The small items**, judged against V1's goal (the chain alone, on
-  any repository, a person's word never lost):
+- **The small items**, against V1's goal (the chain alone, on any
+  repository, a person's word never lost):
 
   | Issue | Side | Why |
   |---|---|---|

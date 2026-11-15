@@ -88,7 +88,7 @@ roles:
   judge calls (a run named `sample`). Releases apart; a run on neither
   (no type, another type) is unknown, and said. The upkeep share is
   the measure of [ADR-0052](adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)'s
-  third criterion ([#610](https://github.com/JN0V/workline/issues/610)).
+  third criterion, moved after 1.0 ([#610](https://github.com/JN0V/workline/issues/610)).
   The builder's own sessions are not counted: no record of the line
   holds them.
 - **In CI**, a job's run folders go with its short-lived artifacts:
