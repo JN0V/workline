@@ -39,7 +39,9 @@ func ScopeSplit(repo string, is forge.Issue) (guarded, others []string) {
 		}
 	}
 	for _, w := range work.ScopeWords(text) {
-		if strings.ContainsAny(w, "/.") {
+		// A file the repository holds, or a path to create (a folder and
+		// a file's extension): never a version or a domain name.
+		if strings.ContainsAny(w, "/.") && (InCommit(repo, path.Clean(w)) || (strings.Contains(w, "/") && !strings.Contains(w, "://") && work.NewPath(w))) {
 			add(w)
 		}
 	}
