@@ -25,10 +25,10 @@ var GuardedSilent = "its " + work.Name(work.Scope) + " names only files the line
 // ScopeSplit is, of the files an issue's Scope names, the guarded ones
 // (steer.Files at HEAD of repo) and the others. Files in backticks, or
 // written plain when the repository holds them.
-func ScopeSplit(repo string, is forge.Issue) (guarded, others []string) {
+func ScopeSplit(repo string, is forge.Issue) (guarded, others []string, err error) {
 	guard, err := steer.Files(repo, "HEAD")
 	if err != nil {
-		return nil, nil
+		return nil, nil, err
 	}
 	text := work.ByMeaning(is.Body)[work.Scope].Text
 	var paths []string
@@ -41,7 +41,10 @@ func ScopeSplit(repo string, is forge.Issue) (guarded, others []string) {
 	for _, w := range work.ScopeWords(text) {
 		// A file the repository holds, or a path to create (a folder and
 		// a file's extension): never a version or a domain name.
-		if strings.ContainsAny(w, "/.") && (InCommit(repo, path.Clean(w)) || (strings.Contains(w, "/") && !strings.Contains(w, "://") && work.NewPath(w))) {
+		// A name the guard lists counts too, held or not yet: `AGENTS.md`,
+		// `CODEOWNERS` at the root.
+		cw := path.Clean(strings.ReplaceAll(strings.TrimSpace(w), `\`, "/"))
+		if (strings.ContainsAny(w, "/.") && (InCommit(repo, cw) || (strings.Contains(w, "/") && !strings.Contains(w, "://") && work.NewPath(w)))) || guard(cw) != "" {
 			add(w)
 		}
 	}
@@ -57,7 +60,7 @@ func ScopeSplit(repo string, is forge.Issue) (guarded, others []string) {
 			others = append(others, p)
 		}
 	}
-	return guarded, others
+	return guarded, others, nil
 }
 
 // guardedScope is, for a ready of an issue not ready yet, the guarded
@@ -68,7 +71,11 @@ func (p *Plan) guardedScope(repo string, is forge.Issue, c *Proposal) (hold []st
 	if repo == "" || Readied(is) {
 		return nil
 	}
-	guarded, others := ScopeSplit(repo, is)
+	guarded, others, err := ScopeSplit(repo, is)
+	if err != nil {
+		// The guard unread: nothing says the Scope is writable, held.
+		return []string{"(the guarded files could not be read: " + err.Error() + ")"}
+	}
 	switch {
 	case len(guarded) == 0:
 		return nil

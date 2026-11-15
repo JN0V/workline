@@ -1403,7 +1403,10 @@ func withoutGuardedOnly(repo string, issues []forge.Issue, claimLabel string, on
 	var passed []Passed
 	for _, is := range issues {
 		if (only == 0 || is.ID == only) && !is.Closed && slices.Contains(is.Labels, backlog.LabelReady) && !slices.Contains(is.Labels, claimLabel) {
-			if g, o := backlog.ScopeSplit(repo, is); len(g) > 0 && len(o) == 0 {
+			if g, o, err := backlog.ScopeSplit(repo, is); err != nil {
+				passed = append(passed, Passed{Issue: is.ID, Why: "the files a person writes could not be read (" + err.Error() + "): no run starts on it"})
+				continue
+			} else if len(g) > 0 && len(o) == 0 {
 				passed = append(passed, Passed{Issue: is.ID, Why: "its " + work.Name(work.Scope) + " names only files a person writes (" + strings.Join(g, ", ") + "): no run starts on it"})
 				continue
 			}
