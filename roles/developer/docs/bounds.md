@@ -157,8 +157,11 @@ what each agent gets: [the agent](agent.md)).
 
 ## On the pull request
 
-The same rules hold on its pull request, as a check: whoever pushed
-its commits, the agent, a person or the engine
+The same rules hold on its pull request, as a check, on the agent's
+commits. A guarded file (`steering-file`, `gate-file`) that only a
+person's commits changed (none carries `Workline-Role`) does not block:
+the check says a person wrote it, and it merges on the person's
+`workline:accepted` alone. The agent's is refused
 ([ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#4-the-developers-bounds-become-a-check-on-its-pull-request)).
 The check above, before the push, stays a fast first pass.
 

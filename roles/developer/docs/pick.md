@@ -92,6 +92,7 @@ claim is a label, on every forge:
   ([letting a claim go](#letting-a-claim-go)). Meanwhile the claim holds no Scope: an issue overlapping it
   may be taken.
   - **A Draft already green**: a person may push to the tester's Draft
+    (a guarded file too: the bounds on its pull request pass a person's commit, said)
     a change only they may make. Its agent writing nothing, the Draft's
     head is proven as it is; green, the pull request opens from it, no
     commit added ([#1434](https://github.com/JN0V/workline/issues/1434)).
