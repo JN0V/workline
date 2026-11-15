@@ -36,6 +36,7 @@ variables. The commands and options: [usage.md](usage.md).
 | `routing.states`, `routing.max-hops`, `routing.reconcile-max` | the line of states, its hop cap, the reconciler's steps a run ([routing](spec/routing.md#the-line-of-states)) |
 | `routing.wip` | `<state>: <issues>`, a state's WIP limit, laid over the shipped `ready: 5`; `0` lifts it ([room in the next state](spec/routing.md#room-in-the-next-state)) |
 | `routing.revisit` | the days a blocked issue waits, nothing new on it, before the product owner reads it again; `7` shipped, `0` never ([blocked, read again](spec/routing.md#blocked-read-again)) |
+| `routing.stalled-hours` | the hours a developer's pull request keeps its head, its verdict not a pass, before the wake and the reconcile say it stalled (`12`; `0`, never) |
 | `routing.stale` | `<state>: <days>`, a state's age limit, laid over the shipped `ready: 30`, `tests: 14`; `0` lifts it ([staleness](spec/routing.md#staleness)) |
 | `packs` | the [language packs](packs.md) every role reads, as `[go, kotlin-gradle]`; written by `workline init` |
 | `board` | `ready`, `doing`, `refine`, `tests`, `blocked`: a column's name, over the names workline matches; `project`: a GitHub project's number, when several are linked ([boards](boards.md)) |
