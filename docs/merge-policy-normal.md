@@ -84,7 +84,8 @@ merge: {autonomy: normal}   # a project's choice, never a default
 - **One list**: the engine holds every path `CODEOWNERS` gives an owner
   (a folder named with or without a trailing `/`, all of it), and a
   `CODEOWNERS` file itself, added or deleted, nothing else. It reads the first found:
-  `.github/`, the root, `docs/`, `.gitlab/` (GitHub's order); on the base, never the
+  in the order the forge documents, chosen from the forge the engine runs on —
+  GitHub: `.github/`, the root, `docs/`; GitLab: the root, `docs/`, `.gitlab/`; on the base, never the
   pull request's own copy.
 - **Other role prompts take the normal path**: the reviewer reads them,
   the auditor samples the acts.

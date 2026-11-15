@@ -1,15 +1,38 @@
 package steer
 
 import (
+	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strings"
 )
 
-// CodeownersPlaces are where the forges look for CODEOWNERS, in the order
-// GitHub reads them: .github/, the root, docs/; then GitLab's .gitlab/.
-// The engine reads the first found.
+// Where each forge looks for CODEOWNERS, in the order it documents as its
+// own practice: the engine reads the first found, so it holds what the
+// forge enforces.
+var (
+	githubPlaces = []string{".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"}
+	gitlabPlaces = []string{"CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"}
+)
+
+// CodeownersPlaces are every place a forge looks for CODEOWNERS, GitHub's
+// first: a file at any of them is always held (IsCodeowners).
 var CodeownersPlaces = []string{".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"}
+
+// PlacesOf is where the forge the repository runs on reads CODEOWNERS, in
+// its order: GitLab's when the pipeline is GitLab's or origin is a GitLab
+// host, else GitHub's.
+func PlacesOf(repo string) []string {
+	if os.Getenv("GITLAB_CI") == "true" {
+		return gitlabPlaces
+	}
+	if out, err := exec.Command("git", "-C", repo, "remote", "get-url", "origin").Output(); err == nil &&
+		strings.Contains(strings.ToLower(string(out)), "gitlab") {
+		return gitlabPlaces
+	}
+	return githubPlaces
+}
 
 // Codeowners is a CODEOWNERS file, read as GitHub and GitLab read it.
 type Codeowners struct {
