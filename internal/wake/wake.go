@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/stall"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -30,6 +31,7 @@ const (
 	Need     = "need"     // need laundering
 	Bypass   = "bypass"   // nobody bypasses
 	Cord     = "cord"     // the person's unease, or a role's
+	Stalled  = "stalled"  // a line pull request standing still
 )
 
 // Label is the cord: anyone may set it on an issue or a merge request.
@@ -57,6 +59,11 @@ type Options struct {
 	Before string      // the default branch's tip before the merge; "" for its first parent
 	After  string      // its tip after
 	Forge  forge.Forge // nil: none, git's facts alone
+	// Branch is the prefix of the developer's branches; StalledHours the
+	// age limit of a stalled pull request (routing.stalled-hours), 0 for
+	// none.
+	Branch       string
+	StalledHours int
 }
 
 // Entry is one trigger met.
@@ -349,6 +356,18 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 		}
 	} else {
 		r.Unread = append(r.Unread, "the default branch's rulesets: this forge keeps none the wake reads")
+	}
+
+	// The line's pull requests standing still: the same read as the
+	// reconcile's.
+	if o.Branch != "" {
+		prs, err := stall.Read(o.Repo, f, o.Branch, o.StalledHours)
+		if err != nil {
+			unread("the developer's pull requests", err)
+		}
+		for _, p := range prs {
+			add(Stalled, fmt.Sprintf("%d", p.ID), p.Said(f))
+		}
 	}
 
 	// The cord.
