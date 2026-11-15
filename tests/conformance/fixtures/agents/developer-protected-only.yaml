@@ -1,0 +1,6 @@
+# The developer's agent proposing one change alone, a CI workflow the line may not make.
+- patch:
+    file: .github/workflows/ci.yml
+    content: |
+      on: push
+
