@@ -441,8 +441,10 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
   role's own settings; `merge-request`, after the gate and before the
   reviewer, its frozen guard and green proof on its own branches.
   Weekly, the docs' run skips it.
-- **The command**: every package but `tests/evaluation`, whose tests
-  measure agents, not the code; the conformance suite in, though it is
+- **The command**: every package; `tests/evaluation` in since
+  [#1570](https://github.com/JN0V/workline/pull/1570), its tests that
+  call an agent skipped without `WORKLINE_EVAL`, so a test frozen there
+  runs on the head; the conformance suite in, though it is
   most of the run (about 230 s of 240 s on a laptop). One run of the
   whole suite, never a second command beside it.
 - **The report**: gotestsum, pinned, run by `go run` as the curator's
