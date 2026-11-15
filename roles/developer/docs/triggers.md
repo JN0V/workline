@@ -68,7 +68,8 @@ routing:
     `reconcile-max` issues a run, the one waiting longest first, each
     its own run. Each reconcile
     starts the next, 55 minutes on by default: [the heartbeat](../../../docs/github/heartbeat.md),
-    an environment to create once, its period yours to set.
+    an environment to create once, its period yours to set. A reconcile
+    that found nothing due and nothing waiting on a time starts none.
   - **Not on the heartbeat alone**: the schedule, or a `workline:` label
     on an issue, each hop of the line, starts it when no heartbeat waits
     and the gap (55 minutes, or the variable

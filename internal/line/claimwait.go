@@ -185,6 +185,9 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 	}
 	if key == "" || rec.Claim == key {
 		msg := fmt.Sprintf("its claim, %s, has no pull request", doing.Label)
+		if key == "" && dated {
+			res.Waiting = append(res.Waiting, is.ID) // claim-hours pending: the heartbeat goes on
+		}
 		switch {
 		case key != "":
 			msg += ": the developer was woken to let it go already"
