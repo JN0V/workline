@@ -42,3 +42,11 @@ func TestTesterDefaultsBuildErrorsDedup(t *testing.T) {
 		t.Errorf("rows with one pattern and different fields were merged: %v", rows)
 	}
 }
+
+// A Gradle project listing only kotlin-gradle keeps javac's rows.
+func TestTesterDefaultsKotlinGradleKeepsJavac(t *testing.T) {
+	rows := TesterDefaults([]Pack{Builtin()["kotlin-gradle"]})["build-errors"].([]any)
+	if !strings.Contains(fmt.Sprint(rows), `\.java`) {
+		t.Errorf("no javac row from kotlin-gradle: %v", rows)
+	}
+}
