@@ -1,8 +1,9 @@
 // Package stall reads the line's pull requests that stand still: a
 // developer's open pull request whose head has not moved for the age
 // limit (routing.stalled-hours) and whose kept verdict is not a pass
-// (ADR-0068 §8). It reads git and the forge, never an agent: the wake
-// and the reconcile both say it.
+// (ADR-0068 §8). A Draft counts: the developer turns a red or capped
+// pull request into one. It reads git and the forge, never an agent: the
+// wake and the reconcile both say it.
 package stall
 
 import (
@@ -24,7 +25,8 @@ type PR struct {
 	ID    int
 	Age   time.Duration // since its head was made
 	Step  string        // the step of the verdict kept on its head; "" when it names none
-	Class string        // the verdict's class: red, held…
+	Class string        // the verdict's class: red, held, waits…
+	Draft bool          // a Draft: red, capped or its agent failed
 }
 
 // Ref is the pull request as the forge names it.
@@ -39,9 +41,13 @@ func (p PR) AgeSaid() string {
 	return fmt.Sprintf("%d h", h)
 }
 
-// Said is "!2: 12 h, step reviewer, red".
+// Said is "!2: head unmoved for 12 h, verdict at the reviewer's step (red)".
 func (p PR) Said(f forge.Forge) string {
-	s := p.Ref(f) + ": head unmoved for " + p.AgeSaid()
+	s := p.Ref(f)
+	if p.Draft {
+		s += ", a Draft"
+	}
+	s += ": head unmoved for " + p.AgeSaid()
 	if p.Step != "" {
 		s += ", verdict at the " + p.Step + "'s step"
 	}
@@ -64,10 +70,10 @@ func Read(repo string, f forge.Forge, branch string, hours int) ([]PR, error) {
 	}
 	var out []PR
 	for _, mr := range mrs {
-		if !strings.HasPrefix(mr.Branch, branch) || mr.Draft {
+		if !strings.HasPrefix(mr.Branch, branch) {
 			continue
 		}
-		head, at := tip(repo, mr.Branch)
+		head, at := tip(repo, f, mr.Branch)
 		if head == "" {
 			continue
 		}
@@ -79,7 +85,7 @@ func Read(repo string, f forge.Forge, branch string, hours int) ([]PR, error) {
 		if err != nil || class == "" || class == "pass" {
 			continue
 		}
-		p := PR{ID: mr.ID, Age: age, Class: class}
+		p := PR{ID: mr.ID, Age: age, Class: class, Draft: mr.Draft}
 		if g := step.FindStringSubmatch(why); g != nil {
 			p.Step = g[1]
 		}
@@ -88,15 +94,26 @@ func Read(repo string, f forge.Forge, branch string, hours int) ([]PR, error) {
 	return out, nil
 }
 
-func tip(repo, branch string) (string, time.Time) {
-	out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%H %cI", "refs/heads/"+branch).Output()
-	if err != nil {
-		return "", time.Time{}
+// tip is the branch's head and its commit date: as fetched from origin
+// (a CI checkout keeps the developer's branches there), else this clone's
+// own branch; only the latter on a forge that keeps branches here (the
+// local one).
+func tip(repo string, f forge.Forge, branch string) (string, time.Time) {
+	refs := []string{"refs/remotes/origin/" + branch, "refs/heads/" + branch}
+	if forge.KeepsBranches(f) {
+		refs = refs[1:]
 	}
-	h, d, _ := strings.Cut(strings.TrimSpace(string(out)), " ")
-	t, err := time.Parse(time.RFC3339, d)
-	if err != nil {
-		return "", time.Time{}
+	for _, ref := range refs {
+		out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%H %cI", ref, "--").Output()
+		if err != nil {
+			continue
+		}
+		h, d, _ := strings.Cut(strings.TrimSpace(string(out)), " ")
+		t, err := time.Parse(time.RFC3339, d)
+		if err != nil || h == "" {
+			continue
+		}
+		return h, t
 	}
-	return h, t
+	return "", time.Time{}
 }
