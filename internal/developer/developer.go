@@ -800,7 +800,7 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 		"Never, whatever the change needs: the files the project's CODEOWNERS lists, agent files (AGENTS.md, CLAUDE.md…) and, with no CODEOWNERS, the pages they link, " +
 		"`.workline/` (but the files named here), the CI's workflows, a gate's definition: such a change is reverted.\n")
 	if len(person) > 0 {
-		t.WriteString("\nA person makes the part of the Scope that is a CI file, never you: `" + strings.Join(person, "`, `") + "`. Leave it, and say in your answer what it needs.\n")
+		t.WriteString("\nA person makes the part of the " + scopeName + " that is a CI file, never you: `" + strings.Join(person, "`, `") + "`. Leave it, and say in your answer what it needs.\n")
 	}
 	if frozen := b.acceptance(); len(frozen) > 0 {
 		t.WriteString("\n## The tester's acceptance tests: frozen\n\nIn your worktree, read-only to you; make them pass. A change to one is reverted.\n\n")
