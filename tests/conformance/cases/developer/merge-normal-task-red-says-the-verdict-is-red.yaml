@@ -1,0 +1,41 @@
+case: developer/merge-normal-task-red-says-the-verdict-is-red
+about: >
+  Red is said: at `normal`, the developer's pull request for #3, workline's
+  own, closes an issue labelled `task`, so it waits for a person's yes. The
+  line's verdict on its head is red, the tester's guard blocking. The
+  comment that asks for the yes says the verdict is red and at which step,
+  since the label alone will not merge it.
+given:
+  repo: tested-draft
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git checkout -q -b workline/developer/3 && GIT_COMMITTER_NAME=workline-bot git commit -q --amend --no-edit && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && GIT_COMMITTER_NAME=workline-bot git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/developer/3 && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: failure, description: "red: the line's verdict on its head is block (tester block): frozen-test-missing", by: workline-bot}
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["task", "workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        author: workline-bot
+        bot: true
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        labels: []
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":2}} -->\n<!-- workline:sticky=developer/code -->"
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}]
+  not-pushed: [workline/developer/3]
+  forge:
+    merge-requests:
+      - {id: 2, auto-merge: false, labels: [], comment-contains: ["**Waiting for a person's yes**", "the line's verdict on its head is block (tester block)", "put the label `workline:accepted`"]}
