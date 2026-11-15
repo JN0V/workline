@@ -603,7 +603,11 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return external(err)
 	}
-	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo, proofs, repoFiles(repo), Changed(repo, forge.KeepsBranches(f)))
+	// An issue whose Scope names only files a person writes is not taken
+	// (#1505): no tester nor developer run starts on it.
+	pickable, guarded := withoutGuardedOnly(repo, issues, s.ClaimLabel, only)
+	id, passed := pick(pickable, mrs, s, only, line.Runs("tester"), letGo, proofs, repoFiles(repo), Changed(repo, forge.KeepsBranches(f)))
+	passed = append(guarded, passed...)
 	for _, p := range passed {
 		findings = append(findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}
@@ -1389,4 +1393,22 @@ func writeBlockedProtected(runDir, repo string, a Act, s Settings, told []intent
 		return code
 	}
 	return writeVerdict(runDir, v)
+}
+
+// withoutGuardedOnly is issues less the ready, unclaimed ones whose Scope
+// names only guarded files (backlog.ScopeSplit, #1505), and those, each
+// passed over with why: the person writes them.
+func withoutGuardedOnly(repo string, issues []forge.Issue, claimLabel string, only int) ([]forge.Issue, []Passed) {
+	var out []forge.Issue
+	var passed []Passed
+	for _, is := range issues {
+		if (only == 0 || is.ID == only) && !is.Closed && slices.Contains(is.Labels, backlog.LabelReady) && !slices.Contains(is.Labels, claimLabel) {
+			if g, o := backlog.ScopeSplit(repo, is); len(g) > 0 && len(o) == 0 {
+				passed = append(passed, Passed{Issue: is.ID, Why: "its " + work.Name(work.Scope) + " names only files a person writes (" + strings.Join(g, ", ") + "): no run starts on it"})
+				continue
+			}
+		}
+		out = append(out, is)
+	}
+	return out, passed
 }

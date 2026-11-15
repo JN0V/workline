@@ -386,6 +386,10 @@ func (s State) say() string {
 		lines = append(lines, strings.TrimSpace(Said("The product owner", "leaves this issue in refine, for a person", s.Silent,
 			"a person of the project names its proof in a comment, `proof: <kind> — why`, or edits its "+work.Name(work.Validation)+
 				" so a test checks it; it does not go to its tests again as it stands")))
+	case strings.HasPrefix(s.Silent, GuardedSilent):
+		files := strings.TrimPrefix(s.Silent, GuardedSilent)
+		lines = append(lines, strings.TrimSpace(Said("The product owner", "leaves this issue in refine: a person writes its files, "+files, s.Silent,
+			"a person writes "+files+" and closes the issue, or edits its "+work.Name(work.Scope)+" to the files the line may write; it does not go to the line as it stands")))
 	case HeldForScenarios(s.Silent):
 		lines = append(lines, strings.TrimSpace(scenariosUnreadSaid(s.Silent)))
 	case s.Silent != "":
@@ -583,6 +587,9 @@ type Proposal struct {
 	// under the issue's Assumptions.
 	Assumed []string `yaml:"assumed,omitempty"`
 	Written string   `yaml:"written,omitempty"`
+	// Guarded, the engine's, on a ready: the files of its Scope left to a
+	// person, the line taking the rest (#1505).
+	Guarded []string `yaml:"guarded,omitempty"`
 	// The engine's, for the conversation with the reporter: the round this
 	// comment would be, and whether a refine is proposed to the reporter in
 	// a comment rather than written in the body (an outsider's issue).
@@ -2446,6 +2453,14 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		}
 	case "ready":
 		c.Assumed, c.Written, c.Retested = nil, "", ""
+		if hold := p.guardedScope(repo, is, c); len(hold) > 0 {
+			// Only files a person writes (#1505): no tokens spent on it.
+			if p.unread == nil {
+				p.unread = map[int]string{}
+			}
+			p.unread[c.Issue] = GuardedSilent + strings.Join(hold, ", ")
+			return "scope-guarded", "not moved to ready: " + GuardedSilent + strings.Join(hold, ", ")
+		}
 		if missing := NotReady(is, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
 			// Drafts no person accepted, past the level's delay: taken as
 			// assumptions, the issue goes on (ADR-0060).
@@ -3656,6 +3671,9 @@ func describe(c Proposal, verb string) string {
 			// No test possible, said the tester: the kind picked in place
 			// of its Draft, and why.
 			board += fmt.Sprintf(", proved by %s in place of new tests (%s)", c.Proof.Kind, strings.TrimSuffix(strings.TrimSpace(c.Proof.Reason), "."))
+		}
+		if len(c.Guarded) > 0 {
+			board += ", " + and(c.Guarded) + " left to a person to write (the guard refuses the developer these files)"
 		}
 		if len(c.Assumed) > 0 {
 			// Drafts no person accepted past the delay (ADR-0060).
