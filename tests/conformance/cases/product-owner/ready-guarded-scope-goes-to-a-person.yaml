@@ -1,0 +1,20 @@
+case: product-owner/ready-guarded-scope-goes-to-a-person
+about: >
+  Guarded Scope goes to a person. Given an issue whose Scope names only
+  files CODEOWNERS lists, when the product owner would move it to ready,
+  then it asks a person to write those files, naming them, and moves
+  nothing to the line: the issue stays in refine.
+given:
+  repo: backlog
+  setup:
+    - "printf '/README.md @owner\\n' > CODEOWNERS && git add -A && git commit -qm 'chore: what never merges alone'"
+  forge:
+    issues:
+      - {id: 9, title: "Describe the export", body: "Say what the export does.\n\n## Need\n\nThe README says what the export does.\n\n## Verification\n\nA test reads the README.\n\n## Validation\n\nAnn reads the README.\n\n## Scope\n\nREADME.md", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine}
+expect:
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine]
+        comment-contains: ["a person", "README.md"]

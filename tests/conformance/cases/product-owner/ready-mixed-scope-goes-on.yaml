@@ -1,0 +1,19 @@
+case: product-owner/ready-mixed-scope-goes-on
+about: >
+  Mixed Scope goes on. Given a Scope with guarded and other files, when
+  it is readied, then the line takes it (workline:ready) and says, on
+  the issue, which files are left to a person.
+given:
+  repo: backlog
+  setup:
+    - "printf '/README.md @owner\\n' > CODEOWNERS && git add -A && git commit -qm 'chore: what never merges alone'"
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\n- `src/export/csv.go`: the rows.\n- `README.md`: the export said.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go, README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine}
+expect:
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        comment-contains: ["left to a person", "README.md"]
