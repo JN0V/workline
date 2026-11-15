@@ -358,6 +358,9 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unread-body", Level: "info", Where: where,
 			Message: "the product owner's state says it never read this issue: woken again, once a body"})
 	}
+	if !ok && s.Name == refineState && name == backlog.Keeper && had && rec.Unread != rec.Body && unreadBody(notes) && ranWithin(rec, ErrorBackoff) {
+		res.Waiting = append(res.Waiting, is.ID) // woken again after the backoff: the heartbeat goes on
+	}
 	if ok && s.Name == refineState && role == backlog.Keeper {
 		now.Given = givenNow(comments)            // the code this read gets: the same next time wakes it no more (#980)
 		now.Heard, _ = commentsUnheard(is, notes) // the comments this read gets: woken for those no more (#1331)
