@@ -77,6 +77,11 @@ func mrWaits(res *Result, b forge.Backlog, repo string, doing routing.State, is 
 			msg += fmt.Sprintf("; it waits to be brought up to date with %s", r.Conflict)
 		}
 	}
+	if why, _, ok := testerBlock(b, repo, mr); ok {
+		// Its verdict is blocked at the tester's green proof: no role
+		// reads that step, a person does (#1502).
+		msg = fmt.Sprintf("its claim, %s, waits on a person: the line's verdict on its pull request #%d is blocked at the tester step, the green proof that could not run here (%s)", doing.Label, mr.ID, why)
+	}
 	if mr.Draft {
 		msg = fmt.Sprintf("its claim, %s, waits on its pull request #%d, a Draft: ", doing.Label, mr.ID) + draftHolder(b, mr)
 	}
@@ -144,6 +149,12 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 		return nil, nil, false, err
 	}
 	if mr, ok := closedByMR(t, is.ID); ok {
+		if t.say {
+			if err := testerBlockSaid(b, t.repo, mr); err != nil {
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unsaid", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+					Message: "the tester block on its pull request was not said: " + forge.Said(err)})
+			}
+		}
 		mrWaits(res, b, t.repo, doing, is, mr)
 		return nil, nil, true, nil
 	}
