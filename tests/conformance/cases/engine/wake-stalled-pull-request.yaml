@@ -1,0 +1,16 @@
+case: engine/wake-stalled-pull-request
+about: >
+  With `forge: local`, the developer's pull request `!2` has a head
+  that has not moved for 12 h, the line's verdict kept on it red at
+  the reviewer's step. `workline wake` lists it as a trigger, read
+  from git and the forge with no AI.
+given:
+  repo: local-fix
+  env: {WORKLINE_CLOCK: "2026-01-03T12:00:00Z"}
+  setup:
+    - "mkdir -p .git/workline/verdicts && printf '{\"class\":\"red\",\"why\":\"the line\\047s verdict on its head is block (reviewer block): review-finding\"}\\n' > .git/workline/verdicts/$(git rev-parse workline/developer/3).json"
+    - "GIT_AUTHOR_DATE=2026-01-03T12:00:00Z GIT_COMMITTER_DATE=2026-01-03T12:00:00Z git commit -q --allow-empty -m 'chore: later'"
+run: {cli: [wake, --forge, local, --range, "main~1..main"]}
+expect:
+  exit: 0
+  stdout: ["**1 trigger met**", "stalled", "!2", "12 h"]

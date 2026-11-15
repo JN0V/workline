@@ -31,6 +31,7 @@ After each merge, the wake prints where the line may be drifting
 | Symptoms without cause | lands while one file is fixed by 3 merges in 14 days; an issue a merge closed is open again, or closed by two merges |
 | Laundered needs | merges a merge request that closes no issue, an app's routine one left out |
 | Nobody bypasses | merges a head without the App's `workline/accepted` (with a `merge:` policy); follows a change of the default branch's ruleset |
+| Stalled pull requests | finds a developer's open pull request, a Draft too, whose head has not moved for `routing.stalled-hours` (12 by default), its verdict not a pass |
 | The cord | finds the label `step-back` on an open issue or merge request |
 
 - **A fix** is a merge closing an issue the forge labels a bug: `bug`,

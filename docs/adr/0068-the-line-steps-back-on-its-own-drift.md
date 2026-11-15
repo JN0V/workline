@@ -237,6 +237,7 @@ It never blocks a merge (principle 15).
 | The same area fixed again and again; a fix reopened | symptoms without cause |
 | A pull request merged closing no issue; issues opened by builders | need laundering |
 | `main`'s ruleset changed; a merged head without the App's `workline/accepted`; pull requests by the person's account against the line's | nobody bypasses |
+| A line pull request whose head has not moved for `routing.stalled-hours` (12 by default; `0`, never) with a verdict that is not a pass; the reconcile's summary says it too, with its age and the verdict's step | a stall is seen in a day, not found by hand |
 | The cord: a `step-back` label anyone may set | the person's unease, or a role's |
 
 - **What real use runs** is logged in each project's run records; a

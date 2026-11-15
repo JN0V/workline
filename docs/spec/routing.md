@@ -1003,6 +1003,14 @@ each reconcile starts the next one, past an environment's wait timer
   its command; nothing written. The reconciler leaves the issue, and
   lists the round with the others
   ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-04-a-widened-scope-resumes-its-round-at-once)).
+- **The stalled pull requests**
+  ([ADR-0068 §8](../adr/0068-the-line-steps-back-on-its-own-drift.md#8-the-wake-script-print-only)):
+  each developer's open pull request, a Draft too, whose head has not
+  moved for `routing.stalled-hours` (12; `0`, never) and whose verdict
+  kept is not a pass is said in the summary, its age and the verdict's
+  step; read with no agent, as the wake reads it. A verdict the forge
+  does not give is said "a stall not read", with why: on GitHub, the
+  job names the App that keeps the verdicts (`WORKLINE_APP`).
 - **An issue that cannot be read** is said (`state-unread`) and the
   others walked; the forge out of reach stops the run.
 - **Run twice in a row**, the second does nothing more: the first left

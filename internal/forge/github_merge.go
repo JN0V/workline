@@ -173,6 +173,9 @@ func (g *github) me() (string, error) {
 	if g.login == "" {
 		out, err := g.api("user", "--jq", ".login")
 		if err != nil {
+			if errors.Is(err, errForbidden) && os.Getenv("GITHUB_ACTIONS") == "true" {
+				return "", fmt.Errorf("%w; the job's own token does not say who it is: give the job workline's App slug in WORKLINE_APP", err)
+			}
 			return "", err
 		}
 		g.login = strings.TrimSpace(string(out))

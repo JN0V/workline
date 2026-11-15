@@ -52,6 +52,7 @@ var (
 			"reconcile-max": free,
 			"wip":           free, // a state's name: its limit (ADR-0059, decision 9), checked by the routing
 			"stale":         free, // a state's name: its age limit in days (ADR-0059, decision 7), checked by the routing
+			"stalled-hours": free, // the hours a pull request keeps its head before it is said stalled (ADR-0068, section 8)
 			"revisit":       free, // the days a blocked issue waits before the product owner reads it again (ADR-0059, amended)
 			// Each moment's wait budget (ADR-0050): its moments only.
 			"budgets": {keys: map[string]*shape{"commit": free, "commit-rewrite": free, "push": free,
