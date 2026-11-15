@@ -17,6 +17,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -359,7 +360,9 @@ func answerPre(runDir, repo string, s Settings) int {
 		if t.Resolved || len(t.Comments) == 0 || !strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) {
 			continue
 		}
-		if last := t.Comments[len(t.Comments)-1]; mine(last, answerMark) || mine(last, unreadMark) || mine(last, settleMark) ||
+		if last := t.Comments[len(t.Comments)-1]; len(neededFiles(runDir)) > 0 && lacked(last.Body) {
+			// Run again given the files it lacked (#1443): its turn again.
+		} else if mine(last, answerMark) || mine(last, unreadMark) || mine(last, settleMark) ||
 			mine(last, personMark) || mine(last, blockedMark) {
 			continue // answered, settled or blocked: the builder's turn, or the product owner's
 		}
@@ -509,6 +512,11 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 			fmt.Fprintf(&b, "\n## The code the finding is on, `%s`, as pull request %d has it\n\n````\n%s\n````\n", file, a.From, a.Code)
 		case a.CodeUnread != "":
 			fmt.Fprintf(&b, "\n## The code the finding is on\n\nNot given: %s.\n", a.CodeUnread)
+		}
+	}
+	for _, p := range neededFiles(runDir) {
+		if data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(p))); err == nil {
+			fmt.Fprintf(&b, "\n## The code you said you lacked, `%s`\n\n````\n%s\n````\n", p, strings.TrimRight(string(data), "\n"))
 		}
 	}
 	head := b.String()
@@ -710,8 +718,24 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 			return fail(err)
 		}
 		if lacks {
-			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no test written: it lacks code, said in the thread" + whysSaid(a) + left,
-				Findings: []verdict.Finding{{Rule: "lacks-code", Level: "warn", Where: a.URL, Message: reason}}})
+			fs := []verdict.Finding{{Rule: "lacks-code", Level: "warn", Where: a.URL, Message: reason}}
+			// The files it names, of the repository: the line gives them (#1443).
+			if paths, _, _ := needsOf(notes); len(paths) > 0 {
+				var known []string
+				for _, p := range paths {
+					clean := path.Clean(strings.TrimPrefix(p, "./"))
+					if clean == "." || strings.HasPrefix(clean, "../") || path.IsAbs(clean) || slices.Contains(known, clean) {
+						continue
+					}
+					if _, err := os.Stat(filepath.Join(repo, filepath.FromSlash(clean))); err == nil {
+						known = append(known, clean)
+					}
+				}
+				if len(known) > 0 {
+					fs = append(fs, verdict.Finding{Rule: verdict.NeedsCode, Level: "info", Where: a.URL, Message: strings.Join(known, ", ")})
+				}
+			}
+			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no test written: it lacks code, said in the thread" + whysSaid(a) + left, Findings: fs})
 		}
 		if missing {
 			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no test needed, the reason in the thread" + whysSaid(a) + left})
@@ -974,4 +998,10 @@ func (a answer) move(to string) []intent.Intention {
 		add, remove = ad, rm
 	}
 	return []intent.Intention{{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": to}}}
+}
+
+// lacked says whether a comment is the tester's answer that it lacks code.
+func lacked(body string) bool {
+	a, ok := ReadAnswered(body)
+	return ok && a.Act == "lacks-code" && IsAnswered(body)
 }
