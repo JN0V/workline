@@ -58,17 +58,21 @@ var step = regexp.MustCompile(`\(([a-z][a-z0-9-]*) [a-z-]+\)`)
 
 // Read lists the stalled pull requests, by number. branch is the prefix
 // of the developer's branches; hours the age limit, 0 for none. A forge
-// that keeps no verdict, or does not answer, lists none.
-func Read(repo string, f forge.Forge, branch string, hours int) ([]PR, error) {
+// that keeps no verdict lists none. A verdict the forge does not give is
+// said in notRead, one line a reason: "the verdict on #3, #5: …", never
+// skipped in silence.
+func Read(repo string, f forge.Forge, branch string, hours int) (prs []PR, notRead []string, err error) {
 	m, ok := f.(forge.Merger)
 	if !ok || hours <= 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	mrs, err := f.ListMergeRequests()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var out []PR
+	var reasons []string
+	missed := map[string][]string{}
 	for _, mr := range mrs {
 		if !strings.HasPrefix(mr.Branch, branch) {
 			continue
@@ -82,7 +86,15 @@ func Read(repo string, f forge.Forge, branch string, hours int) ([]PR, error) {
 			continue
 		}
 		class, why, err := m.Verdict(head)
-		if err != nil || class == "" || class == "pass" {
+		if err != nil {
+			r := forge.Said(err)
+			if _, seen := missed[r]; !seen {
+				reasons = append(reasons, r)
+			}
+			missed[r] = append(missed[r], forge.MergeRef(f, mr.ID))
+			continue
+		}
+		if class == "" || class == "pass" {
 			continue
 		}
 		p := PR{ID: mr.ID, Age: age, Class: class, Draft: mr.Draft}
@@ -91,7 +103,14 @@ func Read(repo string, f forge.Forge, branch string, hours int) ([]PR, error) {
 		}
 		out = append(out, p)
 	}
-	return out, nil
+	for _, r := range reasons {
+		what := "the verdict on "
+		if len(missed[r]) > 1 {
+			what = "the verdicts on "
+		}
+		notRead = append(notRead, what+strings.Join(missed[r], ", ")+": "+r)
+	}
+	return out, notRead, nil
 }
 
 // tip is the branch's head and its commit date: as fetched from origin

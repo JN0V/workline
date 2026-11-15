@@ -1,6 +1,7 @@
 package stall
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"strings"
@@ -17,10 +18,14 @@ type stub struct {
 	forge.Merger
 	mrs      []forge.MergeRequest
 	verdicts map[string]string
+	refused  error // each verdict read refused so
 }
 
 func (s stub) ListMergeRequests() ([]forge.MergeRequest, error) { return s.mrs, nil }
 func (s stub) Verdict(head string) (string, string, error) {
+	if s.refused != nil {
+		return "", "", s.refused
+	}
 	return s.verdicts[head], "the line's verdict on its head is block (reviewer block): review-finding", nil
 }
 
@@ -62,7 +67,7 @@ func clone(t *testing.T) (string, string) {
 func TestReadsTheBranchFetchedFromOrigin(t *testing.T) {
 	dir, head := clone(t)
 	f := stub{mrs: []forge.MergeRequest{{ID: 2, Branch: "workline/developer/1"}}, verdicts: map[string]string{head: "red"}}
-	prs, err := Read(dir, f, "workline/developer/", DefaultHours)
+	prs, _, err := Read(dir, f, "workline/developer/", DefaultHours)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +81,7 @@ func TestReadsTheBranchFetchedFromOrigin(t *testing.T) {
 func TestADraftIsListed(t *testing.T) {
 	dir, head := clone(t)
 	f := stub{mrs: []forge.MergeRequest{{ID: 2, Branch: "workline/developer/1", Draft: true}}, verdicts: map[string]string{head: "waits"}}
-	prs, err := Read(dir, f, "workline/developer/", DefaultHours)
+	prs, _, err := Read(dir, f, "workline/developer/", DefaultHours)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,5 +90,20 @@ func TestADraftIsListed(t *testing.T) {
 	}
 	if said := prs[0].Said(f); !strings.Contains(said, "a Draft") || !strings.Contains(said, "(waits)") {
 		t.Errorf("said %q", said)
+	}
+}
+
+// A verdict the forge does not give is said, with why, never skipped in
+// silence: the reconcile's job token may not read who keeps it.
+func TestAVerdictNotReadIsSaid(t *testing.T) {
+	dir, _ := clone(t)
+	f := stub{mrs: []forge.MergeRequest{{ID: 2, Branch: "workline/developer/1"}, {ID: 3, Branch: "workline/developer/1"}},
+		refused: errors.New("gh api user: Resource not accessible by integration")}
+	prs, notRead, err := Read(dir, f, "workline/developer/", DefaultHours)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(prs) != 0 || len(notRead) != 1 || notRead[0] != "the verdicts on #2, #3: gh api user: Resource not accessible by integration" {
+		t.Fatalf("got %+v, not read %q", prs, notRead)
 	}
 }

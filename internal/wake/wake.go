@@ -361,9 +361,12 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 	// The line's pull requests standing still: the same read as the
 	// reconcile's.
 	if o.Branch != "" {
-		prs, err := stall.Read(o.Repo, f, o.Branch, o.StalledHours)
+		prs, notRead, err := stall.Read(o.Repo, f, o.Branch, o.StalledHours)
 		if err != nil {
 			unread("the developer's pull requests", err)
+		}
+		for _, n := range notRead {
+			r.Unread = append(r.Unread, "a stall: "+n)
 		}
 		for _, p := range prs {
 			add(Stalled, fmt.Sprintf("%d", p.ID), p.Said(f))

@@ -1026,17 +1026,25 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 
 // stalledSaid lists the developer's pull requests whose head has not
 // moved for routing.stalled-hours, their verdict not a pass: its age and
-// the verdict's step (ADR-0068, section 8). Read with no agent.
+// the verdict's step (ADR-0068, section 8). Read with no agent. What the
+// forge did not give is said "not read", never dropped.
 func stalledSaid(f forge.Forge, o engine.Options, cfg *routing.Config) string {
-	prs, err := stall.Read(o.Repo, f, developer.Branch, cfg.Stalled())
-	if err != nil || len(prs) == 0 {
-		return ""
+	prs, notRead, err := stall.Read(o.Repo, f, developer.Branch, cfg.Stalled())
+	if err != nil {
+		return "the stalled pull requests not read: " + forge.Said(err)
 	}
-	var parts []string
-	for _, p := range prs {
-		parts = append(parts, p.Said(f))
+	var said []string
+	if len(prs) > 0 {
+		var parts []string
+		for _, p := range prs {
+			parts = append(parts, p.Said(f))
+		}
+		said = append(said, fmt.Sprintf("%d stalled pull %s: %s", len(prs), plural(len(prs), "request", "requests"), strings.Join(parts, "; ")))
 	}
-	return fmt.Sprintf("%d stalled pull %s: %s", len(prs), plural(len(prs), "request", "requests"), strings.Join(parts, "; "))
+	for _, n := range notRead {
+		said = append(said, "a stall not read: "+n)
+	}
+	return strings.Join(said, "; ")
 }
 
 // roundsDue are the developer's merge requests a review round is due on
