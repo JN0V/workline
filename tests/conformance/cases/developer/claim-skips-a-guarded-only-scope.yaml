@@ -1,0 +1,19 @@
+case: developer/claim-skips-a-guarded-only-scope
+about: >
+  No tokens before. Given a ready issue whose Scope names only files
+  CODEOWNERS lists, when the line runs the developer, then the claim
+  takes nothing: no tester or developer run starts on it, and the issue
+  keeps workline:ready without workline:developing.
+given:
+  repo: tested
+  setup:
+    - "printf '/lib.sh @owner\\n' > CODEOWNERS && git add -A && git commit -qm 'chore: what never merges alone'"
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"]}
