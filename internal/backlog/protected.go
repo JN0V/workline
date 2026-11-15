@@ -13,9 +13,19 @@ import (
 // a patch reaching one.
 var CIFiles = []string{".workline", ".github/workflows", ".github/actions", ".gitlab-ci.yml", ".gitlab/ci"}
 
+// developerFiles are the files under .workline the developer writes itself:
+// its objections and its reasons for files beyond the Scope.
+var developerFiles = []string{".workline/objections.yaml", ".workline/beyond.yaml"}
+
 // IsCIFile says whether p is, or lies under, a file only a person changes.
+// The developer's own answer files under .workline are not.
 func IsCIFile(p string) bool {
 	p = path.Clean(strings.ReplaceAll(p, `\`, "/"))
+	for _, f := range developerFiles {
+		if p == f {
+			return false
+		}
+	}
 	for _, r := range CIFiles {
 		if p == r || strings.HasPrefix(p, r+"/") {
 			return true
