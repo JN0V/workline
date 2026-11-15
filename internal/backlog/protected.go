@@ -69,7 +69,9 @@ func PersonOnly(body string) bool {
 	for _, w := range strings.FieldsFunc(work.Plain(text), func(r rune) bool {
 		return r != '_' && r != '-' && (r < '0' || r > '9') && (r < 'a' || r > 'z') && (r < 'A' || r > 'Z')
 	}) {
-		if bareFiles[w] {
+		// A capitalised word may be a file (Taskfile, Justfile): unless it
+		// is plain prose, the Scope is not known to be all CI.
+		if bareFiles[w] || (w[0] >= 'A' && w[0] <= 'Z' && !proseWords[strings.ToLower(w)]) {
 			return false
 		}
 	}
@@ -83,3 +85,6 @@ func PersonOnly(body string) bool {
 
 // bareFiles are files commonly named with no slash nor dot.
 var bareFiles = map[string]bool{"Makefile": true, "Dockerfile": true, "LICENSE": true, "Jenkinsfile": true, "Procfile": true, "Gemfile": true, "Rakefile": true, "Vagrantfile": true, "Containerfile": true, "CODEOWNERS": true}
+
+// proseWords are capitalised words a Scope's sentence opens with, no file.
+var proseWords = map[string]bool{"the": true, "and": true, "only": true, "a": true, "an": true, "in": true, "on": true, "of": true, "to": true, "for": true, "its": true, "this": true, "that": true, "these": true, "those": true, "ci": true, "github": true, "gitlab": true, "workflow": true, "workflows": true, "scope": true, "file": true, "files": true, "change": true, "step": true}
