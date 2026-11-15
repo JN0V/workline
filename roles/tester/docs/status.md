@@ -291,15 +291,9 @@ Gaps found on real use and in the V1 rounds
 each said before or after 1.0:
 
 - **A person's comment on a Draft** is read by no role
-  (kept for 1.0, [#1358](https://github.com/JN0V/workline/issues/1358)).
-- **"The existing suite guards it"** names no test, and was false 3 of 3
-  times (kept for 1.0, [#1359](https://github.com/JN0V/workline/issues/1359)).
-- **Frozen tests under a runner's own names** judged again on every head
-  (kept for 1.0, [#1373](https://github.com/JN0V/workline/issues/1373)).
-- **A test under a display name** may escape being frozen
-  (kept for 1.0, [#1348](https://github.com/JN0V/workline/issues/1348)).
+  (before 1.0, [#1358](https://github.com/JN0V/workline/issues/1358)).
 - **A new test hidden** by a same-named test in another file
-  (kept for 1.0, [#1291](https://github.com/JN0V/workline/issues/1291)).
+  (before 1.0, [#1291](https://github.com/JN0V/workline/issues/1291)).
 - **A missing name in Rust**: its errors span several lines, which
   `build-errors` does not read
   ([the page](missing-name.md#other-languages)); build errors move to

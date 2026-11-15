@@ -32,8 +32,8 @@ hold:
    rest ([#435](https://github.com/JN0V/workline/issues/435)) and
    [ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md)
    ([#475](https://github.com/JN0V/workline/issues/475)). Left: the
-   role's bugs the V1 rounds and the trials found, kept for 1.0
-   ([Missing](#missing-in-the-order-to-build-it), 1).
+   role's bugs the V1 rounds and the trials found, each said before
+   or after 1.0 ([Missing](#missing-in-the-order-to-build-it), 1).
 2. **The main issue validated on real use**: **awaits the
    maintainer**; v1.0 needs it ([ADR-0052](../../../docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted)). No open issue holds its Validation: the trial of
    [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
@@ -246,25 +246,18 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 
 ## Missing, in the order to build it
 
-1. **Bugs seen in real use**, kept for 1.0:
-   - its code input misses the sources a Scope needs, one Kotlin Scope
-     wrong in V1 round 3 (kept for 1.0,
-     [#1332](https://github.com/JN0V/workline/issues/1332));
-   - a refine dropped for one missing path, never retried (kept for
+1. **Bugs seen in real use**, each said before or after 1.0:
+   - a refine dropped for one missing path, never retried (before
      1.0, [#1355](https://github.com/JN0V/workline/issues/1355));
    - an answer on a Validation question written in the Scope, the
-     reviewer holding again (kept for 1.0,
+     reviewer holding again (before 1.0,
      [#1356](https://github.com/JN0V/workline/issues/1356));
-   - answers to the spec reviewer missed or read twice (after 1.0,
+   - an answer to the spec reviewer given with `workline:accepted`
+     never written into the Scope, a person's word lost; also a
+     deleted comment and an upgrade (before 1.0,
      [#1346](https://github.com/JN0V/workline/issues/1346));
-   - a person's long answer cut at 3,000 characters (kept for 1.0,
-     [#1364](https://github.com/JN0V/workline/issues/1364));
-   - a question to the reporter never timing out on a local forge
-     (kept for 1.0, [#1337](https://github.com/JN0V/workline/issues/1337));
-   - an answer unreadable twice asked again in the same tick (kept for
-     1.0, [#1090](https://github.com/JN0V/workline/issues/1090));
-   - the role started twice in one tick after naming code (kept for
-     1.0, [#1091](https://github.com/JN0V/workline/issues/1091)).
+   - a person's long answer cut at 3,000 characters (before 1.0,
+     [#1364](https://github.com/JN0V/workline/issues/1364)).
 2. **Issue sections and kinds, the rest**
    ([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
    [examples](proposed-headings.md)): established section names, a bug

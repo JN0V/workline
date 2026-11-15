@@ -293,11 +293,9 @@ each said before or after 1.0:
 
 - **The judge drops a defect** the code's comment calls intended
   (after 1.0, [#1357](https://github.com/JN0V/workline/issues/1357)).
-- **`code-lines-max` cuts** a typical Android ViewModel, one lens left,
-  a cut warning on every head
-  (kept for 1.0, [#1334](https://github.com/JN0V/workline/issues/1334)).
-- **Answers to a spec finding** missed or read twice in three edge cases
-  (after 1.0, [#1346](https://github.com/JN0V/workline/issues/1346)).
+- **Answers to a spec finding** missed: one given with
+  `workline:accepted` never reaches the Scope; two rarer edge cases
+  (before 1.0, [#1346](https://github.com/JN0V/workline/issues/1346)).
 
 - **Simplicity's false alarms counted** on 20 to 50 past pull requests,
   before it may block; tried on 11

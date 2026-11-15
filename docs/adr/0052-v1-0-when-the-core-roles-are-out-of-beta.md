@@ -160,9 +160,9 @@ holds the issues that count.
   | [#1358] | before | a person's comment on a Draft unanswered at merge |
   | [#1364] | before | a person's long answer cut |
   | [#1382] | before | the developer skips an issue on GitHub |
+  | [#1346] | before | an answer given with `workline:accepted` never reaches the Scope |
   | [#1381] | after | GitLab parity, with the inspector's GitLab bar |
   | [#1319] | after | language packs: V1 passed on three languages without |
-  | [#1346] | after | rare edge cases: a deleted comment, an upgrade |
   | [#1357] | after | a judge's miss, caught at a feature's yes |
   | [#1361] | after | the documentalist's noise, outside the chain |
   | [#1379] | after | the auditor's measure, outside the chain |
