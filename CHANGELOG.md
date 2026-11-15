@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.78.0](https://github.com/JN0V/workline/compare/v0.77.1...v0.78.0) (2026-11-15)
+
+
+### Features
+
+* **internal:** show only the settlement diff when a ([#1554](https://github.com/JN0V/workline/issues/1554)) ([2099252](https://github.com/JN0V/workline/commit/209925286c577cec7047aac785cc2f3b29504748))
+
+
+### Bug Fixes
+
+* weekly upkeep share misses ci/build work, the ([#1585](https://github.com/JN0V/workline/issues/1585)) ([dc96051](https://github.com/JN0V/workline/commit/dc96051ac3bb89cc4291ff5d23cf1bbb8e502909))
+
 ## [0.77.1](https://github.com/JN0V/workline/compare/v0.77.0...v0.77.1) (2026-11-15)
 
 
