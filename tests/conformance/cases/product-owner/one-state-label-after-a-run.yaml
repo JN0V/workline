@@ -1,0 +1,22 @@
+case: product-owner/one-state-label-after-a-run
+about: >
+  Given issues of the line, one labelled `workline:developing` and one
+  labelled `workline:to-refine`, both with their four sections, When the
+  product owner has run and its agent proposes both for ready, Then each
+  carries exactly one `workline:` state label: the developing issue
+  keeps `workline:developing` alone, the one moved to ready has
+  `workline:ready` and no longer `workline:to-refine`.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:developing],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Totals wrong", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine],
+         comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
+expect:
+  forge:
+    issues:
+      - {id: 9, labels: [workline:developing]}
+      - {id: 10, labels: [workline:ready]}
