@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.78.1](https://github.com/JN0V/workline/compare/v0.78.0...v0.78.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **engine:** "Waiting for a person's yes" does not say ([#1606](https://github.com/JN0V/workline/issues/1606)) ([e7a58ef](https://github.com/JN0V/workline/commit/e7a58efc94dd7c9ac50c5748892925678e36e10a))
+* **internal:** the product owner moves a developing ([#1607](https://github.com/JN0V/workline/issues/1607)) ([f3595c5](https://github.com/JN0V/workline/commit/f3595c5e9393ed476d9cc7188c9d4e5b1b1b1e44))
+
 ## [0.78.0](https://github.com/JN0V/workline/compare/v0.77.1...v0.78.0) (2026-11-15)
 
 
