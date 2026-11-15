@@ -1,12 +1,12 @@
 package tester
 
 import (
-	"os"
 	"regexp"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/packs"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -67,34 +67,31 @@ func TestBuildErrorsGo(t *testing.T) {
 	}
 }
 
-// defaultBuildErrors is the role's build-errors, as role.yaml ships them.
+// defaultBuildErrors is the build-errors the built-in packs give a
+// project that lists none.
 func defaultBuildErrors(t *testing.T) []buildRules {
 	t.Helper()
-	data, err := os.ReadFile("../../roles/tester/role.yaml")
+	data, err := yaml.Marshal(packs.BuiltinTesterDefaults()["build-errors"])
 	if err != nil {
 		t.Fatal(err)
 	}
-	var role struct {
-		Settings struct {
-			BuildErrors []struct {
-				Error       string   `yaml:"error"`
-				MissingName []string `yaml:"missing-name"`
-				NameLine    string   `yaml:"name-line"`
-				MessageLine string   `yaml:"message-line"`
-				TestName    string   `yaml:"test-name"`
-			} `yaml:"build-errors"`
-		} `yaml:"settings"`
+	var rows []struct {
+		Error       string   `yaml:"error"`
+		MissingName []string `yaml:"missing-name"`
+		NameLine    string   `yaml:"name-line"`
+		MessageLine string   `yaml:"message-line"`
+		TestName    string   `yaml:"test-name"`
 	}
-	if err := yaml.Unmarshal(data, &role); err != nil {
+	if err := yaml.Unmarshal(data, &rows); err != nil {
 		t.Fatal(err)
 	}
 	var list []BuildErrors
-	for _, b := range role.Settings.BuildErrors {
+	for _, b := range rows {
 		list = append(list, BuildErrors(b))
 	}
 	rules, err := compileBuildErrors(list)
 	if err != nil {
-		t.Fatalf("role.yaml's build-errors: %v", err)
+		t.Fatalf("the packs' build-errors: %v", err)
 	}
 	return rules
 }
@@ -208,11 +205,11 @@ func TestBuildErrorsJVM(t *testing.T) {
 	src := "class ProbeMissingTest {\n    @Test\n    fun `next index starts at zero`() {\n    }\n\n" +
 		"    @Test fun memberMissing() = runTest {\n    }\n\n    @Test\n    @DisplayName(\"x\")\n    internal fun `a (b) c`() {}\n\n" +
 		"    fun helper() {}\n}\n"
-	if got := testNames(src, rules[1]); !slices.Equal(got, []string{"next index starts at zero", "memberMissing", "a (b) c"}) {
+	if got := testNames(src, rules[2]); !slices.Equal(got, []string{"next index starts at zero", "memberMissing", "a (b) c"}) {
 		t.Errorf("Kotlin test names %q", got)
 	}
 	jsrc := "public class FooTest {\n    @Test\n    void nextIndexStartsAtZero() {}\n    @Test\n    public void sums() throws Exception {}\n    void helper() {}\n}\n"
-	if got := testNames(jsrc, rules[2]); !slices.Equal(got, []string{"nextIndexStartsAtZero", "sums"}) {
+	if got := testNames(jsrc, rules[1]); !slices.Equal(got, []string{"nextIndexStartsAtZero", "sums"}) {
 		t.Errorf("Java test names %q", got)
 	}
 	if got := testNames(src, rules[3]); got != nil {

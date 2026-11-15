@@ -139,34 +139,9 @@ settings:
   # (docs/missing-name.md). On the head, a test of the change that does
   # not build, but for a missing name, is build-broken at once. An absolute path, or a file:// URI, under the
   # checkout is read from the root. A message on a later line, read by
-  # message-line (pytest's `E` line). Go's, Kotlin's (Gradle's `e:`
-  # lines, Kotlin 2 and 1), javac's, Gradle's build files and pytest's
-  # collection errors here; data, until the language packs take them.
-  build-errors:
-    - error: '^(?:\./)?(?P<file>[^\s:]+\.go):\d+:\d+: (?P<message>.+)$'
-      missing-name:
-        - '^undefined: (?P<name>[\w.]+)$'
-        - '^\S+ undefined \(type .+ has no field or method (?P<name>\w+)'
-        - '^unknown field (?P<name>\w+) in struct literal'
-      test-name: '(?m)^func (Test\w*)\(\w+ \*testing\.T\)'
-    - error: '^e: (?P<file>.+?\.kts?)(?::\d+:\d+:?|: \(\d+, \d+\):) (?P<message>.+)$'
-      missing-name:
-        - '^Unresolved reference ''(?P<name>[^'']+)'''
-        - '^Unresolved reference: (?P<name>\S+)'
-        - '^No parameter with name ''(?P<name>[^'']+)'' found'
-        - '^Cannot find a parameter with this name: (?P<name>\S+)'
-      test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|internal)\s+)?fun\s+(?:`([^`]+)`|(\w+))\s*\('
-    - error: '^(?P<file>\S.*?\.java):\d+: error: (?P<message>.+)$'
-      missing-name:
-        - '^cannot find symbol$'
-      name-line: '^\s*symbol:\s+\w+\s+(?P<name>\w+)'
-      test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|protected|private|static|final)\s+)*void\s+(\w+)\s*\('
-    - error: '^(?:Build|Settings) file ''(?P<file>[^'']+)'' line: \d+(?P<message>)$'
-    - error: '^_+ ERROR collecting (?P<file>\S+\.py) _+(?P<message>)$'
-      message-line: '^E\s+(?P<message>[\w.]+: .+)$'
-      missing-name:
-        - '^ImportError: cannot import name ''(?P<name>[^'']+)'''
-      test-name: '(?m)^\s*(?:async\s+)?def (test\w*)\s*\('
+  # message-line (pytest's `E` line). No build-errors here: the language
+  # packs give the rows (ADR-0065), the listed packs', or every built-in
+  # pack's when none is listed; a build-errors set replaces them.
   # The judge of a broken build may read the base before it answers
   # (ADR-0045): its rounds of reads, and the lines served, all rounds
   # together. 0 rounds: it answers from the facts alone.

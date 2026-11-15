@@ -346,6 +346,8 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 			return nil, &ConfigError{err.Error()}
 		}
 		c.PackDefaults = map[string]map[string]any{"tester": packs.TesterDefaults(listed)}
+	} else {
+		c.PackDefaults = map[string]map[string]any{"tester": packs.BuiltinTesterDefaults()}
 	}
 	if c.Autonomy != "" && !slices.Contains(AutonomyLevels, c.Autonomy) {
 		return nil, &ConfigError{fmt.Sprintf("autonomy is %q: the levels are %s", c.Autonomy, strings.Join(AutonomyLevels, ", "))}

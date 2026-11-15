@@ -417,6 +417,29 @@ func TesterDefaults(listed []Pack) map[string]any {
 	return out
 }
 
+// BuiltinTesterDefaults are the tester's settings the built-in packs all
+// give, for a project that lists no packs: its build-errors, the rows of
+// every built-in pack, so a Go, Kotlin, Java or pytest project reads its
+// compiler's lines with no setting. Only that: a project listing no
+// packs keeps the generic test-paths and test-homes.
+func BuiltinTesterDefaults() map[string]any {
+	b := Builtin()
+	names := make([]string, 0, len(b))
+	for n := range b {
+		names = append(names, n)
+	}
+	slices.Sort(names)
+	var all []Pack
+	for _, n := range names {
+		all = append(all, b[n])
+	}
+	out := map[string]any{}
+	if rows, ok := TesterDefaults(all)["build-errors"]; ok {
+		out["build-errors"] = rows
+	}
+	return out
+}
+
 // Files are the repository's files, from its root: tracked, and the
 // untracked ones git does not ignore.
 func Files(repo string) ([]string, error) {
