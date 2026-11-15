@@ -63,7 +63,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `%s`: the developer's fix of a reproduced bug merges once every gate passes, a feature or a task waits for a person's yes.\n\n- To accept this one, put the label `%s`.\n- A bug? Change the label on #%d.",
 			d.Says(), o.Merge, backlog.AcceptedLabel(f), d.Issue)
 		body += headTrouble(o, m, hand, w)
-		if err := f.Comment(t, body, forge.Marker("merge-waits="+d.Kind)); err != nil {
+		if err := f.Sticky(t, body, forge.Marker("merge-waits="+d.Kind), true); err != nil {
 			return nil, err
 		}
 		return waits("", d.Says())
@@ -73,7 +73,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
 		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `enterprising`, but a release candidate was refused: features and tasks wait for a person's yes on each pull request until a person closes %s.\n\n- To accept this one, put the label `%s`.",
 			d.Says(), n.demoted[kindFeature], backlog.AcceptedLabel(f))
-		if err := f.Comment(t, body, forge.Marker("merge-waits="+d.Kind)); err != nil {
+		if err := f.Sticky(t, body, forge.Marker("merge-waits="+d.Kind), true); err != nil {
 			return nil, err
 		}
 		return waits("warn", fmt.Sprintf("%s, but features and tasks wait for a person's yes since a release candidate was refused (%s)", d.Says(), n.demoted[kindFeature]))
