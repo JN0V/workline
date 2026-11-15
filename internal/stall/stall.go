@@ -89,7 +89,15 @@ func Read(repo string, f forge.Forge, branch string, hours int) ([]PR, error) {
 }
 
 func tip(repo, branch string) (string, time.Time) {
-	out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%H %cI", "refs/heads/"+branch).Output()
+	// A checkout without local branches holds the remote-tracking ones.
+	var out []byte
+	var err error
+	for _, ref := range []string{"refs/heads/", "refs/remotes/origin/"} {
+		out, err = exec.Command("git", "-C", repo, "log", "-1", "--format=%H %cI", ref+branch).Output()
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return "", time.Time{}
 	}
