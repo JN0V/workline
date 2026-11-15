@@ -1,0 +1,23 @@
+case: auditor/sample-counts-itself
+about: "The weekly sample's own calls to its judge are spent like any run's: the next week's sample counts the judge's fresh tokens in its total, as upkeep, never lost with the folder the judge ran in."
+given:
+  repo: vouched
+  env: {AUDIT: agree, AUDIT_TOKENS: "1000"}
+  config:
+    roles:
+      documentalist:
+        settings:
+          sample: {ai-max-tokens: 2000}
+  forge:
+    issues:
+      - {"id": 20, "title": "Export rows", "body": "Export the rows as CSV.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Moved #20 to ready'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 23, "title": "Rows lost", "body": "Customers lose rows every night.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: order, level: normal, day: '2026-01-09', line: 'Set #23 priority to 1'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests: []
+run:
+  sh: >
+    w=$(cd .. && pwd);
+    workline sample --week 2026-W02 --judge 'cmd:sh "$FIXTURES/agents/audit-acts.sh"' --forge "fake:$w/forge.json" > /dev/null;
+    workline sample --week "$(date -u +%G-W%V)" --judge none --forge "fake:$w/forge.json" --json | grep -o 'tokens: [^"]*'
+expect:
+  exit: 0
+  stdout: ["tokens: 2.2k fresh tokens over ", ": upkeep 2.2k (100%), product 0 (0%)"]

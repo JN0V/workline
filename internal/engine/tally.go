@@ -35,6 +35,9 @@ type RunTally struct {
 	TokensCached int           `json:"tokens-cached,omitempty"`
 	TokensOut    int           `json:"tokens-out,omitempty"`
 	Seconds      float64       `json:"seconds,omitempty"`
+	// Own: kept by this runs folder itself (a run it dropped, a call of
+	// the weekly sample), not a tally gathered from another job's.
+	Own bool `json:"own,omitempty"`
 }
 
 // Started is when the run started, from its folder's name; zero when the
@@ -111,6 +114,33 @@ func keepTally(base, dir string) error {
 	if err != nil || t.Calls == 0 {
 		return err
 	}
+	t.Own = true
+	return appendTally(base, t)
+}
+
+// KeepCalls adds to base's tally a run named role that made calls, none
+// of which has a run folder: the weekly sample's judge, which runs in a
+// folder removed on return (#1413). No call: nothing.
+func KeepCalls(base, role string, calls []agent.Call) error {
+	t := RunTally{Run: time.Now().UTC().Format("20060102T150405.000000000") + "-" + role, Role: role, Own: true}
+	for _, c := range calls {
+		t.Calls++
+		t.Fresh += c.Fresh()
+		t.TokensIn += c.TokensIn
+		t.TokensCached += c.TokensCached
+		t.TokensOut += c.TokensOut
+		t.Seconds += c.Seconds
+	}
+	if t.Calls == 0 {
+		return nil
+	}
+	if err := os.MkdirAll(base, 0o755); err != nil {
+		return err
+	}
+	return appendTally(base, t)
+}
+
+func appendTally(base string, t RunTally) error {
 	line, err := json.Marshal(t)
 	if err != nil {
 		return err
@@ -167,9 +197,10 @@ func Tallies(base string) ([]RunTally, error) {
 // WriteTally writes to file the tally of the runs whose folder base still
 // holds that called an agent, a line each, as TallyFile holds them: what
 // a CI job keeps once its runs folder is gone (ADR-0019), no prompt nor
-// diff. The lines of base's own tally are not written again: in the
-// weekly sample's job, they are the tallies it gathered. None called an
-// agent: no file, and 0.
+// diff. Of base's own tally, the lines it kept itself are written too (a
+// run dropped, the sample's calls); the tallies gathered into it, in the
+// weekly sample's job, are not written again. None called an agent: no
+// file, and 0.
 func WriteTally(base, file string) (int, error) {
 	entries, err := os.ReadDir(base)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -177,6 +208,18 @@ func WriteTally(base, file string) (int, error) {
 	}
 	var out []byte
 	n := 0
+	if f, err := os.Open(filepath.Join(base, TallyFile)); err == nil {
+		sc := bufio.NewScanner(f)
+		sc.Buffer(make([]byte, 1<<20), 1<<24)
+		for sc.Scan() {
+			var t RunTally
+			if json.Unmarshal(sc.Bytes(), &t) == nil && t.Own && t.Calls > 0 {
+				out = append(append(out, sc.Bytes()...), '\n')
+				n++
+			}
+		}
+		_ = f.Close()
+	}
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue

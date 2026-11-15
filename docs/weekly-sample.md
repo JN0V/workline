@@ -84,8 +84,9 @@ roles:
   machine spent in the week, from its runs folder, no agent. Product: a
   feature or a bug, or a merge request closing one or typed `feat`,
   `fix`, `refactor`, `perf`, `test`. Upkeep: a task, or a `docs`,
-  `chore`, `style` merge request. Releases apart; a run on neither
-  (`ci`, `build`, no type) is unknown, and said. The upkeep share is
+  `chore`, `style`, `ci`, `build` merge request, and the sample's own
+  judge calls (a run named `sample`). Releases apart; a run on neither
+  (no type, another type) is unknown, and said. The upkeep share is
   the measure of [ADR-0052](adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)'s
   third criterion ([#610](https://github.com/JN0V/workline/issues/610)).
   The builder's own sessions are not counted: no record of the line
@@ -93,8 +94,11 @@ roles:
 - **In CI**, a job's run folders go with its short-lived artifacts:
   each job calling an agent keeps its runs' tally (`workline sample
   --tally`: role, target, tokens, seconds; no prompt, no diff) 14 days,
-  as an artifact (GitHub, `workline-tally-<job>`; GitLab, the applying
-  job's `workline-tally.jsonl`). The sample's job gathers them as its runs
+  as an artifact, kept in a cancelled run too, and from every attempt of a
+  re-run (GitHub, `workline-tally-<job>-<attempt>`; GitLab, the judge's,
+  the applying job's and the sample's `workline-tally.jsonl`). A run
+  folder dropped after 50 runs leaves its line in the runs folder's
+  tally, written with the rest. The sample's job gathers them as its runs
   folder's tally, this project's own only, never a fork's
   ([ADR-0019](adr/0019-the-line-evaluates-itself.md#amendment-2026-11-12-a-runs-tally-is-a-ci-artifact)).
   The weekly comment is the lasting record.
