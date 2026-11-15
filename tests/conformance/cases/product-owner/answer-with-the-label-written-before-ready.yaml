@@ -1,0 +1,29 @@
+case: product-owner/answer-with-the-label-written-before-ready
+about: >
+  An answer given with the label is read first: the reviewer asked a
+  person a question, Ann answered it and added workline:accepted before
+  the next run, no text of the product owner's waiting on her. The run
+  gives the agent her answer and its refine writes it into the Scope; the
+  label moves the issue to ready at the run after, never before.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Sales counted"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:accepted]
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n**Questions for a person**\n\n- `#9:3` (ambiguous): Does a refunded sale count?\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+          - {body: "On the reviewer's question: a refunded sale does not count.", author: ann, insider: true}
+run: {role: product-owner, event: schedule, ai: fake:refine-scope-nine-from-answer, then: again}
+expect:
+  agent-calls: 1
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        body-contains: "## Scope\n\n`src/export/csv.go`: the writer. A refunded sale is not counted, as Ann answered."
