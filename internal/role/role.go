@@ -329,6 +329,7 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	var c ProjectConfig
 	data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml"))
 	if os.IsNotExist(err) {
+		c.PackDefaults = map[string]map[string]any{"tester": packs.BuiltinTesterDefaults()}
 		return &c, nil
 	}
 	if err != nil {
