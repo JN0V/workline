@@ -160,6 +160,18 @@ func (v *HeadVerdict) shortRules() []string {
 	return rules
 }
 
+// blockRules are the rules of the findings that block, kept with a red
+// verdict so a later run reads its cause from them, not from its text.
+func (v *HeadVerdict) blockRules() []string {
+	var rules []string
+	for _, f := range v.Findings {
+		if (f.Level == "" || f.Level == "block") && !slices.Contains(rules, f.Rule) {
+			rules = append(rules, f.Rule)
+		}
+	}
+	return rules
+}
+
 // shortSaid opens why a review falls short.
 const shortSaid = "its review falls short "
 
@@ -283,8 +295,11 @@ func KeepVerdict(m forge.Merger, v HeadVerdict) (verdict.Finding, error) {
 func keepHead(m forge.Merger, v HeadVerdict, hand map[string]kept) (verdict.Finding, error) {
 	class, why := v.class()
 	var rules []string
-	if class == verdictShort {
+	switch class {
+	case verdictShort:
 		rules = v.shortRules()
+	case verdictRed:
+		rules = v.blockRules()
 	}
 	if err := m.KeepVerdict(v.Head, class, keptWhy(rules, why)); err != nil {
 		return verdict.Finding{}, err
