@@ -24,13 +24,18 @@ func IsCIFile(p string) bool {
 	return false
 }
 
-// ScopePaths are the paths a Scope's text names, in backticks or plain.
+// ScopePaths are the paths a Scope's text names, in backticks, or, when none is, plain.
 func ScopePaths(scope string) []string {
 	var out []string
 	for _, w := range work.ScopeWords(scope) {
 		if p := RepoPath(w); p != "" {
 			out = append(out, p)
 		}
+	}
+	if len(out) > 0 {
+		// Backticked words are the Scope's listed paths; prose beside them
+		// (`e.g.`, a file name in a sentence) is not a path to change.
+		return out
 	}
 	for _, m := range PathLike.FindAllString(work.Plain(scope), -1) {
 		if p := RepoPath(m); p != "" {
