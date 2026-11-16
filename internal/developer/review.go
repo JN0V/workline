@@ -700,7 +700,7 @@ func RoundDueFor(f forge.Forge, repo string, mr forge.MergeRequest, agent bool) 
 		return false, nil
 	}
 	cHead := branchHead(f, repo, mr.Branch)
-	if base, due := conflictNow(f, kept, a, repo, mr, cHead); due && !(!agent && noAgentAsked(kept, cHead, base)) {
+	if base, due := conflictNow(f, kept, a, repo, mr, cHead); due && (agent || !noAgentAsked(kept, cHead, base)) {
 		return true, nil // its merge refused for a conflict: a merge round (ADR-0067)
 	}
 	head, _ := gitOut(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/"+mr.Branch)
