@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -1338,6 +1339,12 @@ func settlementDiff(repo, commit string) string {
 // commentOpenMarker keeps the comment that says a person's comment waits.
 const commentOpenMarker = "person-comment-open"
 
+// namesTest tells a reply that names a test, or a commit that adds one:
+// "no" alone does not answer a person's comment.
+var namesTestRe = regexp.MustCompile(`(?i)\btests?\b|_test\b|\btest_|\bcommit\b|\b[0-9a-f]{7,40}\b`)
+
+func namesTest(body string) bool { return namesTestRe.MatchString(body) }
+
 // personsCommentOpen says, quoted short, the first person's comment on a
 // merge request that no role has answered: a comment of the request or a
 // conversation on a line, left by a person of the project. A role's own
@@ -1357,7 +1364,7 @@ func personsCommentOpen(f forge.Forge, id int) (string, error) {
 	if ok && err == nil {
 		own := func(n forge.Note) bool { return n.Own || strings.Contains(n.Body, "<!-- workline:") }
 		answers := func(n forge.Note) bool {
-			return own(n) && !strings.Contains(n.Body, forge.Marker(verdictMarker)) && !strings.Contains(n.Body, forge.Marker(commentOpenMarker))
+			return own(n) && namesTest(n.Body) && !strings.Contains(n.Body, forge.Marker(verdictMarker)) && !strings.Contains(n.Body, forge.Marker(commentOpenMarker))
 		}
 		for i, n := range notes {
 			if !n.Insider || n.Bot || own(n) || strings.TrimSpace(n.Body) == "" {
@@ -1380,7 +1387,7 @@ func personsCommentOpen(f forge.Forge, id int) (string, error) {
 		if c.Resolved || !tester.PersonsThread(c) {
 			continue
 		}
-		if last := c.Comments[len(c.Comments)-1]; !strings.Contains(last.Body, "<!-- workline:") {
+		if last := c.Comments[len(c.Comments)-1]; !(strings.Contains(last.Body, "<!-- workline:") && namesTest(last.Body)) {
 			return clipSaid(strings.TrimSpace(c.Comments[0].Body)), nil
 		}
 	}
