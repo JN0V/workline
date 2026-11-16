@@ -146,7 +146,11 @@ holds the issues that count.
   2. **[#1556] fixed**: the release's yes survives `main` moving, so
      the release pull request can be accepted.
   3. **The small items below** marked before, fixed.
-  4. **The release**: a `Release-As: 1.0.0` footer reaches `main`
+  4. **[ADR-0070]'s layout reached**, all five moves (added 2026-11-16):
+     after 1.0, structures do not change.
+  5. **The user docs cleaned**: no stale path; the documentalist reports
+     0 suspect on them.
+  6. **The release**: a `Release-As: 1.0.0` footer reaches `main`
      through a pull request, then the maintainer's label on the
      release.
 - **The small items**, against V1's goal (the chain alone, on any
@@ -194,6 +198,7 @@ holds the issues that count.
 [#610]: https://github.com/JN0V/workline/issues/610
 [ADR-0063]: 0063-every-open-issue-is-due-waiting-or-done.md
 [ADR-0068]: 0068-the-line-steps-back-on-its-own-drift.md
+[ADR-0070]: 0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md#6-the-layout-reached-before-10
 [#1458]: https://github.com/JN0V/workline/issues/1458
 [#1459]: https://github.com/JN0V/workline/issues/1459
 [#1461]: https://github.com/JN0V/workline/issues/1461
