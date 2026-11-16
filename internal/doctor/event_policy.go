@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -60,9 +61,9 @@ func blockedEvent(r *Report, o Options) {
 			Fix:     "allow pull_request_target for these workflow files in Settings → Actions → Policies (" + eventPolicyDoc + ")"})
 		return
 	}
-	if strings.Contains(string(pol), "pull_request_target") {
+	if policyAllows(pol, "pull_request_target", users) {
 		r.add(Check{Area: "repository", Rule: "event-policy", Where: where, Level: OK,
-			Message: "an Actions policy names pull_request_target: GitHub's block of the event in public repositories does not stop " + where})
+			Message: "an Actions policy allows pull_request_target for " + where + ": GitHub's block of the event in public repositories does not stop them"})
 		return
 	}
 	r.add(Check{Area: "repository", Rule: "event-blocked", Where: where, Level: Warn,
@@ -97,4 +98,103 @@ func triggersOn(data []byte, event string) bool {
 		}
 	}
 	return false
+}
+
+// policyAllows says whether the policies JSON holds, for every workflow
+// file in files, a policy that allows the event: it names the event, is not
+// a deny, and either targets no workflow path or targets one matching the file.
+func policyAllows(raw []byte, event string, files []string) bool {
+	var doc struct {
+		Policies []map[string]any `json:"policies"`
+	}
+	if json.Unmarshal(raw, &doc) != nil {
+		return false
+	}
+	for _, f := range files {
+		ok := false
+		for _, p := range doc.Policies {
+			if policyNames(p, event) && !policyDenies(p) && policyCovers(p, f) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func policyNames(v any, event string) bool {
+	switch x := v.(type) {
+	case string:
+		return x == event
+	case []any:
+		for _, c := range x {
+			if policyNames(c, event) {
+				return true
+			}
+		}
+	case map[string]any:
+		for k, c := range x {
+			if k == "conditions" {
+				continue
+			}
+			if policyNames(c, event) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func policyDenies(v any) bool {
+	switch x := v.(type) {
+	case map[string]any:
+		for k, c := range x {
+			lk := strings.ToLower(k)
+			if strings.Contains(lk, "deny") || strings.Contains(lk, "block") {
+				return true
+			}
+			if policyDenies(c) {
+				return true
+			}
+		}
+	case []any:
+		for _, c := range x {
+			if policyDenies(c) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// policyCovers says whether the policy's workflow_path conditions reach the
+// file: no condition covers every file; an include must match, an exclude must not.
+func policyCovers(p map[string]any, file string) bool {
+	cond, _ := p["conditions"].(map[string]any)
+	wp, _ := cond["workflow_path"].(map[string]any)
+	if wp == nil {
+		return true
+	}
+	match := func(key string) (listed, hit bool) {
+		list, _ := wp[key].([]any)
+		for _, e := range list {
+			if pat, ok := e.(string); ok {
+				listed = true
+				if m, _ := path.Match(pat, file); m || pat == file {
+					hit = true
+				}
+			}
+		}
+		return
+	}
+	if _, hit := match("exclude"); hit {
+		return false
+	}
+	if listed, hit := match("include"); listed && !hit {
+		return false
+	}
+	return true
 }
