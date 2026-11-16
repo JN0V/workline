@@ -1478,6 +1478,14 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		}
 		if acted {
 			res.Applied = append(res.Applied, in.Kind)
+			// A role on the shared steps has its acts kept, in the form
+			// the weekly sample draws from (ADR-0070).
+			if !hasScript(r, "post") {
+				if err := keepAct(st.Repo, filepath.Base(runDir), r.Name, st, i, in, f); err != nil {
+					res.Findings = append(res.Findings, verdict.Finding{Rule: "act-not-kept", Level: "warn",
+						Message: fmt.Sprintf("an act of %s could not be kept for the weekly sample: %v", r.Name, err)})
+				}
+			}
 		}
 		return false, nil
 	}
@@ -3610,7 +3618,8 @@ func phase(role, step string) {
 func script(r *role.Role, step, repo string, env []string) (int, error) {
 	path := filepath.Join(r.Dir, step)
 	if _, err := os.Stat(path); err != nil {
-		return 0, fmt.Errorf("role %q has no %s script", r.Name, step)
+		// No script: the shared step runs in its place (ADR-0070).
+		return sharedStep(r, step, repo, env)
 	}
 	phase(r.Name, step)
 	cmd := exec.Command(path)

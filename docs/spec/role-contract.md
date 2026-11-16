@@ -38,6 +38,24 @@ roles/<name>/
 `pre` and `post` are executables in any language. The engine runs them; it does
 not care what they are written in.
 
+Both are optional ([ADR-0070](../adr/0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md)):
+a role with no `pre` runs on the engine's shared one, a role with no `post` on
+the shared one, each on its own. A role of files alone, `role.yaml` and prompts,
+runs with `workline run-role` and in CI like any other.
+
+- **The shared `pre`** reads the role's `inputs`, writes them with the role's
+  mission to `in/task.md`, the role's `context.skills` to `in/skills`. An input
+  it cannot read, or a prompt the role names and lacks, ends the run, said.
+- **The shared `post`** passes what the agent answered (the engine has already
+  checked each proposal against `intentions` and `duties`, and applies
+  nothing before the apply step), blocks on a refusal or an unreadable answer,
+  and with agent `none` follows `without-ai`: `report` (the default) says what
+  it skipped.
+- **Its acts** are kept by the apply step, one line each (role, kind, day,
+  what it was on) in `acts.jsonl` of the runs folder. The weekly sample draws
+  them one in ten per kind, and the auditor re-checks each against the
+  role's `criteria/<kind>.md` (or `kinds/<kind>.md`), else a generic question.
+
 ## Where roles come from
 
 A role is a folder, so it can live anywhere git can reach. A project says which
@@ -73,6 +91,10 @@ name: committer
 mission: One sentence a newcomer understands.
 
 events: [commit-msg, merge-request]   # what the role can be run on
+
+inputs: []                      # what the shared pre reads, for a role with no pre:
+                                # target (the issue or merge request the run is on),
+                                # commits (the range given), issues, issues:<label>
 
 requires: [git]                 # binaries that must be on PATH; anything beyond
                                 # git and the engine is declared here, visibly

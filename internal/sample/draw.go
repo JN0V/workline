@@ -12,6 +12,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
+	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 )
 
@@ -58,19 +59,20 @@ type Act struct {
 	// Verdict: true (it stands), false (proven wrong, with the
 	// material's words), unproven (said wrong, not proven: for a person),
 	// or not-read (for a person, Why says why).
-	Verdict      string     `json:"verdict"`
-	Why          string     `json:"why,omitempty"`
-	Judge        string     `json:"judge,omitempty"`
-	Model        string     `json:"model,omitempty"`
-	Independence string     `json:"independence,omitempty"`
-	Proofs       []Proof    `json:"proofs,omitempty"`
-	Unproven     []Proof    `json:"unproven,omitempty"`
-	Panel        *Panel     `json:"panel,omitempty"`  // how a false verdict was settled
-	Defect       *Defect    `json:"defect,omitempty"` // a true finding its judge dropped, for an issue
-	key          string     // what it is ranked by, with the week
-	tester       *testerAct // a tester's act: what it is re-checked against
-	developer    *devAct    // the developer's code: what it is re-checked against
-	older        bool       // a product owner's act read without the record ADR-0046 completes: as its issue reads now
+	Verdict      string            `json:"verdict"`
+	Why          string            `json:"why,omitempty"`
+	Judge        string            `json:"judge,omitempty"`
+	Model        string            `json:"model,omitempty"`
+	Independence string            `json:"independence,omitempty"`
+	Proofs       []Proof           `json:"proofs,omitempty"`
+	Unproven     []Proof           `json:"unproven,omitempty"`
+	Panel        *Panel            `json:"panel,omitempty"`  // how a false verdict was settled
+	Defect       *Defect           `json:"defect,omitempty"` // a true finding its judge dropped, for an issue
+	key          string            // what it is ranked by, with the week
+	tester       *testerAct        // a tester's act: what it is re-checked against
+	developer    *devAct           // the developer's code: what it is re-checked against
+	older        bool              // a product owner's act read without the record ADR-0046 completes: as its issue reads now
+	generic      *engine.ActRecord // an act of a role on the shared steps: what the engine kept of it (ADR-0070)
 }
 
 // Count is how many acts of a role's kind the window held, and how many
@@ -558,6 +560,11 @@ func actsOfTheWindow(o Options, res *Result, h *heads, commits []string, first, 
 		}
 	}
 	res.NotDrawn = append(res.NotDrawn, h.unread...)
+	generic, err := genericActs(engine.RunsDir(o.Repo), first, end)
+	if err != nil {
+		notDrawn("the acts of the roles that are files alone: " + err.Error())
+	}
+	acts = append(acts, generic...)
 	var own []string
 	for _, c := range commits {
 		if !h.squash[c] {
@@ -642,4 +649,22 @@ func oneLine(t string, max int) string {
 		t = string(r[:max]) + "…"
 	}
 	return t
+}
+
+// genericActs are the acts of the roles that run on the shared pre and
+// post (ADR-0070), on the days [first, end) — end "" reaching now — as the
+// engine kept them: drawn by role and kind like any other's. A role with
+// code of its own keeps its record in its own way and is read as before.
+func genericActs(runsDir, first, end string) ([]Act, error) {
+	recs, err := engine.ReadActs(runsDir)
+	var out []Act
+	for i := range recs {
+		r := recs[i]
+		if r.Day < first || (end != "" && r.Day >= end) {
+			continue
+		}
+		out = append(out, Act{Role: r.Role, Kind: r.Kind, Ref: r.Ref, Day: r.Day, By: r.By, Line: r.Line,
+			key: fmt.Sprintf("%s\x00%d\x00%s", r.Run, r.Index, r.Kind), generic: &r})
+	}
+	return out, err
 }

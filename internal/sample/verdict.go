@@ -84,6 +84,9 @@ type material struct {
 // kindOf is the facet an act is asked with; "" when ADR-0046 sets its kind
 // no question.
 func kindOf(a Act) string {
+	if a.generic != nil {
+		return a.Kind // a role of files alone: one question a kind (ADR-0070)
+	}
 	switch a.Role {
 	case reviewRole:
 		return "finding"
@@ -113,7 +116,10 @@ func kindOf(a Act) string {
 
 // facet is a kind's question: the project's own (.workline/roles/auditor/
 // kinds/<kind>.md), else the role's.
-func (rd *reader) facet(kind string) (string, error) {
+func (rd *reader) facet(a Act, kind string) (string, error) {
+	if a.generic != nil {
+		return rd.genericFacet(a.Role, kind), nil
+	}
 	for _, dir := range []string{filepath.Join(rd.o.Repo, ".workline", "roles", "auditor"), rd.auditor.Dir} {
 		if data, err := os.ReadFile(filepath.Join(dir, "kinds", kind+".md")); err == nil {
 			return strings.TrimSpace(string(data)), nil
@@ -134,7 +140,7 @@ func (rd *reader) readAct(a *Act) {
 		a.Why = noJudge
 		return
 	}
-	facet, err := rd.facet(kind)
+	facet, err := rd.facet(*a, kind)
 	if err != nil {
 		a.Why = err.Error() + "; for a person"
 		return
@@ -364,6 +370,9 @@ func (m *material) task() string {
 // again; why, when it cannot be.
 func (rd *reader) material(a *Act, kind string) (*material, string) {
 	m := &material{holds: "true"}
+	if a.generic != nil {
+		return m, rd.genericAct(a, m)
+	}
 	switch a.Role {
 	case reviewRole:
 		return m, rd.finding(a, m)
@@ -736,4 +745,52 @@ func actFinding(a Act) verdict.Finding {
 		return verdict.Finding{Rule: "act-unproven", Where: where, Message: actWords(a) + " — said wrong, not proven: " + strings.Join(lines, "; ") + "; for a person" + who}
 	}
 	return verdict.Finding{Rule: "sample-not-read", Where: where, Message: actWords(a) + "; " + a.Why}
+}
+
+// genericQuestion is the question of a kind of act its role gives none for:
+// the act holds against what it was done on.
+const genericQuestion = "Does the act hold against what it was done on? Answer with one note, starting with `true` when it holds: it says what the material shows, it changes nothing the role may not, and nothing in it is invented; or with `false` when it does not, then a claim quoting, word for word, the material that shows it."
+
+// genericFacet is the question of a kind of act of a role of files alone:
+// the project's own (.workline/roles/<role>/kinds/<kind>.md), else the
+// role's (kinds/<kind>.md), else genericQuestion. The auditor's own kinds
+// are not looked in: they are those of the roles with code of their own
+// (ADR-0070).
+func (rd *reader) genericFacet(roleName, kind string) string {
+	dirs := []string{filepath.Join(rd.o.Repo, ".workline", "roles", roleName)}
+	if r, err := role.Load(rd.o.RolesDir, roleName); err == nil {
+		dirs = append(dirs, r.Dir)
+	}
+	for _, dir := range dirs {
+		for _, folder := range []string{"criteria", "kinds"} {
+			if data, err := os.ReadFile(filepath.Join(dir, folder, kind+".md")); err == nil {
+				return strings.TrimSpace(string(data))
+			}
+		}
+	}
+	return genericQuestion
+}
+
+// genericAct is the material of an act of a role of files alone: what the
+// engine kept of it, and the issue or merge request it was on as it reads
+// now, or the files it wrote.
+func (rd *reader) genericAct(a *Act, m *material) string {
+	rec := a.generic
+	m.author, m.acted = actedBy(a.By)
+	m.act = fmt.Sprintf("The %s's `%s` on %s, on %s: %s", a.Role, a.Kind, a.Ref, a.Day, a.Line)
+	m.about = "What the act was done on, as it reads now."
+	if rec.Target == "issue" && rec.Number > 0 {
+		if rd.o.Forge == nil {
+			return "no forge to read the issue from"
+		}
+		is, err := rd.o.Forge.Issue(rec.Number)
+		if err != nil {
+			return fmt.Sprintf("%s could not be read: %v", a.Ref, err)
+		}
+		m.items = append(m.items, issueItem(is))
+		return ""
+	}
+	m.about = "The act is the material: it was done on no issue."
+	m.items = append(m.items, item{name: "act", text: a.Line, full: a.Line})
+	return ""
 }

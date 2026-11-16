@@ -26,6 +26,9 @@ type Role struct {
 	Requires   []string `yaml:"requires"`
 	Uses       []string `yaml:"uses"`
 	Intentions []string `yaml:"intentions"`
+	// Inputs are what the shared pre reads for a role with no pre script
+	// (ADR-0070): target, commits, issues.
+	Inputs []string `yaml:"inputs"`
 	// PartIntentions are what a part of a question may answer with
 	// (in/parts): claims when unset; a reviewer's lens answers findings.
 	PartIntentions []string `yaml:"part-intentions"`

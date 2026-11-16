@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -247,9 +248,15 @@ func draw(o Options, res *Result) error {
 		a := &res.Drawn[i]
 		queue[a.Role] = append(queue[a.Role], func() { rd.readAct(a) })
 	}
+	order := slices.Clone(roleOrder)
+	for _, a := range res.Drawn { // a role of files alone, after the others
+		if a.generic != nil && !slices.Contains(order, a.Role) {
+			order = append(order, a.Role)
+		}
+	}
 	for round, more := 0, true; more; round++ {
 		more = false
-		for _, r := range roleOrder {
+		for _, r := range order {
 			if round < len(queue[r]) {
 				queue[r][round]()
 				more = true
@@ -628,7 +635,7 @@ func (rd *reader) readOne(c candidate) Read {
 		r.Verdict, r.Why = "not-read", "no judge is set (--judge, WORKLINE_JUDGE, or the `sample.judge` setting): for a person to read against its sources"
 		return r
 	}
-	question, err := rd.facet("checked")
+	question, err := rd.facet(Act{}, "checked")
 	if err != nil {
 		r.Verdict, r.Why = "not-read", err.Error()+"; for a person"
 		return r
