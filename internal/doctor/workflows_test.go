@@ -24,6 +24,15 @@ func TestWorkflowsOutdatedOrMissing(t *testing.T) {
 		for _, e := range strings.Fields(routes) {
 			body += "      - run: workline route " + e + "\n"
 		}
+		if pin == "v0.71.0" { // a copy of this release: the template, as shipped
+			tpl, err := os.ReadFile(filepath.Join("..", "..", "defaults", "ci", "github", name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			body = pinLine.ReplaceAllStringFunc(string(tpl), func(l string) string {
+				return strings.Replace(l, pinLine.FindStringSubmatch(l)[1], pin, 1)
+			})
+		}
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
 			t.Fatal(err)
 		}
