@@ -1,0 +1,55 @@
+case: merge/local-blocked-in-conflict-goes-to-the-round
+about: >
+  With `forge: local` at `normal`, `!2` has a line verdict on its head
+  that blocks on proof-over-time, and main, which raised
+  suite-max-seconds, also changed lib.sh where `!2` did: git meets a
+  conflict. The engine does not merge main in: `workline follow` says
+  the conflict on `!2`, its branch left as it is. The reconciler then
+  runs the developer's merge round, as for any conflict: its agent
+  settles lib.sh, and the engine commits the merge, two parents, the
+  branch's head first, main second.
+given:
+  repo: local-fix
+  setup:
+    - |
+      mkdir -p .workline && cat > .workline/config.yaml <<'CFG'
+      forge: local
+      merge: {autonomy: normal}
+      roles:
+        tester:
+          settings:
+            test-command: "sh run-tests.sh {report}"
+            suite-max-seconds: 1500
+      routing: {events: {issue: [developer]}}
+      CFG
+      printf 'add() { echo $(($1 + $2)); }\nsub() { echo $(($1 - $2)); }\n' > lib.sh
+      printf '. ./lib.sh\n[ "$(sub 5 3)" = 2 ]\n' > tests/test_sub.sh
+      echo notes > NOTES.md
+      git add .workline lib.sh NOTES.md tests/test_sub.sh && git commit -qm 'feat: sub, and a higher suite cap'
+    - |
+      head=$(git rev-parse workline/developer/3) && cat > .git/verdict.json <<EOF
+      {"head": "$head", "status": "block", "steps": [{"name": "tester", "status": "block", "findings": [{"rule": "proof-over-time", "where": "suite-max-seconds", "message": "the run on the head stopped at the cap suite-max-seconds (1 s): raise suite-max-seconds in the tester's settings"}]}], "findings": [{"rule": "proof-over-time", "where": "suite-max-seconds", "message": "the run on the head stopped at the cap suite-max-seconds (1 s): raise suite-max-seconds in the tester's settings"}]}
+      EOF
+run:
+  sh: >
+    head=$(git rev-parse workline/developer/3);
+    workline follow --base main --verdict .git/verdict.json &&
+    test "$(git rev-parse workline/developer/3)" = "$head" && echo branch-kept &&
+    workline route reconcile --ai "cmd:sh $FIXTURES/agents/developer-settles-conflict.sh" &&
+    git rev-list --parents -n 1 workline/developer/3 | wc -w &&
+    git merge-base --is-ancestor main workline/developer/3 && echo main-in &&
+    git merge-base --is-ancestor $head workline/developer/3 && echo head-kept
+expect:
+  exit: 0
+  stderr:
+    - "merge-conflict !2 (warn): it conflicts with main in lib.sh: not merged; the developer's next round merges main in and settles it"
+    - "1 review round due, run: merge request 2"
+  stderr-lacks: ["merged-at-once", "merged-from-base"]
+  stdout: ["branch-kept\n"]
+  branches:
+    workline/developer/3:
+      lib.sh: "sub() { echo $(($1 - $2)); }\nmul() { echo $(($1 * $2)); }"
+      NOTES.md: "notes"
+  files:
+    .git/workline/merge-requests/2.md:
+      contains: ["**Not merged: it conflicts with main**", "workline:conflict head="]

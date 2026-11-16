@@ -57,7 +57,7 @@ func TestGitHubMainAfterAMergeRunsOnce(t *testing.T) {
 		}
 		return wf
 	}
-	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
 		wf := read(dir + "workline.yml")
 		if fmt.Sprint(wf.On["push"]) != "map[branches:[main]]" {
 			t.Errorf("%sworkline.yml: no run on a push to main (%v)", dir, wf.On["push"])
@@ -187,7 +187,7 @@ func TestGitHubMainAfterAMergeRunsOnce(t *testing.T) {
 }
 
 func TestGitLabMainAfterAMergeRunsOnce(t *testing.T) {
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +276,7 @@ func TestGitLabMainAfterAMergeRunsOnce(t *testing.T) {
 // merge base's alone. The bot's token reads where set, else the job's; a
 // file not served leaves none behind, and the gates' job says so.
 func TestGitLabStoredBaseCarriedAndPruned(t *testing.T) {
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}

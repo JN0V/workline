@@ -15,7 +15,7 @@ import (
 // the heartbeat, by hand or once due, no agent, a read token, and starts
 // each due issue's run.
 func TestLineOfStatesChainsAndReconciles(t *testing.T) {
-	for _, file := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
+	for _, file := range []string{"../../defaults/ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
 		data, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatal(err)
@@ -189,7 +189,7 @@ func startsOnce(t *testing.T, file string, data []byte) {
 
 // The night's states moved: their next steps started once each (#806).
 func TestGardeningStartsEachIssueOnce(t *testing.T) {
-	for _, file := range []string{"../../ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+	for _, file := range []string{"../../defaults/ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
 		data, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatal(err)

@@ -12,11 +12,22 @@ import (
 // `Closes #4`, `fixes: #4`, `Resolved #4`. `Refs #4` closes nothing.
 var closing = regexp.MustCompile(`(?i)\b(?:clos(?:e|es|ed|ing)|fix(?:es|ed|ing)?|resolv(?:e|es|ed|ing)|implement(?:s|ed|ing)?):?\s+#(\d+)\b`)
 
+// githubClosing is the closing words of GitHub: `implement` is GitLab's.
+var githubClosing = regexp.MustCompile(`(?i)\b(?:clos(?:e|es|ed|ing)|fix(?:es|ed|ing)?|resolv(?:e|es|ed|ing)):?\s+#(\d+)\b`)
+
 // Closes are the issues the texts say the change closes, once each, in order.
-func Closes(texts ...string) []int {
+func Closes(texts ...string) []int { return ClosesOn("", texts...) }
+
+// ClosesOn is Closes as the named forge reads the words: GitHub does not
+// read `implements` as closing, the others do.
+func ClosesOn(kind string, texts ...string) []int {
+	re := closing
+	if kind == "github" {
+		re = githubClosing
+	}
 	var ids []int
 	for _, t := range texts {
-		for _, m := range closing.FindAllStringSubmatch(t, -1) {
+		for _, m := range re.FindAllStringSubmatch(t, -1) {
 			if n, err := strconv.Atoi(m[1]); err == nil && !slices.Contains(ids, n) {
 				ids = append(ids, n)
 			}

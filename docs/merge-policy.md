@@ -1,6 +1,6 @@
 ---
-sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 74dc6bec
+sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, defaults/ci/github/workline-apply.yml, defaults/ci/github/workline-merge.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
+checked: 58246a06
 verified: agent:claude-code
 ---
 # The merge policy
@@ -87,6 +87,23 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **A push after the yes takes it back**: auto-merge off, the label off,
   one comment. When each head was pushed is the forge's word: GitHub's
   repository activity, GitLab's versions.
+- **A release tool's rebuild is no push**: the release merge request
+  (`FollowOptions.Release`) is force-pushed on each merge to the base, and
+  its yes holds on the rebuilt head when the rebuild adds only what the
+  line merged by itself:
+  - the rebuilt head is one commit on the base, and every base commit
+    between the covered head's base and the new one came from a merged
+    pull request that carried no person's yes label; a feature, a task, a
+    commit with no merged pull request (a direct push, a hand merge) or
+    one that cannot be read needs a yes;
+  - its tree is the covered head's change redone on the new base, but for
+    the files the release tool's own commit changed on the covered head
+    (its version and changelog files); any other file changed takes the
+    yes off.
+
+  When the yes is taken off, the comment names the added commit or the
+  file that caused it. A merge request that is not a release is as
+  above: any push after the yes takes it back.
 - **Each yes label by its own pushes**: `workline:accepted` put before a
   push and `workline:accepted-whole` after it, only the stale one goes
   off; the other covers the head and stands.

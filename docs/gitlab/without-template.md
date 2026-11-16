@@ -1,5 +1,5 @@
 ---
-sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
+sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
 checked: 8538d558
 verified: agent:claude-code
 judged: bf016b7
@@ -13,7 +13,7 @@ project that does not include the template.
 
 ```yaml
 stages: [test, deploy]
-variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.78.1, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}  # x-release-please-version
+variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.78.2, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}  # x-release-please-version
 .workline:
   image: ghcr.io/jn0v/workline:$WORKLINE_VERSION
   rules: [{if: '$CI_PIPELINE_SOURCE =~ /^(api|trigger|pipeline|parent_pipeline)$/ && $WORKLINE_TASK'}]

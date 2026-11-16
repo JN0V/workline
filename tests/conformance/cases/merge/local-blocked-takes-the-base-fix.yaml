@@ -1,0 +1,53 @@
+case: merge/local-blocked-takes-the-base-fix
+about: >
+  With `forge: local` at `normal`, `!2`, the developer's fix for bug #3,
+  has a line verdict on its head that blocks: the tester's run stopped
+  at the cap suite-max-seconds (proof-over-time). main has since raised
+  that setting, and `!2` changes none of main's files, so it merges with
+  main with no conflict. `workline follow` does not leave it waiting for
+  a person to update its branch: it merges main into the branch, a merge
+  commit, the branch's head first, main second, nothing rewritten, and
+  merges nothing into main yet. The reconciler then runs the line again
+  on that new head, its verdict kept, and the next `follow` merges it.
+given:
+  repo: local-fix
+  setup:
+    - |
+      mkdir -p .workline && cat > .workline/config.yaml <<'CFG'
+      forge: local
+      merge: {autonomy: normal}
+      roles:
+        tester:
+          settings:
+            test-command: "sh run-tests.sh {report}"
+            suite-max-seconds: 1500
+      routing: {events: {merge-request: [committer, reviewer]}}
+      CFG
+      git add .workline && git commit -qm 'chore: raise the suite cap to 1500 s'
+    - |
+      head=$(git rev-parse workline/developer/3) && cat > .git/verdict.json <<EOF
+      {"head": "$head", "status": "block", "steps": [{"name": "tester", "status": "block", "findings": [{"rule": "proof-over-time", "where": "suite-max-seconds", "message": "the run on the head stopped at the cap suite-max-seconds (1 s): raise suite-max-seconds in the tester's settings"}]}], "findings": [{"rule": "proof-over-time", "where": "suite-max-seconds", "message": "the run on the head stopped at the cap suite-max-seconds (1 s): raise suite-max-seconds in the tester's settings"}]}
+      EOF
+run:
+  sh: >
+    head=$(git rev-parse workline/developer/3);
+    workline follow --base main --verdict .git/verdict.json &&
+    git rev-list --parents -n 1 workline/developer/3 | wc -w &&
+    git merge-base --is-ancestor main workline/developer/3 && echo main-in &&
+    git merge-base --is-ancestor $head workline/developer/3 && echo head-kept &&
+    workline route reconcile --ai "fake:$FIXTURES/agents/review-nothing.yaml" &&
+    workline follow --base main &&
+    git merge-base --is-ancestor workline/developer/3 main && echo merged
+expect:
+  exit: 0
+  stderr:
+    - "1 merge-request line run on a new head"
+    - "line-ran !2: its merge-request line ran on"
+    - "merged-at-once !2"
+    - "issue-closed"
+  stdout: ["3\nmain-in\nhead-kept\nmerged\n"]
+  files:
+    lib.sh: {contains: "mul()"}
+    .workline/config.yaml: {contains: "suite-max-seconds: 1500"}
+    .git/workline/issues/3.md: {contains: "state: closed"}
+    .git/workline/merge-requests/2.md: {contains: "state: merged"}

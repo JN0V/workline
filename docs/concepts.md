@@ -1,5 +1,5 @@
 ---
-sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, routing.default.yaml]
+sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, defaults/routing.yaml]
 checked: 8538d558
 verified: agent:claude-code
 judged-in-parts: 5d66009
@@ -23,7 +23,7 @@ The words the other pages use, each in a few lines. The rules behind them:
   workline never watches for events: a hook, a CI job or you run the
   command for one ([triggers](triggers.md)).
 - **Routing, the line** — which roles run, in order, for an event
-  (`routing.default.yaml`, changed in `.workline/config.yaml`). `workline
+  (`defaults/routing.yaml`, changed in `.workline/config.yaml`). `workline
   route <event>` runs the line; the first step that does not pass stops it,
   but on `schedule` and `main`, where every step runs and the worst verdict stands
   ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)); there, a

@@ -1,0 +1,46 @@
+case: merge/local-blocked-merged-with-the-base-not-merged-again
+about: >
+  With `forge: local` at `normal`, `!2` blocked on proof-over-time takes
+  the main that raised suite-max-seconds: one merge commit on its
+  branch. Its new head is blocked again; main is unchanged. The next
+  `follow` and the next reconcile merge nothing more, move its branch no
+  more, and run its line no more: the head stays the one merge commit,
+  no loop of merges, nothing merged into main.
+given:
+  repo: local-fix
+  setup:
+    - |
+      mkdir -p .workline && cat > .workline/config.yaml <<'CFG'
+      forge: local
+      merge: {autonomy: normal}
+      roles:
+        tester:
+          settings:
+            test-command: "sh run-tests.sh {report}"
+            suite-max-seconds: 1500
+      routing: {events: {merge-request: [committer, reviewer]}}
+      CFG
+      git add .workline && git commit -qm 'chore: raise the suite cap to 1500 s'
+    - |
+      head=$(git rev-parse workline/developer/3) && cat > .git/verdict.json <<EOF
+      {"head": "$head", "status": "block", "steps": [{"name": "tester", "status": "block", "findings": [{"rule": "proof-over-time", "where": "suite-max-seconds", "message": "the run on the head stopped at the cap suite-max-seconds (1 s): raise suite-max-seconds in the tester's settings"}]}], "findings": [{"rule": "proof-over-time", "where": "suite-max-seconds", "message": "the run on the head stopped at the cap suite-max-seconds (1 s): raise suite-max-seconds in the tester's settings"}]}
+      EOF
+run:
+  sh: >
+    head=$(git rev-parse workline/developer/3);
+    workline follow --base main --verdict .git/verdict.json &&
+    new=$(git rev-parse workline/developer/3) &&
+    test "$new" != "$head" &&
+    sed "s/$head/$new/" .git/verdict.json > .git/verdict2.json &&
+    workline follow --base main --verdict .git/verdict2.json &&
+    workline route reconcile --ai none &&
+    test "$(git rev-parse workline/developer/3)" = "$new" && echo head-kept &&
+    git rev-list --parents -n 1 workline/developer/3 | wc -w &&
+    (git merge-base --is-ancestor workline/developer/3 main || echo not-merged)
+expect:
+  exit: 0
+  stderr-lacks: ["line-ran", "round-ran", "merged-at-once"]
+  stdout: ["head-kept\n3\nnot-merged\n"]
+  files:
+    lib.sh: {lacks: "mul()"}
+    .git/workline/merge-requests/2.md: {contains: "state: open"}

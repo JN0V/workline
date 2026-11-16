@@ -1,0 +1,24 @@
+case: documentalist/too-large-said-once
+about: "A doc too large to be judged, left to a person, is said so on the merge request's first head; on a new head that changes neither the doc nor its sources, the line is not said again: the finding says the doc and its sources are unchanged since."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q --detach"
+  config: {roles: {documentalist: {settings: {judge-in-parts: false}}}}
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run:
+  role: documentalist
+  event: merge-request
+  target: {merge-request: 1}
+  ai: "fake:parts-contradiction"
+  then: again
+  again-after:
+    - "echo notes > NOTES.txt && git add NOTES.txt && git commit -qm 'chore: add notes' && git push -q origin HEAD:feature"
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "unchanged since"}

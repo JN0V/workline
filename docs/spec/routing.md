@@ -1,5 +1,5 @@
 ---
-sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
+sources: [internal/line, internal/routing, internal/work, defaults/routing.yaml]
 checked: 07ca9b9b
 verified: agent:claude-code
 ---
@@ -75,7 +75,7 @@ prototypes happen there, and their outcome is a refined item, not merged code.
 
 ## The line
 
-workline ships a default line (`routing.default.yaml`); a project changes it in
+workline ships a default line (`defaults/routing.yaml`); a project changes it in
 the `routing:` section of `.workline/config.yaml`. An event it lists replaces
 the default one; a `handoffs` list it gives replaces the default list — an
 empty list forbids every handoff. `workline route <event>` runs an event's
@@ -734,7 +734,7 @@ webhook on GitLab ([#1414](https://github.com/JN0V/workline/issues/1414)).
 
 - **`revisit`** (7): the days a blocked issue waits with nothing new
   before the product owner reads it again; `0`: never, a person moves
-  it out. Shipped in `routing.default.yaml`, a project's
+  it out. Shipped in `defaults/routing.yaml`, a project's
   `routing: revisit:` replacing it; a negative one is refused
   (`config-invalid`). Read only where the project routes
   the product owner on `issue`.
@@ -837,7 +837,7 @@ blocked; its parts close in their own runs.
 a step starts only when the state it moves the issue to has room.
 
 - **`wip`**: a limit per state, the open issues it holds at most.
-  Shipped: `ready: 5`, in `routing.default.yaml`; a project's
+  Shipped: `ready: 5`, in `defaults/routing.yaml`; a project's
   `routing: wip:` is laid over it state by state, `0` lifting one. A
   limit on no state of the table is refused, and so are limits on every
   state of a ring of `next`: each would wait on the next, for good.

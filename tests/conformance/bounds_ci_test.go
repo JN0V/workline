@@ -18,7 +18,7 @@ import (
 // on the pull request by a job apart, the App's key in its environment,
 // at the head the check read. In the template and in workline's own.
 func TestCIGitHubBoundsCheckFromBase(t *testing.T) {
-	for _, f := range []string{"../../ci/github/workline-bounds.yml", "../../.github/workflows/workline-bounds.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-bounds.yml", "../../.github/workflows/workline-bounds.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -113,7 +113,7 @@ func TestCIGitHubBoundsCheckFromBase(t *testing.T) {
 // include it on Ultimate, CODEOWNERS own it on Premium. The doctor reads
 // the tier (cases setup/doctor-bounds-guard-*).
 func TestCIGitLabBoundsGuardByTier(t *testing.T) {
-	data, err := os.ReadFile("../../ci/gitlab/workline-bounds.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline-bounds.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}

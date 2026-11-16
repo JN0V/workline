@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/measure.go, internal/tester/coverage.go, ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml]
+sources: [internal/tester/measure.go, internal/tester/coverage.go, defaults/ci/github/workline-gardening.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
 checked: 9cf386a3
 verified: agent:claude-code
 ---
@@ -61,10 +61,10 @@ checkout apart:
 - **Opt-in**: the variable `WORKLINE_CURATOR` set to `on`, the
   `test-command` set, the test runner installed in the job.
 - **GitHub**: the `curator` job of
-  [workline-gardening.yml](../../../ci/github/workline-gardening.yml);
+  [workline-gardening.yml](../../../defaults/ci/github/workline-gardening.yml);
   it reads the last run's artifact (`actions: read`), writes nothing.
 - **GitLab**: `workline:curator` in
-  [the template](../../../ci/gitlab/workline.gitlab-ci.yml); its image
+  [the template](../../../defaults/ci/gitlab/workline.gitlab-ci.yml); its image
   needs your test runner.
 
 ## Settings

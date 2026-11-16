@@ -6,8 +6,8 @@ sources:
   - internal/developer/worktree.go
   - internal/developer/words.go
   - internal/developer/prbounds.go
-  - ci/github/workline-bounds.yml
-  - ci/gitlab/workline-bounds.gitlab-ci.yml
+  - defaults/ci/github/workline-bounds.yml
+  - defaults/ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go
 checked: 8ddc4e54
 verified: agent:claude-code
@@ -157,8 +157,11 @@ what each agent gets: [the agent](agent.md)).
 
 ## On the pull request
 
-The same rules hold on its pull request, as a check: whoever pushed
-its commits, the agent, a person or the engine
+The same rules hold on its pull request, as a check, on the agent's
+commits. A guarded file (`steering-file`, `gate-file`) that only a
+person's commits changed (none carries `Workline-Role`, and neither its author nor its committer is a bot) does not block:
+the check says a person wrote it, and it merges on the person's
+`workline:accepted` alone. The agent's is refused
 ([ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#4-the-developers-bounds-become-a-check-on-its-pull-request)).
 The check above, before the push, stays a fast first pass.
 
@@ -189,7 +192,7 @@ The check above, before the push, stays a fast first pass.
 
 ### In CI
 
-- **GitHub**: [workline-bounds.yml](../../../ci/github/workline-bounds.yml),
+- **GitHub**: [workline-bounds.yml](../../../defaults/ci/github/workline-bounds.yml),
   the check `workline bounds`; require it on the default branch, its
   source GitHub Actions ([set up](../../../docs/ci-github.md#set-up)).
   - It runs on `pull_request_target`: the default branch's copy of
@@ -203,7 +206,7 @@ The check above, before the push, stays a fast first pass.
     second check of that name: both are required, so the red one
     still blocks.
 - **GitLab**: the job `workline:bounds`
-  ([the file](../../../ci/gitlab/workline-bounds.gitlab-ci.yml)). GitLab
+  ([the file](../../../defaults/ci/gitlab/workline-bounds.gitlab-ci.yml)). GitLab
   runs a merge request's pipeline from its own branch: a pipeline
   execution policy (Ultimate) or code owners (Premium) keep the job;
   on Free, the review. `workline doctor` reads the tier
