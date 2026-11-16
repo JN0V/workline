@@ -114,16 +114,18 @@ func policyAllows(raw []byte, event string, files []string) bool {
 	}
 	doc.Policies = append(doc.Policies, doc.Rules...)
 	for _, f := range files {
+		// a deny that covers the file fails it, whatever else allows it
+		for _, p := range doc.Policies {
+			if policyNames(p, event) && policyCovers(p, f) && policyDenies(p) {
+				return false
+			}
+		}
 		ok := false
 		for _, p := range doc.Policies {
-			if !policyNames(p, event) || !policyCovers(p, f) {
-				continue
-			}
-			if policyDenies(p) {
-				ok = false
+			if policyNames(p, event) && policyCovers(p, f) {
+				ok = true
 				break
 			}
-			ok = true
 		}
 		if !ok {
 			return false
