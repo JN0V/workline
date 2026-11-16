@@ -78,6 +78,9 @@ type Result struct {
 	Woke   map[int]string `json:"woke,omitempty"`
 	Forge  string         `json:"forge,omitempty"`
 	Due    []int          `json:"due,omitempty"`
+	// ReadyBelow: with `--input room=true`, Ready holds fewer open issues
+	// than its target (routing.wip), so a backlog run is due (#1549).
+	ReadyBelow bool `json:"ready-below-target,omitempty"`
 	// Waiting: the issues waiting on a time, a question's delay before
 	// the product owner takes its assumption (ADR-0060): not due now,
 	// but the next reconcile must look again.

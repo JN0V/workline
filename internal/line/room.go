@@ -118,6 +118,7 @@ func roomDue(res *Result, cfg *routing.Config, o engine.Options) []int {
 		unread(err)
 		return nil
 	}
+	res.ReadyBelow = readyBelow(cfg, issues)
 	backlog.Order(issues)
 	x, t := newScopeIndex(o.Repo), newTallyFor(o)
 	full := map[string]bool{}
@@ -172,4 +173,29 @@ func roomSaid(woken []int) string {
 		said += " #" + strconv.Itoa(n)
 	}
 	return said
+}
+
+// readyState is the state the product owner fills and the developer takes
+// from: its limit, routing.wip, is the target the backlog run refills to.
+const readyState = "ready"
+
+// readyBelow says whether Ready holds fewer open issues than its limit
+// (strictly): the job that moved an issue out of it then starts the
+// backlog run (#1549). Never with no limit on Ready (no target is known),
+// nor with the product owner off the schedule line (no backlog run exists).
+func readyBelow(cfg *routing.Config, open []forge.Issue) bool {
+	if !slices.Contains(cfg.Events["schedule"], "product-owner") {
+		return false
+	}
+	limit := cfg.Limit(readyState)
+	if limit <= 0 {
+		return false
+	}
+	n := 0
+	for _, is := range open {
+		if st, ok := cfg.StateOf(is.Labels); ok && st.Name == readyState {
+			n++
+		}
+	}
+	return n < limit
 }
