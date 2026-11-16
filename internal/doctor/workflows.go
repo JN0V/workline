@@ -74,7 +74,9 @@ func ciTemplates(r *Report, o Options, line *routing.Config) {
 		}
 		rel, _ := filepath.Rel(o.Repo, f)
 		if slices.Compare(pin, engine) == 0 {
-			if tpl, err := ci.Templates.ReadFile(strings.TrimPrefix(templateOf(rel), "defaults/ci/")); err == nil && !customised.Match(data) && withoutPin(tpl) != withoutPin(data) {
+			if rel == ".gitlab-ci.yml" {
+				// a person's own pipeline that carries the pin among its other jobs: never the template whole
+			} else if tpl, err := ci.Templates.ReadFile(strings.TrimPrefix(templateOf(rel), "defaults/ci/")); err == nil && !customised.Match(data) && withoutPin(tpl) != withoutPin(data) {
 				r.add(Check{Area: "repository", Rule: "workflow-behind", Where: rel, Level: Warn,
 					Message: fmt.Sprintf("%s differs from the template of workline %s beyond its pin: it was re-pinned, not re-copied, and runs what that template has since changed", rel, o.Engine),
 					Fix:     fmt.Sprintf("re-copy %s to %s, then reapply your changes (%s); if the difference is on purpose, add a `# workline:customised` comment line to %s to silence this", templateOf(rel), rel, templateURL(o.Engine, templateOf(rel)), rel)})

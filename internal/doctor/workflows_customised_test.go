@@ -37,7 +37,7 @@ func TestWorkflowBehindCleanCustomisedAndGitLab(t *testing.T) {
 	if c := behindChecks(t, gh, ghTpl, "\n# workline:customised\n# extra\n"); len(c) != 0 {
 		t.Errorf("acknowledged copy warned: %+v", c)
 	}
-	if c := behindChecks(t, ".gitlab-ci.yml", "defaults/ci/gitlab/workline.gitlab-ci.yml", "\n# extra\n"); len(c) != 1 || c[0].Rule != "workflow-behind" {
-		t.Errorf("gitlab copy behind: %+v", c)
+	if c := behindChecks(t, ".gitlab-ci.yml", "defaults/ci/gitlab/workline.gitlab-ci.yml", "\n# extra\n"); len(c) != 0 {
+		t.Errorf("gitlab pipeline with other content warned: %+v", c)
 	}
 }
