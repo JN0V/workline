@@ -1,0 +1,28 @@
+case: tester/write-test-command-leaves-out-the-folder
+about: >
+  A test the check never runs is not frozen: the project's test-command
+  runs the folder tests/ alone, its draft-command runs the folders of
+  the tests it is given ({packages}, #979). The tester's test is in
+  mul/, a folder test-command leaves out: the red proof, on the
+  draft-command, runs it and finds it red, but the pull request's own
+  check never would. It is not frozen as is: no branch is pushed, no
+  Draft opened with it.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}", test-paths: ["**/test_*.sh"],
+      draft-command: "sh \"$FIXTURES/bin/run-folders\" {report} {packages}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA test a scenario, in mul/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-mul-in.sh mul diff"}
+expect:
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
