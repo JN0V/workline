@@ -31,6 +31,8 @@ roles/<name>/
 ```
 
 - The top level holds README.md and what the engine loads, nothing else.
+- The target, reached before v1.0, is in [layout.md](layout.md):
+  `prompts/`, `criteria/`, `cases/` and `code/` in each role's folder.
 - A page about the role goes to `docs/`; `roles_test.go` fails otherwise.
 
 `pre` and `post` are executables in any language. The engine runs them; it does
