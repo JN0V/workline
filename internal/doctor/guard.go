@@ -231,7 +231,7 @@ func guardedList(r *Report, o Options, cfg *role.ProjectConfig, line *routing.Co
 	if !byPolicy && !routesRole(line, "developer") {
 		return
 	}
-	for _, p := range steer.CodeownersPlaces {
+	for _, p := range steer.PlacesOf(o.Repo) {
 		data, err := os.ReadFile(filepath.Join(o.Repo, p))
 		if err != nil {
 			continue
