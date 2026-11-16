@@ -41,6 +41,11 @@ write run the default branch's workflow, never a pull request's own
 
 ## Set up
 
+> **Before December 2, 2026, on a public repository**: add an Active
+> Actions event policy on `workline-bounds.yml` and `workline-merge.yml`
+> allowing `pull_request_target`, `issues` and `schedule`, or no pull
+> request merges ([how](github/pull-request-target.md)).
+
 1. **Copy the workflows** into `.github/workflows/`:
    - [workline.yml](../defaults/ci/github/workline.yml): `judge` on each pull
      request, its own run: no write token; it warns when no workflow
@@ -169,8 +174,8 @@ Where they differ from the templates: [workline's own workflows](github/own-work
 
 ## Public repositories and pull_request_target
 
-GitHub blocks `pull_request_target` by default in public repositories from December 2, 2026 (brownouts on November 9 and 16 before). `workline-bounds.yml` and `workline-merge.yml` run on it: blocked, their runs end in `startup_failure`, the required check `workline bounds` never reports and no pull request merges. Private and internal repositories are not affected.
-
-Before that date, in a public repository, allow the event for these two files only: Settings → Actions → Policies, a rule "Restrict events" with `pull_request_target` allowed, workflow file targeting `.github/workflows/workline-bounds.yml` and `.github/workflows/workline-merge.yml`. Or the REST API: `POST /repos/{owner}/{repo}/actions/policies`, rule `restrict_action_events`, `conditions.workflow_path.include` listing those two paths.
-
-`workline doctor` reads the policies of a public repository and warns when none allows the event.
+From December 2, 2026, GitHub blocks `pull_request_target` by default in
+public repositories: workline-bounds.yml and workline-merge.yml run on it,
+and no pull request merges. An Actions event policy allows it; it is an
+allow list, so it lists every event of the two files. What to set:
+[pull_request_target](github/pull-request-target.md).
