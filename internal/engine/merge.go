@@ -1387,7 +1387,7 @@ func personsCommentOpen(f forge.Forge, id int) (string, error) {
 		if c.Resolved || !tester.PersonsThread(c) {
 			continue
 		}
-		if last := c.Comments[len(c.Comments)-1]; !(strings.Contains(last.Body, "<!-- workline:") && namesTest(last.Body)) {
+		if last := c.Comments[len(c.Comments)-1]; !strings.Contains(last.Body, "<!-- workline:") || !namesTest(last.Body) {
 			return clipSaid(strings.TrimSpace(c.Comments[0].Body)), nil
 		}
 	}
