@@ -101,8 +101,9 @@ func triggersOn(data []byte, event string) bool {
 }
 
 // policyAllows says whether the policies JSON holds, for every workflow
-// file in files, a policy that allows the event: it names the event, is not
-// a deny, and either targets no workflow path or targets one matching the file.
+// file in files, a policy that allows the event (it names the event, is not a
+// deny, and targets no workflow path or one matching the file) and no covering
+// policy that denies it.
 func policyAllows(raw []byte, event string, files []string) bool {
 	var doc struct {
 		Policies []map[string]any `json:"policies"`
@@ -115,10 +116,14 @@ func policyAllows(raw []byte, event string, files []string) bool {
 	for _, f := range files {
 		ok := false
 		for _, p := range doc.Policies {
-			if policyNames(p, event) && !policyDenies(p) && policyCovers(p, f) {
-				ok = true
+			if !policyNames(p, event) || !policyCovers(p, f) {
+				continue
+			}
+			if policyDenies(p) {
+				ok = false
 				break
 			}
+			ok = true
 		}
 		if !ok {
 			return false
