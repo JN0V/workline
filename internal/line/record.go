@@ -343,7 +343,7 @@ func recordBody(r Record, role string) string {
 		said += fmt.Sprintf(" Woken again on the same text, %d of %d: its last read left the issue unrefined; past that, the issue is blocked for a person.", r.Retry, RefineRetries)
 	}
 	if r.Dropped != "" && r.Dropped == r.Body && role != "" {
-		said += " The product owner's rewrite of what the reviewer found was not written, twice on the same text: the issue waits for a person."
+		said += " The product owner's rewrite of what the reviewer found was not written: woken again, once, on the same text; if that one is not written either, the issue waits for a person."
 	}
 	if role == "" {
 		said = fmt.Sprintf("**workline's line** keeps this record while the issue is blocked, %d state %s before; moved out of Blocked, its count starts again.", r.Hops, plural(r.Hops, "step", "steps"))
