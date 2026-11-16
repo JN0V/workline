@@ -13,12 +13,10 @@
 - **Tracked by:** the GitHub milestone
   [v1.0](https://github.com/JN0V/workline/milestone/1)
 - **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-replaced)
-  (step 1 built): the "until then" freeze held until ADR-0068's step 1 passed its
-  test (nobody bypasses `main`, the guard guarded); lifted on
-  2026-11-14, after [#1463] and [#1464]
-  ([amendment](#amendment-2026-11-14-the-freeze-is-lifted)). Its step
-  7 now decides the bar after 1.0
-  ([amendment](#amendment-2026-11-15-v10-is-the-v1-accepted))
+  (step 1 built): the "until then" freeze held until ADR-0068's step 1
+  passed its test (nobody bypasses `main`, the guard guarded); lifted on
+  2026-11-14, after [#1463] and [#1464] ([amendment](#amendment-2026-11-14-the-freeze-is-lifted)).
+  Its step 7 now decides the bar after 1.0 ([amendment](#amendment-2026-11-15-v10-is-the-v1-accepted))
 
 ## Context
 
