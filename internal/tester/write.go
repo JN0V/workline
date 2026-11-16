@@ -1232,6 +1232,13 @@ func leftOut(repo, tree string, s Settings, files, added []string) []string {
 	if f != nil {
 		return nil
 	}
+	// A command that exited non-zero may have failed to build, in a way no
+	// rule or record reads: what it left out is not said left out. The
+	// tests being red on the base only, the test command exits 0 on them
+	// when it never runs them.
+	if r.failure != "" {
+		return nil
+	}
 	// A build that failed reports without the tests it never built: the
 	// tests are red by a name the code lacks, not left out.
 	rules, _ := compileBuildErrors(s.BuildErrors)
