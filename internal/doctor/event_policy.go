@@ -19,6 +19,10 @@ import (
 // eventPolicyDoc is where a person reads how to allow pull_request_target.
 const eventPolicyDoc = "docs/github/pull-request-target.md"
 
+// eventPolicyCIDoc is the GitHub setup page's section on it: which
+// repositories it concerns, for one whose visibility is unknown.
+const eventPolicyCIDoc = "docs/ci-github.md#public-repositories-and-pull_request_target"
+
 // prTarget is the event GitHub blocks by default in public repositories.
 const prTarget = "pull_request_target"
 
@@ -63,7 +67,7 @@ func blockedEvent(r *Report, o Options) {
 	if err != nil || json.Unmarshal(out, &repo) != nil {
 		r.add(Check{Area: "repository", Rule: "event-policy-unread", Where: where, Level: Note,
 			Message: where + " runs on pull_request_target, which GitHub blocks by default in public repositories from December 2, 2026; whether this repository is public could not be read",
-			Fix:     eventPolicyDoc})
+			Fix:     "if it is public, allow it in an Actions event policy (" + eventPolicyCIDoc + ")"})
 		return
 	}
 	if repo.Visibility == "private" || repo.Visibility == "internal" || (repo.Visibility == "" && repo.Private != nil && *repo.Private) {

@@ -111,7 +111,7 @@ func fakeGh(t *testing.T, body string) {
 func TestDoctorAcceptsAPublicRepositoryWhosePolicyNamesPullRequestTarget(t *testing.T) {
   isolate(t)
   repo := eventPolicyRepo(t)
-  fakeGh(t, "case \"$*\" in\n*actions/policies*) echo '{\"total_count\":1,\"policies\":[{\"id\":1,\"name\":\"workline\",\"target\":\"actions\",\"source_type\":\"Repository\",\"source\":\"example/public-repo\",\"enforcement\":\"active\",\"conditions\":{\"workflow_path\":{\"include\":[\".github/workflows/workline-bounds.yml\"],\"exclude\":[]}},\"rules\":[{\"type\":\"restrict_action_events\",\"parameters\":{\"allowed_events\":[\"pull_request_target\"]}}]}]}' ;;\n"+
+  fakeGh(t, "case \"$*\" in\n*actions/policies*) echo '{\"rules\":[{\"events\":[\"pull_request_target\"]}]}' ;;\n"+
     "*rules/branches*|*rulesets*|*default_branch*) exit 1 ;;\n"+
     "*) echo '{\"visibility\":\"public\",\"private\":false}' ;;\nesac\n")
 
@@ -147,7 +147,7 @@ func TestDoctorNotesWhenTheRepositoryCannotBeRead(t *testing.T) {
       if c.Level != Note {
         t.Errorf("unreadable repository is level %v, want Note: %+v", c.Level, c)
       }
-      if !strings.Contains(c.Fix, "pull-request-target.md") {
+      if !strings.Contains(c.Fix, "ci-github.md") {
         t.Errorf("fix does not point to the docs: %q", c.Fix)
       }
       return
