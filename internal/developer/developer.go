@@ -197,6 +197,9 @@ type Act struct {
 	// Conflict: the head a merge round failed at (ADR-0067): no second
 	// one there.
 	Conflict string `json:"conflict,omitempty"`
+	// NoAgent: the head a conflict was seen at with no agent set: no
+	// round could start. Not a failure: a run with an agent takes it.
+	NoAgent string `json:"noAgent,omitempty"`
 	// Board: the card its claim moved to Doing on the forge's board
 	// (ADR-0057); none, no board or no Doing column.
 	Board *board.Move `json:"board,omitempty"`

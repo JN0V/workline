@@ -302,14 +302,11 @@ func featureMilestone(f forge.Forge, repo string, issue int) (string, error) {
 	return title, b.SetMilestone(issue, title)
 }
 
-// baseFixable says whether a blocked verdict's cause is one the base may
-// change: the proof's time budget, a setting read from the config, or a
-// block of the tester (a rule named `tester-…`, never the words of its message), a role whose fix may have merged since. A red from
-// the developer's own code is not: main merged in would only push it again
-// for nothing. Never twice: once the base is in the head, the request is
-// up to date.
+// baseFixable says whether a blocked verdict may hold a cause main has
+// fixed since: any red whose head is behind main. The head is a role's
+// output, so a fix of a role on main may change it; the update is once per
+// main tip (takeBase merges only a head behind it, and once the base is in
+// the head the request is up to date).
 func baseFixable(v kept) bool {
-	return v.class == verdictRed && slices.ContainsFunc(v.rules, func(r string) bool {
-		return r == "proof-over-time" || strings.HasPrefix(r, "tester-")
-	})
+	return v.class == verdictRed
 }
