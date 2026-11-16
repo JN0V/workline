@@ -34,7 +34,7 @@ func release(v string) []int {
 }
 
 // eventTemplates is the GitHub template that runs each event workline routes
-// in CI (ci/github): the events a person's machine runs are not here.
+// in CI (defaults/ci/github): the events a person's machine runs are not here.
 var eventTemplates = map[string]string{
 	"merge-request": "workline.yml",
 	"main":          "workline.yml",
@@ -97,16 +97,16 @@ func ciTemplates(r *Report, o Options, line *routing.Config) {
 // GitHub workflow's; workline.gitlab-ci.yml, GitLab's pipeline.
 func templateOf(rel string) string {
 	if rel == ".gitlab-ci.yml" {
-		return "ci/gitlab/workline.gitlab-ci.yml"
+		return "defaults/ci/gitlab/workline.gitlab-ci.yml"
 	}
-	return "ci/github/" + filepath.Base(rel)
+	return "defaults/ci/github/" + filepath.Base(rel)
 }
 
 // templateURL is where a template of this engine's release is read; a build
 // that is no release, its default branch's.
 func templateURL(engine, t string) string {
 	if !strings.Contains(t, "/") {
-		t = "ci/github/" + t
+		t = "defaults/ci/github/" + t
 	}
 	ref := "main"
 	if release(engine) != nil {

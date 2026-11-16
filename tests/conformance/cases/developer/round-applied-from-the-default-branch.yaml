@@ -1,6 +1,6 @@
 case: developer/round-applied-from-the-default-branch
 about: >
-  As CI runs it (ci/github/workline-develop.yml): the round proposes on
+  As CI runs it (defaults/ci/github/workline-develop.yml): the round proposes on
   its pull request's head, holding no write token; a job apart, on the
   default branch's checkout, applies it from the merge request, its fix
   pushed on the developer's own branch, the record kept.

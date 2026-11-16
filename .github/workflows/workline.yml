@@ -1,4 +1,4 @@
-# workline on its own pull requests: ci/github/workline.yml, but for two
+# workline on its own pull requests: defaults/ci/github/workline.yml, but for two
 # things. gates installs the tool of workline's own gate, golangci-lint,
 # where the template leaves yours to add. And judge runs the engine built
 # from the pull request's commit, as

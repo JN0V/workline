@@ -1,5 +1,5 @@
 ---
-sources: [ci/forgejo/workline-forge.sh, ci/github, internal/forge/local.go, cmd/workline]
+sources: [defaults/ci/forgejo/workline-forge.sh, defaults/ci/github, internal/forge/local.go, cmd/workline]
 checked: 8538d558
 judged: cd97f28
 verified: agent:claude-code
@@ -28,11 +28,11 @@ Another forge is plugged by a command that answers its small contract, one
 JSON request per operation ([forge-command.md](spec/forge-command.md)).
 
 - **Forgejo and Gitea**, whose API has GitHub's shape: copy
-  [ci/forgejo/workline-forge.sh](../ci/forgejo/workline-forge.sh) into the
+  [defaults/ci/forgejo/workline-forge.sh](../defaults/ci/forgejo/workline-forge.sh) into the
   repository and name it in `.workline/config.yaml`:
 
   ```yaml
-  forge: 'cmd:sh ci/forgejo/workline-forge.sh'
+  forge: 'cmd:sh defaults/ci/forgejo/workline-forge.sh'
   ```
 - It needs `curl` and `jq`, and:
   - `FORGEJO_URL`;

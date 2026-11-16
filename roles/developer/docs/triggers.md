@@ -5,8 +5,8 @@ sources:
   - internal/line/states.go
   - internal/line/round.go
   - internal/line/budget.go
-  - ci/github/workline-develop.yml
-  - ci/gitlab/workline.gitlab-ci.yml
+  - defaults/ci/github/workline-develop.yml
+  - defaults/ci/gitlab/workline.gitlab-ci.yml
 checked: c1990cb1
 verified: agent:claude-code
 ---
@@ -43,7 +43,7 @@ routing:
   (`workline:needs-tests`), the tester, when routed there too
   (`issue: [tester, developer]`). Any other state runs nothing, said.
 - **GitHub**: copy
-  [workline-develop.yml](../../../ci/github/workline-develop.yml). A
+  [workline-develop.yml](../../../defaults/ci/github/workline-develop.yml). A
   person's `workline:` label wakes it; the engine's own labels never
   do.
   - **A person's answer**: a comment or a body edit on an issue bearing
@@ -209,7 +209,7 @@ from the default branch, before the agent and the proof:
 
 - **GitHub**: a composite action,
   `.github/actions/workline-setup/action.yml`, holding your test job's
-  setup steps; [workline-develop.yml](../../../ci/github/workline-develop.yml)
+  setup steps; [workline-develop.yml](../../../defaults/ci/github/workline-develop.yml)
   runs it when it is there.
 - **GitLab**: redefine `.workline:setup` in your `.gitlab-ci.yml`, its
   `script` your test job's setup commands; the jobs

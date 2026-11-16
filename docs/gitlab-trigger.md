@@ -1,5 +1,5 @@
 ---
-sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile, internal/line/payload.go, internal/forge/gitlab_hook.go]
+sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile, internal/line/payload.go, internal/forge/gitlab_hook.go]
 checked: 8538d558
 judged: 9a88170
 verified: agent:documentalist
@@ -45,7 +45,7 @@ GitLab is needed:
 ### The line of states on it
 
 [ADR-0059](adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md),
-the template's jobs ([workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml)):
+the template's jobs ([workline.gitlab-ci.yml](../defaults/ci/gitlab/workline.gitlab-ci.yml)):
 
 - **The hook's URL** ends `&variables[WORKLINE_TASK]=issue`: the job
   `workline:issue` runs `workline route issue --input reconcile=list

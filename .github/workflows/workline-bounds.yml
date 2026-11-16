@@ -1,5 +1,5 @@
 # workline's developer bounds on its own repository (ADR-0058):
-# ci/github/workline-bounds.yml, with the engine built from the default
+# defaults/ci/github/workline-bounds.yml, with the engine built from the default
 # branch's commit checked out, never the pull request's, rather than
 # installed (.github/actions/engine). The check `workline bounds` is
 # required on main.

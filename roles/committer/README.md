@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/committer, roles/committer/role.yaml, routing.default.yaml]
+sources: [internal/builtin/committer, roles/committer/role.yaml, defaults/routing.yaml]
 checked: ac47b877
 verified: agent:claude-code
 ---

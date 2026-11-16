@@ -1,5 +1,5 @@
 <!-- workline
-sources: [ci/gitlab/workline.gitlab-ci.yml, internal/engine/follow.go, internal/engine/settle.go, Dockerfile]
+sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/engine/follow.go, internal/engine/settle.go, Dockerfile]
 checked: 8538d558
 verified: agent:claude-code
 judged-in-parts: e8a46f7

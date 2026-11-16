@@ -1,5 +1,5 @@
 ---
-sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
+sources: [defaults/ci/github, defaults/ci/gitlab, defaults/ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
 checked: 8538d558
 judged: a8574a5
 verified: agent:claude-code
@@ -191,7 +191,7 @@ In short:
   asks again only after an answer, three times at most; past its wait, it
   goes on, its assumption written ([ADR-0060](adr/0060-the-person-is-on-the-loop.md));
 - an issue form with the sections an issue holds,
-  [ci/github/issue-form-need.yml](../ci/github/issue-form-need.yml), copied
+  [defaults/ci/github/issue-form-need.yml](../defaults/ci/github/issue-form-need.yml), copied
   to `.github/ISSUE_TEMPLATE/need.yml`, has a person's issue arrive with
   them written;
 - it also splits, renames, orders and says what an issue waits on

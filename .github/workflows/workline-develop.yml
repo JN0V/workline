@@ -1,5 +1,5 @@
 # workline's developer on its own repository (#696):
-# ci/github/workline-develop.yml, with the engine built from this checkout
+# defaults/ci/github/workline-develop.yml, with the engine built from this checkout
 # rather than installed — each job checks out the default branch's commit,
 # built once (.github/actions/engine). Go left set up where the tester's
 # test-command proves the code (judge, review). A person's label on an

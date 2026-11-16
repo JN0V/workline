@@ -22,7 +22,7 @@ type tallyStep struct {
 }
 
 // tallySteps reads every workflow template the project ships
-// (ci/github/*.yml). It never reads the project's own workflows
+// (defaults/ci/github/*.yml). It never reads the project's own workflows
 // (.github/workflows/*.yml): those are not the developer's to change.
 func tallySteps(t *testing.T) []tallyStep {
 	t.Helper()
@@ -69,7 +69,7 @@ func tallySteps(t *testing.T) []tallyStep {
 // When the weekly sample runs,
 // Then that run's tokens are counted: the steps that write and upload the
 // job's tally run in a cancelled run too. It reads the templates the
-// project ships (ci/github/*.yml) only.
+// project ships (defaults/ci/github/*.yml) only.
 func TestTallyStepsRunInACancelledRun(t *testing.T) {
 	for _, s := range tallySteps(t) {
 		rest := strings.ReplaceAll(s.cond, "!cancelled()", "")
@@ -84,7 +84,7 @@ func TestTallyStepsRunInACancelledRun(t *testing.T) {
 // When the weekly sample runs,
 // Then both attempts' tokens are counted: each attempt uploads its own
 // artifact, none overwrites another's. It reads the templates the
-// project ships (ci/github/*.yml) only.
+// project ships (defaults/ci/github/*.yml) only.
 func TestTallyArtifactsKeepEveryAttempt(t *testing.T) {
 	uploads := 0
 	for _, s := range tallySteps(t) {

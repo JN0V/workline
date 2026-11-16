@@ -1,4 +1,4 @@
-# workline's own weekly sample: ci/github/workline-sample.yml, with the engine
+# workline's own weekly sample: defaults/ci/github/workline-sample.yml, with the engine
 # built from this checkout rather than installed — both jobs check out the
 # same commit, built once (.github/actions/engine), read's kept for write.
 # The judge is the documentalist's `sample.judge` setting

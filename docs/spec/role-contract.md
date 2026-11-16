@@ -1,5 +1,5 @@
 ---
-sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
+sources: [internal/engine, internal/intent, internal/role, internal/agent, tests/roles_test.go]
 checked: 1e01b6d1
 verified: agent:claude-code
 judged: b530b72
@@ -33,7 +33,7 @@ roles/<name>/
 - The top level holds README.md and what the engine loads, nothing else.
 - The target, reached before v1.0, is in [layout.md](layout.md):
   `prompts/`, `criteria/`, `cases/` and `code/` in each role's folder.
-- A page about the role goes to `docs/`; `roles_test.go` fails otherwise.
+- A page about the role goes to `docs/`; `tests/roles_test.go` fails otherwise.
 
 `pre` and `post` are executables in any language. The engine runs them; it does
 not care what they are written in.

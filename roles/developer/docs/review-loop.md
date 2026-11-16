@@ -8,8 +8,8 @@ sources:
   - internal/developer/ready.go
   - internal/forge/checks.go
   - roles/developer/role.yaml
-  - ci/github/workline-develop.yml
-  - ci/gitlab/workline.gitlab-ci.yml
+  - defaults/ci/github/workline-develop.yml
+  - defaults/ci/gitlab/workline.gitlab-ci.yml
 checked: 3ec4d022
 verified: agent:claude-code
 ---
@@ -199,7 +199,7 @@ failed — is marked ready for review once its rounds make it green
 
 ## What wakes it
 
-- **GitHub**: [workline-develop.yml](../../../ci/github/workline-develop.yml),
+- **GitHub**: [workline-develop.yml](../../../defaults/ci/github/workline-develop.yml),
   its `review` jobs. The reviewer's comment or the gates', written or
   edited by workline's App, or a comment of a person of the project.
   - **A project workflow ended** on a `workline/developer/` branch

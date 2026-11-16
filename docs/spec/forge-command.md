@@ -1,5 +1,5 @@
 ---
-sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
+sources: [internal/forge/command.go, internal/forge/forge.go, defaults/ci/forgejo]
 checked: 68001ec6
 verified: agent:claude-code
 judged-in-parts: 87b34bc
@@ -13,12 +13,12 @@ own — is plugged by a command, the way a `cmd:` agent is:
 
 ```yaml
 # .workline/config.yaml
-forge: 'cmd:sh ci/forgejo/workline-forge.sh'
+forge: 'cmd:sh defaults/ci/forgejo/workline-forge.sh'
 ```
 
 or `--forge 'cmd:<command>'` on a command line. A sample for Forgejo and
 Gitea, whose API is GitHub's shape, is
-[ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It answers
+[defaults/ci/forgejo/workline-forge.sh](../../defaults/ci/forgejo/workline-forge.sh). It answers
 `all-issues`, a closed issue without its reason (Forgejo and Gitea keep
 none), `close-merge-request`, `merge-requests`, and `comments`, each with its author and its day, of the project when they may
 write to the repository — asked of Forgejo, which needs the token's user
@@ -155,7 +155,7 @@ weekly sample written, a forge failing (`blocked-external`) and refusing
 `guarded` and `verdict`; merge/cmd-normal-routine-merges-alone, a third
 (fixtures/forges/merging-routine.sh), `app`, `pushers`, `mark` and `marked` besides.
 The Forgejo sample, which knows neither yet, was run against a mock of the API only
-(ci/forgejo/workline_forge_test.go: its labels, `all-issues` over two
+(defaults/ci/forgejo/workline_forge_test.go: its labels, `all-issues` over two
 pages, a pull request left out, `comments` with their authors,
 `merge-requests` with theirs, and
 `close-merge-request`), not yet on a live instance.
