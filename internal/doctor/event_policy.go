@@ -167,7 +167,7 @@ func policyDenies(v any) bool {
 	case map[string]any:
 		for k, c := range x {
 			lk := strings.ToLower(k)
-			if strings.Contains(lk, "deny") || strings.Contains(lk, "block") || strings.Contains(lk, "disallow") {
+			if strings.Contains(lk, "deny") || strings.Contains(lk, "denied") || strings.Contains(lk, "block") || strings.Contains(lk, "disallow") {
 				return true
 			}
 			if policyDenies(c) {
