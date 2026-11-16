@@ -303,7 +303,9 @@ func featureMilestone(f forge.Forge, repo string, issue int) (string, error) {
 }
 
 // baseFixable says whether a blocked verdict's cause is one the base may
-// change: the proof's time budget, a setting read from the config.
+// change: the proof's time budget, a setting read from the config, or a
+// block of a role whose fix merged since: any red verdict. Never twice:
+// once the base is in the head, the request is up to date.
 func baseFixable(v kept) bool {
-	return v.class == verdictRed && slices.Contains(v.rules, "proof-over-time")
+	return v.class == verdictRed
 }

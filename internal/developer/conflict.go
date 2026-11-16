@@ -82,6 +82,33 @@ func conflictDue(kept forge.Kept, a Act, repo, head string) (base string, due bo
 	return b, true
 }
 
+// conflictNow is conflictDue with no record asked for: main moved into
+// the branch's conflict since its round, so no `follow` said it yet. The
+// base's tip as the forge keeps it in repo; git's merge says it conflicts.
+func conflictNow(f forge.Forge, kept forge.Kept, a Act, repo string, mr forge.MergeRequest, head string) (base string, due bool) {
+	if base, due := conflictDue(kept, a, repo, head); due {
+		return base, true
+	}
+	if head == "" || a.Conflict == head || mr.Base == "" {
+		return "", false
+	}
+	refs := []string{"refs/remotes/origin/" + mr.Base, "refs/heads/" + mr.Base}
+	if forge.KeepsBranches(f) {
+		refs = refs[1:]
+	}
+	for _, ref := range refs {
+		tip, err := gitOut(repo, "rev-parse", "-q", "--verify", ref+"^{commit}")
+		if err != nil || tip == "" {
+			continue
+		}
+		if _, files, err := MergeTree(repo, head, tip); err == nil && len(files) > 0 {
+			return tip, true
+		}
+		return "", false
+	}
+	return "", false
+}
+
 // branchHead is a request's branch's head in repo: this clone's own
 // branch on a forge that keeps them here (the local one), else as
 // fetched from origin; "" neither.
