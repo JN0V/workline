@@ -326,18 +326,21 @@ func featureMilestone(f forge.Forge, repo string, issue int) (string, error) {
 // verdict stays red: each runs the judge in full.
 const maxBaseMerges = 2
 
-// ownMerges counts the engine's own merges of the base in the branch, past
-// baseTip.
+// ownMerges counts the engine's own merges of the base ending the branch,
+// along its first parents from tip: a commit of the developer's pushed on
+// top ends the run, so a new push resets the bound.
 func ownMerges(repo, baseTip, tip string) int {
-	out, err := git(repo, nil, "rev-list", "--merges", baseTip+".."+tip)
-	if err != nil {
-		return 0
-	}
 	n := 0
-	for _, c := range strings.Fields(out) {
-		if OwnMerge(repo, c, baseTip) {
-			n++
+	for range 50 {
+		if tip == baseTip || !OwnMerge(repo, tip, baseTip) {
+			break
 		}
+		n++
+		parent, err := git(repo, nil, "rev-parse", tip+"^1")
+		if err != nil {
+			break
+		}
+		tip = strings.TrimSpace(parent)
 	}
 	return n
 }
