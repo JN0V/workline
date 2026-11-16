@@ -2,6 +2,8 @@
 sources: [internal/builtin/productowner/productowner.go]
 checked: cee5a7af
 verified: agent:claude-code
+judged: 5c1573b
+judged-in-parts: 5c1573b
 ---
 # Troubleshooting the product owner
 
