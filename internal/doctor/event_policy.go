@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"go.yaml.in/yaml/v3"
 )
 
 // eventPolicyDoc is where a person reads how to allow pull_request_target.
@@ -21,7 +23,7 @@ func blockedEvent(r *Report, o Options) {
 	var users []string
 	paths, _ := filepath.Glob(filepath.Join(o.Repo, ".github", "workflows", "*.y*ml"))
 	for _, p := range paths {
-		if data, err := os.ReadFile(p); err == nil && strings.Contains(string(data), "pull_request_target") {
+		if data, err := os.ReadFile(p); err == nil && triggersOn(data, "pull_request_target") {
 			users = append(users, ".github/workflows/"+filepath.Base(p))
 		}
 	}
@@ -66,4 +68,33 @@ func blockedEvent(r *Report, o Options) {
 	r.add(Check{Area: "repository", Rule: "event-blocked", Where: where, Level: Warn,
 		Message: where + " runs on pull_request_target, which GitHub blocks by default in public repositories from December 2, 2026 (brownouts before): workline bounds ends in startup_failure and no pull request merges",
 		Fix:     "Settings → Actions → Policies: a rule \"Restrict events\" allowing pull_request_target, targeted at " + where + " (" + eventPolicyDoc + ")"})
+}
+
+// triggersOn says whether a workflow's on: key names the event, as a
+// scalar, a list or a map; a mention in a comment or a string does not count.
+func triggersOn(data []byte, event string) bool {
+	var wf struct {
+		On yaml.Node `yaml:"on"`
+	}
+	if yaml.Unmarshal(data, &wf) != nil {
+		return false
+	}
+	n := &wf.On
+	switch n.Kind {
+	case yaml.ScalarNode:
+		return n.Value == event
+	case yaml.SequenceNode:
+		for _, c := range n.Content {
+			if c.Kind == yaml.ScalarNode && c.Value == event {
+				return true
+			}
+		}
+	case yaml.MappingNode:
+		for i := 0; i < len(n.Content); i += 2 {
+			if n.Content[i].Value == event {
+				return true
+			}
+		}
+	}
+	return false
 }
