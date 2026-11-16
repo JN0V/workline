@@ -151,10 +151,11 @@ With the product owner on the schedule line, each apply of
 input `skip: documentalist`). The engine decides (`backlog-due` in its
 `--json`, why in the job summary); a run starts only when:
 
-- Ready holds fewer issues than `routing.wip.ready`;
+- Ready holds fewer issues than `routing.wip.ready`: 5 when the project
+  leaves it unset (the shipped default), never with 0 (no target);
 - and Ready dropped since the last backlog run started, or that run
   readied an issue: a run that readied none, nothing changed since, is
-  not repeated;
+  not repeated; the very first run, none before it, is always due;
 - and no backlog run waits already: one runs, one waits at most.
 
 The last run is the gardening workflow's latest, read from GitHub; when
