@@ -1,16 +1,15 @@
 # ADR-0070: A new role runs from its files, on a shared pre and post
 
-- **Status:** proposed, until the maintainer merges it; built by the
-  [slices](#slices) of [#1630], all before v1.0
+- **Status:** proposed, until the maintainer merges it; built by
+  [#1630]'s [slices](#slices), all before v1.0
 - **Date:** 2026-11-15; the [layout](#6-the-layout-reached-before-10) on
   2026-11-16, by the maintainer: before 1.0 anything may break, not after
-- **Settles:** [#1630]; [ADR-0068]'s [step 6a](0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)
+- **Settles:** [#1630]; how [ADR-0068]'s [step 6], the process engineer, is built
 - **Builds on:** [ADR-0046], [ADR-0065], [ADR-0066], [ADR-0068] §2 and
   §4; principles 4, 5, 6, 10, 12, 15 ([PRINCIPLES.md](../PRINCIPLES.md))
-- **Amends, once built:** the [role contract](../spec/role-contract.md):
-  `pre` and `post` optional; `role.yaml` gains `inputs` and `acts`;
-  `without-ai` read, `report` its default for a role of files only; the
-  [layout](../spec/layout.md). [ADR-0052]'s 1.0 bar requires it
+- **Amends, once built:** the [role contract](../spec/role-contract.md)
+  (`pre`, `post` optional; `inputs`, `acts`; `without-ai` read, `report`
+  its default) and the [layout](../spec/layout.md); [ADR-0052]'s 1.0 bar requires it
 - **Research:** [skills.md](../research/skills.md), [agent-sandbox.md](../research/agent-sandbox.md)
 
 ## Context
@@ -129,34 +128,34 @@ Five moves reach it, smallest first:
 
 - **a. Shims out, criteria in**: the 3-line `pre`/`post` shims go, the
   engine resolves code, file, shared; today's auditor `kinds/` move to
-  `roles/auditor/criteria/<role>/`; roles gain `criteria/`.
+  `roles/auditor/criteria/<role>/`, their `CODEOWNERS` lines in the
+  same pull request ([guarded](../spec/layout.md#guarded-paths)).
 - **b. Prompts into `roles/<name>/prompts/`**, one role a pull request.
-  A person's overrides move the same way
-  (`.workline/roles/<role>/prompts/<file>.md`); the old flat path is
-  dropped: `workline doctor` and the run name where each file goes.
-- **c. Cases into `roles/<name>/cases/`**, read from disk, one
-  `pending.txt`. `workline.go` embeds `role.yaml`, `prompts/`,
+  [A person's overrides](../spec/layout.md#a-persons-overrides) move
+  the same way; one left at the old path makes the run refuse, never
+  run on the shipped prompt; `workline doctor` names each.
+- **c. Cases into `roles/<name>/cases/`**, one `pending.txt`;
+  `roles.go`, renamed `workline.go`, embeds `role.yaml`, `prompts/`,
   `criteria/` by name, not `all:roles`: the 3 MB of cases never ship.
 - **d. `routing.default.yaml` and `ci/` into `defaults/`**, the root
   `*_test.go` files into `tests/`.
-- **e. Role code into `roles/<name>/code/`**, untangled first:
-  - `internal/contract/` holds the role interfaces (pre, post, draw,
-    doctor checks, what the line asks a role) and the registry each role
-    joins in `init()`; `roles/builtin.go`, imported by `cmd/workline`
-    only, lists them. The engine, line, sample and doctor call through it.
-  - Cross-role helpers go to `internal/kit/`: `testdef`, `codepick`, the
-    committer's message checks and the verdict reading others share.
-  - Before a role moves, every import of it is cut; a check in `tests/`
-    fails if `internal/` imports `roles/` or a role another role's code.
-  - Then by size: judge (300 lines), committer, inspector (1,100
-    each), product owner (2,800), developer (7,200), reviewer (8,100),
-    tester (9,600), documentalist (13,700); last, `sample`'s per-role draws.
+- **e. Role code into `roles/<name>/code/`**, untangled first
+  ([detail](../spec/layout.md#role-code-untangled)):
+  - **Data and functions, not hooks only**: engine, line and sample use
+    about 55 developer and tester symbols, the developer 19 of the
+    tester's; each moves to `internal/contract/` (role interfaces, the
+    registry roles join in `init()`) or `internal/kit/` (shared helpers).
+  - **No cycle**: `contract` and `kit` never import engine, line or
+    sample. A check in `tests/`, `_test.go` files included, fails if
+    `internal/` imports `roles/`, or a role another role's code.
+  - Then by size, judge (300 lines) to documentalist (13,700), one
+    role a pull request; last, `sample`'s per-role draws.
 
 ## Alternatives
 
 - **A skill** ([skills.md](../research/skills.md), [#1494]): loaded at
-  the agent's choice, not on its event. **An agent's own definition
-  files**: no standard ([portability.md](../research/portability.md#standards)).
+  the agent's choice, not on its event. **An agent's definition files**:
+  no standard ([portability.md](../research/portability.md#standards)).
 - **GitHub Agentic Workflows** ([agent-sandbox.md](../research/agent-sandbox.md)):
   read-only agent, separate writer borrowed; GitHub only. **Persona
   files**: local, no apply. **A shell `pre`**: not portable ([ADR-0001]).
@@ -168,8 +167,8 @@ Five moves reach it, smallest first:
   each later role adds a folder only. **Tokens**: no routine skips the
   agent; such a role runs on rare events. **Risk**: the shared `pre` grows.
 - **Breaks before 1.0, none after**: paths in user docs, a person's
-  prompt overrides, `CODEOWNERS` (its guarded prompt paths move with b,
-  the person's label) and the routing file's name change once.
+  prompt overrides, `CODEOWNERS` (criteria with a, prompts with b, the
+  person's label) and the routing file's name change once.
 
 ## Slices
 
@@ -183,8 +182,8 @@ From [#1630], in order, each starting with its conformance case:
    locally and in CI, `claude` and a `cmd:` agent, tokens told.
 7. **The proof**: the process engineer as files only ([#89]), touching
    nothing under `internal/` nor `cmd/`, run on a case of [#1629].
-8. **Cases** (c). 9. **Defaults** (d). 10. **Role code** (e), a pull
-   request per role. External roles (`from`) after: a key, no structure.
+8. **Cases** (c). 9. **Defaults** (d). 10. **Role code** (e), one
+   role a pull request. External roles (`from`): after 1.0.
 
 [#89]: https://github.com/JN0V/workline/issues/89
 [#1494]: https://github.com/JN0V/workline/issues/1494
@@ -198,3 +197,4 @@ From [#1630], in order, each starting with its conformance case:
 [ADR-0065]: 0065-code-only-what-converges-language-knowledge-in-packs.md
 [ADR-0066]: 0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md
 [ADR-0068]: 0068-the-line-steps-back-on-its-own-drift.md
+[step 6]: 0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached
