@@ -180,3 +180,54 @@ func TestDoctorNotesWhenTheActionsPoliciesCannotBeRead(t *testing.T) {
   }
   t.Errorf("no check says the Actions policies could not be read: %+v", r.Checks)
 }
+
+// Person told before: Given a public repository whose line depends on
+// pull_request_target and an active Actions policy naming that event whose
+// workflow_path include or exclude does or does not reach the bounds
+// workflow file, When the person runs `workline doctor`, Then it reports
+// the event as allowed (OK) only when the policy reaches the file, and
+// warns that the event is blocked when the policy is aimed at other files.
+func TestDoctorJudgesAPolicyByItsWorkflowPaths(t *testing.T) {
+  cases := []struct {
+    name       string
+    conditions string
+    wantOK     bool
+  }{
+    {"include matches the file", `"include":[".github/workflows/workline-bounds.yml"]`, true},
+    {"include names other files", `"include":[".github/workflows/other.yml"]`, false},
+    {"exclude matches the file", `"exclude":[".github/workflows/workline-bounds.yml"]`, false},
+    {"exclude names other files", `"exclude":[".github/workflows/other.yml"]`, true},
+  }
+  for _, tc := range cases {
+    t.Run(tc.name, func(t *testing.T) {
+      isolate(t)
+      repo := eventPolicyRepo(t)
+      policies := `{"policies":[{"name":"allow-events","enforcement":"active",` +
+        `"conditions":{"workflow_path":{` + tc.conditions + `}},` +
+        `"rules":[{"type":"restrict_action_events","parameters":{"allowed_events":["pull_request_target"]}}]}]}`
+      fakeGh(t, "case \"$*\" in\n*actions/policies*) echo '"+policies+"' ;;\n"+
+        "*rules/branches*|*rulesets*|*default_branch*) exit 1 ;;\n"+
+        "*) echo '{\"visibility\":\"public\",\"private\":false}' ;;\nesac\n")
+
+      r := Run(Options{Repo: repo, RolesDir: rolesDir, Engine: "v0.71.0"})
+      var oks, warns int
+      for _, c := range r.Checks {
+        if !strings.Contains(c.Message, "pull_request_target") {
+          continue
+        }
+        switch c.Level {
+        case OK:
+          oks++
+        case Warn:
+          warns++
+        }
+      }
+      if tc.wantOK && (oks == 0 || warns != 0) {
+        t.Errorf("the policy reaches the file: want an OK check and no Warn, got %d OK, %d Warn: %+v", oks, warns, r.Checks)
+      }
+      if !tc.wantOK && (warns == 0 || oks != 0) {
+        t.Errorf("the policy does not reach the file: want a Warn and no OK, got %d OK, %d Warn: %+v", oks, warns, r.Checks)
+      }
+    })
+  }
+}
