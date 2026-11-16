@@ -161,6 +161,18 @@ func (v *HeadVerdict) shortRules() []string {
 	return rules
 }
 
+// blockRules are the rules of the findings that block, kept with a red
+// verdict so a later run reads its cause from them, not from its text.
+func (v *HeadVerdict) blockRules() []string {
+	var rules []string
+	for _, f := range v.Findings {
+		if (f.Level == "" || f.Level == "block") && !slices.Contains(rules, f.Rule) {
+			rules = append(rules, f.Rule)
+		}
+	}
+	return rules
+}
+
 // shortSaid opens why a review falls short.
 const shortSaid = "its review falls short "
 
@@ -284,8 +296,11 @@ func KeepVerdict(m forge.Merger, v HeadVerdict) (verdict.Finding, error) {
 func keepHead(m forge.Merger, v HeadVerdict, hand map[string]kept) (verdict.Finding, error) {
 	class, why := v.class()
 	var rules []string
-	if class == verdictShort {
+	switch class {
+	case verdictShort:
 		rules = v.shortRules()
+	case verdictRed:
+		rules = v.blockRules()
 	}
 	if err := m.KeepVerdict(v.Head, class, keptWhy(rules, why)); err != nil {
 		return verdict.Finding{}, err
@@ -642,6 +657,9 @@ type inLine struct {
 	// up brings it up to date with the base when it conflicts, or, clean
 	// asked, when it merges clean (upToDate): acted, not merged now.
 	up func(clean bool, due string) (bool, error)
+	// takeBase merges the base in for a verdict blocked on a rule it may
+	// have fixed (#1513), or says a conflict: acted, not merged now.
+	takeBase func(due string) (bool, error)
 }
 
 // upToDate is e.up, none on a request weighed without it.
@@ -818,6 +836,9 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	e := &inLine{mr: mr, where: where, behind: !isAncestor(o.Repo, baseTip, tip)}
 	e.up = func(clean bool, due string) (bool, error) {
 		return upToDate(f, o, local, mr, baseTip, tip, say, clean, due)
+	}
+	e.takeBase = func(due string) (bool, error) {
+		return upToDateAs(f, o, local, mr, baseTip, tip, say, true, true, due)
 	}
 	off := func() error {
 		if !st.AutoMerge {
