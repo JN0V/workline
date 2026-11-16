@@ -38,9 +38,10 @@ engine:
   gardening installs lychee, for the links to other sites, at night;
 - gardening's backlog runs hourly too, at :47 UTC, one at a time, for
   a push of six hours; run by hand, its input `skip` leaves
-  roles out (`documentalist`: the backlog alone); the develop workflow
-  starts one so when an issue leaves Ready below its target
-  ([the backlog run](../ci.md));
+  roles out (`documentalist`: the backlog alone); an apply of the
+  develop workflow starts one so when Ready is below its target and a
+  run is due: Ready dropped since the last, or the last readied an
+  issue; one waiting at most ([the backlog run](../ci.md));
 - a project never runs, in a commit's checks, the pin that commit ships: a
   pull request moving the templates to a version not yet tagged would
   download nothing, as on each release from v0.2.0 to v0.2.3

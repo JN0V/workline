@@ -146,12 +146,20 @@ gardening then runs it after the documentalist, even when the
 documentalist blocks: the job fails all the same
 ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)).
 
-With the product owner on the schedule line, `workline-develop.yml` also
-starts the backlog run (`workline-gardening.yml`, input `skip:
-documentalist`) when an issue leaves Ready and Ready holds fewer issues than
-`routing.wip.ready`: the engine says so (`ready-below-target` in its
-`--json`), and no run is added while one already waits. The schedule stays
-as the safety net.
+With the product owner on the schedule line, each apply of
+`workline-develop.yml` may start the backlog run (`workline-gardening.yml`,
+input `skip: documentalist`). The engine decides (`backlog-due` in its
+`--json`, why in the job summary); a run starts only when:
+
+- Ready holds fewer issues than `routing.wip.ready`;
+- and Ready dropped since the last backlog run started, or that run
+  readied an issue: a run that readied none, nothing changed since, is
+  not repeated;
+- and no backlog run waits already: one runs, one waits at most.
+
+The last run is the gardening workflow's latest, read from GitHub; when
+it cannot be read (no gardening workflow, an API error), none starts and
+the job goes on. The schedule stays as the safety net.
 
 ```yaml
 routing:
