@@ -1236,6 +1236,13 @@ func leftOut(repo, tree string, s Settings, files, added []string) []string {
 	if len(buildErrorsIn(r.output, files, rules, r.roots...)) > 0 {
 		return nil
 	}
+	// A runner's own record of a build that failed says the same, with no
+	// build-errors rule to read it by.
+	for id := range r.results {
+		if r.buildRecord(id) {
+			return nil
+		}
+	}
 	var out []string
 	for _, id := range added {
 		if _, ok := r.results[id]; !ok {
