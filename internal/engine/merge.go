@@ -665,6 +665,26 @@ func releaseRebuild(f forge.Forge, o FollowOptions, covered, tip, baseTip string
 	return ""
 }
 
+// releasePushers says why the pushes after the yes are not the release
+// tool's own, "" when each is by its App (the pull request's author): a
+// rebuild a person pushed keeps no yes, whatever its files. Who pushed is
+// the forge's word; none named is not known.
+func releasePushers(st forge.MergeState, yes, app string) string {
+	if app == "" || len(st.Pushers) != len(st.Pushes) {
+		return "who pushed it is not known: it needs a yes"
+	}
+	for i, p := range st.Pushes {
+		if later(p.At, yes) && st.Pushers[i] != app {
+			who := "a hand the forge does not name"
+			if st.Pushers[i] != "" {
+				who = "@" + st.Pushers[i]
+			}
+			return "it was pushed by " + who + ", not the release tool's App"
+		}
+	}
+	return ""
+}
+
 // featureOrTask says whether a title, a conventional commit's, is of a
 // feature (`feat`) or a task (`task`): a change that needs a person's yes
 // whatever labels its merge request carried.
@@ -690,7 +710,7 @@ func featureOrTask(title string) bool {
 // (OwnMerge, ownRebuild), or a commit changing only the lines workline
 // writes in the docs (ownRecord), as a merge of the base settles them.
 // It gives the commit that was pushed too ("" when none is one commit).
-func pushedAfterAt(f forge.Forge, o FollowOptions, branch string, st forge.MergeState, yes, baseTip, tip string) (string, string, error) {
+func pushedAfterAt(f forge.Forge, o FollowOptions, branch, author string, st forge.MergeState, yes, baseTip, tip string) (string, string, error) {
 	repo := o.Repo
 	own := func(c string) bool {
 		if ownTrailer(repo, c) == "" {
@@ -722,7 +742,10 @@ func pushedAfterAt(f forge.Forge, o FollowOptions, branch string, st forge.Merge
 			}
 			said := fmt.Sprintf("its branch was rewritten (%s, over %s)", short(tip), short(covered))
 			if o.Release != nil && o.Release(branch) {
-				why := releaseRebuild(f, o, covered, tip, baseTip)
+				why := releasePushers(st, yes, author)
+				if why == "" {
+					why = releaseRebuild(f, o, covered, tip, baseTip)
+				}
 				if why == "" {
 					return "", "", nil
 				}
@@ -1048,7 +1071,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		if g == nil {
 			continue
 		}
-		p, pc, err := pushedAfterAt(f, o, mr.Branch, st, g.Created, baseTip, tip)
+		p, pc, err := pushedAfterAt(f, o, mr.Branch, mr.Author, st, g.Created, baseTip, tip)
 		if err != nil {
 			return nil, err
 		}
