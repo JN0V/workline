@@ -154,7 +154,7 @@ func TestDevelopStartsNoSecondBacklogRunBesideOneWaiting(t *testing.T) {
 // says (a jq condition on its --json output), never unconditionally, in the
 // project's workflow and in the template's.
 func TestDevelopStartsNoBacklogRunAtOrAboveTarget(t *testing.T) {
-	for _, file := range []string{"../../.github/workflows/workline-develop.yml", "../../ci/github/workline-develop.yml"} {
+	for _, file := range []string{"../../.github/workflows/workline-develop.yml", "../../defaults/ci/github/workline-develop.yml"} {
 		_, run, _ := backlogDispatch(t, file)
 		guard := dispatchGuard(run)
 		if guard == "" {
@@ -178,18 +178,18 @@ func TestDevelopStartsNoBacklogRunAtOrAboveTarget(t *testing.T) {
 // and holds one backlog run at a time in a group of its own, the weekly docs
 // run apart.
 func TestTemplateStartsItsBacklogRunWhenReadyDropsBelowTarget(t *testing.T) {
-	job, run, perms := backlogDispatch(t, "../../ci/github/workline-develop.yml")
+	job, run, perms := backlogDispatch(t, "../../defaults/ci/github/workline-develop.yml")
 	if perms["actions"] != "write" {
-		t.Errorf("ci/github/workline-develop.yml, %s: dispatches the backlog run without `actions: write`: %v", job, perms)
+		t.Errorf("defaults/ci/github/workline-develop.yml, %s: dispatches the backlog run without `actions: write`: %v", job, perms)
 	}
 	if guard := dispatchGuard(run); !strings.Contains(guard, "jq") {
-		t.Errorf("ci/github/workline-develop.yml, %s: the backlog run is not dispatched on the engine's answer: %q", job, guard)
+		t.Errorf("defaults/ci/github/workline-develop.yml, %s: the backlog run is not dispatched on the engine's answer: %q", job, guard)
 	}
 	if !regexp.MustCompile(`gh run list[^\n]*workline-gardening\.yml|actions/workflows/workline-gardening\.yml/runs`).MatchString(run) {
-		t.Errorf("ci/github/workline-develop.yml, %s: no look at a backlog run already waiting", job)
+		t.Errorf("defaults/ci/github/workline-develop.yml, %s: no look at a backlog run already waiting", job)
 	}
 
-	data, err := os.ReadFile("../../ci/github/workline-gardening.yml")
+	data, err := os.ReadFile("../../defaults/ci/github/workline-gardening.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,14 +202,14 @@ func TestTemplateStartsItsBacklogRunWhenReadyDropsBelowTarget(t *testing.T) {
 	}
 	group := fmt.Sprint(garden.Concurrency["group"])
 	if !strings.Contains(group, "'workline-gardening-backlog'") || !strings.Contains(group, "github.run_id") || garden.Concurrency["cancel-in-progress"] != false {
-		t.Errorf("ci/github/workline-gardening.yml: no backlog concurrency group, one run at a time and the weekly docs run apart: %v", garden.Concurrency)
+		t.Errorf("defaults/ci/github/workline-gardening.yml: no backlog concurrency group, one run at a time and the weekly docs run apart: %v", garden.Concurrency)
 	}
 	dispatch, _ := garden.On["workflow_dispatch"].(map[string]any)
 	inputs, _ := dispatch["inputs"].(map[string]any)
 	if _, ok := inputs["skip"]; !ok {
-		t.Errorf("ci/github/workline-gardening.yml: workflow_dispatch takes no `skip` input: %v", dispatch)
+		t.Errorf("defaults/ci/github/workline-gardening.yml: workflow_dispatch takes no `skip` input: %v", dispatch)
 	}
 	if !strings.Contains(string(data), `--input skip=`) {
-		t.Error("ci/github/workline-gardening.yml: the schedule line is not given the skip input")
+		t.Error("defaults/ci/github/workline-gardening.yml: the schedule line is not given the skip input")
 	}
 }

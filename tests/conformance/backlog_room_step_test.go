@@ -42,7 +42,7 @@ func TestRoomStepStartsTheBacklogRunOnlyWhenDue(t *testing.T) {
 		{"no gardening run ever", "", nil, 1, 1, "no backlog run before"},
 		{"gh fails, or no gardening workflow", "fail", []string{"2026-11-16T11:00:00Z"}, 1, 0, "could not be read"},
 	}
-	for _, f := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
