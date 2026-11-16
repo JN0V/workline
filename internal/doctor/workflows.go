@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/JN0V/workline/defaults/ci"
 	"github.com/JN0V/workline/internal/routing"
 )
 
@@ -64,10 +65,18 @@ func ciTemplates(r *Report, o Options, line *routing.Config) {
 		}
 		pinned = true
 		pin := release(string(m[1]))
-		if engine == nil || pin == nil || slices.Compare(pin, engine) >= 0 {
+		if engine == nil || pin == nil || slices.Compare(pin, engine) > 0 {
 			continue
 		}
 		rel, _ := filepath.Rel(o.Repo, f)
+		if slices.Compare(pin, engine) == 0 {
+			if tpl, err := ci.Templates.ReadFile(strings.TrimPrefix(templateOf(rel), "defaults/ci/")); err == nil && withoutPin(tpl) != withoutPin(data) {
+				r.add(Check{Area: "repository", Rule: "workflow-behind", Where: rel, Level: Warn,
+					Message: fmt.Sprintf("%s differs from the template of workline %s beyond its pin: it was re-pinned, not re-copied, and runs what that template has since changed", rel, o.Engine),
+					Fix:     fmt.Sprintf("re-copy %s to %s, then reapply your changes (%s)", templateOf(rel), rel, templateURL(o.Engine, templateOf(rel)))})
+			}
+			continue
+		}
 		r.add(Check{Area: "repository", Rule: "workflow-outdated", Where: rel, Level: Warn,
 			Message: fmt.Sprintf("%s runs workline %s, this engine is %s: its roles run as they were then, and what came since never runs", rel, m[1], o.Engine),
 			Fix:     fmt.Sprintf("set WORKLINE_VERSION: %s in it, and compare it with %s", o.Engine, templateURL(o.Engine, templateOf(rel)))})
@@ -91,6 +100,17 @@ func ciTemplates(r *Report, o Options, line *routing.Config) {
 			Message: fmt.Sprintf("`%s` is routed to %s, but no workflow runs `workline route %s`: those steps never run in CI", e, strings.Join(line.Events[e], ", "), e),
 			Fix:     "copy " + templateURL(o.Engine, t) + " to .github/workflows/" + t})
 	}
+}
+
+// withoutPin is a CI file's content, its pin line and line ends set aside.
+func withoutPin(data []byte) string {
+	var out []string
+	for _, l := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		if !pinLine.MatchString(l) {
+			out = append(out, strings.TrimRight(l, " \t"))
+		}
+	}
+	return strings.TrimSpace(strings.Join(out, "\n"))
 }
 
 // templateOf is the template a workflow was copied from: its own name, a
