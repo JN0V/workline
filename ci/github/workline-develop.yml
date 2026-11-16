@@ -307,6 +307,24 @@ jobs:
               echo "::warning title=workline::!$n's round not started: the reconciler starts it"
             fi
           done
+      # Ready below its target (#1549): the backlog run starts now, not
+      # at the schedule's clock, which GitHub may skip. The engine says
+      # whether Ready is below its target (routing.wip), the product owner on
+      # the schedule line. One run waits at most: a run already waiting for
+      # the one running is kept, and none is added to it.
+      - name: The backlog run, when Ready is below its target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}
+        run: |
+          workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --input room=true --json > below.json || true
+          waiting=
+          for s in queued pending waiting; do
+            waiting="$waiting$(gh run list --workflow workline-gardening.yml --status "$s" --limit 100 --json databaseId --jq '.[].databaseId' 2>/dev/null)"
+          done
+          jq -e '."ready-below-target" == true' below.json >/dev/null 2>&1 && [ -z "$waiting" ] && gh workflow run workline-gardening.yml --ref "$GITHUB_REF_NAME" -f skip=documentalist &&
+            echo "Ready is below its target: the backlog run started" >> "$GITHUB_STEP_SUMMARY" || true
+
       # Room this run freed (#960): an issue moved out of a state with a
       # limit — the developer taking a ready one — wakes the issues whose
       # step waited for that room now, not at the next reconcile. The line
@@ -325,21 +343,6 @@ jobs:
             gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
               echo "::warning title=workline::#$n's run not started: the reconciler starts it"
           done
-      # Ready below its target (#1549): the backlog run starts now, not
-      # at the schedule's clock, which GitHub may skip. The engine says
-      # whether Ready is below its target (routing.wip), the product owner on
-      # the schedule line. One run waits at most: a run already waiting for
-      # the one running is kept, and none is added to it.
-      - name: The backlog run, when Ready is below its target
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          waiting=
-          for s in queued pending waiting; do
-            waiting="$waiting$(gh run list --workflow workline-gardening.yml --status "$s" --limit 100 --json databaseId --jq '.[].databaseId' 2>/dev/null)"
-          done
-          jq -e '."ready-below-target" == true' room.json >/dev/null 2>&1 && [ -z "$waiting" ] && gh workflow run workline-gardening.yml --ref "$GITHUB_REF_NAME" -f skip=documentalist &&
-            echo "Ready is below its target: the backlog run started" >> "$GITHUB_STEP_SUMMARY" || true
 
   # The heartbeat (#845): the reconciler's next run, started by the last
   # one, waits here for the wait timer of the environment
