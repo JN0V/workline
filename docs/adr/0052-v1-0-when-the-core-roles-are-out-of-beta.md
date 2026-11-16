@@ -140,13 +140,12 @@ holds the issues that count.
   - upkeep under 10% of tokens for 4 weeks, by [#610] (criterion 3).
 - **What 1.0 still requires**:
   1. **The maintainer signs "validated on real use"** (criterion 2 of
-     [ADR-0036]) in the status.md of the product owner, the tester,
-     the developer and the reviewer. Their other criteria to leave
-     beta may stay open at 1.0.
+     [ADR-0036]) in the status.md of the product owner, tester,
+     developer and reviewer; their other criteria may stay open.
   2. **[#1556] fixed**: the release's yes survives `main` moving, so
      the release pull request can be accepted.
   3. **The small items below** marked before, fixed.
-  4. **[ADR-0070]'s layout** reached; user docs at 0 suspect.
+  4. **[ADR-0070]'s layout** (2026-11-16); user docs at 0 suspect.
   5. **The release**: a `Release-As: 1.0.0` footer reaches `main`
      through a pull request, then the maintainer's label on the
      release.
