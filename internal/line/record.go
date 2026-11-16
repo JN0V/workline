@@ -118,6 +118,10 @@ type Record struct {
 	// the same body and the same code, it would get the same input, so it
 	// is not woken again (#980). "" in a record from before.
 	Given string `json:"given,omitempty"`
+	// Dropped: in refine, the body's hash the line woke the product owner
+	// again on, its rewrite of what the reviewer found open not written
+	// (#1355): once a body; past it, the issue waits for a person.
+	Dropped string `json:"dropped,omitempty"`
 	// Unread: in refine, the body's hash the line woke the product owner
 	// again on, its state saying it never read the issue (#1041): once a
 	// body, so a run that reads nothing is not woken in a loop.
@@ -337,6 +341,9 @@ func recordBody(r Record, role string) string {
 		strings.ReplaceAll(role, "-", " "), in, r.Hops, plural(r.Hops, "step", "steps"))
 	if r.Retry > 0 && role != "" {
 		said += fmt.Sprintf(" Woken again on the same text, %d of %d: its last read left the issue unrefined; past that, the issue is blocked for a person.", r.Retry, RefineRetries)
+	}
+	if r.Dropped != "" && r.Dropped == r.Body && role != "" {
+		said += " The product owner's rewrite of what the reviewer found was not written, twice on the same text: the issue waits for a person."
 	}
 	if role == "" {
 		said = fmt.Sprintf("**workline's line** keeps this record while the issue is blocked, %d state %s before; moved out of Blocked, its count starts again.", r.Hops, plural(r.Hops, "step", "steps"))
