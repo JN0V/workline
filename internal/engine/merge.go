@@ -658,9 +658,27 @@ func releaseRebuild(f forge.Forge, o FollowOptions, covered, tip, baseTip string
 			return "it added " + commitSaid(repo, c) + ", no merged pull request of it known: it needs a yes"
 		case slices.ContainsFunc(m.Labels, accepted):
 			return "it added " + commitSaid(repo, c) + ", merged with a person's yes: it needs one"
+		case featureOrTask(m.Title):
+			return "it added " + commitSaid(repo, c) + ", a feature or a task: it needs a yes, whatever its labels"
 		}
 	}
 	return ""
+}
+
+// featureOrTask says whether a title, a conventional commit's, is of a
+// feature (`feat`) or a task (`task`): a change that needs a person's yes
+// whatever labels its merge request carried.
+func featureOrTask(title string) bool {
+	t := strings.ToLower(strings.TrimSpace(title))
+	i := strings.IndexAny(t, ":(!")
+	if i <= 0 {
+		return false
+	}
+	switch t[:i] {
+	case "feat", "feature", "task":
+		return true
+	}
+	return false
 }
 
 // pushedAfterAt says what was pushed to a merge request after the yes given
