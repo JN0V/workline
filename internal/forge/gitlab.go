@@ -1420,10 +1420,11 @@ func (g *gitlab) MergedSince(since time.Time) ([]MergeRequest, error) {
 		Author        struct {
 			Username string `json:"username"`
 		} `json:"author"`
-		MergedAt string `json:"merged_at"`
-		Merge    string `json:"merge_commit_sha"`
-		Squash   string `json:"squash_commit_sha"`
-		SHA      string `json:"sha"`
+		MergedAt string   `json:"merged_at"`
+		Merge    string   `json:"merge_commit_sha"`
+		Squash   string   `json:"squash_commit_sha"`
+		SHA      string   `json:"sha"`
+		Labels   []string `json:"labels"`
 	}
 	var all []MergeRequest
 	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); { // one array a page
@@ -1443,7 +1444,7 @@ func (g *gitlab) MergedSince(since time.Time) ([]MergeRequest, error) {
 				}
 			}
 			all = append(all, MergeRequest{ID: m.IID, Branch: m.Source, Base: m.Target, Here: m.SourceProject == m.TargetProject,
-				Title: m.Title, Author: m.Author.Username, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID), MergedAs: as, MergedAt: m.MergedAt, HeadSHA: m.SHA})
+				Title: m.Title, Author: m.Author.Username, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID), MergedAs: as, MergedAt: m.MergedAt, HeadSHA: m.SHA, Labels: m.Labels})
 		}
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
