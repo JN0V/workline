@@ -44,6 +44,8 @@ keep their ids.
   The same on every forge (local, GitHub, GitLab): plain git; on the
   local forge, a clean merge is proven first
   ([amended](#amendment-2026-11-11-1370-on-the-local-forge-a-clean-merge-is-proven)).
+  A developer request red or in conflict is also brought up to date
+  ([amended](#amendment-2026-11-16-1676-a-red-or-conflicting-developer-request-takes-main)).
 - **Not chosen for V1: eager.** Updating every request behind main at
   each push to main runs every request's checks for nothing in conflict.
   Deferred after V1.
@@ -133,6 +135,31 @@ keep their ids.
 Conformance: merge/local-behind-same-file-proven,
 local-behind-merged-red-held, local-behind-other-files-merges.
 
+## Amendment (2026-11-16, [#1676]): a red or conflicting developer request takes main
+
+- **The gap**: "only when the policy would merge it" left two requests
+  stuck. One, in conflict since `main` moved, had no green check, so the
+  policy was never asked and no round came. One, red on a role's bug
+  fixed on `main` since, held a head without the fix; nothing ran its
+  checks again.
+- **In conflict, nothing said yet**: the reconciler finds the
+  developer's merge round due from git's merge of `main`, with no
+  refused merge recorded first. Still one round a head.
+- **Red, behind `main`**: the engine's clean merge, as above, on any
+  red verdict, not only a time budget ([#1513]): pushed by the engine,
+  never a person's token; the checks run again. Once a tip of `main`:
+  a head that holds it is not merged again.
+- **With no agent**: the round says the conflict waits and records
+  nothing, so a later run with an agent takes it. The reconciler's
+  listing, run with no agent, cannot tell which run will have one.
+- **Not changed**: a green request that merges clean is not brought up
+  to date ([ADR-0051], cut 2); the eager update of every request behind
+  `main` stays deferred.
+- **Its cost**: a red request whose cause `main` did not fix runs its
+  checks once more each time `main` moves.
+
+Conformance: merge/local-conflict-no-agent-then-agent.
+
 ## Not chosen
 
 - **A rebase**: rewrites the reviewed and the tester's commits, and
@@ -150,3 +177,5 @@ local-behind-merged-red-held, local-behind-other-files-merges.
 [#1266]: https://github.com/JN0V/workline/issues/1266
 [#1354]: https://github.com/JN0V/workline/issues/1354
 [#1370]: https://github.com/JN0V/workline/issues/1370
+[#1513]: https://github.com/JN0V/workline/issues/1513
+[#1676]: https://github.com/JN0V/workline/issues/1676

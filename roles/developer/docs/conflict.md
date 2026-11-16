@@ -3,7 +3,9 @@ sources:
   - internal/developer/conflict.go
   - internal/engine/uptodate.go
   - internal/engine/engine.go
-checked: bc755346
+  - internal/engine/code.go
+  - internal/developer/review.go
+checked: 8cfadcb5
 verified: agent:claude-code
 ---
 # A pull request behind main
@@ -26,12 +28,20 @@ force-pushed.
 
 ## When
 
-- **Only when the policy would merge it** (`workline follow`): the
+- **When the policy would merge it** (`workline follow`): the
   developer's request, its verdict passed, accepted or a fix.
+- **Its verdict red, its head behind `main`**: `main` may have fixed the
+  cause, a role's bug among them. The engine merges `main` in as its own
+  commit, and the checks run again on the new head; once a tip of
+  `main`, never with a person's token
+  ([#1676](https://github.com/JN0V/workline/issues/1676)).
 - **In conflict**: git's merge of `main`, in memory, meets a conflict.
   Said on the request and its issue, in the refused merge's comment
   (`**Not merged: it conflicts with main**`), the files named; edited
   when the round fails, or the engine brings it up to date.
+- **In conflict, nothing said yet**: `main` moved into the developer's
+  request since its last round. The reconciler finds the merge round
+  due all the same, from git's merge of `main`.
 - **Clean, held by the forge** (a base that must be up to date): the
   engine merges `main` in alone, no agent, and pushes the merge.
 - **Clean, on the local forge, `main` having changed one of its files**:
@@ -40,11 +50,14 @@ force-pushed.
   green; the next reconcile reviews it, then it merges. Red: nothing
   moves, said on the request and its issue
   ([#1370](https://github.com/JN0V/workline/issues/1370)).
-- **Not yet**: every request behind `main` at each push to `main`.
+- **Never**: a green request that merges clean, the forge not holding
+  it: it merges as it is, nothing pushed to it.
 
 ## The merge round
 
 - **Due at the next reconcile**, before any review finding.
+- **With no agent**: it says the conflict waits, merges nothing and
+  records nothing; the next run with an agent takes it at the same head.
 - **Its worktree**: the branch's head with `main` merged in, git's
   markers in the files in conflict.
 - **Its task**: settle each conflict, keeping both changes; nothing

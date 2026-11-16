@@ -86,7 +86,10 @@ a feature or a task merges too, and the yes moves to the milestone's
   - the line's verdict on the head red (a role before the reviewer
     blocked): `verdict-red`, never "no review", and a person's yes does
     not lift it
-    ([#1327](https://github.com/JN0V/workline/issues/1327)).
+    ([#1327](https://github.com/JN0V/workline/issues/1327)); its head
+    behind `main`, the engine merges `main` in first, so the line runs
+    again on a head with `main`'s fixes
+    ([conflict.md](conflict.md#when)).
 - **A fix, its bug reproduced first**
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
   - its record names the tester's Draft its code started from, and
