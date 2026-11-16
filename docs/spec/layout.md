@@ -30,7 +30,7 @@ workline/
 │  ├─ builtin.go            the compiled-in roles, as blank imports
 │  ├─ committer/  developer/  tester/  reviewer/  documentalist/
 │  ├─ inspector/  product-owner/  auditor/  judge/
-│  └─ process-engineer/     prompt-only
+│  └─ process-engineer/     prompt-only (later: at its slice)
 ├─ skills/                  shared Agent Skills a role may load
 ├─ defaults/                THE LINE AS SHIPPED
 │  ├─ routing.yaml          the default line (was routing.default.yaml)
@@ -40,7 +40,8 @@ workline/
 │  ├─ conformance/          runner, engine cases; runs each role's cases/
 │  ├─ evaluation/           real-agent evals (cost tokens)
 │  └─ *_test.go             the checks once at the root (roles, agents' rules)
-├─ .workline/               this repository's own line: config.yaml, roles.lock
+├─ .workline/               this repository's own line: config.yaml;
+│                           roles.lock later (external roles, after 1.0)
 ├─ workline.go              go:embed what the binary ships (below)
 └─ go.mod  README.md  AGENTS.md
 ```
@@ -74,8 +75,24 @@ roles/<name>/
 - **The auditor's criteria win**: `roles/auditor/criteria/<role>/<kind>.md`,
   guarded, is read before the role's own `criteria/<kind>.md`.
 - **The binary ships** `role.yaml`, `prompts/` and `criteria/` of each
-  role, named one by one in `workline.go`; never `cases/`, `docs/` nor
-  `code/` as files. A check in `tests/` fails if a case is embedded.
+  role, named one by one in `workline.go` (today's `roles.go`, renamed
+  at move c); never `cases/`, `docs/` nor `code/` as files. A check in
+  `tests/` fails if a case is embedded.
+
+## Guarded paths
+
+`CODEOWNERS` lines follow their files in the pull request that moves
+them, so a guarded file is never unguarded for a commit:
+
+| Today | After | Moved with |
+|---|---|---|
+| `/roles/auditor/kinds/` | `/roles/auditor/criteria/` | move a |
+| `/roles/reviewer/kinds/` (guarded, no folder yet) | `/roles/reviewer/criteria/` | move a |
+| `/roles/{reviewer,auditor}/instruction.md`, `persona.md`, `policy.md`, `lenses/` | the same under `prompts/` | move b, that role's |
+| `/roles/{reviewer,auditor}/role.yaml` | unchanged | — |
+
+- **Other roles' `criteria/`** stay unguarded: a soft one shows in
+  the wake script; the auditor's copy, guarded, wins.
 
 ## Kinds of role
 
@@ -98,10 +115,45 @@ shipped one at the same place in the role's folder:
 
 - **The old flat path** (`.workline/roles/<role>/policy.md`) is no
   longer read once [move b](../adr/0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md#6-the-layout-reached-before-10)
-  lands: `workline doctor` names each file found there and where it must
-  go, and the role's run says it, never ignores it (principle 12).
+  lands.
+- **A file left there makes the run refuse**, naming where it goes; the
+  run never goes on with the shipped prompt (principle 12).
+- **`workline doctor` scans both folders**, `.workline/roles/<role>/`
+  and `~/.config/workline/roles/<role>/`, and names each file to move.
+
+## Role code, untangled
+
+[Move e](../adr/0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md#6-the-layout-reached-before-10)
+cuts every import of a role before the role moves:
+
+- **More than hooks**: engine, line and sample use about 55 developer
+  and tester symbols (`tester.TestsBranch`, `tester.Worktree`,
+  `developer.Merge`, `developer.Held`…); the developer uses 19 of the
+  tester's. They are data and functions: each moves to the core or to
+  the kit, never stays in a role another package reads.
+- **`internal/contract/`**: the role interfaces (pre, post, draw,
+  doctor checks, what the line asks a role), the types the line and a
+  role share, and the registry each role joins in `init()`.
+- **`internal/kit/`**: helpers role code may use, `testdef`, `codepick`,
+  the committer's message checks, the verdict reading others share.
+- **No cycle**: `contract` and `kit` never import `engine`, `line` or
+  `sample`. A role may: the product owner imports `engine` and `line`.
+- **`roles/builtin.go`** lists the compiled-in roles as blank imports;
+  only `cmd/workline` imports it, and the tests below.
+- **Tests**: an in-package test of `engine`, `line` or `sample` gets
+  fixture roles from a test registry in `internal/contract/`; a test on
+  the real roles lives in `tests/` and imports `roles/builtin.go`.
+- **The import check**, in `tests/`, reads `_test.go` files too: it
+  fails if anything under `internal/` imports `roles/`, or a role's code
+  another role's.
+- **Order, by size**: judge (300 lines), committer, inspector (1,100
+  each), product owner (2,800), developer (7,200), reviewer (8,100),
+  tester (9,600), documentalist (13,700); last, `sample`'s per-role draws.
 
 ## An external role
+
+*Not built yet, after 1.0 (the maintainer confirmed it): the engine
+refuses `from` today; `--roles <dir>` and `WORKLINE_ROLES` exist.*
 
 A project names it in its config, pinned:
 
@@ -122,8 +174,6 @@ roles:
   the trusted prepare step, with the forge and agent keys.
 - **A change of `from`, `ref` or `trust`** is a pull request on a
   guarded file, the person's label.
-- *Not built yet*: the engine refuses `from` today; `--roles <dir>` and
-  `WORKLINE_ROLES` exist.
 
 ## Borrowed
 
