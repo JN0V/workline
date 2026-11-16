@@ -8,7 +8,7 @@ sources:
   - defaults/ci/github/workline-warn.yml
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
-checked: 8538d558
+checked: 4cc417ab
 verified: agent:claude-code
 ---
 # Inspector

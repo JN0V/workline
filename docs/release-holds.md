@@ -1,6 +1,6 @@
 ---
 sources: [internal/line/hold.go, internal/forge/hold.go, internal/line/line.go, defaults/ci/github/workline-release.yml, defaults/ci/github/workline.yml, .github/workflows/workline.yml, .github/workflows/workline-release.yml]
-checked: 8538d558
+checked: 4cc417ab
 ---
 # What holds a release, and when to release
 
