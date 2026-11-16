@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
@@ -69,7 +70,11 @@ func keepAct(repo, runID, role string, st runState, index int, in intent.Intenti
 		rec.Ref = runID
 	}
 	if len(rec.Line) > maxActText {
-		rec.Line = rec.Line[:maxActText]
+		cut := maxActText
+		for cut > 0 && !utf8.RuneStart(rec.Line[cut]) {
+			cut-- // back to a rune boundary
+		}
+		rec.Line = rec.Line[:cut]
 	}
 	base := RunsDir(repo)
 	if err := os.MkdirAll(base, 0o755); err != nil {
