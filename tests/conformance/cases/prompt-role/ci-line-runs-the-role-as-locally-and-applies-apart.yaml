@@ -1,0 +1,22 @@
+case: prompt-role/ci-line-runs-the-role-as-locally-and-applies-apart
+about: "The same role, routed on an event in the project's config, runs when the line runs that event, as CI's agent step does: no apply, the forge and the files untouched, the agent's step holding no write token. It gives what it gave on a person's machine once the apply job, which holds the token, applies the run: the day's line written, the file outside the notes refused and left as it was."
+given:
+  repo: basic
+  setup:
+    - "mkdir notes && printf '# Today\\nNothing yet.\\n' > notes/today.md && git add notes && git commit -qm 'docs: start the notes'"
+  config:
+    routing: {events: {schedule: [scribe]}}
+    roles:
+      scribe:
+        settings:
+          notes: ["notes/**"]
+  forge:
+    issues:
+      - {id: 7, title: "Slow start", body: "The tool starts slowly.", labels: [], comments: []}
+run: {route: schedule, ai: "fake:scribe-day-then-bounded", no-apply: true, then: resume}
+expect:
+  status: pass
+  agent-calls: 2
+  files:
+    notes/today.md: {contains: ["Open: Slow start"], lacks: ["Nothing yet."]}
+    README.md: {lacks: ["slow to start"]}

@@ -1,0 +1,17 @@
+case: prompt-role/a-missing-prompt-is-said
+about: "A role that names a prompt it does not have (context.knowledge: house-style.md) does not pass, though its input is read: the run says which prompt is missing, and applies nothing."
+given:
+  repo: basic
+  setup:
+    - "mkdir notes && printf '# Today\\nNothing yet.\\n' > notes/today.md && git add notes && git commit -qm 'docs: start the notes'"
+  env: {WORKLINE_ROLES: "$FIXTURES/roles"}
+  forge:
+    issues:
+      - {id: 7, title: "Slow start", body: "The tool starts slowly.", labels: [], comments: []}
+run:
+  sh: 'workline run-role scribe-unwritten --event schedule --ai "cmd:sh $FIXTURES/agents/scribe-writes-the-day.sh" --forge "fake:$(cd .. && pwd)/forge.json"'
+expect:
+  exit: 1
+  stderr: ["house-style.md"]
+  files:
+    notes/today.md: {contains: ["Nothing yet."], lacks: ["Open: Slow start"]}

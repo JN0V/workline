@@ -1,0 +1,16 @@
+case: prompt-role/acts-sampled-drawn-by-kind-and-rechecked
+about: "A week of the role's acts: the role comments on an issue, its act recorded by the engine, and the weekly sample, run on that week, draws it by kind like any other role's act — said in its findings, by the role — and the auditor re-checks it, one call. The week is the current one, the day the act was done."
+given:
+  repo: basic
+  setup:
+    - "mkdir ../roles-all && S=$(cd \"$FIXTURES/../../../roles\" && pwd) && for d in \"$S\"/*/ \"$FIXTURES\"/roles/*/; do ln -s \"${d%/}\" ../roles-all/; done"
+  forge:
+    issues:
+      - {id: 7, title: "Slow start", body: "The tool starts slowly.", labels: [], comments: []}
+run:
+  sh: 'set -e; R=$(cd .. && pwd)/roles-all; F=$(cd .. && pwd)/forge.json; workline run-role scribe --event schedule --target issue:7 --ai "cmd:sh $FIXTURES/agents/scribe-comments.sh" --roles "$R" --forge "fake:$F"; workline sample --week "$(date -u +%G-W%V)" --judge "cmd:sh $FIXTURES/agents/audit-holds.sh" --roles "$R" --forge "fake:$F" --json'
+expect:
+  exit: 0
+  stdout:
+    - "by the scribe"
+    - '"agent-calls": 1'

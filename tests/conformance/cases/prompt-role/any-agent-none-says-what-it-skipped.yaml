@@ -1,0 +1,21 @@
+case: prompt-role/any-agent-none-says-what-it-skipped
+about: "The same role with agent `none` asks no one: the run reports, its summary saying what it skipped, and writes nothing."
+given:
+  repo: basic
+  setup:
+    - "mkdir notes && printf '# Today\\nNothing yet.\\n' > notes/today.md && git add notes && git commit -qm 'docs: start the notes'"
+  config:
+    roles:
+      scribe:
+        settings:
+          notes: ["notes/**"]
+  forge:
+    issues:
+      - {id: 7, title: "Slow start", body: "The tool starts slowly.", labels: [], comments: []}
+run: {role: scribe, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "skipped"
+  files:
+    notes/today.md: {contains: ["Nothing yet."], lacks: ["Open: Slow start"]}

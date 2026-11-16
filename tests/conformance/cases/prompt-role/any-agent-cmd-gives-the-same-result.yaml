@@ -1,0 +1,20 @@
+case: prompt-role/any-agent-cmd-gives-the-same-result
+about: "The same role run with a `cmd:` agent, any command that reads the prompt and answers the proposals, gives the same kind of result as with any other agent: its patch within the notes applied, one call."
+given:
+  repo: basic
+  setup:
+    - "mkdir notes && printf '# Today\\nNothing yet.\\n' > notes/today.md && git add notes && git commit -qm 'docs: start the notes'"
+  config:
+    roles:
+      scribe:
+        settings:
+          notes: ["notes/**"]
+  forge:
+    issues:
+      - {id: 7, title: "Slow start", body: "The tool starts slowly.", labels: [], comments: []}
+run: {role: scribe, event: schedule, ai: "cmd:sh $FIXTURES/agents/scribe-writes-the-day.sh"}
+expect:
+  status: pass
+  agent-calls: 1
+  files:
+    notes/today.md: {contains: ["Open: Slow start"], lacks: ["Nothing yet."]}
