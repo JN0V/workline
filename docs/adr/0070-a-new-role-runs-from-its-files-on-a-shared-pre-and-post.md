@@ -13,8 +13,7 @@
   `pre` and `post` optional; `role.yaml` gains `inputs` and `acts`;
   `without-ai` read at last, `report` its default for a role of files
   only (today "not read yet", default `block`)
-- **Research:** [skills.md](../research/skills.md),
-  [portability.md](../research/portability.md), [agent-sandbox.md](../research/agent-sandbox.md)
+- **Research:** [skills.md](../research/skills.md), [agent-sandbox.md](../research/agent-sandbox.md)
 
 ## Context
 
@@ -50,12 +49,10 @@ flowchart LR
   `inputs` ([§2](#2-inputs-from-a-short-fixed-list)), writes the
   facets' task with them to `in/task.md`, what it cut to `in/cuts`, the
   role's declared skills to `in/skills`.
-- **The agent has no tools** (`--tools ""`, `internal/agent/claude.go`):
-  it sees only what the shared `pre` wrote.
+- **The agent has no tools** (`--tools ""`): it sees what `pre` wrote.
 - **No `post` file: the shared one runs.** It checks each proposal
   against `intentions`, `duties` and `acts`; the apply step applies.
-- **Each is optional on its own**: a role may bring its own `pre` and
-  take the shared `post`, or call the shared one first and add to it.
+- **Each is optional on its own**; a role's own may call the shared one.
 - **The shared `post` blocks on converging facts only**: an input
   not read, a facet missing, an intention or kind not declared, a write
   outside `duties` (principles 12 and 15). Never on what the agent
@@ -64,12 +61,9 @@ flowchart LR
   `report` by default for such a role, saying what it skipped
   ([ADR-0066]). A `cmd:` agent gets the task inlined.
 - **A role still brings its own `pre` or `post`** when part of its job
-  converges ([§4](#4-when-a-part-moves-to-code)): a routine settled
-  without the agent, a gate on a fact, a judge's questions, a worktree.
-- **Same everywhere**: `workline run-role` locally; in CI routed per
-  event by `workline route`, no workflow per role (principle 10).
-- **The roles built today keep their scripts**; moving their judgement
-  to prompts is an issue each.
+  converges ([§4](#4-when-a-part-moves-to-code)): a routine, a gate on
+  a fact, a judge's questions, a worktree. Built roles keep theirs.
+- **Same everywhere**: `run-role` locally, `route` in CI (principle 10).
 
 ### 2. Inputs, from a short fixed list
 
@@ -84,8 +78,8 @@ flowchart LR
 | `sample` | the weekly sample's results ([ADR-0046]) |
 | `runs` | the run records of a window |
 
-- **Each has a cap**; what is cut is said in `in/cuts`, as today.
-- **`runs` and `wake` are sent as recorded**, not re-summarised.
+- **Each has a cap**, cuts said in `in/cuts`; `runs` and `wake` are
+  sent as recorded, not re-summarised.
 - **An input not read** (an API error, a record missing) is said on the
   run and blocks it: never a task written without it (principle 12).
 - **`duties.reads` is enforced nowhere today**; slice 3 enforces it on
@@ -116,15 +110,12 @@ flowchart LR
   `roles/<name>/audit/<kind>.md`, read by the auditor, never by the
   role's agent. The auditor looks it up in its own `kinds/` first, the
   project's then the shipped, then in the role's `audit/`.
-- **Why there**: adding a role needs no label; the oversight stays
-  guarded where it acts: the auditor's prompts frame every question,
-  the engine checks every quote, a panel settles a dispute ([ADR-0046]).
-- **The risk**: a soft question for one's own acts. The reviewer reads
-  it like any prompt, the wake script prints it changed; a person may
-  copy it into `roles/auditor/kinds/`, where it wins, guarded.
+- **Why there**: adding a role needs no label; the auditor's guarded
+  prompts frame every question, the engine checks quotes ([ADR-0046]).
+  A soft question for one's own acts: the wake script prints it changed;
+  a person may copy it into `roles/auditor/kinds/`, where it wins.
 - **A kind with no question is still drawn**, asked the auditor's
-  generic one ("does the act hold against what it was done on, as the
-  role's mission says?"), its missing question said in the report.
+  generic one, its missing question said in the report.
 
 ### 4. When a part moves to code
 
@@ -137,8 +128,8 @@ result each run, verifiable without judgement.
   tokens or wait.
 - **Who proposes**: the process engineer once built ([#89]); anyone
   else as an issue ([ADR-0068 §5](0068-the-line-steps-back-on-its-own-drift.md#5-the-persons-assistant-goes-through-the-line)).
-- **Who decides**: the product owner, at its level, like any need
-  ([ADR-0018], [ADR-0026]); the person's label only on a guarded file.
+- **Who decides**: the product owner, like any need ([ADR-0018],
+  [ADR-0026]); the person's label only on a guarded file.
 - **The move**: the role gains its own `pre` or `post`, its
   conformance case first; the wake script prints it as growth. Code
   that makes a role rigid moves back to its prompt by the same path.
@@ -156,18 +147,14 @@ result each run, verifiable without judgement.
 ## Alternatives
 
 - **The role as a skill** ([skills.md](../research/skills.md),
-  [#1494]): loaded when the agent judges it fits. A role must run on
-  its event, bounded by the engine; skills stay its optional know-how.
-- **An agent's own definition files** (subagents, TOML): no standard
-  ([portability.md](../research/portability.md#standards)); one would
-  impose its agent.
+  [#1494]): loaded at the agent's choice, not on its event.
+- **An agent's own definition files**: no standard
+  ([portability.md](../research/portability.md#standards)).
 - **GitHub Agentic Workflows** ([agent-sandbox.md](../research/agent-sandbox.md)):
   a read-only agent, safe outputs a separate job writes; that shape is
   borrowed. Not adopted: GitHub only, a workflow per role, no local run.
 - **Persona files an agent drives** ([landscape.md](../research/landscape.md)):
-  the LLM drives the flow, locally only, no apply step guarding it.
-- **A shared `pre` as a shell script**: not the same on every machine
-  (principle 10); the engine is the one binary ([ADR-0001]).
+  local only, no apply step. **A shell `pre`**: not portable ([ADR-0001]).
 - **Code per role, as today**: the growth [ADR-0068] measured.
 
 ## Consequences
@@ -179,13 +166,12 @@ result each run, verifiable without judgement.
 - **Routing a new role**: in `.workline/config.yaml`, guarded, the
   person's label; in `routing.default.yaml`, not guarded today, the
   line's normal path. An option: add it to `CODEOWNERS`.
-- **Risk**: the shared `pre` becomes where the engine grows; its
-  input list is fixed, each addition an issue the wake script prints.
+- **Risk**: the shared `pre` grows; its input list is fixed, each
+  addition an issue.
 
 ## Slices
 
-From [#1630], in order, each starting with its conformance case under
-`tests/conformance/cases/`:
+From [#1630], in order, each starting with its conformance case:
 
 1. **This record.**
 2. **A role with no scripts runs**: the shared `pre` and `post`,
