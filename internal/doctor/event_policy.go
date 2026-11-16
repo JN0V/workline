@@ -116,7 +116,7 @@ func policyAllows(raw []byte, event string, files []string) bool {
 	for _, f := range files {
 		// a deny that covers the file fails it, whatever else allows it
 		for _, p := range doc.Policies {
-			if policyNames(p, event) && policyCovers(p, f) && policyDenies(p) {
+			if policyNames(p, event) && policyCovers(p, f) && policyDenies(p, event) {
 				return false
 			}
 		}
@@ -157,28 +157,46 @@ func policyNames(v any, event string) bool {
 	return false
 }
 
-func policyDenies(v any) bool {
+// policyDenies says whether the policy blocks the event: its action, effect
+// (or alike) field says deny, or a deny-like key holds a value that names the
+// event. A deny-like key that does not name the event (another event, false,
+// an empty list) is no deny of it.
+func policyDenies(v any, event string) bool {
 	switch x := v.(type) {
-	case string:
-		switch strings.ToLower(x) {
-		case "deny", "denied", "block", "blocked", "disallow", "disallowed":
-			return true
-		}
 	case map[string]any:
 		for k, c := range x {
 			lk := strings.ToLower(k)
-			if strings.Contains(lk, "deny") || strings.Contains(lk, "denied") || strings.Contains(lk, "block") || strings.Contains(lk, "disallow") {
+			if k == "conditions" {
+				continue
+			}
+			switch lk {
+			case "action", "effect", "type", "behavior", "decision", "mode", "access", "permission":
+				if s, ok := c.(string); ok && denyWord(s) {
+					return true
+				}
+			}
+			if denyWord(lk) && policyNames(c, event) {
 				return true
 			}
-			if policyDenies(c) {
+			if policyDenies(c, event) {
 				return true
 			}
 		}
 	case []any:
 		for _, c := range x {
-			if policyDenies(c) {
+			if policyDenies(c, event) {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+func denyWord(s string) bool {
+	s = strings.ToLower(s)
+	for _, w := range []string{"deny", "denied", "block", "disallow"} {
+		if strings.Contains(s, w) {
+			return true
 		}
 	}
 	return false
