@@ -4,9 +4,9 @@ about: >
   conflict (#1676). `!2`, the developer's fix for bug #3, conflicts with
   main in lib.sh. The reconciler runs its merge round with no agent: it
   says the conflict waits, merges nothing, and records nothing on `!2`.
-  The reconciler's listing, which runs with no agent in CI, still says
-  the round due on the same head; the next run, with an agent, merges
-  main in and settles it.
+  The reconciler's listing, which runs with no agent in CI, says no
+  round due again on the same head and base (#1690: no run for nothing);
+  the next run, with an agent, merges main in and settles it.
 given:
   repo: local-fix
   setup:
@@ -28,7 +28,7 @@ expect:
   stderr:
     - "no-agent merge request 2: settling a conflict is judgement on code: with no agent, nothing is merged"
     - "proof-green merge request 2: 4 tests passed"
-  stdout: ["[2]\n", "main-in\n"]
+  stdout: ["[]\n", "main-in\n"]
   branches:
     workline/developer/3:
       lib.sh: "sub() { echo $(($1 - $2)); }\nmul() { echo $(($1 * $2)); }"
