@@ -60,24 +60,12 @@ func conflictAt(kept forge.Kept) (head, base string, ok bool) {
 	return m[1], m[2], true
 }
 
-// noAgent says no agent is set to settle a conflict.
-func noAgent() bool {
-	ai := os.Getenv("WORKLINE_AI")
-	return ai == "" || ai == "none"
-}
-
-// seenNoAgent says the conflict at head was seen with no agent, and none
-// is set yet: nothing to wake for. With an agent set, it is due again.
-func seenNoAgent(a Act, head string) bool {
-	return a.NoAgent == head && noAgent()
-}
-
 // conflictDue says a merge round is due: `follow` said a conflict at head,
 // the branch's head now, no round failed at it, and git still meets it in
 // repo (a base not fetched here counts it).
 func conflictDue(kept forge.Kept, a Act, repo, head string) (base string, due bool) {
 	h, b, ok := conflictAt(kept)
-	if !ok || head == "" || h != head || a.Conflict == head || seenNoAgent(a, head) {
+	if !ok || head == "" || h != head || a.Conflict == head {
 		return "", false
 	}
 	_, files, err := MergeTree(repo, head, b)
@@ -101,7 +89,7 @@ func conflictNow(f forge.Forge, kept forge.Kept, a Act, repo string, mr forge.Me
 	if base, due := conflictDue(kept, a, repo, head); due {
 		return base, true
 	}
-	if head == "" || a.Conflict == head || seenNoAgent(a, head) || mr.Base == "" {
+	if head == "" || a.Conflict == head || mr.Base == "" {
 		return "", false
 	}
 	refs := []string{"refs/remotes/origin/" + mr.Base, "refs/heads/" + mr.Base}
@@ -264,14 +252,10 @@ func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "its head merges clean with " + mr.Base + " now: no round",
 			Findings: []verdict.Finding{{Rule: "conflict-gone", Level: "info", Where: where, Message: "the conflict said on it is no more: the merge policy merges it as it is"}}})
 	}
-	if noAgent() {
-		// The head is recorded, so the reconcile finds no round due again at it.
-		a.NoAgent = head
-		if err := writeIntents(runDir, "", []intent.Intention{
-			{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}}}); err != 0 {
-			return err
-		}
-		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no agent: the conflict waits for a run with one, no round counted",
+	// No agent: nothing recorded, so a later run with one takes the round
+	// at this head; the reconciler's listing runs with none (#1676).
+	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
+		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no agent: the conflict waits for a run with one, no round counted",
 			Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where, Message: "settling a conflict is judgement on code: with no agent, nothing is merged (principle 5); in conflict: " + strings.Join(files, ", ")}}})
 	}
 	r := round{MR: mr.ID, Branch: mr.Branch, Record: a, At: head, Merge: base, Conflicts: files,
