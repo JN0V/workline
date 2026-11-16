@@ -57,6 +57,14 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 	case d.Kind == "":
 		return waits("", fmt.Sprintf("%s: whether it is a feature, a label on #%d says (`bug`, `enhancement`, `task`)", d.Says(), d.Issue))
 	case d.WaitsForAYes() && o.Merge != MergeEnterprising:
+		// Kept up to date while it waits, once per tip of main (takeBase
+		// merges only a head behind it), so a person never accepts a stale
+		// head; a conflict is said as for any other, and it still waits.
+		if w.e != nil && w.e.takeBase != nil {
+			if _, err := w.e.takeBase("it waits for a person's yes, behind " + o.Base); err != nil {
+				return nil, err
+			}
+		}
 		// Said once on it, where a person reviewing looks, the decision's
 		// record for the auditor (ADR-0046).
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
@@ -91,7 +99,14 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		// Blocked on a setting main may have fixed since: main merged in,
 		// the line runs again on the new head (#1513).
 		if baseFixable(v) && w.e != nil && w.e.takeBase != nil {
-			if acted, err := w.e.takeBase("its verdict blocks on " + v.why); acted || err != nil {
+			if w.e.behind && ownMerges(o.Repo, w.baseTip, w.tip) >= maxBaseMerges {
+				// Bounded: a red main does not fix costs a judge run in full
+				// at each merge of main; said once on it.
+				body := fmt.Sprintf("**Blocked, and %s no longer merged in**: its verdict is red (%s) and %d merges of %s into it did not mend it. To spare a judge run at each move of %s, %s is merged in no more; a new push of the developer's, or a person, brings it up to date.", o.Base, v.why, maxBaseMerges, o.Base, o.Base, o.Base)
+				if err := f.Sticky(forge.Target{Kind: "merge-request", ID: w.mr.ID}, body, forge.Marker("base-merges-bounded"), true); err != nil {
+					return nil, err
+				}
+			} else if acted, err := w.e.takeBase("its verdict blocks on " + v.why); acted || err != nil {
 				return nil, err
 			}
 		}
@@ -307,6 +322,26 @@ func featureMilestone(f forge.Forge, repo string, issue int) (string, error) {
 // output, so a fix of a role on main may change it; the update is once per
 // main tip (takeBase merges only a head behind it, and once the base is in
 // the head the request is up to date).
+// maxBaseMerges bounds the merges of main the engine makes into a head whose
+// verdict stays red: each runs the judge in full.
+const maxBaseMerges = 2
+
+// ownMerges counts the engine's own merges of the base in the branch, past
+// baseTip.
+func ownMerges(repo, baseTip, tip string) int {
+	out, err := git(repo, nil, "rev-list", "--merges", baseTip+".."+tip)
+	if err != nil {
+		return 0
+	}
+	n := 0
+	for _, c := range strings.Fields(out) {
+		if OwnMerge(repo, c, baseTip) {
+			n++
+		}
+	}
+	return n
+}
+
 func baseFixable(v kept) bool {
 	return v.class == verdictRed
 }

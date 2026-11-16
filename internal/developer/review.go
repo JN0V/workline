@@ -673,6 +673,13 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 // handed to a person. Its branch's head is read in repo, as fetched from
 // origin; not found, the round itself compares the gates' head.
 func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
+	return RoundDueFor(f, repo, mr, !noAgent())
+}
+
+// RoundDueFor is RoundDue for a run that has an agent set, or none: with
+// none, a conflict already found with none at the same head and base is not
+// due again (#1690), no run started for nothing.
+func RoundDueFor(f forge.Forge, repo string, mr forge.MergeRequest, agent bool) (bool, error) {
 	if developerIssue(mr.Branch) == 0 {
 		return false, nil
 	}
@@ -692,7 +699,8 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	if a.Handed {
 		return false, nil
 	}
-	if _, due := conflictNow(f, kept, a, repo, mr, branchHead(f, repo, mr.Branch)); due {
+	cHead := branchHead(f, repo, mr.Branch)
+	if base, due := conflictNow(f, kept, a, repo, mr, cHead); due && !(!agent && noAgentAsked(kept, cHead, base)) {
 		return true, nil // its merge refused for a conflict: a merge round (ADR-0067)
 	}
 	head, _ := gitOut(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/"+mr.Branch)

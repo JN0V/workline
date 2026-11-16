@@ -1082,7 +1082,7 @@ func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o e
 		if !strings.HasPrefix(mr.Branch, developer.Branch) {
 			continue
 		}
-		if !roundDue(res, f, o.Repo, mr) {
+		if !roundDue(res, f, o, mr) {
 			continue
 		}
 		if stop, w := roundStopped(res, f, cfg, o.Repo, mr); stop {

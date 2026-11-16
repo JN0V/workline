@@ -155,8 +155,12 @@ local-behind-merged-red-held, local-behind-other-files-merges.
 - **Not changed**: a green request that merges clean is not brought up
   to date ([ADR-0051], cut 2); the eager update of every request behind
   `main` stays deferred.
-- **Its cost**: a red request whose cause `main` did not fix runs its
-  checks once more each time `main` moves.
+- **Its cost, bounded** (#1690): a red request whose cause `main` did not
+  fix takes `main` in at most twice, then says on it that `main` is merged
+  in no more. A conflict found with no agent is said once on the request,
+  at its head and `main`'s tip: the reconcile starts no run again for it.
+  A feature waiting for a person's yes takes `main` in once per tip, so
+  the person accepts a current head.
 
 Conformance: merge/local-conflict-no-agent-then-agent.
 

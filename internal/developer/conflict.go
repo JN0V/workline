@@ -82,6 +82,24 @@ func conflictDue(kept forge.Kept, a Act, repo, head string) (base string, due bo
 	return b, true
 }
 
+// noAgent says no agent is set for this run.
+func noAgent() bool {
+	ai := os.Getenv("WORKLINE_AI")
+	return ai == "" || ai == "none"
+}
+
+// noAgentMark is kept in it: the head and the base the conflict was read at.
+func noAgentMark(head, base string) string {
+	return forge.Marker(fmt.Sprintf("conflict-no-agent head=%s base=%s", head, base))
+}
+
+// noAgentAsked says a round was started with no agent on this conflict, at
+// this head and this base: it is not started again for the same.
+func noAgentAsked(kept forge.Kept, head, base string) bool {
+	_, ok := kept.Last(noAgentMark(head, base))
+	return ok
+}
+
 // conflictNow is conflictDue with no record asked for: main moved into
 // the branch's conflict since its round, so no `follow` said it yet. The
 // base's tip as the forge keeps it in repo; git's merge says it conflicts.
@@ -254,7 +272,14 @@ func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog
 	}
 	// No agent: nothing recorded, so a later run with one takes the round
 	// at this head; the reconciler's listing runs with none (#1676).
-	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
+	if noAgent() {
+		// Said on it, at this head and this base, so the reconciler starts no
+		// run again for the same conflict (RoundDue); a new head or base, or
+		// a run with an agent, takes the round.
+		body := fmt.Sprintf("**A conflict with %s waits for an agent**: no agent is set, so no round is run for it at this head and this %s; a new push, a new tip of %s, or a run with an agent settles it.", mr.Base, mr.Base, mr.Base)
+		if err := forge.KeepOwn(f, forge.Target{Kind: "merge-request", ID: mr.ID}, body, noAgentMark(head, base), true); err != nil {
+			return external(err)
+		}
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no agent: the conflict waits for a run with one, no round counted",
 			Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where, Message: "settling a conflict is judgement on code: with no agent, nothing is merged (principle 5); in conflict: " + strings.Join(files, ", ")}}})
 	}

@@ -45,9 +45,9 @@ func roundOn(b forge.Backlog, t *tally, s routing.State, id int) (*forge.MergeRe
 
 // roundDue says whether a review round is due on mr, the developer's:
 // what it could not read added to res, a warning, and not due.
-func roundDue(res *Result, f forge.Forge, repo string, mr forge.MergeRequest) bool {
+func roundDue(res *Result, f forge.Forge, o engine.Options, mr forge.MergeRequest) bool {
 	where := fmt.Sprintf("merge request %d", mr.ID)
-	ok, err := developer.RoundDue(f, repo, mr)
+	ok, err := developer.RoundDueFor(f, o.Repo, mr, o.AI != "none")
 	switch {
 	case errors.Is(err, developer.ErrRecordUnread):
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "round-unread", Level: "warn", Where: where,
@@ -88,7 +88,7 @@ func roundSaid(res *Result, mr forge.MergeRequest) {
 // open (ADR-0064, §5).
 func byRound(res *Result, cfg *routing.Config, f forge.Forge, spec string, o engine.Options, event string, id int, mr forge.MergeRequest) {
 	where := fmt.Sprintf("#%d's step is the review round on merge request %d", id, mr.ID)
-	if !roundDue(res, f, o.Repo, mr) {
+	if !roundDue(res, f, o, mr) {
 		res.Summary = fmt.Sprintf("%s: %s, not due: nothing to start", event, where)
 		return
 	}
