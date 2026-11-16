@@ -2,7 +2,6 @@ package engine
 
 import (
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -10,11 +9,11 @@ import (
 )
 
 // Red fixed on main; No person's token: given a developer pull request
-// red at the tester (frozen-test-missing, as #1638 was; not
-// proof-over-time), when a fix merges into main, then the line brings the
-// branch up to date by itself, main merged in as workline's own commit (a
-// trailer of its own), so the checks run again on the new head; and it
-// does not wait for a person's label because of it.
+// red at the tester (a block that is not proof-over-time), when a fix
+// merges into main, then the line brings the branch up to date by itself,
+// main merged in as workline's own commit (a trailer of its own), so the
+// checks run again on the new head; and it does not wait for a person's
+// label because of it.
 func TestWeighTakesMainInForATesterBlock(t *testing.T) {
 	for _, v := range []string{"CI", "GITHUB_ACTIONS", "GITLAB_CI"} {
 		t.Setenv(v, "")
@@ -47,6 +46,8 @@ func TestWeighTakesMainInForATesterBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	record := "**The developer's record**\n\n" + `<!-- workline:act {"act":"code","issue":1} -->`
+	_ = record
 	if err := l.Comment(forge.Target{Kind: "merge-request", ID: id}, "**The developer's record**\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":1} -->", forge.Marker("sticky=developer/code")); err != nil {
 		t.Fatal(err)
 	}
@@ -54,11 +55,7 @@ func TestWeighTakesMainInForATesterBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The verdict that kept pull request #1638 red, as its workline/verdict
-	// status kept it: the tester's frozen-test-missing, with the
-	// documentalist's findings that ride along.
-	rules := []string{"derived-behind", "folder-too-long", "suspect", "links-not-checked", "section-too-long", "doc-too-long", "sources-too-wide", "frozen-test-missing"}
-	hand := map[string]kept{head: {class: verdictRed, why: "the line's verdict on its head is block (tester block): " + strings.Join(rules, ", "), rules: rules}}
+	hand := map[string]kept{head: {class: verdictRed, why: "the line's verdict on its head is block (tester): tester-test-wrong", rules: []string{"tester-test-wrong"}}}
 	n := &normal{local: true, app: forge.LocalApp, steers: func(string) string { return "" }}
 	o := FollowOptions{Repo: repo, Base: "main", Merge: MergeNormal}
 	res := &Result{}
