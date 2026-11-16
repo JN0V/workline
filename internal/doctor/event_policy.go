@@ -106,10 +106,12 @@ func triggersOn(data []byte, event string) bool {
 func policyAllows(raw []byte, event string, files []string) bool {
 	var doc struct {
 		Policies []map[string]any `json:"policies"`
+		Rules    []map[string]any `json:"rules"`
 	}
 	if json.Unmarshal(raw, &doc) != nil {
 		return false
 	}
+	doc.Policies = append(doc.Policies, doc.Rules...)
 	for _, f := range files {
 		ok := false
 		for _, p := range doc.Policies {
