@@ -1,0 +1,23 @@
+# The first answer reaches README.md, outside the notes the role may write;
+# the second, asked again after the refusal, keeps the day's line alone.
+calls:
+  - - patch: |
+        --- a/notes/today.md
+        +++ b/notes/today.md
+        @@ -1,2 +1,2 @@
+         # Today
+        -Nothing yet.
+        +Open: Slow start
+    - patch: |
+        --- a/README.md
+        +++ b/README.md
+        @@ -3 +3 @@
+        -A small project.
+        +A small project, slow to start.
+  - - patch: |
+        --- a/notes/today.md
+        +++ b/notes/today.md
+        @@ -1,2 +1,2 @@
+         # Today
+        -Nothing yet.
+        +Open: Slow start

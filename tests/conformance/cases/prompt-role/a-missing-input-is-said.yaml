@@ -1,0 +1,9 @@
+case: prompt-role/a-missing-input-is-said
+about: "A role that names an input the engine cannot read — the open issues, with no forge to read them from — does not pass: the run says the input, issues, was not read."
+given:
+  repo: basic
+  env: {WORKLINE_ROLES: "$FIXTURES/roles"}
+run: {cli: [run-role, scribe, --event, schedule, --ai, none, --forge, none]}
+expect:
+  exit: 1
+  stderr: ["issues"]

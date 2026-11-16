@@ -1,0 +1,21 @@
+case: prompt-role/local-run-reads-asks-and-applies-within-settings
+about: "A role declared by its files alone (settings, prompts, no script) runs on a person's machine: the engine's shared steps read the open issues it names, the agent is asked with them in its task, and what it proposes is applied only where the project's settings let it write. The agent answers only if its prompt holds the issue's title, and its first answer reaches README.md, outside the notes: refused, asked again, the day's line applied and README.md left as it was."
+given:
+  repo: basic
+  setup:
+    - "mkdir notes && printf '# Today\\nNothing yet.\\n' > notes/today.md && git add notes && git commit -qm 'docs: start the notes'"
+  config:
+    roles:
+      scribe:
+        settings:
+          notes: ["notes/**"]
+  forge:
+    issues:
+      - {id: 7, title: "Slow start", body: "The tool starts slowly.", labels: [], comments: []}
+run: {role: scribe, event: schedule, ai: "cmd:sh $FIXTURES/agents/scribe-from-its-task.sh"}
+expect:
+  status: pass
+  agent-calls: 2
+  files:
+    notes/today.md: {contains: ["Open: Slow start"], lacks: ["Nothing yet."]}
+    README.md: {lacks: ["slow to start"]}

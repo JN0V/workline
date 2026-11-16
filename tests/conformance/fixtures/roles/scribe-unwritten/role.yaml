@@ -1,0 +1,13 @@
+contract: 1
+name: scribe-unwritten
+mission: A role of the tests only, made of its files alone, that names a prompt it does not have — so a missing prompt is said, never run on without it.
+
+events: [schedule]
+model: {capability: writing, tier: standard, effort: medium}
+inputs: [issues]
+context:
+  knowledge: [house-style.md]
+duties:
+  reads: ["**"]
+  writes: ["notes/**"]
+intentions: [patch, note]

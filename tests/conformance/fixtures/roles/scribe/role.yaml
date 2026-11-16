@@ -1,0 +1,14 @@
+contract: 1
+name: scribe
+mission: A role of the tests only, made of its files alone, no pre and no post — it keeps a line a day in the notes from the open issues — so a role that is a prompt runs on the engine's shared steps with any agent.
+
+events: [schedule]
+model: {capability: writing, tier: standard, effort: medium, promote-after: 1}
+inputs: [issues]
+duties:
+  reads: ["**"]
+  writes: ["$settings.notes"]
+intentions: [patch, comment, note]
+settings:
+  # Where the role may write: the project's config says where.
+  notes: ["scratch/**"]
