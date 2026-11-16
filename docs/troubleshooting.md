@@ -183,7 +183,7 @@ The line of states says why on the issue and in the run's summary
   whether the default branch has it.
 - **Code scanning's**: workline before
   [#412](https://github.com/JN0V/workline/issues/412) sent every finding
-  there, one conversation each. Copy `ci/github/workline.yml` and
+  there, one conversation each. Copy `defaults/ci/github/workline.yml` and
   `workline-apply.yml` of this release: the documentalist's findings
   become a check's annotations, which open none.
 - **The reviewer's comments** are conversations by design. The reviewer

@@ -1,4 +1,4 @@
-# workline's jobs that write, on its own repository: ci/github/workline-apply.yml,
+# workline's jobs that write, on its own repository: defaults/ci/github/workline-apply.yml,
 # with the engine built from main's commit rather than installed — merged, it
 # is reviewed; what a pull request changes in the engine never runs with the
 # write token. It is built once a commit of main (.github/actions/engine):

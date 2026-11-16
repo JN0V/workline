@@ -1,5 +1,5 @@
 ---
-sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
+sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
 checked: 8538d558
 verified: agent:documentalist
 judged: e8a46f7
@@ -7,7 +7,7 @@ judged: e8a46f7
 # What the GitLab template does
 
 Part of [workline on GitLab CI](../ci-gitlab.md): what each job of
-[the template](../../ci/gitlab/workline.gitlab-ci.yml) does, and why.
+[the template](../../defaults/ci/gitlab/workline.gitlab-ci.yml) does, and why.
 
 - `workline:gates` runs your gates alone, before `workline:judge`, and
   writes what they found the change adds as its Code Quality report;

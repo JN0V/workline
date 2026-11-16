@@ -1,5 +1,5 @@
 <!-- workline
-sources: [ci/github, cmd/workline]
+sources: [defaults/ci/github, cmd/workline]
 verified: agent:documentalist
 -->
 

@@ -1,5 +1,5 @@
 ---
-sources: [ci/github/workline-objection.yml, ci/github/workline-answer.yml, ci/github/workline-develop.yml, ci/gitlab/workline.gitlab-ci.yml, internal/engine/fromrun.go]
+sources: [defaults/ci/github/workline-objection.yml, defaults/ci/github/workline-answer.yml, defaults/ci/github/workline-develop.yml, defaults/ci/gitlab/workline.gitlab-ci.yml, internal/engine/fromrun.go]
 checked: 8538d558
 ---
 # An objection's jobs

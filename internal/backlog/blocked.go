@@ -22,7 +22,7 @@ import (
 const BlockedElsewhere = "a role or a person blocked it"
 
 // stateLabels are the labels of the line's states as shipped
-// (routing.default.yaml), by the state's name.
+// (defaults/routing.yaml), by the state's name.
 var stateLabels = map[string]string{"refine": LabelToRefine, "tests": LabelNeedsTests, "ready": LabelReady, "doing": "workline:developing", "blocked": LabelBlocked}
 
 // StateLabel is the label of the line's state name, as shipped; the name

@@ -1,7 +1,7 @@
 ---
 sources:
   - roles/developer/role.yaml
-  - ci/github/workline-develop.yml
+  - defaults/ci/github/workline-develop.yml
   - internal/developer
 checked: 27437193
 verified: agent:claude-code

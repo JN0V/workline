@@ -2,9 +2,9 @@
 sources:
   - roles/tester/role.yaml
   - internal/tester
-  - ci/github/workline-objection.yml
-  - ci/github/workline-answer.yml
-  - ci/github/workline-gardening.yml
+  - defaults/ci/github/workline-objection.yml
+  - defaults/ci/github/workline-answer.yml
+  - defaults/ci/github/workline-gardening.yml
 checked: 01e06784
 verified: agent:claude-code
 ---
@@ -202,9 +202,9 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
   - Install your test runner in the gardening's judge job: the tests are
     proven red there.
 - **On an objection**, in CI:
-  - GitHub: [workline-objection.yml](../../ci/github/workline-objection.yml)
+  - GitHub: [workline-objection.yml](../../defaults/ci/github/workline-objection.yml)
     notices the comment, with no token;
-    [workline-answer.yml](../../ci/github/workline-answer.yml) answers,
+    [workline-answer.yml](../../defaults/ci/github/workline-answer.yml) answers,
     from the default branch. Copy both.
   - GitLab: the project's note webhook, on its own trigger URL,
     starts the template's `workline:objection:*` jobs

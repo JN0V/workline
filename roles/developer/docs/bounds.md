@@ -6,8 +6,8 @@ sources:
   - internal/developer/worktree.go
   - internal/developer/words.go
   - internal/developer/prbounds.go
-  - ci/github/workline-bounds.yml
-  - ci/gitlab/workline-bounds.gitlab-ci.yml
+  - defaults/ci/github/workline-bounds.yml
+  - defaults/ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go
 checked: 8ddc4e54
 verified: agent:claude-code
@@ -192,7 +192,7 @@ The check above, before the push, stays a fast first pass.
 
 ### In CI
 
-- **GitHub**: [workline-bounds.yml](../../../ci/github/workline-bounds.yml),
+- **GitHub**: [workline-bounds.yml](../../../defaults/ci/github/workline-bounds.yml),
   the check `workline bounds`; require it on the default branch, its
   source GitHub Actions ([set up](../../../docs/ci-github.md#set-up)).
   - It runs on `pull_request_target`: the default branch's copy of
@@ -206,7 +206,7 @@ The check above, before the push, stays a fast first pass.
     second check of that name: both are required, so the red one
     still blocks.
 - **GitLab**: the job `workline:bounds`
-  ([the file](../../../ci/gitlab/workline-bounds.gitlab-ci.yml)). GitLab
+  ([the file](../../../defaults/ci/gitlab/workline-bounds.gitlab-ci.yml)). GitLab
   runs a merge request's pipeline from its own branch: a pipeline
   execution policy (Ultimate) or code owners (Premium) keep the job;
   on Free, the review. `workline doctor` reads the tier

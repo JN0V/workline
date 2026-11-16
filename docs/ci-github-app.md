@@ -1,5 +1,5 @@
 ---
-sources: [ci/github, .github/workflows/workline-apply.yml, .github/workflows/workline.yml]
+sources: [defaults/ci/github, .github/workflows/workline-apply.yml, .github/workflows/workline.yml]
 checked: 6163e1c4
 judged: c7e1e98
 verified: agent:claude-code

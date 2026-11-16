@@ -225,7 +225,7 @@ none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-ac
 line. The judging job reads the summary comment, to know what was
 reviewed: on GitHub it needs a read token (`GH_TOKEN`,
 `pull-requests: read`), which
-[ci/github/workline.yml](../../../ci/github/workline.yml) gives it. The
+[defaults/ci/github/workline.yml](../../../defaults/ci/github/workline.yml) gives it. The
 lenses that only warn read apart, in a comment of their own ([apart](apart.md)).
 
 - **Each important finding on its line**, in the forge's own review; the

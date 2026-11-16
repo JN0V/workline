@@ -56,7 +56,7 @@ func findingsOnMergeRequests(r *Report, o Options, projectForge string) {
 	if applies, granted := applyWorkflow(o.Repo); applies && !granted {
 		c.Level = Warn
 		c.Message += "; but the workflow running `workline apply` grants no `checks: write`, as copied before the findings became annotations: they reach pull requests only in the judge's job summary"
-		c.Fix = "copy ci/github/workline.yml and workline-apply.yml of this release again (docs/ci-github.md); a GitHub App writing the check needs the permission Checks: read and write"
+		c.Fix = "copy defaults/ci/github/workline.yml and workline-apply.yml of this release again (docs/ci-github.md); a GitHub App writing the check needs the permission Checks: read and write"
 	}
 	r.add(c)
 }

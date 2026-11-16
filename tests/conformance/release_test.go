@@ -84,7 +84,7 @@ func TestReleaseDryRunEachNight(t *testing.T) {
 	// The templates' gardening, and workline's own: the dry run runs each
 	// night the gardening does.
 	sets := [][]string{
-		{"../../ci/github/workline-gardening.yml"},
+		{"../../defaults/ci/github/workline-gardening.yml"},
 		{"../../.github/workflows/workline-gardening.yml"},
 	}
 	for _, files := range sets {
@@ -169,7 +169,7 @@ func TestReleaseDryRunEachNight(t *testing.T) {
 
 func readGitLab(t *testing.T) map[string]any {
 	t.Helper()
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}

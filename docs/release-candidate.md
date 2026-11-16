@@ -1,5 +1,5 @@
 ---
-sources: [internal/engine/candidate.go, internal/engine/code.go, internal/engine/backlog.go, internal/forge/forge.go, ci/github/release-candidate.yml, ci/github/workline-merge.yml]
+sources: [internal/engine/candidate.go, internal/engine/code.go, internal/engine/backlog.go, internal/forge/forge.go, defaults/ci/github/release-candidate.yml, defaults/ci/github/workline-merge.yml]
 checked: 8538d558
 verified: agent:claude-code
 ---
@@ -97,14 +97,14 @@ merge: {autonomy: enterprising}
 ## Set up
 
 - **The release tool on the branch**: with release-please, copy
-  [release-candidate.yml](../ci/github/release-candidate.yml) to
+  [release-candidate.yml](../defaults/ci/github/release-candidate.yml) to
   `.github/workflows/`. It merges the tool's pull request into
   `release/v*` at once, the version decided before, and marks an
   `-rc.N` a pre-release.
 - **Let GitHub Actions create pull requests** (Settings, Actions,
   General): that workflow runs with the job's own token.
 - **The yes reaches workline**:
-  [workline-merge.yml](../ci/github/workline-merge.yml) runs `follow` on a
+  [workline-merge.yml](../defaults/ci/github/workline-merge.yml) runs `follow` on a
   candidate's label and close too.
 - **Stop release-please on `main`**: its release pull request there
   would ship features nobody tried.

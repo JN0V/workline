@@ -1,5 +1,5 @@
 ---
-sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
+sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, defaults/ci/github/workline-apply.yml, defaults/ci/github/workline-merge.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
 checked: 74dc6bec
 verified: agent:claude-code
 ---

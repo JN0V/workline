@@ -47,7 +47,7 @@ type keyJob struct {
 }
 
 func TestGitHubAppKeyOutOfPullRequestRuns(t *testing.T) {
-	files, _ := filepath.Glob("../../ci/github/*.yml")
+	files, _ := filepath.Glob("../../defaults/ci/github/*.yml")
 	own, _ := filepath.Glob("../../.github/workflows/*.yml")
 	users, warned := 0, 0
 	for _, f := range append(files, own...) {
@@ -256,7 +256,7 @@ func TestReleasePleaseMovesEveryPin(t *testing.T) {
 			moved = append(moved, e.Path)
 		}
 	}
-	files, _ := filepath.Glob("../../ci/*/*.yml")
+	files, _ := filepath.Glob("../../defaults/ci/*/*.yml")
 	for _, f := range files {
 		data, err := os.ReadFile(f)
 		if err != nil {
