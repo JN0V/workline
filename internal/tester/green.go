@@ -277,15 +277,52 @@ func namedAs(id, name, file string) bool {
 		j += i
 		end := j + len(name)
 		before := j == 0 || id[j-1] == '.'
+		sub := false // a conformance case: a subtest of TestConformance
+		if j > 0 && id[j-1] == '/' {
+			pkg, ok := conformanceOf(id[:j-1])
+			if !ok || !conformanceQualified(pkg, file) {
+				i = j + 1
+				continue
+			}
+			before, sub = true, true
+		} else if strings.Contains(name, "/") && path.Ext(file) == ".yaml" {
+			i = j + 1
+			continue
+		}
 		after := end == len(id)
 		if !after {
 			c := []rune(id[end:])[0]
 			after = c != '.' && c != '_' && !unicode.IsLetter(c) && !unicode.IsDigit(c)
 		}
-		if before && after && (j == 0 || qualifiedBy(id[:j-1], file)) {
+		if sub && !after || sub && end < len(id) && id[end] != '/' && id[end] != '[' {
+			i = j + 1
+			continue
+		}
+		if before && after && (sub || j == 0 || qualifiedBy(id[:j-1], file)) {
 			return true
 		}
 		i = j + 1
+	}
+	return false
+}
+
+// conformanceOf cuts the package from a qualifier that ends with the
+// conformance suite's test (`<package>.TestConformance`), whose subtests
+// are the cases `<folder>/<case>`.
+func conformanceOf(qualifier string) (string, bool) {
+	return strings.CutSuffix(qualifier, ".TestConformance")
+}
+
+// conformanceQualified says whether the package pkg is the one of the
+// conformance case file: a package that is the folder `cases` is in
+// (`tests/conformance/cases/merge/x.yaml` for `.../tests/conformance`).
+func conformanceQualified(pkg, file string) bool {
+	dir := path.Dir(file)
+	for dir != "." && dir != "/" {
+		if path.Base(dir) == "cases" {
+			return qualifiedBy(pkg, path.Join(path.Dir(dir), "x"))
+		}
+		dir = path.Dir(dir)
 	}
 	return false
 }
