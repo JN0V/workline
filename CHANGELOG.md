@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.78.2](https://github.com/JN0V/workline/compare/v0.78.1...v0.78.2) (2026-11-16)
+
+
+### Bug Fixes
+
+* a blocked pull request never takes the fix main ([#1609](https://github.com/JN0V/workline/issues/1609)) ([10e1636](https://github.com/JN0V/workline/commit/10e163630891469baaf63416268629f408f8c5e1))
+* a frozen conformance subtest is never found in the head's ([#1672](https://github.com/JN0V/workline/issues/1672)) ([a36a409](https://github.com/JN0V/workline/commit/a36a4099bb71828beb5d1e94cd04b4878e778d6f))
+* a person cannot finish a guarded change on the ([#1605](https://github.com/JN0V/workline/issues/1605)) ([f4cebd6](https://github.com/JN0V/workline/commit/f4cebd6df77f38c2019b317f2194b69d060de3b2))
+* a person's yes on the release drops on every merge ([#1660](https://github.com/JN0V/workline/issues/1660)) ([199d0f6](https://github.com/JN0V/workline/commit/199d0f6363b40a6d9ea115847def9cf4c203bc3f))
+* a refine dropped for one missing path is never ([#1662](https://github.com/JN0V/workline/issues/1662)) ([621d4ae](https://github.com/JN0V/workline/commit/621d4ae0d69da2a662b31c4fecd311021c11ec21))
+* **config:** the tester's check runs tests/evaluation too ([#1625](https://github.com/JN0V/workline/issues/1625)) ([80e93ed](https://github.com/JN0V/workline/commit/80e93ed700a279875e531c4a0ad4dedacbd84269))
+* **internal:** developer skips an issue a GitHub pull request ([#1567](https://github.com/JN0V/workline/issues/1567)) ([c290d17](https://github.com/JN0V/workline/commit/c290d179c7b5d0459be54c578f027392b8bf177b))
+* the developer's round limit counts every round as a ([#1622](https://github.com/JN0V/workline/issues/1622)) ([6d0e14d](https://github.com/JN0V/workline/commit/6d0e14d8977bde325c02312909c553b49d3a4865))
+* the documentalist repeats 'a person judges it' on ([#1555](https://github.com/JN0V/workline/issues/1555)) ([03156a8](https://github.com/JN0V/workline/commit/03156a8657c244b046e8a67aa2a645f2cb0623a4))
+* the engine reads a different CODEOWNERS than GitHub ([#1490](https://github.com/JN0V/workline/issues/1490)) ([599a602](https://github.com/JN0V/workline/commit/599a60203695efdf436c77927a707abe70eef8a9))
+* **wake:** list a stalled line pull request, read on GitHub too ([#1617](https://github.com/JN0V/workline/issues/1617)) ([e73b141](https://github.com/JN0V/workline/commit/e73b1419cccaf8f8d7bb3095c03ef5ccb84d183a))
+
 ## [0.78.1](https://github.com/JN0V/workline/compare/v0.78.0...v0.78.1) (2026-11-15)
 
 
