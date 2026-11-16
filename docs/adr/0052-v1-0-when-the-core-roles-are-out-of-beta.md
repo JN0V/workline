@@ -17,6 +17,7 @@
   passed its test (nobody bypasses `main`, the guard guarded); lifted on
   2026-11-14, after [#1463] and [#1464] ([amendment](#amendment-2026-11-14-the-freeze-is-lifted)).
   Its step 7 now decides the bar after 1.0 ([amendment](#amendment-2026-11-15-v10-is-the-v1-accepted))
+  [ADR-0070] (2026-11-16): its layout joins what 1.0 requires ([same amendment](#amendment-2026-11-15-v10-is-the-v1-accepted))
 
 ## Context
 
@@ -183,7 +184,6 @@ holds the issues that count.
 [round 3]: https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764
 [#1370]: https://github.com/JN0V/workline/issues/1370
 [#1375]: https://github.com/JN0V/workline/pull/1375
-
 [#117]: https://github.com/JN0V/workline/issues/117
 [#264]: https://github.com/JN0V/workline/issues/264
 [its status.md]: ../../roles/reviewer/docs/status.md
