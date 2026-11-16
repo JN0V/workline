@@ -53,10 +53,33 @@ func checksAsked(f forge.Forge, a Act, head string) (at string, asked []Asked, u
 		asked = append(asked, Asked{Key: "checks|" + c.Name, Where: c.Name, Text: "red at `" + head[:min(7, len(head))] + "`",
 			Holds: checkHolds, Check: &c})
 	}
+	if a := testerBlocked(f, head); a != nil {
+		asked = append(asked, *a)
+	}
 	if len(asked) == 0 {
 		return "", nil, ""
 	}
 	return head, asked, ""
+}
+
+// testerBlocked is the line's verdict on head when it is red at the
+// tester for a frozen test the head's reports never hold
+// (frozen-test-missing): a round of the developer's, who put the test
+// back in what the check runs, or says on its line what does not fit
+// (#1624). nil when the forge keeps no verdict, or another one.
+func testerBlocked(f forge.Forge, head string) *Asked {
+	m, ok := f.(forge.Merger)
+	if !ok {
+		return nil
+	}
+	class, why, err := m.Verdict(head)
+	if err != nil || class != "red" || !strings.Contains(why, "frozen-test-missing") {
+		return nil
+	}
+	return &Asked{Key: "checks|verdict-frozen-test-missing", Where: "the tester's green proof",
+		Text:   "red at `" + head[:min(7, len(head))] + "`: frozen-test-missing",
+		Holds:  checkHolds,
+		Detail: "a test the tester froze is not in the head's reports: the project's test command never runs it, or the change stops it running or renames it. Make the test command run it, or object to the test on its line (`workline:objection`)."}
 }
 
 // checkLogs gives each red check the end of its failed steps' log, read
