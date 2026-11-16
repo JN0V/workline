@@ -1,0 +1,6 @@
+# A refine whose Scope names only a path the commit lacks: no line of
+# the rewrite is valid, so nothing of it is written.
+- refine:
+    issue: 9
+    scope: "- `src/import/xml.go`: the importer."
+    why: "The reviewer found the Scope too vague."
