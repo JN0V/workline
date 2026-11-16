@@ -2,7 +2,8 @@ package developer
 
 // The bounds on the pull request (ADR-0058, step 1): on the merge-request
 // event, no agent, the developer's pull request is held to the issue's
-// bounds on its diff against its base, whoever pushed its commits. The
+// bounds on its diff against its base. A guarded file a person wrote waits
+// on their label, not the bounds; the agent's is refused. The
 // rules are read at the base's tip, never at the head: a pull request
 // cannot loosen its own check. A file refused blocks, named with its
 // rule; a file beyond the issue's Scope, a hint, is said, never refused
@@ -44,6 +45,9 @@ type prBounds struct {
 	// Beyond: the files changed beyond the issue's Scope, applied and
 	// listed for the reviewer (ADR-0065, change 2).
 	Beyond []string `json:"beyond,omitempty"`
+	// Person: the guarded files a person's commits changed, which wait on
+	// the person's label, not on the bounds (ADR-0058, ADR-0068 §4).
+	Person []string `json:"person,omitempty"`
 }
 
 func (r prBounds) body() string {
@@ -51,6 +55,9 @@ func (r prBounds) body() string {
 	fmt.Fprintf(&b, "**The developer's bounds** on this pull request, read at the base's %s: %d file%s changed since it, ", shortSHA(r.Base), r.Files, plural(r.Files))
 	if len(r.Refused) == 0 {
 		b.WriteString("each within the bounds of #" + fmt.Sprint(r.Issue) + ".\n")
+		if len(r.Person) > 0 {
+			fmt.Fprintf(&b, "\n%d guarded file%s a person wrote, not held by the bounds: it merges on the person's `workline:accepted` only: `%s`.\n", len(r.Person), plural(len(r.Person)), strings.Join(r.Person, "`, `"))
+		}
 		if len(r.Beyond) > 0 {
 			fmt.Fprintf(&b, "\n%d beyond its %s, a hint, judged by the reviewer's intent lens: `%s`.\n", len(r.Beyond), work.Name(work.Scope), strings.Join(r.Beyond, "`, `"))
 		}
@@ -135,12 +142,12 @@ func boundsPre(runDir, repo string, id int) int {
 	if len(unknown) > 0 {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "frozen tests unknown: the bounds were not checked", Findings: unknown})
 	}
-	files, refused, beyond, err := prRefusals(repo, b, base, head)
+	files, refused, beyond, person, err := prRefusals(repo, b, base, head)
 	if err != nil {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the pull request's diff cannot be read: the bounds were not checked",
 			Findings: []verdict.Finding{{Rule: "bounds-unread", Where: where, Message: err.Error()}}})
 	}
-	rec := prBounds{Act: "bounds", Issue: n, Base: base, Head: head, Files: files, Refused: refused, Beyond: beyond}
+	rec := prBounds{Act: "bounds", Issue: n, Base: base, Head: head, Files: files, Refused: refused, Beyond: beyond, Person: person}
 	if rec.Refused == nil {
 		rec.Refused = []Refusal{}
 	}
@@ -152,7 +159,11 @@ func boundsPre(runDir, repo string, id int) int {
 	}
 	for _, r := range refused {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: r.Rule, Where: r.File,
-			Message: "changed on the developer's branch, which its bounds refuse, whoever pushed it: " + why(r)})
+			Message: "changed on the developer's branch, which its bounds refuse, the agent's commit: " + why(r)})
+	}
+	for _, f := range person {
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "person-guarded-file", Level: "info", Where: f,
+			Message: "a guarded file a person wrote: the bounds do not refuse it, it merges on the person's label (ADR-0068 §4)"})
 	}
 	for _, f := range beyond {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "beyond-scope", Level: "info", Where: f,
@@ -223,21 +234,21 @@ func prRange(runDir, repo string, mr forge.MergeRequest) (base, head string, err
 // base to the bounds, the rules read at base: how many changed, the ones
 // refused, and the ones beyond the Scope. A frozen test as the tester
 // wrote it is not the developer's change.
-func prRefusals(repo string, b Bounds, base, head string) (files int, refused []Refusal, beyond []string, err error) {
+func prRefusals(repo string, b Bounds, base, head string) (files int, refused []Refusal, beyond, person []string, err error) {
 	from, err := gitOut(repo, "merge-base", base, head)
 	if err != nil {
-		return 0, nil, nil, fmt.Errorf("no merge base between %s and %s", shortSHA(base), shortSHA(head))
+		return 0, nil, nil, nil, fmt.Errorf("no merge base between %s and %s", shortSHA(base), shortSHA(head))
 	}
 	raw, err := gitOut(repo, "-c", "core.quotePath=false", "diff", "--raw", "--no-abbrev", "--no-renames", "--no-ext-diff", "-z", from, head)
 	if err != nil {
-		return 0, nil, nil, fmt.Errorf("git diff %s..%s: %w", shortSHA(from), shortSHA(head), err)
+		return 0, nil, nil, nil, fmt.Errorf("git diff %s..%s: %w", shortSHA(from), shortSHA(head), err)
 	}
 	c := newCheckerAt(repo, b, base)
 	fields := strings.Split(raw, "\x00")
 	for i := 0; i+1 < len(fields); i += 2 {
 		meta, name := strings.Fields(strings.TrimPrefix(fields[i], ":")), fields[i+1]
 		if len(meta) < 5 || name == "" {
-			return files, refused, beyond, errors.New("git diff --raw: a line it cannot read")
+			return files, refused, beyond, person, errors.New("git diff --raw: a line it cannot read")
 		}
 		files++
 		mode, blob := meta[1], meta[3]
@@ -250,7 +261,9 @@ func prRefusals(repo string, b Bounds, base, head string) (files int, refused []
 				rule = "symlink-out"
 			}
 		}
-		if rule != "" {
+		if (rule == "steering-file" || rule == "gate-file") && byPerson(repo, from, head, name) {
+			person = append(person, name) // a guarded file a person wrote waits on their label
+		} else if rule != "" {
 			r := Refusal{File: name, Rule: rule}
 			if rule == "bounds-unread" {
 				r.Detail = c.unread.Error()
@@ -271,7 +284,7 @@ func prRefusals(repo string, b Bounds, base, head string) (files int, refused []
 			refused = append(refused, Refusal{File: t, Rule: "acceptance-test-edit"})
 		}
 	}
-	return files, refused, beyond, nil
+	return files, refused, beyond, person, nil
 }
 
 // linkOut says a link at name pointing to to leads out of the tree.
@@ -283,3 +296,34 @@ func linkOut(name, to string) bool {
 	return p == ".." || strings.HasPrefix(p, "../")
 }
 
+// byPerson says every commit since from that changed name is a person's:
+// it carries no Workline-Role trailer and neither its author nor its
+// committer is a bot (the engine commits the agent's work as workline's
+// App, an identity the agent does not set). A file the agent touched too
+// is still the agent's.
+func byPerson(repo, from, head, name string) bool {
+	out, err := gitOut(repo, "log", "--no-merges", "--format=C%ae%x1f%ce%x1f%(trailers:key=Workline-Role,separator=%x2C)", from+".."+head, "--", name)
+	if err != nil || strings.TrimSpace(out) == "" {
+		return false
+	}
+	for _, l := range strings.Split(out, "\n") {
+		if l = strings.TrimSpace(l); l == "" {
+			continue
+		}
+		f := strings.Split(strings.TrimPrefix(l, "C"), "\x1f")
+		// The trailer is read with its key, so an empty value still
+		// marks the commit; the engine's own commit identities
+		// (workline@localhost, workline@invalid) are the agent's too.
+		if len(f) != 3 || strings.TrimSpace(f[2]) != "" || agentEmail(f[0]) || agentEmail(f[1]) {
+			return false
+		}
+	}
+	return true
+}
+
+// agentEmail says an address is one the engine commits with: workline's
+// App ("[bot]") or its local identities ("workline@…").
+func agentEmail(e string) bool {
+	e = strings.ToLower(strings.TrimSpace(e))
+	return strings.Contains(e, "[bot]") || strings.HasPrefix(e, "workline@")
+}

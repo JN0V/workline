@@ -1,0 +1,38 @@
+case: developer/pr-bounds-passes-a-guarded-change-taken-from-the-draft
+about: >
+  The takeover route: a person pushed a change to docs/policy.md, a path
+  CODEOWNERS lists, to the tester's Draft, and the developer opened its
+  pull request, workline/developer/3, from that Draft's head with no
+  commit of its own. The tests it carries are the tester's, as it froze
+  them; the guarded file is the person's. The bounds pass it.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q main && mkdir -p docs && printf 'Review every change.\\n' > docs/policy.md && printf '/CODEOWNERS @owner\\n/docs/policy.md @owner\\n' > CODEOWNERS && git add -A && git commit -qm 'chore: what never merges alone'"
+    - "git checkout -q workline/tester/issue-3 && git rebase -q main"
+    - "echo 'Name each scenario.' >> docs/policy.md && GIT_AUTHOR_NAME='A Person' GIT_AUTHOR_EMAIL='person@example.invalid' GIT_COMMITTER_NAME='A Person' GIT_COMMITTER_EMAIL='person@example.invalid' git commit -qam 'docs: the policy as its owner wants it' && git branch workline/developer/3 && git checkout -q main"
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        title: "Multiply two numbers"
+        body: "Closes #3"
+run: {develop: [--bounds, --merge-request, "2"], ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: steering-file, where: docs/policy.md}, {rule: acceptance-test-edit}]
+  forge:
+    merge-requests:
+      - id: 2
+        comment-contains: ['"act":"bounds"', "a person wrote"]
