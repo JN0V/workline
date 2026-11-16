@@ -692,16 +692,18 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (pro
 	if s.SuiteMaxSeconds > 0 && s.deadline.IsZero() {
 		s.deadline, s.budget = time.Now().Add(3*time.Duration(s.SuiteMaxSeconds)*time.Second), "suite-max-seconds"
 	}
+	p := prove(tree, base, s)
 	// The settings with test-command, the pull request's own check, held to
-	// the same deadline as the proof's runs.
+	// the same deadline and budget as the proof's runs.
 	whole := s
 	whole.Command, whole.packages = testCommand, testPackages
-	p := prove(tree, base, s)
 	if len(pkgs) > 0 && p.v.Status == verdict.Pass {
 		p.v.Findings = append(p.v.Findings, verdict.Finding{Rule: "proof-scope", Level: "info", Where: "draft-command",
 			Message: "run on the folders holding the tests alone, " + strings.Join(pkgs, " ") + ": the pull request's own checks run the whole suite"})
 	}
-	if len(pkgs) > 0 && p.v.Status == verdict.Pass && len(p.added) > 0 {
+	// Tests red by a build error are red by a name the code lacks: the
+	// test command's report would lack them for that, not for being left out.
+	if len(pkgs) > 0 && p.v.Status == verdict.Pass && len(p.added) > 0 && len(p.errs) == 0 {
 		// The red proof ran the draft-command: a test test-command never
 		// runs would be frozen, and no head could ever pass it.
 		if out := leftOut(repo, tree, whole, files, p.added); len(out) > 0 {
