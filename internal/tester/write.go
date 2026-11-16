@@ -680,7 +680,7 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (pro
 	// them, so a draft-command naming {packages} runs those alone, on the
 	// base and with the tests, rather than the whole suite twice (#979).
 	var pkgs []string
-	whole := s // the settings with test-command, the pull request's own check
+	testCommand, testPackages := s.Command, s.packages
 	if strings.Contains(s.DraftCommand, "{packages}") {
 		if pkgs = Packages(tree, files, s.Paths, s.ModuleFiles); len(pkgs) > 0 {
 			s.Command, s.packages = s.DraftCommand, pkgs
@@ -692,6 +692,10 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (pro
 	if s.SuiteMaxSeconds > 0 && s.deadline.IsZero() {
 		s.deadline, s.budget = time.Now().Add(3*time.Duration(s.SuiteMaxSeconds)*time.Second), "suite-max-seconds"
 	}
+	// The settings with test-command, the pull request's own check, held to
+	// the same deadline as the proof's runs.
+	whole := s
+	whole.Command, whole.packages = testCommand, testPackages
 	p := prove(tree, base, s)
 	if len(pkgs) > 0 && p.v.Status == verdict.Pass {
 		p.v.Findings = append(p.v.Findings, verdict.Finding{Rule: "proof-scope", Level: "info", Where: "draft-command",
@@ -700,7 +704,7 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (pro
 	if len(pkgs) > 0 && p.v.Status == verdict.Pass && len(p.added) > 0 {
 		// The red proof ran the draft-command: a test test-command never
 		// runs would be frozen, and no head could ever pass it.
-		if out := leftOut(repo, tree, whole, p.added); len(out) > 0 {
+		if out := leftOut(repo, tree, whole, files, p.added); len(out) > 0 {
 			p.v = &verdict.Verdict{Status: verdict.Block, Summary: "the tests are not run by the project's test command", Again: true,
 				Findings: []verdict.Finding{{Rule: "no-new-test", Where: strings.Join(files, ", "),
 					Message: fmt.Sprintf("the draft-command ran %s, but the project's test command (`%s`) does not run them, so the pull request's own check never would: "+
@@ -1217,13 +1221,19 @@ func toMend(findings []verdict.Finding) ([]verdict.Finding, bool) {
 // leftOut are the tests of added the project's test command, run on the
 // tests' commit as the pull request's check will, does not name in its
 // report. A run that fails to give a report says nothing here.
-func leftOut(repo, tree string, s Settings, added []string) []string {
+func leftOut(repo, tree string, s Settings, files, added []string) []string {
 	head, err := git(tree, "rev-parse", "HEAD")
 	if err != nil {
 		return nil
 	}
 	r, f := run(repo, strings.TrimSpace(head), nil, "", s, "with the tests, on the test command")
 	if f != nil {
+		return nil
+	}
+	// A build that failed reports without the tests it never built: the
+	// tests are red by a name the code lacks, not left out.
+	rules, _ := compileBuildErrors(s.BuildErrors)
+	if len(buildErrorsIn(r.output, files, rules, r.roots...)) > 0 {
 		return nil
 	}
 	var out []string
