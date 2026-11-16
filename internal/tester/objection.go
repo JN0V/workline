@@ -73,7 +73,7 @@ var kinds = []struct{ key, name, word string }{
 // reconcile. The run reads them again, who wrote each among them.
 func ObjectionsWait(threads []forge.Thread) bool {
 	for _, t := range threads {
-		if t.Resolved || len(t.Comments) == 0 || !(strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) || PersonsThread(t)) {
+		if t.Resolved || len(t.Comments) == 0 || (!strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) && !PersonsThread(t)) {
 			continue
 		}
 		last := t.Comments[len(t.Comments)-1].Body
@@ -370,7 +370,7 @@ func answerPre(runDir, repo string, s Settings) int {
 	}
 	var waiting []forge.Thread
 	for _, t := range threads {
-		if t.Resolved || len(t.Comments) == 0 || !(strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) || PersonsThread(t)) {
+		if t.Resolved || len(t.Comments) == 0 || (!strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) && !PersonsThread(t)) {
 			continue
 		}
 		if last := t.Comments[len(t.Comments)-1]; len(neededFiles(runDir)) > 0 && lacked(last.Body) {
