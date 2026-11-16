@@ -1,0 +1,6 @@
+# A refine whose Scope names one path the commit holds and one it lacks:
+# the valid line is written, the bad one dropped and said.
+- refine:
+    issue: 12
+    scope: "- `src/export/csv.go`: the rows.\n- `src/import/xml.go`: the importer."
+    why: "Need and Validation are there; the Scope is not."

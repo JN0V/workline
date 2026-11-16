@@ -1,0 +1,20 @@
+case: product-owner/scope-one-bad-path-drops-only-that-line
+about: >
+  One bad path: a Scope rewrite names one path the repository lacks
+  (src/import/xml.go) beside one it holds (src/export/csv.go). The
+  engine writes the valid line and drops only the bad one; the product
+  owner's state comment says which line was dropped, quoting the path
+  and the reason, not in the repository.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 12, title: "XML import", body: "## Need\n\nAnn needs to import the XML her bank sends, as src/export/csv.go reads rows.\n\n## Validation\n\nAnn imports last month's file and sees its rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-scope-one-bad-path}
+expect:
+  forge:
+    issues:
+      - id: 12
+        body-contains: ["## Scope", "- `src/export/csv.go`: the rows."]
+        body-lacks: "src/import/xml.go"
+        comment-contains: ["src/import/xml.go", "not in the repository"]

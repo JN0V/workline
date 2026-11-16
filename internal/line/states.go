@@ -292,6 +292,18 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		st, _, _ := backlog.ReadState(comments, name) // one that does not read gives none to rewrite
 		ok = len(backlog.Unrevised(is, st, comments)) > 0
 	}
+	if !ok && reviewed && name == backlog.Keeper && had && rec.Revise == rec.Spec && rec.Body == backlog.BodyDigest(is.Body) && rec.Dropped != rec.Body {
+		// The product owner answered the review open on this body and the
+		// body is the same: its rewrite was dropped (#1355). Woken again,
+		// once a body; then the issue waits for a person.
+		st, _, _ := backlog.ReadState(comments, name)
+		if r := backlog.SpecOpen(is, comments); st != nil && st.Dropped == rec.Body && r != nil && r.Body == st.Answered && len(backlog.Revisable(is, st, r)) > 0 {
+			ok = true
+			now.Dropped = rec.Body
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-dropped", Level: "info", Where: where,
+				Message: "the product owner's rewrite of the section the reviewer's finding lies in was not written, the body the same: woken again, once a body"})
+		}
+	}
 	if !ok && s.Name == refineState && name == backlog.Keeper && had {
 		// A person wrote since the product owner last read the issue — an
 		// answer to the reviewer's question, or to its own (#1331): woken
