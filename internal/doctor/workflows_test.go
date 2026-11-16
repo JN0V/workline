@@ -45,14 +45,14 @@ func TestWorkflowsOutdatedOrMissing(t *testing.T) {
 	write("workline-gardening.yml", "v0.71.0", "schedule")
 	got := run("v0.71.0")
 	old, ok := got["workflow-outdated .github/workflows/workline.yml"]
-	if !ok || !strings.Contains(old.Message, "runs workline v0.33.0, this engine is v0.71.0") || !strings.Contains(old.Fix, "blob/v0.71.0/ci/github/workline.yml") {
+	if !ok || !strings.Contains(old.Message, "runs workline v0.33.0, this engine is v0.71.0") || !strings.Contains(old.Fix, "blob/v0.71.0/defaults/ci/github/workline.yml") {
 		t.Errorf("an old pin: %+v; want workline.yml said, v0.33.0 against v0.71.0", got)
 	}
 	if _, ok := got["workflow-outdated .github/workflows/workline-gardening.yml"]; ok {
 		t.Errorf("a pin of this release said outdated: %+v", got)
 	}
 	miss, ok := got["workflow-missing .github/workflows/workline-develop.yml"]
-	if !ok || !strings.Contains(miss.Fix, "blob/v0.71.0/ci/github/workline-develop.yml") || len(got) != 2 {
+	if !ok || !strings.Contains(miss.Fix, "blob/v0.71.0/defaults/ci/github/workline-develop.yml") || len(got) != 2 {
 		t.Errorf("issue routed, not run: %+v; want workline-develop.yml to copy, and nothing else", got)
 	}
 	if got := run("(devel)"); len(got) != 1 {

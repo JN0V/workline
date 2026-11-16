@@ -2,7 +2,7 @@
 # workline's forge on Forgejo or Gitea (Codeberg included), plugged by a
 # command (docs/spec/forge-command.md):
 #
-#   forge: 'cmd:sh ci/forgejo/workline-forge.sh'     # .workline/config.yaml
+#   forge: 'cmd:sh defaults/ci/forgejo/workline-forge.sh'     # .workline/config.yaml
 #
 # One request a run: JSON on the input, its answer as JSON on the output;
 # an exit other than 0 says the forge is unreachable. Needs curl and jq, and:

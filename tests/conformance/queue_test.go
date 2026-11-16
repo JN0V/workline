@@ -57,7 +57,7 @@ func TestGitHubMergeQueueRunsTheGatesAlone(t *testing.T) {
 		Env         map[string]string `yaml:"env"`
 		Steps       []step            `yaml:"steps"`
 	}
-	data, err := os.ReadFile("../../ci/github/workline.yml")
+	data, err := os.ReadFile("../../defaults/ci/github/workline.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +190,7 @@ func TestGitHubMergeQueueRunsTheGatesAlone(t *testing.T) {
 			"github.event.workflow_run.name": "workline", "github.event.workflow_run.event": c.event,
 			"github.event.workflow_run.conclusion": "failure", "github.event.workflow_run.head_repository.full_name": "owner/repo",
 			"vars.WORKLINE_APP_ID": "1"}
-		for _, f := range []string{"../../ci/github/workline-apply.yml", "../../ci/github/workline-fork.yml"} {
+		for _, f := range []string{"../../defaults/ci/github/workline-apply.yml", "../../defaults/ci/github/workline-fork.yml"} {
 			data, err := os.ReadFile(f)
 			if err != nil {
 				t.Fatal(err)
@@ -237,7 +237,7 @@ func TestGitHubMergeQueueRunsTheGatesAlone(t *testing.T) {
 }
 
 func TestGitLabMergeTrainRunsTheGatesAlone(t *testing.T) {
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}

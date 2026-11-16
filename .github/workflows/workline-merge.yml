@@ -1,5 +1,5 @@
 # workline's merge policy on its own repository, when a pull request's
-# label changes: ci/github/workline-merge.yml, with the engine built from
+# label changes: defaults/ci/github/workline-merge.yml, with the engine built from
 # the default branch's commit rather than installed — merged, it is
 # reviewed —, once a commit (.github/actions/engine). Without `merge:` in
 # .workline/config.yaml, it stops at once. Hourly too, the safety net: a

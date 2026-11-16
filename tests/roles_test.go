@@ -1,4 +1,4 @@
-package workline
+package tests
 
 import (
 	"io/fs"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -18,7 +19,7 @@ var loaded = map[string]bool{
 }
 
 func TestRoleTopLevelHoldsOnlyWhatTheEngineLoads(t *testing.T) {
-	roles, err := fs.ReadDir(Roles, "roles")
+	roles, err := fs.ReadDir(workline.Roles, "roles")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,7 +28,7 @@ func TestRoleTopLevelHoldsOnlyWhatTheEngineLoads(t *testing.T) {
 			t.Errorf("roles/%s: a file beside the roles", r.Name())
 			continue
 		}
-		entries, err := fs.ReadDir(Roles, "roles/"+r.Name())
+		entries, err := fs.ReadDir(workline.Roles, "roles/"+r.Name())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -48,13 +49,13 @@ func TestRoleTopLevelHoldsOnlyWhatTheEngineLoads(t *testing.T) {
 // role declares in context.skills is shipped.
 func TestSharedSkillsFollowTheAgentSkillsFormat(t *testing.T) {
 	name := regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
-	skills, err := fs.ReadDir(Skills, "skills")
+	skills, err := fs.ReadDir(workline.Skills, "skills")
 	if err != nil {
 		t.Fatal(err)
 	}
 	shipped := map[string]bool{}
 	for _, d := range skills {
-		data, err := fs.ReadFile(Skills, "skills/"+d.Name()+"/SKILL.md")
+		data, err := fs.ReadFile(workline.Skills, "skills/"+d.Name()+"/SKILL.md")
 		if err != nil {
 			t.Errorf("skills/%s: no SKILL.md", d.Name())
 			continue
@@ -67,9 +68,9 @@ func TestSharedSkillsFollowTheAgentSkillsFormat(t *testing.T) {
 		}
 		shipped[d.Name()] = true
 	}
-	roles, _ := fs.ReadDir(Roles, "roles")
+	roles, _ := fs.ReadDir(workline.Roles, "roles")
 	for _, r := range roles {
-		data, err := fs.ReadFile(Roles, "roles/"+r.Name()+"/role.yaml")
+		data, err := fs.ReadFile(workline.Roles, "roles/"+r.Name()+"/role.yaml")
 		if err != nil {
 			continue
 		}

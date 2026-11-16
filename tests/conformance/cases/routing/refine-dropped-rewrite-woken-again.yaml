@@ -1,0 +1,26 @@
+case: routing/refine-dropped-rewrite-woken-again
+about: >
+  Woken again: the reviewer's Important is open in an issue's Scope, and
+  the product owner's rewrite of it names only a path the repository
+  lacks, so none of it is written. The next pass runs the product owner
+  again, once, on the same body: two agent calls in all, though the body
+  and the labelling did not change.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner, reviewer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        labeled: {"workline:to-refine": "2026-11-01T19:59:38Z"}
+        author: ann
+        insider: true
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nSessions feel right to the users.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: efbae4cec0e6\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Scope -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {route: issue, target: {issue: 9}, ai: fake:refine-scope-only-missing-path, then: again}
+expect:
+  agent-calls: 2

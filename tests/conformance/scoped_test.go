@@ -19,7 +19,7 @@ import (
 // variable, which GitLab may not see when it creates the pipeline: a job
 // that needs the bot's token and lacks it says so and stops, green.
 func TestGitLabTokensKeptFromTheProjectsTools(t *testing.T) {
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}

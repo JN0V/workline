@@ -5,10 +5,10 @@ sources:
   - roles/inspector/policy.md
   - internal/builtin/inspector
   - internal/line/line.go
-  - ci/github/workline-warn.yml
-  - ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
-  - ci/gitlab/workline.gitlab-ci.yml#workline:warn
-checked: 8538d558
+  - defaults/ci/github/workline-warn.yml
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
+checked: 4cc417ab
 verified: agent:claude-code
 ---
 # Inspector

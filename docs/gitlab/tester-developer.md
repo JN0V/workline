@@ -1,5 +1,5 @@
 ---
-sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
+sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
 checked: 8538d558
 verified: agent:documentalist
 judged: e8a46f7

@@ -21,7 +21,7 @@ func TestCIGitHubBoundsStepRuns(t *testing.T) {
 	if _, err := exec.LookPath("jq"); err != nil {
 		t.Skip("jq is not installed")
 	}
-	for _, f := range []string{"../../ci/github/workline-bounds.yml", "../../.github/workflows/workline-bounds.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-bounds.yml", "../../.github/workflows/workline-bounds.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)

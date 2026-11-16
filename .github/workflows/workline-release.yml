@@ -1,5 +1,5 @@
 # What holds the release, read again (docs/release-holds.md):
-# ci/github/workline-release.yml, main's workflows named: workline's, its
+# defaults/ci/github/workline-release.yml, main's workflows named: workline's, its
 # tests, release-please. It re-runs the release pull request's last
 # workline run, with the job's own token, when the label
 # workline:hold-release changes on an issue, or when main's runs after a

@@ -213,7 +213,7 @@ func (g *gitlab) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) 
 // Guarded: GitLab merges a merge request set to merge once the pipeline
 // of its head succeeds, and a push starts a new one, holding the
 // template's workline:merge, which takes a yes back before that pipeline
-// can succeed (ci/gitlab/workline.gitlab-ci.yml).
+// can succeed (defaults/ci/gitlab/workline.gitlab-ci.yml).
 func (g *gitlab) Guarded(base string) (string, error) { return "", nil }
 
 // Accept: nothing to mark on GitLab, which holds a yes as Guarded says.

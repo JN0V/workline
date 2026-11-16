@@ -15,7 +15,7 @@ import (
 // the review job ends green and says so, asking no round. In the
 // template and in workline's own.
 func TestCIGitHubRoundOnAMergedRequest(t *testing.T) {
-	for _, f := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)

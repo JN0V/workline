@@ -1,5 +1,5 @@
 ---
-sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
+sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, defaults/routing.yaml]
 checked: 8538d558
 verified: agent:claude-code
 ---
@@ -133,7 +133,7 @@ gives them to your agent ([more](docs/run.md#on-a-machine)).
 
 `workline init --review` adds the reviewer to the project's merge-request
 line. On GitHub the judging job needs a read token (`GH_TOKEN`,
-`pull-requests: read`), which the [template](../../ci/github/workline.yml)
+`pull-requests: read`), which the [template](../../defaults/ci/github/workline.yml)
 gives it. Each important finding is a comment on its line; one still
 open is not posted again ([more](docs/lines.md)). A blocked merge request
 still gets its comments ([more](docs/run.md#on-a-merge-request)).

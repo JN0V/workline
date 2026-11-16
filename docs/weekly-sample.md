@@ -2,10 +2,10 @@
 sources:
   - internal/sample
   - internal/builtin/documentalist/sample.go
-  - ci/github/workline-sample.yml
-  - ci/gitlab/workline.gitlab-ci.yml#.workline:sample
-  - ci/gitlab/workline.gitlab-ci.yml#workline:sample:read
-  - ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
+  - defaults/ci/github/workline-sample.yml
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:sample
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:read
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
   - roles/auditor
   - roles/product-owner/role.yaml
 checked: 8538d558

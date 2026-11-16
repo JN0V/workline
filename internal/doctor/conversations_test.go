@@ -17,7 +17,7 @@ func TestApplyWorkflowReadsTheJudgeApplyWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"workline.yml", "workline-apply.yml", "workline-answer.yml", "workline-bounds.yml", "workline-develop.yml"} {
-		body, err := os.ReadFile(filepath.Join("..", "..", "ci", "github", name))
+		body, err := os.ReadFile(filepath.Join("..", "..", "defaults", "ci", "github", name))
 		if err != nil {
 			t.Fatal(err)
 		}

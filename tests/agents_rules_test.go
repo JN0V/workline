@@ -1,4 +1,4 @@
-package workline
+package tests
 
 import (
 	"os"
@@ -23,7 +23,7 @@ func oneLine(s string) string {
 // Given an assistant told "merge it", When it reads the rules, Then one
 // sentence says it asks the person for their label.
 func TestAgentsMergeItAsksForTheLabel(t *testing.T) {
-	text := readText(t, "AGENTS.md")
+	text := readText(t, "../AGENTS.md")
 	found := false
 	for _, line := range strings.Split(text, "\n") {
 		low := strings.ToLower(line)
@@ -47,7 +47,7 @@ func TestAgentsMergeItAsksForTheLabel(t *testing.T) {
 // Then it applies the three conditions: that item now, an independent
 // analysis, traced.
 func TestAgentsAcceptItInMyNameThreeConditions(t *testing.T) {
-	text := oneLine(readText(t, "AGENTS.md"))
+	text := oneLine(readText(t, "../AGENTS.md"))
 	_, after, ok := strings.Cut(text, "accept it in my name")
 	if !ok {
 		t.Fatal(`AGENTS.md does not name "accept it in my name"`)
@@ -62,7 +62,7 @@ func TestAgentsAcceptItInMyNameThreeConditions(t *testing.T) {
 // Given the rules, When a reader looks for "independent", Then it says what
 // counts: a run other than the change's author.
 func TestAgentsSaysWhatIndependentCounts(t *testing.T) {
-	text := oneLine(readText(t, "AGENTS.md"))
+	text := oneLine(readText(t, "../AGENTS.md"))
 	if !regexp.MustCompile(`(?i)independent[^.]*a run other than the change's author`).MatchString(text) {
 		t.Error(`AGENTS.md does not say that "independent" means a run other than the change's author`)
 	}
@@ -71,7 +71,7 @@ func TestAgentsSaysWhatIndependentCounts(t *testing.T) {
 // Given the weekly sample page, When an assistant answers a week for the
 // person, Then the page names the same three conditions, or links them.
 func TestWeeklySampleAnswerNamesTheThreeConditions(t *testing.T) {
-	text := readText(t, "docs/weekly-sample.md")
+	text := readText(t, "../docs/weekly-sample.md")
 	_, rest, ok := strings.Cut(text, "**Your answer**")
 	if !ok {
 		t.Fatal("no Your answer bullet")

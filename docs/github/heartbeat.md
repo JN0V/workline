@@ -1,5 +1,5 @@
 <!-- workline
-sources: [ci/github/workline-develop.yml, .github/workflows/workline-develop.yml]
+sources: [defaults/ci/github/workline-develop.yml, .github/workflows/workline-develop.yml]
 checked: bc129c5c7
 judged-in-parts: 5c1573b
 -->
@@ -16,7 +16,7 @@ flowchart LR
 
 GitHub runs a schedule late or not at all: an hourly one ran 4 to 6
 times a day here ([research](../research/reliable-schedule.md)). So in
-[workline-develop.yml](../../ci/github/workline-develop.yml) each
+[workline-develop.yml](../../defaults/ci/github/workline-develop.yml) each
 reconcile starts the next one:
 
 - **At its end**, even when it failed, it starts a run of the workflow

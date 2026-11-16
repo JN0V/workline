@@ -1,4 +1,4 @@
-# workline gardening its own repository: ci/github/workline-gardening.yml,
+# workline gardening its own repository: defaults/ci/github/workline-gardening.yml,
 # with the engine built from this checkout rather than installed — both jobs
 # check out the same commit, built once (.github/actions/engine), judge's
 # kept for apply. Claude with CLAUDE_CODE_OAUTH_TOKEN, pull

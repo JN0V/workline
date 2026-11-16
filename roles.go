@@ -16,7 +16,7 @@ var Roles embed.FS
 //go:embed skills
 var Skills embed.FS
 
-// DefaultRouting is the line as shipped (routing.default.yaml).
+// DefaultRouting is the line as shipped (defaults/routing.yaml).
 //
-//go:embed routing.default.yaml
+//go:embed defaults/routing.yaml
 var DefaultRouting []byte

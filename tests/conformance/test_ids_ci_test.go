@@ -117,7 +117,7 @@ func TestGitHubTestIDsCarriedByTheCache(t *testing.T) {
 		}
 		return false
 	}
-	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
 		// A pull request reads them by a prefix, its own newest else the
 		// default branch's, and keeps what is new under a key of its run.
 		judge := read(dir + "workline.yml").Jobs["judge"]

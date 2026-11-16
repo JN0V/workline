@@ -1,5 +1,5 @@
 ---
-sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
+sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
 checked: 8538d558
 judged: e8a46f7
 verified: agent:documentalist
@@ -57,7 +57,7 @@ the judging jobs.
 
 ### 1. Include the template
 
-Copy [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml)
+Copy [defaults/ci/gitlab/workline.gitlab-ci.yml](../defaults/ci/gitlab/workline.gitlab-ci.yml)
 to `ci/` and add to `.gitlab-ci.yml`:
 
 ```yaml

@@ -1,9 +1,9 @@
 ---
 sources:
-  - ci/github/workline-gardening.yml
-  - ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
-  - ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
-  - ci/gitlab/workline.gitlab-ci.yml#workline:release
+  - defaults/ci/github/workline-gardening.yml
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
   - internal/line/dryrun.go
   - internal/report/dryrun.go
   - internal/release/release.go
@@ -54,7 +54,7 @@ were cut now.
 - **GitHub**: the jobs `dry-run` (contents, issues, checks, statuses
   and actions read: [what holds a release](release-holds.md); no secret) and
   `dry-run-post` (the App's token, issues write), in
-  [the gardening](../ci/github/workline-gardening.yml).
+  [the gardening](../defaults/ci/github/workline-gardening.yml).
 - **GitLab**: `workline:release:dry-run` (no token) and
   `workline:release:dry-run:post`, on each schedule but the sample's
   and the reconciler's.

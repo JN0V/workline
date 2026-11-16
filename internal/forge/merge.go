@@ -276,7 +276,7 @@ func (g *github) app() (string, string, error) {
 
 // app: the token's user when GitLab says it is a bot (a project or group
 // access token's); the template's jobs commit as "workline"
-// (ci/gitlab/workline.gitlab-ci.yml).
+// (defaults/ci/gitlab/workline.gitlab-ci.yml).
 func (g *gitlab) app() (string, string, error) {
 	out, err := g.api("user")
 	if err != nil {

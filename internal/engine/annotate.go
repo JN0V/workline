@@ -15,7 +15,7 @@ const annotationsSummary = "The documentalist's findings on this head, each besi
 	"The judge's job summary lists them all."
 
 // annotateFix is what to give a token whose check was refused.
-const annotateFix = "give the applying job's token `checks: write` (ci/github/workline-apply.yml), " +
+const annotateFix = "give the applying job's token `checks: write` (defaults/ci/github/workline-apply.yml), " +
 	"and a GitHub App the permission Checks: read and write"
 
 // Annotate shows the documentalist's findings of a merge request's own run

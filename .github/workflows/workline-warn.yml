@@ -1,4 +1,4 @@
-# workline on its own pull requests, what only warns: ci/github/workline-warn.yml,
+# workline on its own pull requests, what only warns: defaults/ci/github/workline-warn.yml,
 # but for one thing, as workline.yml: the engine built from the pull
 # request's commit (.github/actions/engine), once a commit, the build of
 # whichever job comes first.
