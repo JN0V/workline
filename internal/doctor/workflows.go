@@ -16,6 +16,10 @@ import (
 // pinLine is a CI file's pin of the engine, as the templates write it.
 var pinLine = regexp.MustCompile(`(?m)^\s*WORKLINE_VERSION:\s*["']?(v\d+\.\d+\.\d+)["']?`)
 
+// customised is the comment line with which a person says a copy differs from
+// its template on purpose: doctor then does not compare its content.
+var customised = regexp.MustCompile(`(?m)^\s*#\s*workline:customised\b`)
+
 // release reads a release's vMAJOR.MINOR.PATCH, nil for anything else:
 // "(devel)", a pseudo-version, a release candidate.
 func release(v string) []int {
@@ -70,10 +74,10 @@ func ciTemplates(r *Report, o Options, line *routing.Config) {
 		}
 		rel, _ := filepath.Rel(o.Repo, f)
 		if slices.Compare(pin, engine) == 0 {
-			if tpl, err := ci.Templates.ReadFile(strings.TrimPrefix(templateOf(rel), "defaults/ci/")); err == nil && withoutPin(tpl) != withoutPin(data) {
+			if tpl, err := ci.Templates.ReadFile(strings.TrimPrefix(templateOf(rel), "defaults/ci/")); err == nil && !customised.Match(data) && withoutPin(tpl) != withoutPin(data) {
 				r.add(Check{Area: "repository", Rule: "workflow-behind", Where: rel, Level: Warn,
 					Message: fmt.Sprintf("%s differs from the template of workline %s beyond its pin: it was re-pinned, not re-copied, and runs what that template has since changed", rel, o.Engine),
-					Fix:     fmt.Sprintf("re-copy %s to %s, then reapply your changes (%s)", templateOf(rel), rel, templateURL(o.Engine, templateOf(rel)))})
+					Fix:     fmt.Sprintf("re-copy %s to %s, then reapply your changes (%s); if the difference is on purpose, add a `# workline:customised` comment line to %s to silence this", templateOf(rel), rel, templateURL(o.Engine, templateOf(rel)), rel)})
 			}
 			continue
 		}
