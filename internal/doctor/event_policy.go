@@ -159,10 +159,15 @@ func policyNames(v any, event string) bool {
 
 func policyDenies(v any) bool {
 	switch x := v.(type) {
+	case string:
+		switch strings.ToLower(x) {
+		case "deny", "denied", "block", "blocked", "disallow", "disallowed":
+			return true
+		}
 	case map[string]any:
 		for k, c := range x {
 			lk := strings.ToLower(k)
-			if strings.Contains(lk, "deny") || strings.Contains(lk, "block") {
+			if strings.Contains(lk, "deny") || strings.Contains(lk, "block") || strings.Contains(lk, "disallow") {
 				return true
 			}
 			if policyDenies(c) {
