@@ -1,0 +1,36 @@
+case: merge/release-rebuilt-by-an-unknown-pusher-takes-it-back
+about: "A release pull request's yes survives only its release tool's rebuild, which the forge's word on who pushed shows: a forge that does not say who pushed (the pushes name none) leaves it unknown, and an unknown pusher is no proof of the tool. The branch was rebuilt after the yes with exactly the release commit, yet the yes drops, saying who pushed is not known."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && GIT_COMMITTER_NAME=workline-bot git commit -qm 'chore(main): release 1.1.0' && git tag before && git push -q origin release-please--branches--main && git checkout -q main"
+    - "git checkout -q -B rebuilt main && echo '1.1.0' > version.txt && git add version.txt && GIT_COMMITTER_NAME=workline-bot GIT_COMMITTER_DATE=2026-01-04T11:00:00Z git commit -qm 'chore(main): release 1.1.0' && git push -q -f origin rebuilt:release-please--branches--main && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: before, name: workline/accepted, state: success, description: "accepted by @dana, its head's verdict passed", by: workline-bot}
+      - {commit: release-please--branches--main, name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 12
+        branch: release-please--branches--main
+        base: main
+        author: workline-bot
+        bot: true
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes:
+          - {head: before, at: "2026-01-04T09:00:00Z"}
+          - {head: release-please--branches--main, at: "2026-01-04T11:00:00Z"}
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:01:00Z"
+        auto-merge-by: workline-bot
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: accepted-reset, where: "#12", level: warn, message: "not known"}]
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 12, auto-merge: false, labels: [], comments: 1}
