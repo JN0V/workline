@@ -570,6 +570,99 @@ func ownRebuild(repo, covered, tip, base string) bool {
 	return err == nil && own == tree
 }
 
+// releaseRebuild says why a release tool's rebuilt head, tip, is no more of
+// what a person accepted on covered, "" when the yes holds: the rebuild is
+// one commit on the base, adding only what the line merged by policy (a
+// merged pull request with no person's yes label), its tree the covered
+// head's change redone but for the files the release tool's own commit
+// changed (its version and changelog). What cannot be read is unknown, and
+// needs a yes.
+func releaseRebuild(f forge.Forge, o FollowOptions, covered, tip, baseTip string) string {
+	repo := o.Repo
+	out, err := git(repo, nil, "rev-list", "--parents", "-n", "1", tip)
+	parts := strings.Fields(out)
+	if err != nil || len(parts) != 2 || !isAncestor(repo, parts[1], baseTip) {
+		return "it is not one commit on the base"
+	}
+	parent := parts[1]
+	from, err := git(repo, nil, "merge-base", parent, covered)
+	if err != nil {
+		return "its base could not be read"
+	}
+	own := map[string]bool{}
+	names, err := git(repo, nil, "diff", "--name-only", "-z", from, covered)
+	if err != nil {
+		return "the release tool's files could not be read"
+	}
+	for _, n := range strings.Split(names, "\x00") {
+		if n != "" {
+			own[n] = true
+		}
+	}
+	tree, clashes, err := redo(repo, parent, covered)
+	switch {
+	case err != nil:
+		return "the covered change could not be redone on its base"
+	case len(clashes) > 0:
+		return "`" + clashes[0] + "` no longer applies on its base"
+	}
+	diff, err := git(repo, nil, "diff-tree", "-r", "--name-only", "--no-renames", "-z", tree, tip+"^{tree}")
+	if err != nil {
+		return "its tree could not be compared"
+	}
+	for _, n := range strings.Split(diff, "\x00") {
+		if n != "" && !own[n] {
+			return "it changed `" + n + "`, no file of the release tool's own"
+		}
+	}
+	added, err := git(repo, nil, "rev-list", "--reverse", from+".."+parent)
+	if err != nil {
+		return "what it added could not be read"
+	}
+	commits := strings.Fields(added)
+	if len(commits) == 0 {
+		return ""
+	}
+	var all []forge.MergeRequest
+	if merged, ok := f.(forge.Merged); ok {
+		since := time.Now().AddDate(-1, 0, 0)
+		if at, err := git(repo, nil, "log", "-1", "--format=%cI", from); err == nil {
+			if t, err := parseTime(at); err == nil {
+				since = t.AddDate(0, 0, -1)
+			}
+		}
+		if all, err = merged.MergedSince(since); err != nil {
+			all = nil
+		}
+	}
+	by := map[string]forge.MergeRequest{}
+	for _, m := range all {
+		if m.MergedAs == "" {
+			continue
+		}
+		by[m.MergedAs] = m
+		if ps, err := git(repo, nil, "rev-list", "--parents", "-n", "1", m.MergedAs); err == nil && len(strings.Fields(ps)) == 3 {
+			if inner, err := git(repo, nil, "rev-list", m.MergedAs+"^1.."+m.MergedAs); err == nil {
+				for _, c := range strings.Fields(inner) {
+					if _, ok := by[c]; !ok {
+						by[c] = m
+					}
+				}
+			}
+		}
+	}
+	for _, c := range commits {
+		m, ok := by[c]
+		switch {
+		case !ok:
+			return "it added " + commitSaid(repo, c) + ", no merged pull request of it known: it needs a yes"
+		case slices.ContainsFunc(m.Labels, accepted):
+			return "it added " + commitSaid(repo, c) + ", merged with a person's yes: it needs one"
+		}
+	}
+	return ""
+}
+
 // pushedAfterAt says what was pushed to a merge request after the yes given
 // at yes, "" nothing but workline's own: the yes covers the head it was
 // given on, as approvals reset on a push (ADR-0042). The head it was given
@@ -579,7 +672,7 @@ func ownRebuild(repo, covered, tip, base string) bool {
 // (OwnMerge, ownRebuild), or a commit changing only the lines workline
 // writes in the docs (ownRecord), as a merge of the base settles them.
 // It gives the commit that was pushed too ("" when none is one commit).
-func pushedAfterAt(o FollowOptions, branch string, st forge.MergeState, yes, baseTip, tip string) (string, string, error) {
+func pushedAfterAt(f forge.Forge, o FollowOptions, branch string, st forge.MergeState, yes, baseTip, tip string) (string, string, error) {
 	repo := o.Repo
 	own := func(c string) bool {
 		if ownTrailer(repo, c) == "" {
@@ -609,7 +702,15 @@ func pushedAfterAt(o FollowOptions, branch string, st forge.MergeState, yes, bas
 			if strings.HasPrefix(branch, "workline/") && ownRebuild(repo, covered, tip, baseTip) {
 				return "", "", nil
 			}
-			return fmt.Sprintf("its branch was rewritten (%s, over %s)", short(tip), short(covered)), "", nil
+			said := fmt.Sprintf("its branch was rewritten (%s, over %s)", short(tip), short(covered))
+			if o.Release != nil && o.Release(branch) {
+				why := releaseRebuild(f, o, covered, tip, baseTip)
+				if why == "" {
+					return "", "", nil
+				}
+				said += ", " + why
+			}
+			return said, "", nil
 		}
 		// The base's commits a merge of it brings are no push to judge.
 		out, err := git(repo, nil, "rev-list", "--reverse", covered+".."+tip, "^"+baseTip)
@@ -929,7 +1030,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		if g == nil {
 			continue
 		}
-		p, pc, err := pushedAfterAt(o, mr.Branch, st, g.Created, baseTip, tip)
+		p, pc, err := pushedAfterAt(f, o, mr.Branch, st, g.Created, baseTip, tip)
 		if err != nil {
 			return nil, err
 		}
