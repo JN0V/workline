@@ -39,12 +39,12 @@ fork's pull request gets no secret, so no agent and no write. The jobs that
 write run the default branch's workflow, never a pull request's own
 ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
 
-## Set up
-
 > **Before December 2, 2026, on a public repository**: add an Active
 > Actions event policy on `workline-bounds.yml` and `workline-merge.yml`
 > allowing `pull_request_target`, `issues` and `schedule`, or no pull
 > request merges ([how](github/pull-request-target.md)).
+
+## Set up
 
 1. **Copy the workflows** into `.github/workflows/`:
    - [workline.yml](../defaults/ci/github/workline.yml): `judge` on each pull

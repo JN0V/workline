@@ -1,5 +1,6 @@
 <!-- workline
 sources: [defaults/ci/github/workline-bounds.yml, defaults/ci/github/workline-merge.yml, internal/doctor/event_policy.go]
+checked: 6dc839b45
 -->
 # pull_request_target in a public repository
 
