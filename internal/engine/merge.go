@@ -1004,7 +1004,14 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
 			return nil, err
 		}
-		say("comments-unread", "warn", "its comments could not be read, left as they are: "+forge.Said(err))
+		// Unread, a comment may wait: hold, as for one that waits.
+		if st.AutoMerge && st.AutoMergeBot {
+			if err := off(); err != nil {
+				return nil, err
+			}
+		}
+		say("comments-unread", "warn", "its comments could not be read, so a person's may wait: nothing merges, auto-merge stays off: "+forge.Said(err))
+		return nil, nil
 	} else if open != "" {
 		if st.AutoMerge && st.AutoMergeBot {
 			if err := off(); err != nil {
@@ -1506,6 +1513,12 @@ const commentOpenMarker = "person-comment-open"
 // "no" alone does not answer a person's comment.
 var namesTestRe = regexp.MustCompile(`(?i)\btests?\b|_test\b|\btest_|\bcommit\b|\b[0-9a-f]{7,40}\b`)
 
+// isReply tells a role's reply, a run's comment or the tester's answer,
+// from the engine's statuses and the records that mention tests.
+func isReply(body string) bool {
+	return strings.Contains(body, "<!-- workline:run=") || strings.Contains(body, forge.Marker("tester-answer"))
+}
+
 func namesTest(body string) bool { return namesTestRe.MatchString(body) }
 
 // personsCommentOpen says, quoted short, the first person's comment on a
@@ -1526,8 +1539,10 @@ func personsCommentOpen(f forge.Forge, id int) (string, error) {
 	}
 	if ok && err == nil {
 		own := func(n forge.Note) bool { return n.Own || strings.Contains(n.Body, "<!-- workline:") }
+		// A role's reply: a note of a run, not a status of the engine or
+		// the tester's record, that names a test.
 		answers := func(n forge.Note) bool {
-			return own(n) && namesTest(n.Body) && !strings.Contains(n.Body, forge.Marker(verdictMarker)) && !strings.Contains(n.Body, forge.Marker(commentOpenMarker))
+			return own(n) && isReply(n.Body) && namesTest(n.Body)
 		}
 		for i, n := range notes {
 			if !n.Insider || n.Bot || own(n) || strings.TrimSpace(n.Body) == "" {
@@ -1550,7 +1565,7 @@ func personsCommentOpen(f forge.Forge, id int) (string, error) {
 		if c.Resolved || !tester.PersonsThread(c) {
 			continue
 		}
-		if last := c.Comments[len(c.Comments)-1]; !strings.Contains(last.Body, "<!-- workline:") || !namesTest(last.Body) {
+		if last := c.Comments[len(c.Comments)-1]; !isReply(last.Body) || !namesTest(last.Body) {
 			return clipSaid(strings.TrimSpace(c.Comments[0].Body)), nil
 		}
 	}
