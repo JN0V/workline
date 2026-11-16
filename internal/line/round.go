@@ -47,7 +47,7 @@ func roundOn(b forge.Backlog, t *tally, s routing.State, id int) (*forge.MergeRe
 // what it could not read added to res, a warning, and not due.
 func roundDue(res *Result, f forge.Forge, o engine.Options, mr forge.MergeRequest) bool {
 	where := fmt.Sprintf("merge request %d", mr.ID)
-	ok, err := developer.RoundDueFor(f, o.Repo, mr, o.AI != "none")
+	ok, err := developer.RoundDueFor(f, o.Repo, mr, o.AI != "" && o.AI != "none")
 	switch {
 	case errors.Is(err, developer.ErrRecordUnread):
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "round-unread", Level: "warn", Where: where,
