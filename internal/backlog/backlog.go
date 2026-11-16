@@ -2316,12 +2316,11 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 				// left out; the others are written (#1355).
 				var keep []string
 				for _, l := range strings.Split(c.Scope, "\n") {
-					if !slices.ContainsFunc(bad, func(b string) bool { return strings.Contains(l, b) }) {
+					if !slices.ContainsFunc(bad, func(b string) bool { return namesPath(l, b) }) {
 						keep = append(keep, l)
 					}
 				}
 				rest := strings.TrimSpace(strings.Join(keep, "\n"))
-				c.ScopeDropped = bad
 				c.Sources = slices.DeleteFunc(c.Sources, func(s string) bool {
 					path, _, _ := strings.Cut(s, "#")
 					return slices.Contains(bad, path)
@@ -2331,6 +2330,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 				widened := !slices.ContainsFunc(asked, func(a string) bool { return !strings.Contains(rest, a) })
 				if rest != "" && widened && (len(c.Sources) > 0 || work.MarksNew(rest)) {
 					c.Scope = rest
+					c.ScopeDropped = bad
 					for _, b := range bad {
 						p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-line-dropped", Level: "info", Where: c.where(),
 							Message: fmt.Sprintf("its %s line naming `%s` was left out: not in the repository; the other lines are written", work.Name(work.Scope), b)})
@@ -2344,7 +2344,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					Message: fmt.Sprintf("could not tell which files #%d is about, so its %[2]s was left out: add a %[2]s naming them, or leave it", c.Issue, work.Name(work.Scope))})
 			case len(bad) > 0:
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-without-files", Level: "info", Where: c.where(),
-					Message: fmt.Sprintf("its %[1]s named %[2]s, which the repository does not hold, so it was left out: name a path it holds, a glob matching one, or a new file on a line `New:`", work.Name(work.Scope), bad[0])})
+					Message: fmt.Sprintf("its %[1]s named %[2]s, which the repository does not hold, so it was left out: name a path it holds, a glob matching one, or a new file on a line `New:`", work.Name(work.Scope), strings.Join(bad, ", "))})
 			}
 			if len(c.Sources) == 0 && !work.MarksNew(c.Scope) || len(bad) > 0 {
 				c.Scope, c.Sources = "", nil
@@ -3949,4 +3949,27 @@ func (p *Plan) recordDrafted(c Proposal) {
 		}
 	}
 	p.ledger.States[c.Issue] = &st
+}
+
+// namesPath says whether the line holds the path whole: never as a part
+// of a longer path or name (#1355).
+func namesPath(line, path string) bool {
+	isPath := func(c byte) bool {
+		return c == '_' || c == '-' || c == '/' || c == '.' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+	}
+	for off := 0; ; {
+		i := strings.Index(line[off:], path)
+		if i < 0 {
+			return false
+		}
+		i += off
+		end := i + len(path)
+		before := i == 0 || !isPath(line[i-1])
+		after := end == len(line) || !isPath(line[end]) ||
+			(line[end] == '.' && (end+1 == len(line) || !isPath(line[end+1])))
+		if before && after {
+			return true
+		}
+		off = i + 1
+	}
 }
