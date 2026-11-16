@@ -1,10 +1,10 @@
-case: developer/round-five-no-dispute-runs
+case: developer/round-ceiling-counts-every-kind
 about: >
   Five rounds went on red checks, a tester's rewrite and findings that
-  only warn: none answered a blocking finding of the reviewer, so none
-  is a dispute. The next round is due: it runs, its agent is called, and
-  the issue is not blocked for the reviewer and the developer not
-  agreeing.
+  only warn, none on a blocking finding: the pull request has had the
+  maximum number of rounds, of any kind. A new verdict that blocks
+  arrives: no round starts, no agent is called, and the pull request
+  goes to a person, said on it and on its issue, which is blocked.
 given:
   repo: tested-draft
   setup:
@@ -32,13 +32,14 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  agent-calls: 1
-  no-findings: [{rule: review-blocked}]
+  agent-calls: 0
+  findings: [{rule: review-blocked, level: warn, where: "merge request 2"}]
+  not-pushed: [workline/developer/3]
   forge:
     issues:
       - id: 3
-        labels: ["workline:ready", "workline:developing"]
-        comment-lacks: ["do not agree"]
+        labels: ["workline:blocked"]
+        comment-contains: ["**The developer** blocks this issue."]
     merge-requests:
       - id: 2
-        comment-lacks: ["\"handed\":true"]
+        comment-contains: ["**Blocked**", "\"handed\":true"]
