@@ -2328,7 +2328,10 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 				// A widening asked for (#1061) is kept only with every file
 				// asked: the Scope that did not widen is dropped whole.
 				widened := !slices.ContainsFunc(asked, func(a string) bool { return !strings.Contains(rest, a) })
-				if rest != "" && widened && (len(c.Sources) > 0 || work.MarksNew(rest)) {
+				// A bad path the lines kept still name (glued to a name
+				// character, or normalised) leaves the Scope whole to drop.
+				stillNamed := slices.ContainsFunc(bad, func(b string) bool { return namesPath(rest, b) || strings.Contains(rest, b) })
+				if rest != "" && widened && !stillNamed && (len(c.Sources) > 0 || work.MarksNew(rest)) {
 					c.Scope = rest
 					c.ScopeDropped = bad
 					for _, b := range bad {
