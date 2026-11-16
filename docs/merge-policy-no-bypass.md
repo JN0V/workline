@@ -2,6 +2,7 @@
 sources: [internal/doctor/guard.go, internal/forge/github_merge.go]
 checked: 70dfeb18
 verified: agent:claude-code
+judged-in-parts: 5c1573b
 ---
 # Nobody bypasses `main`
 
