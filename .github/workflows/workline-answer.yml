@@ -1,5 +1,5 @@
 # workline's tester answering an objection, on its own repository:
-# ci/github/workline-answer.yml, with the engine built from the default
+# defaults/ci/github/workline-answer.yml, with the engine built from the default
 # branch's checkout (.github/actions/engine); Go left set up for its tests.
 # It runs for any branch workline/tester/* of this repository that gets an
 # objection: the tester is not routed here yet, its Drafts open by hand.

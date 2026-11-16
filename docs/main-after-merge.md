@@ -1,5 +1,5 @@
 ---
-sources: [ci/github/workline.yml, ci/github/workline-apply.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/gate/kept.go, internal/report/main.go, routing.default.yaml]
+sources: [defaults/ci/github/workline.yml, defaults/ci/github/workline-apply.yml, defaults/ci/gitlab/workline.gitlab-ci.yml, internal/line/line.go, internal/gate/kept.go, internal/report/main.go, defaults/routing.yaml]
 checked: 8538d558
 verified: agent:claude-code
 judged: 9a88170
@@ -85,7 +85,7 @@ Nobody waits for it; nothing in it holds a merge request.
 
 ## GitHub
 
-- [workline.yml](../ci/github/workline.yml) runs on `push` to `main`
+- [workline.yml](../defaults/ci/github/workline.yml) runs on `push` to `main`
   too (rename it for another default branch): `gates` runs `route main`,
   with `contents: read` alone.
 - **Actions' cache** holds the findings: main's run reads
@@ -100,7 +100,7 @@ Nobody waits for it; nothing in it holds a merge request.
   The template saves only on a push to `main`.
 - **An entry unused for 7 days is gone**: the tools run again.
 - **The issue** and the comments:
-  [workline-apply.yml](../ci/github/workline-apply.yml)'s `main` job,
+  [workline-apply.yml](../defaults/ci/github/workline-apply.yml)'s `main` job,
   after that run, with `issues: write`, which comments on a pull request
   too; never after a push to another branch.
 

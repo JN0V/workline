@@ -1,5 +1,5 @@
 <!-- workline
-sources: [ci/gitlab/workline.gitlab-ci.yml, cmd/workline]
+sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, cmd/workline]
 checked: b6085f38
 judged-in-parts: e8a46f7
 -->

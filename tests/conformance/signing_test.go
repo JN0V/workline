@@ -18,7 +18,7 @@ import (
 // before; a key given as a plain variable, the job fails without printing
 // it (#549).
 func TestGitLabBotSignsWithItsKey(t *testing.T) {
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}

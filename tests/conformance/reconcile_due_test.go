@@ -61,7 +61,7 @@ func TestReconcileDueReadsTheReconcilersRuns(t *testing.T) {
 		{"the last 10 min ago, a gap of 0", one(run(beat, "completed", "success", 10*time.Minute)), false, "0"},
 		{"the last 10 min ago, a gap too long", one(run(beat, "completed", "success", 10*time.Minute)), false, "99999999999999999999"},
 	}
-	for _, f := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)

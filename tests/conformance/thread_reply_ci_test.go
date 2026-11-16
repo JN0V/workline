@@ -45,7 +45,7 @@ func TestCIGitHubThreadReplyWakesTheRound(t *testing.T) {
 		return wf.On, wf.Jobs
 	}
 	norm := func(s string) string { return strings.Join(strings.Fields(s), " ") }
-	for _, dir := range []string{"../../ci/github", "../../.github/workflows"} {
+	for _, dir := range []string{"../../defaults/ci/github", "../../.github/workflows"} {
 		on, jobs := read(filepath.Join(dir, "workline-objection.yml"))
 		replied := jobs["replied"]
 		if _, ok := on["pull_request_review_comment"]; !ok || len(replied.Permissions) != 0 || replied.Permissions == nil ||

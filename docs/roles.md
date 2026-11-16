@@ -1,5 +1,5 @@
 ---
-sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/inspector/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml, roles/tester/role.yaml, roles/developer/role.yaml]
+sources: [defaults/routing.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/inspector/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml, roles/tester/role.yaml, roles/developer/role.yaml]
 checked: 8538d558
 judged: d34fd75
 verified: agent:claude-code
@@ -29,7 +29,7 @@ How far each goes alone before a person is its level:
 
 ## Which role runs when
 
-Which role runs on which event is the routing: `routing.default.yaml` as
+Which role runs on which event is the routing: `defaults/routing.yaml` as
 shipped, changed in `.workline/config.yaml` ([config](config.md)).
 
 - **By default**: `commit-msg` → committer; `merge-request` → committer,

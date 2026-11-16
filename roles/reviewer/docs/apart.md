@@ -4,13 +4,13 @@ sources:
   - internal/builtin/reviewer/reviewer.go
   - internal/builtin/reviewer/record.go
   - internal/line/line.go
-  - ci/github/workline.yml
-  - ci/github/workline-warn.yml
-  - ci/github/workline-apply.yml
-  - ci/gitlab/workline.gitlab-ci.yml#workline:judge
-  - ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
-  - ci/gitlab/workline.gitlab-ci.yml#workline:warn
-  - ci/gitlab/workline.gitlab-ci.yml#workline:warn:apply
+  - defaults/ci/github/workline.yml
+  - defaults/ci/github/workline-warn.yml
+  - defaults/ci/github/workline-apply.yml
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:apply
 checked: 8538d558
 judged: a5cd2cf
 verified: agent:claude-code
@@ -112,7 +112,7 @@ beside the verdict's, and posts once it answered.
 ## In CI
 
 - **GitHub**: workline.yml's `judge` leaves them (`--warn-apart`);
-  [workline-warn.yml](../../../ci/github/workline-warn.yml) asks them
+  [workline-warn.yml](../../../defaults/ci/github/workline-warn.yml) asks them
   beside it (`--warn-only`); workline-apply.yml applies both, and keeps
   the verdict from `judge` alone
   ([CI on GitHub](../../../docs/ci-github.md)). Without workline-warn.yml,
