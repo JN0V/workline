@@ -253,7 +253,13 @@ func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog
 			Findings: []verdict.Finding{{Rule: "conflict-gone", Level: "info", Where: where, Message: "the conflict said on it is no more: the merge policy merges it as it is"}}})
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
-		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no agent: the conflict waits for a run with one, no round counted",
+		// The head is recorded, so the reconcile finds no round due again at it.
+		a.Conflict = head
+		if err := writeIntents(runDir, "", []intent.Intention{
+			{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}}}); err != 0 {
+			return err
+		}
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no agent: the conflict waits for a run with one, no round counted",
 			Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where, Message: "settling a conflict is judgement on code: with no agent, nothing is merged (principle 5); in conflict: " + strings.Join(files, ", ")}}})
 	}
 	r := round{MR: mr.ID, Branch: mr.Branch, Record: a, At: head, Merge: base, Conflicts: files,
