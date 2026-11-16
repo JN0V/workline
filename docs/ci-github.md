@@ -166,3 +166,11 @@ engine and the agent as in workline-gardening.yml
 ## workline's own workflows
 
 Where they differ from the templates: [workline's own workflows](github/own-workflows.md).
+
+## Public repositories and pull_request_target
+
+GitHub blocks `pull_request_target` by default in public repositories from December 2, 2026 (brownouts on November 9 and 16 before). `workline-bounds.yml` and `workline-merge.yml` run on it: blocked, their runs end in `startup_failure`, the required check `workline bounds` never reports and no pull request merges. Private and internal repositories are not affected.
+
+Before that date, in a public repository, allow the event for these two files only: Settings → Actions → Policies, a rule "Restrict events" with `pull_request_target` allowed, workflow file targeting `.github/workflows/workline-bounds.yml` and `.github/workflows/workline-merge.yml`. Or the REST API: `POST /repos/{owner}/{repo}/actions/policies`, rule `restrict_action_events`, `conditions.workflow_path.include` listing those two paths.
+
+`workline doctor` reads the policies of a public repository and warns when none allows the event.
