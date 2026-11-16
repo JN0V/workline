@@ -876,6 +876,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	list := o.Inputs[ReconcileInput] == "list"
 	if list && o.Inputs[RoomInput] == "true" { // the steps room woke alone, for the job that freed it (room.go)
 		res.Summary = ReconcileEvent + ": " + cmp.Or(roomSaid(roomDue(res, cfg, o)), "no issue waiting for room has it now")
+		if res.BacklogSaid != "" {
+			res.Summary += "; " + res.BacklogSaid
+		}
 		return res
 	}
 	issues, err := b.Issues()

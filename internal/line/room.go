@@ -118,7 +118,9 @@ func roomDue(res *Result, cfg *routing.Config, o engine.Options) []int {
 		unread(err)
 		return nil
 	}
-	res.ReadyBelow = readyBelow(cfg, issues)
+	if res.ReadyBelow = readyBelow(cfg, issues); res.ReadyBelow {
+		res.BacklogDue, res.BacklogSaid = backlogDue(cfg, b, issues, o.Inputs[BacklogLastInput])
+	}
 	backlog.Order(issues)
 	x, t := newScopeIndex(o.Repo), newTallyFor(o)
 	full := map[string]bool{}

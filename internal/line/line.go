@@ -81,6 +81,11 @@ type Result struct {
 	// ReadyBelow: with `--input room=true`, Ready holds fewer open issues
 	// than its target (routing.wip), so a backlog run is due (#1549).
 	ReadyBelow bool `json:"ready-below-target,omitempty"`
+	// BacklogDue: Ready below its target, a backlog run is due: Ready
+	// dropped since the last one, or it readied an issue; BacklogSaid
+	// says why, or why not (backlog_due.go).
+	BacklogDue  bool   `json:"backlog-due,omitempty"`
+	BacklogSaid string `json:"backlog,omitempty"`
 	// Waiting: the issues waiting on a time, a question's delay before
 	// the product owner takes its assumption (ADR-0060): not due now,
 	// but the next reconcile must look again.
