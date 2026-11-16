@@ -680,6 +680,7 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (pro
 	// them, so a draft-command naming {packages} runs those alone, on the
 	// base and with the tests, rather than the whole suite twice (#979).
 	var pkgs []string
+	whole := s // the settings with test-command, the pull request's own check
 	if strings.Contains(s.DraftCommand, "{packages}") {
 		if pkgs = Packages(tree, files, s.Paths, s.ModuleFiles); len(pkgs) > 0 {
 			s.Command, s.packages = s.DraftCommand, pkgs
@@ -695,6 +696,16 @@ func proveOnBase(repo, base string, patches []intent.Intention, s Settings) (pro
 	if len(pkgs) > 0 && p.v.Status == verdict.Pass {
 		p.v.Findings = append(p.v.Findings, verdict.Finding{Rule: "proof-scope", Level: "info", Where: "draft-command",
 			Message: "run on the folders holding the tests alone, " + strings.Join(pkgs, " ") + ": the pull request's own checks run the whole suite"})
+	}
+	if len(pkgs) > 0 && p.v.Status == verdict.Pass && len(p.added) > 0 {
+		// The red proof ran the draft-command: a test test-command never
+		// runs would be frozen, and no head could ever pass it.
+		if out := leftOut(repo, tree, whole, p.added); len(out) > 0 {
+			p.v = &verdict.Verdict{Status: verdict.Block, Summary: "the tests are not run by the project's test command", Again: true,
+				Findings: []verdict.Finding{{Rule: "no-new-test", Where: strings.Join(files, ", "),
+					Message: fmt.Sprintf("the draft-command ran %s, but the project's test command (`%s`) does not run them, so the pull request's own check never would: "+
+						"write them where that command runs them, or say in a note why no test it runs can check the scenario", sample(out), whole.Command)}}}
+		}
 	}
 	if p.v.Status == verdict.Pass {
 		// The lint, past the build's own errors in the tests: a missing
@@ -1201,4 +1212,25 @@ func toMend(findings []verdict.Finding) ([]verdict.Finding, bool) {
 		}
 	}
 	return told, found
+}
+
+// leftOut are the tests of added the project's test command, run on the
+// tests' commit as the pull request's check will, does not name in its
+// report. A run that fails to give a report says nothing here.
+func leftOut(repo, tree string, s Settings, added []string) []string {
+	head, err := git(tree, "rev-parse", "HEAD")
+	if err != nil {
+		return nil
+	}
+	r, f := run(repo, strings.TrimSpace(head), nil, "", s, "with the tests, on the test command")
+	if f != nil {
+		return nil
+	}
+	var out []string
+	for _, id := range added {
+		if _, ok := r.results[id]; !ok {
+			out = append(out, id)
+		}
+	}
+	return out
 }
