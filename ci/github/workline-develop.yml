@@ -319,7 +319,13 @@ jobs:
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # the App whose statuses keep the verdicts read back
           ISSUE: ${{ github.event.issue.number || inputs.issue }}
         run: |
-          workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --input room=true --json > room.json || true
+          # The last backlog run (#1549), for the line to judge whether
+          # another is due: `waiting` when one waits already, `unread` when
+          # the runs could not be listed (no gardening workflow, an API
+          # error), never failing this job.
+          last=$(gh run list --workflow workline-gardening.yml --limit 1 --json status,startedAt,updatedAt --jq \
+            'if length == 0 then "none" elif (.[0].status | test("queued|pending|waiting|requested")) then "waiting" else "\(.[0].startedAt)/\(.[0].updatedAt)" end' 2>/dev/null) || last=unread
+          workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --input room=true --input backlog-last="${last:-unread}" --json > room.json || true
           jq -r '.summary // empty' room.json | tee -a "$GITHUB_STEP_SUMMARY"
           for n in $(jq -r '(.due // [])[]' room.json); do
             [ "$n" != "$ISSUE" ] || continue   # its own next step: started above
@@ -328,15 +334,14 @@ jobs:
           done
           # Ready below its target (#1549): the backlog run starts now, not
           # at the schedule's clock, which GitHub may skip. The line says
-          # whether Ready is below its target, the product owner on the
-          # schedule line. One run waits at most: a run already waiting for
-          # the one running is kept, and none is added to it.
-          waiting=
-          for s in queued pending waiting; do
-            waiting="$waiting$(gh run list --workflow workline-gardening.yml --status "$s" --limit 100 --json databaseId --jq '.[].databaseId' 2>/dev/null)"
-          done
-          jq -e '."ready-below-target" == true' room.json >/dev/null 2>&1 && [ -z "$waiting" ] && gh workflow run workline-gardening.yml --ref "$GITHUB_REF_NAME" -f skip=documentalist &&
-            echo "Ready is below its target: the backlog run started" >> "$GITHUB_STEP_SUMMARY" || true
+          # whether one is due, and why in the summary above: Ready dropped
+          # since the last backlog run, or that run readied an issue, and
+          # none waits already. One runs, one waits at most.
+          if jq -e '."backlog-due" == true' room.json >/dev/null 2>&1; then
+            gh workflow run workline-gardening.yml --ref "$GITHUB_REF_NAME" -f skip=documentalist &&
+              echo "the backlog run started" >> "$GITHUB_STEP_SUMMARY" ||
+              echo "::warning title=workline::the backlog run not started: the schedule starts it"
+          fi
 
   # The heartbeat (#845): the reconciler's next run, started by the last
   # one, waits here for the wait timer of the environment
