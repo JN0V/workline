@@ -1,6 +1,6 @@
 <!-- workline
 sources: [scripts/try-on-copy.sh, .github/workflows/try.yml, defaults/ci/github]
-checked: cd52b6830
+checked: d84829328
 -->
 # Try a release or a ref on a copy
 
