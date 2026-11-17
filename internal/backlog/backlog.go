@@ -3998,16 +3998,18 @@ func namesPath(line, path string) bool {
 
 var (
 	splitWord = regexp.MustCompile(`(?i)\bsplit\b`)
-	// splitNegation: any negation in the clause of the word is a refusal.
+	// splitNegation: a negation before the word in its clause is a refusal.
 	splitNegation = regexp.MustCompile(`(?i)\b(?:don'?t|do not|doesn'?t|does not|shouldn'?t|should not|won'?t|will not|can'?t|cannot|never|not|no|without|nothing|neither|nor)\b`)
-	// splitLead: what may come before "split" in a clause that directs it.
-	splitLead = regexp.MustCompile(`(?i)^\s*(?:(?:yes|yep|ok|okay|sure|please|then|so|and|do|go ahead and|let'?s|you can|you may|you should|can you|could you|would you|we should|i want you to|i'?d like you to|i want to|i would like to|i'?d like to)\b[\s,]*)*$`)
+	// splitDoubt: what before "split" makes a clause a question or a
+	// condition, not a request.
+	splitDoubt = regexp.MustCompile(`(?i)\b(?:why|whether|if|unless|how|what|when|should we|shall we|do we|can we|could we|is it|would it|maybe|perhaps)\b`)
 )
 
 // splitStance reads what a comment says of a split. It is an ask only where
-// a clause directs it (the word at its start, or after a lead as "please"
-// or "let's") and holds no negation; any other clause that holds the word
-// ("why split?", "I don't want to split this") is said, not asked. "split-off"
+// a clause uses the word and, before it, holds no negation and no doubt
+// ("why", "if", "should we"), and does not end as a question; any other
+// clause that holds it ("why split?", "I don't want to split this") is
+// said, not asked. What comes after the word does not cancel it. "split-off"
 // and the like are not a word of it.
 func splitStance(body string) (asked, said bool) {
 	body = strings.NewReplacer("\u2019", "'", "\u2018", "'").Replace(body)
@@ -4017,12 +4019,13 @@ func splitStance(body string) (asked, said bool) {
 		}
 		const delims = ".,;:!?\n"
 		start := strings.LastIndexAny(body[:m[0]], delims) + 1
-		end := len(body)
+		question := false
 		if i := strings.IndexAny(body[m[1]:], delims); i >= 0 {
-			end = m[1] + i
+			question = body[m[1]+i] == '?'
 		}
+		before := body[start:m[0]]
 		said = true
-		asked = splitLead.MatchString(body[start:m[0]]) && !splitNegation.MatchString(body[start:end])
+		asked = !question && !splitNegation.MatchString(before) && !splitDoubt.MatchString(before)
 	}
 	return asked, said
 }
