@@ -39,6 +39,11 @@ fork's pull request gets no secret, so no agent and no write. The jobs that
 write run the default branch's workflow, never a pull request's own
 ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
 
+> **Before December 2, 2026, on a public repository**: add an Active
+> Actions event policy on `workline-bounds.yml` and `workline-merge.yml`
+> allowing `pull_request_target`, `issues` and `schedule`, or no pull
+> request merges ([how](github/pull-request-target.md)).
+
 ## Set up
 
 1. **Copy the workflows** into `.github/workflows/`:
@@ -166,3 +171,11 @@ engine and the agent as in workline-gardening.yml
 ## workline's own workflows
 
 Where they differ from the templates: [workline's own workflows](github/own-workflows.md).
+
+## Public repositories and pull_request_target
+
+From December 2, 2026, GitHub blocks `pull_request_target` by default in
+public repositories: workline-bounds.yml and workline-merge.yml run on it,
+and no pull request merges. An Actions event policy allows it; it is an
+allow list, so it lists every event of the two files. What to set:
+[pull_request_target](github/pull-request-target.md).
