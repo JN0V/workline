@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/forge"
@@ -28,9 +29,12 @@ import (
 // `duties`, before post — and applies nothing: the trusted apply step does.
 
 // Inputs are the inputs a role may declare, each read by the shared pre
-// (`issues:<label>` too, the open issues carrying a label); `wake`, `sample` and `runs` of the ADR are not read yet, and said so. One not named
-// here is refused, said: never read as nothing.
-var Inputs = []string{"target", "commits", "issues"}
+// (`issues:<label>` too, the open issues carrying a label). `wake` and
+// `sample` are given to the run (--input wake=..., --input-file
+// sample=<path>), as `commits` is its range; `runs` is the acts kept in the
+// runs folder, the last week's. One not named here is refused, said: never
+// read as nothing.
+var Inputs = []string{"target", "commits", "issues", "wake", "sample", "runs"}
 
 // sharedStep runs the shared pre or post for a role with no such script.
 // It returns the exit code the script would, as script does.
@@ -142,20 +146,49 @@ func readInput(name, repo, runDir string, get func(string) string) (string, erro
 		return strings.Join(out, "\n"), nil
 	case "target":
 		t := get("WORKLINE_TARGET")
-		_, id, _ := strings.Cut(t, ":")
+		kind, id, _ := strings.Cut(t, ":")
 		n, convErr := strconv.Atoi(id)
-		if t == "" || convErr != nil {
-			return "", fmt.Errorf("the run is on no issue nor merge request (--target issue:<number>)")
+		if t == "" || convErr != nil || (kind != "issue" && kind != "merge-request") {
+			return "", fmt.Errorf("the run is on no issue nor merge request (--target issue:<number> or merge-request:<number>)")
 		}
 		fg, err := needForge()
 		if err != nil {
 			return "", err
+		}
+		if kind == "merge-request" {
+			mr, err := fg.MergeRequest(n)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("- merge request %s: %s (%s into %s)\n\n%s\n", forge.MergeRef(fg, n), mr.Title, mr.Branch, mr.Base, indent(mr.Body)), nil
 		}
 		is, err := fg.Issue(n)
 		if err != nil {
 			return "", err
 		}
 		return issueText(*is), nil
+	case "wake", "sample":
+		data, err := os.ReadFile(filepath.Join(runDir, "in", "input", base))
+		if err != nil || strings.TrimSpace(string(data)) == "" {
+			return "", fmt.Errorf("the run is given no %s (--input %s=... or --input-file %s=<path>)", base, base, base)
+		}
+		return string(data), nil
+	case "runs":
+		acts, err := ReadActs(RunsDir(repo))
+		if err != nil {
+			return "", fmt.Errorf("the run records cannot be read: %w", err)
+		}
+		since := time.Now().UTC().AddDate(0, 0, -7).Format(time.DateOnly)
+		var out []string
+		for _, a := range acts {
+			if a.Day >= since {
+				out = append(out, fmt.Sprintf("- %s %s %s on %s: %s", a.Day, a.Role, a.Kind, a.Ref, firstLine(a.Line)))
+			}
+		}
+		if len(out) == 0 {
+			return "none in the last 7 days", nil
+		}
+		return strings.Join(out, "\n"), nil
 	case "commits":
 		data, err := os.ReadFile(filepath.Join(runDir, "in", "input", "range"))
 		if err != nil || strings.TrimSpace(string(data)) == "" {
@@ -169,6 +202,11 @@ func readInput(name, repo, runDir string, get func(string) string) (string, erro
 		return strings.TrimSpace(string(out)), nil
 	}
 	return "", fmt.Errorf("not one the engine reads (%s)", strings.Join(Inputs, ", "))
+}
+
+func firstLine(s string) string {
+	l, _, _ := strings.Cut(s, "\n")
+	return l
 }
 
 func indent(s string) string {
