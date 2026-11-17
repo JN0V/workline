@@ -1,13 +1,9 @@
 # The engine for workline's own workflows (ADR-0071 §1). With a version,
-# the published release, downloaded and its checksum checked as the
-# templates do: what every job with a write token runs, and judge and
-# gates' verdict. Without one, the engine built from the commit checked
-# out, once a commit (ADR-0050, step 1): the first job builds it and keeps
-# it in Actions' cache by that commit, the jobs after take it; warn, and
-# the head pass on an engine-changing pull request. Never another engine:
-# the release must say its version, the cache is read by its exact key,
-# and a built binary must name the commit checked out, unmodified, or the
-# job fails (docs/ci-github.md).
+# that release, its checksum checked as the templates do, and it must say
+# that version. Without one, the engine built from the commit checked out,
+# once a commit, kept in Actions' cache by that commit (ADR-0050); it must
+# name that commit, unmodified. Otherwise the job fails
+# (docs/github/own-workflows.md).
 name: workline engine
 description: The pinned release of workline, checksum checked; or, with no version, the engine built from the commit checked out, once a commit.
 inputs:

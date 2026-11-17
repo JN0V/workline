@@ -1,21 +1,11 @@
-# workline on its own pull requests: defaults/ci/github/workline.yml, but for
-# three things (ADR-0071 §1). gates installs the tool of workline's own gate,
-# golangci-lint, where the template leaves yours to add. gates and judge run
-# the release WORKLINE_VERSION pins, downloaded by .github/actions/engine,
-# its checksum checked, as a user's line does: a defect on main never
-# refuses the pull request that fixes it. ADR-0017's "never the pin that
-# commit ships" guarded an untagged pin; this one is published, tried on a
-# copy, and moved only in its own pull request. On a pull request, the
-# head's file says the pin: the pin's pull request is judged by the new
-# release, applied by the old (the N-1 rule, below). And a pull request
-# that changes the engine (cmd/, internal/, roles/, skills/, roles.go,
-# defaults/routing.yaml, go.mod, go.sum) gets a head pass: gates and
-# judge again on the engine built from its head, non-blocking, its result
-# its own check. The job `pinned` holds the N-1 rule: the pinned release
-# reads the head's .workline/config.yaml and the front matter of the docs
-# the change touches, or fails naming the file. What judge proposes is
-# applied by workline-apply.yml, from main, on the pinned release: what a
-# pull request changes in the engine never runs with the write token.
+# workline on its own pull requests: defaults/ci/github/workline.yml, but
+# gates installs golangci-lint, and gates and judge run the release
+# WORKLINE_VERSION pins, as a user's line does; ADR-0017's "never the pin
+# that commit ships" guarded an untagged pin, this one is published and
+# tried (ADR-0071 §1). The job `pinned` checks the pinned release reads the
+# head; an engine-changing pull request also gets a head pass, non-blocking.
+# What judge proposes, workline-apply.yml applies on the pinned release.
+# Why each: docs/github/own-workflows.md.
 # workline on GitHub Actions — copy to .github/workflows/workline.yml, with
 # workline-apply.yml beside it.
 #
@@ -384,8 +374,8 @@ jobs:
         if: "!cancelled() && github.event_name != 'merge_group'"
         with: {name: "workline-tally-${{ github.job }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14, overwrite: true}
 
-  # The N-1 rule (ADR-0071, Consequences): a format ships in a release
-  # before it is used. The pinned release reads the head's
+  # A format ships in a release before it is used (ADR-0071,
+  # Consequences). The pinned release reads the head's
   # .workline/config.yaml, which refuses an unknown key, and the front
   # matter of the docs the change touches; it fails naming the file it
   # cannot read. .workline/roles/ holds prompts, read as text.
