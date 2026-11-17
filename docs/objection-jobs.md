@@ -60,6 +60,10 @@ flowchart LR
   (`workline test answer --tried`). A run on that same state
   (`--state` says `tried`) calls no agent: only a new comment in a
   waiting thread, a new objection or a new head starts one again.
+- A state not read (a release before `--state`, or the forge
+  failing): the answer runs as before, a warning in the log, and no
+  state is written
+  ([the N-1 rule](adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#consequences)).
 - The reconciler of `workline-develop.yml` lists the Drafts an
   objection still waits on (`answers` in `workline route reconcile
   --input reconcile=list`) and starts their answer: a run that

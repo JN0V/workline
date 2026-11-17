@@ -70,10 +70,15 @@ jobs:
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           got=$(gh pr list --head "$BRANCH" --state open --json number,headRefOid,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0] // empty | "\(.number) \(.headRefOid)"')
           [ -n "$got" ] || { echo "no open pull request from $BRANCH in this repository: nothing to answer"; exit 0; }
-          said=$(workline test answer --merge-request "${got%% *}" --state --forge github) || said=
+          # A state not read (an engine before --state, ADR-0071's N-1, or
+          # the forge failing): answered as before, due, none marked after.
+          if ! said=$(workline test answer --merge-request "${got%% *}" --state --forge github); then
+            echo "::warning title=workline::the Draft's state not read: answered as due, its state not marked"
+            said="due unread"
+          fi
           case "$said" in
             "due "*) ;;
-            *) echo "no answer: ${said:-its state not read}" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+            *) echo "no answer: ${said:-none waits}" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0 ;;
           esac
           echo "head=${got#* }" >> "$GITHUB_OUTPUT"
           echo "state=${said#due }" >> "$GITHUB_OUTPUT"
@@ -180,8 +185,8 @@ jobs:
       # The state this answer ran on, whatever it wrote: answered,
       # refused, failed. The reconciler and a chained run start none
       # again on it, only on a new comment, objection or head (#1701). Not
-      # when the agent was unreachable (status 3) or judge stopped before
-      # answering: the next run tries again.
+      # when the agent was unreachable (status 3), judge stopped before
+      # answering, or read no state: the next run tries again.
       - name: The answer's state
         if: always() && needs.judge.outputs.status != '' && needs.judge.outputs.status != '3'
         env:
@@ -191,6 +196,7 @@ jobs:
         run: |
           NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
           [ -n "$NUMBER" ] || exit 0
+          [ "$STATE" != unread ] || { echo "the state was not read: none marked, the reconciler may start it again"; exit 0; }
           workline test answer --merge-request "$NUMBER" --tried "$STATE" --forge github ||
             echo "::warning title=workline::the answer's state not written: the reconciler may start it again"
       # One answer a run: an answer applied, the next objection waiting is
