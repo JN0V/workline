@@ -58,7 +58,8 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   wrote it, put at or after it and still on: the trace written before a
   yes put in their name
   ([ADR-0068 §7](adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated))
-  never holds that yes.
+  never holds that yes. A conversation on a line is answered by that
+  yes only when every person's comment in it is theirs, before it.
 - **Open conversations that hold it are said**: auto-merge on, its
   checks green, the forge not merging, and its base requiring every
   conversation resolved: `follow` lists each open one, linked, in its

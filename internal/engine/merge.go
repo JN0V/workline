@@ -1580,8 +1580,19 @@ func personsCommentOpen(f forge.Forge, id int, labels []forge.LabelEvent) (strin
 	if err != nil {
 		return "", err
 	}
+	// allTheirs: every person's comment in the thread is the yes author's,
+	// given at or before the yes; another person's still waits for a role.
+	allTheirs := func(c forge.Thread) bool {
+		for _, n := range c.Comments {
+			if n.Insider && !n.Bot && !n.Own && strings.TrimSpace(n.Body) != "" &&
+				!strings.Contains(n.Body, "<!-- workline:") && !theirs(n) {
+				return false
+			}
+		}
+		return true
+	}
 	for _, c := range threads {
-		if c.Resolved || !tester.PersonsThread(c) || theirs(c.Comments[len(c.Comments)-1]) {
+		if c.Resolved || !tester.PersonsThread(c) || allTheirs(c) {
 			continue
 		}
 		if last := c.Comments[len(c.Comments)-1]; !isReply(last.Body) || !namesTest(last.Body) {
