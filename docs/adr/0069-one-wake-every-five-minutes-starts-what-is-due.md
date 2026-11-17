@@ -16,6 +16,8 @@
 - **Leaves as they are:** [ADR-0037] (how a `schedule` line runs);
   [ADR-0068] §8 (the wake script, print only)
 - **Research:** [reliable-schedule.md](../research/reliable-schedule.md)
+- **Amended:** [2026-11-17](#amendment-2026-11-17-a-beat-every-minute-no-event-moves-the-line):
+  a beat every minute, no event moves the line; the GitHub loop
 
 Called **the tick** below, to keep it apart from
 [ADR-0068 §8](0068-the-line-steps-back-on-its-own-drift.md#8-the-wake-script-print-only)'s
@@ -249,13 +251,81 @@ From [#1611], in order:
    machine's timer, in `docs/ci.md` and
    [heartbeat.md](../github/heartbeat.md).
 
+## Amendment (2026-11-17): a beat every minute, no event moves the line
+
+Still proposed. The first part is decided; the second is proposed, for
+the slices to settle.
+
+### Decided by the maintainer (2026-11-17)
+
+In a session, [recorded on #1665](https://github.com/JN0V/workline/issues/1665#issuecomment-6961071716).
+Why: in the maintainer's reading, nearly every defect reported lately
+is in the workflows (runs stepping on each other, cancelled by another
+run, blocked).
+
+- **Priority**: the tick moves up, before the 1.0 tag.
+- **A regular beat**: at each beat, only what is due starts
+  ([§2](#2-the-engine-decides-what-is-due)), as a cron would.
+- **Nothing moves from events**: no issue, comment, label or finished
+  run starts line work; but the required pull request checks (gates,
+  judge, bounds, test, warn) and the release keep their triggers.
+- **GitHub, a loop**: `schedule` runs every 5 minutes at best, late or
+  never: 2 of 9 hourly runs one night ([#1611]); 167 of about 9,000
+  probe runs in a month
+  ([reliable-schedule.md](../research/reliable-schedule.md#what-this-repository-saw)).
+  So one long job ticks every minute, dispatches its successor before
+  the 6 h job limit, one at a time by a concurrency group.
+- **Elsewhere, the native schedule**: a GitLab pipeline schedule
+  ([§7](#7-gitlab)), a person's machine (cron, systemd, launchd).
+- **Two checks**: the loop dispatches exactly the list
+  `workline tick --json` prints, on a fixed state and a fake forge; a
+  test reads the workflows and their templates, and keeps only the
+  allowed triggers.
+
+### Proposed, not decided
+
+- **Two more exceptions**: `workline/verdict` (applied from the
+  checks' results; protection needs it on the head) and release-please
+  (not the line; it opens the release pull request on a push to main).
+- **A restart is an event**: an hourly cron or a person's `workline:`
+  label may start the beat when it stopped, nothing else; the beat then
+  reads state, and says since when it was down.
+- **Cost on a private repository**: the loop bills about 1,440 runner
+  minutes a day (43,000 a month) before the jobs it starts; GitHub
+  Free includes 2,000 a month, Team 3,000. A project chooses instead a
+  self-hosted runner, a person's machine on a timer, the wait-timer
+  chain of [§1](#1-one-wake-same-everywhere) at 5 to 15 minutes (not on
+  GitHub Free), or the crons alone, said. Public: not billed.
+- **API budget**: 60 beats an hour at [§3](#3-api-cost)'s 7 to 11
+  listings would be 420 to 660 calls of the token's 1,000. Each beat
+  sends the last `ETag`; a `304 Not Modified` costs no quota
+  ([GitHub](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#use-conditional-requests-if-appropriate)).
+  §3's quarter stays the rule, measured in the try.
+- **Migration with the pinned line** ([ADR-0071]), in order: `workline
+  tick` ([#1665]), released; tried on a copy; the pin's pull request,
+  on the person's label; the loop in dry run beside today's workflows,
+  a day; the event workflows removed one per pull request, crons kept
+  as restart until a week without a missed beat.
+- **What it does not fix**: engine defects; the beat ends only the
+  duplicate and cancelled runs events start.
+- **Supersedes, once decided**: the title's "every five minutes";
+  [§1](#1-one-wake-same-everywhere)'s GitHub wait timer;
+  [§3](#3-api-cost)'s "about 240" a reconcile;
+  [§6](#6-the-tick-does-not-stop-while-a-time-is-waiting)'s stop at
+  rest and its figures; [§8](#8-crons-demoted-to-fallback)'s crons per
+  job; [What changes in ADR-0059](#what-changes-in-adr-0059)'s "events
+  still move the line"; [Consequences](#consequences)' "288 ticks a
+  day"; the [Slices](#slices).
+
 [#607]: https://github.com/JN0V/workline/issues/607
 [#853]: https://github.com/JN0V/workline/issues/853
 [#1397]: https://github.com/JN0V/workline/issues/1397
 [#1549]: https://github.com/JN0V/workline/issues/1549
 [#1611]: https://github.com/JN0V/workline/issues/1611
+[#1665]: https://github.com/JN0V/workline/issues/1665
 [ADR-0037]: 0037-the-schedule-runs-every-step.md
 [ADR-0059]: 0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md
 [ADR-0060]: 0060-the-person-is-on-the-loop.md
 [ADR-0063]: 0063-every-open-issue-is-due-waiting-or-done.md
 [ADR-0068]: 0068-the-line-steps-back-on-its-own-drift.md
+[ADR-0071]: 0071-the-line-runs-a-pinned-release-tried-on-a-copy.md
