@@ -7,12 +7,13 @@
 name: workline gardening
 # Each run named by its job, what `workline tick` reads to know it ran
 # (#1761): the nightly at 02:17, the docs on Sunday, the backlog hourly;
-# by hand, the job its input names, else the workflow's own name.
+# by hand, the job its input names, else `workline gardening by hand`,
+# a name no job of the tick claims.
 run-name: >-
   ${{ (github.event.schedule == '17 2 * * *' && 'workline gardening nightly') ||
   (github.event.schedule == '7 18 * * 0' && 'workline gardening docs') ||
   (github.event.schedule == '47 * * * *' && 'workline gardening backlog') ||
-  (contains(fromJSON('["backlog","nightly","docs"]'), inputs.job) && format('workline gardening {0}', inputs.job)) || github.workflow }}
+  (contains(fromJSON('["backlog","nightly","docs"]'), inputs.job) && format('workline gardening {0}', inputs.job)) || 'workline gardening by hand' }}
 on:
   # The backlog nightly, 02:17 UTC; the docs pull request weekly, Sunday
   # 18:07 UTC, so that it lands before Monday's workday though GitHub may

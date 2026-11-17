@@ -2472,5 +2472,10 @@ func TestGardeningRunsNamedByTheirJob(t *testing.T) {
 		if _, ok := wf.On.Dispatch.Inputs["job"]; !ok || !strings.Contains(wf.RunName, "format('workline gardening {0}', inputs.job)") {
 			t.Errorf("%s: a run by hand is not named by its input job: run-name %q", f, wf.RunName)
 		}
+		// With no job, a name no job of the tick claims: the old one,
+		// `workline gardening`, is read as the backlog's.
+		if strings.Contains(wf.RunName, "github.workflow") || !strings.Contains(wf.RunName, "|| 'workline gardening by hand' }}") {
+			t.Errorf("%s: a run by hand with no job may pass for a backlog run: run-name %q", f, wf.RunName)
+		}
 	}
 }

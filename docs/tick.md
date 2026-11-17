@@ -41,7 +41,8 @@ flowchart LR
   whoever started it, green or not.
 - **Gardening runs named by their job**: the templates name each run
   `workline gardening docs`, `nightly` or `backlog`, from its schedule
-  or the input `job` of a run by hand
+  or the input `job` of a run by hand; with no job, `workline gardening
+  by hand`, no job's
   ([#1761](https://github.com/JN0V/workline/issues/1761)).
 - **Runs from before those names**: a gardening run named `workline
   gardening` counts as a backlog run, a `workline develop heartbeat` as
