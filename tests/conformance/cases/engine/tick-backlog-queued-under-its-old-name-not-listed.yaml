@@ -1,0 +1,25 @@
+case: engine/tick-backlog-queued-under-its-old-name-not-listed
+about: >
+  A gardening run queued under the workflow's own name, as runs before the tick were named, is a backlog run going: not listed again (#1665).
+given:
+  repo: basic
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 10}}
+  forge:
+    issues:
+      - {id: 1, title: "Item 1", body: "x", labels: ["workline:ready"]}
+      - {id: 2, title: "Item 2", body: "x", labels: ["workline:ready"]}
+      - {id: 3, title: "Item 3", body: "x", labels: ["workline:ready"]}
+      - {id: 4, title: "Item 4", body: "x", labels: ["workline:ready"]}
+      - {id: 5, title: "Item 5", body: "x", labels: ["workline:ready"]}
+      - {id: 6, title: "Item 6", body: "x", labels: ["workline:ready"]}
+    runs:
+      - {name: "workline merge", workflow: workline-merge.yml, status: completed, success: true, started: "2026-11-16T02:00:00Z", updated: "2026-11-16T02:01:00Z"}
+      - {name: "workline gardening docs", workflow: workline-gardening.yml, status: completed, success: true, started: "2026-11-15T18:10:00Z", updated: "2026-11-15T18:30:00Z"}
+      - {name: "workline sample", workflow: workline-sample.yml, status: completed, success: true, started: "2026-11-16T00:00:00Z", updated: "2026-11-16T00:05:00Z"}
+      - {name: "workline gardening", workflow: workline-gardening.yml, status: queued, started: "2026-11-16T02:18:00Z"}
+run: {cli: [tick, --forge, "fake:../forge.json", --now, "2026-11-16T02:20:00Z", --json]}
+expect:
+  exit: 0
+  stdout-lacks: ['"backlog"']
+  stderr: ['backlog: "workline gardening" queued']

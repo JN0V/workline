@@ -1,0 +1,12 @@
+case: engine/tick-both-at-and-gap-refused
+about: >
+  A timed job sets at or gap, never both: the config is refused when read,
+  naming the job (#1665).
+given:
+  repo: basic
+  config:
+    routing: {timed: {nightly: {at: "17 2 * * *", gap: 60}}}
+run: {cli: [tick, --forge, none, --json]}
+expect:
+  exit: 64
+  stderr: ["routing.timed.nightly sets both at and gap"]

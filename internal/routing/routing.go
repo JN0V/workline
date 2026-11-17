@@ -56,6 +56,9 @@ type Config struct {
 	// its verdict not a pass, before the wake and the reconcile say it
 	// stalled (ADR-0068, section 8); nil, stall.DefaultHours; 0, never.
 	StalledHours *int `yaml:"stalled-hours"`
+	// Timed: each timed job's time, by its name (ADR-0069 §4; timed.go):
+	// a project's laid over the shipped ones job by job.
+	Timed map[string]Timed `yaml:"timed"`
 }
 
 // Stalled is the age limit of a stalled pull request, in hours; 0, none.
@@ -131,6 +134,10 @@ func Load(repo string) (*Config, error) {
 			}
 			c.StalledHours = p.StalledHours
 		}
+		if err := checkTimed(p.Timed); err != nil {
+			return nil, role.ConfigErrorf("%s", err)
+		}
+		c.Timed = p.Timed
 		if err := checkStale(p.Stale, c.States); err != nil {
 			return nil, role.ConfigErrorf("%s", err)
 		}

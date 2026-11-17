@@ -83,6 +83,10 @@ type FakeState struct {
 	// forge does not answer them.
 	Rulesets       []FakeRuleset `json:"rulesets,omitempty"`
 	RulesetsUnread string        `json:"rulesets-unread,omitempty"`
+	// Runs are the CI runs of the line's jobs, as Runs reads them (the
+	// tick, ADR-0069); RunsUnread, why the forge does not answer them.
+	Runs       []Run  `json:"runs,omitempty"`
+	RunsUnread string `json:"runs-unread,omitempty"`
 	// Tips are the runs on each branch's tip, by branch, as Tip reads
 	// them; TipsUnread, why the forge does not answer them.
 	Tips       map[string][]CheckRun `json:"tips,omitempty"`

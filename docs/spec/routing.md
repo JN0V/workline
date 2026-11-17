@@ -969,6 +969,9 @@ each reconcile starts the next one, past an environment's wait timer
 - **`--input reconcile=list`**: it says the issues due (`due` in its
   result), starts none and writes nothing, for a CI job that starts each
   one's own run. `--input skip` leaves a role's issues out.
+- **`workline tick --issues`** reads the same listing, each issue's step,
+  review round and answer due as its own job beside the line's timed
+  jobs and the backlog run ([the tick](../tick.md)).
 - **The developer's review rounds**: where the project routes the
   developer, it reads its open pull requests too. A round due that no
   event started (the reviewer's verdict, the gates' report, a project

@@ -43,6 +43,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline sample`](commands.md#workline-sample) | the weekly sample: one in ten of every role's acts of the week, re-checked |
 | [`workline size`](commands.md#workline-size) | the normal size of an issue here, measured from the line's records, kept in one comment |
 | [`workline wake`](wake.md) | after a merge, prints where the line may be drifting, with no AI; `--issue` keeps it in one issue |
+| [`workline tick`](tick.md) | lists the line's jobs due now, each with why, with no AI: what a regular beat starts |
 | [`workline follow`](commands.md#workline-follow) | `--gardening`: rebuilds gardening's merge requests on the default branch's new tip; closes the tester's Draft of a closed issue; runs the [merge policy](merge-policy.md), when set |
 | [`workline hooks install --global`](commands-setup.md#workline-hooks) | installs the git hooks for every repository (`--repo`: this one) |
 | [`workline setup`](commands-setup.md#workline-setup) | sets up this machine: hooks, agent, tools |
