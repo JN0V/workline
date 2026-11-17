@@ -73,7 +73,7 @@ var kinds = []struct{ key, name, word string }{
 // reconcile. The run reads them again, who wrote each among them.
 func ObjectionsWait(threads []forge.Thread) bool {
 	for _, t := range threads {
-		if t.Resolved || len(t.Comments) == 0 || !strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) {
+		if t.Resolved || len(t.Comments) == 0 || (!strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) && !PersonsThread(t)) {
 			continue
 		}
 		last := t.Comments[len(t.Comments)-1].Body
@@ -82,6 +82,19 @@ func ObjectionsWait(threads []forge.Thread) bool {
 		}
 	}
 	return false
+}
+
+// PersonsThread says whether a conversation on a line was opened by a
+// person of the project (#1358): a review comment on the Draft, no
+// objection's form, no engine's marker. The tester reads it as a test
+// missing, naming no scenario.
+func PersonsThread(t forge.Thread) bool {
+	if len(t.Comments) == 0 {
+		return false
+	}
+	c := t.Comments[0]
+	body := strings.TrimSpace(c.Body)
+	return c.Insider && !c.Bot && body != "" && !strings.HasPrefix(body, ObjectionWord) && !strings.Contains(body, "<!-- workline:")
 }
 
 // What an answer run does, decided before any agent.
@@ -357,7 +370,7 @@ func answerPre(runDir, repo string, s Settings) int {
 	}
 	var waiting []forge.Thread
 	for _, t := range threads {
-		if t.Resolved || len(t.Comments) == 0 || !strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) {
+		if t.Resolved || len(t.Comments) == 0 || (!strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) && !PersonsThread(t)) {
 			continue
 		}
 		if last := t.Comments[len(t.Comments)-1]; len(neededFiles(runDir)) > 0 && lacked(last.Body) {
@@ -382,8 +395,13 @@ func answerPre(runDir, repo string, s Settings) int {
 	// The first comment's fields, then those the builder gave in a reply,
 	// the latest kept: an unreadable objection is completed in the thread.
 	o, _ := parseObjection(t.Comments[0].Body)
+	byPerson := PersonsThread(t)
+	if byPerson {
+		// A person's review comment: a test missing, on the line it is on.
+		o = objection{Test: t.Path, Kind: "missing", Why: strings.TrimSpace(t.Comments[0].Body)}
+	}
 	for _, c := range t.Comments[1:] {
-		if own.Wrote(c) {
+		if own.Wrote(c) || byPerson {
 			continue
 		}
 		if r, _ := parseObjection(c.Body); r != (objection{}) {
@@ -484,6 +502,9 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 	fmt.Fprintf(&b, "## The objection: %s\n\n", kindName(a.Kind))
 	for i, c := range t.Comments {
 		who := "the builder"
+		if i == 0 && a.Kind == "missing" && PersonsThread(t) {
+			who = "a person of the project"
+		}
 		switch {
 		case strings.Contains(c.Body, answerMark), strings.Contains(c.Body, unreadMark):
 			who = "you, the tester"

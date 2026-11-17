@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/steer"
+	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -996,6 +998,34 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		}
 		return m.Accept(tip, false, why)
 	}
+	// A person's comment on it with no answer holds the merge, whatever
+	// the policy says (#1358).
+	if open, err := personsCommentOpen(f, mr.ID); err != nil {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+			return nil, err
+		}
+		// Unread, a comment may wait: hold, as for one that waits.
+		if st.AutoMerge && st.AutoMergeBot {
+			if err := off(); err != nil {
+				return nil, err
+			}
+		}
+		say("comments-unread", "warn", "its comments could not be read, so a person's may wait: nothing merges, auto-merge stays off: "+forge.Said(err))
+		return nil, nil
+	} else if open != "" {
+		if st.AutoMerge && st.AutoMergeBot {
+			if err := off(); err != nil {
+				return nil, err
+			}
+		}
+		if err := f.Sticky(forge.Target{Kind: "merge-request", ID: mr.ID},
+			"**Held**: a person's comment on this merge request has no answer yet ("+open+"). It does not merge until a role answers it: a commit that adds the test, or a reply that names the test that guards the case.",
+			forge.Marker(commentOpenMarker), true); err != nil {
+			return nil, err
+		}
+		say("persons-comment-open", "warn", "a person's comment ("+open+") has no answer: nothing merges, auto-merge stays off, until a role answers it")
+		return nil, nil
+	}
 	// At `normal`, workline's own routine merge request, no person's yes
 	// given: weighed by what it is (routine.go).
 	routine := routineCandidate(o, n, mr)
@@ -1474,4 +1504,81 @@ func settlementDiff(repo, commit string) string {
 		fmt.Fprintf(&b, "\n(%d more lines)\n", n-max)
 	}
 	return "\n\nWhat the agent wrote to settle the conflict, over git's own merge:\n" + b.String()
+}
+
+// commentOpenMarker keeps the comment that says a person's comment waits.
+const commentOpenMarker = "person-comment-open"
+
+// namesTest tells a reply that names a test, or a commit that adds one:
+// "no" alone, or the bare word "test" or "commit", does not answer a
+// person's comment. It takes an identifier: test_x, x_test, TestX, a path
+// under tests/, a x.test.y file, or a commit hash.
+var namesTestRe = regexp.MustCompile(`\btest_\w+|\b\w+_test\b|\bTest[A-Z]\w*|\b\w+\.(?:test|spec)\.\w+|(?:^|[\s` + "`" + `(])(?:\S*/)?tests?/\S+|\b[0-9a-f]{7,40}\b`)
+
+// isReply tells a role's reply, a run's comment or the tester's answer,
+// from the engine's statuses and the records that mention tests.
+func isReply(body string) bool {
+	return strings.Contains(body, "<!-- workline:run=") || strings.Contains(body, forge.Marker("tester-answer"))
+}
+
+func namesTest(body string) bool {
+	for _, m := range namesTestRe.FindAllString(body, -1) {
+		// A hash holds a digit: a word of letters a-f ("defaced") is not one.
+		if strings.Trim(m, "0123456789abcdef") == "" && !strings.ContainsAny(m, "0123456789") {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+// personsCommentOpen says, quoted short, the first person's comment on a
+// merge request that no role has answered: a comment of the request or a
+// conversation on a line, left by a person of the project. A role's own
+// comment after it answers it, the line's verdict and this hold apart.
+// "" when none waits.
+func personsCommentOpen(f forge.Forge, id int) (string, error) {
+	t := forge.Target{Kind: "merge-request", ID: id}
+	b, ok := f.(forge.Backlog)
+	var notes []forge.Note
+	var err error
+	if ok {
+		notes, err = b.Notes(t)
+	}
+	if ok && err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
+		return "", err
+	}
+	if ok && err == nil {
+		own := func(n forge.Note) bool { return n.Own || strings.Contains(n.Body, "<!-- workline:") }
+		// A role's reply: a note of a run, not a status of the engine or
+		// the tester's record, that names a test.
+		answers := func(n forge.Note) bool {
+			return own(n) && isReply(n.Body) && namesTest(n.Body)
+		}
+		for i, n := range notes {
+			if !n.Insider || n.Bot || own(n) || strings.TrimSpace(n.Body) == "" {
+				continue
+			}
+			if !slices.ContainsFunc(notes[i+1:], answers) {
+				return clipSaid(strings.TrimSpace(n.Body)), nil
+			}
+		}
+	}
+	th, ok := f.(forge.Threaded)
+	if !ok {
+		return "", nil
+	}
+	threads, err := th.Threads(id)
+	if err != nil {
+		return "", err
+	}
+	for _, c := range threads {
+		if c.Resolved || !tester.PersonsThread(c) {
+			continue
+		}
+		if last := c.Comments[len(c.Comments)-1]; !isReply(last.Body) || !namesTest(last.Body) {
+			return clipSaid(strings.TrimSpace(c.Comments[0].Body)), nil
+		}
+	}
+	return "", nil
 }
