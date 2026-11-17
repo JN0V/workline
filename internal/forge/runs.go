@@ -14,7 +14,7 @@ import (
 
 // Run is one CI run: Name, the name it was started under (a GitHub
 // run-name, its display title); Workflow, the file it runs; Status,
-// queued, waiting, pending, in_progress or completed; Success, it ended
+// requested, queued, waiting, pending, in_progress or completed; Success, it ended
 // green; Started and Updated, RFC 3339.
 type Run struct {
 	Name     string `json:"name"`
@@ -92,20 +92,30 @@ func compareTimes(a, b string) int {
 // githubRunJQ keeps of a run what Run holds.
 const githubRunJQ = `{name: .display_title, workflow: (.path | split("/") | last | split("@") | first), status, success: (.conclusion == "success"), started: (.run_started_at // .created_at), updated: .updated_at}`
 
-// RunsGoing reads the runs of each status not completed, one page of 100
-// each: 4 calls.
+// runStatusesGoing are the statuses of a run not completed: requested, a
+// run asked for and not yet queued, among them (#1761).
+var runStatusesGoing = []string{"requested", "queued", "waiting", "pending", "in_progress"}
+
+// RunsGoing reads the runs of each status not completed, page by page,
+// until a page holds fewer than 100 or RunsPages are read: 5 calls when
+// fewer than 100 of each.
 func (g *github) RunsGoing() ([]Run, error) {
 	var all []Run
-	for _, status := range []string{"queued", "waiting", "pending", "in_progress"} {
-		out, err := g.api("repos/{owner}/{repo}/actions/runs?per_page=100&status="+status, "--jq", ".workflow_runs[] | "+githubRunJQ)
-		if err != nil {
-			return nil, err
+	for _, status := range runStatusesGoing {
+		for page := 1; page <= RunsPages; page++ {
+			out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/actions/runs?per_page=100&page=%d&status=%s", page, status), "--jq", ".workflow_runs[] | "+githubRunJQ)
+			if err != nil {
+				return nil, err
+			}
+			runs, err := lines[Run](out)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, runs...)
+			if len(runs) < 100 {
+				break
+			}
 		}
-		runs, err := lines[Run](out)
-		if err != nil {
-			return nil, err
-		}
-		all = append(all, runs...)
 	}
 	return all, nil
 }

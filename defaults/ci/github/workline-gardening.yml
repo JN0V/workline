@@ -36,6 +36,14 @@
 #          GitHub waits for someone to approve them, and the repository must
 #          let Actions create pull requests (Settings → Actions → General).
 name: workline gardening
+# Each run named by its job, what `workline tick` reads to know it ran
+# (docs/tick.md): the docs on Sunday; any other schedule you add, the
+# nightly; by hand, the job its input names, else `workline gardening
+# by hand`, a name no job of the tick claims.
+run-name: >-
+  ${{ (github.event.schedule == '7 18 * * 0' && 'workline gardening docs') ||
+  (github.event.schedule && 'workline gardening nightly') ||
+  (contains(fromJSON('["backlog","nightly","docs"]'), inputs.job) && format('workline gardening {0}', inputs.job)) || 'workline gardening by hand' }}
 on:
   # Sundays, 18:07 UTC: the docs pull request lands before Monday's
   # workday, though GitHub may start a run hours late (ADR-0051); nightly
@@ -43,6 +51,8 @@ on:
   # run scheduled at its start, when busiest.
   schedule: [{cron: "7 18 * * 0"}]
   workflow_dispatch:
+    inputs:
+      job: {description: "the job this run is named for: backlog, nightly or docs (it runs the schedule line all the same)", required: false, default: ""}
 permissions: {}
 
 env:

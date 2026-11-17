@@ -5,6 +5,15 @@
 # release's dry run: what would hold it if it were cut now, said in the
 # default branch's issue.
 name: workline gardening
+# Each run named by its job, what `workline tick` reads to know it ran
+# (#1761): the nightly at 02:17, the docs on Sunday, the backlog hourly;
+# by hand, the job its input names, else `workline gardening by hand`,
+# a name no job of the tick claims.
+run-name: >-
+  ${{ (github.event.schedule == '17 2 * * *' && 'workline gardening nightly') ||
+  (github.event.schedule == '7 18 * * 0' && 'workline gardening docs') ||
+  (github.event.schedule == '47 * * * *' && 'workline gardening backlog') ||
+  (contains(fromJSON('["backlog","nightly","docs"]'), inputs.job) && format('workline gardening {0}', inputs.job)) || 'workline gardening by hand' }}
 on:
   # The backlog nightly, 02:17 UTC; the docs pull request weekly, Sunday
   # 18:07 UTC, so that it lands before Monday's workday though GitHub may
@@ -14,13 +23,14 @@ on:
   schedule: [{cron: "17 2 * * *"}, {cron: "7 18 * * 0"}, {cron: "47 * * * *"}]
   workflow_dispatch:
     inputs:
+      job: {description: "the job run, its schedule's roles: backlog, nightly or docs; empty: as skip says", required: false, default: ""}
       skip: {description: "roles left out, comma-separated (documentalist: the backlog alone); empty: every role", required: false, default: ""}
 permissions: {}
 
 # One backlog run at a time: two product owners on the same issues would
 # act twice. The weekly docs run waits for none.
 concurrency:
-  group: ${{ github.event.schedule == '7 18 * * 0' && format('workline-gardening-{0}', github.run_id) || 'workline-gardening-backlog' }}
+  group: ${{ (github.event.schedule == '7 18 * * 0' || inputs.job == 'docs') && format('workline-gardening-{0}', github.run_id) || 'workline-gardening-backlog' }}
   cancel-in-progress: false
 
 env:
@@ -70,9 +80,9 @@ jobs:
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Nightly and hourly the backlog, the tester's one issue
-          # and the developer's; weekly the docs alone; run by hand, all
-          # but the roles its input `skip` names.
-          SKIP: "${{ (github.event.schedule == '17 2 * * *' || github.event.schedule == '47 * * * *') && 'documentalist' || github.event.schedule == '7 18 * * 0' && 'product-owner,reviewer,tester,developer' || inputs.skip || '' }}"
+          # and the developer's; weekly the docs alone; run by hand, its
+          # input `job`'s, else all but the roles its input `skip` names.
+          SKIP: "${{ (github.event.schedule == '17 2 * * *' || github.event.schedule == '47 * * * *' || inputs.job == 'backlog' || inputs.job == 'nightly') && 'documentalist' || (github.event.schedule == '7 18 * * 0' || inputs.job == 'docs') && 'product-owner,reviewer,tester,developer' || inputs.skip || '' }}"
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           status=0
@@ -226,7 +236,7 @@ jobs:
   # few redundant tests of one folder removed, proven with no agent, and
   # apply opens the pull request (step 7).
   curator:
-    if: vars.WORKLINE_CURATOR == 'on' && github.event.schedule != '17 2 * * *' && github.event.schedule != '47 * * * *'
+    if: vars.WORKLINE_CURATOR == 'on' && github.event.schedule != '17 2 * * *' && github.event.schedule != '47 * * * *' && inputs.job != 'backlog' && inputs.job != 'nightly'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     # actions: the last run's artifact, the history; pull-requests: the
