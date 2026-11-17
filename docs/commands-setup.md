@@ -101,7 +101,10 @@ changes nothing.
   it cannot read — classic branch protection, without an admin's token —
   is said. Whether this token can bypass the default branch's rulesets:
   nobody should, a warning names each one it can
-  ([nobody bypasses `main`](merge-policy-no-bypass.md)). `--forge` names
+  ([nobody bypasses `main`](merge-policy-no-bypass.md)). On a public
+  repository, whether an active Actions event policy lets the workflows
+  on `pull_request_target` run: a warning when not
+  ([pull_request_target](github/pull-request-target.md)). `--forge` names
   the forge; by default the project's `forge`, else GitHub when its
   workflows run workline.
 - Where the merge policy merges alone, or the developer runs: which
