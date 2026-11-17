@@ -623,7 +623,10 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 		}
 		lineDetails(r.Asked, threads, kept.Wrote)
 	}
-	at, gates := gatesAsked(f, kept, a, head)
+	at, gates, err := gatesAsked(f, kept, a, head)
+	if err != nil {
+		return r, false, err
+	}
 	r.GatesAt, r.Asked = at, append(r.Asked, gates...)
 	if r.Back = back; back || legacyNoCode(a) || len(keptNow) > 0 {
 		a.ChecksAt = "" // asked again at its head: new bounds, a test kept, or a round that could not ask for them

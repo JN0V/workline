@@ -96,28 +96,31 @@ func sameCommit(a, b string) bool {
 // gates reported on another head than its branch's (head; "" when not
 // known: the round reads it), or on the one its last round read
 // (a.GatesAt). It returns the head they were read at.
-func gatesAsked(f forge.Forge, kept forge.Kept, a Act, head string) (string, []Asked) {
+func gatesAsked(f forge.Forge, kept forge.Kept, a Act, head string) (string, []Asked, error) {
 	c, ok := kept.Last(forge.GatesMarker)
 	if !ok {
 		// On GitLab the gates' summary is also the end of their failed job's trace (#1381).
 		gt, is := f.(forge.GatesTraced)
 		if !is || head == "" || sameCommit(head, a.GatesAt) {
-			return "", nil
+			return "", nil, nil
 		}
 		trace, err := gt.GatesTrace(head)
-		if err != nil || trace == "" {
-			return "", nil
+		if err != nil {
+			return "", nil, fmt.Errorf("read the gates' trace at %s: %w", head, err)
+		}
+		if trace == "" {
+			return "", nil, nil
 		}
 		c = trace
 	}
 	at, asked := gateRows(c)
 	if at == "" || len(asked) == 0 || sameCommit(at, a.GatesAt) || head != "" && !sameCommit(at, head) {
-		return "", nil
+		return "", nil, nil
 	}
 	if t, ok := kept.Last(inspector.Marker); ok {
 		triageDetails(asked, t, at)
 	}
-	return at, asked
+	return at, asked, nil
 }
 
 // gateLine is a gate's finding as a round's question and comment say it.
