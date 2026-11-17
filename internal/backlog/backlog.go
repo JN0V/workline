@@ -113,7 +113,7 @@ type State struct {
 	Aside string `yaml:"aside,omitempty"`
 	// Heard are the comments of its reporter and the project's people the
 	// role read; Revisions, the times it revised its drafts for them.
-	Heard     *int `yaml:"heard,omitempty"`
+	Heard *int `yaml:"heard,omitempty"`
 	// HeardLast is the id of the last counted comment read: which ones
 	// were read, not only how many (a comment deleted, a new one written).
 	HeardLast string `yaml:"heard-last,omitempty"`
