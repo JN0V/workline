@@ -169,9 +169,11 @@ jobs:
           exit "$status"
       # The state this answer ran on, whatever it wrote: answered,
       # refused, failed. The reconciler and a chained run start none
-      # again on it, only on a new comment, objection or head (#1701).
+      # again on it, only on a new comment, objection or head (#1701). Not
+      # when the agent was unreachable (status 3) or judge stopped before
+      # answering: the next run tries again.
       - name: The answer's state
-        if: always()
+        if: always() && needs.judge.outputs.status != '' && needs.judge.outputs.status != '3'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           BRANCH: ${{ needs.judge.outputs.branch }}

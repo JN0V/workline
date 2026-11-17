@@ -55,7 +55,8 @@ flowchart LR
   none left, the run ends before any agent. 5 answers at most in a
   chain (input `chain`); the reconciler resumes after.
 - Each run writes on the Draft the state it ran on, whatever it
-  wrote: the tip and each objection waiting
+  wrote, unless its agent was out of reach: the tip and each
+  objection waiting
   (`workline test answer --tried`). A run on that same state
   (`--state` says `tried`) calls no agent: only a new comment in a
   waiting thread, a new objection or a new head starts one again.
