@@ -38,6 +38,7 @@ variables. The commands and options: [usage.md](usage.md).
 | `routing.revisit` | the days a blocked issue waits, nothing new on it, before the product owner reads it again; `7` shipped, `0` never ([blocked, read again](spec/routing.md#blocked-read-again)) |
 | `routing.stalled-hours` | the hours a developer's pull request keeps its head, its verdict not a pass, before the wake and the reconcile say it stalled (`12`; `0`, never; [the reconciler](spec/routing.md#the-reconciler)) |
 | `routing.stale` | `<state>: <days>`, a state's age limit, laid over the shipped `ready: 30`, `tests: 14`; `0` lifts it ([staleness](spec/routing.md#staleness)) |
+| `routing.timed` | `<job>: {at: <cron>}`, `{gap: <minutes>}` or `off`: when [`workline tick`](tick.md#the-times) lists a timed job; at or gap, never both |
 | `packs` | the [language packs](packs.md) every role reads, as `[go, kotlin-gradle]`; written by `workline init` |
 | `board` | `ready`, `doing`, `refine`, `tests`, `blocked`: a column's name, over the names workline matches; `project`: a GitHub project's number, when several are linked ([boards](boards.md)) |
 | `gitlab.bots` | usernames GitLab does not name bots that are: the service account or line account holding workline's token; its comments, labels and reactions are a bot's, never a person's ([why](ci-gitlab.md#what-the-template-does)) |
