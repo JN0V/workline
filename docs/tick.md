@@ -39,9 +39,14 @@ flowchart LR
 - **A run's name is its key**: a run going under it keeps the job off
   the list; a run started under it since the job's time makes it done,
   whoever started it, green or not.
-- **Runs from before the tick**: a gardening run named `workline
+- **Gardening runs named by their job**: the templates name each run
+  `workline gardening docs`, `nightly` or `backlog`, from its schedule
+  or the input `job` of a run by hand
+  ([#1761](https://github.com/JN0V/workline/issues/1761)).
+- **Runs from before those names**: a gardening run named `workline
   gardening` counts as a backlog run, a `workline develop heartbeat` as
   a reconcile.
+- **Going**: a run requested, queued, waiting, pending or in progress.
 - **`--issues`**: in the place of the reconcile, each issue's step,
   review round and tester's answer the reconciler finds due, as its own
   job: `develop` (`workline develop #<n>`), `round` (`workline develop
@@ -83,7 +88,7 @@ workline tick --now 2026-11-16T02:20:00Z --json   # a fixed clock, for tests
 ## Cost
 
 - **No agent, no token** of a model.
-- **GitHub reads, each tick**: the runs going (4 calls), each timed
+- **GitHub reads, each tick**: the runs going (5 calls, one a status), each timed
   job's workflow back to its time (1 call a page of 100, 5 pages at
   most), the open issues when Ready's target is set (1 call a page),
   and each issue's label events past Ready when Ready is below it.

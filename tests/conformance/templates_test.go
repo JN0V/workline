@@ -2435,3 +2435,42 @@ func nodeText(n *yaml.Node) string {
 	out, _ := yaml.Marshal(n)
 	return string(out)
 }
+
+// Each gardening run is named by its job, what `workline tick` reads to
+// know it ran (#1761): the docs schedule's `workline gardening docs`;
+// every schedule of the workflow named, none left under the workflow's
+// own name; a run by hand named by its input `job`.
+func TestGardeningRunsNamedByTheirJob(t *testing.T) {
+	for _, f := range []string{"../../defaults/ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			RunName string `yaml:"run-name"`
+			On      struct {
+				Schedule []struct {
+					Cron string `yaml:"cron"`
+				} `yaml:"schedule"`
+				Dispatch struct {
+					Inputs map[string]any `yaml:"inputs"`
+				} `yaml:"workflow_dispatch"`
+			} `yaml:"on"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(wf.RunName, "github.event.schedule == '7 18 * * 0' && 'workline gardening docs'") {
+			t.Errorf("%s: the docs run is not named `workline gardening docs`: run-name %q", f, wf.RunName)
+		}
+		named := strings.Contains(wf.RunName, "(github.event.schedule && 'workline gardening ")
+		for _, s := range wf.On.Schedule {
+			if !named && !regexp.MustCompile(`github\.event\.schedule == '`+regexp.QuoteMeta(s.Cron)+`' && 'workline gardening (backlog|nightly|docs)'`).MatchString(wf.RunName) {
+				t.Errorf("%s: the schedule %q's run is not named by its job: run-name %q", f, s.Cron, wf.RunName)
+			}
+		}
+		if _, ok := wf.On.Dispatch.Inputs["job"]; !ok || !strings.Contains(wf.RunName, "format('workline gardening {0}', inputs.job)") {
+			t.Errorf("%s: a run by hand is not named by its input job: run-name %q", f, wf.RunName)
+		}
+	}
+}

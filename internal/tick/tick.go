@@ -60,8 +60,8 @@ type job struct {
 
 var jobs = map[string]job{
 	"reconcile": {"workline develop reconcile", "workline-develop.yml", []string{"workline develop heartbeat"}},
-	// The gardening's runs before the tick have no name of their own:
-	// every one ran the backlog.
+	// The gardening's runs before its run-name (#1761) have no name of
+	// their own: read as the backlog's. Since, each is named by its job.
 	"backlog": {"workline gardening backlog", "workline-gardening.yml", []string{"workline gardening"}},
 	"nightly": {"workline gardening nightly", "workline-gardening.yml", nil},
 	"docs":    {"workline gardening docs", "workline-gardening.yml", nil},
