@@ -264,37 +264,76 @@ func refusedAnswer(runDir string) string {
 	if err != nil || len(in) == 0 {
 		return ""
 	}
-	var b strings.Builder
-	b.WriteString("The answer that was refused, as you gave it:\n\n")
+	// Each proposal is a head, a body (cut when too long) and, for code, a
+	// fence: the cut is made inside the body, so a fence is always closed,
+	// and each body gets a fair share of the cap, so no proposal is lost.
+	type piece struct {
+		head, body string
+		fenced     bool
+		lang       string
+	}
+	var ps []piece
 	for _, i := range in {
-		if m, ok := i.Value.(map[string]any); ok && i.Kind == "patch" {
-			if file, ok := m["file"].(string); ok {
-				if content, ok := m["content"].(string); ok {
-					f := fence(content)
-					fmt.Fprintf(&b, "## %s\n\n%s\n%s\n%s\n\n", file, f, strings.TrimRight(content, "\n"), f)
+		if i.Kind == "patch" {
+			if m, ok := i.Value.(map[string]any); ok {
+				file, ok1 := m["file"].(string)
+				content, ok2 := m["content"].(string)
+				if ok1 && ok2 {
+					ps = append(ps, piece{head: "## " + file + "\n\n", body: strings.TrimRight(content, "\n"), fenced: true})
 					continue
 				}
 			}
-		}
-		if s, ok := i.Value.(string); ok && i.Kind == "patch" {
-			f := fence(s)
-			fmt.Fprintf(&b, "- patch (a diff):\n\n%sdiff\n%s\n%s\n\n", f, strings.TrimRight(s, "\n"), f)
-			continue
+			if s, ok := i.Value.(string); ok {
+				ps = append(ps, piece{head: "- patch (a diff):\n\n", body: strings.TrimRight(s, "\n"), fenced: true, lang: "diff"})
+				continue
+			}
 		}
 		if s, ok := i.Value.(string); ok {
-			fmt.Fprintf(&b, "- %s: %s\n\n", i.Kind, s)
+			ps = append(ps, piece{head: "- " + i.Kind + ": ", body: s})
 			continue
 		}
 		out, err := intent.Marshal([]intent.Intention{i})
 		if err != nil {
 			continue
 		}
-		b.WriteString(string(out) + "\n")
+		ps = append(ps, piece{body: strings.TrimRight(string(out), "\n")})
 	}
-	if b.Len() > maxRefusedChars {
-		return strings.ToValidUTF8(b.String()[:maxRefusedChars], "") + "\n[the refused answer is cut here: too long to give back whole]\n\n"
+	sizes := make([]int, len(ps))
+	for k, p := range ps {
+		sizes[k] = len(p.body)
+	}
+	limit := bodyLimit(sizes, maxRefusedChars)
+	var b strings.Builder
+	b.WriteString("The answer that was refused, as you gave it:\n\n")
+	for _, p := range ps {
+		body := p.body
+		if len(body) > limit {
+			body = strings.ToValidUTF8(body[:limit], "") + "\n[cut here: too long to give back whole]"
+		}
+		b.WriteString(p.head)
+		if p.fenced {
+			f := fence(p.body)
+			fmt.Fprintf(&b, "%s%s\n%s\n%s\n\n", f, p.lang, body, f)
+		} else {
+			b.WriteString(body + "\n\n")
+		}
 	}
 	return b.String()
+}
+
+// bodyLimit is the longest a body may be so that all together fit in total:
+// short ones stay whole, the long ones share what is left.
+func bodyLimit(sizes []int, total int) int {
+	s := slices.Clone(sizes)
+	slices.Sort(s)
+	left := total
+	for k, n := range s {
+		if share := left / (len(s) - k); n > share {
+			return share
+		}
+		left -= n
+	}
+	return total
 }
 
 // maxRefusedChars caps the refused answer given back, so a large one does
