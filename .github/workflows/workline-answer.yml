@@ -12,6 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       branch: {description: "the tester's Draft branch, workline/tester/*", required: true}
+      chain: {description: "the answers chained before this one: 4 at most, then the reconciler resumes", required: false, default: "0"}
 permissions: {}
 # One answer at a time per Draft: the next takes the objection waiting after it.
 concurrency: {group: "workline-answer-${{ github.event.workflow_run.head_branch || inputs.branch }}", cancel-in-progress: false}
@@ -36,6 +37,7 @@ jobs:
     outputs:
       branch: ${{ steps.head.outputs.branch }}
       head: ${{ steps.head.outputs.head }}
+      state: ${{ steps.head.outputs.state }}
       run: ${{ steps.answer.outputs.run }}
       status: ${{ steps.answer.outputs.status }}
     steps:
@@ -51,17 +53,26 @@ jobs:
       # with the project's `test-command`.
       # The Draft's branch and the head the answer reads: its open pull
       # request's tip now, never the objection run's head_sha, which a
-      # re-run or a push since leaves behind (#1701).
+      # re-run or a push since leaves behind (#1701). Its state, the tip
+      # and each objection waiting: an answer ran on that same state
+      # already (refused, failed, wrote none), none again, no agent.
       - name: The Draft's head
         id: head
         env:
           GH_TOKEN: ${{ github.token }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}
           BRANCH: ${{ github.event.workflow_run.head_branch || inputs.branch }}
         run: |
-          HEAD_SHA=$(gh pr list --head "$BRANCH" --state open --json headRefOid,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0].headRefOid // empty')
-          [ -n "$HEAD_SHA" ] || echo "no open pull request from $BRANCH in this repository: nothing to answer"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
-          echo "head=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          got=$(gh pr list --head "$BRANCH" --state open --json number,headRefOid,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0] // empty | "\(.number) \(.headRefOid)"')
+          [ -n "$got" ] || { echo "no open pull request from $BRANCH in this repository: nothing to answer"; exit 0; }
+          said=$(workline test answer --merge-request "${got%% *}" --state --forge github) || said=
+          case "$said" in
+            "due "*) ;;
+            *) echo "no answer: ${said:-its state not read}" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+          esac
+          echo "head=${got#* }" >> "$GITHUB_OUTPUT"
+          echo "state=${said#due }" >> "$GITHUB_OUTPUT"
       - name: The answer (proposed only)
         id: answer
         if: steps.head.outputs.head != ''
@@ -108,7 +119,7 @@ jobs:
 
   apply:
     needs: judge
-    if: always() && needs.judge.outputs.run != ''
+    if: always() && needs.judge.outputs.state != ''
     runs-on: ubuntu-latest
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     permissions: {contents: write, pull-requests: write, issues: write, actions: write}
@@ -127,10 +138,12 @@ jobs:
         with: {version: "${{ env.WORKLINE_VERSION }}"}
       # judge ran the Draft's code: its folder is data, outside the checkout.
       - uses: actions/download-artifact@v4
+        if: needs.judge.outputs.run != ''
         with: {name: workline-answer, path: "${{ runner.temp }}/workline-runs"}
       # Only what the Draft's line may do, to it, at the event's head: the
       # repository, roles and forge this job's (`apply --from-merge-request`).
-      - env:
+      - if: needs.judge.outputs.run != ''
+        env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
@@ -154,13 +167,29 @@ jobs:
           workline apply "$RUN" --from-merge-request "$NUMBER" --head "$HEAD_SHA" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+      # The state this answer ran on, whatever it wrote: answered,
+      # refused, failed. The reconciler and a chained run start none
+      # again on it, only on a new comment, objection or head (#1701).
+      - name: The answer's state
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          BRANCH: ${{ needs.judge.outputs.branch }}
+          STATE: ${{ needs.judge.outputs.state }}
+        run: |
+          NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          [ -n "$NUMBER" ] || exit 0
+          workline test answer --merge-request "$NUMBER" --tried "$STATE" --forge github ||
+            echo "::warning title=workline::the answer's state not written: the reconciler may start it again"
       # One answer a run: an answer applied, the next objection waiting is
-      # answered by a new run, which ends at once with none left.
+      # answered by a new run, which ends at once with none left; 5 at
+      # most in a chain, then the reconciler resumes.
       - name: The next answer
-        if: success()
+        if: success() && needs.judge.outputs.run != '' && fromJSON(inputs.chain || '0') < 4
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ needs.judge.outputs.branch }}
+          CHAIN: ${{ inputs.chain || '0' }}
         run: |
-          gh workflow run workline-answer.yml --ref "$GITHUB_REF_NAME" -f branch="$BRANCH" ||
-            echo "::warning title=workline::the next answer not started: the heartbeat starts it"
+          gh workflow run workline-answer.yml --ref "$GITHUB_REF_NAME" -f branch="$BRANCH" -f chain="$((CHAIN + 1))" ||
+            echo "::warning title=workline::the next answer not started: the reconciler starts it"
