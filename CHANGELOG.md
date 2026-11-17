@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.79.0](https://github.com/JN0V/workline/compare/v0.78.5...v0.79.0) (2026-11-17)
+
+
+### Features
+
+* **engine:** workline tick lists the jobs due now ([#1759](https://github.com/JN0V/workline/issues/1759)) ([8f1ef3e](https://github.com/JN0V/workline/commit/8f1ef3e88527e5d53cbc769d82d230ea8d33565a))
+
+
+### Bug Fixes
+
+* an answer on a Validation question goes to the ([#1742](https://github.com/JN0V/workline/issues/1742)) ([f2a8b02](https://github.com/JN0V/workline/commit/f2a8b02a309610a5bf5898ae315822dca9442e98))
+* an objection to a frozen test waits hours: one ([#1703](https://github.com/JN0V/workline/issues/1703)) ([d8475fe](https://github.com/JN0V/workline/commit/d8475fe3f765d9402aa60afbf2ce428574be1b3d))
+* fixes wait forever on test findings the reviewer says ([#1751](https://github.com/JN0V/workline/issues/1751)) ([748c34c](https://github.com/JN0V/workline/commit/748c34c6903da2f3685dc8cca4baee68a1daf96f))
+
 ## [0.78.5](https://github.com/JN0V/workline/compare/v0.78.4...v0.78.5) (2026-11-17)
 
 
