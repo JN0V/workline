@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.78.5](https://github.com/JN0V/workline/compare/v0.78.4...v0.78.5) (2026-11-17)
+
+
+### Bug Fixes
+
+* a p1 issue waits on a file reservation held by ([#1744](https://github.com/JN0V/workline/issues/1744)) ([0db3dff](https://github.com/JN0V/workline/commit/0db3dff45eedd88d1f94419369b0aad22f06a090))
+
 ## [0.78.4](https://github.com/JN0V/workline/compare/v0.78.3...v0.78.4) (2026-11-17)
 
 
