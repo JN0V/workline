@@ -86,14 +86,18 @@ func Follow(o FollowOptions) *Result {
 	if err != nil {
 		return fail(err)
 	}
-	n, rebuilt, closed := 0, 0, 0
+	n, rebuilt, closed, later, draftsRebuilt := 0, 0, 0, 0, 0
 	for _, branch := range open {
 		role, _, ok := strings.Cut(strings.TrimPrefix(branch, "workline/"), "/")
 		if !ok || !gardening {
 			continue
 		}
 		n++
-		finding, err := follow(repo, base, branch, role, local)
+		// A tester's draft is rebuilt a few a run: each push starts the
+		// project's full checks, and all at once they keep a merge a person
+		// accepted waiting for a runner (#1723). The others wait for a later run.
+		mayPush := role != "tester" || draftsRebuilt < maxDraftRebuilds
+		finding, err := followMay(repo, base, branch, role, local, mayPush)
 		if err != nil {
 			return fail(err)
 		}
@@ -104,6 +108,12 @@ func Follow(o FollowOptions) *Result {
 			res.Status = verdict.Human
 		case "rebuilt":
 			rebuilt++
+			if role == "tester" {
+				draftsRebuilt++
+			}
+		case "due-later":
+			later++
+			continue
 		case "closed":
 			// The forge's own close, its comment saying why; the branch
 			// stays, for the next run of the task to propose again from.
@@ -116,6 +126,9 @@ func Follow(o FollowOptions) *Result {
 	}
 	if gardening {
 		res.Summary = fmt.Sprintf("%d merge requests of the roles open, %d rebuilt on %s, %d closed", n, rebuilt, base, closed)
+		if later > 0 {
+			res.Summary += fmt.Sprintf(", %d tester drafts due for their rebuild later (at most %d a run, so their checks leave the runners to a merge)", later, maxDraftRebuilds)
+		}
 	} else {
 		res.Summary = "the roles' merge requests left to gardening"
 	}
@@ -161,10 +174,19 @@ func Follow(o FollowOptions) *Result {
 	return res
 }
 
+// maxDraftRebuilds is how many tester drafts one gardening run rebuilds.
+const maxDraftRebuilds = 5
+
 // follow rebuilds one role's branch on base's tip, and says what it did;
 // nothing when the branch is on base's tip already. A branch with nothing
 // left to merge is said `closed`, for Follow to close.
 func follow(repo, base, branch, role string, local bool) (verdict.Finding, error) {
+	return followMay(repo, base, branch, role, local, true)
+}
+
+// followMay is follow, pushing the rebuilt branch only with mayPush: else it
+// says `due-later`, the branch left as it is.
+func followMay(repo, base, branch, role string, local, mayPush bool) (verdict.Finding, error) {
 	baseTip, tip, err := tips(repo, base, branch, local)
 	if err != nil || tip == "" {
 		return verdict.Finding{}, err
@@ -231,6 +253,9 @@ func follow(repo, base, branch, role string, local bool) (verdict.Finding, error
 			return verdict.Finding{Rule: "closed", Where: branch,
 				Message: fmt.Sprintf("it only records when docs were read (`judged`), and %s changed %s since; the next gardening judges again those still due", base, strings.Join(strings.Split(moved, "\n"), ", "))}, nil
 		}
+	}
+	if !mayPush {
+		return verdict.Finding{Rule: "due-later", Where: branch}, nil
 	}
 	commit, err := recommit(repo, tip, tree, baseTip)
 	if err != nil {
