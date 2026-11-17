@@ -33,6 +33,13 @@ func BringChecksBack(repo string, mr forge.MergeRequest) (pushed bool, said stri
 	if isAncestor(repo, baseTip, tip) {
 		return false, fmt.Sprintf("its head has no check of the project's, but its branch holds %s already: no push brings them back; re-run its checks by hand", base), nil
 	}
+	// Its own merge already pushed, and still no check: the project's CI
+	// does not run on it (no workflow, a filter, a token's push). A second
+	// merge would be noise, pushed again and again.
+	if msg, err := git(repo, nil, "log", "-1", "--format=%B", tip); err == nil &&
+		strings.Contains(msg, OwnTrailer) && strings.HasPrefix(msg, fmt.Sprintf("Merge branch '%s' into", base)) {
+		return false, "its head has no check of the project's, though the line merged " + base + " into it already: no second push; the project's CI may not run on it", nil
+	}
 	tree, files, err := developer.MergeTree(repo, tip, baseTip)
 	if err != nil {
 		return false, "", fmt.Errorf("whether it merges with %s could not be read: %v", base, err)
