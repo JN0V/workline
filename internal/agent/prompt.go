@@ -270,10 +270,16 @@ func refusedAnswer(runDir string) string {
 		if m, ok := i.Value.(map[string]any); ok && i.Kind == "patch" {
 			if file, ok := m["file"].(string); ok {
 				if content, ok := m["content"].(string); ok {
-					fmt.Fprintf(&b, "## %s\n\n```\n%s\n```\n\n", file, strings.TrimRight(content, "\n"))
+					f := fence(content)
+					fmt.Fprintf(&b, "## %s\n\n%s\n%s\n%s\n\n", file, f, strings.TrimRight(content, "\n"), f)
 					continue
 				}
 			}
+		}
+		if s, ok := i.Value.(string); ok && i.Kind == "patch" {
+			f := fence(s)
+			fmt.Fprintf(&b, "- patch (a diff):\n\n%sdiff\n%s\n%s\n\n", f, strings.TrimRight(s, "\n"), f)
+			continue
 		}
 		if s, ok := i.Value.(string); ok {
 			fmt.Fprintf(&b, "- %s: %s\n\n", i.Kind, s)
@@ -285,5 +291,26 @@ func refusedAnswer(runDir string) string {
 		}
 		b.WriteString(string(out) + "\n")
 	}
+	if b.Len() > maxRefusedChars {
+		return strings.ToValidUTF8(b.String()[:maxRefusedChars], "") + "\n[the refused answer is cut here: too long to give back whole]\n\n"
+	}
 	return b.String()
+}
+
+// maxRefusedChars caps the refused answer given back, so a large one does
+// not push the retry over the role's budget.
+const maxRefusedChars = 60000
+
+// fence is a code fence longer than any backtick run in text.
+func fence(text string) string {
+	longest, run := 2, 0
+	for _, r := range text {
+		if r == '`' {
+			run++
+			longest = max(longest, run)
+		} else {
+			run = 0
+		}
+	}
+	return strings.Repeat("`", longest+1)
 }
