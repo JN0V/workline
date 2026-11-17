@@ -2489,7 +2489,11 @@ func specFindings(is forge.Issue, st *backlog.State, comments []string, r *backl
 	theirs := slices.DeleteFunc(slices.Clone(r.In), func(n string) bool { return work.Has(mine, work.MeaningOf(n)) })
 	testers := slices.DeleteFunc(slices.Clone(theirs), func(n string) bool { return !work.Testers(work.MeaningOf(n)) })
 	theirs = slices.DeleteFunc(theirs, func(n string) bool { return work.Testers(work.MeaningOf(n)) })
-	if len(theirs) > 0 {
+	if len(theirs) > 0 && backlog.Accepted(is) {
+		// A person's yes is their word on the hold: nothing more to ask
+		// the reporter until the Validation changes again.
+		fmt.Fprintf(&b, "%s: a person's, never rewritten, and a person accepted the issue: leave it, ask no one. ", strings.Join(theirs, ", "))
+	} else if len(theirs) > 0 {
 		fmt.Fprintf(&b, "%s: a person's, never rewritten: `ask` its reporter. ", strings.Join(theirs, ", "))
 	}
 	if len(testers) > 0 {

@@ -1752,7 +1752,7 @@ func issuesCmd(args []string) int {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		what, args = args[0], args[1:]
 	}
-	if slices.Contains([]string{"show", "import", "open", "label", "comment"}, what) && len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+	if slices.Contains([]string{"show", "import", "open", "label", "comment", "edit"}, what) && len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		id, args = args[0], args[1:]
 	}
 	fs := newFlags("issues")
@@ -1762,6 +1762,7 @@ func issuesCmd(args []string) int {
 	fs.Var(&addLabels, "label", "open: a label the issue starts with (repeatable)")
 	fs.Var(&addLabels, "add", "label: a label to put on (repeatable)")
 	fs.Var(&removeLabels, "remove", "label: a label to take off (repeatable)")
+	section := fs.String("section", "", "edit: the heading of the section to change; its new text is read from stdin")
 	repo := fs.String("repo", ".", "repository")
 	apply := fs.Bool("apply", false, "import: open the issues; without it, only say which")
 	forgeSpec := fs.String("forge", "", "import: github, gitlab, local, cmd:<command> (default: the project's `forge` setting)")
@@ -1788,6 +1789,8 @@ func issuesCmd(args []string) int {
 	switch what {
 	case "open", "label", "comment":
 		return issuesWrite(l, root, what, id, *body, *bodyFile, addLabels, removeLabels)
+	case "edit":
+		return issuesEdit(l, root, id, *section)
 	}
 	switch {
 	case what == "list":
@@ -1854,6 +1857,7 @@ var issuesOwn = map[string][]string{
 	"open":    {"body", "body-file", "label"},
 	"label":   {"add", "remove"},
 	"comment": {"body", "body-file"},
+	"edit":    {"section"},
 	"import":  {"apply", "forge", "ai", "lines", "roles", "json", "summary"},
 }
 
@@ -1872,7 +1876,8 @@ func issuesOptions(fs *flag.FlagSet, what string) (int, bool) {
 }
 
 const issuesUsage = "usage: workline issues [list] | show <n>|!<n> | open <title> [--body <text>|--body-file <file>] [--label <l>]... | " +
-	"label <n>|!<n> [--add <l>]... [--remove <l>]... | comment <n>|!<n> --body <text>|--body-file <file>   [--repo <dir>]"
+	"label <n>|!<n> [--add <l>]... [--remove <l>]... | comment <n>|!<n> --body <text>|--body-file <file> | " +
+	"edit <n> --section <heading> (the new text on stdin)   [--repo <dir>]"
 
 // issuesWrite is a person's act on the local forge: what they would do
 // on a forge's page. Only where the project's forge is the local one:
@@ -3033,4 +3038,83 @@ func importAnswer(runDir string) backlog.ImportShare {
 func notInRepo() int {
 	fmt.Fprintln(os.Stderr, "workline: not in a git repository")
 	return 64
+}
+
+// issuesEdit is a person's change of one section of a local issue's body,
+// the new text read from stdin: the other sections stay as they are
+// (#1356). The product owner never runs it.
+func issuesEdit(l *forge.Local, root, id, section string) int {
+	cfg, err := role.LoadProjectConfig(root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if cfg.Forge != "local" {
+		fmt.Fprintln(os.Stderr, "workline: `issues edit` changes an issue on the local forge (`forge: local` in .workline/config.yaml)")
+		return 1
+	}
+	n, err := strconv.Atoi(strings.TrimPrefix(id, "#"))
+	if err != nil || n <= 0 || section == "" {
+		fmt.Fprintln(os.Stderr, "workline: edit <n> --section <heading>, the new text on stdin")
+		return 64
+	}
+	data, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	text := strings.TrimSpace(string(data))
+	if text == "" {
+		fmt.Fprintln(os.Stderr, "workline: edit needs the new text of the section on stdin")
+		return 64
+	}
+	is, err := l.Issue(n)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	body, ok := replaceSection(is.Body, section, text)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "workline: #%d has no section %q\n", n, section)
+		return 1
+	}
+	if err := l.SetBody(n, body); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	fmt.Printf("#%d edited: %s\n", n, section)
+	return 0
+}
+
+// replaceSection puts text under the heading named in body, up to the
+// next heading of the same level or above; everything else stays byte for
+// byte. Headings inside a code fence are not headings.
+func replaceSection(body, name string, text string) (string, bool) {
+	lines := strings.SplitAfter(body, "\n")
+	fence, start, level := "", -1, 0
+	for i, l := range lines {
+		was := fence
+		fence = work.Fenced(strings.TrimRight(l, "\n"), fence)
+		if fence != "" || was != "" {
+			continue
+		}
+		t := strings.TrimRight(l, "\r\n")
+		hashes := len(t) - len(strings.TrimLeft(t, "#"))
+		if hashes == 0 || hashes > 6 || len(t) == hashes || t[hashes] != ' ' {
+			continue
+		}
+		if start < 0 {
+			if strings.EqualFold(strings.TrimSpace(t[hashes:]), strings.TrimSpace(name)) {
+				start, level = i, hashes
+			}
+			continue
+		}
+		if hashes <= level {
+			return strings.Join(lines[:start+1], "") + "\n" + text + "\n\n" + strings.Join(lines[i:], ""), true
+		}
+	}
+	if start < 0 {
+		return "", false
+	}
+	return strings.Join(lines[:start+1], "") + "\n" + text + "\n", true
 }

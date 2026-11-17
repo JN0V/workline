@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -43,6 +44,9 @@ type Spec struct {
 	// answer a finding, the Scope always; the Verification is the
 	// tester's (ADR-0066), the others a person's (ADR-0060).
 	Mine []string `json:"mine,omitempty"`
+	// Before is the comment the last review wrote on the issue: the
+	// findings it held, which a person's answer may have settled.
+	Before string `json:"before,omitempty"`
 }
 
 // heading names the spec where the lenses and the judge read it.
@@ -421,4 +425,45 @@ func specMaterial(repo string, st state, s Settings, f Finding, code bool) strin
 		b.WriteString("\n## The code the spec names\n\nNone the repository holds.\n")
 	}
 	return b.String()
+}
+
+// scenarioQuoted is the name of the scenario a finding quotes, `**Name:**`.
+var scenarioQuoted = regexp.MustCompile(`\*\*([^*]+?):?\*\*`)
+
+// answeredInSpec says whether a finding the last review held on a
+// scenario is answered in the spec as it is now: the last review's comment
+// held a finding of the same lens on a scenario of the same name, the body
+// has changed since, and it speaks of that scenario on a line that is not
+// the scenario's own. Two findings are the same when they have the same
+// scenario name and the same lens; a person's answer settles the finding
+// wherever it is, the Scope included (#1356).
+func answeredInSpec(sp Spec, f Finding) bool {
+	if sp.Before == "" || sp.Prior == nil || sp.Prior.Body == sp.Digest {
+		return false
+	}
+	m := scenarioQuoted.FindStringSubmatch(f.Cause.Quote)
+	if m == nil {
+		return false
+	}
+	name := strings.ToLower(strings.TrimSpace(m[1]))
+	if name == "" {
+		return false
+	}
+	held := false
+	for _, l := range strings.Split(sp.Before, "\n") {
+		low := strings.ToLower(l)
+		if strings.HasPrefix(l, "|") && strings.Contains(l, "| "+f.Lens+" |") && strings.Contains(low, name) {
+			held = true
+			break
+		}
+	}
+	if !held {
+		return false
+	}
+	for _, l := range strings.Split(strings.ToLower(sp.Text), "\n") {
+		if strings.Contains(l, name) && !strings.Contains(l, "**"+name) {
+			return true
+		}
+	}
+	return false
 }
