@@ -189,3 +189,60 @@ func TestObjectionHeartbeatIdleCountsAnswers(t *testing.T) {
 		}
 	}
 }
+
+// answerCITriedWorkflow is what the state step's test reads of a workflow:
+// each job's condition, and each step's condition and command.
+type answerCITriedWorkflow struct {
+	Jobs map[string]struct {
+		If    string `yaml:"if"`
+		Steps []struct {
+			If  string `yaml:"if"`
+			Run string `yaml:"run"`
+		} `yaml:"steps"`
+	} `yaml:"jobs"`
+}
+
+// answerCITriedCondition gives the condition of the step that writes the
+// answer's state (`--tried`), and its job's, each on one line.
+func answerCITriedCondition(t *testing.T, f string) (step, job string) {
+	t.Helper()
+	data, err := os.ReadFile(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wf answerCITriedWorkflow
+	if err := yaml.Unmarshal(data, &wf); err != nil {
+		t.Fatalf("%s: %v", f, err)
+	}
+	for _, j := range wf.Jobs {
+		for _, s := range j.Steps {
+			if strings.Contains(s.Run, "--tried") {
+				return strings.Join(strings.Fields(s.If), " "), strings.Join(strings.Fields(j.If), " ")
+			}
+		}
+	}
+	t.Fatalf("%s: no step writes the answer's state (`--tried`)", f)
+	return "", ""
+}
+
+// Heartbeat resumes: an unreachable agent leaves no tried mark
+// Given an unanswered objection whose answer ran with the agent unreachable
+// (status 3),
+// When the heartbeat runs,
+// Then the tester answers it: the answer's state step is not run for that
+// status, so that no tried mark stops the reconciler, and the template and
+// workline's own workflow give that step the same condition.
+func TestObjectionUnreachableAgentLeavesNoTriedMark(t *testing.T) {
+	var steps []string
+	for _, dir := range answerCIDirs {
+		step, job := answerCITriedCondition(t, filepath.Join(dir, "workline-answer.yml"))
+		steps = append(steps, step)
+		both := step + " " + job
+		if !strings.Contains(both, "status") || !strings.Contains(both, "3") {
+			t.Errorf("%s/workline-answer.yml: the state step runs whatever the status (step if: %q, job if: %q): an unreachable agent (status 3) gets marked tried and the reconciler never retries it", dir, step, job)
+		}
+	}
+	if len(steps) == 2 && steps[0] != steps[1] {
+		t.Errorf("the two copies of the answer's state step differ: %s has %q, %s has %q", answerCIDirs[0], steps[0], answerCIDirs[1], steps[1])
+	}
+}
