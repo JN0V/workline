@@ -1486,6 +1486,10 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		}
 		var route string
 		for name, job := range judged.Jobs {
+			// workline's head pass gives no verdict (ADR-0071 §1).
+			if name == "head-judge" {
+				continue
+			}
 			for _, s := range job.Steps {
 				switch {
 				case strings.Contains(s.Run, "--gates-only"), strings.Contains(s.Run, "--input queue=true"):
