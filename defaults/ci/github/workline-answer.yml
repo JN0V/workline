@@ -35,7 +35,7 @@ jobs:
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
     outputs:
       branch: ${{ steps.head.outputs.branch }}
-      sha: ${{ steps.head.outputs.sha }}
+      head: ${{ steps.head.outputs.head }}
       run: ${{ steps.answer.outputs.run }}
       status: ${{ steps.answer.outputs.status }}
     steps:
@@ -69,16 +69,16 @@ jobs:
             [ -n "$HEAD_SHA" ] || { echo "no open pull request from $BRANCH in this repository: nothing to answer"; }
           fi
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
-          echo "sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "head=$HEAD_SHA" >> "$GITHUB_OUTPUT"
       - name: The answer (proposed only)
         id: answer
-        if: steps.head.outputs.sha != ''
+        if: steps.head.outputs.head != ''
         env:
           GH_TOKEN: ${{ github.token }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the tester's record (ADR-0051)
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           BRANCH: ${{ steps.head.outputs.branch }}
-          HEAD_SHA: ${{ steps.head.outputs.sha }}
+          HEAD_SHA: ${{ steps.head.outputs.head }}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
@@ -151,7 +151,7 @@ jobs:
           WORKLINE_RUNS_DIR: ${{ runner.temp }}/workline-runs
           RUN: ${{ needs.judge.outputs.run }}
           BRANCH: ${{ needs.judge.outputs.branch }}
-          HEAD_SHA: ${{ needs.judge.outputs.sha }}
+          HEAD_SHA: ${{ needs.judge.outputs.head }}
         run: |
           printf '%s' "$RUN" | grep -Eqx '[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+' && [ -d "$WORKLINE_RUNS_DIR/$RUN" ] ||
             { echo "::error title=workline::judge named no run of its own: $RUN"; exit 1; }
