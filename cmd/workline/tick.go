@@ -52,6 +52,9 @@ func tickCmd(args []string) int {
 	if *forgeSpec == "" {
 		*forgeSpec = pc.Forge
 	}
+	// Each listing read again sends its last ETag: unchanged, it costs
+	// no quota (#1762).
+	forge.ReadConditionally(true)
 	var f forge.Forge
 	if *forgeSpec != "" && *forgeSpec != "none" {
 		if f, err = forge.Open(*forgeSpec, root); err != nil {
@@ -65,6 +68,9 @@ func tickCmd(args []string) int {
 	}
 	for _, s := range r.Said {
 		fmt.Fprintln(os.Stderr, "workline: tick:", s)
+	}
+	if r.Calls > 0 {
+		fmt.Fprintf(os.Stderr, "workline: tick: %d GitHub calls, %d of them cost quota (%d answered 304 Not Modified)\n", r.Calls, r.Calls-r.Free, r.Free)
 	}
 	if *asJSON {
 		items := r.Items

@@ -2,36 +2,93 @@ package forge
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// The runs going are read in each status not completed, requested too
-// (#1761), page after page while a page is full.
-func TestGitHubRunsGoing(t *testing.T) {
+// fakeGH puts a gh on PATH that logs each call's arguments to the file
+// it returns and runs script.
+func fakeGH(t *testing.T, script string) string {
+	t.Helper()
 	bin := t.TempDir()
 	calls := filepath.Join(bin, "calls")
-	script := "#!/bin/sh\necho \"$2\" >> " + calls + `
-case "$2" in
-*status=requested*) echo '{"name":"workline gardening backlog","workflow":"workline-gardening.yml","status":"requested","started":"2026-11-16T02:15:00Z"}' ;;
-*page=1\&status=in_progress*) i=0; while [ $i -lt 100 ]; do echo '{"name":"workline merge","workflow":"workline-merge.yml","status":"in_progress","started":"2026-11-16T02:00:00Z"}'; i=$((i+1)); done ;;
-*page=2\&status=in_progress*) echo '{"name":"workline sample","workflow":"workline-sample.yml","status":"in_progress","started":"2026-11-16T01:00:00Z"}' ;;
-esac
-`
-	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte("#!/bin/sh\necho \"$*\" >> "+calls+"\n"+script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return calls
+}
+
+func callsIn(t *testing.T, file string) []string {
+	t.Helper()
+	data, _ := os.ReadFile(file)
+	return strings.Split(strings.TrimSpace(string(data)), "\n")
+}
+
+// The runs going are one listing of the last day's runs, every workflow,
+// those not completed kept, requested too (#1761, #1762): one call, and
+// the next page only when its Link says one follows.
+func TestGitHubRunsGoing(t *testing.T) {
+	calls := fakeGH(t, `case "$2" in
+*page=1\&*) printf 'HTTP/2.0 200 OK\r\nLink: <https://api.github.com/x?page=2>; rel="next"\r\n\r\n'
+  echo '{"name":"workline gardening backlog","workflow":"workline-gardening.yml","status":"requested","started":"2026-11-16T02:15:00Z"}' ;;
+*page=2\&*) printf 'HTTP/2.0 200 OK\r\n\r\n'
+  echo '{"name":"workline merge","workflow":"workline-merge.yml","status":"in_progress","started":"2026-11-16T02:00:00Z"}' ;;
+esac
+`)
 	runs, err := (&github{repo: t.TempDir()}).RunsGoing()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(runs) != 102 || runs[0].Status != "requested" || runs[101].Name != "workline sample" {
-		t.Errorf("%d runs going, first %+v: want the requested one and both pages of in_progress", len(runs), runs[0])
+	if len(runs) != 2 || runs[0].Status != "requested" || runs[1].Name != "workline merge" {
+		t.Errorf("runs going %+v: want the requested one and the next page's", runs)
 	}
-	sent, _ := os.ReadFile(calls)
-	if n := strings.Count(string(sent), "\n"); n != 6 {
-		t.Errorf("%d calls, want 6 (5 statuses, a second page of in_progress):\n%s", n, sent)
+	sent := callsIn(t, calls)
+	if len(sent) != 2 || !strings.Contains(sent[0], "actions/runs?per_page=100&page=1&created=%3E%3D") || !strings.Contains(sent[0], `select(.status != "completed")`) {
+		t.Errorf("calls %q: want one listing of every workflow's runs a page, the completed left out", sent)
+	}
+}
+
+// A listing read again sends its last ETag; GitHub's 304 Not Modified
+// costs no quota, and the answer kept, in the clone's git folder from one
+// command to the next, is used (#1762).
+func TestGitHubListingsReadConditionally(t *testing.T) {
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "init", "-q", repo).CombinedOutput(); err != nil {
+		t.Fatal(err, string(out))
+	}
+	calls := fakeGH(t, `case "$*" in
+*'If-None-Match: W/"e1"'*) printf 'HTTP/2.0 304 Not Modified\r\nEtag: W/"e1"\r\n\r\n'; echo "unexpected end of JSON input" >&2; exit 1 ;;
+*) printf 'HTTP/2.0 200 OK\r\nEtag: W/"e1"\r\n\r\n'
+   echo '{"name":"workline merge","workflow":"workline-merge.yml","status":"in_progress","started":"2026-11-16T02:00:00Z"}' ;;
+esac
+`)
+	ReadConditionally(true)
+	t.Cleanup(func() { ReadConditionally(false); answers.m, answers.path = nil, "" })
+	answers.m, answers.path = nil, ""
+	sent0, free0 := Calls()
+	g := &github{repo: repo}
+	for i := range 2 {
+		runs, err := g.RunsGoing()
+		if err != nil || len(runs) != 1 || runs[0].Name != "workline merge" {
+			t.Fatalf("read %d: %+v, %v: want the run going, from the answer kept the second time", i+1, runs, err)
+		}
+	}
+	// Another command, the answers read back from the clone.
+	answers.m, answers.path = nil, ""
+	if runs, err := g.RunsGoing(); err != nil || len(runs) != 1 {
+		t.Fatalf("a next command: %+v, %v: want the answer kept in the clone", runs, err)
+	}
+	sent, free := Calls()
+	if sent-sent0 != 3 || free-free0 != 2 {
+		t.Errorf("%d calls, %d free: want 3, the last 2 answered 304", sent-sent0, free-free0)
+	}
+	if got := callsIn(t, calls); len(got) != 3 || strings.Contains(got[0], "If-None-Match") || !strings.Contains(got[2], `If-None-Match: W/"e1"`) {
+		t.Errorf("calls %q: the first with no ETag, the next with the one kept", got)
+	}
+	if _, err := os.Stat(filepath.Join(repo, ".git", "workline", "etags.json")); err != nil {
+		t.Errorf("the answers are not kept in the clone: %v", err)
 	}
 }
