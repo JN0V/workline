@@ -70,8 +70,9 @@ jobs:
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           got=$(gh pr list --head "$BRANCH" --state open --json number,headRefOid,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0] // empty | "\(.number) \(.headRefOid)"')
           [ -n "$got" ] || { echo "no open pull request from $BRANCH in this repository: nothing to answer"; exit 0; }
-          # A state not read (an engine before --state, ADR-0071's N-1, or
-          # the forge failing): answered as before, due, none marked after.
+          # A state not read (a release before --state, still pinned, which
+          # this workflow must run on; or the forge failing): answered as
+          # before, due, none marked after.
           if ! said=$(workline test answer --merge-request "${got%% *}" --state --forge github); then
             echo "::warning title=workline::the Draft's state not read: answered as due, its state not marked"
             said="due unread"

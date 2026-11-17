@@ -67,7 +67,8 @@ func answerN1Run(t *testing.T, script, workline string, env ...string) (string, 
 	return string(got), string(said) + string(calls)
 }
 
-// The pinned release reads the answer workflow (ADR-0071's N-1 rule)
+// The pinned release runs the answer workflow: a release reads what
+// itself and the one before it write (ADR-0071)
 // Given workline-answer.yml run by a release that knows neither
 // `test answer --state` nor `--tried` (v0.78.4: "flag provided but not
 // defined", exit 64),
