@@ -999,8 +999,8 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		return m.Accept(tip, false, why)
 	}
 	// A person's comment on it with no answer holds the merge, whatever
-	// the policy says (#1358).
-	if open, err := personsCommentOpen(f, mr.ID); err != nil {
+	// the policy says (#1358); their own yes, put after it, answers it.
+	if open, err := personsCommentOpen(f, mr.ID, st.Labels); err != nil {
 		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
 			return nil, err
 		}
@@ -1535,10 +1535,18 @@ func namesTest(body string) bool {
 // personsCommentOpen says, quoted short, the first person's comment on a
 // merge request that no role has answered: a comment of the request or a
 // conversation on a line, left by a person of the project. A role's own
-// comment after it answers it, the line's verdict and this hold apart.
-// "" when none waits.
-func personsCommentOpen(f forge.Forge, id int) (string, error) {
+// comment after it answers it, the line's verdict and this hold apart; so
+// does the yes of the person who wrote it, put at or after it and still
+// on: it covers what they said before it, as the trace of a yes put in
+// their name (ADR-0068 §7). "" when none waits.
+func personsCommentOpen(f forge.Forge, id int, labels []forge.LabelEvent) (string, error) {
 	t := forge.Target{Kind: "merge-request", ID: id}
+	yes, _ := theYes(labels, accepted)
+	// theirs: the standing yes is the writer's own, given at or after it.
+	theirs := func(n forge.Note) bool {
+		return yes != nil && n.Author != "" && yes.Author == n.Author &&
+			n.Created != "" && yes.Created != "" && !later(n.Created, yes.Created)
+	}
 	b, ok := f.(forge.Backlog)
 	var notes []forge.Note
 	var err error
@@ -1556,7 +1564,7 @@ func personsCommentOpen(f forge.Forge, id int) (string, error) {
 			return own(n) && isReply(n.Body) && namesTest(n.Body)
 		}
 		for i, n := range notes {
-			if !n.Insider || n.Bot || own(n) || strings.TrimSpace(n.Body) == "" {
+			if !n.Insider || n.Bot || own(n) || strings.TrimSpace(n.Body) == "" || theirs(n) {
 				continue
 			}
 			if !slices.ContainsFunc(notes[i+1:], answers) {
@@ -1572,8 +1580,19 @@ func personsCommentOpen(f forge.Forge, id int) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// allTheirs: every person's comment in the thread is the yes author's,
+	// given at or before the yes; another person's still waits for a role.
+	allTheirs := func(c forge.Thread) bool {
+		for _, n := range c.Comments {
+			if n.Insider && !n.Bot && !n.Own && strings.TrimSpace(n.Body) != "" &&
+				!strings.Contains(n.Body, "<!-- workline:") && !theirs(n) {
+				return false
+			}
+		}
+		return true
+	}
 	for _, c := range threads {
-		if c.Resolved || !tester.PersonsThread(c) {
+		if c.Resolved || !tester.PersonsThread(c) || allTheirs(c) {
 			continue
 		}
 		if last := c.Comments[len(c.Comments)-1]; !isReply(last.Body) || !namesTest(last.Body) {
