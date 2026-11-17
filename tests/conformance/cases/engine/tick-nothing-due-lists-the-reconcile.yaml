@@ -1,0 +1,28 @@
+case: engine/tick-nothing-due-lists-the-reconcile
+about: >
+  Ready at its target, every timed job run since its time, merge's gap not passed: the tick lists the reconcile alone, every tick, and calls no agent (#1665, Nothing due).
+given:
+  repo: basic
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 10}}
+  forge:
+    issues:
+      - {id: 1, title: "Item 1", body: "x", labels: ["workline:ready"]}
+      - {id: 2, title: "Item 2", body: "x", labels: ["workline:ready"]}
+      - {id: 3, title: "Item 3", body: "x", labels: ["workline:ready"]}
+      - {id: 4, title: "Item 4", body: "x", labels: ["workline:ready"]}
+      - {id: 5, title: "Item 5", body: "x", labels: ["workline:ready"]}
+      - {id: 6, title: "Item 6", body: "x", labels: ["workline:ready"]}
+      - {id: 7, title: "Item 7", body: "x", labels: ["workline:ready"]}
+      - {id: 8, title: "Item 8", body: "x", labels: ["workline:ready"]}
+      - {id: 9, title: "Item 9", body: "x", labels: ["workline:ready"]}
+      - {id: 10, title: "Item 10", body: "x", labels: ["workline:ready"]}
+    runs:
+      - {name: "workline merge", workflow: workline-merge.yml, status: completed, success: true, started: "2026-11-16T02:00:00Z", updated: "2026-11-16T02:01:00Z"}
+      - {name: "workline gardening docs", workflow: workline-gardening.yml, status: completed, success: true, started: "2026-11-15T18:10:00Z", updated: "2026-11-15T18:30:00Z"}
+      - {name: "workline sample", workflow: workline-sample.yml, status: completed, success: true, started: "2026-11-16T00:00:00Z", updated: "2026-11-16T00:05:00Z"}
+run: {cli: [tick, --forge, "fake:../forge.json", --now, "2026-11-16T02:20:00Z", --json]}
+expect:
+  exit: 0
+  stdout: ['[{"job":"reconcile","why":"every tick","key":"workline develop reconcile"}]']
+  stdout-lacks: ['"backlog"', '"merge"', '"docs"', '"sample"']

@@ -1,0 +1,22 @@
+case: engine/tick-issues-lists-each-step-not-one-going
+about: >
+  With --issues, the tick lists each issue's step the reconciler finds
+  due, as its own job named for its run, in the place of the reconcile;
+  an issue whose run is going is not listed again, said on stderr; no
+  agent (#1665).
+given:
+  repo: basic
+  config:
+    routing: {events: {issue: [tester, developer]}, timed: {docs: off, merge: off, sample: off}}
+  forge:
+    issues:
+      - {id: 1, title: "Add", body: "x", labels: ["workline:ready"]}
+      - {id: 3, title: "Multiply", body: "x", labels: ["workline:ready"]}
+    runs:
+      - {name: "workline develop #3", workflow: workline-develop.yml, status: in_progress, started: "2026-11-16T02:19:00Z"}
+run: {cli: [tick, --forge, "fake:../forge.json", --now, "2026-11-16T02:20:00Z", --issues, --json]}
+expect:
+  exit: 0
+  stdout: ['[{"job":"develop","role":"developer","target":"#1","why":"its state''s step is due (reconcile)","key":"workline develop #1"}]']
+  stdout-lacks: ['"#3"', '"reconcile"']
+  stderr: ['develop #3: "workline develop #3" in_progress']
