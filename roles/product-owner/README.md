@@ -1,5 +1,5 @@
 ---
-sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
+sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, defaults/routing.yaml]
 checked: 8538d558
 verified: agent:claude-code
 ---

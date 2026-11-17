@@ -53,7 +53,7 @@ func waits(passed []Passed) []intent.Intention {
 func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Settings, now time.Time, card *board.Move) ([]intent.Intention, []verdict.Finding, error) {
 	closed := map[int]bool{}
 	for _, m := range mrs {
-		for _, n := range forge.Closes(m.Title, m.Body) {
+		for _, n := range forge.ClosesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
 			closed[n] = true
 		}
 	}

@@ -292,6 +292,18 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		st, _, _ := backlog.ReadState(comments, name) // one that does not read gives none to rewrite
 		ok = len(backlog.Unrevised(is, st, comments)) > 0
 	}
+	if !ok && reviewed && name == backlog.Keeper && had && rec.Revise == rec.Spec && rec.Body == backlog.BodyDigest(is.Body) && rec.Dropped != rec.Body {
+		// The product owner answered the review open on this body and the
+		// body is the same: its rewrite was dropped (#1355). Woken again,
+		// once a body; then the issue waits for a person.
+		st, _, _ := backlog.ReadState(comments, name)
+		if r := backlog.SpecOpen(is, comments); st != nil && st.Dropped == rec.Body && r != nil && r.Body == st.Answered && len(backlog.Revisable(is, st, r)) > 0 {
+			ok = true
+			now.Dropped = rec.Body
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-dropped", Level: "info", Where: where,
+				Message: "the product owner's rewrite of the section the reviewer's finding lies in was not written, the body the same: woken again, once a body"})
+		}
+	}
 	if !ok && s.Name == refineState && name == backlog.Keeper && had {
 		// A person wrote since the product owner last read the issue — an
 		// answer to the reviewer's question, or to its own (#1331): woken
@@ -985,6 +997,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	lines := localLines(res, cfg, f, o, &issued)     // a forge kept here: no job reviews a push (#1324)
 	answers := localAnswers(res, cfg, f, o, &issued) // nor answers an objection on a Draft (#1265)
 	rounds := roundsDue(res, cfg, f, spec, o, &issued)
+	restored := checksBack(res, f, o) // a head the opened event missed (#1719)
 	switch {
 	case list:
 		res.Summary = fmt.Sprintf("%s: %d %s due:", ReconcileEvent, len(res.Due), plural(len(res.Due), "issue", "issues"))
@@ -998,6 +1011,9 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		res.Summary = fmt.Sprintf("%s: no issue's step due (%s)", ReconcileEvent, res.Status)
 	default:
 		res.Summary = fmt.Sprintf("%s: %d %s due, %s run (%s)", ReconcileEvent, started, plural(started, "issue", "issues"), plural(started, "its step", "their steps"), res.Status)
+	}
+	if restored > 0 {
+		res.Summary += fmt.Sprintf("; %d merge-request %s with no checks brought up to date with its base", restored, plural(restored, "head", "heads"))
 	}
 	if stales > 0 {
 		res.Summary += fmt.Sprintf("; %d stale %s back to refine", stales, plural(stales, "issue", "issues"))

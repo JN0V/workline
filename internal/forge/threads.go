@@ -59,7 +59,7 @@ func (f *Fake) Threads(id int) ([]Thread, error) {
 		}
 		th := Thread{ID: tid, Path: t.Path, Line: t.Line, Resolved: t.Resolved,
 			URL:      fmt.Sprintf("https://forge.example/merge-requests/%d#thread-%s", id, tid),
-			Comments: []Note{{Body: t.Body, Author: t.Author}}}
+			Comments: []Note{{Body: t.Body, Author: t.Author, Insider: t.Insider, Bot: t.Bot, Created: t.Created}}}
 		for _, r := range t.Replies {
 			th.Comments = append(th.Comments, Note(r))
 		}

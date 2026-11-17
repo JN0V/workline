@@ -768,6 +768,11 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			st.SetHeard(h[0], p.ledger.Notes[id], *is)
 			st.AnswerHeld = h[1]
 		}
+		if p.scopeLost[id] {
+			st.Dropped = BodyDigest(is.Body)
+		} else if st.Dropped != "" && st.Dropped != BodyDigest(is.Body) {
+			st.Dropped = ""
+		}
 		if why, ok := p.Silent[id]; ok {
 			st.Silent = why
 		} else if waits := strings.HasPrefix(st.Silent, NoTestSilent) && NoTestStands(*is, comments, role) ||

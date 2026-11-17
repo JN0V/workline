@@ -1,5 +1,5 @@
 ---
-sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
+sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, defaults/routing.yaml]
 checked: 44f06aba
 verified: agent:claude-code
 ---

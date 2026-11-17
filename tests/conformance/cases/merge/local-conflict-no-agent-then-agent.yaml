@@ -1,0 +1,38 @@
+case: merge/local-conflict-no-agent-then-agent
+about: >
+  A run with no agent never keeps a later run with one from settling a
+  conflict (#1676). `!2`, the developer's fix for bug #3, conflicts with
+  main in lib.sh. The reconciler runs its merge round with no agent: it
+  says the conflict waits, merges nothing, and records nothing on `!2`.
+  The reconciler's listing, which runs with no agent in CI, still says
+  the round due on the same head; the next run, with an agent, merges
+  main in and settles it.
+given:
+  repo: local-fix
+  setup:
+    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && printf '. ./lib.sh\\n[ \"$(sub 5 3)\" = 2 ]\\n' > tests/test_sub.sh && echo notes > NOTES.md && git add lib.sh NOTES.md tests/test_sub.sh && git commit -qm 'feat: sub'"
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [developer]}}
+run:
+  sh: >
+    workline follow --base main --verdict .git/verdict.json &&
+    workline route reconcile --ai none &&
+    workline route reconcile --ai none --input reconcile=list --json | jq -c '[(.reviews // [])[].id]' &&
+    workline route reconcile --ai "cmd:sh $FIXTURES/agents/developer-settles-conflict.sh" &&
+    git merge-base --is-ancestor main workline/developer/3 && echo main-in
+expect:
+  exit: 0
+  stderr:
+    - "no-agent merge request 2: settling a conflict is judgement on code: with no agent, nothing is merged"
+    - "proof-green merge request 2: 4 tests passed"
+  stdout: ["[2]\n", "main-in\n"]
+  branches:
+    workline/developer/3:
+      lib.sh: "sub() { echo $(($1 - $2)); }\nmul() { echo $(($1 * $2)); }"
+  files:
+    .git/workline/merge-requests/2.md:
+      contains: ["main merged in, its conflicts settled (`lib.sh`), the tests green"]
+      lacks: ["noAgent", "<<<<<<<"]

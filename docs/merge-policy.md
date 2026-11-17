@@ -1,6 +1,6 @@
 ---
-sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 74dc6bec
+sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, defaults/ci/github/workline-apply.yml, defaults/ci/github/workline-merge.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
+checked: 1b77ad96
 verified: agent:claude-code
 ---
 # The merge policy
@@ -51,6 +51,15 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   ending or a push, and may miss one
   ([#993](https://github.com/JN0V/workline/issues/993)). An hourly run
   catches one no event follows.
+- **A person's comment with no answer holds it**: nothing merges,
+  auto-merge stays off, whatever the policy
+  ([#1358](https://github.com/JN0V/workline/issues/1358)). A role's
+  reply that names a test answers it; so does the yes of the person who
+  wrote it, put at or after it and still on: the trace written before a
+  yes put in their name
+  ([ADR-0068 §7](adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated))
+  never holds that yes. A conversation on a line is answered by that
+  yes only when every person's comment in it is theirs, before it.
 - **Open conversations that hold it are said**: auto-merge on, its
   checks green, the forge not merging, and its base requiring every
   conversation resolved: `follow` lists each open one, linked, in its
@@ -87,6 +96,23 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **A push after the yes takes it back**: auto-merge off, the label off,
   one comment. When each head was pushed is the forge's word: GitHub's
   repository activity, GitLab's versions.
+- **A release tool's rebuild is no push**: the release merge request
+  (`FollowOptions.Release`) is force-pushed on each merge to the base, and
+  its yes holds on the rebuilt head when the rebuild adds only what the
+  line merged by itself:
+  - the rebuilt head is one commit on the base, and every base commit
+    between the covered head's base and the new one came from a merged
+    pull request that carried no person's yes label; a feature, a task, a
+    commit with no merged pull request (a direct push, a hand merge) or
+    one that cannot be read needs a yes;
+  - its tree is the covered head's change redone on the new base, but for
+    the files the release tool's own commit changed on the covered head
+    (its version and changelog files); any other file changed takes the
+    yes off.
+
+  When the yes is taken off, the comment names the added commit or the
+  file that caused it. A merge request that is not a release is as
+  above: any push after the yes takes it back.
 - **Each yes label by its own pushes**: `workline:accepted` put before a
   push and `workline:accepted-whole` after it, only the stale one goes
   off; the other covers the head and stands.
@@ -253,6 +279,7 @@ the candidate's issue, ships the version:
 |---|---|
 | `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind; "merged now", an auto-merge the forge left |
 | `merge-refused` | the forge refused to merge now one whose auto-merge it left: auto-merge left on |
+| `persons-comment-open`, `comments-unread` | a person's comment no role answered, nor their own later yes: nothing merges; or its comments could not be read |
 | `held-by-conversations`, `conversations-unread` | auto-merge on, checks green, not merged: the open conversations that hold it, or why they could not be read |
 | `verdict-kept`, `verdict-missing`, `review-to-come` | the verdict kept; one not judged yet; marked ready, the draft's verdict still on its head |
 | `verdict-red`, `review-short`, `checks-red` | nothing turned on, why; a person's yes does not lift a red verdict |

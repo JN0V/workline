@@ -1,5 +1,5 @@
 ---
-sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
+sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, defaults/ci/github, defaults/ci/gitlab]
 checked: de02c96b
 judged: a8574a5
 verified: agent:claude-code
@@ -159,20 +159,24 @@ forge, the whole line from a need to a merge:
 
 What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
 
-- **GitHub**: copy the workflows of [ci/github](../ci/github/) into
-  `.github/workflows/` — [workline.yml](../ci/github/workline.yml) (each
-  pull request, and main after each merge), [workline-warn.yml](../ci/github/workline-warn.yml) (what
-  only warns, beside it), [workline-apply.yml](../ci/github/workline-apply.yml)
+- **GitHub**: copy the workflows of [defaults/ci/github](../defaults/ci/github/) into
+  `.github/workflows/` — [workline.yml](../defaults/ci/github/workline.yml) (each
+  pull request, and main after each merge), [workline-warn.yml](../defaults/ci/github/workline-warn.yml) (what
+  only warns, beside it), [workline-apply.yml](../defaults/ci/github/workline-apply.yml)
   (what it proposed applied, main's findings in one issue, `workline
-  follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
-  fork's), [workline-gardening.yml](../ci/github/workline-gardening.yml),
-  [workline-sample.yml](../ci/github/workline-sample.yml); the others come
+  follow`), [workline-fork.yml](../defaults/ci/github/workline-fork.yml) (a
+  fork's), [workline-gardening.yml](../defaults/ci/github/workline-gardening.yml),
+  [workline-sample.yml](../defaults/ci/github/workline-sample.yml); the others come
   with what uses them: the tester, the developer and the line of states
   (its reconciler's [heartbeat](github/heartbeat.md)), the
   [merge policy](merge-policy.md), a release tool
-  ([ci-github.md](ci-github.md)).
+  ([ci-github.md](ci-github.md)). **Before December 2, 2026, on a
+  public repository**: an Actions event policy on the bounds and merge
+  workflows allowing `pull_request_target`, `issues` and `schedule`, or no
+  pull request merges
+  ([what to set](github/pull-request-target.md)).
 - **GitLab**: include
-  [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml),
+  [defaults/ci/gitlab/workline.gitlab-ci.yml](../defaults/ci/gitlab/workline.gitlab-ci.yml),
   then add pipeline schedules, gardening, the sample and, with the line
   of states, the hourly reconciler and the issue webhook
   ([ci-gitlab.md](ci-gitlab.md#gitlabcom); a [self-managed

@@ -13,12 +13,11 @@
 - **Tracked by:** the GitHub milestone
   [v1.0](https://github.com/JN0V/workline/milestone/1)
 - **Amended by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#9-the-old-brakes-hold-until-replaced)
-  (step 1 built): the "until then" freeze held until ADR-0068's step 1 passed its
-  test (nobody bypasses `main`, the guard guarded); lifted on
-  2026-11-14, after [#1463] and [#1464]
-  ([amendment](#amendment-2026-11-14-the-freeze-is-lifted)). Its step
-  7 now decides the bar after 1.0
-  ([amendment](#amendment-2026-11-15-v10-is-the-v1-accepted))
+  (step 1 built): the "until then" freeze held until ADR-0068's step 1
+  passed its test (nobody bypasses `main`, the guard guarded); lifted on
+  2026-11-14, after [#1463] and [#1464] ([amendment](#amendment-2026-11-14-the-freeze-is-lifted)).
+  Its step 7 now decides the bar after 1.0 ([amendment](#amendment-2026-11-15-v10-is-the-v1-accepted))
+  [ADR-0070] (2026-11-16): its layout joins what 1.0 requires ([same amendment](#amendment-2026-11-15-v10-is-the-v1-accepted))
 
 ## Context
 
@@ -140,13 +139,13 @@ holds the issues that count.
   - upkeep under 10% of tokens for 4 weeks, by [#610] (criterion 3).
 - **What 1.0 still requires**:
   1. **The maintainer signs "validated on real use"** (criterion 2 of
-     [ADR-0036]) in the status.md of the product owner, the tester,
-     the developer and the reviewer. Their other criteria to leave
-     beta may stay open at 1.0.
+     [ADR-0036]) in the status.md of the product owner, tester,
+     developer and reviewer; their other criteria may stay open.
   2. **[#1556] fixed**: the release's yes survives `main` moving, so
      the release pull request can be accepted.
   3. **The small items below** marked before, fixed.
-  4. **The release**: a `Release-As: 1.0.0` footer reaches `main`
+  4. **[ADR-0070]'s layout** (2026-11-16); user docs at 0 suspect.
+  5. **The release**: a `Release-As: 1.0.0` footer reaches `main`
      through a pull request, then the maintainer's label on the
      release.
 - **The small items**, against V1's goal (the chain alone, on any
@@ -185,7 +184,6 @@ holds the issues that count.
 [round 3]: https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764
 [#1370]: https://github.com/JN0V/workline/issues/1370
 [#1375]: https://github.com/JN0V/workline/pull/1375
-
 [#117]: https://github.com/JN0V/workline/issues/117
 [#264]: https://github.com/JN0V/workline/issues/264
 [its status.md]: ../../roles/reviewer/docs/status.md
@@ -194,6 +192,7 @@ holds the issues that count.
 [#610]: https://github.com/JN0V/workline/issues/610
 [ADR-0063]: 0063-every-open-issue-is-due-waiting-or-done.md
 [ADR-0068]: 0068-the-line-steps-back-on-its-own-drift.md
+[ADR-0070]: 0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md#6-the-layout-reached-before-10
 [#1458]: https://github.com/JN0V/workline/issues/1458
 [#1459]: https://github.com/JN0V/workline/issues/1459
 [#1461]: https://github.com/JN0V/workline/issues/1461

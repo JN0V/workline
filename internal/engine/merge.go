@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/steer"
+	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -161,6 +163,18 @@ func (v *HeadVerdict) shortRules() []string {
 	return rules
 }
 
+// blockRules are the rules of the findings that block, kept with a red
+// verdict so a later run reads its cause from them, not from its text.
+func (v *HeadVerdict) blockRules() []string {
+	var rules []string
+	for _, f := range v.Findings {
+		if (f.Level == "" || f.Level == "block") && !slices.Contains(rules, f.Rule) {
+			rules = append(rules, f.Rule)
+		}
+	}
+	return rules
+}
+
 // shortSaid opens why a review falls short.
 const shortSaid = "its review falls short "
 
@@ -284,8 +298,11 @@ func KeepVerdict(m forge.Merger, v HeadVerdict) (verdict.Finding, error) {
 func keepHead(m forge.Merger, v HeadVerdict, hand map[string]kept) (verdict.Finding, error) {
 	class, why := v.class()
 	var rules []string
-	if class == verdictShort {
+	switch class {
+	case verdictShort:
 		rules = v.shortRules()
+	case verdictRed:
+		rules = v.blockRules()
 	}
 	if err := m.KeepVerdict(v.Head, class, keptWhy(rules, why)); err != nil {
 		return verdict.Finding{}, err
@@ -555,6 +572,137 @@ func ownRebuild(repo, covered, tip, base string) bool {
 	return err == nil && own == tree
 }
 
+// releaseRebuild says why a release tool's rebuilt head, tip, is no more of
+// what a person accepted on covered, "" when the yes holds: the rebuild is
+// one commit on the base, adding only what the line merged by policy (a
+// merged pull request with no person's yes label), its tree the covered
+// head's change redone but for the files the release tool's own commit
+// changed (its version and changelog). What cannot be read is unknown, and
+// needs a yes.
+func releaseRebuild(f forge.Forge, o FollowOptions, covered, tip, baseTip string) string {
+	repo := o.Repo
+	out, err := git(repo, nil, "rev-list", "--parents", "-n", "1", tip)
+	parts := strings.Fields(out)
+	if err != nil || len(parts) != 2 || !isAncestor(repo, parts[1], baseTip) {
+		return "it is not one commit on the base"
+	}
+	parent := parts[1]
+	from, err := git(repo, nil, "merge-base", parent, covered)
+	if err != nil {
+		return "its base could not be read"
+	}
+	own := map[string]bool{}
+	names, err := git(repo, nil, "diff", "--name-only", "-z", from, covered)
+	if err != nil {
+		return "the release tool's files could not be read"
+	}
+	for _, n := range strings.Split(names, "\x00") {
+		if n != "" {
+			own[n] = true
+		}
+	}
+	tree, clashes, err := redo(repo, parent, covered)
+	switch {
+	case err != nil:
+		return "the covered change could not be redone on its base"
+	case len(clashes) > 0:
+		return "`" + clashes[0] + "` no longer applies on its base"
+	}
+	diff, err := git(repo, nil, "diff-tree", "-r", "--name-only", "--no-renames", "-z", tree, tip+"^{tree}")
+	if err != nil {
+		return "its tree could not be compared"
+	}
+	for _, n := range strings.Split(diff, "\x00") {
+		if n != "" && !own[n] {
+			return "it changed `" + n + "`, no file of the release tool's own"
+		}
+	}
+	added, err := git(repo, nil, "rev-list", "--reverse", from+".."+parent)
+	if err != nil {
+		return "what it added could not be read"
+	}
+	commits := strings.Fields(added)
+	if len(commits) == 0 {
+		return ""
+	}
+	var all []forge.MergeRequest
+	if merged, ok := f.(forge.Merged); ok {
+		since := time.Now().AddDate(-1, 0, 0)
+		if at, err := git(repo, nil, "log", "-1", "--format=%cI", from); err == nil {
+			if t, err := parseTime(at); err == nil {
+				since = t.AddDate(0, 0, -1)
+			}
+		}
+		if all, err = merged.MergedSince(since); err != nil {
+			all = nil
+		}
+	}
+	by := map[string]forge.MergeRequest{}
+	for _, m := range all {
+		if m.MergedAs == "" {
+			continue
+		}
+		by[m.MergedAs] = m
+		if ps, err := git(repo, nil, "rev-list", "--parents", "-n", "1", m.MergedAs); err == nil && len(strings.Fields(ps)) == 3 {
+			if inner, err := git(repo, nil, "rev-list", m.MergedAs+"^1.."+m.MergedAs); err == nil {
+				for _, c := range strings.Fields(inner) {
+					if _, ok := by[c]; !ok {
+						by[c] = m
+					}
+				}
+			}
+		}
+	}
+	for _, c := range commits {
+		m, ok := by[c]
+		switch {
+		case !ok:
+			return "it added " + commitSaid(repo, c) + ", no merged pull request of it known: it needs a yes"
+		case slices.ContainsFunc(m.Labels, accepted):
+			return "it added " + commitSaid(repo, c) + ", merged with a person's yes: it needs one"
+		case featureOrTask(m.Title):
+			return "it added " + commitSaid(repo, c) + ", a feature or a task: it needs a yes, whatever its labels"
+		}
+	}
+	return ""
+}
+
+// releasePushers says why the pushes after the yes are not the release
+// tool's own, "" when each is by its App (the pull request's author): a
+// rebuild a person pushed keeps no yes, whatever its files. Who pushed is
+// the forge's word; none named is not known.
+func releasePushers(st forge.MergeState, yes, app string) string {
+	if app == "" || len(st.Pushers) != len(st.Pushes) {
+		return "who pushed it is not known: it needs a yes"
+	}
+	for i, p := range st.Pushes {
+		if later(p.At, yes) && st.Pushers[i] != app {
+			who := "a hand the forge does not name"
+			if st.Pushers[i] != "" {
+				who = "@" + st.Pushers[i]
+			}
+			return "it was pushed by " + who + ", not the release tool's App"
+		}
+	}
+	return ""
+}
+
+// featureOrTask says whether a title, a conventional commit's, is of a
+// feature (`feat`) or a task (`task`): a change that needs a person's yes
+// whatever labels its merge request carried.
+func featureOrTask(title string) bool {
+	t := strings.ToLower(strings.TrimSpace(title))
+	i := strings.IndexAny(t, ":(!")
+	if i <= 0 {
+		return false
+	}
+	switch t[:i] {
+	case "feat", "feature", "task":
+		return true
+	}
+	return false
+}
+
 // pushedAfterAt says what was pushed to a merge request after the yes given
 // at yes, "" nothing but workline's own: the yes covers the head it was
 // given on, as approvals reset on a push (ADR-0042). The head it was given
@@ -564,7 +712,7 @@ func ownRebuild(repo, covered, tip, base string) bool {
 // (OwnMerge, ownRebuild), or a commit changing only the lines workline
 // writes in the docs (ownRecord), as a merge of the base settles them.
 // It gives the commit that was pushed too ("" when none is one commit).
-func pushedAfterAt(o FollowOptions, branch string, st forge.MergeState, yes, baseTip, tip string) (string, string, error) {
+func pushedAfterAt(f forge.Forge, o FollowOptions, branch, author string, st forge.MergeState, yes, baseTip, tip string) (string, string, error) {
 	repo := o.Repo
 	own := func(c string) bool {
 		if ownTrailer(repo, c) == "" {
@@ -594,7 +742,18 @@ func pushedAfterAt(o FollowOptions, branch string, st forge.MergeState, yes, bas
 			if strings.HasPrefix(branch, "workline/") && ownRebuild(repo, covered, tip, baseTip) {
 				return "", "", nil
 			}
-			return fmt.Sprintf("its branch was rewritten (%s, over %s)", short(tip), short(covered)), "", nil
+			said := fmt.Sprintf("its branch was rewritten (%s, over %s)", short(tip), short(covered))
+			if o.Release != nil && o.Release(branch) {
+				why := releasePushers(st, yes, author)
+				if why == "" {
+					why = releaseRebuild(f, o, covered, tip, baseTip)
+				}
+				if why == "" {
+					return "", "", nil
+				}
+				said += ", " + why
+			}
+			return said, "", nil
 		}
 		// The base's commits a merge of it brings are no push to judge.
 		out, err := git(repo, nil, "rev-list", "--reverse", covered+".."+tip, "^"+baseTip)
@@ -642,6 +801,9 @@ type inLine struct {
 	// up brings it up to date with the base when it conflicts, or, clean
 	// asked, when it merges clean (upToDate): acted, not merged now.
 	up func(clean bool, due string) (bool, error)
+	// takeBase merges the base in for a verdict blocked on a rule it may
+	// have fixed (#1513), or says a conflict: acted, not merged now.
+	takeBase func(due string) (bool, error)
 }
 
 // upToDate is e.up, none on a request weighed without it.
@@ -819,6 +981,9 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	e.up = func(clean bool, due string) (bool, error) {
 		return upToDate(f, o, local, mr, baseTip, tip, say, clean, due)
 	}
+	e.takeBase = func(due string) (bool, error) {
+		return upToDateAs(f, o, local, mr, baseTip, tip, say, true, true, due)
+	}
 	off := func() error {
 		if !st.AutoMerge {
 			return nil
@@ -832,6 +997,34 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 			return err
 		}
 		return m.Accept(tip, false, why)
+	}
+	// A person's comment on it with no answer holds the merge, whatever
+	// the policy says (#1358); their own yes, put after it, answers it.
+	if open, err := personsCommentOpen(f, mr.ID, st.Labels); err != nil {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+			return nil, err
+		}
+		// Unread, a comment may wait: hold, as for one that waits.
+		if st.AutoMerge && st.AutoMergeBot {
+			if err := off(); err != nil {
+				return nil, err
+			}
+		}
+		say("comments-unread", "warn", "its comments could not be read, so a person's may wait: nothing merges, auto-merge stays off: "+forge.Said(err))
+		return nil, nil
+	} else if open != "" {
+		if st.AutoMerge && st.AutoMergeBot {
+			if err := off(); err != nil {
+				return nil, err
+			}
+		}
+		if err := f.Sticky(forge.Target{Kind: "merge-request", ID: mr.ID},
+			"**Held**: a person's comment on this merge request has no answer yet ("+open+"). It does not merge until a role answers it: a commit that adds the test, or a reply that names the test that guards the case.",
+			forge.Marker(commentOpenMarker), true); err != nil {
+			return nil, err
+		}
+		say("persons-comment-open", "warn", "a person's comment ("+open+") has no answer: nothing merges, auto-merge stays off, until a role answers it")
+		return nil, nil
 	}
 	// At `normal`, workline's own routine merge request, no person's yes
 	// given: weighed by what it is (routine.go).
@@ -908,7 +1101,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		if g == nil {
 			continue
 		}
-		p, pc, err := pushedAfterAt(o, mr.Branch, st, g.Created, baseTip, tip)
+		p, pc, err := pushedAfterAt(f, o, mr.Branch, mr.Author, st, g.Created, baseTip, tip)
 		if err != nil {
 			return nil, err
 		}
@@ -1311,4 +1504,100 @@ func settlementDiff(repo, commit string) string {
 		fmt.Fprintf(&b, "\n(%d more lines)\n", n-max)
 	}
 	return "\n\nWhat the agent wrote to settle the conflict, over git's own merge:\n" + b.String()
+}
+
+// commentOpenMarker keeps the comment that says a person's comment waits.
+const commentOpenMarker = "person-comment-open"
+
+// namesTest tells a reply that names a test, or a commit that adds one:
+// "no" alone, or the bare word "test" or "commit", does not answer a
+// person's comment. It takes an identifier: test_x, x_test, TestX, a path
+// under tests/, a x.test.y file, or a commit hash.
+var namesTestRe = regexp.MustCompile(`\btest_\w+|\b\w+_test\b|\bTest[A-Z]\w*|\b\w+\.(?:test|spec)\.\w+|(?:^|[\s` + "`" + `(])(?:\S*/)?tests?/\S+|\b[0-9a-f]{7,40}\b`)
+
+// isReply tells a role's reply, a run's comment or the tester's answer,
+// from the engine's statuses and the records that mention tests.
+func isReply(body string) bool {
+	return strings.Contains(body, "<!-- workline:run=") || strings.Contains(body, forge.Marker("tester-answer"))
+}
+
+func namesTest(body string) bool {
+	for _, m := range namesTestRe.FindAllString(body, -1) {
+		// A hash holds a digit: a word of letters a-f ("defaced") is not one.
+		if strings.Trim(m, "0123456789abcdef") == "" && !strings.ContainsAny(m, "0123456789") {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+// personsCommentOpen says, quoted short, the first person's comment on a
+// merge request that no role has answered: a comment of the request or a
+// conversation on a line, left by a person of the project. A role's own
+// comment after it answers it, the line's verdict and this hold apart; so
+// does the yes of the person who wrote it, put at or after it and still
+// on: it covers what they said before it, as the trace of a yes put in
+// their name (ADR-0068 §7). "" when none waits.
+func personsCommentOpen(f forge.Forge, id int, labels []forge.LabelEvent) (string, error) {
+	t := forge.Target{Kind: "merge-request", ID: id}
+	yes, _ := theYes(labels, accepted)
+	// theirs: the standing yes is the writer's own, given at or after it.
+	theirs := func(n forge.Note) bool {
+		return yes != nil && n.Author != "" && yes.Author == n.Author &&
+			n.Created != "" && yes.Created != "" && !later(n.Created, yes.Created)
+	}
+	b, ok := f.(forge.Backlog)
+	var notes []forge.Note
+	var err error
+	if ok {
+		notes, err = b.Notes(t)
+	}
+	if ok && err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
+		return "", err
+	}
+	if ok && err == nil {
+		own := func(n forge.Note) bool { return n.Own || strings.Contains(n.Body, "<!-- workline:") }
+		// A role's reply: a note of a run, not a status of the engine or
+		// the tester's record, that names a test.
+		answers := func(n forge.Note) bool {
+			return own(n) && isReply(n.Body) && namesTest(n.Body)
+		}
+		for i, n := range notes {
+			if !n.Insider || n.Bot || own(n) || strings.TrimSpace(n.Body) == "" || theirs(n) {
+				continue
+			}
+			if !slices.ContainsFunc(notes[i+1:], answers) {
+				return clipSaid(strings.TrimSpace(n.Body)), nil
+			}
+		}
+	}
+	th, ok := f.(forge.Threaded)
+	if !ok {
+		return "", nil
+	}
+	threads, err := th.Threads(id)
+	if err != nil {
+		return "", err
+	}
+	// allTheirs: every person's comment in the thread is the yes author's,
+	// given at or before the yes; another person's still waits for a role.
+	allTheirs := func(c forge.Thread) bool {
+		for _, n := range c.Comments {
+			if n.Insider && !n.Bot && !n.Own && strings.TrimSpace(n.Body) != "" &&
+				!strings.Contains(n.Body, "<!-- workline:") && !theirs(n) {
+				return false
+			}
+		}
+		return true
+	}
+	for _, c := range threads {
+		if c.Resolved || !tester.PersonsThread(c) || allTheirs(c) {
+			continue
+		}
+		if last := c.Comments[len(c.Comments)-1]; !isReply(last.Body) || !namesTest(last.Body) {
+			return clipSaid(strings.TrimSpace(c.Comments[0].Body)), nil
+		}
+	}
+	return "", nil
 }

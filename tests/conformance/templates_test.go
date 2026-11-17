@@ -25,7 +25,7 @@ import (
 // CI templates fetches it.
 
 func TestGitLabTemplateFetchesWholeHistory(t *testing.T) {
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestGitLabTemplateFetchesWholeHistory(t *testing.T) {
 }
 
 func TestGitHubTemplatesFetchWholeHistory(t *testing.T) {
-	files, _ := filepath.Glob("../../ci/github/*.yml")
+	files, _ := filepath.Glob("../../defaults/ci/github/*.yml")
 	n := 0
 	for _, f := range files {
 		data, err := os.ReadFile(f)
@@ -112,7 +112,7 @@ func TestGitHubTemplatesFetchWholeHistory(t *testing.T) {
 // 1 h default is below the developer's caps (#1197).
 func TestTemplatesTimeEachJob(t *testing.T) {
 	need := rolesCapSeconds(t)
-	files, _ := filepath.Glob("../../ci/github/*.yml")
+	files, _ := filepath.Glob("../../defaults/ci/github/*.yml")
 	n, capped := 0, 0
 	for _, f := range files {
 		data, err := os.ReadFile(f)
@@ -154,7 +154,7 @@ func TestTemplatesTimeEachJob(t *testing.T) {
 	if n == 0 || capped < 2 {
 		t.Fatalf("%d jobs, %d running the developer or the tester with an agent: want the issue's judge and the review round", n, capped)
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +200,7 @@ func rolesCapSeconds(t *testing.T) int {
 // (--summary), the templates show it, none rebuilds it from the JSON.
 
 func TestGitLabTemplateKeepsTheSummary(t *testing.T) {
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func TestGitLabTemplateKeepsTheSummary(t *testing.T) {
 }
 
 func TestGitHubTemplatesUseTheSummary(t *testing.T) {
-	files, _ := filepath.Glob("../../ci/github/workline*.yml")
+	files, _ := filepath.Glob("../../defaults/ci/github/workline*.yml")
 	own, _ := filepath.Glob("../../.github/workflows/workline*.yml")
 	n := 0
 	for _, f := range append(files, own...) {
@@ -278,7 +278,7 @@ func TestGitHubTemplatesUseTheSummary(t *testing.T) {
 // job following main too, which names each pull request it merged main
 // into, and each it left (ADR-0041).
 func TestGitHubApplyJobsWriteTheirSummary(t *testing.T) {
-	files, _ := filepath.Glob("../../ci/github/workline*.yml")
+	files, _ := filepath.Glob("../../defaults/ci/github/workline*.yml")
 	own, _ := filepath.Glob("../../.github/workflows/workline*.yml")
 	n := 0
 	for _, f := range append(files, own...) {
@@ -321,7 +321,7 @@ func TestGitHubApplyJobsWriteTheirSummary(t *testing.T) {
 // judge's. An agent out of reach (3) warns, as on GitHub, never fails.
 
 func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -371,7 +371,7 @@ func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
 }
 
 func TestGitHubApplyRunsWhenTheJudgeFails(t *testing.T) {
-	files, _ := filepath.Glob("../../ci/github/workline*.yml")
+	files, _ := filepath.Glob("../../defaults/ci/github/workline*.yml")
 	own, _ := filepath.Glob("../../.github/workflows/workline*.yml")
 	n := 0
 	for _, f := range append(files, own...) {
@@ -459,7 +459,7 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 		}
 		return wf
 	}
-	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
 		judges := 0
 		wf := read(dir + "workline.yml")
 		if group := ownGroup(fmt.Sprint(wf.Concurrency["group"])); !strings.Contains(group, "${{ github.event.pull_request.number }}") || wf.Concurrency["cancel-in-progress"] != true {
@@ -505,7 +505,7 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 			}
 		}
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -560,7 +560,8 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 		Jobs map[string]struct {
 			Concurrency map[string]any `yaml:"concurrency"`
 			Steps       []struct {
-				Run string `yaml:"run"`
+				Uses string `yaml:"uses"`
+				Run  string `yaml:"run"`
 			} `yaml:"steps"`
 		} `yaml:"jobs"`
 	}
@@ -589,6 +590,17 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 			if !runs {
 				continue
 			}
+			// workline's head pass (ADR-0071 §1) reads the record but leaves
+			// nothing for an apply to write: out of the lock, never waiting
+			// on the line's review.
+			if name == "head-judge" {
+				for _, s := range job.Steps {
+					if strings.HasPrefix(s.Uses, "actions/upload-artifact@") {
+						t.Errorf("%s, job %s: the head pass uploads what an apply could read", file, name)
+					}
+				}
+				continue
+			}
 			n++
 			if group := ownGroup(fmt.Sprint(job.Concurrency["group"])); group != want || job.Concurrency["cancel-in-progress"] != false {
 				t.Errorf("%s, job %s: not in the review's lock per pull request %q, never cancelling: %v", file, name, want, job.Concurrency)
@@ -598,12 +610,12 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 			t.Errorf("%s: no job runs %q", file, command)
 		}
 	}
-	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
 		locks(dir+"workline.yml", "workline route merge-request", review)
 		locks(dir+"workline-warn.yml", "workline route merge-request --warn-only", apart)
 		locks(dir+"workline-apply.yml", "--from-merge-request", apply)
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -697,7 +709,7 @@ func TestWarnApartSaysWhatIsMissing(t *testing.T) {
 		warned, _ := run(script, files, true)
 		return warned
 	}
-	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
 		judge := script(dir+"workline.yml", "Whether anything reads the lenses that warn")
 		if !warns(judge, map[string]string{"workline.yml": dir + "workline.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
 			t.Errorf("%sworkline.yml: no warning with no workline-warn.yml beside it", dir)
@@ -774,7 +786,7 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 		}
 		return wf, string(data)
 	}
-	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
 		judge, _ := read(dir + "workline.yml")
 		left := false
 		for _, job := range judge.Jobs {
@@ -826,7 +838,7 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 			}
 		}
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -942,7 +954,7 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 
 func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 	n := 0
-	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml", "../../ci/github/workline-warn.yml", "../../.github/workflows/workline-warn.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline.yml", "../../.github/workflows/workline.yml", "../../defaults/ci/github/workline-warn.yml", "../../.github/workflows/workline-warn.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -1070,7 +1082,7 @@ func livePullRequestDraft(t *testing.T, where string, env map[string]string, run
 // on a draft, and still name the agent, for the engine to say the AI
 // review waits for ready.
 func TestTemplatesInstallNoAgentOnADraft(t *testing.T) {
-	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml", "../../ci/github/workline-warn.yml", "../../.github/workflows/workline-warn.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline.yml", "../../.github/workflows/workline.yml", "../../defaults/ci/github/workline-warn.yml", "../../.github/workflows/workline-warn.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -1106,7 +1118,7 @@ func TestTemplatesInstallNoAgentOnADraft(t *testing.T) {
 			t.Errorf("%s: no step installs the agent", filepath.Base(f))
 		}
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1158,7 +1170,7 @@ func TestGitLabTemplateAsksEveryLensWhenReady(t *testing.T) {
 		}
 		t.Skip("jq is not on PATH: the GitLab template's check for ready is not tried here")
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1266,7 +1278,7 @@ printf '%s' "$f"
 // `workline follow --gardening` after `workline apply`, its summary on
 // the job's page.
 func TestGardeningTendsItsMergeRequests(t *testing.T) {
-	for _, f := range []string{"../../ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -1302,7 +1314,7 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 			t.Errorf("%s: no job applies", f)
 		}
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1326,7 +1338,7 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 // the App alone pushed to the release's branch, as for a pull request's
 // own run (workline-apply.yml).
 func TestGardeningJudgesTheReleaseAtNight(t *testing.T) {
-	for _, f := range []string{"../../ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -1364,7 +1376,7 @@ func TestGardeningJudgesTheReleaseAtNight(t *testing.T) {
 			t.Errorf("%s: no job runs the schedule line, or none applies it", f)
 		}
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1398,7 +1410,7 @@ func TestMergePolicyRunsWhenADemotionIsClosed(t *testing.T) {
 	}
 	demotion := []string{"github.event.action == 'closed'", "startsWith(github.event.issue.title, 'workline: its ')",
 		"contains(github.event.issue.title, 'merge requests wait for a person''s yes again')"}
-	for _, f := range []string{"../../ci/github/workline-merge.yml", "../../.github/workflows/workline-merge.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-merge.yml", "../../.github/workflows/workline-merge.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -1465,7 +1477,7 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		}
 		return wf
 	}
-	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
 		judged := read(dir + "workline.yml")
 		for _, ty := range []string{"labeled", "unlabeled", "converted_to_draft"} {
 			if slices.Contains(judged.On.PullRequest.Types, ty) || judged.On.Target != nil {
@@ -1474,6 +1486,10 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		}
 		var route string
 		for name, job := range judged.Jobs {
+			// workline's head pass gives no verdict (ADR-0071 §1).
+			if name == "head-judge" {
+				continue
+			}
 			for _, s := range job.Steps {
 				switch {
 				case strings.Contains(s.Run, "--gates-only"), strings.Contains(s.Run, "--input queue=true"):
@@ -1520,7 +1536,7 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 			t.Errorf("%sworkline-apply.yml: no job keeps the head's verdict", dir)
 		}
 	}
-	for _, f := range []string{"../../ci/github/workline-merge.yml", "../../.github/workflows/workline-merge.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-merge.yml", "../../.github/workflows/workline-merge.yml"} {
 		wf := read(f)
 		if wf.On.Target == nil || !slices.Contains(wf.On.Target.Types, "labeled") || !slices.Contains(wf.On.Target.Types, "unlabeled") {
 			t.Errorf("%s: does not run on a label put and taken off", filepath.Base(f))
@@ -1565,7 +1581,7 @@ func TestForkIsFollowedWithNoVerdict(t *testing.T) {
 		return wf
 	}
 	const ours = "full_name == github.repository"
-	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
 		uploads := 0
 		for name, job := range read(dir + "workline.yml").Jobs {
 			for _, s := range job.Steps {
@@ -1641,7 +1657,7 @@ func TestGitHubFindingsReachTheApplyingJob(t *testing.T) {
 		}
 		return wf
 	}
-	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
 		judge := read(dir + "workline.yml").Jobs["judge"]
 		found, uploaded := false, false
 		for _, s := range judge.Steps {
@@ -1669,7 +1685,7 @@ func TestGitHubJudgeTellsTheDocumentalistFound(t *testing.T) {
 		return line.Step{Name: name, Status: verdict.Pass, Result: &engine.Result{Status: verdict.Pass, Findings: findings}}
 	}
 	doc := verdict.Finding{Rule: "count-off", Where: "docs/a.md", Message: "`a.go` has 7 lines, not ~40"}
-	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline.yml", "../../.github/workflows/workline.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -1720,7 +1736,7 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 		Env         map[string]any    `yaml:"env"`
 		Steps       []step            `yaml:"steps"`
 	}
-	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline.yml", "../../.github/workflows/workline.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -1757,8 +1773,17 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 				}
 			}
 		}
-		if running != 1 {
-			t.Errorf("%s: %d jobs run the gates alone, want one", f, running)
+		// workline's own adds the head pass's gates, on the engine built
+		// from an engine-changing head, under the same rules (ADR-0071 §1).
+		want := 1
+		if strings.Contains(f, ".github/workflows") {
+			want = 2
+			if _, ok := wf.Jobs["head-gates"]; !ok {
+				t.Errorf("%s: no head pass's gates (job head-gates)", f)
+			}
+		}
+		if running != want {
+			t.Errorf("%s: %d jobs run the gates alone, want %d", f, running, want)
 		}
 		// Main's run after a merge is the gates' job's alone (ADR-0050).
 		judge := wf.Jobs["judge"]
@@ -1775,7 +1800,7 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 			t.Errorf("%s: judge's line runs the gates itself, beside the agent's token: no --gates-from", f)
 		}
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1810,7 +1835,7 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 // token, opt-in, its history read back from the last run's artifact and
 // kept for the next.
 func TestCuratorMeasuresWithNoWriteToken(t *testing.T) {
-	for _, f := range []string{"../../ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -1852,7 +1877,7 @@ func TestCuratorMeasuresWithNoWriteToken(t *testing.T) {
 			t.Errorf("%s: the curator's history is not read back (%v), measured with it (%v), and kept (%v)", f, read, measured, kept)
 		}
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1874,7 +1899,7 @@ func TestCuratorMeasuresWithNoWriteToken(t *testing.T) {
 // one run at a time; the job that applies holds the App's key, no AI key.
 // On GitLab, the same from a pipeline a tool starts (WORKLINE_TASK=develop).
 func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
-	data, err := os.ReadFile("../../ci/github/workline-develop.yml")
+	data, err := os.ReadFile("../../defaults/ci/github/workline-develop.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1924,7 +1949,7 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 	}
 	// The night's states moved, their next steps started by the
 	// gardening's apply, which may start runs.
-	gdata, err := os.ReadFile("../../ci/github/workline-gardening.yml")
+	gdata, err := os.ReadFile("../../defaults/ci/github/workline-gardening.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2023,7 +2048,7 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 		}
 	}
 
-	data, err = os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err = os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2062,7 +2087,7 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 // head; the apply holds no agent's token and applies from the merge
 // request at that head. On GitLab, the same from WORKLINE_TASK=review.
 func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
-	data, err := os.ReadFile("../../ci/github/workline-develop.yml")
+	data, err := os.ReadFile("../../defaults/ci/github/workline-develop.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2162,7 +2187,7 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 		t.Error("workline-develop.yml, apply: an issue whose step is its review round does not start that round")
 	}
 
-	data, err = os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err = os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2193,8 +2218,8 @@ func TestDeveloperJudgesKeepNoCredential(t *testing.T) {
 	// The jobs that may run the developer's agent: its own, and the
 	// gardening's judge, whose schedule line may list it.
 	judges := map[string][]string{
-		"../../ci/github/workline-develop.yml": {"judge", "review"}, "../../.github/workflows/workline-develop.yml": {"judge", "review"},
-		"../../ci/github/workline-gardening.yml": {"judge"}, "../../.github/workflows/workline-gardening.yml": {"judge"},
+		"../../defaults/ci/github/workline-develop.yml": {"judge", "review"}, "../../.github/workflows/workline-develop.yml": {"judge", "review"},
+		"../../defaults/ci/github/workline-gardening.yml": {"judge"}, "../../.github/workflows/workline-gardening.yml": {"judge"},
 	}
 	for f, names := range judges {
 		data, err := os.ReadFile(f)
@@ -2226,7 +2251,7 @@ func TestDeveloperJudgesKeepNoCredential(t *testing.T) {
 			}
 		}
 	}
-	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2251,7 +2276,7 @@ func TestDeveloperJudgesKeepNoCredential(t *testing.T) {
 // branch's head as it starts (#898): a heartbeat waits 55 minutes, and a
 // fix merged meanwhile acts on that reconcile, not the next.
 func TestDeveloperJobsRunTheirAgentsShellAndTheHead(t *testing.T) {
-	for _, f := range []string{"../../ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
+	for _, f := range []string{"../../defaults/ci/github/workline-develop.yml", "../../.github/workflows/workline-develop.yml"} {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -2350,7 +2375,7 @@ func TestOwnProofsRunWhereTheTestsRun(t *testing.T) {
 // GitHub: a local composite action, run when the project has it; GitLab:
 // `.workline:setup`, empty, the project redefining its script.
 func TestDeveloperJudgesRunTheProjectsSetupSteps(t *testing.T) {
-	data, err := os.ReadFile("../../ci/github/workline-develop.yml")
+	data, err := os.ReadFile("../../defaults/ci/github/workline-develop.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2384,7 +2409,7 @@ func TestDeveloperJudgesRunTheProjectsSetupSteps(t *testing.T) {
 		}
 	}
 
-	data, err = os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	data, err = os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}

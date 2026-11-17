@@ -257,7 +257,7 @@ func specOnForge(runDir, repo string, s Settings) (queue, int, bool) {
 			}
 		case len(q.read) < s.SpecsPerRun:
 			q.read = append(q.read, Spec{Path: where, Title: strings.TrimSpace(w.issue.Title), Text: w.issue.Body, Issue: w.issue.ID,
-				Digest: backlog.BodyDigest(w.issue.Body), Round: n, Prior: w.prior, Mine: w.mine})
+				Digest: backlog.BodyDigest(w.issue.Body), Round: n, Prior: w.prior, Mine: w.mine, Before: w.before})
 		default:
 			q.rest = append(q.rest, where)
 		}

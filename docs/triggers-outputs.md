@@ -1,5 +1,5 @@
 ---
-sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
+sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, defaults/ci/gitlab/workline.gitlab-ci.yml, defaults/ci/github/workline.yml, defaults/ci/github/workline-gardening.yml, defaults/ci/github/workline-sample.yml, defaults/routing.yaml]
 checked: 8538d558
 verified: agent:claude-code
 ---

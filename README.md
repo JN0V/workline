@@ -1,5 +1,5 @@
 <!-- workline
-sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
+sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, defaults/ci/github/workline-fork.yml, defaults/routing.yaml, internal/forge/forge.go, internal/agent/agent.go, defaults/ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, defaults/ci/github/workline.yml, defaults/ci/forgejo/workline-forge.sh, defaults/ci/github/workline-gardening.yml, defaults/ci/github/workline-sample.yml]
 checked: 8538d558
 judged: e8a46f7
 verified: agent:documentalist
@@ -25,7 +25,7 @@ A software factory for AI-assisted development:
 
 Status (2026-10-06): runs on every commit of its author, and in CI on the
 pull requests and nightly gardening of workline and of another project;
-<!-- workline:derive conformance-cases -->1888<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->2185<!-- workline:end --> conformance cases green in CI.
 
 ## Get started
 
@@ -81,7 +81,7 @@ pull requests and nightly gardening of workline and of another project;
 
 ## Where it runs
 
-- One routing says which roles each event runs: `routing.default.yaml` as
+- One routing says which roles each event runs: `defaults/routing.yaml` as
   shipped, changed in `.workline/config.yaml`.
 - A role behaves the same wherever it runs; only the trigger, the agent at
   hand and how its proposals are applied differ.
@@ -127,12 +127,12 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 - The review is on the merge request; a person accepts it, or, by the
   [merge policy](docs/merge-policy.md), a reproduced bug's fix merges alone.
-- Templates: [GitHub Actions](ci/github/workline.yml),
-  [what only warns, beside it](ci/github/workline-warn.yml),
-  [its jobs that write](ci/github/workline-apply.yml) and
-  [its fork job](ci/github/workline-fork.yml),
-  [the release's holds read again](ci/github/workline-release.yml),
-  [GitLab CI](ci/gitlab/workline.gitlab-ci.yml). Setting up:
+- Templates: [GitHub Actions](defaults/ci/github/workline.yml),
+  [what only warns, beside it](defaults/ci/github/workline-warn.yml),
+  [its jobs that write](defaults/ci/github/workline-apply.yml) and
+  [its fork job](defaults/ci/github/workline-fork.yml),
+  [the release's holds read again](defaults/ci/github/workline-release.yml),
+  [GitLab CI](defaults/ci/gitlab/workline.gitlab-ci.yml). Setting up:
   [CI](docs/ci.md).
 
 ### main: schedules and releases
@@ -147,11 +147,11 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | before your release tool tags (`workline route release`); on GitLab, at a tag | your release's gates, none by default | a non-zero exit holds the release |
 
 - workline cuts no releases: it runs before your release tool.
-- Templates: GitHub's [gardening](ci/github/workline-gardening.yml) and
-  [sample](ci/github/workline-sample.yml), `follow` in
-  [workline-apply.yml](ci/github/workline-apply.yml); on GitLab, three pipeline
+- Templates: GitHub's [gardening](defaults/ci/github/workline-gardening.yml) and
+  [sample](defaults/ci/github/workline-sample.yml), `follow` in
+  [workline-apply.yml](defaults/ci/github/workline-apply.yml); on GitLab, three pipeline
   schedules, a push to the default branch and a tag, all in the same
-  [template](ci/gitlab/workline.gitlab-ci.yml).
+  [template](defaults/ci/gitlab/workline.gitlab-ci.yml).
 - Each command in detail: [usage](docs/usage.md#commands).
 
 ### The issues

@@ -1,7 +1,7 @@
 ---
-sources: [ci/gitlab/workline-bounds.gitlab-ci.yml, internal/doctor/guard.go, internal/forge/gitlab_guard.go]
+sources: [defaults/ci/gitlab/workline-bounds.gitlab-ci.yml, internal/doctor/guard.go, internal/forge/gitlab_guard.go]
 checked: 8538d558
-judged: 87b34bc
+judged: 5c1573b
 verified: agent:documentalist
 ---
 # The developer's bounds on GitLab
@@ -26,7 +26,7 @@ flowchart LR
   it ([the bounds](../../roles/developer/docs/bounds.md#on-the-pull-request)).
 - **Include it** beside the template:
   `include: [{local: ci/workline.gitlab-ci.yml}, {local: ci/workline-bounds.gitlab-ci.yml}]`
-  ([the file](../../ci/gitlab/workline-bounds.gitlab-ci.yml)).
+  ([the file](../../defaults/ci/gitlab/workline-bounds.gitlab-ci.yml)).
 - **Its token**: `WORKLINE_GITLAB_TOKEN`, to read the issue and keep the
   verdict on the merge request. Without it the job fails: the bounds
   unread never pass.

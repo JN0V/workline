@@ -254,7 +254,7 @@ func repository(r *Report, o Options) {
 	} else if cfg.Forge != "local" { // no forge, no CI: the reconciler judges from main
 		r.add(Check{Area: "repository", Rule: "docs-judged-nowhere", Where: where, Level: Warn,
 			Message: "the documentalist runs on no merge request in CI, and no gardening: docs go stale unseen, unless someone runs `workline docs`",
-			Fix:     "copy the CI templates (ci/github, ci/gitlab)"})
+			Fix:     "copy the CI templates (defaults/ci/github, defaults/ci/gitlab)"})
 	}
 	if routes("pre-push") {
 		r.add(Check{Area: "repository", Rule: "docs-counted-at-push", Where: where, Level: OK,
@@ -267,6 +267,7 @@ func repository(r *Report, o Options) {
 	tokensScoped(r, o, cfg.Forge)
 	boundsGuard(r, o, cfg.Forge, line)
 	bypassGuard(r, o, cfg.Forge)
+	blockedEvent(r, o)
 	guardedList(r, o, cfg, line)
 	boards(r, o, cfg, line)
 	issueHook(r, o, cfg, line)

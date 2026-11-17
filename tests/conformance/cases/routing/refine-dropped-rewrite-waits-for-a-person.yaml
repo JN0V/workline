@@ -1,0 +1,30 @@
+case: routing/refine-dropped-rewrite-waits-for-a-person
+about: >
+  No false promise: the product owner's rewrite of a Scope was dropped
+  twice, the one retry spent, the reviewer's Important still open. The
+  issue will not be refined again on its own: what a person opens says
+  it waits for a person, and never says the product owner answers at its
+  next refine.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner, reviewer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        labeled: {"workline:to-refine": "2026-11-01T19:59:38Z"}
+        author: ann
+        insider: true
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nSessions feel right to the users.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: efbae4cec0e6\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=efbae4cec0e6 round=1 open=1 in=Scope -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {route: issue, target: {issue: 9}, ai: fake:refine-scope-only-missing-path, then: again}
+expect:
+  forge:
+    issues:
+      - id: 9
+        comment-contains: "waits for a person"
+        comment-lacks: "at its next refine"

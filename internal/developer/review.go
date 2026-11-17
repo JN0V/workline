@@ -354,7 +354,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	}
 	// Its merge refused for a conflict with its base (ADR-0067): the
 	// round merges the base in, and asks nothing else.
-	if base, due := conflictDue(kept, a, repo, head); due {
+	if base, due := conflictNow(f, kept, a, repo, mr, head); due {
 		return conflictPre(runDir, repo, s, f, b, mr, a, head, base)
 	}
 	// The review's test findings on code are the tester's (#1265): its
@@ -434,7 +434,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		}
 		return writeIntents(runDir, "fallback.yaml", toTesterOnly(r, bounds, repo))
 	}
-	if disputes(a) >= s.Rounds {
+	if rounds(a) >= s.Rounds {
 		r.Person = true
 		if err := writeIn(runDir, roundFile, r); err != nil {
 			return fail(err)
@@ -601,6 +601,12 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 	// (#1040). A record from before review-at counts runs alone.
 	newReview := r.Runs > a.ReviewRuns ||
 		r.ReviewAt != "" && r.ReviewAt != a.ReviewAt && (a.ReviewAt != "" || a.ReviewRuns == 0)
+	// A review read on another head than the branch's is stale: its
+	// findings are never sent again, its runs bring no round; the verdict
+	// on this head wakes the next one.
+	if r.Runs > 0 && r.ReviewAt != "" && head != "" && !strings.HasPrefix(head, r.ReviewAt) && !strings.HasPrefix(r.ReviewAt, head) {
+		newReview = false
+	}
 	r.Disputed = disputed(r.Asked, a, kept)
 	if !newReview { // the review read already
 		r.Asked = nil
@@ -692,7 +698,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	if a.Handed {
 		return false, nil
 	}
-	if _, due := conflictDue(kept, a, repo, branchHead(f, repo, mr.Branch)); due {
+	if _, due := conflictNow(f, kept, a, repo, mr, branchHead(f, repo, mr.Branch)); due {
 		return true, nil // its merge refused for a conflict: a merge round (ADR-0067)
 	}
 	head, _ := gitOut(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/"+mr.Branch)
@@ -1318,4 +1324,10 @@ func disputes(a Act) int {
 		}
 	}
 	return n
+}
+
+// rounds counts every round the pull request had, of any kind: the
+// ceiling that hands it to a person (#1687).
+func rounds(a Act) int {
+	return max(a.Round, len(a.Rounds), disputes(a))
 }

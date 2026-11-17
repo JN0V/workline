@@ -2101,6 +2101,11 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	// A finding the lens raises again, the tester's answer weighed
 	// before settling it, goes as its block did (#1303).
 	related = slices.DeleteFunc(related, func(f Finding) bool { return st.settles(f.Lens, f.Where, shortMessage(f)) })
+	if sp := st.Spec; sp != nil {
+		// A finding a person answered in the spec, wherever they wrote it,
+		// is settled: the same scenario name, the same lens (#1356).
+		related = slices.DeleteFunc(related, func(f Finding) bool { return answeredInSpec(*sp, f) })
+	}
 	v := review(st, nil, "")
 	v.Lenses, v.Change, v.Complete, v.Parts = facets(st), related, len(c.Failed) == 0, st.Parts
 	var fallback []intent.Intention

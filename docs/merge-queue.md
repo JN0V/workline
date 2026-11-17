@@ -1,10 +1,10 @@
 ---
 sources:
-  - ci/github/workline.yml
-  - ci/github/workline-apply.yml
-  - ci/gitlab/workline.gitlab-ci.yml#workline:base
-  - ci/gitlab/workline.gitlab-ci.yml#workline:gates
-  - ci/gitlab/workline.gitlab-ci.yml#workline:merge
+  - defaults/ci/github/workline.yml
+  - defaults/ci/github/workline-apply.yml
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:base
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:gates
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
   - internal/line/line.go
   - internal/engine/queue.go
 checked: 8538d558
@@ -53,7 +53,7 @@ workline's run there guards that combination only
   ([changelog](https://github.blog/changelog/2023-07-12-pull-request-merge-queue-is-now-generally-available/)).
   A user's repository has none, workline's own included: its workflows
   have no `merge_group`.
-- **The trigger**: [workline.yml](../ci/github/workline.yml) runs on
+- **The trigger**: [workline.yml](../defaults/ci/github/workline.yml) runs on
   `merge_group` too. Without it, the checks the queue requires never
   report on its commit, and it waits until its timeout
   ([GitHub's docs](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue)).
@@ -62,7 +62,7 @@ workline's run there guards that combination only
   request.
 - **With the [merge policy](merge-policy.md)**: the base requires
   `workline/accepted` from the App, on the group's commit too.
-  [workline-apply.yml](../ci/github/workline-apply.yml)'s `queue` job
+  [workline-apply.yml](../defaults/ci/github/workline-apply.yml)'s `queue` job
   sets it there as the head of the pull request the group ends with
   holds it; a head with no yes fails the group.
 - **Set up**: Settings → Rules, on the base: "Require merge queue", and
@@ -75,7 +75,7 @@ workline's run there guards that combination only
   → Merge requests,
   [GitLab's docs](https://docs.gitlab.com/ci/pipelines/merge_trains/)).
 - **A train's pipeline** (`CI_MERGE_REQUEST_EVENT_TYPE` is
-  `merge_train`): [the template](../ci/gitlab/workline.gitlab-ci.yml)
+  `merge_train`): [the template](../defaults/ci/gitlab/workline.gitlab-ci.yml)
   runs `workline:gates` alone, against the target's tip, after
   `workline:base`, which reads that tip's findings main kept. A gate
   that blocks fails the pipeline, and the train drops the merge request.

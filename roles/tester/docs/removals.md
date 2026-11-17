@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/curate.go, internal/tester/removal.go, roles/tester/role.yaml, ci/github/workline-gardening.yml, ci/gitlab/workline.gitlab-ci.yml]
+sources: [internal/tester/curate.go, internal/tester/removal.go, roles/tester/role.yaml, defaults/ci/github/workline-gardening.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
 checked: 9cf386a3
 verified: agent:claude-code
 ---

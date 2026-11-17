@@ -1,0 +1,33 @@
+case: merge/release-rebuild-keeps-yes
+about: "Fixes only: a release pull request a person accepted is rebuilt by the release tool on a main that merged only a fix by policy (its pull request carried no person's yes). The rebuilt head is one commit on the new main, its tree the covered head's change redone, the release tool's own file alone. The yes stays: it is not taken off, and the release merges once its head is green."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && git commit -qm 'chore(main): release 1.1.0' && git tag before && git push -q origin release-please--branches--main && git checkout -q main"
+    - "echo 'fixed' > fix.txt && git add fix.txt && git commit -qm 'fix: handle an empty token (#20)' && git push -q origin main"
+    - "git checkout -q release-please--branches--main && git reset -q --hard main && echo '1.1.0' > version.txt && git add version.txt && GIT_COMMITTER_DATE=2026-01-04T11:00:00Z git commit -qm 'chore(main): release 1.1.0' && git push -q -f origin release-please--branches--main && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "release-please--branches--main", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 20, branch: fix-token, base: main, title: "fix: handle an empty token", author: workline-bot, bot: true, closed: true, merged: true, merged-at: "2026-01-04T10:30:00Z", merged-as: "main", labels: [], comments: []}
+      - id: 10
+        branch: release-please--branches--main
+        base: main
+        author: workline-bot
+        bot: true
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: before, at: "2026-01-04T09:00:00Z", by: workline-bot}, {head: release-please--branches--main, at: "2026-01-04T11:00:00Z", by: workline-bot}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings:
+    - {rule: auto-merge-on, where: "#10"}
+  no-findings: [{rule: accepted-reset}]
+  forge:
+    merge-requests:
+      - {id: 10, auto-merge: true, labels: [workline:accepted], comments: 0}

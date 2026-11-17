@@ -1,5 +1,53 @@
 # Changelog
 
+## [0.78.5](https://github.com/JN0V/workline/compare/v0.78.4...v0.78.5) (2026-11-17)
+
+
+### Bug Fixes
+
+* a p1 issue waits on a file reservation held by ([#1744](https://github.com/JN0V/workline/issues/1744)) ([0db3dff](https://github.com/JN0V/workline/commit/0db3dff45eedd88d1f94419369b0aad22f06a090))
+
+## [0.78.4](https://github.com/JN0V/workline/compare/v0.78.3...v0.78.4) (2026-11-17)
+
+
+### Bug Fixes
+
+* **productowner:** a person's long answer is still cut at 3000 ([#1715](https://github.com/JN0V/workline/issues/1715)) ([b8a811f](https://github.com/JN0V/workline/commit/b8a811f2c9534c20f14604f75795f6cc1e959f24))
+
+## [0.78.3](https://github.com/JN0V/workline/compare/v0.78.2...v0.78.3) (2026-11-17)
+
+
+### Bug Fixes
+
+* a line pull request is never brought up to date when main ([#1678](https://github.com/JN0V/workline/issues/1678)) ([6a1f1ba](https://github.com/JN0V/workline/commit/6a1f1ba41c6c54f03f1ce91c0d3f7dd4f32829cd))
+* a PR whose opened event GitHub lost never gets CI ([#1721](https://github.com/JN0V/workline/issues/1721)) ([5b9dd4b](https://github.com/JN0V/workline/commit/5b9dd4bb5707aa621fd814c225e8bda11ba9338e))
+* a warn-lens comment starts a developer round that ([#1694](https://github.com/JN0V/workline/issues/1694)) ([f9f7486](https://github.com/JN0V/workline/commit/f9f7486096c1a012b1ff4c93a022939805bfe81c))
+* **engine:** a person's own later yes answers their comment ([#1732](https://github.com/JN0V/workline/issues/1732)) ([6eaee12](https://github.com/JN0V/workline/commit/6eaee12eed652ae8334246d8899898a674fa1f34))
+* **internal:** a person's review comment on a tester's ([#1638](https://github.com/JN0V/workline/issues/1638)) ([a456bbe](https://github.com/JN0V/workline/commit/a456bbe481615910d13453ae92df8f8f3080f4d3))
+* public GitHub repos stop merging on Dec 2 ([#1686](https://github.com/JN0V/workline/issues/1686)) ([abdc1e5](https://github.com/JN0V/workline/commit/abdc1e564265d6149b23b3eb99c90c7ba5b0e013))
+* rebuilding every tester draft at once starves the merge of ([#1728](https://github.com/JN0V/workline/issues/1728)) ([29f49c1](https://github.com/JN0V/workline/commit/29f49c1683c133605a69eb354edf216a528094f8))
+* **tester:** new test hidden by a same-named test in another ([#1717](https://github.com/JN0V/workline/issues/1717)) ([9f1c129](https://github.com/JN0V/workline/commit/9f1c1291fdd694bb8703b4603ee7dfc7970d3b21))
+* **tester:** tester's answer puts a missing test in a new file ([#1710](https://github.com/JN0V/workline/issues/1710)) ([d351276](https://github.com/JN0V/workline/commit/d351276aa3c6d211ce51bcabe159898fb5061df1))
+* the product owner does not split when a person asks it to ([#1726](https://github.com/JN0V/workline/issues/1726)) ([3455fe5](https://github.com/JN0V/workline/commit/3455fe5fac0e300e06be73c9f05813ba3de5c0f0))
+* the tester's retry rewrites its tests whole and repeats ([#1725](https://github.com/JN0V/workline/issues/1725)) ([e46c040](https://github.com/JN0V/workline/commit/e46c04032bad7a2ba815a8af84d9aa495b060646))
+
+## [0.78.2](https://github.com/JN0V/workline/compare/v0.78.1...v0.78.2) (2026-11-16)
+
+
+### Bug Fixes
+
+* a blocked pull request never takes the fix main ([#1609](https://github.com/JN0V/workline/issues/1609)) ([10e1636](https://github.com/JN0V/workline/commit/10e163630891469baaf63416268629f408f8c5e1))
+* a frozen conformance subtest is never found in the head's ([#1672](https://github.com/JN0V/workline/issues/1672)) ([a36a409](https://github.com/JN0V/workline/commit/a36a4099bb71828beb5d1e94cd04b4878e778d6f))
+* a person cannot finish a guarded change on the ([#1605](https://github.com/JN0V/workline/issues/1605)) ([f4cebd6](https://github.com/JN0V/workline/commit/f4cebd6df77f38c2019b317f2194b69d060de3b2))
+* a person's yes on the release drops on every merge ([#1660](https://github.com/JN0V/workline/issues/1660)) ([199d0f6](https://github.com/JN0V/workline/commit/199d0f6363b40a6d9ea115847def9cf4c203bc3f))
+* a refine dropped for one missing path is never ([#1662](https://github.com/JN0V/workline/issues/1662)) ([621d4ae](https://github.com/JN0V/workline/commit/621d4ae0d69da2a662b31c4fecd311021c11ec21))
+* **config:** the tester's check runs tests/evaluation too ([#1625](https://github.com/JN0V/workline/issues/1625)) ([80e93ed](https://github.com/JN0V/workline/commit/80e93ed700a279875e531c4a0ad4dedacbd84269))
+* **internal:** developer skips an issue a GitHub pull request ([#1567](https://github.com/JN0V/workline/issues/1567)) ([c290d17](https://github.com/JN0V/workline/commit/c290d179c7b5d0459be54c578f027392b8bf177b))
+* the developer's round limit counts every round as a ([#1622](https://github.com/JN0V/workline/issues/1622)) ([6d0e14d](https://github.com/JN0V/workline/commit/6d0e14d8977bde325c02312909c553b49d3a4865))
+* the documentalist repeats 'a person judges it' on ([#1555](https://github.com/JN0V/workline/issues/1555)) ([03156a8](https://github.com/JN0V/workline/commit/03156a8657c244b046e8a67aa2a645f2cb0623a4))
+* the engine reads a different CODEOWNERS than GitHub ([#1490](https://github.com/JN0V/workline/issues/1490)) ([599a602](https://github.com/JN0V/workline/commit/599a60203695efdf436c77927a707abe70eef8a9))
+* **wake:** list a stalled line pull request, read on GitHub too ([#1617](https://github.com/JN0V/workline/issues/1617)) ([e73b141](https://github.com/JN0V/workline/commit/e73b1419cccaf8f8d7bb3095c03ef5ccb84d183a))
+
 ## [0.78.1](https://github.com/JN0V/workline/compare/v0.78.0...v0.78.1) (2026-11-15)
 
 

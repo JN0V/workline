@@ -5,7 +5,8 @@ about: >
   holds, a glob matching a file of it, or a path on a line `New:`, to
   create. #9's Scope is written. #12's names src/import/xml.go, which
   the commit lacks and no line marks new; #14's glob src/import/** matches
-  nothing: each Scope is left out, said; a Verification given is left
+  nothing: each line naming such a path is left out, said (#1355), the
+  line of a path the commit holds written; a Verification given is left
   out, the tester's (ADR-0066).
 given:
   repo: backlog
@@ -18,10 +19,10 @@ run: {role: product-owner, event: schedule, ai: fake:refine-scope-new-files}
 expect:
   findings:
     - {rule: done, where: "#9", message: "Refined #9: Scope."}
-    - {rule: scope-without-files, where: "#12", message: "its Scope named src/import/xml.go, which the repository does not hold, so it was left out: name a path it holds, a glob matching one, or a new file on a line `New:`"}
-    - {rule: scope-without-files, where: "#14", message: "its Scope named src/import/**, which the repository does not hold, so it was left out: name a path it holds, a glob matching one, or a new file on a line `New:`"}
+    - {rule: scope-line-dropped, where: "#12", message: "its Scope line naming `src/import/xml.go` was left out: not in the repository; the other lines are written"}
+    - {rule: scope-line-dropped, where: "#14", message: "its Scope line naming `src/import/**` was left out: not in the repository; the other lines are written"}
   forge:
     issues:
       - {id: 9, body-contains: "- New: `src/export/xml.go`, the XML writer.", comment-contains: "sources: [src/export/csv.go"}
-      - {id: 12, body-lacks: ["## Scope", "## Verification"]}
-      - {id: 14, body-lacks: "## Scope"}
+      - {id: 12, body-contains: "`src/export/csv.go`", body-lacks: ["src/import/xml.go", "## Verification"]}
+      - {id: 14, body-contains: "`src/export/csv.go`", body-lacks: "src/import/**"}

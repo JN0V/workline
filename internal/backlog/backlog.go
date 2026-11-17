@@ -86,6 +86,10 @@ type State struct {
 	Wrote    map[string]string `yaml:"wrote,omitempty"`
 	Answered string            `yaml:"answered,omitempty"`
 	Revised  []string          `yaml:"revised,flow,omitempty"`
+	// Dropped is the digest of the body whose Scope rewrite the engine
+	// dropped whole, no line of it valid (#1355): the line wakes the role
+	// again on it, once.
+	Dropped string `yaml:"dropped,omitempty"`
 	// Plain is the digest of the description the role rewrote in plain
 	// words (ADR-0038, amended): another text there is a person's.
 	Plain string `yaml:"plain,omitempty"`
@@ -251,9 +255,10 @@ func FormatState(s State) string {
 		Size      string            `yaml:"size,omitempty"`
 		SplitTest bool              `yaml:"split-after-tests,omitempty"`
 		Held      int               `yaml:"answer-held,omitempty"`
+		Dropped   string            `yaml:"dropped,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Revised, s.Plain, s.Deleted,
 		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.HeardLast, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Retest, s.Silent, s.Unread,
-		s.Assumed, s.AssumedAt, s.Told, s.Kind, s.Size, s.SplitTests, s.AnswerHeld})
+		s.Assumed, s.AssumedAt, s.Told, s.Kind, s.Size, s.SplitTests, s.AnswerHeld, s.Dropped})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
 	// role tells them, never its record.
@@ -565,6 +570,9 @@ type Proposal struct {
 	// Repeated, the engine's: the drafts not written because they said
 	// again what is above them (Repeated), by heading; said on the issue.
 	Repeated []string `yaml:"repeated,omitempty"`
+	// ScopeDropped, the engine's: the paths the Scope drafted named and
+	// the repository lacks; their lines are left out, said on the issue.
+	ScopeDropped []string `yaml:"scope-dropped,omitempty"`
 	// Revise, the engine's: the sections with text this refine may rewrite,
 	// to answer the reviewer's findings on the spec (#128) — those it may
 	// rewrite (Revisable); never taken from the agent.
@@ -752,6 +760,8 @@ type Plan struct {
 	// drops are the agent's acts this run dropped on each issue, each with
 	// why: said on an issue nothing else refined (#951).
 	drops map[int][]string
+	// asked are the issues whose latest person's comment asks a split.
+	asked map[int]bool
 	// Visit are the open issues with a state, written back at the end of
 	// the run (Persist); SetAside, those a person took workline:proposed
 	// off; Answers, a person's comments read as "revise" on each.
@@ -785,6 +795,7 @@ type Plan struct {
 	seen          map[string]bool  // the imports this run decided
 	read          []int            // the issues this run read
 	unread        map[int]string   // the issues a ready was held for, no scenario read: why, said on it
+	scopeLost     map[int]bool     // the issues whose Scope rewrite was dropped whole, no line valid (#1355)
 	widenDropped  map[int][]string // the blocked issues whose Scope widening, for the developer's ask, was dropped: the files asked
 	narrowDropped map[int]bool     // the blocked issues asked on their size whose Scope narrowing was dropped: an unblock beside it would cross the same
 	ledger        *Ledger          // what the role holds, read from the issues
@@ -1135,6 +1146,14 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if c.Do == "split" && c.TooBig && s.Mode == Off && !p.config.SplitOff() {
 				// Past the issue's size, split turns on (ADR-0064, §3):
 				// done at normal and enterprising, proposed at cautious.
+				s = Setting{Mode: Act, Max: max(s.Max, 1)}
+				if p.config.Level == "cautious" {
+					s.Mode = Propose
+				}
+			}
+			if c.Do == "split" && !c.TooBig && s.Mode == Off && p.asked[c.Issue] && !p.config.SplitOff() {
+				// A person asked this split: on for this issue, as
+				// `too-big` does, proposed at cautious.
 				s = Setting{Mode: Act, Max: max(s.Max, 1)}
 				if p.config.Level == "cautious" {
 					s.Mode = Propose
@@ -1744,6 +1763,11 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if rule, why := p.checkRefining(f, repo, role, c); rule != "" {
 		return rule, why
 	}
+	if c.Do == "split" && f != nil {
+		if err := p.markAsked(f, c.Issue); err != nil {
+			return "no-notes", fmt.Sprintf("the comments of #%d could not be read, to know whether a person asked a split: %v", c.Issue, err)
+		}
+	}
 	if rule, why := p.checkSplitRename(repo, c); rule != "" {
 		return rule, why
 	}
@@ -2288,10 +2312,10 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					c.Sources = append(c.Sources, k)
 				}
 			}
-			missing := ""
+			var bad []string // each path the Scope names that the repository lacks
 			for _, s := range c.Sources {
-				if path, _, _ := strings.Cut(s, "#"); !InCommit(repo, path) && !slices.Contains(onBranch, path) && missing == "" {
-					missing = path
+				if path, _, _ := strings.Cut(s, "#"); !InCommit(repo, path) && !slices.Contains(onBranch, path) && !slices.Contains(bad, path) {
+					bad = append(bad, path)
 				}
 			}
 			// Each path the Scope writes, the developer's bounds (ADR-0065,
@@ -2302,20 +2326,54 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			unfound := work.Unfound(c.Scope, append(Tracked(repo), onBranch...))
 			ignored := Ignored(repo, unfound)
 			for _, u := range unfound {
-				if missing == "" && !slices.Contains(ignored, u) {
-					missing = u
+				if !slices.Contains(ignored, u) && !slices.Contains(bad, u) {
+					bad = append(bad, u)
+				}
+			}
+			if len(bad) > 0 {
+				// Only the lines naming a path the repository lacks are
+				// left out; the others are written (#1355).
+				var keep []string
+				for _, l := range strings.Split(c.Scope, "\n") {
+					if !slices.ContainsFunc(bad, func(b string) bool { return namesPath(l, b) }) {
+						keep = append(keep, l)
+					}
+				}
+				rest := strings.TrimSpace(strings.Join(keep, "\n"))
+				c.Sources = slices.DeleteFunc(c.Sources, func(s string) bool {
+					path, _, _ := strings.Cut(s, "#")
+					return slices.Contains(bad, path)
+				})
+				// A widening asked for (#1061) is kept only with every file
+				// asked: the Scope that did not widen is dropped whole.
+				widened := !slices.ContainsFunc(asked, func(a string) bool { return !strings.Contains(rest, a) })
+				// A bad path the lines kept still name (glued to a name
+				// character, or normalised) leaves the Scope whole to drop.
+				stillNamed := slices.ContainsFunc(bad, func(b string) bool { return namesPath(rest, b) || strings.Contains(rest, b) })
+				if rest != "" && widened && !stillNamed && (len(c.Sources) > 0 || work.MarksNew(rest)) {
+					c.Scope = rest
+					c.ScopeDropped = bad
+					for _, b := range bad {
+						p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-line-dropped", Level: "info", Where: c.where(),
+							Message: fmt.Sprintf("its %s line naming `%s` was left out: not in the repository; the other lines are written", work.Name(work.Scope), b)})
+					}
+					bad = nil
 				}
 			}
 			switch {
-			case len(c.Sources) == 0 && missing == "" && !work.MarksNew(c.Scope):
+			case len(c.Sources) == 0 && len(bad) == 0 && !work.MarksNew(c.Scope):
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-without-files", Level: "info", Where: c.where(),
 					Message: fmt.Sprintf("could not tell which files #%d is about, so its %[2]s was left out: add a %[2]s naming them, or leave it", c.Issue, work.Name(work.Scope))})
-			case missing != "":
+			case len(bad) > 0:
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-without-files", Level: "info", Where: c.where(),
-					Message: fmt.Sprintf("its %[1]s named %[2]s, which the repository does not hold, so it was left out: name a path it holds, a glob matching one, or a new file on a line `New:`", work.Name(work.Scope), missing)})
+					Message: fmt.Sprintf("its %[1]s named %[2]s, which the repository does not hold, so it was left out: name a path it holds, a glob matching one, or a new file on a line `New:`", work.Name(work.Scope), strings.Join(bad, ", "))})
 			}
-			if len(c.Sources) == 0 && !work.MarksNew(c.Scope) || missing != "" {
+			if len(c.Sources) == 0 && !work.MarksNew(c.Scope) || len(bad) > 0 {
 				c.Scope, c.Sources = "", nil
+				if p.scopeLost == nil {
+					p.scopeLost = map[int]bool{}
+				}
+				p.scopeLost[c.Issue] = true
 				if len(asked) > 0 {
 					// Its widening dropped: an unblock beside it would send
 					// it back on a Scope that did not change (#1061).
@@ -2646,6 +2704,10 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 		// Past its size only where the run was told to judge it (ADR-0064,
 		// §2): the issue the event names, asked on its size or in refine.
 		return "too-big-unasked", fmt.Sprintf("#%d's size was not asked in this run: `too-big` holds only on the issue the line woke the role on, asked on its size or predicted in refine; `split` keeps its mode", c.Issue)
+	}
+	if !c.TooBig && p.asked[c.Issue] && p.config.SplitOff() {
+		// A person asked a split, and the project set `split` off itself.
+		return "split-off", fmt.Sprintf("a person asked a split of #%d, and this project set `split` off itself: no split; its text is left as it is", c.Issue)
 	}
 	if c.TooBig && p.config.SplitOff() {
 		// The project turned split off itself: never on for a size
@@ -3774,6 +3836,9 @@ func refined(c Proposal) string {
 		said = append([]string{fmt.Sprintf("Added: %s. Changed: %s.", list(added), list(changed))}, said...)
 	}
 	said = append(said, notWritten(c)...)
+	for _, d := range c.ScopeDropped {
+		said = append(said, fmt.Sprintf("Dropped: the %s line naming `%s`, not in the repository.", work.Name(work.Scope), d))
+	}
 	return strings.Join(said, " ") + " See the issue's edit history."
 }
 
@@ -3910,4 +3975,86 @@ func (p *Plan) recordDrafted(c Proposal) {
 		}
 	}
 	p.ledger.States[c.Issue] = &st
+}
+
+// namesPath says whether the line holds the path whole: never as a part
+// of a longer path or name (#1355).
+func namesPath(line, path string) bool {
+	isPath := func(c byte) bool {
+		return c == '_' || c == '-' || c == '/' || c == '.' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+	}
+	for off := 0; ; {
+		i := strings.Index(line[off:], path)
+		if i < 0 {
+			return false
+		}
+		i += off
+		end := i + len(path)
+		before := i == 0 || !isPath(line[i-1])
+		after := end == len(line) || !isPath(line[end]) ||
+			(line[end] == '.' && (end+1 == len(line) || !isPath(line[end+1])))
+		if before && after {
+			return true
+		}
+		off = i + 1
+	}
+}
+
+var (
+	splitWord = regexp.MustCompile(`(?i)\bsplit\b`)
+	// splitNegation: a negation before the word in its clause is a refusal.
+	splitNegation = regexp.MustCompile(`(?i)\b(?:don'?t|do not|doesn'?t|does not|shouldn'?t|should not|won'?t|will not|can'?t|cannot|never|not|no|without|nothing|neither|nor)\b`)
+	// splitDoubt: what before "split" makes a clause a question or a
+	// condition, not a request.
+	splitDoubt = regexp.MustCompile(`(?i)\b(?:why|whether|if|unless|how|what|when|should we|shall we|do we|can we|could we|is it|would it|maybe|perhaps)\b`)
+)
+
+// splitStance reads what a comment says of a split. It is an ask only where
+// a clause uses the word and, before it, holds no negation and no doubt
+// ("why", "if", "should we"), and does not end as a question; any other
+// clause that holds it ("why split?", "I don't want to split this") is
+// said, not asked. What comes after the word does not cancel it. "split-off"
+// and the like are not a word of it.
+func splitStance(body string) (asked, said bool) {
+	body = strings.NewReplacer("\u2019", "'", "\u2018", "'").Replace(body)
+	for _, m := range splitWord.FindAllStringIndex(body, -1) {
+		if m[1] < len(body) && (body[m[1]] == '-' || body[m[1]] == '_') && m[1]+1 < len(body) && body[m[1]+1] != ' ' {
+			continue // split-off, split_out: a word of another thing
+		}
+		const delims = ".,;:!?\n"
+		start := strings.LastIndexAny(body[:m[0]], delims) + 1
+		question := false
+		if i := strings.IndexAny(body[m[1]:], delims); i >= 0 {
+			question = body[m[1]+i] == '?'
+		}
+		before := body[start:m[0]]
+		said = true
+		asked = !question && !splitNegation.MatchString(before) && !splitDoubt.MatchString(before)
+	}
+	return asked, said
+}
+
+// markAsked reads whether the people of the project ask a split on the
+// issue, and keeps it in p.asked: their comments in order, each that speaks
+// of a split replacing the stance before it, one that does not (as
+// "thanks") leaving it. A failed read is an error, never "no ask".
+func (p *Plan) markAsked(f forge.Backlog, id int) error {
+	if p.asked == nil {
+		p.asked = map[int]bool{}
+	}
+	notes, err := f.Notes(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return err
+	}
+	asked := false
+	for _, n := range notes {
+		if !n.Insider || n.Bot || Bot(n.Author) {
+			continue
+		}
+		if a, said := splitStance(n.Body); said {
+			asked = a
+		}
+	}
+	p.asked[id] = asked
+	return nil
 }

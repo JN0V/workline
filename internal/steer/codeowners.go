@@ -1,15 +1,56 @@
 package steer
 
 import (
+	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strings"
 )
 
-// CodeownersPlaces are where the forges look for CODEOWNERS: the root,
-// GitHub's .github/, both forges' docs/, GitLab's .gitlab/. The engine
-// reads the first found.
-var CodeownersPlaces = []string{"CODEOWNERS", ".github/CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"}
+// Where each forge looks for CODEOWNERS, in the order it documents as its
+// own practice: the engine reads the first found, so it holds what the
+// forge enforces.
+var (
+	githubPlaces = []string{".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"}
+	gitlabPlaces = []string{"CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"}
+)
+
+// CodeownersPlaces are every place a forge looks for CODEOWNERS, GitHub's
+// first: a file at any of them is always held (IsCodeowners).
+var CodeownersPlaces = []string{".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"}
+
+// PlacesOf is where the forge the repository runs on reads CODEOWNERS, in
+// its order: GitLab's when the pipeline is GitLab's or origin's host is a GitLab
+// one (its name starting with "gitlab"), else GitHub's.
+func PlacesOf(repo string) []string {
+	if os.Getenv("GITLAB_CI") == "true" {
+		return gitlabPlaces
+	}
+	if out, err := exec.Command("git", "-C", repo, "remote", "get-url", "origin").Output(); err == nil &&
+		strings.HasPrefix(OriginHost(string(out)), "gitlab") {
+		return gitlabPlaces
+	}
+	return githubPlaces
+}
+
+// OriginHost is the lowercase host of a remote URL (https://, ssh:// or
+// scp-like git@host:path), without user, port or path: only the host says the
+// forge, never an owner or repository name.
+func OriginHost(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if i := strings.Index(raw, "://"); i >= 0 {
+		raw = raw[i+3:]
+		raw, _, _ = strings.Cut(raw, "/")
+	} else {
+		raw, _, _ = strings.Cut(raw, ":")
+	}
+	if i := strings.LastIndex(raw, "@"); i >= 0 {
+		raw = raw[i+1:]
+	}
+	raw, _, _ = strings.Cut(raw, ":")
+	return strings.ToLower(raw)
+}
 
 // Codeowners is a CODEOWNERS file, read as GitHub and GitLab read it.
 type Codeowners struct {
