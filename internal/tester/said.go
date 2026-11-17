@@ -48,7 +48,7 @@ func refuseIssue(runDir string, n int, v verdict.Verdict, next string) int {
 // in the tester's one comment there, applied though the run blocks: post's
 // out/on-block.yaml (ADR-0059, decision 1).
 func refusePost(runDir string, n int, v verdict.Verdict) int {
-	if code := sayBlock(runDir, n, v); code != 0 {
+	if code := sayBlock(runDir, n, &v); code != 0 {
 		return code
 	}
 	return write(runDir, v)
@@ -56,11 +56,26 @@ func refusePost(runDir string, n int, v verdict.Verdict) int {
 
 // sayBlock writes, for a blocking verdict, the tester's comment on the
 // issue (out/on-block.yaml); its exit, 0 when written or not needed.
-func sayBlock(runDir string, n int, v verdict.Verdict) int {
+// A refusal the answer mends that came back as the one before is final:
+// asked again, the agent would loop (#1666).
+func sayBlock(runDir string, n int, v *verdict.Verdict) int {
 	if v.Status == verdict.Block {
 		why := v.Summary
 		if len(v.Findings) > 0 {
 			why = v.Findings[0].Message
+		}
+		var mark string
+		if v.Again && !v.Final && len(v.Findings) > 0 {
+			var t task
+			if data, err := os.ReadFile(filepath.Join(runDir, "in", taskFile)); err == nil && json.Unmarshal(data, &t) == nil {
+				var times int
+				times, mark = repeatedRefusal(t, *v)
+				if times > 1 {
+					v.Final, v.Again = true, false
+					why = unchangedWhy(times, why)
+					v.Summary = "a refusal came back unchanged: " + v.Summary
+				}
+			}
 		}
 		next := "waiting for its tests, the line blocks it with this reason; a person writes them, or puts " + backlog.LabelNeedsTests + " back for another run"
 		if out := verdict.OutcomeOf(v.Status, v.Findings); out.Crossed() {
@@ -73,7 +88,7 @@ func sayBlock(runDir string, n int, v verdict.Verdict) int {
 			next = "the line keeps its labels and runs the tester again, its comment saying when; past its tries, a person reads it"
 		}
 		said := []intent.Intention{{Kind: "comment", Value: map[string]any{"issue": n, "sticky": "issue",
-			"body": backlog.Said("The tester", refusedRun, why, next)}}}
+			"body": backlog.Said("The tester", refusedRun, why, next) + mark}}}
 		if err := intent.Write(filepath.Join(runDir, "out", "on-block.yaml"), said); err != nil {
 			return fail(err)
 		}

@@ -65,6 +65,10 @@ type task struct {
 	// Retried: the product owner sent it back unchanged after a "no test
 	// possible" (#1053); another one is recorded as said once retried.
 	Retried bool `json:"retried,omitempty"`
+	// PriorRefusal, PriorTimes: the digest of the findings of the last
+	// refusal on the issue, and the runs in a row that gave them (#1666).
+	PriorRefusal string `json:"prior_refusal,omitempty"`
+	PriorTimes   int    `json:"prior_times,omitempty"`
 	// Author: who opened the issue, asked how to reproduce a bug its
 	// tests do not show (ADR-0060).
 	Author string `json:"author,omitempty"`
@@ -195,6 +199,7 @@ func Pre(runDir, repo string) int {
 	}
 	t := task{Issue: id, Title: is.Title, Base: strings.TrimSpace(head), Scenarios: scenarios, Labels: is.Labels, Body: backlog.BodyDigest(is.Body), Author: is.Author,
 		Text: is.Title + "\n" + is.Body, Retried: backlog.Retested(comments, "product-owner")}
+	t.PriorRefusal, t.PriorTimes = lastRefusal(comments)
 	if v := strings.TrimSpace(sections[work.Verification].Text); v != "" && !backlog.TestersToWrite(is.Body, po) {
 		t.Verification = v
 	}
@@ -541,7 +546,7 @@ func Post(runDir, repo string) int {
 		// the issue's comment and the board's reason say the finding alone.
 		if told, ok := toMend(proof.Findings); ok && !proof.Final {
 			proof.Again = true
-			if code := sayBlock(runDir, t.Issue, *proof); code != 0 {
+			if code := sayBlock(runDir, t.Issue, proof); code != 0 {
 				return code
 			}
 			proof.Findings = told
