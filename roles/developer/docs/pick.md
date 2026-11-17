@@ -100,6 +100,11 @@ claim is a label, on every forge:
   what failed in the comment; the second time, the issue blocked
   ([when it does not open](pull-request.md#when-it-does-not-open)).
 
+A held issue of a lower priority does not hold one of a higher priority
+(priority 1 before 2, none last): the urgent issue is taken, and the
+other keeps its pull request and commits, which may need a rebase. The
+same priority still waits.
+
 ## Letting a claim go
 
 A claim no pull request followed is let go by the developer's next run,
