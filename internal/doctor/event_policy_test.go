@@ -111,7 +111,13 @@ func fakeGh(t *testing.T, body string) {
 func TestDoctorAcceptsAPublicRepositoryWhosePolicyNamesPullRequestTarget(t *testing.T) {
   isolate(t)
   repo := eventPolicyRepo(t)
-  fakeGh(t, "case \"$*\" in\n*actions/policies*) echo '{\"rules\":[{\"events\":[\"pull_request_target\"]}]}' ;;\n"+
+  // The shape GET /repos/{owner}/{repo}/actions/policies returns: an active
+  // policy aimed at the bounds workflow, its restrict_action_events rule
+  // allowing the event.
+  policies := `{"total_count":1,"policies":[{"name":"allow-events","enforcement":"active",` +
+    `"conditions":{"workflow_path":{"include":[".github/workflows/workline-bounds.yml"]}},` +
+    `"rules":[{"type":"restrict_action_events","parameters":{"allowed_events":["pull_request_target"]}}]}]}`
+  fakeGh(t, "case \"$*\" in\n*actions/policies*) echo '"+policies+"' ;;\n"+
     "*rules/branches*|*rulesets*|*default_branch*) exit 1 ;;\n"+
     "*) echo '{\"visibility\":\"public\",\"private\":false}' ;;\nesac\n")
 
