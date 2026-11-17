@@ -1,7 +1,6 @@
 # workline gardening its own repository: defaults/ci/github/workline-gardening.yml,
-# with the engine built from this checkout rather than installed — both jobs
-# check out the same commit, built once (.github/actions/engine), judge's
-# kept for apply. Claude with CLAUDE_CODE_OAUTH_TOKEN, pull
+# on the release WORKLINE_VERSION pins (ADR-0071 §1; .github/actions/engine),
+# both jobs on the same commit. Claude with CLAUDE_CODE_OAUTH_TOKEN, pull
 # requests opened with the GitHub App (ADR-0006, ADR-0010). And the
 # release's dry run: what would hold it if it were cut now, said in the
 # default branch's issue.
@@ -25,6 +24,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # The release this workflow runs (ADR-0071 §1): moved only in its own
+  # pull request, after its try on a copy; release-please never moves it.
+  WORKLINE_VERSION: v0.78.3
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
 jobs:
@@ -43,7 +45,7 @@ jobs:
       # here and the developer's code green; the tools they need, as the
       # test job.
       - uses: ./.github/actions/engine
-        with: {go: "true"}
+        with: {version: "${{ env.WORKLINE_VERSION }}", go: "true"}
       - uses: ./.github/actions/tests
       # The documentalist's links to other sites, checked at night only:
       # they break with no change to the repository, and main's run after
@@ -130,6 +132,7 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token || github.token }}
       - uses: ./.github/actions/engine
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       - uses: actions/download-artifact@v4
         if: needs.judge.outputs.proposed == 'true'
         with: {name: workline-runs}
@@ -206,6 +209,7 @@ jobs:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
       - uses: ./.github/actions/engine
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       - name: What would hold the release (said, never a block)
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |
@@ -235,7 +239,7 @@ jobs:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
       - uses: ./.github/actions/engine
-        with: {go: "true"}
+        with: {version: "${{ env.WORKLINE_VERSION }}", go: "true"}
       - uses: ./.github/actions/tests   # the tools the tests need, as the test job
       - name: The history, from the last measure's artifact
         env: {GH_TOKEN: "${{ github.token }}"}
@@ -303,6 +307,7 @@ jobs:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
       - uses: ./.github/actions/engine
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       - uses: actions/download-artifact@v4
         continue-on-error: true         # none: said below
         with: {name: workline-dry-run}

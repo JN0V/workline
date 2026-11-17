@@ -1,7 +1,7 @@
 # workline's developer on its own repository (#696):
-# defaults/ci/github/workline-develop.yml, with the engine built from this checkout
-# rather than installed — each job checks out the default branch's commit,
-# built once (.github/actions/engine). Go left set up where the tester's
+# defaults/ci/github/workline-develop.yml, on the release WORKLINE_VERSION
+# pins (ADR-0071 §1; .github/actions/engine), each job on the default
+# branch's commit. Go left set up where the tester's
 # test-command proves the code (judge, review). A person's label on an
 # issue runs the role its state wakes, the tester or the developer
 # (ADR-0059); the job that moves a state starts the next step; hourly, the
@@ -68,6 +68,9 @@ on:
 permissions: {}
 
 env:
+  # The release this workflow runs (ADR-0071 §1): moved only in its own
+  # pull request, after its try on a copy; release-please never moves it.
+  WORKLINE_VERSION: v0.78.3
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
 jobs:
@@ -105,7 +108,7 @@ jobs:
       # tools the test job has: without gitleaks, the committer's cases
       # went red on the proof alone.
       - uses: ./.github/actions/engine
-        with: {go: "true"}
+        with: {version: "${{ env.WORKLINE_VERSION }}", go: "true"}
       # Asked first, no agent (#806): an issue whose step is not due —
       # acted on already, or its run started twice — ends here, before
       # the agent and the proof are set up. With no issue, or the ask
@@ -236,6 +239,7 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token || github.token }}
       - uses: ./.github/actions/engine
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       - uses: actions/download-artifact@v4
         with: {name: workline-runs}
       - env:
@@ -416,6 +420,7 @@ jobs:
         # meanwhile acts now (#898).
         with: {ref: "${{ github.ref }}", fetch-depth: 0, persist-credentials: false}
       - uses: ./.github/actions/engine
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       - env:
           GH_TOKEN: ${{ github.token }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records read back
@@ -562,11 +567,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
-      # The engine built from the default branch, before the round checks
+      # The pinned release, taken before the round checks
       # out the developer's branch; Go left set up, its fix proven with the
       # tester's test-command, with the tools the test job has.
       - uses: ./.github/actions/engine
-        with: {go: "true"}
+        with: {version: "${{ env.WORKLINE_VERSION }}", go: "true"}
       - uses: ./.github/actions/tests
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
@@ -647,6 +652,7 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token || github.token }}
       - uses: ./.github/actions/engine
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       # The round ran the pull request's code: its folder is data, outside the checkout.
       - uses: actions/download-artifact@v4
         with: {name: workline-round, path: "${{ runner.temp }}/workline-runs"}
