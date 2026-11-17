@@ -1,0 +1,31 @@
+case: merge/another-persons-thread-holds-the-yes
+about: >
+  Lee asks a question on a line; dana answers in that conversation, last, then puts `workline:accepted`. Dana's yes answers only dana's own comments: lee's question still waits for a role. Nothing merges, auto-merge stays off.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: zed
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z", by: zed}]
+        threads:
+          - {path: src/auth/token.go, line: 3, author: lee, insider: true, created: "2026-01-04T09:30:00Z", body: "Two hours seems long for admins.",
+             replies: [{body: "It is what the issue asks.", author: dana, insider: true, created: "2026-01-04T09:50:00Z"}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: persons-comment-open, where: "#7", level: warn}]
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false}

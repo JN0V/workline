@@ -1,0 +1,30 @@
+case: merge/persons-comment-before-their-yes-merges
+about: >
+  A person writes on the pull request, then puts `workline:accepted` themselves: their yes, given after it, answers their comment, as the trace an assistant writes before a yes put in their name (ADR-0068 §7). `workline follow` turns auto-merge on.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: zed
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z", by: zed}]
+        comments:
+          - {body: "Accepted on dana's explicit instruction in a session.", author: dana, insider: true, created: "2026-01-04T09:59:58Z"}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: auto-merge-on, where: "#7"}]
+  no-findings: [{rule: persons-comment-open}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: true}

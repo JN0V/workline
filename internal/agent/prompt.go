@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline"
+	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -159,8 +160,20 @@ func Prompt(req Request) (system, user string, err error) {
 	}
 	b.WriteString(skills)
 	if fb, err := os.ReadFile(filepath.Join(req.RunDir, "out", "feedback.md")); err == nil {
-		b.WriteString("# Your previous answer was refused\n\n" + string(fb) + "\n" +
-			"Your new answer replaces it whole: give again, unchanged, every proposal and every change of it not refused above, and change only what is refused.\n\n")
+		const tail = "Your new answer replaces it whole: give again, unchanged, every proposal and every change of it not refused above, and change only what is refused.\n\n"
+		policy, _ := facet(req, "policy.md")
+		limit := maxRefusedChars
+		if budget := req.Role.Context.Budget; budget > 0 {
+			// What the budget leaves, in characters, once all else is in.
+			left := (budget-711)*100/82 - len(system) - b.Len() - len("# Your previous answer was refused\n\n") -
+				len(fb) - 1 - len(tail) - len("# Rules\n\n") - len(policy) - refusedSlack
+			limit = min(limit, left)
+		}
+		b.WriteString("# Your previous answer was refused\n\n" + string(fb) + "\n")
+		if limit > 0 {
+			b.WriteString(refusedAnswerMax(req.RunDir, limit))
+		}
+		b.WriteString(tail)
 	}
 	if policy, ok := facet(req, "policy.md"); ok {
 		b.WriteString("# Rules\n\n" + policy)
@@ -239,3 +252,134 @@ func Tokens(chars int) int { return 711 + chars*82/100 }
 
 // TokensRatio says the estimate, in the refusal.
 const TokensRatio = "711 + 0.82 a character"
+
+// refusedAnswer gives back the refused answer the engine kept
+// (out/refused-N.yaml, the latest): each patch's file with its lines, each
+// other proposal as written, so the retry starts from them and changes
+// lines instead of reading the code again to rewrite them.
+func refusedAnswer(runDir string) string { return refusedAnswerMax(runDir, maxRefusedChars) }
+
+// refusedAnswerMax is refusedAnswer within at most max characters of
+// bodies; "" when that is too little to give anything back.
+func refusedAnswerMax(runDir string, max int) string {
+	files, _ := filepath.Glob(filepath.Join(runDir, "out", "refused-*.yaml"))
+	if len(files) == 0 {
+		return ""
+	}
+	latest, n := "", -1
+	for _, f := range files {
+		num := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(f), "refused-"), ".yaml")
+		if i, err := strconv.Atoi(num); err == nil && i > n {
+			latest, n = f, i
+		}
+	}
+	if latest == "" {
+		return ""
+	}
+	in, err := intent.Read(latest)
+	if err != nil || len(in) == 0 {
+		return ""
+	}
+	// Each proposal is a head, a body (cut when too long) and, for code, a
+	// fence: the cut is made inside the body, so a fence is always closed,
+	// and each body gets a fair share of the cap, so no proposal is lost.
+	type piece struct {
+		head, body string
+		fenced     bool
+		lang       string
+	}
+	var ps []piece
+	for _, i := range in {
+		if i.Kind == "patch" {
+			if m, ok := i.Value.(map[string]any); ok {
+				file, ok1 := m["file"].(string)
+				content, ok2 := m["content"].(string)
+				if ok1 && ok2 {
+					ps = append(ps, piece{head: "## " + file + "\n\n", body: strings.TrimRight(content, "\n"), fenced: true})
+					continue
+				}
+			}
+			if s, ok := i.Value.(string); ok {
+				ps = append(ps, piece{head: "- patch (a diff):\n\n", body: strings.TrimRight(s, "\n"), fenced: true, lang: "diff"})
+				continue
+			}
+		}
+		if s, ok := i.Value.(string); ok {
+			ps = append(ps, piece{head: "- " + i.Kind + ": ", body: s})
+			continue
+		}
+		out, err := intent.Marshal([]intent.Intention{i})
+		if err != nil {
+			continue
+		}
+		ps = append(ps, piece{body: strings.TrimRight(string(out), "\n")})
+	}
+	sizes := make([]int, len(ps))
+	for k, p := range ps {
+		sizes[k] = len(p.body)
+	}
+	// What the heads, fences and cut notes add comes off the cap: it holds
+	// for the whole text, not for the bodies alone.
+	over := len("The answer that was refused, as you gave it:\n\n")
+	for _, p := range ps {
+		over += len(p.head) + 2*len(fence(p.body)) + len("[cut here: too long to give back whole]") + 8
+	}
+	room := max - over
+	if room < 100*len(ps) {
+		return "" // too little to give back anything useful
+	}
+	limit := bodyLimit(sizes, room)
+	var b strings.Builder
+	b.WriteString("The answer that was refused, as you gave it:\n\n")
+	for _, p := range ps {
+		body := p.body
+		if len(body) > limit {
+			body = strings.ToValidUTF8(body[:limit], "") + "\n[cut here: too long to give back whole]"
+		}
+		b.WriteString(p.head)
+		if p.fenced {
+			f := fence(p.body)
+			fmt.Fprintf(&b, "%s%s\n%s\n%s\n\n", f, p.lang, body, f)
+		} else {
+			b.WriteString(body + "\n\n")
+		}
+	}
+	return b.String()
+}
+
+// bodyLimit is the longest a body may be so that all together fit in total:
+// short ones stay whole, the long ones share what is left.
+func bodyLimit(sizes []int, total int) int {
+	s := slices.Clone(sizes)
+	slices.Sort(s)
+	left := total
+	for k, n := range s {
+		if share := left / (len(s) - k); n > share {
+			return share
+		}
+		left -= n
+	}
+	return total
+}
+
+// maxRefusedChars caps the refused answer given back, so a large one does
+// not push the retry over the role's budget.
+const maxRefusedChars = 60000
+
+// refusedSlack is what the heads, fences and cut notes of the refused answer
+// may add to its bodies, and a margin for the estimate, in characters.
+const refusedSlack = 1000
+
+// fence is a code fence longer than any backtick run in text.
+func fence(text string) string {
+	longest, run := 2, 0
+	for _, r := range text {
+		if r == '`' {
+			run++
+			longest = max(longest, run)
+		} else {
+			run = 0
+		}
+	}
+	return strings.Repeat("`", longest+1)
+}

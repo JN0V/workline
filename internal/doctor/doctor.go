@@ -267,6 +267,7 @@ func repository(r *Report, o Options) {
 	tokensScoped(r, o, cfg.Forge)
 	boundsGuard(r, o, cfg.Forge, line)
 	bypassGuard(r, o, cfg.Forge)
+	blockedEvent(r, o)
 	guardedList(r, o, cfg, line)
 	boards(r, o, cfg, line)
 	issueHook(r, o, cfg, line)

@@ -238,6 +238,7 @@ type FakeThread struct {
 	Author   string        `json:"author,omitempty"`
 	Insider  bool          `json:"insider,omitempty"`
 	Bot      bool          `json:"bot,omitempty"`
+	Created  string        `json:"created,omitempty"`
 	Resolved bool          `json:"resolved,omitempty"`
 	Replies  []FakeComment `json:"replies,omitempty"`
 }

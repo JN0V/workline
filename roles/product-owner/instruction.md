@@ -282,6 +282,13 @@ needs, not a need with steps. A child that cannot start before another
 of the split is done says so with `after`: the places of the children it
 waits on, from 1.
 
+**A person asks a split**: when the latest comment of a person of the
+project says to split the issue, propose `split` with the parts they
+name, without `too-big`: it is done for that issue though `split` is off
+by default (proposed at cautious). Never fold their answer into the
+issue's Scope instead. Where the project set `split` off itself, the
+split is dropped and the reason said on the issue.
+
 **Past its size**, the task says what crossed and what the issue spent
 against its normal: judge on those facts, not on "too big". A crossing
 measures one run, not the need. Split only when its parts each pass

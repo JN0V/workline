@@ -45,8 +45,8 @@ const (
 	exitExternal = 3
 	bodyMax      = 3000  // characters of a comment given to the agent; half, of a related issue's body
 	bodyWholeMax = 20000 // characters of the body of an issue it reads: whole, but for pasted logs
-	commentsMax  = 5    // its last comments given
-	relatedMax   = 6    // other issues on the same code, given whole
+	commentsMax  = 5     // its last comments given
+	relatedMax   = 6     // other issues on the same code, given whole
 )
 
 // Settings are the role's settings pre reads, as merged by the engine.
@@ -850,7 +850,7 @@ func Pre(runDir, repo string) int {
 		var code []string          // the files the issues name
 		var picks []codepick.Pick  // each issue's, in order
 		var pickedFor []int        // the issue each pick is for
-		codeLeft := s.CodeLinesMax  // lines of code still to share
+		codeLeft := s.CodeLinesMax // lines of code still to share
 		noCode := false            // an issue read names no file: the repository's folders are listed
 		left := slices.Clone(rest)
 		for i, d := range toRead {
@@ -1295,7 +1295,7 @@ func commented(n forge.Note, is forge.Issue, st *backlog.State, notes []forge.No
 			"What it settles that the body leaves open — a value, a bound, a choice, an answer to the reviewer's question — goes into the %s with a `refine`, its whole new text: the tester and the developer build from the body, never from its comments. Not read before:\n",
 			by, work.Name(work.Scope))
 		for _, f := range fresh {
-			fmt.Fprintf(&b, "> %s\n\n", strings.ReplaceAll(clip(marker.ReplaceAllString(f.Body, ""), quoteMax), "\n", "\n> "))
+			fmt.Fprintf(&b, "> %s\n\n", strings.ReplaceAll(quoteOf(f, is, marker.ReplaceAllString(f.Body, "")), "\n", "\n> "))
 		}
 		if st.AnswerHeld > 0 && st.AnswerHeld == len(backlog.Counted(notes, is)) {
 			// Its ready held for them last run (#1331): read again, line by
@@ -1311,7 +1311,7 @@ func commented(n forge.Note, is forge.Issue, st *backlog.State, notes []forge.No
 			on = " on " + n.Created[:10]
 		}
 	}
-	quote := strings.ReplaceAll(clip(marker.ReplaceAllString(n.Body, ""), quoteMax), "\n", "\n> ")
+	quote := strings.ReplaceAll(quoteOf(n, is, marker.ReplaceAllString(n.Body, "")), "\n", "\n> ")
 	return fmt.Sprintf("Brought back by a comment from @%s%s:\n> %s\n\n", n.Author, on, quote) +
 		"Read their word first; then treat it as any issue at your level: complete what it lacks — draft its missing sections —, propose, or move it to `ready`, as the modes above say. " +
 		"Unless the comment says otherwise (not now, leave it, they will do it themselves): then propose nothing, and say so in a `note`.\n"
@@ -1569,7 +1569,11 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		kept = left
 	}
 	for _, c := range kept {
-		fmt.Fprintf(b, "Comment%s:\n> %s\n\n", c.who, strings.ReplaceAll(clip(c.text, bodyMax), "\n", "\n> "))
+		text := strings.TrimSpace(c.text)
+		if !c.person {
+			text = clipSaid(text, bodyMax)
+		}
+		fmt.Fprintf(b, "Comment%s:\n> %s\n\n", c.who, strings.ReplaceAll(text, "\n", "\n> "))
 	}
 }
 
@@ -2215,6 +2219,24 @@ func clip(s string, n int) string {
 	return s[:n] + " […]"
 }
 
+// clipSaid is clip that says, after the cut mark, that the text was cut.
+func clipSaid(s string, n int) string {
+	c := clip(s, n)
+	if len(strings.TrimSpace(s)) > n {
+		c += fmt.Sprintf(" (cut at %d characters)", n)
+	}
+	return c
+}
+
+// quoteOf is a comment's text for a quote: whole when its author is a person
+// who counts, else cut at quoteMax, and said.
+func quoteOf(n forge.Note, is forge.Issue, text string) string {
+	if len(backlog.Counted([]forge.Note{n}, is)) == 1 {
+		return strings.TrimSpace(text)
+	}
+	return clipSaid(text, quoteMax)
+}
+
 // Post passes: each act is checked when the engine applies it, against the
 // code and the forge as they are then.
 func Post(runDir, repo string) int {
@@ -2478,7 +2500,7 @@ func specFindings(is forge.Issue, st *backlog.State, comments []string, r *backl
 	b.WriteString("The reviewer reads the spec again after your answer.\n")
 	for i := len(comments) - 1; i >= 0; i-- {
 		if strings.Contains(comments[i], backlog.SpecMarker) {
-			fmt.Fprintf(&b, "\n> %s\n", strings.ReplaceAll(clip(marker.ReplaceAllString(comments[i], ""), bodyMax), "\n", "\n> "))
+			fmt.Fprintf(&b, "\n> %s\n", strings.ReplaceAll(clipSaid(marker.ReplaceAllString(comments[i], ""), bodyMax), "\n", "\n> "))
 			break
 		}
 	}
