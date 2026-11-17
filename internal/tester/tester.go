@@ -448,9 +448,9 @@ func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []
 			broken[e.file] = true
 		}
 	}
-	ran := func(name string) bool {
+	ran := func(name, file string) bool {
 		for id := range head.results {
-			if id == name || strings.HasSuffix(id, "."+name) {
+			if id == name || namedAs(id, name, file) {
 				return true
 			}
 		}
@@ -472,7 +472,7 @@ func unbuiltTests(repo string, ch *change, head ran, errs []buildError, rules []
 			base := testNames(old, r)
 			for _, name := range testNames(content, r) {
 				declares = true
-				if !ran(name) && !slices.Contains(base, name) {
+				if !ran(name, file) && !slices.Contains(base, name) {
 					out = append(out, file+":"+name)
 				}
 			}
