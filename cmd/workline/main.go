@@ -1810,6 +1810,8 @@ func issuesCmd(args []string) int {
 	fs.Var(&addLabels, "label", "open: a label the issue starts with (repeatable)")
 	fs.Var(&addLabels, "add", "label: a label to put on (repeatable)")
 	fs.Var(&removeLabels, "remove", "label: a label to take off (repeatable)")
+	file := fs.String("file", "", "comment: the file of a merge request a comment is on (with --line)")
+	line := fs.Int("line", 0, "comment: the line of that file the comment is on")
 	section := fs.String("section", "", "edit: the heading of the section to change; its new text is read from stdin")
 	repo := fs.String("repo", ".", "repository")
 	apply := fs.Bool("apply", false, "import: open the issues; without it, only say which")
@@ -1836,7 +1838,7 @@ func issuesCmd(args []string) int {
 	l := &forge.Local{Repo: root}
 	switch what {
 	case "open", "label", "comment":
-		return issuesWrite(l, root, what, id, *body, *bodyFile, addLabels, removeLabels)
+		return issuesWrite(l, root, what, id, *body, *bodyFile, *file, *line, addLabels, removeLabels)
 	case "edit":
 		return issuesEdit(l, root, id, *section)
 	}
@@ -1904,7 +1906,7 @@ func issuesCmd(args []string) int {
 var issuesOwn = map[string][]string{
 	"open":    {"body", "body-file", "label"},
 	"label":   {"add", "remove"},
-	"comment": {"body", "body-file"},
+	"comment": {"body", "body-file", "file", "line"},
 	"edit":    {"section"},
 	"import":  {"apply", "forge", "ai", "lines", "roles", "json", "summary"},
 }
@@ -1924,13 +1926,13 @@ func issuesOptions(fs *flag.FlagSet, what string) (int, bool) {
 }
 
 const issuesUsage = "usage: workline issues [list] | show <n>|!<n> | open <title> [--body <text>|--body-file <file>] [--label <l>]... | " +
-	"label <n>|!<n> [--add <l>]... [--remove <l>]... | comment <n>|!<n> --body <text>|--body-file <file> | " +
+	"label <n>|!<n> [--add <l>]... [--remove <l>]... | comment <n>|!<n> --body <text>|--body-file <file> [--file <path> --line <n>] | " +
 	"edit <n> --section <heading> (the new text on stdin)   [--repo <dir>]"
 
 // issuesWrite is a person's act on the local forge: what they would do
 // on a forge's page. Only where the project's forge is the local one:
 // elsewhere no role would read what it writes.
-func issuesWrite(l *forge.Local, root, what, id, body, bodyFile string, add, remove []string) int {
+func issuesWrite(l *forge.Local, root, what, id, body, bodyFile, file string, line int, add, remove []string) int {
 	cfg, err := role.LoadProjectConfig(root)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
@@ -2002,7 +2004,15 @@ func issuesWrite(l *forge.Local, root, what, id, body, bodyFile string, add, rem
 			fmt.Fprintln(os.Stderr, "workline: comment needs its text: --body or --body-file")
 			return 64
 		}
-		err = l.Answer(t, text)
+		if file != "" || line != 0 {
+			if file == "" || line <= 0 || t.Kind != "merge-request" {
+				fmt.Fprintln(os.Stderr, "workline: a comment on a line is on a merge request, with --file and --line (a number above 0) together")
+				return 64
+			}
+			_, err = l.Review(t.ID, "", "", []forge.LineComment{{Path: file, Line: line, Body: text}})
+		} else {
+			err = l.Answer(t, text)
+		}
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
