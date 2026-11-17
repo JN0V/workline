@@ -62,6 +62,9 @@ func TestTryDryRunTouchesNothing(t *testing.T) {
 	if out, code := runTry(t, path, nil, "--dry-run", "v0.78.4", "other/repo"); code != 2 || !strings.Contains(out, "--seed") {
 		t.Errorf("another source with no seed: exit %d, want 2 asking for --seed:\n%s", code, out)
 	}
+	if out, code := runTry(t, path, nil, "--dry-run", "--seed", filepath.Join(t.TempDir(), "none.md"), "v0.78.4", "other/repo"); code != 2 || !strings.Contains(out, "no readable file") {
+		t.Errorf("a seed file missing: exit %d, want 2 before anything:\n%s", code, out)
+	}
 }
 
 func TestTryRefusesWhileAnotherRuns(t *testing.T) {

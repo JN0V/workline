@@ -63,6 +63,10 @@ if [ -z "$seed_file" ] && [ "$src_repo" != "$default_source" ]; then
 	echo "try: --seed FILE is needed for $src_repo: the default issue is $default_source's" >&2
 	exit 2
 fi
+if [ -n "$seed_file" ] && { [ ! -r "$seed_file" ] || [ -z "$(head -1 "$seed_file")" ]; }; then
+	echo "try: $seed_file: no readable file whose first line is the issue's title" >&2
+	exit 2
+fi
 
 log() { printf '%s try: %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 die() { log "$1"; exit "${2:-4}"; }
@@ -139,8 +143,8 @@ log "fetching $workline_repo"
 git clone -q --filter=blob:none "https://github.com/$workline_repo" "$work/workline"
 wl() { git -C "$work/workline" "$@"; }
 if [ "$kind" = version ]; then
-	gh release view "$version" -R "$workline_repo" --json assets --jq '.assets[].name' 2>/dev/null |
-		grep -qx workline_linux_amd64.tar.gz || die "$version: no published release of $workline_repo with workline_linux_amd64.tar.gz"
+	assets=$(gh release view "$version" -R "$workline_repo" --json assets --jq '.assets[].name' 2>/dev/null || true)
+	grep -qx workline_linux_amd64.tar.gz <<<"$assets" || die "$version: no published release of $workline_repo with workline_linux_amd64.tar.gz"
 	wl -c advice.detachedHead=false checkout -q "refs/tags/$version"
 	engine_version=$version
 	download="https://github.com/$workline_repo/releases/download/"
