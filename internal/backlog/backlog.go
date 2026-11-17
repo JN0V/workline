@@ -3997,24 +3997,32 @@ func namesPath(line, path string) bool {
 }
 
 var (
-	splitWord    = regexp.MustCompile(`(?i)\bsplit\b`)
-	splitRefusal = regexp.MustCompile(`(?i)\b(?:(?:don'?t|do not|doesn'?t|does not|shouldn'?t|should not|won'?t|will not|can'?t|cannot|never|not|no|without)\s+(?:really\s+|yet\s+|please\s+)?|no need to\s+)$`)
+	splitWord = regexp.MustCompile(`(?i)\bsplit\b`)
+	// splitNegation: any negation in the clause of the word is a refusal.
+	splitNegation = regexp.MustCompile(`(?i)\b(?:don'?t|do not|doesn'?t|does not|shouldn'?t|should not|won'?t|will not|can'?t|cannot|never|not|no|without|nothing|neither|nor)\b`)
+	// splitLead: what may come before "split" in a clause that directs it.
+	splitLead = regexp.MustCompile(`(?i)^\s*(?:(?:yes|yep|ok|okay|sure|please|then|so|and|do|go ahead and|let'?s|you can|you may|you should|can you|could you|would you|we should|i want you to|i'?d like you to|i want to|i would like to|i'?d like to)\b[\s,]*)*$`)
 )
 
-// splitStance reads what a comment says of a split: asked, refused (a
-// negation before the word in its clause, as "don't split"), or nothing
-// (no word of it, or "split-off" and the like, which are not an ask).
+// splitStance reads what a comment says of a split. It is an ask only where
+// a clause directs it (the word at its start, or after a lead as "please"
+// or "let's") and holds no negation; any other clause that holds the word
+// ("why split?", "I don't want to split this") is said, not asked. "split-off"
+// and the like are not a word of it.
 func splitStance(body string) (asked, said bool) {
+	body = strings.NewReplacer("\u2019", "'", "\u2018", "'").Replace(body)
 	for _, m := range splitWord.FindAllStringIndex(body, -1) {
 		if m[1] < len(body) && (body[m[1]] == '-' || body[m[1]] == '_') && m[1]+1 < len(body) && body[m[1]+1] != ' ' {
 			continue // split-off, split_out: a word of another thing
 		}
-		start := strings.LastIndexAny(body[:m[0]], ".,;:!?\n") + 1
-		said = true
-		if splitRefusal.MatchString(strings.NewReplacer("\u2019", "'", "\u2018", "'").Replace(body[start:m[0]])) {
-			return false, true
+		const delims = ".,;:!?\n"
+		start := strings.LastIndexAny(body[:m[0]], delims) + 1
+		end := len(body)
+		if i := strings.IndexAny(body[m[1]:], delims); i >= 0 {
+			end = m[1] + i
 		}
-		asked = true
+		said = true
+		asked = splitLead.MatchString(body[start:m[0]]) && !splitNegation.MatchString(body[start:end])
 	}
 	return asked, said
 }
