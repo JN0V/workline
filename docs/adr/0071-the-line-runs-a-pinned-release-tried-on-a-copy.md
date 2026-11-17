@@ -2,8 +2,8 @@
 
 - **Status:** proposed, until the maintainer merges it
 - **Date:** 2026-11-17
-- **Decided by:** the maintainer, on 2026-11-17, from a three-agent
-  panel's synthesis after the day's five whys
+- **Proposed by:** a three-agent panel's synthesis after the day's
+  five whys; the maintainer's choices of 2026-11-17 on judge folded in
 - **Builds on:** [ADR-0042], [ADR-0043], [ADR-0044], [ADR-0063],
   [ADR-0068] §5 to §7; principles 6, 7, 9, 10, 12
   ([PRINCIPLES.md](../PRINCIPLES.md))
@@ -20,10 +20,15 @@ The five whys of 2026-11-17:
   last 6 p1 were line defects found while landing another p1:
   [#1678] → [#1704], [#1638] → [#1670] and [#1676], [#1686] →
   [#1687] and [#1701].
-- **The line runs on itself, from main**: judge runs the pull
-  request head's engine; the `workflow_run` jobs (develop, answer,
-  apply) and the `pull_request_target` jobs (bounds, merge) build the
-  engine from `main` ([engine action](../../.github/actions/engine/action.yml)).
+- **The line runs on itself, from main**: judge and warn run the pull
+  request head's engine; every job with a write token builds it from
+  `main` ([engine action](../../.github/actions/engine/action.yml)):
+  - develop, on `issues`, `issue_comment`, `workflow_dispatch`,
+    `schedule` and `workflow_run`;
+  - answer and apply on `workflow_run` (apply also on a push to `main`);
+  - bounds and merge on `pull_request_target` (merge also on `issues`
+    and `schedule`);
+  - gardening and sample on `schedule` and `workflow_dispatch`.
   A defect on `main` blocks the pull request that fixes it.
 - **Fixes are never tried on GitHub's CI**: `## Tried` says a local
   run, or boilerplate; V1 was accepted on a local forge.
@@ -37,18 +42,34 @@ the person's own pull request.**
 
 ### 1. The line runs a pinned release
 
-- **The line's jobs take a release**: develop, answer, apply, bounds,
-  merge download `WORKLINE_VERSION`, checksum checked, as
+- **Each workflow that runs the engine**, under `.github/workflows/`:
+
+  | Workflow | Write rights | Engine |
+  |---|---|---|
+  | develop, answer, apply, bounds, merge | yes | pinned release |
+  | gardening, sample | yes | pinned release |
+  | workline (judge) | no | pinned release; head pass apart (below) |
+  | warn | no | head: it only warns |
+  | test | no | head: `go test`, conformance, simulator |
+
+  workline-release, fork and objection build no engine.
+- **A pinned job downloads `WORKLINE_VERSION`**, checksum checked, as
   [the templates](../../defaults/ci/github/workline-merge.yml) do.
-  No engine is built from `main` for them.
-- **The pull request's code stays tested from its head**: `go test`,
-  conformance, the simulator, the gates' tools.
-- **Judge runs the pinned release too**: its verdict is the line's
-  verdict, so the line's engine gives it; a head that breaks judge is
-  caught by the tests, not by the line refusing its own fix. Judge
+  No engine is built from `main` for a job with a write token.
+- **Judge's official verdict runs the pinned release**: the verdict is
+  the line's, so the line's engine gives it; a head that breaks judge
+  is caught by the tests, not by the line refusing its own fix. Judge
   still holds no write token ([ADR-0044]).
-- **The pin moves in its own pull request**, after a release candidate
-  passed a real try (§2), linked in it. Never a moved tag.
+- **A pull request that changes the engine also gets a head pass**:
+  judge built from its head, non-blocking, its result told on the pull
+  request. A new rule, lens or prompt is exercised on its own pull
+  request, not first on the next release's.
+- **The pin moves only in its own pull request**, after a release
+  candidate passed a green try (§2), linked in it. Never a moved tag.
+- **release-please never moves it**: `.github/workflows/` carries no
+  `x-release-please-version` marker, and
+  [release-please-config.json](../../release-please-config.json)'s
+  `extra-files` list only the templates under `defaults/`. It stays so.
 
 ### 2. A real try, in one command
 
@@ -57,8 +78,9 @@ the person's own pull request.**
   tag, the version's line runs one issue end to end.
 - **It asserts forge facts**: a pull request opened, its checks green,
   the labels set; never the code's content.
-- **A p1 closes only with the link of a green try.** `## Tried`
-  carries it ([ADR-0043]).
+- **A p1's fix links a green try run** under `## Tried`
+  ([ADR-0043]); without it the pull request is not accepted, so the
+  issue it closes on merge stays open.
 - **After V1**: the try runs on each `-rc.N` by itself; a one-off
   fault-injection campaign (a conflict, several objections, a
   cancelled run, a brownout), each case ending as a conformance case
@@ -71,14 +93,18 @@ the person's own pull request.**
   fix is the person's own pull request: built by a contributor on the
   person's explicit instruction, accepted with their label
   ([ADR-0068 §5], [§7]).
+- **A fix merged does not reach the line yet**: it does after a
+  release, a green try and the pin's pull request.
 - **Everything else goes through the line**, as before.
 
 ### 4. Rollback
 
 - **A broken pinned release**: a one-line pull request reverts the
   pin, on the person's label.
-- **Else** [the emergency](../merge-policy-no-bypass.md#the-emergency),
-  the person's own. No bypass is added ([ADR-0068 §6]).
+- **When the pinned release breaks merge itself**, the person's fix and
+  the rollback both go through that broken merge: neither lands. Only
+  [the emergency](../merge-policy-no-bypass.md#the-emergency) remains,
+  the person's own, by hand. No bypass is added ([ADR-0068 §6]).
 
 ## Not chosen
 
@@ -99,8 +125,14 @@ the person's own pull request.**
   (`role.yaml`, prompts, facets) ship inside the binary
   ([roles.go](../../roles.go), `go:embed`); the pinned release reads
   only `.workline/config.yaml` and `.workline/roles/` from the
-  repository. Those must stay readable by the previous release; a
-  change to their format lands in a release before it is used.
+  repository.
+- **A format ships in a release before it is used**: the config reader
+  ([config.go](../../internal/role/config.go)) refuses an unknown key,
+  so a pull request adding a key to `.workline/config.yaml` would be
+  refused by the pinned judge.
+- **A check holds the rule**: a conformance case or gate runs the
+  pinned release on the head's `.workline/config.yaml` and fails when
+  it does not parse.
 - **The try's latency and tokens are paid per release**, not per pull
   request.
 
@@ -108,9 +140,11 @@ the person's own pull request.**
 
 Before Thursday 2026-11-19:
 
-1. The pin: the line's workflows on `WORKLINE_VERSION`.
-2. The manual try: the script and `try.yml`.
-3. This record.
+1. The pin: the pinned workflows above on `WORKLINE_VERSION`, and the
+   config check.
+2. Judge's non-blocking head pass on engine-changing pull requests.
+3. The manual try: the script and `try.yml`.
+4. This record.
 
 After V1: the try on each `-rc.N`; the fault-injection campaign.
 
