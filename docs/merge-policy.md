@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, defaults/ci/github/workline-apply.yml, defaults/ci/github/workline-merge.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
-checked: 58246a06
+checked: 9f1c1291
 verified: agent:claude-code
 ---
 # The merge policy
@@ -51,6 +51,14 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   ending or a push, and may miss one
   ([#993](https://github.com/JN0V/workline/issues/993)). An hourly run
   catches one no event follows.
+- **A person's comment with no answer holds it**: nothing merges,
+  auto-merge stays off, whatever the policy
+  ([#1358](https://github.com/JN0V/workline/issues/1358)). A role's
+  reply that names a test answers it; so does the yes of the person who
+  wrote it, put at or after it and still on: the trace written before a
+  yes put in their name
+  ([ADR-0068 §7](adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated))
+  never holds that yes.
 - **Open conversations that hold it are said**: auto-merge on, its
   checks green, the forge not merging, and its base requiring every
   conversation resolved: `follow` lists each open one, linked, in its
@@ -270,6 +278,7 @@ the candidate's issue, ships the version:
 |---|---|
 | `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind; "merged now", an auto-merge the forge left |
 | `merge-refused` | the forge refused to merge now one whose auto-merge it left: auto-merge left on |
+| `persons-comment-open`, `comments-unread` | a person's comment no role answered, nor their own later yes: nothing merges; or its comments could not be read |
 | `held-by-conversations`, `conversations-unread` | auto-merge on, checks green, not merged: the open conversations that hold it, or why they could not be read |
 | `verdict-kept`, `verdict-missing`, `review-to-come` | the verdict kept; one not judged yet; marked ready, the draft's verdict still on its head |
 | `verdict-red`, `review-short`, `checks-red` | nothing turned on, why; a person's yes does not lift a red verdict |
