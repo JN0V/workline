@@ -61,7 +61,15 @@ jobs:
           status=0
           workline test answer --merge-request "$pr" --ai "$ai" --no-apply --forge github --json > answer.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' answer.json)" >> "$GITHUB_OUTPUT"   # a run left to apply, by name; none when it stopped before
+          # A run left to apply, by name; none when it stopped before. A refused
+          # answer is no pending run, but its folder holds out/on-block.yaml, the
+          # comment saying why in the objection's thread: it is applied too.
+          run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' answer.json)
+          if [ -z "$run" ] && [ "$status" != 3 ]; then
+            d=$(jq -r '."run-dir" // empty | split("/") | last' answer.json)
+            [ -z "$d" ] || [ ! -s "$WORKLINE_RUNS_DIR/$d/out/on-block.yaml" ] || run=$d
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
           jq -r '.summary // empty' answer.json >> "$GITHUB_STEP_SUMMARY"
           { jq -r '.summary // empty' answer.json; jq -r '.findings[]? | "- \(.rule): \(.message)"' answer.json; } > answer-summary.txt 2>/dev/null || true
       - uses: actions/upload-artifact@v4
@@ -126,7 +134,8 @@ jobs:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
-          WORKLINE_RUNS_DIR: ${{ runner.temp }}/workline-runs
+          # Two upload paths root the artifact at the workspace: the runs are in its .workline-runs.
+          WORKLINE_RUNS_DIR: ${{ runner.temp }}/workline-runs/.workline-runs
           RUN: ${{ needs.judge.outputs.run }}
           BRANCH: ${{ github.event.workflow_run.head_branch }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
