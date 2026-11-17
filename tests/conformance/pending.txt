@@ -1,3 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 routing/ready-overlap-gone-wait-said
+# "A deleted comment, then a new one": moved after 1.0 by #1346's Scope.
+# Its again-after edit does not match the forge file as written today.
+routing/state-refine-answer-deleted-then-new-wakes-once
