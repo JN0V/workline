@@ -27,7 +27,8 @@ var refusalRecord = regexp.MustCompile(`<!-- workline:` + refusalMark + ` key=([
 func refusalKey(fs []verdict.Finding) string {
 	h := sha256.New()
 	for _, f := range fs {
-		fmt.Fprintf(h, "%s\x00%s\x00%s\x00", f.Rule, f.Where, f.Message)
+		// A hash's Write never returns an error.
+		_, _ = h.Write([]byte(f.Rule + "\x00" + f.Where + "\x00" + f.Message + "\x00"))
 	}
 	return hex.EncodeToString(h.Sum(nil))[:16]
 }
