@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline"
+	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -159,7 +160,7 @@ func Prompt(req Request) (system, user string, err error) {
 	}
 	b.WriteString(skills)
 	if fb, err := os.ReadFile(filepath.Join(req.RunDir, "out", "feedback.md")); err == nil {
-		b.WriteString("# Your previous answer was refused\n\n" + string(fb) + "\n" +
+		b.WriteString("# Your previous answer was refused\n\n" + string(fb) + "\n" + refusedAnswer(req.RunDir) +
 			"Your new answer replaces it whole: give again, unchanged, every proposal and every change of it not refused above, and change only what is refused.\n\n")
 	}
 	if policy, ok := facet(req, "policy.md"); ok {
@@ -239,3 +240,50 @@ func Tokens(chars int) int { return 711 + chars*82/100 }
 
 // TokensRatio says the estimate, in the refusal.
 const TokensRatio = "711 + 0.82 a character"
+
+// refusedAnswer gives back the refused answer the engine kept
+// (out/refused-N.yaml, the latest): each patch's file with its lines, each
+// other proposal as written, so the retry starts from them and changes
+// lines instead of reading the code again to rewrite them.
+func refusedAnswer(runDir string) string {
+	files, _ := filepath.Glob(filepath.Join(runDir, "out", "refused-*.yaml"))
+	if len(files) == 0 {
+		return ""
+	}
+	latest, n := "", -1
+	for _, f := range files {
+		num := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(f), "refused-"), ".yaml")
+		if i, err := strconv.Atoi(num); err == nil && i > n {
+			latest, n = f, i
+		}
+	}
+	if latest == "" {
+		return ""
+	}
+	in, err := intent.Read(latest)
+	if err != nil || len(in) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("The answer that was refused, as you gave it:\n\n")
+	for _, i := range in {
+		if m, ok := i.Value.(map[string]any); ok && i.Kind == "patch" {
+			if file, ok := m["file"].(string); ok {
+				if content, ok := m["content"].(string); ok {
+					fmt.Fprintf(&b, "## %s\n\n```\n%s\n```\n\n", file, strings.TrimRight(content, "\n"))
+					continue
+				}
+			}
+		}
+		if s, ok := i.Value.(string); ok {
+			fmt.Fprintf(&b, "- %s: %s\n\n", i.Kind, s)
+			continue
+		}
+		out, err := intent.Marshal([]intent.Intention{i})
+		if err != nil {
+			continue
+		}
+		b.WriteString(string(out) + "\n")
+	}
+	return b.String()
+}
