@@ -1760,7 +1760,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		return rule, why
 	}
 	if c.Do == "split" && f != nil {
-		p.markAsked(f, c.Issue)
+		if err := p.markAsked(f, c.Issue); err != nil {
+			return "no-notes", fmt.Sprintf("the comments of #%d could not be read, to know whether a person asked a split: %v", c.Issue, err)
+		}
 	}
 	if rule, why := p.checkSplitRename(repo, c); rule != "" {
 		return rule, why
@@ -3994,22 +3996,50 @@ func namesPath(line, path string) bool {
 	}
 }
 
-var splitAsk = regexp.MustCompile(`(?i)\bsplit\b`)
+var (
+	splitWord    = regexp.MustCompile(`(?i)\bsplit\b`)
+	splitRefusal = regexp.MustCompile(`(?i)\b(don'?t|do not|doesn'?t|does not|no need|not|never|no|without|shouldn'?t|won'?t|can'?t|cannot|instead of|rather than)\b`)
+)
 
-// markAsked reads whether the latest comment of a person of the project on
-// the issue asks a split, and keeps it in p.asked.
-func (p *Plan) markAsked(f forge.Backlog, id int) {
+// splitStance reads what a comment says of a split: asked, refused (a
+// negation before the word in its clause, as "don't split"), or nothing
+// (no word of it, or "split-off" and the like, which are not an ask).
+func splitStance(body string) (asked, said bool) {
+	for _, m := range splitWord.FindAllStringIndex(body, -1) {
+		if m[1] < len(body) && (body[m[1]] == '-' || body[m[1]] == '_') && m[1]+1 < len(body) && body[m[1]+1] != ' ' {
+			continue // split-off, split_out: a word of another thing
+		}
+		start := strings.LastIndexAny(body[:m[0]], ".,;:!?\n") + 1
+		said = true
+		if splitRefusal.MatchString(body[start:m[0]]) {
+			return false, true
+		}
+		asked = true
+	}
+	return asked, said
+}
+
+// markAsked reads whether the people of the project ask a split on the
+// issue, and keeps it in p.asked: their comments in order, each that speaks
+// of a split replacing the stance before it, one that does not (as
+// "thanks") leaving it. A failed read is an error, never "no ask".
+func (p *Plan) markAsked(f forge.Backlog, id int) error {
 	if p.asked == nil {
 		p.asked = map[int]bool{}
 	}
 	notes, err := f.Notes(forge.Target{Kind: "issue", ID: id})
 	if err != nil {
-		return
+		return err
 	}
-	for i := len(notes) - 1; i >= 0; i-- {
-		if n := notes[i]; n.Insider && !n.Bot && !Bot(n.Author) {
-			p.asked[id] = splitAsk.MatchString(n.Body)
-			return
+	asked := false
+	for _, n := range notes {
+		if !n.Insider || n.Bot || Bot(n.Author) {
+			continue
+		}
+		if a, said := splitStance(n.Body); said {
+			asked = a
 		}
 	}
+	p.asked[id] = asked
+	return nil
 }
