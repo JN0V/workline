@@ -140,3 +140,52 @@ func TestObjectionReplyWakesTheTester(t *testing.T) {
 		}
 	}
 }
+
+// answerCICode is a workflow file's text without its comment lines, to look
+// for a name the workflow really uses.
+func answerCICode(t *testing.T, f string) string {
+	t.Helper()
+	data, err := os.ReadFile(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var code []string
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+			continue
+		}
+		code = append(code, line)
+	}
+	return strings.Join(code, "\n")
+}
+
+// Queue drained: the answer reads the Draft's tip
+// Given a Draft whose branch moved since the objection run (a re-run, a push),
+// When the next answer run starts,
+// Then workline-answer.yml reads the open pull request's tip (`headRefOid`),
+// never the objection run's `workflow_run.head_sha`, which it leaves behind.
+func TestObjectionAnswerReadsTheDraftsTip(t *testing.T) {
+	for _, dir := range answerCIDirs {
+		code := answerCICode(t, filepath.Join(dir, "workline-answer.yml"))
+		if strings.Contains(code, "workflow_run.head_sha") {
+			t.Errorf("%s/workline-answer.yml: reads workflow_run.head_sha, the head of the objection run, which a re-run or a push since leaves behind: it must read the open pull request's tip", dir)
+		}
+		if !strings.Contains(code, "headRefOid") {
+			t.Errorf("%s/workline-answer.yml: never reads the open pull request's tip (headRefOid)", dir)
+		}
+	}
+}
+
+// Heartbeat resumes: the idle check counts the answers
+// Given an unanswered objection and no new comment for an hour,
+// When the heartbeat runs,
+// Then its idle check counts `.answers` too, so that a Draft with an
+// answer waiting is not taken for idle.
+func TestObjectionHeartbeatIdleCountsAnswers(t *testing.T) {
+	for _, dir := range answerCIDirs {
+		code := answerCICode(t, filepath.Join(dir, "workline-develop.yml"))
+		if !strings.Contains(code, ".answers") {
+			t.Errorf("%s/workline-develop.yml: the heartbeat's idle check does not count `.answers`: an objection waiting for an answer is taken for idle", dir)
+		}
+	}
+}
