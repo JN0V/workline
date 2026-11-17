@@ -1510,8 +1510,10 @@ func settlementDiff(repo, commit string) string {
 const commentOpenMarker = "person-comment-open"
 
 // namesTest tells a reply that names a test, or a commit that adds one:
-// "no" alone does not answer a person's comment.
-var namesTestRe = regexp.MustCompile(`(?i)\btests?\b|_test\b|\btest_|\bcommit\b|\b[0-9a-f]{7,40}\b`)
+// "no" alone, or the bare word "test" or "commit", does not answer a
+// person's comment. It takes an identifier: test_x, x_test, TestX, a path
+// under tests/, a x.test.y file, or a commit hash.
+var namesTestRe = regexp.MustCompile(`\btest_\w+|\b\w+_test\b|\bTest[A-Z]\w*|\b\w+\.(?:test|spec)\.\w+|(?:^|[\s` + "`" + `(])(?:\S*/)?tests?/\S+|\b[0-9a-f]{7,40}\b`)
 
 // isReply tells a role's reply, a run's comment or the tester's answer,
 // from the engine's statuses and the records that mention tests.
@@ -1519,7 +1521,16 @@ func isReply(body string) bool {
 	return strings.Contains(body, "<!-- workline:run=") || strings.Contains(body, forge.Marker("tester-answer"))
 }
 
-func namesTest(body string) bool { return namesTestRe.MatchString(body) }
+func namesTest(body string) bool {
+	for _, m := range namesTestRe.FindAllString(body, -1) {
+		// A hash holds a digit: a word of letters a-f ("defaced") is not one.
+		if strings.Trim(m, "0123456789abcdef") == "" && !strings.ContainsAny(m, "0123456789") {
+			continue
+		}
+		return true
+	}
+	return false
+}
 
 // personsCommentOpen says, quoted short, the first person's comment on a
 // merge request that no role has answered: a comment of the request or a
