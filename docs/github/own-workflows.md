@@ -22,8 +22,8 @@ engine ([ADR-0071](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md
     or the job fails;
   - one value, in each of those workflows' `env:`; no
     `x-release-please-version` marker: release-please never moves it;
-  - moved only in its own pull request, after its try on a copy, on the
-    person's label;
+  - moved only in its own pull request, after its
+    [try on a copy](try-on-copy.md), on the person's label;
 - **the head's engine**: warn, and test's `go test`, run the pull
   request's commit, built once a commit by the same action without a
   version; it must name the commit checked out, unmodified, or the job

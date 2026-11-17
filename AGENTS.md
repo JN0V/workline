@@ -74,6 +74,10 @@ Whatever the agent, a person's assistant works the way the line does
     as it is until the next round
     ([ADR-0063](docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#working-agreements)).
     Told under `## Tried` in its own pull request, its fresh tokens said.
+  - **A line path or the engine**
+    ([ADR-0071 §2](docs/adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#2-two-real-tries-one-command)): link a green
+    [try on a copy](docs/github/try-on-copy.md) of the ref under
+    `## Tried`.
   - **Which roles**: those whose behaviour the change touches, through a
     shared engine package too. Their outputs are kept as the simulator's
     inputs once [#1079](https://github.com/JN0V/workline/issues/1079)
