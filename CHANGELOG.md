@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.78.4](https://github.com/JN0V/workline/compare/v0.78.3...v0.78.4) (2026-11-17)
+
+
+### Bug Fixes
+
+* **productowner:** a person's long answer is still cut at 3000 ([#1715](https://github.com/JN0V/workline/issues/1715)) ([b8a811f](https://github.com/JN0V/workline/commit/b8a811f2c9534c20f14604f75795f6cc1e959f24))
+
 ## [0.78.3](https://github.com/JN0V/workline/compare/v0.78.2...v0.78.3) (2026-11-17)
 
 
