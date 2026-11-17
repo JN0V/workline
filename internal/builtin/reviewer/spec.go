@@ -433,8 +433,8 @@ var scenarioQuoted = regexp.MustCompile(`\*\*([^*]+?):?\*\*`)
 // answeredInSpec says whether a finding the last review held on a
 // scenario is answered in the spec as it is now: the last review's comment
 // held a finding of the same lens on a scenario of the same name, the body
-// has changed since, and it speaks of that scenario on a line that is not
-// the scenario's own. Two findings are the same when they have the same
+// has changed since, and it speaks of that scenario on a line outside the Need, the
+// Verification and the Validation. Two findings are the same when they have the same
 // scenario name and the same lens; a person's answer settles the finding
 // wherever it is, the Scope included (#1356).
 func answeredInSpec(sp Spec, f Finding) bool {
@@ -460,8 +460,17 @@ func answeredInSpec(sp Spec, f Finding) bool {
 	if !held {
 		return false
 	}
+	// The Need, the Verification and the Validation are what the lens read
+	// when it held the finding: a line there that names the scenario is not
+	// an answer. The answer is in any other section, the Scope included.
+	skip := false
 	for _, l := range strings.Split(strings.ToLower(sp.Text), "\n") {
-		if strings.Contains(l, name) && !strings.Contains(l, "**"+name) {
+		if strings.HasPrefix(l, "#") {
+			h := strings.ToLower(strings.TrimSpace(strings.TrimLeft(l, "# ")))
+			skip = h == "need" || h == "verification" || h == "validation"
+			continue
+		}
+		if !skip && strings.Contains(l, name) && !strings.Contains(l, "**"+name) {
 			return true
 		}
 	}
