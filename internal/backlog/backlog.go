@@ -3998,7 +3998,7 @@ func namesPath(line, path string) bool {
 
 var (
 	splitWord    = regexp.MustCompile(`(?i)\bsplit\b`)
-	splitRefusal = regexp.MustCompile(`(?i)\b(don'?t|do not|doesn'?t|does not|no need|not|never|no|without|shouldn'?t|won'?t|can'?t|cannot|instead of|rather than)\b`)
+	splitRefusal = regexp.MustCompile(`(?i)\b(?:(?:don'?t|do not|doesn'?t|does not|shouldn'?t|should not|won'?t|will not|can'?t|cannot|never|not|no|without)\s+(?:really\s+|yet\s+|please\s+)?|no need to\s+)$`)
 )
 
 // splitStance reads what a comment says of a split: asked, refused (a
@@ -4011,7 +4011,7 @@ func splitStance(body string) (asked, said bool) {
 		}
 		start := strings.LastIndexAny(body[:m[0]], ".,;:!?\n") + 1
 		said = true
-		if splitRefusal.MatchString(body[start:m[0]]) {
+		if splitRefusal.MatchString(strings.NewReplacer("\u2019", "'", "\u2018", "'").Replace(body[start:m[0]])) {
 			return false, true
 		}
 		asked = true
