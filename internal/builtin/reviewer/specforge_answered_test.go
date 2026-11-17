@@ -44,6 +44,11 @@ func specRound(t *testing.T, repo string, s Settings, found []Finding) (state, R
 // issue held no more.
 func TestAnswerWrittenIntoTheScopeSettlesTheFinding(t *testing.T) {
 	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	// The local forge refuses every write in CI: a CI runner's own variables
+	// never decide this test.
+	t.Setenv("GITHUB_ACTIONS", "")
+	t.Setenv("CI", "")
+	t.Setenv("GITLAB_CI", "")
 	repo := t.TempDir()
 	if out, err := exec.Command("git", "-C", repo, "init", "-q").CombinedOutput(); err != nil {
 		t.Fatalf("git init: %v\n%s", err, out)
