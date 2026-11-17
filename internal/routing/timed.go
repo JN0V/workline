@@ -90,6 +90,8 @@ func checkTimed(timed map[string]Timed) error {
 			return fmt.Errorf("routing.timed.%s.gap is %d: a number of minutes above 0", job, t.Gap)
 		case job == "backlog" && (t.At != "" || t.Gap != 0):
 			return fmt.Errorf("routing.timed.backlog: due when Ready is below its target, never on a time: off, or nothing")
+		case t.At == "" && t.Gap == 0 && job != "reconcile" && job != "backlog":
+			return fmt.Errorf("routing.timed.%s sets neither at nor gap: a job sets one, or is off", job)
 		case t.At != "":
 			if _, err := ParseCron(t.At); err != nil {
 				return fmt.Errorf("routing.timed.%s.at: %w", job, err)

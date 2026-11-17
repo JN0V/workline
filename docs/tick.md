@@ -28,7 +28,7 @@ flowchart LR
 
 | Job | Due when | Its run's name |
 |---|---|---|
-| `reconcile` | every tick; or its `gap` passed, when set | `workline develop reconcile` |
+| `reconcile` | every tick; or its `at` or `gap`, when set | `workline develop reconcile` |
 | `backlog` | Ready below `routing.wip.ready`, and Ready moved since the last backlog run ([#1549](https://github.com/JN0V/workline/issues/1549)) | `workline gardening backlog` |
 | `nightly` | its `at` passed, no run since; not timed unless set | `workline gardening nightly` |
 | `docs` | its `at` passed, no run since; `7 18 * * 0` shipped | `workline gardening docs` |
@@ -60,7 +60,7 @@ routing:
     sample: off
 ```
 
-- **`at` or `gap`**, never both: the config is refused, naming the job.
+- **`at` or `gap`**, never both, never neither: the config is refused, naming the job.
 - **Neither is a late limit**: a job hours late runs once.
 - **`backlog`** takes no time: `off`, or Ready's rule.
 - **Not set**, a job keeps its shipped time, in the table above.

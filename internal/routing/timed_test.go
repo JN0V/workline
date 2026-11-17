@@ -70,6 +70,7 @@ func TestTimed(t *testing.T) {
 		"routing: {timed: {backlog: {gap: 60}}}\n":                     "routing.timed.backlog: due when Ready is below its target",
 		"routing: {timed: {nightly: {at: \"61 2 * * *\"}}}\n":          "routing.timed.nightly.at",
 		"routing: {timed: {merge: {gap: -1}}}\n":                       "routing.timed.merge.gap is -1",
+		"routing: {timed: {nightly: {}}}\n":                            "routing.timed.nightly sets neither at nor gap",
 		"routing: {timed: {merge: sometimes}}\n":                       "a job's time is",
 	} {
 		if _, err := load(config); err == nil || !strings.Contains(err.Error(), want) {

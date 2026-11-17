@@ -93,6 +93,8 @@ func TestDue(t *testing.T) {
 			"", []string{"reconcile"}, ""},
 		{"a gap of its own on the reconcile", strings.Replace(po, "%s", ", timed: {reconcile: {gap: 15}}%s", 1), 10,
 			append(slices.Clone(done), run("workline develop reconcile", "workline-develop.yml", "completed", "2026-11-16T02:10:00Z")), "", nil, "reconcile: ran at"},
+		{"a time of its own on the reconcile, past", strings.Replace(po, "%s", ", timed: {reconcile: {at: \"0 2 * * *\"}}%s", 1), 10,
+			append(slices.Clone(done), run("workline develop reconcile", "workline-develop.yml", "completed", "2026-11-16T02:05:00Z")), "", nil, "reconcile: ran at"},
 		{"runs not read", po, 6, nil, "HTTP 502", []string{"reconcile"}, ""},
 	} {
 		config := c.config

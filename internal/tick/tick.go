@@ -154,7 +154,7 @@ func Due(o Options) Result {
 			continue
 		}
 		switch {
-		case t.name == "reconcile" && t.Gap == 0:
+		case t.name == "reconcile" && t.Gap == 0 && t.At == "":
 			r.add(o, Item{Job: "reconcile", Why: "every tick", Key: j.key})
 		case t.name == "backlog":
 			if why, ok := backlog(o, &r, runsOf, j, t.from, runsErr); ok {
