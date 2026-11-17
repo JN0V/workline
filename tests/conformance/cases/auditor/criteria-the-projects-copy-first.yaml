@@ -1,0 +1,23 @@
+case: auditor/criteria-the-projects-copy-first
+about: "The project's copy first: the project's own copy in `.workline/roles/auditor/criteria/<role>/<kind>.md` is the criteria an act is judged against, before the auditor's shipped copy and the role's own (ADR-0070 §3). Here the product owner's `ready` has all three: the auditor is asked the project's file alone."
+given:
+  repo: vouched
+  env: {WORKLINE_ROLES: "$WORK/roles"}
+  setup:
+    - "mkdir ../roles && for r in \"$FIXTURES\"/../../../roles/*/; do ln -s \"$(cd \"$r\" && pwd)\" \"../roles/$(basename \"$r\")\"; done"
+    - "rm ../roles/auditor ../roles/product-owner && cp -r \"$FIXTURES/../../../roles/auditor\" ../roles/auditor && cp -r \"$FIXTURES/../../../roles/product-owner\" ../roles/product-owner"
+    - "mkdir -p ../roles/auditor/criteria/product-owner ../roles/product-owner/criteria && printf 'SHIPPED-COPY-CRITERIA: a ready issue is one a person wrote.\\n' > ../roles/auditor/criteria/product-owner/ready.md && printf 'ROLE-OWN-CRITERIA: a ready issue says what it asks.\\n' > ../roles/product-owner/criteria/ready.md"
+    - "mkdir -p .workline/roles/auditor/criteria/product-owner && printf 'PROJECT-COPY-CRITERIA: a ready issue is one this project can build.\\n' > .workline/roles/auditor/criteria/product-owner/ready.md"
+  forge:
+    issues:
+      - {"id": 20, "title": "Issue 20", "body": "Issue 20.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Did ready on #20'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests: []
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-by-criteria.sh" PROJECT-COPY-CRITERIA CRITERIA:'], then: apply}
+expect:
+  status: pass
+  findings:
+    - {rule: act-stands, where: "#20", message: "the product owner's `ready` on #20"}
+  no-findings:
+    - {rule: sample-not-read, where: "#20"}
+    - {rule: act-false, where: "#20"}
+    - {rule: act-unproven, where: "#20"}
