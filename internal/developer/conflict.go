@@ -233,8 +233,10 @@ func bundleMerge(runDir, repo, tree, head, base string) error {
 	if out, err := exec.Command("git", "-C", repo, "update-ref", ref, at).CombinedOutput(); err != nil {
 		return fmt.Errorf("git update-ref: %v: %s", err, strings.TrimSpace(string(out)))
 	}
-	defer exec.Command("git", "-C", repo, "update-ref", "-d", ref).Run() //nolint:errcheck // a leftover ref is harmless
 	out, err := exec.Command("git", "-C", repo, "bundle", "create", "-q", filepath.Join(runDir, MergeBundle), ref, "^"+head, "^"+base).CombinedOutput()
+	if _, delErr := gitOut(repo, "update-ref", "-d", ref); err == nil && delErr != nil {
+		return fmt.Errorf("git update-ref -d %s: %w", ref, delErr)
+	}
 	if err != nil {
 		return fmt.Errorf("git bundle create: %v: %s", err, strings.TrimSpace(string(out)))
 	}
