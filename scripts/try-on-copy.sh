@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
-# Try a release or a ref of workline on a scratch copy of a real repository
-# (ADR-0071 §2, docs/github/try-on-copy.md): one issue runs end to end,
-# product owner, tester, developer, on GitHub's own CI; the try asserts forge
-# facts only, then deletes its scratch repository.
-#
-#   scripts/try-on-copy.sh [--dry-run] [--keep] [--timeout MIN] <version|ref> [source[@tag]]
-#
+# Try a release or a ref of workline on a scratch copy of a real repository:
+# one issue end to end on GitHub's CI, forge facts asserted, the copy deleted.
+# Why and how: docs/github/try-on-copy.md (ADR-0071 §2). Usage: --help.
 # Exit: 0 green, 1 red, 2 usage, 3 another try is running, 4 setup failed.
 set -euo pipefail
 
@@ -330,4 +326,5 @@ fi
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
 	printf '### Try of %s: %s\n\n%s\n' "${version:-$target}" "$verdict" "$why" >>"$GITHUB_STEP_SUMMARY"
 fi
-[ $verdict = green ]
+trap - ERR
+if [ $verdict = green ]; then exit 0; else exit 1; fi
