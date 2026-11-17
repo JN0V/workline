@@ -4,7 +4,9 @@ about: >
   person a question, Ann answered it and added workline:accepted before
   the next run, no text of the product owner's waiting on her. The run
   gives the agent her answer and its refine writes it into the Scope; the
-  label moves the issue to ready at the run after, never before.
+  label moves the issue to ready at the run after, never before. The issue
+  already carries its kind label, so the second run has nothing left to ask
+  the agent and the one call is the refine that reads the answer.
 given:
   repo: backlog
   forge:
@@ -13,7 +15,7 @@ given:
         title: "Sales counted"
         author: ann
         insider: true
-        labels: [workline:to-refine, workline:accepted]
+        labels: [bug, workline:to-refine, workline:accepted]
         body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n---\n\n## Verification\n\nA test counts a known day.\n\n## Scope\n\n`src/export/csv.go`: the writer."
         comments:
           - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
@@ -25,5 +27,5 @@ expect:
   forge:
     issues:
       - id: 9
-        labels: [workline:ready]
+        labels: [bug, workline:ready]
         body-contains: "## Scope\n\n`src/export/csv.go`: the writer. A refunded sale is not counted, as Ann answered."
