@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -87,7 +89,7 @@ func Follow(o FollowOptions) *Result {
 		return fail(err)
 	}
 	n, rebuilt, closed, later, draftsRebuilt := 0, 0, 0, 0, 0
-	for _, branch := range open {
+	for _, branch := range oldestDraftsFirst(repo, base, open, local) {
 		role, _, ok := strings.Cut(strings.TrimPrefix(branch, "workline/"), "/")
 		if !ok || !gardening {
 			continue
@@ -176,6 +178,41 @@ func Follow(o FollowOptions) *Result {
 
 // maxDraftRebuilds is how many tester drafts one gardening run rebuilds.
 const maxDraftRebuilds = 5
+
+// oldestDraftsFirst orders the branches so the tester drafts come by the age
+// of their tip, the oldest first: the few a run rebuilds are those left
+// longest, and a rebuilt one (a new commit) goes to the back, so every draft
+// gets its turn. The others keep the forge's order, ahead of the drafts.
+func oldestDraftsFirst(repo, base string, open []string, local bool) []string {
+	isDraft := func(b string) bool { return strings.HasPrefix(b, "workline/tester/") }
+	age := map[string]int64{}
+	for _, b := range open {
+		if !isDraft(b) {
+			continue
+		}
+		_, tip, err := tips(repo, base, b, local)
+		if err != nil || tip == "" {
+			continue
+		}
+		if out, err := git(repo, nil, "log", "-1", "--format=%ct", tip); err == nil {
+			age[b], _ = strconv.ParseInt(strings.TrimSpace(out), 10, 64)
+		}
+	}
+	sorted := slices.Clone(open)
+	slices.SortStableFunc(sorted, func(a, b string) int {
+		switch {
+		case isDraft(a) != isDraft(b):
+			if isDraft(a) {
+				return 1
+			}
+			return -1
+		case isDraft(a):
+			return cmp.Compare(age[a], age[b])
+		}
+		return 0
+	})
+	return sorted
+}
 
 // follow rebuilds one role's branch on base's tip, and says what it did;
 // nothing when the branch is on base's tip already. A branch with nothing
