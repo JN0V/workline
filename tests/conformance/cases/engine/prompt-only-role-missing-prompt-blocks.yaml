@@ -1,0 +1,7 @@
+case: engine/prompt-only-role-missing-prompt-blocks
+about: "A role whose instruction.md is not there does not pass: the run says which file is missing."
+given: {repo: basic}
+run: {role: prompt-missing, event: schedule, ai: "cmd:echo '[]'"}
+expect:
+  status: block
+  findings: [{rule: engine-error, message: "instruction.md"}]
