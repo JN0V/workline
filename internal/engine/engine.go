@@ -3943,6 +3943,9 @@ func envValue(env []string, name string) string {
 // error naming the file; nothing here judges.
 func sharedPre(r *role.Role, env []string) error {
 	runDir := envValue(env, "WORKLINE_RUN_DIR")
+	if runDir == "" {
+		return fmt.Errorf("WORKLINE_RUN_DIR is not set")
+	}
 	text, err := os.ReadFile(filepath.Join(r.Dir, "instruction.md"))
 	if err != nil {
 		return fmt.Errorf("role %q has no instruction.md", r.Name)
@@ -3962,9 +3965,14 @@ func sharedPre(r *role.Role, env []string) error {
 
 // sharedPost is the post of a role that has none: it blocks on nothing
 // and applies nothing. What the agent proposed is held to the role's
-// intentions and duties.writes where it is applied.
+// intentions and duties.writes by the apply step: invalid (intention
+// kinds the role does not declare) and outOfBounds (writes outside
+// duties.writes), which refuse and apply nothing.
 func sharedPost(env []string) (int, error) {
 	runDir := envValue(env, "WORKLINE_RUN_DIR")
+	if runDir == "" {
+		return 0, fmt.Errorf("WORKLINE_RUN_DIR is not set")
+	}
 	if err := os.MkdirAll(filepath.Join(runDir, "out"), 0o755); err != nil {
 		return 0, err
 	}
