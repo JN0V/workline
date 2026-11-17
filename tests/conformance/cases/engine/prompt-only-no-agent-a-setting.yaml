@@ -1,0 +1,10 @@
+case: engine/prompt-only-no-agent-a-setting
+about: "A prompt-only role with without-ai: skip, run with no agent, does what the setting says and says it."
+given: {repo: released}
+run: {role: follows-its-setting, event: merge, ai: none, summary: true}
+expect:
+  status: pass
+  agent-calls: 0
+  summary-file:
+    - "### workline run-role follows-its-setting (merge)"
+    - "skip"

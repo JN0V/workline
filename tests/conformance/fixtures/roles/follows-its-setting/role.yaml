@@ -1,0 +1,12 @@
+contract: 1
+name: follows-its-setting
+mission: A role of the tests only, made of role.yaml and a prompt, with no script and without-ai set to skip, so a setting it names is tried with no agent.
+
+events: [merge]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: ["docs/**"]
+intentions: [note]
+without-ai: skip

@@ -1,0 +1,10 @@
+case: engine/prompt-only-locally-and-in-ci
+about: "A prompt-only role routed on an event and run by route, with no agent, gives the result run-role gives: it passes, and asks no agent."
+given:
+  repo: released
+  config: {routing: {events: {merge: [reports-by-default]}}}
+run: {route: merge, ai: none}
+expect:
+  status: pass
+  steps: [reports-by-default]
+  agent-calls: 0

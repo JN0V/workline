@@ -1,0 +1,11 @@
+contract: 1
+name: reports-by-default
+mission: A role of the tests only, made of role.yaml and a prompt, with no script and no without-ai, so what a prompt-only role does with no agent is tried.
+
+events: [merge]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: ["docs/**"]
+intentions: [note]

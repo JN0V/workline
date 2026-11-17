@@ -1,0 +1,17 @@
+case: engine/prompt-only-any-command
+about: "A prompt-only role run with a cmd: agent gives the command the whole task inlined on its input, and its answer is read and applied as claude's is."
+given: {repo: released}
+run:
+  role: reports-by-default
+  event: merge
+  # It proposes only when the role's instruction is in the prompt it was given.
+  ai: |-
+    cmd:prompt=$(cat)
+    case "$prompt" in *"for the release notes"*) ;; *) exit 0 ;; esac
+    echo '- note: "the command saw the whole task"'
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [note]
+  notes: ["saw the whole task"]
+  calls: [{agent: cmd}]
