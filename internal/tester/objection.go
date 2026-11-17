@@ -803,6 +803,11 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 			act.Test = a.File
 		}
 		if missing && i == 0 && len(files) == 1 && a.Record.Files[files[0]] == "" && inTestFolder(a.Record, files[0]) {
+			// A new file is new: a file already on the branch, not the
+			// tester's, is never overwritten by the whole-content patch.
+			if _, err := os.Stat(filepath.Join(repo, filepath.FromSlash(files[0]))); err == nil {
+				return block("rewrite-other-file", "a test missing goes in a new file: `"+files[0]+"` exists already and is not one of the tester's tests")
+			}
 			// Tests are one case a file: a test missing is a new file, in a
 			// folder holding one of the tester's tests (#1668).
 			a.File = files[0]
