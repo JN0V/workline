@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.78.3](https://github.com/JN0V/workline/compare/v0.78.2...v0.78.3) (2026-11-17)
+
+
+### Bug Fixes
+
+* a line pull request is never brought up to date when main ([#1678](https://github.com/JN0V/workline/issues/1678)) ([6a1f1ba](https://github.com/JN0V/workline/commit/6a1f1ba41c6c54f03f1ce91c0d3f7dd4f32829cd))
+* a PR whose opened event GitHub lost never gets CI ([#1721](https://github.com/JN0V/workline/issues/1721)) ([5b9dd4b](https://github.com/JN0V/workline/commit/5b9dd4bb5707aa621fd814c225e8bda11ba9338e))
+* a warn-lens comment starts a developer round that ([#1694](https://github.com/JN0V/workline/issues/1694)) ([f9f7486](https://github.com/JN0V/workline/commit/f9f7486096c1a012b1ff4c93a022939805bfe81c))
+* **engine:** a person's own later yes answers their comment ([#1732](https://github.com/JN0V/workline/issues/1732)) ([6eaee12](https://github.com/JN0V/workline/commit/6eaee12eed652ae8334246d8899898a674fa1f34))
+* **internal:** a person's review comment on a tester's ([#1638](https://github.com/JN0V/workline/issues/1638)) ([a456bbe](https://github.com/JN0V/workline/commit/a456bbe481615910d13453ae92df8f8f3080f4d3))
+* public GitHub repos stop merging on Dec 2 ([#1686](https://github.com/JN0V/workline/issues/1686)) ([abdc1e5](https://github.com/JN0V/workline/commit/abdc1e564265d6149b23b3eb99c90c7ba5b0e013))
+* rebuilding every tester draft at once starves the merge of ([#1728](https://github.com/JN0V/workline/issues/1728)) ([29f49c1](https://github.com/JN0V/workline/commit/29f49c1683c133605a69eb354edf216a528094f8))
+* **tester:** new test hidden by a same-named test in another ([#1717](https://github.com/JN0V/workline/issues/1717)) ([9f1c129](https://github.com/JN0V/workline/commit/9f1c1291fdd694bb8703b4603ee7dfc7970d3b21))
+* **tester:** tester's answer puts a missing test in a new file ([#1710](https://github.com/JN0V/workline/issues/1710)) ([d351276](https://github.com/JN0V/workline/commit/d351276aa3c6d211ce51bcabe159898fb5061df1))
+* the product owner does not split when a person asks it to ([#1726](https://github.com/JN0V/workline/issues/1726)) ([3455fe5](https://github.com/JN0V/workline/commit/3455fe5fac0e300e06be73c9f05813ba3de5c0f0))
+* the tester's retry rewrites its tests whole and repeats ([#1725](https://github.com/JN0V/workline/issues/1725)) ([e46c040](https://github.com/JN0V/workline/commit/e46c04032bad7a2ba815a8af84d9aa495b060646))
+
 ## [0.78.2](https://github.com/JN0V/workline/compare/v0.78.1...v0.78.2) (2026-11-16)
 
 
