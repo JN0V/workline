@@ -62,17 +62,17 @@ const answerKept = 24 * time.Hour
 
 var answers struct {
 	sync.Mutex
-	path string
-	m    map[string]keptAnswer
+	repo, path string
+	m          map[string]keptAnswer
 }
 
-// keptAnswers is the clone's answers kept, read once: none when repo is
-// no clone.
+// keptAnswers is repo's answers kept, read once a process for each
+// repository it reads: none when repo is no clone.
 func keptAnswers(repo string) map[string]keptAnswer {
-	if answers.m != nil {
+	if answers.m != nil && answers.repo == repo {
 		return answers.m
 	}
-	answers.m = map[string]keptAnswer{}
+	answers.repo, answers.path, answers.m = repo, "", map[string]keptAnswer{}
 	out, err := exec.Command("git", "-C", repo, "rev-parse", "--path-format=absolute", "--git-common-dir").Output()
 	if err != nil {
 		return answers.m
@@ -100,9 +100,15 @@ func keep() {
 	if err != nil || os.MkdirAll(filepath.Dir(answers.path), 0o755) != nil {
 		return
 	}
-	tmp := answers.path + ".tmp"
-	if os.WriteFile(tmp, data, 0o600) == nil {
-		_ = os.Rename(tmp, answers.path)
+	// A file of its own, renamed in place: two ticks at once each write
+	// a whole file, the last one kept.
+	f, err := os.CreateTemp(filepath.Dir(answers.path), "etags-*.json")
+	if err != nil {
+		return
+	}
+	_, werr := f.Write(data)
+	if cerr := f.Close(); werr != nil || cerr != nil || os.Rename(f.Name(), answers.path) != nil {
+		_ = os.Remove(f.Name())
 	}
 }
 

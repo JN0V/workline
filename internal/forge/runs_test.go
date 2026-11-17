@@ -66,8 +66,8 @@ func TestGitHubListingsReadConditionally(t *testing.T) {
 esac
 `)
 	ReadConditionally(true)
-	t.Cleanup(func() { ReadConditionally(false); answers.m, answers.path = nil, "" })
-	answers.m, answers.path = nil, ""
+	t.Cleanup(func() { ReadConditionally(false); answers.m, answers.repo, answers.path = nil, "", "" })
+	answers.m, answers.repo, answers.path = nil, "", ""
 	sent0, free0 := Calls()
 	g := &github{repo: repo}
 	for i := range 2 {
@@ -77,7 +77,7 @@ esac
 		}
 	}
 	// Another command, the answers read back from the clone.
-	answers.m, answers.path = nil, ""
+	answers.m, answers.repo, answers.path = nil, "", ""
 	if runs, err := g.RunsGoing(); err != nil || len(runs) != 1 {
 		t.Fatalf("a next command: %+v, %v: want the answer kept in the clone", runs, err)
 	}
@@ -90,5 +90,52 @@ esac
 	}
 	if _, err := os.Stat(filepath.Join(repo, ".git", "workline", "etags.json")); err != nil {
 		t.Errorf("the answers are not kept in the clone: %v", err)
+	}
+}
+
+// A change is read (#1762): after a 304, an answer 200 with a new ETag
+// replaces the one kept, and its ETag is sent the next time.
+func TestGitHubListingANewAnswerReplacesTheOneKept(t *testing.T) {
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "init", "-q", repo).CombinedOutput(); err != nil {
+		t.Fatal(err, string(out))
+	}
+	state := filepath.Join(t.TempDir(), "changed")
+	calls := fakeGH(t, `case "$*" in
+*'If-None-Match: W/"e2"'*) printf 'HTTP/2.0 304 Not Modified\r\nEtag: W/"e2"\r\n\r\n'; exit 1 ;;
+*'If-None-Match: W/"e1"'*) if [ -f `+state+` ]; then
+     printf 'HTTP/2.0 200 OK\r\nEtag: W/"e2"\r\n\r\n'
+     echo '{"name":"workline gardening docs","workflow":"workline-gardening.yml","status":"queued","started":"2026-11-16T02:30:00Z"}'
+   else printf 'HTTP/2.0 304 Not Modified\r\nEtag: W/"e1"\r\n\r\n'; exit 1; fi ;;
+*) printf 'HTTP/2.0 200 OK\r\nEtag: W/"e1"\r\n\r\n'
+   echo '{"name":"workline merge","workflow":"workline-merge.yml","status":"in_progress","started":"2026-11-16T02:00:00Z"}' ;;
+esac
+`)
+	ReadConditionally(true)
+	t.Cleanup(func() { ReadConditionally(false); answers.m, answers.repo, answers.path = nil, "", "" })
+	answers.m, answers.repo, answers.path = nil, "", ""
+	g := &github{repo: repo}
+	names := func() string {
+		runs, err := g.RunsGoing()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var n []string
+		for _, r := range runs {
+			n = append(n, r.Name)
+		}
+		return strings.Join(n, ",")
+	}
+	if a, b := names(), names(); a != "workline merge" || b != "workline merge" {
+		t.Fatalf("read, then 304: %q, %q; want the merge run both times", a, b)
+	}
+	if err := os.WriteFile(state, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if c, d := names(), names(); c != "workline gardening docs" || d != "workline gardening docs" {
+		t.Errorf("a new run, then 304 on its ETag: %q, %q; want the new answer both times", c, d)
+	}
+	if got := callsIn(t, calls); len(got) != 4 || !strings.Contains(got[3], `If-None-Match: W/"e2"`) {
+		t.Errorf("calls %q: the last one with the new ETag", got)
 	}
 }
