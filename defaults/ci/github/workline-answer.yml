@@ -53,21 +53,17 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code
       # Your test runner here: the tester proves a rewrite red on the base
       # with the project's `test-command`.
-      # The Draft's branch and the head the answer reads: the objection's
-      # run names them; a start by hand or by the reconciler, its open
-      # pull request from this repository.
+      # The Draft's branch and the head the answer reads: its open pull
+      # request's tip now, never the objection run's head_sha, which a
+      # re-run or a push since leaves behind (#1701).
       - name: The Draft's head
         id: head
         env:
           GH_TOKEN: ${{ github.token }}
-          EVENT: ${{ github.event_name }}
           BRANCH: ${{ github.event.workflow_run.head_branch || inputs.branch }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [ "$EVENT" = workflow_dispatch ]; then
-            HEAD_SHA=$(gh pr list --head "$BRANCH" --state open --json headRefOid,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0].headRefOid // empty')
-            [ -n "$HEAD_SHA" ] || { echo "no open pull request from $BRANCH in this repository: nothing to answer"; }
-          fi
+          HEAD_SHA=$(gh pr list --head "$BRANCH" --state open --json headRefOid,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0].headRefOid // empty')
+          [ -n "$HEAD_SHA" ] || echo "no open pull request from $BRANCH in this repository: nothing to answer"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "head=$HEAD_SHA" >> "$GITHUB_OUTPUT"
       - name: The answer (proposed only)
@@ -83,8 +79,8 @@ jobs:
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
           [ -n "$pr" ] || { echo "no open pull request from $BRANCH: nothing to answer"; exit 0; }
-          # The head the objection was made on; the engine already set up
-          # from the default branch's checkout.
+          # The Draft's tip; the engine already set up from the default
+          # branch's checkout.
           git checkout -q -B "$BRANCH" "$HEAD_SHA"
           status=0
           workline test answer --merge-request "$pr" --ai "$ai" --no-apply --forge github --json > answer.json || status=$?

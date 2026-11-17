@@ -42,14 +42,15 @@ jobs:
 
   # A reply in a thread on the tester's Draft (workline/tester/*), the
   # developer's App or a person's, its body opening with no
-  # `workline:objection`: noticed the same way, its end wakes
-  # workline-answer.yml, which answers the reply.
+  # `workline:objection`, nor the tester's own answer: noticed the same
+  # way, its end wakes workline-answer.yml, which answers the reply.
   replied-to-tester:
     if: >-
       startsWith(github.event.pull_request.head.ref, 'workline/tester/') &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.state == 'open' && github.event.comment.in_reply_to_id != '' &&
       !startsWith(github.event.comment.body, 'workline:objection') &&
+      !contains(github.event.comment.body, '<!-- workline:tester-') &&
       (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) || github.event.comment.user.type == 'Bot')
     runs-on: ubuntu-latest
     timeout-minutes: 30

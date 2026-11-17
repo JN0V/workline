@@ -6,9 +6,15 @@
 name: workline answer
 on:
   workflow_run: {workflows: [workline objection], types: [completed]}
+  # By hand, and by the end of an answer (the next objection waiting) and by
+  # workline-develop.yml's reconciler (an objection no comment wakes): the
+  # Draft's branch, workline/tester/*.
+  workflow_dispatch:
+    inputs:
+      branch: {description: "the tester's Draft branch, workline/tester/*", required: true}
 permissions: {}
 # One answer at a time per Draft: the next takes the objection waiting after it.
-concurrency: {group: "workline-answer-${{ github.event.workflow_run.head_branch }}", cancel-in-progress: false}
+concurrency: {group: "workline-answer-${{ github.event.workflow_run.head_branch || inputs.branch }}", cancel-in-progress: false}
 
 env:
   # The release this workflow runs (ADR-0071 §1): moved only in its own
@@ -19,13 +25,17 @@ env:
 jobs:
   judge:
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_repository.full_name == github.repository &&
-      startsWith(github.event.workflow_run.head_branch, 'workline/tester/')
+      (github.event_name == 'workflow_dispatch' && startsWith(inputs.branch, 'workline/tester/')) ||
+      (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        startsWith(github.event.workflow_run.head_branch, 'workline/tester/'))
     runs-on: ubuntu-latest
     permissions: {contents: read, pull-requests: read, issues: read}
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
     outputs:
+      branch: ${{ steps.head.outputs.branch }}
+      head: ${{ steps.head.outputs.head }}
       run: ${{ steps.answer.outputs.run }}
       status: ${{ steps.answer.outputs.status }}
     steps:
@@ -39,20 +49,34 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code
       # Your test runner here: the tester proves a rewrite red on the base
       # with the project's `test-command`.
+      # The Draft's branch and the head the answer reads: its open pull
+      # request's tip now, never the objection run's head_sha, which a
+      # re-run or a push since leaves behind (#1701).
+      - name: The Draft's head
+        id: head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.workflow_run.head_branch || inputs.branch }}
+        run: |
+          HEAD_SHA=$(gh pr list --head "$BRANCH" --state open --json headRefOid,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0].headRefOid // empty')
+          [ -n "$HEAD_SHA" ] || echo "no open pull request from $BRANCH in this repository: nothing to answer"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "head=$HEAD_SHA" >> "$GITHUB_OUTPUT"
       - name: The answer (proposed only)
         id: answer
+        if: steps.head.outputs.head != ''
         env:
           GH_TOKEN: ${{ github.token }}
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the tester's record (ADR-0051)
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          BRANCH: ${{ github.event.workflow_run.head_branch }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH: ${{ steps.head.outputs.branch }}
+          HEAD_SHA: ${{ steps.head.outputs.head }}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
           [ -n "$pr" ] || { echo "no open pull request from $BRANCH: nothing to answer"; exit 0; }
-          # The head the objection was made on; the engine already set up
-          # from the default branch's checkout.
+          # The Draft's tip; the engine already set up from the default
+          # branch's checkout.
           git checkout -q -B "$BRANCH" "$HEAD_SHA"
           status=0
           workline test answer --merge-request "$pr" --ai "$ai" --no-apply --forge github --json > answer.json || status=$?
@@ -87,7 +111,7 @@ jobs:
     if: always() && needs.judge.outputs.run != ''
     runs-on: ubuntu-latest
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
-    permissions: {contents: write, pull-requests: write, issues: write}
+    permissions: {contents: write, pull-requests: write, issues: write, actions: write}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''
@@ -112,8 +136,8 @@ jobs:
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
           WORKLINE_RUNS_DIR: ${{ runner.temp }}/workline-runs
           RUN: ${{ needs.judge.outputs.run }}
-          BRANCH: ${{ github.event.workflow_run.head_branch }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH: ${{ needs.judge.outputs.branch }}
+          HEAD_SHA: ${{ needs.judge.outputs.head }}
         run: |
           printf '%s' "$RUN" | grep -Eqx '[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+' && [ -d "$WORKLINE_RUNS_DIR/$RUN" ] ||
             { echo "::error title=workline::judge named no run of its own: $RUN"; exit 1; }
@@ -130,3 +154,13 @@ jobs:
           workline apply "$RUN" --from-merge-request "$NUMBER" --head "$HEAD_SHA" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+      # One answer a run: an answer applied, the next objection waiting is
+      # answered by a new run, which ends at once with none left.
+      - name: The next answer
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ needs.judge.outputs.branch }}
+        run: |
+          gh workflow run workline-answer.yml --ref "$GITHUB_REF_NAME" -f branch="$BRANCH" ||
+            echo "::warning title=workline::the next answer not started: the heartbeat starts it"

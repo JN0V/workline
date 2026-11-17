@@ -461,6 +461,13 @@ jobs:
             gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f pull-request="$n" ||
               echo "::warning title=workline::!$n's round not started: the next hour starts it"
           done
+          # The tester's answer on each Draft an objection waits on, that
+          # no comment wakes again: a run that answered one, or stopped
+          # first (#1701).
+          for b in $(jq -r '(.answers // [])[].branch' due.json); do
+            gh workflow run workline-answer.yml --ref "$GITHUB_REF_NAME" -f branch="$b" ||
+              echo "::warning title=workline::the answer on $b not started: the next reconcile starts it"
+          done
       # The next reconcile, by the heartbeat (#845), even when this one
       # failed: its run waits the environment's wait timer, in minutes.
       # No such environment, or no wait timer (a private repository on
