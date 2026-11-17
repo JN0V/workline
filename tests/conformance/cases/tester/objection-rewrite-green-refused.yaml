@@ -1,7 +1,7 @@
 case: tester/objection-rewrite-green-refused
 about: >
-  A rewrite that passes on the base proves nothing: it is refused, nothing
-  is pushed nor replied, and the objection still waits.
+  A rewrite that passes on the base proves nothing: it is refused, said in the thread, nothing
+  is pushed, and the objection goes on.
 given:
   repo: tested-draft
   setup:
@@ -31,4 +31,4 @@ expect:
     merge-requests:
       - id: 1
         threads:
-          - {path: tests/test_mul_two_by_three.sh, replies: 0}
+          - {path: tests/test_mul_two_by_three.sh, replies: 1, replies-contain: ["refused", "test-green-on-base"]}
