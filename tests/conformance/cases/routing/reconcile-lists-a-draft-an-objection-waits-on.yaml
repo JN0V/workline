@@ -1,0 +1,44 @@
+case: routing/reconcile-lists-a-draft-an-objection-waits-on
+about: >
+  An objection no comment wakes again (#1701): the tester's answer run
+  answered one objection and two wait, or a reply came while it ran.
+  With `--input reconcile=list` the reconciler says the tester's Draft
+  an objection waits on, starts nothing and asks no agent: the CI job
+  starts its answer run. A Draft whose objection is answered is not
+  listed.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q -b workline/tester/issue-4 main && git push -q origin workline/tester/issue-4 && git checkout -q main"
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - {id: 3, title: "Multiply two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+      - {id: 4, title: "Divide two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+        threads:
+          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: mul may print spaces around the number"}
+          - {id: "8", path: tests/test_mul_two_by_three.sh, line: 5, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: untestable\n- why: the exit code is not said"}
+      - id: 2
+        branch: workline/tester/issue-4
+        draft: true
+        comments: ["The tests of #4, frozen.\n\n<!-- workline:tester-record {\"issue\":4,\"base\":\"main\",\"files\":{}} -->\n<!-- workline:sticky=tester/tests -->"]
+        threads:
+          - {id: "9", path: tests/test_div.sh, line: 3, author: builder, body: "workline:objection\n- test: tests/test_div.sh\n- scenario: By two\n- kind: over-specified\n- why: too strict", replies: [{author: "workline-app[bot]", bot: true, body: "**Kept**: the scenario says it.\n\n<!-- workline:tester-answer -->"}]}
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-answer-kept", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "; 1 tester's Draft an objection waits on: merge request 1"
+  agent-calls: 0
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - id: 1
+        threads:
+          - {path: tests/test_mul_two_by_three.sh, replies: 0}
+          - {path: tests/test_mul_two_by_three.sh, replies: 0}
