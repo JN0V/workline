@@ -153,12 +153,12 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 			m.Why = "the reviewer's findings on it cannot be read: " + why
 			return m, nil
 		}
+		if marker != reviewerMarkers[0] {
+			continue // the lenses that warn, read apart: never the verdict, never a hold
+		}
 		asked, _ := reviewRows(c)
 		for _, x := range asked {
 			m.Open = append(m.Open, fmt.Sprintf("%s %s `%s`: %s", x.Holds, x.Lens, x.Where, x.Text))
-		}
-		if marker != reviewerMarkers[0] {
-			continue // the lenses that warn, read apart: never the verdict
 		}
 		if at := reviewerAt.FindStringSubmatch(c); at != nil {
 			m.ReviewedAt = at[1]
@@ -177,7 +177,7 @@ func MergeSaid(f forge.Forge, id int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for _, marker := range []string{"merge-alone=code", "merge-waits=" + KindFeature, "merge-waits=" + KindTask, "merge-waits=" + Unreproduced, "merge-waits=" + Unreviewed} {
+	for _, marker := range []string{"merge-alone=code", "merge-waits=" + KindFeature, "merge-waits=" + KindTask, "merge-waits=" + Unreproduced, "merge-waits=" + Unreviewed, "merge-waits=findings"} {
 		if body, whole := kept.Last(forge.Marker(marker)); body != "" && whole {
 			said, _, _ := strings.Cut(body, "\n")
 			return strings.TrimSpace(said), nil
