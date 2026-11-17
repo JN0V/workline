@@ -1,0 +1,11 @@
+contract: 1
+name: reads-the-sample
+mission: A role of the tests only, made of this file and its instruction, no pre nor post — it declares the weekly sample's results as its input, so what the shared pre reads of them is tried.
+
+events: [schedule]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties: {reads: ["**"], writes: []}
+inputs: {sample: {}}
+intentions: [note]
+without-ai: pass

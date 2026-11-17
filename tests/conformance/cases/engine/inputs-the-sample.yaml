@@ -1,0 +1,19 @@
+case: engine/inputs-the-sample
+about: "A role declaring the input `sample` is given the last weekly sample's results, the week's comment on the sample's issue, in its task."
+given:
+  repo: basic
+  forge:
+    issues:
+      - id: 1
+        title: "workline: the weekly sample of every role's acts"
+        body: "Each week…"
+        labels: []
+        comments:
+          - "### 2026-W01\n\nTwo acts: docs/a.md checked, true.\n\n<!-- workline:rows [{\"n\":1,\"role\":\"documentalist\",\"kind\":\"checked\",\"ref\":\"docs/a.md\",\"verdict\":\"true\"}] -->\n\n<!-- workline:sample:2026-W01 -->"
+    merge-requests: []
+run: {role: reads-the-sample, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains: ["2026-W01", "docs/a.md"]

@@ -1,0 +1,20 @@
+case: engine/inputs-the-runs
+about: "A role declaring the input `runs` over 7 days is given the run records of those days in its task: a run of 2 days ago is there, one of 20 days ago is not."
+given:
+  repo: basic
+  forge: {issues: [], merge-requests: []}
+  setup:
+    - |
+      runs=.git/workline/runs
+      recent="$(date -u -d '2 days ago' +%Y%m%dT%H%M%S.000000000)-recent-scout"
+      old="$(date -u -d '20 days ago' +%Y%m%dT%H%M%S.000000000)-old-scout"
+      mkdir -p "$runs/$recent/out" "$runs/$old/out"
+      printf 'role: recent-scout\nrepo: here\napplied: [0]\n' > "$runs/$recent/out/run.yaml"
+      printf 'role: old-scout\nrepo: here\napplied: [0]\n' > "$runs/$old/out/run.yaml"
+run: {role: reads-the-runs, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains: ["recent-scout"]
+      not-contains: ["old-scout"]

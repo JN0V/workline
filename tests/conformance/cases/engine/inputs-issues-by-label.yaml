@@ -1,0 +1,25 @@
+case: engine/inputs-issues-by-label
+about: "A role declaring the input `issues` with the label `bug` is given the open `bug` issues in its task, one page at most; what it cut past the page is said (in/cuts), never silent. An issue without the label, and a closed one, are not in it."
+given:
+  repo: basic
+  forge: {issues: [{id: 1, title: "a feature", labels: [enhancement]}], merge-requests: []}
+  setup:
+    - |
+      {
+        printf '{"issues":[{"id":1,"title":"a feature","labels":["enhancement"],"comments":[]},{"id":2,"title":"a fixed bug","labels":["bug"],"closed":true,"comments":[]},'
+        i=3
+        while [ "$i" -le 122 ]; do
+          printf '{"id":%d,"title":"bug number %d","labels":["bug"],"comments":[]},' "$i" "$i"
+          i=$((i + 1))
+        done
+        printf '{"id":123,"title":"last bug number 123","labels":["bug"],"comments":[]}],"merge-requests":[]}'
+      } > "$FORGE_FILE"
+run: {role: reads-bugs, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains: ["bug number 3"]
+      not-contains: ["a feature", "a fixed bug", "bug number 122", "last bug number 123"]
+    in/cuts:
+      contains: ["issues"]

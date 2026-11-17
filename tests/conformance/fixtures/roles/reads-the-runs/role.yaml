@@ -1,0 +1,11 @@
+contract: 1
+name: reads-the-runs
+mission: A role of the tests only, made of this file and its instruction, no pre nor post — it declares the run records of the last 7 days as its input, so what the shared pre reads of them is tried.
+
+events: [schedule]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties: {reads: ["**"], writes: []}
+inputs: {runs: {days: 7}}
+intentions: [note]
+without-ai: pass

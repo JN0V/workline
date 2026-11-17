@@ -1,0 +1,11 @@
+contract: 1
+name: reads-bugs
+mission: A role of the tests only, made of this file and its instruction, no pre nor post — it declares the open bug issues as its input, so what the shared pre reads of the forge is tried.
+
+events: [schedule]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties: {reads: ["**"], writes: []}
+inputs: {issues: {label: bug}}
+intentions: [note]
+without-ai: pass

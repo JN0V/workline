@@ -1,0 +1,17 @@
+case: engine/inputs-the-wake
+about: "A role declaring the input `wake` is given the wake script's latest output, the entries its issue keeps on the forge, in its task."
+given:
+  repo: basic
+  forge:
+    issues:
+      - id: 1
+        title: "workline: where the line may be drifting"
+        labels: []
+        body: '**1 trigger met**. ADR added: `docs/adr/0000-old.md` <!-- workline:wake {"entries":[{"kind":"contract","key":"contract:adr:docs/adr/0000-old.md","text":"ADR added: `docs/adr/0000-old.md`","at":"abc","day":"2026-01-01"}]} -->'
+    merge-requests: []
+run: {role: reads-the-wake, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains: ["ADR added: `docs/adr/0000-old.md`"]

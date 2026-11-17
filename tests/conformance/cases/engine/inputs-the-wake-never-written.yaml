@@ -1,0 +1,9 @@
+case: engine/inputs-the-wake-never-written
+about: "When no wake output was ever written, a role declaring the input `wake` has not read it: the run says the wake was not read, and does not pass, whatever the agent would have said."
+given:
+  repo: basic
+  forge: {issues: [], merge-requests: []}
+run: {role: reads-the-wake, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  status: block
+  summary: "the wake was not read"
