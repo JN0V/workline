@@ -29,7 +29,9 @@ hold:
    [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)
    completes, the verdicts kept and counted
    ([#276](https://github.com/JN0V/workline/issues/276)), the product
-   owner's issue folded in. The weekly sample's other gaps are parked
+   owner's issue folded in. A comment edited since the act is left out, said: a comment's edit
+   history is not kept, and the act's time is the date of its commit. The
+   weekly sample's other gaps are parked
    ([#108](https://github.com/JN0V/workline/issues/108)): a judge of
    another provider, a week not run caught up.
 2. **The main issue validated on real use**: awaits the maintainer.

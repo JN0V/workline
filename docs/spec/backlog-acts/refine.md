@@ -16,7 +16,12 @@ is not one: the tester writes it from its tests, in `needs-tests`, before ready
 ([ADR-0066](../../adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md),
 [the tester's Verification](#the-testers-verification)). A person's text on top,
 with no Need section holding text, is its Need (`backlog.NeedOnTop`,
-ADR-0039, amended). The product owner writes
+ADR-0039, amended).
+
+This is the meaning of ready since 2026-11-09. Before it, ready meant four
+sections, the Verification written by the product owner and proving the need;
+the auditor judges a `ready` by the meaning of its own day, and only by the
+comments there were at the act (a question that holds nothing is no finding). The product owner writes
 what it can and asks for the rest:
 
 ```yaml

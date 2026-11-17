@@ -527,11 +527,13 @@ func (rd *reader) issueAct(a *Act, m *material, kind string) string {
 		m.items = append(m.items, it)
 	}
 	k := 0
+	actAt, leftOutWhy := actTime(rd.o.Repo, a.Commit), map[string]int{}
 	for _, n := range notes {
 		if strings.Contains(n.Body, "<!-- workline:sticky="+productOwner+"/") {
 			continue // the role's record, its reasoning: never given
 		}
-		if len(n.Created) >= 10 && n.Created[:10] > a.Day {
+		if why := leftOut(n, a, actAt); why != "" {
+			leftOutWhy[why]++
 			continue
 		}
 		k++
@@ -544,6 +546,14 @@ func (rd *reader) issueAct(a *Act, m *material, kind string) string {
 		}
 		text := fmt.Sprintf("%s, %s:\n\n%s", who, when, n.Body)
 		m.items = append(m.items, item{name: fmt.Sprintf("#%d comment %d", id, k), text: text, full: text})
+	}
+	for _, why := range []string{leftEdited, leftNoCommit, leftDay, leftLater} {
+		if c := leftOutWhy[why]; c > 0 {
+			m.about += fmt.Sprintf(" %d comment(s) left out: %s.", c, why)
+		}
+	}
+	if kind == "ready" && a.Day < readyRuleChange {
+		m.about += fmt.Sprintf(" Ready meant, on %s: %s", a.Day, olderReady)
 	}
 	st, _, _ := backlog.ReadState(forge.Bodies(notes), productOwner)
 	m.act = fmt.Sprintf("The product owner's `%s` on #%d, on %s, done alone at %s: %s", a.Kind, id, a.Day, a.By, a.Line)
@@ -577,6 +587,62 @@ func (rd *reader) issueAct(a *Act, m *material, kind string) string {
 		m.about += fmt.Sprintf(" The code it names at %.7s, %s, %d lines at most.", at, which, codeLines)
 	}
 	return ""
+}
+
+// readyRuleChange is the day ready took its present meaning: the Verification
+// became the tester's (docs/spec/backlog-acts/refine.md).
+const readyRuleChange = "2026-11-09"
+
+// olderReady is what ready meant before readyRuleChange.
+const olderReady = "four sections, the need, the scenarios, the verification and the scope; the verification, written by the product owner, proved the need; one need, nothing important left open in its comments. The judge reads the act by this rule, not today's."
+
+const (
+	leftEdited   = "edited since by someone else, and this forge keeps no edit history of a comment, so what it said at the act is not known"
+	leftNoCommit = "posted on the act's own day, and its record keeps no commit to tell the time of the act"
+	leftDay      = "posted on the act's own day, its date giving no time to compare with the act's"
+	leftLater    = "posted after the act"
+)
+
+// actTime is the date of the commit an act's record keeps, standing for the
+// time of the act; zero when there is none.
+func actTime(repo, commit string) time.Time {
+	if commit == "" {
+		return time.Time{}
+	}
+	out, err := git(repo, "log", "-1", "--format=%cI", commit)
+	if err != nil {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339, strings.TrimSpace(out))
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+// leftOut says why a comment is not given: written after the act, or edited
+// since; "" when it is given.
+func leftOut(n forge.Note, a *Act, actAt time.Time) string {
+	if n.Editor != "" {
+		return leftEdited
+	}
+	if len(n.Created) < 10 || n.Created[:10] < a.Day {
+		return ""
+	}
+	if n.Created[:10] > a.Day {
+		return leftLater
+	}
+	if actAt.IsZero() {
+		return leftNoCommit
+	}
+	at, err := time.Parse(time.RFC3339, n.Created)
+	if err != nil {
+		return leftDay
+	}
+	if at.Before(actAt) {
+		return ""
+	}
+	return leftLater
 }
 
 // textRead is the issue's text the product owner read, found by its
