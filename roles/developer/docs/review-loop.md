@@ -219,9 +219,12 @@ failed — is marked ready for review once its rounds make it green
   URL, starts a pipeline with `WORKLINE_TASK=review`; `MR_IID` and
   `MR_SOURCE_BRANCH` from a tool until the engine reads the event
   itself ([with GitLab alone](../../../docs/gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)).
-  The hourly reconcile starts a round an event missed. GitLab shows the
-  gates in its Code Quality report, no comment: a gate red is no round
-  there yet, nor a failed pipeline.
+  The hourly reconcile starts a round an event missed. A round reads
+  the head pipeline's jobs: a project job that failed is asked with the
+  end of its trace, a failed `workline:gates` job asks its trace's new
+  findings once, and a Draft whose jobs are all green is marked ready.
+  A pipeline event as the round's wake is not wired yet: the reconcile
+  starts it.
 - **Off by default**: it runs only on the developer's own pull
   requests, which exist only where a project routes the developer
   ([the triggers](triggers.md)).
