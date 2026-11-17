@@ -1426,12 +1426,126 @@ func settlementDiff(repo, commit string) string {
 	if err != nil || len(parts) != 3 {
 		return ""
 	}
+	return settlementWrote(repo, commit, parts) + settlementDropped(repo, commit, parts)
+}
+
+// settlementDropped lists the lines main added over the merge base that the
+// merge commit's files lost, file by file: keeping the branch's side whole
+// is the riskiest settlement.
+func settlementDropped(repo, commit string, parts []string) string {
+	base, err := git(repo, nil, "merge-base", parts[1], parts[2])
+	base = strings.TrimSpace(base)
+	if err != nil || base == "" {
+		return ""
+	}
+	added, err := git(repo, nil, "diff", "-U0", "--no-color", "--no-renames", "--no-ext-diff", base, parts[2])
+	if err != nil {
+		return ""
+	}
+	mainAdded := map[string]map[string]bool{}
+	fileOf := func(diff string, sign string, each func(file, line string)) {
+		header, file := false, ""
+		for _, l := range strings.Split(diff, "\n") {
+			switch {
+			case strings.HasPrefix(l, "diff --git "):
+				header, file = true, ""
+			case header && strings.HasPrefix(l, "--- "):
+				if f := strings.TrimPrefix(l, "--- "); f != "/dev/null" {
+					file = strings.TrimPrefix(f, "a/")
+				}
+			case header && strings.HasPrefix(l, "+++ "):
+				if f := strings.TrimPrefix(l, "+++ "); f != "/dev/null" {
+					file = strings.TrimPrefix(f, "b/")
+				}
+			case strings.HasPrefix(l, "@@"):
+				header = false
+			case !header && strings.HasPrefix(l, sign):
+				each(file, l[1:])
+			}
+		}
+	}
+	fileOf(added, "+", func(file, line string) {
+		if mainAdded[file] == nil {
+			mainAdded[file] = map[string]bool{}
+		}
+		mainAdded[file][line] = true
+	})
+	lost, err := git(repo, nil, "diff", "-U0", "--no-color", "--no-renames", "--no-ext-diff", commit, parts[2])
+	if err != nil {
+		return ""
+	}
+	// lost: the lines main has that the commit lacks, they are "+" here.
+	var files []string
+	lines := map[string][]string{}
+	fileOf(lost, "+", func(file, line string) {
+		if !mainAdded[file][line] {
+			return
+		}
+		if lines[file] == nil {
+			files = append(files, file)
+		}
+		lines[file] = append(lines[file], line)
+	})
+	if len(files) == 0 {
+		return ""
+	}
+	const max = 200
+	fence := "~~~"
+	for _, f := range files {
+		for _, l := range lines[f] {
+			run, cur := 0, 0
+			for _, r := range l {
+				if r == '~' {
+					if cur++; cur > run {
+						run = cur
+					}
+				} else {
+					cur = 0
+				}
+			}
+			for len(fence) <= run {
+				fence += "~"
+			}
+		}
+	}
+	var b strings.Builder
+	n := 0
+	for _, f := range files {
+		open := false
+		for _, l := range lines[f] {
+			if n++; n > max {
+				continue
+			}
+			if !open {
+				fmt.Fprintf(&b, "\n`%s`:\n\n%s\n", f, fence)
+				open = true
+			}
+			b.WriteString(l + "\n")
+		}
+		if open {
+			b.WriteString(fence + "\n")
+		}
+	}
+	if n > max {
+		fmt.Fprintf(&b, "\n(%d more lines)\n", n-max)
+	}
+	return "\n\nLines main had that the settled files lost:\n" + b.String()
+}
+
+// settlementWrote is the lines the agent wrote over git's own merge.
+func settlementWrote(repo, commit string, parts []string) string {
 	// git's own merge, its conflicts written as markers in the files.
 	cmd := exec.Command("git", "-C", repo, "merge-tree", "--write-tree", "-z", "--no-messages", parts[1], parts[2])
 	raw, err := cmd.Output()
 	var ee *exec.ExitError
 	if err != nil && (!errors.As(err, &ee) || ee.ExitCode() != 1) {
-		return ""
+		why := err.Error()
+		if ee != nil {
+			if m := strings.TrimSpace(string(ee.Stderr)); m != "" {
+				why = m
+			}
+		}
+		return "\n\nThe settlement diff could not be computed: `git merge-tree --write-tree` needs git 2.38 or newer on the runner (" + why + ")."
 	}
 	tree, _, _ := strings.Cut(string(raw), "\x00")
 	if tree == "" {
