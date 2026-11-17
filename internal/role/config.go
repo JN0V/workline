@@ -54,6 +54,7 @@ var (
 			"stale":         free, // a state's name: its age limit in days (ADR-0059, decision 7), checked by the routing
 			"stalled-hours": free, // the hours a pull request keeps its head before it is said stalled (ADR-0068, section 8)
 			"revisit":       free, // the days a blocked issue waits before the product owner reads it again (ADR-0059, amended)
+			"timed":         free, // a job's time, read by workline tick (ADR-0069 §4), checked by the routing
 			// Each moment's wait budget (ADR-0050): its moments only.
 			"budgets": {keys: map[string]*shape{"commit": free, "commit-rewrite": free, "push": free,
 				"first-result": free, "verdict": free, "ready-review": free, "queue": free}},
