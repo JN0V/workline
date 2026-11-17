@@ -1545,7 +1545,10 @@ func settlementWrote(repo, commit string, parts []string) string {
 				why = m
 			}
 		}
-		return "\n\nThe settlement diff could not be computed: `git merge-tree --write-tree` needs git 2.38 or newer on the runner (" + why + ")."
+		if ee != nil && (ee.ExitCode() == 129 || strings.Contains(why, "usage: git merge-tree")) {
+			return "\n\nThe settlement diff could not be computed: `git merge-tree --write-tree` needs git 2.38 or newer on the runner (" + why + ")."
+		}
+		return "\n\nThe settlement diff could not be computed: `git merge-tree --write-tree` failed (" + why + ")."
 	}
 	tree, _, _ := strings.Cut(string(raw), "\x00")
 	if tree == "" {
