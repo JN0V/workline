@@ -1,6 +1,6 @@
 ---
 sources: [defaults/ci/github/workline-objection.yml, defaults/ci/github/workline-answer.yml, defaults/ci/github/workline-develop.yml, defaults/ci/gitlab/workline.gitlab-ci.yml, internal/engine/fromrun.go]
-checked: 1007a8ca
+checked: b34f0b15
 ---
 # An objection's jobs
 
@@ -52,7 +52,13 @@ flowchart LR
   ([#1701](https://github.com/JN0V/workline/issues/1701)).
 - apply then starts `workline-answer.yml` again on the same Draft
   (`workflow_dispatch`, input `branch`): the next one waiting. With
-  none left, the run ends before any agent.
+  none left, the run ends before any agent. 5 answers at most in a
+  chain (input `chain`); the reconciler resumes after.
+- Each run writes on the Draft the state it ran on, whatever it
+  wrote: the tip and each objection waiting
+  (`workline test answer --tried`). A run on that same state
+  (`--state` says `tried`) calls no agent: only a new comment in a
+  waiting thread, a new objection or a new head starts one again.
 - The reconciler of `workline-develop.yml` lists the Drafts an
   objection still waits on (`answers` in `workline route reconcile
   --input reconcile=list`) and starts their answer: a run that
