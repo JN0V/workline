@@ -1,0 +1,62 @@
+# The try on a copy (ADR-0071 §2, docs/github/try-on-copy.md): a release or
+# a ref of workline runs one issue end to end on a scratch repository made
+# afresh from the trial copy, then the scratch repository is deleted. By
+# hand only; one at a time. It runs no engine of its own: the scratch
+# repository's line does.
+name: try on a copy
+on:
+  workflow_dispatch:
+    inputs:
+      ref_or_version:
+        description: "a release (v0.78.4) or a ref of workline (a commit, a branch, pull/<n>/head)"
+        required: true
+      timeout:
+        description: "minutes to wait for the line"
+        required: false
+        default: "90"
+permissions: {}
+
+concurrency:
+  group: try
+  cancel-in-progress: false
+
+jobs:
+  try:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions: {contents: read}
+    # The App's key: the scratch repository's line needs it. Only the
+    # default branch's run reaches it (ADR-0044).
+    environment: workline-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod, cache: false}
+      - name: Try
+        env:
+          # A classic token of the maintainer's: repo, workflow, delete_repo.
+          GH_TOKEN: ${{ secrets.WORKLINE_TRY_TOKEN }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          WORKLINE_APP_PRIVATE_KEY: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}
+          TARGET: ${{ inputs.ref_or_version }}
+          TIMEOUT: ${{ inputs.timeout }}
+        run: |
+          set -o pipefail
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::secret WORKLINE_TRY_TOKEN is not set: docs/github/try-on-copy.md#set-up"
+            exit 4
+          fi
+          scripts/try-on-copy.sh --timeout "$TIMEOUT" "$TARGET" 2>&1 | tee try.log
+      - name: The scratch repository, if the run was cut short
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.WORKLINE_TRY_TOKEN }}
+          SCRATCH: JN0V/workline-try-${{ github.run_id }}
+        run: |
+          if [ -n "$GH_TOKEN" ] && gh repo view "$SCRATCH" >/dev/null 2>&1; then
+            gh repo delete "$SCRATCH" --yes && echo "deleted $SCRATCH"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: try-log, path: try.log, if-no-files-found: ignore, retention-days: 30}
