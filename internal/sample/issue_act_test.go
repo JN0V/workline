@@ -178,3 +178,62 @@ func TestIssueActSaysWhatReadyMeantOnAnOlderDay(t *testing.T) {
 		t.Errorf("the material does not say what ready meant on the act's day: %q", m.about)
 	}
 }
+
+// askedPanelOnReady is what the panel is given when the auditor says a
+// ready false because of a question for a person, the spec review's
+// "No important finding open" on the issue.
+func askedPanelOnReady(t *testing.T) string {
+	t.Helper()
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	repo, sha := commitAt(t, "2026-11-10T10:00:00Z")
+	rd := readerOn(t, repo, []forge.FakeComment{
+		{Body: "**workline reviewer**, its spec — 0 findings on the spec, 1 question for a person.\n\n**Holds**: No important finding open, round 1 of 5.\n\n**Questions for a person**\n\n- `#7:5` (ambiguous): Does it include refunds?",
+			Author: "workline-bot", Bot: true, Created: "2026-11-09T09:00:00Z"},
+	})
+	auditor, err := role.Load("../../roles", "auditor")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rd.auditor = auditor
+	panelIn := filepath.Join(t.TempDir(), "panel.txt")
+	t.Setenv("PANEL_IN", panelIn)
+	script := filepath.Join(t.TempDir(), "judge.sh")
+	body := `in=$(cat)
+case "$in" in
+*"Two readings of the act below disagree"*)
+  printf '%s' "$in" > "$PANEL_IN"
+  printf -- '- note: "yes: it holds"\n' ;;
+*)
+  printf -- '- claim:\n    quote: "a question is open"\n    why: "a question is open"\n    source: {path: "#7", quote: "Does it include refunds?"}\n- note: "false: a question is open"\n' ;;
+esac
+`
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	rd.spec = "cmd:sh " + script
+	rd.settings.Sample.Panel = []string{rd.spec}
+	a := &Act{Role: productOwner, Kind: "ready", Ref: "#7", Day: "2026-11-10", Commit: sha, By: "alone", Line: "ready", key: "7-ready"}
+	rd.readAct(a)
+	asked, err := os.ReadFile(panelIn)
+	if err != nil {
+		t.Fatalf("the panel was never asked (verdict %s, why %q): %v", a.Verdict, a.Why, err)
+	}
+	return string(asked)
+}
+
+// Question for a person: Given a spec review with one question for a person
+// and "No important finding open", When the auditor samples the `ready` that
+// followed, Then the question alone does not make the verdict false: the
+// ready statement the panel is given names the important finding as what
+// must not be left open, and says a question that holds nothing is no
+// finding.
+func TestReadyPanelStatementSaysAQuestionThatHoldsNothingIsNoFinding(t *testing.T) {
+	asked := askedPanelOnReady(t)
+	if !strings.Contains(asked, "no important finding left open") {
+		t.Errorf("the ready statement given to the panel does not ask for no important finding left open:\n%s", asked)
+	}
+	if !strings.Contains(asked, "a question that holds nothing is no finding") {
+		t.Errorf("the ready statement given to the panel does not say a question that holds nothing is no finding:\n%s", asked)
+	}
+}
