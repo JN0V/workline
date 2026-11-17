@@ -347,6 +347,14 @@ func answersDue(res *Result, cfg *routing.Config, f forge.Forge, o engine.Option
 		if _, said, err := answerTried(f, forge.Target{Kind: "merge-request", ID: mr.ID}); err == nil && said {
 			continue
 		}
+		// Its answer ran on these same objections at this same head, and
+		// left them waiting: refused, failed or wrote none. Started again
+		// only on a change (#1701), never each reconcile.
+		if _, _, tried, err := answerState(o.Repo, f, mr, threads); err == nil && tried {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-tried", Level: "info", Where: fmt.Sprintf("!%d", mr.ID),
+				Message: "its answer ran on these objections at this head and left them waiting: a new comment there, or a new head, starts it again"})
+			continue
+		}
 		due = append(due, Review{ID: mr.ID, Branch: mr.Branch})
 	}
 	return due
@@ -380,6 +388,9 @@ func answerTried(f forge.Forge, t forge.Target) (attempt, bool, error) {
 	}
 	a, said := attempt{}, -1
 	for _, c := range comments {
+		if strings.Contains(c, answerStateMarker) {
+			continue // the CI's word, not a comment the answer reads
+		}
 		if strings.Contains(c, answerMarker) {
 			if m := answerTriedAt.FindStringSubmatch(c); m != nil {
 				said, _ = strconv.Atoi(m[1])

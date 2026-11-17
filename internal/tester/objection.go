@@ -72,16 +72,17 @@ var kinds = []struct{ key, name, word string }{
 // what wakes its answer run where no forge's job does, the local forge's
 // reconcile. The run reads them again, who wrote each among them.
 func ObjectionsWait(threads []forge.Thread) bool {
-	for _, t := range threads {
-		if t.Resolved || len(t.Comments) == 0 || (!strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) && !PersonsThread(t)) {
-			continue
-		}
-		last := t.Comments[len(t.Comments)-1].Body
-		if !slices.ContainsFunc([]string{answerMark, unreadMark, settleMark, personMark, blockedMark}, func(m string) bool { return strings.Contains(last, m) }) {
-			return true
-		}
+	return slices.ContainsFunc(threads, ObjectionWaits)
+}
+
+// ObjectionWaits says whether one conversation on a line is an objection
+// the tester has not answered, settled nor blocked.
+func ObjectionWaits(t forge.Thread) bool {
+	if t.Resolved || len(t.Comments) == 0 || (!strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) && !PersonsThread(t)) {
+		return false
 	}
-	return false
+	last := t.Comments[len(t.Comments)-1].Body
+	return !slices.ContainsFunc([]string{answerMark, unreadMark, settleMark, personMark, blockedMark}, func(m string) bool { return strings.Contains(last, m) })
 }
 
 // PersonsThread says whether a conversation on a line was opened by a
