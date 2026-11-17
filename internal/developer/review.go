@@ -337,6 +337,15 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			Findings: []verdict.Finding{{Rule: "record-unread", Where: where,
 				Message: "a round reads what the last ones did from the developer's record on its pull request, workline's own comment: none it can read, so no round is counted; a person takes it"}}})
 	}
+	if a.Handed {
+		given, err := givenBack(f, issue)
+		if err != nil {
+			return external(err)
+		}
+		if given {
+			a = takenBack(a)
+		}
+	}
 	// The gates read at its branch's head, checked out; a head git
 	// cannot read fails the round below.
 	head, _ := gitOut(repo, "rev-parse", "HEAD")
@@ -672,6 +681,25 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 	return r, newReview || at != "" || checksAt != "" || len(rewrites) > 0 || len(keptNow) > 0, nil
 }
 
+// givenBack says whether a person gave a handed pull request back to the
+// developer: its issue, open, no longer blocked.
+func givenBack(f forge.Forge, issue int) (bool, error) {
+	is, err := f.Issue(issue)
+	if err != nil {
+		return false, err
+	}
+	return !is.Closed && !slices.Contains(is.Labels, backlog.LabelBlocked), nil
+}
+
+// takenBack is the record of a pull request given back: no longer
+// handed, its rounds counted afresh.
+func takenBack(a Act) Act {
+	a.Handed = false
+	a.Round = 0
+	a.Rounds = nil
+	return a
+}
+
 // RoundDue says whether a review round is due on the developer's merge
 // request mr, no agent: the reconciler's fallback for an event missed
 // (ADR-0059). Due when the round would ask something new; not, on
@@ -696,7 +724,14 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 		return false, ErrRecordUnread
 	}
 	if a.Handed {
-		return false, nil
+		given, err := givenBack(f, developerIssue(mr.Branch))
+		if err != nil {
+			return false, err
+		}
+		if !given {
+			return false, nil
+		}
+		a = takenBack(a)
 	}
 	if _, due := conflictNow(f, kept, a, repo, mr, branchHead(f, repo, mr.Branch)); due {
 		return true, nil // its merge refused for a conflict: a merge round (ADR-0067)
