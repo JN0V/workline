@@ -560,7 +560,8 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 		Jobs map[string]struct {
 			Concurrency map[string]any `yaml:"concurrency"`
 			Steps       []struct {
-				Run string `yaml:"run"`
+				Uses string `yaml:"uses"`
+				Run  string `yaml:"run"`
 			} `yaml:"steps"`
 		} `yaml:"jobs"`
 	}
@@ -587,6 +588,17 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 				runs = runs || strings.Contains(s.Run, command) && !strings.Contains(s.Run, "--gates-only")
 			}
 			if !runs {
+				continue
+			}
+			// workline's head pass (ADR-0071 §1) reads the record but leaves
+			// nothing for an apply to write: out of the lock, never waiting
+			// on the line's review.
+			if name == "head-judge" {
+				for _, s := range job.Steps {
+					if strings.HasPrefix(s.Uses, "actions/upload-artifact@") {
+						t.Errorf("%s, job %s: the head pass uploads what an apply could read", file, name)
+					}
+				}
 				continue
 			}
 			n++
@@ -1474,6 +1486,10 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		}
 		var route string
 		for name, job := range judged.Jobs {
+			// workline's head pass gives no verdict (ADR-0071 §1).
+			if name == "head-judge" {
+				continue
+			}
 			for _, s := range job.Steps {
 				switch {
 				case strings.Contains(s.Run, "--gates-only"), strings.Contains(s.Run, "--input queue=true"):
@@ -1757,8 +1773,17 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 				}
 			}
 		}
-		if running != 1 {
-			t.Errorf("%s: %d jobs run the gates alone, want one", f, running)
+		// workline's own adds the head pass's gates, on the engine built
+		// from an engine-changing head, under the same rules (ADR-0071 §1).
+		want := 1
+		if strings.Contains(f, ".github/workflows") {
+			want = 2
+			if _, ok := wf.Jobs["head-gates"]; !ok {
+				t.Errorf("%s: no head pass's gates (job head-gates)", f)
+			}
+		}
+		if running != want {
+			t.Errorf("%s: %d jobs run the gates alone, want %d", f, running, want)
 		}
 		// Main's run after a merge is the gates' job's alone (ADR-0050).
 		judge := wf.Jobs["judge"]
