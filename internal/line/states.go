@@ -1004,6 +1004,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			res.Summary += " #" + strconv.Itoa(n)
 		}
 		res.Reviews = rounds
+		res.Answers = answersDue(res, cfg, f, o)
 	case started == 0 && lines == 0 && answers == 0 && len(rounds) == 0:
 		res.Summary = fmt.Sprintf("%s: nothing due (%d %s on the line acted on already)", ReconcileEvent, quiet, plural(quiet, "issue", "issues"))
 	case started == 0:
@@ -1031,6 +1032,12 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		res.Summary += fmt.Sprintf("; %d review %s %s:", len(rounds), plural(len(rounds), "round", "rounds"), said)
 		for _, r := range rounds {
 			res.Summary += fmt.Sprintf(" merge request %d", r.ID)
+		}
+	}
+	if len(res.Answers) > 0 {
+		res.Summary += fmt.Sprintf("; %d tester's %s an objection waits on:", len(res.Answers), plural(len(res.Answers), "Draft", "Drafts"))
+		for _, a := range res.Answers {
+			res.Summary += fmt.Sprintf(" merge request %d", a.ID)
 		}
 	}
 	if said := stalledSaid(f, o, cfg); said != "" {

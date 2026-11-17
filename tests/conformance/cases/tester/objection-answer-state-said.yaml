@@ -1,0 +1,29 @@
+case: tester/objection-answer-state-said
+about: >
+  Asked its Draft's state before an answer run (#1701), the engine says
+  it due with the state it reads: the tip of its branch and each
+  objection waiting, with its comments' count. The CI's answer job
+  starts its agent only then, and marks that state after. No agent.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
+  forge:
+    issues:
+      - {id: 3, title: "Multiply two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{}} -->\n<!-- workline:sticky=tester/tests -->"]
+        threads:
+          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: mul may print spaces around the number"}
+          - {id: "8", path: tests/test_mul_two_by_three.sh, line: 5, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: untestable\n- why: the exit code is not said", replies: [{author: "workline-app[bot]", bot: true, body: "**Kept**: the scenario says it.\n\n<!-- workline:tester-answer -->"}]}
+run: {test: [answer, --merge-request, "1", --state]}
+expect:
+  status: pass
+  summary: " threads=7.1"
+  agent-calls: 0
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1}

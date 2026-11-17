@@ -85,6 +85,10 @@ type Result struct {
 	// Reviews: the developer's merge requests the reconciler found a
 	// review round due on, for a CI job starting each one's run.
 	Reviews []Review `json:"reviews,omitempty"`
+	// Answers: the tester's Drafts an objection waits on, its answer
+	// unrun or stopped before it (#1701), for a CI job starting each
+	// one's answer run: no comment wakes it again.
+	Answers []Review `json:"answers,omitempty"`
 }
 
 // Review is a developer's merge request a review round is due on: its

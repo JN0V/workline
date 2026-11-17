@@ -1,0 +1,47 @@
+case: routing/reconcile-skips-a-draft-its-answer-left
+about: >
+  An answer run that left its objections waiting, refused, failed or
+  writing none, is not started again on the same Draft (#1701): its
+  Draft says the state it ran on, its tip and each objection waiting
+  with its comments' count. With `--input reconcile=list` the
+  reconciler lists no answer on a Draft at that same state, so no agent
+  is called each reconcile. A Draft whose head moved since is listed
+  again.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q -b workline/tester/issue-4 main && git push -q origin workline/tester/issue-4 && git checkout -q main"
+    - "sed -i \"s/@tip3@/$(git rev-parse workline/tester/issue-3)/g\" \"$FORGE_FILE\""
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - {id: 3, title: "Multiply two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+      - {id: 4, title: "Divide two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments:
+          - "The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"
+          - "**workline's line** ran the tester's answer on the objections here.\n\n<!-- workline:answer-state at=@tip3@ threads=7.1 -->\n<!-- workline:sticky=line/answer-state -->"
+        threads:
+          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: mul may print spaces around the number"}
+      - id: 2
+        branch: workline/tester/issue-4
+        draft: true
+        comments:
+          - "The tests of #4, frozen.\n\n<!-- workline:tester-record {\"issue\":4,\"base\":\"main\",\"files\":{}} -->\n<!-- workline:sticky=tester/tests -->"
+          - "**workline's line** ran the tester's answer on the objections here.\n\n<!-- workline:answer-state at=1111111111111111111111111111111111111111 threads=9.1 -->\n<!-- workline:sticky=line/answer-state -->"
+        threads:
+          - {id: "9", path: tests/test_div.sh, line: 3, author: builder, body: "workline:objection\n- test: tests/test_div.sh\n- scenario: By two\n- kind: over-specified\n- why: too strict"}
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-answer-kept", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "; 1 tester's Draft an objection waits on: merge request 2"
+  agent-calls: 0
+  findings: [{rule: answer-tried, where: "!1"}]
+  forge:
+    merge-requests:
+      - {id: 1, comments: 2}
+      - {id: 2, comments: 2}

@@ -1184,6 +1184,8 @@ func testCmd(args []string) int {
 	base := fs.String("base", "", "check: the revision the change is proven red on: its merge base with HEAD, as on a merge request")
 	issue := fs.Int("issue", 0, "write: the ready issue whose scenarios the tests check")
 	mr := fs.Int("merge-request", 0, "answer: the tester's Draft whose objections it answers, the first waiting")
+	stateOnly := fs.Bool("state", false, "answer: run nothing, print the Draft's state, `due <state>`, `tried <state>` (its answer ran on it already) or `none` (no objection waits)")
+	tried := fs.String("tried", "", "answer: run nothing, write on the Draft that its answer ran on this state, as --state printed it: the reconciler starts none again on it")
 	ai := fs.String("ai", "", "write, answer, curate: agent: none, claude, cmd:<command> (default: the project's `ai` setting, else none)")
 	forgeSpec := fs.String("forge", "", "write, answer, curate: forge: github, gitlab, local, fake:<file> (default: the project's `forge` setting)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
@@ -1205,6 +1207,9 @@ func testCmd(args []string) int {
 	case sub == "answer":
 		if *mr <= 0 {
 			return misuse(fs, "answer needs --merge-request <n>, the tester's Draft whose objections it answers")
+		}
+		if *stateOnly || *tried != "" {
+			return answerStateCmd(*repo, *forgeSpec, *mr, *tried, *asJSON)
 		}
 		return testRun(*repo, *roles, *ai, *forgeSpec, "objection", &forge.Target{Kind: "merge-request", ID: *mr}, *noApply, *asJSON)
 	case sub == "curate":
@@ -1396,6 +1401,49 @@ func roundTree(repo, spec string, id int) (tree string, done func(), why string)
 // waiting, kept or rewritten, its own commit pushed on the branch. With no
 // target, curate (step 7): a folder's redundant tests removed, proven with
 // no agent, on workline/tester/curate-<folder>.
+// answerStateCmd prints a tester's Draft's state as its answer run reads
+// it, or writes that its answer ran on tried (#1701): no agent, no run.
+func answerStateCmd(repo, spec string, id int, tried string, asJSON bool) int {
+	abs, _ := filepath.Abs(repo)
+	f, err := forge.Open(spec, abs)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 2
+	}
+	if f == nil {
+		fmt.Fprintln(os.Stderr, "workline: "+forge.Missing)
+		return 2
+	}
+	var said string
+	if tried != "" {
+		if err := line.MarkAnswerTried(f, id, tried); err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 3
+		}
+		said = "tried " + tried
+	} else {
+		state, waiting, done, err := line.AnswerState(abs, f, id)
+		switch {
+		case err != nil:
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 3
+		case !waiting:
+			said = "none"
+		case done:
+			said = "tried " + state
+		default:
+			said = "due " + state
+		}
+	}
+	if asJSON {
+		out, _ := json.MarshalIndent(&engine.Result{Status: verdict.Pass, Summary: said, Applied: []string{}, Refused: []string{}}, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		fmt.Println(said)
+	}
+	return 0
+}
+
 func testRun(repo, roles, ai, forgeSpec, event string, target *forge.Target, noApply, asJSON bool) int {
 	abs, _ := filepath.Abs(repo)
 	rolesDir, err := resolveRoles(roles)

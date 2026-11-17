@@ -315,6 +315,51 @@ func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Opti
 	return answered
 }
 
+// answersDue lists, with `--input reconcile=list`, the tester's open
+// Drafts an objection waits on (#1701): an answer run answers one, and a
+// reply or a run that stopped first wakes none, so the CI job starts each
+// one's answer. One said tried and answering none waits for a comment.
+func answersDue(res *Result, cfg *routing.Config, f forge.Forge, o engine.Options) []Review {
+	th, ok := f.(forge.Threaded)
+	if !ok || !cfg.Runs("tester") || o.Inputs[ReconcileInput] != "list" {
+		return nil
+	}
+	mrs, err := f.ListMergeRequests()
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "answers-unread", Level: "warn", Where: "merge requests",
+			Message: "the tester's Drafts not read, so no objection on them is listed: " + forge.Said(err)})
+		return nil
+	}
+	var due []Review
+	for _, mr := range mrs {
+		if !strings.HasPrefix(mr.Branch, tester.TestsBranch) {
+			continue
+		}
+		threads, err := th.Threads(mr.ID)
+		if err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "answers-unread", Level: "warn", Where: fmt.Sprintf("!%d", mr.ID),
+				Message: "its conversations on lines not read, so no objection there is listed: " + forge.Said(err)})
+			continue
+		}
+		if !tester.ObjectionsWait(threads) {
+			continue
+		}
+		if _, said, err := answerTried(f, forge.Target{Kind: "merge-request", ID: mr.ID}); err == nil && said {
+			continue
+		}
+		// Its answer ran on these same objections at this same head, and
+		// left them waiting: refused, failed or wrote none. Started again
+		// only on a change (#1701), never each reconcile.
+		if _, _, tried, err := answerState(o.Repo, f, mr, threads); err == nil && tried {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-tried", Level: "info", Where: fmt.Sprintf("!%d", mr.ID),
+				Message: "its answer ran on these objections at this head and left them waiting: a new comment there, or a new head, starts it again"})
+			continue
+		}
+		due = append(due, Review{ID: mr.ID, Branch: mr.Branch})
+	}
+	return due
+}
+
 // needsSpentMarker keys the line's word asking a person to name the files
 // the tester's answer lacks.
 var needsSpentMarker = forge.Marker("sticky=line/needs-spent")
@@ -343,6 +388,9 @@ func answerTried(f forge.Forge, t forge.Target) (attempt, bool, error) {
 	}
 	a, said := attempt{}, -1
 	for _, c := range comments {
+		if strings.Contains(c, answerStateMarker) {
+			continue // the CI's word, not a comment the answer reads
+		}
 		if strings.Contains(c, answerMarker) {
 			if m := answerTriedAt.FindStringSubmatch(c); m != nil {
 				said, _ = strconv.Atoi(m[1])

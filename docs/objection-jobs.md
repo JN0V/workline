@@ -1,6 +1,6 @@
 ---
 sources: [defaults/ci/github/workline-objection.yml, defaults/ci/github/workline-answer.yml, defaults/ci/github/workline-develop.yml, defaults/ci/gitlab/workline.gitlab-ci.yml, internal/engine/fromrun.go]
-checked: 4cc417ab
+checked: b34f0b15
 ---
 # An objection's jobs
 
@@ -24,6 +24,9 @@ flowchart LR
   stranger's word.
 - Only a comment that opens with `workline:objection`: the tester's own
   reply, which names the word to say the form, wakes nothing.
+- A reply in an objection's thread, the developer's or a person's,
+  wakes it too (GitHub: job `replied-to-tester`); the tester's own
+  answers do not.
 - Any branch `workline/tester/*` of the repository with such a comment
   wakes it, a Draft opened by hand too; never a fork's.
 
@@ -43,6 +46,29 @@ flowchart LR
   the developer's review round, at once rather than at the hourly
   reconcile ([#1438](https://github.com/JN0V/workline/issues/1438)).
 
+## One objection a run, the queue drained (GitHub only)
+
+- An answer run answers one objection
+  ([#1701](https://github.com/JN0V/workline/issues/1701)).
+- apply then starts `workline-answer.yml` again on the same Draft
+  (`workflow_dispatch`, input `branch`): the next one waiting. With
+  none left, the run ends before any agent. 5 answers at most in a
+  chain (input `chain`); the reconciler resumes after.
+- Each run writes on the Draft the state it ran on, whatever it
+  wrote, unless its agent was out of reach: the tip and each
+  objection waiting
+  (`workline test answer --tried`). A run on that same state
+  (`--state` says `tried`) calls no agent: only a new comment in a
+  waiting thread, a new objection or a new head starts one again.
+- A state not read (a release before `--state`, or the forge
+  failing): the answer runs as before, a warning in the log, and no
+  state is written
+  ([the N-1 rule](adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#consequences)).
+- The reconciler of `workline-develop.yml` lists the Drafts an
+  objection still waits on (`answers` in `workline route reconcile
+  --input reconcile=list`) and starts their answer: a run that
+  stopped first is resumed with no person acting.
+
 ## head (GitLab only)
 
 - Reads the Draft's head with `git ls-remote`, before any of the
@@ -53,8 +79,11 @@ flowchart LR
 
 - The agent's token, read rights, no write token: it proposes
   (`--no-apply`).
-- It checks out the Draft's head, the one the objection was made on,
-  and runs your test command there: a rewrite must be red on the base.
+- It checks out the Draft's head, and runs your test command there: a
+  rewrite must be red on the base.
+- On GitHub, that head is the Draft's open pull request's tip when the
+  run starts, never the objection run's `head_sha`: a re-run or a push
+  since would leave it behind.
 - So it runs the Draft's code: what it leaves is not trusted.
 - On GitLab, it reads the forge with the bot's token, which that code
   can reach: not fixed yet
@@ -75,7 +104,7 @@ flowchart LR
 - Only what the Draft's line may do: its branch, its threads, the issue
   it was opened for (`workline/tester/issue-<n>`); anything else refuses
   the whole run.
-- The head: the event's on GitHub; on GitLab, the one
+- The head: the one judge read on GitHub; on GitLab, the one
   `workline:objection:head` reads before the judge, holding no agent. A
   judge reporting another head applies nothing; so does a branch moved
   on since: the objection waits for the next run.

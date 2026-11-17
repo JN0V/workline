@@ -134,8 +134,9 @@ workline route reconcile --ai none --forge gitlab --open-merge-request --input r
 ```
 
 The last, hourly, writes nothing: it lists the issues an event missed
-(`due`) and the developer's merge requests a round is due on (`reviews`),
-each to start as above ([on GitLab](gitlab-trigger.md#the-line-of-states-on-it)).
+(`due`), the developer's merge requests a round is due on (`reviews`)
+and the tester's Drafts an objection waits on (`answers`), each to start
+as above or below ([on GitLab](gitlab-trigger.md#the-line-of-states-on-it)).
 
 ### On a role's own merge request
 
