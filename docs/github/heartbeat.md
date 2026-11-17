@@ -29,10 +29,12 @@ reconcile starts the next one:
   environment `workline-heartbeat`: in GitHub, on no runner, no minute
   billed. Then the `reconcile` job runs.
 - **The branch's head, not the hour-old commit**: the `reconcile` job
-  checks out the branch as it starts. A fix to the engine or to
+  checks out the branch as it starts. A fix to
   `.workline/config.yaml` merged during the wait acts on this reconcile
   ([#898](https://github.com/JN0V/workline/issues/898)). The workflow
-  file's own steps stay those of the commit the run started on.
+  file's own steps stay those of the commit the run started on, and so
+  does its engine: the release `WORKLINE_VERSION` pins
+  ([ADR-0071](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#1-the-line-runs-a-pinned-release)).
 - **One a branch**: a new heartbeat cancels the one waiting.
 - **The schedule and a `workline:` label** ask the job `reconcile-due`:
   - not due while a heartbeat or a reconciler's run is queued, waiting
