@@ -231,3 +231,34 @@ func TestDoctorJudgesAPolicyByItsWorkflowPaths(t *testing.T) {
     })
   }
 }
+
+// Person told before: Given a public repository whose line depends on
+// pull_request_target and an active Actions policy that names that event
+// only to deny it, When the person runs `workline doctor`, Then it warns
+// that the event is blocked and reports no check about it as OK.
+func TestDoctorWarnsWhenAPolicyDeniesPullRequestTarget(t *testing.T) {
+  isolate(t)
+  repo := eventPolicyRepo(t)
+  policies := `{"policies":[{"name":"deny-events","enforcement":"active",` +
+    `"rules":[{"type":"restrict_action_events","parameters":{"denied_events":["pull_request_target"]}}]}]}`
+  fakeGh(t, "case \"$*\" in\n*actions/policies*) echo '"+policies+"' ;;\n"+
+    "*rules/branches*|*rulesets*|*default_branch*) exit 1 ;;\n"+
+    "*) echo '{\"visibility\":\"public\",\"private\":false}' ;;\nesac\n")
+
+  r := Run(Options{Repo: repo, RolesDir: rolesDir, Engine: "v0.71.0"})
+  var oks, warns int
+  for _, c := range r.Checks {
+    if !strings.Contains(c.Message, "pull_request_target") {
+      continue
+    }
+    switch c.Level {
+    case OK:
+      oks++
+    case Warn:
+      warns++
+    }
+  }
+  if warns == 0 || oks != 0 {
+    t.Errorf("a policy that only denies pull_request_target: want a Warn and no OK, got %d OK, %d Warn: %+v", oks, warns, r.Checks)
+  }
+}
