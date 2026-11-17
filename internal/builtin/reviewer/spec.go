@@ -15,6 +15,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/codepick"
@@ -483,9 +485,27 @@ func answeredInSpec(sp Spec, f Finding) bool {
 				continue
 			}
 		}
-		if !skip && strings.Contains(l, name) {
+		if !skip && answersScenario(l, name) {
 			return true
 		}
 	}
 	return false
+}
+
+// answersScenario says whether a line answers the scenario as the finding
+// quoted it: the line opens with the name (after a list mark, bold, quote or
+// italic marks), whole, as a person writes "Name: the decision". A name met
+// in the middle of a line, or inside another word, answers nothing.
+func answersScenario(line, name string) bool {
+	t := strings.TrimSpace(line)
+	t = strings.TrimLeft(t, "-*+> \t\"'“”`_")
+	if !strings.HasPrefix(t, name) {
+		return false
+	}
+	rest := t[len(name):]
+	if rest == "" {
+		return false
+	}
+	r, _ := utf8.DecodeRuneInString(rest)
+	return !unicode.IsLetter(r) && !unicode.IsDigit(r)
 }
