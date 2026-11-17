@@ -484,6 +484,16 @@ jobs:
             gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f pull-request="$n" ||
               echo "::warning title=workline::!$n's round not started: the next hour starts it"
           done
+      # An objection no comment wakes (a reply, a run that ended before
+      # the next answer): each tester's Draft open gets an answer run,
+      # which ends at once with no objection waiting.
+      - name: The tester's answers
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          for b in $(gh pr list --state open --limit 100 --json headRefName,isCrossRepository --jq '.[] | select((.isCrossRepository | not) and (.headRefName | startswith("workline/tester/"))) | .headRefName'); do
+            gh workflow run workline-answer.yml --ref "$GITHUB_REF_NAME" -f branch="$b" ||
+              echo "::warning title=workline::the answer on $b not started: the next hour starts it"
+          done
       # The next reconcile, by the heartbeat (#845), even when this one
       # failed: its run waits the environment's wait timer, in minutes.
       # No such environment, or no wait timer (a private repository on
