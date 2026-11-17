@@ -1,0 +1,16 @@
+case: engine/prompt-only-role-runs-on-the-shared-pre-and-post
+about: "A role folder holding only role.yaml and instruction.md runs with `workline run-role`: the agent gets the role's prompt as its task, and the run passes."
+given: {repo: basic}
+run:
+  role: prompt-only
+  event: schedule
+  # It leaves its note only when the prompt it was given holds the instruction.
+  ai: |-
+    cmd:prompt=$(cat)
+    case "$prompt" in *"Summarise the README in one line"*) echo '- note: "got the instruction"' ;; *) echo '[]' ;; esac
+expect:
+  status: pass
+  agent-calls: 1
+  notes: ["got the instruction"]
+  run-files:
+    in/task.md: {contains: "Summarise the README in one line"}

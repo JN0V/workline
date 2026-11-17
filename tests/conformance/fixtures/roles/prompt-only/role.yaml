@@ -1,0 +1,12 @@
+contract: 1
+name: prompt-only
+mission: A role of the tests only, made of this file and its instruction, no pre and no post, so a role that adds no code runs on the shared ones.
+
+events: [schedule]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: ["docs/**"]
+intentions: [patch, note]
+without-ai: pass
