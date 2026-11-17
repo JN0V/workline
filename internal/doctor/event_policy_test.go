@@ -111,7 +111,13 @@ func fakeGh(t *testing.T, body string) {
 func TestDoctorAcceptsAPublicRepositoryWhosePolicyNamesPullRequestTarget(t *testing.T) {
   isolate(t)
   repo := eventPolicyRepo(t)
-  fakeGh(t, "case \"$*\" in\n*actions/policies*) echo '{\"rules\":[{\"events\":[\"pull_request_target\"]}]}' ;;\n"+
+  // The shape GET /repos/{owner}/{repo}/actions/policies returns: an active
+  // policy aimed at the bounds workflow, its restrict_action_events rule
+  // allowing the event.
+  policies := `{"total_count":1,"policies":[{"name":"allow-events","enforcement":"active",` +
+    `"conditions":{"workflow_path":{"include":[".github/workflows/workline-bounds.yml"]}},` +
+    `"rules":[{"type":"restrict_action_events","parameters":{"allowed_events":["pull_request_target"]}}]}]}`
+  fakeGh(t, "case \"$*\" in\n*actions/policies*) echo '"+policies+"' ;;\n"+
     "*rules/branches*|*rulesets*|*default_branch*) exit 1 ;;\n"+
     "*) echo '{\"visibility\":\"public\",\"private\":false}' ;;\nesac\n")
 
@@ -229,5 +235,36 @@ func TestDoctorJudgesAPolicyByItsWorkflowPaths(t *testing.T) {
         t.Errorf("the policy does not reach the file: want a Warn and no OK, got %d OK, %d Warn: %+v", oks, warns, r.Checks)
       }
     })
+  }
+}
+
+// Person told before: Given a public repository whose line depends on
+// pull_request_target and an active Actions policy that names that event
+// only to deny it, When the person runs `workline doctor`, Then it warns
+// that the event is blocked and reports no check about it as OK.
+func TestDoctorWarnsWhenAPolicyDeniesPullRequestTarget(t *testing.T) {
+  isolate(t)
+  repo := eventPolicyRepo(t)
+  policies := `{"policies":[{"name":"deny-events","enforcement":"active",` +
+    `"rules":[{"type":"restrict_action_events","parameters":{"denied_events":["pull_request_target"]}}]}]}`
+  fakeGh(t, "case \"$*\" in\n*actions/policies*) echo '"+policies+"' ;;\n"+
+    "*rules/branches*|*rulesets*|*default_branch*) exit 1 ;;\n"+
+    "*) echo '{\"visibility\":\"public\",\"private\":false}' ;;\nesac\n")
+
+  r := Run(Options{Repo: repo, RolesDir: rolesDir, Engine: "v0.71.0"})
+  var oks, warns int
+  for _, c := range r.Checks {
+    if !strings.Contains(c.Message, "pull_request_target") {
+      continue
+    }
+    switch c.Level {
+    case OK:
+      oks++
+    case Warn:
+      warns++
+    }
+  }
+  if warns == 0 || oks != 0 {
+    t.Errorf("a policy that only denies pull_request_target: want a Warn and no OK, got %d OK, %d Warn: %+v", oks, warns, r.Checks)
   }
 }
