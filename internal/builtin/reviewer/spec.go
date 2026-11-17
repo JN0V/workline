@@ -463,14 +463,27 @@ func answeredInSpec(sp Spec, f Finding) bool {
 	// The Need, the Verification and the Validation are what the lens read
 	// when it held the finding: a line there that names the scenario is not
 	// an answer. The answer is in any other section, the Scope included.
-	skip := false
+	skip, level, fenced := false, 0, false
 	for _, l := range strings.Split(strings.ToLower(sp.Text), "\n") {
-		if strings.HasPrefix(l, "#") {
-			h := strings.ToLower(strings.TrimSpace(strings.TrimLeft(l, "# ")))
-			skip = h == "need" || h == "verification" || h == "validation"
+		t := strings.TrimSpace(l)
+		if strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~") {
+			fenced = !fenced
 			continue
 		}
-		if !skip && strings.Contains(l, name) && !strings.Contains(l, "**"+name) {
+		if !fenced && strings.HasPrefix(l, "#") {
+			rest := strings.TrimLeft(l, "#")
+			if n := len(l) - len(rest); n <= 6 && strings.HasPrefix(rest, " ") {
+				h := strings.TrimSpace(rest)
+				switch {
+				case h == "need" || h == "verification" || h == "validation":
+					skip, level = true, n
+				case skip && n <= level:
+					skip = false
+				}
+				continue
+			}
+		}
+		if !skip && strings.Contains(l, name) {
 			return true
 		}
 	}
