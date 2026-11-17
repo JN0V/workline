@@ -29,12 +29,7 @@ run:
   then: again
   again-after:
     - |
-      sed -i -E \
-        -e 's/("body": *)"Second answer"/\1"Third answer: a returned sale counts"/' \
-        -e 's/("id": *)"c2"/\1"c3"/' \
-        -e 's/("body": *)"First answer"/\1"Second answer"/' \
-        -e 's/("id": *)"c1"/\1"c2"/' \
-        ../forge.json
+      sed -i -e 's/"body":"Second answer","author":"ann","insider":true,"id":"c2"/"body":"Third answer: a returned sale counts","author":"ann","insider":true,"id":"c3"/' -e 's/"body":"First answer","author":"ann","insider":true,"id":"c1"/"body":"Second answer","author":"ann","insider":true,"id":"c2"/' ../forge.json
 expect:
   agent-calls: 2
   findings:
