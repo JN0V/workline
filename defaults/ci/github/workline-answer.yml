@@ -105,13 +105,14 @@ jobs:
           # A run left to apply, by name; none when it stopped before. A refused
           # answer is no pending run, but its folder holds out/on-block.yaml, the
           # comment saying why in the objection's thread: it is applied too.
-          run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' answer.json)
+          # An answer.json that does not parse (the engine crashed) ends no step: the Verdict says it.
+          run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' answer.json 2>/dev/null) || run=
           if [ -z "$run" ] && [ "$status" != 3 ]; then
-            d=$(jq -r '."run-dir" // empty | split("/") | last' answer.json)
+            d=$(jq -r '."run-dir" // empty | split("/") | last' answer.json 2>/dev/null) || d=
             [ -z "$d" ] || [ ! -s "$WORKLINE_RUNS_DIR/$d/out/on-block.yaml" ] || run=$d
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
-          jq -r '.summary // empty' answer.json >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.summary // empty' answer.json >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           { jq -r '.summary // empty' answer.json; jq -r '.findings[]? | "- \(.rule): \(.message)"' answer.json; } > answer-summary.txt 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         if: always() && steps.answer.outputs.status != ''   # a refused answer leaves no pending run: kept all the same

@@ -98,17 +98,32 @@ jobs:
           status=0
           workline test answer --merge-request "$pr" --ai "$ai" --no-apply --forge github --json > answer.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' answer.json)" >> "$GITHUB_OUTPUT"   # a run left to apply, by name; none when it stopped before
-          jq -r '.summary // empty' answer.json >> "$GITHUB_STEP_SUMMARY"
+          # A run left to apply, by name; none when it stopped before. A refused
+          # answer is no pending run, but its folder holds out/on-block.yaml, the
+          # comment saying why in the objection's thread: it is applied too.
+          # An answer.json that does not parse (the engine crashed) ends no step: the Verdict says it.
+          run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' answer.json 2>/dev/null) || run=
+          if [ -z "$run" ] && [ "$status" != 3 ]; then
+            d=$(jq -r '."run-dir" // empty | split("/") | last' answer.json 2>/dev/null) || d=
+            [ -z "$d" ] || [ ! -s "$WORKLINE_RUNS_DIR/$d/out/on-block.yaml" ] || run=$d
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          jq -r '.summary // empty' answer.json >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          { jq -r '.summary // empty' answer.json; jq -r '.findings[]? | "- \(.rule): \(.message)"' answer.json; } > answer-summary.txt 2>/dev/null || true
       - uses: actions/upload-artifact@v4
-        if: steps.answer.outputs.run != ''
-        with: {name: workline-answer, path: ".workline-runs", include-hidden-files: true, retention-days: 1}
+        if: always() && steps.answer.outputs.status != ''   # a refused answer leaves no pending run: kept all the same
+        with: {name: workline-answer, path: ".workline-runs\nanswer.json", include-hidden-files: true, retention-days: 1}
       - name: Verdict
         env: {STATUS: "${{ steps.answer.outputs.status }}"}
         run: |
           if [ "$STATUS" = 3 ]; then
             echo "::warning title=workline::the agent could not be reached; the objection waits for the next one"
             exit 0
+          fi
+          if [ "${STATUS:-0}" != 0 ]; then
+            # The reason in the log: the answer's summary and findings, as an error annotation.
+            msg=$(cat answer-summary.txt 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the answer ended with status $STATUS, see answer.json}"
           fi
           exit "${STATUS:-0}"
       # What this job's agent calls spent, a line a run: role, target,
@@ -153,7 +168,8 @@ jobs:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
-          WORKLINE_RUNS_DIR: ${{ runner.temp }}/workline-runs
+          # Two upload paths root the artifact at the workspace: the runs are in its .workline-runs.
+          WORKLINE_RUNS_DIR: ${{ runner.temp }}/workline-runs/.workline-runs
           RUN: ${{ needs.judge.outputs.run }}
           BRANCH: ${{ needs.judge.outputs.branch }}
           HEAD_SHA: ${{ needs.judge.outputs.head }}

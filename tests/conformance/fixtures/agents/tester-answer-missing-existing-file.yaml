@@ -1,0 +1,11 @@
+# The tester's agent answering a test the review finds missing: the test
+# written whole over a file the branch already holds, beside the tester's
+# tests but not one of them.
+- patch:
+    file: tests/test_add.sh
+    content: |
+      # Scenario: Two by three
+      # Given the library, When I multiply -2 by 3, Then I get -6.
+      . ./lib.sh
+      [ "$(mul -2 3)" = -6 ]
+- note: "A negative factor had no test: a test of its own, in a file beside the others."
