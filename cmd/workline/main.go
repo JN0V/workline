@@ -2159,6 +2159,8 @@ func applyCmd(args []string) int {
 	}
 	if states != nil && res.Status == verdict.Pass {
 		keepStates(res, states, *repo)
+	} else if states != nil {
+		countApplyFailure(res, states, *repo)
 	}
 	// The runs after the one that stopped are not applied: said, with the
 	// command that resumes them all, never left out of the job's page.
@@ -2222,6 +2224,41 @@ func keepStates(res *engine.Result, l *line.Result, repo string) {
 	}
 	for _, w := range l.States {
 		res.Applied = append(res.Applied, fmt.Sprintf("the line's record on #%d", w.Issue))
+	}
+}
+
+// countApplyFailure counts the failure of an apply on the issues the line
+// ran a step for, as a machine error in their records (#1775): the next
+// reconcile does not run the developer again at once.
+func countApplyFailure(res *engine.Result, l *line.Result, repo string) {
+	said := ""
+	for _, f := range res.Findings {
+		if f.Rule == "engine-error" {
+			said = f.Message
+			break
+		}
+	}
+	if said == "" {
+		return
+	}
+	root, err := gitRoot(repo)
+	if err != nil {
+		return
+	}
+	spec := l.Forge
+	if spec == "" {
+		cfg, err := role.LoadProjectConfig(root)
+		if err != nil {
+			return
+		}
+		spec = cfg.Forge
+	}
+	f, err := forge.Open(spec, root)
+	if err != nil {
+		return
+	}
+	if err := line.CountApplyFailure(f, root, l, said); err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unwritten", Message: err.Error()})
 	}
 }
 

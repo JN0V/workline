@@ -239,6 +239,8 @@ func (e *Errors) retry(now time.Time) (due bool, until time.Time, spent string) 
 		// A size error recorded before it was blocked at once (#1160),
 		// "budget" its name then: no try mends it.
 		return false, time.Time{}, fmt.Sprintf("its task is too big for its context (%s): %s", e.Kind, e.Said)
+	case e.Kind == ApplyKind && e.By[e.Kind] >= ApplyBudget:
+		return false, time.Time{}, fmt.Sprintf("its patch did not apply on %d runs in a row (%s): %s; it starts again when its tester's Draft or `main` moves", e.By[e.Kind], e.Kind, e.Said)
 	case e.By[e.Kind] > ErrorBudget:
 		return false, time.Time{}, fmt.Sprintf("its run failed %d times (%s): %s", e.By[e.Kind], e.Kind, e.Said)
 	case err1 == nil && now.Sub(first) >= ErrorWindow:
@@ -271,3 +273,56 @@ func failedBody(w StateWrite, role string) string {
 	}
 	return backlog.Said("workline's line", fmt.Sprintf("saw %s's run on this issue fail (%s)", who, e.Kind), e.Said, next)
 }
+
+// ApplyKind is the kind of machine error of a developer's patch that does
+// not apply on the tree the apply job meets it on: the base moved since
+// the tester's Draft (#1775).
+const ApplyKind = "apply"
+
+// ApplyBudget is how many such failures in a row stop the line: a patch
+// that missed twice misses again until its base moves, and each run is an
+// agent call.
+const ApplyBudget = 2
+
+// CountApplyFailure writes, for each issue the line ran a step for, the
+// failure of its run's apply as a machine error in its record, said on
+// the issue with its labels and state kept: the apply job could not apply
+// what the judge found, said is what it printed. A failure of the same
+// input before it is counted with it.
+func CountApplyFailure(f forge.Forge, repo string, res *Result, said string) error {
+	if f == nil || len(res.States) == 0 {
+		return nil
+	}
+	cfg, err := routing.Load(repo)
+	if err != nil {
+		return err
+	}
+	kind := "run"
+	if strings.Contains(said, errNotAppliedText) {
+		kind = ApplyKind
+	}
+	now := clock().UTC()
+	for _, w := range res.States {
+		role := res.Woke[w.Issue]
+		if role == "" || w.Blocked != "" {
+			continue
+		}
+		var prev *Errors
+		if b, ok := f.(forge.Backlog); ok {
+			if comments, err := b.Comments(forge.Target{Kind: "issue", ID: w.Issue}); err == nil {
+				if _, rec, had := recordCommentIn(comments); had && rec.State == w.Record.State && rec.Body == w.Record.Body {
+					prev = errorsOf(rec)
+				}
+			}
+		}
+		w.Record.Errors = prev.with(verdict.Outcome{Kind: verdict.MachineError, Of: kind, Said: said}, now)
+		w.Record.Lost, w.Record.Needs, w.Failed, w.After = "", nil, true, false
+		if err := writeState(f, cfg, repo, w, role); err != nil {
+			return fmt.Errorf("#%d: %w", w.Issue, err)
+		}
+	}
+	return nil
+}
+
+// errNotAppliedText is what the engine says of a diff git does not apply.
+const errNotAppliedText = "the diff does not apply"
