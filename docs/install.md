@@ -56,7 +56,7 @@ workline --help    # every command; `workline <command> --help`, its options
    gardening), and the agent's CLI if you chose `claude`;
 4. in a GitLab clone, whether to create the webhook and trigger token
    that start the line on an issue's label
-   ([how](gitlab-trigger.md#the-line-of-states-on-it)).
+   ([how](gitlab/line-of-states.md)).
 
 Run it again to change an answer; `--yes` takes the defaults; `--hooks`,
 `--ai`, `--install` and `--issue-hook` answer without a terminal.
@@ -180,7 +180,7 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
   of states, the hourly reconciler and the issue webhook
   ([ci-gitlab.md](ci-gitlab.md#gitlabcom); a [self-managed
   instance](ci-gitlab-self-managed.md)).
-- **Another forge** (Gitea, Forgejo…) or [none](ci-other-forges.md#no-forge): [ci-other-forges.md](ci-other-forges.md).
+- **Another forge** (Gitea, Forgejo…) or [none](no-forge.md): [ci-other-forges.md](ci-other-forges.md).
 - **A board**, GitHub's project or GitLab's: what to switch on so the
   roles move its cards, [boards](boards.md#what-you-switch-on).
 

@@ -74,7 +74,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   marked ready.
 - **A fork's merge request**: no triage, its run gets no secret; on
   GitHub, the gates' verdicts are in one comment
-  ([what a fork gets](../../docs/gates-in-ci.md#a-forks-pull-request)).
+  ([what a fork gets](../../docs/gates-fork.md)).
 - **Status**: beta; [where it stands](docs/status.md).
 
 ## Set it up
@@ -96,7 +96,7 @@ gates:
 - **After the gates** in the routing: it reads the gate steps before it
   in the line.
 - **In CI**: the templates' run apart gives it the gates' job's result
-  ([gates in CI](../../docs/gates-in-ci.md#the-inspectors-triage)). On
+  ([gates in CI](../../docs/gates-triage.md)). On
   GitHub, workline-warn.yml waits for workline.yml's `gates` job on the
   same head; on GitLab, `workline:warn` runs in a child pipeline
   started after `workline:gates`.

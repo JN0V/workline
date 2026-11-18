@@ -556,7 +556,7 @@ nothing left to merge (ADR-0034, amended). A task's branch a person committed to
 
 None of these reaches the project's commands a script runs, its tests,
 its checks or the agent (`forge.LineEnv`;
-[the line's own](../environment.md#the-lines-own), #953).
+[the line's own](../environment-roles.md#the-lines-own), #953).
 
 ### Exit codes
 

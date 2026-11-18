@@ -188,7 +188,7 @@ its token's role, who is of the project, and on GitLab Free what an issue waits 
 run by hand (Build → Pipelines → Run pipeline, the variable
 `WORKLINE_IMPORT` the file), beside the template;
 `WORKLINE_GITLAB_READ_TOKEN`, `read_api`, Reporter
-([its variables](gitlab-trigger.md#tokens-and-variables)):
+([its variables](gitlab/trigger-tokens.md)):
 
 the two jobs to add are in [gitlab/import-jobs.md](gitlab/import-jobs.md).
 

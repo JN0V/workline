@@ -77,6 +77,6 @@ them ([#804](https://github.com/JN0V/workline/issues/804)).
 - **The line's alone**: the project's tests, checks and agents run
   without this wait, so a test of the project never reads it
   ([#940](https://github.com/JN0V/workline/issues/940)), nor the line's
-  other variables ([the list](../environment.md#the-lines-own)).
+  other variables ([the list](../environment-roles.md#the-lines-own)).
 - **GitLab** says its budget only in each answer's headers: a run there
   reads nothing first.

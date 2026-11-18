@@ -1,6 +1,19 @@
 ---
-sources: [defaults/ci/forgejo/workline-forge.sh, defaults/ci/github, internal/forge/local.go, cmd/workline]
-checked: 8538d558
+sources:
+  - defaults/ci/github/workline.yml#jobs.judge.permissions
+  - defaults/ci/github/workline.yml#jobs.judge.env
+  - defaults/ci/github/workline-apply.yml#jobs.apply.permissions
+  - defaults/ci/github/workline-gardening.yml#jobs.judge.permissions
+  - defaults/ci/github/workline-gardening.yml#jobs.judge.env
+  - defaults/ci/github/workline-gardening.yml#jobs.apply.permissions
+  - defaults/ci/github/workline-sample.yml#jobs.read.permissions
+  - defaults/ci/github/workline-sample.yml#jobs.read.env
+  - defaults/ci/github/workline-sample.yml#jobs.write.permissions
+  - defaults/ci/github/workline-apply.yml#on
+  - defaults/ci/github/workline-apply.yml#jobs.follow.if
+  - docs/github/import-jobs.md
+  - internal/forge/local.go#Local
+checked: e2e165c2d
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -24,77 +37,11 @@ spoken natively: [ci-github.md](ci-github.md), [ci-gitlab.md](ci-gitlab.md).
 
 ## Gitea, Forgejo, Codeberg…
 
-Another forge is plugged by a command that answers its small contract, one
-JSON request per operation ([forge-command.md](spec/forge-command.md)).
-
-- **Forgejo and Gitea**, whose API has GitHub's shape: copy
-  [defaults/ci/forgejo/workline-forge.sh](../defaults/ci/forgejo/workline-forge.sh) into the
-  repository and name it in `.workline/config.yaml`:
-
-  ```yaml
-  forge: 'cmd:sh defaults/ci/forgejo/workline-forge.sh'
-  ```
-- It needs `curl` and `jq`, and:
-  - `FORGEJO_URL`;
-  - `FORGEJO_TOKEN`: issues and pull requests, write; user, read: its
-    user is workline's own account, whose comments keep the records a
-    role reads back
-    ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
-    its user an administrator of the repository for the product owner,
-    which asks who of a comment's authors may write;
-  - `FORGEJO_REPO` (`owner/name`), unless `origin` names it.
-- The engine pushes the branches itself, with the job's git credentials;
-  the script does the rest.
-- **The jobs**: Forgejo Actions reads, largely, GitHub's workflow syntax.
-  The [GitHub templates](ci-github.md) are a start: `--forge github`
-  replaced by the command, the GitHub App's steps by `FORGEJO_TOKEN`.
-  Check that your version honours `concurrency`, the workflow's and the
-  jobs': one run per pull request, and one review at a time, the judge
-  waiting for the apply before it.
-- **Not tried yet** on a live instance — the script was run against a mock
-  of the API only: tell us what differs.
-- **The [weekly sample](ci.md#the-weekly-sample)** draws the product
-  owner's acts there, not the reviewer's, the tester's nor the developer's: the contract lists no
-  merge request merged. It says so each week.
-- **The [merge policy](merge-policy.md)** needs `merge-state`,
-  `auto-merge`, `guarded` and the verdict's operations — at `normal`,
-  `app`, `closing`, `mark` and `marked` too —, which the sample does not answer yet: said,
-  nothing turned on. The local forge merges itself
-  ([the merge](local-line.md#6-the-merge)).
-- A forge of another shape: write the command the contract asks.
+- **Plugged by a command** that answers a small contract
+  ([forge-command.md](spec/forge-command.md)); Forgejo and Gitea have
+  one ready: [workline on Forgejo](ci-forgejo.md).
 
 ## No forge
 
-A project with no forge — pushed to `main`, no merge request — keeps what
-workline writes in its own clone:
-
-```yaml
-forge: local
-```
-
-- Issues and merge requests are files under `.git/workline/`, never
-  committed; gardening's merge requests are local branches, nothing
-  pushed.
-- `workline issues` lists them, `workline issues show <n>` (or `!<n>` for a
-  merge request) shows one; you merge a branch with git.
-- After that merge, `workline follow` closes the issues the merge request
-  says it closes (`Closes #<n>`), their state's label taken off, as a
-  forge does.
-- `workline route issue --target issue:<n>` opens the tester's Draft or
-  the developer's merge request as a local branch, as CI does; your
-  working tree is left as it was.
-- `workline route merge-request --target merge-request:<n>`, its branch
-  checked out, judges its base to its branch: no `range` to give.
-- No CI to set up: gardening and the [weekly sample](ci.md#the-weekly-sample)
-  run on your machine — `workline route schedule --open-merge-request`,
-  then `workline follow --gardening` to rebuild or close its earlier
-  branches, `workline sample --out sample.json` then `workline sample
-  --apply sample.json` — and `workline docs` judges before a release.
-- In CI — `CI`, `GITHUB_ACTIONS` or `GITLAB_CI` set — the local forge
-  refuses its writes, loud: the job's clone is thrown away, and what it
-  would hold with it. What writes nothing still runs, so a project whose
-  config says `local` for its laptops passes `--forge` to its CI jobs that
-  write.
-- With `forge: none` (the default), nothing is written to a forge: a write
-  that needs one — the issue a role opens included — is refused and says
-  so, naming `forge: local`.
+- **`forge: local`** keeps issues and merge requests in the clone:
+  [workline with no forge](no-forge.md).

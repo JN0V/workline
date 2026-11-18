@@ -1,6 +1,18 @@
 ---
-sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, defaults/ci/gitlab/workline.gitlab-ci.yml, defaults/ci/github/workline.yml, defaults/ci/github/workline-gardening.yml, defaults/ci/github/workline-sample.yml, defaults/routing.yaml]
-checked: 8538d558
+sources:
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:garden
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
+  - defaults/ci/github/workline.yml#jobs.judge.permissions
+  - defaults/ci/github/workline-gardening.yml#jobs.judge
+  - Dockerfile
+  - docs/adr/0023-the-project-bot-keeps-a-gitlab-backlog.md#decision
+  - docs/ci-gitlab.md#2-the-variables
+  - docs/gitlab-trigger.md#what-premium-adds
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Jobs' needs and outputs
@@ -38,48 +50,9 @@ been tried with workline yet. `CI_JOB_TOKEN` reaches no issue: never enough
 to write. Store the token as a masked variable, not protected if merge
 requests from unprotected branches must apply.
 
-## Exit codes
+## Exit codes and outputs
 
-| Code | `route`, `run-role`, `review`, `apply` | In CI |
-|---|---|---|
-| 0 | `pass` | go on |
-| 1 | `block`, or an error | fail the job |
-| 2 | `human`: a person decides | fail, or allow and read the comment |
-| 3 | `blocked-external`: the agent or the forge failed | a warning; run again later |
-| 64 | the command was misused | fix the job |
-
-An unknown option exits 64 too, never 2. `workline gate` exits 0 or 1;
-`workline sample` exits 2 when a doc or an act is left for a person and 3
-when the judge or the forge cannot be reached; `workline doctor`, 1 on an error only. The
-templates keep a job's status and still apply what passed, and what a
-role that blocks names to say why, such as its comments
-([`on-block`](spec/role-contract.md#one-run); `artifacts: when: always`,
-`if: always()`, `when: always`).
-
-## Outputs
-
-- **stdout**: the verdict; with `--json`, status, summary, findings, each
-  agent call with its model and tokens, and for a line its steps, their
-  seconds, its moment and the runs `pending` for `apply`; on the line of
-  states, the moves left to `apply` (`states`), and with `--input
-  reconcile=list` the issues due (`due`) and review rounds (`reviews`).
-- **Reports**: `--sarif <file>` (GitHub code scanning), `--code-quality
-  <file>` (GitLab: `artifacts: reports: codequality`, shown on the merge
-  request, every tier). The paths are yours to choose.
-- **Job summary**: `--summary <file>` (`route`, `run-role`, `apply`,
-  `follow`, `sample`, `size`, `test measure`, `issues import`): the verdict, each step's verdict, findings and seconds, what
-  was applied and what waits to be, in Markdown, or HTML for a `.html` file,
-  added to the file ([ADR-0035](adr/0035-the-engine-writes-the-jobs-summary.md)).
-  GitHub: `$GITHUB_STEP_SUMMARY`; GitLab: an artifact the job's page links
-  ([ci.md](ci.md#what-a-job-shows)).
-- **Runs**: `$WORKLINE_RUNS_DIR` (else `.git/workline/runs/`), each with
-  `out/calls.jsonl`, the agent's answer and what was refused.
-- **On the forge**: a comment on the merge request (the documentalist's list
-  for a person, the reviewer's summary), edited on each run; the
-  reviewer's findings on their lines, in the forge's review; doc fixes
-  as a diff in a comment, nothing pushed to its branch; gardening's
-  merge requests on `workline/<role>/<task>`; issues (the product owner's comment and
-  label `workline:proposed` on each issue it proposes on; the sample's
-  tracking issues, the docs' and the product owner's acts'; a reviewer's
-  finding outside
-  the change, `needs-triage`) and labels.
+- **Exit codes**: what each command's code means, and what a CI job
+  does with it ([exit codes](exit-codes.md)).
+- **Outputs**: stdout, reports, the job's summary, the runs, and what
+  goes on the forge ([what a job gives back](job-outputs.md)).

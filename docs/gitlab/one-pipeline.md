@@ -1,7 +1,16 @@
 ---
-sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 8538d558
-verified: agent:documentalist
+sources:
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:apply
+  - internal/forge/at.go#At
+  - internal/forge/at.go#Newer
+  - internal/builtin/reviewer/reviewer.go#summaryValue
+  - internal/builtin/inspector/record.go#comment
+  - internal/engine/review.go#applier.mergedRecord
+checked: e2e165c2d
+verified: agent:claude-code
 judged: e8a46f7
 judged-in-parts: b3b9aad
 ---

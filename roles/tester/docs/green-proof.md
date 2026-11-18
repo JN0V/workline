@@ -109,7 +109,7 @@ flowchart LR
     branch writes ([#1407](https://github.com/JN0V/workline/issues/1407)):
     GitHub's cache, GitLab's artifacts
     ([GitHub](../../../docs/github/jobs.md),
-    [GitLab](../../../docs/gitlab/template.md)); never a run where the
+    [GitLab](../../../docs/gitlab/review-jobs.md)); never a run where the
     developer ran. A file of another tree, command or report is not read.
 - **The head three times**, one run after the other, in one fresh
   checkout. Each run is `test-command`, its report read as JUnit XML,
@@ -191,7 +191,7 @@ random order each find it more often. Put the runner's option in
   next ones. Each run gets `-count=1` in `GOFLAGS`, unless the project
   set a `-count` there; other runners ignore it.
 - **The job's environment, not the line's**: the runs never see the
-  line's own variables ([the list](../../../docs/environment.md#the-lines-own)):
+  line's own variables ([the list](../../../docs/environment-roles.md#the-lines-own)):
   its forge calls' wait, `WORKLINE_RATE_WAIT`
   ([#940](https://github.com/JN0V/workline/issues/940)), nor its runs'
   folder, `WORKLINE_RUNS_DIR`, where a suite's engines would prune the

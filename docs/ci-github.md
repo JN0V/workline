@@ -57,7 +57,7 @@ write run the default branch's workflow, never a pull request's own
      `judge`, the reviewer's lenses that only warn, apart from the
      verdict ([apart](../roles/reviewer/docs/apart.md)), and the
      inspector's triage, given what `gates` found: it waits for that job
-     (`actions: read`) ([the triage in CI](gates-in-ci.md#the-inspectors-triage));
+     (`actions: read`) ([the triage in CI](gates-triage.md));
      without it, `judge` warns that nothing reads them; it reads only
      beside this release's workline-apply.yml, else warns.
    - [workline-apply.yml](../defaults/ci/github/workline-apply.yml), from the
@@ -78,7 +78,7 @@ write run the default branch's workflow, never a pull request's own
      candidate's branch ([the release candidate](release-candidate.md)).
    - [workline-fork.yml](../defaults/ci/github/workline-fork.yml): comments a fork's
      pull request, which gets no secret and no right to write
-     ([its gates](gates-in-ci.md#a-forks-pull-request)). With the merge
+     ([its gates](gates-fork.md)). With the merge
      policy, it merges on a person's yes and every check green, unless
      it changes CI, a gate's file or what steers agents
      ([a fork's](merge-policy.md#never-without-a-persons-yes)).
