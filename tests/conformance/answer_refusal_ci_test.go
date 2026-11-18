@@ -136,6 +136,17 @@ func TestAnswerRefusalSaidInJobAndThread(t *testing.T) {
 			if !strings.Contains(log, "workline apply "+run+" --from-merge-request 7") {
 				t.Errorf("%s: apply does not apply the refused run\n%s", f, log)
 			}
+			// An engine crashing, its stdout no JSON: the answer step ends
+			// whole, and the Verdict says its status.
+			crash := "#!/bin/sh\necho 'panic: boom'\nexit 2\n"
+			work = t.TempDir()
+			out, log = answerRefusalRun(t, work, answer.Run, crash, "WORKLINE_RUNS_DIR="+filepath.Join(work, ".workline-runs"))
+			if !strings.Contains(out, "status=2") || !strings.Contains(out, "run=\n") {
+				t.Errorf("%s: an answer.json that does not parse ends the answer step\noutputs:\n%s\nlog:\n%s", f, out, log)
+			}
+			if _, log = answerRefusalRun(t, work, verdict.Run, crash, "STATUS=2"); !strings.Contains(log, "::error title=workline::the answer ended with status 2") {
+				t.Errorf("%s: the Verdict step does not say a crash's status\n%s", f, log)
+			}
 		})
 	}
 }
