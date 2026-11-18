@@ -1,8 +1,7 @@
 ---
 sources: [internal/doctor/guard.go, internal/forge/github_merge.go]
-checked: 70dfeb18
+checked: e4e4287bc
 verified: agent:claude-code
-judged-in-parts: 786d304
 ---
 # Nobody bypasses `main`
 
@@ -33,7 +32,9 @@ and a labelled pull request all merge with none
     branch's rulesets (`current_user_can_bypass: never`);
   - `bypass-allowed`, a warning: one it can bypass, named, with how to
     empty its list;
-  - `bypass-unread`, a note: the rulesets could not be read, said.
+  - `bypass-unread`, a note: the rulesets could not be read, said;
+  - `bypass-no-ruleset`, a note: no ruleset protects the default branch;
+    a classic branch protection's bypass is not read.
 - **What a person then does**: puts `workline:accepted` on the pull
   request; workline's App merges it once its checks are green
   ([the merge policy](merge-policy.md)). `gh pr merge --admin` and a

@@ -1,8 +1,7 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks, internal/line/states.go]
-checked: 8538d558
+checked: e4e4287bc
 verified: agent:claude-code
-judged: e343388
 ---
 # The commands that do the work
 
@@ -122,6 +121,11 @@ step due that no event started, run.
   ([staleness](spec/routing.md#staleness)).
 - **The developer's rounds**: a round due on its open pull requests that
   no event started, counted in `reconcile-max`.
+- **The tester's answers**: a Draft an objection waits on, listed for
+  its answer.
+- **Checks GitHub lost**: a developer's pull request whose head has no
+  check of the project's 15 minutes after its push gets its branch
+  merged with its base, pushed as the App, so its checks run.
 - **Run twice in a row**, the second does nothing more.
 
 ## workline review
@@ -172,6 +176,8 @@ A person's acts, as on a forge's page
   `--body-file <file>` (`-`: stdin), `--label <l>` repeatable.
 - **`label <n>|!<n>`**: `--add <l>`, `--remove <l>`, each repeatable.
 - **`comment <n>|!<n>`**: `--body` or `--body-file`; none, refused (64).
+- **`edit <n> --section <heading>`**: one section of an issue's body,
+  its new text on stdin; the other sections stay as they are.
 - Only where the project sets `forge: local`; elsewhere refused, as in
   CI, where the clone is thrown away.
 

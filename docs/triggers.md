@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, defaults/ci/gitlab/workline.gitlab-ci.yml, defaults/ci/github/workline.yml, defaults/ci/github/workline-gardening.yml, defaults/ci/github/workline-sample.yml, defaults/routing.yaml]
-checked: 8538d558
+checked: e4e4287bc
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -104,12 +104,15 @@ git checkout -q -B <branch>              # CI checks out a detached HEAD
 workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request --json > line.json
 workline apply --line line.json
 workline follow --gardening --base <branch> --forge gitlab
+workline size --forge gitlab
 ```
 
-The last command, with the applying job's token and no agent, tends the
+`follow --gardening`, with the applying job's token and no agent, tends the
 merge requests gardening opened before: rebuilt on the branch's new tip,
 or closed when nothing is left to merge
 ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
+`size` keeps an issue's normal size in one comment
+([the command](commands.md#workline-size)).
 
 ### The product owner alone
 
@@ -137,6 +140,12 @@ The last, hourly, writes nothing: it lists the issues an event missed
 (`due`), the developer's merge requests a round is due on (`reviews`)
 and the tester's Drafts an objection waits on (`answers`), each to start
 as above or below ([on GitLab](gitlab-trigger.md#the-line-of-states-on-it)).
+
+### What is due now
+
+`workline tick --forge gitlab --json` lists the line's jobs due now,
+each with why, no agent, nothing written: a regular beat (a loop, a
+schedule, a timer) starts those and nothing else ([the tick](tick.md)).
 
 ### On a role's own merge request
 
