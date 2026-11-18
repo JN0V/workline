@@ -211,6 +211,9 @@ type StateWrite struct {
 	Stale   string `json:"stale,omitempty"`
 	Kept    string `json:"kept,omitempty"`
 	Seen    string `json:"seen,omitempty"`
+	// OldRead: an old record's comments taken as read, their count
+	// written with no wake (#1346): what is said of it.
+	OldRead string `json:"old-read,omitempty"`
 	// Own: the runs the step itself added to Record.Spent, by role: the
 	// rest of each list is what the record had when the step read it.
 	Own map[string]int `json:"own,omitempty"`
