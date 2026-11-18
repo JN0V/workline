@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.81.0](https://github.com/JN0V/workline/compare/v0.80.0...v0.81.0) (2026-11-18)
+
+
+### Features
+
+* **ci:** the loop dispatches what tick lists, off by default ([#1796](https://github.com/JN0V/workline/issues/1796)) ([34329cd](https://github.com/JN0V/workline/commit/34329cdec28fa0cddfa8d1680eebbc2077ceacc8))
+
+
+### Bug Fixes
+
+* a pull request closed during a follow run is held for its ([#1794](https://github.com/JN0V/workline/issues/1794)) ([fe658c1](https://github.com/JN0V/workline/commit/fe658c19b9c25f9e52718efa602b3c7edf500a60))
+* a refine on a ready issue adds to-refine and leaves ready ([#1793](https://github.com/JN0V/workline/issues/1793)) ([dea1e40](https://github.com/JN0V/workline/commit/dea1e4067187d0783c73afa711ee347c3ef57c8d))
+* an open issue labelled workline:parked is still refined ([#1792](https://github.com/JN0V/workline/issues/1792)) ([c679421](https://github.com/JN0V/workline/commit/c679421696c1e91ec92a04e864ea23a319154ede))
+* **ci:** shipped templates' comments cite no internal codes ([#1778](https://github.com/JN0V/workline/issues/1778)) ([6dec31e](https://github.com/JN0V/workline/commit/6dec31ef9f0ec42b449fec982f47fb30504cafd3))
+* **ci:** the loop holds a dispatch a beat and a minute ([#1797](https://github.com/JN0V/workline/issues/1797)) ([786d304](https://github.com/JN0V/workline/commit/786d30495036d9dac9a87122c341782f77ff3112))
+* **ci:** workline's own answer workflow says a refused answer ([#1787](https://github.com/JN0V/workline/issues/1787)) ([36038df](https://github.com/JN0V/workline/commit/36038df716529c2d75b2c85ac7098b8c50406fe8))
+* tests failing lint block the issue instead of ([#1772](https://github.com/JN0V/workline/issues/1772)) ([69a2ddf](https://github.com/JN0V/workline/commit/69a2ddffab34ccbf5007bf28ec7baabceaf5bbc8))
+
 ## [0.80.0](https://github.com/JN0V/workline/compare/v0.79.0...v0.80.0) (2026-11-18)
 
 
