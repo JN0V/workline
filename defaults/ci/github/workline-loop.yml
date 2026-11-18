@@ -75,7 +75,7 @@ jobs:
           BRANCH: ${{ github.event.repository.default_branch }}
           DISPATCH: ${{ vars.WORKLINE_LOOP_DISPATCH }}
           LOOP_MINUTES: "340"                # under the job's timeout, the successor's dispatch after
-          # 180 s until the loop's release reads conditionally (#1764): the
+          # 180 s until the loop's release reads conditionally: the
           # job token's 1,000 calls an hour are the whole repository's.
           BEAT_SECONDS: ${{ vars.WORKLINE_LOOP_BEAT_SECONDS || '180' }}
           FAILS_MAX: "10"                    # tick failing this many beats in a row: the loop stops

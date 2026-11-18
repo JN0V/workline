@@ -38,7 +38,7 @@ jobs:
       contains(github.event.issue.title, 'merge requests wait for a person''s yes again')
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: workline-app       # the App's key: the default branch only (ADR-0044)
+    environment: workline-app       # the App's key: the default branch only
     permissions: {contents: write, pull-requests: read}
     steps:
       - id: app

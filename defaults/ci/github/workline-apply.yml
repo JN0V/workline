@@ -3,25 +3,25 @@
 # release after v0.26.1).
 #
 # They hold the write token, and the GitHub App's key, so they never run in a
-# pull request's own run, whose workflow its branch can change (ADR-0044):
+# pull request's own run, whose workflow its branch can change:
 # `workflow_run` and `push` run this file as the default branch holds it,
 # the base checked out. The key sits in the environment `workline-app`,
 # which only the default branch may use (docs/ci-github.md). What a pull
 # request's run left is read as data: its head is the event's, its runs are
 # found by name, and only what that pull request's line may do is applied.
-# A run a newer push cancelled (workline.yml's concurrency, #359) gets
+# A run a newer push cancelled (workline.yml's concurrency) gets
 # nothing applied, kept or followed: the newer run's own does.
 #
 #   apply  after workline.yml's judge, holds the write token and no AI key:
 #          it applies what judge proposed (`apply --from-merge-request`). A
 #          doc fix goes in a comment, never pushed to the pull request's
-#          branch (ADR-0051). The documentalist's findings are the
+#          branch. The documentalist's findings are the
 #          annotations of the check `workline findings` on the head judged,
-#          beside the docs' lines: none a conversation to resolve (#412; the
+#          beside the docs' lines: none a conversation to resolve (the
 #          first release after v0.30.0). What the gates found the change
 #          adds are the annotations of the check `workline gates`, and one
 #          summary comment counts them by rule, edited on each push
-#          (ADR-0049; the first release after v0.35.0). With a GitHub App (variable
+#          (the first release after v0.35.0). With a GitHub App (variable
 #          WORKLINE_APP_ID, secret WORKLINE_APP_PRIVATE_KEY in the
 #          environment; contents, pull requests, issues and checks in read
 #          and write), the commit runs the checks again by itself; with the job's own token, GitHub waits for
@@ -32,24 +32,24 @@
 #          One at a time per pull request, with workline.yml's judge: the
 #          next push is judged once the review before it is written. A
 #          branch moved on since the head judged gets the reviewer's review
-#          of that head alone, never a fix (ADR-0044, amended).
-#          After workline-warn.yml too (ADR-0050; the first release after
+#          of that head alone, never a fix.
+#          After workline-warn.yml too (the first release after
 #          v0.36.0): the comment of the reviewer's lenses that warn, and
 #          their comments on lines, posted once they answered, maybe after
 #          the verdict; one at a time per pull request with that workflow's
 #          job, never waiting for judge's nor holding it.
-#   verdict with the merge policy, `merge: {autonomy: cautious}` (ADR-0042),
+#   verdict with the merge policy, `merge: {autonomy: cautious}`,
 #          after judge alone: the head's verdict kept as the status
 #          workline/verdict, by the App; in no concurrency group, so no newer
 #          run cancels it.
 #   queue  with the merge policy, after workline.yml's run on a merge
-#          queue's group (ADR-0050; the first release after v0.37.0): the
+#          queue's group (the first release after v0.37.0): the
 #          base requires workline/accepted from the App on the group's
 #          commit too, which no other run sets there, so the queue would
 #          wait until its timeout. Set as the head queued holds it, the
-#          person's yes follow kept there (ADR-0042); nothing else is
+#          person's yes follow kept there; nothing else is
 #          followed, nothing applied.
-#   main   after workline.yml's run on main after a merge (ADR-0050; the
+#   main   after workline.yml's run on main after a merge (the
 #          first release after v0.37.0), whatever its verdict, holds issues:
 #          write and no AI key: what that run found, the whole repository's
 #          checks and what the gates found main gained, kept in one issue,
@@ -57,7 +57,7 @@
 #          lists changes, never commented on.
 #   follow on a push to main, holds the write token and no AI key: the
 #          tester's Draft of an issue a merge closed is closed, and the
-#          closed issues' state labels taken off (#999).
+#          closed issues' state labels taken off.
 #          With the merge policy, also after verdict: auto-merge turned on
 #          for what a person accepted, each merging once its own head is
 #          green; workline-merge.yml runs it on a label. Only with the App's token
@@ -77,10 +77,10 @@ jobs:
     # steps that passed before one blocked still get their proposals applied.
     # Never a cancelled run: a newer push stopped it, and its run applies.
     if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
-    # One review at a time per pull request (#375), with workline.yml's
+    # One review at a time per pull request, with workline.yml's
     # judge, neither cancelling the other: the next push's judge waits for
     # this apply, and reads the record it writes. A run of workline-warn.yml
-    # with that workflow's job, its record its own comment's (ADR-0050).
+    # with that workflow's job, its record its own comment's.
     concurrency: {group: "workline-${{ github.event.workflow_run.name == 'workline warn' && 'warn-review' || 'review' }}-${{ github.event.workflow_run.pull_requests[0].number }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -155,7 +155,7 @@ jobs:
           exit "$status"
 
   verdict:
-    # judge's run alone: workline-warn.yml's gives no verdict (ADR-0050).
+    # judge's run alone: workline-warn.yml's gives no verdict.
     # Never a fork's: its run is the fork's to write, no verdict of it.
     if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'workline' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
@@ -304,7 +304,7 @@ jobs:
   follow:
     # A push to main; with the merge policy, a pull request's run too, once
     # its verdict is kept, never workline-warn.yml's, which keeps none. A
-    # fork's too, once its checks are done (#1043): no verdict of it is
+    # fork's too, once its checks are done: no verdict of it is
     # kept, a person's yes on its head and its checks all green arm it,
     # unless it changes CI, a gate's file or what steers agents.
     needs: verdict

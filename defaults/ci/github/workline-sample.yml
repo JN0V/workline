@@ -6,7 +6,7 @@
 # Every Monday, one in ten of the docs whose `checked` the documentalist
 # moved in the week before is read whole against its sources, at the commit
 # `checked` names, by a judge standing apart from the model that vouched;
-# the engine checks every quote it gives (ADR-0014, step 4; ADR-0005).
+# the engine checks every quote it gives.
 # What it found goes to one tracking issue, a comment a week. A `checked`
 # found false labels it `documentalist-step-0`, and a pull request puts that
 # doc's `checked` back, for a person to review; nothing is merged here.
@@ -17,7 +17,7 @@
 # provider's agent when there is one. With none, the sample is still drawn,
 # and what it drew is listed on the issue for a person to read.
 #
-# The other roles' acts are drawn too, one in ten per kind (ADR-0046): the
+# The other roles' acts are drawn too, one in ten per kind: the
 # product owner's acts done alone, the findings the reviewer's judge kept
 # or dropped, the commits the committer rewrote — read from the issues and
 # pull requests, never written. The same judge re-checks each, one call an
@@ -77,8 +77,8 @@ jobs:
         if: env.HAS_CLAUDE == 'true'
         run: npm install -g @anthropic-ai/claude-code
 
-      # The week's tokens (ADR-0052, criterion 3): the tallies the jobs
-      # calling an agent kept 14 days (ADR-0019, open point 1), gathered as
+      # The week's tokens: the tallies the jobs
+      # calling an agent kept 14 days, gathered as
       # the runs folder's tally. This repository's runs only: a fork's pull
       # request runs with no agent token, and what it uploads is anyone's.
       # The jobs' names are the templates'.
@@ -130,8 +130,8 @@ jobs:
           esac
       # What this job's agent calls spent, a line a run: role, target,
       # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
-      # weekly sample's tokens (ADR-0019, open point 1); the run folders
-      # keep their day. Also in a cancelled run (a newer push's), (#1413), named so, not always(); in each
+      # weekly sample's tokens; the run folders
+      # keep their day. Also in a cancelled run (a newer push's), named so, not always(); in each
       # attempt of a re-run, its own artifact; not in a merge queue's, which asks no agent. The
       # first release after v0.75.0; an engine before it keeps none, said.
       - name: The runs' tally
@@ -146,7 +146,7 @@ jobs:
     if: always() && needs.read.outputs.drawn == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: workline-app       # the App's key: the default branch only (ADR-0044)
+    environment: workline-app       # the App's key: the default branch only
     permissions: {contents: write, pull-requests: write, issues: write}
     steps:
       - id: app

@@ -2,7 +2,7 @@
 # to .github/workflows/workline-warn.yml, beside workline.yml and
 # workline-apply.yml (the first release after v0.36.0).
 #
-# The reviewer's lenses that only warn (its `ai-findings`, ADR-0050):
+# The reviewer's lenses that only warn (its `ai-findings`):
 # workline.yml's judge asks the lenses that block (--warn-apart), and the
 # head's verdict waits for nothing else. This workflow asks the others on
 # the same push, beside it (--warn-only); workline-apply.yml posts what they
@@ -12,13 +12,13 @@
 # Without the reviewer in the line, or with every lens blocking, it ends at
 # once.
 #
-# The inspector's triage too, when the line routes it (ADR-0049): it waits
+# The inspector's triage too, when the line routes it: it waits
 # for workline.yml's gates job on the same head, reads the result that job
 # left (`--gates-from`), and posts the triage in a comment of its own. The
 # gates never run here: this job holds the agent's token.
 #
 # The pull request's own, as workline.yml: GitHub runs the copy its branch
-# holds; no write token, never the GitHub App's key (ADR-0044). With the
+# holds; no write token, never the GitHub App's key. With the
 # secret CLAUDE_CODE_OAUTH_TOKEN (`claude setup-token`, a Claude
 # subscription), Claude reads; for another agent, change --ai to a `cmd:`.
 # Without it, or on a fork, which gets no secrets, it ends at once: the
@@ -74,8 +74,8 @@ jobs:
             echo "any=true" >> "$GITHUB_OUTPUT"
             ! grep -qsw inspector .workline/config.yaml || echo "triage=true" >> "$GITHUB_OUTPUT"
           fi
-      # The pull request's draft state as it is now, not as its event said
-      # (#662): marked ready seconds after a push, the push's run can be
+      # The pull request's draft state as it is now, not as its event said:
+      # marked ready seconds after a push, the push's run can be
       # the one the concurrency group keeps, its event still saying draft.
       # Unread, the event's, said.
       - name: The pull request, a draft or not
@@ -87,7 +87,7 @@ jobs:
           case "$draft" in true|false) ;; *) draft=$EVENT_DRAFT; echo "::warning title=workline::the pull request's draft state could not be read, the event's taken: $EVENT_DRAFT" ;; esac
           echo "draft=$draft" >> "$GITHUB_OUTPUT"
       # The engine at the version pinned above, checksum verified, and the
-      # agent; not on a draft, which asks none (ADR-0050): the engine only
+      # agent; not on a draft, which asks none: the engine only
       # keeps the record there.
       - name: workline, and Claude
         if: steps.any.outputs.any == 'true'
@@ -99,12 +99,12 @@ jobs:
           echo "$bin" >> "$GITHUB_PATH"
           "$bin/workline" version
           [ "$DRAFT" = true ] || npm install -g @anthropic-ai/claude-code
-      # The inspector triages what the gates found the change adds
-      # (ADR-0049): their result as workline.yml's gates job left it for
+      # The inspector triages what the gates found the change adds:
+      # their result as workline.yml's gates job left it for
       # this head, the same the verdict counted; never the gates run again
       # here, in the agent's reach. Waited for, 15 minutes at most; none,
       # said, and the triage reads nothing. Not on a draft, which asks no
-      # agent (ADR-0050).
+      # agent.
       - name: The gates' findings, from workline.yml's run of this head
         if: steps.any.outputs.triage == 'true' && steps.pr.outputs.draft != 'true'
         env: {GH_TOKEN: "${{ github.token }}", HEAD_SHA: "${{ github.event.pull_request.head.sha }}"}
@@ -124,13 +124,13 @@ jobs:
         id: line
         if: steps.any.outputs.any == 'true'
         # As workline.yml's judge: every lens once when opened or marked
-        # ready, the draft state on every run (ADR-0020, #359); on a draft,
-        # no lens (ADR-0050).
+        # ready, the draft state on every run; on a draft,
+        # no lens.
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
           GH_TOKEN: ${{ github.token }}
-          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back
           ACTION: ${{ github.event.action }}
           EVENT_DRAFT: ${{ github.event.pull_request.draft }}
           DRAFT: ${{ steps.pr.outputs.draft }}
@@ -164,8 +164,8 @@ jobs:
           esac
       # What this job's agent calls spent, a line a run: role, target,
       # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
-      # weekly sample's tokens (ADR-0019, open point 1); the run folders
-      # keep their day. Also in a cancelled run (a newer push's), (#1413), named so, not always(); in each
+      # weekly sample's tokens; the run folders
+      # keep their day. Also in a cancelled run (a newer push's), named so, not always(); in each
       # attempt of a re-run, its own artifact; not in a merge queue's, which asks no agent. The
       # first release after v0.75.0; an engine before it keeps none, said.
       - name: The runs' tally

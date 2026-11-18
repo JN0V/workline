@@ -4,7 +4,7 @@
 # person of the project or an App: noticed, with no token and no secret;
 # its end wakes workline-answer.yml. Why: docs/objection-jobs.md.
 # A person's reply in a thread on the developer's pull request: noticed
-# too, its end wakes workline-develop.yml's round (#1438).
+# too, its end wakes workline-develop.yml's round.
 name: workline objection
 on:
   pull_request_review_comment: {types: [created]}
@@ -25,7 +25,7 @@ jobs:
         run: 'echo "an objection on pull request $PR, $URL: workline-answer.yml answers it"'
 
   # A person's reply in a thread on a line of the developer's pull
-  # request (#1438): noticed the same way, its end wakes the round in
+  # request: noticed the same way, its end wakes the round in
   # workline-develop.yml, which runs as the default branch holds it.
   replied:
     if: >-

@@ -11,7 +11,7 @@
 #   gates  runs the project's gates alone (`gate:<name>`; the first release
 #          after v0.35.0), their tools the merge request's code: what they
 #          add is its Code Quality report, their verdicts judge's to read
-#          (ADR-0049). Install their tools in its before_script. No token:
+#         . Install their tools in its before_script. No token:
 #          workline:base, before it, reads main's findings at the merge
 #          base with the bot's, and hands them over.
 #   judge  runs the line, no write token, stops before applying (--no-apply).
@@ -20,14 +20,14 @@
 #          are listed for a person. GitLab gives a variable to the whole job,
 #          installs included, where GitHub gives it to one step.
 #          The reviewer's lenses that only warn are left to warn
-#          (--warn-apart, ADR-0050; the first release after v0.36.0) when
+#          (--warn-apart; the first release after v0.36.0) when
 #          WORKLINE_GITLAB_TOKEN is set; else they read here, said.
 #   warn   beside judge, with the agent's token: the reviewer's lenses that
 #          only warn (--warn-only), and the inspector's triage of what the
-#          gates found, given their result (ADR-0049); warn:apply posts
+#          gates found, given their result; warn:apply posts
 #          what they found, each in a comment of its own. Both run in a
 #          child pipeline of this same file, which the merge request's
-#          does not wait for (ADR-0051): neither fails a pipeline the
+#          does not wait for: neither fails a pipeline the
 #          merge waits on, nor holds the head's verdict, which
 #          workline:merge reads from judge alone.
 #   The findings show in the merge request's Code Quality report, on every tier.
@@ -38,17 +38,17 @@
 #   artifact it only downloads), is linked from the job's page (Annotations)
 #   and from the merge request's (`expose_as`). `--summary` needs the first
 #   release after v0.16.0.
-#   A merge train's pipeline (`merge_train`, Premium; ADR-0050; the first
+#   A merge train's pipeline (`merge_train`; Premium; the first
 #   release after v0.37.0) runs gates alone, on the merged result, against
 #   the target's tip, no agent asked: the head's review and verdict, and
-#   a person's yes, stay its merge request's (ADR-0042). A merged results
+#   a person's yes, stay its merge request's. A merged results
 #   pipeline (`merged_result`) is the merge request's own, on each push:
 #   every job runs there, as on any other.
 #   apply  holds WORKLINE_GITLAB_TOKEN (a project access token, role Developer,
 #          scopes `api` and `write_repository`: one glab command in
 #          docs/ci-gitlab.md makes and stores it; CI_JOB_TOKEN reaches no issue) and
 #          no AI key. A doc fix goes in one comment on the merge request,
-#          never on its branch (ADR-0051).
+#          never on its branch.
 #
 # Both variables are masked, and NOT protected: GitLab gives a protected
 # variable only to protected branches, never to a merge request's. Anyone who
@@ -59,7 +59,7 @@
 # Scope each to the environment `workline` (Settings, CI/CD, Variables,
 # Environments; a project's variable, on every tier): GitLab gives it then
 # only to the jobs that declare it, those that hold a token here, and never
-# to workline:gates nor workline:main, which run the project's tools (#520).
+# to workline:gates nor workline:main, which run the project's tools.
 # GITLAB_TOKEN and WORKLINE_SIGNING_KEY too, when set. `workline doctor`
 # warns of a token left to every environment.
 #
@@ -106,12 +106,12 @@ variables:
 # The tally of what the judge's agent calls spent, a line a run: role,
 # target, calls, tokens, seconds; no prompt, no diff. Written from its runs
 # folder by the job after it, which keeps it 2 weeks for the weekly
-# sample's tokens (ADR-0019, open point 1); the run folders keep their
+# sample's tokens; the run folders keep their
 # day. The first release after v0.75.0; an engine before it keeps none,
 # said.
 .workline:tally: &tally
   - 'workline sample --tally workline-tally.jsonl || echo "workline: no tally kept"'
-# The week's tokens (ADR-0052, criterion 3): the tallies those jobs
+# The week's tokens: the tallies those jobs
 # kept, read with the bot's token from this project's jobs of the last 15
 # days, as the sample's runs folder's tally. A fork's merge request runs
 # in the fork: none of its jobs is read here.
@@ -135,7 +135,7 @@ variables:
 # Premium and Ultimate only (gitlab.com's Free tier answers 404).
 .workline:kept: &kept
   - 'kept() { h="JOB-TOKEN: $CI_JOB_TOKEN"; [ -z "${WORKLINE_GITLAB_TOKEN:-}" ] || h="PRIVATE-TOKEN: $WORKLINE_GITLAB_TOKEN"; mkdir -p .workline-kept; curl -fsSL --header "$h" -o ".workline-kept/$1" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_DEFAULT_BRANCH/raw/.workline-kept/$1?job=workline:main" 2>/dev/null || { rm -f ".workline-kept/$1"; return 1; }; }'
-# ids <ref> <job>: the tests a tree holds, by their ids (#1407), as a job
+# ids <ref> <job>: the tests a tree holds, by their ids, as a job
 # of <ref> kept them, in its artifact .workline-test-ids/ (index: its
 # files), from the last successful pipeline of <ref> that ran it: the
 # default branch's, or the merge request's own. Never a cache a branch
@@ -158,23 +158,23 @@ variables:
 # The developer's agent runs commands in a worktree of the clone: in the
 # jobs that may run it, the runner's job token leaves its git config
 # first, every branch fetched while it is there; the engine refuses to
-# start the agent while git would hand it one (ADR-0056).
+# start the agent while git would hand it one.
 .workline:no-credential: &no-credential
   - git fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
   - git config remote.origin.url "$CI_SERVER_URL/$CI_PROJECT_PATH.git"
   - for k in $(git config --local --name-only --get-regexp '^(http\..*extraheader|credential\..*helper)$'); do git config --local --unset-all "$k"; done
-# Every lens of the reviewer once when the merge request becomes ready
-# (ADR-0020); a draft's pipelines ask no agent, the summary saying the AI
-# review waits for ready (ADR-0050). Marking a draft ready starts no
+# Every lens of the reviewer once when the merge request becomes ready;
+# a draft's pipelines ask no agent, the summary saying the AI
+# review waits for ready. Marking a draft ready starts no
 # pipeline: the next one, a push or Run pipeline, is
 # the run on ready when the merge request is no draft and its note
 # "marked this merge request as **ready**" is newer than the reviewer's
 # comment, or there is no comment yet. Read with GITLAB_TOKEN, else the
 # job's token; unread, one lens, said (roles/reviewer/docs/run.md). The
 # draft state goes on every run (`draft`): a merge request no draft whose
-# record does not say every lens read it gets them (#359). The lenses that
+# record does not say every lens read it gets them. The lenses that
 # warn read the ready note against their own comment (WORKLINE_STICKY).
-# The draft state as the API says it when the job runs (#662), else as
+# The draft state as the API says it when the job runs, else as
 # the pipeline was created with it (CI_MERGE_REQUEST_DRAFT).
 .workline:ready: &ready
   - |
@@ -207,12 +207,12 @@ variables:
     - git fetch --quiet origin $CI_MERGE_REQUEST_DIFF_BASE_SHA || true
     - '[ -z "${CI_MERGE_REQUEST_TARGET_BRANCH_SHA:-}" ] || git fetch --quiet origin "$CI_MERGE_REQUEST_TARGET_BRANCH_SHA" || true'
 
-# The stored base, before the gates run (ADR-0050): main's findings by
+# The stored base, before the gates run: main's findings by
 # commit, read from main's own pipeline artifacts (workline:main), never
 # from a cache a branch could write, and handed to workline:gates, or to
 # workline:main on the default branch, as this job's artifact. The bot's
 # token reads them here, where no tool runs and nothing is checked out:
-# the jobs that run the project's tools never receive it (#520). Its
+# the jobs that run the project's tools never receive it. Its
 # failure fails nothing: the tools then run again at the merge base, said.
 workline:base:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
@@ -236,7 +236,7 @@ workline:base:
         [ "${CI_MERGE_REQUEST_EVENT_TYPE:-}" != merge_train ] || base=${CI_MERGE_REQUEST_TARGET_BRANCH_SHA:-$base}
         kept "$base.json" || echo "workline: main's pipeline kept no findings for $base"
       fi
-    # The tests' ids the tester's guard reads (#1407): those the tester's
+    # The tests' ids the tester's guard reads: those the tester's
     # red proof kept on the default branch, then this merge request's own
     # judge before; never in a merge train, which runs no judge.
     - *ids
@@ -255,7 +255,7 @@ workline:base:
 # environment workline; it unsets them still, for one left to every
 # environment (docs/gitlab/environment.md). The judge runs after it,
 # whatever its verdict: the line reads it, and errs on a gate it does not
-# hold. In a merge train (ADR-0050), with workline:base the only jobs of
+# hold. In a merge train, with workline:base the only jobs of
 # workline: the gates on the merged result against the target's tip,
 # failing the train's pipeline when they block; the summary names the
 # steps left to the head's verdict.
@@ -299,25 +299,24 @@ workline:judge:
   extends: .workline
   stage: test
   environment: *environment         # the agent's token, the bot's (whether workline:warn runs), GITLAB_TOKEN
-  needs: [workline:gates, {job: "workline:base", artifacts: true}]   # the tests' ids workline:base read (#1407)
+  needs: [workline:gates, {job: "workline:base", artifacts: true}]   # the tests' ids workline:base read
   rules:                            # also when the gates did not pass: the line reads their verdict; never in a merge train
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train"
       when: always
-  # One pipeline per merge request (#359): a push cancels the one still
+  # One pipeline per merge request: a push cancels the one still
   # judging the head before, with GitLab's "Auto-cancel redundant
   # pipelines" on (docs/ci-gitlab.md). The jobs that write are not
   # interruptible: one begun goes to its end.
   interruptible: true
-  # One review at a time per merge request (#375), with workline:apply: a
+  # One review at a time per merge request, with workline:apply: a
   # push waits while the pipeline before it applies, then reads its
   # record and reviews only what is new.
   resource_group: workline-review-$CI_MERGE_REQUEST_IID
   # The lenses that warn read apart only where workline:warn runs, which
-  # needs the bot's token too (ADR-0050); without it they read here, on the
+  # needs the bot's token too; without it they read here, on the
   # verdict's path, said in the log and the summary, never lost. On a
   # release tool's merge request, the default branch's checks not done
-  # yet are waited for, 30 minutes at most, this job running meanwhile
-  # (#640).
+  # yet are waited for, 30 minutes at most, this job running meanwhile.
   script:
     - *ready
     - *claude
@@ -334,7 +333,7 @@ workline:judge:
     - *ids-keep                     # for this merge request's next pipeline
     - exit $status
   # An agent out of reach (3) warns, not taken for the change's fault: a
-  # person judges what it would have (ADR-0010).
+  # person judges what it would have.
   allow_failure: {exit_codes: [3]}
   after_script: [*summary, *tally]
   artifacts:
@@ -350,8 +349,8 @@ workline:apply:
   environment: *environment
   needs: [workline:judge]
   interruptible: false
-  resource_group: workline-review-$CI_MERGE_REQUEST_IID   # one review at a time, with workline:judge (#375)
-  rules:                            # also when the judge failed: a blocked merge request still gets the reviewer's comment (#226)
+  resource_group: workline-review-$CI_MERGE_REQUEST_IID   # one review at a time, with workline:judge
+  rules:                            # also when the judge failed: a blocked merge request still gets the reviewer's comment
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE != "merge_train"
       when: always
   script:
@@ -368,7 +367,7 @@ workline:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 2 weeks             # the tally, for the weekly sample
 
-# What only warns, in a child pipeline (ADR-0051): GitLab merges a merge
+# What only warns, in a child pipeline: GitLab merges a merge
 # request set to merge once its pipeline succeeds, and waits for
 # `allow_failure` jobs too. Started with no `strategy`, the merge
 # request's pipeline ends with the verdict. The child is this same file,
@@ -389,7 +388,7 @@ workline:warn:child:
     include: ci/workline.gitlab-ci.yml
   allow_failure: true               # a child that cannot start warns: the lenses that warn did not read
 
-# The reviewer's lenses that only warn (its `ai-findings`, ADR-0050; the
+# The reviewer's lenses that only warn (its `ai-findings`; the
 # first release after v0.36.0): workline:judge asks the lenses that block
 # (--warn-apart), and workline:merge reads the head's verdict from it
 # alone. This job asks the others beside it, in the child pipeline
@@ -398,8 +397,8 @@ workline:warn:child:
 # (allow_failure): a lens that fails is said in that comment. With the
 # agent's token and the bot's: unposted, their record would never move,
 # and every pipeline read them all again. One review apart at a time per
-# merge request. The inspector's triage too, when the line routes it
-# (ADR-0049): after workline:gates, whatever its verdict, it reads the
+# merge request. The inspector's triage too, when the line routes it:
+# after workline:gates, whatever its verdict, it reads the
 # result that job left (`--gates-from`); the gates never run here, in the
 # agent's reach.
 workline:warn:
@@ -468,10 +467,10 @@ workline:warn:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 2 weeks             # the tally, for the weekly sample
 
-# The merge policy, `merge: {autonomy: cautious}` (ADR-0042; the first
+# The merge policy, `merge: {autonomy: cautious}` (the first
 # release after v0.25.0), after the judge: the head's verdict kept, the
 # merge requests a person accepted set to merge when their pipeline
-# succeeds, none brought up to date first (ADR-0051). A label starts no
+# succeeds, none brought up to date first. A label starts no
 # pipeline: it waits for that merge request's own next one. The target
 # branch checked out, for its config; never a fork's. Without `merge:`,
 # it stops at once (docs/merge-policy.md).
@@ -508,18 +507,17 @@ workline:merge:
 # `schedule` line runs (by default the documentalist); each task it takes up
 # becomes a merge request of its own, on a branch workline/<role>/<task>,
 # updated when the task runs again, and no more are proposed while
-# max-open-merge-requests of them wait (ADR-0006); those the branch moved
-# under are rebuilt on it, or closed when nothing is left to merge
-# (ADR-0034). WORKLINE_GITLAB_TOKEN also
+# max-open-merge-requests of them wait; those the branch moved
+# under are rebuilt on it, or closed when nothing is left to merge.
+# WORKLINE_GITLAB_TOKEN also
 # needs the `write_repository` scope, to push the branch. Without AI, only
-# derived blocks are regenerated. The release never waits for the docs
-# (ADR-0051).
+# derived blocks are regenerated. The release never waits for the docs.
 .workline:garden:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   environment: *environment
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   rules:
-    # A schedule left from before ADR-0051 (WORKLINE_TASK=release-docs) runs
+    # An older schedule of the docs (WORKLINE_TASK=release-docs) runs
     # no gardening: delete it (docs/ci-gitlab.md).
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs" && $WORKLINE_TASK != "reconcile"
   before_script:                    # one shell with the script: a job without the bot's token stops here
@@ -550,7 +548,7 @@ workline:garden:apply:
   extends: .workline:garden
   stage: deploy
   needs: [workline:garden:judge]
-  rules:                            # also when the judge failed: what passed before a step blocked is applied (#142)
+  rules:                            # also when the judge failed: what passed before a step blocked is applied
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_TASK != "sample" && $WORKLINE_TASK != "release-docs" && $WORKLINE_TASK != "reconcile"
       when: always
   script:
@@ -559,11 +557,11 @@ workline:garden:apply:
     - status=0
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html || status=$?
     # Its merge requests the branch moved under: rebuilt on it, or closed
-    # when nothing is left to merge; one a person committed to is theirs
-    # (ADR-0034). Needs the first release after v0.24.0.
+    # when nothing is left to merge; one a person committed to is theirs.
+    # Needs the first release after v0.24.0.
     - workline follow --gardening --base "$CI_COMMIT_REF_NAME" --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
     # The normal size of an issue, from the line's records: one comment
-    # kept in place, reported only (ADR-0064, step 2). Needs the first
+    # kept in place, reported only. Needs the first
     # release after v0.73.0.
     - workline size --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
     - exit $status
@@ -574,7 +572,7 @@ workline:garden:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 2 weeks             # the tally, for the weekly sample
 
-# The tester answers an objection (ADR-0055): a comment opened by
+# The tester answers an objection: a comment opened by
 # `workline:objection` on a line of its Draft (branch workline/tester/…).
 # GitLab starts no pipeline on a comment: a tool given the project's note
 # webhook starts one on the default branch, through the pipelines API or a
@@ -675,20 +673,20 @@ workline:objection:apply:
 .workline:setup:
   script: []
 
-# The line of states (ADR-0059): the project's issue webhook, pointed at
+# The line of states: the project's issue webhook, pointed at
 # its own trigger URL with WORKLINE_TASK=issue, starts a pipeline on every
 # issue change, and on every comment where the reviewer or the product
 # owner is routed on issue; workline:issue reads the event
 # ($TRIGGER_PAYLOAD) and, when it put a state's label on an issue, is
-# the reviewer's comment on the spec of an issue in refine (#846), or a
-# person's comment or body edit on an issue on the line (#1414), and
+# the reviewer's comment on the spec of an issue in refine, or a
+# person's comment or body edit on an issue on the line, and
 # that issue's step is due,
 # starts its own pipeline, WORKLINE_TASK=develop and ISSUE_IID, with the
 # job's token, and with it each issue whose step waited for the room
-# that move freed (#960): any other event exits at once. A pipeline schedule with
+# that move freed: any other event exits at once. A pipeline schedule with
 # WORKLINE_TASK=reconcile, hourly, does the same for every issue an event
 # missed (docs/gitlab-trigger.md): GitLab runs it on time, so no
-# heartbeat as on GitHub (#845). No agent, the bot's token to read.
+# heartbeat as on GitHub. No agent, the bot's token to read.
 .workline:start: &start             # each due issue's own pipeline, started with the job's token; one not started is said, the others still started, the job warns (exit 3)
   - |
     missed=
@@ -752,9 +750,9 @@ workline:reconcile:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 day
 
-# The step an issue's state wakes (ADR-0059), routed `issue: [tester,
+# The step an issue's state wakes, routed `issue: [tester,
 # developer]`: the tester on workline:needs-tests, the developer on
-# workline:ready (ADR-0054, ADR-0055). A pipeline workline:issue or
+# workline:ready. A pipeline workline:issue or
 # workline:reconcile starts, or a tool, with WORKLINE_TASK=develop and
 # ISSUE_IID; without ISSUE_IID, the first ready issue nobody took. One
 # run an issue, whichever role (resource_group). Your setup steps run in
@@ -784,7 +782,7 @@ workline:develop:judge:
     - *claude
     - !reference [.workline:setup, script]
     - *no-credential
-    # The tests' ids the tester's red proof finds on the base (#1407),
+    # The tests' ids the tester's red proof finds on the base,
     # carried from the job before: a merge request's guard reads them.
     - *ids
     - rm -rf .workline-test-ids
@@ -831,7 +829,7 @@ workline:develop:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 2 weeks             # the tally, for the weekly sample
 
-# A review round on the developer's own merge request (ADR-0054, step 6):
+# A review round on the developer's own merge request:
 # the reviewer's verdict or a person's comment. GitLab starts no pipeline
 # on a comment: a tool given the note webhook starts one on the default
 # branch with WORKLINE_TASK=review, MR_IID and MR_SOURCE_BRANCH
@@ -917,7 +915,7 @@ workline:review:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 2 weeks             # the tally, for the weekly sample
 
-# A release's dry run, on each schedule but the sample's (ADR-0050): what
+# A release's dry run, on each schedule but the sample's: what
 # would hold the release if it were cut now from the branch's tip. Every
 # step, no agent, nothing applied, said as warnings. Install here the
 # tools of your `release` line's gates: they run on the default branch's
@@ -968,7 +966,7 @@ workline:release:dry-run:post:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# The tester's curator, its measures, no agent (ADR-0055, step 6): the
+# The tester's curator, its measures, no agent: the
 # project's tests run on the branch's tip, each test's time and result kept
 # from one run to the next in this job's artifact, read back from the last
 # one (GitLab keeps a ref's latest). Said in the job's summary. Opt-in: the
@@ -1046,9 +1044,9 @@ workline:curator:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 2 weeks             # the tally, for the weekly sample
 
-# At a release's tag (ADR-0050; the first release after v0.37.0), whoever
+# At a release's tag (the first release after v0.37.0), whoever
 # pushed it: the release's line, its gates, no agent, no token, red when it
-# holds the release; never the docs (ADR-0051). Have the jobs that
+# holds the release; never the docs. Have the jobs that
 # publish it need it (`needs: [workline:release]`). A tool that tags and
 # publishes in one job (semantic-release) runs `workline route release
 # --ai none` before it, in that job. Why and how: docs/release.md.
@@ -1073,7 +1071,7 @@ workline:release:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# Main after a merge (ADR-0050; the first release after v0.37.0), each
+# Main after a merge (the first release after v0.37.0), each
 # push to the default branch, no token, no agent: the gates, red when the
 # push adds what they count, their findings kept in its artifacts by the
 # commit for workline:gates to read; then the whole repository's checks.
@@ -1144,7 +1142,7 @@ workline:main:issue:
 # merge policy (`merge:`), as workline:merge. It writes to no person's
 # merge request. On the hourly reconcile schedule too, the safety net: a
 # merge request set to merge when its pipeline succeeds that GitLab left,
-# mergeable, merged by the next run (#993).
+# mergeable, merged by the next run.
 workline:follow:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy
@@ -1169,7 +1167,7 @@ workline:follow:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# The weekly sample of every role's acts (ADR-0014, step 4; ADR-0046): a
+# The weekly sample of every role's acts: a
 # second pipeline schedule, weekly (Mondays, after the gardening), with the
 # variable WORKLINE_TASK=sample. One in ten of the docs whose `checked` the
 # documentalist moved in the week before is read whole against its sources

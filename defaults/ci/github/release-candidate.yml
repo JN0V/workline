@@ -1,4 +1,4 @@
-# The release tool on a release candidate's branch (ADR-0060), with
+# The release tool on a release candidate's branch, with
 # release-please — copy to .github/workflows/release-candidate.yml, with
 # `merge: {autonomy: enterprising}`. What it does: docs/release-candidate.md.
 #
