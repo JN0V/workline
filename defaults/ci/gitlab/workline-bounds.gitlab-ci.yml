@@ -1,4 +1,4 @@
-# The developer's bounds on its merge request (ADR-0058): include it beside
+# The developer's bounds on its merge request: include it beside
 # workline.gitlab-ci.yml, or from a pipeline execution policy (Ultimate).
 #   include: [{local: ci/workline.gitlab-ci.yml}, {local: ci/workline-bounds.gitlab-ci.yml}]
 # A refused file fails the pipeline; no agent, no code of the merge request

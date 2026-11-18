@@ -1,9 +1,9 @@
-# workline's line of states on GitHub Actions (ADR-0059): copy to
+# workline's line of states on GitHub Actions: copy to
 # .github/workflows/workline-develop.yml, route `issue: [tester, developer]`
-# in .workline/config.yaml (ADR-0054, ADR-0055). A person's label on an
+# in .workline/config.yaml. A person's label on an
 # issue runs the role its state wakes: the tester on workline:needs-tests,
 # the developer on workline:ready; a person's comment or edit on an issue
-# on the line, when its step is due (#1414); the job that moves a state starts the
+# on the line, when its step is due; the job that moves a state starts the
 # next step; about hourly, the reconciler starts what an event missed. By hand
 # with no issue, the first ready one nobody took.
 # On its own pull request (workline/developer/…), the reviewer's verdict
@@ -15,12 +15,12 @@
 #                          .github/actions/workline-setup/action.yml, when you have it.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
 #   heartbeat              no token; the environment workline-heartbeat, its wait
-#                          timer the gap between two reconciles (#845): 55 min,
+#                          timer the gap between two reconciles: 55 min,
 #                          or the variable WORKLINE_RECONCILE_GAP_MINUTES.
 # Why each part: roles/developer/docs/triggers.md.
 name: workline develop
 # A run of an issue's step named for it, `workline develop #<n>`: a start
-# of that issue's run is skipped while one is queued or running (#806).
+# of that issue's run is skipped while one is queued or running.
 run-name: >-
   ${{ (github.event_name == 'workflow_dispatch' && inputs.issue != '' && format('workline develop #{0}', inputs.issue)) ||
   (github.event_name == 'workflow_dispatch' && inputs['pull-request'] != '' && format('workline develop round !{0}', inputs['pull-request'])) ||
@@ -39,11 +39,11 @@ run-name: >-
   github.event.sender.type != 'Bot' && github.event.issue.state == 'open' && contains(join(github.event.issue.labels.*.name, ' '), 'workline:') &&
   format('workline develop #{0}', github.event.issue.number)) || github.workflow }}
 on:
-  # A person's label on an issue: its state wakes its role (ADR-0059).
+  # A person's label on an issue: its state wakes its role.
   # The engine's own labels wake nothing here: the job that set them
   # starts the next step, by workflow_dispatch. A person's edit of an
   # issue on the line, or comment on it, may be the answer it waits on,
-  # a draft's or a block's (#1414): its run asks the line first, no
+  # a draft's or a block's: its run asks the line first, no
   # agent, and ends there when nothing is due.
   issues: {types: [labeled, edited]}
   workflow_dispatch:
@@ -56,16 +56,16 @@ on:
   # writes wakes nothing), or a person's; on an issue, a person's.
   issue_comment: {types: [created, edited]}
   # A project's workflow that failed on the developer's branch: its
-  # checks red are a round (#917); all green on its Draft, a round that
-  # marks it ready (#969). Every workflow, workline's own left
+  # checks red are a round; all green on its Draft, a round that
+  # marks it ready. Every workflow, workline's own left
   # out by the job whose; check_suite and check_run never fire for
   # GitHub Actions' own checks.
   workflow_run: {workflows: ["*"], types: [completed], branches: ["workline/developer/**"]}
-  # The reconciler, hourly: a step an event missed (ADR-0059). A safety
+  # The reconciler, hourly: a step an event missed. A safety
   # net, not the driver. Each reconcile starts the next one, an hour on,
   # by the heartbeat (job heartbeat); GitHub runs this schedule late or
   # not at all, so it and the events above only start it again when the
-  # heartbeat stopped (#845): job reconcile-due.
+  # heartbeat stopped: job reconcile-due.
   schedule: [{cron: "41 * * * *"}]
 permissions: {}
 
@@ -85,7 +85,7 @@ jobs:
         github.event.issue.state == 'open' && contains(join(github.event.issue.labels.*.name, ' '), 'workline:') &&
         (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) ||
           github.event.comment.user.login == github.event.issue.user.login))
-    # A person's edit or comment on an issue on the line (#1414): the
+    # A person's edit or comment on an issue on the line: the
     # step Due below asks the line, no agent; nothing due, the run ends
     # there. A comment counts from the project's people or the issue's
     # author, whose answer the line asked for; anyone else's waits for
@@ -103,7 +103,7 @@ jobs:
       proposed: ${{ steps.line.outputs.proposed }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
+        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent
       # The engine at the version pinned above, from its release, checksum
       # verified: seconds, not a build.
       - name: workline
@@ -113,7 +113,7 @@ jobs:
           get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
           echo "$bin" >> "$GITHUB_PATH"
           "$bin/workline" version
-      # Asked first, no agent (#806): an issue whose step is not due —
+      # Asked first, no agent: an issue whose step is not due —
       # acted on already, or its run started twice — ends here, before
       # your setup steps and the agent. With no issue, or the ask failing,
       # the line runs and says why itself.
@@ -142,12 +142,12 @@ jobs:
       - name: Claude, when the repository gives its token
         if: steps.due.outputs.due == 'true' && env.HAS_CLAUDE == 'true'
         # Its shell: Claude Code boxes each command with bubblewrap, its
-        # network through socat; either missing, no command runs (#900).
+        # network through socat; either missing, no command runs.
         run: |
           npm install -g @anthropic-ai/claude-code
           command -v bwrap >/dev/null && command -v socat >/dev/null ||
             { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends bubblewrap socat; }
-      # The tests a tree holds, by their ids (#1407): the tester's red
+      # The tests a tree holds, by their ids: the tester's red
       # proof runs the base, the default branch's tip; the ids it finds are
       # kept in the default branch's cache, newest first, which every pull
       # request reads: the guard on the developer's then reads the base's
@@ -169,7 +169,7 @@ jobs:
         if: steps.due.outputs.due == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ISSUE: ${{ github.event.issue.number || inputs.issue }}
         run: |
@@ -188,7 +188,7 @@ jobs:
 
       # Kept only when the tester ran, the developer not: the guard's
       # base is never read from a run of the code it guards. A run a
-      # person's label starts may not write the cache (#853): the next
+      # person's label starts may not write the cache: the next
       # pull request's guard then runs the base.
       - name: The test ids found
         id: found
@@ -216,8 +216,8 @@ jobs:
           exit "$status"
       # What this job's agent calls spent, a line a run: role, target,
       # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
-      # weekly sample's tokens (ADR-0019, open point 1); the run folders
-      # keep their day. Also in a cancelled run (a newer push's), (#1413), named so, not always(); in each
+      # weekly sample's tokens; the run folders
+      # keep their day. Also in a cancelled run (a newer push's), named so, not always(); in each
       # attempt of a re-run, its own artifact; not in a merge queue's, which asks no agent. The
       # first release after v0.75.0; an engine before it keeps none, said.
       - name: The runs' tally
@@ -232,9 +232,9 @@ jobs:
     if: always() && needs.judge.outputs.proposed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: workline-app       # the App's key: the default branch only (ADR-0044)
-    # actions: the next step started, by workflow_dispatch (ADR-0059).
-    # statuses: the line's verdicts, read by the reconcile (ADR-0068 §8).
+    environment: workline-app       # the App's key: the default branch only
+    # actions: the next step started, by workflow_dispatch.
+    # statuses: the line's verdicts, read by the reconcile.
     permissions: {contents: write, pull-requests: write, issues: write, actions: write, statuses: read}
     outputs:
       next: ${{ steps.next.outputs.issue }}
@@ -273,7 +273,7 @@ jobs:
           workline apply --line line.json --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
-      # Explicit chaining (ADR-0059): the state this run moved the issue to
+      # Explicit chaining: the state this run moved the issue to
       # wakes its next step now. The line says, with no agent, whether
       # that step is due; its run then starts by workflow_dispatch, which
       # the job's own token may start.
@@ -284,7 +284,7 @@ jobs:
         run: |
           printf '%s' "$ISSUE" | grep -Eqx '[0-9]+' || exit 0
           # Asked again after a pause: GitHub lists a comment the apply
-          # just wrote some seconds later, a review among them (#757).
+          # just wrote some seconds later, a review among them.
           for wait in 0 10 20; do
             sleep "$wait"
             workline route issue --target "issue:$ISSUE" --ai none --forge github --open-merge-request --input reconcile=list --json > next.json || true
@@ -292,13 +292,13 @@ jobs:
           done
           # Started even when another run of the issue waits: that one may
           # ask the line before this apply moved the state, and end; a
-          # second run ends at its due step, before any setup (#806).
+          # second run ends at its due step, before any setup.
           if jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null; then
             gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$ISSUE"
             echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
             echo "#$ISSUE's next step started" >> "$GITHUB_STEP_SUMMARY"
           fi
-          # Its step a review round (#1013): back to ready from a Scope
+          # Its step a review round: back to ready from a Scope
           # ask, the round on its own pull request resumes, not a claim.
           for n in $(jq -r '(.reviews // [])[].id' next.json); do
             if gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f pull-request="$n"; then
@@ -307,7 +307,7 @@ jobs:
               echo "::warning title=workline::!$n's round not started: the reconciler starts it"
             fi
           done
-      # Room this run freed (#960): an issue moved out of a state with a
+      # Room this run freed: an issue moved out of a state with a
       # limit — the developer taking a ready one — wakes the issues whose
       # step waited for that room now, not at the next reconcile. The line
       # says which, with no agent, the one waiting longest first.
@@ -326,7 +326,7 @@ jobs:
               echo "::warning title=workline::#$n's run not started: the reconciler starts it"
           done
 
-  # The heartbeat (#845): the reconciler's next run, started by the last
+  # The heartbeat: the reconciler's next run, started by the last
   # one, waits here for the wait timer of the environment
   # workline-heartbeat (55 minutes by default), holding no runner, then runs the job
   # reconcile. One a branch: a new one cancels the one waiting.
@@ -343,12 +343,12 @@ jobs:
       - run: echo "the heartbeat's wait timer passed; the reconciler runs"
 
   # Whether a reconcile is due, on the schedule or an issue labelled, the
-  # line's every hop: the heartbeat stopped (#789, #845). Not while a
+  # line's every hop: the heartbeat stopped. Not while a
   # reconciler's run or a heartbeat is queued, waiting or running, nor
   # within the gap after the last that succeeded: the repository variable
   # WORKLINE_RECONCILE_GAP_MINUTES, 55 when unset. Read from this workflow's runs,
-  # one call: a run an event starts may not write the Actions cache
-  # (#853). Due, it starts the reconciler's own run, which the next event
+  # one call: a run an event starts may not write the Actions cache.
+  # Due, it starts the reconciler's own run, which the next event
   # sees. One at a time: the next asks once this one started that run.
   reconcile-due:
     if: >-
@@ -391,8 +391,8 @@ jobs:
             echo "::warning title=workline::the reconciler's run not started: the next event or the schedule asks again"
           fi
 
-  # Who keeps the line's verdicts, for the reconciler to read them
-  # (ADR-0068 §8): the App's slug, read with its key in a job of its own,
+  # Who keeps the line's verdicts, for the reconciler to read them:
+  # the App's slug, read with its key in a job of its own,
   # so the key never reaches the job that runs the engine. Where the
   # environment refuses the key, a branch, the reconciler runs all the
   # same and says the verdicts it could not read.
@@ -400,7 +400,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && (inputs.reconcile == 'true' || inputs.reconcile == 'next') && vars.WORKLINE_APP_ID != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    environment: workline-app       # the App's key: the default branch only (ADR-0044)
+    environment: workline-app       # the App's key: the default branch only
     permissions: {}
     outputs:
       app: ${{ steps.app.outputs.app-slug }}
@@ -412,13 +412,13 @@ jobs:
           private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
           permission-metadata: read
 
-  # The reconciler (ADR-0059): each open issue whose step is due and no
+  # The reconciler: each open issue whose step is due and no
   # event started, at most reconcile-max a run, the one waiting longest
-  # first (#960), each its own run. No agent, a read token, the right to
+  # first, each its own run. No agent, a read token, the right to
   # start runs. Its own run, named
   # `workline develop heartbeat` or `workline develop reconcile`: by the
   # heartbeat, by hand (input reconcile=true) or by reconcile-due. Those
-  # runs keep when it last ran (#853; why: the developer's triggers page).
+  # runs keep when it last ran (why: the developer's triggers page).
   # One at a time.
   reconcile:
     needs: [heartbeat, identity]
@@ -430,13 +430,13 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 120
-    # statuses: the line's verdicts on the heads, read (ADR-0068 §8).
+    # statuses: the line's verdicts on the heads, read.
     permissions: {contents: read, issues: read, pull-requests: read, checks: read, statuses: read, actions: write}
     steps:
       - uses: actions/checkout@v4
         # The branch's head as the job starts, not the commit the run was
         # started on: a heartbeat's waited its timer, and a fix merged
-        # meanwhile acts now (#898).
+        # meanwhile acts now.
         with: {ref: "${{ github.ref }}", fetch-depth: 0, persist-credentials: false}
       - name: workline
         run: |
@@ -465,7 +465,7 @@ jobs:
             --summary workline-summary.md --json > due.json
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           # An issue with a run queued or running, this one among them, is
-          # not started again (#806).
+          # not started again.
           busy=$(for s in queued in_progress pending waiting; do
             gh run list --workflow "$wf" --status "$s" --limit 100 --json displayTitle --jq '.[].displayTitle'
           done) || busy=
@@ -486,12 +486,12 @@ jobs:
           done
           # The tester's answer on each Draft an objection waits on, that
           # no comment wakes again: a run that answered one, or stopped
-          # first (#1701).
+          # first.
           for b in $(jq -r '(.answers // [])[].branch' due.json); do
             gh workflow run workline-answer.yml --ref "$GITHUB_REF_NAME" -f branch="$b" ||
               echo "::warning title=workline::the answer on $b not started: the next reconcile starts it"
           done
-      # The next reconcile, by the heartbeat (#845), even when this one
+      # The next reconcile, by the heartbeat, even when this one
       # failed: its run waits the environment's wait timer, in minutes.
       # No such environment, or no wait timer (a private repository on
       # GitHub's free plan has none), no heartbeat: said, the schedule and
@@ -521,7 +521,7 @@ jobs:
             echo "::warning title=workline::the heartbeat not started: the schedule or the line's next event starts the reconciler"
           fi
 
-  # A review round (ADR-0054, step 6): a fresh run on the developer's own
+  # A review round: a fresh run on the developer's own
   # pull request, reading its record, the reviewer's findings and a
   # person's comments; its fix proposed only.
   # Whose pull request: a comment on any pull request wakes this
@@ -555,7 +555,7 @@ jobs:
           RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           printf '%s' "$PR" | grep -Eqx '[0-9]+' || { echo "::error title=workline::not a pull request number: $PR"; exit 64; }
-          # A person's reply in a thread on a line (#1438): noticed by
+          # A person's reply in a thread on a line: noticed by
           # workline-objection.yml's job replied, which holds no token;
           # its end is a round, the project's runs not read.
           if [ "$RUN" = "workline objection" ]; then
@@ -564,10 +564,10 @@ jobs:
             [ "$replied" -gt 0 ] || { echo "workline objection's run on pull request $PR: no person's reply in a thread noticed: no round"; exit 0; }
             SHA=
           fi
-          # A project's run ended (#917): a round once all of its runs on
+          # A project's run ended: a round once all of its runs on
           # that head are done, one of them failed, whichever ends last —
           # a red one first, then a green one, wakes it all the same. All
-          # green on a Draft: a round too, which marks it ready (#969).
+          # green on a Draft: a round too, which marks it ready.
           runs=
           if [ -n "$SHA" ]; then
             runs=$(gh api "repos/$GH_REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | select(.name | ascii_downcase | startswith("workline") | not)] |
@@ -597,7 +597,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120   # a review round has the developer's caps, ai-max-seconds and proof-seconds: 75 min
     # checks, actions: the project's checks red at its head, and their
-    # failed steps' log, the round's input (#917).
+    # failed steps' log, the round's input.
     permissions: {contents: read, pull-requests: read, issues: read, checks: read, actions: read}
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
     outputs:
@@ -606,7 +606,7 @@ jobs:
       issue: ${{ steps.round.outputs.issue }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent (ADR-0056)
+        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the agent
       # Your setup steps, from the default branch, before the round
       # checks its pull request's code out.
       - name: The project's setup steps
@@ -622,7 +622,7 @@ jobs:
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
         # Its shell: Claude Code boxes each command with bubblewrap, its
-        # network through socat; either missing, no command runs (#900).
+        # network through socat; either missing, no command runs.
         run: |
           npm install -g @anthropic-ai/claude-code
           command -v bwrap >/dev/null && command -v socat >/dev/null ||
@@ -632,7 +632,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           PR: ${{ github.event.issue.number || inputs['pull-request'] || github.event.workflow_run.pull_requests[0].number }}
           BRANCH: ${{ needs.whose.outputs.branch }}
@@ -641,8 +641,8 @@ jobs:
           printf '%s' "$PR" | grep -Eqx '[0-9]+' || { echo "::error title=workline::not a pull request number: $PR"; exit 64; }
           branch=$BRANCH
           case "$branch" in workline/developer/*) ;; *) echo "pull request $PR is not the developer's: no round"; exit 0;; esac
-          # Merged or closed since it was read, its branch maybe deleted
-          # (#1420): nothing to review, said, the run green.
+          # Merged or closed since it was read, its branch maybe deleted:
+          # nothing to review, said, the run green.
           state=$(gh pr view "$PR" --json state --jq .state 2>/dev/null) || state=
           case "$state" in MERGED|CLOSED) echo "pull request $PR is $(printf '%s' "$state" | tr A-Z a-z) meanwhile: no round"; exit 0;; esac
           git rev-parse -q --verify "origin/$branch^{commit}" >/dev/null ||
@@ -669,8 +669,8 @@ jobs:
           exit "${STATUS:-0}"
       # What this job's agent calls spent, a line a run: role, target,
       # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
-      # weekly sample's tokens (ADR-0019, open point 1); the run folders
-      # keep their day. Also in a cancelled run (a newer push's), (#1413), named so, not always(); in each
+      # weekly sample's tokens; the run folders
+      # keep their day. Also in a cancelled run (a newer push's), named so, not always(); in each
       # attempt of a re-run, its own artifact; not in a merge queue's, which asks no agent. The
       # first release after v0.75.0; an engine before it keeps none, said.
       - name: The runs' tally
@@ -685,8 +685,8 @@ jobs:
     if: always() && needs.review.outputs.run != ''
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: workline-app       # the App's key: the default branch only (ADR-0044)
-    # actions: its issue's next step started, by workflow_dispatch (#1013).
+    environment: workline-app       # the App's key: the default branch only
+    # actions: its issue's next step started, by workflow_dispatch.
     permissions: {contents: write, pull-requests: write, issues: write, actions: write}
     steps:
       - id: app
@@ -732,11 +732,11 @@ jobs:
           workline apply "$RUN" --from-merge-request "$PR" --head "$HEAD_SHA" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
-      # Explicit chaining (#1013): the state the round moved its issue to
+      # Explicit chaining: the state the round moved its issue to
       # wakes its next step now. Blocked on a Scope ask, the product owner
       # reads it at once, not at the next reconcile. The line says, with
       # no agent, whether that step is due; asked again after a pause,
-      # GitHub listing the round's comment some seconds later (#757).
+      # GitHub listing the round's comment some seconds later.
       - name: The issue's next step
         env:
           GH_TOKEN: ${{ github.token }}
@@ -749,7 +749,7 @@ jobs:
             jq -e --argjson n "$ISSUE" '((.due // []) | index($n)) or ([.findings[]?.rule] | index("state-wakes-none"))' next.json >/dev/null && break
           done
           jq -e --argjson n "$ISSUE" '(.due // []) | index($n)' next.json >/dev/null || exit 0
-          # Not while a run of the issue is queued or running (#806).
+          # Not while a run of the issue is queued or running.
           wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
           busy=$(for s in queued in_progress pending waiting; do
             gh run list --workflow "$wf" --status "$s" --limit 100 --json displayTitle --jq '.[].displayTitle'

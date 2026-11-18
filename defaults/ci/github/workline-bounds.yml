@@ -1,4 +1,4 @@
-# The developer's bounds as the check `workline bounds` (ADR-0058): copy to
+# The developer's bounds as the check `workline bounds`: copy to
 # .github/workflows/workline-bounds.yml, require that check on the default
 # branch. Runs the default branch's copy (pull_request_target), never the
 # pull request's code: base checked out, head fetched for git to diff, a
@@ -43,7 +43,7 @@ jobs:
         id: bounds
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records the bounds read (ADR-0051)
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records the bounds read
           PR: ${{ github.event.pull_request.number }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -77,7 +77,7 @@ jobs:
     if: always() && needs.bounds.outputs.run != ''
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: workline-app       # the App's key: the default branch only (ADR-0044)
+    environment: workline-app       # the App's key: the default branch only
     permissions: {pull-requests: write, issues: write}
     steps:
       - id: app

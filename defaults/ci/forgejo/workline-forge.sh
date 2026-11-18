@@ -62,7 +62,7 @@ comment_with() { # number marker [login]
 }
 
 # The token's user: workline's own account, whose comments keep the
-# records a role reads back (ADR-0051). A lookup refused, or no login,
+# records a role reads back. A lookup refused, or no login,
 # fails the operation, loud: never anyone taken for workline.
 me() {
 	user=$(curl -fsS -H "Authorization: token $FORGEJO_TOKEN" "$FORGEJO_URL/api/v1/user") || {
@@ -140,7 +140,7 @@ comment | sticky)
 	marker=$(arg .marker)
 	text=$(printf '%s' "$req" | jq -c '{body: (.body + "\n\n" + .marker)}')
 	# `own`: only the token's user's, another's left and its own posted
-	# after it (ADR-0051).
+	# after it.
 	who=
 	if [ "$(arg '.own // false')" = true ]; then
 		who=$(me)

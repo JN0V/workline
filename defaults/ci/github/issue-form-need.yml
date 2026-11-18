@@ -2,7 +2,7 @@
 # .github/ISSUE_TEMPLATE/need.yml. GitHub writes each field under a
 # "### <label>" heading: the sections an issue needs to be ready
 # (docs/spec/routing.md), and the Verification the tester writes from its
-# tests (ADR-0066). Write what you know; the product owner drafts the
+# tests. Write what you know; the product owner drafts the
 # rest from the code, and you accept its drafts with the label
 # workline:accepted (docs/spec/backlog-acts.md, "Refining to ready").
 name: A need

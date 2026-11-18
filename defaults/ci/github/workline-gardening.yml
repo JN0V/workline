@@ -4,19 +4,19 @@
 # documentalist; add the product owner to keep the backlog, docs/ci.md):
 # each task it takes up becomes a pull request of its own, on a branch
 # workline/<role>/<task>, updated when the task runs again, and no more are
-# proposed while max-open-merge-requests of them wait (ADR-0006).
-# The review is on those pull requests; nothing is merged here (ADR-0011).
+# proposed while max-open-merge-requests of them wait.
+# The review is on those pull requests; nothing is merged here.
 # The tester, when the line lists it, writes a ready issue's tests, one
-# issue a run, opened as a Draft (ADR-0055): install your test runner in
+# issue a run, opened as a Draft: install your test runner in
 # judge, where it proves them red.
 # The developer, when the line lists it, takes the first ready issue nobody
-# took, one a run, and opens its pull request (ADR-0054): install your test
+# took, one a run, and opens its pull request: install your test
 # runner in judge, where it proves its code. workline-develop.yml takes an
 # issue as soon as it is labelled ready.
 # The tester's curator measures the test corpus, opt-in (curator below).
 # And a release's dry run: what would hold the release if it were cut now,
 # said in the default branch's issue (dry-run below). The release never
-# waits for the docs (ADR-0051).
+# waits for the docs.
 #
 # Two jobs, two trust zones, as for pull requests (workline.yml):
 #   judge  runs the line. With the secret CLAUDE_CODE_OAUTH_TOKEN (`claude
@@ -28,8 +28,7 @@
 #   apply  holds the write token and no AI key: it commits, pushes the
 #          branch, and opens or updates the pull request; then it rebuilds
 #          on main those main moved under, or closes them, saying why, when
-#          nothing is left to merge (`workline follow --gardening`,
-#          ADR-0034). With a GitHub App
+#          nothing is left to merge (`workline follow --gardening`). With a GitHub App
 #          (variable WORKLINE_APP_ID, secret WORKLINE_APP_PRIVATE_KEY in the
 #          environment workline-app, which only the default branch may use), the
 #          pull request runs your checks by itself; with the job's own token,
@@ -46,7 +45,7 @@ run-name: >-
   (contains(fromJSON('["backlog","nightly","docs"]'), inputs.job) && format('workline gardening {0}', inputs.job)) || 'workline gardening by hand' }}
 on:
   # Sundays, 18:07 UTC: the docs pull request lands before Monday's
-  # workday, though GitHub may start a run hours late (ADR-0051); nightly
+  # workday, though GitHub may start a run hours late; nightly
   # ("17 2 * * *") to catch up a backlog. Off the hour: GitHub may drop a
   # run scheduled at its start, when busiest.
   schedule: [{cron: "7 18 * * 0"}]
@@ -71,7 +70,7 @@ jobs:
       proposed: ${{ steps.line.outputs.proposed }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the developer's agent (ADR-0056)
+        with: {fetch-depth: 0, persist-credentials: false}   # no token left in .git/config for the developer's agent
       # The engine at the version pinned above, and the tools its roles use,
       # from their releases, checksums verified: seconds, not a build.
       - name: workline
@@ -89,7 +88,7 @@ jobs:
         id: line
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back (ADR-0051)
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the records a role reads back
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
@@ -114,8 +113,8 @@ jobs:
           exit "$status"
       # What this job's agent calls spent, a line a run: role, target,
       # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
-      # weekly sample's tokens (ADR-0019, open point 1); the run folders
-      # keep their day. Also in a cancelled run (a newer push's), (#1413), named so, not always(); in each
+      # weekly sample's tokens; the run folders
+      # keep their day. Also in a cancelled run (a newer push's), named so, not always(); in each
       # attempt of a re-run, its own artifact; not in a merge queue's, which asks no agent. The
       # first release after v0.75.0; an engine before it keeps none, said.
       - name: The runs' tally
@@ -126,7 +125,7 @@ jobs:
         with: {name: "workline-tally-${{ github.job }}-${{ github.run_attempt }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14}
 
   # Every night, proposed or not: it also tends the pull requests gardening
-  # opened before (ADR-0034, amended).
+  # opened before.
   # Also the curator's proven removal, when it proposed one (its job's
   # run): the write token, no agent's key.
   apply:
@@ -134,12 +133,11 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: workline-app       # the App's key: the default branch only (ADR-0044)
+    environment: workline-app       # the App's key: the default branch only
     # issues: the product owner's acts (comments, labels, closings,
     # reactions) on each issue.
-    # actions: the next steps of the states the night moved, started
-    # (ADR-0059). statuses: the line's verdicts, read by the reconcile
-    # (ADR-0068 §8).
+    # actions: the next steps of the states the night moved, started.
+    # statuses: the line's verdicts, read by the reconcile.
     permissions: {contents: write, pull-requests: write, issues: write, actions: write, statuses: read}
     steps:
       - id: app
@@ -195,15 +193,15 @@ jobs:
           # Needs the first release after v0.24.0.
           workline follow --gardening --base "$GITHUB_REF_NAME" --forge github --summary workline-summary.md || status=$?
           # The normal size of an issue, from the line's records: one comment
-          # kept in place, reported only (ADR-0064, step 2). Needs the first
+          # kept in place, reported only. Needs the first
           # release after v0.73.0.
           workline size --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
       # The states the night moved, the product owner's ready or
       # needs-tests: their next steps started now, by the line's workflow
-      # (workline-develop.yml), not at the reconciler's next hour
-      # (ADR-0059). No agent; none started without that workflow.
+      # (workline-develop.yml), not at the reconciler's next hour.
+      # No agent; none started without that workflow.
       - env:
           GH_TOKEN: ${{ github.token }}
           # Read only: reconcile=list writes nothing, and this token is not the App's.
@@ -211,7 +209,7 @@ jobs:
         run: |
           gh workflow view workline-develop.yml >/dev/null 2>&1 || exit 0
           workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --json > due.json || exit 0
-          # An issue with a run queued or running is not started again (#806).
+          # An issue with a run queued or running is not started again.
           busy=$(for s in queued in_progress pending waiting; do
             gh run list --workflow workline-develop.yml --status "$s" --limit 100 --json displayTitle --jq '.[].displayTitle'
           done) || busy=
@@ -223,7 +221,7 @@ jobs:
               echo "::warning title=workline::#$n's run not started: the reconciler starts it"
           done
 
-  # A release's dry run, every night this runs (ADR-0050): what would hold
+  # A release's dry run, every night this runs: what would hold
   # the release if it were cut now from this branch's tip. The release's
   # line, every step, no agent, nothing applied: said as warnings, never a
   # block. Install the tools of the gates your `release` line runs here.
@@ -255,7 +253,7 @@ jobs:
         if: always()
         with: {name: workline-dry-run, path: dry-run.json, if-no-files-found: ignore}
 
-  # The tester's curator, its measures, no agent (ADR-0055, step 6): the
+  # The tester's curator, its measures, no agent: the
   # project's tests run on this branch's tip, each test's time and result
   # kept from one run to the next in the artifact workline-curator, read
   # back here (one run within its 90 days keeps it). Said in the job's
@@ -311,7 +309,7 @@ jobs:
         if: env.HAS_CLAUDE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the tester's records (ADR-0051)
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}   # the App whose comments keep the tester's records
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           status=0
@@ -328,8 +326,8 @@ jobs:
         with: {name: workline-curator, path: curator-history.json, if-no-files-found: ignore, retention-days: 90}
       # What this job's agent calls spent, a line a run: role, target,
       # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the
-      # weekly sample's tokens (ADR-0019, open point 1); the run folders
-      # keep their day. Also in a cancelled run (a newer push's), (#1413), named so, not always(); in each
+      # weekly sample's tokens; the run folders
+      # keep their day. Also in a cancelled run (a newer push's), named so, not always(); in each
       # attempt of a re-run, its own artifact; not in a merge queue's, which asks no agent. The
       # first release after v0.75.0; an engine before it keeps none, said.
       - name: The runs' tally
@@ -344,7 +342,7 @@ jobs:
     if: always()                    # a dry run that left no result is said
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: workline-app       # the App's key: the default branch only (ADR-0044)
+    environment: workline-app       # the App's key: the default branch only
     # One writer of the default branch's issue at a time, with main's.
     concurrency: {group: "workline-main-issue", cancel-in-progress: false}
     permissions: {contents: read, issues: write}
