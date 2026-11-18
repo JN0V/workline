@@ -59,12 +59,12 @@ on:
   # out by the job whose; check_suite and check_run never fire for
   # GitHub Actions' own checks.
   workflow_run: {workflows: ["*"], types: [completed], branches: ["workline/developer/**"]}
-  # The reconciler, hourly: a step an event missed (ADR-0059). A safety
-  # net, not the driver. Each reconcile starts the next one, an hour on,
-  # by the heartbeat (job heartbeat); GitHub runs this schedule late or
-  # not at all, so it and the events above only start it again when the
-  # heartbeat stopped (#845): job reconcile-due.
-  schedule: [{cron: "41 * * * *"}]
+  # No schedule: the reconciler is dispatched by the loop when `workline
+  # tick` lists it (docs/tick.md), 15 minutes at most after the last
+  # (routing.timed.reconcile), and by the heartbeat (job heartbeat); a
+  # person's label starts it again when both stopped: job reconcile-due.
+  # The template keeps its hourly cron, for a project whose loop is a
+  # dry run.
 permissions: {}
 
 env:
@@ -326,9 +326,9 @@ jobs:
     steps:
       - run: echo "the heartbeat's wait timer passed; the reconciler runs"
 
-  # Whether a reconcile is due, on the schedule or an issue labelled, the
-  # line's every hop: the heartbeat stopped (#789, #845). Not while a
-  # reconciler's run or a heartbeat is queued, waiting or running, nor
+  # Whether a reconcile is due, on an issue labelled (the template: or
+  # its schedule), the line's every hop: the heartbeat stopped (#789,
+  # #845). Not while a reconciler's run or a heartbeat is queued, waiting or running, nor
   # within the gap after the last that succeeded: the repository variable
   # WORKLINE_RECONCILE_GAP_MINUTES, 55 when unset. Read from this workflow's runs,
   # one call: a run an event starts may not write the Actions cache

@@ -142,6 +142,10 @@ beat on GitHub, whose own schedule runs late or not at all
   Public repositories are not billed.
 - **The other workflows keep their triggers** for now;
   [a test](../tests/conformance/triggers_test.go) lists each one's.
+- **workline's own, dispatching**: a job tick lists loses its cron, one
+  workflow per pull request; the loop starts it, its hourly schedule
+  the restart. The templates keep theirs, for a project whose loop is
+  a dry run: the test marks each `onTemplate`.
 
 ### Turn dispatching on
 
@@ -166,8 +170,8 @@ beat on GitHub, whose own schedule runs late or not at all
   - **Not seen**: a merge run a label or an issue's close starts, named
     by the pull request's or the issue's title. A dispatched merge may run beside it: the merge's
     `follow` job waits in its group, one at a time.
-  - They are removed one per pull request, the crons kept as a restart
-    until a week without a missed beat
+  - They are removed one per pull request; on workline's own, the
+    crons of the jobs tick lists first ([above](#the-github-loop))
   ([ADR-0069's amendment](adr/0069-one-wake-every-five-minutes-starts-what-is-due.md#amendment-2026-11-17-a-beat-every-minute-no-event-moves-the-line)).
 
 ## Cost

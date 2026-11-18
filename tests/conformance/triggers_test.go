@@ -18,6 +18,11 @@ const (
 	onCheck = "check"
 	onEvent = "event"
 	onTime  = "time"
+	// onTemplate is a schedule of a job `workline tick` lists: this
+	// repository's loop dispatches it, so its own workflow has none and
+	// fails here if it comes back; the template keeps it, for a project
+	// whose loop is a dry run (docs/tick.md#the-github-loop).
+	onTemplate = "time, the template only"
 )
 
 // triggers is each workflow's, by file, the same for this repository's
@@ -36,7 +41,7 @@ var triggers = map[string]map[string]string{
 	"workline-sample.yml":    {"schedule": onTime, "workflow_dispatch": onTime},
 	"schedule-probe.yml":     {"schedule": onTime, "workflow_dispatch": onTime},
 	"workline-develop.yml": {"issues": onEvent, "issue_comment": onEvent, "workflow_run": onEvent,
-		"schedule": onTime, "workflow_dispatch": onTime},
+		"schedule": onTemplate, "workflow_dispatch": onTime},
 	"workline-answer.yml": {"workflow_run": onEvent, "workflow_dispatch": onTime},
 	"workline-merge.yml": {"pull_request_target": onEvent, "issues": onEvent, "schedule": onTime,
 		"workflow_dispatch": onTime},
@@ -80,7 +85,9 @@ func TestEachWorkflowsTriggersListed(t *testing.T) {
 			}
 			all := map[string]string{}
 			for k, v := range want {
-				all[k] = v
+				if v != onTemplate || strings.Contains(dir, "defaults") {
+					all[k] = v
+				}
 			}
 			if strings.Contains(dir, "defaults") {
 				for k, v := range templateOnly[base] {
