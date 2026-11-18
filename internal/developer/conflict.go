@@ -11,7 +11,6 @@ package developer
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,6 +23,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/kit/worktree"
 )
 
 var conflictRecord = regexp.MustCompile(`<!-- workline:conflict head=([0-9a-f]{40,64}) base=([0-9a-f]{40,64}) -->`)
@@ -59,7 +59,7 @@ func conflictDue(kept forge.Kept, a devmark.Act, repo, head string) (base string
 	if !ok || head == "" || h != head || a.Conflict == head {
 		return "", false
 	}
-	_, files, err := MergeTree(repo, head, b)
+	_, files, err := worktree.MergeTree(repo, head, b)
 	switch {
 	case err == nil && len(files) == 0:
 		return "", false // settled since, or merged clean now
@@ -92,7 +92,7 @@ func conflictNow(f forge.Forge, kept forge.Kept, a devmark.Act, repo string, mr 
 		if err != nil || tip == "" {
 			continue
 		}
-		if _, files, err := MergeTree(repo, head, tip); err == nil && len(files) > 0 {
+		if _, files, err := worktree.MergeTree(repo, head, tip); err == nil && len(files) > 0 {
 			return tip, true
 		}
 		return "", false
@@ -114,31 +114,6 @@ func branchHead(f forge.Forge, repo, branch string) string {
 		}
 	}
 	return ""
-}
-
-// MergeTree merges base into head as git does, in memory (`git
-// merge-tree`, 2.38): the tree, its conflicts' markers left in it, and
-// the files in conflict; none when it merges clean.
-func MergeTree(repo, head, base string) (tree string, files []string, err error) {
-	cmd := exec.Command("git", "-C", repo, "merge-tree", "--write-tree", "-z", "--name-only", "--no-messages", head, base)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
-	var ee *exec.ExitError
-	if err != nil && (!errors.As(err, &ee) || ee.ExitCode() != 1) {
-		return "", nil, fmt.Errorf("git merge-tree (2.38 or later): %v: %s", err, strings.TrimSpace(stderr.String()))
-	}
-	parts := strings.Split(string(out), "\x00")
-	tree = strings.TrimSpace(parts[0])
-	for _, p := range parts[1:] {
-		if p != "" && !slices.Contains(files, p) {
-			files = append(files, p)
-		}
-	}
-	if err != nil && len(files) == 0 {
-		return "", nil, errors.New("git merge-tree met a conflict it named no file of")
-	}
-	return tree, files, nil
 }
 
 // markerLine is a line git's merge opens or closes a conflict with: a
@@ -256,7 +231,7 @@ func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog
 	if _, err := gitOut(repo, "cat-file", "-e", base+"^{commit}"); err != nil {
 		_ = exec.Command("git", "-C", repo, "fetch", "-q", "origin", mr.Base).Run()
 	}
-	tree, files, err := MergeTree(repo, head, base)
+	tree, files, err := worktree.MergeTree(repo, head, base)
 	if err != nil {
 		return fail(fmt.Errorf("main merged into its head, in memory: %w", err))
 	}

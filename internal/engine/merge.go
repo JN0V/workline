@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"os"
 	"os/exec"
 	"regexp"
@@ -13,8 +12,9 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/developer"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/steer"
 )
@@ -1266,7 +1266,7 @@ func forkGuarded(repo, base, tip string) string {
 	if err != nil {
 		return "its change could not be read"
 	}
-	rule := developer.Guarded(repo, base)
+	rule := contract.BuiltinCode().Guarded(repo, base)
 	var hit []string
 	for _, p := range strings.Fields(out) {
 		if rule(p) != "" {
