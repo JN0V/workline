@@ -11,6 +11,16 @@ import (
 // fault (an SDK not found, a tool missing) ends a run in seconds (#1333).
 const RunsWithin = 60 * time.Second
 
+// commandRuns is Runs on rev for the doctor, the settings merged read
+// first, within RunsWithin (contract.Tests).
+func commandRuns(repo, rev string, merged map[string]any) (string, *verdict.Finding, error) {
+	s, err := SettingsFrom(merged)
+	if err != nil {
+		return "", nil, err
+	}
+	return s.Command, Runs(repo, rev, s, RunsWithin), nil
+}
+
 // Runs runs the test command on rev, apart, for at most within, and says
 // whether it runs: nil when it wrote its report, red tests or not, or was
 // still running at the end, stopped then, or exited 0 with no report (a

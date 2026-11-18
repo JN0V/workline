@@ -7,11 +7,11 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/packs"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // testCommandRuns runs the test command set on HEAD, apart, a minute at
@@ -19,22 +19,21 @@ import (
 // its error lines, before a tester's agent spends tokens to find it out
 // (#1333). One still running at the end is taken to run.
 func testCommandRuns(r *Report, o Options, merged map[string]any) {
-	s, err := tester.SettingsFrom(merged)
-	if err != nil {
-		return // the tester's own load says it, where it runs
-	}
 	head, err := exec.Command("git", "-C", o.Repo, "rev-parse", "--verify", "--quiet", "HEAD^{commit}").Output()
 	if err != nil {
 		return // no commit yet: nothing to run it on
 	}
-	f := tester.Runs(o.Repo, strings.TrimSpace(string(head)), s, tester.RunsWithin)
+	command, f, err := contract.BuiltinTests().CommandRuns(o.Repo, strings.TrimSpace(string(head)), merged)
+	if err != nil {
+		return // the tester's own load says it, where it runs
+	}
 	if f == nil {
 		r.add(Check{Area: "repository", Rule: "test-command-runs", Where: "tester", Level: OK,
-			Message: "the test command runs on HEAD, a minute at most watched: `" + s.Command + "`"})
+			Message: "the test command runs on HEAD, a minute at most watched: `" + command + "`"})
 		return
 	}
 	r.add(Check{Area: "repository", Rule: f.Rule, Where: "tester", Level: Warn,
-		Message: fmt.Sprintf("the test command `%s` does not run on HEAD: the tester stops before its agent, the developer's code stays an unproven Draft; %s", s.Command, f.Message),
+		Message: fmt.Sprintf("the test command `%s` does not run on HEAD: the tester stops before its agent, the developer's code stays an unproven Draft; %s", command, f.Message),
 		Fix:     "run it in a fresh clone, mend what it lacks (a tool, an SDK, a variable a gitignored file held) or the test-command setting in .workline/config.yaml   # roles/tester/README.md#settings"})
 }
 
