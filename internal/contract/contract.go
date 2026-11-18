@@ -9,6 +9,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
@@ -23,8 +24,8 @@ type Role struct {
 	Code      *Code
 }
 
-// Code is what the engine asks of the role whose code it merges, beside
-// its steps: the developer's.
+// Code is what the engine and the line ask of the role whose code they
+// merge, beside its steps: the developer's.
 type Code struct {
 	// ProveMerge runs the project's tests whole on at, a merge of the base
 	// into a request made by the engine: the proof that two changes green
@@ -34,6 +35,18 @@ type Code struct {
 	// being trusted to its own run, the rules read at the commit at; ""
 	// for any other file.
 	Guarded func(repo, at string) func(string) string
+	// RoundDue says whether a round of the role is due on mr, its open
+	// request: what the line's reconciler wakes it for.
+	RoundDue func(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error)
+	// Held are the files each claimed issue holds, by its open requests'
+	// changes (changed) or its Scope's paths; Overlapping, the first held
+	// issue whose files is's Scope overlaps, and the path.
+	Held        func(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string, changed Diffs) map[int][]string
+	Overlapping func(is forge.Issue, held map[int][]string, files []string) (int, string)
+	// Changed reads open requests' changed files with git in repo; RepoFiles,
+	// the files the repository's index holds.
+	Changed   func(repo string, keeps bool) Diffs
+	RepoFiles func(repo string) []string
 }
 
 // Registry holds roles by name.
@@ -130,3 +143,14 @@ func BuiltinCode() *Code {
 	}
 	return c
 }
+
+// Diffs gives the files an open merge request changes, its diff from the
+// merge base with its base branch, and whether they were read (#1256).
+// nil reads none: each held issue then holds its Scope's prediction.
+type Diffs func(forge.MergeRequest) ([]string, bool)
+
+// Backstop says why issue's runs reached its backstop, what a person
+// does about it; "" when they did not. Set by the engine's command to
+// the line's reading (line.BackstopSaid), which keeps the record and the
+// normals; nil, never checked.
+var Backstop func(f forge.Forge, repo string, issue int) (string, error)

@@ -5,13 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 )
-
-// Diffs gives the files an open merge request changes, its diff from the
-// merge base with its base branch, and whether they were read (#1256).
-// nil reads none: each held issue then holds its Scope's prediction.
-type Diffs func(forge.MergeRequest) ([]string, bool)
 
 // Changed reads merge requests' changed files with git in repo, each
 // once: its branch in repo itself where the forge keeps branches there
@@ -22,7 +18,7 @@ type Diffs func(forge.MergeRequest) ([]string, bool)
 // until the merge base is found (deepened): the line's reconcile and the
 // developer then read the same diff. A head that cannot be read is
 // not: the caller falls back on the prediction.
-func Changed(repo string, keeps bool) Diffs {
+func Changed(repo string, keeps bool) contract.Diffs {
 	if repo == "" {
 		return nil
 	}
