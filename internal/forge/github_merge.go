@@ -15,7 +15,7 @@ import (
 // (ADR-0042): a draft, its head, whether GitHub would merge it now, its
 // auto-merge on and who turned it on,
 // and when auto-merge was last turned on, the last hundred such events.
-const mergeStateQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { isDraft headRefOid mergeStateStatus autoMergeRequest { enabledAt enabledBy { login __typename } } timelineItems(itemTypes: [AUTO_MERGE_ENABLED_EVENT, AUTO_SQUASH_ENABLED_EVENT, AUTO_REBASE_ENABLED_EVENT], last: 100) { nodes { ... on AutoMergeEnabledEvent { createdAt } ... on AutoSquashEnabledEvent { createdAt } ... on AutoRebaseEnabledEvent { createdAt } } } } } }`
+const mergeStateQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { isDraft state headRefOid mergeStateStatus autoMergeRequest { enabledAt enabledBy { login __typename } } timelineItems(itemTypes: [AUTO_MERGE_ENABLED_EVENT, AUTO_SQUASH_ENABLED_EVENT, AUTO_REBASE_ENABLED_EVENT], last: 100) { nodes { ... on AutoMergeEnabledEvent { createdAt } ... on AutoSquashEnabledEvent { createdAt } ... on AutoRebaseEnabledEvent { createdAt } } } } } }`
 
 // checksQuery asks the head's checks as GitHub shows them on the pull
 // request, each: check runs and commit statuses both, a hundred a page.
@@ -37,6 +37,7 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 			Repository struct {
 				PullRequest struct {
 					Draft bool   `json:"isDraft"`
+					Open  string `json:"state"`
 					Head  string `json:"headRefOid"`
 					State string `json:"mergeStateStatus"`
 					Auto  *struct {
@@ -59,7 +60,7 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 		return MergeState{}, err
 	}
 	pr := v.Data.Repository.PullRequest
-	st := MergeState{Head: pr.Head, Draft: pr.Draft, Mergeable: mergeableStates[pr.State], Behind: pr.State == "BEHIND" || pr.State == "DIRTY"}
+	st := MergeState{Head: pr.Head, Closed: pr.Open != "" && pr.Open != "OPEN", Draft: pr.Draft, Mergeable: mergeableStates[pr.State], Behind: pr.State == "BEHIND" || pr.State == "DIRTY"}
 	for _, n := range pr.Timeline.Nodes {
 		st.AutoMergeAt = max(st.AutoMergeAt, n.At)
 	}
