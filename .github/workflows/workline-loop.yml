@@ -1,11 +1,7 @@
 # workline's loop on its own repository: defaults/ci/github/workline-loop.yml.
-# The line's beat (ADR-0069's 2026-11-17 amendment), a DRY RUN beside
-# today's workflows: each beat logs what it would dispatch, exactly the
-# list `workline tick --json` prints, and starts nothing; no other
-# workflow changes (docs/tick.md#the-github-loop).
-# Its release runs ahead of the line's pin, WORKLINE_VERSION in the other
-# workflows: tick ships in v0.79.0, the pin may not hold it yet (ADR-0071,
-# the N-1 rule). It writes nothing but its successor's dispatch.
+# A dry run beside today's workflows: each beat logs what tick lists,
+# and starts nothing (docs/tick.md#the-github-loop). Its release runs
+# ahead of the line's pin: tick ships in v0.79.0 (ADR-0071).
 name: workline loop
 run-name: workline loop
 on:

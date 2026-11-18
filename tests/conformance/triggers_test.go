@@ -10,17 +10,10 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// Each workflow's triggers, listed (#1665; ADR-0069's 2026-11-17
-// amendment): the beat alone moves the line, so an event trigger is
-// either one that stays, or one a later slice removes, one pull request
-// each. A trigger added, or removed without this list, fails here.
-//
-//	check  stays: a required pull request check (gates, judge, bounds,
-//	       test, warn) or the release (decided).
-//	event  moves the line from an event: removed in a later slice, or kept
-//	       as a proposed exception (the verdict apply and fork read).
-//	time   a schedule or a dispatch: the loop's restart, a job's fallback
-//	       cron, or how the loop starts a job.
+// Each workflow's triggers, listed (#1665): check stays (a required
+// check, the release); event moves the line, removed in a later slice or
+// a proposed exception; time is a schedule or a dispatch. A trigger
+// added, or removed without this list, fails here.
 const (
 	onCheck = "check"
 	onEvent = "event"

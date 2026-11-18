@@ -38,7 +38,7 @@ var pinnedJobs = map[string][]string{
 // the pin does not hold yet. Their WORKLINE_VERSION is their own, a
 // release, never behind the pin; the pin's pull request catches them up.
 var aheadJobs = map[string]string{
-	"workline-loop.yml": "tick, first released in v0.79.0 (#1665; ADR-0071's N-1 rule)",
+	"workline-loop.yml": "tick, first released in v0.79.0 (#1665; ADR-0071: a release reads what the one before wrote)",
 }
 
 var headJobs = map[string][]string{

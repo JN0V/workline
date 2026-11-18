@@ -1,22 +1,8 @@
 # workline's loop on GitHub Actions — copy to .github/workflows/workline-loop.yml.
-#
-# The line's beat (ADR-0069's 2026-11-17 amendment): one long job runs
-# `workline tick --json` every minute, and starts only what it lists.
-# GitHub's own schedule runs late or not at all, so this loop holds the
-# beat; its schedule below only restarts it when it stopped.
-#
-# A DRY RUN for now: each beat logs what it would dispatch, exactly the
-# list tick prints, and starts nothing. The repository variable
-# WORKLINE_LOOP_DISPATCH is read already; dispatching comes with a later
-# release (docs/tick.md#the-github-loop).
-#
-#   alive  a restart while a loop runs starts nothing (actions: read).
-#   loop   the beat: one at a time by its concurrency group, its checkout
-#          kept between beats (tick's ETag cache in .git/workline), then
-#          its successor dispatched before GitHub's 6 h limit.
-#
-# Its cost on a private repository: about 1,440 runner minutes a day.
-# Public repositories are not billed (docs/tick.md#the-github-loop).
+# The line's beat: `workline tick --json` every minute, one job at a time,
+# its successor dispatched before GitHub's 6 h; the schedule only restarts it.
+# A dry run for now: it logs what it would start, and starts nothing.
+# Why and what it costs: docs/tick.md#the-github-loop.
 name: workline loop
 run-name: workline loop
 on:
