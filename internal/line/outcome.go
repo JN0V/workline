@@ -240,7 +240,7 @@ func (e *Errors) retry(now time.Time) (due bool, until time.Time, spent string) 
 		// "budget" its name then: no try mends it.
 		return false, time.Time{}, fmt.Sprintf("its task is too big for its context (%s): %s", e.Kind, e.Said)
 	case e.Kind == ApplyKind && e.By[e.Kind] >= ApplyBudget:
-		return false, time.Time{}, fmt.Sprintf("its patch did not apply on %d runs in a row (%s): %s; it starts again when its tester's Draft or `main` moves", e.By[e.Kind], e.Kind, e.Said)
+		return false, time.Time{}, fmt.Sprintf("its patch did not apply on %d runs in a row (%s): %s; the line does not compare heads: a person restarts it, worth doing once its tester's Draft or `main` has moved", e.By[e.Kind], e.Kind, e.Said)
 	case e.By[e.Kind] > ErrorBudget:
 		return false, time.Time{}, fmt.Sprintf("its run failed %d times (%s): %s", e.By[e.Kind], e.Kind, e.Said)
 	case err1 == nil && now.Sub(first) >= ErrorWindow:
@@ -307,13 +307,17 @@ func CountApplyFailure(f forge.Forge, repo string, res *Result, said string) err
 		if role == "" || w.Blocked != "" {
 			continue
 		}
+		b, ok := f.(forge.Backlog)
+		if !ok {
+			return fmt.Errorf("#%d: the forge has no comments to read its previous failures from", w.Issue)
+		}
+		comments, err := b.Comments(forge.Target{Kind: "issue", ID: w.Issue})
+		if err != nil {
+			return fmt.Errorf("#%d: read its previous failures: %w", w.Issue, err)
+		}
 		var prev *Errors
-		if b, ok := f.(forge.Backlog); ok {
-			if comments, err := b.Comments(forge.Target{Kind: "issue", ID: w.Issue}); err == nil {
-				if _, rec, had := recordCommentIn(comments); had && rec.State == w.Record.State && rec.Body == w.Record.Body {
-					prev = errorsOf(rec)
-				}
-			}
+		if _, rec, had := recordCommentIn(comments); had && rec.State == w.Record.State && rec.Body == w.Record.Body {
+			prev = errorsOf(rec)
 		}
 		w.Record.Errors = prev.with(verdict.Outcome{Kind: verdict.MachineError, Of: kind, Said: said}, now)
 		w.Record.Lost, w.Record.Needs, w.Failed, w.After = "", nil, true, false
