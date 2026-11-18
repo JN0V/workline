@@ -480,7 +480,8 @@ Each an open issue, on either side of 1.0
   1.0, a bug, [#1382](https://github.com/JN0V/workline/issues/1382)).
 
 Parked, closed as not planned with `workline:parked`, reopened when
-real use asks:
+real use asks (an open issue labelled `workline:parked` is never picked
+either, until a person takes the label off):
 
 - **Its shell boxed in its worktree**: Claude Code's sandbox, writes in
   the worktree only, no network by default (parked,

@@ -30,7 +30,7 @@ func taskKey(n int) string { return fmt.Sprintf("issue-%d", n) }
 // owner's ready, keeping it, sends it to its tests.
 func Untested(is forge.Issue, comments, drafts []string) bool {
 	if !slices.Contains(is.Labels, backlog.LabelReady) || slices.Contains(is.Labels, backlog.LabelNeedsTests) ||
-		slices.Contains(is.Labels, backlog.LabelBlocked) || slices.Contains(is.Labels, "workline:developing") ||
+		slices.Contains(is.Labels, backlog.LabelBlocked) || backlog.Parked(is) || slices.Contains(is.Labels, "workline:developing") ||
 		slices.Contains(drafts, branchPrefix+fmt.Sprint(is.ID)) {
 		return false
 	}
@@ -56,7 +56,7 @@ func pick(f forge.Backlog, waiting []string) (int, error) {
 	}
 	backlog.Order(issues)
 	for _, is := range issues {
-		if !backlog.Readied(is) || slices.Contains(is.Labels, backlog.LabelBlocked) || len(backlog.Waiting(is, open)) > 0 || len(backlog.Parts(is)) > 0 || slices.Contains(waiting, taskKey(is.ID)) {
+		if !backlog.Readied(is) || slices.Contains(is.Labels, backlog.LabelBlocked) || backlog.Parked(is) || len(backlog.Waiting(is, open)) > 0 || len(backlog.Parts(is)) > 0 || slices.Contains(waiting, taskKey(is.ID)) {
 			continue
 		}
 		if len(Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0 {

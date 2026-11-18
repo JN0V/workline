@@ -3115,7 +3115,12 @@ const (
 	LabelNeedsTests = "workline:needs-tests"
 	// A state no role leaves alone: its reason on the issue (ADR-0059).
 	LabelBlocked = "workline:blocked"
+	// An open issue a person set aside: no role works on it (#1752).
+	LabelParked = "workline:parked"
 )
+
+// Parked says whether a person set an open issue aside.
+func Parked(is forge.Issue) bool { return slices.Contains(is.Labels, LabelParked) }
 
 // Readied says whether an issue went past refining: ready, or waiting
 // for its tests on the way there (ADR-0059).

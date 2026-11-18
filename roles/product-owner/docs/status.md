@@ -278,7 +278,8 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
    on (parked,
    [#1377](https://github.com/JN0V/workline/issues/1377)).
 5. **Parked**, closed as not planned with `workline:parked`, reopened when
-   real use asks: a yes in a reply or by a bot
+   real use asks (an open issue labelled `workline:parked` is left alone: no
+   role refines, tests or builds it until a person takes the label off): a yes in a reply or by a bot
    ([#290](https://github.com/JN0V/workline/issues/290)); splits on GitLab
    ([#291](https://github.com/JN0V/workline/issues/291)); the forge's own
    rank ([#292](https://github.com/JN0V/workline/issues/292)); a part or a

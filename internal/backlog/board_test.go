@@ -64,3 +64,17 @@ func TestBoardStuck(t *testing.T) {
 		t.Errorf("stuck = %+v", b.Stuck)
 	}
 }
+
+// Parked ready issue: an open issue labelled ready and parked is not
+// offered to whoever builds next, while the same issue not parked is.
+func TestOfferedLeavesAParkedIssue(t *testing.T) {
+	open := map[int]bool{1: true}
+	plain := forge.Issue{ID: 1, Labels: []string{LabelReady}}
+	if !Offered(plain, open) {
+		t.Fatal("a ready issue is not offered: the fixture is wrong")
+	}
+	parked := forge.Issue{ID: 1, Labels: []string{LabelReady, "workline:parked"}}
+	if Offered(parked, open) {
+		t.Error("an open issue labelled workline:ready and workline:parked is offered")
+	}
+}

@@ -152,7 +152,7 @@ func Next(open []forge.Issue, report, n int) []forge.Issue {
 // ready, not blocked (ADR-0059), waiting on no open issue, no parent
 // (ADR-0028, ADR-0029).
 func Offered(is forge.Issue, open map[int]bool) bool {
-	return slices.Contains(is.Labels, LabelReady) && !slices.Contains(is.Labels, LabelBlocked) && len(Waiting(is, open)) == 0 && len(Parts(is)) == 0
+	return slices.Contains(is.Labels, LabelReady) && !slices.Contains(is.Labels, LabelBlocked) && !Parked(is) && len(Waiting(is, open)) == 0 && len(Parts(is)) == 0
 }
 
 // Board is what is next and what is stuck, for the job's summary.
