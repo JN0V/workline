@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
-checked: db6103ad
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # Writing an issue a person reads
@@ -63,8 +63,10 @@ first, the cause folded.
   beyond them, with why
   ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)).
   - A file to create: on a line `New:`, its full path.
-  - A path the repository lacks, not on a `New:` line: the Scope is
-    left out, said. A path its ignore rules match, a file the build
+  - A path the repository lacks, not on a `New:` line: its line is left
+    out, said; the Scope too when no line is left
+    ([#1355](https://github.com/JN0V/workline/issues/1355)). A path its
+    ignore rules match, a file the build
     writes, is kept as a value.
 - **Fold only what is long** — a log, a list of more than ten lines — in
   `<details>`.

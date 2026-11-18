@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/parent.go, internal/backlog/symptom.go, internal/builtin/productowner/productowner.go, internal/line/parent.go, internal/forge/forge.go, internal/forge/github.go, internal/forge/gitlab.go]
 status: draft
-checked: a16d7f0a
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # A parent and its parts

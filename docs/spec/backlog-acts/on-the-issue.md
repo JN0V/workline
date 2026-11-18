@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/backlog/say.go, internal/report/summary.go, internal/engine/backlog.go]
 status: draft
-checked: 8538d558
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # On the issue
@@ -20,7 +20,9 @@ state under it in an HTML comment, so no mail holds it (`backlog.FormatState`,
   (`backlog.refined`), then "Rewrote: the text on top as the Need, in
   plain words." when it took a role's text there into the Need, and
   "Not written: the Example, which said again what is above it." for
-  each draft it left out (ADR-0039, amended): Changed, the role's own sections it rewrote — a draft, or a text as it wrote it — it never
+  each draft it left out (ADR-0039, amended), "Dropped: the Scope line
+  naming `x`, not in the repository." for each line left out
+  ([#1355](https://github.com/JN0V/workline/issues/1355)): Changed, the role's own sections it rewrote — a draft, or a text as it wrote it — it never
   changes a person's sentence, so nothing of theirs is quoted, on GitLab's
   Free plan either, which keeps no text of a description's versions; the
   text before is in the forge's edit history, which no forge links to;

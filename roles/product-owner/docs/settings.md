@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/backlog/assume.go, internal/sample/acts.go, internal/scale/detect.go]
-checked: d72f90e5
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -53,6 +53,7 @@ issue, for a person to accept) or `off` (dropped).
 | `ready` | act, max 5 | propose | max 10 |
 | `close-duplicate` | act, max 3 | propose | max 5 |
 | `kind` | act, max 10 | propose | max 20 |
+| `size` | act, max 3 | propose | max 5 |
 | `open` | act, max 30 (importing) | | |
 
 An empty cell is the `normal` value. `ask.rounds` also bounds the
@@ -77,7 +78,9 @@ Need or Validation draft no person accepted, waits for an answer
   `workline:draft`, or from a person's later comment. Draft marks in a
   body that never had the label: from the role's first comment on it
   ([#1021](https://github.com/JN0V/workline/issues/1021)).
-- **An answer before the delay** cancels it: no assumption.
+- **An answer before the delay** cancels it: no assumption. A bot's
+  comment, an outsider's or a "+1" is none
+  ([#1400](https://github.com/JN0V/workline/issues/1400)).
 - **While it waits**, the line says so on each reconcile: on whom, and
   the day the assumption is taken
   ([#1082](https://github.com/JN0V/workline/issues/1082)). Its comment
@@ -111,7 +114,7 @@ The code stays; each comes back with a mode
 | `milestone` | puts an issue in its release's milestone; moves one that slipped |
 | `order` | sets an issue's priority, `workline:priority/1` to `/4` unless `priority` says where the project keeps it; a person's kept |
 | `effort` | sets an issue's effort, Low to High, once, where `effort` says the project keeps it, on code the run read ([below](#priority-and-effort)) |
-| `split` | splits a need too big into 2 to 6 issues ([ADR-0022](../../../docs/adr/0022-a-split-keeps-the-need-a-rename-keeps-a-persons-title.md)) |
+| `split` | splits a need too big into 2 to 6 issues ([ADR-0022](../../../docs/adr/0022-a-split-keeps-the-need-a-rename-keeps-a-persons-title.md)); off, still done on an issue past its size or where a person's comment asks it, unless set off |
 | `rename` | renames a vague title; a person's kept |
 | `depend` | says what an issue waits on ([ADR-0028](../../../docs/adr/0028-an-issue-names-what-it-waits-on.md)) |
 | `close-obsolete` | announces an obsolete issue, closes it `days` later (7) on silence and a second judge's yes ([ADR-0024](../../../docs/adr/0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md)) |
