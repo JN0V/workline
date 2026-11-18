@@ -7,13 +7,9 @@
 package developer
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/devmark"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"math"
 	"os"
@@ -23,6 +19,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"go.yaml.in/yaml/v3"
 
@@ -47,9 +46,6 @@ const (
 	exitNothing  = 10 // pre: no question for the agent, its verdict final
 	exitExternal = 3  // an outside service failed
 	pickFile     = "pick.json"
-	// ActMark opens the hidden line of the developer's record on an issue
-	// it took, what the auditor reads (ADR-0046).
-	ActMark = "workline:developer-act"
 )
 
 // Settings are the developer's settings, the project's over the role's.
@@ -108,107 +104,6 @@ func SettingsFrom(m map[string]any) Settings {
 	return s
 }
 
-// Passed is a ready issue the pick passed over, and why.
-type Passed struct {
-	Issue int    `json:"issue"`
-	Why   string `json:"why"`
-	// next is what the issue waits for when the developer's own pick
-	// holds it, said on the issue (ADR-0059, decision 1); none for a
-	// person's hold, or an open pull request that says it already.
-	next string
-}
-
-// Act is the record of a pick, hidden in the comment it leaves on the
-// issue: the commit the run read, the issue taken, the ready issues before
-// it passed over and why.
-type Act struct {
-	Act    string   `json:"act"`
-	At     string   `json:"at,omitempty"`
-	Issue  int      `json:"issue"`
-	Passed []Passed `json:"passed,omitempty"`
-	// Refused: each file its agent's patches reached past its bounds, and
-	// the bound (ADR-0054, step 2).
-	Refused []devmark.Refusal `json:"refused,omitempty"`
-	// Unread: its agent's words that did not read, as they came, for its
-	// pull request's body (agentWords); never kept in the record.
-	Unread []string `json:"-"`
-	// Proof: what the project's tests said on its code; Caps: the bounds
-	// on the run it reached (step 3).
-	Proof *devmark.Proof `json:"proof,omitempty"`
-	Caps  []devmark.Cap  `json:"caps,omitempty"`
-	// Turns, Tokens, Cached and Tools: what its agent used, as it
-	// reported them (ADR-0056, steps 4, 5 and 7): its fresh tokens, what
-	// ai-max-tokens holds, its cache reads apart, the times it used each
-	// tool; 0 or none, not reported.
-	Turns  int            `json:"turns,omitempty"`
-	Tokens int            `json:"tokens,omitempty"`
-	Cached int            `json:"cached,omitempty"`
-	Tools  map[string]int `json:"tools,omitempty"`
-	// AgentFailed: why its agent's call failed, its time aside; what it
-	// edited is proven all the same, its pull request a Draft.
-	AgentFailed string `json:"agent-failed,omitempty"`
-	// NoCode: its agent wrote no code, so no pull
-	// request; the claim waits to be let go (ADR-0059, decision 1).
-	NoCode bool `json:"no-code,omitempty"`
-	// Body: the issue's body as the claim read it (BodyMark): a claim
-	// with no code is let go when the body changes since (#1084).
-	Body string `json:"body,omitempty"`
-	// Unopened: the times its pull request did not open for this issue,
-	// each giving the claim back (#856); read at the pick from the claim's
-	// comment, carried on. At the second, the issue is blocked.
-	Unopened int `json:"unopened,omitempty"`
-	// From: the tester's Draft's commit its code starts from, the
-	// acceptance tests on it, those for the issue in Acceptance; Code and
-	// Tests: the files its code and its tests wrote, in commits apart
-	// (step 4).
-	From       string   `json:"from,omitempty"`
-	Acceptance []string `json:"acceptance,omitempty"`
-	// RedUnproven: why the tester's red proof of those tests was not
-	// settled by its judge (ADR-0065): said on its pull request.
-	RedUnproven string   `json:"red-unproven,omitempty"`
-	Code        []string `json:"code,omitempty"`
-	Tests       []string `json:"tests,omitempty"`
-	// The review loop (step 6): the rounds run, the reviewer's runs and
-	// a person's comments read already, the findings asked before (to
-	// tell one still there), the five whys run, a person handed it.
-	Round      int `json:"round,omitempty"`
-	ReviewRuns int `json:"review-runs,omitempty"`
-	// ReviewAt: the head of the reviewer's summary its last round read;
-	// another is a new review, its runs counted or not (#1040).
-	ReviewAt string          `json:"review-at,omitempty"`
-	Heard    []string        `json:"heard,omitempty"`
-	Seen     []string        `json:"seen,omitempty"`
-	Rounds   []devmark.Round `json:"rounds,omitempty"`
-	Whys     bool            `json:"whys,omitempty"`
-	Handed   bool            `json:"handed,omitempty"`
-	// GatesAt: the head of the gates' report its last round asked the
-	// findings of: the same report is not asked again.
-	GatesAt string `json:"gates-at,omitempty"`
-	// ChecksAt: the head its last round read the project's red checks
-	// at: the same head is never asked twice (#917).
-	ChecksAt string `json:"checks-at,omitempty"`
-	// Widen: its last round's wait, for a person or the tester (#938,
-	// #987).
-	Widen *devmark.Widen `json:"widen,omitempty"`
-	// Beside: the new test files its code wrote beside the Scope
-	// (ADR-0063, §9): listed on its pull request, and added to the Scope
-	// at the product owner's next run.
-	Beside []string `json:"beside,omitempty"`
-	// Beyond: the files its code wrote beyond the Scope, each with its
-	// agent's reason (ADR-0065, change 2): listed on its pull request,
-	// for the reviewer's `intent` lens to judge.
-	Beyond []devmark.Beyond `json:"beyond,omitempty"`
-	// Tester: the keys of the review's test findings sent to the tester
-	// (#1265): never asked again, of the developer nor the tester.
-	Tester []string `json:"tester,omitempty"`
-	// Conflict: the head a merge round failed at (ADR-0067): no second
-	// one there.
-	Conflict string `json:"conflict,omitempty"`
-	// Board: the card its claim moved to Doing on the forge's board
-	// (ADR-0057); none, no board or no Doing column.
-	Board *board.Move `json:"board,omitempty"`
-}
-
 // number is a setting's whole number, 0 when not one.
 func number(v any) int {
 	switch n := v.(type) {
@@ -218,48 +113,6 @@ func number(v any) int {
 		return int(n)
 	}
 	return 0
-}
-
-var actData = regexp.MustCompile(`<!-- ` + ActMark + ` (\{.*\}) -->`)
-
-// Line is the hidden line a comment keeps the record in.
-func (a Act) Line() string {
-	data, _ := json.Marshal(a)
-	return fmt.Sprintf("<!-- %s %s -->", ActMark, data)
-}
-
-// BodyMark is an issue body's short digest, as a claim's record keeps
-// it (Act.Body): the line and the developer read a change by it. The
-// engine's own "Blocked by" line (backlog.BlockedByMarker) is left out:
-// the engine recording what an issue waits on is no change of a
-// person's, and starts no round (#1271).
-func BodyMark(body string) string {
-	lines := strings.Split(body, "\n")
-	lines = slices.DeleteFunc(lines, func(l string) bool { return strings.Contains(l, backlog.BlockedByMarker) })
-	return digest(strings.Join(lines, "\n"))
-}
-
-// digest is the short digest of a text, its spaces around trimmed.
-func digest(text string) string {
-	sum := sha256.Sum256([]byte(strings.TrimSpace(text)))
-	return hex.EncodeToString(sum[:])[:12]
-}
-
-// BodyChanged says whether body is not the one mark, a record's
-// BodyMark, was kept of. A record from before the engine's line was left
-// out kept the whole body's digest: read as the same body too.
-func BodyChanged(mark, body string) bool {
-	return mark != BodyMark(body) && mark != digest(body)
-}
-
-// ReadAct reads a pick's record from a comment of the developer's.
-func ReadAct(body string) (Act, bool) {
-	m := actData.FindStringSubmatch(body)
-	var a Act
-	if m == nil || json.Unmarshal([]byte(m[1]), &a) != nil || a.Act == "" {
-		return Act{}, false
-	}
-	return a, true
 }
 
 // scopePaths are the paths a Scope names: in backticks, a word with a
@@ -440,7 +293,7 @@ func PassedForOverlap(c string) bool {
 func kindOf(issues []forge.Issue, n int) string {
 	for _, is := range issues {
 		if is.ID == n {
-			k, _ := IssueKind(is.Labels)
+			k, _ := devmark.IssueKind(is.Labels)
 			return k
 		}
 	}
@@ -490,7 +343,7 @@ func outranked(is forge.Issue, issues []forge.Issue, held map[int][]string) map[
 
 // letGo are the claims this run lets go: held no more, taken at a next
 // run. passed are the issues offered it passed over, why each.
-func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string, changed Diffs) (id int, passed []Passed) {
+func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string, changed Diffs) (id int, passed []devmark.Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
@@ -543,7 +396,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 		if why == "" {
 			return is.ID, passed
 		}
-		passed = append(passed, Passed{Issue: is.ID, Why: why, next: next})
+		passed = append(passed, devmark.Passed{Issue: is.ID, Why: why, Next: next})
 	}
 	return 0, passed
 }
@@ -655,9 +508,9 @@ func Pre(runDir, repo string) int {
 		return say(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("would take #%d: no agent, nothing claimed", id), Findings: findings}, said)
 	}
 	at, _ := gitOut(repo, "rev-parse", "HEAD")
-	act := Act{Act: "pick", At: at, Issue: id, Passed: passed}
+	act := devmark.Act{Act: "pick", At: at, Issue: id, Passed: passed}
 	if i := slices.IndexFunc(issues, func(is forge.Issue) bool { return is.ID == id }); i >= 0 {
-		act.Body = BodyMark(issues[i].Body)
+		act.Body = devmark.BodyMark(issues[i].Body)
 	}
 	if act.Unopened, err = unopenedBefore(b, id); err != nil {
 		return external(err)
@@ -685,7 +538,7 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return external(err)
 	}
-	bounds.Kind, _ = IssueKind(is.Labels)
+	bounds.Kind, _ = devmark.IssueKind(is.Labels)
 	if p, ok := proofs[id]; ok && bounds.Draft == 0 {
 		bounds.Proof = &p
 	}
@@ -752,7 +605,7 @@ func takenMeanwhile(repo string, id int, s Settings) string {
 }
 
 // claimOf is the claim: the label and the comment holding the record.
-func claimOf(a Act, s Settings) []intent.Intention {
+func claimOf(a devmark.Act, s Settings) []intent.Intention {
 	return []intent.Intention{
 		claimLabel(a, s),
 		{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "claim", "body": claimBody(a, s)}},
@@ -763,7 +616,7 @@ func claimOf(a Act, s Settings) []intent.Intention {
 // label off in the same call, one state at a time (ADR-0059, §2;
 // #1081); its card moved to Doing too when the forge's board has that
 // column (ADR-0057).
-func claimLabel(a Act, s Settings) intent.Intention {
+func claimLabel(a devmark.Act, s Settings) intent.Intention {
 	v := map[string]any{"issue": a.Issue, "add": []string{s.ClaimLabel}, "remove": []string{backlog.LabelReady}}
 	switch {
 	case a.Board.Labels():
@@ -897,7 +750,7 @@ func (b Bounds) acceptance() []string {
 }
 
 // claimBody is the comment the claim leaves on the issue, its record hidden.
-func claimBody(a Act, s Settings) string {
+func claimBody(a devmark.Act, s Settings) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. "+
 		"`%s` says so; a person who takes it over assigns themselves; one who gives it back to the line swaps it for `%s`: "+
@@ -958,7 +811,7 @@ func Post(runDir, repo string) int {
 	if hasSaid(runDir) {
 		return saidPost(runDir)
 	}
-	var a Act
+	var a devmark.Act
 	var b Bounds
 	if err := readIn(runDir, pickFile, &a); err != nil {
 		return fail(err)
@@ -1353,7 +1206,7 @@ func onlyProtected(refused []devmark.Refusal) bool {
 
 // writeBlockedProtected claims the issue and blocks it for a person in
 // the same run, the refused files and why said on it (#1418).
-func writeBlockedProtected(runDir, repo string, a Act, s Settings, told []intent.Intention, refused []devmark.Refusal, v verdict.Verdict) int {
+func writeBlockedProtected(runDir, repo string, a devmark.Act, s Settings, told []intent.Intention, refused []devmark.Refusal, v verdict.Verdict) int {
 	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
 	if line, err := routing.Load(repo); err == nil {
 		if ad, rm, err := line.Move("blocked"); err == nil {

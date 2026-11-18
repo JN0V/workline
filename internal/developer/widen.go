@@ -37,7 +37,7 @@ func scopeKey(scope []string) string {
 // backFromAsk says whether a person sent the issue back since the
 // record's wait: no more blocked, ready or taken again. One call, only
 // while an ask waits.
-func backFromAsk(f forge.Forge, a Act) (bool, error) {
+func backFromAsk(f forge.Forge, a devmark.Act) (bool, error) {
 	if a.Widen == nil || a.Widen.Back || a.Widen.Objected {
 		return false, nil // an objection waits in Doing: nothing sent back
 	}
@@ -56,7 +56,7 @@ func backFromAsk(f forge.Forge, a Act) (bool, error) {
 // (#921), or block its issue when it asked none (#938): due once more at
 // the same head, to ask or block now. Since, such a round always leaves
 // an ask in the record.
-func legacyNoCode(a Act) bool {
+func legacyNoCode(a devmark.Act) bool {
 	if len(a.Rounds) == 0 || a.Widen != nil {
 		return false
 	}
@@ -79,7 +79,7 @@ func redChecks(asked []devmark.Asked) []string {
 // holdCheck is what a round writes that fixed no red check (#938): the
 // issue blocked for a person, the checks, its agent's notes, its
 // objections' place and the checks' log on it.
-func holdCheck(repo string, a Act, r round, red, notes []string, objections []intent.Intention) []intent.Intention {
+func holdCheck(repo string, a devmark.Act, r round, red, notes []string, objections []intent.Intention) []intent.Intention {
 	why := fmt.Sprintf("pull request %d is still red on `%s` at this head, and its round wrote no fix: the check is not asked again at this head",
 		r.MR, strings.Join(red, "`, `"))
 	next := "a person on the loop reads the developer's note below, then fixes the check or the test, or re-runs a flaky check; " +
@@ -91,7 +91,7 @@ func holdCheck(repo string, a Act, r round, red, notes []string, objections []in
 // frozen tests red on a green head (#987): not pushed, and it objected
 // to no test. Nothing else
 // would move: blocked for a person, the tests and the findings on it.
-func holdGreen(repo string, a Act, r round, red, notes []string, objections []intent.Intention) []intent.Intention {
+func holdGreen(repo string, a devmark.Act, r round, red, notes []string, objections []intent.Intention) []intent.Intention {
 	why := fmt.Sprintf("its fix of the review turns the frozen tests red on pull request %d's green head (`%s`): not pushed, the head kept; it objected to no test, or objected already at this head",
 		r.MR, strings.Join(red, "`, `"))
 	next := "a person on the loop reads the findings and the developer's note below, then answers the finding or fixes the test; " +
@@ -101,7 +101,7 @@ func holdGreen(repo string, a Act, r round, red, notes []string, objections []in
 
 // holdFor blocks the issue for a person, why and next said, then what
 // the round was asked, its agent's notes and where its objections went.
-func holdFor(repo string, a Act, r round, why, next string, notes []string, objections []intent.Intention) []intent.Intention {
+func holdFor(repo string, a devmark.Act, r round, why, next string, notes []string, objections []intent.Intention) []intent.Intention {
 	var b strings.Builder
 	b.WriteString(backlog.Said(who, "blocks this issue", why, next))
 	b.WriteString("\nWhat it was asked:\n\n" + askedList(r.Asked))
@@ -158,7 +158,7 @@ func moveTo(repo, state string, issue int, add, remove []string) intent.Intentio
 // besideSaid is the issue's comment listing the new test files the
 // developer's rounds kept beside its Scope, with the mark the product
 // owner reads to fold them in (ADR-0063, §9): one comment, edited.
-func besideSaid(a Act) intent.Intention {
+func besideSaid(a devmark.Act) intent.Intention {
 	body := fmt.Sprintf("**The developer** wrote new test files beside this issue's %s: `%s`. The product owner adds them to the %[1]s at its next run.\n\n%[3]s\n",
 		scopeName, strings.Join(a.Beside, "`, `"), backlog.ScopeKeptMark(a.Beside))
 	return intent.Intention{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "beside", "body": body}}

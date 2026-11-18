@@ -20,7 +20,7 @@ func findingsLine(holds, lens, where, text string) string {
 // mergeReadWith reads, as the merge pass does, a developer's pull request
 // for a fix (its issue labelled `bug`) on a local forge, with the
 // reviewer's summary comment and its comment of the lenses that warn.
-func mergeReadWith(t *testing.T, act Act, summary, warn string) Merge {
+func mergeReadWith(t *testing.T, act devmark.Act, summary, warn string) devmark.Merge {
 	t.Helper()
 	for _, v := range []string{"CI", "GITHUB_ACTIONS", "GITLAB_CI"} {
 		t.Setenv(v, "")
@@ -57,7 +57,7 @@ func mergeReadWith(t *testing.T, act Act, summary, warn string) Merge {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m, err := ReadMerge(l, mr)
+	m, err := devmark.ReadMerge(l, mr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestReadMergeWarnFindingDoesNotHold(t *testing.T) {
 	summary := "**workline reviewer** — verdict pass.\n\n" + `<!-- workline:findings [] -->`
 	warn := "**workline reviewer** — the lenses that warn never hold the verdict.\n\n" +
 		findingsLine("warns", "tests", "a_test.go:3", "Important: a case is not tested")
-	m := mergeReadWith(t, Act{Act: "code", Issue: 1}, summary, warn)
+	m := mergeReadWith(t, devmark.Act{Act: "code", Issue: 1}, summary, warn)
 	if len(m.Open) != 0 {
 		t.Errorf("findings open %q: a finding of the lenses that warn holds nothing", m.Open)
 	}
@@ -86,7 +86,7 @@ func TestReadMergeWarnFindingDoesNotHold(t *testing.T) {
 // then that finding is no longer counted open: the merge reads no finding
 // open for it, and the verdict's own comment is left as it is.
 func TestReadMergeTestsFindingSentToTesterIsNotOpen(t *testing.T) {
-	act := Act{
+	act := devmark.Act{
 		Act: "code", Issue: 1,
 		Tester: []string{"tests|a_test.go|a case is not tested"},
 		Rounds: []devmark.Round{{N: 1, Tester: []string{"warns tests `a_test.go:3`: Important: a case is not tested"}}},

@@ -36,7 +36,7 @@ func ConflictFailed(f forge.Forge, mr forge.MergeRequest, head string) (bool, er
 		return false, err
 	}
 	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
-	a, read := ReadAct(body)
+	a, read := devmark.ReadAct(body)
 	return ok && read && a.Conflict == head, nil
 }
 
@@ -54,7 +54,7 @@ func conflictAt(kept forge.Kept) (head, base string, ok bool) {
 // conflictDue says a merge round is due: `follow` said a conflict at head,
 // the branch's head now, no round failed at it, and git still meets it in
 // repo (a base not fetched here counts it).
-func conflictDue(kept forge.Kept, a Act, repo, head string) (base string, due bool) {
+func conflictDue(kept forge.Kept, a devmark.Act, repo, head string) (base string, due bool) {
 	h, b, ok := conflictAt(kept)
 	if !ok || head == "" || h != head || a.Conflict == head {
 		return "", false
@@ -76,7 +76,7 @@ func conflictDue(kept forge.Kept, a Act, repo, head string) (base string, due bo
 // conflictNow is conflictDue with no record asked for: main moved into
 // the branch's conflict since its round, so no `follow` said it yet. The
 // base's tip as the forge keeps it in repo; git's merge says it conflicts.
-func conflictNow(f forge.Forge, kept forge.Kept, a Act, repo string, mr forge.MergeRequest, head string) (base string, due bool) {
+func conflictNow(f forge.Forge, kept forge.Kept, a devmark.Act, repo string, mr forge.MergeRequest, head string) (base string, due bool) {
 	if base, due := conflictDue(kept, a, repo, head); due {
 		return base, true
 	}
@@ -251,7 +251,7 @@ const conflictHolds = "the base"
 
 // conflictPre starts the merge round on the request: its agent's worktree
 // starts from the branch's head with base merged in, the markers in it.
-func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog, mr forge.MergeRequest, a Act, head, base string) int {
+func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog, mr forge.MergeRequest, a devmark.Act, head, base string) int {
 	where := fmt.Sprintf("merge request %d", mr.ID)
 	if _, err := gitOut(repo, "cat-file", "-e", base+"^{commit}"); err != nil {
 		_ = exec.Command("git", "-C", repo, "fetch", "-q", "origin", mr.Base).Run()

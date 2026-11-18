@@ -23,7 +23,7 @@ import (
 // round followed, and the project's checks there are all done and green;
 // with no project check on the forge, its last proof green. Not ready,
 // kept says why when a person is the one to mark it, "" else.
-func draftReady(f forge.Forge, a Act, head string) (ready bool, kept string) {
+func draftReady(f forge.Forge, a devmark.Act, head string) (ready bool, kept string) {
 	switch {
 	case len(a.Caps) > 0:
 		names := make([]string, len(a.Caps))
@@ -88,7 +88,7 @@ func DraftHolder(f forge.Forge, mr forge.MergeRequest) (string, error) {
 		return "", err
 	}
 	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
-	a, read := ReadAct(body)
+	a, read := devmark.ReadAct(body)
 	switch {
 	case !ok || !read:
 		return "", devmark.ErrRecordUnread

@@ -39,7 +39,7 @@ const roundFile = "round.json"
 type round struct {
 	MR     int             `json:"merge-request"`
 	Branch string          `json:"branch"`
-	Record Act             `json:"record"`
+	Record devmark.Act     `json:"record"`
 	Asked  []devmark.Asked `json:"asked"`
 	Heard  []string        `json:"heard,omitempty"` // the ids of a person's comments it reads
 	// Body: its issue's body as the round reads it (BodyMark), when it
@@ -101,7 +101,7 @@ var recordedFinding = regexp.MustCompile("^(blocks|warns) (\\S+) `([^`]*)`: (.+)
 // (#1022): the reviewer's comment, read again since on a later head,
 // may no longer hold them, and a green head asks no check. Those the
 // review asks again are not doubled.
-func waited(a Act, asked []devmark.Asked) []devmark.Asked {
+func waited(a devmark.Act, asked []devmark.Asked) []devmark.Asked {
 	if len(a.Rounds) == 0 {
 		return asked
 	}
@@ -192,7 +192,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	}
 	// The trace, never a memory: its record on the pull request.
 	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
-	a, read := ReadAct(body)
+	a, read := devmark.ReadAct(body)
 	if !ok || !read {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "its record on the pull request cannot be read",
 			Findings: []verdict.Finding{{Rule: "record-unread", Where: where,
@@ -361,7 +361,7 @@ var errOwnAccount = errors.New("workline's own account")
 // roundBounds reads a round's issue and its bounds: its frozen tests
 // those of its branch too, whatever the tester's Draft, and the test
 // files an earlier round wrote beside the Scope, still beside it.
-func roundBounds(f forge.Forge, b forge.Backlog, repo string, a Act, issue int) (*forge.Issue, Bounds, error) {
+func roundBounds(f forge.Forge, b forge.Backlog, repo string, a devmark.Act, issue int) (*forge.Issue, Bounds, error) {
 	is, err := f.Issue(issue)
 	if err != nil {
 		return nil, Bounds{}, err
@@ -390,7 +390,7 @@ const issueHolds = "the issue"
 // record's (#1271): the person's change is the developer's to hold its
 // code to, as a person's comment on its pull request is. "" when it did
 // not, or a record from before Body has none to compare.
-func issueRewritten(f forge.Forge, a Act) (string, error) {
+func issueRewritten(f forge.Forge, a devmark.Act) (string, error) {
 	if a.Body == "" || a.Issue == 0 {
 		return "", nil
 	}
@@ -398,8 +398,8 @@ func issueRewritten(f forge.Forge, a Act) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if BodyChanged(a.Body, is.Body) {
-		return BodyMark(is.Body), nil
+	if devmark.BodyChanged(a.Body, is.Body) {
+		return devmark.BodyMark(is.Body), nil
 	}
 	return "", nil
 }
@@ -409,7 +409,7 @@ func issueRewritten(f forge.Forge, a Act) (string, error) {
 // new findings when they reported on head since it (head "": not
 // known), a person's comments not heard yet. fresh: the reviewer or the
 // gates said something new.
-func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a Act, id int, head string) (r round, fresh bool, err error) {
+func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a devmark.Act, id int, head string) (r round, fresh bool, err error) {
 	r = round{MR: id, Record: a}
 	back, err := backFromAsk(f, a)
 	if err != nil {
@@ -547,7 +547,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 		return false, err
 	}
 	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
-	a, read := ReadAct(body)
+	a, read := devmark.ReadAct(body)
 	if !ok || !read {
 		return false, devmark.ErrRecordUnread
 	}
@@ -1169,7 +1169,7 @@ func writeVerdict(runDir string, v verdict.Verdict) int {
 // disputes counts the rounds that answered a blocking finding of the
 // reviewer: a red check, a tester's rewrite or a warning alone is no
 // dispute (#1598). A record with no round listed counts its round number.
-func disputes(a Act) int {
+func disputes(a devmark.Act) int {
 	if len(a.Rounds) == 0 {
 		return a.Round
 	}
@@ -1184,6 +1184,6 @@ func disputes(a Act) int {
 
 // rounds counts every round the pull request had, of any kind: the
 // ceiling that hands it to a person (#1687).
-func rounds(a Act) int {
+func rounds(a devmark.Act) int {
 	return max(a.Round, len(a.Rounds), disputes(a))
 }

@@ -1,8 +1,9 @@
 package developer
 
 import (
-	"github.com/JN0V/workline/internal/kit/devmark"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 func TestIssueKind(t *testing.T) {
@@ -19,7 +20,7 @@ func TestIssueKind(t *testing.T) {
 		{[]string{"workline:ready", "debug"}, "", ""}, // whole names only
 		{nil, "", ""},
 	} {
-		kind, label := IssueKind(c.labels)
+		kind, label := devmark.IssueKind(c.labels)
 		if kind != c.kind || label != c.label {
 			t.Errorf("IssueKind(%q) = %q, %q; want %q, %q", c.labels, kind, label, c.kind, c.label)
 		}
@@ -32,13 +33,13 @@ func TestUnreviewed(t *testing.T) {
 	const head = "4feb95cd88448f137d793775c4ad7b591c1ac175"
 	for _, c := range []struct {
 		name string
-		m    Merge
+		m    devmark.Merge
 		want string
 	}{
-		{"none", Merge{}, "no reviewer's verdict is on it"},
-		{"older", Merge{ReviewedAt: "1111111111111111111111111111111111111111"}, "the reviewer's verdict is on 1111111, not on its head 4feb95c"},
-		{"owed", Merge{ReviewedAt: head, Owed: true}, "the reviewer's lenses have not read its head 4feb95c yet: only its rules ran"},
-		{"head", Merge{ReviewedAt: head}, ""},
+		{"none", devmark.Merge{}, "no reviewer's verdict is on it"},
+		{"older", devmark.Merge{ReviewedAt: "1111111111111111111111111111111111111111"}, "the reviewer's verdict is on 1111111, not on its head 4feb95c"},
+		{"owed", devmark.Merge{ReviewedAt: head, Owed: true}, "the reviewer's lenses have not read its head 4feb95c yet: only its rules ran"},
+		{"head", devmark.Merge{ReviewedAt: head}, ""},
 	} {
 		if got := c.m.Unreviewed(head); got != c.want {
 			t.Errorf("%s: %q, want %q", c.name, got, c.want)

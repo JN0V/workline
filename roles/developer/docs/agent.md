@@ -6,6 +6,7 @@ sources:
   - internal/developer/developer.go
   - internal/agent/closing.go
   - internal/developer/words.go
+  - internal/kit/devmark
 checked: e5e6a3f8
 verified: agent:claude-code
 ---

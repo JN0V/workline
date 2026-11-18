@@ -7,6 +7,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // A claim let go takes its card out of Doing, back to the board's ready
@@ -34,17 +35,17 @@ func TestReleasedCardLeavesDoing(t *testing.T) {
 // without a board.
 func TestClaimTakesReadyOff(t *testing.T) {
 	s := SettingsFrom(nil)
-	in := claimLabel(Act{Issue: 2}, s)
+	in := claimLabel(devmark.Act{Issue: 2}, s)
 	v, _ := in.Value.(map[string]any)
 	if !slices.Equal(v["add"].([]string), []string{s.ClaimLabel}) || !slices.Equal(v["remove"].([]string), []string{backlog.LabelReady}) {
 		t.Errorf("no board: %v", v)
 	}
-	in = claimLabel(Act{Issue: 2, Board: &board.Move{Board: "Dev", Column: "Doing", Off: []string{"To Do"}}}, s)
+	in = claimLabel(devmark.Act{Issue: 2, Board: &board.Move{Board: "Dev", Column: "Doing", Off: []string{"To Do"}}}, s)
 	v, _ = in.Value.(map[string]any)
 	if !slices.Equal(v["add"].([]string), []string{s.ClaimLabel, "Doing"}) || !slices.Equal(v["remove"].([]string), []string{backlog.LabelReady, "To Do"}) {
 		t.Errorf("GitLab: %v", v)
 	}
-	in = claimLabel(Act{Issue: 2, Board: &board.Move{Board: "Dev", Column: "In Progress", Project: 3}}, s)
+	in = claimLabel(devmark.Act{Issue: 2, Board: &board.Move{Board: "Dev", Column: "In Progress", Project: 3}}, s)
 	v, _ = in.Value.(map[string]any)
 	if !slices.Equal(v["remove"].([]string), []string{backlog.LabelReady}) || v["status"] == nil {
 		t.Errorf("GitHub: %v", v)
