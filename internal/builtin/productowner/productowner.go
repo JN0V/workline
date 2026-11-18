@@ -261,7 +261,7 @@ func Pre(runDir, repo string) int {
 	var waits []backlog.Wait                                 // the issues waiting on a person, for the summary (ADR-0031)
 	var kindless []forge.Issue                               // read before, no kind label: their kind read alone (#878)
 	for _, is := range open {
-		if backlog.Tracking(is, role) || !inScope(is) {
+		if backlog.Tracking(is, role) || !inScope(is) || backlog.Parked(is) {
 			// Its old report, the weekly sample, a role's issue kept in
 			// place: workline's own, never read as the backlog's (#429).
 			// Out of an event's scope: its comments unread (#804).
