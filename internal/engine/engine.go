@@ -1777,7 +1777,9 @@ func ownPush(runDir string) string {
 // baseMerge is a merge of the base the role asks committed on its own
 // branch (ADR-0067): the base's commit merged in, and the tree the merge
 // settled, its conflicts' markers gone.
-type baseMerge struct{ Base, Tree string }
+// Bundle is the run's git bundle of the tree's objects, "" for none: the
+// clone that applies may not be the one that merged (#1704).
+type baseMerge struct{ Base, Tree, Bundle string }
 
 // ownMerge is out/merge-request.yaml's `merge:` and `tree:`, nil none.
 func ownMerge(runDir string) *baseMerge {
@@ -1785,7 +1787,11 @@ func ownMerge(runDir string) *baseMerge {
 	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err != nil || yaml.Unmarshal(data, &mr) != nil || mr.Merge == "" || mr.Tree == "" {
 		return nil
 	}
-	return &baseMerge{Base: mr.Merge, Tree: mr.Tree}
+	m := &baseMerge{Base: mr.Merge, Tree: mr.Tree}
+	if b := filepath.Join(runDir, "out", "merge.bundle"); fileIs(b) { // developer.MergeBundle
+		m.Bundle = b
+	}
+	return m
 }
 
 // ownReady says the role asks its own Draft, the merge request it
@@ -1891,7 +1897,12 @@ func commitMerge(f forge.Forge, st runState, mr forge.MergeRequest, message stri
 	if !isAncestor(st.Repo, m.Base, baseRef) {
 		return fmt.Errorf("%s is not in %s's history: only the base is merged in", short(m.Base), mr.Base)
 	}
-	if kind, err := git(st.Repo, nil, "cat-file", "-t", m.Tree); err != nil || strings.TrimSpace(kind) != "tree" {
+	if !isTree(st.Repo, m.Tree) && m.Bundle != "" {
+		if _, err := git(st.Repo, nil, "bundle", "unbundle", m.Bundle); err != nil {
+			return fmt.Errorf("the merge's tree %s is not in this clone, nor read from the run's bundle: %v", short(m.Tree), err)
+		}
+	}
+	if !isTree(st.Repo, m.Tree) {
 		return fmt.Errorf("the merge's tree %s is not in this clone", short(m.Tree))
 	}
 	args := []string{"commit-tree", m.Tree, "-p", "HEAD", "-p", m.Base, "-F", "-"}
@@ -1922,6 +1933,18 @@ func commitMerge(f forge.Forge, st runState, mr forge.MergeRequest, message stri
 		_ = os.WriteFile(cfgPath, aside, 0o644)
 	}
 	return err
+}
+
+// fileIs tells whether a file is there.
+func fileIs(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
+// isTree tells whether the clone holds the tree.
+func isTree(repo, tree string) bool {
+	kind, err := git(repo, nil, "cat-file", "-t", tree)
+	return err == nil && strings.TrimSpace(kind) == "tree"
 }
 
 // commitWritten commits what the patches wrote on HEAD.
