@@ -788,6 +788,12 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			prev = nil
 		}
 		st.write.Record.Errors, st.write.Failed = prev.with(out, now), true
+		if r := st.write.Record; r.State != st.rec.State && st.rec.Hops > 0 && r.Hops <= st.rec.Hops {
+			// A machine error moves nothing, its count neither: the record
+			// catching up with the labels is one hop more, not a count
+			// started again as for progress.
+			st.write.Record.Hops, st.write.Record.Reached = st.rec.Hops+1, st.rec.Reached
+		}
 		if role := st.inputs[engine.SizeInput]; role != "" {
 			// Its run answered nothing: the size question stands, asked
 			// again after the back-off, within the budget (revisit).
