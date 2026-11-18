@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/kit/commitmsg"
 )
 
 // The issue a finding outside the change becomes opens with what a person
@@ -65,14 +65,14 @@ func TestLongCommentCountsWholeLines(t *testing.T) {
 		added = append(added, Line{"a.go", i + 1, fmt.Sprintf("\tField%d int // what it holds", i)})
 	}
 	c := Change{Added: map[string][]Line{"a.go": added}}
-	found, err := mechanical(c, Settings{CommentBlockMax: 8}, committer.Settings{})
+	found, err := mechanical(c, Settings{CommentBlockMax: 8}, commitmsg.Settings{})
 	if err != nil || len(found) != 0 {
 		t.Errorf("comments after code are no block: %v %v", found, err)
 	}
 	for i := range added {
 		added[i].Text = "// a line of a long comment"
 	}
-	if found, _ := mechanical(c, Settings{CommentBlockMax: 8}, committer.Settings{}); len(found) != 1 || found[0].Where != "a.go:1" {
+	if found, _ := mechanical(c, Settings{CommentBlockMax: 8}, commitmsg.Settings{}); len(found) != 1 || found[0].Where != "a.go:1" {
 		t.Errorf("twelve comment lines: %v", found)
 	}
 }
@@ -83,7 +83,7 @@ func TestStoryOverTwoLines(t *testing.T) {
 		{"a.go", 8, "// to drop the empty words."},
 		{"a.go", 9, "func Args() {}"},
 	}}}
-	found, err := mechanical(c, Settings{StoryWords: []string{`\bused to\b`}}, committer.Settings{})
+	found, err := mechanical(c, Settings{StoryWords: []string{`\bused to\b`}}, commitmsg.Settings{})
 	if err != nil || len(found) != 1 || found[0].Rule != "bug-story" || found[0].Level != "warn" || found[0].Where != "a.go:7" {
 		t.Errorf("a story over two lines of one comment: %v %v", found, err)
 	}

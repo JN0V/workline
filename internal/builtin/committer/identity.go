@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/gitrange"
+	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -17,7 +18,7 @@ import (
 // setting, and the user's own list, one pattern a line (# comments), kept in
 // <config folder>/workline/allowed-identities, never in the repository. Both
 // empty, identities are not checked.
-func allowedIdentities(s Settings) ([]*regexp.Regexp, error) {
+func allowedIdentities(s commitmsg.Settings) ([]*regexp.Regexp, error) {
 	patterns := append([]string{}, s.AllowedIdentities...)
 	if dir, err := os.UserConfigDir(); err == nil {
 		if f, err := os.Open(filepath.Join(dir, "workline", "allowed-identities")); err == nil {
@@ -46,7 +47,7 @@ func allowedIdentities(s Settings) ([]*regexp.Regexp, error) {
 // whole and matched exactly, case included. They are allowed beside the
 // allow list but never turn the check on alone; naming one bot never lets
 // every bot in. An entry that reads as a pattern is a mistake, said.
-func forgeIdentities(s Settings) error {
+func forgeIdentities(s commitmsg.Settings) error {
 	for _, f := range s.ForgeIdentities {
 		if !strings.Contains(f, "@") || strings.ContainsAny(f, "^$*?\\|(){} \t") {
 			return fmt.Errorf("forge identity %q: an address written whole (12345+app[bot]@users.noreply.github.com), not a pattern", f)
@@ -59,7 +60,7 @@ func forgeIdentities(s Settings) error {
 // empty), or those of every commit of rng. git var gives the effective
 // identity, so an address given for one commit (-c user.email, --author) is
 // caught too: the one that leaks is usually given on purpose.
-func Identity(repo, rng string, s Settings) ([]verdict.Finding, error) {
+func Identity(repo, rng string, s commitmsg.Settings) ([]verdict.Finding, error) {
 	if err := forgeIdentities(s); err != nil {
 		return nil, err
 	}

@@ -12,9 +12,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
@@ -76,13 +76,13 @@ var squashRoom = len(" (#12345)")
 // Scope shares, its title. Its pull request's title is the code's
 // subject, cut so that a squash lands it within the limit, and the
 // engine keeps it: within forge.TitleMax, GitLab's "Draft: " too.
-func subjects(issue int, title, kind string, scope []string, s committer.Settings) Subjects {
+func subjects(issue int, title, kind string, scope []string, s commitmsg.Settings) Subjects {
 	sum := summaryOf(title, s)
 	if sum == "" {
 		sum = fmt.Sprintf("the code of #%d", issue)
 	}
 	sc, typ := commitScope(scope), commitType(kind)
-	room := func(less int) committer.Settings {
+	room := func(less int) commitmsg.Settings {
 		r := s
 		r.SubjectMax = forge.TitleMax - less
 		if s.SubjectMax > 0 {

@@ -20,11 +20,12 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
@@ -32,6 +33,9 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"go.yaml.in/yaml/v3"
 )
+
+// The role joins the engine by name (internal/contract).
+func init() { contract.Join("reviewer", contract.Role{Pre: Pre, Post: Post}) }
 
 const (
 	exitBlock    = 1
@@ -2743,8 +2747,8 @@ func lensNamed(v any) (lens, title string) {
 // committerSettings are the committer's, as the project sets them: a code
 // it refuses in a subject is refused in a comment, and one it allows,
 // allowed.
-func committerSettings(repo string) (committer.Settings, error) {
-	var s committer.Settings
+func committerSettings(repo string) (commitmsg.Settings, error) {
+	var s commitmsg.Settings
 	r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), "committer")
 	if err != nil {
 		return s, fmt.Errorf("the committer's internal codes: %w", err)

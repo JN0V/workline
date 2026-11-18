@@ -39,11 +39,9 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
-	"github.com/JN0V/workline/internal/builtin/inspector"
-	"github.com/JN0V/workline/internal/builtin/productowner"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/doctor"
 	"github.com/JN0V/workline/internal/engine"
@@ -505,35 +503,8 @@ func builtin(args []string) int {
 		return 99
 	}
 	repo, _ := os.Getwd()
-	switch args[0] + " " + args[1] {
-	case "committer pre":
-		return committer.Pre(runDir, repo)
-	case "committer post":
-		return committer.Post(runDir, repo)
-	case "documentalist pre":
-		return documentalist.Pre(runDir, repo)
-	case "documentalist post":
-		return documentalist.Post(runDir, repo)
-	case "product-owner pre":
-		return productowner.Pre(runDir, repo)
-	case "product-owner post":
-		return productowner.Post(runDir, repo)
-	case "reviewer pre":
-		return reviewer.Pre(runDir, repo)
-	case "reviewer post":
-		return reviewer.Post(runDir, repo)
-	case "inspector pre":
-		return inspector.Pre(runDir, repo)
-	case "inspector post":
-		return inspector.Post(runDir, repo)
-	case "developer pre":
-		return developer.Pre(runDir, repo)
-	case "developer post":
-		return developer.Post(runDir, repo)
-	case "tester pre":
-		return tester.Pre(runDir, repo)
-	case "tester post":
-		return tester.Post(runDir, repo)
+	if step, ok := contract.Builtins().Step(args[0], args[1]); ok {
+		return step(runDir, repo)
 	}
 	fmt.Fprintf(os.Stderr, "workline builtin: no built-in step %q\n", strings.Join(args, " "))
 	return 99

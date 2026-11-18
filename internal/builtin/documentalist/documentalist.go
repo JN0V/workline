@@ -20,6 +20,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
@@ -28,6 +29,9 @@ import (
 	"github.com/JN0V/workline/internal/tools"
 	"go.yaml.in/yaml/v3"
 )
+
+// The role joins the engine by name (internal/contract).
+func init() { contract.Join("documentalist", contract.Role{Pre: Pre, Post: Post}) }
 
 // Settings are the role's settings, as merged by the engine.
 type Settings struct {

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -79,13 +79,13 @@ const storyRule = "bug-story"
 // change adds: a code internal to the project, a block too long; and the
 // guess of a bug's story, which only warns. A line the change did not add
 // is not looked at.
-func mechanical(c Change, s Settings, codes committer.Settings) ([]verdict.Finding, error) {
+func mechanical(c Change, s Settings, codes commitmsg.Settings) ([]verdict.Finding, error) {
 	out, _, err := rules(c, s, codes)
 	return out, err
 }
 
 // rules is mechanical, with the comments the story guess flags as hints.
-func rules(c Change, s Settings, codes committer.Settings) ([]verdict.Finding, []Hint, error) {
+func rules(c Change, s Settings, codes commitmsg.Settings) ([]verdict.Finding, []Hint, error) {
 	var story []*regexp.Regexp
 	for _, w := range s.StoryWords {
 		re, err := regexp.Compile("(?i)" + w)
@@ -151,7 +151,7 @@ func rules(c Change, s Settings, codes committer.Settings) ([]verdict.Finding, [
 			} else {
 				tells(f, []Line{{f, l.At, text}})
 			}
-			found, err := committer.InternalCodes(text, codes)
+			found, err := commitmsg.InternalCodes(text, codes)
 			if err != nil {
 				return nil, nil, err
 			}
