@@ -148,6 +148,7 @@ func followCmd(args []string) int {
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 	}
@@ -323,6 +324,9 @@ func runRole(args []string) int {
 		Inputs: inputs, Targets: targets, TamperBeforeApply: *tamper,
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR,
 	})
+	if !*noApply {
+		commentRefusal(name, *forgeSpec, absRepo, t, res)
+	}
 	if err := wlreport.Write(absRepo, *event, wlreport.FromRole(name, res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
@@ -334,6 +338,7 @@ func runRole(args []string) int {
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 	}
@@ -369,6 +374,63 @@ func report(r *engine.Result) {
 	}
 	for _, n := range r.Notes {
 		fmt.Fprintf(os.Stderr, "  note from the agent: %s\n", strings.ReplaceAll(n, "\n", "\n    "))
+	}
+}
+
+// sayReasons prints, on stderr, why a run that did not pass did not: its
+// summary and each `rule: message`. With --json stdout keeps the result
+// alone, so the log says the reason here (#1669).
+func sayReasons(r *engine.Result) {
+	if r == nil || r.Status == verdict.Pass {
+		return
+	}
+	if r.Summary != "" {
+		fmt.Fprintln(os.Stderr, r.Summary)
+	}
+	for _, f := range r.Findings {
+		fmt.Fprintf(os.Stderr, "  %s: %s\n", f.Rule, f.Message)
+	}
+}
+
+// refusalMarker keys the one comment a role's refused run keeps on its item.
+func refusalMarker(role string) string {
+	return "<!-- workline:refused:" + role + " -->"
+}
+
+// commentRefusal says on the issue or merge request a run concerns why it
+// was refused or blocked: one sticky comment a role, updated in place.
+func commentRefusal(role, spec, repo string, t *forge.Target, r *engine.Result) {
+	if t == nil || r == nil || (r.Status != verdict.Block && r.Status != verdict.BlockedExternal) {
+		return
+	}
+	// A role that judged says its own verdict on its item; this says a run
+	// the engine itself refused or failed, which no role spoke for.
+	if !slices.ContainsFunc(r.Findings, func(f verdict.Finding) bool {
+		return f.Rule == "config-invalid" || f.Rule == "engine-error"
+	}) {
+		return
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "workline: the %s's run was refused (%s).\n", role, r.Status)
+	if r.Summary != "" {
+		b.WriteString("\n" + r.Summary + "\n")
+	}
+	for _, f := range r.Findings {
+		if f.Level == "warn" || f.Level == "info" {
+			continue
+		}
+		fmt.Fprintf(&b, "\n- %s: %s", f.Rule, f.Message)
+	}
+	f, err := forge.Open(spec, repo)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline: the refusal not said on its item:", err)
+		return
+	}
+	if f == nil {
+		return
+	}
+	if err := f.Sticky(*t, strings.TrimRight(b.String(), "\n"), refusalMarker(role), true); err != nil {
+		fmt.Fprintln(os.Stderr, "workline: the refusal not said on its item:", err)
 	}
 }
 
@@ -438,6 +500,7 @@ func reviewCmd(args []string) int {
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 		reviewTokens(filepath.Join(res.RunDir, "out", "review.json"))
@@ -839,6 +902,7 @@ func docsCmd(args []string) int {
 	ai := fs.String("ai", "", "agent judging the docs (default: the project's, else yours, else none)")
 	reviewOnly := fs.Bool("review", false, "no agent: review, doc by doc, the doc changes already in the working tree")
 	since := fs.String("since", "", "judge the commits after this one (default: where the docs were last judged, else the last tag, else all)")
+	asJSON := fs.Bool("json", false, "print the result as JSON on stdout; the reason of a refusal stays on stderr")
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
@@ -888,6 +952,11 @@ func docsCmd(args []string) int {
 	fmt.Fprintf(out, "workline: judging the docs made suspect by the commits since %s\n", from)
 	judged, err := judgeDocs(root, rng, *ai, in, out)
 	if err != nil {
+		if *asJSON {
+			data, _ := json.MarshalIndent(&engine.Result{Status: verdict.Block, Summary: err.Error(), Applied: []string{}, Refused: []string{},
+				Findings: []verdict.Finding{{Rule: "config-invalid", Message: err.Error()}}}, "", "  ")
+			fmt.Println(string(data))
+		}
 		return 1
 	}
 	if judged {
@@ -896,6 +965,10 @@ func docsCmd(args []string) int {
 		if err := exec.Command("git", "-C", root, "update-ref", docsJudgedRef, head).Run(); err == nil {
 			fmt.Fprintf(out, "workline: docs judged up to %.7s (%s)\n", head, docsJudgedRef)
 		}
+	}
+	if *asJSON {
+		data, _ := json.MarshalIndent(&engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}, "", "  ")
+		fmt.Println(string(data))
 	}
 	return 0
 }
@@ -1165,6 +1238,7 @@ func gateCmd(args []string) int {
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 	}
@@ -1277,6 +1351,7 @@ func testCmd(args []string) int {
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 	}
@@ -1341,6 +1416,7 @@ func developCmd(args []string) int {
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 	}
@@ -1461,12 +1537,8 @@ func testRun(repo, roles, ai, forgeSpec, event string, target *forge.Target, noA
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
-		if res.Status != verdict.Pass { // stdout keeps the JSON; the reason is said on stderr too (#1668)
-			fmt.Fprintln(os.Stderr, res.Summary)
-			for _, f := range res.Findings {
-				fmt.Fprintf(os.Stderr, "  %s: %s\n", f.Rule, f.Message)
-			}
-		}
+		sayReasons(res)
+		sayReasons(res)
 	} else {
 		report(res)
 	}
@@ -1623,6 +1695,7 @@ func routeCmd(args []string) int {
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(&engine.Result{Status: res.Status, Summary: res.Summary, Findings: res.Findings})
 	} else {
 		fmt.Fprintf(os.Stderr, "%s — %s\n", res.Status, res.Summary)
 		for _, s := range res.Steps {
@@ -1791,6 +1864,7 @@ func itemCmd(args []string) int {
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 	}
@@ -2212,6 +2286,7 @@ func applied(res *engine.Result, summaryFiles []string, asJSON bool) int {
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 	}
@@ -2339,6 +2414,7 @@ func keepMain(file, repo, forgeSpec string, summaryFiles []string, asJSON bool) 
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 	}
@@ -2454,6 +2530,7 @@ func keepDryRun(file, repo, forgeSpec string, summaryFiles []string, asJSON bool
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 	}
@@ -2472,6 +2549,7 @@ func nothingToApply(noted []verdict.Finding, summaryFiles []string, asJSON bool)
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		sayReasons(res)
 	} else {
 		report(res)
 	}
