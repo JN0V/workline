@@ -1,0 +1,12 @@
+contract: 1
+name: records-comment
+mission: A role of the tests only, made of this file and its instruction, that comments on the issue it is run on, so the record of its act is read.
+
+events: [schedule]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium, promote-after: 2}
+duties:
+  reads: ["**"]
+  writes: ["docs/**"]
+intentions: [comment]
+without-ai: pass
