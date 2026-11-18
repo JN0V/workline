@@ -1,0 +1,22 @@
+case: auditor/sample-counts-a-product-owner-act-once
+about: "No act is drawn twice (ADR-0046, ADR-0070 §3): a product owner act held both in its issue's state and in the shared record is counted once, by the product owner's own draw; the shared draw skips a role that still has a draw of its own. Another role's act in the same record is drawn."
+given:
+  repo: vouched
+  forge:
+    issues:
+      - id: 20
+        title: "Issue 20"
+        body: "Issue 20."
+        labels: []
+        comments:
+          - "```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Did ready on #20'}\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: '<!-- workline:act {"role":"product-owner","kind":"ready","day":"2026-01-06"} -->', own: true}
+          - {body: '<!-- workline:act {"role":"triager","kind":"triage","day":"2026-01-06"} -->', own: true}
+    merge-requests: []
+run: {sample: [--week, 2026-W02, --judge, none], then: apply}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 21, title: "workline: the weekly sample of every role's acts", comment-contains: "| product owner | `ready` | 1 | 1 |"}
+      - {id: 21, comment-contains: "| `triage` | 1 | 1 |"}
