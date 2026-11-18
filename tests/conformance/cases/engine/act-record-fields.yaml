@@ -1,0 +1,42 @@
+case: engine/act-record-fields
+about: "An act applied at 01:30 on 2026-11-19 local time, UTC+2, by a run that called sonnet twice then opus once, after reading an open issue and two of its comments: the record's day is the UTC date at apply, 2026-11-18, its models are sonnet and opus, each once, and it lists the issue as open and both comments."
+given:
+  repo: basic
+  env: {WORKLINE_CLOCK: "2026-11-19T01:30:00+02:00"}
+  forge:
+    issues:
+      - id: 1
+        title: "Export users"
+        body: "Export the users as CSV."
+        labels: []
+        comments:
+          - "Which columns?"
+          - "Name and email."
+run:
+  role: records-comment
+  event: schedule
+  target: {issue: 1}
+  # The first two answers hold a note the role does not declare, refused:
+  # asked again on the same tier, then one tier up; the models differ by tier.
+  ai: |-
+    cmd:case "$WORKLINE_TIER" in frontier) m=opus ;; *) m=sonnet ;; esac
+    printf 'model: %s\n' "$m" > "$WORKLINE_CALL"
+    if [ "$WORKLINE_TIER" = frontier ]; then printf '%s\n' '- comment: "Triaged."'; else printf '%s\n' '- note: "not for me to say"'; fi
+expect:
+  agent-calls: 3
+  calls:
+    - {model: sonnet}
+    - {model: sonnet}
+    - {model: opus}
+  applied: [comment]
+  forge:
+    issues:
+      - id: 1
+        comment-contains:
+          - '"day":"2026-11-18"'
+          - "sonnet"
+          - "opus"
+          - "open"
+        comment-lacks:
+          - '"sonnet","sonnet"'
+          - "2026-11-19"

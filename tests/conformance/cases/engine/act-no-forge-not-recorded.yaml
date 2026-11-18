@@ -1,0 +1,11 @@
+case: engine/act-no-forge-not-recorded
+about: "A run with no forge that acts records nothing, and says the act cannot be sampled."
+given: {repo: basic}
+run:
+  role: prompt-only
+  event: schedule
+  ai: |-
+    cmd:printf '%s\n' '- note: "the README reads well"'
+expect:
+  applied: [note]
+  findings: [{rule: act-not-sampled, message: "cannot be sampled"}]
