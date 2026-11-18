@@ -18,8 +18,8 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
 )
@@ -256,7 +256,7 @@ func SpentSaid(b forge.Backlog, open []forge.Issue, is forge.Issue, comments []s
 // blocks its issue, nil when the line blocked it at its backstop already.
 // One not read is said, and runs: the round's own check reads it again.
 func roundStopped(res *Result, f forge.Forge, cfg *routing.Config, repo string, mr forge.MergeRequest) (bool, *StateWrite) {
-	id := developer.BranchIssue(mr.Branch)
+	id := devmark.BranchIssue(mr.Branch)
 	b, ok := f.(forge.Backlog)
 	if id == 0 || !ok {
 		return false, nil

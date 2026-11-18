@@ -11,6 +11,7 @@ import (
 
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // BringChecksBack pushes mr's branch merged with its base, so that its
@@ -20,7 +21,7 @@ import (
 // it is: a push of it would change nothing, or ask a person's hand.
 func BringChecksBack(repo string, mr forge.MergeRequest) (pushed bool, said string, err error) {
 	base := mr.Base
-	if !mr.Here || base == "" || !strings.HasPrefix(mr.Branch, developer.Branch) {
+	if !mr.Here || base == "" || !strings.HasPrefix(mr.Branch, devmark.Branch) {
 		return false, "", nil
 	}
 	baseTip, tip, err := tips(repo, base, mr.Branch, false)

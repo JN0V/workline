@@ -28,6 +28,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/whys"
 	"github.com/JN0V/workline/internal/work"
@@ -288,15 +289,6 @@ func lineDetails(asked []Asked, threads []forge.Thread, wrote func(forge.Note) b
 	}
 }
 
-// developerIssue is the issue of a developer's branch, 0 for another's.
-func developerIssue(branch string) int {
-	n, err := strconv.Atoi(strings.TrimPrefix(branch, Branch))
-	if err != nil || !strings.HasPrefix(branch, Branch) {
-		return 0
-	}
-	return n
-}
-
 // reviewPre reads the trace of its pull request and decides the round:
 // nothing new, a round for the agent, or a person past the last.
 func reviewPre(runDir, repo string, s Settings, id int) int {
@@ -318,11 +310,11 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	if err != nil {
 		return external(err)
 	}
-	issue := developerIssue(mr.Branch)
+	issue := devmark.BranchIssue(mr.Branch)
 	if issue == 0 {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "not a developer's pull request",
 			Findings: []verdict.Finding{{Rule: "not-a-developers-branch", Where: where,
-				Message: "it comes from " + mr.Branch + ": the developer fixes the review of its own pull requests, on " + Branch + "<n>"}}})
+				Message: "it comes from " + mr.Branch + ": the developer fixes the review of its own pull requests, on " + devmark.Branch + "<n>"}}})
 	}
 	target := forge.Target{Kind: "merge-request", ID: id}
 	kept, err := forge.ReadKept(f, target)
@@ -330,7 +322,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		return external(err)
 	}
 	// The trace, never a memory: its record on the pull request.
-	body, ok := kept.Last(forge.Marker("sticky=developer/" + RecordKey))
+	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
 	a, read := ReadAct(body)
 	if !ok || !read {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "its record on the pull request cannot be read",
@@ -543,11 +535,6 @@ func issueRewritten(f forge.Forge, a Act) (string, error) {
 	return "", nil
 }
 
-// ErrRecordUnread: the developer's record on its merge request, workline's
-// own comment, was not read; on GitHub with an App, WORKLINE_APP_ID names
-// the account its comments are trusted from.
-var ErrRecordUnread = errors.New("the developer's record on it was not read as workline's own comment (with a GitHub App, WORKLINE_APP_ID names it)")
-
 // readAsked reads what a round on merge request id asks, no agent: the
 // reviewer's findings when it reviewed since the last round, the gates'
 // new findings when they reported on head since it (head "": not
@@ -679,7 +666,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 // handed to a person. Its branch's head is read in repo, as fetched from
 // origin; not found, the round itself compares the gates' head.
 func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
-	if developerIssue(mr.Branch) == 0 {
+	if devmark.BranchIssue(mr.Branch) == 0 {
 		return false, nil
 	}
 	b, ok := f.(forge.Backlog)
@@ -690,10 +677,10 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	body, ok := kept.Last(forge.Marker("sticky=developer/" + RecordKey))
+	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
 	a, read := ReadAct(body)
 	if !ok || !read {
-		return false, ErrRecordUnread
+		return false, devmark.ErrRecordUnread
 	}
 	if a.Handed {
 		return false, nil
@@ -847,7 +834,7 @@ func handOff(r round, b Bounds, repo string) []intent.Intention {
 		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(
 			"**Blocked**: %d rounds, and the review still asks %d finding%s. #%d is blocked, its reason on it: a person of the project fixes them, or closes this pull request.\n\n%s",
 			a.Round, len(r.Asked), plural(len(r.Asked)), a.Issue, askedList(r.Asked))}},
-		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}},
+		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}},
 	)
 }
 
@@ -1009,7 +996,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 	// A green head (#987): its last proof green, no red check nor rewrite
 	// asked. A fix of the review that turns its frozen tests red is not
 	// pushed: the green code is never undone for a finding.
-	green := a.Proof != nil && a.Proof.Result == Green && len(redChecks(r.Asked)) == 0 && len(takes) == 0
+	green := a.Proof != nil && a.Proof.Result == devmark.Green && len(redChecks(r.Asked)) == 0 && len(takes) == 0
 	var heldRed []string
 	if len(patches) > 0 || len(takes) > 0 {
 		// The tester's rewrites first, as its record names them, then
@@ -1018,7 +1005,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		this.Result, this.Turns, this.Tokens, this.Cached, this.Tools = p.Result, u.Turns, u.Tokens, u.Cached, u.Tools
 		// Only a frozen test red holds it: a red of its own tests is the
 		// next round's to fix, pushed as before.
-		if frozen := frozenRed(repo, r.At, a.Acceptance, p.Red); green && p.Result == Red && len(frozen) > 0 {
+		if frozen := frozenRed(repo, r.At, a.Acceptance, p.Red); green && p.Result == devmark.Red && len(frozen) > 0 {
 			heldRed = frozen
 			this.Result, patches = "not-pushed", nil
 			msg := fmt.Sprintf("its fix turns the tests red on a green head (%s): not pushed, the green head kept", strings.Join(heldRed, ", "))
@@ -1134,7 +1121,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	a.Rounds = append(a.Rounds, this)
 	out := append(slices.Concat(takes, patches), intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, s, notes, analysis, a.Widen)}},
-		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}})
+		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}})
 	out = append(out, others...)
 	if len(this.Beside) > 0 {
 		out = append(out, besideSaid(a))

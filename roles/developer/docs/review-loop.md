@@ -10,6 +10,7 @@ sources:
   - roles/developer/role.yaml
   - defaults/ci/github/workline-develop.yml
   - defaults/ci/gitlab/workline.gitlab-ci.yml
+  - internal/kit/devmark
 checked: 3ec4d022
 verified: agent:claude-code
 ---

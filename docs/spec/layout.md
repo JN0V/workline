@@ -136,8 +136,8 @@ cuts every import of a role before the role moves:
   role share, and the registry each role joins in `init()`.
 - **`internal/kit/`**: helpers role code may use, `testdef`, `codepick`,
   the committer's message checks, the verdict reading others share,
-  `worktree`, and `testmark`: what the tester leaves on the forge that
-  the line and other roles read.
+  `worktree`, `testmark` and `devmark`: what the tester and the
+  developer leave on the forge that the line and other roles read.
 - **No cycle**: `contract` and `kit` never import `engine`, `line` or
   `sample`. A role may: the product owner imports `engine` and `line`.
 - **`roles/builtin.go`** lists the compiled-in roles as blank imports;

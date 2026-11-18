@@ -6,6 +6,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // The merge of the developer's pull request (ADR-0054, step 7): at
@@ -15,22 +16,6 @@ import (
 // kind is its issue's, as the forge's labels say it (ADR-0039), never
 // the agent's say.
 
-// The kinds of the issue a developer's pull request closes.
-const (
-	KindFix     = "fix"
-	KindTask    = "task"
-	KindFeature = "feature"
-)
-
-// Unreproduced marks the merge policy's word on a fix whose bug no test
-// red on the base showed: it waits for a person's yes (ADR-0060).
-const Unreproduced = "unreproduced"
-
-// Unreviewed marks the merge policy's word on the developer's code no
-// reviewer's verdict reads at its head: it waits for a person's yes, or
-// a review of its head (ADR-0065, change 2).
-const Unreviewed = "unreviewed"
-
 // IssueKind is the kind its labels give an issue, and the label that
 // told it (backlog.KindOf): a feature over a fix over a task, on the safe
 // side; "" when none says it.
@@ -38,11 +23,11 @@ func IssueKind(labels []string) (kind, label string) {
 	k, l := backlog.KindOf(labels)
 	switch k {
 	case backlog.KindBug:
-		return KindFix, l
+		return devmark.KindFix, l
 	case backlog.KindFeature:
-		return KindFeature, l
+		return devmark.KindFeature, l
 	case backlog.KindTask:
-		return KindTask, l
+		return devmark.KindTask, l
 	}
 	return "", ""
 }
@@ -98,7 +83,7 @@ func (m Merge) Unreviewed(head string) string {
 // task, at `enterprising` a yes on its milestone's release candidate.
 // Only a fix merges alone (ADR-0060, #937).
 func (m Merge) WaitsForAYes() bool {
-	return m.Kind == KindFeature || m.Kind == KindTask
+	return m.Kind == devmark.KindFeature || m.Kind == devmark.KindTask
 }
 
 // Says says the pull request for a person: whose code, for which issue,
@@ -118,12 +103,12 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 	if err != nil {
 		return Merge{}, err
 	}
-	body, whole := kept.Last(forge.Marker("sticky=developer/" + RecordKey))
+	body, whole := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
 	a, read := ReadAct(body)
 	switch {
 	case !whole || !read || a.Act != "code":
 		return Merge{Why: "the developer's record on it, workline's own comment, cannot be read"}, nil
-	case a.Issue == 0 || a.Issue != developerIssue(mr.Branch):
+	case a.Issue == 0 || a.Issue != devmark.BranchIssue(mr.Branch):
 		return Merge{Why: fmt.Sprintf("the developer's record on it names #%d, not its branch's issue", a.Issue)}, nil
 	case a.Handed:
 		return Merge{Issue: a.Issue, Why: "the developer handed it to a person past its last review round"}, nil
@@ -177,7 +162,7 @@ func MergeSaid(f forge.Forge, id int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for _, marker := range []string{"merge-alone=code", "merge-waits=" + KindFeature, "merge-waits=" + KindTask, "merge-waits=" + Unreproduced, "merge-waits=" + Unreviewed, "merge-waits=findings"} {
+	for _, marker := range []string{"merge-alone=code", "merge-waits=" + devmark.KindFeature, "merge-waits=" + devmark.KindTask, "merge-waits=" + devmark.Unreproduced, "merge-waits=" + devmark.Unreviewed, "merge-waits=findings"} {
 		if body, whole := kept.Last(forge.Marker(marker)); body != "" && whole {
 			said, _, _ := strings.Cut(body, "\n")
 			return strings.TrimSpace(said), nil

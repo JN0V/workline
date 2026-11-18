@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 func TestReviewRows(t *testing.T) {
@@ -57,7 +58,7 @@ func TestLineDetails(t *testing.T) {
 
 func TestDeveloperIssue(t *testing.T) {
 	for branch, want := range map[string]int{"workline/developer/12": 12, "workline/tester/issue-12": 0, "workline/developer/x": 0} {
-		if got := developerIssue(branch); got != want {
+		if got := devmark.BranchIssue(branch); got != want {
 			t.Errorf("%s: %d, want %d", branch, got, want)
 		}
 	}

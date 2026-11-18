@@ -22,20 +22,11 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
-// RefusedKey is the sticky `follow` says a refused merge in, on the
-// request (#1354): a conflict's carries the record a merge round reads.
-const RefusedKey = "line/merge-refused"
-
 var conflictRecord = regexp.MustCompile(`<!-- workline:conflict head=([0-9a-f]{40,64}) base=([0-9a-f]{40,64}) -->`)
-
-// ConflictMark is the record of a conflict of head with base, the tip of
-// its base branch, the next merge round reads.
-func ConflictMark(head, base string) string {
-	return fmt.Sprintf("<!-- workline:conflict head=%s base=%s -->", head, base)
-}
 
 // ConflictFailed says a merge round failed at head, as the developer's
 // record on mr keeps it: no second one there, a person's.
@@ -44,7 +35,7 @@ func ConflictFailed(f forge.Forge, mr forge.MergeRequest, head string) (bool, er
 	if err != nil {
 		return false, err
 	}
-	body, ok := kept.Last(forge.Marker("sticky=developer/" + RecordKey))
+	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
 	a, read := ReadAct(body)
 	return ok && read && a.Conflict == head, nil
 }
@@ -52,7 +43,7 @@ func ConflictFailed(f forge.Forge, mr forge.MergeRequest, head string) (bool, er
 // conflictAt reads the conflict `follow` said on the request: the head and
 // the base it was read at; ok false when none.
 func conflictAt(kept forge.Kept) (head, base string, ok bool) {
-	body, read := kept.Last(forge.Marker("sticky=" + RefusedKey))
+	body, read := kept.Last(forge.Marker("sticky=" + devmark.RefusedKey))
 	m := conflictRecord.FindStringSubmatch(body)
 	if !read || m == nil {
 		return "", "", false
@@ -217,11 +208,6 @@ func settled(repo, start string, patches []intent.Intention) (string, error) {
 	return run("", "write-tree")
 }
 
-// MergeBundle is the run's git bundle of the settled merge's objects,
-// under its directory: in CI the apply starts from another clone, which
-// gets the run directory only (#1704).
-const MergeBundle = "out/merge.bundle"
-
 // bundleMerge writes the settled tree's objects in the run's bundle, as a
 // merge commit on head and base: the clone that applies holds both.
 func bundleMerge(runDir, repo, tree, head, base string) error {
@@ -233,7 +219,7 @@ func bundleMerge(runDir, repo, tree, head, base string) error {
 	if out, err := exec.Command("git", "-C", repo, "update-ref", ref, at).CombinedOutput(); err != nil {
 		return fmt.Errorf("git update-ref: %v: %s", err, strings.TrimSpace(string(out)))
 	}
-	out, err := exec.Command("git", "-C", repo, "bundle", "create", "-q", filepath.Join(runDir, MergeBundle), ref, "^"+head, "^"+base).CombinedOutput()
+	out, err := exec.Command("git", "-C", repo, "bundle", "create", "-q", filepath.Join(runDir, devmark.MergeBundle), ref, "^"+head, "^"+base).CombinedOutput()
 	if _, delErr := gitOut(repo, "update-ref", "-d", ref); err == nil && delErr != nil {
 		return fmt.Errorf("git update-ref -d %s: %w", ref, delErr)
 	}
@@ -417,7 +403,7 @@ func mergePost(runDir, repo string, s Settings, r round) int {
 			f.Message = strings.ReplaceAll(f.Message, "; its pull request opens as a Draft", "")
 			v.Findings = append(v.Findings, f)
 		}
-		if p.Result == Red {
+		if p.Result == devmark.Red {
 			failed = "the merge turns the tests red: " + strings.Join(p.Red, ", ")
 		} else {
 			a.Proof, a.Caps = &p, caps
@@ -453,7 +439,7 @@ func mergePost(runDir, repo string, s Settings, r round) int {
 	a.Rounds = append(a.Rounds, this)
 	out = append([]intent.Intention{
 		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": mergeBody(this, r, notes, failed)}},
-		{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}},
+		{Kind: "comment", Value: map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}},
 	}, append(out, others...)...)
 	if err := writeIntents(runDir, "", out); err != 0 {
 		return err

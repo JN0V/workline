@@ -16,6 +16,7 @@ import (
 
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // upToDate acts on mr, at tip, behind baseTip: in conflict, said on it,
@@ -33,7 +34,7 @@ func upToDate(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest,
 // clean, whatever it changed, with no proof of the tests: the line runs on
 // the new head. Never twice: once the base is in, the request is up to date.
 func upToDateAs(f forge.Forge, o FollowOptions, local bool, mr forge.MergeRequest, baseTip, tip string, say func(rule, level, msg string), clean, blocked bool, due string) (bool, error) {
-	if !mr.Here || !strings.HasPrefix(mr.Branch, developer.Branch) || isAncestor(o.Repo, baseTip, tip) {
+	if !mr.Here || !strings.HasPrefix(mr.Branch, devmark.Branch) || isAncestor(o.Repo, baseTip, tip) {
 		return false, nil
 	}
 	tree, files, err := developer.MergeTree(o.Repo, tip, baseTip)
@@ -191,8 +192,8 @@ func provenUpToDate(f forge.Forge, o FollowOptions, mr forge.MergeRequest, tree,
 		return true, nil
 	}
 	p := developer.ProveMerge(o.RolesDir, o.Repo, commit)
-	if p.Result != developer.Green {
-		red := &redMerged{Base: o.Base, BaseTip: baseTip, Files: both, Proof: p.Said(), Unproven: p.Result != developer.Red}
+	if p.Result != devmark.Green {
+		red := &redMerged{Base: o.Base, BaseTip: baseTip, Files: both, Proof: p.Said(), Unproven: p.Result != devmark.Red}
 		sayRefused(f, mr, tip, due, red, say)
 		rule, then := "merge-red", "said on it"
 		if red.Unproven {

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // gitRepo is a repository holding files, committed on main.
@@ -63,11 +64,11 @@ func lib(says string) []intent.Intention {
 
 func TestProve(t *testing.T) {
 	repo := provingRepo(t, `"sh run-tests.sh {report}"`)
-	if p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60}); p.Result != Green || p.Passed != 1 || c != nil {
+	if p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60}); p.Result != devmark.Green || p.Passed != 1 || c != nil {
 		t.Errorf("green: proof = %+v, cap = %+v; want green, 1 passed, no cap", p, c)
 	}
 	p, c := prove(repo, "", lib("no"), nil, nil, Settings{ProofSeconds: 60})
-	if p.Result != Red || len(p.Red) != 1 || p.Red[0] != "lib.ok" || c != nil {
+	if p.Result != devmark.Red || len(p.Red) != 1 || p.Red[0] != "lib.ok" || c != nil {
 		t.Errorf("red: proof = %+v, cap = %+v; want red, lib.ok red, no cap", p, c)
 	}
 	if lines := proofLines(p, nil); !strings.Contains(lines, "0 passed, 1 red") || !strings.Contains(lines, "red: `lib.ok`") {
@@ -83,22 +84,22 @@ func TestProve(t *testing.T) {
 func TestProveFlakyKeepsItsRunsForTheReview(t *testing.T) {
 	repo := provingRepo(t, `"sh run-tests.sh {report}"`)
 	p, _ := prove(repo, "", lib("ok"), nil, &Flaky{Test: "ok", Runs: 3}, Settings{ProofSeconds: 60})
-	if p.Result != Green || p.Ran != 3 || !strings.Contains(proofLines(p, nil), "`ok` passed 3 runs of 3") {
+	if p.Result != devmark.Green || p.Ran != 3 || !strings.Contains(proofLines(p, nil), "`ok` passed 3 runs of 3") {
 		t.Errorf("green: proof = %+v; want green, 3 runs of 3 said", p)
 	}
 	if n := again(&p); n == nil || *n != (Flaky{Test: "ok", Runs: 3}) {
 		t.Errorf("again(green) = %+v, want ok, 3 runs", n)
 	}
 	p, _ = prove(repo, "", lib("ok"), nil, &Flaky{Test: "a b", Runs: 3}, Settings{ProofSeconds: 60})
-	if p.Result != Unproven || again(&p) == nil {
+	if p.Result != devmark.Unproven || again(&p) == nil {
 		t.Errorf("a name a shell reads: proof = %+v; want unproven, its runs kept", p)
 	}
 	t.Setenv("WORKLINE_ROLES_DIR", t.TempDir()) // no tester's role: its settings unread
 	p, _ = prove(repo, "", lib("ok"), nil, &Flaky{Test: "ok", Runs: 3}, Settings{})
-	if p.Result != Unproven || again(&p) == nil {
+	if p.Result != devmark.Unproven || again(&p) == nil {
 		t.Errorf("settings unread: proof = %+v; want unproven, its runs kept", p)
 	}
-	if again(&Proof{Result: Green}) != nil {
+	if again(&Proof{Result: devmark.Green}) != nil {
 		t.Error("again(not flaky) is not nil")
 	}
 }
@@ -107,7 +108,7 @@ func TestProveFlakyKeepsItsRunsForTheReview(t *testing.T) {
 func TestProveNotRunWhole(t *testing.T) {
 	repo := provingRepo(t, `"true"`)
 	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
-	if p.Result != Unproven || p.Why == "" || c != nil {
+	if p.Result != devmark.Unproven || p.Why == "" || c != nil {
 		t.Errorf("proof = %+v, cap = %+v; want unproven, why said, no cap", p, c)
 	}
 	if f := proofFindings("#3", p, nil); len(f) != 1 || f[0].Rule != "proof-not-run" {
@@ -119,7 +120,7 @@ func TestProveNotRunWhole(t *testing.T) {
 func TestProveEmptyReportIsUnproven(t *testing.T) {
 	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}"`)
 	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
-	if p.Result != Unproven || p.Why != "the report names no test" || c != nil {
+	if p.Result != devmark.Unproven || p.Why != "the report names no test" || c != nil {
 		t.Errorf("proof = %+v, cap = %+v; want unproven, the report naming no test", p, c)
 	}
 }
@@ -129,7 +130,7 @@ func TestProveEmptyReportIsUnproven(t *testing.T) {
 func TestProveUnprovenHoldsTheMissingTool(t *testing.T) {
 	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}; echo 'run.sh: 1: nosuchtool774: not found'; exit 1"`)
 	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
-	if p.Result != Unproven || p.Why != "the report names no test" || c != nil {
+	if p.Result != devmark.Unproven || p.Why != "the report names no test" || c != nil {
 		t.Fatalf("proof = %+v, cap = %+v; want unproven, the report naming no test", p, c)
 	}
 	if !slices.Equal(p.Missing, []string{"nosuchtool774"}) {
@@ -141,7 +142,7 @@ func TestProveUnprovenHoldsTheMissingTool(t *testing.T) {
 func TestProveUnprovenWithNoToolMissingNamesNone(t *testing.T) {
 	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}; exit 1"`)
 	p, _ := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
-	if p.Result != Unproven || len(p.Missing) != 0 {
+	if p.Result != devmark.Unproven || len(p.Missing) != 0 {
 		t.Errorf("proof = %+v; want unproven, no Missing", p)
 	}
 }
@@ -150,7 +151,7 @@ func TestProveUnprovenWithNoToolMissingNamesNone(t *testing.T) {
 func TestProveStoppedPastItsSeconds(t *testing.T) {
 	repo := provingRepo(t, `"exec sleep 30"`)
 	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 1})
-	if p.Result != Unproven || c == nil || c.Setting != "proof-seconds" || c.Allows != 1 {
+	if p.Result != devmark.Unproven || c == nil || c.Setting != "proof-seconds" || c.Allows != 1 {
 		t.Fatalf("proof = %+v, cap = %+v; want unproven, the proof-seconds cap", p, c)
 	}
 	f := proofFindings("#3", p, []Cap{*c})
@@ -248,7 +249,7 @@ func TestUsedReadsAFailure(t *testing.T) {
 }
 
 func TestMergeRequestReadyOnlyGreenUncapped(t *testing.T) {
-	green := &Proof{Result: Green, Command: "make test", Passed: 4}
+	green := &Proof{Result: devmark.Green, Command: "make test", Passed: 4}
 	for _, tc := range []struct {
 		name  string
 		a     Act
@@ -256,8 +257,8 @@ func TestMergeRequestReadyOnlyGreenUncapped(t *testing.T) {
 	}{
 		{"green", Act{Issue: 7, Proof: green}, false},
 		{"green, a cap", Act{Issue: 7, Proof: green, Caps: []Cap{{Setting: "ai-max-tokens", Spent: 9, Allows: 5}}}, true},
-		{"red", Act{Issue: 7, Proof: &Proof{Result: Red, Red: []string{"t.a"}}}, true},
-		{"unproven", Act{Issue: 7, Proof: &Proof{Result: Unproven, Why: "no report"}}, true},
+		{"red", Act{Issue: 7, Proof: &Proof{Result: devmark.Red, Red: []string{"t.a"}}}, true},
+		{"unproven", Act{Issue: 7, Proof: &Proof{Result: devmark.Unproven, Why: "no report"}}, true},
 		{"green, its agent failed", Act{Issue: 7, Proof: green, AgentFailed: "it gave up"}, true},
 	} {
 		mr := mergeRequest(tc.a, "Add it", Subjects{})

@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/kit/commitmsg"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 )
@@ -25,9 +26,9 @@ import (
 // bug, a chore for a task, a feature otherwise.
 func commitType(kind string) string {
 	switch kind {
-	case KindFix:
+	case devmark.KindFix:
 		return "fix"
-	case KindTask:
+	case devmark.KindTask:
 		return "chore"
 	}
 	return "feat"

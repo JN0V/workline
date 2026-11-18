@@ -7,6 +7,7 @@ sources:
   - internal/line/budget.go
   - defaults/ci/github/workline-develop.yml
   - defaults/ci/gitlab/workline.gitlab-ci.yml
+  - internal/kit/devmark
 checked: c1990cb1
 verified: agent:claude-code
 ---

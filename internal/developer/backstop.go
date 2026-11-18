@@ -21,9 +21,6 @@ import (
 // normals; nil, never checked.
 var Backstop func(f forge.Forge, repo string, issue int) (string, error)
 
-// BranchIssue is the issue a developer's branch is for, 0 for another's.
-func BranchIssue(branch string) int { return developerIssue(branch) }
-
 // stopped is what a round its issue's backstop stops writes: the issue
 // blocked, why on it and on the pull request. No round is counted.
 func stopped(r round, repo string, issue int) []intent.Intention {

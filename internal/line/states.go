@@ -18,9 +18,9 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
@@ -1069,7 +1069,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 // the verdict's step (ADR-0068, section 8). Read with no agent. What the
 // forge did not give is said "not read", never dropped.
 func stalledSaid(f forge.Forge, o engine.Options, cfg *routing.Config) string {
-	prs, notRead, err := stall.Read(o.Repo, f, developer.Branch, cfg.Stalled())
+	prs, notRead, err := stall.Read(o.Repo, f, devmark.Branch, cfg.Stalled())
 	if err != nil {
 		return "the stalled pull requests not read: " + forge.Said(err)
 	}
@@ -1107,7 +1107,7 @@ func roundsDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o e
 	}
 	var due []Review
 	for _, mr := range mrs {
-		if !strings.HasPrefix(mr.Branch, developer.Branch) {
+		if !strings.HasPrefix(mr.Branch, devmark.Branch) {
 			continue
 		}
 		if !roundDue(res, f, o.Repo, mr) {

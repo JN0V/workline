@@ -15,13 +15,13 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // RefusedKey is the sticky comment's key that says a refused merge, on
 // the merge request and on each issue it closes.
-const RefusedKey = developer.RefusedKey
+const RefusedKey = devmark.RefusedKey
 
 // refusedMark is the data line the comment on an issue carries while its
 // merge request's merge is refused, read back by the reconciler.
@@ -106,7 +106,7 @@ func sayRefused(f forge.Forge, mr forge.MergeRequest, tip, due string, err error
 	}
 	body = backlog.Inert(body)
 	if c != nil && c.Commit != "" && !c.Failed {
-		body += "\n\n" + developer.ConflictMark(tip, c.Commit) // the merge round's record
+		body += "\n\n" + devmark.ConflictMark(tip, c.Commit) // the merge round's record
 	}
 	if red != nil && !red.Unproven {
 		body += "\n\n" + redMark(tip, red.BaseTip) // not proven again at this head and base

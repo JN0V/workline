@@ -6,6 +6,7 @@ sources:
   - internal/tester/missing.go
   - internal/tester/fresh.go
   - roles/developer/role.yaml
+  - internal/kit/devmark
 checked: 9cf386a3
 verified: agent:claude-code
 ---

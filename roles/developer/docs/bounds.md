@@ -9,6 +9,7 @@ sources:
   - defaults/ci/github/workline-bounds.yml
   - defaults/ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go
+  - internal/kit/devmark
 checked: 8ddc4e54
 verified: agent:claude-code
 ---

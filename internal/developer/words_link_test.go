@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/agent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // TestAgentWordsNeverFollowALink: an objections file that is a link is
@@ -62,7 +63,7 @@ func TestClaimHoldsUnreadWordsWithNoPullRequest(t *testing.T) {
 	if !strings.Contains(body, "Its agent's words, unread") || !strings.Contains(body, "- test: [x") {
 		t.Errorf("unread words not in the claim:\n%s", body)
 	}
-	a.Proof = &Proof{Result: Green}
+	a.Proof = &Proof{Result: devmark.Green}
 	if strings.Contains(claimBody(a, Settings{ClaimLabel: "workline:doing"}), "- test: [x") {
 		t.Errorf("unread words in the claim beside a pull request")
 	}

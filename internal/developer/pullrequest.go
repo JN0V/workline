@@ -9,6 +9,7 @@ package developer
 
 import (
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"slices"
 	"strings"
@@ -20,12 +21,6 @@ import (
 	"github.com/JN0V/workline/internal/work"
 )
 
-// RecordKey is the sticky key of the record on its pull request.
-const RecordKey = "code"
-
-// Branch opens its branches' names: workline/developer/<issue>.
-const Branch = "workline/developer/"
-
 // ReadRecord reads the record of its code on its merge request id, from
 // workline's own comment; ok is false when there is none it can read.
 func ReadRecord(f forge.Forge, id int) (Act, bool, error) {
@@ -33,7 +28,7 @@ func ReadRecord(f forge.Forge, id int) (Act, bool, error) {
 	if err != nil {
 		return Act{}, false, err
 	}
-	body, ok := kept.Last(forge.Marker("sticky=developer/" + RecordKey))
+	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
 	if !ok {
 		return Act{}, false, nil
 	}
@@ -99,9 +94,9 @@ func subjects(issue int, title, kind string, scope []string, s commitmsg.Setting
 // from the tester's Draft, the tests in a commit apart; the record kept
 // on it.
 func mergeRequest(a Act, title string, sub Subjects) map[string]any {
-	ready := a.Proof != nil && a.Proof.Result == Green && len(a.Caps) == 0 && a.AgentFailed == ""
+	ready := a.Proof != nil && a.Proof.Result == devmark.Green && len(a.Caps) == 0 && a.AgentFailed == ""
 	mr := map[string]any{"key": fmt.Sprint(a.Issue), "title": title, "body": body(a, ready), "draft": !ready,
-		"record": map[string]any{"sticky": RecordKey, "body": recordBody(a)}, "message": sub.Code}
+		"record": map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}, "message": sub.Code}
 	switch {
 	case ready && sub.Title != "":
 		mr["title"] = sub.Title
