@@ -1,0 +1,8 @@
+case: engine/prompt-only-role-proposal-not-declared-refused
+about: "An agent's answer with an intention the prompt-only role does not declare is refused, the intention named, and nothing is applied."
+given: {repo: basic}
+run: {role: prompt-only, event: schedule, ai: "fake:prompt-only-undeclared-intention"}
+expect:
+  refused: [comment]
+  applied: []
+  findings: [{rule: intention-refused, message: "comment is not allowed for this role"}]

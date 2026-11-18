@@ -217,6 +217,32 @@ func settled(repo, start string, patches []intent.Intention) (string, error) {
 	return run("", "write-tree")
 }
 
+// MergeBundle is the run's git bundle of the settled merge's objects,
+// under its directory: in CI the apply starts from another clone, which
+// gets the run directory only (#1704).
+const MergeBundle = "out/merge.bundle"
+
+// bundleMerge writes the settled tree's objects in the run's bundle, as a
+// merge commit on head and base: the clone that applies holds both.
+func bundleMerge(runDir, repo, tree, head, base string) error {
+	at, err := mergeCommit(repo, tree, head, base, "workline: the merge carried to the apply")
+	if err != nil {
+		return err
+	}
+	const ref = "refs/workline/merge-bundle" // a bundle carries refs only
+	if out, err := exec.Command("git", "-C", repo, "update-ref", ref, at).CombinedOutput(); err != nil {
+		return fmt.Errorf("git update-ref: %v: %s", err, strings.TrimSpace(string(out)))
+	}
+	out, err := exec.Command("git", "-C", repo, "bundle", "create", "-q", filepath.Join(runDir, MergeBundle), ref, "^"+head, "^"+base).CombinedOutput()
+	if _, delErr := gitOut(repo, "update-ref", "-d", ref); err == nil && delErr != nil {
+		return fmt.Errorf("git update-ref -d %s: %w", ref, delErr)
+	}
+	if err != nil {
+		return fmt.Errorf("git bundle create: %v: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
 // mergeCommit is the merge of base into head with tree, made apart for
 // the proof: the engine makes the one pushed, with its message. It needs
 // no identity of the checkout's: a review job's runner has none (#1439).
@@ -404,6 +430,9 @@ func mergePost(runDir, repo string, s Settings, r round) int {
 		this.Result, this.Merge = p.Result, "settled"
 		msg := fmt.Sprintf("Merge branch '%s' into %s\n\nConflicts settled: %s", r.Asked[0].Where, r.Branch, strings.Join(r.Conflicts, ", "))
 		if err := writeMergeRequest(runDir, map[string]any{"push": msg, "merge": r.Merge, "tree": tree}); err != nil {
+			return fail(err)
+		}
+		if err := bundleMerge(runDir, repo, tree, r.At, r.Merge); err != nil {
 			return fail(err)
 		}
 		v.Summary += ", its conflicts settled, the tests " + p.Result

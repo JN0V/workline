@@ -1,0 +1,138 @@
+# workline's loop on GitHub Actions — copy to .github/workflows/workline-loop.yml.
+# The line's beat: `workline tick --json` every 3 minutes, one job at a time,
+# its successor dispatched before GitHub's 6 h; the schedule only restarts it.
+# A dry run for now: it logs what it would start, and starts nothing.
+# Why and what it costs: docs/tick.md#the-github-loop.
+name: workline loop
+run-name: workline loop
+on:
+  # By hand, and by the loop itself before its job's 6 h end.
+  workflow_dispatch:
+    inputs:
+      after: {description: "the loop run this one takes over from (set by the loop)", required: false, default: ""}
+  # A restart only: the alive job ends a run started while a loop runs.
+  schedule: [{cron: "23 * * * *"}]
+permissions: {}
+
+env:
+  WORKLINE_VERSION: v0.80.0          # a release of workline: update it to take a newer one (x-release-please-version)
+
+jobs:
+  alive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {actions: read}
+    outputs:
+      start: ${{ steps.alive.outputs.start }}
+    steps:
+      - name: Whether a loop runs already
+        id: alive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ github.run_id }}
+          AFTER: ${{ inputs.after }}
+        run: |
+          # A loop's successor always starts: it waits in the concurrency
+          # group for the loop before it. Unread, it starts too: the group
+          # keeps one loop at a time.
+          others=""
+          if [ -z "$AFTER" ]; then
+            others=$(gh api "repos/$REPO/actions/workflows/workline-loop.yml/runs?status=in_progress&per_page=20" \
+              --jq "[.workflow_runs[] | select(.id != $RUN) | .id] | join(\" \")") ||
+              { echo "::warning title=workline loop::the loop's runs not read: started, the concurrency group keeps one at a time"; others=""; }
+          fi
+          if [ -n "$others" ]; then
+            echo "a loop runs already (run $others): nothing to start"
+            echo "start=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "start=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  loop:
+    needs: alive
+    if: needs.alive.outputs.start == 'true'
+    concurrency: {group: workline-loop, cancel-in-progress: false}
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    # actions: write, to dispatch its successor; the beat itself only reads.
+    permissions: {contents: read, issues: read, pull-requests: read, actions: write}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      # The engine at the version pinned above, checksum verified.
+      - name: workline
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
+          get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      - name: The beat
+        id: beat
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+          DISPATCH: ${{ vars.WORKLINE_LOOP_DISPATCH }}
+          LOOP_MINUTES: "340"                # under the job's timeout, the successor's dispatch after
+          # 180 s until the loop's release reads conditionally (#1764): the
+          # job token's 1,000 calls an hour are the whole repository's.
+          BEAT_SECONDS: ${{ vars.WORKLINE_LOOP_BEAT_SECONDS || '180' }}
+          FAILS_MAX: "10"                    # tick failing this many beats in a row: the loop stops
+        run: |
+          if ! workline tick --help >/dev/null 2>&1; then
+            echo "::notice title=workline loop::workline $WORKLINE_VERSION has no tick (v0.79.0 and later): the loop skips, and starts no successor"
+            exit 0
+          fi
+          case "$DISPATCH" in
+            ""|false) ;;
+            *) echo "::warning title=workline loop::WORKLINE_LOOP_DISPATCH=$DISPATCH: dispatching is not built in this release; a dry run" ;;
+          esac
+          end=$(( $(date +%s) + LOOP_MINUTES * 60 ))
+          beats=0 fails=0
+          : > "$RUNNER_TEMP/would.log"
+          while :; do
+            beats=$((beats + 1))
+            # The default branch's config, read again; the clone kept, its
+            # .git/workline with it.
+            git fetch -q origin "$BRANCH" 2>/dev/null && git checkout -q --detach FETCH_HEAD ||
+              echo "::warning title=workline loop::$BRANCH not fetched: beat $beats reads the config checked out before"
+            status=0
+            workline tick --forge github --json > "$RUNNER_TEMP/tick.json" 2> "$RUNNER_TEMP/tick.err" || status=$?
+            sed 's/^/  /' "$RUNNER_TEMP/tick.err"
+            if [ "$status" != 0 ] || ! jq -e 'type == "array"' "$RUNNER_TEMP/tick.json" >/dev/null 2>&1; then
+              echo "::warning title=workline loop::beat $beats: workline tick failed (exit $status): nothing dispatched"
+              fails=$((fails + 1))
+              if [ "$fails" -ge "$FAILS_MAX" ]; then
+                echo "::error title=workline loop::workline tick failed $fails beats in a row: the loop stops, no successor; the hourly schedule tries again"
+                exit 1
+              fi
+            elif [ "$(jq length "$RUNNER_TEMP/tick.json")" = 0 ]; then
+              fails=0
+              echo "beat $beats, $(date -u +%H:%M:%S) UTC: nothing due"
+            else
+              fails=0
+              echo "beat $beats, $(date -u +%H:%M:%S) UTC: $(jq length "$RUNNER_TEMP/tick.json") due, a dry run"
+              jq -c '.[]' "$RUNNER_TEMP/tick.json" | sed 's/^/would dispatch /' | tee -a "$RUNNER_TEMP/would.log"
+            fi
+            [ "$(date +%s)" -lt "$end" ] || break
+            sleep "$BEAT_SECONDS"
+          done
+          # Ended by its time, not by a crash: a successor takes over.
+          echo "handover=true" >> "$GITHUB_OUTPUT"
+          # What the beats would have dispatched, by run name, on the run's page.
+          would="nothing"
+          if [ -s "$RUNNER_TEMP/would.log" ]; then
+            would=$(sed 's/^would dispatch //' "$RUNNER_TEMP/would.log" | jq -r .key | sort | uniq -c | awk '{n=$1; $1=""; printf "%s%s ×%d", sep, substr($0, 2), n; sep=", "}')
+          fi
+          echo "::notice title=workline loop, a dry run::$beats beats; would have dispatched: $would"
+      # Before the 6 h limit, its successor: it waits in the concurrency
+      # group until this job ends. Not after a crash, nor a cancel: the
+      # hourly schedule restarts it.
+      - name: The next loop
+        if: steps.beat.outputs.handover == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+          RUN: ${{ github.run_id }}
+        run: gh workflow run workline-loop.yml --ref "$BRANCH" -f after="$RUN"

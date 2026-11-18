@@ -1,7 +1,7 @@
 case: tester/objection-five-whys-missing-refused
 about: >
   Still open after the tester's second answer, the five whys are due:
-  a third answer that gives no analysis is refused, and nothing is said
+  a third answer that gives no analysis is refused, and said
   in the thread (ADR-0055, the shared skill).
 given:
   repo: tested-draft
@@ -30,4 +30,4 @@ expect:
     merge-requests:
       - id: 1
         threads:
-          - {path: tests/test_mul_two_by_three.sh, replies: 4}
+          - {path: tests/test_mul_two_by_three.sh, replies: 5, replies-contain: ["refused", "five-whys-missing"]}

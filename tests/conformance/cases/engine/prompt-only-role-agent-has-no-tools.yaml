@@ -1,0 +1,12 @@
+case: engine/prompt-only-role-agent-has-no-tools
+about: "A prompt-only role run with claude calls it with no tools (--tools with an empty value), no worktree and no read tree. The stand-in notes whether it got none."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p ../bin && cp $FIXTURES/claude-no-tools/claude ../bin/claude && chmod +x ../bin/claude"
+  env: {PATH: "$WORK/bin:$PATH"}
+run: {role: prompt-only, event: schedule, ai: claude}
+expect:
+  status: pass
+  agent-calls: 1
+  notes: ["called with no tools"]

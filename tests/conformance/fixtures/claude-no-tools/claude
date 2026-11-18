@@ -1,0 +1,12 @@
+#!/bin/sh
+# A stand-in for `claude -p` as a role with no worktree and no read tree
+# calls it. It answers a note saying whether it was given no tools (the
+# option --tools with an empty value) or some.
+cat > /dev/null
+tools=none-given
+while [ $# -gt 0 ]; do
+	if [ "$1" = "--tools" ]; then tools=$2; fi
+	shift
+done
+if [ -z "$tools" ]; then said="called with no tools"; else said="called with tools $tools"; fi
+printf '{"type":"result","subtype":"success","is_error":false,"num_turns":1,"result":"- note: %s","modelUsage":{"claude-sonnet-5":{"inputTokens":10,"outputTokens":5}}}\n' "$said"

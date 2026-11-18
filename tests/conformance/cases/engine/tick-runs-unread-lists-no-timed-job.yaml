@@ -1,0 +1,23 @@
+case: engine/tick-runs-unread-lists-no-timed-job
+about: >
+  The forge's runs listing fails: the tick lists no timed, gap or backlog job on a guess, and says why on stderr (#1665, Runs not read).
+given:
+  repo: basic
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 10}, timed: {nightly: {at: "17 2 * * *"}}}
+  forge:
+    issues:
+      - {id: 1, title: "Item 1", body: "x", labels: ["workline:ready"]}
+      - {id: 2, title: "Item 2", body: "x", labels: ["workline:ready"]}
+      - {id: 3, title: "Item 3", body: "x", labels: ["workline:ready"]}
+      - {id: 4, title: "Item 4", body: "x", labels: ["workline:ready"]}
+      - {id: 5, title: "Item 5", body: "x", labels: ["workline:ready"]}
+      - {id: 6, title: "Item 6", body: "x", labels: ["workline:ready"]}
+    runs-unread: "HTTP 502"
+
+run: {cli: [tick, --forge, "fake:../forge.json", --now, "2026-11-16T02:20:00Z", --json]}
+expect:
+  exit: 0
+  stdout: ['{"job":"reconcile"']
+  stdout-lacks: ['"nightly"', '"merge"', '"docs"', '"sample"', '"backlog"']
+  stderr: ["not read: the runs going", "HTTP 502", "no timed job listed on a guess"]

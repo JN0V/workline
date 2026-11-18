@@ -81,16 +81,31 @@ func commentsUnheard(is forge.Issue, notes []forge.Note) (int, bool) {
 	return counted, unheard
 }
 
+// oldRecord says whether the record and the product owner's state both
+// come from before the comments were counted by which (#1346): neither
+// holds a `heard`. Their comments were read; no wake for them.
+func oldRecord(comments []string, rec Record) bool {
+	st, found, err := backlog.ReadState(comments, backlog.Keeper)
+	return found && err == nil && st.Heard == nil && st.Comments > 0 && rec.Heard == 0
+}
+
+// commentsLast is the id of the last comment that counts.
+func commentsLast(is forge.Issue, notes []forge.Note) string {
+	c := backlog.Counted(notes, is)
+	return backlog.LastID(c, len(c))
+}
+
 // commentsHeld is commentsUnheard, and whether the product owner's last
 // run held its `ready` for those comments, nothing of them written into
 // the spec (#1331): they are read once more.
 func commentsHeld(is forge.Issue, notes []forge.Note) (counted int, unheard, held bool) {
-	counted = len(backlog.Counted(notes, is))
+	all := backlog.Counted(notes, is)
+	counted = len(all)
 	st, found, err := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
 	if !found || err != nil {
 		return counted, false, false
 	}
-	unheard = backlog.Heard(st, counted) < counted
+	unheard = backlog.HeardIn(st, all) < counted
 	return counted, unheard, unheard && st.AnswerHeld == counted
 }
 

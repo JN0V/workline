@@ -1,8 +1,8 @@
 # workline's jobs that write, on its own repository: defaults/ci/github/workline-apply.yml,
-# with the engine built from main's commit rather than installed — merged, it
-# is reviewed; what a pull request changes in the engine never runs with the
-# write token. It is built once a commit of main (.github/actions/engine):
-# the first job on that commit builds it, the others take it from the cache.
+# on the release WORKLINE_VERSION pins, as a user's line (ADR-0071 §1;
+# downloaded by .github/actions/engine, its checksum checked): neither what
+# a pull request changes in the engine nor main's untried tip runs with the
+# write token.
 #
 # They hold the write token, and the GitHub App's key, so they never run in a
 # pull request's own run, whose workflow its branch can change (ADR-0044):
@@ -64,6 +64,11 @@ on:
   push: {branches: [main]}          # your default branch: for the follow job
 permissions: {}
 
+env:
+  # The release this workflow runs (ADR-0071 §1): moved only in its own
+  # pull request, after its try on a copy; release-please never moves it.
+  WORKLINE_VERSION: v0.78.4
+
 jobs:
   apply:
     # A pull request of this repository, judged, whatever judge's verdict:
@@ -111,9 +116,10 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token || github.token }}
-      # The engine built from main's commit.
+      # The pinned release, not main's engine (ADR-0071).
       - uses: ./.github/actions/engine
         if: steps.judged.outputs.number != ''
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       # The pull request the run names must have the head judged as its
       # head still, the event's: the engine checks it, and applies nothing
       # else than that pull request's line may.
@@ -167,6 +173,7 @@ jobs:
           private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
       - uses: ./.github/actions/engine
         if: steps.policy.outputs.run == 'true'
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       # The verdict the pull request's run wrote, outside the checkout:
       # kept only for the head the event names.
       - if: steps.policy.outputs.run == 'true'
@@ -211,6 +218,7 @@ jobs:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
       - uses: ./.github/actions/engine
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       # What main's run found, outside the checkout: kept in one issue.
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
@@ -249,6 +257,7 @@ jobs:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
       - uses: ./.github/actions/engine
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # only its workline/accepted is a yes
@@ -294,6 +303,7 @@ jobs:
           fi
       - uses: ./.github/actions/engine
         if: steps.policy.outputs.run == 'true'
+        with: {version: "${{ env.WORKLINE_VERSION }}"}
       - if: steps.policy.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}

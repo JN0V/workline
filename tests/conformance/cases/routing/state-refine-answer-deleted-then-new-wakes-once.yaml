@@ -1,0 +1,45 @@
+case: routing/state-refine-answer-deleted-then-new-wakes-once
+about: >
+  A comment deleted, then a new one written, is read: the product
+  owner read Ann's two comments in its first run. Before the second she
+  deletes one and writes another, so the issue holds as many comments as
+  the product owner read, but not the same. The line wakes the product
+  owner once more for it (`state-comment`), and the word of the new
+  comment is in the Scope.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [product-owner, tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        labels: [workline:to-refine]
+        author: ann
+        insider: true
+        body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {id: c1, body: "First answer", author: ann, insider: true}
+          - {id: c2, body: "Second answer", author: ann, insider: true}
+run:
+  route: issue
+  target: {issue: 9}
+  ai: "cmd:sh $FIXTURES/agents/scope-from-the-newest-answer.sh"
+  then: again
+  again-after:
+    - |
+      sed -i -E \
+        -e 's/("body": *)"Second answer"/\1"Third answer: a returned sale counts"/' \
+        -e 's/("id": *)"c2"/\1"c3"/' \
+        -e 's/("body": *)"First answer"/\1"Second answer"/' \
+        -e 's/("id": *)"c1"/\1"c2"/' \
+        ../forge.json
+expect:
+  agent-calls: 2
+  findings:
+    - {rule: state-comment, level: info, where: "#9", message: "a person commented since the product owner last read it"}
+  forge:
+    issues:
+      - id: 9
+        body-contains: "A returned sale is counted, as Ann answered last."

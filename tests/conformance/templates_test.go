@@ -560,7 +560,8 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 		Jobs map[string]struct {
 			Concurrency map[string]any `yaml:"concurrency"`
 			Steps       []struct {
-				Run string `yaml:"run"`
+				Uses string `yaml:"uses"`
+				Run  string `yaml:"run"`
 			} `yaml:"steps"`
 		} `yaml:"jobs"`
 	}
@@ -587,6 +588,17 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 				runs = runs || strings.Contains(s.Run, command) && !strings.Contains(s.Run, "--gates-only")
 			}
 			if !runs {
+				continue
+			}
+			// workline's head pass (ADR-0071 §1) reads the record but leaves
+			// nothing for an apply to write: out of the lock, never waiting
+			// on the line's review.
+			if name == "head-judge" {
+				for _, s := range job.Steps {
+					if strings.HasPrefix(s.Uses, "actions/upload-artifact@") {
+						t.Errorf("%s, job %s: the head pass uploads what an apply could read", file, name)
+					}
+				}
 				continue
 			}
 			n++
@@ -1474,6 +1486,10 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		}
 		var route string
 		for name, job := range judged.Jobs {
+			// workline's head pass gives no verdict (ADR-0071 §1).
+			if name == "head-judge" {
+				continue
+			}
 			for _, s := range job.Steps {
 				switch {
 				case strings.Contains(s.Run, "--gates-only"), strings.Contains(s.Run, "--input queue=true"):
@@ -1757,8 +1773,17 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 				}
 			}
 		}
-		if running != 1 {
-			t.Errorf("%s: %d jobs run the gates alone, want one", f, running)
+		// workline's own adds the head pass's gates, on the engine built
+		// from an engine-changing head, under the same rules (ADR-0071 §1).
+		want := 1
+		if strings.Contains(f, ".github/workflows") {
+			want = 2
+			if _, ok := wf.Jobs["head-gates"]; !ok {
+				t.Errorf("%s: no head pass's gates (job head-gates)", f)
+			}
+		}
+		if running != want {
+			t.Errorf("%s: %d jobs run the gates alone, want %d", f, running, want)
 		}
 		// Main's run after a merge is the gates' job's alone (ADR-0050).
 		judge := wf.Jobs["judge"]
@@ -2409,4 +2434,48 @@ func TestDeveloperJudgesRunTheProjectsSetupSteps(t *testing.T) {
 func nodeText(n *yaml.Node) string {
 	out, _ := yaml.Marshal(n)
 	return string(out)
+}
+
+// Each gardening run is named by its job, what `workline tick` reads to
+// know it ran (#1761): the docs schedule's `workline gardening docs`;
+// every schedule of the workflow named, none left under the workflow's
+// own name; a run by hand named by its input `job`.
+func TestGardeningRunsNamedByTheirJob(t *testing.T) {
+	for _, f := range []string{"../../defaults/ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			RunName string `yaml:"run-name"`
+			On      struct {
+				Schedule []struct {
+					Cron string `yaml:"cron"`
+				} `yaml:"schedule"`
+				Dispatch struct {
+					Inputs map[string]any `yaml:"inputs"`
+				} `yaml:"workflow_dispatch"`
+			} `yaml:"on"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(wf.RunName, "github.event.schedule == '7 18 * * 0' && 'workline gardening docs'") {
+			t.Errorf("%s: the docs run is not named `workline gardening docs`: run-name %q", f, wf.RunName)
+		}
+		named := strings.Contains(wf.RunName, "(github.event.schedule && 'workline gardening ")
+		for _, s := range wf.On.Schedule {
+			if !named && !regexp.MustCompile(`github\.event\.schedule == '`+regexp.QuoteMeta(s.Cron)+`' && 'workline gardening (backlog|nightly|docs)'`).MatchString(wf.RunName) {
+				t.Errorf("%s: the schedule %q's run is not named by its job: run-name %q", f, s.Cron, wf.RunName)
+			}
+		}
+		if _, ok := wf.On.Dispatch.Inputs["job"]; !ok || !strings.Contains(wf.RunName, "format('workline gardening {0}', inputs.job)") {
+			t.Errorf("%s: a run by hand is not named by its input job: run-name %q", f, wf.RunName)
+		}
+		// With no job, a name no job of the tick claims: the old one,
+		// `workline gardening`, is read as the backlog's.
+		if strings.Contains(wf.RunName, "github.workflow") || !strings.Contains(wf.RunName, "|| 'workline gardening by hand' }}") {
+			t.Errorf("%s: a run by hand with no job may pass for a backlog run: run-name %q", f, wf.RunName)
+		}
+	}
 }

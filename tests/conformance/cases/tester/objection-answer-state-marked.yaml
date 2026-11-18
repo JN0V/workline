@@ -1,0 +1,31 @@
+case: tester/objection-answer-state-marked
+about: >
+  The CI's answer job, its run ended whatever it wrote (#1701), writes
+  on the Draft the state the run read: its tip and each objection
+  waiting: the reconciler and a chained run start no answer on that
+  same state (routing/reconcile-skips-a-draft-its-answer-left). No
+  agent, no run.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3"
+  forge:
+    issues:
+      - {id: 3, title: "Multiply two numbers", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{}} -->\n<!-- workline:sticky=tester/tests -->"]
+        threads:
+          - {id: "7", path: tests/test_mul_two_by_three.sh, line: 4, author: builder, body: "workline:objection\n- test: tests/test_mul_two_by_three.sh\n- scenario: Two by three\n- kind: over-specified\n- why: mul may print spaces around the number"}
+run:
+  test: [answer, --merge-request, "1", --tried, "at=0123456789abcdef threads=7.1"]
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    merge-requests:
+      - id: 1
+        comments: 2
+        comment-contains: ["at 0123456", "<!-- workline:answer-state at=0123456789abcdef threads=7.1 -->", "<!-- workline:sticky=line/answer-state -->"]

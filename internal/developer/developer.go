@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -459,6 +460,32 @@ func RepoFiles(repo string) []string { return repoFiles(repo) }
 // ADR-0059). only, when not 0, is the one issue looked at. files are the
 // repository's, its Scopes' paths read against them (scopePaths);
 // changed reads the files held merge requests change (Held).
+// rank orders priorities: 1 first, none last.
+func rank(is forge.Issue) int {
+	if p := backlog.Priority(is); p != 0 {
+		return p
+	}
+	return math.MaxInt
+}
+
+// outranked is held less the issues of a lower priority than is's: a more
+// urgent issue is not held by them; they keep their work and rebase. The
+// same priority still waits.
+func outranked(is forge.Issue, issues []forge.Issue, held map[int][]string) map[int][]string {
+	byID := map[int]forge.Issue{}
+	for _, o := range issues {
+		byID[o.ID] = o
+	}
+	out := map[int][]string{}
+	for n, files := range held {
+		if o, ok := byID[n]; ok && rank(o) > rank(is) {
+			continue
+		}
+		out[n] = files
+	}
+	return out
+}
+
 // letGo are the claims this run lets go: held no more, taken at a next
 // run. passed are the issues offered it passed over, why each.
 func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string, changed Diffs) (id int, passed []Passed) {
@@ -497,7 +524,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			why = "its acceptance tests are not written yet: it waits for the tester's Draft"
 			next = "the tester writes them, as a Draft of its own; the developer takes this issue at a run after that Draft is open"
 		default:
-			if n, p := Overlapping(is, held, files); n != 0 {
+			if n, p := Overlapping(is, outranked(is, issues, held), files); n != 0 {
 				why = OverlapWhy(n, p)
 				next = fmt.Sprintf("#%d merged or let go; the developer looks at this issue again at its next run", n)
 				if k := kindOf(issues, n); k != KindFix && closer[n] != 0 {

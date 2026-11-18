@@ -304,13 +304,21 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 				Message: "the product owner's rewrite of the section the reviewer's finding lies in was not written, the body the same: woken again, once a body"})
 		}
 	}
+	var upgraded *Record // an old record's comments counted, nothing to run (#1346)
 	if !ok && s.Name == refineState && name == backlog.Keeper && had {
 		// A person wrote since the product owner last read the issue — an
 		// answer to the reviewer's question, or to its own (#1331): woken
 		// once for their word, never again on the same comments.
 		n, unheard, held := commentsHeld(is, notes)
 		switch {
-		case unheard && n > rec.Heard:
+		case unheard && oldRecord(comments, rec):
+			// A record and a state from before the comments were counted
+			// by which (#1346): those it holds now were read. Their count
+			// is written in the record, with no wake, so a comment after
+			// them still wakes the product owner.
+			upgraded = &now
+			upgraded.Heard, upgraded.HeardLast = n, commentsLast(is, notes)
+		case unheard && (n > rec.Heard || rec.HeardLast != "" && rec.HeardLast != commentsLast(is, notes)):
 			ok = true
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-comment", Level: "info", Where: where,
 				Message: "a person commented since the product owner last read it: woken once, to read their word"})
@@ -383,8 +391,9 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		res.Waiting = append(res.Waiting, is.ID) // woken again after the backoff: the heartbeat goes on
 	}
 	if ok && s.Name == refineState && role == backlog.Keeper {
-		now.Given = givenNow(comments)            // the code this read gets: the same next time wakes it no more (#980)
-		now.Heard, _ = commentsUnheard(is, notes) // the comments this read gets: woken for those no more (#1331)
+		now.Given = givenNow(comments) // the code this read gets: the same next time wakes it no more (#980)
+		now.Heard, _ = commentsUnheard(is, notes)
+		now.HeardLast = commentsLast(is, notes) // the comments this read gets: woken for those no more (#1331)
 	}
 	if ok && reviewed {
 		now.Asked = now.Body // the reviewer runs after the product owner: never due again for this alone
@@ -442,6 +451,9 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	if !ok {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-acted", Level: "info", Where: where,
 			Message: fmt.Sprintf("its state, %s, woke the %s already, on the same body and labelling: nothing more to run", s.Name, name)})
+		if upgraded != nil {
+			return nil, &StateWrite{Issue: is.ID, Record: *upgraded, OldRead: "its comments, read under an older engine, counted in the line's record"}, nil
+		}
 		return nil, nil, nil
 	}
 	if mr, err := roundOn(b, t, s, is.ID); err != nil {
@@ -611,6 +623,8 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 			why = "to be blocked, at its backstop"
 		case "backstop-waits":
 			why = "blocked at its backstop, the line's record to write"
+		case "state-acted":
+			why = "nothing to run, the line's record to write"
 		}
 		res.Summary = fmt.Sprintf("%s: %s due, %s: not started (--input %s=list)", event, where, why, ReconcileInput)
 	case block != nil && block.Stale != "":
@@ -633,6 +647,9 @@ func byState(res *Result, cfg *routing.Config, o engine.Options, event string, s
 		keepState(res, cfg, f, spec, o, *block, "")
 	case block != nil && block.Seen != "":
 		res.Summary = fmt.Sprintf("%s: %s %s", event, where, block.Seen)
+		keepState(res, cfg, f, spec, o, *block, "")
+	case block != nil && block.OldRead != "":
+		res.Summary = fmt.Sprintf("%s: %s acted, nothing to run: %s", event, where, block.OldRead)
 		keepState(res, cfg, f, spec, o, *block, "")
 	case block != nil:
 		res.Status = verdict.Pass
@@ -996,6 +1013,7 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 	lines := localLines(res, cfg, f, o, &issued)     // a forge kept here: no job reviews a push (#1324)
 	answers := localAnswers(res, cfg, f, o, &issued) // nor answers an objection on a Draft (#1265)
 	rounds := roundsDue(res, cfg, f, spec, o, &issued)
+	restored := checksBack(res, f, o) // a head the opened event missed (#1719)
 	switch {
 	case list:
 		res.Summary = fmt.Sprintf("%s: %d %s due:", ReconcileEvent, len(res.Due), plural(len(res.Due), "issue", "issues"))
@@ -1003,12 +1021,16 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 			res.Summary += " #" + strconv.Itoa(n)
 		}
 		res.Reviews = rounds
+		res.Answers = answersDue(res, cfg, f, o)
 	case started == 0 && lines == 0 && answers == 0 && len(rounds) == 0:
 		res.Summary = fmt.Sprintf("%s: nothing due (%d %s on the line acted on already)", ReconcileEvent, quiet, plural(quiet, "issue", "issues"))
 	case started == 0:
 		res.Summary = fmt.Sprintf("%s: no issue's step due (%s)", ReconcileEvent, res.Status)
 	default:
 		res.Summary = fmt.Sprintf("%s: %d %s due, %s run (%s)", ReconcileEvent, started, plural(started, "issue", "issues"), plural(started, "its step", "their steps"), res.Status)
+	}
+	if restored > 0 {
+		res.Summary += fmt.Sprintf("; %d merge-request %s with no checks brought up to date with its base", restored, plural(restored, "head", "heads"))
 	}
 	if stales > 0 {
 		res.Summary += fmt.Sprintf("; %d stale %s back to refine", stales, plural(stales, "issue", "issues"))
@@ -1027,6 +1049,12 @@ func reconcile(res *Result, cfg *routing.Config, o engine.Options) *Result {
 		res.Summary += fmt.Sprintf("; %d review %s %s:", len(rounds), plural(len(rounds), "round", "rounds"), said)
 		for _, r := range rounds {
 			res.Summary += fmt.Sprintf(" merge request %d", r.ID)
+		}
+	}
+	if len(res.Answers) > 0 {
+		res.Summary += fmt.Sprintf("; %d tester's %s an objection waits on:", len(res.Answers), plural(len(res.Answers), "Draft", "Drafts"))
+		for _, a := range res.Answers {
+			res.Summary += fmt.Sprintf(" merge request %d", a.ID)
 		}
 	}
 	if said := stalledSaid(f, o, cfg); said != "" {

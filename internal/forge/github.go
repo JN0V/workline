@@ -101,9 +101,23 @@ func (g *github) Issues() ([]Issue, error) { return g.issues("open") }
 func (g *github) AllIssues() ([]Issue, error) { return g.issues("all") }
 
 func (g *github) issues(state string, filters ...string) ([]Issue, error) {
-	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state="+state+"&per_page=100"+strings.Join(filters, ""),
-		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), \"milestone-due\": ((.milestone.due_on // \"\") | .[0:10]), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), assignees: [.assignees[]?.login], blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url, fields: ([.issue_field_values[]? | select(.single_select_option != null) | {key: .issue_field_name, value: .single_select_option.name}] | from_entries)}")
-	if err != nil {
+	endpoint := "repos/{owner}/{repo}/issues?state=" + state + "&per_page=100" + strings.Join(filters, "")
+	jq := ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), \"milestone-due\": ((.milestone.due_on // \"\") | .[0:10]), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), assignees: [.assignees[]?.login], blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url, fields: ([.issue_field_values[]? | select(.single_select_option != null) | {key: .issue_field_name, value: .single_select_option.name}] | from_entries)}"
+	var out []byte
+	var err error
+	if conditional {
+		// Page by page, each read conditionally (#1762).
+		for page := 1; ; page++ {
+			body, next, err := g.listing(endpoint+"&page="+strconv.Itoa(page), jq)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, body...)
+			if !next {
+				break
+			}
+		}
+	} else if out, err = g.api("--paginate", endpoint, "--jq", jq); err != nil {
 		return nil, err
 	}
 	found, err := lines[struct {

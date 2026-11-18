@@ -37,12 +37,13 @@ Each in detail: [the commands](commands.md), and
 | [`workline test curate --history <file>`](commands-work.md#workline-test) | the curator removes a few redundant tests, proven by coverage and mutants |
 | [`workline develop`](commands-work.md#workline-develop) | the developer takes the first ready issue, writes its code, opens its pull request; `--merge-request <n>`: fixes its review; `--bounds`: checks its files against its issue's bounds |
 | [`workline item ready <id>`](commands-work.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
-| [`workline issues`, `issues show <n>`](commands-work.md#workline-issues) | reads the issues kept in the clone (`forge: local`); `open`, `label`, `comment` write them |
+| [`workline issues`, `issues show <n>`](commands-work.md#workline-issues) | reads the issues kept in the clone (`forge: local`); `open`, `label`, `comment` write them; `edit <n> --section <heading>` changes one section, the new text on stdin |
 | [`workline issues import <file>`](commands-work.md#workline-issues-import) | turns a roadmap or backlog file into issues |
 | [`workline docs`](commands.md#workline-docs) | your agent fixes the docs made suspect; you keep or drop each fix |
 | [`workline sample`](commands.md#workline-sample) | the weekly sample: one in ten of every role's acts of the week, re-checked |
 | [`workline size`](commands.md#workline-size) | the normal size of an issue here, measured from the line's records, kept in one comment |
 | [`workline wake`](wake.md) | after a merge, prints where the line may be drifting, with no AI; `--issue` keeps it in one issue |
+| [`workline tick`](tick.md) | lists the line's jobs due now, each with why, with no AI: what a regular beat starts |
 | [`workline follow`](commands.md#workline-follow) | `--gardening`: rebuilds gardening's merge requests on the default branch's new tip; closes the tester's Draft of a closed issue; runs the [merge policy](merge-policy.md), when set |
 | [`workline hooks install --global`](commands-setup.md#workline-hooks) | installs the git hooks for every repository (`--repo`: this one) |
 | [`workline setup`](commands-setup.md#workline-setup) | sets up this machine: hooks, agent, tools |

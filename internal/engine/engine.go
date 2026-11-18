@@ -1777,7 +1777,9 @@ func ownPush(runDir string) string {
 // baseMerge is a merge of the base the role asks committed on its own
 // branch (ADR-0067): the base's commit merged in, and the tree the merge
 // settled, its conflicts' markers gone.
-type baseMerge struct{ Base, Tree string }
+// Bundle is the run's git bundle of the tree's objects, "" for none: the
+// clone that applies may not be the one that merged (#1704).
+type baseMerge struct{ Base, Tree, Bundle string }
 
 // ownMerge is out/merge-request.yaml's `merge:` and `tree:`, nil none.
 func ownMerge(runDir string) *baseMerge {
@@ -1785,7 +1787,11 @@ func ownMerge(runDir string) *baseMerge {
 	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err != nil || yaml.Unmarshal(data, &mr) != nil || mr.Merge == "" || mr.Tree == "" {
 		return nil
 	}
-	return &baseMerge{Base: mr.Merge, Tree: mr.Tree}
+	m := &baseMerge{Base: mr.Merge, Tree: mr.Tree}
+	if b := filepath.Join(runDir, "out", "merge.bundle"); fileIs(b) { // developer.MergeBundle
+		m.Bundle = b
+	}
+	return m
 }
 
 // ownReady says the role asks its own Draft, the merge request it
@@ -1891,7 +1897,12 @@ func commitMerge(f forge.Forge, st runState, mr forge.MergeRequest, message stri
 	if !isAncestor(st.Repo, m.Base, baseRef) {
 		return fmt.Errorf("%s is not in %s's history: only the base is merged in", short(m.Base), mr.Base)
 	}
-	if kind, err := git(st.Repo, nil, "cat-file", "-t", m.Tree); err != nil || strings.TrimSpace(kind) != "tree" {
+	if !isTree(st.Repo, m.Tree) && m.Bundle != "" {
+		if _, err := git(st.Repo, nil, "bundle", "unbundle", m.Bundle); err != nil {
+			return fmt.Errorf("the merge's tree %s is not in this clone, nor read from the run's bundle: %v", short(m.Tree), err)
+		}
+	}
+	if !isTree(st.Repo, m.Tree) {
 		return fmt.Errorf("the merge's tree %s is not in this clone", short(m.Tree))
 	}
 	args := []string{"commit-tree", m.Tree, "-p", "HEAD", "-p", m.Base, "-F", "-"}
@@ -1922,6 +1933,18 @@ func commitMerge(f forge.Forge, st runState, mr forge.MergeRequest, message stri
 		_ = os.WriteFile(cfgPath, aside, 0o644)
 	}
 	return err
+}
+
+// fileIs tells whether a file is there.
+func fileIs(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
+// isTree tells whether the clone holds the tree.
+func isTree(repo, tree string) bool {
+	kind, err := git(repo, nil, "cat-file", "-t", tree)
+	return err == nil && strings.TrimSpace(kind) == "tree"
 }
 
 // commitWritten commits what the patches wrote on HEAD.
@@ -3607,9 +3630,18 @@ func phase(role, step string) {
 }
 
 // script runs roles/<name>/<step> in the repository and returns its exit code.
+//
+// A role with no such file runs the shared one (ADR-0070, §1), each step
+// on its own.
 func script(r *role.Role, step, repo string, env []string) (int, error) {
 	path := filepath.Join(r.Dir, step)
 	if _, err := os.Stat(path); err != nil {
+		switch step {
+		case "pre":
+			return 0, sharedPre(r, env)
+		case "post":
+			return sharedPost(env)
+		}
 		return 0, fmt.Errorf("role %q has no %s script", r.Name, step)
 	}
 	phase(r.Name, step)
@@ -3917,4 +3949,55 @@ func overBudgetSummary(said string) string {
 		s += " (" + said + ")"
 	}
 	return s
+}
+
+// envValue is the value of name in env, the last one set.
+func envValue(env []string, name string) string {
+	for i := len(env) - 1; i >= 0; i-- {
+		if v, ok := strings.CutPrefix(env[i], name+"="); ok {
+			return v
+		}
+	}
+	return ""
+}
+
+// sharedPre is the pre of a role that has none: the role's instruction
+// is the task, its declared skills are loaded. A prompt missing is an
+// error naming the file; nothing here judges.
+func sharedPre(r *role.Role, env []string) error {
+	runDir := envValue(env, "WORKLINE_RUN_DIR")
+	if runDir == "" {
+		return fmt.Errorf("WORKLINE_RUN_DIR is not set")
+	}
+	text, err := os.ReadFile(filepath.Join(r.Dir, "instruction.md"))
+	if err != nil {
+		return fmt.Errorf("role %q has no instruction.md", r.Name)
+	}
+	if err := os.MkdirAll(filepath.Join(runDir, "in"), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), text, 0o644); err != nil {
+		return err
+	}
+	if len(r.Context.Skills) > 0 {
+		list := strings.Join(r.Context.Skills, "\n") + "\n"
+		return os.WriteFile(filepath.Join(runDir, "in", "skills"), []byte(list), 0o644)
+	}
+	return nil
+}
+
+// sharedPost is the post of a role that has none: it blocks on nothing
+// and applies nothing. What the agent proposed is held to the role's
+// intentions and duties.writes by the apply step: invalid (intention
+// kinds the role does not declare) and outOfBounds (writes outside
+// duties.writes), which refuse and apply nothing.
+func sharedPost(env []string) (int, error) {
+	runDir := envValue(env, "WORKLINE_RUN_DIR")
+	if runDir == "" {
+		return 0, fmt.Errorf("WORKLINE_RUN_DIR is not set")
+	}
+	if err := os.MkdirAll(filepath.Join(runDir, "out"), 0o755); err != nil {
+		return 0, err
+	}
+	return 0, os.WriteFile(filepath.Join(runDir, "out", "verdict.yaml"), []byte("status: pass\n"), 0o644)
 }

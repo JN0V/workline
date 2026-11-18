@@ -1,5 +1,5 @@
 ---
-sources: [defaults/ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
+sources: [defaults/ci/github, .github/workflows/workline-loop.yml, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
 checked: 4acc8379
 judged: 220b6dc
 verified: agent:claude-code
@@ -38,6 +38,11 @@ on GitHub. The agent's token reaches only the one step that calls it; a
 fork's pull request gets no secret, so no agent and no write. The jobs that
 write run the default branch's workflow, never a pull request's own
 ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
+
+> **Before December 2, 2026, on a public repository**: add an Active
+> Actions event policy on `workline-bounds.yml` and `workline-merge.yml`
+> allowing `pull_request_target`, `issues` and `schedule`, or no pull
+> request merges ([how](github/pull-request-target.md)).
 
 ## Set up
 
@@ -85,7 +90,9 @@ write run the default branch's workflow, never a pull request's own
      ([what holds a release](release-holds.md)).
    - [workline-gardening.yml](../defaults/ci/github/workline-gardening.yml):
      gardening, weekly, Sunday 18:07 UTC, so that its pull request lands
-     before Monday's workday though GitHub may start it hours late; its
+     before Monday's workday though GitHub may start it hours late; each
+     run named by its job, `workline gardening docs` there, as
+     [the tick](tick.md#what-it-lists) reads them; its
      `apply` runs every time, and then rebuilds on `main` the pull
      requests it opened before, or closes those with nothing left to merge
      ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
@@ -128,6 +135,11 @@ write run the default branch's workflow, never a pull request's own
      after v0.2.1. It reads the week's tokens from the `workline-tally-*`
      artifacts the jobs calling an agent keep 14 days (`actions: read`;
      [tokens in CI](weekly-sample.md#what-it-writes)).
+   - [workline-loop.yml](../defaults/ci/github/workline-loop.yml),
+     optional, from v0.79.0: the line's beat, `workline tick` every 3
+     minutes; a dry run for now, it logs what it would start and starts
+     nothing. On a private repository it bills about 1,440 runner minutes
+     a day ([the GitHub loop](tick.md#the-github-loop)).
 2. **The agent's token**, if you want one: Settings → Secrets and variables
    → Actions → New repository secret. The templates call Claude when
    `CLAUDE_CODE_OAUTH_TOKEN` is set (`claude setup-token`), and no agent
@@ -166,3 +178,11 @@ engine and the agent as in workline-gardening.yml
 ## workline's own workflows
 
 Where they differ from the templates: [workline's own workflows](github/own-workflows.md).
+
+## Public repositories and pull_request_target
+
+From December 2, 2026, GitHub blocks `pull_request_target` by default in
+public repositories: workline-bounds.yml and workline-merge.yml run on it,
+and no pull request merges. An Actions event policy allows it; it is an
+allow list, so it lists every event of the two files. What to set:
+[pull_request_target](github/pull-request-target.md).

@@ -1,0 +1,3 @@
+# The answer of an agent to the prompt-only role, which declares patch and
+# note: a comment, an intention it does not declare.
+- comment: "the README reads well"

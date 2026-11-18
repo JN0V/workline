@@ -11,9 +11,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/codepick"
@@ -43,6 +46,9 @@ type Spec struct {
 	// answer a finding, the Scope always; the Verification is the
 	// tester's (ADR-0066), the others a person's (ADR-0060).
 	Mine []string `json:"mine,omitempty"`
+	// Before is the comment the last review wrote on the issue: the
+	// findings it held, which a person's answer may have settled.
+	Before string `json:"before,omitempty"`
 }
 
 // heading names the spec where the lenses and the judge read it.
@@ -421,4 +427,85 @@ func specMaterial(repo string, st state, s Settings, f Finding, code bool) strin
 		b.WriteString("\n## The code the spec names\n\nNone the repository holds.\n")
 	}
 	return b.String()
+}
+
+// scenarioQuoted is the name of the scenario a finding quotes, `**Name:**`.
+var scenarioQuoted = regexp.MustCompile(`\*\*([^*]+?):?\*\*`)
+
+// answeredInSpec says whether a finding the last review held on a
+// scenario is answered in the spec as it is now: the last review's comment
+// held a finding of the same lens on a scenario of the same name, the body
+// has changed since, and it speaks of that scenario on a line outside the Need, the
+// Verification and the Validation. Two findings are the same when they have the same
+// scenario name and the same lens; a person's answer settles the finding
+// wherever it is, the Scope included (#1356).
+func answeredInSpec(sp Spec, f Finding) bool {
+	if sp.Before == "" || sp.Prior == nil || sp.Prior.Body == sp.Digest {
+		return false
+	}
+	m := scenarioQuoted.FindStringSubmatch(f.Cause.Quote)
+	if m == nil {
+		return false
+	}
+	name := strings.ToLower(strings.TrimSpace(m[1]))
+	if name == "" {
+		return false
+	}
+	held := false
+	for _, l := range strings.Split(sp.Before, "\n") {
+		low := strings.ToLower(l)
+		if strings.HasPrefix(l, "|") && strings.Contains(l, "| "+f.Lens+" |") && strings.Contains(low, name) {
+			held = true
+			break
+		}
+	}
+	if !held {
+		return false
+	}
+	// The Need, the Verification and the Validation are what the lens read
+	// when it held the finding: a line there that names the scenario is not
+	// an answer. The answer is in any other section, the Scope included.
+	skip, level, fenced := false, 0, false
+	for _, l := range strings.Split(strings.ToLower(sp.Text), "\n") {
+		t := strings.TrimSpace(l)
+		if strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~") {
+			fenced = !fenced
+			continue
+		}
+		if !fenced && strings.HasPrefix(l, "#") {
+			rest := strings.TrimLeft(l, "#")
+			if n := len(l) - len(rest); n <= 6 && strings.HasPrefix(rest, " ") {
+				h := strings.TrimSpace(rest)
+				switch {
+				case h == "need" || h == "verification" || h == "validation":
+					skip, level = true, n
+				case skip && n <= level:
+					skip = false
+				}
+				continue
+			}
+		}
+		if !skip && answersScenario(l, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// answersScenario says whether a line answers the scenario as the finding
+// quoted it: the line opens with the name (after a list mark, bold, quote or
+// italic marks), whole, as a person writes "Name: the decision". A name met
+// in the middle of a line, or inside another word, answers nothing.
+func answersScenario(line, name string) bool {
+	t := strings.TrimSpace(line)
+	t = strings.TrimLeft(t, "-*+> \t\"'“”`_")
+	if !strings.HasPrefix(t, name) {
+		return false
+	}
+	rest := t[len(name):]
+	if rest == "" {
+		return false
+	}
+	r, _ := utf8.DecodeRuneInString(rest)
+	return !unicode.IsLetter(r) && !unicode.IsDigit(r)
 }

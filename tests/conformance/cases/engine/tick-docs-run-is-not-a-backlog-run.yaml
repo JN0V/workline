@@ -1,0 +1,25 @@
+case: engine/tick-docs-run-is-not-a-backlog-run
+about: >
+  A `workline gardening docs` run went an hour ago, the only gardening run of the day, and Ready holds 6 against 10: docs is not listed, done since its time; the backlog is, the docs run not taken for one of its (#1761).
+given:
+  repo: basic
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 10}}
+  forge:
+    issues:
+      - {id: 1, title: "Item 1", body: "x", labels: ["workline:ready"]}
+      - {id: 2, title: "Item 2", body: "x", labels: ["workline:ready"]}
+      - {id: 3, title: "Item 3", body: "x", labels: ["workline:ready"]}
+      - {id: 4, title: "Item 4", body: "x", labels: ["workline:ready"]}
+      - {id: 5, title: "Item 5", body: "x", labels: ["workline:ready"]}
+      - {id: 6, title: "Item 6", body: "x", labels: ["workline:ready"]}
+    runs:
+      - {name: "workline merge", workflow: workline-merge.yml, status: completed, success: true, started: "2026-11-15T19:00:00Z", updated: "2026-11-15T19:01:00Z"}
+      - {name: "workline gardening docs", workflow: workline-gardening.yml, status: completed, success: true, started: "2026-11-15T18:30:00Z", updated: "2026-11-15T18:50:00Z"}
+      - {name: "workline sample", workflow: workline-sample.yml, status: completed, success: true, started: "2026-11-09T05:45:00Z", updated: "2026-11-09T05:50:00Z"}
+run: {cli: [tick, --forge, "fake:../forge.json", --now, "2026-11-15T19:30:00Z", --json]}
+expect:
+  exit: 0
+  stdout: ['{"job":"backlog","role":"product-owner","why":"Ready 6 below 10', '"key":"workline gardening backlog"}', '{"job":"reconcile"']
+  stdout-lacks: ['"job":"docs"']
+  stderr: ['docs: ran at 2026-11-15T18:30:00Z ("workline gardening docs"), not due']

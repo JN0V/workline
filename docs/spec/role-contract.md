@@ -21,8 +21,8 @@ roles/<name>/
   knowledge/*.md
   instruction.md
   policy.md
-  pre               deterministic: gathers input, decides whether a decision is needed
-  post              deterministic: validates, decides the verdict
+  pre               optional; deterministic: gathers input, decides whether a decision is needed
+  post              optional; deterministic: validates, decides the verdict
   lenses/*.md       the reviewer's: one facet per lens
   kinds/*.md        the auditor's: one facet per kind of act
   tasks/*.md        optional: a kind of task's own instruction (model.tasks)
@@ -37,6 +37,14 @@ roles/<name>/
 
 `pre` and `post` are executables in any language. The engine runs them; it does
 not care what they are written in.
+
+Each is optional, on its own (ADR-0070, §1). With no `pre`, the shared one
+writes `in/task.md` from the role's `instruction.md` and `in/skills` from
+its declared `context.skills`; a missing `instruction.md` stops the run,
+naming the file. With no `post`, the shared one passes and applies nothing:
+what the agent proposed is held to the role's `intentions` and
+`duties.writes` where it is applied, an intention not declared or a write
+outside the duties refused and named.
 
 ## Where roles come from
 

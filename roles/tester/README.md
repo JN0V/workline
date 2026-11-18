@@ -205,7 +205,9 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
   - GitHub: [workline-objection.yml](../../defaults/ci/github/workline-objection.yml)
     notices the comment, with no token;
     [workline-answer.yml](../../defaults/ci/github/workline-answer.yml) answers,
-    from the default branch. Copy both.
+    from the default branch, one objection a run, then the next; a
+    reply in its thread wakes it again, and the reconciler resumes an
+    objection left waiting. Copy both.
   - GitLab: the project's note webhook, on its own trigger URL,
     starts the template's `workline:objection:*` jobs
     ([how](../../docs/gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)).

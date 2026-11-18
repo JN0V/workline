@@ -113,8 +113,11 @@ type State struct {
 	Aside string `yaml:"aside,omitempty"`
 	// Heard are the comments of its reporter and the project's people the
 	// role read; Revisions, the times it revised its drafts for them.
-	Heard     *int `yaml:"heard,omitempty"`
-	Revisions int  `yaml:"revisions,omitempty"`
+	Heard *int `yaml:"heard,omitempty"`
+	// HeardLast is the id of the last counted comment read: which ones
+	// were read, not only how many (a comment deleted, a new one written).
+	HeardLast string `yaml:"heard-last,omitempty"`
+	Revisions int    `yaml:"revisions,omitempty"`
 	// Rules is the role's way of reading an issue when it last read it
 	// (Reading): an issue it left with nothing is read again once they
 	// change.
@@ -236,6 +239,7 @@ func FormatState(s State) string {
 		Label     string            `yaml:"label,omitempty"`
 		Aside     string            `yaml:"aside,omitempty"`
 		Heard     *int              `yaml:"heard,omitempty"`
+		HeardLast string            `yaml:"heard-last,omitempty"`
 		Revisions int               `yaml:"revisions,omitempty"`
 		Rules     int               `yaml:"rules,omitempty"`
 		Left      string            `yaml:"left,omitempty"`
@@ -253,7 +257,7 @@ func FormatState(s State) string {
 		Held      int               `yaml:"answer-held,omitempty"`
 		Dropped   string            `yaml:"dropped,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Revised, s.Plain, s.Deleted,
-		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Retest, s.Silent, s.Unread,
+		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.HeardLast, s.Revisions, s.Rules, s.Left, s.Proof, s.NoTest, s.Retest, s.Silent, s.Unread,
 		s.Assumed, s.AssumedAt, s.Told, s.Kind, s.Size, s.SplitTests, s.AnswerHeld, s.Dropped})
 	// The record is kept out of sight, in an HTML comment (#548): a forge
 	// mails what a comment shows, and a person reads there only what the
@@ -756,6 +760,8 @@ type Plan struct {
 	// drops are the agent's acts this run dropped on each issue, each with
 	// why: said on an issue nothing else refined (#951).
 	drops map[int][]string
+	// asked are the issues whose latest person's comment asks a split.
+	asked map[int]bool
 	// Visit are the open issues with a state, written back at the end of
 	// the run (Persist); SetAside, those a person took workline:proposed
 	// off; Answers, a person's comments read as "revise" on each.
@@ -1140,6 +1146,14 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if c.Do == "split" && c.TooBig && s.Mode == Off && !p.config.SplitOff() {
 				// Past the issue's size, split turns on (ADR-0064, §3):
 				// done at normal and enterprising, proposed at cautious.
+				s = Setting{Mode: Act, Max: max(s.Max, 1)}
+				if p.config.Level == "cautious" {
+					s.Mode = Propose
+				}
+			}
+			if c.Do == "split" && !c.TooBig && s.Mode == Off && p.asked[c.Issue] && !p.config.SplitOff() {
+				// A person asked this split: on for this issue, as
+				// `too-big` does, proposed at cautious.
 				s = Setting{Mode: Act, Max: max(s.Max, 1)}
 				if p.config.Level == "cautious" {
 					s.Mode = Propose
@@ -1748,6 +1762,11 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	}
 	if rule, why := p.checkRefining(f, repo, role, c); rule != "" {
 		return rule, why
+	}
+	if c.Do == "split" && f != nil {
+		if err := p.markAsked(f, c.Issue); err != nil {
+			return "no-notes", fmt.Sprintf("the comments of #%d could not be read, to know whether a person asked a split: %v", c.Issue, err)
+		}
 	}
 	if rule, why := p.checkSplitRename(repo, c); rule != "" {
 		return rule, why
@@ -2685,6 +2704,10 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 		// Past its size only where the run was told to judge it (ADR-0064,
 		// §2): the issue the event names, asked on its size or in refine.
 		return "too-big-unasked", fmt.Sprintf("#%d's size was not asked in this run: `too-big` holds only on the issue the line woke the role on, asked on its size or predicted in refine; `split` keeps its mode", c.Issue)
+	}
+	if !c.TooBig && p.asked[c.Issue] && p.config.SplitOff() {
+		// A person asked a split, and the project set `split` off itself.
+		return "split-off", fmt.Sprintf("a person asked a split of #%d, and this project set `split` off itself: no split; its text is left as it is", c.Issue)
 	}
 	if c.TooBig && p.config.SplitOff() {
 		// The project turned split off itself: never on for a size
@@ -3975,4 +3998,63 @@ func namesPath(line, path string) bool {
 		}
 		off = i + 1
 	}
+}
+
+var (
+	splitWord = regexp.MustCompile(`(?i)\bsplit\b`)
+	// splitNegation: a negation before the word in its clause is a refusal.
+	splitNegation = regexp.MustCompile(`(?i)\b(?:don'?t|do not|doesn'?t|does not|shouldn'?t|should not|won'?t|will not|can'?t|cannot|never|not|no|without|nothing|neither|nor)\b`)
+	// splitDoubt: what before "split" makes a clause a question or a
+	// condition, not a request.
+	splitDoubt = regexp.MustCompile(`(?i)\b(?:why|whether|if|unless|how|what|when|should we|shall we|do we|can we|could we|is it|would it|maybe|perhaps)\b`)
+)
+
+// splitStance reads what a comment says of a split. It is an ask only where
+// a clause uses the word and, before it, holds no negation and no doubt
+// ("why", "if", "should we"), and does not end as a question; any other
+// clause that holds it ("why split?", "I don't want to split this") is
+// said, not asked. What comes after the word does not cancel it. "split-off"
+// and the like are not a word of it.
+func splitStance(body string) (asked, said bool) {
+	body = strings.NewReplacer("\u2019", "'", "\u2018", "'").Replace(body)
+	for _, m := range splitWord.FindAllStringIndex(body, -1) {
+		if m[1] < len(body) && (body[m[1]] == '-' || body[m[1]] == '_') && m[1]+1 < len(body) && body[m[1]+1] != ' ' {
+			continue // split-off, split_out: a word of another thing
+		}
+		const delims = ".,;:!?\n"
+		start := strings.LastIndexAny(body[:m[0]], delims) + 1
+		question := false
+		if i := strings.IndexAny(body[m[1]:], delims); i >= 0 {
+			question = body[m[1]+i] == '?'
+		}
+		before := body[start:m[0]]
+		said = true
+		asked = !question && !splitNegation.MatchString(before) && !splitDoubt.MatchString(before)
+	}
+	return asked, said
+}
+
+// markAsked reads whether the people of the project ask a split on the
+// issue, and keeps it in p.asked: their comments in order, each that speaks
+// of a split replacing the stance before it, one that does not (as
+// "thanks") leaving it. A failed read is an error, never "no ask".
+func (p *Plan) markAsked(f forge.Backlog, id int) error {
+	if p.asked == nil {
+		p.asked = map[int]bool{}
+	}
+	notes, err := f.Notes(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return err
+	}
+	asked := false
+	for _, n := range notes {
+		if !n.Insider || n.Bot || Bot(n.Author) {
+			continue
+		}
+		if a, said := splitStance(n.Body); said {
+			asked = a
+		}
+	}
+	p.asked[id] = asked
+	return nil
 }

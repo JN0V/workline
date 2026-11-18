@@ -1,0 +1,29 @@
+case: engine/tick-timed-job-done-not-listed
+about: >
+  The nightly already ran at 02:20 UTC: the tick at 02:25 does not list it again, and says when it ran (#1665, Timed job done).
+given:
+  repo: basic
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 10}, timed: {nightly: {at: "17 2 * * *"}}}
+  forge:
+    issues:
+      - {id: 1, title: "Item 1", body: "x", labels: ["workline:ready"]}
+      - {id: 2, title: "Item 2", body: "x", labels: ["workline:ready"]}
+      - {id: 3, title: "Item 3", body: "x", labels: ["workline:ready"]}
+      - {id: 4, title: "Item 4", body: "x", labels: ["workline:ready"]}
+      - {id: 5, title: "Item 5", body: "x", labels: ["workline:ready"]}
+      - {id: 6, title: "Item 6", body: "x", labels: ["workline:ready"]}
+      - {id: 7, title: "Item 7", body: "x", labels: ["workline:ready"]}
+      - {id: 8, title: "Item 8", body: "x", labels: ["workline:ready"]}
+      - {id: 9, title: "Item 9", body: "x", labels: ["workline:ready"]}
+      - {id: 10, title: "Item 10", body: "x", labels: ["workline:ready"]}
+    runs:
+      - {name: "workline merge", workflow: workline-merge.yml, status: completed, success: true, started: "2026-11-16T02:00:00Z", updated: "2026-11-16T02:01:00Z"}
+      - {name: "workline gardening docs", workflow: workline-gardening.yml, status: completed, success: true, started: "2026-11-15T18:10:00Z", updated: "2026-11-15T18:30:00Z"}
+      - {name: "workline sample", workflow: workline-sample.yml, status: completed, success: true, started: "2026-11-16T00:00:00Z", updated: "2026-11-16T00:05:00Z"}
+      - {name: "workline gardening nightly", workflow: workline-gardening.yml, status: completed, success: true, started: "2026-11-16T02:20:00Z", updated: "2026-11-16T02:24:00Z"}
+run: {cli: [tick, --forge, "fake:../forge.json", --now, "2026-11-16T02:25:00Z", --json]}
+expect:
+  exit: 0
+  stdout-lacks: ['"nightly"']
+  stderr: ["nightly: ran at 2026-11-16T02:20:00Z"]

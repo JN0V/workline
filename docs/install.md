@@ -170,7 +170,11 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
   with what uses them: the tester, the developer and the line of states
   (its reconciler's [heartbeat](github/heartbeat.md)), the
   [merge policy](merge-policy.md), a release tool
-  ([ci-github.md](ci-github.md)).
+  ([ci-github.md](ci-github.md)). **Before December 2, 2026, on a
+  public repository**: an Actions event policy on the bounds and merge
+  workflows allowing `pull_request_target`, `issues` and `schedule`, or no
+  pull request merges
+  ([what to set](github/pull-request-target.md)).
 - **GitLab**: include
   [defaults/ci/gitlab/workline.gitlab-ci.yml](../defaults/ci/gitlab/workline.gitlab-ci.yml),
   then add pipeline schedules, gardening, the sample and, with the line

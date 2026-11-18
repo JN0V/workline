@@ -184,6 +184,9 @@ type Record struct {
 	// for them — an answer to the reviewer's question among them. Kept
 	// from step to step, so a run that reads nothing is no loop.
 	Heard int `json:"heard,omitempty"`
+	// HeardLast: the id of the last of them, so a comment deleted and
+	// another written is no same comments (#1346).
+	HeardLast string `json:"heard-last,omitempty"`
 	// AnswerHeld: the count of those comments when the line woke the
 	// product owner once more, its `ready` held for them (#1331): never
 	// again on the same comments.
@@ -208,6 +211,9 @@ type StateWrite struct {
 	Stale   string `json:"stale,omitempty"`
 	Kept    string `json:"kept,omitempty"`
 	Seen    string `json:"seen,omitempty"`
+	// OldRead: an old record's comments taken as read, their count
+	// written with no wake (#1346): what is said of it.
+	OldRead string `json:"old-read,omitempty"`
 	// Own: the runs the step itself added to Record.Spent, by role: the
 	// rest of each list is what the record had when the step read it.
 	Own map[string]int `json:"own,omitempty"`
@@ -442,7 +448,7 @@ func afterWrite(r *Record, is forge.Issue) {
 // before — one, a count started again, for a state further on the line
 // (cfg) than any it reached (#1068).
 func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec string, rec Record, had bool) (Record, bool) {
-	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Parts: rec.Parts, Heard: rec.Heard, AnswerHeld: rec.AnswerHeld, Labels: inputLabels(is.Labels), Last: rec.Last}
+	now := Record{State: s.Name, Body: bodyHash(is.Body), Labeled: labeled, Hops: rec.Hops, Spec: spec, Reached: rec.Reached, Spent: rec.Spent, Counted: rec.Counted, Sized: rec.Sized, Parts: rec.Parts, Heard: rec.Heard, HeardLast: rec.HeardLast, AnswerHeld: rec.AnswerHeld, Labels: inputLabels(is.Labels), Last: rec.Last}
 	if had && rec.State == now.State && rec.Body == now.Body && rec.Labeled == now.Labeled && rec.Spec == now.Spec && sameLabels(rec, now) {
 		return rec, false
 	}

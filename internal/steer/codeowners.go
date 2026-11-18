@@ -28,16 +28,16 @@ func PlacesOf(repo string) []string {
 		return gitlabPlaces
 	}
 	if out, err := exec.Command("git", "-C", repo, "remote", "get-url", "origin").Output(); err == nil &&
-		strings.HasPrefix(originHost(string(out)), "gitlab") {
+		strings.HasPrefix(OriginHost(string(out)), "gitlab") {
 		return gitlabPlaces
 	}
 	return githubPlaces
 }
 
-// originHost is the lowercase host of a remote URL (https://, ssh:// or
+// OriginHost is the lowercase host of a remote URL (https://, ssh:// or
 // scp-like git@host:path), without user, port or path: only the host says the
 // forge, never an owner or repository name.
-func originHost(raw string) string {
+func OriginHost(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if i := strings.Index(raw, "://"); i >= 0 {
 		raw = raw[i+3:]
