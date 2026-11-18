@@ -86,11 +86,22 @@ func RecordUnread(comment string) string {
 		}
 		return ""
 	}
-	var list []map[string]any
-	if err := json.Unmarshal([]byte(m[1]), &list); err != nil {
+	if _, err := decodeRows(m[1]); err != nil {
 		return "its findings record does not parse: " + err.Error()
 	}
 	return ""
+}
+
+type reviewRow struct {
+	Lens, Holds, Where, Severity, Text string
+}
+
+// decodeRows is the one decoding RecordUnread and ReviewRows share, so a
+// mistyped field is said unread, never read as no finding.
+func decodeRows(raw string) ([]reviewRow, error) {
+	var list []reviewRow
+	err := json.Unmarshal([]byte(raw), &list)
+	return list, err
 }
 
 // ReviewRows reads the findings of the reviewer's comment from its hidden
@@ -103,10 +114,8 @@ func ReviewRows(comment string) (asked []Asked, nits int) {
 	if m == nil {
 		return nil, 0
 	}
-	var list []struct {
-		Lens, Holds, Where, Severity, Text string
-	}
-	if json.Unmarshal([]byte(m[1]), &list) != nil {
+	list, err := decodeRows(m[1])
+	if err != nil {
 		return nil, 0
 	}
 	for _, x := range list {
