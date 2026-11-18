@@ -1,6 +1,6 @@
 ---
-sources: [cmd/workline/tick.go, defaults/ci/github/workline-loop.yml, .github/workflows/workline-loop.yml, internal/tick, internal/routing/timed.go, internal/forge/runs.go, internal/forge/cond.go, internal/line/tick.go, internal/line/backlog_due.go]
-checked: f02bc319
+sources: [cmd/workline/tick.go, defaults/ci/github/workline-loop.yml, .github/workflows/workline-loop.yml, .github/workflows/workline-merge.yml, .github/workflows/test.yml, internal/tick, internal/routing/timed.go, internal/forge/runs.go, internal/forge/cond.go, internal/line/tick.go, internal/line/backlog_due.go]
+checked: 3d23c7a7
 ---
 # The tick
 
@@ -21,8 +21,9 @@ flowchart LR
   whose run is queued, waiting or running is not listed again.
 - **Never a guess**: a read that fails lists no job that needs it, and
   says why on stderr. It exits 0 all the same.
-- **On GitHub, a loop calls it**, a dry run for now: it logs what it
-  would start, and starts nothing ([the GitHub loop](#the-github-loop)).
+- **On GitHub, a loop calls it**, a dry run by default: it logs what it
+  would start; turned on, it starts exactly that
+  ([the GitHub loop](#the-github-loop)).
 
 ## What it lists
 
@@ -98,8 +99,8 @@ beat on GitHub, whose own schedule runs late or not at all
 - **One long job**: `workline tick --forge github --json` every beat,
   its checkout kept between beats, so the conditional reads' cache in
   `.git/workline` too.
-- **A dry run**: each job tick lists is logged, as tick prints it, and
-  nothing starts. The run's notice counts them:
+- **A dry run by default**: each job tick lists is logged, as tick
+  prints it, and nothing starts. The run's notice counts them:
 
   ```text
   beat 12, 14:03:01 UTC: 2 due, a dry run
@@ -107,9 +108,20 @@ beat on GitHub, whose own schedule runs late or not at all
   would dispatch {"job":"docs","why":"its time …","key":"workline gardening docs"}
   ```
 
-- **Dispatching comes later**: the repository variable
-  `WORKLINE_LOOP_DISPATCH` is read; `true` is said not built yet, and the
-  beat stays a dry run.
+- **Dispatching**, with the repository variable
+  `WORKLINE_LOOP_DISPATCH` set to `true`
+  ([turn it on](#turn-dispatching-on)): each job tick lists is started,
+  `gh workflow run`, nothing else; logged `dispatched {…}`.
+  - **Its workflow**: `reconcile` in workline-develop.yml
+    (`reconcile=true`); `backlog`, `nightly`, `docs` in
+    workline-gardening.yml (`job=<job>`); `merge` in workline-merge.yml;
+    `sample` in workline-sample.yml; `seeds` in workline's own test.yml
+    (`job=seeds`). Each run is named by its key.
+  - **Once**: a job going is not listed; a key dispatched under 2
+    minutes ago is held (`held {…}`), its run maybe not listed yet.
+  - **A dispatch that fails** is said, and tried again at the next beat
+    tick lists it.
+  - **A job the loop does not know** is said, not started.
 - **One at a time**: its concurrency group; a restart while a loop runs
   (job `alive`) starts nothing.
 - **Before GitHub's 6 h**: after 340 minutes of beats, it dispatches its
@@ -119,8 +131,7 @@ beat on GitHub, whose own schedule runs late or not at all
   loop says so and stops.
 - **Its beat**: 180 s, or the variable `WORKLINE_LOOP_BEAT_SECONDS`.
   The job token's 1,000 calls an hour are the whole repository's; 60 s
-  once the loop's release reads conditionally
-  ([#1764](https://github.com/JN0V/workline/pull/1764)).
+  only where a tick costs little quota ([cost](#cost)).
 - **Tick failing 10 beats in a row**: the loop stops, says why, and
   starts no successor; its hourly schedule tries again.
 - **Its cost on a private repository**: about 1,440 runner minutes a day.
@@ -128,9 +139,41 @@ beat on GitHub, whose own schedule runs late or not at all
 - **The other workflows keep their triggers** for now;
   [a test](../tests/conformance/triggers_test.go) lists each one's.
 
+### Turn dispatching on
+
+- **Before**: the dry run's notices, a day, list what you expect.
+- **Set the reconcile's time**: due every beat, it would start up to 20
+  reconciles an hour, about 20 calls each. A `gap` keeps it in budget:
+
+  ```yaml
+  routing:
+    timed:
+      reconcile: {gap: 15}
+  ```
+
+- **Then**: Settings → Secrets and variables → Actions → Variables →
+  `WORKLINE_LOOP_DISPATCH` = `true`. The next beat reads it; `false` or
+  unset is a dry run again.
+- **Event triggers next**: each workflow keeps its own while the loop
+  dispatches beside it; a run either starts is seen by tick, so a job
+  starts once. They are removed one per pull request, the crons kept as
+  a restart until a week without a missed beat
+  ([ADR-0069's amendment](adr/0069-one-wake-every-five-minutes-starts-what-is-due.md#amendment-2026-11-17-a-beat-every-minute-no-event-moves-the-line)).
+
 ## Cost
 
 - **No agent, no token** of a model.
+- **The beat's budget**: the tick's calls an hour stay under a quarter
+  of the job token's 1,000
+  ([ADR-0069 §3](adr/0069-one-wake-every-five-minutes-starts-what-is-due.md#3-api-cost)).
+  - **A quiet trial copy**: 5 calls of quota its first beat, then 0 to
+    2 a beat, the others answered 304
+    ([#1764](https://github.com/JN0V/workline/pull/1764),
+    [#1783](https://github.com/JN0V/workline/pull/1783)); 60 s holds.
+  - **This repository**, 2026-11-18: 19 calls a beat, 10 of them quota,
+    its runs changing from minute to minute; about 600 an hour at 60 s,
+    200 at 180 s. Hence 180 s.
+  - **A dispatch** is 1 call more.
 - **GitHub reads, each tick**: the runs going (1 call: the last day's
   runs, every workflow), each timed job's workflow back to its time
   (1 call a page of 100, 5 pages at most), the open issues when Ready's
