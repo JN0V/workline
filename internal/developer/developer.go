@@ -27,6 +27,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/clock"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/testdef"
@@ -36,6 +37,9 @@ import (
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
+
+// The role joins the engine by name (internal/contract).
+func init() { contract.Join("developer", contract.Role{Pre: Pre, Post: Post}) }
 
 const (
 	exitNothing  = 10 // pre: no question for the agent, its verdict final

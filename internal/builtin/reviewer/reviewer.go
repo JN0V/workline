@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
@@ -32,6 +33,9 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"go.yaml.in/yaml/v3"
 )
+
+// The role joins the engine by name (internal/contract).
+func init() { contract.Join("reviewer", contract.Role{Pre: Pre, Post: Post}) }
 
 const (
 	exitBlock    = 1

@@ -20,11 +20,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
+
+// The role joins the engine by name (internal/contract).
+func init() { contract.Join("inspector", contract.Role{Pre: Pre, Post: Post}) }
 
 const (
 	exitNothing = 10 // no question for the agent: the verdict pre wrote is final

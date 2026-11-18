@@ -15,6 +15,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
@@ -22,6 +23,9 @@ import (
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"go.yaml.in/yaml/v3"
 )
+
+// The role joins the engine by name (internal/contract).
+func init() { contract.Join("committer", contract.Role{Pre: Pre, Post: Post}) }
 
 // Pre is the role's prepare step: check the message; if it fails, ask the
 // agent to rewrite it. Exit 10 when there is nothing to do.

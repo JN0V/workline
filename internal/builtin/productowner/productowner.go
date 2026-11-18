@@ -26,6 +26,7 @@ import (
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/clock"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
@@ -39,6 +40,9 @@ import (
 	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
+
+// The role joins the engine by name (internal/contract).
+func init() { contract.Join("product-owner", contract.Role{Pre: Pre, Post: Post}) }
 
 const (
 	exitNothing  = 10
