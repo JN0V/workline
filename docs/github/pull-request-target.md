@@ -1,6 +1,7 @@
 <!-- workline
 sources: [defaults/ci/github/workline-bounds.yml, defaults/ci/github/workline-merge.yml, internal/doctor/event_policy.go]
 checked: 8b32cb8a0
+judged-in-parts: 786d304
 -->
 # pull_request_target in a public repository
 
@@ -24,11 +25,11 @@ GitHub's own pages: [the default policy](https://docs.github.com/en/actions/refe
 | Workflow file | Events to allow |
 |---|---|
 | `.github/workflows/workline-bounds.yml` | `pull_request_target` |
-| `.github/workflows/workline-merge.yml` | `pull_request_target`, `issues`, `schedule` |
+| `.github/workflows/workline-merge.yml` | `pull_request_target`, `issues`, `schedule`, `workflow_dispatch` |
 
 1. Settings → Actions → Policies → new policy; target these two workflow
    files; a rule "Restrict events" allowing `pull_request_target`,
-   `issues` and `schedule`.
+   `issues`, `schedule` and `workflow_dispatch`.
 2. Enforcement: **Evaluate** first where it is offered (GitHub Enterprise
    Cloud), then check **Policy insights**: no run of these files would be
    blocked. Then set it **Active**: Evaluate allows nothing.
@@ -40,7 +41,7 @@ gh api -X POST repos/OWNER/REPO/actions/policies --input - <<'EOF'
  "conditions": {"workflow_path": {"exclude": [], "include": [
    ".github/workflows/workline-bounds.yml", ".github/workflows/workline-merge.yml"]}},
  "rules": [{"type": "restrict_action_events",
-   "parameters": {"allowed_events": ["pull_request_target", "issues", "schedule"]}}]}
+   "parameters": {"allowed_events": ["pull_request_target", "issues", "schedule", "workflow_dispatch"]}}]}
 EOF
 ```
 
