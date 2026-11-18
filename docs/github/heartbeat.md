@@ -1,7 +1,7 @@
 <!-- workline
 sources: [defaults/ci/github/workline-develop.yml, .github/workflows/workline-develop.yml]
-checked: bc129c5c7
-judged-in-parts: 5c1573b
+checked: 04d2af892
+verified: agent:claude-code
 -->
 # The reconciler's heartbeat
 
@@ -21,9 +21,9 @@ reconcile starts the next one:
 
 - **At its end**, even when it failed, it starts a run of the workflow
   (`workflow_dispatch`, which the job's own token may start), unless
-  the line is idle: no issue due, no review round due, none waiting on
-  a time (a question's delay). It then says "no heartbeat" and why in
-  its summary; the schedule or a `workline:` label starts the next
+  the line is idle: no issue due, no review round due, no tester's
+  answer due on a Draft, none waiting on a time (a question's delay).
+  It then says "no heartbeat" and why in its summary; the schedule or a `workline:` label starts the next
   reconcile, which starts the heartbeat again.
 - **That run's `heartbeat` job waits** the wait timer of the
   environment `workline-heartbeat`: in GitHub, on no runner, no minute

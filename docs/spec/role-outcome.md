@@ -2,8 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/kit/verdict, internal/report]
 verified: agent:claude-code
-checked: adf500ab
-judged: b5899f5
+checked: 04d2af892
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -119,6 +118,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `order` | set an issue's priority, one label of `workline:priority/1` (the most pressing) to `/4`, or of the family the project keeps it in, its settings asking; a priority a person set is kept (docs/spec/backlog-acts.md, "Ordering") | forge |
 | `effort` | the engine's, split from an `order` carrying `effort: 1` to `3` (Low, hours, to High, weeks): set once, only where empty, on code the run read (docs/spec/backlog-acts.md, "Ordering") | forge |
 | `kind` | set an issue's kind label, `bug`, `feature` or `task` as the project names them, where no kind label is; a label a person put since the run read it is kept (`kind-kept`) ([the kind](../../roles/product-owner/docs/kind.md); ADR-0039) | forge |
+| `size` | grant an issue the size tier `large`, `{issue, tier, why}`: every size target of its runs ×2; a label a person took off is not granted again; `x-large` is a person's ([ADR-0064](../adr/0064-size-is-a-target-not-a-wall.md)) | forge |
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
 | `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts, a real example or a bug's steps to reproduce as drafts too, never required — in the reader's order, never rewriting one there; a role's text on top taken into the Need draft, a draft saying again what is above it left out (ADR-0039, amended); on an outsider's issue, proposed to its reporter in a comment until a person agrees (docs/spec/backlog-acts.md, "Refining to ready") | forge |
 | `ready` | move an issue to `ready`, once the engine finds its Need, Validation and Scope there — a person's text on top standing for a Need — and none a draft — or the drafts accepted with the label `workline:accepted`, or unanswered past `acts.ask.wait`, taken as written (ADR-0060); an outsider's is proposed, unless accepted | forge |
@@ -131,6 +131,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `rename` | set an issue's title; a title a person set after the role's is kept (docs/spec/backlog-acts.md, "Renaming") | forge |
 | `depend` | name the open issues an issue waits on (`blocked-by`): the forge's own relation, or a line in its body; never a cycle, a person's link kept (docs/spec/backlog-acts.md, "What an issue waits on"; ADR-0028) | forge |
 | `undepend` | take off a link the role set (`blocked-by`), its blocker still open: always proposed to a person; a closed blocker's link the engine takes off itself, a person's never (ADR-0028) | forge |
+| `verification` | the engine's, never the agent's: the tester's test plan written as an issue's Verification, `{issue, text}`, its own rewritten, another's kept ([ADR-0066](../adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)) | forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else; the documentalist's may name the doc it is about, `{doc, text}`: a doc a note names is not vouched for in that answer (roles/documentalist/docs/judge.md, "Moving `checked`") | report |
 | `finding` | a lens's answer (role contract, "In parts"): `{lens, severity, title, why, cause: {path, quote}, symptom, fix, seen, claim, decision}`, `severity` `important` or `nit`, `lens` the one that found it, read when the lenses are asked together; `claim` the author's words a lens that `cites: claim` quotes; `decision` the question for a person, for a choice that is no defect, a key of the finding, never an item of its own; a cause's `path` `#4` for the issue the change closes; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
