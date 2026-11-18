@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -32,7 +33,7 @@ const (
 // is not known, the forge reads none, its last round read them at this
 // head (a.ChecksAt), one still runs, or none is red. It returns the head
 // they were read at, and why the forge did not answer.
-func checksAsked(f forge.Forge, a Act, head string) (at string, asked []Asked, unread string) {
+func checksAsked(f forge.Forge, a Act, head string) (at string, asked []devmark.Asked, unread string) {
 	pc, ok := f.(forge.ProjectChecked)
 	if !ok || head == "" || sameCommit(head, a.ChecksAt) {
 		return "", nil, ""
@@ -50,7 +51,7 @@ func checksAsked(f forge.Forge, a Act, head string) (at string, asked []Asked, u
 		if c.State != "failure" {
 			continue
 		}
-		asked = append(asked, Asked{Key: "checks|" + c.Name, Where: c.Name, Text: "red at `" + head[:min(7, len(head))] + "`",
+		asked = append(asked, devmark.Asked{Key: "checks|" + c.Name, Where: c.Name, Text: "red at `" + head[:min(7, len(head))] + "`",
 			Holds: checkHolds, Check: &c})
 	}
 	if len(asked) == 0 {
@@ -61,7 +62,7 @@ func checksAsked(f forge.Forge, a Act, head string) (at string, asked []Asked, u
 
 // checkLogs gives each red check the end of its failed steps' log, read
 // from the forge; one it cannot read says so.
-func checkLogs(f forge.Forge, asked []Asked) {
+func checkLogs(f forge.Forge, asked []devmark.Asked) {
 	pc, ok := f.(forge.ProjectChecked)
 	if !ok {
 		return
@@ -123,7 +124,7 @@ func logEnd(log string) string {
 }
 
 // checkLine is a red check as a round's record and comment say it.
-func checkLine(a Asked) string {
+func checkLine(a devmark.Asked) string {
 	return fmt.Sprintf("%s `%s`: %s", checkHolds, a.Where, a.Text)
 }
 

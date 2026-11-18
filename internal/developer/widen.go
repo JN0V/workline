@@ -66,7 +66,7 @@ func legacyNoCode(a Act) bool {
 }
 
 // redChecks are the names of the project checks a round asked, red.
-func redChecks(asked []Asked) []string {
+func redChecks(asked []devmark.Asked) []string {
 	var out []string
 	for _, x := range asked {
 		if x.Holds == checkHolds && !slices.Contains(out, x.Where) {
@@ -134,7 +134,7 @@ func objectedOn(comments []intent.Intention) bool {
 
 // checkLogsSaid is the end of each red check's failed steps' log, as
 // an issue's comment quotes it: its marks broken (#926).
-func checkLogsSaid(asked []Asked) string {
+func checkLogsSaid(asked []devmark.Asked) string {
 	var b strings.Builder
 	for _, x := range asked {
 		if x.Holds == checkHolds && x.Detail != "" {

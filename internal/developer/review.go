@@ -13,7 +13,6 @@ package developer
 // the auditor (ADR-0046).
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -36,81 +35,13 @@ import (
 
 const roundFile = "round.json"
 
-// The reviewer's comments a round reads its findings from (its summary,
-// and the comment of its lenses that warn when the review is split), and
-// the count of its runs their records hold.
-var (
-	reviewerMarkers = []string{forge.Marker("sticky=reviewer/summary"), forge.Marker("sticky=reviewer/warn")}
-	reviewerRuns    = regexp.MustCompile(`<!-- workline:record reviewed=\S*(?: patches=\S*)? runs=(\d+)`)
-	// reviewerAt: the head its summary read. A run its rules hold counts
-	// no run, its findings new all the same (#1040).
-	reviewerAt = regexp.MustCompile(`<!-- workline:at head=([0-9a-f]+)`)
-	// reviewerFindings: the hidden record of its findings, a JSON list of
-	// lens, holds, where, severity and text (the reviewer's reviewer.go).
-	reviewerFindings = regexp.MustCompile(`<!-- workline:findings (\[.*\]) -->`)
-	// reviewerOwed: its summary's record owes every lens, its rules alone
-	// ran (the reviewer's record.go writes it).
-	reviewerOwed = regexp.MustCompile(`<!-- workline:record reviewed=\S*(?: patches=\S*)? runs=\d+ owed=all`)
-)
-
-// Round is one round of the review loop, as the record keeps it.
-type Round struct {
-	N      int      `json:"n"`
-	Asked  []string `json:"asked,omitempty"`  // the findings asked, each as its row reads
-	Heard  int      `json:"heard,omitempty"`  // a person's comments read
-	Nits   int      `json:"nits,omitempty"`   // nits said, not asked
-	Result string   `json:"result,omitempty"` // its proof's result; no-code when it wrote none
-	Whys   bool     `json:"whys,omitempty"`   // the five whys ran
-	Person bool     `json:"person,omitempty"` // past the last round: its issue blocked (ADR-0059)
-	// Bounds, a round with no fix: held, nothing to wait for; blocked, a
-	// project check stays red, or its fix was held off a green head:
-	// blocked for a person (#938); objected, its objection waits for the
-	// tester (#987). Asked, in a record before ADR-0065's change 2: it
-	// asked the product owner for files outside the Scope (#921).
-	// Result not-pushed: its fix, red on a green head, kept off it.
-	Bounds string         `json:"bounds,omitempty"`
-	Turns  int            `json:"turns,omitempty"`  // what its agent used, as it reported them
-	Tokens int            `json:"tokens,omitempty"` // fresh, what ai-max-tokens holds
-	Cached int            `json:"cached,omitempty"` // read from cache, apart
-	Tools  map[string]int `json:"tools,omitempty"`
-	// Beside: the new test files its fix wrote beside the Scope
-	// (ADR-0063, §9).
-	Beside []string `json:"beside,omitempty"`
-	// Beyond: the files its fix wrote beyond the Scope, each with its
-	// agent's reason (ADR-0065, change 2).
-	Beyond []devmark.Beyond `json:"beyond,omitempty"`
-	// Tester: the review's test findings it sent to the tester (#1265).
-	Tester []string `json:"tester,omitempty"`
-	// Merge: a round that merged the base in (ADR-0067): settled, or
-	// failed, nothing pushed.
-	Merge string `json:"merge,omitempty"`
-}
-
-// Asked is a finding a round asks the agent to fix: a reviewer's row that
-// blocks, or warns and is Important, or a person's comment.
-type Asked struct {
-	Key   string `json:"key"` // lens, file, title: the same finding round after round
-	Lens  string `json:"lens,omitempty"`
-	Where string `json:"where,omitempty"`
-	Text  string `json:"text"`
-	Holds string `json:"holds"` // blocks, warns, or a person
-	// Detail is the finding whole, from the reviewer's comment on its
-	// line: its row shows the title alone.
-	Detail string `json:"detail,omitempty"`
-	// Check: a project check red, whose log the round reads (#917).
-	Check *forge.HeadCheck `json:"check,omitempty"`
-	// Waited: asked again from the record's last round (#1022): the
-	// developer's still, a test finding too.
-	Waited bool `json:"waited,omitempty"`
-}
-
 // round is what the review run's pre leaves for post.
 type round struct {
-	MR     int      `json:"merge-request"`
-	Branch string   `json:"branch"`
-	Record Act      `json:"record"`
-	Asked  []Asked  `json:"asked"`
-	Heard  []string `json:"heard,omitempty"` // the ids of a person's comments it reads
+	MR     int             `json:"merge-request"`
+	Branch string          `json:"branch"`
+	Record Act             `json:"record"`
+	Asked  []devmark.Asked `json:"asked"`
+	Heard  []string        `json:"heard,omitempty"` // the ids of a person's comments it reads
 	// Body: its issue's body as the round reads it (BodyMark), when it
 	// changed since the code was written (#1271).
 	Body     string `json:"body,omitempty"`
@@ -145,12 +76,12 @@ type round struct {
 	KeptRead bool `json:"kept-read,omitempty"`
 	// ToTester: the review's test findings it sends to the tester
 	// (#1265); TesterOnly, they alone were asked: no agent, no round.
-	ToTester   []Asked `json:"to-tester,omitempty"`
-	TesterOnly bool    `json:"tester-only,omitempty"`
-	Sent       int     `json:"sent,omitempty"` // those the record sent already, not asked again
+	ToTester   []devmark.Asked `json:"to-tester,omitempty"`
+	TesterOnly bool            `json:"tester-only,omitempty"`
+	Sent       int             `json:"sent,omitempty"` // those the record sent already, not asked again
 	// Disputed: those sent that still block, the tester holding no test
 	// needed: its issue blocked for a person.
-	Disputed []Asked `json:"disputed,omitempty"`
+	Disputed []devmark.Asked `json:"disputed,omitempty"`
 	// RecordUnread: why a reviewer comment's findings were not read: its
 	// record missing beside a table, or not parsing (#705). Said, not silent.
 	RecordUnread string `json:"record-unread,omitempty"`
@@ -159,68 +90,6 @@ type round struct {
 	// its agent's worktree starts.
 	Merge     string   `json:"merge,omitempty"`
 	Conflicts []string `json:"conflicts,omitempty"`
-}
-
-// recordUnread says why a reviewer comment's findings record cannot be
-// read, "" when it reads, or when the comment shows no finding either.
-func recordUnread(comment string) string {
-	m := reviewerFindings.FindStringSubmatch(comment)
-	if m == nil {
-		if strings.Contains(comment, "|---") {
-			return "its comment shows a table but holds no findings record (workline:findings): no finding read from the table's words"
-		}
-		return ""
-	}
-	var list []map[string]any
-	if err := json.Unmarshal([]byte(m[1]), &list); err != nil {
-		return "its findings record does not parse: " + err.Error()
-	}
-	return ""
-}
-
-// reviewRows reads the findings of the reviewer's comment from its hidden
-// findings record, never from its table's words (#705): what blocks, a
-// lens's or a rule's, and what warns and is Important; the nits counted.
-// Another that warns asks nothing: left. A comment with no record asks
-// nothing.
-func reviewRows(comment string) (asked []Asked, nits int) {
-	m := reviewerFindings.FindStringSubmatch(comment)
-	if m == nil {
-		return nil, 0
-	}
-	var list []struct {
-		Lens, Holds, Where, Severity, Text string
-	}
-	if json.Unmarshal([]byte(m[1]), &list) != nil {
-		return nil, 0
-	}
-	for _, x := range list {
-		switch {
-		case x.Severity == "Nit":
-			nits++
-			continue
-		case x.Holds == "blocks": // a lens's, or a rule's: a gate's, said bare
-		case x.Holds != "warns" || x.Severity != "Important":
-			continue
-		}
-		msg := x.Text
-		if x.Severity != "" {
-			msg = x.Severity + ": " + msg
-		}
-		asked = append(asked, reviewFinding(x.Holds, x.Lens, x.Where, msg))
-	}
-	return asked, nits
-}
-
-// reviewFinding is a reviewer's finding asked, its key the same round
-// after round: lens, file, title.
-func reviewFinding(holds, lens, where, msg string) Asked {
-	title := strings.TrimSpace(strings.TrimPrefix(msg, "Important:"))
-	if t, _, ok := strings.Cut(title, " — "); ok {
-		title = t
-	}
-	file, _, _ := strings.Cut(where, ":")
-	return Asked{Key: lens + "|" + file + "|" + title, Lens: lens, Where: where, Text: msg, Holds: holds}
 }
 
 // recordedFinding reads a reviewer's finding as the record's round
@@ -232,7 +101,7 @@ var recordedFinding = regexp.MustCompile("^(blocks|warns) (\\S+) `([^`]*)`: (.+)
 // (#1022): the reviewer's comment, read again since on a later head,
 // may no longer hold them, and a green head asks no check. Those the
 // review asks again are not doubled.
-func waited(a Act, asked []Asked) []Asked {
+func waited(a Act, asked []devmark.Asked) []devmark.Asked {
 	if len(a.Rounds) == 0 {
 		return asked
 	}
@@ -241,9 +110,9 @@ func waited(a Act, asked []Asked) []Asked {
 		if m == nil {
 			continue
 		}
-		f := reviewFinding(m[1], m[2], m[3], m[4])
+		f := devmark.ReviewFinding(m[1], m[2], m[3], m[4])
 		f.Waited = true
-		if !slices.ContainsFunc(asked, func(x Asked) bool { return x.Key == f.Key }) {
+		if !slices.ContainsFunc(asked, func(x devmark.Asked) bool { return x.Key == f.Key }) {
 			asked = append(asked, f)
 		}
 	}
@@ -255,7 +124,7 @@ func waited(a Act, asked []Asked) []Asked {
 // one, shows only its title. Only a comment workline's own account wrote
 // is read, on the finding's file, carrying its title; an open one before
 // one resolved, the latest first.
-func lineDetails(asked []Asked, threads []forge.Thread, wrote func(forge.Note) bool) {
+func lineDetails(asked []devmark.Asked, threads []forge.Thread, wrote func(forge.Note) bool) {
 	for i, a := range asked {
 		if a.Holds == "a person" || a.Holds == issueHolds || a.Holds == gateHolds || a.Holds == checkHolds || a.Holds == testerHolds || a.Holds == keptHolds {
 			continue
@@ -438,7 +307,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where, Message: "fixing a finding is judgement on code: with no agent, nothing is fixed (principle 5); waiting: " + strings.Join(texts(r.Asked), "; ")}}})
 	}
 	n := a.Round + 1
-	r.FiveWhys = n >= 3 && !a.Whys && slices.ContainsFunc(r.Asked, func(x Asked) bool { return slices.Contains(a.Seen, x.Key) })
+	r.FiveWhys = n >= 3 && !a.Whys && slices.ContainsFunc(r.Asked, func(x devmark.Asked) bool { return slices.Contains(a.Seen, x.Key) })
 	if is == nil {
 		if is, bounds, err = roundBounds(f, b, repo, a, issue); err != nil {
 			return external(err)
@@ -549,7 +418,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 	// The tester's answer to the round's objection (#987): a test kept
 	// asks again what the round held, at the same head. A rewrite is
 	// asked below, as any.
-	var keptNow []Asked
+	var keptNow []devmark.Asked
 	if a.Widen != nil && a.Widen.Objected && !back {
 		tests, err := testerKept(f, a.Issue)
 		if err != nil {
@@ -558,28 +427,28 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 		r.Kept, r.KeptRead = len(tests), true
 		if len(tests) > a.Widen.Kept {
 			for _, t := range tests[a.Widen.Kept:] {
-				keptNow = append(keptNow, Asked{Key: "kept|" + t, Where: t, Holds: keptHolds, Text: "kept on its Draft"})
+				keptNow = append(keptNow, devmark.Asked{Key: "kept|" + t, Where: t, Holds: keptHolds, Text: "kept on its Draft"})
 			}
 		}
 	}
 	if (back || len(keptNow) > 0) && a.Widen.Review {
 		a.ReviewRuns, a.ReviewAt = 0, "" // the findings it held off a green head, asked again
 	}
-	for _, m := range reviewerMarkers {
+	for _, m := range devmark.ReviewerMarkers {
 		c, ok := kept.Last(m)
 		if !ok {
 			continue
 		}
-		asked, nits := reviewRows(c)
+		asked, nits := devmark.ReviewRows(c)
 		r.Asked, r.Nits = append(r.Asked, asked...), r.Nits+nits
-		if why := recordUnread(c); why != "" && r.RecordUnread == "" {
+		if why := devmark.RecordUnread(c); why != "" && r.RecordUnread == "" {
 			r.RecordUnread = why
 		}
-		if m := reviewerRuns.FindStringSubmatch(c); m != nil {
+		if m := devmark.ReviewerRuns.FindStringSubmatch(c); m != nil {
 			n, _ := strconv.Atoi(m[1])
 			r.Runs += n
 		}
-		if at := reviewerAt.FindStringSubmatch(c); at != nil && r.ReviewAt == "" {
+		if at := devmark.ReviewerAt.FindStringSubmatch(c); at != nil && r.ReviewAt == "" {
 			r.ReviewAt = at[1]
 		}
 	}
@@ -599,7 +468,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 		r.Asked = nil
 	}
 	// A test finding sent to the tester is never asked again (#1265).
-	r.Asked = slices.DeleteFunc(r.Asked, func(x Asked) bool {
+	r.Asked = slices.DeleteFunc(r.Asked, func(x devmark.Asked) bool {
 		if slices.Contains(a.Tester, x.Key) {
 			r.Sent++
 			return true
@@ -647,13 +516,13 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a A
 		if n.Author != "" {
 			who = "@" + n.Author
 		}
-		r.Asked = append(r.Asked, Asked{Key: "person|" + n.ID, Where: who, Text: strings.TrimSpace(n.Body), Holds: "a person"})
+		r.Asked = append(r.Asked, devmark.Asked{Key: "person|" + n.ID, Where: who, Text: strings.TrimSpace(n.Body), Holds: "a person"})
 	}
 	if r.Body, err = issueRewritten(f, a); err != nil {
 		return r, false, err
 	}
 	if r.Body != "" {
-		r.Asked = append(r.Asked, Asked{Key: "issue|" + r.Body, Where: fmt.Sprintf("#%d", a.Issue), Holds: issueHolds,
+		r.Asked = append(r.Asked, devmark.Asked{Key: "issue|" + r.Body, Where: fmt.Sprintf("#%d", a.Issue), Holds: issueHolds,
 			Text: "its body changed since its code was written"})
 	}
 	return r, newReview || at != "" || checksAt != "" || len(rewrites) > 0 || len(keptNow) > 0, nil
@@ -790,7 +659,7 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 // frozenNote tells a finding on a line of a frozen test whose it is to fix:
 // the tester's, by an objection, never a dead end the developer waits on
 // (#1040). "" for any other finding.
-func frozenNote(a Asked, b Bounds) string {
+func frozenNote(a devmark.Asked, b Bounds) string {
 	file, _, _ := strings.Cut(a.Where, ":")
 	if _, frozen := b.Frozen[file]; !frozen || file == "" {
 		return ""
@@ -808,7 +677,7 @@ func frozenNote(a Asked, b Bounds) string {
 func handOff(r round, b Bounds, repo string) []intent.Intention {
 	a := r.Record
 	a.Handed = true
-	a.Rounds = append(a.Rounds, Round{N: a.Round + 1, Asked: texts(r.Asked), Person: true, Tester: testerLines(r.ToTester)})
+	a.Rounds = append(a.Rounds, devmark.Round{N: a.Round + 1, Asked: texts(r.Asked), Person: true, Tester: testerLines(r.ToTester)})
 	var tests []intent.Intention
 	if len(r.ToTester) > 0 { // the tester's all the same: no disagreement on them
 		sendTests(&a, r.ToTester)
@@ -838,7 +707,7 @@ func handOff(r round, b Bounds, repo string) []intent.Intention {
 	)
 }
 
-func texts(l []Asked) []string {
+func texts(l []devmark.Asked) []string {
 	out := make([]string, len(l))
 	for i, a := range l {
 		switch a.Holds {
@@ -863,7 +732,7 @@ func texts(l []Asked) []string {
 	return out
 }
 
-func askedList(l []Asked) string {
+func askedList(l []devmark.Asked) string {
 	var b strings.Builder
 	for _, t := range texts(l) {
 		fmt.Fprintf(&b, "- %s\n", t)
@@ -977,7 +846,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			others = append(others, in) // an objection on the tester's Draft
 		}
 	}
-	this := Round{N: n, Asked: texts(r.Asked), Heard: len(r.Heard), Nits: r.Nits, Whys: r.FiveWhys, Tester: testerLines(r.ToTester)}
+	this := devmark.Round{N: n, Asked: texts(r.Asked), Heard: len(r.Heard), Nits: r.Nits, Whys: r.FiveWhys, Tester: testerLines(r.ToTester)}
 	if len(r.ToTester) > 0 {
 		sendTests(&a, r.ToTester)
 		others = append(others, testRequests(repo, b, r.MR, r.ToTester))
@@ -1141,7 +1010,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 
 // roundBody is the round's comment on its pull request: what was asked,
 // what the developer did, its proof, the five whys.
-func roundBody(x Round, s Settings, notes []string, analysis string, w *devmark.Widen) string {
+func roundBody(x devmark.Round, s Settings, notes []string, analysis string, w *devmark.Widen) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The developer**, review round %d of %d: ", x.N, s.Rounds)
 	if x.Result == "not-pushed" {

@@ -89,7 +89,7 @@ func TestReadMergeTestsFindingSentToTesterIsNotOpen(t *testing.T) {
 	act := Act{
 		Act: "code", Issue: 1,
 		Tester: []string{"tests|a_test.go|a case is not tested"},
-		Rounds: []Round{{N: 1, Tester: []string{"warns tests `a_test.go:3`: Important: a case is not tested"}}},
+		Rounds: []devmark.Round{{N: 1, Tester: []string{"warns tests `a_test.go:3`: Important: a case is not tested"}}},
 	}
 	summary := "**workline reviewer** — verdict pass.\n\n" + `<!-- workline:findings [] -->`
 	warn := "**workline reviewer** — the lenses that warn never hold the verdict.\n\n" +

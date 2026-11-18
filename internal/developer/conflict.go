@@ -271,7 +271,7 @@ func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog
 			Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where, Message: "settling a conflict is judgement on code: with no agent, nothing is merged (principle 5); in conflict: " + strings.Join(files, ", ")}}})
 	}
 	r := round{MR: mr.ID, Branch: mr.Branch, Record: a, At: head, Merge: base, Conflicts: files,
-		Asked: []Asked{{Key: "conflict|" + base, Where: mr.Base, Holds: conflictHolds, Text: "conflicts with " + mr.Base + " in " + strings.Join(files, ", ")}}}
+		Asked: []devmark.Asked{{Key: "conflict|" + base, Where: mr.Base, Holds: conflictHolds, Text: "conflicts with " + mr.Base + " in " + strings.Join(files, ", ")}}}
 	if Backstop != nil {
 		said, err := Backstop(f, repo, a.Issue)
 		if err != nil {
@@ -371,7 +371,7 @@ func mergePost(runDir, repo string, s Settings, r round) int {
 	}
 	a := r.Record
 	n := a.Round + 1
-	this := Round{N: n, Asked: texts(r.Asked)}
+	this := devmark.Round{N: n, Asked: texts(r.Asked)}
 	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d on %s: %s merged in", n, where, r.Asked[0].Where),
 		Findings: append([]verdict.Finding{rightsFinding(where)}, refusalFindings(where, refused, said)...)}
 	if len(unread) > 0 {
@@ -448,7 +448,7 @@ func mergePost(runDir, repo string, s Settings, r round) int {
 }
 
 // mergeBody is the merge round's comment on its pull request.
-func mergeBody(x Round, r round, notes []string, failed string) string {
+func mergeBody(x devmark.Round, r round, notes []string, failed string) string {
 	var b strings.Builder
 	base := r.Asked[0].Where
 	if failed == "" {

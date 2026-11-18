@@ -31,7 +31,7 @@ const testsLens = "tests"
 // testFinding says whether a is a reviewer's finding of its tests lens,
 // a row that blocks or warns, with no finding of another lens grouped
 // under it on its line: such a row holds code to fix, the developer's.
-func testFinding(a Asked) bool {
+func testFinding(a devmark.Asked) bool {
 	if a.Lens != testsLens || (a.Holds != "blocks" && a.Holds != "warns") {
 		return false
 	}
@@ -80,7 +80,7 @@ func (b Bounds) testerTests() []string {
 // nor of another test (the developer's own), with the tester's Draft
 // open. One a resumed round asks again from its record stays the
 // developer's: it was asked it already.
-func splitTests(asked []Asked, b Bounds) (mine, theirs []Asked) {
+func splitTests(asked []devmark.Asked, b Bounds) (mine, theirs []devmark.Asked) {
 	tests := b.tests()
 	open := len(b.testerTests()) > 0
 	for _, x := range asked {
@@ -98,7 +98,7 @@ func splitTests(asked []Asked, b Bounds) (mine, theirs []Asked) {
 // testRequests is the comment that sends l to the tester's Draft: an
 // objection of kind `missing` a finding, on the last line of the issue's
 // first frozen test, its own key so that two are two threads.
-func testRequests(repo string, b Bounds, mr int, l []Asked) intent.Intention {
+func testRequests(repo string, b Bounds, mr int, l []devmark.Asked) intent.Intention {
 	file := b.testerTests()[0]
 	line := 1
 	if data, err := readAt(repo, b.Head, file); err == nil {
@@ -126,7 +126,7 @@ func testRequests(repo string, b Bounds, mr int, l []Asked) intent.Intention {
 
 // testerLines are the test findings a round sends, as its task, its
 // comment and its record say them.
-func testerLines(l []Asked) []string {
+func testerLines(l []devmark.Asked) []string {
 	out := make([]string, len(l))
 	for i, x := range l {
 		out[i] = fmt.Sprintf("%s %s `%s`: %s", x.Holds, x.Lens, x.Where, x.Text)
@@ -135,7 +135,7 @@ func testerLines(l []Asked) []string {
 }
 
 // sendTests marks l sent in a's record.
-func sendTests(a *Act, l []Asked) {
+func sendTests(a *Act, l []devmark.Asked) {
 	for _, x := range l {
 		if !slices.Contains(a.Tester, x.Key) {
 			a.Tester = append(a.Tester, x.Key)
@@ -176,14 +176,14 @@ func toTesterOnly(r round, b Bounds, repo string) []intent.Intention {
 // merge, the tester answering on the pull request that no test is needed
 // on their line: the reviewer and the tester do not agree, and nothing
 // the developer may do settles it.
-func disputed(rows []Asked, a Act, kept forge.Kept) []Asked {
+func disputed(rows []devmark.Asked, a Act, kept forge.Kept) []devmark.Asked {
 	needless := map[string]bool{}
 	for _, c := range kept.Each("<!-- workline:sticky=tester/" + tester.TesterAnswerKey) {
 		if a, ok := reviewer.NoneNeeded(c); ok {
 			needless[a.Where] = true
 		}
 	}
-	var out []Asked
+	var out []devmark.Asked
 	for _, x := range rows {
 		if x.Holds == "blocks" && slices.Contains(a.Tester, x.Key) && needless[x.Where] {
 			out = append(out, x)

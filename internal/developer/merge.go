@@ -123,7 +123,7 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 	}
 	m.Kind, m.Label = IssueKind(is.Labels)
 	m.Milestone = is.Milestone
-	for _, marker := range reviewerMarkers {
+	for _, marker := range devmark.ReviewerMarkers {
 		c, whole := kept.Last(marker)
 		switch {
 		case c == "":
@@ -132,23 +132,23 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 			m.Why = "the reviewer's comment on it was edited by another: its findings cannot be read"
 			return m, nil
 		}
-		if why := recordUnread(c); why != "" {
+		if why := devmark.RecordUnread(c); why != "" {
 			// Never read as no finding open: a comment from an older
 			// engine, or a record that does not parse, holds it (#705).
 			m.Why = "the reviewer's findings on it cannot be read: " + why
 			return m, nil
 		}
-		if marker != reviewerMarkers[0] {
+		if marker != devmark.ReviewerMarkers[0] {
 			continue // the lenses that warn, read apart: never the verdict, never a hold
 		}
-		asked, _ := reviewRows(c)
+		asked, _ := devmark.ReviewRows(c)
 		for _, x := range asked {
 			m.Open = append(m.Open, fmt.Sprintf("%s %s `%s`: %s", x.Holds, x.Lens, x.Where, x.Text))
 		}
-		if at := reviewerAt.FindStringSubmatch(c); at != nil {
+		if at := devmark.ReviewerAt.FindStringSubmatch(c); at != nil {
 			m.ReviewedAt = at[1]
 		}
-		m.Owed, m.Summary = reviewerOwed.MatchString(c), c
+		m.Owed, m.Summary = devmark.ReviewerOwed.MatchString(c), c
 	}
 	return m, nil
 }

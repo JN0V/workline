@@ -1,13 +1,16 @@
 package developer
 
-import "testing"
+import (
+	"github.com/JN0V/workline/internal/kit/devmark"
+	"testing"
+)
 
 // A tests-lens finding on code goes to the tester, its Draft open; one
 // on a frozen test, on the developer's own test, of another lens, or
 // with no Draft stays the developer's (#1265).
 func TestSplitTests(t *testing.T) {
 	b := Bounds{Issue: 3, Draft: 1, Head: "abc", Frozen: map[string]int{"tests/test_mul.sh": 3}}
-	asked := []Asked{
+	asked := []devmark.Asked{
 		{Key: "tests|lib.sh|a", Lens: "tests", Where: "lib.sh:2", Holds: "warns"},
 		{Key: "tests|tests/test_mul.sh|b", Lens: "tests", Where: "tests/test_mul.sh:4", Holds: "warns"},
 		{Key: "tests|tests/test_neg.sh|c", Lens: "tests", Where: "tests/test_neg.sh:1", Holds: "blocks"},
@@ -23,16 +26,16 @@ func TestSplitTests(t *testing.T) {
 	}
 	resumed := asked[0]
 	resumed.Waited = true
-	if mine, theirs := splitTests([]Asked{resumed}, b); len(theirs) != 0 || len(mine) != 1 {
+	if mine, theirs := splitTests([]devmark.Asked{resumed}, b); len(theirs) != 0 || len(mine) != 1 {
 		t.Errorf("asked again from the record, the developer's still: %v, %v", mine, theirs)
 	}
 	grouped := asked[0]
 	grouped.Text = "Important: a — no test. (also found on this line — correctness: nil deref on empty amount (verified))"
-	if mine, theirs := splitTests([]Asked{grouped}, b); len(theirs) != 0 || len(mine) != 1 {
+	if mine, theirs := splitTests([]devmark.Asked{grouped}, b); len(theirs) != 0 || len(mine) != 1 {
 		t.Errorf("a code finding grouped under it, the developer's: %v, %v", mine, theirs)
 	}
 	grouped.Text = "Important: a — no test. (also found on this line — tests: no test of zero)"
-	if _, theirs := splitTests([]Asked{grouped}, b); len(theirs) != 1 {
+	if _, theirs := splitTests([]devmark.Asked{grouped}, b); len(theirs) != 1 {
 		t.Errorf("test findings alone grouped, the tester's: %v", theirs)
 	}
 	b.Draft = 0
