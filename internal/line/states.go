@@ -716,7 +716,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			return
 		}
 	}
-	before, steps := len(res.Findings), len(res.Steps)
+	before, steps, pend := len(res.Findings), len(res.Steps), len(res.Pending)
 	first := steps // the step's runs, counted in its record (ADR-0064)
 	_, status := runRole(res, cfg, o, 0)
 	out, given := outcomeOf(res.Steps[steps:], status), st.inputs[NeedsInput] != "" // given what it lacked on its input (#1157)
@@ -871,7 +871,8 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		}
 	}
 	passed(res, f, cfg, &st) // its run took the issue to its backstop: a person's (ADR-0064, §5)
-	st.write.After = true    // its body and labels as its run left them (ADR-0063, §3)
+	st.write.Runs = slices.Clone(res.Pending[pend:])
+	st.write.After = true // its body and labels as its run left them (ADR-0063, §3)
 	st.write.Parent = st.parent
 	if st.role == backlog.Keeper {
 		st.write.Wait = waitWord(newTallyFor(o).askWait()) // what waits on a person after it, said with its day (#1195)

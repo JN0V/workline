@@ -1,0 +1,51 @@
+case: routing/ready-patch-not-applied-counted
+about: >
+  Counted: the line judges a developer's run with no write token
+  (--no-apply) and the apply job applies it (`workline apply --line`).
+  Its patch does not apply on the tree it meets there (a base that
+  moved since the Draft's), so the apply fails. The issue's record
+  counts that failure as a machine error, its labels and state kept:
+  the line's comment says the developer's run failed, and the record
+  holds its errors. Without the count the line runs the developer
+  again at once, an agent call each time, and never says it is stuck.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run:
+  route: issue
+  target: {issue: 3}
+  open-merge-request: true
+  no-apply: true
+  ai: "fake:developer-writes-mul"
+  then: resume
+  apply-from:
+    line: true
+    intents:
+      - patch: |
+          diff --git a/lib.sh b/lib.sh
+          --- a/lib.sh
+          +++ b/lib.sh
+          @@ -1,2 +1,2 @@
+          -a line that lib.sh never had
+          +another line
+expect:
+  forge:
+    issues:
+      - id: 3
+        comment-contains: ["**workline's line** saw the developer's run on this issue fail (", "\"errors\":{\"by\":{"]

@@ -2123,6 +2123,7 @@ func applyCmd(args []string) int {
 		}
 	}
 	res := resume(dirs[0])
+	failed := res.Findings   // the findings of the run that did not apply
 	stopped := len(dirs) - 1 // the last run applied
 	var ran []string         // the runs applied, their folders: their tokens counted (ADR-0064)
 	if res.Status == verdict.Pass {
@@ -2134,6 +2135,7 @@ func applyCmd(args []string) int {
 			break
 		}
 		next := resume(d)
+		failed = next.Findings
 		if next.Status == verdict.Pass {
 			ran = append(ran, next.RunDir)
 		}
@@ -2158,6 +2160,8 @@ func applyCmd(args []string) int {
 	}
 	if states != nil && res.Status == verdict.Pass {
 		keepStates(res, states, *repo)
+	} else if states != nil {
+		countApplyFailure(res, states, *repo, dirs[stopped], failed)
 	}
 	// The runs after the one that stopped are not applied: said, with the
 	// command that resumes them all, never left out of the job's page.
@@ -2221,6 +2225,47 @@ func keepStates(res *engine.Result, l *line.Result, repo string) {
 	}
 	for _, w := range l.States {
 		res.Applied = append(res.Applied, fmt.Sprintf("the line's record on #%d", w.Issue))
+	}
+}
+
+// countApplyFailure counts the failure of an apply on the issues the line
+// ran a step for, as a machine error in their records (#1775): the next
+// reconcile does not run the developer again at once.
+func countApplyFailure(res *engine.Result, l *line.Result, repo, run string, own []verdict.Finding) {
+	said := ""
+	for _, f := range own {
+		if f.Rule == "engine-error" {
+			said = f.Message
+			break
+		}
+	}
+	if said == "" {
+		return
+	}
+	fail := func(err error) {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unwritten", Message: "the failure of " + filepath.Base(run) + " is not counted: " + err.Error()})
+	}
+	root, err := gitRoot(repo)
+	if err != nil {
+		fail(errors.New("not in a git repository"))
+		return
+	}
+	spec := l.Forge
+	if spec == "" {
+		cfg, err := role.LoadProjectConfig(root)
+		if err != nil {
+			fail(err)
+			return
+		}
+		spec = cfg.Forge
+	}
+	f, err := forge.Open(spec, root)
+	if err != nil {
+		fail(err)
+		return
+	}
+	if err := line.CountApplyFailure(f, root, l, said, run); err != nil {
+		fail(err)
 	}
 }
 
