@@ -1,6 +1,25 @@
 ---
-sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/backlog/assume.go, internal/sample/acts.go, internal/scale/detect.go]
-checked: d72f90e5
+sources:
+  - roles/product-owner/role.yaml#settings
+  - roles/product-owner/role.yaml#levels
+  - internal/backlog/autonomy.go#GoneSettings
+  - internal/backlog/autonomy.go#ReadConfig
+  - internal/backlog/ledger.go#UndoneMaxLimit
+  - internal/backlog/ledger.go#ProposalsMaxLimit
+  - internal/backlog/ledger.go#Plan.labelWithin
+  - internal/backlog/ledger.go#RevisionsMax
+  - internal/backlog/backlog.go#RoundsMax
+  - internal/backlog/board.go#NextMaxLimit
+  - internal/backlog/board.go#StuckDaysLimit
+  - internal/backlog/repeat.go#RepeatedPercentMax
+  - internal/backlog/assume.go#ReadWait
+  - internal/backlog/assume.go#Unanswered
+  - internal/backlog/assume.go#DraftsSince
+  - internal/backlog/assume.go#firstRead
+  - internal/backlog/size.go#Config.SplitOff
+  - internal/builtin/productowner/productowner.go#Settings
+  - internal/kit/verdict/cut.go#CutRule
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -18,7 +37,7 @@ project's top-level `autonomy`, else `normal`; the task says which
 |---|---|---|
 | `autonomy` | `normal` | how far it goes alone: `cautious`, `normal`, `enterprising` (below) |
 | `issues-per-run` | `8` | issues read a run |
-| `code-lines-max` | `1500` | lines of code given a run, all files together; a cut said in the run (`input-cut`) |
+| `code-lines-max` | `1500` | lines of code given a run, all files together; a cut said in the run (`input-cut`, [how](../../../docs/spec/role-contract.md#one-run)) |
 | `code-bytes-max` | `16000` | bytes of code given each issue read: 0, the lines bound it alone ([code picker](../../../docs/spec/code-picker.md#each-role)); a cut said in the run (`input-cut`) |
 | `proposals-max` | `10` (1 to 100) | issues waiting on a person before it reads only those a person commented on, and labels no more |
 | `undone-max` | `3` (1 to 20) | acts of a kind a person undoes, across the issues, before that kind is proposed on every issue |
@@ -72,7 +91,8 @@ Need or Validation draft no person accepted, waits for an answer
 | `enterprising` | `"0"` | the assumption is written in the run that asks |
 
 - **Values**: a duration (`24h`, `90m`, `2d`), `"0"`, or `never`;
-  anything else stops the run, said.
+  anything else stops the run, said
+  ([caps](../../../docs/spec/backlog-acts/autonomy.md#the-levels)).
 - **Counted from the question's comment**, as the forge dates it,
   never from the issue's last update; a draft from when the issue got
   `workline:draft`, or from a person's later comment. Draft marks in a
@@ -81,20 +101,12 @@ Need or Validation draft no person accepted, waits for an answer
 - **An answer before the delay** cancels it: no assumption. A bot's
   comment, an outsider's or a "+1" is none
   ([#1400](https://github.com/JN0V/workline/issues/1400)).
-- **While it waits**, the line says so on each reconcile: on whom, and
-  the day the assumption is taken
-  ([#1082](https://github.com/JN0V/workline/issues/1082)). Its comment
-  on the issue says it too, with what a person does to end the wait
-  ([#1195](https://github.com/JN0V/workline/issues/1195)). Drafts
-  waiting call no agent; a person's comment, edit or label, or an
-  important finding of the reviewer's, still does
-  ([#1127](https://github.com/JN0V/workline/issues/1127)). Drafts not
-  reviewed yet call the reviewer alone, not this role
-  ([#1150](https://github.com/JN0V/workline/issues/1150)).
-- **Past the delay**, the line wakes the role once, with no agent until
-  then; one agent call writes the assumption
-  ([on the issue](writing.md#assumptions)). A draft needs none: the
-  engine takes it as written and moves the issue to ready.
+- **While it waits**, the line says so: on whom, and the day the
+  assumption is taken; drafts waiting call no agent, a person's comment,
+  edit or label does. **Past the delay**, it wakes the role once, with
+  no agent until then: one call writes the assumption
+  ([on the issue](writing.md#assumptions)); a draft is taken as written
+  ([the line](../../../docs/spec/routing.md#once-a-state-the-record)).
 - **Silence is still no yes** to close, merge or release.
 
 ```yaml
@@ -114,14 +126,14 @@ The code stays; each comes back with a mode
 | `milestone` | puts an issue in its release's milestone; moves one that slipped |
 | `order` | sets an issue's priority, `workline:priority/1` to `/4` unless `priority` says where the project keeps it; a person's kept |
 | `effort` | sets an issue's effort, Low to High, once, where `effort` says the project keeps it, on code the run read ([below](#priority-and-effort)) |
-| `split` | splits a need too big into 2 to 6 issues ([ADR-0022](../../../docs/adr/0022-a-split-keeps-the-need-a-rename-keeps-a-persons-title.md)); off, still done on an issue past its size or where a person's comment asks it, unless set off |
+| `split` | splits a need too big into 2 to 6 issues ([ADR-0022](../../../docs/adr/0022-a-split-keeps-the-need-a-rename-keeps-a-persons-title.md)); off, still done on an issue past its size or where a person's comment asks it, unless set off ([how](../../../docs/spec/backlog-acts/autonomy.md)) |
 | `rename` | renames a vague title; a person's kept |
 | `depend` | says what an issue waits on ([ADR-0028](../../../docs/adr/0028-an-issue-names-what-it-waits-on.md)) |
 | `close-obsolete` | announces an obsolete issue, closes it `days` later (7) on silence and a second judge's yes ([ADR-0024](../../../docs/adr/0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md)) |
 
 Off, `close-obsolete` still speaks: an issue the code already does is
 said so on the issue, the code quoted, for you to close; nothing is
-announced or closed.
+announced or closed ([its outputs](outputs.md)).
 
 ```yaml
 roles:
@@ -138,26 +150,20 @@ Where the project keeps each issue's priority and effort
 [examples](priority-and-effort.md)). Unset by default: workline's own
 labels, and no effort read.
 
-| Value | Reads and writes |
-|---|---|
-| `auto` | a GitHub organisation's own Priority and Effort fields; the effort in GitLab's weight (Premium, Ultimate); else the project's own labels (`P0`…, `P-*`, `priority/*`, `priority::*`, `effort*`), else workline's own, else the forge's: `priority/urgent` to `/low` on GitHub, `priority::1` to `::4` on GitLab, created at the first act |
-| `{in: labels, prefix: P}`, `{in: field, name: Severity}`, `{in: weight}` | that family, that field, or GitLab's weight (the effort only); the run stops if the project has none |
-| `names: {sev-1: urgent}`, beside either | a label no table knows, read as that level |
-
-- **Said once a run**: where each was found, and a name no table knows.
-- **One place each**: an issue holding a priority in another family, or
-  in a field beside the labels, gets nothing written.
-- **Fields visible to members only**, on a public repository: the values
-  are set but never shown — not in the role's comment, its state, nor the
-  job's summary — and never proposed. A token not shown to read them, the
-  job's own or an App's, writes nothing there
-  ([why](../../../docs/research/priority-and-weight.md#checked-live-2026-10-18)).
-- **GitLab's weight**: read 0–1 Low, 2–3 Medium, 4 or more High; written
-  1, 3 or 5; never a parent's, which GitLab sums from its parts'.
-- **Set once, only where empty**: a value a person set stays; one the
-  role set and a person changed or cleared is never written again.
+- **`auto`** finds where each is kept; `{in: labels, prefix: P}`,
+  `{in: field, name: Severity}` or `{in: weight}` (the effort only)
+  names it, the run stopped if the project has none; `names` reads a
+  label no table knows as a level
+  ([where the project keeps them](../../../docs/spec/backlog-acts/order.md#where-the-project-keeps-them)).
+- **GitHub's fields** visible to members only: never shown, never
+  proposed ([GitHub's fields](../../../docs/spec/backlog-acts/order.md#in-githubs-fields)).
+- **GitLab's weight**: the effort only, never a parent's
+  ([GitLab's weight](../../../docs/spec/backlog-acts/order.md#in-gitlabs-weight)).
+- **Set once, only where empty**; a person's change stands
+  ([set once](../../../docs/spec/backlog-acts/order.md#the-effort-set-once)).
 - **The order** goes by the priority, then the effort, the lightest
-  first; Next shows each issue's cell, "High · Effort Low → quick win".
+  first ([ordering](../../../docs/spec/backlog-acts/order.md#ordering));
+  Next shows each issue's cell ([examples](priority-and-effort.md#next)).
 - **An effort** needs the `effort` act on (`max` 10 a run, 20 at
   `enterprising`), and is estimated only on an issue whose code the run
   read.
