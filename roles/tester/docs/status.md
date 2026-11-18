@@ -147,7 +147,7 @@ Cases in `tests/conformance/cases/tester/`:
   [#966](https://github.com/JN0V/workline/pull/966#tried). The lint's
   error naming the test's missing name not counted
   ([#988](https://github.com/JN0V/workline/issues/988),
-  [the page](missing-name.md#the-lint)); tried with the real
+  [the page](build-errors.md#the-lint)); tried with the real
   golangci-lint on a copy of workline, on
   [#996](https://github.com/JN0V/workline/pull/996#tried).
 - **A Draft proven on its tests' folders**, `draft-command` naming
@@ -242,7 +242,7 @@ Cases in `tests/conformance/cases/tester/`:
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
   every test green on the base, no Draft, its reporter asked, then
   Blocked as not reproduced by the line
-  ([how](hand-over.md#a-bug-not-reproduced)). Cases
+  ([how](proof-kinds.md#a-bug-not-reproduced)). Cases
   `tester/bug-green-on-base-asks-its-reporter`,
   `routing/bug-not-reproduced-blocked-after-the-delay`. Tried on
   [#876](https://github.com/JN0V/workline/pull/876#tried).
@@ -296,7 +296,7 @@ each said before or after 1.0:
   (before 1.0, [#1291](https://github.com/JN0V/workline/issues/1291)).
 - **A missing name in Rust**: its errors span several lines, which
   `build-errors` does not read
-  ([the page](missing-name.md#other-languages)); build errors move to
+  ([the page](build-errors.md#other-languages)); build errors move to
   language packs
   (after 1.0, [#1319](https://github.com/JN0V/workline/issues/1319)).
 

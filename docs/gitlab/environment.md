@@ -60,7 +60,7 @@ can read them, even after `unset`, from its parent's start environment.
   `workline:main`, `workline:release`, `workline:curator`. GitLab gives them no scoped
   variable. They still unset the agent's and the bot's tokens first,
   for one left to every environment.
-- **The stored base** ([main after a merge](../main-after-merge.md#gitlab))
+- **The stored base** ([main after a merge](main-after-merge.md))
   is read by `workline:base`, first: the bot's token, nothing checked
   out, no tool. Its artifact goes to `workline:gates`, or to
   `workline:main` on the default branch. A job's own token cannot read

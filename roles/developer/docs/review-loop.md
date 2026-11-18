@@ -38,7 +38,7 @@ step 6).
   `workline/developer/<n>`, in its conversation or in a thread on a
   line ([#1438](https://github.com/JN0V/workline/issues/1438)):
   `workline develop --merge-request <n>`. With no forge
-  ([`forge: local`](../../../docs/local-line.md#5-review-the-merge-request)),
+  ([`forge: local`](../../../docs/local-line-review.md)),
   the reconciler runs it, in a worktree of the head.
 - **No memory**: it reads its record on the pull request (the rounds
   before, the reviewer's runs read, the gates' report read, the

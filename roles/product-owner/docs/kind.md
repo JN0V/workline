@@ -90,7 +90,7 @@ changes. A light read gives it a kind
   changes it, or takes it off, is never undone (`kind-once`).
 - **A bug is never turned into a feature**: not by the role, and not
   when its bug is not reproduced ([the tester's
-  hand-over](../../tester/docs/hand-over.md#a-bug-not-reproduced)).
+  hand-over](../../tester/docs/proof-kinds.md#a-bug-not-reproduced)).
 
 ## Not yet
 

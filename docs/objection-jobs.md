@@ -1,6 +1,18 @@
 ---
-sources: [defaults/ci/github/workline-objection.yml, defaults/ci/github/workline-answer.yml, defaults/ci/github/workline-develop.yml, defaults/ci/gitlab/workline.gitlab-ci.yml, internal/engine/fromrun.go]
-checked: b34f0b15
+sources:
+  - defaults/ci/github/workline-objection.yml
+  - defaults/ci/github/workline-answer.yml#on
+  - defaults/ci/github/workline-answer.yml#jobs.judge.permissions
+  - defaults/ci/github/workline-answer.yml#jobs.judge.env
+  - defaults/ci/github/workline-answer.yml#jobs.apply.environment
+  - defaults/ci/github/workline-answer.yml#jobs.apply.permissions
+  - defaults/ci/github/workline-develop.yml#on.workflow_run
+  - defaults/ci/github/workline-develop.yml#on.schedule
+  - defaults/ci/github/workline-develop.yml#jobs.reconcile
+  - internal/engine/fromrun.go#onHead
+  - internal/engine/fromrun.go#ResumeFrom
+checked: c46a93d6c
+verified: agent:claude-code
 judged-in-parts: 786d304
 ---
 # An objection's jobs
@@ -12,12 +24,19 @@ comment opened by `workline:objection` on the tester's Draft
 ```mermaid
 flowchart LR
   notice["<b>notice</b><br/>no token"]
-  judge["<b>judge</b><br/>AI key, read rights<br/>runs the Draft's tests"]
-  apply["<b>apply</b><br/>write token, no AI key<br/>default branch"]
+  judge["<b>judge</b><br/>AI key, read rights"]
+  apply["<b>apply</b><br/>write token<br/>default branch"]
   notice --> judge -- "a run, as data" --> apply
 ```
 
-## Who wakes it
+- [The judge and apply jobs](objection-jobs-judge.md): what each holds,
+  on GitHub and on GitLab.
+- [One objection a run](objection-jobs-queue.md): the queue drained,
+  on GitHub.
+- [What apply takes from the judge](objection-jobs-apply.md): the run
+  read as data, only what the Draft's line may do.
+
+## Who wakes it (GitHub)
 
 - A person of the project (owner, member, collaborator) or an App
   installed on it, such as workline's own builder.
@@ -26,10 +45,14 @@ flowchart LR
 - Only a comment that opens with `workline:objection`: the tester's own
   reply, which names the word to say the form, wakes nothing.
 - A reply in an objection's thread, the developer's or a person's,
-  wakes it too (GitHub: job `replied-to-tester`); the tester's own
+  wakes it too (job `replied-to-tester`); the tester's own
   answers do not.
 - Any branch `workline/tester/*` of the repository with such a comment
   wakes it, a Draft opened by hand too; never a fork's.
+- The reconciler of `workline-develop.yml` lists the Drafts an
+  objection still waits on (`answers` in `workline route reconcile
+  --input reconcile=list`) and starts their answer: a run that
+  stopped first is resumed with no person acting.
 
 ## notice (GitHub only)
 
@@ -45,69 +68,8 @@ flowchart LR
   secret, the App's own replies left out.
 - Its end wakes `workline-develop.yml`, as the default branch holds it:
   the developer's review round, at once rather than at the hourly
-  reconcile ([#1438](https://github.com/JN0V/workline/issues/1438)).
-
-## One objection a run, the queue drained (GitHub only)
-
-- An answer run answers one objection
-  ([#1701](https://github.com/JN0V/workline/issues/1701)).
-- apply then starts `workline-answer.yml` again on the same Draft
-  (`workflow_dispatch`, input `branch`): the next one waiting. With
-  none left, the run ends before any agent. 5 answers at most in a
-  chain (input `chain`); the reconciler resumes after.
-- Each run writes on the Draft the state it ran on, whatever it
-  wrote, unless its agent was out of reach: the tip and each
-  objection waiting
-  (`workline test answer --tried`). A run on that same state
-  (`--state` says `tried`) calls no agent: only a new comment in a
-  waiting thread, a new objection or a new head starts one again.
-- A state not read (a release before `--state`, or the forge
-  failing): the answer runs as before, a warning in the log, and no
-  state is written
-  ([the N-1 rule](adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#consequences)).
-- The reconciler of `workline-develop.yml` lists the Drafts an
-  objection still waits on (`answers` in `workline route reconcile
-  --input reconcile=list`) and starts their answer: a run that
-  stopped first is resumed with no person acting.
-
-## head (GitLab only)
-
-- Reads the Draft's head with `git ls-remote`, before any of the
-  Draft's code runs, holding no agent's token.
-- The judge checks that head out; apply applies at that head only.
-
-## judge
-
-- The agent's token, read rights, no write token: it proposes
-  (`--no-apply`).
-- It checks out the Draft's head, and runs your test command there: a
-  rewrite must be red on the base.
-- On GitHub, that head is the Draft's open pull request's tip when the
-  run starts, never the objection run's `head_sha`: a re-run or a push
-  since would leave it behind.
-- So it runs the Draft's code: what it leaves is not trusted.
-- On GitLab, it reads the forge with a separate read-only token, not
-  the bot's: that one is unset before the Draft's code runs.
-
-## apply
-
-- The write token (GitHub: the App's, in the environment
-  `workline-app`), no AI key, from the default branch's checkout
-  ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
-- The judge's run is data:
-  - it names a run's folder, checked by the job (`<date>T<time>.<ns>-<role>`,
-    under the runs folder) and by the engine;
-  - on GitHub, downloaded outside the checkout;
-  - `workline apply --from-merge-request` reads only its proposals: the
-    repository, the roles and the forge are the job's own
-    ([`workline apply`](commands.md#workline-apply)).
-- Only what the Draft's line may do: its branch, its threads, the issue
-  it was opened for (`workline/tester/issue-<n>`); anything else refuses
-  the whole run.
-- The head: the one judge read on GitHub; on GitLab, the one
-  `workline:objection:head` reads before the judge, holding no agent. A
-  judge reporting another head applies nothing; so does a branch moved
-  on since: the objection waits for the next run.
+  reconcile ([its triggers](../roles/developer/docs/triggers.md#on-its-pull-request),
+  [#1438](https://github.com/JN0V/workline/issues/1438)).
 
 ## The Draft's files beside the write token
 

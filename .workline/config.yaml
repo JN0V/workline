@@ -22,7 +22,10 @@ roles:
         roles/reviewer/docs/run.md, roles/reviewer/docs/judge.md, roles/reviewer/docs/spec.md,
         roles/reviewer/docs/lines.md, roles/reviewer/docs/apart.md, roles/reviewer/docs/once.md,
         roles/committer/docs/squash-title.md, roles/tester/docs/hand-over.md,
-        roles/tester/docs/missing-name.md]
+        roles/tester/docs/missing-name.md, roles/tester/docs/written.md, roles/tester/docs/refused.md,
+        roles/tester/docs/proof-kinds.md, roles/tester/docs/build-judge.md, roles/tester/docs/build-outcomes.md,
+        roles/tester/docs/build-errors.md, roles/committer/docs/checks.md, roles/committer/docs/secrets.md,
+        roles/committer/docs/rewrite.md, roles/reviewer/docs/lines-forge.md, roles/reviewer/docs/lines-again.md]
       # The user pages (AGENTS.md, "Writing user docs"): the role pages too,
       # but their status and the archived backlog; each role page opens
       # with a diagram.

@@ -127,10 +127,10 @@ workline test write --issue 42 --ai claude
 | `intention-refused` | a patch reaches a file outside `test-paths` |
 | `test-green-on-base` | a test is not proven red; asked again once, told how to mend it (one passing on the base may keep its scenario as today), then blocked. A feature's answer keeping every scenario as today is `none`, back to the product owner |
 | `no-new-test` | the report names no test of the files written: the project's runner did not run them, the filter that may skip them named (a PlatformIO `test_filter`); the next run gives the agent this reason |
-| `bug-not-reproduced` | a bug's tests all pass on the base: `workline:needs-repro`, its reporter asked ([how](docs/hand-over.md#a-bug-not-reproduced)) |
+| `bug-not-reproduced` | a bug's tests all pass on the base: `workline:needs-repro`, its reporter asked ([how](docs/proof-kinds.md#a-bug-not-reproduced)) |
 | `no-test-written` | no test proposed, the answer unread or refused whole; an answer that does not read is asked again once first. An answer read with no test nor kind is `none`, back to the product owner |
 
-Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-refuses-an-issue)).
+Each refusal is written on the issue ([how](docs/refused.md)).
 
 ## Frozen tests and objections
 
@@ -194,7 +194,7 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
 ## When it runs
 
 - **At once**, routed on `issue` too: an issue labelled
-  `workline:needs-tests` ([the hand-over](docs/hand-over.md#when-the-tests-are-written)).
+  `workline:needs-tests` ([the hand-over](docs/written.md)).
 - **At night**, list it in the `schedule` line, after the product owner
   and the reviewer
   ([routing](../../docs/spec/routing.md#the-line)):
@@ -247,7 +247,7 @@ workline test check --base origin/main
 | `tests-not-built` | no, warns | tests the base ran are not in the report of the base with the change's tests: their build broke there |
 | `suite-record` | no, informs | the change's tests alone: a new case is the runner's record of its suite, not a test, not frozen |
 | `no-new-test` | no, warns | the change touches test files, but no new test is in the report |
-| `red-unproven` | no, warns; `human` with no agent | the build broke on the base past the fast path, and the judge did not settle it: the Draft opens marked, the developer starts ([broken build](docs/missing-name.md#the-judge)) |
+| `red-unproven` | no, warns; `human` with no agent | the build broke on the base past the fast path, and the judge did not settle it: the Draft opens marked, the developer starts ([broken build](docs/build-outcomes.md#red-unproven)) |
 | `build-broken` | yes | the build broke on the base with the change's tests, and the judge says it is not by what the issue adds, its line quoted ([broken build](docs/missing-name.md)); writing an issue's tests, after the agent is asked once more with the error, then a machine error the line runs again ([the record](../../docs/spec/routing.md#once-a-state-the-record)) |
 
 - **A change with no new test** passes, and says so.
@@ -279,7 +279,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | `test-paths` | none: the packs' | the test files, as patterns; every role reads them, the one definition of a test file ([ADR-0065](../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)). Unset: the listed [packs'](../../docs/packs.md) with the generic pack's, else the generic pack's alone: `test/`, `tests/`, `Tests/`, `__tests__/` folders, `test_*`, `*_test.*`, `*_spec.*`, `*.test.*`, `*.spec.*`, said by `workline doctor`. The only files `test write` may add; a new one beside the Scope is not listed beyond it by the developer ([its bounds](../developer/docs/bounds.md#what-it-checks)) |
 | `test-homes` | none: the packs' | where a test's code lives, for the developer's Scope: `[{tests: "**/src/test/kotlin/**", code: "**/src/main/kotlin/**"}]`, each `**` filling the next; unset, the listed [packs'](../../docs/packs.md), then the generic ones: the folder holding a `test/` or `tests/` folder; in none, the test's own folder |
 | `build-errors` | Go, Kotlin, Java, Gradle, pytest | how a broken build's errors and missing names read, by ecosystem ([page](docs/missing-name.md)) |
-| `judge-read-rounds`, `judge-read-lines-max` | 2, 400 | what the judge of a broken build may read of the base before it answers ([page](docs/missing-name.md#the-judge)) |
+| `judge-read-rounds`, `judge-read-lines-max` | 2, 400 | what the judge of a broken build may read of the base before it answers ([page](docs/build-judge.md#the-judge)) |
 | `code-lines-max` | 1500 | lines of the code the issue names and of the tests given to the agent, all files together, fewer when long lines would pass the context budget; a longer file gives the pieces the issue names in it, inside its declarations; the files the test and the Scope include or import, two steps deep, as declarations ([the code picker](../../docs/spec/code-picker.md)); a fifth kept for a test beside when the code would fill it; files past it are named with their size |
 | `ai-max-tokens`, `ai-max-seconds` | 300000, 1200 | what one `test write` or `test answer` run may spend, and wait on its agent |
 | `ai-max-turns` | 40 | the turns of an agent that reads the project itself (`claude`), told in its task and enforced by the engine (`claude --max-turns`); reached before it answered: asked again once, then a machine error the line retries, never "no test possible" ([#1194](https://github.com/JN0V/workline/issues/1194)) |

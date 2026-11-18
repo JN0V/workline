@@ -76,7 +76,7 @@ flowchart LR
 ## A flaky test: N runs of N
 
 For an issue whose tester recorded `flaky-n-of-n` in place of a Draft
-([proof kinds](../../tester/docs/hand-over.md#a-proof-kind-not-always-a-new-test)):
+([proof kinds](../../tester/docs/proof-kinds.md#a-proof-kind-not-always-a-new-test)):
 
 - **N runs**: the command above runs N times on the one fresh tree;
   N is the tester's record's, else `flaky-runs` (10).

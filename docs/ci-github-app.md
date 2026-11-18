@@ -27,7 +27,7 @@ branch's workflow
      **Commit statuses** too;
    - organization permission **Projects**, read and write, when the
      work shows on an organisation's project: the roles move its cards
-     ([boards](boards.md#who-may-write-a-github-project));
+     ([boards](board-github.md#who-may-write-a-github-project));
    - **Checks** writes the checks `workline findings` and `workline gates`: the documentalist's
      findings beside their lines, none a conversation to resolve
      ([#412](https://github.com/JN0V/workline/issues/412)). An App made

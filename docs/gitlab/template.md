@@ -45,7 +45,7 @@ Part of [workline on GitLab CI](../ci-gitlab.md): what each job of
   agent: the gates, their findings kept in its artifacts as the next base
   `workline:gates` reads, and the whole repository's checks;
   `workline:main:issue`, the bot's token, keeps what it found in one issue
-  ([main after a merge](../main-after-merge.md#gitlab)).
+  ([main after a merge](main-after-merge.md)).
 - **`workline:garden:apply`** then rebuilds gardening's earlier merge
   requests, or closes those with nothing left to merge
   ([ADR-0034, amended](../adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).

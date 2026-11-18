@@ -1,6 +1,20 @@
 ---
-sources: [internal/tester/moment.go, internal/kit/testmark, internal/tester/write.go, internal/builtin/reviewer/ruleson.go, internal/tester/proof.go, defaults/routing.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go, internal/tester/repro.go, internal/engine/done.go]
-checked: ccbfd55d
+sources:
+  - internal/kit/testmark/testmark.go#TestsBranch
+  - internal/kit/testmark/testmark.go#TestsSubject
+  - internal/tester/write.go#draftBody
+  - internal/tester/write.go#unprovenOf
+  - internal/tester/write.go#proveOnBase
+  - internal/tester/frozen.go#record
+  - internal/tester/frozen.go#recordData
+  - internal/tester/frozen.go#record.body
+  - internal/tester/frozen.go#readRecordKept
+  - internal/tester/frozen.go#guard
+  - internal/developer/bounds.go#checker.rule
+  - internal/tester/green.go#greenRuns
+  - internal/tester/green.go#judge
+  - internal/engine/done.go
+checked: c46a93d6c
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -47,170 +61,13 @@ flowchart LR
   the scenarios as read. Only the tester's runs write it. The green
   proof requires each id on the code ([how](green-proof.md#what-it-runs)).
 
-## When the tests are written
+## Before the builder
 
-The issue waits for its tests labelled `workline:needs-tests`, set by
-the product owner; an issue labelled ready by hand, with no Draft, is
-taken too.
-
-Routed on `issue` (`issue: [tester, developer]`), the issue line runs
-the tester on it at once, and moves a ready issue whose scenarios no
-Draft nor proof kind stands for back to its tests, by rule, said on it
-([the line of states](../../../docs/spec/routing.md#the-line-of-states)).
-Once the Draft is proven, the engine moves the issue on, no agent asked
-([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#3-tests-wakes-the-tester-its-result-makes-ready)):
-
-- **Each scenario** has its row in `## Tests`, or its reason under
-  not tested.
-- **The project's lint** passes on the tests: each gate routed on
-  `merge-request`, only what they add counted, and
-  [the reviewer's rules](../../reviewer/README.md) when it is routed
-  there: a test once frozen is no longer the tester's to edit
-  ([#1040](https://github.com/JN0V/workline/issues/1040)). A finding there is the
-  agent's to mend: it is asked once more, each finding named by its file
-  and line
-  ([#964](https://github.com/JN0V/workline/issues/964)). Still there,
-  the run blocks (`tests-lint`): no Draft, the finding said on it, and
-  the line runs the tester again on the issue, told the findings, as
-  for any machine error (a bounded number of tries), before the issue
-  is blocked for a person, the last finding named
-  ([#1738](https://github.com/JN0V/workline/issues/1738)). A gate that
-  cannot run at all (`tests-lint-gate-not-run`) blocks at once: no new
-  run mends it. A lint's error repeating the build's own
-  error the test is red by ([how](missing-name.md#the-lint)) is not
-  counted.
-- **Then ready**: `workline:ready` on, the other states' labels off,
-  said in the tester's comment on the issue (`state-moved`). An issue
-  already ready keeps its labels.
-- **No Draft, no move**: a Draft that does not open (its commit
-  refused, say) undoes the move, the reason on the issue; a run told
-  to open none (`--open-merge-request=false`) is refused before its
-  agent is asked, nothing applied
-  ([#1280](https://github.com/JN0V/workline/issues/1280)).
-
-## A proof kind, not always a new test
-
-When no new test fits, the tester's agent names the proof that does
-([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#4-a-proof-kind-not-always-a-new-test)):
-
-| Kind | When | Proof |
-|---|---|---|
-| `flaky-n-of-n` | a flaky test to make reliable | the named test passes N runs of N |
-| `existing-suite` | a refactor | the project's suite, unchanged and green |
-| `docs-checks` | a docs change | the documentalist's checks |
-
-- **Recorded**, the kind and its reason, in the tester's comment on the
-  issue; no Draft. The issue moves to ready (`proof-recorded`); one
-  labelled ready by hand keeps its state.
-- **The developer** takes it as it takes one with a Draft, the kind in
-  its task ([the pick](../../developer/docs/pick.md#which-issue)).
-- **`none`**, no test possible: the issue goes back to the product
-  owner's state, refine, the reason said and recorded
-  (`no-test-possible`). The product owner then picks a kind, or
-  rewrites the text and sends it back to its tests, or, the reason
-  being the tester's own, sends it back unchanged once (its next
-  `none` recorded `retried`) — or, none of these, the line blocks it
-  ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked));
-  with no agent, a person of the project names one in a comment,
-  `proof: <kind> — why`.
-- **No reason, no answer**: an agent that names no kind, writes no
-  test and gives no reason, or stops at its turn cap first, did no
-  work: asked again once, then `no-test-written`, a machine error the
-  line retries, never "no test possible"
-  ([#1194](https://github.com/JN0V/workline/issues/1194)).
-- **Read tools** (`claude`): the agent finds what it lacks in a
-  read-only copy, writes the test, and lists what it could not confirm
-  in `assumes:` notes, shown on the Draft as **Assumed**
-  ([ADR-0063 §8](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them)).
-- **Short of code** (`needs: <paths> — why`), an agent without read
-  tools: it lacks a file
-  its test needs, never "no test possible". Its task already holds, as
-  declarations, what the test and the Scope include or import, two
-  steps deep, and asks it to name every file it lacks in one note.
-  The issue keeps its state,
-  the files said on it (`needs-code`); the line gives them to the
-  tester, run again at once, those files first in its code
-  ([the code picker](../../../docs/spec/code-picker.md)); then a person
-  if still lacking
-  ([the record](../../../docs/spec/routing.md#once-a-state-the-record)).
-- **Sent back unchanged**: the record keeps the digest of the body the
-  tester read. The same body back in its tests, no kind picked, goes to
-  `workline:blocked` with no agent, once, said on it
-  (`sent-back-unchanged`): no back and forth until the hop cap
-  ([#815](https://github.com/JN0V/workline/issues/815)). A product
-  owner's retest lifts it once: the agent is asked again
-  ([#1053](https://github.com/JN0V/workline/issues/1053)).
-- **`flaky-n-of-n` names its test**, `test: <name>` under the note,
-  and its runs, `runs: <N>`; both kept in the record. The developer's
-  proof runs that test N times
-  ([N runs of N](../../developer/docs/proof.md#a-flaky-test-n-runs-of-n)).
-- **Refused**: a kind it does not know (`proof-kind-unknown`), one with
-  no reason (`proof-reason-missing`), a `flaky-n-of-n` naming no test
-  (`proof-test-missing`); the issue keeps its state.
-
-## A bug not reproduced
-
-A bug is reproduced before it is fixed
-([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
-its tests must fail on the base. Its kind is its label
-([the kind](../../product-owner/docs/kind.md)).
-
-- **Its tests red on the base**: the Draft, as any issue. The fix
-  then merges by the policy once every gate passes
-  ([the merge](../../developer/docs/merge.md)).
-- **Every test green on the base** (`bug-not-reproduced`): no Draft,
-  never ready. The issue keeps its state and gets
-  `workline:needs-repro`; the tester's comment asks its reporter how to
-  reproduce it.
-- **Then, with no agent**, the line reads it
-  ([not reproduced](../../../docs/spec/routing.md#a-bug-not-reproduced)):
-  - its steps edited: the tester runs again;
-  - its reporter answers: back to refine, for the product owner;
-  - no answer within the product owner's delay (`acts.ask.wait`, 24 h
-    at `normal`): Blocked, reason "not reproduced".
-- **Never another kind**: a bug not shown is not turned into a feature,
-  nor fixed blind.
-- **A proof kind on a bug**: only new tests; `flaky-n-of-n`,
-  `existing-suite` or `docs-checks` are refused
-  (`bug-proof-new-tests`).
-
-## When the tester refuses an issue
-
-`workline test write --issue <n>` on an issue neither waiting for its
-tests nor ready, or whose
-Validation names no scenario, blocks before any agent is asked. The
-refusal is written on the issue too
-([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#1-every-refusal-claim-wait-or-block-is-on-the-issue)):
-
-- **One comment of the tester's**, edited on each refusal: why, and
-  what comes next (ready it, or name its scenarios).
-- **Its own tests refused too**: a test green on the base, a scenario
-  with no test: asked again once first, told which; still refused, said
-  in the same comment, the run blocks. In
-  `workline:needs-tests`, the line then blocks the issue, `workline:blocked`,
-  the reason on the board
-  ([routing](../../../docs/spec/routing.md#the-line-of-states)).
-- **No test written**, the agent's answer read and no kind named: no
-  test possible, its notes the reason, back to the product owner as
-  `none` does
-  ([#794](https://github.com/JN0V/workline/issues/794)).
-- **A scenario kept as today** ("as today", "unchanged"): the agent
-  says it not tested, naming the existing test that guards it; its test
-  would pass on the base and be refused. A name the base's tests do not
-  hold, or none, and the Draft says plainly that no existing test was
-  found to check it
-  ([#1359](https://github.com/JN0V/workline/issues/1359)).
-- **An answer that does not read** (a list item indented one space
-  too far): asked again once, with the reader's error; still
-  unreadable, refused and said, no third call
-  ([#761](https://github.com/JN0V/workline/issues/761)). Prose before
-  the list, or a `file:` beside a patch naming its own file, is read
-  ([#1148](https://github.com/JN0V/workline/issues/1148)).
-- **A test the project's runner skips** (a suite its `test_filter`
-  does not list): the block names the file and the filter, and the next
-  run tells the agent ([#1149](https://github.com/JN0V/workline/issues/1149)).
-- **Not a job's log alone**: a person on the issue sees why no Draft
-  came.
+- **When the tests are written**, and the issue moves on:
+  [written](written.md).
+- **A proof kind** in place of a test, and **a bug not reproduced**:
+  [proof kinds](proof-kinds.md).
+- **When the tester refuses an issue**: [refusals](refused.md).
 
 ## What the builder does
 
@@ -220,7 +77,7 @@ refusal is written on the issue too
 - **Starts from the branch**: checks it out and pushes its commits on
   top. Never a force push, never a branch of its own for the issue.
   Where the project routes the tester, a ready issue whose Draft is not
-  open yet waits for it.
+  open yet waits for it ([the pick](../../developer/docs/pick.md#which-issue)).
 - **The developer** opens a pull request of its own instead,
   `workline/developer/<n>`, on top of the Draft's commits; merged, it
   brings the tests ([its pull request](../../developer/docs/pull-request.md)).
