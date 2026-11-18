@@ -1,0 +1,10 @@
+# The tester's agent answering a test the review finds missing: the
+# test added as a new file, in the folder holding the tester's tests.
+- patch:
+    file: tests/test_mul_negative.sh
+    content: |
+      # Scenario: Two by three
+      # Given the library, When I multiply -2 by 3, Then I get -6.
+      . ./lib.sh
+      [ "$(mul -2 3)" = -6 ]
+- note: "A negative factor had no test: a test of its own, in a new file beside the others."

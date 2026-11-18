@@ -611,7 +611,30 @@ func answerPost(runDir, repo string, s Settings) int {
 		_, v := plainAnswer(a, s)
 		return write(runDir, v)
 	}
-	return judgeAnswer(runDir, repo, a, s)
+	code := judgeAnswer(runDir, repo, a, s)
+	if code == 1 {
+		sayRefusal(runDir, a)
+	}
+	return code
+}
+
+// sayRefusal says, in the objection's thread, that the answer was refused
+// and why: the verdict's summary and each finding, `rule: message`; written
+// to out/on-block.yaml, applied though the run blocks (#1668).
+func sayRefusal(runDir string, a answer) {
+	v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml"))
+	if err != nil || v.Status != verdict.Block {
+		return
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "**The answer is refused**: %s.", strings.TrimSuffix(v.Summary, "."))
+	for _, f := range v.Findings {
+		fmt.Fprintf(&b, "\n- `%s`: %s", f.Rule, f.Message)
+	}
+	b.WriteString("\n\nThe objection goes on: reply in this thread.")
+	if err := intent.Write(filepath.Join(runDir, "out", "on-block.yaml"), []intent.Intention{a.reply(b.String())}); err != nil {
+		fmt.Fprintln(os.Stderr, "tester:", err)
+	}
 }
 
 // reply is the tester's reply in the objection's thread.
@@ -778,6 +801,17 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		}
 		if missing && i == 0 && len(files) == 1 && a.Record.Files[files[0]] != "" {
 			a.File = files[0] // a test missing goes in any of its tests, one: the first patch's
+			act.Test = a.File
+		}
+		if missing && i == 0 && len(files) == 1 && a.Record.Files[files[0]] == "" && inTestFolder(a.Record, files[0]) {
+			// A new file is new: a file already on the branch, not the
+			// tester's, is never overwritten by the whole-content patch.
+			if _, err := os.Stat(filepath.Join(repo, filepath.FromSlash(files[0]))); err == nil {
+				return block("rewrite-other-file", "a test missing goes in a new file: `"+files[0]+"` exists already and is not one of the tester's tests")
+			}
+			// Tests are one case a file: a test missing is a new file, in a
+			// folder holding one of the tester's tests (#1668).
+			a.File = files[0]
 			act.Test = a.File
 		}
 		if len(files) != 1 || files[0] != a.File {
@@ -1027,4 +1061,16 @@ func (a answer) move(to string) []intent.Intention {
 func lacked(body string) bool {
 	a, ok := ReadAnswered(body)
 	return ok && a.Act == "lacks-code" && IsAnswered(body)
+}
+
+// inTestFolder says whether file sits in a folder holding one of the
+// record's tests.
+func inTestFolder(r record, file string) bool {
+	dir := path.Dir(file)
+	for f := range r.Files {
+		if path.Dir(f) == dir {
+			return true
+		}
+	}
+	return false
 }

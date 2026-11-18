@@ -1461,6 +1461,12 @@ func testRun(repo, roles, ai, forgeSpec, event string, target *forge.Target, noA
 	if asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
+		if res.Status != verdict.Pass { // stdout keeps the JSON; the reason is said on stderr too (#1668)
+			fmt.Fprintln(os.Stderr, res.Summary)
+			for _, f := range res.Findings {
+				fmt.Fprintf(os.Stderr, "  %s: %s\n", f.Rule, f.Message)
+			}
+		}
 	} else {
 		report(res)
 	}
