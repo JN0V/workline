@@ -45,16 +45,12 @@ func TestLocalReviewUncommittedConfigSaid(t *testing.T) {
 	if err != nil || string(got) != "forge: local\nautonomy: normal\n" {
 		t.Fatalf("the run's config = %q, %v: want the clone's uncommitted one", got, err)
 	}
-	doc, err := os.ReadFile(filepath.Join("..", "..", "docs", "local-line.md"))
+	// Step 5 of docs/local-line.md, the review, is its own page.
+	doc, err := os.ReadFile(filepath.Join("..", "..", "docs", "local-line-review.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, step5, ok := strings.Cut(string(doc), "## 5. Review the merge request")
-	if !ok {
-		t.Fatal("no step 5 in docs/local-line.md")
-	}
-	step5, _, _ = strings.Cut(step5, "## 6.")
-	if !strings.Contains(strings.ToLower(step5), "uncommitted") {
-		t.Errorf("step 5 does not say which config the run takes (an uncommitted one)")
+	if !strings.Contains(strings.ToLower(string(doc)), "uncommitted") {
+		t.Errorf("the review step does not say which config the run takes (an uncommitted one)")
 	}
 }
