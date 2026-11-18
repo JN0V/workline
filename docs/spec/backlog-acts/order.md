@@ -2,8 +2,9 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/backlog/undo.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go, internal/forge/github_fields.go]
 status: draft
-checked: 04d2af892
+checked: 8538d558
 verified: agent:claude-code
+judged-in-parts: 04d2af892
 ---
 # Milestones and ordering
 

@@ -2,8 +2,9 @@
 type: reference
 sources: [internal/builtin/productowner/productowner.go, internal/backlog/ledger.go, internal/backlog/opening.go]
 status: draft
-checked: 04d2af892
+checked: 44f06aba
 verified: agent:claude-code
+judged-in-parts: 04d2af892
 ---
 # Reading
 
