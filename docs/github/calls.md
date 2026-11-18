@@ -1,6 +1,25 @@
 <!-- workline
-sources: [internal/forge/retry.go, internal/forge/cli.go, internal/forge/budget.go, internal/line/budget.go]
-checked: 4eaa098f
+sources:
+  - internal/forge/retry.go#retry
+  - internal/forge/retry.go#failure
+  - internal/forge/retry.go#again
+  - internal/forge/retry.go#RateWaitEnv
+  - internal/forge/retry.go#ProjectEnv
+  - internal/forge/retry.go#asked
+  - internal/forge/retry.go#aside
+  - internal/forge/cli.go#runAnswer
+  - internal/forge/cli.go#asksHeads
+  - internal/forge/cli.go#ghOnce
+  - internal/forge/cli.go#ghFailure
+  - internal/forge/cli.go#ghCall.err
+  - internal/forge/cli.go#ghRead
+  - internal/forge/budget.go#Budget.Low
+  - internal/forge/budget.go#Budgeted
+  - internal/forge/budget.go#github.Budget
+  - internal/line/budget.go#BudgetWaitMax
+  - internal/line/budget.go#waitBudget
+checked: c46a93d6c
+verified: agent:claude-code
 judged-in-parts: eb16524
 -->
 # A GitHub call that fails for a moment
@@ -34,7 +53,7 @@ rule as [on GitLab](../gitlab/calls.md):
     ask.
 - **A run of the line** (`workline route issue`, `route reconcile`)
   waits longer for a rate limit spent, up to 5 minutes, its roles' calls
-  too ([the API budget](#the-api-budget)).
+  too ([the API budget](#the-api-budget), [the line](../spec/routing.md#the-line-of-states)).
 - **Never tried again**: a certificate refused, any other 4xx.
 - **After the last try**, the failure says so: "(tried 3 times)".
 
@@ -73,7 +92,8 @@ them ([#804](https://github.com/JN0V/workline/issues/804)).
   the pull requests' tests would queue behind them.
 - **Spent half-way**: a call refused for the rate waits for a reset
   within 5 minutes too, said in the job's log; a later one fails the
-  step as the forge out of reach, and the reconciler runs it again.
+  step as the forge out of reach, and the reconciler runs it again
+  ([no record kept](../spec/routing.md#once-a-state-the-record)).
 - **The line's alone**: the project's tests, checks and agents run
   without this wait, so a test of the project never reads it
   ([#940](https://github.com/JN0V/workline/issues/940)), nor the line's

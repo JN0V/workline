@@ -91,8 +91,8 @@ workline develop --bounds --merge-request 7      # its bounds on its pull reques
 
 ## Run it locally
 
-Each run with an agent says once, in its output and in the pull
-request's description:
+Each run with an agent says once, in its output (its pull request's
+description says the same):
 
 > the agent runs with your account's rights; the forge's guards decide what merges
 

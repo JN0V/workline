@@ -1,6 +1,17 @@
 ---
-sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, Dockerfile]
-checked: 8538d558
+sources:
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:trust
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:environment
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:ready
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - internal/forge/gitlab.go#gitlab.connect
+  - internal/forge/gitlab_merge.go#gitlab.AutoMerge
+  - internal/agent/claude.go#shellTools
+  - Dockerfile
+checked: c46a93d6c
 judged: c9d96e2
 verified: agent:claude-code
 judged-in-parts: e8a46f7
@@ -21,7 +32,7 @@ own changes. **Not tried yet on one**: tell us what differs.
   on (`CI_API_V4_URL`); nothing to set, nothing to install.
 - **The agent** reaches out — Claude Code, for one, needs npm's registry
   and Anthropic's API. Without that, set no `CLAUDE_CODE_OAUTH_TOKEN`: the
-  docs are listed for a person.
+  jobs run with no agent.
 - **The developer's agent runs commands** in a sandbox the image holds
   (bubblewrap). A Docker runner's default profile refuses it: the
   developer then says so, and does not ask the agent. Give its jobs a
