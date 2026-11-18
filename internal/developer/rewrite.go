@@ -124,7 +124,7 @@ func testerKept(f forge.Forge, issue int) ([]string, error) {
 			if !own.Wrote(c) || !testmark.IsAnswered(c.Body) {
 				continue
 			}
-			if ans, ok := tester.ReadAnswered(c.Body); ok && ans.Act == "kept" && !ans.Missing { // none needed: no test to make pass
+			if ans, ok := testmark.ReadAnswered(c.Body); ok && ans.Act == "kept" && !ans.Missing { // none needed: no test to make pass
 				out = append(out, ans.Test)
 			}
 		}

@@ -11,8 +11,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/devmark"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"os"
 	"os/exec"
 	"path"
@@ -21,6 +19,9 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"go.yaml.in/yaml/v3"
 
@@ -89,7 +90,7 @@ type Bounds struct {
 	RedUnproven string `json:"red-unproven,omitempty"`
 	// Proof: the kind of proof the tester recorded in place of a Draft
 	// (ADR-0059, decision 4), when it did.
-	Proof *tester.Proof `json:"proof,omitempty"`
+	Proof *backlog.Proof `json:"proof,omitempty"`
 	// TestPaths, TestHomes: the tester's test-paths and test-homes, the
 	// project's one definition of a test file (ADR-0065): a new test file
 	// whose code lives beside the Scope is not beyond it (ADR-0063, §9).
@@ -587,7 +588,7 @@ func scenarioOf(name string, scenarios []string, covers map[string][]string) str
 	case 1:
 		return found[0]
 	case 0:
-		if sc := tester.CoveredBy(covers, name); slices.Contains(scenarios, sc) {
+		if sc := testmark.CoveredBy(covers, name); slices.Contains(scenarios, sc) {
 			return sc
 		}
 	}
@@ -654,9 +655,9 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 				said = append(said, fmt.Sprintf("an objection to `%s`: the commit of the tester's Draft !%d could not be read, so no line to put it on", o.Test, b.Draft))
 			case o.Line < 1 || strings.TrimSpace(o.Scenario) == "" || strings.TrimSpace(o.Kind) == "" || strings.TrimSpace(o.Why) == "":
 				said = append(said, fmt.Sprintf("an objection to `%s`: it names the test's line, the scenario, the kind and why", o.Test))
-			case scenarioOf(o.Scenario, b.Scenarios, b.Covers) == "" && len(tester.Covering(b.Covers, o.Scenario)) > 1:
+			case scenarioOf(o.Scenario, b.Scenarios, b.Covers) == "" && len(testmark.Covering(b.Covers, o.Scenario)) > 1:
 				said = append(said, fmt.Sprintf("an objection to `%s`: the test %q covers %s, as the tester declared it: name the one scenario it objects for, so the tester reads it: not posted",
-					o.Test, o.Scenario, strings.Join(tester.Covering(b.Covers, o.Scenario), " and ")))
+					o.Test, o.Scenario, strings.Join(testmark.Covering(b.Covers, o.Scenario), " and ")))
 			case scenarioOf(o.Scenario, b.Scenarios, b.Covers) == "":
 				said = append(said, fmt.Sprintf("an objection to `%s`: its scenario %q is none of #%d's (%s), so the tester would not read it: not posted",
 					o.Test, o.Scenario, b.Issue, strings.Join(b.Scenarios, ", ")))

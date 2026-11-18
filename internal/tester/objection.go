@@ -699,7 +699,7 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	}
 	at, _ := git(repo, "rev-parse", "HEAD")
 	missing := a.Kind == "missing"
-	act := Answered{Act: "kept", At: strings.TrimSpace(at), Model: asked(runDir), Scenario: a.Scenario, Test: a.File, Whys: a.FiveWhys, Missing: missing}
+	act := testmark.Answered{Act: "kept", At: strings.TrimSpace(at), Model: asked(runDir), Scenario: a.Scenario, Test: a.File, Whys: a.FiveWhys, Missing: missing}
 	if len(patches) == 0 {
 		word := "**Kept**: "
 		if missing {
@@ -711,7 +711,7 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		if lacks {
 			word, act.Act = "**Lacks code**: ", "lacks-code"
 		}
-		out := []intent.Intention{reply(word + reason + why + "\n" + act.line())}
+		out := []intent.Intention{reply(word + reason + why + "\n" + act.Line())}
 		out = append(out, a.toReview(word+reason)...)
 		if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), out); err != nil {
 			return fail(err)
@@ -809,7 +809,7 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		word = "**Added** in `" + a.File + "`"
 	}
 	out := []intent.Intention{patches[len(patches)-1],
-		reply(word + ", the tester's own commit on this branch, red on the base: " + reason + why + unprovenSaid(*proof) + "\n" + act.line()),
+		reply(word + ", the tester's own commit on this branch, red on the base: " + reason + why + unprovenSaid(*proof) + "\n" + act.Line()),
 		{Kind: "comment", Value: r.intention()["comment"]}}
 	out = append(out, a.toReview(word+": "+reason)...)
 	for _, in := range intents {
@@ -1012,7 +1012,7 @@ func (a answer) move(to string) []intent.Intention {
 
 // lacked says whether a comment is the tester's answer that it lacks code.
 func lacked(body string) bool {
-	a, ok := ReadAnswered(body)
+	a, ok := testmark.ReadAnswered(body)
 	return ok && a.Act == "lacks-code" && testmark.IsAnswered(body)
 }
 
