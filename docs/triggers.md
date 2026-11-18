@@ -143,9 +143,10 @@ as above or below ([on GitLab](gitlab-trigger.md#the-line-of-states-on-it)).
 
 ### What is due now
 
-`workline tick --forge gitlab --json` lists the line's jobs due now,
-each with why, no agent, nothing written: a regular beat (a loop, a
-schedule, a timer) starts those and nothing else ([the tick](tick.md)).
+`workline tick --json` lists the line's jobs due now, each with why,
+no agent, nothing written: a regular beat (a loop, a schedule, a timer)
+starts those and nothing else ([the tick](tick.md)). It reads the runs
+on GitHub only: on GitLab, the reconcile alone is listed.
 
 ### On a role's own merge request
 
