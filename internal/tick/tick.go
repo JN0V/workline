@@ -64,8 +64,9 @@ type job struct {
 var jobs = map[string]job{
 	"reconcile": {"workline develop reconcile", "workline-develop.yml", []string{"workline develop heartbeat"}},
 	// The gardening's runs before its run-name (#1761) have no name of
-	// their own: read as the backlog's. Since, each is named by its job.
-	"backlog": {"workline gardening backlog", "workline-gardening.yml", []string{"workline gardening"}},
+	// their own: read as the backlog's. Since, each is named by its job;
+	// the nightly keeps the backlog too (#1765).
+	"backlog": {"workline gardening backlog", "workline-gardening.yml", []string{"workline gardening", "workline gardening nightly"}},
 	"nightly": {"workline gardening nightly", "workline-gardening.yml", nil},
 	"docs":    {"workline gardening docs", "workline-gardening.yml", nil},
 	"merge":   {"workline merge", "workline-merge.yml", nil},
