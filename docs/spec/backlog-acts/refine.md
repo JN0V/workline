@@ -87,8 +87,10 @@ what it can and asks for the rest:
   request adds it ([#1061](https://github.com/JN0V/workline/issues/1061)).
   That widening left out, an `unblock` beside it is refused
   (`scope-not-widened`): the issue stays blocked. Nothing to add drops the act (`nothing-to-refine`). The
-  issue gets the label `workline:to-refine`; a blocked one keeps its
-  label alone, an `unblock` beside the refine moving it.
+  issue gets the label `workline:to-refine`; a blocked one, or one
+  already `ready`, `needs-tests` or `developing`, keeps its label alone:
+  an `unblock` beside the refine moves a blocked one, only `unready` moves
+  a ready one back.
 - **A Scope waits for its code** (#970). A refine's Scope on an issue
   whose code the run did not give — not in pre's `code-read`, its state
   naming no sources, its title and body no file of the commit
