@@ -9,6 +9,7 @@ package line
 // again, a person names the files.
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 	"strings"
@@ -302,6 +303,7 @@ func CountApplyFailure(f forge.Forge, repo string, res *Result, said string) err
 		kind = ApplyKind
 	}
 	now := clock().UTC()
+	var errs []error // one issue's failure to read or write does not stop the others
 	for _, w := range res.States {
 		role := res.Woke[w.Issue]
 		if role == "" || w.Blocked != "" {
@@ -309,11 +311,13 @@ func CountApplyFailure(f forge.Forge, repo string, res *Result, said string) err
 		}
 		b, ok := f.(forge.Backlog)
 		if !ok {
-			return fmt.Errorf("#%d: the forge has no comments to read its previous failures from", w.Issue)
+			errs = append(errs, fmt.Errorf("#%d: the forge has no comments to read its previous failures from", w.Issue))
+			continue
 		}
 		comments, err := b.Comments(forge.Target{Kind: "issue", ID: w.Issue})
 		if err != nil {
-			return fmt.Errorf("#%d: read its previous failures: %w", w.Issue, err)
+			errs = append(errs, fmt.Errorf("#%d: read its previous failures: %w", w.Issue, err))
+			continue
 		}
 		var prev *Errors
 		if _, rec, had := recordCommentIn(comments); had && rec.State == w.Record.State && rec.Body == w.Record.Body {
@@ -322,10 +326,10 @@ func CountApplyFailure(f forge.Forge, repo string, res *Result, said string) err
 		w.Record.Errors = prev.with(verdict.Outcome{Kind: verdict.MachineError, Of: kind, Said: said}, now)
 		w.Record.Lost, w.Record.Needs, w.Failed, w.After = "", nil, true, false
 		if err := writeState(f, cfg, repo, w, role); err != nil {
-			return fmt.Errorf("#%d: %w", w.Issue, err)
+			errs = append(errs, fmt.Errorf("#%d: %w", w.Issue, err))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 // errNotAppliedText is what the engine says of a diff git does not apply.
