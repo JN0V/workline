@@ -3630,9 +3630,18 @@ func phase(role, step string) {
 }
 
 // script runs roles/<name>/<step> in the repository and returns its exit code.
+//
+// A role with no such file runs the shared one (ADR-0070, §1), each step
+// on its own.
 func script(r *role.Role, step, repo string, env []string) (int, error) {
 	path := filepath.Join(r.Dir, step)
 	if _, err := os.Stat(path); err != nil {
+		switch step {
+		case "pre":
+			return 0, sharedPre(r, env)
+		case "post":
+			return sharedPost(env)
+		}
 		return 0, fmt.Errorf("role %q has no %s script", r.Name, step)
 	}
 	phase(r.Name, step)
@@ -3940,4 +3949,55 @@ func overBudgetSummary(said string) string {
 		s += " (" + said + ")"
 	}
 	return s
+}
+
+// envValue is the value of name in env, the last one set.
+func envValue(env []string, name string) string {
+	for i := len(env) - 1; i >= 0; i-- {
+		if v, ok := strings.CutPrefix(env[i], name+"="); ok {
+			return v
+		}
+	}
+	return ""
+}
+
+// sharedPre is the pre of a role that has none: the role's instruction
+// is the task, its declared skills are loaded. A prompt missing is an
+// error naming the file; nothing here judges.
+func sharedPre(r *role.Role, env []string) error {
+	runDir := envValue(env, "WORKLINE_RUN_DIR")
+	if runDir == "" {
+		return fmt.Errorf("WORKLINE_RUN_DIR is not set")
+	}
+	text, err := os.ReadFile(filepath.Join(r.Dir, "instruction.md"))
+	if err != nil {
+		return fmt.Errorf("role %q has no instruction.md", r.Name)
+	}
+	if err := os.MkdirAll(filepath.Join(runDir, "in"), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), text, 0o644); err != nil {
+		return err
+	}
+	if len(r.Context.Skills) > 0 {
+		list := strings.Join(r.Context.Skills, "\n") + "\n"
+		return os.WriteFile(filepath.Join(runDir, "in", "skills"), []byte(list), 0o644)
+	}
+	return nil
+}
+
+// sharedPost is the post of a role that has none: it blocks on nothing
+// and applies nothing. What the agent proposed is held to the role's
+// intentions and duties.writes by the apply step: invalid (intention
+// kinds the role does not declare) and outOfBounds (writes outside
+// duties.writes), which refuse and apply nothing.
+func sharedPost(env []string) (int, error) {
+	runDir := envValue(env, "WORKLINE_RUN_DIR")
+	if runDir == "" {
+		return 0, fmt.Errorf("WORKLINE_RUN_DIR is not set")
+	}
+	if err := os.MkdirAll(filepath.Join(runDir, "out"), 0o755); err != nil {
+		return 0, err
+	}
+	return 0, os.WriteFile(filepath.Join(runDir, "out", "verdict.yaml"), []byte("status: pass\n"), 0o644)
 }

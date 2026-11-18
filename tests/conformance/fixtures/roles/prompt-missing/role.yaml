@@ -1,0 +1,12 @@
+contract: 1
+name: prompt-missing
+mission: A role of the tests only, made of this file alone, its instruction missing, so a role whose prompt is not there is refused, naming the file.
+
+events: [schedule]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: ["docs/**"]
+intentions: [patch, note]
+without-ai: pass

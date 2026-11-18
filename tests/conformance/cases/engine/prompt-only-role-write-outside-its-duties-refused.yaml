@@ -1,0 +1,9 @@
+case: engine/prompt-only-role-write-outside-its-duties-refused
+about: "A patch to a file the prompt-only role's duties.writes does not list is refused, the file named, and nothing is applied."
+given: {repo: basic}
+run: {role: prompt-only, event: schedule, ai: "fake:prompt-only-write-outside-duties"}
+expect:
+  refused: [patch]
+  applied: []
+  findings: [{rule: intention-refused, message: "reaches outside the task or the role's duties: main.go"}]
+  files: {main.go: {contains: "func main() {}"}}
