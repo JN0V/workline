@@ -1,7 +1,8 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/backlog/assume.go, internal/sample/acts.go, internal/scale/detect.go]
-checked: 04d2af892
+checked: d72f90e5
 verified: agent:claude-code
+judged-in-parts: 04d2af892
 ---
 # Product owner — settings
 

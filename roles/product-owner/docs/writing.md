@@ -1,7 +1,8 @@
 ---
 sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
-checked: 04d2af892
+checked: db6103ad
 verified: agent:claude-code
+judged-in-parts: 04d2af892
 ---
 # Writing an issue a person reads
 
