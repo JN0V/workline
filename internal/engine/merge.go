@@ -967,6 +967,9 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say("merge-state-unread", "warn", "its state could not be read, left as it is: "+forge.Said(err))
 		return nil, nil
 	}
+	if st.Closed {
+		return nil, nil // closed since it was listed: left alone
+	}
 	baseTip, tip, err := headTips(o.Repo, o.Base, mr, local)
 	switch {
 	case err != nil && mr.Here:

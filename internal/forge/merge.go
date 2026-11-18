@@ -60,6 +60,8 @@ func sumRuns(runs []CheckRun) string {
 type MergeState struct {
 	Head  string `json:"head"` // its head commit
 	Draft bool   `json:"draft,omitempty"`
+	// Closed: it is no longer open — closed or merged since it was listed.
+	Closed bool `json:"closed,omitempty"`
 	// AutoMerge: the forge's auto-merge is on now. AutoMergeAt: when it
 	// was last turned on, on now or not; "" never, or the forge does not
 	// say. AutoMergeBy, AutoMergeBot: who turned it on now, and whether a
