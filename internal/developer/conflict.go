@@ -309,7 +309,7 @@ func conflictTask(r round, baseName string, is forge.Issue, b Bounds, s Settings
 	for _, f := range r.Conflicts {
 		fmt.Fprintf(&t, "- `%s`\n", f)
 	}
-	fmt.Fprintf(&t, "\nIn each, the side after `<<<<<<<` is your branch's (%s), the side before `>>>>>>>` is %s's (%s).\n\n", shortSHA(r.At), baseName, shortSHA(r.Merge))
+	fmt.Fprintf(&t, "\nIn each, the side after `<<<<<<<` is your branch's (%s), the side before `>>>>>>>` is %s's (%s).\n\n", devmark.ShortSHA(r.At), baseName, devmark.ShortSHA(r.Merge))
 	t.WriteString("## What to do\n\n" +
 		"- Settle each conflict: keep both intents, yours and " + baseName + "'s, as one code that does both. Read both changes before you choose.\n" +
 		"- Remove every marker. Change nothing else: only these files, and in them only what the conflicts need. An edit to another file is refused.\n" +
@@ -363,7 +363,7 @@ func mergePost(runDir, repo string, s Settings, r round) int {
 		files, _ := touched(in.Value)
 		if out := slices.DeleteFunc(slices.Clone(files), func(f string) bool { return slices.Contains(r.Conflicts, f) }); len(out) > 0 {
 			for _, f := range out {
-				refused = append(refused, Refusal{File: f, Rule: conflictRule})
+				refused = append(refused, devmark.Refusal{File: f, Rule: conflictRule})
 			}
 			continue
 		}
@@ -387,7 +387,7 @@ func mergePost(runDir, repo string, s Settings, r round) int {
 			failed = "conflict markers are left in " + strings.Join(left, ", ")
 		}
 	}
-	var p Proof
+	var p devmark.Proof
 	u := used(runDir)
 	if failed == "" {
 		// The proof on the merge itself, both parents' code: the whole
@@ -396,7 +396,7 @@ func mergePost(runDir, repo string, s Settings, r round) int {
 		if err != nil {
 			return fail(err)
 		}
-		var caps []Cap
+		var caps []devmark.Cap
 		var found []verdict.Finding
 		p, u, caps, found = proven(runDir, repo, at, where, nil, union(a.Acceptance, union(a.Code, a.Tests)), again(a.Proof), s)
 		for _, f := range found {
@@ -432,7 +432,7 @@ func mergePost(runDir, repo string, s Settings, r round) int {
 		next := fmt.Sprintf("a person merges %s into `%s`, settles the conflict and pushes, never a rebase; then moves the issue back by its label", r.Asked[0].Where, r.Branch)
 		out = append(out, holdFor(repo, a, r, why, next, notes, others)...)
 		if objectedOn(others) {
-			a.Widen = &Widen{At: r.At, Scope: scopeKey(b.Scope), Objected: true, Draft: b.Draft, Kept: r.Kept}
+			a.Widen = &devmark.Widen{At: r.At, Scope: scopeKey(b.Scope), Objected: true, Draft: b.Draft, Kept: r.Kept}
 		}
 	}
 	a.Round = n

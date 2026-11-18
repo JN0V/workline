@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -81,11 +82,11 @@ func TestNoteInertOnTheIssueAndTheSameInLeftOut(t *testing.T) {
 	raw := "## Need\n<b>x</b> ping @someone"
 	kept, _, _ := bounded(t.TempDir(), Bounds{Issue: 7}, nil, []intent.Intention{{Kind: "note", Value: map[string]any{"issue": 7, "body": raw}}})
 	note := noteOf(kept, 7)
-	if note != inertText(raw) {
-		t.Fatalf("issue comment = %q, want it inert: %q", note, inertText(raw))
+	if note != devmark.InertText(raw) {
+		t.Fatalf("issue comment = %q, want it inert: %q", note, devmark.InertText(raw))
 	}
-	if inertText(note) != note {
-		t.Errorf("inert twice changes the text: %q -> %q", note, inertText(note))
+	if devmark.InertText(note) != note {
+		t.Errorf("inert twice changes the text: %q -> %q", note, devmark.InertText(note))
 	}
 	if got := withNote("x\n", note); !strings.Contains(got, "## Left out\n\n"+note+"\n") {
 		t.Errorf("Left out does not hold the issue's text: %q", got)
@@ -94,22 +95,22 @@ func TestNoteInertOnTheIssueAndTheSameInLeftOut(t *testing.T) {
 
 // A note naming an issue with a closing keyword closes nothing at the merge.
 func TestInertTextBreaksClosingKeywords(t *testing.T) {
-	got := inertText("Closes #12, fixes #13 and resolved #14; a fixture stays.")
+	got := devmark.InertText("Closes #12, fixes #13 and resolved #14; a fixture stays.")
 	for _, w := range []string{"Closes #", "fixes #", "resolved #"} {
 		if strings.Contains(got, w) {
 			t.Errorf("%q left live: %q", w, got)
 		}
 	}
-	if !strings.Contains(got, "a fixture stays") || inertText(got) != got {
-		t.Errorf("inertText = %q", got)
+	if !strings.Contains(got, "a fixture stays") || devmark.InertText(got) != got {
+		t.Errorf("InertText = %q", got)
 	}
 }
 
 // An escaped backslash before < leaves the tag live: it is escaped again.
 func TestInertTextEscapesATagAfterAnEscapedBackslash(t *testing.T) {
 	for in, want := range map[string]string{`\<b>`: `\<b>`, `\\<b>`: `\\\<b>`, `<b>`: `\<b>`} {
-		if got := inertText(in); got != want || inertText(got) != got {
-			t.Errorf("inertText(%q) = %q, want %q, the same made inert twice", in, got, want)
+		if got := devmark.InertText(in); got != want || devmark.InertText(got) != got {
+			t.Errorf("InertText(%q) = %q, want %q, the same made inert twice", in, got, want)
 		}
 	}
 }

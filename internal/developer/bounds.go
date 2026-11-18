@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"os"
 	"os/exec"
@@ -103,15 +104,6 @@ type Bounds struct {
 	// beside it, whatever the commit the rules are read at holds (a
 	// review round in CI runs on the pull request's head).
 	Beside []string `json:"beside,omitempty"`
-}
-
-// Refusal is a file a patch reached and post refused, and why: kept in the
-// record the claim's comment holds, for the auditor (ADR-0046).
-type Refusal struct {
-	File string `json:"file"`
-	Rule string `json:"rule"`
-	// Detail is why the bounds could not be read, for bounds-unread.
-	Detail string `json:"detail,omitempty"`
 }
 
 // readBounds reads, on the forge, what bounds the issue's patches.
@@ -405,20 +397,13 @@ func besideKept(repo string, b Bounds, patches []intent.Intention) []string {
 
 // beyondKept are the files patches wrote beyond the Scope (ADR-0065,
 // change 2), each with its agent's one-line reason, or none given.
-func beyondKept(repo string, b Bounds, patches []intent.Intention, why map[string]string) []Beyond {
+func beyondKept(repo string, b Bounds, patches []intent.Intention, why map[string]string) []devmark.Beyond {
 	c := newChecker(repo, b)
-	var out []Beyond
+	var out []devmark.Beyond
 	for _, f := range patchFiles(patches, func(f string) bool { return c.rule(f) == "" && c.beyond(f) }) {
-		out = append(out, Beyond{File: f, Why: why[f]})
+		out = append(out, devmark.Beyond{File: f, Why: why[f]})
 	}
 	return out
-}
-
-// Beyond is a file a change wrote beyond its issue's Scope, and the
-// one-line reason its agent gave, "" when it gave none.
-type Beyond struct {
-	File string `json:"file"`
-	Why  string `json:"why,omitempty"`
 }
 
 // BeyondHeading heads the list of files beyond the Scope, on the pull
@@ -426,30 +411,12 @@ type Beyond struct {
 // it there.
 var BeyondHeading = "Beyond the " + work.Name(work.Scope)
 
-// beyondLines are the files beyond the Scope, one bullet each, its
-// reason or that none was given.
-func beyondLines(l []Beyond) string {
-	var b strings.Builder
-	for _, x := range l {
-		why := x.Why
-		if why == "" {
-			why = "no reason given by its agent"
-		}
-		fmt.Fprintf(&b, "- `%s`: %s\n", x.File, inertText(strings.Join(strings.Fields(why), " ")))
-	}
-	return b.String()
-}
-
-// BeyondLines are a record's files beyond the Scope, as its pull request
-// lists them: what the auditor samples (ADR-0046); "" for none.
-func BeyondLines(l []Beyond) string { return beyondLines(l) }
-
 // unionBeyond is a with each file of b it lacks, a later reason kept
 // where the earlier gave none.
-func unionBeyond(a, b []Beyond) []Beyond {
+func unionBeyond(a, b []devmark.Beyond) []devmark.Beyond {
 	out := slices.Clone(a)
 	for _, x := range b {
-		i := slices.IndexFunc(out, func(y Beyond) bool { return y.File == x.File })
+		i := slices.IndexFunc(out, func(y devmark.Beyond) bool { return y.File == x.File })
 		switch {
 		case i < 0:
 			out = append(out, x)
@@ -540,7 +507,7 @@ func readAt(repo, rev, p string) ([]byte, error) {
 }
 
 // why is what a refusal says to a person.
-func why(r Refusal) string {
+func why(r devmark.Refusal) string {
 	switch r.Rule {
 	case "patch-unread":
 		return "a patch naming no file, or a diff header whose files cannot be told apart: nothing the bounds can hold, so refused rather than let past"
@@ -642,7 +609,7 @@ func compact(s string) string {
 // bounded holds the agent's proposals to the bounds: the claim pre made,
 // the patches within them, the objections on the tester's Draft; the rest
 // refused, each said.
-func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []intent.Intention, refused []Refusal, said []string) {
+func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []intent.Intention, refused []devmark.Refusal, said []string) {
 	c := newChecker(repo, b)
 	var objections []forge.LineComment
 	var note *intent.Intention
@@ -654,10 +621,10 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 		switch {
 		case isClaim(i):
 		case i.Kind == "patch":
-			var bad []Refusal
+			var bad []devmark.Refusal
 			files, read := touched(i.Value)
 			if !read || len(files) == 0 { // a patch the bounds cannot hold
-				ref := Refusal{File: "(a patch)", Rule: "patch-unread"}
+				ref := devmark.Refusal{File: "(a patch)", Rule: "patch-unread"}
 				if c.unread != nil {
 					ref.Rule, ref.Detail = "bounds-unread", c.unread.Error()
 				}
@@ -665,7 +632,7 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 			}
 			for _, f := range files {
 				if r := c.rule(f); r != "" {
-					ref := Refusal{File: path.Clean(filepath.ToSlash(f)), Rule: r}
+					ref := devmark.Refusal{File: path.Clean(filepath.ToSlash(f)), Rule: r}
 					if r == "bounds-unread" {
 						ref.Detail = c.unread.Error()
 					}
@@ -708,7 +675,7 @@ func bounded(repo string, b Bounds, claim, proposed []intent.Intention) (kept []
 				said = append(said, fmt.Sprintf("a note on #%d: the developer posts one note only, the first is kept (not-the-developers)", b.Issue))
 			default:
 				noted = true
-				body = inertText(body) // posted as the developer: it forges no heading and pings no one
+				body = devmark.InertText(body) // posted as the developer: it forges no heading and pings no one
 				if len(body) > NoteMax {
 					cut := NoteMax
 					for cut > 0 && !utf8.RuneStart(body[cut]) {

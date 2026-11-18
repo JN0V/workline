@@ -72,9 +72,9 @@ func (m Merge) Unreviewed(head string) string {
 	case m.ReviewedAt == "":
 		return "no reviewer's verdict is on it"
 	case m.ReviewedAt != head:
-		return fmt.Sprintf("the reviewer's verdict is on %s, not on its head %s", shortSHA(m.ReviewedAt), shortSHA(head))
+		return fmt.Sprintf("the reviewer's verdict is on %s, not on its head %s", devmark.ShortSHA(m.ReviewedAt), devmark.ShortSHA(head))
 	case m.Owed:
-		return fmt.Sprintf("the reviewer's lenses have not read its head %s yet: only its rules ran", shortSHA(head))
+		return fmt.Sprintf("the reviewer's lenses have not read its head %s yet: only its rules ran", devmark.ShortSHA(head))
 	}
 	return ""
 }

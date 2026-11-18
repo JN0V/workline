@@ -11,7 +11,7 @@ import (
 // When the developer says its proof,
 // Then the finding `proof-not-run` names that tool.
 func TestNotRunNamesTheTool(t *testing.T) {
-	p := Proof{Result: devmark.Unproven, Why: "the report names no test", Missing: []string{"jq"}}
+	p := devmark.Proof{Result: devmark.Unproven, Why: "the report names no test", Missing: []string{"jq"}}
 	f := proofFindings("#3", p, nil)
 	if len(f) != 1 || f[0].Rule != "proof-not-run" {
 		t.Fatalf("findings = %+v, want one proof-not-run", f)
@@ -26,8 +26,8 @@ func TestNotRunNamesTheTool(t *testing.T) {
 // When the developer writes its pull request's Verification,
 // Then it lists the tool not found.
 func TestVerificationNamesTheTool(t *testing.T) {
-	p := Proof{Result: devmark.Unproven, Why: "the report names no test", Missing: []string{"jq"}}
-	lines := proofLines(p, nil)
+	p := devmark.Proof{Result: devmark.Unproven, Why: "the report names no test", Missing: []string{"jq"}}
+	lines := devmark.ProofLines(p, nil)
 	if !strings.Contains(lines, "`jq`") {
 		t.Errorf("Verification lines %q do not list the tool not found, jq", lines)
 	}

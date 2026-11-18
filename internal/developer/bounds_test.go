@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/testdef"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -194,7 +195,7 @@ func TestNewTestBesideTheScopeIsKept(t *testing.T) {
 		t.Errorf("besideKept = %v, want the new test alone, not the code beyond the Scope", got)
 	}
 	got := beyondKept(repo, c.b, patches, map[string]string{"Wifi/include/Wifi.h": "the grid reads its signal"})
-	if want := []Beyond{{File: "Wifi/include/Wifi.h", Why: "the grid reads its signal"}}; !slices.Equal(got, want) {
+	if want := []devmark.Beyond{{File: "Wifi/include/Wifi.h", Why: "the grid reads its signal"}}; !slices.Equal(got, want) {
 		t.Errorf("beyondKept = %v, want %v", got, want)
 	}
 }

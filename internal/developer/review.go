@@ -78,7 +78,7 @@ type Round struct {
 	Beside []string `json:"beside,omitempty"`
 	// Beyond: the files its fix wrote beyond the Scope, each with its
 	// agent's reason (ADR-0065, change 2).
-	Beyond []Beyond `json:"beyond,omitempty"`
+	Beyond []devmark.Beyond `json:"beyond,omitempty"`
 	// Tester: the review's test findings it sent to the tester (#1265).
 	Tester []string `json:"tester,omitempty"`
 	// Merge: a round that merged the base in (ADR-0067): settled, or
@@ -399,7 +399,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		}
 		if r.Nits > 0 && newReview {
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "nits-not-asked", Level: "info", Where: where,
-				Message: fmt.Sprintf("%d nit%s shown by the reviewer, not asked: a nit never holds the merge (ADR-0051)", r.Nits, plural(r.Nits))})
+				Message: fmt.Sprintf("%d nit%s shown by the reviewer, not asked: a nit never holds the merge (ADR-0051)", r.Nits, devmark.Plural(r.Nits))})
 		}
 		return final(runDir, v)
 	}
@@ -434,7 +434,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		return writeIntents(runDir, "fallback.yaml", handOff(r, bounds, repo))
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
-		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("no agent: %d finding%s wait for a run with one, no round counted", len(r.Asked), plural(len(r.Asked))),
+		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("no agent: %d finding%s wait for a run with one, no round counted", len(r.Asked), devmark.Plural(len(r.Asked))),
 			Findings: []verdict.Finding{{Rule: "no-agent", Level: "warn", Where: where, Message: "fixing a finding is judgement on code: with no agent, nothing is fixed (principle 5); waiting: " + strings.Join(texts(r.Asked), "; ")}}})
 	}
 	n := a.Round + 1
@@ -511,7 +511,7 @@ func roundBounds(f forge.Forge, b forge.Backlog, repo string, a Act, issue int) 
 // testsSent says the review's test findings the tester has already.
 func testsSent(where string, n int) verdict.Finding {
 	return verdict.Finding{Rule: "tests-with-the-tester", Level: "info", Where: where,
-		Message: fmt.Sprintf("%d test finding%s of the review sent to the tester already: not asked again (#1265)", n, plural(n))}
+		Message: fmt.Sprintf("%d test finding%s of the review sent to the tester already: not asked again (#1265)", n, devmark.Plural(n))}
 }
 
 // issueHolds is who asks a round its issue's new body: the issue.
@@ -771,7 +771,7 @@ func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testE
 		}
 	}
 	if r.Nits > 0 {
-		fmt.Fprintf(&t, "\nThe reviewer showed %d nit%s too: not asked, leave them.\n", r.Nits, plural(r.Nits))
+		fmt.Fprintf(&t, "\nThe reviewer showed %d nit%s too: not asked, leave them.\n", r.Nits, devmark.Plural(r.Nits))
 	}
 	t.WriteString("\n" + question(is, b, test, testErr, s))
 	t.WriteString("A fix that lies in a file beyond the issue's " + work.Name(work.Scope) + ": make it there, and say why in `" + BeyondFile + "`, as above. " +
@@ -826,14 +826,14 @@ func handOff(r round, b Bounds, repo string) []intent.Intention {
 	}
 	add, remove := blockedMove(repo)
 	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree, a dispute over a blocking finding",
-		a.Round, r.MR, len(r.Asked), plural(len(r.Asked)))
+		a.Round, r.MR, len(r.Asked), devmark.Plural(len(r.Asked)))
 	return append(tests,
 		intent.Intention{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
 		sayOn(a.Issue, backlog.Said(who, "blocks this issue", why,
 			"a person on the loop reads the pull request, fixes the findings or closes it, and moves the issue back by its label")),
 		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(
 			"**Blocked**: %d rounds, and the review still asks %d finding%s. #%d is blocked, its reason on it: a person of the project fixes them, or closes this pull request.\n\n%s",
-			a.Round, len(r.Asked), plural(len(r.Asked)), a.Issue, askedList(r.Asked))}},
+			a.Round, len(r.Asked), devmark.Plural(len(r.Asked)), a.Issue, askedList(r.Asked))}},
 		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}},
 	)
 }
@@ -892,14 +892,14 @@ func reviewPost(runDir, repo string, s Settings) int {
 				Message: fmt.Sprintf("%s: no review round runs; #%d blocked, this pull request kept open", r.Backstop, r.Record.Issue)}}})
 	}
 	if r.TesterOnly {
-		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("%d test finding%s of the review sent to the tester: no round counted", len(r.ToTester), plural(len(r.ToTester))),
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("%d test finding%s of the review sent to the tester: no round counted", len(r.ToTester), devmark.Plural(len(r.ToTester))),
 			Findings: []verdict.Finding{{Rule: "tests-to-the-tester", Level: "info", Where: where,
 				Message: fmt.Sprintf("the review asks test findings alone, the tester's: on its Draft, #%d waits for its tests (#1265)", r.Record.Issue)}}})
 	}
 	if len(r.Disputed) > 0 && len(r.Asked) == 0 && len(r.ToTester) == 0 {
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("the review blocks on test findings the tester holds needless: its issue #%d blocked", r.Record.Issue),
 			Findings: []verdict.Finding{{Rule: "tests-disputed", Level: "warn", Where: where,
-				Message: fmt.Sprintf("%d test finding%s still block, the tester answering no test is needed: #%d blocked for a person, its reason on it", len(r.Disputed), plural(len(r.Disputed)), r.Record.Issue)}}})
+				Message: fmt.Sprintf("%d test finding%s still block, the tester answering no test is needed: #%d blocked for a person, its reason on it", len(r.Disputed), devmark.Plural(len(r.Disputed)), r.Record.Issue)}}})
 	}
 	if r.Person {
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("past round %d: its issue #%d blocked", r.Record.Round, r.Record.Issue),
@@ -982,7 +982,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		sendTests(&a, r.ToTester)
 		others = append(others, testRequests(repo, b, r.MR, r.ToTester))
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "tests-to-the-tester", Level: "info", Where: where,
-			Message: fmt.Sprintf("%d test finding%s of the review sent to the tester, on its Draft !%d (#1265)", len(r.ToTester), plural(len(r.ToTester)), b.Draft)})
+			Message: fmt.Sprintf("%d test finding%s of the review sent to the tester, on its Draft !%d (#1265)", len(r.ToTester), devmark.Plural(len(r.ToTester)), b.Draft)})
 	}
 	a.Refused = append(a.Refused, refused...)
 	if r.Back {
@@ -1036,7 +1036,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			if len(this.Beyond) > 0 {
 				// In its commit, where the reviewer's intent lens reads
 				// it with the commits not reviewed yet.
-				push += "\n\n" + BeyondHeading + ":\n\n" + strings.TrimRight(beyondLines(this.Beyond), "\n")
+				push += "\n\n" + BeyondHeading + ":\n\n" + strings.TrimRight(devmark.BeyondLines(this.Beyond), "\n")
 			}
 			if err := writeMergeRequest(runDir, map[string]any{"push": push}); err != nil {
 				return fail(err)
@@ -1054,7 +1054,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			// Its objection is on the tester's Draft (#987): the issue
 			// waits for its answer, not for a person. A rewrite is the
 			// next round; a test kept asks it again at this head.
-			a.Widen, this.Bounds = &Widen{At: r.At, Scope: scopeKey(b.Scope), Objected: true, Draft: b.Draft, Kept: r.Kept, Review: heldRed != nil}, "objected"
+			a.Widen, this.Bounds = &devmark.Widen{At: r.At, Scope: scopeKey(b.Scope), Objected: true, Draft: b.Draft, Kept: r.Kept, Review: heldRed != nil}, "objected"
 			msg := fmt.Sprintf("its objection to the frozen tests is on the tester's Draft !%d: #%d waits for its answer", b.Draft, a.Issue)
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "objected", Level: "info", Where: where, Message: msg})
 			v.Summary += "; " + msg
@@ -1064,7 +1064,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			// so nothing would move. Blocked for a person, its reason
 			// written; one who sends it back resumes the round.
 			ask = holdCheck(repo, a, r, red, notes, others)
-			a.Widen, this.Bounds = &Widen{At: r.At, Scope: scopeKey(b.Scope), Held: true}, "blocked"
+			a.Widen, this.Bounds = &devmark.Widen{At: r.At, Scope: scopeKey(b.Scope), Held: true}, "blocked"
 			msg := fmt.Sprintf("no fix for the red check %s: #%d blocked for a person", strings.Join(red, ", "), a.Issue)
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "check-held", Level: "warn", Where: where, Message: msg})
 			v.Summary += "; " + msg
@@ -1073,7 +1073,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			// file asked (#987): nothing else would move. Blocked for a
 			// person; one who sends it back has the findings asked again.
 			ask = holdGreen(repo, a, r, heldRed, notes, others)
-			a.Widen, this.Bounds = &Widen{At: r.At, Scope: scopeKey(b.Scope), Held: true, Review: true}, "blocked"
+			a.Widen, this.Bounds = &devmark.Widen{At: r.At, Scope: scopeKey(b.Scope), Held: true, Review: true}, "blocked"
 			msg := fmt.Sprintf("no objection left for the tester at this head: #%d blocked for a person", a.Issue)
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "green-held", Level: "warn", Where: where, Message: msg})
 			v.Summary += "; " + msg
@@ -1083,7 +1083,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 			why := fmt.Sprintf("its round on pull request %d objected again at this head, after the tester's answer, and pushed no fix: no second wait for the tester at the same head", r.MR)
 			next := "a person on the loop reads the tester's answer and the developer's note below, then settles the test or the finding; and moves the issue back to ready: the next round asks the findings again at the same head"
 			ask = holdFor(repo, a, r, why, next, notes, others)
-			a.Widen, this.Bounds = &Widen{At: r.At, Scope: scopeKey(b.Scope), Held: true, Review: true}, "blocked"
+			a.Widen, this.Bounds = &devmark.Widen{At: r.At, Scope: scopeKey(b.Scope), Held: true, Review: true}, "blocked"
 			msg := fmt.Sprintf("objected again at this head after the tester's answer: #%d blocked for a person", a.Issue)
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "objection-held", Level: "warn", Where: where, Message: msg})
 			v.Summary += "; " + msg
@@ -1141,7 +1141,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 
 // roundBody is the round's comment on its pull request: what was asked,
 // what the developer did, its proof, the five whys.
-func roundBody(x Round, s Settings, notes []string, analysis string, w *Widen) string {
+func roundBody(x Round, s Settings, notes []string, analysis string, w *devmark.Widen) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The developer**, review round %d of %d: ", x.N, s.Rounds)
 	if x.Result == "not-pushed" {
@@ -1167,7 +1167,7 @@ func roundBody(x Round, s Settings, notes []string, analysis string, w *Widen) s
 		fmt.Fprintf(&b, "New test files beside the issue's %s: `%s`; the product owner adds them to the %[1]s at its next run.\n\n", scopeName, strings.Join(x.Beside, "`, `"))
 	}
 	if len(x.Beyond) > 0 {
-		fmt.Fprintf(&b, "%s, the issue's %s a hint; the reviewer's intent lens judges each:\n\n%s\n", BeyondHeading, scopeName, beyondLines(x.Beyond))
+		fmt.Fprintf(&b, "%s, the issue's %s a hint; the reviewer's intent lens judges each:\n\n%s\n", BeyondHeading, scopeName, devmark.BeyondLines(x.Beyond))
 	}
 	b.WriteString("Asked:\n\n")
 	for _, t := range x.Asked {
@@ -1180,7 +1180,7 @@ func roundBody(x Round, s Settings, notes []string, analysis string, w *Widen) s
 		}
 	}
 	if x.Nits > 0 {
-		fmt.Fprintf(&b, "\n%d nit%s shown, not asked.\n", x.Nits, plural(x.Nits))
+		fmt.Fprintf(&b, "\n%d nit%s shown, not asked.\n", x.Nits, devmark.Plural(x.Nits))
 	}
 	if len(notes) > 0 {
 		b.WriteString("\nWhat it did:\n\n")
