@@ -69,6 +69,7 @@ var machineKinds = map[string]string{
 	"no-test-written":      "answer", // the tester's agent answered nothing it could use, or was not asked
 	"patch-unreadable":     "patch",  // a patch that does not apply
 	"build-broken":         "build",  // tests or code that do not build
+	"tests-lint":           "lint",   // the tester's tests fail the project's lint: the tester's to mend, run again (#1738)
 	"no-new-test":          "report", // the test report names none of the tests written
 	"report-missing":       "report", // the test command wrote no report: its errors said (#1192)
 	"proof-over-time":      "time",   // a test command stopped at its time: a hang, retried (#1197); the curator's too, run on no issue

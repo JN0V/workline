@@ -70,8 +70,13 @@ Once the Draft is proven, the engine moves the issue on, no agent asked
   agent's to mend: it is asked once more, each finding named by its file
   and line
   ([#964](https://github.com/JN0V/workline/issues/964)). Still there,
-  the run blocks (`tests-lint`): no Draft, the issue keeps its state,
-  the finding said on it. A lint's error repeating the build's own
+  the run blocks (`tests-lint`): no Draft, the finding said on it, and
+  the line runs the tester again on the issue, told the findings, as
+  for any machine error (a bounded number of tries), before the issue
+  is blocked for a person, the last finding named
+  ([#1738](https://github.com/JN0V/workline/issues/1738)). A gate that
+  cannot run at all (`tests-lint-gate-not-run`) blocks at once: no new
+  run mends it. A lint's error repeating the build's own
   error the test is red by ([how](missing-name.md#the-lint)) is not
   counted.
 - **Then ready**: `workline:ready` on, the other states' labels off,
