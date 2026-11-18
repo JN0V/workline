@@ -1,6 +1,18 @@
 ---
-sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, defaults/routing.yaml]
-checked: 04d2af892
+sources:
+  - roles/documentalist/role.yaml#events
+  - roles/documentalist/role.yaml#model
+  - roles/documentalist/role.yaml#duties
+  - roles/documentalist/role.yaml#without-ai
+  - roles/documentalist/role.yaml#merge-request-ai
+  - roles/documentalist/role.yaml#settings
+  - internal/builtin/documentalist/freshness.go#wholeCharsMax
+  - internal/builtin/documentalist/freshness.go#checkWholeChars
+  - internal/builtin/documentalist/sample.go#SampleSettings
+  - internal/builtin/documentalist/documentalist.go#preRun.sayShallow
+  - cmd/workline/main.go#prePushLine
+  - defaults/ci/github/workline-gardening.yml#on
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Documentalist
@@ -34,32 +46,37 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   a Go declaration, a YAML key.
 - With no agent: finds the suspect docs, and checks sizes, duplicates, dead
   links, identifiers gone from the code, decisions superseded, derived
-  blocks; when gardening, whether user pages serve their reader.
+  blocks; when gardening, whether user pages serve their reader
+  ([checks](docs/checks.md)).
 - With an agent: reads each suspect doc against its sources, and fixes it
   or vouches for it by moving `checked`; when gardening, it also reads
   stale docs again, merges repeated passages, condenses a doc over
-  budget, and reads the pages the reader checks flag.
+  budget, and reads the pages the reader checks flag
+  ([gardening](docs/gardening.md)).
 
 **Does not**: write code (its patches touch only `docs`), rewrite a doc the
 code follows (`truth: doc`, decisions by default: it opens an issue
 instead), fix what a change did not touch (other suspect docs wait for
 gardening), commit on your machine without asking (`workline docs` asks,
-doc by doc), or make a push wait on an agent.
+doc by doc), or make a push wait on an agent
+([at the push](docs/push-local.md)).
 
 | Event | Fired by | Does |
 |---|---|---|
 | `pre-push` | the global hook, when routed | counts the docs the pushed commits made suspect, reading no other doc, no agent |
 | `merge-request` | CI | judges the docs the merge request made suspect, reading no other doc; its fix in a comment, nothing pushed; the agent once, at ready; a draft or a push after: counts them |
 | `main` | CI, after each merge | the whole repository's checks, no agent, in one issue ([more](../../docs/main-after-merge.md)) |
-| `schedule` | CI, weekly, Sunday 18:07 UTC (gardening) | every suspect or stale doc, the docs due, budgets, links, reader checks; one merge request per task |
+| `schedule` | CI, weekly, Sunday 18:07 UTC (gardening) | every suspect or stale doc, the docs due, budgets, links, reader checks; one merge request per task ([more](docs/gardening.md)) |
 | `init` | `workline init` | proposes each doc's `sources`, for you to review |
 
 `workline docs` judges, on your machine, what was made suspect since the
-last time, and asks you to keep or drop each change.
+last time, and asks you to keep or drop each change
+([more](docs/push-local.md)).
 
 It needs the history back to each doc's `checked`: a shallow clone lacking
 it gets `shallow-clone`, never a doc found suspect or passed by guess. The
-CI templates fetch the whole history; elsewhere, `git fetch --unshallow`.
+CI templates fetch the whole history; elsewhere, `git fetch --unshallow`
+([more](docs/checks.md#suspects)).
 
 ## Settings
 
@@ -87,7 +104,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
 | `judge-in-parts` | `true` | when gardening, judge a doc too large in parts ([ADR-0009](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)), and one a merge request judged on its change alone; a merge request leaves it for the next gardening; `false`: such docs go to a person |
 | `parts-max`, `parts-max-per-run` | `8`, `16` | parts a doc, parts a run: what bounds a night's tokens in parts |
-| `parts-move-checked` | `true` | a doc judged in parts, nothing found wrong, every line it states supported, gets its `checked` moved; `false`: it waits for a person ([more](docs/parts.md#when-checked-moves-after-parts)) |
+| `parts-move-checked` | `true` | a doc judged in parts, nothing found wrong, every line it states supported, gets its `checked` moved; `false`: it waits for a person ([more](docs/parts-fix.md#when-checked-moves-after-parts)) |
 | `sample` | unset | `{judge, at-least, after, ai-max-tokens, panel}` for `workline sample` ([ci.md](../../docs/ci.md#the-weekly-sample)) |
 
 ## Outputs
@@ -103,19 +120,21 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
     whole; the others wait for parts or a person;
   - a doc found with nothing to fix gets no commit: its record waits in a
     comment, and gardening writes it on main once merged
-    ([more](docs/push.md#a-doc-found-with-nothing-to-fix-no-commit));
+    ([more](docs/push-records.md));
   - its findings beside their lines, none a conversation to resolve: on
     GitHub the check `workline findings`, on GitLab the Code Quality
-    report ([#412](https://github.com/JN0V/workline/issues/412)).
+    report ([#412](https://github.com/JN0V/workline/issues/412),
+    [more](../../docs/ci.md#what-a-job-shows)).
 - On main after a merge: the whole repository's findings, with the
   gates', in one issue, edited only when they change
   ([more](../../docs/main-after-merge.md)).
 - Gardening: weekly, before Monday's workday; a doc another open pull
-  request changes is left to it. A branch and merge request per task,
+  request changes is left to it
+  ([more](docs/gardening-merge-requests.md#one-merge-request-per-task)). A branch and merge request per task,
   `workline/documentalist/<task>` — `records` for the records merged merge
   requests kept —, rebuilt on `main` once `main` moved, or
   closed, saying why, when nothing is left to merge
-  ([when the base moves](docs/gardening.md#when-the-base-moves)); a
+  ([when the base moves](docs/gardening-merge-requests.md#when-the-base-moves)); a
   tracking issue for docs due later; an issue when the code
   disagrees with a doc it follows.
 - Never at the release: the release does not wait for the docs
@@ -123,7 +142,8 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 - Never a commit on a person's pull request: a conflict with main, on a
   doc's `checked` too, is its author's
   ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
-- `--json`, `--sarif`, `--code-quality` for CI.
+- `--json`, `--sarif`, `--code-quality` for CI
+  ([options](../../docs/usage.md)).
 
 ## Cost
 
@@ -142,7 +162,9 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   `parts-max-per-run` (a night's parts), `max-open-merge-requests`;
   `judge-in-parts: false` spends nothing on docs too large.
 - The weekly sample reads one doc in ten vouched for, about 8k to 12k
-  tokens a doc, within its cap (`sample.ai-max-tokens`). A push costs
+  tokens a doc
+  ([ADR-0046](../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#cost-a-week)),
+  within its cap (`sample.ai-max-tokens`). A push costs
   nothing.
 
 ## Without AI

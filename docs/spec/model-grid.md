@@ -1,6 +1,6 @@
 ---
-sources: [internal/agent, internal/engine/engine.go]
-checked: 04d2af892
+sources: [internal/role/role.go#Model, internal/role/role.go#ProjectConfig, roles/documentalist/role.yaml#model, internal/engine/engine.go#taskKind, internal/agent/claude.go#claudeTier, internal/agent/claude.go#claudeEffort, internal/agent/agent.go#Parse, internal/agent/agent.go#Call, internal/agent/claude.go#claudeAnswer, internal/agent/seen.go#Notice, internal/engine/engine.go#askJudge, internal/judge/judge.go#Pick, internal/judge/judge.go#Independence, tests/evaluation/eval_test.go#judge, roles/reviewer/role.yaml#settings.judge-at-least]
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Model grid — v1 (draft)
@@ -18,6 +18,7 @@ model:
   capability: writing     # coding | reasoning | writing | classification
   tier: light             # light | standard | frontier
   effort: low             # none | low | medium | high | xhigh | max
+  promote-after: 2        # refused attempts before one last try a tier up; 0 = never
 ```
 
 - **capability** — what the decision is mostly about. Writing a commit message
@@ -34,6 +35,8 @@ model:
   frontier}}`), because the evaluation showed it cheaper than a `standard` try
   stepped up. A kind of task may also name its own `instruction` facet and
   the `intentions` it answers with, for a light read (role-contract.md).
+- **promote-after** — how often a refused answer is asked again before one
+  last try a tier up ([stepping up after failures](model-step-up.md)).
 
 ## The grid
 
@@ -107,30 +110,6 @@ pinned only when a measurement shows the new one doing worse
 every role (`--ai claude:<model>@<effort>`, also in `ai:`), which the
 evaluation uses to compare them. Not yet: the grid, pins or forbidden models
 per project; Claude's aliases stand for the tiers.*
-
-## Stepping up after failures
-
-A light model is the right default, not a ceiling. When the agent's intentions
-are refused, or `post` blocks on what the agent produced — not a `final`
-block, which the answer did not cause (docs/spec/role-outcome.md) — the
-engine may retry one tier up:
-
-```yaml
-model:
-  capability: writing
-  tier: light
-  effort: low
-  promote-after: 2        # refused attempts before one last try a tier up; 0 = never
-```
-
-The ladder stops at `frontier`. The number of attempts is capped at
-`promote-after` + 1: the last one is the only one a tier up. A role's
-`ai-max-seconds` caps them all together, in time
-([the role contract](role-contract.md)).
-An answer that could not be read at all is asked once more on the same tier,
-besides, even when `promote-after` is 0 — a part's too, a reviewer's lens,
-when `promote-after` is above 0. So is a block `post` marks `again`, one
-the answer can mend, when `promote-after` is 0: one more call in all.
 
 ## Independent judgement
 

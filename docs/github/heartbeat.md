@@ -1,6 +1,13 @@
 <!-- workline
-sources: [defaults/ci/github/workline-develop.yml, .github/workflows/workline-develop.yml]
-checked: 04d2af892
+sources:
+  - defaults/ci/github/workline-develop.yml#run-name
+  - defaults/ci/github/workline-develop.yml#env.WORKLINE_VERSION
+  - defaults/ci/github/workline-develop.yml#jobs.heartbeat
+  - defaults/ci/github/workline-develop.yml#jobs.reconcile-due
+  - defaults/ci/github/workline-develop.yml#jobs.reconcile
+  - internal/line/states.go#roundsDue
+  - internal/developer/review.go#RoundDue
+checked: e2e165c2d
 verified: agent:claude-code
 -->
 # The reconciler's heartbeat
@@ -96,8 +103,8 @@ gh api -X PUT repos/OWNER/REPO/environments/workline-heartbeat -F wait_timer=5
   reconcile job.
 - **API calls**: the reconcile's own, 1 to read when it last ran, and
   2 for the next heartbeat ([the budget](calls.md#the-api-budget)).
-  Where the developer is routed, 1 more to list the pull requests, and
-  a few to read the comments and checks of each of the developer's.
+  Where the developer is routed, more: the pull requests listed, then
+  the comments and checks of each of the developer's read.
 - **Each `workline:` label**: a job of a few seconds, 1 call to read the
   runs; none starts a reconcile while the heartbeat waits.
 - **Runners**: none while it waits.

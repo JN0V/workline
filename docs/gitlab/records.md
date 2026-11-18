@@ -38,7 +38,7 @@ and the documentalist read back what their comments keep.
     read the whole change once, as the draft's summary says
     ([how](../../roles/reviewer/docs/ready.md); not tried on a GitLab yet).
 - **The documentalist** reads the records its note keeps instead of
-  commits ([more](../../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)):
+  commits ([more](../../roles/documentalist/docs/push-records.md)):
   - only a note workline's own account wrote: `WORKLINE_GITLAB_TOKEN`'s
     user, as GitLab says, or one named in `gitlab: {bots: [<username>]}`
     in `.workline/config.yaml`

@@ -72,7 +72,7 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   and sets `judged`, the judge refusing a move (`checked-unread`), and the
   doc stays suspect for a person. The same holds for docs due and for
   stale docs. What the run says of it names what was read
-  and what was not ([the judge](judge.md#what-the-finding-says)).
+  and what was not ([the judge](judge-findings.md#what-the-finding-says)).
 - **A source that cannot be read** — a file gone, a section whose
   heading is renamed or removed, a named part gone from its file — is
   never given as empty: the doc is
@@ -87,7 +87,7 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
 - **In parts**: a fix never moves it; the engine does when the parts
   support every line stating something, unless the project turns
   `parts-move-checked` off
-  ([judged in parts](parts.md#when-checked-moves-after-parts)).
+  ([judged in parts](parts-fix.md#when-checked-moves-after-parts)).
 
 ### Every word removed is cited
 

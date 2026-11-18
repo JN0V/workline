@@ -41,7 +41,7 @@ commit you read them at. A doc that names no `sources` is never suspect:
 records of docs found with nothing to fix, or of the merge requests
 merged, could not be read:
 the records are committed, or those docs judged again, at night. On GitLab, give the judging job `GITLAB_TOKEN`
-([more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
+([more](../roles/documentalist/docs/push-records.md)).
 
 - **Its marker in another's comment**: only workline's own account's
   comment is read; the warning names whose was not, and the account read.

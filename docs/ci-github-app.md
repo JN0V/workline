@@ -1,6 +1,25 @@
 ---
-sources: [defaults/ci/github, .github/workflows/workline-apply.yml, .github/workflows/workline.yml]
-checked: e4e4287bc
+sources:
+  - internal/forge/annotate.go#FindingsCheck
+  - internal/forge/annotate.go#GatesCheck
+  - internal/forge/own.go#github.own
+  - defaults/ci/github/workline-apply.yml#on
+  - defaults/ci/github/workline-apply.yml#jobs.apply
+  - defaults/ci/github/workline-apply.yml#jobs.verdict
+  - defaults/ci/github/workline-apply.yml#jobs.queue.environment
+  - defaults/ci/github/workline-apply.yml#jobs.main.environment
+  - defaults/ci/github/workline-apply.yml#jobs.follow.environment
+  - defaults/ci/github/workline-merge.yml#on
+  - defaults/ci/github/workline-merge.yml#jobs.follow
+  - defaults/ci/github/workline-gardening.yml#jobs.apply.environment
+  - defaults/ci/github/workline-gardening.yml#jobs.dry-run-post.environment
+  - defaults/ci/github/workline-sample.yml#jobs.write.environment
+  - defaults/ci/github/workline-answer.yml#jobs.apply.environment
+  - defaults/ci/github/workline-develop.yml#jobs.apply.environment
+  - defaults/ci/github/workline-develop.yml#jobs.identity.environment
+  - defaults/ci/github/workline-develop.yml#jobs.review-apply.environment
+  - defaults/ci/github/workline-bounds.yml#jobs.bounds-apply.environment
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # The GitHub App and its key
@@ -46,7 +65,8 @@ branch's workflow
    - no required reviewer: each job holding the key would wait for one.
 4. **No repository secret of that name**: delete
    `WORKLINE_APP_PRIVATE_KEY` from the repository's secrets if it is
-   there. It reaches every branch's workflow; `judge` warns while it is.
+   there. It reaches every branch's workflow
+   ([`judge` warns](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#decision)).
 
 The same with `gh`, by an admin of the repository:
 
@@ -91,7 +111,8 @@ gh secret delete WORKLINE_APP_PRIVATE_KEY -R OWNER/REPO    # the repository's ow
   workline-merge.yml, on a label and hourly, a demotion or release
   candidate's issue's too;
   gardening and the sample; the tester's answer, the developer's steps
-  and rounds, its bounds. Each records a deployment to `workline-app`.
+  and rounds, its reconciler, its bounds. Each records a deployment to
+  `workline-app`.
 - **They read a pull request's run as data**: its artifacts, outside the
   checkout; the head the event names; only the agents' proposals
   ([`apply --from-merge-request`](commands.md#workline-apply)).
