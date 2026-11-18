@@ -16,7 +16,7 @@ func TestReviewRows(t *testing.T) {
 		`{"lens":"gate-lint","holds":"warns","where":"a.go:4","text":"unused variable"},` +
 		`{"lens":"gate:lint","holds":"blocks","where":"a.go:9","text":"gate lint did not pass — 1 new finding"}` +
 		"] -->\n"
-	asked, nits := reviewRows(comment)
+	asked, nits := devmark.ReviewRows(comment)
 	if nits != 1 || len(asked) != 3 {
 		t.Fatalf("asked %v, nits %d: want 3 asked, 1 nit", asked, nits)
 	}
@@ -35,7 +35,7 @@ func TestLineDetails(t *testing.T) {
 	body := func(title, why string) string {
 		return "**workline reviewer** · **blocks** · correctness\n\n**Important: " + title + "**\n\n" + why + "\n\n<!-- workline:line=correctness/abc -->"
 	}
-	asked := []Asked{
+	asked := []devmark.Asked{
 		{Key: "correctness|lib.sh|mul adds", Lens: "correctness", Where: "lib.sh:2", Holds: "blocks"},
 		{Key: "design|lib.sh|two lenses; also tests: more", Lens: "design", Where: "lib.sh:1", Holds: "warns"},
 		{Key: "tests|other.sh|no comment", Lens: "tests", Where: "other.sh:1", Holds: "warns"},

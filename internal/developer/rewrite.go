@@ -34,7 +34,7 @@ const testerHolds = "the tester"
 // the forge is read only when the branches differ. A blob the record
 // does not name is never asked, so it makes no round due again and
 // again. None when the head or the tester's branch is not known in repo.
-func rewritesAsked(f forge.Forge, repo string, a Act, head string) ([]Asked, error) {
+func rewritesAsked(f forge.Forge, repo string, a Act, head string) ([]devmark.Asked, error) {
 	if head == "" || len(a.Acceptance) == 0 {
 		return nil, nil
 	}
@@ -42,7 +42,7 @@ func rewritesAsked(f forge.Forge, repo string, a Act, head string) ([]Asked, err
 	if tip == "" {
 		return nil, nil
 	}
-	var out []Asked
+	var out []devmark.Asked
 	for _, t := range a.Acceptance {
 		blob, _ := gitOut(repo, "rev-parse", "-q", "--verify", tip+":"+t)
 		if blob == "" {
@@ -51,7 +51,7 @@ func rewritesAsked(f forge.Forge, repo string, a Act, head string) ([]Asked, err
 		if have, _ := gitOut(repo, "rev-parse", "-q", "--verify", head+":"+t); have == blob {
 			continue
 		}
-		out = append(out, Asked{Key: "tester|" + t + "|" + blob, Where: t, Holds: testerHolds, Detail: blob,
+		out = append(out, devmark.Asked{Key: "tester|" + t + "|" + blob, Where: t, Holds: testerHolds, Detail: blob,
 			Text: "rewritten on an objection, on its Draft"})
 	}
 	if len(out) == 0 {
@@ -61,7 +61,7 @@ func rewritesAsked(f forge.Forge, repo string, a Act, head string) ([]Asked, err
 	if err != nil {
 		return nil, err
 	}
-	return slices.DeleteFunc(out, func(x Asked) bool { return files[x.Where] != x.Detail }), nil
+	return slices.DeleteFunc(out, func(x devmark.Asked) bool { return files[x.Where] != x.Detail }), nil
 }
 
 // testerFiles are the frozen tests the record on the tester's open Draft
@@ -134,7 +134,7 @@ func testerKept(f forge.Forge, issue int) ([]string, error) {
 
 // keptLine is a test the tester kept, as the round's task and comment
 // say it.
-func keptLine(a Asked) string {
+func keptLine(a devmark.Asked) string {
 	return fmt.Sprintf("the tester kept `%s`, objected to at this head: its answer on its Draft", a.Where)
 }
 
@@ -205,7 +205,7 @@ func testerTip(repo string, issue int) string {
 // tester's record names (b.Blobs): the frozen test is the record's, never
 // a branch's word alone. It returns the asks kept and the tests taken,
 // each its blob.
-func takeRewrites(asked []Asked, b Bounds) (kept []Asked, taken map[string]string) {
+func takeRewrites(asked []devmark.Asked, b Bounds) (kept []devmark.Asked, taken map[string]string) {
 	taken = map[string]string{}
 	for _, x := range asked {
 		if x.Holds != testerHolds {
@@ -276,6 +276,6 @@ func rewritePatches(repo string, taken map[string]string) ([]intent.Intention, e
 }
 
 // rewriteLine is a rewrite asked, as the round's task and comment say it.
-func rewriteLine(a Asked) string {
+func rewriteLine(a devmark.Asked) string {
 	return fmt.Sprintf("the tester rewrote `%s` on an objection, on its Draft: taken into this branch", a.Where)
 }

@@ -1,6 +1,9 @@
 package developer
 
-import "testing"
+import (
+	"github.com/JN0V/workline/internal/kit/devmark"
+	"testing"
+)
 
 // The record the reviewer hides in its comment, one JSON list of its findings.
 const findingsRecord = "<!-- workline:findings [{\"lens\":\"design\",\"holds\":\"warns\",\"where\":\"lib.sh:1\",\"severity\":\"Important\",\"text\":\"mul adds — it gives 5. Fix: multiply.\"}] -->\n"
@@ -9,7 +12,7 @@ const findingsRecord = "<!-- workline:findings [{\"lens\":\"design\",\"holds\":\
 // Important finding, When the developer runs a round, Then it works on
 // that finding.
 func TestReviewRowsReadTheRecord(t *testing.T) {
-	asked, nits := reviewRows(findingsRecord)
+	asked, nits := devmark.ReviewRows(findingsRecord)
 	if nits != 0 || len(asked) != 1 {
 		t.Fatalf("asked %+v, nits %d: want the record's one finding", asked, nits)
 	}
@@ -23,8 +26,8 @@ func TestReviewRowsReadTheRecord(t *testing.T) {
 func TestReviewRowsIgnoreTheTablesWords(t *testing.T) {
 	reworded := "| Level | Area | Place | Remark |\n|---|---|---|---|\n" +
 		"| high | design | `lib.sh:1` | something else entirely |\n" + findingsRecord
-	want, _ := reviewRows(findingsRecord)
-	got, _ := reviewRows(reworded)
+	want, _ := devmark.ReviewRows(findingsRecord)
+	got, _ := devmark.ReviewRows(reworded)
 	if len(want) != 1 || len(got) != 1 || got[0].Key != want[0].Key || got[0].Holds != want[0].Holds || got[0].Where != want[0].Where {
 		t.Errorf("reworded table: %+v, want %+v", got, want)
 	}
@@ -35,7 +38,7 @@ func TestReviewRowsIgnoreTheTablesWords(t *testing.T) {
 func TestReviewRowsWithNoRecordAskNothing(t *testing.T) {
 	table := "| | | Where | Finding |\n|---|---|---|---|\n" +
 		"| warns | design | `lib.sh:1` | Important: mul adds — it gives 5. |\n"
-	asked, nits := reviewRows(table)
+	asked, nits := devmark.ReviewRows(table)
 	if len(asked) != 0 || nits != 0 {
 		t.Errorf("asked %+v, nits %d from a table alone: want nothing", asked, nits)
 	}

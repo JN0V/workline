@@ -52,7 +52,7 @@ func TestUnreviewed(t *testing.T) {
 		{"<!-- workline:record reviewed=abc patches=def runs=2 owed=all read=all -->", true},
 		{"<!-- workline:record reviewed=abc runs=1 -->", false},
 	} {
-		if got := reviewerOwed.MatchString(c.comment); got != c.owed {
+		if got := devmark.ReviewerOwed.MatchString(c.comment); got != c.owed {
 			t.Errorf("owed %q: %v, want %v", c.comment, got, c.owed)
 		}
 	}

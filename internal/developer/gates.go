@@ -14,6 +14,7 @@ import (
 
 	"github.com/JN0V/workline/internal/builtin/inspector"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // gateHolds is how a round says a gate's finding: neither the reviewer's
@@ -30,7 +31,7 @@ var (
 // each rule's new findings, at the first place it names; a check that
 // did not pass, or whose findings a command fixes, too. A check that did
 // not run asks nothing: no code of the change fixes a tool not run.
-func gateRows(comment string) (head string, asked []Asked) {
+func gateRows(comment string) (head string, asked []devmark.Asked) {
 	m := gatesHead.FindStringSubmatch(comment)
 	if m == nil {
 		return "", nil
@@ -49,7 +50,7 @@ func gateRows(comment string) (head string, asked []Asked) {
 			where = p[1]
 			file, _, _ = strings.Cut(where, ":")
 		}
-		asked = append(asked, Asked{Key: "gates|" + file + "|" + n[1], Where: where, Text: text, Holds: gateHolds})
+		asked = append(asked, devmark.Asked{Key: "gates|" + file + "|" + n[1], Where: where, Text: text, Holds: gateHolds})
 	}
 	return m[1], asked
 }
@@ -58,7 +59,7 @@ func gateRows(comment string) (head string, asked []Asked) {
 // triaged at the gates' head: why it matters, its fix, or why it is
 // likely a false positive. An inspector's comment that does not read
 // adds nothing: the gates' own words stand.
-func triageDetails(asked []Asked, comment, head string) {
+func triageDetails(asked []devmark.Asked, comment, head string) {
 	rec, err := inspector.ReadTriage(comment)
 	if err != nil {
 		return
@@ -96,7 +97,7 @@ func sameCommit(a, b string) bool {
 // gates reported on another head than its branch's (head; "" when not
 // known: the round reads it), or on the one its last round read
 // (a.GatesAt). It returns the head they were read at.
-func gatesAsked(kept forge.Kept, a Act, head string) (string, []Asked) {
+func gatesAsked(kept forge.Kept, a Act, head string) (string, []devmark.Asked) {
 	c, ok := kept.Last(forge.GatesMarker)
 	if !ok {
 		return "", nil
@@ -112,7 +113,7 @@ func gatesAsked(kept forge.Kept, a Act, head string) (string, []Asked) {
 }
 
 // gateLine is a gate's finding as a round's question and comment say it.
-func gateLine(a Asked) string {
+func gateLine(a devmark.Asked) string {
 	if a.Where == "" {
 		return fmt.Sprintf("%s's new finding: %s", gateHolds, a.Text)
 	}

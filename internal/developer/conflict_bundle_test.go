@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -76,7 +77,7 @@ func TestConflictLands(t *testing.T) {
 	}
 	write(filepath.Join(runDir, "in"), boundsFile, string(bounds))
 	r := round{MR: 4, Branch: "workline/developer/3", Record: Act{Act: "code", Issue: 3}, At: head, Merge: base, Base: settledAt, Conflicts: []string{"a.txt"},
-		Asked: []Asked{{Key: "conflict|" + base, Where: "main", Holds: conflictHolds, Text: "conflicts with main in a.txt"}}}
+		Asked: []devmark.Asked{{Key: "conflict|" + base, Where: "main", Holds: conflictHolds, Text: "conflicts with main in a.txt"}}}
 	if code := mergePost(runDir, repo, Settings{}, r); code != 0 {
 		t.Fatalf("mergePost exited %d", code)
 	}

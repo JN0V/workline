@@ -214,7 +214,7 @@ func RoundLines(a Act) string {
 }
 
 // roundResult says how a review round ended.
-func roundResult(x Round) string {
+func roundResult(x devmark.Round) string {
 	switch {
 	case x.Person:
 		return "its issue blocked"

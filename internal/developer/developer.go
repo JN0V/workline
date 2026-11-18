@@ -175,12 +175,12 @@ type Act struct {
 	ReviewRuns int `json:"review-runs,omitempty"`
 	// ReviewAt: the head of the reviewer's summary its last round read;
 	// another is a new review, its runs counted or not (#1040).
-	ReviewAt string   `json:"review-at,omitempty"`
-	Heard    []string `json:"heard,omitempty"`
-	Seen     []string `json:"seen,omitempty"`
-	Rounds   []Round  `json:"rounds,omitempty"`
-	Whys     bool     `json:"whys,omitempty"`
-	Handed   bool     `json:"handed,omitempty"`
+	ReviewAt string          `json:"review-at,omitempty"`
+	Heard    []string        `json:"heard,omitempty"`
+	Seen     []string        `json:"seen,omitempty"`
+	Rounds   []devmark.Round `json:"rounds,omitempty"`
+	Whys     bool            `json:"whys,omitempty"`
+	Handed   bool            `json:"handed,omitempty"`
 	// GatesAt: the head of the gates' report its last round asked the
 	// findings of: the same report is not asked again.
 	GatesAt string `json:"gates-at,omitempty"`
