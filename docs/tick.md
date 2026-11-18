@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline/tick.go, defaults/ci/github/workline-loop.yml, .github/workflows/workline-loop.yml, .github/workflows/workline-merge.yml, .github/workflows/test.yml, internal/tick, internal/routing/timed.go, internal/forge/runs.go, internal/forge/cond.go, internal/line/tick.go, internal/line/backlog_due.go]
-checked: 3d23c7a7
+checked: c511c9f2
 ---
 # The tick
 
@@ -117,8 +117,12 @@ beat on GitHub, whose own schedule runs late or not at all
     workline-gardening.yml (`job=<job>`); `merge` in workline-merge.yml;
     `sample` in workline-sample.yml; `seeds` in workline's own test.yml
     (`job=seeds`). Each run is named by its key.
-  - **Once**: a job going is not listed; a key dispatched under 2
-    minutes ago is held (`held {…}`), its run maybe not listed yet.
+  - **Once**: a job going is not listed; a key dispatched under a beat
+    and a minute ago is held (`held {…}`), its run maybe not listed yet:
+    `HOLD_SECONDS`, 240, never under the beat + 60 s.
+  - **One run at a time** for the jobs that must not double: the
+    backlog and the nightly share a concurrency group, the docs have
+    their own, workline's seeds too; a dispatch waits for the run going.
   - **A dispatch that fails** is said, and tried again at the next beat
     tick lists it.
   - **A job the loop does not know** is said, not started.
@@ -142,8 +146,10 @@ beat on GitHub, whose own schedule runs late or not at all
 ### Turn dispatching on
 
 - **Before**: the dry run's notices, a day, list what you expect.
-- **Set the reconcile's time**: due every beat, it would start up to 20
-  reconciles an hour, about 20 calls each. A `gap` keeps it in budget:
+- **Set the reconcile's time**: while a heartbeat waits, tick lists no
+  reconcile; were its chain broken, due every beat, it would start up
+  to 20 reconciles an hour, about 20 calls each. A `gap` keeps it in
+  budget (workline's own config sets it):
 
   ```yaml
   routing:
@@ -155,9 +161,13 @@ beat on GitHub, whose own schedule runs late or not at all
   `WORKLINE_LOOP_DISPATCH` = `true`. The next beat reads it; `false` or
   unset is a dry run again.
 - **Event triggers next**: each workflow keeps its own while the loop
-  dispatches beside it; a run either starts is seen by tick, so a job
-  starts once. They are removed one per pull request, the crons kept as
-  a restart until a week without a missed beat
+  dispatches beside it. Tick sees a run by its name only:
+  - **Seen**: a scheduled run, named by its job; a dispatched one.
+  - **Not seen**: a merge run a label or an issue's close starts, named
+    by the pull request's or the issue's title. A dispatched merge may run beside it: the merge's
+    `follow` job waits in its group, one at a time.
+  - They are removed one per pull request, the crons kept as a restart
+    until a week without a missed beat
   ([ADR-0069's amendment](adr/0069-one-wake-every-five-minutes-starts-what-is-due.md#amendment-2026-11-17-a-beat-every-minute-no-event-moves-the-line)).
 
 ## Cost

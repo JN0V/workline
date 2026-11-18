@@ -163,6 +163,11 @@ routing:
   # developer works; an issue whose Scope overlaps an open pull request is
   # still counted apart. Reverted with the push's pull request.
   wip: {ready: 10}
+  # The loop's reconcile (docs/tick.md#turn-dispatching-on): while the
+  # heartbeat waits, tick lists none; were its chain broken, 15 minutes
+  # apart, not every beat.
+  timed:
+    reconcile: {gap: 15}
   events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, "gate:lint", tester, reviewer, inspector],
     schedule: [documentalist, product-owner, reviewer], issue: [product-owner, reviewer, tester, developer]}
 

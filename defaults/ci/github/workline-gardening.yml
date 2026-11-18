@@ -54,6 +54,13 @@ on:
       job: {description: "the job this run is named for: backlog, nightly or docs (it runs the schedule line all the same)", required: false, default: ""}
 permissions: {}
 
+# One run at a time per job: a backlog run (the nightly's too) waits for
+# the one going, so two product owners never act on the same issues; a
+# docs run likewise, beside it.
+concurrency:
+  group: ${{ (github.event.schedule == '7 18 * * 0' || inputs.job == 'docs') && 'workline-gardening-docs' || 'workline-gardening-backlog' }}
+  cancel-in-progress: false
+
 env:
   WORKLINE_VERSION: v0.80.0          # a release of workline: update it to take a newer one (x-release-please-version)
   # the job summary (--summary) needs the first release after v0.16.0

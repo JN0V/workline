@@ -28,9 +28,10 @@ on:
 permissions: {}
 
 # One backlog run at a time: two product owners on the same issues would
-# act twice. The weekly docs run waits for none.
+# act twice. One docs run at a time too, beside it: a docs run the loop
+# dispatches waits for the scheduled one, never doubles its pull request.
 concurrency:
-  group: ${{ (github.event.schedule == '7 18 * * 0' || inputs.job == 'docs') && format('workline-gardening-{0}', github.run_id) || 'workline-gardening-backlog' }}
+  group: ${{ (github.event.schedule == '7 18 * * 0' || inputs.job == 'docs') && 'workline-gardening-docs' || 'workline-gardening-backlog' }}
   cancel-in-progress: false
 
 env:

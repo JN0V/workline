@@ -76,8 +76,9 @@ jobs:
           # quota even when read conditionally (docs/tick.md#cost).
           BEAT_SECONDS: ${{ vars.WORKLINE_LOOP_BEAT_SECONDS || '180' }}
           # A job dispatched this recently is held: its run may not be
-          # listed yet, and tick would list it again.
-          HOLD_SECONDS: "120"
+          # listed yet, and tick would list it again. Never under a beat
+          # and a minute: the beat after its dispatch holds it still.
+          HOLD_SECONDS: "240"
           FAILS_MAX: "10"                    # tick failing this many beats in a row: the loop stops
         run: |
           if ! workline tick --help >/dev/null 2>&1; then
@@ -107,6 +108,8 @@ jobs:
             esac
             gh workflow run "$@" --ref "$BRANCH"
           }
+          # The hold: HOLD_SECONDS, at least a beat and a minute.
+          hold=$(( HOLD_SECONDS > BEAT_SECONDS + 60 ? HOLD_SECONDS : BEAT_SECONDS + 60 ))
           : > "$RUNNER_TEMP/dispatched"
           end=$(( $(date +%s) + LOOP_MINUTES * 60 ))
           beats=0 fails=0
@@ -137,10 +140,10 @@ jobs:
                 jq -c '.[]' "$RUNNER_TEMP/tick.json" | sed 's/^/would dispatch /' | tee -a "$RUNNER_TEMP/would.log"
               else
                 # Exactly tick's list, once per key: a key dispatched
-                # under HOLD_SECONDS ago, in this beat too, is held.
+                # under $hold seconds ago, in this beat too, is held.
                 while IFS= read -r item; do
                   key=$(jq -r .key <<<"$item"); now=$(date +%s)
-                  if jq -R -e --arg k "$key" --argjson t $((now - HOLD_SECONDS)) \
+                  if jq -R -e --arg k "$key" --argjson t $((now - hold)) \
                     'split("\t") | select(.[1] == $k and (.[0] | tonumber) > $t)' "$RUNNER_TEMP/dispatched" >/dev/null; then
                     echo "held $item"
                   elif start "$item" </dev/null; then
