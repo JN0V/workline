@@ -52,9 +52,12 @@ engine ([ADR-0071](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md
   main's whole-repository checks are
   `route main`'s, once a merge ([main after a merge](../main-after-merge.md));
   gardening installs lychee, for the links to other sites, at night;
-- gardening's backlog runs hourly too, at :47 UTC, one at a time, for
-  a push of six hours; run by hand, its input `skip` leaves
-  roles out (`documentalist`: the backlog alone);
+- gardening and the seeds have no cron: the loop dispatches the
+  nightly (02:17 UTC) and test.yml's seeds (03:41 UTC) at the times
+  `routing.timed` gives them in [the config](../../.workline/config.yaml),
+  the docs on Sunday, the backlog when Ready is below its target; run
+  by hand, gardening's input `skip` leaves roles out (`documentalist`:
+  the backlog alone);
 - the templates' pins, which release-please moves, are never what
   workline's own checks run: a pull request moving them to a version not
   yet tagged stays green
