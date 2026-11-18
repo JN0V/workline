@@ -30,6 +30,7 @@
         {"type": "generic", "path": "defaults/ci/github/workline-answer.yml"},
         {"type": "generic", "path": "defaults/ci/github/workline-develop.yml"},
         {"type": "generic", "path": "defaults/ci/github/workline-bounds.yml"},
+        {"type": "generic", "path": "defaults/ci/github/workline-loop.yml"},
         {"type": "generic", "path": "defaults/ci/gitlab/workline-bounds.gitlab-ci.yml"},
         {"type": "generic", "path": "defaults/ci/gitlab/workline.gitlab-ci.yml"},
         {"type": "generic", "path": "docs/gitlab/without-template.md"}

@@ -1,6 +1,6 @@
 ---
-sources: [cmd/workline/tick.go, internal/tick, internal/routing/timed.go, internal/forge/runs.go, internal/forge/cond.go, internal/line/tick.go, internal/line/backlog_due.go]
-checked: aa842322
+sources: [cmd/workline/tick.go, defaults/ci/github/workline-loop.yml, .github/workflows/workline-loop.yml, internal/tick, internal/routing/timed.go, internal/forge/runs.go, internal/forge/cond.go, internal/line/tick.go, internal/line/backlog_due.go]
+checked: f02bc319
 ---
 # The tick
 
@@ -21,8 +21,8 @@ flowchart LR
   whose run is queued, waiting or running is not listed again.
 - **Never a guess**: a read that fails lists no job that needs it, and
   says why on stderr. It exits 0 all the same.
-- **The workflows do not call it yet**: the beat that does comes in the
-  next slices of [#1611](https://github.com/JN0V/workline/issues/1611).
+- **On GitHub, a loop calls it**, a dry run for now: it logs what it
+  would start, and starts nothing ([the GitHub loop](#the-github-loop)).
 
 ## What it lists
 
@@ -47,6 +47,9 @@ flowchart LR
 - **Runs from before those names**: a gardening run named `workline
   gardening` counts as a backlog run, a `workline develop heartbeat` as
   a reconcile.
+- **The nightly keeps the backlog**: a `workline gardening nightly` run
+  counts as a backlog run too; a docs run does not
+  ([#1765](https://github.com/JN0V/workline/issues/1765)).
 - **Going**: a run requested, queued, waiting, pending or in progress.
 - **`--issues`**: in the place of the reconcile, each issue's step,
   review round and tester's answer the reconciler finds due, as its own
@@ -85,6 +88,45 @@ workline tick --now 2026-11-16T02:20:00Z --json   # a fixed clock, for tests
 - **Runs are read on GitHub** (and the conformance tests' fake forge).
   On GitLab, a forge kept in the clone or none, the runs are said not
   read: the reconcile alone is listed.
+
+## The GitHub loop
+
+[workline-loop.yml](../defaults/ci/github/workline-loop.yml) holds the
+beat on GitHub, whose own schedule runs late or not at all
+([ADR-0069's amendment](adr/0069-one-wake-every-five-minutes-starts-what-is-due.md#amendment-2026-11-17-a-beat-every-minute-no-event-moves-the-line)).
+
+- **One long job**: `workline tick --forge github --json` every beat,
+  its checkout kept between beats, so the conditional reads' cache in
+  `.git/workline` too.
+- **A dry run**: each job tick lists is logged, as tick prints it, and
+  nothing starts. The run's notice counts them:
+
+  ```text
+  beat 12, 14:03:01 UTC: 2 due, a dry run
+  would dispatch {"job":"reconcile","why":"every tick","key":"workline develop reconcile"}
+  would dispatch {"job":"docs","why":"its time …","key":"workline gardening docs"}
+  ```
+
+- **Dispatching comes later**: the repository variable
+  `WORKLINE_LOOP_DISPATCH` is read; `true` is said not built yet, and the
+  beat stays a dry run.
+- **One at a time**: its concurrency group; a restart while a loop runs
+  (job `alive`) starts nothing.
+- **Before GitHub's 6 h**: after 340 minutes of beats, it dispatches its
+  successor, which waits in the group; not after a crash or a cancel.
+- **Restarted** by its hourly schedule, or by hand (Run workflow).
+- **Its release**: v0.79.0 at least; an older one has no `tick`, and the
+  loop says so and stops.
+- **Its beat**: 180 s, or the variable `WORKLINE_LOOP_BEAT_SECONDS`.
+  The job token's 1,000 calls an hour are the whole repository's; 60 s
+  once the loop's release reads conditionally
+  ([#1764](https://github.com/JN0V/workline/pull/1764)).
+- **Tick failing 10 beats in a row**: the loop stops, says why, and
+  starts no successor; its hourly schedule tries again.
+- **Its cost on a private repository**: about 1,440 runner minutes a day.
+  Public repositories are not billed.
+- **The other workflows keep their triggers** for now;
+  [a test](../tests/conformance/triggers_test.go) lists each one's.
 
 ## Cost
 
