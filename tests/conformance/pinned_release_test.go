@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -33,6 +34,13 @@ var pinnedJobs = map[string][]string{
 	"workline.yml":           {"gates", "judge", "pinned"},
 }
 
+// The workflows running a release ahead of the pin, and why: a command
+// the pin does not hold yet. Their WORKLINE_VERSION is their own, a
+// release, never behind the pin; the pin's pull request catches them up.
+var aheadJobs = map[string]string{
+	"workline-loop.yml": "tick, first released in v0.79.0 (#1665; ADR-0071's N-1 rule)",
+}
+
 var headJobs = map[string][]string{
 	"workline.yml":      {"head-gates", "head-judge"},
 	"workline-warn.yml": nil,
@@ -43,7 +51,7 @@ const pinRef = "${{ env.WORKLINE_VERSION }}"
 func TestOwnLineRunsThePinnedRelease(t *testing.T) {
 	own, _ := filepath.Glob("../../.github/workflows/*.yml")
 	version := regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
-	pins := map[string]string{}
+	pins, ahead := map[string]string{}, map[string]string{}
 	for _, f := range own {
 		base := filepath.Base(f)
 		data, err := os.ReadFile(f)
@@ -65,6 +73,13 @@ func TestOwnLineRunsThePinnedRelease(t *testing.T) {
 		}
 		pinned, isPinned := pinnedJobs[base]
 		heads, isHead := headJobs[base]
+		_, isAhead := aheadJobs[base]
+		if isAhead {
+			if !version.MatchString(wf.Env["WORKLINE_VERSION"]) {
+				t.Errorf("%s: WORKLINE_VERSION %q is not a release", base, wf.Env["WORKLINE_VERSION"])
+			}
+			ahead[base] = wf.Env["WORKLINE_VERSION"]
+		}
 		if isPinned {
 			if !version.MatchString(wf.Env["WORKLINE_VERSION"]) {
 				t.Errorf("%s: WORKLINE_VERSION %q is not a release", base, wf.Env["WORKLINE_VERSION"])
@@ -76,7 +91,7 @@ func TestOwnLineRunsThePinnedRelease(t *testing.T) {
 				if s.Uses != engineAction {
 					continue
 				}
-				wantPin := isPinned && (pinned == nil || slices.Contains(pinned, name))
+				wantPin := isAhead || isPinned && (pinned == nil || slices.Contains(pinned, name))
 				wantHead := isHead && (heads == nil || slices.Contains(heads, name))
 				switch {
 				case wantPin && s.With["version"] != pinRef:
@@ -104,6 +119,12 @@ func TestOwnLineRunsThePinnedRelease(t *testing.T) {
 		if v != first {
 			t.Errorf("the pins differ: %v (%s); one release runs the line", pins, f)
 			break
+		}
+	}
+
+	for f, v := range ahead {
+		if first != "" && semverLess(v, first) {
+			t.Errorf("%s: WORKLINE_VERSION %s is behind the pin, %s: it runs ahead of it, for %s", f, v, first, aheadJobs[f])
 		}
 	}
 
@@ -189,4 +210,17 @@ if [ -n "$out" ]; then cp "$f" .; else cat "$f"; fi
 			t.Errorf("%s: refused, the release put on PATH still:\n%s", c.name, out)
 		}
 	}
+}
+
+// semverLess says whether release a (v1.2.3) comes before b.
+func semverLess(a, b string) bool {
+	num := func(v string) [3]int {
+		var n [3]int
+		for i, p := range strings.SplitN(strings.TrimPrefix(v, "v"), ".", 3) {
+			n[i], _ = strconv.Atoi(p)
+		}
+		return n
+	}
+	x, y := num(a), num(b)
+	return slices.Compare(x[:], y[:]) < 0
 }

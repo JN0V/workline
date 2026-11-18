@@ -1,0 +1,140 @@
+# workline's loop on GitHub Actions — copy to .github/workflows/workline-loop.yml.
+#
+# The line's beat (ADR-0069's 2026-11-17 amendment): one long job runs
+# `workline tick --json` every minute, and starts only what it lists.
+# GitHub's own schedule runs late or not at all, so this loop holds the
+# beat; its schedule below only restarts it when it stopped.
+#
+# A DRY RUN for now: each beat logs what it would dispatch, exactly the
+# list tick prints, and starts nothing. The repository variable
+# WORKLINE_LOOP_DISPATCH is read already; dispatching comes with a later
+# release (docs/tick.md#the-github-loop).
+#
+#   alive  a restart while a loop runs starts nothing (actions: read).
+#   loop   the beat: one at a time by its concurrency group, its checkout
+#          kept between beats (tick's ETag cache in .git/workline), then
+#          its successor dispatched before GitHub's 6 h limit.
+#
+# Its cost on a private repository: about 1,440 runner minutes a day.
+# Public repositories are not billed (docs/tick.md#the-github-loop).
+name: workline loop
+run-name: workline loop
+on:
+  # By hand, and by the loop itself before its job's 6 h end.
+  workflow_dispatch:
+    inputs:
+      after: {description: "the loop run this one takes over from (set by the loop)", required: false, default: ""}
+  # A restart only: the alive job ends a run started while a loop runs.
+  schedule: [{cron: "23 * * * *"}]
+permissions: {}
+
+env:
+  WORKLINE_VERSION: v0.79.0          # a release of workline: update it to take a newer one (x-release-please-version)
+
+jobs:
+  alive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {actions: read}
+    outputs:
+      start: ${{ steps.alive.outputs.start }}
+    steps:
+      - name: Whether a loop runs already
+        id: alive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ github.run_id }}
+          AFTER: ${{ inputs.after }}
+        run: |
+          # A loop's successor always starts: it waits in the concurrency
+          # group for the loop before it. Unread, it starts too: the group
+          # keeps one loop at a time.
+          others=""
+          if [ -z "$AFTER" ]; then
+            others=$(gh api "repos/$REPO/actions/workflows/workline-loop.yml/runs?status=in_progress&per_page=20" \
+              --jq "[.workflow_runs[] | select(.id != $RUN) | .id] | join(\" \")") ||
+              { echo "::warning title=workline loop::the loop's runs not read: started, the concurrency group keeps one at a time"; others=""; }
+          fi
+          if [ -n "$others" ]; then
+            echo "a loop runs already (run $others): nothing to start"
+            echo "start=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "start=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  loop:
+    needs: alive
+    if: needs.alive.outputs.start == 'true'
+    concurrency: {group: workline-loop, cancel-in-progress: false}
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    # actions: write, to dispatch its successor; the beat itself only reads.
+    permissions: {contents: read, issues: read, pull-requests: read, actions: write}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      # The engine at the version pinned above, checksum verified.
+      - name: workline
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
+          get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      - name: The beat
+        id: beat
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+          DISPATCH: ${{ vars.WORKLINE_LOOP_DISPATCH }}
+          LOOP_MINUTES: "340"                # under the job's timeout, the successor's dispatch after
+          BEAT_SECONDS: ${{ vars.WORKLINE_LOOP_BEAT_SECONDS || '60' }}   # the beat; longer spares the API
+        run: |
+          if ! workline tick --help >/dev/null 2>&1; then
+            echo "::notice title=workline loop::workline $WORKLINE_VERSION has no tick (v0.79.0 and later): the loop skips, and starts no successor"
+            exit 0
+          fi
+          echo "ticked=true" >> "$GITHUB_OUTPUT"
+          case "$DISPATCH" in
+            ""|false) ;;
+            *) echo "::warning title=workline loop::WORKLINE_LOOP_DISPATCH=$DISPATCH: dispatching is not built in this release; a dry run" ;;
+          esac
+          end=$(( $(date +%s) + LOOP_MINUTES * 60 ))
+          beats=0
+          : > "$RUNNER_TEMP/would.log"
+          while :; do
+            beats=$((beats + 1))
+            # The default branch's config, read again; the clone kept, its
+            # .git/workline with it.
+            git fetch -q origin "$BRANCH" 2>/dev/null && git checkout -q --detach FETCH_HEAD ||
+              echo "::warning title=workline loop::$BRANCH not fetched: beat $beats reads the config checked out before"
+            status=0
+            workline tick --forge github --json > "$RUNNER_TEMP/tick.json" 2> "$RUNNER_TEMP/tick.err" || status=$?
+            sed 's/^/  /' "$RUNNER_TEMP/tick.err"
+            if [ "$status" != 0 ] || ! jq -e 'type == "array"' "$RUNNER_TEMP/tick.json" >/dev/null 2>&1; then
+              echo "::warning title=workline loop::beat $beats: workline tick failed (exit $status): nothing dispatched"
+            elif [ "$(jq length "$RUNNER_TEMP/tick.json")" = 0 ]; then
+              echo "beat $beats, $(date -u +%H:%M:%S) UTC: nothing due"
+            else
+              echo "beat $beats, $(date -u +%H:%M:%S) UTC: $(jq length "$RUNNER_TEMP/tick.json") due, a dry run"
+              jq -c '.[]' "$RUNNER_TEMP/tick.json" | sed 's/^/would dispatch /' | tee -a "$RUNNER_TEMP/would.log"
+            fi
+            [ "$(date +%s)" -lt "$end" ] || break
+            sleep "$BEAT_SECONDS"
+          done
+          # What the beats would have dispatched, by run name, on the run's page.
+          would="nothing"
+          if [ -s "$RUNNER_TEMP/would.log" ]; then
+            would=$(sed 's/^would dispatch //' "$RUNNER_TEMP/would.log" | jq -r .key | sort | uniq -c | awk '{n=$1; $1=""; printf "%s%s ×%d", sep, substr($0, 2), n; sep=", "}')
+          fi
+          echo "::notice title=workline loop, a dry run::$beats beats; would have dispatched: $would"
+      # Before the 6 h limit, its successor: it waits in the concurrency
+      # group until this job ends. Not when a person cancelled the run.
+      - name: The next loop
+        if: ${{ !cancelled() && steps.beat.outputs.ticked == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+          RUN: ${{ github.run_id }}
+        run: gh workflow run workline-loop.yml --ref "$BRANCH" -f after="$RUN"
