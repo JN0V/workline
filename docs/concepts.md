@@ -1,9 +1,7 @@
 ---
 sources: [internal/engine/engine.go, internal/line, internal/routing, internal/kit/verdict, defaults/routing.yaml]
-checked: 8538d558
+checked: e4e4287bc
 verified: agent:claude-code
-judged-in-parts: 5d66009
-judged: 71c5f05
 ---
 # Concepts
 
@@ -35,8 +33,8 @@ The words the other pages use, each in a few lines. The rules behind them:
   `workline run-role <role> --event <event>` runs one role alone.
 - **State** — where an issue stands on the line, one label at a time:
   to refine, needs tests, ready, developing, blocked. Each wakes its role
-  on `issue`, whose result moves the issue on; an hourly reconciler
-  (`route reconcile`) runs what an event missed
+  on `issue`, whose result moves the issue on; a reconciler (`route
+  reconcile`), hourly or at each [tick](tick.md), runs what an event missed
   ([the line of states](spec/routing.md#the-line-of-states)).
 - **Gate** — a step that runs your own scanners and reads their output
   against thresholds, never asking a model (`gate:<name>` in a line); on
@@ -121,7 +119,9 @@ best available, said in the verdict
 - What a role cannot settle is written where a person looks — an issue, a
   comment, a label — with what to do.
 - A **parent** — a need the product owner split into parts, each an issue
-  — is never closed by a role: as its parts close, a comment on it says
-  what each delivered and which items of its Verification are proved, and
-  a person accepts the need by closing it
-  ([ADR-0029](adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md)).
+  — is told as its parts close: a comment says what each delivered and
+  which items of its Verification are proved. Its closing is proposed; a
+  person accepts it with `workline:accepted`. Only a bug's parent closes
+  alone, at `normal` or above, once the reporter's symptom test is green
+  on the default branch
+  ([ADR-0029](adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md#a-bugs-parent)).

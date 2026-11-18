@@ -1,8 +1,7 @@
 <!-- workline
 sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, defaults/ci/github/workline-fork.yml, defaults/routing.yaml, internal/forge/forge.go, internal/agent/agent.go, defaults/ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, defaults/ci/github/workline.yml, defaults/ci/forgejo/workline-forge.sh, defaults/ci/github/workline-gardening.yml, defaults/ci/github/workline-sample.yml]
-checked: 8538d558
-judged: e8a46f7
-verified: agent:documentalist
+checked: e4e4287bc
+verified: agent:claude-code
 reader: e375241655b6
 -->
 <h1>
