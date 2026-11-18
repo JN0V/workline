@@ -33,7 +33,8 @@ group bot) is never addressed to it (#429): an `ask` is dropped
 (`reporter-bot`), a `refine` follows its mode as on an issue of the
 project's; the agent is told nobody there answers. GitHub Actions' own bot, on an
 issue no role opened, is an outsider: a workflow may carry their text
-([#1195](https://github.com/JN0V/workline/issues/1195)).
+([#1204](https://github.com/JN0V/workline/pull/1204), closing
+[#1196](https://github.com/JN0V/workline/issues/1196)).
 
 **An outsider's issue** — its reporter without write access, not a bot,
 not opened by a role, not bearing `workline:accepted` — is theirs: a `refine` writes
