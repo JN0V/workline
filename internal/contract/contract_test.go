@@ -41,3 +41,20 @@ func TestARoleJoinsOnce(t *testing.T) {
 	}()
 	r.Join("x", Role{})
 }
+
+// The code the engine merges is asked of the role that offers it, found
+// by the registry; none offered, none found.
+func TestTheCodeIsAskedOfTheRoleOfferingIt(t *testing.T) {
+	r := NewRegistry()
+	r.Join("other", Role{})
+	if c, n := r.Code(); c != nil || n != "" {
+		t.Fatalf("Code = %v, %q with no role offering it", c, n)
+	}
+	r.Join("coder", Role{Code: &Code{Guarded: func(string, string) func(string) string {
+		return func(p string) string { return "gate-file" }
+	}}})
+	c, n := r.Code()
+	if c == nil || n != "coder" || c.Guarded("repo", "at")("ci.yml") != "gate-file" {
+		t.Errorf("Code = %v, %q", c, n)
+	}
+}

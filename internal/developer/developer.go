@@ -41,7 +41,9 @@ import (
 )
 
 // The role joins the engine by name (internal/contract).
-func init() { contract.Join("developer", contract.Role{Pre: Pre, Post: Post}) }
+func init() {
+	contract.Join("developer", contract.Role{Pre: Pre, Post: Post, Code: &contract.Code{ProveMerge: ProveMerge, Guarded: Guarded}})
+}
 
 const (
 	exitNothing  = 10 // pre: no question for the agent, its verdict final

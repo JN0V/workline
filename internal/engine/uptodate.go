@@ -14,9 +14,11 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/worktree"
 )
 
 // upToDate acts on mr, at tip, behind baseTip: in conflict, said on it,
@@ -37,7 +39,7 @@ func upToDateAs(f forge.Forge, o FollowOptions, local bool, mr forge.MergeReques
 	if !mr.Here || !strings.HasPrefix(mr.Branch, devmark.Branch) || isAncestor(o.Repo, baseTip, tip) {
 		return false, nil
 	}
-	tree, files, err := developer.MergeTree(o.Repo, tip, baseTip)
+	tree, files, err := worktree.MergeTree(o.Repo, tip, baseTip)
 	if err != nil {
 		say("merge-unread", "warn", fmt.Sprintf("whether it merges with %s could not be read: %v", o.Base, err))
 		return false, nil
@@ -191,7 +193,7 @@ func provenUpToDate(f forge.Forge, o FollowOptions, mr forge.MergeRequest, tree,
 		say("merge-refused", "warn", fmt.Sprintf("behind %[1]s, which changed %[2]s since its branch left it, but the merge of %[1]s into it could not be made: %[3]v", o.Base, files, err))
 		return true, nil
 	}
-	p := developer.ProveMerge(o.RolesDir, o.Repo, commit)
+	p := contract.BuiltinCode().ProveMerge(o.RolesDir, o.Repo, commit)
 	if p.Result != devmark.Green {
 		red := &redMerged{Base: o.Base, BaseTip: baseTip, Files: both, Proof: p.Said(), Unproven: p.Result != devmark.Red}
 		sayRefused(f, mr, tip, due, red, say)
