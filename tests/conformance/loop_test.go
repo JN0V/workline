@@ -66,17 +66,17 @@ func loopStepNamed(t *testing.T, wf loopWorkflow, f, name string) loopStep {
 	return loopStep{}
 }
 
-// A dry run dispatches exactly what tick lists
-// Given a fixed state on a fake forge and a fixed clock,
-// When the loop's beat runs once, in its dry run,
-// Then it logs one `would dispatch` line per job `workline tick --json`
-// prints, the same jobs in the same order, and calls no dispatch.
-func TestLoopDryRunLogsExactlyWhatTickLists(t *testing.T) {
-	for _, tool := range []string{"jq", "bash"} {
-		if _, err := exec.LookPath(tool); err != nil {
-			t.Skip(tool + " is not installed")
-		}
-	}
+// loopStates: fixed states on a fake forge, at loopNow, each with the
+// number of jobs tick lists on it at least.
+type loopState struct {
+	name  string
+	forge map[string]any
+	jobs  int
+}
+
+const loopNow = "2026-11-15T19:30:00Z"
+
+func loopStates() []loopState {
 	ready := func(n int) []map[string]any {
 		var is []map[string]any
 		for i := 1; i <= n; i++ {
@@ -84,97 +84,284 @@ func TestLoopDryRunLogsExactlyWhatTickLists(t *testing.T) {
 		}
 		return is
 	}
-	states := []struct {
-		name     string
-		forge    map[string]any
-		dispatch string
-		jobs     int // tick's jobs, at least: the state is what the case says
-	}{
+	return []loopState{
 		{"three jobs due", map[string]any{"issues": ready(6), "runs": []map[string]any{
 			{"name": "workline merge", "workflow": "workline-merge.yml", "status": "completed", "success": true, "started": "2026-11-15T19:00:00Z"},
 			{"name": "workline sample", "workflow": "workline-sample.yml", "status": "completed", "success": true, "started": "2026-11-09T05:45:00Z"},
-		}}, "", 3},
+		}}, 3},
 		{"nothing due", map[string]any{"issues": ready(10), "runs": []map[string]any{
 			{"name": "workline develop reconcile", "workflow": "workline-develop.yml", "status": "in_progress", "started": "2026-11-15T19:29:00Z"},
 			{"name": "workline merge", "workflow": "workline-merge.yml", "status": "completed", "success": true, "started": "2026-11-15T19:00:00Z"},
 			{"name": "workline gardening docs", "workflow": "workline-gardening.yml", "status": "completed", "success": true, "started": "2026-11-15T18:30:00Z"},
 			{"name": "workline sample", "workflow": "workline-sample.yml", "status": "completed", "success": true, "started": "2026-11-09T05:45:00Z"},
-		}}, "", 0},
-		{"dispatch asked, not built", map[string]any{"issues": ready(6)}, "true", 2},
+		}}, 0},
+		{"no run yet", map[string]any{"issues": ready(6)}, 2},
 	}
-	const now = "2026-11-15T19:30:00Z"
-	for _, f := range loopFiles {
-		wf := readLoop(t, f)
-		beat := loopStepNamed(t, wf, f, "The beat")
-		for _, st := range states {
-			dir := t.TempDir()
-			origin, repo, bin, tmp := filepath.Join(dir, "origin"), filepath.Join(dir, "repo"), filepath.Join(dir, "bin"), filepath.Join(dir, "tmp")
-			for _, d := range []string{origin, bin, tmp} {
-				if err := os.MkdirAll(d, 0o755); err != nil {
-					t.Fatal(err)
-				}
-			}
-			cfg := "routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 10}}\n"
-			if err := os.MkdirAll(filepath.Join(origin, ".workline"), 0o755); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(filepath.Join(origin, ".workline", "config.yaml"), []byte(cfg), 0o644); err != nil {
-				t.Fatal(err)
-			}
-			gitIn(t, origin, "init", "-q", "-b", "main")
-			gitIn(t, origin, "add", ".")
-			gitIn(t, origin, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "config")
-			gitIn(t, dir, "clone", "-q", origin, repo)
-			forgeFile := filepath.Join(dir, "forge.json")
-			data, _ := enc.Marshal(st.forge)
-			if err := os.WriteFile(forgeFile, data, 0o644); err != nil {
-				t.Fatal(err)
-			}
-			// workline: the engine on the fake forge and the fixed clock,
-			// for the forge GitHub the step names; gh: each call logged.
-			calls := filepath.Join(dir, "gh-calls")
-			writeExec(t, filepath.Join(bin, "workline"), `#!/bin/bash
+}
+
+// loopFixture: a clone of a repository with a config, the fake forge
+// holding st, and a bin where workline runs the engine on that forge at
+// loopNow, gh logs each call in calls; tick's list on that state.
+func loopFixture(t *testing.T, st loopState) (repo, bin, tmp, calls string, want []map[string]any) {
+	t.Helper()
+	for _, tool := range []string{"jq", "bash"} {
+		if _, err := exec.LookPath(tool); err != nil {
+			t.Skip(tool + " is not installed")
+		}
+	}
+	dir := t.TempDir()
+	origin := filepath.Join(dir, "origin")
+	repo, bin, tmp = filepath.Join(dir, "repo"), filepath.Join(dir, "bin"), filepath.Join(dir, "tmp")
+	for _, d := range []string{filepath.Join(origin, ".workline"), bin, tmp} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cfg := "routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 10}}\n"
+	if err := os.WriteFile(filepath.Join(origin, ".workline", "config.yaml"), []byte(cfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gitIn(t, origin, "init", "-q", "-b", "main")
+	gitIn(t, origin, "add", ".")
+	gitIn(t, origin, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "config")
+	gitIn(t, dir, "clone", "-q", origin, repo)
+	forgeFile := filepath.Join(dir, "forge.json")
+	data, _ := enc.Marshal(st.forge)
+	if err := os.WriteFile(forgeFile, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	calls = filepath.Join(dir, "gh-calls")
+	writeExec(t, filepath.Join(bin, "workline"), `#!/bin/bash
 args=(); for a in "$@"; do [ "$a" = github ] && a="fake:`+forgeFile+`"; args+=("$a"); done
-[ "$1" = tick ] && [ "$2" != --help ] && args+=(--now `+now+`)
+[ "$1" = tick ] && [ "$2" != --help ] && args+=(--now `+loopNow+`)
 exec "`+engineBin+`" "${args[@]}"
 `)
-			writeExec(t, filepath.Join(bin, "gh"), "#!/bin/bash\necho \"$*\" >> \""+calls+"\"\n")
-			want := tickJobs(t, repo, forgeFile, now)
-			if len(want) < st.jobs {
-				t.Fatalf("%s: tick lists %d jobs, the state wants %d at least: %v", st.name, len(want), st.jobs, want)
-			}
-			out := runBeat(t, beat.Run, repo, bin, tmp, st.dispatch)
-			var got []map[string]any
-			for _, line := range strings.Split(out, "\n") {
-				js, ok := strings.CutPrefix(line, "would dispatch ")
-				if !ok {
-					continue
+	writeExec(t, filepath.Join(bin, "gh"), "#!/bin/bash\necho \"$*\" >> \""+calls+"\"\n")
+	want = tickJobs(t, repo, forgeFile, loopNow)
+	if len(want) < st.jobs {
+		t.Fatalf("%s: tick lists %d jobs, the state wants %d at least: %v", st.name, len(want), st.jobs, want)
+	}
+	return repo, bin, tmp, calls, want
+}
+
+// loggedItems: tick's items the beat logged after prefix, in order.
+func loggedItems(t *testing.T, out, prefix string) []map[string]any {
+	t.Helper()
+	var got []map[string]any
+	for _, line := range strings.Split(out, "\n") {
+		js, ok := strings.CutPrefix(line, prefix)
+		if !ok {
+			continue
+		}
+		var it map[string]any
+		if err := enc.Unmarshal([]byte(js), &it); err != nil {
+			t.Fatalf("a line not in the format `%s<tick's JSON item>`: %q", prefix, line)
+		}
+		got = append(got, it)
+	}
+	return got
+}
+
+// A dry run dispatches nothing, and logs exactly what tick lists
+// Given a fixed state on a fake forge and a fixed clock,
+// When the loop's beat runs once, dispatching unset or false,
+// Then it logs one `would dispatch` line per job `workline tick --json`
+// prints, the same jobs in the same order, and calls no dispatch.
+func TestLoopDryRunLogsExactlyWhatTickLists(t *testing.T) {
+	for _, f := range loopFiles {
+		beat := loopStepNamed(t, readLoop(t, f), f, "The beat")
+		for _, st := range loopStates() {
+			for _, dispatch := range []string{"", "false"} {
+				repo, bin, tmp, calls, want := loopFixture(t, st)
+				out := runBeat(t, beat.Run, repo, bin, tmp, "DISPATCH="+dispatch)
+				got := loggedItems(t, out, "would dispatch ")
+				if !reflect.DeepEqual(got, want) && (len(got) > 0 || len(want) > 0) {
+					t.Errorf("%s, %s: the dry run logs %v, tick lists %v", f, st.name, got, want)
 				}
-				var it map[string]any
-				if err := enc.Unmarshal([]byte(js), &it); err != nil {
-					t.Fatalf("%s, %s: a line not in the dry run's format, `would dispatch <tick's JSON item>`: %q", f, st.name, line)
+				if b, _ := os.ReadFile(filepath.Join(tmp, "output")); !strings.Contains(string(b), "handover=true") {
+					t.Errorf("%s, %s: a beat ended by its time hands over to no successor", f, st.name)
 				}
-				got = append(got, it)
+				if b, _ := os.ReadFile(calls); len(b) > 0 {
+					t.Errorf("%s, %s, DISPATCH=%q: the dry run called gh: %s", f, st.name, dispatch, b)
+				}
+				if len(want) == 0 && !strings.Contains(out, ": nothing due") {
+					t.Errorf("%s, %s: a beat with nothing due does not say so:\n%s", f, st.name, out)
+				}
+				for _, it := range want {
+					if !strings.Contains(out, it["key"].(string)+" ×1") || !strings.Contains(out, "would have dispatched") {
+						t.Errorf("%s, %s: the run's notice does not count %q:\n%s", f, st.name, it["key"], out)
+					}
+				}
 			}
-			if !reflect.DeepEqual(got, want) && (len(got) > 0 || len(want) > 0) {
-				t.Errorf("%s, %s: the dry run logs %v, tick lists %v", f, st.name, got, want)
+		}
+	}
+}
+
+// dispatchOf: each job tick lists without --issues, the workflow the loop
+// dispatches it in, its inputs, and the part of the workflow's run-name
+// (or its name) that names a dispatched run as tick's key.
+var dispatchOf = map[string]struct {
+	file   string
+	inputs map[string]string
+	named  string
+}{
+	"reconcile": {"workline-develop.yml", map[string]string{"reconcile": "true"}, "inputs.reconcile == 'true' && 'workline develop reconcile'"},
+	"backlog":   {"workline-gardening.yml", map[string]string{"job": "backlog"}, "format('workline gardening {0}', inputs.job)"},
+	"nightly":   {"workline-gardening.yml", map[string]string{"job": "nightly"}, "format('workline gardening {0}', inputs.job)"},
+	"docs":      {"workline-gardening.yml", map[string]string{"job": "docs"}, "format('workline gardening {0}', inputs.job)"},
+	"merge":     {"workline-merge.yml", nil, "name: workline merge"},
+	"sample":    {"workline-sample.yml", nil, "name: workline sample"},
+	"seeds":     {"test.yml", map[string]string{"job": "seeds"}, "inputs.job == 'seeds') && 'workline test seeds'"},
+}
+
+// ghCall: the `gh workflow run` the loop sends for a job.
+func ghCall(job string) string {
+	d := dispatchOf[job]
+	c := "workflow run " + d.file
+	keys := make([]string, 0, len(d.inputs))
+	for k := range d.inputs {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	for _, k := range keys {
+		c += " -f " + k + "=" + d.inputs[k]
+	}
+	return c + " --ref main"
+}
+
+// The loop dispatches exactly what tick lists, once
+// Given a fixed state on a fake forge, a fixed clock, and
+// WORKLINE_LOOP_DISPATCH=true,
+// When the loop's beat runs once, then once more at once,
+// Then the first beat sends one `gh workflow run` per job tick lists, the
+// same jobs in the same order, none for a job whose run is going, and
+// logs each `dispatched`; the second sends none: each key is held while
+// its run may not be listed yet.
+func TestLoopDispatchesExactlyWhatTickLists(t *testing.T) {
+	for _, f := range loopFiles {
+		beat := loopStepNamed(t, readLoop(t, f), f, "The beat")
+		if beat.Env["HOLD_SECONDS"] == "" {
+			t.Fatalf("%s: the beat sets no HOLD_SECONDS", f)
+		}
+		for _, st := range loopStates() {
+			repo, bin, tmp, calls, want := loopFixture(t, st)
+			out := runBeat(t, beat.Run, repo, bin, tmp, "DISPATCH=true", "HOLD_SECONDS=120")
+			var wantCalls []string
+			for _, it := range want {
+				wantCalls = append(wantCalls, ghCall(it["job"].(string)))
 			}
-			if b, _ := os.ReadFile(filepath.Join(tmp, "output")); !strings.Contains(string(b), "handover=true") {
-				t.Errorf("%s, %s: a beat ended by its time hands over to no successor", f, st.name)
+			b, _ := os.ReadFile(calls)
+			var gotCalls []string
+			if c := strings.TrimSpace(string(b)); c != "" {
+				gotCalls = strings.Split(c, "\n")
 			}
-			if b, _ := os.ReadFile(calls); len(b) > 0 {
-				t.Errorf("%s, %s: the dry run called gh: %s", f, st.name, b)
+			if !slices.Equal(gotCalls, wantCalls) {
+				t.Errorf("%s, %s: the loop sent %q; tick lists %v, so %q", f, st.name, gotCalls, want, wantCalls)
 			}
-			if len(want) == 0 && !strings.Contains(out, ": nothing due") {
-				t.Errorf("%s, %s: a beat with nothing due does not say so:\n%s", f, st.name, out)
+			if got := loggedItems(t, out, "dispatched "); !reflect.DeepEqual(got, want) && (len(got) > 0 || len(want) > 0) {
+				t.Errorf("%s, %s: the loop logs %v dispatched, tick lists %v", f, st.name, got, want)
 			}
-			if st.dispatch == "true" && !strings.Contains(out, "dispatching is not built in this release; a dry run") {
-				t.Errorf("%s, %s: WORKLINE_LOOP_DISPATCH=true is not said a dry run still:\n%s", f, st.name, out)
+			if strings.Contains(out, "would dispatch") {
+				t.Errorf("%s, %s: dispatching on, the beat still logs a dry run:\n%s", f, st.name, out)
 			}
 			for _, it := range want {
-				if !strings.Contains(out, it["key"].(string)+" ×1") {
-					t.Errorf("%s, %s: the run's notice does not count %q:\n%s", f, st.name, it["key"], out)
+				if !strings.Contains(out, "dispatched: ") || !strings.Contains(out, it["key"].(string)+" ×1") {
+					t.Errorf("%s, %s: the run's notice does not count %q dispatched:\n%s", f, st.name, it["key"], out)
 				}
+			}
+			// The same job, the beat after: held, not dispatched again.
+			if err := os.Remove(calls); err != nil && len(want) > 0 {
+				t.Fatal(err)
+			}
+			again := runBeatKeeping(t, beat.Run, repo, bin, tmp, "DISPATCH=true", "HOLD_SECONDS=120")
+			if b, _ := os.ReadFile(calls); len(b) > 0 {
+				t.Errorf("%s, %s: a job dispatched a beat before is dispatched again: %s", f, st.name, b)
+			}
+			if got := loggedItems(t, again, "held "); !reflect.DeepEqual(got, want) && (len(got) > 0 || len(want) > 0) {
+				t.Errorf("%s, %s: the beat after holds %v, tick lists %v", f, st.name, got, want)
+			}
+		}
+	}
+}
+
+// Each job tick lists starts in its workflow, under its key
+// Given a tick that lists every timed job, and one the loop does not know,
+// When the loop's beat runs with WORKLINE_LOOP_DISPATCH=true,
+// Then each job is dispatched in its workflow with its inputs, the job
+// it does not know is said and not dispatched; and each such workflow
+// can be dispatched (workflow_dispatch, those inputs), its run named by
+// tick's key.
+func TestLoopDispatchesEachJobInItsWorkflow(t *testing.T) {
+	var jobs []string
+	for j := range dispatchOf {
+		jobs = append(jobs, j)
+	}
+	slices.Sort(jobs)
+	var items []string
+	for _, j := range jobs {
+		items = append(items, `{"job":"`+j+`","why":"due","key":"k-`+j+`"}`)
+	}
+	items = append(items, `{"job":"unheard","why":"due","key":"k-unheard"}`)
+	for _, f := range loopFiles {
+		beat := loopStepNamed(t, readLoop(t, f), f, "The beat")
+		dir := t.TempDir()
+		bin, tmp := filepath.Join(dir, "bin"), filepath.Join(dir, "tmp")
+		for _, d := range []string{bin, tmp} {
+			if err := os.MkdirAll(d, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		calls := filepath.Join(dir, "gh-calls")
+		writeExec(t, filepath.Join(bin, "workline"), "#!/bin/bash\necho '["+strings.Join(items, ",")+"]'\n")
+		writeExec(t, filepath.Join(bin, "gh"), "#!/bin/bash\necho \"$*\" >> \""+calls+"\"\n")
+		out := runBeat(t, beat.Run, dir, bin, tmp, "DISPATCH=true", "HOLD_SECONDS=120")
+		var want []string
+		for _, j := range jobs {
+			want = append(want, ghCall(j))
+		}
+		b, _ := os.ReadFile(calls)
+		if got := strings.Split(strings.TrimSpace(string(b)), "\n"); !slices.Equal(got, want) {
+			t.Errorf("%s: the loop sent %q; want %q", f, got, want)
+		}
+		if !strings.Contains(out, "unheard: no workflow known to start it") || !strings.Contains(out, "k-unheard not dispatched") {
+			t.Errorf("%s: a job the loop does not know is not said:\n%s", f, out)
+		}
+	}
+	// Each workflow, in this repository and the template where it is one.
+	for _, j := range jobs {
+		d := dispatchOf[j]
+		for _, dir := range []string{"../../.github/workflows", "../../defaults/ci/github"} {
+			p := filepath.Join(dir, d.file)
+			data, err := os.ReadFile(p)
+			if os.IsNotExist(err) && strings.Contains(dir, "defaults") && d.file == "test.yml" {
+				continue // a project's own tests: workline's seeds are its own
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			var wf struct {
+				On struct {
+					Dispatch *struct {
+						Inputs map[string]any `yaml:"inputs"`
+					} `yaml:"workflow_dispatch"`
+				} `yaml:"on"`
+			}
+			if err := yaml.Unmarshal(data, &wf); err != nil {
+				t.Fatalf("%s: %v", p, err)
+			}
+			wd := wf.On.Dispatch
+			if !strings.Contains(string(data), "\n  workflow_dispatch:") {
+				t.Errorf("%s: no workflow_dispatch; tick lists %s, the loop dispatches it there", p, j)
+				continue
+			}
+			for in := range d.inputs {
+				if _, ok := wd.Inputs[in]; wd == nil || !ok {
+					t.Errorf("%s: workflow_dispatch has no input %q, which the loop passes for %s", p, in, j)
+				}
+			}
+			if !strings.Contains(string(data), d.named) {
+				t.Errorf("%s: its runs are not named %s's key (want %q in its run-name or name)", p, j, d.named)
+			} else if strings.HasPrefix(d.named, "name: ") && strings.Contains(string(data), "\nrun-name:") {
+				t.Errorf("%s: a run-name hides its name, %s's key", p, j)
 			}
 		}
 	}
@@ -196,7 +383,7 @@ func TestLoopSkipsAReleaseWithNoTick(t *testing.T) {
 			}
 		}
 		writeExec(t, filepath.Join(bin, "workline"), "#!/bin/bash\necho 'workline: unknown command' >&2; exit 64\n")
-		out := runBeat(t, beat.Run, dir, bin, tmp, "")
+		out := runBeat(t, beat.Run, dir, bin, tmp)
 		if !strings.Contains(out, "has no tick") {
 			t.Errorf("%s: a release with no tick is not said:\n%s", f, out)
 		}
@@ -340,19 +527,40 @@ func tickJobs(t *testing.T, repo, forgeFile, now string) []map[string]any {
 }
 
 // runBeat runs the beat's script as GitHub does (bash -e), once: no
-// minute left, no wait between beats.
-func runBeat(t *testing.T, script, dir, bin, tmp, dispatch string) string {
+// minute left, no wait between beats; env adds to or overrides the
+// runner's.
+func runBeat(t *testing.T, script, dir, bin, tmp string, env ...string) string {
 	t.Helper()
 	cmd := exec.Command("bash", "-e", "-c", script)
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "RUNNER_TEMP="+tmp,
+	cmd.Env = append(append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "RUNNER_TEMP="+tmp,
 		"GITHUB_OUTPUT="+filepath.Join(tmp, "output"),
-		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1", "BRANCH=main", "DISPATCH="+dispatch, "LOOP_MINUTES=0", "BEAT_SECONDS=0", "WORKLINE_VERSION=v0.0.0", "GH_TOKEN=x")
+		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1", "BRANCH=main", "DISPATCH=", "LOOP_MINUTES=0", "BEAT_SECONDS=0", "WORKLINE_VERSION=v0.0.0", "GH_TOKEN=x"), env...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("the beat failed: %v\n%s", err, out)
 	}
 	return string(out)
+}
+
+// runBeatKeeping runs one more beat in the same job: what the beats
+// before kept in RUNNER_TEMP is kept, as between two beats of one run.
+func runBeatKeeping(t *testing.T, script, dir, bin, tmp string, env ...string) string {
+	t.Helper()
+	kept, err := os.ReadFile(filepath.Join(tmp, "dispatched"))
+	if err != nil {
+		t.Fatalf("the beat kept no dispatched list: %v", err)
+	}
+	// The script starts a job's list empty: a beat in the same job is
+	// the loop's body run again, its list as the beat before left it.
+	body := strings.Replace(script, `: > "$RUNNER_TEMP/dispatched"`, `cat "$RUNNER_TEMP/dispatched.kept" > "$RUNNER_TEMP/dispatched"`, 1)
+	if body == script {
+		t.Fatal("the beat no longer starts its dispatched list empty: this test runs it again as the next beat")
+	}
+	if err := os.WriteFile(filepath.Join(tmp, "dispatched.kept"), kept, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return runBeat(t, body, dir, bin, tmp, env...)
 }
 
 func gitIn(t *testing.T, dir string, args ...string) {

@@ -19,6 +19,9 @@ on:
   pull_request_target: {types: [labeled, unlabeled, converted_to_draft]}
   issues: {types: [labeled, closed]}
   schedule: [{cron: "53 * * * *"}]
+  # By hand, and by the loop when `workline tick` lists the merge
+  # (docs/tick.md): a run as the hourly one, named `workline merge`.
+  workflow_dispatch:
 permissions: {}
 
 env:
