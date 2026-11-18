@@ -42,7 +42,8 @@ engine ([ADR-0071](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md
   cron, one workflow at a time: the loop dispatches it, the loop's
   hourly schedule the restart;
   [the triggers test](../../tests/conformance/triggers_test.go) marks
-  each cron gone `onTemplate`;
+  `onTemplate` each cron gone that a template keeps; test.yml, no
+  template, simply lists none;
 - the tools the tests need beyond Go (gitleaks) come from
   [one action](../../.github/actions/tests/action.yml), in test.yml and in
   each job where a role runs the tests: the developer's and the tester's
