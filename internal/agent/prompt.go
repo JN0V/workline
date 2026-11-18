@@ -87,10 +87,16 @@ func facetDirs(req Request) []string {
 	return append(dirs, req.Role.Dir)
 }
 
-// facet finds a facet file in the first of facetDirs that holds it.
+// facet finds a facet file in the first of facetDirs that holds it. A role
+// with a prompts/ folder is read under prompts/ only, in every folder, never
+// from its top level; one without it, from its top level.
 func facet(req Request, name string) (string, bool) {
+	sub := ""
+	if st, err := os.Stat(filepath.Join(req.Role.Dir, "prompts")); err == nil && st.IsDir() {
+		sub = "prompts"
+	}
 	for _, dir := range facetDirs(req) {
-		if data, err := os.ReadFile(filepath.Join(dir, name)); err == nil {
+		if data, err := os.ReadFile(filepath.Join(dir, sub, name)); err == nil {
 			return string(data), true
 		}
 	}
