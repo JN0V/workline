@@ -1,17 +1,19 @@
 ---
 sources:
-  - roles/reviewer/role.yaml
-  - internal/builtin/reviewer/reviewer.go
-  - internal/builtin/reviewer/record.go
-  - internal/line/line.go
-  - defaults/ci/github/workline.yml
-  - defaults/ci/github/workline-warn.yml
-  - defaults/ci/github/workline-apply.yml
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:apply
-checked: 8538d558
+  - roles/reviewer/role.yaml#apart
+  - roles/reviewer/role.yaml#settings.ai-findings
+  - .workline/config.yaml#roles.reviewer.settings.ai-findings
+  - internal/builtin/reviewer/reviewer.go#prepare
+  - internal/builtin/reviewer/reviewer.go#state.side
+  - internal/builtin/reviewer/reviewer.go#Settings.ofSide
+  - internal/builtin/reviewer/reviewer.go#Settings.warns
+  - internal/builtin/reviewer/reviewer.go#otherSide
+  - internal/builtin/reviewer/reviewer.go#review
+  - internal/builtin/reviewer/reviewer.go#final
+  - internal/builtin/reviewer/reviewer.go#enforcement
+  - internal/builtin/reviewer/record.go#answering
+  - internal/builtin/reviewer/once.go#Record.leftTo
+checked: e2e165c2d
 judged: a5cd2cf
 verified: agent:claude-code
 ---
@@ -58,7 +60,8 @@ beside the verdict's, and posts once it answered.
   ([#588](https://github.com/JN0V/workline/issues/588)). So is one that
   left commits past five a push: no run records what it left
   ([#591](https://github.com/JN0V/workline/issues/591)).
-- **The rules** (`internal-code`) block on the verdict's
+- **The rules** (`internal-code`
+  [and the others](run.md#12-the-range-the-rules)) block on the verdict's
   run. While they block, the run apart asks no lens either, and says
   nothing of them again.
   They are read at the levels the project sets in
@@ -66,70 +69,13 @@ beside the verdict's, and posts once it answered.
 - **Every lens blocking** (`ai-findings: block`): the run apart asks
   nothing and writes nothing. **None blocking**: the verdict's run asks
   no lens; its summary comment still holds the rules and its record.
+- **On a machine**: `workline review` asks every lens in one run
+  ([as the run on ready does](ready.md#the-run-on-ready)).
 
-## Two comments, two records
+## More
 
-- **The summary comment** is the verdict's run's: what blocks, its
-  record, the blocks standing
-  ([more](judge.md#a-block-stands-until-a-commit-answers-it)). It says the
-  lenses that warn read apart.
-- **The comment of the lenses that warn**: their findings, questions and
-  record, edited each run; their comments on lines in a review of their
-  own.
-- **Two comments, not one**: each is written by its own applying job, one
-  at a time per merge request. One comment written by both could lose a
-  run's write when both apply at once.
-- **Each run its own record**: neither waits for the other, nor loses
-  what the other did not read. A run apart cancelled by a newer push
-  leaves its record as it was: the next one reads those commits too.
-- **The first run apart** on a merge request reviewed before takes up the
-  summary comment's commits and turn.
-- **The weekly sample** draws the findings judged from both comments
-  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
-
-## What the verdict holds, and what it never waits for
-
-- **It holds** the committer, the gates, the documentalist, the rules,
-  and the lenses that block with their judges.
-- **It never waits** for a lens that only warns, nor its judges.
-- **A warn finding arriving after the verdict** is shown, in its comment
-  and, important, on its line; it asks nothing and never changes a
-  verdict given.
-- **A lens that fails** — an answer that never reads, the tokens spent —
-  says so in that comment (`lens-failed`). Its record holds none of the
-  commits and names the lens (`failed=`): the next push, or the run run
-  again, asks it first, whosever turn it is
-  ([the record](run.md#3-the-record)). The agent out of reach is said
-  in the job's log. It never
-  turns a pass into a fail, nor a fail into a pass; the job stays green,
-  only the engine's own error fails it.
-- **The merge policy merges on the head's verdict**
-  ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)):
-  warn findings, and a lens that warns failing, may come after it, and
-  after the merge. Read their comment before you accept, or accept
-  knowing it may still post.
-
-## In CI
-
-- **GitHub**: workline.yml's `judge` leaves them (`--warn-apart`);
-  [workline-warn.yml](../../../defaults/ci/github/workline-warn.yml) asks them
-  beside it (`--warn-only`); workline-apply.yml applies both, and keeps
-  the verdict from `judge` alone
-  ([CI on GitHub](../../../docs/ci-github.md)). Without workline-warn.yml,
-  `judge` warns that nothing reads them; with an older
-  workline-apply.yml, which does not name it, `warn` warns and reads
-  nothing: unposted, its record would never move.
-- **GitLab**: `workline:warn`, after `workline:gates`, then
-  `workline:warn:apply`, with the agent's token and the bot's; without
-  the bot's, `workline:warn` says so and stops, and the lenses that warn
-  read in `workline:judge`, said in its log and summary. Both run in a
-  child pipeline the merge request's does not wait for: "merge when the
-  pipeline succeeds" waits for the verdict alone
-  ([CI on GitLab](../../../docs/ci-gitlab.md#what-the-template-does)).
-- **No agent, or neither the reviewer nor the inspector in the line**:
-  the run apart ends at once.
-- **The inspector's triage** reads in the same run, given what the gates
-  found, its own comment beside this one; with it routed, the run waits
-  for the gates' job first, but on a draft
-  ([the inspector](../../inspector/README.md)).
-- **On a machine**: `workline review` asks every lens in one run.
+- **[The two comments and their records](apart-comments.md)**: the
+  summary comment and the comment of the lenses that warn, each its own
+  record.
+- **[The verdict, and the run apart in CI](apart-ci.md)**: what the
+  verdict holds and never waits for, and the jobs on GitHub and GitLab.

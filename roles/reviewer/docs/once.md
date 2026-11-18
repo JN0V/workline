@@ -1,6 +1,6 @@
 ---
-sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/once.go, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go]
-checked: b79ca968
+sources: [internal/builtin/reviewer/once.go#sameAs, internal/builtin/reviewer/once.go#patchOf, internal/builtin/reviewer/once.go#judgeFloor, internal/builtin/reviewer/once.go#judgedBefore, internal/builtin/reviewer/intent.go#whatFor, internal/builtin/reviewer/reviewer.go#askJudges, internal/builtin/reviewer/reviewer.go#settled, internal/builtin/reviewer/reviewer.go#summary, internal/builtin/reviewer/record.go#Answered, internal/builtin/reviewer/record.go#saveLocal, roles/reviewer/role.yaml#settings.judge-at-least]
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Reviewer — a finding judged once
@@ -51,7 +51,9 @@ comes back when commits are read again:
 - the run on ready again, after a draft;
 - every lens again, after a failed run on ready;
 - a review not whole, read again at the next push;
-- a record that does not read;
-- commits a conflict altered in a rebase.
+- a record that does not read
+  ([the run on ready](ready.md#the-run-on-ready));
+- commits a conflict altered in a rebase
+  ([the record](run.md#3-the-record)).
 
 On a machine, no line is kept: every finding is judged.

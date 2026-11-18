@@ -1,6 +1,35 @@
 ---
-sources: [internal/gate, internal/line, internal/linters/check.go, internal/report/report.go, internal/report/gates.go, internal/engine/annotate.go]
-checked: 8538d558
+sources:
+  - internal/gate/gate.go#Check
+  - internal/gate/gate.go#Gate
+  - internal/gate/gate.go#defaultTimeout
+  - internal/gate/gate.go#Load
+  - internal/gate/gate.go#Gate.Validate
+  - internal/gate/gate.go#RunWith
+  - internal/gate/gate.go#enforce
+  - internal/gate/gate.go#Run
+  - internal/gate/gate.go#fixWith
+  - internal/gate/gate.go#execute
+  - internal/gate/gate.go#maskLog
+  - internal/gate/gate.go#rerun
+  - internal/gate/gate.go#overThreshold
+  - internal/gate/gate.go#first
+  - internal/gate/gate.go#outDir
+  - internal/gate/sarif.go#parse
+  - internal/line/line.go#runGate
+  - cmd/workline/main.go#gateCmd
+  - internal/developer/bounds.go#ciFiles
+  - internal/developer/bounds.go#checker.rule
+  - roles/committer/role.yaml#duties.writes
+  - roles/developer/role.yaml#duties.writes
+  - roles/documentalist/role.yaml#duties.writes
+  - roles/documentalist/role.yaml#settings.docs
+  - roles/inspector/role.yaml#duties.writes
+  - roles/product-owner/role.yaml#duties.writes
+  - roles/reviewer/role.yaml#duties.writes
+  - roles/tester/role.yaml#duties.writes
+  - roles/tester/role.yaml#settings.test-paths
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Gates — v1 (draft)
@@ -69,105 +98,28 @@ read only the findings the change adds since the merge base of the
 range's start and `HEAD`
 ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
 On `schedule` and `release`, and with `workline gate <name>` given no
-`--base` ([below](#with-workline-gate)), every finding counts. On `main`
-after a merge, every finding is read and kept, and what the push adds
-since the branch's tip before it counts.
+`--base` ([by hand](gates-told.md#with-workline-gate)), every finding
+counts. On `main` after a merge, every finding is read and kept, and
+what the push adds since the branch's tip before it counts.
 
-```yaml
-      - id: lint
-        run: golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --output.sarif.path={out}/lint.sarif ./...
-        output: sarif
-        max: {error: 0}
-```
-
-- **Run again at the merge base**: a SARIF check runs a second time, on
-  the merge base checked out in a tree of its own, outside the repository.
-  The same command and tool, and the head's config: the files the change
-  touched that its tool reads its config from, by name
-  ([the tools' table](../languages.md#the-table-it-reads)), or that the
-  check's `config` names (`config: [pyproject.toml]`, globs).
-- **Or read as main kept it** ([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
-  with `--gates-kept <folder>`, main's run after a merge writes every
-  finding of each SARIF check there, by its commit (`<commit>.json`);
-  a change whose merge base it holds reads them instead of running the
-  tool there. Only for the same command, `output` and `config`, no file
-  the tool reads its config from changed by the change, and the same
-  tool: the version its SARIF names, the hash of the binary found on the
-  PATH; one naming neither runs again. Else, or none kept for that
-  commit, run again, the summary saying why. The folder is filled only
-  from main's own runs, never from a store a branch could write
-  ([the next base](../next-base.md)).
-- **Compared one for one, never by line number**: the tool, the rule, the
-  file (a rename followed), then the tool's own `fingerprints`, else its
-  `partialFingerprints`, else the message and the text of the line, its
-  spaces left out. `workline/v1` is not read: it holds a line.
-- **Moved is not new**: a finding pushed down its file, or in a file
-  renamed. One cut to another file is new, as Semgrep and code scanning
-  count it.
-- **Day one is quiet**: the old findings are a count in the gate's
-  summary, with both runs' times: `lint 1 new, 360 before it (6.5s, then
-  7.1s at the merge base)`.
-- **Each result marked** for what posts them: the head's SARIF written
-  again under `compared/<check>/` in the gate's folder, every result's
-  `baselineState` `new` or `unchanged` (SARIF 2.1.0, 3.27.24).
-
-### Told by the tool, suppressions, errors
-
-- **Every check is given the merge base** in `WORKLINE_BASE`, an `exit`
-  check too: its command may tell the new findings itself. Where every
-  finding counts, `WORKLINE_BASE` is empty.
-- **Or the tool tells them**, `new: tool`: the SARIF check runs once, what
-  it reports counts. `golangci-lint run
-  ${WORKLINE_BASE:+--new-from-merge-base=$WORKLINE_BASE}`, Semgrep's
-  `--baseline-commit`. golangci-lint's keeps changed lines only: a
-  finding the change causes on a line it left is missed.
-- **A suppression the change adds is a finding** (`suppression-added`),
-  in a file of its language, when a check runs the tool it silences:
-  `//nolint` (golangci-lint), `# noqa` (Ruff, flake8), `eslint-disable`
-  (ESLint), `NOLINT` (clang-tidy). One only moved is not.
-- **An error, never a pass**: a merge base not known (a shallow clone), a
-  check that fails there or writes no SARIF, a run past its cap. The cap
-  is `base-timeout`; by default twice the head's run, a minute at least,
-  the check's `timeout` at most (measured in
-  [ADR-0049's plan](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#build-plan)).
-- **A tool whose version differs** between the two runs is said
-  (`tool-version-differs`, a warning): one the project's tree pins, upgraded
-  by the change. A tool's upgrade gets a pull request of its own.
-- **A cap on findings hides some**: set the tool's to none
-  (golangci-lint's `max-issues-per-linter`, `max-same-issues`).
-
-### With `workline gate`
-
-- **`workline gate <name> --base <rev>`** compares as a merge request
-  does, since the merge base of `<rev>` and `HEAD`: a CI job of its own,
-  a check by hand. With no `--base`, every finding counts.
-- **`--gates-kept <folder>`**, with `--base`: the merge base's findings
-  read as main kept them, by the rules above; else run again there.
-- **A `<rev>` that is no commit here is an error**, never a run counting
-  every finding; an empty one (`--base ""`, a variable unset) is misuse.
-- **Each summary says how it counted**: `only the findings the change
-  adds since <merge base> count`, or `every finding counts, none
-  compared with a base`.
+- **How they are told**: run again at the merge base, or read as main
+  kept it; compared one for one, never by line number; a finding moved
+  is not new ([the findings a change adds](gates-new.md)).
+- **Told by the tool, suppressions, errors**, and `workline gate --base`
+  by hand: [how the new findings are told](gates-told.md).
 
 ### Shown on the merge request
 
 - **Where the forge shows a finding beside its line**, with no
-  conversation to resolve: on GitHub, the annotations of the check
-  `workline gates` and one summary comment; on GitLab, the Code Quality
-  report. Never code scanning
-  ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)).
-- **The gates alone, in a job of their own** (`--gates-only`), with no
-  write token and no agent's; the judging job reads their verdicts
-  (`--gates-from`) and runs no gate. On GitLab, the tokens scoped to the
-  environment `workline` never reach that job, which declares none; they
-  still reach whoever changes the pipeline
-  ([the environment](../gitlab/environment.md)).
-- **Each new finding's fingerprint** holds no line number.
-- **How, and what is said**: [the new findings shown](gates-shown.md), [explained](../../roles/inspector/README.md).
-
-*Not built yet*: a formatter's fixes applied, rather than its command
-said; the count's trend; vendored and generated code skipped; CI's build
-reused; a monorepo's changed folders only.
+  conversation to resolve, never code scanning; the gates alone
+  (`--gates-only`), in a job of their own with no write token, the
+  judging job reading their verdicts (`--gates-from`):
+  [the new findings shown](gates-shown.md),
+  [explained](../../roles/inspector/README.md).
+- **On GitLab**, the tokens scoped to the environment `workline` never
+  reach the gates' job, which declares none; they still reach whoever
+  changes the pipeline ([gates in CI](../gates-findings.md#on-gitlab),
+  [the environment](../gitlab/environment.md)).
 
 ## Three outcomes, not two
 
@@ -195,14 +147,14 @@ A gate gives the same verdict as a role (`--json`), with the findings of every
 check, and keeps each check's output under `.git/workline/gates/`: its log
 (a secret's value masked, [#1215](https://github.com/JN0V/workline/issues/1215)),
 its SARIF, and on a merge request the run at the merge base under `base/`
-and the results marked under `compared/`. A check over its thresholds names
-its first findings, file and line; no agent is ever asked, so the verdict
+and the results marked under `compared/` ([how](gates-new.md)). A check
+over its thresholds names its first findings, file and line; no agent is ever asked, so the verdict
 and the findings are the same with an agent or none.
 
 ## Protection
 
 The `gates:` and `routing:` sections of `.workline/config.yaml` and the role
 folders can only be changed by people,
-never by an agent's patch: they are outside every role's `duties.writes`, and
-should be protected on the forge (CODEOWNERS or equivalent). A gate the agent
+never by an agent's patch: they are outside every role's `duties.writes`
+but the developer's, whose bounds refuse them, and should be protected on the forge (CODEOWNERS or equivalent). A gate the agent
 can edit is not a gate.

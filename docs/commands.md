@@ -97,7 +97,7 @@ order; the first that does not pass stops the line.
 
 `workline gate <name>` runs a gate declared in `.workline/config.yaml`
 ([gates](spec/gates.md)); it returns 0 or 1. Its summary says how it
-counted ([more](spec/gates.md#with-workline-gate)):
+counted ([more](spec/gates-told.md#with-workline-gate)):
 
 - **Every finding**, by default.
 - **`--base <rev>`**: only those the change adds since the merge base of

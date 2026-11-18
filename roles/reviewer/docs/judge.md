@@ -204,7 +204,7 @@ comment hides a line for each.
 - **Not whole**: a lens not asked, a finding not judged, or a change
   past `parts-max` (`review-not-whole`), leaves the commits unrecorded,
   reviewed again next run. Several specs a run: those after the cap are not read, each said
-  ([a spec on the forge](spec.md#on-the-forge)).
+  ([a spec on the forge](spec-forge.md)).
 - **Said**: the summary gives the tokens used against the cap; each
   call's, by lens and by judged finding, is in `out/review.json`.
 - **A call**: `context.budget`, 100000 tokens, estimated 711 + 0.82 a

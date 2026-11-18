@@ -21,6 +21,8 @@ roles:
         roles/product-owner/docs/settings.md, roles/product-owner/docs/writing.md,
         roles/reviewer/docs/run.md, roles/reviewer/docs/judge.md, roles/reviewer/docs/spec.md,
         roles/reviewer/docs/lines.md, roles/reviewer/docs/apart.md, roles/reviewer/docs/once.md,
+        roles/reviewer/docs/apart-comments.md, roles/reviewer/docs/apart-ci.md, roles/reviewer/docs/spec-code.md,
+        roles/reviewer/docs/spec-forge.md, roles/reviewer/docs/spec-rounds.md, roles/inspector/docs/run.md,
         roles/committer/docs/squash-title.md, roles/tester/docs/hand-over.md,
         roles/tester/docs/missing-name.md, roles/tester/docs/written.md, roles/tester/docs/refused.md,
         roles/tester/docs/proof-kinds.md, roles/tester/docs/build-judge.md, roles/tester/docs/build-outcomes.md,

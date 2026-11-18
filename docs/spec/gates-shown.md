@@ -1,6 +1,27 @@
 ---
-sources: [internal/gate/added.go, internal/line/line.go, internal/report/gates.go, internal/report/report.go, internal/engine/annotate.go, cmd/workline/main.go]
-checked: 8538d558
+sources:
+  - internal/report/report.go#gateItem
+  - internal/report/report.go#Item.level
+  - internal/report/report.go#Item.rule
+  - internal/report/report.go#Item.fingerprint
+  - internal/report/report.go#CodeQuality
+  - internal/report/report.go#ForCodeScanning
+  - internal/report/report.go#maxAnnotations
+  - internal/report/gates.go#placesShown
+  - internal/report/gates.go#Gates
+  - internal/report/gates.go#GatesShown.note
+  - internal/report/gates.go#GatesShown.Comment
+  - internal/report/gates.go#inRepo
+  - internal/report/gates.go#inert
+  - internal/forge/annotate.go#GatesCheck
+  - internal/forge/annotate.go#GatesMarker
+  - internal/forge/forge.go#Marker
+  - internal/forge/annotate.go#annotationsPerCall
+  - internal/engine/annotate.go#ShowGates
+  - cmd/workline/main.go#showGates
+  - cmd/workline/main.go#fromMergeRequest
+  - defaults/ci/github/workline-apply.yml#jobs.apply
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Gates — the new findings shown on a merge request
@@ -10,36 +31,14 @@ the findings a change adds go, and how
 ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md),
 [ADR-0047](../adr/0047-findings-on-a-merge-request-open-no-conversation.md)).
 
-## What a gate step holds
+## A gate step, and the gates alone
 
-- **On an event given a range**, its result in `--json` holds `new`: the
-  merge base, each check's count (`new`; `before`, `-1` when not known;
-  `failed`, `error`, `fix`; `kept`, the merge base's findings read as
-  main kept them), and each new finding: check, tool, rule, SARIF level,
-  file, line, message, and a fingerprint. On `main`, `present` names
-  every finding the head holds, by its fingerprint
-  ([main after a merge](../main-after-merge.md)).
-- **The fingerprint** hashes the finding's identity
-  ([gates.md](gates.md#on-a-merge-request-the-findings-the-change-adds))
-  and how many alike come before it: no line number.
+[A gate step's result, and the gates alone](gates-alone.md):
 
-## The gates alone
-
-- **`route <event> --gates-only`**: every gate step of the event runs,
-  none of its roles. Their tools run the change's code: that job holds no
-  write token and no agent's ([gates in CI](../gates-in-ci.md)).
-- **`--gates-from <file>`**: the job judging the line reads each gate
-  step's verdict there, and runs no gate. One missing from the file, or a
-  file for other commits than the line judges, is a `check-error`: the
-  gates' result says the commits its range named when they ran
-  (`commits`), a branch moved since names others.
-- **A gate's findings are reported by the job that ran it**: a step read
-  from a file adds none to `--sarif` nor `--code-quality`.
-- **The run apart** (`--warn-only --gates-from <file>`) reads no verdict
-  there: it hands that result to the inspector, which triages the new
-  findings, only for the commits it judges; for others, said
-  (`gates-unread`), none given
-  ([the inspector](../../roles/inspector/README.md)).
+- **What a gate step holds**: on a merge request, each check's count
+  and each new finding, named by a fingerprint holding no line number.
+- **The gates alone** (`--gates-only`), in a job with no write token;
+  the judging job reads their verdicts (`--gates-from`).
 
 ## Where they go
 
