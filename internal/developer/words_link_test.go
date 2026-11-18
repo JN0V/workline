@@ -63,7 +63,7 @@ func TestClaimHoldsUnreadWordsWithNoPullRequest(t *testing.T) {
 	if !strings.Contains(body, "Its agent's words, unread") || !strings.Contains(body, "- test: [x") {
 		t.Errorf("unread words not in the claim:\n%s", body)
 	}
-	a.Proof = &Proof{Result: devmark.Green}
+	a.Proof = &devmark.Proof{Result: devmark.Green}
 	if strings.Contains(claimBody(a, Settings{ClaimLabel: "workline:doing"}), "- test: [x") {
 		t.Errorf("unread words in the claim beside a pull request")
 	}

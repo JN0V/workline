@@ -10,6 +10,7 @@ package developer
 
 import (
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"os"
@@ -267,7 +268,7 @@ func rewritePatches(repo string, taken map[string]string) ([]intent.Intention, e
 	for _, t := range slices.Sorted(maps.Keys(taken)) {
 		data, err := exec.Command("git", "-C", repo, "cat-file", "blob", taken[t]).Output()
 		if err != nil {
-			return nil, fmt.Errorf("the tester's rewrite of %s, blob %s: %w", t, shortSHA(taken[t]), err)
+			return nil, fmt.Errorf("the tester's rewrite of %s, blob %s: %w", t, devmark.ShortSHA(taken[t]), err)
 		}
 		out = append(out, intent.Intention{Kind: "patch", Value: map[string]any{"file": t, "content": string(data)}})
 	}

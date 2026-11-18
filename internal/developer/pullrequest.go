@@ -36,9 +36,6 @@ func ReadRecord(f forge.Forge, id int) (Act, bool, error) {
 	return a, ok && a.Act == "code", nil
 }
 
-// ProofLines are a proof's lines, as its pull request's body says them.
-func ProofLines(p Proof, caps []Cap) string { return proofLines(p, caps) }
-
 // written are the files its patches touch, its code and its tests apart,
 // by the project's one definition of a test file (ADR-0065).
 func written(patches []intent.Intention, def testdef.Def) (code, tests []string) {
@@ -148,7 +145,7 @@ func body(a Act, ready bool) string {
 	}
 	if len(a.Beyond) > 0 {
 		fmt.Fprintf(&b, "\n## %s\n\nFiles changed beyond the issue's %s, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.\n\n%s",
-			BeyondHeading, work.Name(work.Scope), beyondLines(a.Beyond))
+			BeyondHeading, work.Name(work.Scope), devmark.BeyondLines(a.Beyond))
 	}
 	if len(a.Refused) > 0 {
 		b.WriteString("\n## Left out\n\nRefused at apply, out of its bounds: an issue for a person, not this change.\n\n")
@@ -168,7 +165,7 @@ func body(a Act, ready bool) string {
 		fmt.Fprintf(&b, "- Its agent failed: %s. What it edited was proven all the same.\n", a.AgentFailed)
 	}
 	if a.Proof != nil {
-		b.WriteString(proofLines(*a.Proof, a.Caps))
+		b.WriteString(devmark.ProofLines(*a.Proof, a.Caps))
 	}
 	b.WriteString("\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n" +
 		"- Not tried: the commands the issue names to verify it, nor a person's use of it.\n")
@@ -206,7 +203,7 @@ func RoundLines(a Act) string {
 			b.WriteString(", the five whys run")
 		}
 		if x.Nits > 0 {
-			fmt.Fprintf(&b, ", %d nit%s not asked", x.Nits, plural(x.Nits))
+			fmt.Fprintf(&b, ", %d nit%s not asked", x.Nits, devmark.Plural(x.Nits))
 		}
 		b.WriteString(".\n")
 		for _, t := range x.Asked {

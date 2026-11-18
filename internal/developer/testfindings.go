@@ -218,14 +218,14 @@ func disputedOff(r round, repo string) []intent.Intention {
 	add, remove := blockedMove(repo)
 	n := len(r.Disputed)
 	why := fmt.Sprintf("the review of merge request %d still blocks on %d test finding%s the tester answered no test is needed for: the reviewer and the tester do not agree",
-		r.MR, n, plural(n))
+		r.MR, n, devmark.Plural(n))
 	return []intent.Intention{
 		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
 		sayOn(a.Issue, backlog.Said(who, "blocks this issue", why,
 			"a person on the loop reads the finding and the tester's answer on the pull request, settles it, and moves the issue back by its label")),
 		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(
 			"**Blocked**: the review still blocks on %d test finding%s the tester answered no test is needed for. #%d is blocked, its reason on it: a person of the project reads both and settles it.\n\n%s",
-			n, plural(n), a.Issue, askedList(r.Disputed))}},
+			n, devmark.Plural(n), a.Issue, askedList(r.Disputed))}},
 		{Kind: "comment", Value: map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}},
 	}
 }

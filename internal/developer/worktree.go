@@ -12,6 +12,7 @@ package developer
 import (
 	"bytes"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/worktree"
 	"os"
 	"os/exec"
@@ -31,7 +32,7 @@ func openWorktree(runDir, repo, at string) error {
 // worktreeCode is the run's worktree's diff against base, one patch a
 // file, a deletion too, and the files refused before the bounds. No
 // worktree: nothing.
-func worktreeCode(runDir, base string) (patches []intent.Intention, refused []Refusal, err error) {
+func worktreeCode(runDir, base string) (patches []intent.Intention, refused []devmark.Refusal, err error) {
 	tree := agent.Worktree(runDir)
 	if tree == "" {
 		return nil, nil, nil
@@ -54,7 +55,7 @@ func worktreeCode(runDir, base string) (patches []intent.Intention, refused []Re
 			return nil, nil, fmt.Errorf("its agent's worktree: %w", err)
 		}
 		if rule := notTextFile(tree, name, diff); rule != "" {
-			refused = append(refused, Refusal{File: name, Rule: rule})
+			refused = append(refused, devmark.Refusal{File: name, Rule: rule})
 			continue
 		}
 		patches = append(patches, intent.Intention{Kind: "patch", Value: diff})

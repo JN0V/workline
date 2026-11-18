@@ -29,36 +29,6 @@ import (
 	"github.com/JN0V/workline/internal/tester"
 )
 
-// Proof is what the project's tests said on the developer's code.
-type Proof struct {
-	Result  string   `json:"result"`
-	Command string   `json:"command,omitempty"`
-	Passed  int      `json:"passed"`
-	Red     []string `json:"red,omitempty"`
-	// Why: unproven, why it did not run whole; red with no test red, why
-	// the command failed.
-	Why string `json:"why,omitempty"`
-	// Tree: where it ran, "fresh" — a checkout of At apart, never its
-	// agent's worktree; At: that commit.
-	Tree string `json:"tree,omitempty"`
-	At   string `json:"at,omitempty"`
-	// Scope: "touched", the proof-command on Packages, the folders of
-	// its code and of the acceptance tests (#703); "whole", the
-	// test-command, Why so in Whole.
-	Scope    string   `json:"scope,omitempty"`
-	Packages []string `json:"packages,omitempty"`
-	Whole    string   `json:"whole,omitempty"`
-	// Missing: the tools the test command's output says were missing
-	// where it ran (#760): a red from the environment, not the code.
-	Missing []string `json:"missing,omitempty"`
-	// Test, Runs and Ran: a flaky-n-of-n proof (ADR-0059, decision 4),
-	// the test it ran, the runs asked, the runs made; green only when
-	// each of Runs was green, Test passing.
-	Test string `json:"test,omitempty"`
-	Runs int    `json:"runs,omitempty"`
-	Ran  int    `json:"ran,omitempty"`
-}
-
 // Flaky is a flaky-n-of-n proof to run: the named test, Runs times.
 type Flaky struct {
 	Test string
@@ -80,25 +50,11 @@ func flakyOf(k *tester.Proof, s Settings) *Flaky {
 
 // again is the flaky-n-of-n proof a review round runs again: the one
 // the issue run made, from its record.
-func again(p *Proof) *Flaky {
+func again(p *devmark.Proof) *Flaky {
 	if p == nil || p.Runs == 0 {
 		return nil
 	}
 	return &Flaky{Test: p.Test, Runs: p.Runs}
-}
-
-// The proof's scopes.
-const (
-	Touched = "touched"
-	Whole   = "whole"
-)
-
-// Cap is a bound on the run reached: the setting, what was spent, what it
-// allows.
-type Cap struct {
-	Setting string `json:"setting"`
-	Spent   int    `json:"spent"`
-	Allows  int    `json:"allows"`
 }
 
 // prove runs the project's test command on the patches laid on the commit
@@ -108,10 +64,10 @@ type Cap struct {
 // runs the whole suite. A flaky-n-of-n proof runs it n.Runs times on
 // the one tree, `{test}` the named test; green only N runs of N, the
 // test passing in each.
-func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky, s Settings) (Proof, *Cap) {
+func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky, s Settings) (devmark.Proof, *devmark.Cap) {
 	// The flaky proof's test and runs first, kept whatever stops it: a
 	// review round reads them again from the record (again).
-	var p Proof
+	var p devmark.Proof
 	if n != nil {
 		p.Test, p.Runs = n.Test, max(1, n.Runs)
 	}
@@ -151,20 +107,20 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 		// proof's own seconds (#1425): that setting named, where it hung.
 		p.Ran = o.Runs
 		p.Result, p.Why = devmark.Unproven, fmt.Sprintf("a run of the tests stopped at suite-max-seconds (%d s): %s", ts.SuiteMaxSeconds, f.Message)
-		return p, &Cap{Setting: "suite-max-seconds", Spent: int(time.Since(start).Seconds()), Allows: ts.SuiteMaxSeconds}
+		return p, &devmark.Cap{Setting: "suite-max-seconds", Spent: int(time.Since(start).Seconds()), Allows: ts.SuiteMaxSeconds}
 	case f != nil && f.Rule == "proof-over-time":
 		p.Ran = o.Runs
 		p.Result, p.Why = devmark.Unproven, fmt.Sprintf("the test command ran past %d s: stopped", s.ProofSeconds)
-		return p, &Cap{Setting: "proof-seconds", Spent: int(time.Since(start).Seconds()), Allows: s.ProofSeconds}
+		return p, &devmark.Cap{Setting: "proof-seconds", Spent: int(time.Since(start).Seconds()), Allows: s.ProofSeconds}
 	case f != nil:
 		p.Result, p.Why = devmark.Unproven, strings.TrimSpace(f.Where+": "+f.Message)
 		return p, nil
 	}
 	p.Passed, p.Red, p.Tree, p.At, p.Missing = len(o.Passed), o.Red, "fresh", o.At, o.Missing
-	p.Scope, p.Packages = Whole, o.Packages
+	p.Scope, p.Packages = devmark.Whole, o.Packages
 	switch {
 	case len(o.Packages) > 0:
-		p.Scope, p.Command = Touched, s.ProofCommand
+		p.Scope, p.Command = devmark.Touched, s.ProofCommand
 	case s.ProofCommand == "":
 		p.Whole = "no proof-command set"
 	case scope.Command == "":
@@ -190,7 +146,7 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 	case p.Result == devmark.Green && !reported:
 		p.Result, p.Why = devmark.Unproven, fmt.Sprintf("the named test `%s` was not reported, run %d of %d", n.Test, o.Runs, p.Runs)
 	case p.Result == devmark.Red && p.Why == "":
-		p.Why = fmt.Sprintf("run %d of %d: %d test%s red on its code: %s", o.Runs, p.Runs, len(p.Red), plural(len(p.Red)), strings.Join(p.Red, ", "))
+		p.Why = fmt.Sprintf("run %d of %d: %d test%s red on its code: %s", o.Runs, p.Runs, len(p.Red), devmark.Plural(len(p.Red)), strings.Join(p.Red, ", "))
 	case p.Result != devmark.Green:
 		p.Why = fmt.Sprintf("run %d of %d: %s", o.Runs, p.Runs, p.Why)
 	}
@@ -282,16 +238,16 @@ func used(runDir string) Used {
 // time over the run (the engine stopped waiting and killed it), its turns
 // in one call (each is told ai-max-turns), its fresh tokens over the run,
 // as it reports them, at or past what each allows; none set, none reached.
-func agentCaps(u Used, s Settings) []Cap {
-	var caps []Cap
+func agentCaps(u Used, s Settings) []devmark.Cap {
+	var caps []devmark.Cap
 	if u.timeCut && s.MaxSeconds > 0 {
-		caps = append(caps, Cap{Setting: "ai-max-seconds", Spent: u.Seconds, Allows: s.MaxSeconds})
+		caps = append(caps, devmark.Cap{Setting: "ai-max-seconds", Spent: u.Seconds, Allows: s.MaxSeconds})
 	}
 	if s.MaxTurns > 0 && u.mostTurns >= s.MaxTurns {
-		caps = append(caps, Cap{Setting: "ai-max-turns", Spent: u.mostTurns, Allows: s.MaxTurns})
+		caps = append(caps, devmark.Cap{Setting: "ai-max-turns", Spent: u.mostTurns, Allows: s.MaxTurns})
 	}
 	if s.MaxTokens > 0 && u.Tokens >= s.MaxTokens {
-		caps = append(caps, Cap{Setting: "ai-max-tokens", Spent: u.Tokens, Allows: s.MaxTokens})
+		caps = append(caps, devmark.Cap{Setting: "ai-max-tokens", Spent: u.Tokens, Allows: s.MaxTokens})
 	}
 	return caps
 }
@@ -327,14 +283,14 @@ func agentFailed(where, why string) verdict.Finding {
 }
 
 // proofFindings say the proof and the caps in the run's verdict.
-func proofFindings(where string, p Proof, caps []Cap) []verdict.Finding {
+func proofFindings(where string, p devmark.Proof, caps []devmark.Cap) []verdict.Finding {
 	var out []verdict.Finding
 	switch p.Result {
 	case devmark.Green:
 		out = append(out, verdict.Finding{Rule: "proof-green", Level: "info", Where: where,
-			Message: fmt.Sprintf("%d test%s passed on its code, none red: `%s`%s", p.Passed, plural(p.Passed), p.Command, p.nOfN())})
+			Message: fmt.Sprintf("%d test%s passed on its code, none red: `%s`%s", p.Passed, devmark.Plural(p.Passed), p.Command, p.NOfN())})
 	case devmark.Red:
-		msg := fmt.Sprintf("%d test%s red on its code: %s", len(p.Red), plural(len(p.Red)), strings.Join(p.Red, ", "))
+		msg := fmt.Sprintf("%d test%s red on its code: %s", len(p.Red), devmark.Plural(len(p.Red)), strings.Join(p.Red, ", "))
 		if p.Why != "" {
 			msg = p.Why
 		}
@@ -351,14 +307,6 @@ func proofFindings(where string, p Proof, caps []Cap) []verdict.Finding {
 	return out
 }
 
-// nOfN says a green flaky-n-of-n proof's runs; "" for another proof.
-func (p Proof) nOfN() string {
-	if p.Runs == 0 || p.Result != devmark.Green {
-		return ""
-	}
-	return fmt.Sprintf("; `%s` passed %d runs of %d", p.Test, p.Ran, p.Runs)
-}
-
 // missingSaid is what a red finding adds for the tools missing where the
 // proof ran: "" when none.
 func missingSaid(tools []string) string {
@@ -366,45 +314,6 @@ func missingSaid(tools []string) string {
 		return ""
 	}
 	return "; not found where it ran: " + strings.Join(tools, ", ")
-}
-
-// proofLines are the Verification's lines: what ran and its result, each
-// cap reached.
-func proofLines(p Proof, caps []Cap) string {
-	var b strings.Builder
-	switch p.Result {
-	case devmark.Green:
-		fmt.Fprintf(&b, "- `%s`: %d test%s passed, none red%s.\n", p.Command, p.Passed, plural(p.Passed), p.nOfN())
-	case devmark.Red:
-		fmt.Fprintf(&b, "- `%s`: %d passed, %d red.\n", p.Command, p.Passed, len(p.Red))
-		for _, t := range p.Red {
-			fmt.Fprintf(&b, "  - red: `%s`\n", t)
-		}
-		if p.Why != "" {
-			fmt.Fprintf(&b, "  - %s\n", p.Why)
-		}
-		if len(p.Missing) > 0 {
-			fmt.Fprintf(&b, "  - Not found where it ran: `%s`. A tool missing there is a red from the environment, not the code: the project's setup steps install what its test job has.\n", strings.Join(p.Missing, "`, `"))
-		}
-	default:
-		fmt.Fprintf(&b, "- The project's tests did not run whole: %s\n", p.Why)
-		if len(p.Missing) > 0 {
-			fmt.Fprintf(&b, "  - Not found where it ran: `%s`.\n", strings.Join(p.Missing, "`, `"))
-		}
-	}
-	switch p.Scope {
-	case Touched:
-		fmt.Fprintf(&b, "- On the folders its code and the acceptance tests touch: `%s`. This pull request's own CI runs the whole suite.\n", strings.Join(p.Packages, " "))
-	case Whole:
-		fmt.Fprintf(&b, "- The whole suite: %s (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n", p.Whole)
-	}
-	if p.Tree == "fresh" && p.At != "" {
-		fmt.Fprintf(&b, "- Run on a fresh checkout of %s, its code laid on it: not its agent's worktree.\n", shortSHA(p.At))
-	}
-	for _, c := range caps {
-		fmt.Fprintf(&b, "- Cap reached: %s, %d spent of %d.\n", c.Setting, c.Spent, c.Allows)
-	}
-	return b.String()
 }
 
 // issueTitle is the issue's title, from the task pre wrote; "" when not
@@ -422,27 +331,13 @@ func issueTitle(runDir string, issue int) string {
 	return strings.TrimSpace(t)
 }
 
-func shortSHA(sha string) string {
-	if len(sha) > 7 {
-		return sha[:7]
-	}
-	return sha
-}
-
-func plural(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
-}
-
 // ProveMerge runs the project's test command whole on at, a merge of the
 // base into a request made by the engine, on a fresh checkout of it: the
 // proof that two changes green apart are green together (#1370). Whole,
 // never the proof-command's folders: a clash may sit in a file neither
 // change touched. The developer's proof-seconds bound it. rolesDir: where
 // the roles are read, as the engine resolves them.
-func ProveMerge(rolesDir, repo, at string) Proof {
+func ProveMerge(rolesDir, repo, at string) devmark.Proof {
 	var s Settings
 	if r, err := role.Load(rolesDir, "developer"); err == nil {
 		if cfg, err := role.LoadProjectConfig(repo); err == nil {
@@ -452,17 +347,4 @@ func ProveMerge(rolesDir, repo, at string) Proof {
 	s.ProofCommand, s.rolesDir = "", rolesDir
 	p, _ := prove(repo, at, nil, nil, nil, s)
 	return p
-}
-
-// Said is the proof in a few words: its tests passed, or what failed.
-func (p Proof) Said() string {
-	switch {
-	case p.Result == devmark.Green:
-		return fmt.Sprintf("%d test%s passed", p.Passed, plural(p.Passed))
-	case len(p.Red) > 0:
-		return fmt.Sprintf("%d test%s red: %s", len(p.Red), plural(len(p.Red)), strings.Join(p.Red, ", "))
-	case p.Why != "":
-		return p.Why
-	}
-	return p.Result
 }

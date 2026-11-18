@@ -71,7 +71,7 @@ func TestProve(t *testing.T) {
 	if p.Result != devmark.Red || len(p.Red) != 1 || p.Red[0] != "lib.ok" || c != nil {
 		t.Errorf("red: proof = %+v, cap = %+v; want red, lib.ok red, no cap", p, c)
 	}
-	if lines := proofLines(p, nil); !strings.Contains(lines, "0 passed, 1 red") || !strings.Contains(lines, "red: `lib.ok`") {
+	if lines := devmark.ProofLines(p, nil); !strings.Contains(lines, "0 passed, 1 red") || !strings.Contains(lines, "red: `lib.ok`") {
 		t.Errorf("red: Verification lines %q lack what was red", lines)
 	}
 	if f := proofFindings("#3", p, nil); len(f) != 1 || f[0].Rule != "proof-red" {
@@ -84,7 +84,7 @@ func TestProve(t *testing.T) {
 func TestProveFlakyKeepsItsRunsForTheReview(t *testing.T) {
 	repo := provingRepo(t, `"sh run-tests.sh {report}"`)
 	p, _ := prove(repo, "", lib("ok"), nil, &Flaky{Test: "ok", Runs: 3}, Settings{ProofSeconds: 60})
-	if p.Result != devmark.Green || p.Ran != 3 || !strings.Contains(proofLines(p, nil), "`ok` passed 3 runs of 3") {
+	if p.Result != devmark.Green || p.Ran != 3 || !strings.Contains(devmark.ProofLines(p, nil), "`ok` passed 3 runs of 3") {
 		t.Errorf("green: proof = %+v; want green, 3 runs of 3 said", p)
 	}
 	if n := again(&p); n == nil || *n != (Flaky{Test: "ok", Runs: 3}) {
@@ -99,7 +99,7 @@ func TestProveFlakyKeepsItsRunsForTheReview(t *testing.T) {
 	if p.Result != devmark.Unproven || again(&p) == nil {
 		t.Errorf("settings unread: proof = %+v; want unproven, its runs kept", p)
 	}
-	if again(&Proof{Result: devmark.Green}) != nil {
+	if again(&devmark.Proof{Result: devmark.Green}) != nil {
 		t.Error("again(not flaky) is not nil")
 	}
 }
@@ -154,7 +154,7 @@ func TestProveStoppedPastItsSeconds(t *testing.T) {
 	if p.Result != devmark.Unproven || c == nil || c.Setting != "proof-seconds" || c.Allows != 1 {
 		t.Fatalf("proof = %+v, cap = %+v; want unproven, the proof-seconds cap", p, c)
 	}
-	f := proofFindings("#3", p, []Cap{*c})
+	f := proofFindings("#3", p, []devmark.Cap{*c})
 	if len(f) != 2 || f[1].Rule != "cap-reached" || f[1].Where != "proof-seconds" {
 		t.Errorf("findings = %+v, want proof-not-run then cap-reached on proof-seconds", f)
 	}
@@ -186,7 +186,7 @@ func TestAgentCaps(t *testing.T) {
 		t.Errorf("no cap set: want none, got %+v", c)
 	}
 	c := agentCaps(u, Settings{MaxTokens: 2000, MaxTurns: 7, MaxSeconds: 3})
-	want := []Cap{{"ai-max-seconds", 4, 3}, {"ai-max-turns", 7, 7}, {"ai-max-tokens", 2000, 2000}}
+	want := []devmark.Cap{{Setting: "ai-max-seconds", Spent: 4, Allows: 3}, {Setting: "ai-max-turns", Spent: 7, Allows: 7}, {Setting: "ai-max-tokens", Spent: 2000, Allows: 2000}}
 	if !slices.Equal(c, want) {
 		t.Errorf("each at or past its cap: want %+v, got %+v", want, c)
 	}
@@ -206,7 +206,7 @@ func TestTurnCapIsPerCall(t *testing.T) {
 		t.Errorf("turns used = %d, want the run's 120 kept for the record", u.Turns)
 	}
 	u = calls(t, `{"agent":"claude","turns":3,"tokens-in":10}`, `{"agent":"claude","turns":100,"tokens-in":10}`)
-	if c := agentCaps(u, Settings{MaxTurns: 100}); !slices.Equal(c, []Cap{{"ai-max-turns", 100, 100}}) {
+	if c := agentCaps(u, Settings{MaxTurns: 100}); !slices.Equal(c, []devmark.Cap{{Setting: "ai-max-turns", Spent: 100, Allows: 100}}) {
 		t.Errorf("one call at 100 turns: want ai-max-turns 100 of 100, got %+v", c)
 	}
 }
@@ -249,16 +249,16 @@ func TestUsedReadsAFailure(t *testing.T) {
 }
 
 func TestMergeRequestReadyOnlyGreenUncapped(t *testing.T) {
-	green := &Proof{Result: devmark.Green, Command: "make test", Passed: 4}
+	green := &devmark.Proof{Result: devmark.Green, Command: "make test", Passed: 4}
 	for _, tc := range []struct {
 		name  string
 		a     Act
 		draft bool
 	}{
 		{"green", Act{Issue: 7, Proof: green}, false},
-		{"green, a cap", Act{Issue: 7, Proof: green, Caps: []Cap{{Setting: "ai-max-tokens", Spent: 9, Allows: 5}}}, true},
-		{"red", Act{Issue: 7, Proof: &Proof{Result: devmark.Red, Red: []string{"t.a"}}}, true},
-		{"unproven", Act{Issue: 7, Proof: &Proof{Result: devmark.Unproven, Why: "no report"}}, true},
+		{"green, a cap", Act{Issue: 7, Proof: green, Caps: []devmark.Cap{{Setting: "ai-max-tokens", Spent: 9, Allows: 5}}}, true},
+		{"red", Act{Issue: 7, Proof: &devmark.Proof{Result: devmark.Red, Red: []string{"t.a"}}}, true},
+		{"unproven", Act{Issue: 7, Proof: &devmark.Proof{Result: devmark.Unproven, Why: "no report"}}, true},
 		{"green, its agent failed", Act{Issue: 7, Proof: green, AgentFailed: "it gave up"}, true},
 	} {
 		mr := mergeRequest(tc.a, "Add it", Subjects{})

@@ -128,14 +128,14 @@ type Act struct {
 	Passed []Passed `json:"passed,omitempty"`
 	// Refused: each file its agent's patches reached past its bounds, and
 	// the bound (ADR-0054, step 2).
-	Refused []Refusal `json:"refused,omitempty"`
+	Refused []devmark.Refusal `json:"refused,omitempty"`
 	// Unread: its agent's words that did not read, as they came, for its
 	// pull request's body (agentWords); never kept in the record.
 	Unread []string `json:"-"`
 	// Proof: what the project's tests said on its code; Caps: the bounds
 	// on the run it reached (step 3).
-	Proof *Proof `json:"proof,omitempty"`
-	Caps  []Cap  `json:"caps,omitempty"`
+	Proof *devmark.Proof `json:"proof,omitempty"`
+	Caps  []devmark.Cap  `json:"caps,omitempty"`
 	// Turns, Tokens, Cached and Tools: what its agent used, as it
 	// reported them (ADR-0056, steps 4, 5 and 7): its fresh tokens, what
 	// ai-max-tokens holds, its cache reads apart, the times it used each
@@ -189,7 +189,7 @@ type Act struct {
 	ChecksAt string `json:"checks-at,omitempty"`
 	// Widen: its last round's wait, for a person or the tester (#938,
 	// #987).
-	Widen *Widen `json:"widen,omitempty"`
+	Widen *devmark.Widen `json:"widen,omitempty"`
 	// Beside: the new test files its code wrote beside the Scope
 	// (ADR-0063, §9): listed on its pull request, and added to the Scope
 	// at the product owner's next run.
@@ -197,7 +197,7 @@ type Act struct {
 	// Beyond: the files its code wrote beyond the Scope, each with its
 	// agent's reason (ADR-0065, change 2): listed on its pull request,
 	// for the reviewer's `intent` lens to judge.
-	Beyond []Beyond `json:"beyond,omitempty"`
+	Beyond []devmark.Beyond `json:"beyond,omitempty"`
 	// Tester: the keys of the review's test findings sent to the tester
 	// (#1265): never asked again, of the developer nor the tester.
 	Tester []string `json:"tester,omitempty"`
@@ -219,10 +219,6 @@ func number(v any) int {
 	}
 	return 0
 }
-
-// closingWord is a word the forges read, in a pull request's body, as
-// closing the issue it names.
-var closingWord = regexp.MustCompile(`(?i)\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\b`)
 
 var actData = regexp.MustCompile(`<!-- ` + ActMark + ` (\{.*\}) -->`)
 
@@ -922,7 +918,7 @@ func claimBody(a Act, s Settings) string {
 		}
 	}
 	if a.Proof != nil {
-		b.WriteString("\nIts code on the project's tests:\n\n" + proofLines(*a.Proof, a.Caps))
+		b.WriteString("\nIts code on the project's tests:\n\n" + devmark.ProofLines(*a.Proof, a.Caps))
 	}
 	if a.NoCode && a.Widen == nil {
 		fmt.Fprintf(&b, "\n- **Why no pull request**: its agent wrote no code.\n"+
@@ -1046,9 +1042,9 @@ func Post(runDir, repo string) int {
 		if len(a.Beyond) > 0 {
 			v.Findings = append(v.Findings, beyondFinding(where, a.Beyond))
 		}
-		var p Proof
+		var p devmark.Proof
 		var u Used
-		var caps []Cap
+		var caps []devmark.Cap
 		var found []verdict.Finding
 		if draft != nil {
 			p, u, caps, found = draft.p, draft.u, draft.caps, draft.found
@@ -1111,7 +1107,7 @@ func Post(runDir, repo string) int {
 // withNote puts the agent's one note, the text posted on the issue, in the
 // pull request's `## Left out`, opening that section when it has none.
 func withNote(body, note string) string {
-	note = inertText(note)
+	note = devmark.InertText(note)
 	const head = "\n## Left out\n\n"
 	if i := strings.Index(body, head); i >= 0 {
 		i += len(head)
@@ -1124,52 +1120,12 @@ func withNote(body, note string) string {
 	return body + head + note + "\n"
 }
 
-// inertText is the agent's text made safe in a pull request body or an
-// issue comment: a line that would open a heading, a fence or a rule is
-// escaped, so it cannot forge a section, a < cannot open a tag, and an @ is
-// broken so it notifies no one; a closing keyword (Closes, Fixes,
-// Resolves…) is broken too, so a merge closes no issue the note names.
-// Made inert twice, a text stays the same.
-func inertText(s string) string {
-	lines := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
-	for i, l := range lines {
-		t := strings.TrimLeft(l, " \t")
-		if strings.HasPrefix(t, "#") || strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~") || strings.HasPrefix(t, "---") || strings.HasPrefix(t, "===") {
-			lines[i] = "\\" + t
-		}
-	}
-	joined := closingWord.ReplaceAllStringFunc(strings.Join(lines, "\n"), func(w string) string { return w[:1] + "\u200b" + w[1:] })
-	rs := []rune(joined)
-	var out strings.Builder
-	for i, r := range rs {
-		switch {
-		case r == '<' && !escapedAt(rs, i):
-			out.WriteString("\\<")
-		case r == '@' && (i+1 == len(rs) || rs[i+1] != '\u200b'):
-			out.WriteString("@\u200b")
-		default:
-			out.WriteRune(r)
-		}
-	}
-	return out.String()
-}
-
-// escapedAt tells whether the rune at i is escaped in Markdown: preceded
-// by an odd run of backslashes (an even run escapes only itself).
-func escapedAt(rs []rune, i int) bool {
-	n := 0
-	for j := i - 1; j >= 0 && rs[j] == '\\'; j-- {
-		n++
-	}
-	return n%2 == 1
-}
-
 // held is its agent's code held to the bounds: what it proposed, the
 // objections it wrote in its worktree and its worktree's diff against
 // base, the claim pre made first; the files refused, the worktree's
 // before the bounds', and the rest said; its words that did not read, as
 // they came (agentWords).
-func held(runDir, repo, base string, b Bounds, claim, proposed []intent.Intention) (kept []intent.Intention, refused []Refusal, said, unread []string, beyond map[string]string, err error) {
+func held(runDir, repo, base string, b Bounds, claim, proposed []intent.Intention) (kept []intent.Intention, refused []devmark.Refusal, said, unread []string, beyond map[string]string, err error) {
 	objections, beyond, unread, err := agentWords(runDir)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
@@ -1186,14 +1142,14 @@ func held(runDir, repo, base string, b Bounds, claim, proposed []intent.Intentio
 
 // beyondFinding says, in the verdict, the files a change wrote beyond its
 // issue's Scope (ADR-0065, change 2): applied, listed for the reviewer.
-func beyondFinding(where string, l []Beyond) verdict.Finding {
+func beyondFinding(where string, l []devmark.Beyond) verdict.Finding {
 	files := make([]string, len(l))
 	for i, x := range l {
 		files[i] = x.File
 	}
 	return verdict.Finding{Rule: "beyond-scope", Level: "info", Where: where,
 		Message: fmt.Sprintf("%d file%s beyond the issue's %s, applied and listed on the pull request for the reviewer's intent lens: %s",
-			len(l), plural(len(l)), scopeName, strings.Join(files, ", "))}
+			len(l), devmark.Plural(len(l)), scopeName, strings.Join(files, ", "))}
 }
 
 // unreadFinding says its agent's words that did not read, and where a
@@ -1233,7 +1189,7 @@ func rightsFinding(where string) verdict.Finding {
 }
 
 // refusalFindings say in the verdict what the bounds refused.
-func refusalFindings(where string, refused []Refusal, said []string) []verdict.Finding {
+func refusalFindings(where string, refused []devmark.Refusal, said []string) []verdict.Finding {
 	var out []verdict.Finding
 	for _, r := range refused {
 		out = append(out, verdict.Finding{Rule: r.Rule, Level: "warn", Where: r.File, Message: "refused at apply, its patch left out: " + why(r)})
@@ -1248,7 +1204,7 @@ func refusalFindings(where string, refused []Refusal, said []string) []verdict.F
 // what its agent used: the proof, the caps the run reached, and what the
 // verdict says of them. Also: the files whose folders run beside the
 // patches' (the acceptance tests).
-func proven(runDir, repo, on, where string, patches []intent.Intention, also []string, n *Flaky, s Settings) (Proof, Used, []Cap, []verdict.Finding) {
+func proven(runDir, repo, on, where string, patches []intent.Intention, also []string, n *Flaky, s Settings) (devmark.Proof, Used, []devmark.Cap, []verdict.Finding) {
 	p, over := prove(repo, on, patches, also, n, s)
 	u := used(runDir)
 	caps := agentCaps(u, s)
@@ -1266,9 +1222,9 @@ func proven(runDir, repo, on, where string, patches []intent.Intention, also []s
 // drafted is the proof of a tester's Draft its agent wrote nothing on,
 // green as it is (#1434).
 type drafted struct {
-	p     Proof
+	p     devmark.Proof
 	u     Used
-	caps  []Cap
+	caps  []devmark.Cap
 	found []verdict.Finding
 }
 
@@ -1383,7 +1339,7 @@ func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, t
 
 // onlyProtected says whether every refusal is a file only a person
 // changes (a gate's or the CI's, a steering file), and there is one.
-func onlyProtected(refused []Refusal) bool {
+func onlyProtected(refused []devmark.Refusal) bool {
 	if len(refused) == 0 {
 		return false
 	}
@@ -1397,7 +1353,7 @@ func onlyProtected(refused []Refusal) bool {
 
 // writeBlockedProtected claims the issue and blocks it for a person in
 // the same run, the refused files and why said on it (#1418).
-func writeBlockedProtected(runDir, repo string, a Act, s Settings, told []intent.Intention, refused []Refusal, v verdict.Verdict) int {
+func writeBlockedProtected(runDir, repo string, a Act, s Settings, told []intent.Intention, refused []devmark.Refusal, v verdict.Verdict) int {
 	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
 	if line, err := routing.Load(repo); err == nil {
 		if ad, rm, err := line.Move("blocked"); err == nil {

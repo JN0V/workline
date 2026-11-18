@@ -37,12 +37,12 @@ const BoundsKey = "bounds"
 
 // prBounds is the record of one check, hidden in its comment.
 type prBounds struct {
-	Act     string    `json:"act"` // "bounds"
-	Issue   int       `json:"issue"`
-	Base    string    `json:"base"` // the base's tip the rules were read at
-	Head    string    `json:"head"`
-	Files   int       `json:"files"`
-	Refused []Refusal `json:"refused"`
+	Act     string            `json:"act"` // "bounds"
+	Issue   int               `json:"issue"`
+	Base    string            `json:"base"` // the base's tip the rules were read at
+	Head    string            `json:"head"`
+	Files   int               `json:"files"`
+	Refused []devmark.Refusal `json:"refused"`
 	// Beyond: the files changed beyond the issue's Scope, applied and
 	// listed for the reviewer (ADR-0065, change 2).
 	Beyond []string `json:"beyond,omitempty"`
@@ -53,11 +53,11 @@ type prBounds struct {
 
 func (r prBounds) body() string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "**The developer's bounds** on this pull request, read at the base's %s: %d file%s changed since it, ", shortSHA(r.Base), r.Files, plural(r.Files))
+	fmt.Fprintf(&b, "**The developer's bounds** on this pull request, read at the base's %s: %d file%s changed since it, ", devmark.ShortSHA(r.Base), r.Files, devmark.Plural(r.Files))
 	if len(r.Refused) == 0 {
 		b.WriteString("each within the bounds of #" + fmt.Sprint(r.Issue) + ".\n")
 		if len(r.Person) > 0 {
-			fmt.Fprintf(&b, "\n%d guarded file%s a person wrote, not held by the bounds: it merges on the person's `workline:accepted` only: `%s`.\n", len(r.Person), plural(len(r.Person)), strings.Join(r.Person, "`, `"))
+			fmt.Fprintf(&b, "\n%d guarded file%s a person wrote, not held by the bounds: it merges on the person's `workline:accepted` only: `%s`.\n", len(r.Person), devmark.Plural(len(r.Person)), strings.Join(r.Person, "`, `"))
 		}
 		if len(r.Beyond) > 0 {
 			fmt.Fprintf(&b, "\n%d beyond its %s, a hint, judged by the reviewer's intent lens: `%s`.\n", len(r.Beyond), work.Name(work.Scope), strings.Join(r.Beyond, "`, `"))
@@ -134,7 +134,7 @@ func boundsPre(runDir, repo string, id int) int {
 			blob, err := gitOut(repo, "rev-parse", "-q", "--verify", a.From+":"+t)
 			if a.From == "" || err != nil || blob == "" {
 				unknown = append(unknown, verdict.Finding{Rule: "frozen-tests-unknown", Where: t,
-					Message: fmt.Sprintf("an acceptance test its record names, frozen at its start commit %q, which cannot be read in this clone (fetch it): what the tester wrote cannot be told, so the bounds cannot pass", shortSHA(a.From))})
+					Message: fmt.Sprintf("an acceptance test its record names, frozen at its start commit %q, which cannot be read in this clone (fetch it): what the tester wrote cannot be told, so the bounds cannot pass", devmark.ShortSHA(a.From))})
 				continue
 			}
 			b.Frozen[t], b.Blobs[t] = n, blob
@@ -150,13 +150,13 @@ func boundsPre(runDir, repo string, id int) int {
 	}
 	rec := prBounds{Act: "bounds", Issue: n, Base: base, Head: head, Files: files, Refused: refused, Beyond: beyond, Person: person}
 	if rec.Refused == nil {
-		rec.Refused = []Refusal{}
+		rec.Refused = []devmark.Refusal{}
 	}
 	v := verdict.Verdict{Status: verdict.Pass, Final: true,
-		Summary: fmt.Sprintf("the bounds of #%d hold: %d file%s changed, none refused", n, files, plural(files))}
+		Summary: fmt.Sprintf("the bounds of #%d hold: %d file%s changed, none refused", n, files, devmark.Plural(files))}
 	if len(refused) > 0 {
 		v.Status = verdict.Block
-		v.Summary = fmt.Sprintf("the bounds of #%d refuse %d of %d file%s changed", n, len(refused), files, plural(files))
+		v.Summary = fmt.Sprintf("the bounds of #%d refuse %d of %d file%s changed", n, len(refused), files, devmark.Plural(files))
 	}
 	for _, r := range refused {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: r.Rule, Where: r.File,
@@ -235,14 +235,14 @@ func prRange(runDir, repo string, mr forge.MergeRequest) (base, head string, err
 // base to the bounds, the rules read at base: how many changed, the ones
 // refused, and the ones beyond the Scope. A frozen test as the tester
 // wrote it is not the developer's change.
-func prRefusals(repo string, b Bounds, base, head string) (files int, refused []Refusal, beyond, person []string, err error) {
+func prRefusals(repo string, b Bounds, base, head string) (files int, refused []devmark.Refusal, beyond, person []string, err error) {
 	from, err := gitOut(repo, "merge-base", base, head)
 	if err != nil {
-		return 0, nil, nil, nil, fmt.Errorf("no merge base between %s and %s", shortSHA(base), shortSHA(head))
+		return 0, nil, nil, nil, fmt.Errorf("no merge base between %s and %s", devmark.ShortSHA(base), devmark.ShortSHA(head))
 	}
 	raw, err := gitOut(repo, "-c", "core.quotePath=false", "diff", "--raw", "--no-abbrev", "--no-renames", "--no-ext-diff", "-z", from, head)
 	if err != nil {
-		return 0, nil, nil, nil, fmt.Errorf("git diff %s..%s: %w", shortSHA(from), shortSHA(head), err)
+		return 0, nil, nil, nil, fmt.Errorf("git diff %s..%s: %w", devmark.ShortSHA(from), devmark.ShortSHA(head), err)
 	}
 	c := newCheckerAt(repo, b, base)
 	fields := strings.Split(raw, "\x00")
@@ -265,7 +265,7 @@ func prRefusals(repo string, b Bounds, base, head string) (files int, refused []
 		if (rule == "steering-file" || rule == "gate-file") && byPerson(repo, from, head, name) {
 			person = append(person, name) // a guarded file a person wrote waits on their label
 		} else if rule != "" {
-			r := Refusal{File: name, Rule: rule}
+			r := devmark.Refusal{File: name, Rule: rule}
 			if rule == "bounds-unread" {
 				r.Detail = c.unread.Error()
 			}
@@ -278,11 +278,11 @@ func prRefusals(repo string, b Bounds, base, head string) (files int, refused []
 	// the diff does not show it: added by the tester's Draft, then
 	// deleted on the branch, it is in neither end of the range.
 	for _, t := range slices.Sorted(maps.Keys(b.Frozen)) {
-		if b.Frozen[t] != b.Issue || slices.ContainsFunc(refused, func(r Refusal) bool { return r.File == t }) {
+		if b.Frozen[t] != b.Issue || slices.ContainsFunc(refused, func(r devmark.Refusal) bool { return r.File == t }) {
 			continue
 		}
 		if blob, _ := gitOut(repo, "rev-parse", "-q", "--verify", head+":"+t); blob != b.Blobs[t] {
-			refused = append(refused, Refusal{File: t, Rule: "acceptance-test-edit"})
+			refused = append(refused, devmark.Refusal{File: t, Rule: "acceptance-test-edit"})
 		}
 	}
 	return files, refused, beyond, person, nil
