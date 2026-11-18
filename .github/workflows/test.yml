@@ -55,6 +55,9 @@ jobs:
         env: {REST: "${{ needs.rest.result }}", SIM: "${{ needs.simulator.result }}"}
   seeds:
     if: github.event_name == 'schedule' || inputs.job == 'seeds'
+    # One seeds run at a time: the nightly's and a dispatched one never
+    # run twice beside each other.
+    concurrency: {group: workline-test-seeds, cancel-in-progress: false}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:

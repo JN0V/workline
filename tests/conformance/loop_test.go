@@ -2,6 +2,7 @@ package conformance
 
 import (
 	enc "encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -364,6 +366,117 @@ func TestLoopDispatchesEachJobInItsWorkflow(t *testing.T) {
 				t.Errorf("%s: a run-name hides its name, %s's key", p, j)
 			}
 		}
+	}
+}
+
+// A dispatch is held a beat and a minute at least, then let go
+// Given a beat of 300 s, HOLD_SECONDS 120, and a job tick lists,
+// When the job was dispatched 200 s before, then 400 s before,
+// Then the first beat holds it: the hold is never under the beat + 60 s,
+// or the beat after a dispatch would start it again; the second sends it
+// again: a hold ends.
+func TestLoopHoldsADispatchABeatAndAMinute(t *testing.T) {
+	for _, f := range loopFiles {
+		beat := loopStepNamed(t, readLoop(t, f), f, "The beat")
+		for _, c := range []struct {
+			ago  int
+			held bool
+		}{{200, true}, {400, false}} {
+			dir := t.TempDir()
+			bin, tmp := filepath.Join(dir, "bin"), filepath.Join(dir, "tmp")
+			for _, d := range []string{bin, tmp} {
+				if err := os.MkdirAll(d, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			calls := filepath.Join(dir, "gh-calls")
+			writeExec(t, filepath.Join(bin, "workline"), "#!/bin/bash\necho '[{\"job\":\"merge\",\"why\":\"due\",\"key\":\"workline merge\"}]'\n")
+			writeExec(t, filepath.Join(bin, "gh"), "#!/bin/bash\necho \"$*\" >> \""+calls+"\"\n")
+			at := time.Now().Unix() - int64(c.ago)
+			if err := os.WriteFile(filepath.Join(tmp, "dispatched"), []byte(fmt.Sprintf("%d\tworkline merge\n", at)), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			out := runBeatKeeping(t, beat.Run, dir, bin, tmp, "DISPATCH=true", "HOLD_SECONDS=120", "BEAT_SECONDS=300")
+			b, _ := os.ReadFile(calls)
+			if sent := len(b) > 0; sent == c.held {
+				t.Errorf("%s: dispatched %d s before, a beat of 300 s: sent %q, held %v; want held %v:\n%s", f, c.ago, b, !sent, c.held, out)
+			}
+		}
+	}
+}
+
+// A dispatch that fails is said and tried again
+// Given a job tick lists, and a `gh workflow run` that fails,
+// When the beat runs, then the next beat with gh answering,
+// Then the first says the key not dispatched and holds nothing; the
+// next dispatches it.
+func TestLoopTriesAFailedDispatchAgain(t *testing.T) {
+	for _, f := range loopFiles {
+		beat := loopStepNamed(t, readLoop(t, f), f, "The beat")
+		dir := t.TempDir()
+		bin, tmp := filepath.Join(dir, "bin"), filepath.Join(dir, "tmp")
+		for _, d := range []string{bin, tmp} {
+			if err := os.MkdirAll(d, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		calls := filepath.Join(dir, "gh-calls")
+		writeExec(t, filepath.Join(bin, "workline"), "#!/bin/bash\necho '[{\"job\":\"merge\",\"why\":\"due\",\"key\":\"workline merge\"}]'\n")
+		writeExec(t, filepath.Join(bin, "gh"), "#!/bin/bash\necho 'HTTP 502' >&2; exit 1\n")
+		out := runBeat(t, beat.Run, dir, bin, tmp, "DISPATCH=true")
+		if !strings.Contains(out, "workline merge not dispatched") || strings.Contains(out, "\ndispatched ") {
+			t.Errorf("%s: a failed dispatch is not said, or said dispatched:\n%s", f, out)
+		}
+		writeExec(t, filepath.Join(bin, "gh"), "#!/bin/bash\necho \"$*\" >> \""+calls+"\"\n")
+		again := runBeatKeeping(t, beat.Run, dir, bin, tmp, "DISPATCH=true")
+		if b, _ := os.ReadFile(calls); strings.TrimSpace(string(b)) != ghCall("merge") {
+			t.Errorf("%s: the beat after a failed dispatch sent %q; want %q:\n%s", f, b, ghCall("merge"), again)
+		}
+	}
+}
+
+// A dispatched job that must not double waits for its own
+// Given the gardening workflows (workline's and the template) and
+// workline's test.yml,
+// When they are read,
+// Then a docs run and a backlog run each sit in one fixed concurrency
+// group, cancelling none, and workline's seeds job in its own: a run the
+// loop dispatches waits for the one going, never runs beside it.
+func TestLoopDispatchedJobsWaitForTheirOwn(t *testing.T) {
+	type conc struct {
+		Group  string `yaml:"group"`
+		Cancel bool   `yaml:"cancel-in-progress"`
+	}
+	for _, p := range []string{"../../.github/workflows/workline-gardening.yml", "../../defaults/ci/github/workline-gardening.yml"} {
+		var wf struct {
+			Concurrency conc `yaml:"concurrency"`
+		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", p, err)
+		}
+		g := wf.Concurrency.Group
+		if wf.Concurrency.Cancel || !strings.Contains(g, "'workline-gardening-docs'") || !strings.Contains(g, "'workline-gardening-backlog'") || strings.Contains(g, "run_id") {
+			t.Errorf("%s: concurrency %+v; want a fixed group for the docs and one for the backlog, cancelling none", p, wf.Concurrency)
+		}
+	}
+	var tw struct {
+		Jobs map[string]struct {
+			Concurrency conc `yaml:"concurrency"`
+		} `yaml:"jobs"`
+	}
+	data, err := os.ReadFile("../../.github/workflows/test.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := yaml.Unmarshal(data, &tw); err != nil {
+		t.Fatal(err)
+	}
+	if c := tw.Jobs["seeds"].Concurrency; c.Group == "" || strings.Contains(c.Group, "${{") || c.Cancel {
+		t.Errorf("test.yml: the seeds job's concurrency %+v; want one fixed group, cancelling none", c)
 	}
 }
 
