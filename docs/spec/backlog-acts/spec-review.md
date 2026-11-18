@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/spec.go, internal/backlog/backlog.go, internal/routing/routing.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 8538d558
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # A spec read before ready
@@ -56,7 +56,8 @@ reads refined issues and keeps what it found in one comment on each, `<!-- workl
     whose digest is the one the state's `wrote` holds — recorded by every
     refine for what it wrote, and by a split for its children's four
     sections. A person's is kept (`section-kept`): the agent asks its
-    reporter. Issues refined before #128 have no `wrote`: their sections
+    reporter — none, once a person accepted the issue
+    ([#1356](https://github.com/JN0V/workline/issues/1356)). Issues refined before #128 have no `wrote`: their sections
     read as a person's, but a Need or Validation still marked a draft,
     the role's.
 - **Answered under the rule before**: the state's `revised` keeps the

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/backlog/acts.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
 status: draft
-checked: 8538d558
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # The issue's state
@@ -42,16 +42,22 @@ closed: close-duplicate                  # the kind it was closed with: open aga
 label: workline:proposed                 # the label the role put on it while it waits on a person
 aside: 3f9a1c0e2b7d                      # set aside by a person, at this body: nothing proposed until it changes
 heard: 2                                 # the comments that count the role read: one more is a person's word since
+heard-last: '2894531207'                 # the id of the last of them: one deleted and another written is still unread
 revisions: 1                             # its drafts revised for a person's comments
 rules: 2                                 # the way of reading it was last read under (backlog.Reading)
 left: bob                                # left to a person past its revisions, after bob wrote: said above while it waits
 proof: {kind: docs-checks, reason: "…", answers: af1c2ed6ea0a}   # the proof kind it picked where the tester found no test possible, the tester's word it answers
 no-test: af1c2ed6ea0a                    # the tester's "no test possible" last given to the agent
+retest: af1c2ed6ea0a                     # the tester's "no test possible" it sent the issue back to its tests for, unchanged: tried again once
 silent: "it lacks Scope, …; `sources` dropped: …; its note: …"  # read and left with nothing that refines it, the acts dropped, and why: said above until the role acts on it
 unread: 3f9a1c0e2b7d                     # the body whose Validation it was told once to rewrite in a form the tester reads
 assumed: 2                               # the round of the question it took an assumption on (A question nobody answers)
 assumed-at: '2026-10-09T08:00:00Z'       # when: a person's comment after it answers it
 told: 2                                  # the round the agent was told is unanswered past acts.ask.wait
+size: large                              # the size tier the role granted, once: taken off, a person's (Split on size)
+split-after-tests: true                  # a bug predicted past its size at ready: split once its tests are written (Split on size)
+answer-held: 1                           # the counted comments it held when its ready was held for a person's answer: read once more
+dropped: 3f9a1c0e2b7d                    # the body whose Scope rewrite was dropped whole: the line wakes the role on it again, once
 ```
 
 The comment says, above the state, what the role did and proposes there,

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: 8538d558
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # Splitting and renaming
@@ -35,6 +35,12 @@ An issue too big to be one need is broken into its parts (ADR-0022):
   children already is never split again (`already-split`); nor twice in one
   run, nor renamed twice: the first that passes its check is kept
   (`once-a-run`).
+- **Asked by a person**
+  ([#1667](https://github.com/JN0V/workline/issues/1667)): the latest
+  comment of a person of the project asking a split — not a question,
+  no negation before the word — turns `split` on for that issue, where it
+  is off by default: `act`, `propose` at `cautious`. Where the project
+  set it off itself, dropped (`split-off`), said on the issue.
 - **The parent's Verification**, when it has one: the product owner
   quotes each item, word for word, in the scenario of the child's
   Validation that delivers it, so the parent's comment says it proved
