@@ -1,7 +1,9 @@
 ---
 sources: [defaults/ci/github/workline.yml, defaults/ci/github/workline-apply.yml, defaults/ci/github/workline-warn.yml, defaults/ci/gitlab/workline.gitlab-ci.yml, internal/report/gates.go, internal/engine/annotate.go, internal/line]
-checked: 04d2af892
+checked: 74dc6bec
+judged: 14c41d9
 verified: agent:claude-code
+judged-in-parts: 04d2af892
 ---
 # Gates in CI
 
