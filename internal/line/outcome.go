@@ -76,6 +76,9 @@ type LastRun struct {
 	Talk   string `json:"talk,omitempty"`
 	Said   string `json:"said,omitempty"`
 	Times  int    `json:"times,omitempty"`
+	// Idle: its run left the issue as it found it, nothing drafted
+	// (#1800).
+	Idle bool `json:"idle,omitempty"`
 }
 
 // lastOn is role's last run in r when its step, due on now, is on its
