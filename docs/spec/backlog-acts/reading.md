@@ -4,7 +4,7 @@ sources: [internal/builtin/productowner/productowner.go, internal/backlog/ledger
 status: draft
 checked: 44f06aba
 verified: agent:claude-code
-judged-in-parts: 04d2af892
+judged-in-parts: 87b34bc
 ---
 # Reading
 

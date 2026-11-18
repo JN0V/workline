@@ -5,7 +5,6 @@ status: draft
 checked: 8538d558
 judged: 8b6aecc
 verified: agent:claude-code
-judged-in-parts: 04d2af892
 ---
 # Opening issues
 

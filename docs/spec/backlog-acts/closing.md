@@ -4,7 +4,6 @@ sources: [internal/backlog/backlog.go, internal/backlog/obsolete.go, internal/bu
 status: draft
 checked: 8538d558
 verified: agent:claude-code
-judged-in-parts: 04d2af892
 ---
 # Closing
 

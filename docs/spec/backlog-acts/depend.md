@@ -4,7 +4,6 @@ sources: [internal/backlog/depend.go, internal/backlog/backlog.go, internal/forg
 status: draft
 checked: 8538d558
 verified: agent:claude-code
-judged-in-parts: 04d2af892
 ---
 # What an issue waits on
 

@@ -4,7 +4,6 @@ sources: [internal/backlog/change.go, internal/builtin/productowner/changes.go, 
 status: draft
 checked: 8538d558
 verified: agent:claude-code
-judged-in-parts: 04d2af892
 ---
 # A changed need
 

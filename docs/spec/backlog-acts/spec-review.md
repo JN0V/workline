@@ -4,7 +4,6 @@ sources: [internal/backlog/spec.go, internal/backlog/backlog.go, internal/routin
 status: draft
 checked: 8538d558
 verified: agent:claude-code
-judged-in-parts: 04d2af892
 ---
 # A spec read before ready
 
