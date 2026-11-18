@@ -448,6 +448,17 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 		}
 		res.Findings = res.Findings[:before] // waiting on its parts: acted, said below
 	}
+	if !ok && s.Name == refineState && name == backlog.Keeper && had && rec.State == refineState && rec.Last[name].Idle {
+		// The product owner's run on this very text, code and comments
+		// drafted nothing, and no other rule says what it waits on
+		// (#1800): never left as acted with no status. Blocked, why on
+		// the board; a person completes it or names the files it is about.
+		if _, on := lastOn(rec, name, rec, talkHash(comments), given); on {
+			why := fmt.Sprintf("the %s read it in %s on this same text, code and comments and drafted nothing: read again, it would get the same; a person completes it, or names the files it is about in a comment", strings.ReplaceAll(name, "-", " "), s.Name)
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "needs-spent", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
+			return nil, &StateWrite{Issue: is.ID, Record: blocking(rec, s.Name, why, comments), Blocked: why}, nil
+		}
+	}
 	if !ok {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-acted", Level: "info", Where: where,
 			Message: fmt.Sprintf("its state, %s, woke the %s already, on the same body and labelling: nothing more to run", s.Name, name)})
@@ -749,7 +760,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	w, now := st.write.Record, clock().UTC()
 	// ranOn keeps the input its run was on, the comments as its run left
 	// them, with what its agent said it lacked there (#1157).
-	ranOn := func(said string, times int) {
+	ranOn := func(said string, times int, idle bool) {
 		if w.State == BlockedState {
 			return // a blocked issue read again: its news is its input
 		}
@@ -758,7 +769,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			comments, _ = b.Comments(forge.Target{Kind: "issue", ID: st.write.Issue})
 		}
 		st.write.Record.Last = withLast(w.Last, st.role, &LastRun{State: w.State, Body: w.Body, Labels: w.Labels, Spec: w.Spec, Given: w.Given,
-			Talk: talkHash(comments), Said: said, Times: times})
+			Talk: talkHash(comments), Said: said, Times: times, Idle: idle})
 	}
 	same := st.rec.State == w.State && st.rec.Body == w.Body && st.rec.Labeled == w.Labeled && sameLabels(st.rec, w) // the same input
 	st.write.Record.Errors, st.write.Record.Lost, st.write.Record.Needs = nil, "", nil
@@ -802,7 +813,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	case needsCode(out) && given:
 		// Said lacking again once given it (ADR-0063, §5): Waiting on a
 		// person, Blocked on the board, in this step, said at once.
-		ranOn(oneLine(out.Said), 2)
+		ranOn(oneLine(out.Said), 2, false)
 		blockNow("needs-spent", fmt.Sprintf("the %s said again it lacks code in its state %s, given what it named: %s; a person names the files it needs in a comment", st.role, st.from.Name, oneLine(out.Said)))
 	case needsCode(out):
 		n := &Needs{Said: oneLine(out.Said), At: now.Format(time.RFC3339), Times: 1}
@@ -810,11 +821,11 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			n.Times = 2
 		}
 		st.write.Record.Needs = n
-		ranOn(n.Said, n.Times)
+		ranOn(n.Said, n.Times, false)
 	case st.role == backlog.Keeper && w.State == refineState:
 		// Its read of refine: read again on the same input after a block,
 		// it would get the same (#1157).
-		ranOn("", 0)
+		ranOn("", 0, status == verdict.Pass && w.State == refineState && leftAsFound(f, st.write.Issue, st.rec))
 	case w.Last[st.role].State == w.State:
 		// It had what it needed on its state's input: nothing lacked now.
 		st.write.Record.Last = withLast(w.Last, st.role, nil)
@@ -1182,4 +1193,11 @@ func movedToReady(findings []verdict.Finding, id int) bool {
 func ranWithin(rec Record, d time.Duration) bool {
 	t, err := time.Parse(time.RFC3339, rec.Ran)
 	return err == nil && clock().UTC().Sub(t) < d
+}
+
+// leftAsFound says whether the issue of record w has the body w was woken
+// on still: the run drafted nothing in it (#1800).
+func leftAsFound(f forge.Forge, id int, w Record) bool {
+	is, err := f.Issue(id)
+	return err == nil && bodyHash(is.Body) == w.Body
 }
