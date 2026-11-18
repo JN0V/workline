@@ -1,8 +1,7 @@
 ---
 sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 8538d558
-verified: agent:documentalist
-judged: e8a46f7
+checked: 04d2af892
+verified: agent:claude-code
 ---
 # What the GitLab template does
 
@@ -69,9 +68,11 @@ Part of [workline on GitLab CI](../ci-gitlab.md): what each job of
 - **The summary** ([what a job shows](../ci.md#what-a-job-shows)):
   `workline-summary.html`, linked from the job's page (its annotations)
   and, for a merge request, from the merge request's page (`expose_as`);
-  `workline-summary.md` printed at the end of the log. Both kept a day as
-  artifacts, a week for the applying jobs, which add what they applied to
-  the judging job's. The HTML opens through GitLab Pages,
+  `workline-summary.md` printed at the end of the log. The applying
+  job adds what it applied to the judging job's. Both kept as artifacts
+  a day; a week for `workline:merge`, `workline:follow` and the jobs
+  writing the default branch's issue; two weeks for each judge and
+  apply, whose agent's calls the weekly sample tallies. The HTML opens through GitLab Pages,
   on by default on gitlab.com; without Pages, the link downloads it.
   - Tried on gitlab.com (2026-10-06), the engine of the branch: a
     scheduled gardening job, the sample's read, and a gardening job

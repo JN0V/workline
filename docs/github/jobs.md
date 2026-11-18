@@ -1,8 +1,7 @@
 ---
 sources: [defaults/ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/workline-answer.yml, .github/workflows/workline-develop.yml, .github/actions/engine/action.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 2e07991c
+checked: 04d2af892
 verified: agent:claude-code
-judged: 220b6dc
 ---
 # What the GitHub jobs may do
 
@@ -50,6 +49,9 @@ Part of [workline on GitHub Actions](../ci-github.md): each job's rights, its lo
   `workline-app`. `follow`'s merge into a pull request runs its checks
   again only with the App's token; the merge policy acts only with it,
   and needs "Allow auto-merge" (Settings → General).
+- **The loop** (`workline-loop.yml`): `actions: write`, to start what
+  `workline tick` lists and its own successor; contents, issues and pull
+  requests read; no agent, no App token ([the loop](../tick.md#the-github-loop)).
 - **`wake`**, workline's own, on a push to `main`: `issues: write`,
   `pull-requests: read`, `statuses: read`, the App's token when there is
   one; it prints where the line may drift and never fails

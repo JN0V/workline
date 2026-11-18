@@ -1,7 +1,6 @@
 ---
 sources: [defaults/ci/forgejo/workline-forge.sh, defaults/ci/github, internal/forge/local.go, cmd/workline]
-checked: 8538d558
-judged: cd97f28
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # workline on another forge, or none
@@ -54,7 +53,7 @@ JSON request per operation ([forge-command.md](spec/forge-command.md)).
 - **Not tried yet** on a live instance — the script was run against a mock
   of the API only: tell us what differs.
 - **The [weekly sample](ci.md#the-weekly-sample)** draws the product
-  owner's acts there, not the reviewer's findings: the contract lists no
+  owner's acts there, not the reviewer's, the tester's nor the developer's: the contract lists no
   merge request merged. It says so each week.
 - **The [merge policy](merge-policy.md)** needs `merge-state`,
   `auto-merge`, `guarded` and the verdict's operations — at `normal`,

@@ -1,9 +1,7 @@
 ---
 sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 8538d558
-verified: agent:documentalist
-judged: e8a46f7
-judged-in-parts: 9a88170
+checked: 04d2af892
+verified: agent:claude-code
 ---
 # The tester and the developer on GitLab
 

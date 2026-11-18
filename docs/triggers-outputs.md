@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, defaults/ci/gitlab/workline.gitlab-ci.yml, defaults/ci/github/workline.yml, defaults/ci/github/workline-gardening.yml, defaults/ci/github/workline-sample.yml, defaults/routing.yaml]
-checked: 8538d558
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # Jobs' needs and outputs
@@ -67,7 +67,7 @@ role that blocks names to say why, such as its comments
   <file>` (GitLab: `artifacts: reports: codequality`, shown on the merge
   request, every tier). The paths are yours to choose.
 - **Job summary**: `--summary <file>` (`route`, `run-role`, `apply`,
-  `sample`): the verdict, each step's verdict, findings and seconds, what
+  `follow`, `sample`, `size`, `test measure`, `issues import`): the verdict, each step's verdict, findings and seconds, what
   was applied and what waits to be, in Markdown, or HTML for a `.html` file,
   added to the file ([ADR-0035](adr/0035-the-engine-writes-the-jobs-summary.md)).
   GitHub: `$GITHUB_STEP_SUMMARY`; GitLab: an artifact the job's page links

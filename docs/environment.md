@@ -1,8 +1,7 @@
 ---
 sources: [internal/forge/retry.go, internal/forge/mask.go, internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks, internal/line/payload.go]
-checked: cd8e8d0d
+checked: 04d2af892
 verified: agent:claude-code
-judged: e343388
 ---
 # The environment
 
@@ -22,7 +21,7 @@ part of [the configuration](config.md).
 | `WORKLINE_APP`, `WORKLINE_APP_ID` | in GitHub Actions, the GitHub App's slug and id: who keeps the [merge policy](merge-policy.md)'s verdicts and holds its yes. No slug: the job's own token, nothing turned on. The id alone, in a job holding no App token: whose comments keep the records a role reads back ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)) |
 | `WORKLINE_GITLAB_TOKEN` | in GitLab CI, the bot's token: its user, as GitLab says, is workline's own account, whose notes keep the records a role reads back, even in a job reading with another token; it may ask GitLab's GraphQL who last edited them, as a job's own token may not |
 | `GITLEAKS_CONFIG`, `GITLEAKS_CONFIG_TOML` | the committer's term list, before the repository's and yours |
-| `TRIGGER_PAYLOAD` | in GitLab CI, set by GitLab on a pipeline the issue webhook started: `route issue` with no `--target` reads the issue from it, a state's label put on or the reviewer's comment on a spec in refine; any other event runs nothing ([GitLab alone](gitlab-trigger.md#the-line-of-states-on-it)) |
+| `TRIGGER_PAYLOAD` | in GitLab CI, set by GitLab on a pipeline the issue webhook started: `route issue` with no `--target` reads the issue from it, a state's label put on, the reviewer's comment on a spec in refine, or a person's comment or body edit on an issue on the line; any other event runs nothing ([GitLab alone](gitlab-trigger.md#the-line-of-states-on-it)) |
 | `CI`, `GITHUB_ACTIONS`, `GITLAB_CI` | any set: `forge: local` refuses its writes, the clone being thrown away |
 
 The agent's own credentials are its own, and workline holds no key:

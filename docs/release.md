@@ -8,7 +8,8 @@ sources:
   - internal/report/dryrun.go
   - internal/release/release.go
   - cmd/workline
-checked: 8538d558
+checked: 04d2af892
+verified: agent:claude-code
 ---
 # The release: a dry run with gardening, a check at the tag
 

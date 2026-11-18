@@ -1,8 +1,7 @@
 ---
 sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile, internal/line/payload.go, internal/forge/gitlab_hook.go]
-checked: 8538d558
-judged: 9a88170
-verified: agent:documentalist
+checked: 04d2af892
+verified: agent:claude-code
 ---
 # GitLab: pipelines a tool starts
 
@@ -112,7 +111,8 @@ GitLab sets `CI_PIPELINE_SOURCE`: `trigger` (a trigger token), `api` (the
 pipelines API), `pipeline` (another project's `trigger:` job),
 `parent_pipeline` (a child pipeline) — never `schedule` nor
 `merge_request_event`, so none of the template's jobs run but in its own
-child of a merge request's pipeline, what only warns, and the tester's
+child of a merge request's pipeline, what only warns, the line of states
+(`workline:issue`), the tester's
 answer to an objection, the developer's ready issue and its review round, below. The tool, or
 the webhook's URL ([above](#a-label-or-a-comment-with-gitlab-alone)), passes
 what to do as variables. The names below are this page's; the engine reads

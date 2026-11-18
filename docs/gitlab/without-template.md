@@ -1,8 +1,7 @@
 ---
 sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 8538d558
+checked: 04d2af892
 verified: agent:claude-code
-judged: bf016b7
 ---
 # GitLab jobs without the template
 
