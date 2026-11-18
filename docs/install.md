@@ -1,6 +1,15 @@
 ---
-sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, defaults/ci/github, defaults/ci/gitlab]
-checked: e4e4287bc
+sources:
+  - .goreleaser.yaml#archives
+  - go.mod
+  - cmd/workline/cli.go#topHelp
+  - cmd/workline/main.go#setupCmd
+  - cmd/workline/main.go#doctorCmd
+  - internal/setup/setup.go#Run
+  - internal/setup/setup.go#Shell
+  - internal/tools/tools.go#known
+  - internal/agent/claude.go#claude.Propose
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Install
@@ -35,9 +44,8 @@ usually `~/go/bin`: add it to your `PATH`):
 go install github.com/JN0V/workline/cmd/workline@latest
 ```
 
-To update, run the same command again, into the same place: the global
-hooks call the binary where it was when they were installed (`command -v
-workline` says where).
+To update, run the same command again, into the same place
+([why](install-hooks.md#update-in-place)).
 
 ### 2. Set the machine up
 
@@ -78,128 +86,20 @@ Run it again to change an answer; `--yes` takes the defaults; `--hooks`,
 - The answer goes to `ai:` in `~/.config/workline/config.yaml` (macOS:
   `~/Library/Application Support/workline/config.yaml`), for all your
   repositories.
-- A project's own `.workline/config.yaml` wins over yours.
-- `WORKLINE_AI=none git commit …` turns the agent off for one commit.
+- Which answer wins, the project's, yours or `WORKLINE_AI` for one
+  commit: [which agent answers](config.md).
 
 ### 4. Every commit checked
 
-`workline setup` does this when you say yes; by hand:
-
-```sh
-workline hooks install --global     # git's global core.hooksPath now goes through workline
-workline hooks uninstall --global   # gives core.hooksPath back as it was
-```
-
-- Each global hook hands over to the one that held `core.hooksPath` before,
-  or else to the repository's own (`.githooks/`, `.git/hooks/`), from a
-  linked worktree (`git worktree add`), a submodule or a bare repository
-  too: nothing that ran before stops running.
-- Hooks written by another version of workline: `workline doctor` says
-  `hooks-outdated`; run `workline hooks install --global` again.
-- A repository that sets its own `core.hooksPath` bypasses the global
-  hooks: `workline doctor` there says so and prints the fix
-  ([troubleshooting](troubleshooting.md#a-hook-does-not-fire)).
-- A repository opts out with an empty `.workline/off` file.
-
-Try it in any repository:
-
-```sh
-git commit --allow-empty -m "AC-3 fix the thing"
-# workline committer: block — rewrite the commit message
-#   format subject: the subject must read `type(scope): summary`…
-# workline: 0.6 s in all — committer 0.5 s
-# commit aborted; your message is kept in .git/COMMIT_EDITMSG: to edit it and commit again, git commit -e -F .git/COMMIT_EDITMSG
-```
-
-- **With no agent**, or `rewrite: false` under
-  `roles: {committer: {settings: …}}` (the project's
-  `.workline/config.yaml`, or your own config), it refuses in about a
-  second, as above.
-- **With an agent**, the same commit goes through, rewritten, 30 s at most
-  ([the committer](../roles/committer/docs/rewrite.md#rewrite-the-agent-30-s-at-most),
-  [ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
-
-```text
-workline committer: the message is refused; the agent (claude) rewrites it, 30 s at most…
-workline committer: pass — message rewritten
-workline: 14 s in all — committer 14 s (rewrite 13 s)
-workline: the commit goes on with this message instead of yours:
-  │ fix: fix the thing
-  │
-  │ Refs: AC-3
-```
+The global git hooks, installed by `setup` or by hand, and what a commit
+refused looks like: [every commit checked](install-hooks.md).
 
 ### 5. Adopt a repository
 
-```sh
-cd your-repo
-workline init      # routes pre-push; proposes each doc's sources, for you to review and commit
-```
-
-- From then on, each push runs the committer and the documentalist on the
-  commits leaving, with no agent: one line counts the docs they made
-  suspect.
-- Until a doc names its `sources`, nothing tells when it goes wrong.
-- `--review` puts the reviewer on each merge request too; `workline review`
-  reads a branch before you push it.
-- `--human-po yes` says a person is the project's Product Owner: the
-  product owner role then proposes what sets direction rather than doing it
-  ([ADR-0038](adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
-
-To start the product owner on one open issue:
-`workline run-role product-owner --event issue --target issue:<n> --forge github`
-([try each role once](quickstart.md#try-each-role-once-on-a-real-repository)).
-
-Step by step, in ten minutes: [the quickstart](quickstart.md). With no
-forge, the whole line from a need to a merge:
-[the line with no forge](local-line.md).
+`workline init` in a repository, then the product owner on one issue:
+[adopt a repository](install-repo.md).
 
 ## In CI
 
-What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
-
-- **GitHub**: copy the workflows of [defaults/ci/github](../defaults/ci/github/) into
-  `.github/workflows/` — [workline.yml](../defaults/ci/github/workline.yml) (each
-  pull request, and main after each merge), [workline-warn.yml](../defaults/ci/github/workline-warn.yml) (what
-  only warns, beside it), [workline-apply.yml](../defaults/ci/github/workline-apply.yml)
-  (what it proposed applied, main's findings in one issue, `workline
-  follow`), [workline-fork.yml](../defaults/ci/github/workline-fork.yml) (a
-  fork's), [workline-gardening.yml](../defaults/ci/github/workline-gardening.yml),
-  [workline-sample.yml](../defaults/ci/github/workline-sample.yml); the others come
-  with what uses them: the tester, the developer and the line of states
-  (its reconciler's [heartbeat](github/heartbeat.md)), the
-  [merge policy](merge-policy.md), a release tool
-  ([ci-github.md](ci-github.md)). **Before December 2, 2026, on a
-  public repository**: an Actions event policy on the bounds and merge
-  workflows allowing `pull_request_target`, `issues` and `schedule`, or no
-  pull request merges
-  ([what to set](github/pull-request-target.md)).
-- **GitLab**: include
-  [defaults/ci/gitlab/workline.gitlab-ci.yml](../defaults/ci/gitlab/workline.gitlab-ci.yml),
-  then add pipeline schedules, gardening, the sample and, with the line
-  of states, the hourly reconciler and the issue webhook
-  ([ci-gitlab.md](ci-gitlab.md#gitlabcom); a [self-managed
-  instance](ci-gitlab-self-managed.md)).
-- **Another forge** (Gitea, Forgejo…) or [none](no-forge.md): [ci-other-forges.md](ci-other-forges.md).
-- **A board**, GitHub's project or GitLab's: what to switch on so the
-  roles move its cards, [boards](boards.md#what-you-switch-on).
-
-What the templates need:
-
-| | GitHub | GitLab |
-|---|---|---|
-| the agent, your choice | its credentials; for Claude, which the templates install: secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | the same as a variable, masked, not protected, scoped to the environment `workline` ([why](gitlab/environment.md)) |
-| writing | a [GitHub App](ci-github-app.md): variable `WORKLINE_APP_ID`, secret `WORKLINE_APP_PRIVATE_KEY` in the environment `workline-app` | variable `WORKLINE_GITLAB_TOKEN`: a project access token, `api` and `write_repository`, scoped the same |
-| the history | `fetch-depth: 0`, set | `GIT_DEPTH: 0`, set |
-| the sample's judge | variable `WORKLINE_JUDGE` (optional) | the same, and `WORKLINE_TASK=sample` on its schedule |
-
-- Without the agent's token, the templates run with no agent: every check
-  still runs. For another agent, change their `--ai` to a `cmd:`.
-- The whole history is needed: docs are compared since their `checked`,
-  the release since its tag. A job cloning too shallow reports
-  `shallow-clone`, never a pass.
-- The templates run the release named by `WORKLINE_VERSION` at their top:
-  update it for a newer one; `workline doctor` names any pinned older.
-- A pipeline started by a tool rather than by the forge (GitLab's trigger
-  API, another pipeline): [gitlab-trigger.md](gitlab-trigger.md). The bare
-  command for each event, for any other trigger: [triggers.md](triggers.md).
+The workflows to copy or the pipeline to include, and what they need:
+[install in CI](install-ci.md). What the jobs are: [ci.md](ci.md).
