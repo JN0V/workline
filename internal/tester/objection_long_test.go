@@ -3,6 +3,7 @@ package tester
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,7 +33,7 @@ func TestAnswerLongThreadEndingWithTheTestersReplyPostsNothing(t *testing.T) {
 		ID: 7, Branch: branchPrefix + "790", Labels: []string{},
 		Comments: []forge.FakeComment{{Body: rec.body() + "\n" + forge.Marker("sticky=tester/"+recordKey), Author: bot}},
 		Threads: []forge.FakeThread{{ID: "T1", Path: "a_test.go", Line: 3, Author: "builder",
-			Body: ObjectionWord + "\ntest: a_test.go", Replies: replies}},
+			Body: testmark.ObjectionWord + "\ntest: a_test.go", Replies: replies}},
 	}}}
 	data, err := json.Marshal(state)
 	if err != nil {

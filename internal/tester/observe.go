@@ -32,19 +32,6 @@ func ReadRecord(f forge.Forge, id int) (Record, bool, error) {
 	return r, err == nil && missing == nil, err
 }
 
-// The tester's branches: an issue's tests, a folder curated.
-const (
-	TestsBranch  = branchPrefix
-	CurateBranch = "workline/tester/" + curateKey
-)
-
-// TestsSubject and CurateSubject open the subjects of the tester's
-// commits of its tests and of a removal: its merge request's title.
-const (
-	TestsSubject  = "test: the acceptance tests of #"
-	CurateSubject = "test: curate "
-)
-
 // Answered is an answer to an objection, as its reply records it.
 type Answered struct {
 	Act      string   `json:"act"`             // kept or rewritten
@@ -76,9 +63,6 @@ func ReadAnswered(body string) (Answered, bool) {
 	}
 	return a, true
 }
-
-// IsAnswered says whether a comment is the tester's answer to an objection.
-func IsAnswered(body string) bool { return strings.Contains(body, answerMark) }
 
 // asked are the agents and models the run asked, as <agent>:<model>,
 // from its calls (out/calls.jsonl); a judge is not one.

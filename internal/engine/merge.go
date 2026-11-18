@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"os"
 	"os/exec"
 	"regexp"
@@ -16,7 +17,6 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/steer"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // The merge policy (ADR-0042): `workline follow` turns the forge's own
@@ -1595,7 +1595,7 @@ func personsCommentOpen(f forge.Forge, id int, labels []forge.LabelEvent) (strin
 		return true
 	}
 	for _, c := range threads {
-		if c.Resolved || !tester.PersonsThread(c) || allTheirs(c) {
+		if c.Resolved || !testmark.PersonsThread(c) || allTheirs(c) {
 			continue
 		}
 		if last := c.Comments[len(c.Comments)-1]; !isReply(last.Body) || !namesTest(last.Body) {

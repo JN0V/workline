@@ -27,10 +27,6 @@ import (
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
-// branchPrefix is the tester's work branches', one an issue
-// (workline/tester/issue-<n>).
-const branchPrefix = "workline/tester/issue-"
-
 // recordKey is the record's sticky key: the comment's marker is
 // sticky=tester/tests, as the engine writes it.
 const recordKey = "tests"

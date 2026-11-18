@@ -2,6 +2,7 @@ package sample
 
 import (
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"regexp"
 	"slices"
@@ -65,7 +66,7 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 			}
 			p := strings.Split(info, "\x00")
 			if len(p) != 4 || !hasValue(p[0], testRole) ||
-				!strings.HasPrefix(p[3], tester.TestsSubject) && !strings.HasPrefix(p[3], tester.CurateSubject) {
+				!strings.HasPrefix(p[3], testmark.TestsSubject) && !strings.HasPrefix(p[3], testmark.CurateSubject) {
 				continue
 			}
 			commit, by, subject, day = c, p[1], p[3], ""
@@ -75,7 +76,7 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 			break
 		}
 		switch {
-		case strings.HasPrefix(m.Branch, tester.CurateBranch):
+		case strings.HasPrefix(m.Branch, testmark.CurateBranch):
 			if commit == "" {
 				unread = append(unread, fmt.Sprintf("the tester's removal on %s: no commit of its on the head", ref))
 				continue
@@ -86,7 +87,7 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 			}
 			out = append(out, Act{Role: testRole, Kind: "removal", Ref: ref, Commit: commit, Day: day, By: by, Line: subject, key: commit,
 				tester: &testerAct{mr: m.ID, body: full.Body}})
-		case strings.HasPrefix(m.Branch, tester.TestsBranch):
+		case strings.HasPrefix(m.Branch, testmark.TestsBranch):
 			r, ok, err := tester.ReadRecord(f, m.ID)
 			if err != nil {
 				return nil, nil, err
@@ -150,7 +151,7 @@ func answeredOn(f forge.Forge, id int, ref string, r tester.Record, recorded boo
 	var out []Act
 	for _, t := range threads {
 		for i, c := range t.Comments {
-			if !own.Wrote(c) || !tester.IsAnswered(c.Body) {
+			if !own.Wrote(c) || !testmark.IsAnswered(c.Body) {
 				continue
 			}
 			ans, ok := tester.ReadAnswered(c.Body)
@@ -201,7 +202,7 @@ func (rd *reader) testerMaterial(a *Act, m *material) string {
 			return fmt.Sprintf("#%d cannot be read: %v", t.record.Issue, err)
 		}
 		if len(scen) == 0 {
-			scen, about = tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text), "The scenarios as the issue reads now (its record, older, keeps none)"
+			scen, about = work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text), "The scenarios as the issue reads now (its record, older, keeps none)"
 		}
 		m.items = append(m.items, scenariosItem(scen))
 		files := slices.Sorted(maps.Keys(t.record.Files))

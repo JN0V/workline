@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"os"
 	"os/exec"
@@ -37,7 +38,6 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
-	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -830,7 +830,7 @@ func Pre(runDir, repo string) int {
 	// (#788); nil, none offered.
 	var drafts []string
 	if line.Runs("tester") && slices.ContainsFunc(toRead, func(d due) bool { return slices.Contains(d.is.Labels, backlog.LabelReady) }) {
-		open, err := f.OpenMergeRequests(tester.TestsBranch)
+		open, err := f.OpenMergeRequests(testmark.TestsBranch)
 		if errors.Is(err, forge.ErrUnreachable) {
 			fmt.Fprintln(os.Stderr, err)
 			return exitExternal
@@ -2172,7 +2172,7 @@ func toTests(is forge.Issue, comments []string, cfg backlog.Config, drafts []str
 	if s, ok := cfg.Acts["ready"]; !ok || s.Mode == backlog.Off {
 		return false
 	}
-	return tester.Untested(is, comments, drafts)
+	return testmark.Untested(is, comments, drafts)
 }
 
 // lift says whether the agent is told an issue's text on top is a role's

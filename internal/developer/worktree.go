@@ -12,6 +12,7 @@ package developer
 import (
 	"bytes"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,13 +20,12 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // openWorktree checks at out in the run's worktree, for its agent: out
 // of any .git folder, where its agent could edit nothing (#1304).
 func openWorktree(runDir, repo, at string) error {
-	return tester.RunTree(repo, at, runDir, agent.WorktreeDir)
+	return worktree.RunTree(repo, at, runDir, agent.WorktreeDir)
 }
 
 // worktreeCode is the run's worktree's diff against base, one patch a

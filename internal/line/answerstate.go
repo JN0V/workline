@@ -2,12 +2,12 @@ package line
 
 import (
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"os/exec"
 	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // answerStateMarker keys the line's word on a tester's Draft whose answer
@@ -40,7 +40,7 @@ func AnswerState(repo string, f forge.Forge, id int) (state string, waiting, tri
 func answerState(repo string, f forge.Forge, mr forge.MergeRequest, threads []forge.Thread) (state string, waiting, tried bool, err error) {
 	var ids []string
 	for _, t := range threads {
-		if tester.ObjectionWaits(t) {
+		if testmark.ObjectionWaits(t) {
 			ids = append(ids, fmt.Sprintf("%s.%d", t.ID, len(t.Comments)))
 		}
 	}

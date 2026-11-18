@@ -37,10 +37,6 @@ import (
 // measures it weighs, and where it keeps the folder it weighed.
 const HistoryEnv = "WORKLINE_CURATOR_HISTORY"
 
-// curateKey opens the key of a curator's merge request, one a folder
-// (workline/tester/curate-<folder>).
-const curateKey = "curate-"
-
 // curateTask is what pre leaves for post, in in/curate-task.json.
 type curateTask struct {
 	Base   string         `json:"base"`

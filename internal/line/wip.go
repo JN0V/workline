@@ -13,6 +13,7 @@ package line
 
 import (
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"slices"
 	"strings"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -74,14 +74,14 @@ func (t *tally) drafted(b forge.Backlog, id int) (bool, error) {
 		if !ok {
 			return false, fmt.Errorf("this forge lists no merge requests: whether a ready issue's tests are written cannot be read")
 		}
-		branches, err := f.OpenMergeRequests(tester.TestsBranch)
+		branches, err := f.OpenMergeRequests(testmark.TestsBranch)
 		if err != nil {
 			return false, err
 		}
 		t.drafts = map[int]bool{}
 		for _, br := range branches {
 			var n int // read as the developer reads it: the number the branch starts with
-			if _, err := fmt.Sscanf(strings.TrimPrefix(br, tester.TestsBranch), "%d", &n); err == nil && strings.HasPrefix(br, tester.TestsBranch) {
+			if _, err := fmt.Sscanf(strings.TrimPrefix(br, testmark.TestsBranch), "%d", &n); err == nil && strings.HasPrefix(br, testmark.TestsBranch) {
 				t.drafts[n] = true
 			}
 		}
@@ -140,7 +140,7 @@ func (t *tally) proved(b forge.Backlog, id int, comments []string) (bool, error)
 			return false, err
 		}
 	}
-	_, ok := tester.ReadProof(comments)
+	_, ok := testmark.ReadProof(comments)
 	t.proofs[id] = ok
 	return ok, nil
 }
@@ -156,7 +156,7 @@ func testsFirst(cfg *routing.Config, s routing.State) bool {
 // its Validation names scenarios, and neither a tester's open Draft nor
 // a proof kind stands for them. comments: the issue's, when read already.
 func untested(cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is forge.Issue, comments []string) (bool, error) {
-	if !testsFirst(cfg, s) || t.moved[is.ID] || len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) == 0 {
+	if !testsFirst(cfg, s) || t.moved[is.ID] || len(work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) == 0 {
 		return false, nil
 	}
 	if ok, err := t.drafted(b, is.ID); err != nil || ok {

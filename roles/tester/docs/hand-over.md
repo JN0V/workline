@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/moment.go, internal/tester/write.go, internal/builtin/reviewer/ruleson.go, internal/tester/proof.go, defaults/routing.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go, internal/tester/repro.go, internal/engine/done.go]
+sources: [internal/tester/moment.go, internal/kit/testmark, internal/tester/write.go, internal/builtin/reviewer/ruleson.go, internal/tester/proof.go, defaults/routing.yaml, internal/tester/said.go, internal/tester/frozen.go, internal/tester/objection.go, internal/tester/green.go, internal/tester/repro.go, internal/engine/done.go]
 checked: ccbfd55d
 verified: agent:claude-code
 ---

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -8,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/agent"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // The worktree a role's pre made for its agent goes when the engine drops
@@ -31,7 +31,7 @@ func TestDropWorktree(t *testing.T) {
 	// (ADR-0063 §8): both go.
 	for _, dir := range []string{agent.WorktreeDir, agent.ReadTreeDir} {
 		tree := filepath.Join(run, dir)
-		if err := tester.Worktree(repo, "HEAD", tree); err != nil {
+		if err := worktree.Worktree(repo, "HEAD", tree); err != nil {
 			t.Fatal(err)
 		}
 		if err := os.WriteFile(filepath.Join(tree, "edit.sh"), []byte("x\n"), 0o644); err != nil {

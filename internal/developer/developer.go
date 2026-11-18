@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"math"
 	"os"
@@ -524,7 +525,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			why = "taken already, labelled " + s.ClaimLabel
 		case closer[is.ID] != 0:
 			why = fmt.Sprintf("the open merge request %d closes it", closer[is.ID])
-		case testsFirst && !tested[is.ID] && proofs[is.ID].Kind == "" && len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0:
+		case testsFirst && !tested[is.ID] && proofs[is.ID].Kind == "" && len(work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0:
 			why = "its acceptance tests are not written yet: it waits for the tester's Draft"
 			next = "the tester writes them, as a Draft of its own; the developer takes this issue at a run after that Draft is open"
 		default:
@@ -1365,14 +1366,14 @@ func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, t
 		tested[testerIssue(m.Branch)] = true
 	}
 	for _, is := range issues {
-		if only != 0 && is.ID != only || !slices.Contains(is.Labels, backlog.LabelReady) || tested[is.ID] || len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) == 0 {
+		if only != 0 && is.ID != only || !slices.Contains(is.Labels, backlog.LabelReady) || tested[is.ID] || len(work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) == 0 {
 			continue
 		}
 		comments, err := b.Comments(forge.Target{Kind: "issue", ID: is.ID})
 		if err != nil {
 			return nil, err
 		}
-		if p, ok := tester.ReadProof(comments); ok {
+		if p, ok := testmark.ReadProof(comments); ok {
 			out[is.ID] = p
 		}
 	}

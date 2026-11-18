@@ -8,11 +8,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"slices"
-	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/work"
@@ -94,35 +91,6 @@ func sayBlock(runDir string, n int, v *verdict.Verdict) int {
 		}
 	}
 	return 0
-}
-
-// What the tester says, in its one comment on an issue, when it writes
-// no tests for it: before asking the agent, or after.
-const (
-	refusedPre = "writes no tests for this issue yet"
-	refusedRun = "wrote no tests for this issue this run"
-)
-
-// Refused is why the tester's last word on an issue refused it, read from
-// its one comment there; "" when that word is another, or there is none.
-// An issue waiting for its tests that the tester refused is blocked by
-// the line, never left as acted (#794).
-func Refused(comments []string) string {
-	sticky := forge.Marker("sticky=tester/issue")
-	for _, c := range slices.Backward(comments) {
-		if !strings.Contains(c, sticky) {
-			continue
-		}
-		if !strings.Contains(c, "**The tester** "+refusedRun) && !strings.Contains(c, "**The tester** "+refusedPre) {
-			return ""
-		}
-		_, why, ok := strings.Cut(c, "- **Why**: ")
-		if why, _, _ = strings.Cut(why, "\n"); !ok || strings.TrimSpace(why) == "" {
-			return "the tester wrote no tests for it"
-		}
-		return strings.TrimSuffix(strings.TrimSpace(why), ".")
-	}
-	return ""
 }
 
 // saidPost writes the verdict pre left; its exit says it.

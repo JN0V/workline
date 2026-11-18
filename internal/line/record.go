@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"slices"
 	"strings"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // Record is what the line keeps of an issue: the state its last step
@@ -301,7 +301,7 @@ func recordFrom(comments []string) (Record, bool, string, string) {
 		}
 	}
 	r, had := recordIn(comments)
-	return r, had, spec, tester.Refused(comments)
+	return r, had, spec, testmark.Refused(comments)
 }
 
 // holdsSpecMark says whether comment c carries the reviewer's mark as

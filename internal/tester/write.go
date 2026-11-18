@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"os"
 	"os/exec"
 	"path"
@@ -237,7 +238,7 @@ func Pre(runDir, repo string) int {
 	// An agent that reads files itself reads the project at the base, the
 	// code below its seed (ADR-0063 §8); any other gets the task alone.
 	if agent.ReadsFiles(os.Getenv("WORKLINE_AI")) {
-		if err := RunTree(repo, t.Base, runDir, agent.ReadTreeDir); err != nil {
+		if err := worktree.RunTree(repo, t.Base, runDir, agent.ReadTreeDir); err != nil {
 			return fail(err)
 		}
 		writeReading(&b, s)

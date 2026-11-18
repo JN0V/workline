@@ -1,13 +1,13 @@
 package engine
 
 import (
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/JN0V/workline/internal/agent"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // An interrupted run's tree, outside its run folder (#1304), goes with
@@ -23,7 +23,7 @@ func TestNewRunDirDropsAnOldRunsTree(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := tester.RunTree(repo, "HEAD", first, agent.WorktreeDir); err != nil {
+	if err := worktree.RunTree(repo, "HEAD", first, agent.WorktreeDir); err != nil {
 		t.Fatal(err)
 	}
 	tree := agent.Worktree(first)
