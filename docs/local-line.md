@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline/main.go, internal/forge/local.go, internal/forge/local_merge.go, internal/forge/local_threads.go, internal/doctor/tests.go]
-checked: 796746533
+checked: e4e4287bc
 verified: agent:claude-code
 ---
 # The whole line with no forge
@@ -18,8 +18,8 @@ need ──► product owner ──► tester ──► developer ──► revi
 - **Issues and merge requests stay in the clone** (`.git/workline/`),
   never committed nor pushed
   ([ADR-0016](adr/0016-writes-go-where-the-project-lives.md)).
-- **You act by command**: `workline issues` opens, labels and comments,
-  as you would on a forge's page.
+- **You act by command**: `workline issues` opens, labels, comments and
+  edits a section, as you would on a forge's page.
 - **An agent is needed** for the roles that write: `claude`, or any
   command as `cmd:` ([the agent](install.md#3-the-agent-your-choice)).
   With `none`, each role says what it skipped.

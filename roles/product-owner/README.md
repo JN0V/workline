@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, defaults/routing.yaml]
-checked: 8538d558
+checked: e4e4287bc
 verified: agent:claude-code
 ---
 # Product owner
@@ -74,6 +74,8 @@ is on each issue; you answer there
 | revise | a plain comment | 👀 on it, rewrites its own drafts in place, replies in one line |
 | correct it yourself | edit the body | what you edited is yours, never rewritten; an edited draft counts as accepted |
 | not now | take `workline:proposed` off | proposes nothing more on that issue until you edit it or comment |
+| set it aside | label `workline:parked` | no role works on it while the label is there |
+| split it | a comment asking it | splits it, unless the project set `split` off itself; proposed at `cautious` |
 | it should not exist | close it | never reopens it |
 
 - **Silence is never a yes** to close, merge or release. Past
