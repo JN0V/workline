@@ -399,7 +399,7 @@ func refusalMarker(role string) string {
 
 // commentRefusal says on the issue or merge request a run concerns why it
 // was refused or blocked: one sticky comment a role, updated in place.
-func commentRefusal(role, spec, repo string, t *forge.Target, r *engine.Result) {
+func commentRefusal(who, spec, repo string, t *forge.Target, r *engine.Result) {
 	if t == nil || r == nil || (r.Status != verdict.Block && r.Status != verdict.BlockedExternal) {
 		return
 	}
@@ -411,7 +411,7 @@ func commentRefusal(role, spec, repo string, t *forge.Target, r *engine.Result) 
 		return
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "workline: the %s's run was refused (%s).\n", role, r.Status)
+	fmt.Fprintf(&b, "workline: the %s's run was refused (%s).\n", who, r.Status)
 	if r.Summary != "" {
 		b.WriteString("\n" + r.Summary + "\n")
 	}
@@ -421,6 +421,16 @@ func commentRefusal(role, spec, repo string, t *forge.Target, r *engine.Result) 
 		}
 		fmt.Fprintf(&b, "\n- %s: %s", f.Rule, f.Message)
 	}
+	if spec == "" {
+		// As the engine does: the project's `forge` setting, when it can be
+		// read; a config-invalid run cannot, and then says so.
+		cfg, err := role.LoadProjectConfig(repo)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline: the refusal not said on its item: the project's forge cannot be read; pass --forge:", err)
+			return
+		}
+		spec = cfg.Forge
+	}
 	f, err := forge.Open(spec, repo)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline: the refusal not said on its item:", err)
@@ -429,7 +439,7 @@ func commentRefusal(role, spec, repo string, t *forge.Target, r *engine.Result) 
 	if f == nil {
 		return
 	}
-	if err := f.Sticky(*t, strings.TrimRight(b.String(), "\n"), refusalMarker(role), true); err != nil {
+	if err := f.Sticky(*t, strings.TrimRight(b.String(), "\n"), refusalMarker(who), true); err != nil {
 		fmt.Fprintln(os.Stderr, "workline: the refusal not said on its item:", err)
 	}
 }
