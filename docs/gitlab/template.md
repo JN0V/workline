@@ -3,7 +3,6 @@ sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, c
 checked: 8538d558
 verified: agent:documentalist
 judged: e8a46f7
-judged-in-parts: 04d2af892
 ---
 # What the GitLab template does
 

@@ -3,7 +3,6 @@ sources: [internal/forge/retry.go, internal/forge/mask.go, internal/role/config.
 checked: cd8e8d0d
 verified: agent:claude-code
 judged: e343388
-judged-in-parts: 04d2af892
 ---
 # The environment
 

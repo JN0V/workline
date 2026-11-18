@@ -3,7 +3,6 @@ sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, c
 checked: 8538d558
 judged: 9a88170
 verified: agent:documentalist
-judged-in-parts: 04d2af892
 ---
 # GitLab: pipelines a tool starts
 

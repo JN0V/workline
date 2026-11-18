@@ -3,7 +3,6 @@ sources: [defaults/ci/forgejo/workline-forge.sh, defaults/ci/github, internal/fo
 checked: 8538d558
 judged: cd97f28
 verified: agent:claude-code
-judged-in-parts: 04d2af892
 ---
 # workline on another forge, or none
 

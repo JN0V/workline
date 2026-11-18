@@ -3,7 +3,6 @@ sources: [defaults/ci/github, .github/workflows/workline.yml, .github/workflows/
 checked: 2e07991c
 verified: agent:claude-code
 judged: 220b6dc
-judged-in-parts: 04d2af892
 ---
 # What the GitHub jobs may do
 

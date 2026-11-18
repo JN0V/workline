@@ -9,7 +9,6 @@ sources:
   - internal/release/release.go
   - cmd/workline
 checked: 8538d558
-judged-in-parts: 04d2af892
 ---
 # The release: a dry run with gardening, a check at the tag
 
