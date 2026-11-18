@@ -3,6 +3,7 @@ sources: [defaults/routing.yaml, roles/committer/role.yaml, roles/documentalist/
 checked: 8538d558
 judged: d34fd75
 verified: agent:claude-code
+judged-in-parts: 786d304
 ---
 # The roles
 
