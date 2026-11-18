@@ -76,7 +76,6 @@ jobs:
             echo "::notice title=workline loop::workline $WORKLINE_VERSION has no tick (v0.79.0 and later): the loop skips, and starts no successor"
             exit 0
           fi
-          echo "ticked=true" >> "$GITHUB_OUTPUT"
           case "$DISPATCH" in
             ""|false) ;;
             *) echo "::warning title=workline loop::WORKLINE_LOOP_DISPATCH=$DISPATCH: dispatching is not built in this release; a dry run" ;;
@@ -104,6 +103,8 @@ jobs:
             [ "$(date +%s)" -lt "$end" ] || break
             sleep "$BEAT_SECONDS"
           done
+          # Ended by its time, not by a crash: a successor takes over.
+          echo "handover=true" >> "$GITHUB_OUTPUT"
           # What the beats would have dispatched, by run name, on the run's page.
           would="nothing"
           if [ -s "$RUNNER_TEMP/would.log" ]; then
@@ -111,9 +112,10 @@ jobs:
           fi
           echo "::notice title=workline loop, a dry run::$beats beats; would have dispatched: $would"
       # Before the 6 h limit, its successor: it waits in the concurrency
-      # group until this job ends. Not when a person cancelled the run.
+      # group until this job ends. Not after a crash, nor a cancel: the
+      # hourly schedule restarts it.
       - name: The next loop
-        if: ${{ !cancelled() && steps.beat.outputs.ticked == 'true' }}
+        if: steps.beat.outputs.handover == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.event.repository.default_branch }}

@@ -113,7 +113,7 @@ beat on GitHub, whose own schedule runs late or not at all
 - **One at a time**: its concurrency group; a restart while a loop runs
   (job `alive`) starts nothing.
 - **Before GitHub's 6 h**: after 340 minutes of beats, it dispatches its
-  successor, which waits in the group; not when a person cancelled it.
+  successor, which waits in the group; not after a crash or a cancel.
 - **Restarted** by its hourly schedule, or by hand (Run workflow).
 - **Its release**: v0.79.0 at least; an older one has no `tick`, and the
   loop says so and stops.

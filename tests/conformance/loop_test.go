@@ -159,6 +159,9 @@ exec "`+engineBin+`" "${args[@]}"
 			if !reflect.DeepEqual(got, want) && (len(got) > 0 || len(want) > 0) {
 				t.Errorf("%s, %s: the dry run logs %v, tick lists %v", f, st.name, got, want)
 			}
+			if b, _ := os.ReadFile(filepath.Join(tmp, "output")); !strings.Contains(string(b), "handover=true") {
+				t.Errorf("%s, %s: a beat ended by its time hands over to no successor", f, st.name)
+			}
 			if b, _ := os.ReadFile(calls); len(b) > 0 {
 				t.Errorf("%s, %s: the dry run called gh: %s", f, st.name, b)
 			}
@@ -197,12 +200,42 @@ func TestLoopSkipsAReleaseWithNoTick(t *testing.T) {
 		if !strings.Contains(out, "has no tick") {
 			t.Errorf("%s: a release with no tick is not said:\n%s", f, out)
 		}
-		if b, _ := os.ReadFile(filepath.Join(tmp, "output")); strings.Contains(string(b), "ticked=true") {
+		if b, _ := os.ReadFile(filepath.Join(tmp, "output")); strings.Contains(string(b), "handover=true") {
 			t.Errorf("%s: a release with no tick still hands over to a successor", f)
 		}
+	}
+}
+
+// A crash hands over to no successor
+// Given a beat that fails (a wait that is not a number),
+// When the loop's beat runs,
+// Then the step fails and hands over to no successor: no chain of
+// crashing runs; the hourly schedule restarts it.
+func TestLoopCrashHandsOverToNoSuccessor(t *testing.T) {
+	for _, f := range loopFiles {
+		wf := readLoop(t, f)
+		beat := loopStepNamed(t, wf, f, "The beat")
+		dir := t.TempDir()
+		bin, tmp := filepath.Join(dir, "bin"), filepath.Join(dir, "tmp")
+		for _, d := range []string{bin, tmp} {
+			if err := os.MkdirAll(d, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		writeExec(t, filepath.Join(bin, "workline"), "#!/bin/bash\necho '[]'\n")
+		cmd := exec.Command("bash", "-e", "-c", beat.Run)
+		cmd.Dir = dir
+		cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "RUNNER_TEMP="+tmp, "GITHUB_OUTPUT="+filepath.Join(tmp, "output"),
+			"GIT_CONFIG_GLOBAL=/dev/null", "BRANCH=main", "LOOP_MINUTES=1", "BEAT_SECONDS=x", "WORKLINE_VERSION=v0.0.0")
+		if out, err := cmd.CombinedOutput(); err == nil {
+			t.Errorf("%s: a beat whose wait fails still succeeds:\n%s", f, out)
+		}
+		if b, _ := os.ReadFile(filepath.Join(tmp, "output")); strings.Contains(string(b), "handover=true") {
+			t.Errorf("%s: a crashed beat hands over to a successor", f)
+		}
 		next := loopStepNamed(t, wf, f, "The next loop")
-		if !strings.Contains(next.If, "steps.beat.outputs.ticked == 'true'") {
-			t.Errorf("%s: the next loop starts whether the beat ticked or not (if %q)", f, next.If)
+		if next.If != "steps.beat.outputs.handover == 'true'" {
+			t.Errorf("%s: the next loop's if is %q; want the beat's handover alone, so a crash or a cancel starts none", f, next.If)
 		}
 	}
 }
@@ -212,8 +245,7 @@ func TestLoopSkipsAReleaseWithNoTick(t *testing.T) {
 // When it is read,
 // Then only a dispatch and a schedule start it; its job is in one
 // concurrency group that cancels none; it ends its beats before its
-// timeout, under GitHub's 6 h, and dispatches its successor unless a
-// person cancelled it.
+// timeout, under GitHub's 6 h, and dispatches its successor.
 func TestLoopOneAtATimeHandedOverBeforeSixHours(t *testing.T) {
 	for _, f := range loopFiles {
 		wf := readLoop(t, f)
@@ -241,9 +273,9 @@ func TestLoopOneAtATimeHandedOverBeforeSixHours(t *testing.T) {
 			t.Errorf("%s: the loop's permissions %v; want actions: write for its successor, contents read", f, loop.Permissions)
 		}
 		next := loopStepNamed(t, wf, f, "The next loop")
-		if !strings.Contains(next.If, "!cancelled()") || !strings.Contains(next.Run, "gh workflow run workline-loop.yml") ||
+		if !strings.Contains(next.Run, "gh workflow run workline-loop.yml") ||
 			!strings.Contains(next.Run, `after="$RUN"`) {
-			t.Errorf("%s: the next loop (if %q) does not dispatch the loop, handing over, unless cancelled: %q", f, next.If, next.Run)
+			t.Errorf("%s: the next loop does not dispatch the loop, handing over: %q", f, next.Run)
 		}
 		checkouts := 0
 		for _, s := range loop.Steps {
