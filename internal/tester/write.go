@@ -805,6 +805,13 @@ func lintTests(repo, tree, base string, missing func(path, message string) bool)
 	if len(names) == 0 {
 		return nil
 	}
+	if !mendable {
+		// A gate that did not run: no new run of the tester mends it, so
+		// the line blocks the issue at once (#1738), not retries it.
+		for i := range found {
+			found[i].Rule = "tests-lint-gate-not-run"
+		}
+	}
 	return &verdict.Verdict{Status: verdict.Block, Summary: "the tests do not pass the project's lint (" + strings.Join(names, ", ") + "): no Draft opened",
 		Findings: found, Again: mendable}
 }

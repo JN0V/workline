@@ -1,0 +1,37 @@
+case: routing/tests-lint-slip-not-blocked
+about: >
+  A lint slip in the tester's tests blocks nobody: #3 waits for its
+  tests, the tester's tests hold one finding of the project's lint
+  (an exit status not checked) on every call, and the run refuses them
+  with it said on the issue. The next reconcile does not move #3 to
+  Blocked for a person: it keeps workline:needs-tests, so that the
+  tester runs again on it, told the finding. No tests-refused block, no
+  retry spent yet.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {ALWAYS: "1", WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    gates: {lint: {checks: [{id: shlint, run: "sh \"$FIXTURES/bin/shlint\" {out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+    routing: {events: {issue: [tester], merge-request: ["gate:lint"]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {route: reconcile, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/tester-mul-unchecked-once.sh", then: again}
+expect:
+  findings: [{rule: tests-lint, where: "tests/test_mul_by_zero.sh:4"}]
+  no-findings: [{rule: tests-refused}, {rule: machine-error-spent}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
+    issues:
+      - id: 3
+        labels: ["workline:needs-tests"]
+        comment-contains: ["tests/test_mul_by_zero.sh:4", "Exit status of `rm` is not checked"]
+        comment-lacks: ["**workline's line** blocks this issue"]

@@ -115,7 +115,8 @@ workline test write --issue 42 --ai claude
 | Finding | When; nothing is opened |
 |---|---|
 | `issue-not-ready` | the issue is labelled neither `workline:needs-tests` nor `workline:ready` |
-| `tests-lint` | the tests do not pass the project's lint, still after the agent is asked once more with each finding |
+| `tests-lint` | the tests do not pass the project's lint, still after the agent is asked once more with each finding; the line runs the tester again, a bounded number of times, before a person is asked |
+| `tests-lint-gate-not-run` | a lint gate cannot run at all: the issue is blocked at once, no retry mends it |
 | `no-named-scenario` | its Validation names no scenario: asked of the product owner, never invented |
 | `scenario-without-test` | a scenario has no `covers` entry, no test nor reason; asked again once with the names first |
 | `declared-test-missing` | a declared test is none of the new tests red on the base, nor of the test files written; asked again once, then blocked: the product owner reads a blocked issue again |
