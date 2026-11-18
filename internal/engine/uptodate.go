@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/contract"
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/worktree"
@@ -47,7 +46,7 @@ func upToDateAs(f forge.Forge, o FollowOptions, local bool, mr forge.MergeReques
 	if len(files) > 0 {
 		// Said in the refused merge's one comment (#1354), its record the
 		// merge round reads; once that round failed here, a person's.
-		failed, err := developer.ConflictFailed(f, mr, tip)
+		failed, err := devmark.ConflictFailed(f, mr, tip)
 		if err != nil {
 			return true, err
 		}

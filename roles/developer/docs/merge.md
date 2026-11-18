@@ -1,6 +1,5 @@
 ---
 sources:
-  - internal/developer/merge.go
   - internal/engine/code.go
   - internal/engine/candidate.go
   - internal/sample/developer.go

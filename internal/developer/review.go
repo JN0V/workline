@@ -241,7 +241,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		if mr.Draft {
 			// Its Draft made green: marked ready, no agent asked (#969).
 			var ready bool
-			if ready, kept = draftReady(f, a, head); ready {
+			if ready, kept = devmark.DraftReady(f, a, head); ready {
 				r.Ready = true
 				if err := writeIn(runDir, roundFile, r); err != nil {
 					return fail(err)
@@ -566,7 +566,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 		return true, nil // blocked on test findings the tester holds needless: its round blocks the issue
 	}
 	if err == nil && len(r.Asked) == 0 && mr.Draft {
-		ready, _ := draftReady(f, a, head) // its Draft made green: its round marks it ready (#969)
+		ready, _ := devmark.DraftReady(f, a, head) // its Draft made green: its round marks it ready (#969)
 		return ready, nil
 	}
 	return len(r.Asked) > 0, err

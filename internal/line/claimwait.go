@@ -122,7 +122,7 @@ func draftHolder(b forge.Backlog, mr forge.MergeRequest) string {
 	if !ok {
 		return "the developer's, a round on it once its checks end or one is red"
 	}
-	why, err := developer.DraftHolder(f, mr)
+	why, err := devmark.DraftHolder(f, mr)
 	switch {
 	case err != nil:
 		return "who holds it not read (" + forge.Said(err) + ")"

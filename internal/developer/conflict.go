@@ -28,18 +28,6 @@ import (
 
 var conflictRecord = regexp.MustCompile(`<!-- workline:conflict head=([0-9a-f]{40,64}) base=([0-9a-f]{40,64}) -->`)
 
-// ConflictFailed says a merge round failed at head, as the developer's
-// record on mr keeps it: no second one there, a person's.
-func ConflictFailed(f forge.Forge, mr forge.MergeRequest, head string) (bool, error) {
-	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: mr.ID})
-	if err != nil {
-		return false, err
-	}
-	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
-	a, read := devmark.ReadAct(body)
-	return ok && read && a.Conflict == head, nil
-}
-
 // conflictAt reads the conflict `follow` said on the request: the head and
 // the base it was read at; ok false when none.
 func conflictAt(kept forge.Kept) (head, base string, ok bool) {
