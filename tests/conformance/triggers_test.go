@@ -37,7 +37,7 @@ var triggers = map[string]map[string]string{
 	"release.yml":            {"workflow_call": onCheck},
 	"release-candidate.yml":  {"push": onCheck},
 	"workline-loop.yml":      {"schedule": onTime, "workflow_dispatch": onTime},
-	"workline-gardening.yml": {"schedule": onTime, "workflow_dispatch": onTime},
+	"workline-gardening.yml": {"schedule": onTemplate, "workflow_dispatch": onTime},
 	"workline-sample.yml":    {"schedule": onTemplate, "workflow_dispatch": onTime},
 	"schedule-probe.yml":     {"schedule": onTime, "workflow_dispatch": onTime},
 	"workline-develop.yml": {"issues": onEvent, "issue_comment": onEvent, "workflow_run": onEvent,
