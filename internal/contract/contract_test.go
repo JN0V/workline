@@ -58,3 +58,14 @@ func TestTheCodeIsAskedOfTheRoleOfferingIt(t *testing.T) {
 		t.Errorf("Code = %v, %q", c, n)
 	}
 }
+
+func TestASecondRoleOfferingCodeIsRefused(t *testing.T) {
+	r := NewRegistry()
+	r.Join("coder", Role{Code: &Code{}})
+	defer func() {
+		if recover() == nil {
+			t.Error("a second role offering the code is taken")
+		}
+	}()
+	r.Join("other", Role{Code: &Code{}})
+}

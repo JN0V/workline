@@ -46,12 +46,20 @@ type Registry struct {
 // fixture roles, apart from the shipped ones.
 func NewRegistry() *Registry { return &Registry{roles: map[string]Role{}} }
 
-// Join adds a role; a name joined twice is a programming error.
+// Join adds a role; a name joined twice, or a second role offering
+// Code, is a programming error.
 func (r *Registry) Join(name string, role Role) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, ok := r.roles[name]; ok {
 		panic(fmt.Sprintf("contract: the role %q joined twice", name))
+	}
+	if role.Code != nil {
+		for n, other := range r.roles {
+			if other.Code != nil {
+				panic(fmt.Sprintf("contract: the role %q offers the code the engine merges, as %q does", name, n))
+			}
+		}
 	}
 	r.roles[name] = role
 }
@@ -76,7 +84,7 @@ func (r *Registry) Step(name, step string) (Step, bool) {
 }
 
 // Code is what the role whose code the engine merges offers, and that
-// role's name; nil when none joined offers it.
+// role's name, one at most (Join); nil when none joined offers it.
 func (r *Registry) Code() (*Code, string) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
