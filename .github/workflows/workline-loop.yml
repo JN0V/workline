@@ -1,7 +1,7 @@
 # workline's loop on its own repository: defaults/ci/github/workline-loop.yml.
 # A dry run beside today's workflows: each beat logs what tick lists,
-# and starts nothing (docs/tick.md#the-github-loop). Its release runs
-# ahead of the line's pin: tick ships in v0.79.0 (ADR-0071).
+# and starts nothing (docs/tick.md#the-github-loop). Its release is its
+# own, never behind the line's pin: tick ships in v0.79.0 (ADR-0071).
 name: workline loop
 run-name: workline loop
 on:
@@ -14,9 +14,9 @@ on:
 permissions: {}
 
 env:
-  # tick's first release, ahead of the pin until the pin's pull request
-  # moves the others past it; never moved by release-please (ADR-0071 §1).
-  WORKLINE_VERSION: v0.79.0
+  # The line's pin, as the others: moved with them in the pin's pull
+  # request; never moved by release-please (ADR-0071 §1).
+  WORKLINE_VERSION: v0.80.0
 
 jobs:
   alive:
