@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // History is what the curator keeps from one measure to the next.

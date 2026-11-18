@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // lineComments are the findings on the change, each a comment on its line

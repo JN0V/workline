@@ -10,10 +10,10 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/sample"
 	"github.com/JN0V/workline/internal/scale"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // Summary is what a CI job's page shows a person, in Markdown: what ran,

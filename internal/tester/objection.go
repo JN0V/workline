@@ -26,13 +26,13 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/whys"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -547,7 +547,7 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 		b.WriteString("\n## Your answer\n\n" +
 			"The reviewer found a behaviour of the change with no test, its cause in the code: you are the one who writes the acceptance tests.\n\n" +
 			"- **Added**: the test, as a `patch` of an existing file (the file whole with `file` and `content`, or a diff of that file), and a `note`, why. " +
-			"It goes in `"+a.File+"`, or in another of your tests of #"+fmt.Sprint(a.Issue)+" listed above, if any, never a new file: a patch of any other file is refused. " +
+			"It goes in `" + a.File + "`, or in another of your tests of #" + fmt.Sprint(a.Issue) + " listed above, if any, never a new file: a patch of any other file is refused. " +
 			"It checks a scenario's Then, and fails on the code before the change.\n" +
 			"- **None needed**: a `note`, why no acceptance test is needed (a scenario's test covers it already, naming it; or it is no behaviour a scenario asks).\n" +
 			"- **Lacks code**: a `note` opening `needs:`, the files you lack and why, when the code given does not let you write it.\n")

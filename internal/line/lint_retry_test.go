@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/engine"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // Retries bounded: Given the tester's tests failing the project's lint on

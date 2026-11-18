@@ -24,8 +24,8 @@ import (
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/line"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // Item is a finding with the role that made it and how its run ended.

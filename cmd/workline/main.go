@@ -52,6 +52,7 @@ import (
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/packs"
 	"github.com/JN0V/workline/internal/release"
@@ -63,7 +64,6 @@ import (
 	"github.com/JN0V/workline/internal/sample"
 	"github.com/JN0V/workline/internal/setup"
 	"github.com/JN0V/workline/internal/tester"
-	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 	"go.yaml.in/yaml/v3"
 )

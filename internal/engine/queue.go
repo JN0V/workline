@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // queueGroup gives a merge queue's group commit the yes its base requires

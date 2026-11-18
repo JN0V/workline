@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // A note names its doc in `doc`, or, given as text, by the doc's path or an

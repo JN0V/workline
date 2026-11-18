@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // Code examples a fix writes, fenced blocks it adds or changes, are told

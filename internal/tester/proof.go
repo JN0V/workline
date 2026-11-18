@@ -16,8 +16,8 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -97,7 +97,7 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 		to, next = "", "whoever builds it proves it so, "+ProofKinds[p.Kind]+"; its state kept, not the tester's"
 	}
 	if p.Kind == KindNone {
-		p.Body = t.Body // the body it read: sent again unchanged, Blocked (#815)
+		p.Body = t.Body       // the body it read: sent again unchanged, Blocked (#815)
 		p.Retried = t.Retried // after a retest: no second one (#1053)
 		to, did, rule = "", "finds no test possible for this issue", "no-test-possible"
 		for _, o := range line.States {

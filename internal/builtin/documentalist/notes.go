@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // What the agent says it could not confirm (#449). The policy tells it that

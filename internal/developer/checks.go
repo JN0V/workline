@@ -14,7 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // checkHolds is how a round says a project check's red.

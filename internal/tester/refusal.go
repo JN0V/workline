@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // refusalMark marks, in the tester's comment, the findings of its last

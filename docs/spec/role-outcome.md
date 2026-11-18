@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
+sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/kit/verdict, internal/report]
 verified: agent:claude-code
 checked: adf500ab
 judged: b5899f5

@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/agent"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
-	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
 

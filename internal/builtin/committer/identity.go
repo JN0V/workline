@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/gitrange"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // allowedIdentities is the allow list: the project's `allowed-identities`

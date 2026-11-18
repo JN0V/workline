@@ -15,8 +15,8 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/codenav"
+	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/pathglob"
-	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/work"
 )
 

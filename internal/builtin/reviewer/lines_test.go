@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // A comment's key: lines added above keep it, a line changed gets a new

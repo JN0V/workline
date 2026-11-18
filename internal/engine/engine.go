@@ -28,6 +28,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/role"
@@ -35,7 +36,6 @@ import (
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/tester"
-	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
 

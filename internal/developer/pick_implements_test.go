@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // An open pull request saying `Implements #4` on GitHub: GitHub closes

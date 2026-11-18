@@ -12,8 +12,8 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/release"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // A milestone's release candidate (ADR-0060, §4): at `merge: {autonomy:

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // manyDrafts is a clone, on the local forge, with n tester drafts open

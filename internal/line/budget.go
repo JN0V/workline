@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // BudgetWaitMax is the longest a run of the line waits in place for the

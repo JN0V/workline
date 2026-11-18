@@ -11,8 +11,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // The developer's commits pass the project's commit check (#736): each

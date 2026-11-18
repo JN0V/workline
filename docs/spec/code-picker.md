@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/codepick, internal/codenav, internal/builtin/productowner/productowner.go]
+sources: [internal/kit/codepick, internal/codenav, internal/builtin/productowner/productowner.go]
 status: draft
 checked: 2b7a87ad
 verified: agent:claude-code
@@ -152,7 +152,7 @@ A binary file gives nothing: no line, and `logo.png` names neither
   naming a name.
 - **One step away, as paths**: the files the code, the declarations
   and the test given include or import, not given (the table of
-  [imports.go](../../internal/codepick/imports.go): C and C++, Python,
+  [imports.go](../../internal/kit/codepick/imports.go): C and C++, Python,
   JavaScript and TypeScript, Go, the JVM's, Rust, Ruby, PHP, Lua,
   shell), and those defining the types the code derives from.
 - **In its package**: in Java, Kotlin, Scala, a file uses its

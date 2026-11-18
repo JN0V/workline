@@ -21,10 +21,10 @@ import (
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/stall"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // IssueEvent is the event naming one issue: its labelling on a forge, a

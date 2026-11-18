@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // testerDraft is the branch prefix of the tester's Draft of an issue,

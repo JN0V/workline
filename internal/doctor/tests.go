@@ -7,10 +7,10 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/packs"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/testdef"
 	"github.com/JN0V/workline/internal/tester"
 )
 

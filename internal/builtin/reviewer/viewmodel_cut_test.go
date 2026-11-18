@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // bigViewModel is a 900-line Kotlin file: a 100-line function `load`

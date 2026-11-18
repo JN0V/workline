@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // uncoveredMessage commits a doc whose one line is docLine, with

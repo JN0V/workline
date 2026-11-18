@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // failure is the first property a run broke.
@@ -46,7 +46,7 @@ var (
 	dueRules     = []string{"state-wakes", "reconcile-left"}
 	waitingRules = []string{"state-blocked-quiet", "state-blocked-seen", "state-waits", "state-room", "repro-waits", "state-review-missing",
 		"no-code-spent", "needs-spent", "no-test-unsettled", "machine-error-spent", "backstop-crossed", "backstop-waits"}
-	notStatus    = []string{"state-acted"}
+	notStatus = []string{"state-acted"}
 )
 
 // target is what a wait must name to count (state-waits): an issue, room

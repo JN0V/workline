@@ -13,8 +13,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/packs"
-	"github.com/JN0V/workline/internal/testdef"
 )
 
 // Role is a parsed role.yaml, plus the folder it was loaded from.

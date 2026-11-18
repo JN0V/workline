@@ -3,7 +3,7 @@ package tester
 import (
 	"time"
 
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // RunsWithin is how long the tester waits, before its agent, for the test

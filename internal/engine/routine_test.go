@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // gitRepo is a repository for a test, and a way to run git in it.

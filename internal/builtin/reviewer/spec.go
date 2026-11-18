@@ -19,10 +19,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/codepick"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/codepick"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // specEvent is the event a spec is reviewed on: its input names the spec,

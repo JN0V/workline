@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // Scope narrows a run to the folders a change touches (#703): Command,

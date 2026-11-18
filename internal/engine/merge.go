@@ -14,9 +14,9 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/steer"
 	"github.com/JN0V/workline/internal/tester"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // The merge policy (ADR-0042): `workline follow` turns the forge's own
