@@ -8,6 +8,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/commitmsg"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/role"
 )
 
@@ -34,21 +35,21 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 		scope             []string
 		tests, code       string
 	}{
-		{"a bug in a folder", "Login fails on a long name", KindFix, []string{"internal/auth/login.go", "internal/auth/"},
+		{"a bug in a folder", "Login fails on a long name", devmark.KindFix, []string{"internal/auth/login.go", "internal/auth/"},
 			"test(auth): login fails on a long name", "fix(auth): login fails on a long name"},
-		{"a feature at the root", "Multiply two numbers", KindFeature, []string{"lib.sh"},
+		{"a feature at the root", "Multiply two numbers", devmark.KindFeature, []string{"lib.sh"},
 			"test: multiply two numbers", "feat: multiply two numbers"},
-		{"a task, folders apart", "Bump the linter", KindTask, []string{"cmd/x", "internal/y"},
+		{"a task, folders apart", "Bump the linter", devmark.KindTask, []string{"cmd/x", "internal/y"},
 			"test: bump the linter", "chore: bump the linter"},
 		{"no kind", "Add a flag", "", nil, "test: add a flag", "feat: add a flag"},
-		{"codes and references out", "AC-3: Multiply two numbers (F207) for #12.", KindFix, []string{"lib.sh"},
+		{"codes and references out", "AC-3: Multiply two numbers (F207) for #12.", devmark.KindFix, []string{"lib.sh"},
 			"test: multiply two numbers for", "fix: multiply two numbers for"},
-		{"an acronym kept", "API returns a 500 on an empty body", KindFix, nil,
+		{"an acronym kept", "API returns a 500 on an empty body", devmark.KindFix, nil,
 			"test: API returns a 500 on an empty body", "fix: API returns a 500 on an empty body"},
-		{"a long title, cut on a word", "Developer: its commits pass the project's commit check, the tests commit and the code commit alike", KindFix,
+		{"a long title, cut on a word", "Developer: its commits pass the project's commit check, the tests commit and the code commit alike", devmark.KindFix,
 			[]string{"internal/developer/"},
 			"test(developer): developer: its commits pass the project's commit check", "fix(developer): developer: its commits pass the project's commit check"},
-		{"no title", "", KindFix, nil, "test: the code of #4", "fix: the code of #4"},
+		{"no title", "", devmark.KindFix, nil, "test: the code of #4", "fix: the code of #4"},
 	} {
 		got := subjects(4, tc.title, tc.kind, tc.scope, s)
 		if got.Tests != tc.tests || got.Code != tc.code {

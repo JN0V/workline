@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -35,7 +35,7 @@ func checksBack(res *Result, f forge.Forge, o engine.Options) int {
 	}
 	n := 0
 	for _, mr := range mrs {
-		if !mr.Here || mr.Draft || !strings.HasPrefix(mr.Branch, developer.Branch) {
+		if !mr.Here || mr.Draft || !strings.HasPrefix(mr.Branch, devmark.Branch) {
 			continue
 		}
 		where := fmt.Sprintf("merge request %d", mr.ID)

@@ -23,16 +23,10 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/tester"
-)
-
-// The proof's results.
-const (
-	Green    = "green"
-	Red      = "red"
-	Unproven = "unproven" // the test command did not run whole
 )
 
 // Proof is what the project's tests said on the developer's code.
@@ -123,14 +117,14 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 	}
 	ts, err := testerSettingsIn(s.rolesDir, repo)
 	if err != nil {
-		p.Result, p.Why = Unproven, err.Error()
+		p.Result, p.Why = devmark.Unproven, err.Error()
 		return p, nil
 	}
 	p.Command = ts.Command
 	scope := tester.Scope{Files: also}
 	if n != nil {
 		if !tester.TestName.MatchString(n.Test) {
-			p.Result, p.Why = Unproven, "the tester's flaky-n-of-n record names no test to run"
+			p.Result, p.Why = devmark.Unproven, "the tester's flaky-n-of-n record names no test to run"
 			return p, nil
 		}
 		scope.Test, scope.Runs = n.Test, p.Runs
@@ -156,14 +150,14 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 		// One run stopped at the tester's suite-max-seconds, before the
 		// proof's own seconds (#1425): that setting named, where it hung.
 		p.Ran = o.Runs
-		p.Result, p.Why = Unproven, fmt.Sprintf("a run of the tests stopped at suite-max-seconds (%d s): %s", ts.SuiteMaxSeconds, f.Message)
+		p.Result, p.Why = devmark.Unproven, fmt.Sprintf("a run of the tests stopped at suite-max-seconds (%d s): %s", ts.SuiteMaxSeconds, f.Message)
 		return p, &Cap{Setting: "suite-max-seconds", Spent: int(time.Since(start).Seconds()), Allows: ts.SuiteMaxSeconds}
 	case f != nil && f.Rule == "proof-over-time":
 		p.Ran = o.Runs
-		p.Result, p.Why = Unproven, fmt.Sprintf("the test command ran past %d s: stopped", s.ProofSeconds)
+		p.Result, p.Why = devmark.Unproven, fmt.Sprintf("the test command ran past %d s: stopped", s.ProofSeconds)
 		return p, &Cap{Setting: "proof-seconds", Spent: int(time.Since(start).Seconds()), Allows: s.ProofSeconds}
 	case f != nil:
-		p.Result, p.Why = Unproven, strings.TrimSpace(f.Where+": "+f.Message)
+		p.Result, p.Why = devmark.Unproven, strings.TrimSpace(f.Where+": "+f.Message)
 		return p, nil
 	}
 	p.Passed, p.Red, p.Tree, p.At, p.Missing = len(o.Passed), o.Red, "fresh", o.At, o.Missing
@@ -178,13 +172,13 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 	default:
 		p.Whole = "no file it touches lies in a folder holding tests"
 	}
-	p.Result = Red
+	p.Result = devmark.Red
 	if o.Green() {
-		p.Result = Green
+		p.Result = devmark.Green
 	} else if len(o.Red) == 0 {
 		p.Why = "the test command failed, no test red: " + o.Exit
 		if len(o.Passed) == 0 {
-			p.Result, p.Why = Unproven, "the report names no test"
+			p.Result, p.Why = devmark.Unproven, "the report names no test"
 		}
 	}
 	if n == nil {
@@ -193,11 +187,11 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 	p.Ran = o.Runs
 	reported, _ := o.Passes(n.Test)
 	switch {
-	case p.Result == Green && !reported:
-		p.Result, p.Why = Unproven, fmt.Sprintf("the named test `%s` was not reported, run %d of %d", n.Test, o.Runs, p.Runs)
-	case p.Result == Red && p.Why == "":
+	case p.Result == devmark.Green && !reported:
+		p.Result, p.Why = devmark.Unproven, fmt.Sprintf("the named test `%s` was not reported, run %d of %d", n.Test, o.Runs, p.Runs)
+	case p.Result == devmark.Red && p.Why == "":
 		p.Why = fmt.Sprintf("run %d of %d: %d test%s red on its code: %s", o.Runs, p.Runs, len(p.Red), plural(len(p.Red)), strings.Join(p.Red, ", "))
-	case p.Result != Green:
+	case p.Result != devmark.Green:
 		p.Why = fmt.Sprintf("run %d of %d: %s", o.Runs, p.Runs, p.Why)
 	}
 	return p, nil
@@ -336,10 +330,10 @@ func agentFailed(where, why string) verdict.Finding {
 func proofFindings(where string, p Proof, caps []Cap) []verdict.Finding {
 	var out []verdict.Finding
 	switch p.Result {
-	case Green:
+	case devmark.Green:
 		out = append(out, verdict.Finding{Rule: "proof-green", Level: "info", Where: where,
 			Message: fmt.Sprintf("%d test%s passed on its code, none red: `%s`%s", p.Passed, plural(p.Passed), p.Command, p.nOfN())})
-	case Red:
+	case devmark.Red:
 		msg := fmt.Sprintf("%d test%s red on its code: %s", len(p.Red), plural(len(p.Red)), strings.Join(p.Red, ", "))
 		if p.Why != "" {
 			msg = p.Why
@@ -359,7 +353,7 @@ func proofFindings(where string, p Proof, caps []Cap) []verdict.Finding {
 
 // nOfN says a green flaky-n-of-n proof's runs; "" for another proof.
 func (p Proof) nOfN() string {
-	if p.Runs == 0 || p.Result != Green {
+	if p.Runs == 0 || p.Result != devmark.Green {
 		return ""
 	}
 	return fmt.Sprintf("; `%s` passed %d runs of %d", p.Test, p.Ran, p.Runs)
@@ -379,9 +373,9 @@ func missingSaid(tools []string) string {
 func proofLines(p Proof, caps []Cap) string {
 	var b strings.Builder
 	switch p.Result {
-	case Green:
+	case devmark.Green:
 		fmt.Fprintf(&b, "- `%s`: %d test%s passed, none red%s.\n", p.Command, p.Passed, plural(p.Passed), p.nOfN())
-	case Red:
+	case devmark.Red:
 		fmt.Fprintf(&b, "- `%s`: %d passed, %d red.\n", p.Command, p.Passed, len(p.Red))
 		for _, t := range p.Red {
 			fmt.Fprintf(&b, "  - red: `%s`\n", t)
@@ -463,7 +457,7 @@ func ProveMerge(rolesDir, repo, at string) Proof {
 // Said is the proof in a few words: its tests passed, or what failed.
 func (p Proof) Said() string {
 	switch {
-	case p.Result == Green:
+	case p.Result == devmark.Green:
 		return fmt.Sprintf("%d test%s passed", p.Passed, plural(p.Passed))
 	case len(p.Red) > 0:
 		return fmt.Sprintf("%d test%s red: %s", len(p.Red), plural(len(p.Red)), strings.Join(p.Red, ", "))

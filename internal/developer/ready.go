@@ -14,6 +14,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -49,7 +50,7 @@ func draftReady(f forge.Forge, a Act, head string) (ready bool, kept string) {
 		}
 	}
 	if len(cs) == 0 {
-		return a.Proof != nil && a.Proof.Result == Green, ""
+		return a.Proof != nil && a.Proof.Result == devmark.Green, ""
 	}
 	return true, ""
 }
@@ -86,11 +87,11 @@ func DraftHolder(f forge.Forge, mr forge.MergeRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	body, ok := kept.Last(forge.Marker("sticky=developer/" + RecordKey))
+	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
 	a, read := ReadAct(body)
 	switch {
 	case !ok || !read:
-		return "", ErrRecordUnread
+		return "", devmark.ErrRecordUnread
 	case a.Handed:
 		return fmt.Sprintf("past round %d, the developer handed it to a person", a.Round), nil
 	}

@@ -17,6 +17,7 @@ import (
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
 )
@@ -32,7 +33,7 @@ func roundOn(b forge.Backlog, t *tally, s routing.State, id int) (*forge.MergeRe
 		return nil, err
 	}
 	for _, mr := range t.mrs {
-		if mr.Branch == developer.Branch+strconv.Itoa(id) {
+		if mr.Branch == devmark.Branch+strconv.Itoa(id) {
 			if t.rounds == nil {
 				t.rounds = map[int]forge.MergeRequest{}
 			}
@@ -49,7 +50,7 @@ func roundDue(res *Result, f forge.Forge, repo string, mr forge.MergeRequest) bo
 	where := fmt.Sprintf("merge request %d", mr.ID)
 	ok, err := developer.RoundDue(f, repo, mr)
 	switch {
-	case errors.Is(err, developer.ErrRecordUnread):
+	case errors.Is(err, devmark.ErrRecordUnread):
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "round-unread", Level: "warn", Where: where,
 			Message: "whether a review round is due is not known: " + err.Error()})
 		return false
@@ -64,7 +65,7 @@ func roundDue(res *Result, f forge.Forge, repo string, mr forge.MergeRequest) bo
 // roundWakes says a round due on mr on the issue it closes, in place of
 // what its claim waits on (mrWaits): the developer's next, on mr (#1271).
 func roundWakes(res *Result, mr forge.MergeRequest) {
-	id := developer.BranchIssue(mr.Branch)
+	id := devmark.BranchIssue(mr.Branch)
 	if id == 0 {
 		return
 	}

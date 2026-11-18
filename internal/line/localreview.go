@@ -11,6 +11,7 @@ package line
 import (
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/worktree"
 	"maps"
@@ -21,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -104,7 +104,7 @@ func localLines(res *Result, cfg *routing.Config, f forge.Forge, o engine.Option
 	}
 	ran := 0
 	for _, mr := range mrs {
-		if !strings.HasPrefix(mr.Branch, developer.Branch) || mr.Draft || mr.Base == "" {
+		if !strings.HasPrefix(mr.Branch, devmark.Branch) || mr.Draft || mr.Base == "" {
 			continue
 		}
 		where := fmt.Sprintf("!%d", mr.ID)

@@ -50,6 +50,7 @@ import (
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/packs"
@@ -1331,7 +1332,7 @@ func roundTree(repo, spec string, id int) (tree string, done func(), why string)
 		return "", nil, ""
 	}
 	mr, err := f.MergeRequest(id)
-	if err != nil || !mr.Here || !strings.HasPrefix(mr.Branch, developer.Branch) {
+	if err != nil || !mr.Here || !strings.HasPrefix(mr.Branch, devmark.Branch) {
 		return "", nil, ""
 	}
 	head, err := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()

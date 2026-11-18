@@ -7,6 +7,7 @@ import (
 
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // The developer's code in the weekly sample (ADR-0046, the developer's
@@ -31,7 +32,7 @@ func developerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act,
 	var out []Act
 	var unread []string
 	for _, m := range mrs {
-		if !strings.HasPrefix(m.Branch, developer.Branch) {
+		if !strings.HasPrefix(m.Branch, devmark.Branch) {
 			continue
 		}
 		ref := forge.MergeRef(f, m.ID)

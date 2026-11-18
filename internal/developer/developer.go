@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"math"
@@ -532,7 +533,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			if n, p := Overlapping(is, outranked(is, issues, held), files); n != 0 {
 				why = OverlapWhy(n, p)
 				next = fmt.Sprintf("#%d merged or let go; the developer looks at this issue again at its next run", n)
-				if k := kindOf(issues, n); k != KindFix && closer[n] != 0 {
+				if k := kindOf(issues, n); k != devmark.KindFix && closer[n] != 0 {
 					// Only a fix merges alone (ADR-0060): the wait ends on
 					// a person's yes, said where they look (#998).
 					said := "no label says its kind"
@@ -1023,7 +1024,7 @@ func Post(runDir, repo string) int {
 	var draft *drafted
 	if len(patches) == 0 && a.From != "" {
 		p, u, caps, found := proven(runDir, repo, on, where, nil, a.Acceptance, flakyOf(b.Proof, s), s)
-		if p.Result == Green && len(caps) == 0 && u.failed == "" {
+		if p.Result == devmark.Green && len(caps) == 0 && u.failed == "" {
 			draft = &drafted{p, u, caps, found}
 		}
 	}
@@ -1054,7 +1055,7 @@ func Post(runDir, repo string) int {
 		} else {
 			p, u, caps, found = proven(runDir, repo, on, where, patches, a.Acceptance, flakyOf(b.Proof, s), s)
 		}
-		if p.Result == Red && len(p.Red) == 0 && len(caps) == 0 && !objects(kept) {
+		if p.Result == devmark.Red && len(p.Red) == 0 && len(caps) == 0 && !objects(kept) {
 			// Its code does not build, or breaks the run, no test red, and
 			// no objection to a frozen test beside it, the tester's: the
 			// agent's to mend, asked again once with the error, as the

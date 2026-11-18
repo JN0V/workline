@@ -24,6 +24,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -96,11 +97,11 @@ func boundsPre(runDir, repo string, id int) int {
 	if err != nil {
 		return external(err)
 	}
-	n := developerIssue(mr.Branch)
+	n := devmark.BranchIssue(mr.Branch)
 	if n == 0 {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "not a developer's pull request: no bounds to hold",
 			Findings: []verdict.Finding{{Rule: "not-a-developers-branch", Level: "info", Where: where,
-				Message: "it comes from " + mr.Branch + ": a person's pull request, reviewed as one; the bounds hold the developer's own, " + Branch + "<n>"}}})
+				Message: "it comes from " + mr.Branch + ": a person's pull request, reviewed as one; the bounds hold the developer's own, " + devmark.Branch + "<n>"}}})
 	}
 	base, head, err := prRange(runDir, repo, mr)
 	if err != nil {

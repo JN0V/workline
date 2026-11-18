@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // findingsLine is the hidden record of a reviewer's comment, holding one
@@ -39,7 +40,7 @@ func mergeReadWith(t *testing.T, act Act, summary, warn string) Merge {
 		t.Fatal(err)
 	}
 	target := forge.Target{Kind: "merge-request", ID: id}
-	if err := l.Comment(target, "**The developer's record**\n\n"+act.Line(), forge.Marker("sticky=developer/"+RecordKey)); err != nil {
+	if err := l.Comment(target, "**The developer's record**\n\n"+act.Line(), forge.Marker("sticky=developer/"+devmark.RecordKey)); err != nil {
 		t.Fatal(err)
 	}
 	if summary != "" {
@@ -60,7 +61,7 @@ func mergeReadWith(t *testing.T, act Act, summary, warn string) Merge {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if m.Why != "" || m.Kind != KindFix {
+	if m.Why != "" || m.Kind != devmark.KindFix {
 		t.Fatalf("the pull request is not read as a developer's fix: why %q, kind %q", m.Why, m.Kind)
 	}
 	return m

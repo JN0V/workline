@@ -1,18 +1,21 @@
 package developer
 
-import "testing"
+import (
+	"github.com/JN0V/workline/internal/kit/devmark"
+	"testing"
+)
 
 func TestIssueKind(t *testing.T) {
 	for _, c := range []struct {
 		labels      []string
 		kind, label string
 	}{
-		{[]string{"bug", "workline:ready"}, KindFix, "bug"},
-		{[]string{"Type::Bug"}, KindFix, "Type::Bug"},
-		{[]string{"enhancement"}, KindFeature, "enhancement"},
-		{[]string{"task"}, KindTask, "task"},
-		{[]string{"bug", "enhancement"}, KindFeature, "enhancement"}, // a feature first: the safe side
-		{[]string{"task", "bug"}, KindFix, "bug"},
+		{[]string{"bug", "workline:ready"}, devmark.KindFix, "bug"},
+		{[]string{"Type::Bug"}, devmark.KindFix, "Type::Bug"},
+		{[]string{"enhancement"}, devmark.KindFeature, "enhancement"},
+		{[]string{"task"}, devmark.KindTask, "task"},
+		{[]string{"bug", "enhancement"}, devmark.KindFeature, "enhancement"}, // a feature first: the safe side
+		{[]string{"task", "bug"}, devmark.KindFix, "bug"},
 		{[]string{"workline:ready", "debug"}, "", ""}, // whole names only
 		{nil, "", ""},
 	} {

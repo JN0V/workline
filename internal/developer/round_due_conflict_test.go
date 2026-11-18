@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // Conflict after main moved: given a developer pull request with no
@@ -55,7 +56,7 @@ func TestRoundDueWhenMainMovedIntoConflict(t *testing.T) {
 		t.Fatal(err)
 	}
 	record := "**The developer's record**\n\n" + Act{Act: "code", Issue: 1}.Line()
-	if err := l.Comment(forge.Target{Kind: "merge-request", ID: id}, record, forge.Marker("sticky=developer/"+RecordKey)); err != nil {
+	if err := l.Comment(forge.Target{Kind: "merge-request", ID: id}, record, forge.Marker("sticky=developer/"+devmark.RecordKey)); err != nil {
 		t.Fatal(err)
 	}
 	mr, err := l.MergeRequest(id)

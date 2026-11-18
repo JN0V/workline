@@ -12,6 +12,7 @@ import (
 	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // The developer's code at `normal` and `enterprising` (ADR-0054, step 7;
@@ -129,7 +130,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		}
 		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `%s`: the developer's code merges with no person's yes only once the reviewer's verdict is on its head, no finding open that blocks or is Important.\n\n- To accept this one, put the label `%s`.\n%s",
 			d.Says(), why, o.Merge, backlog.AcceptedLabel(f), how)
-		if err := f.Sticky(t, body, forge.Marker("merge-waits="+developer.Unreviewed), true); err != nil {
+		if err := f.Sticky(t, body, forge.Marker("merge-waits="+devmark.Unreviewed), true); err != nil {
 			return nil, err
 		}
 		return waits("", d.Says()+", but "+why)
@@ -147,7 +148,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		}
 		w.say("milestone-set", "", fmt.Sprintf("#%d, a %s, put in milestone %s: its release candidate is tried before the version ships", d.Issue, d.Kind, title))
 	}
-	if d.Kind == developer.KindFix {
+	if d.Kind == devmark.KindFix {
 		why, err := unreproduced(o.Repo, w.baseTip, w.tip, d)
 		if err != nil {
 			return nil, err
@@ -158,7 +159,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 			t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
 			body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `%s`: a bug's fix merges once a test that failed on the base proves the bug and every gate passes.\n\n- To accept this one, put the label `%s`.\n- Not a bug? Change the label on #%d.",
 				d.Says(), why, o.Merge, backlog.AcceptedLabel(f), d.Issue)
-			if err := f.Comment(t, body, forge.Marker("merge-waits="+developer.Unreproduced)); err != nil {
+			if err := f.Comment(t, body, forge.Marker("merge-waits="+devmark.Unreproduced)); err != nil {
 				return nil, err
 			}
 			return waits("", d.Says()+", but "+why)

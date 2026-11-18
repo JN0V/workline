@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/stall"
@@ -82,7 +82,7 @@ func wakeCmd(args []string) int {
 	} else {
 		hours = rc.Stalled()
 	}
-	r, err := wake.Read(wake.Options{Repo: root, Before: before, After: after, Forge: f, Branch: developer.Branch, StalledHours: hours})
+	r, err := wake.Read(wake.Options{Repo: root, Before: before, After: after, Forge: f, Branch: devmark.Branch, StalledHours: hours})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 64

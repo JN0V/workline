@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // The apply finds the bundle the merge round writes, where it writes it;
@@ -24,7 +24,7 @@ func TestOwnMergeFindsTheRoundsBundle(t *testing.T) {
 	if m := ownMerge(run); m == nil || m.Bundle != "" {
 		t.Fatalf("no bundle: want none named, got %+v", m)
 	}
-	b := filepath.Join(run, developer.MergeBundle)
+	b := filepath.Join(run, devmark.MergeBundle)
 	if err := os.WriteFile(b, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}

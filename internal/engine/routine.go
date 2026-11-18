@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/steer"
 )
@@ -345,7 +345,7 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 			return waits("", fmt.Sprintf("opened by workline, but %s pushed to its branch", who))
 		}
 	}
-	if strings.HasPrefix(mr.Branch, developer.Branch) {
+	if strings.HasPrefix(mr.Branch, devmark.Branch) {
 		return weighCode(f, m, o, w, n, hand, waits)
 	}
 	who, err := notOwn(o.Repo, w.baseTip, tip, n.committer, n.local)

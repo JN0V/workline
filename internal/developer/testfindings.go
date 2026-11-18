@@ -11,6 +11,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"slices"
 	"strings"
@@ -167,7 +168,7 @@ func toTesterOnly(r round, b Bounds, repo string) []intent.Intention {
 	return []intent.Intention{
 		testRequests(repo, b, r.MR, r.ToTester),
 		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": body.String()}},
-		{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}},
+		{Kind: "comment", Value: map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}},
 	}
 }
 
@@ -225,6 +226,6 @@ func disputedOff(r round, repo string) []intent.Intention {
 		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(
 			"**Blocked**: the review still blocks on %d test finding%s the tester answered no test is needed for. #%d is blocked, its reason on it: a person of the project reads both and settles it.\n\n%s",
 			n, plural(n), a.Issue, askedList(r.Disputed))}},
-		{Kind: "comment", Value: map[string]any{"sticky": RecordKey, "body": recordBody(a)}},
+		{Kind: "comment", Value: map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}},
 	}
 }

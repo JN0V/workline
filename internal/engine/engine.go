@@ -1788,7 +1788,7 @@ func ownMerge(runDir string) *baseMerge {
 		return nil
 	}
 	m := &baseMerge{Base: mr.Merge, Tree: mr.Tree}
-	if b := filepath.Join(runDir, "out", "merge.bundle"); fileIs(b) { // developer.MergeBundle
+	if b := filepath.Join(runDir, "out", "merge.bundle"); fileIs(b) { // devmark.MergeBundle
 		m.Bundle = b
 	}
 	return m

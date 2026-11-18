@@ -8,6 +8,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // The wait is said; A blocking finding still holds: given a developer's
@@ -45,7 +46,7 @@ func TestWeighSaysTheWaitOnABlockingFinding(t *testing.T) {
 	}
 	target := forge.Target{Kind: "merge-request", ID: id}
 	record := "**The developer's record**\n\n" + developer.Act{Act: "code", Issue: 1}.Line()
-	if err := l.Comment(target, record, forge.Marker("sticky=developer/"+developer.RecordKey)); err != nil {
+	if err := l.Comment(target, record, forge.Marker("sticky=developer/"+devmark.RecordKey)); err != nil {
 		t.Fatal(err)
 	}
 	summary := "**workline reviewer** — verdict pass.\n\n" +
