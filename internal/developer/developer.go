@@ -15,7 +15,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -41,7 +40,10 @@ import (
 
 // The role joins the engine by name (internal/contract).
 func init() {
-	contract.Join("developer", contract.Role{Pre: Pre, Post: Post, Code: &contract.Code{ProveMerge: ProveMerge, Guarded: Guarded}})
+	contract.Join("developer", contract.Role{Pre: Pre, Post: Post, Code: &contract.Code{
+		ProveMerge: ProveMerge, Guarded: Guarded,
+		RoundDue: RoundDue, Held: Held, Overlapping: Overlapping, Changed: Changed, RepoFiles: RepoFiles,
+	}})
 }
 
 const (
@@ -197,7 +199,7 @@ func overlap(a, b []string) string {
 // Scope's paths and those its pull request lists beyond the Scope.
 // Only a claimed issue's merge requests are read: an unclaimed one's
 // branch is never fetched, a wait each pick would feel.
-func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string, changed Diffs) map[int][]string {
+func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string, changed contract.Diffs) map[int][]string {
 	closing := map[int][]forge.MergeRequest{}
 	for _, m := range mrs {
 		for _, n := range forge.ClosesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
@@ -275,21 +277,6 @@ func Overlapping(is forge.Issue, held map[int][]string, files []string) (int, st
 	return 0, ""
 }
 
-// OverlapWhy says why an issue is passed over: its Scope's path p
-// overlaps issue n's, held.
-func OverlapWhy(n int, p string) string {
-	return fmt.Sprintf("its %s's `%s` overlaps #%d's, taken", work.Name(work.Scope), p, n)
-}
-
-// overlapSaid is OverlapWhy as the developer's comment says it.
-var overlapSaid = regexp.MustCompile("'s `[^`]+` overlaps #\\d+'s, taken")
-
-// PassedForOverlap says whether the developer's comment c says it passed
-// its issue over for an overlap (OverlapWhy).
-func PassedForOverlap(c string) bool {
-	return strings.Contains(c, "waits on this issue") && overlapSaid.MatchString(c)
-}
-
 // kindOf is the kind issue n's labels give it, "" when none or not among
 // issues.
 func kindOf(issues []forge.Issue, n int) string {
@@ -345,7 +332,7 @@ func outranked(is forge.Issue, issues []forge.Issue, held map[int][]string) map[
 
 // letGo are the claims this run lets go: held no more, taken at a next
 // run. passed are the issues offered it passed over, why each.
-func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string, changed Diffs) (id int, passed []devmark.Passed) {
+func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string, changed contract.Diffs) (id int, passed []devmark.Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
@@ -382,7 +369,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 			next = "the tester writes them, as a Draft of its own; the developer takes this issue at a run after that Draft is open"
 		default:
 			if n, p := Overlapping(is, outranked(is, issues, held), files); n != 0 {
-				why = OverlapWhy(n, p)
+				why = devmark.OverlapWhy(n, p)
 				next = fmt.Sprintf("#%d merged or let go; the developer looks at this issue again at its next run", n)
 				if k := kindOf(issues, n); k != devmark.KindFix && closer[n] != 0 {
 					// Only a fix merges alone (ADR-0060): the wait ends on

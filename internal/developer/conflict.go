@@ -19,6 +19,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
@@ -235,8 +236,8 @@ func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog
 	}
 	r := round{MR: mr.ID, Branch: mr.Branch, Record: a, At: head, Merge: base, Conflicts: files,
 		Asked: []devmark.Asked{{Key: "conflict|" + base, Where: mr.Base, Holds: conflictHolds, Text: "conflicts with " + mr.Base + " in " + strings.Join(files, ", ")}}}
-	if Backstop != nil {
-		said, err := Backstop(f, repo, a.Issue)
+	if contract.Backstop != nil {
+		said, err := contract.Backstop(f, repo, a.Issue)
 		if err != nil {
 			return external(err)
 		}

@@ -13,13 +13,15 @@ package line
 
 import (
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/contract"
+	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/testmark"
+
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
@@ -44,7 +46,7 @@ type tally struct {
 	// need: what says which claims hold which files (developer.Held).
 	mrs     []forge.MergeRequest
 	files   []string
-	changed developer.Diffs // the held ones' changed files, each read once
+	changed contract.Diffs // the held ones' changed files, each read once
 	read    bool
 	// The product owner's delay for a question (timeout.go), read once
 	// from its role in rolesDir and the project in repo.
@@ -100,7 +102,7 @@ func (t *tally) held(b forge.Backlog, doing routing.State, open []forge.Issue) (
 	if err := t.mergeRequests(b, "which claims hold code"); err != nil {
 		return nil, err
 	}
-	return developer.Held(open, t.mrs, doing.Label, nil, t.files, t.changed), nil
+	return contract.BuiltinCode().Held(open, t.mrs, doing.Label, nil, t.files, t.changed), nil
 }
 
 // mergeRequests reads the forge's open merge requests, and the
@@ -121,9 +123,9 @@ func (t *tally) mergeRequests(b forge.Backlog, what string) error {
 	}
 	t.mrs, t.read = mrs, true
 	if t.repo != "" {
-		t.files = developer.RepoFiles(t.repo)
+		t.files = contract.BuiltinCode().RepoFiles(t.repo)
 		f, _ := b.(forge.Forge)
-		t.changed = developer.Changed(t.repo, f != nil && forge.KeepsBranches(f))
+		t.changed = contract.BuiltinCode().Changed(t.repo, f != nil && forge.KeepsBranches(f))
 	}
 	return nil
 }
@@ -185,8 +187,8 @@ func apart(cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is f
 		if err != nil {
 			return "", err
 		}
-		if n, p := developer.Overlapping(is, held, t.files); n != 0 {
-			return developer.OverlapWhy(n, p), nil
+		if n, p := contract.BuiltinCode().Overlapping(is, held, t.files); n != 0 {
+			return devmark.OverlapWhy(n, p), nil
 		}
 	}
 	return "", nil

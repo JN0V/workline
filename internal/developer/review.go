@@ -25,6 +25,7 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
@@ -272,9 +273,9 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		}
 		return final(runDir, v)
 	}
-	if Backstop != nil {
+	if contract.Backstop != nil {
 		// Its issue's runs at their backstop: no round more (ADR-0064, §5).
-		said, err := Backstop(f, repo, issue)
+		said, err := contract.Backstop(f, repo, issue)
 		if err != nil {
 			return external(err)
 		}
