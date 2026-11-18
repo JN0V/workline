@@ -72,6 +72,7 @@ func TestASecondRoleOfferingCodeIsRefused(t *testing.T) {
 
 // A test runs on its fixture registry, and the shipped one comes back.
 func TestATestUsesItsFixtureRegistry(t *testing.T) {
+	shipped := Builtins()
 	r := NewRegistry()
 	r.Join("coder", Role{Code: &Code{}})
 	restore := UseForTest(r)
@@ -79,7 +80,7 @@ func TestATestUsesItsFixtureRegistry(t *testing.T) {
 		t.Errorf("the fixture registry is not read: %v, %q", c, n)
 	}
 	restore()
-	if Builtins() == r {
+	if Builtins() != shipped {
 		t.Error("the shipped registry is not put back")
 	}
 }

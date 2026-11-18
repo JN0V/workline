@@ -2,6 +2,7 @@ package line
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"slices"
 	"strings"
@@ -14,7 +15,9 @@ import (
 // The line's tests run on a fixture role in place of the developer
 // (docs/spec/layout.md, Tests): the real one is tried in tests/ and in
 // its own package. A claimed issue holds the files of the open merge
-// requests that close it; none overlaps; a claim keeps 24 hours.
+// requests that close it; an issue overlaps a held one when its body
+// names one of that one's files; a claim keeps its settings'
+// claim-hours, 24 when none.
 func TestMain(m *testing.M) {
 	r := contract.NewRegistry()
 	r.Join("fixture-coder", contract.Role{Code: &contract.Code{
@@ -33,10 +36,25 @@ func TestMain(m *testing.M) {
 			}
 			return held
 		},
-		Overlapping: func(forge.Issue, map[int][]string, []string) (int, string) { return 0, "" },
-		Changed:     func(string, bool) contract.Diffs { return nil },
-		RepoFiles:   func(string) []string { return nil },
-		ClaimHours:  func(map[string]any) int { return 24 },
+		Overlapping: func(is forge.Issue, held map[int][]string, _ []string) (int, string) {
+			ids := slices.Sorted(maps.Keys(held))
+			for _, id := range ids {
+				for _, f := range held[id] {
+					if id != is.ID && strings.Contains(is.Body, f) {
+						return id, f
+					}
+				}
+			}
+			return 0, ""
+		},
+		Changed:   func(string, bool) contract.Diffs { return nil },
+		RepoFiles: func(string) []string { return nil },
+		ClaimHours: func(m map[string]any) int {
+			if h, ok := m["claim-hours"].(int); ok && h > 0 {
+				return h
+			}
+			return 24
+		},
 	}})
 	restore := contract.UseForTest(r)
 	code := m.Run()
