@@ -734,10 +734,13 @@ func (a *applier) refining(c backlog.Proposal) error {
 		}
 	}
 	labels := []string{backlog.LabelToRefine}
-	if slices.Contains(is.Labels, backlog.LabelBlocked) {
-		// Blocked, read again (revisit.go): a refine writes its body and
-		// moves nothing; an `unblock` beside it does, one state label at
-		// a time (#1126).
+	if slices.ContainsFunc(is.Labels, func(l string) bool {
+		return l == backlog.LabelBlocked || l == backlog.LabelReady || l == backlog.LabelNeedsTests || l == "workline:developing"
+	}) {
+		// Blocked, read again (revisit.go), or already past refine (ready,
+		// needs-tests, developing): a refine writes its body and moves
+		// nothing; an `unblock` or `unready` does, one state label at a
+		// time (#1126, #1747).
 		labels = nil
 	}
 	if slices.ContainsFunc(added, backlog.Drafted) {
