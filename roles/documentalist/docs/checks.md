@@ -1,7 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
-checked: 8538d558
-judged: f70db89
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # Documentalist — the checks
@@ -171,6 +170,8 @@ turns one off with `enforce`.
   merge request).
 - **Blocks**:
   - `unknown`: a source that could not be read;
+  - a check that cannot run (git failing): its reason, git's own text in
+    it;
   - `setting-missing`: a budget or threshold not set, so a check did not
     run;
   - `derive-unknown` and `derive-failed`: a derived block that could not

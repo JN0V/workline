@@ -10,7 +10,7 @@ sources:
   - internal/builtin/documentalist/documentalist.go#preRun.leaveForNextRound
   - internal/builtin/documentalist/documentalist.go#Post
   - internal/builtin/documentalist/documentalist.go#outcomes
-checked: 8538d558
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # Documentalist — judged in parts

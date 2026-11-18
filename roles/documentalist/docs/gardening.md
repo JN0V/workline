@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go]
-checked: 87a81d4a
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -33,7 +33,8 @@ It comes before condensing: two copies drift apart. The judge checks that:
 - what leaves a doc is found in the other;
 - it links to the one keeping it;
 - no MUST or SHOULD is lost;
-- the passage is no longer repeated.
+- the passage is no longer repeated;
+- no reader problem is added (`patch-introduces`).
 
 ## Condensing
 
@@ -69,7 +70,10 @@ The judge refuses a condense patch when:
 - it brings a budget problem the docs did not have, or makes one bigger
   (`patch-introduces`) — a part over its budget already, moved whole into
   a new doc, its text word for word, is the same problem moved, not a
-  new one.
+  new one; so does a reader problem a new page among the user pages
+  brings (`patch-introduces`, [reader checks](checks-docs.md#docs-for-their-reader)):
+  the task says to put a new doc in a subfolder of the doc's own, unless
+  it is written for readers.
 
 A condense, split, merge-card or dedupe hunk quoting a doc wrong is placed
 as for a suspect doc ([hunks](judge.md#hunks-that-misquote-the-doc)); one
@@ -89,7 +93,8 @@ deleted, and every link to it pointed there. The judge checks that:
 
 - the text is found in one card, which loses nothing;
 - the docs linking to it change those links only;
-- no link is left dangling.
+- no link is left dangling;
+- no reader problem is added (`patch-introduces`).
 
 ## Splitting a card
 
