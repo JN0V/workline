@@ -97,7 +97,7 @@ func sameCommit(a, b string) bool {
 // gates reported on another head than its branch's (head; "" when not
 // known: the round reads it), or on the one its last round read
 // (a.GatesAt). It returns the head they were read at.
-func gatesAsked(kept forge.Kept, a Act, head string) (string, []devmark.Asked) {
+func gatesAsked(kept forge.Kept, a devmark.Act, head string) (string, []devmark.Asked) {
 	c, ok := kept.Last(forge.GatesMarker)
 	if !ok {
 		return "", nil

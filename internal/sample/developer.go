@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
 )
@@ -20,7 +19,7 @@ const devRole = "developer"
 
 // devAct is what the developer's code is re-checked against, read with it.
 type devAct struct {
-	record   developer.Act
+	record   devmark.Act
 	recorded bool
 	first    string // its oldest commit on the head
 	merge    string // how the merge policy decided on it, "" a person's yes
@@ -66,11 +65,11 @@ func developerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act,
 			unread = append(unread, fmt.Sprintf("the developer's code on %s: no commit of its on the head", ref))
 			continue
 		}
-		r, ok, err := developer.ReadRecord(f, m.ID)
+		r, ok, err := devmark.ReadRecord(f, m.ID)
 		if err != nil {
 			return nil, nil, err
 		}
-		said, err := developer.MergeSaid(f, m.ID)
+		said, err := devmark.MergeSaid(f, m.ID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -114,7 +113,7 @@ func (rd *reader) developerMaterial(a *Act, m *material) string {
 	m.about = "The issue as it reads now, the diff of the developer's own commits (its code, its tests), and what the project's tests said on it."
 	// Its review rounds (ADR-0054, step 6): what each was asked and how it
 	// ended, its fixes among the commits drawn.
-	if rounds := developer.RoundLines(d.record); rounds != "" {
+	if rounds := devmark.RoundLines(d.record); rounds != "" {
 		m.items = append(m.items, item{name: "rounds", text: rounds, full: rounds})
 		m.act = fmt.Sprintf("The developer's code for #%d, its commits up to %.7s, opened as %s, then %s.", d.record.Issue, a.Commit, a.Ref, plural(len(d.record.Rounds), "review round"))
 		m.about += " Then its review rounds: what the reviewer or a person asked each, and how it ended."

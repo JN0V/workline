@@ -11,10 +11,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/devmark"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"slices"
 	"strings"
+
+	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
@@ -135,7 +136,7 @@ func testerLines(l []devmark.Asked) []string {
 }
 
 // sendTests marks l sent in a's record.
-func sendTests(a *Act, l []devmark.Asked) {
+func sendTests(a *devmark.Act, l []devmark.Asked) {
 	for _, x := range l {
 		if !slices.Contains(a.Tester, x.Key) {
 			a.Tester = append(a.Tester, x.Key)
@@ -176,7 +177,7 @@ func toTesterOnly(r round, b Bounds, repo string) []intent.Intention {
 // merge, the tester answering on the pull request that no test is needed
 // on their line: the reviewer and the tester do not agree, and nothing
 // the developer may do settles it.
-func disputed(rows []devmark.Asked, a Act, kept forge.Kept) []devmark.Asked {
+func disputed(rows []devmark.Asked, a devmark.Act, kept forge.Kept) []devmark.Asked {
 	needless := map[string]bool{}
 	for _, c := range kept.Each("<!-- workline:sticky=tester/" + tester.TesterAnswerKey) {
 		if a, ok := reviewer.NoneNeeded(c); ok {

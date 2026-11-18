@@ -3,6 +3,7 @@ sources:
   - internal/developer/developer.go
   - internal/tester/proof.go
   - internal/kit/testmark
+  - internal/kit/devmark
 checked: 07ca9b9b
 verified: agent:claude-code
 ---

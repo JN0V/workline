@@ -8,6 +8,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // A claim is let go at claim-hours exactly, not an hour before; one an
@@ -75,9 +76,9 @@ func TestPickPassesALetGoClaim(t *testing.T) {
 // issue over for (#998): that reason alone, as OverlapWhy says it.
 func TestPassedForOverlap(t *testing.T) {
 	for c, want := range map[string]bool{
-		backlog.Said("**The developer**", "waits on this issue", OverlapWhy(5, "lib.sh"), "#5 merged or let go"): true,
+		backlog.Said("**The developer**", "waits on this issue", OverlapWhy(5, "lib.sh"), "#5 merged or let go"):                       true,
 		backlog.Said("**The developer**", "waits on this issue", "its acceptance tests are not written yet", "the tester writes them"): false,
-		"**The developer** took this issue. Passed over: #2: " + OverlapWhy(5, "lib.sh"): false,
+		"**The developer** took this issue. Passed over: #2: " + OverlapWhy(5, "lib.sh"):                                               false,
 	} {
 		if got := PassedForOverlap(c); got != want {
 			t.Errorf("PassedForOverlap(%q) = %v, want %v", c, got, want)
@@ -92,33 +93,33 @@ func TestPassedForOverlap(t *testing.T) {
 func TestNoCodeOnOtherBody(t *testing.T) {
 	body := "## Need\n\nI want to multiply.\n"
 	for _, c := range []struct {
-		a    Act
+		a    devmark.Act
 		want bool
 	}{
-		{Act{NoCode: true, Body: BodyMark(body)}, false},
-		{Act{NoCode: true, Body: BodyMark("## Need\n\nI want to add.")}, true},
-		{Act{Body: BodyMark("other")}, false},
-		{Act{NoCode: true}, false},
+		{devmark.Act{NoCode: true, Body: devmark.BodyMark(body)}, false},
+		{devmark.Act{NoCode: true, Body: devmark.BodyMark("## Need\n\nI want to add.")}, true},
+		{devmark.Act{Body: devmark.BodyMark("other")}, false},
+		{devmark.Act{NoCode: true}, false},
 	} {
-		if got := NoCodeOnOtherBody(c.a, body); got != c.want {
+		if got := devmark.NoCodeOnOtherBody(c.a, body); got != c.want {
 			t.Errorf("%+v: %v, want %v", c.a, got, c.want)
 		}
 	}
 	// The same input: no code on this body, or on one it did not keep.
 	for _, c := range []struct {
-		a    Act
+		a    devmark.Act
 		want bool
 	}{
-		{Act{NoCode: true, Body: BodyMark(body)}, true},
-		{Act{NoCode: true}, true},
-		{Act{NoCode: true, Body: BodyMark("## Need\n\nI want to add.")}, false},
-		{Act{Body: BodyMark(body)}, false},
+		{devmark.Act{NoCode: true, Body: devmark.BodyMark(body)}, true},
+		{devmark.Act{NoCode: true}, true},
+		{devmark.Act{NoCode: true, Body: devmark.BodyMark("## Need\n\nI want to add.")}, false},
+		{devmark.Act{Body: devmark.BodyMark(body)}, false},
 	} {
-		if got := NoCodeOnSameBody(c.a, body); got != c.want {
+		if got := devmark.NoCodeOnSameBody(c.a, body); got != c.want {
 			t.Errorf("same body %+v: %v, want %v", c.a, got, c.want)
 		}
 	}
-	if BodyMark(body) != BodyMark("  "+body+"\n") {
+	if devmark.BodyMark(body) != devmark.BodyMark("  "+body+"\n") {
 		t.Error("a body's mark reads its spaces around")
 	}
 }
@@ -129,13 +130,13 @@ func TestNoCodeOnOtherBody(t *testing.T) {
 func TestBodyChangedEngineLine(t *testing.T) {
 	body := "## Need\n\nI want to add."
 	blocked := body + "\n\nBlocked by #9. " + backlog.BlockedByMarker
-	if BodyChanged(BodyMark(body), blocked) {
+	if devmark.BodyChanged(devmark.BodyMark(body), blocked) {
 		t.Error("the engine's line read as a change")
 	}
-	if BodyChanged(digest(blocked), blocked) {
+	if devmark.BodyChanged(devmark.Digest(blocked), blocked) {
 		t.Error("a record's whole-body mark read as a change")
 	}
-	if !BodyChanged(BodyMark(body), blocked+"\n\nAnd subtract.") {
+	if !devmark.BodyChanged(devmark.BodyMark(body), blocked+"\n\nAnd subtract.") {
 		t.Error("a person's change not read")
 	}
 }

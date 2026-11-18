@@ -10,8 +10,6 @@ package developer
 
 import (
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/devmark"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"os"
 	"os/exec"
@@ -19,6 +17,9 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
@@ -34,7 +35,7 @@ const testerHolds = "the tester"
 // the forge is read only when the branches differ. A blob the record
 // does not name is never asked, so it makes no round due again and
 // again. None when the head or the tester's branch is not known in repo.
-func rewritesAsked(f forge.Forge, repo string, a Act, head string) ([]devmark.Asked, error) {
+func rewritesAsked(f forge.Forge, repo string, a devmark.Act, head string) ([]devmark.Asked, error) {
 	if head == "" || len(a.Acceptance) == 0 {
 		return nil, nil
 	}

@@ -55,7 +55,7 @@ func TestRoundDueWhenMainMovedIntoConflict(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	record := "**The developer's record**\n\n" + Act{Act: "code", Issue: 1}.Line()
+	record := "**The developer's record**\n\n" + devmark.Act{Act: "code", Issue: 1}.Line()
 	if err := l.Comment(forge.Target{Kind: "merge-request", ID: id}, record, forge.Marker("sticky=developer/"+devmark.RecordKey)); err != nil {
 		t.Fatal(err)
 	}

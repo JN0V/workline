@@ -1,8 +1,9 @@
 // Package devmark is what the developer leaves on the forge and in its
 // run that the line, the engine and the sample read: its branches, its
-// record's key and parts, its merge's words and marks, its proof and its
-// results, its review's rounds and the reviewer's marks they read
-// (ADR-0070 §6 e). The developer writes with the same words.
+// record, its key, parts and readers, its merge's words and marks and
+// what the merge policy reads, its proof and its results, its review's
+// rounds and the reviewer's marks they read (ADR-0070 §6 e). The
+// developer writes with the same words.
 package devmark
 
 import (
