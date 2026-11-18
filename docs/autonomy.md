@@ -2,7 +2,7 @@
 sources: [internal/role/role.go, internal/doctor/levels.go, roles/product-owner/role.yaml, roles/developer/role.yaml]
 checked: 4447b0ab
 verified: agent:claude-code
-judged-in-parts: 5c1573b
+judged-in-parts: eb16524
 ---
 # Autonomy
 
