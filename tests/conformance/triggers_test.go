@@ -18,6 +18,11 @@ const (
 	onCheck = "check"
 	onEvent = "event"
 	onTime  = "time"
+	// onTemplate is a schedule of a job `workline tick` lists: this
+	// repository's loop dispatches it, so its own workflow has none and
+	// fails here if it comes back; the template keeps it, for a project
+	// whose loop is a dry run (docs/tick.md#the-github-loop).
+	onTemplate = "time, the template only"
 )
 
 // triggers is each workflow's, by file, the same for this repository's
@@ -27,18 +32,18 @@ var triggers = map[string]map[string]string{
 	"workline.yml":           {"pull_request": onCheck, "push": onCheck},
 	"workline-warn.yml":      {"pull_request": onCheck},
 	"workline-bounds.yml":    {"pull_request_target": onCheck},
-	"test.yml":               {"pull_request": onCheck, "push": onCheck, "schedule": onTime, "workflow_dispatch": onTime},
+	"test.yml":               {"pull_request": onCheck, "push": onCheck, "workflow_dispatch": onTime},
 	"release-please.yml":     {"push": onCheck},
 	"release.yml":            {"workflow_call": onCheck},
 	"release-candidate.yml":  {"push": onCheck},
 	"workline-loop.yml":      {"schedule": onTime, "workflow_dispatch": onTime},
-	"workline-gardening.yml": {"schedule": onTime, "workflow_dispatch": onTime},
-	"workline-sample.yml":    {"schedule": onTime, "workflow_dispatch": onTime},
+	"workline-gardening.yml": {"schedule": onTemplate, "workflow_dispatch": onTime},
+	"workline-sample.yml":    {"schedule": onTemplate, "workflow_dispatch": onTime},
 	"schedule-probe.yml":     {"schedule": onTime, "workflow_dispatch": onTime},
 	"workline-develop.yml": {"issues": onEvent, "issue_comment": onEvent, "workflow_run": onEvent,
-		"schedule": onTime, "workflow_dispatch": onTime},
+		"schedule": onTemplate, "workflow_dispatch": onTime},
 	"workline-answer.yml": {"workflow_run": onEvent, "workflow_dispatch": onTime},
-	"workline-merge.yml": {"pull_request_target": onEvent, "issues": onEvent, "schedule": onTime,
+	"workline-merge.yml": {"pull_request_target": onEvent, "issues": onEvent, "schedule": onTemplate,
 		"workflow_dispatch": onTime},
 	"workline-objection.yml": {"pull_request_review_comment": onEvent},
 	"workline-release.yml":   {"issues": onEvent, "workflow_run": onEvent},
@@ -80,7 +85,9 @@ func TestEachWorkflowsTriggersListed(t *testing.T) {
 			}
 			all := map[string]string{}
 			for k, v := range want {
-				all[k] = v
+				if v != onTemplate || strings.Contains(dir, "defaults") {
+					all[k] = v
+				}
 			}
 			if strings.Contains(dir, "defaults") {
 				for k, v := range templateOnly[base] {

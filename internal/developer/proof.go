@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/agent"
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -37,8 +38,8 @@ type Flaky struct {
 
 // flakyOf is the flaky-n-of-n proof the tester recorded, its runs the
 // record's or the flaky-runs setting; nil for another kind or none.
-func flakyOf(k *tester.Proof, s Settings) *Flaky {
-	if k == nil || k.Kind != tester.KindFlaky {
+func flakyOf(k *backlog.Proof, s Settings) *Flaky {
+	if k == nil || k.Kind != backlog.KindFlaky {
 		return nil
 	}
 	n := k.Runs
@@ -79,7 +80,7 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 	p.Command = ts.Command
 	scope := tester.Scope{Files: also}
 	if n != nil {
-		if !tester.TestName.MatchString(n.Test) {
+		if !backlog.TestName.MatchString(n.Test) {
 			p.Result, p.Why = devmark.Unproven, "the tester's flaky-n-of-n record names no test to run"
 			return p, nil
 		}

@@ -10,8 +10,7 @@ sources:
   - internal/builtin/documentalist/documentalist.go#outcomes
   - internal/builtin/documentalist/documentalist.go#mergeRequest
   - internal/builtin/documentalist/documentalist.go#checklist
-checked: d722a840
-judged: 786d304
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # Documentalist — the judge

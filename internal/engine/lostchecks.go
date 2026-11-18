@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/worktree"
 )
 
 // BringChecksBack pushes mr's branch merged with its base, so that its
@@ -41,7 +41,7 @@ func BringChecksBack(repo string, mr forge.MergeRequest) (pushed bool, said stri
 		strings.Contains(msg, OwnTrailer) && strings.HasPrefix(msg, fmt.Sprintf("Merge branch '%s' into", base)) {
 		return false, "its head has no check of the project's, though the line merged " + base + " into it already: no second push; the project's CI may not run on it", nil
 	}
-	tree, files, err := developer.MergeTree(repo, tip, baseTip)
+	tree, files, err := worktree.MergeTree(repo, tip, baseTip)
 	if err != nil {
 		return false, "", fmt.Errorf("whether it merges with %s could not be read: %v", base, err)
 	}

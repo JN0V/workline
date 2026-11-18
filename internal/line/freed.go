@@ -22,8 +22,9 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/developer"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -64,7 +65,7 @@ func freed(cfg *routing.Config, b forge.Backlog, tl *tally, s routing.State, is 
 	for _, c := range slices.Backward(comments) {
 		if strings.Contains(c, developerSaid) {
 			said = bodyHash(c)
-			overlapped = developer.PassedForOverlap(c) && rec.Unheld != said
+			overlapped = devmark.PassedForOverlap(c) && rec.Unheld != said
 			break
 		}
 	}
@@ -80,7 +81,7 @@ func freed(cfg *routing.Config, b forge.Backlog, tl *tally, s routing.State, is 
 			return rec, fmt.Sprintf("#%d, held when the line woke the developer on it, is held no more: free to take again", n), nil
 		}
 	}
-	if n, _ := developer.Overlapping(is, claims, tl.files); overlapped && n == 0 {
+	if n, _ := contract.BuiltinCode().Overlapping(is, claims, tl.files); overlapped && n == 0 {
 		rec.Unheld = said
 		return rec, fmt.Sprintf("the developer passed it over for an overlap, but its %s overlaps no issue held now (a %[1]s its own words call a guess holds nothing): free to take again", work.Name(work.Scope)), nil
 	}

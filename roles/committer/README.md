@@ -2,6 +2,7 @@
 sources: [internal/builtin/committer, internal/kit/commitmsg, roles/committer/role.yaml, defaults/routing.yaml]
 checked: ac47b877
 verified: agent:claude-code
+judged-in-parts: eb16524
 ---
 # Committer
 

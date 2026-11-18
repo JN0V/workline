@@ -16,6 +16,7 @@ import (
 	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
 )
@@ -35,11 +36,11 @@ func sayOn(n int, body string) intent.Intention {
 
 // waits are what the pick writes on the issues it passed over for its own
 // reasons: why each waits, and what comes next.
-func waits(passed []Passed) []intent.Intention {
+func waits(passed []devmark.Passed) []intent.Intention {
 	var out []intent.Intention
 	for _, p := range passed {
-		if p.next != "" {
-			out = append(out, sayOn(p.Issue, backlog.Said(who, "waits on this issue", p.Why, p.next)))
+		if p.Next != "" {
+			out = append(out, sayOn(p.Issue, backlog.Said(who, "waits on this issue", p.Why, p.Next)))
 		}
 	}
 	return out
@@ -106,7 +107,7 @@ func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Se
 					Message: "its claim's comment could not be read (" + forge.Said(err) + "): kept, read again at the next run"})
 				continue
 			}
-			if NoCodeOnSameBody(a, is.Body) {
+			if devmark.NoCodeOnSameBody(a, is.Body) {
 				found = append(found, verdict.Finding{Rule: "claim-left-to-line", Level: "info", Where: where,
 					Message: why + ", its agent wrote no code on the body it still has: kept, left to the line, which blocks it for a person"})
 				continue
@@ -130,43 +131,17 @@ func bodyChanged(b forge.Backlog, is forge.Issue) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return NoCodeOnOtherBody(a, is.Body), nil
+	return devmark.NoCodeOnOtherBody(a, is.Body), nil
 }
 
 // ClaimAct is the record the developer's claim comment on issue id
 // holds, its last; the zero Act when none reads.
-func ClaimAct(b forge.Backlog, id int) (Act, error) {
+func ClaimAct(b forge.Backlog, id int) (devmark.Act, error) {
 	comments, err := b.Comments(forge.Target{Kind: "issue", ID: id})
 	if err != nil {
-		return Act{}, err
+		return devmark.Act{}, err
 	}
-	return ClaimActIn(comments), nil
-}
-
-// ClaimActIn is the last developer's record among comments; the zero Act
-// when none reads.
-func ClaimActIn(comments []string) Act {
-	var last Act
-	for _, c := range comments {
-		if a, ok := ReadAct(c); ok {
-			last = a
-		}
-	}
-	return last
-}
-
-// NoCodeOnOtherBody says whether a claim's record a wrote no code on a
-// body other than body (#1084); false for a record from before Act.Body.
-func NoCodeOnOtherBody(a Act, body string) bool {
-	return a.NoCode && a.Body != "" && BodyChanged(a.Body, body)
-}
-
-// NoCodeOnSameBody says whether a claim's record a wrote no code on the
-// body it has now, or on one it did not keep (a record from before
-// Act.Body): run again, its agent would get the same input. Past
-// claim-hours, the line blocks such an issue for a person instead.
-func NoCodeOnSameBody(a Act, body string) bool {
-	return a.NoCode && !NoCodeOnOtherBody(a, body)
+	return devmark.ClaimActIn(comments), nil
 }
 
 // say ends pre with v: final when nothing is to be written on an issue;
@@ -210,7 +185,7 @@ func unopenedBefore(b forge.Backlog, id int) (int, error) {
 	}
 	n := 0
 	for _, c := range comments {
-		if a, ok := ReadAct(c); ok {
+		if a, ok := devmark.ReadAct(c); ok {
 			n = max(n, a.Unopened)
 		}
 	}
@@ -222,8 +197,8 @@ func unopenedBefore(b forge.Backlog, id int) (int, error) {
 // claim's comment, edited in place, so the next run takes it again. Its
 // second time on the issue, it is blocked instead: no run takes it again
 // until a person moves it back, so a failure that repeats is no loop.
-func unopened(a Act, s Settings, repo string) []map[string]any {
-	rec := Act{Act: "unopened", At: a.At, Issue: a.Issue, From: a.From, Unopened: a.Unopened + 1}
+func unopened(a devmark.Act, s Settings, repo string) []map[string]any {
+	rec := devmark.Act{Act: "unopened", At: a.At, Issue: a.Issue, From: a.From, Unopened: a.Unopened + 1}
 	why := "its pull request did not open: " + intent.WhyMark
 	if rec.Unopened > 1 {
 		add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}

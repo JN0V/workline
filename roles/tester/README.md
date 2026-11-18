@@ -6,7 +6,7 @@ sources:
   - defaults/ci/github/workline-objection.yml
   - defaults/ci/github/workline-answer.yml
   - defaults/ci/github/workline-gardening.yml
-checked: 01e06784
+checked: e4e4287bc
 verified: agent:claude-code
 ---
 # Tester
@@ -165,6 +165,9 @@ Each refusal is written on the issue ([how](docs/hand-over.md#when-the-tester-re
     naming the finding's line and title: the developer reads it there,
     and the reviewer's judge weighs a *none needed*
     ([weighed](../reviewer/docs/tester-answers.md)).
+- **A person's review comment** on a test's line in the Draft, in no
+  objection's form: read as a test missing, and answered the same way
+  ([#1358](https://github.com/JN0V/workline/issues/1358)).
 - **The answer**: `workline test answer --merge-request <n> --ai claude`
   takes the first objection waiting, checked out at the branch's tip.
   The agent reads the scenario first, then answers in the thread:

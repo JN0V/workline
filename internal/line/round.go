@@ -14,7 +14,7 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/JN0V/workline/internal/developer"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
@@ -48,7 +48,7 @@ func roundOn(b forge.Backlog, t *tally, s routing.State, id int) (*forge.MergeRe
 // what it could not read added to res, a warning, and not due.
 func roundDue(res *Result, f forge.Forge, repo string, mr forge.MergeRequest) bool {
 	where := fmt.Sprintf("merge request %d", mr.ID)
-	ok, err := developer.RoundDue(f, repo, mr)
+	ok, err := contract.BuiltinCode().RoundDue(f, repo, mr)
 	switch {
 	case errors.Is(err, devmark.ErrRecordUnread):
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "round-unread", Level: "warn", Where: where,

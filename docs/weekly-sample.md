@@ -8,8 +8,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
   - roles/auditor
   - roles/product-owner/role.yaml
-checked: 8538d558
-judged: c9d96e2
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # The weekly sample
@@ -136,7 +135,7 @@ roles:
   best quoted (`after: "7515148"`): unquoted, one with a leading zero is
   refused, YAML reading it as another number.
 - **The week** is the last whole one; for another (`--week 2026-W40`),
-  each forge page says how.
+  each forge page says how. A week not started yet is refused.
 - **Nothing to turn on for the product owner**: its acts are drawn like
   any role's. Its former `weekly-sample` setting is no longer read, and
   its run says so.

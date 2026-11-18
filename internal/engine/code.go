@@ -10,7 +10,6 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/clock"
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
 )
@@ -48,7 +47,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 	if page != "" {
 		return waits("", "the developer's, but it changes "+page)
 	}
-	d, err := developer.ReadMerge(f, w.mr)
+	d, err := devmark.ReadMerge(f, w.mr)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +185,7 @@ func headTrouble(o FollowOptions, m forge.Merger, hand map[string]kept, w weighe
 // reviewer's verdict names it, or its record covers every commit of it,
 // a head rebased with no new change, on which the reviewer writes no
 // summary (reviewer.ReviewedAll).
-func unreviewed(repo string, w weighed, d developer.Merge) string {
+func unreviewed(repo string, w weighed, d devmark.Merge) string {
 	tip, why := w.tip, d.Unreviewed(w.tip)
 	if why != "" {
 		if past := reviewedTip(repo, w.tip, w.baseTip); past != w.tip {
@@ -238,7 +237,7 @@ func pushedAt(st forge.MergeState, head string) (time.Time, bool) {
 // unreproduced says why a fix's bug is not shown reproduced: its code
 // starts from no tester's Draft, or its branch holds no commit of the
 // tester's past base; "" when it is.
-func unreproduced(repo, baseTip, tip string, d developer.Merge) (string, error) {
+func unreproduced(repo, baseTip, tip string, d devmark.Merge) (string, error) {
 	if !d.Reproduced {
 		return "its code starts from no tester's Draft: no test red on the base shows the bug", nil
 	}

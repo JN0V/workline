@@ -10,16 +10,9 @@ import (
 	"fmt"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/routing"
 )
-
-// Backstop says why issue's runs reached its backstop, what a person
-// does about it; "" when they did not. Set by the engine's command to
-// the line's reading (line.BackstopSaid), which keeps the record and the
-// normals; nil, never checked.
-var Backstop func(f forge.Forge, repo string, issue int) (string, error)
 
 // stopped is what a round its issue's backstop stops writes: the issue
 // blocked, why on it and on the pull request. No round is counted.

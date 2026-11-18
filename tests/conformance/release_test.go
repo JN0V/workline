@@ -3,6 +3,7 @@ package conformance
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -137,6 +138,23 @@ func TestReleaseDryRunEachNight(t *testing.T) {
 			}
 			for d := range nightsOf(t, wf) {
 				nights[d] = true
+			}
+			// workline's own holds no cron: the loop starts the nightly
+			// at the time .workline/config.yaml gives it (docs/tick.md).
+			if len(wf.On.Schedule) == 0 && strings.HasPrefix(f, "../../.github/") {
+				cfg, err := os.ReadFile("../../.workline/config.yaml")
+				if err != nil {
+					t.Fatal(err)
+				}
+				if m := regexp.MustCompile(`\n    nightly: \{at: "([^"]+)"\}`).FindSubmatch(cfg); m != nil {
+					var own ghWorkflow
+					own.On.Schedule = append(own.On.Schedule, struct {
+						Cron string `yaml:"cron"`
+					}{string(m[1])})
+					for d := range nightsOf(t, own) {
+						nights[d] = true
+					}
+				}
 			}
 		}
 		if len(nights) == 0 {

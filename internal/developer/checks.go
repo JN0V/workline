@@ -33,7 +33,7 @@ const (
 // is not known, the forge reads none, its last round read them at this
 // head (a.ChecksAt), one still runs, or none is red. It returns the head
 // they were read at, and why the forge did not answer.
-func checksAsked(f forge.Forge, a Act, head string) (at string, asked []devmark.Asked, unread string) {
+func checksAsked(f forge.Forge, a devmark.Act, head string) (at string, asked []devmark.Asked, unread string) {
 	pc, ok := f.(forge.ProjectChecked)
 	if !ok || head == "" || sameCommit(head, a.ChecksAt) {
 		return "", nil, ""

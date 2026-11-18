@@ -11,7 +11,6 @@ package developer
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -20,25 +19,15 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/kit/worktree"
 )
 
 var conflictRecord = regexp.MustCompile(`<!-- workline:conflict head=([0-9a-f]{40,64}) base=([0-9a-f]{40,64}) -->`)
-
-// ConflictFailed says a merge round failed at head, as the developer's
-// record on mr keeps it: no second one there, a person's.
-func ConflictFailed(f forge.Forge, mr forge.MergeRequest, head string) (bool, error) {
-	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: mr.ID})
-	if err != nil {
-		return false, err
-	}
-	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
-	a, read := ReadAct(body)
-	return ok && read && a.Conflict == head, nil
-}
 
 // conflictAt reads the conflict `follow` said on the request: the head and
 // the base it was read at; ok false when none.
@@ -54,12 +43,12 @@ func conflictAt(kept forge.Kept) (head, base string, ok bool) {
 // conflictDue says a merge round is due: `follow` said a conflict at head,
 // the branch's head now, no round failed at it, and git still meets it in
 // repo (a base not fetched here counts it).
-func conflictDue(kept forge.Kept, a Act, repo, head string) (base string, due bool) {
+func conflictDue(kept forge.Kept, a devmark.Act, repo, head string) (base string, due bool) {
 	h, b, ok := conflictAt(kept)
 	if !ok || head == "" || h != head || a.Conflict == head {
 		return "", false
 	}
-	_, files, err := MergeTree(repo, head, b)
+	_, files, err := worktree.MergeTree(repo, head, b)
 	switch {
 	case err == nil && len(files) == 0:
 		return "", false // settled since, or merged clean now
@@ -76,7 +65,7 @@ func conflictDue(kept forge.Kept, a Act, repo, head string) (base string, due bo
 // conflictNow is conflictDue with no record asked for: main moved into
 // the branch's conflict since its round, so no `follow` said it yet. The
 // base's tip as the forge keeps it in repo; git's merge says it conflicts.
-func conflictNow(f forge.Forge, kept forge.Kept, a Act, repo string, mr forge.MergeRequest, head string) (base string, due bool) {
+func conflictNow(f forge.Forge, kept forge.Kept, a devmark.Act, repo string, mr forge.MergeRequest, head string) (base string, due bool) {
 	if base, due := conflictDue(kept, a, repo, head); due {
 		return base, true
 	}
@@ -92,7 +81,7 @@ func conflictNow(f forge.Forge, kept forge.Kept, a Act, repo string, mr forge.Me
 		if err != nil || tip == "" {
 			continue
 		}
-		if _, files, err := MergeTree(repo, head, tip); err == nil && len(files) > 0 {
+		if _, files, err := worktree.MergeTree(repo, head, tip); err == nil && len(files) > 0 {
 			return tip, true
 		}
 		return "", false
@@ -114,31 +103,6 @@ func branchHead(f forge.Forge, repo, branch string) string {
 		}
 	}
 	return ""
-}
-
-// MergeTree merges base into head as git does, in memory (`git
-// merge-tree`, 2.38): the tree, its conflicts' markers left in it, and
-// the files in conflict; none when it merges clean.
-func MergeTree(repo, head, base string) (tree string, files []string, err error) {
-	cmd := exec.Command("git", "-C", repo, "merge-tree", "--write-tree", "-z", "--name-only", "--no-messages", head, base)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
-	var ee *exec.ExitError
-	if err != nil && (!errors.As(err, &ee) || ee.ExitCode() != 1) {
-		return "", nil, fmt.Errorf("git merge-tree (2.38 or later): %v: %s", err, strings.TrimSpace(stderr.String()))
-	}
-	parts := strings.Split(string(out), "\x00")
-	tree = strings.TrimSpace(parts[0])
-	for _, p := range parts[1:] {
-		if p != "" && !slices.Contains(files, p) {
-			files = append(files, p)
-		}
-	}
-	if err != nil && len(files) == 0 {
-		return "", nil, errors.New("git merge-tree met a conflict it named no file of")
-	}
-	return tree, files, nil
 }
 
 // markerLine is a line git's merge opens or closes a conflict with: a
@@ -251,12 +215,12 @@ const conflictHolds = "the base"
 
 // conflictPre starts the merge round on the request: its agent's worktree
 // starts from the branch's head with base merged in, the markers in it.
-func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog, mr forge.MergeRequest, a Act, head, base string) int {
+func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog, mr forge.MergeRequest, a devmark.Act, head, base string) int {
 	where := fmt.Sprintf("merge request %d", mr.ID)
 	if _, err := gitOut(repo, "cat-file", "-e", base+"^{commit}"); err != nil {
 		_ = exec.Command("git", "-C", repo, "fetch", "-q", "origin", mr.Base).Run()
 	}
-	tree, files, err := MergeTree(repo, head, base)
+	tree, files, err := worktree.MergeTree(repo, head, base)
 	if err != nil {
 		return fail(fmt.Errorf("main merged into its head, in memory: %w", err))
 	}
@@ -272,8 +236,8 @@ func conflictPre(runDir, repo string, s Settings, f forge.Forge, b forge.Backlog
 	}
 	r := round{MR: mr.ID, Branch: mr.Branch, Record: a, At: head, Merge: base, Conflicts: files,
 		Asked: []devmark.Asked{{Key: "conflict|" + base, Where: mr.Base, Holds: conflictHolds, Text: "conflicts with " + mr.Base + " in " + strings.Join(files, ", ")}}}
-	if Backstop != nil {
-		said, err := Backstop(f, repo, a.Issue)
+	if contract.Backstop != nil {
+		said, err := contract.Backstop(f, repo, a.Issue)
 		if err != nil {
 			return external(err)
 		}

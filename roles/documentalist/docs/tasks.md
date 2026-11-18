@@ -17,7 +17,7 @@ sources:
   - roles/documentalist/role.yaml#settings.whole-chars
   - roles/documentalist/role.yaml#settings.judge-in-parts
   - roles/documentalist/role.yaml#settings.parts-move-checked
-checked: 8538d558
+checked: 04d2af892
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks

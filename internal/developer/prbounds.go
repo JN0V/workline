@@ -69,7 +69,7 @@ func (r prBounds) body() string {
 		}
 	}
 	data, _ := json.Marshal(r)
-	fmt.Fprintf(&b, "\n<!-- %s %s -->", ActMark, data)
+	fmt.Fprintf(&b, "\n<!-- %s %s -->", devmark.ActMark, data)
 	return b.String()
 }
 
@@ -124,7 +124,7 @@ func boundsPre(runDir, repo string, id int) int {
 		unknown = append(unknown, verdict.Finding{Rule: "frozen-tests-unknown", Where: fmt.Sprintf("merge request %d", d),
 			Message: "the tester's Draft for this issue holds no record it can read: which tests are frozen cannot be told, so the bounds cannot pass"})
 	}
-	if a, ok, err := ReadRecord(f, id); err != nil {
+	if a, ok, err := devmark.ReadRecord(f, id); err != nil {
 		return external(err)
 	} else if ok {
 		for _, t := range a.Acceptance {

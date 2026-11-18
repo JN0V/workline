@@ -2,12 +2,13 @@ package sample
 
 import (
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"regexp"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/tester"
@@ -34,7 +35,7 @@ type testerAct struct {
 	mr       int
 	record   tester.Record
 	recorded bool
-	answered tester.Answered
+	answered testmark.Answered
 	thread   []forge.Note // an answer's thread, up to it
 	reply    string       // an answer's words
 	body     string       // a removal's pull request, its proof
@@ -154,7 +155,7 @@ func answeredOn(f forge.Forge, id int, ref string, r tester.Record, recorded boo
 			if !own.Wrote(c) || !testmark.IsAnswered(c.Body) {
 				continue
 			}
-			ans, ok := tester.ReadAnswered(c.Body)
+			ans, ok := testmark.ReadAnswered(c.Body)
 			if !ok {
 				continue // an answer before its line was kept: not drawn
 			}
@@ -223,7 +224,7 @@ func (rd *reader) testerMaterial(a *Act, m *material) string {
 		m.about = about + "; each test file at the tester's commit; the code the issue's " + work.Name(work.Scope) + " names, at the base (`(base)`)."
 	case "kept", "rewritten", "whys":
 		ans := t.answered
-		m.items = append(m.items, scenariosItem([]tester.Scenario{ans.Scenario}), item{name: "objection", text: threadText(t.thread), full: threadText(t.thread)})
+		m.items = append(m.items, scenariosItem([]work.Scenario{ans.Scenario}), item{name: "objection", text: threadText(t.thread), full: threadText(t.thread)})
 		before, err := git(repo, "show", ans.At+":"+ans.Test)
 		if err != nil {
 			return fmt.Sprintf("%s is not at %.7s, where the answer read it", ans.Test, ans.At)
@@ -280,7 +281,7 @@ func scopeAt(repo, commit, scope string) []string {
 }
 
 // scenariosItem names each scenario with its Given / When / Then.
-func scenariosItem(scen []tester.Scenario) item {
+func scenariosItem(scen []work.Scenario) item {
 	var b strings.Builder
 	for _, s := range scen {
 		fmt.Fprintf(&b, "- **%s:** %s\n", s.Name, s.Text)
