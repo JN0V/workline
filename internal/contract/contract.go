@@ -47,6 +47,9 @@ type Code struct {
 	// the files the repository's index holds.
 	Changed   func(repo string, keeps bool) Diffs
 	RepoFiles func(repo string) []string
+	// ClaimHours: the hours a claim with no pull request is kept, read
+	// from the role's settings.
+	ClaimHours func(settings map[string]any) int
 }
 
 // Registry holds roles by name.
@@ -126,6 +129,16 @@ func (r *Registry) names() []string {
 }
 
 var builtins = NewRegistry()
+
+// UseForTest makes r the registry Builtins and BuiltinCode read, until
+// restore puts the shipped one back: an in-package test of the engine,
+// the line or the sample runs on fixture roles, never the real ones
+// (docs/spec/layout.md, Tests).
+func UseForTest(r *Registry) (restore func()) {
+	old := builtins
+	builtins = r
+	return func() { builtins = old }
+}
 
 // Join adds a compiled-in role to the shipped registry, from its init().
 func Join(name string, role Role) { builtins.Join(name, role) }
