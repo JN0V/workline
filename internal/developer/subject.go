@@ -10,7 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 )
@@ -76,10 +76,10 @@ var (
 // summaryOf is an issue's title as a subject's summary: its references
 // to issues and the codes the committer refuses taken out, its first
 // letter lower-case unless the word is an acronym, no closing dot.
-func summaryOf(title string, s committer.Settings) string {
+func summaryOf(title string, s commitmsg.Settings) string {
 	t := issueRef.ReplaceAllString(title, " ")
-	codes, _ := committer.InternalCodes(t, s)
-	maybe, _ := committer.InternalCodes(t, committer.Settings{InternalCodes: s.InternalCodesMaybe, InternalCodesAllow: s.InternalCodesAllow})
+	codes, _ := commitmsg.InternalCodes(t, s)
+	maybe, _ := commitmsg.InternalCodes(t, commitmsg.Settings{InternalCodes: s.InternalCodesMaybe, InternalCodesAllow: s.InternalCodesAllow})
 	for _, c := range append(codes, maybe...) {
 		t = regexp.MustCompile(`\b`+regexp.QuoteMeta(c)+`\b`).ReplaceAllString(t, " ")
 	}
@@ -99,7 +99,7 @@ func summaryOf(title string, s committer.Settings) string {
 // subject is `typ(scope): summary`, cut on a word to the committer's
 // limit; the scope dropped when the head would take half of it, the
 // type the committer's first when it does not know typ.
-func subject(typ, scope, summary string, s committer.Settings) string {
+func subject(typ, scope, summary string, s commitmsg.Settings) string {
 	if len(s.Types) > 0 && !slices.Contains(s.Types, typ) {
 		typ = s.Types[0]
 	}
@@ -140,16 +140,16 @@ func subject(typ, scope, summary string, s committer.Settings) string {
 // subject limit and the codes it refuses. Unread, the role's own as it
 // ships them, else its limit alone, and the finding that says so: the
 // subjects may then miss the project's rules.
-func committerSettings(repo, where string) (committer.Settings, []verdict.Finding) {
-	unread := func(err error, fallback committer.Settings) (committer.Settings, []verdict.Finding) {
+func committerSettings(repo, where string) (commitmsg.Settings, []verdict.Finding) {
+	unread := func(err error, fallback commitmsg.Settings) (commitmsg.Settings, []verdict.Finding) {
 		return fallback, []verdict.Finding{{Rule: "commit-rules-unread", Level: "warn", Where: where,
 			Message: "the project's commit rules could not be read (" + err.Error() + "): its commits' subjects follow the committer's own, which the project's check may refuse"}}
 	}
 	r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), "committer")
 	if err != nil {
-		return unread(err, committer.Settings{SubjectMax: 72})
+		return unread(err, commitmsg.Settings{SubjectMax: 72})
 	}
-	own, _ := committer.SettingsFrom(r.MergedSettings(&role.ProjectConfig{}))
+	own, _ := commitmsg.SettingsFrom(r.MergedSettings(&role.ProjectConfig{}))
 	if own.SubjectMax == 0 {
 		own.SubjectMax = 72
 	}
@@ -157,7 +157,7 @@ func committerSettings(repo, where string) (committer.Settings, []verdict.Findin
 	if err != nil {
 		return unread(err, own)
 	}
-	s, err := committer.SettingsFrom(r.MergedSettings(cfg))
+	s, err := commitmsg.SettingsFrom(r.MergedSettings(cfg))
 	if err != nil {
 		return unread(err, own)
 	}
@@ -165,6 +165,6 @@ func committerSettings(repo, where string) (committer.Settings, []verdict.Findin
 }
 
 // reviewSubject is the subject of a review round's fix commit.
-func reviewSubject(issue, round int, s committer.Settings) string {
+func reviewSubject(issue, round int, s commitmsg.Settings) string {
 	return subject("fix", "", fmt.Sprintf("the review's findings on #%d, round %d", issue, round), s)
 }

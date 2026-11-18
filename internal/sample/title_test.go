@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/role"
 )
 
@@ -22,7 +22,7 @@ func TestEngineTitlesPassTheSquashRule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var s committer.Settings
+	var s commitmsg.Settings
 	if err := json.Unmarshal(data, &s); err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestEngineTitlesPassTheSquashRule(t *testing.T) {
 		}
 	}
 	for _, title := range titles {
-		found, err := committer.Check(title+" (#12345)", s)
+		found, err := commitmsg.Check(title+" (#12345)", s)
 		if err != nil {
 			t.Fatal(err)
 		}

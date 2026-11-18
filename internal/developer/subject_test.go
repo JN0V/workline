@@ -6,19 +6,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/role"
 )
 
 // roleCommitter is the committer's settings as its role ships them.
-func roleCommitter(t *testing.T) committer.Settings {
+func roleCommitter(t *testing.T) commitmsg.Settings {
 	t.Helper()
 	r, err := role.Load("../../roles", "committer")
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := committer.SettingsFrom(r.MergedSettings(&role.ProjectConfig{}))
+	s, err := commitmsg.SettingsFrom(r.MergedSettings(&role.ProjectConfig{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 			t.Errorf("%s: subjects = %q, %q; want %q, %q", tc.name, got.Tests, got.Code, tc.tests, tc.code)
 		}
 		for _, m := range []string{got.Tests, got.Code} {
-			if f, err := committer.Check(m+"\n\nWorkline-Role: developer", s); err != nil || len(f) > 0 {
+			if f, err := commitmsg.Check(m+"\n\nWorkline-Role: developer", s); err != nil || len(f) > 0 {
 				t.Errorf("%s: %q refused by the committer: %v %v", tc.name, m, f, err)
 			}
 		}
@@ -66,7 +66,7 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 			if !strings.HasPrefix(got.Code, strings.TrimRight(title, " ")) || !strings.HasPrefix(title, strings.SplitN(got.Code, ": ", 2)[0]+": ") {
 				t.Errorf("%s: title %q is not the code's subject %q", tc.name, title, got.Code)
 			}
-			if f, err := committer.Check(title+" (#12345)", s); err != nil || len(f) > 0 {
+			if f, err := commitmsg.Check(title+" (#12345)", s); err != nil || len(f) > 0 {
 				t.Errorf("%s: the squash of %q refused: %v %v", tc.name, title, f, err)
 			}
 		}
@@ -76,7 +76,7 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 	}
 	if m := reviewSubject(3, 2, s); m != "fix: the review's findings on #3, round 2" {
 		t.Errorf("review subject = %q", m)
-	} else if f, err := committer.Check(m+"\n\nWorkline-Role: developer", s); err != nil || len(f) > 0 {
+	} else if f, err := commitmsg.Check(m+"\n\nWorkline-Role: developer", s); err != nil || len(f) > 0 {
 		t.Errorf("review subject %q refused: %v %v", m, f, err)
 	}
 }
@@ -92,7 +92,7 @@ func TestSubjectFitsTheProjectsLimit(t *testing.T) {
 		if len([]rune(got)) > 30 {
 			t.Errorf("scope %q: %q is over 30", scope, got)
 		}
-		if f, _ := committer.Check(got, s); len(f) > 0 {
+		if f, _ := commitmsg.Check(got, s); len(f) > 0 {
 			t.Errorf("scope %q: %q refused: %v", scope, got, f)
 		}
 	}

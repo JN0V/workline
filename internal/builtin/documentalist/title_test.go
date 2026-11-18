@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/role"
 )
 
@@ -22,7 +22,7 @@ func TestMergeRequestTitlesPassTheSquashRule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var s committer.Settings
+	var s commitmsg.Settings
 	if err := json.Unmarshal(data, &s); err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestMergeRequestTitlesPassTheSquashRule(t *testing.T) {
 		other := "docs/b.md"
 		for _, c := range []struct {
 			kind, file, task string
-			parts, byAgent bool
+			parts, byAgent   bool
 		}{
 			{kind: "suspect", byAgent: true},
 			{kind: "derived"},
@@ -62,7 +62,7 @@ func TestMergeRequestTitlesPassTheSquashRule(t *testing.T) {
 				inParts = map[string]string{doc: "part", other: "part"}
 			}
 			mr := mergeRequest(runDir, map[string]map[string]string{doc: {}}, inParts, c.byAgent, nil, nil)
-			found, err := committer.Check(mr["title"]+" (#12345)", s)
+			found, err := commitmsg.Check(mr["title"]+" (#12345)", s)
 			if err != nil {
 				t.Fatal(err)
 			}
