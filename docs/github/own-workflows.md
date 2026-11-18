@@ -38,6 +38,11 @@ engine ([ADR-0071](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md
   and the front matter of the docs it touches, and fails naming the file
   it cannot read;
 - no `merge_group`: a user's repository has no merge queue;
+- a job [`workline tick`](../tick.md#the-github-loop) lists loses its
+  cron, one workflow at a time: the loop dispatches it, the loop's
+  hourly schedule the restart;
+  [the triggers test](../../tests/conformance/triggers_test.go) marks
+  each cron gone `onTemplate`;
 - the tools the tests need beyond Go (gitleaks) come from
   [one action](../../.github/actions/tests/action.yml), in test.yml and in
   each job where a role runs the tests: the developer's and the tester's
