@@ -1,0 +1,30 @@
+case: routing/ready-patch-not-applied-twice-stops
+about: >
+  Twice stops: #3's developer run failed twice in a row because its
+  patch did not apply, the last one an hour ago, past the back-off and
+  within the window. The next reconcile starts no developer run on it:
+  no try again, no wake. Its tries are spent and it goes to Blocked for
+  a person. No agent asked.
+given:
+  repo: tested
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"ready\",\"body\":\"8a828a06be19\",\"hops\":1,\"errors\":{\"by\":{\"apply\":2},\"first\":{\"apply\":\"2026-11-05T05:00:00Z\"},\"last\":\"2026-11-05T07:00:00Z\",\"kind\":\"apply\",\"said\":\"the diff does not apply: cmd/workline/main.go\"},\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: machine-error-spent, level: warn, where: "#3", message: "the diff does not apply: cmd/workline/main.go"}
+  no-findings:
+    - {rule: state-retry, where: "#3"}
+    - {rule: state-wakes, where: "#3"}
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked"]}
