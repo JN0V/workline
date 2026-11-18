@@ -4,7 +4,6 @@ sources: [internal/backlog/parent.go, internal/backlog/symptom.go, internal/buil
 status: draft
 checked: a16d7f0a
 verified: agent:claude-code
-judged-in-parts: 04d2af892
 ---
 # A parent and its parts
 

@@ -4,7 +4,6 @@ sources: [internal/backlog/autonomy.go, roles/product-owner/role.yaml, internal/
 status: draft
 checked: 8538d558
 verified: agent:claude-code
-judged-in-parts: 04d2af892
 ---
 # Autonomy and caps
 

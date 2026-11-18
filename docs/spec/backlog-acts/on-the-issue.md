@@ -4,7 +4,6 @@ sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/back
 status: draft
 checked: 8538d558
 verified: agent:claude-code
-judged-in-parts: 04d2af892
 ---
 # On the issue
 
