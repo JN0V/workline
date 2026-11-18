@@ -43,3 +43,27 @@ func TestReviewRowsWithNoRecordAskNothing(t *testing.T) {
 		t.Errorf("asked %+v, nits %d from a table alone: want nothing", asked, nits)
 	}
 }
+
+// Mistyped field: Given a reviewer comment whose record has one row with a
+// number in where, and a valid blocking finding, When the developer's merge
+// check reads it, Then it says the findings cannot be read, or it lists the
+// valid blocking finding as open.
+func TestReviewRowsMistypedWhereIsNeverHidden(t *testing.T) {
+	comment := "<!-- workline:findings [" +
+		`{"lens":"correctness","holds":"blocks","where":"lib.sh:2","severity":"Important","text":"mul adds — it gives 5. Fix: multiply."},` +
+		`{"lens":"design","holds":"warns","where":7,"severity":"Nit","text":"name the operands"}` +
+		"] -->\n"
+	if why := devmark.RecordUnread(comment); why != "" {
+		return // said unread: the merge check holds, never reads no finding open
+	}
+	asked, _ := devmark.ReviewRows(comment)
+	listed := false
+	for _, a := range asked {
+		if a.Holds == "blocks" && a.Lens == "correctness" && a.Where == "lib.sh:2" {
+			listed = true
+		}
+	}
+	if !listed {
+		t.Errorf("RecordUnread says it reads, and ReviewRows lists %+v: the valid blocking finding is hidden", asked)
+	}
+}
