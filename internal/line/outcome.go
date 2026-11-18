@@ -12,6 +12,8 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -288,9 +290,10 @@ const ApplyBudget = 2
 // CountApplyFailure writes, for each issue the line ran a step for, the
 // failure of its run's apply as a machine error in its record, said on
 // the issue with its labels and state kept: the apply job could not apply
-// what the judge found, said is what it printed. A failure of the same
+// what the judge found, said is what it printed, run the folder of the
+// run that failed: its issue alone is counted. A failure of the same
 // input before it is counted with it.
-func CountApplyFailure(f forge.Forge, repo string, res *Result, said string) error {
+func CountApplyFailure(f forge.Forge, repo string, res *Result, said, run string) error {
 	if f == nil || len(res.States) == 0 {
 		return nil
 	}
@@ -306,7 +309,7 @@ func CountApplyFailure(f forge.Forge, repo string, res *Result, said string) err
 	var errs []error // one issue's failure to read or write does not stop the others
 	for _, w := range res.States {
 		role := res.Woke[w.Issue]
-		if role == "" || w.Blocked != "" {
+		if role == "" || w.Blocked != "" || !slices.ContainsFunc(w.Runs, func(r string) bool { return filepath.Base(r) == filepath.Base(run) }) {
 			continue
 		}
 		b, ok := f.(forge.Backlog)

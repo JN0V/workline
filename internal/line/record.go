@@ -232,6 +232,9 @@ type StateWrite struct {
 	// the record: said on the issue with it, its labels and state kept
 	// (ADR-0063, I3).
 	Failed bool `json:"failed,omitempty"`
+	// Runs: the folders of the runs the step left to apply, so a failure
+	// of one is counted on this issue alone (#1775).
+	Runs []string `json:"runs,omitempty"`
 	// After: the record is of a step's run: its body and labels are those
 	// of the issue as it stands when written, the role's own writes in
 	// (afterWrite), so its own edit is no new input for it (ADR-0063, §3).
