@@ -70,7 +70,10 @@ jobs:
           BRANCH: ${{ github.event.repository.default_branch }}
           DISPATCH: ${{ vars.WORKLINE_LOOP_DISPATCH }}
           LOOP_MINUTES: "340"                # under the job's timeout, the successor's dispatch after
-          BEAT_SECONDS: ${{ vars.WORKLINE_LOOP_BEAT_SECONDS || '60' }}   # the beat; longer spares the API
+          # 180 s until the loop's release reads conditionally (#1764): the
+          # job token's 1,000 calls an hour are the whole repository's.
+          BEAT_SECONDS: ${{ vars.WORKLINE_LOOP_BEAT_SECONDS || '180' }}
+          FAILS_MAX: "10"                    # tick failing this many beats in a row: the loop stops
         run: |
           if ! workline tick --help >/dev/null 2>&1; then
             echo "::notice title=workline loop::workline $WORKLINE_VERSION has no tick (v0.79.0 and later): the loop skips, and starts no successor"
@@ -81,7 +84,7 @@ jobs:
             *) echo "::warning title=workline loop::WORKLINE_LOOP_DISPATCH=$DISPATCH: dispatching is not built in this release; a dry run" ;;
           esac
           end=$(( $(date +%s) + LOOP_MINUTES * 60 ))
-          beats=0
+          beats=0 fails=0
           : > "$RUNNER_TEMP/would.log"
           while :; do
             beats=$((beats + 1))
@@ -94,9 +97,16 @@ jobs:
             sed 's/^/  /' "$RUNNER_TEMP/tick.err"
             if [ "$status" != 0 ] || ! jq -e 'type == "array"' "$RUNNER_TEMP/tick.json" >/dev/null 2>&1; then
               echo "::warning title=workline loop::beat $beats: workline tick failed (exit $status): nothing dispatched"
+              fails=$((fails + 1))
+              if [ "$fails" -ge "$FAILS_MAX" ]; then
+                echo "::error title=workline loop::workline tick failed $fails beats in a row: the loop stops, no successor; the hourly schedule tries again"
+                exit 1
+              fi
             elif [ "$(jq length "$RUNNER_TEMP/tick.json")" = 0 ]; then
+              fails=0
               echo "beat $beats, $(date -u +%H:%M:%S) UTC: nothing due"
             else
+              fails=0
               echo "beat $beats, $(date -u +%H:%M:%S) UTC: $(jq length "$RUNNER_TEMP/tick.json") due, a dry run"
               jq -c '.[]' "$RUNNER_TEMP/tick.json" | sed 's/^/would dispatch /' | tee -a "$RUNNER_TEMP/would.log"
             fi

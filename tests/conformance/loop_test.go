@@ -240,6 +240,40 @@ func TestLoopCrashHandsOverToNoSuccessor(t *testing.T) {
 	}
 }
 
+// Tick failing beat after beat stops the loop
+// Given a tick that fails on every beat,
+// When the loop's beat runs,
+// Then it stops after FAILS_MAX beats in a row, fails, and hands over to
+// no successor: no endless loop of warnings.
+func TestLoopStopsWhenTickKeepsFailing(t *testing.T) {
+	for _, f := range loopFiles {
+		wf := readLoop(t, f)
+		beat := loopStepNamed(t, wf, f, "The beat")
+		if beat.Env["FAILS_MAX"] == "" {
+			t.Fatalf("%s: the beat sets no FAILS_MAX", f)
+		}
+		dir := t.TempDir()
+		bin, tmp := filepath.Join(dir, "bin"), filepath.Join(dir, "tmp")
+		for _, d := range []string{bin, tmp} {
+			if err := os.MkdirAll(d, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		writeExec(t, filepath.Join(bin, "workline"), "#!/bin/bash\n[ \"$2\" = --help ] && exit 0\necho 'forge down' >&2; exit 1\n")
+		cmd := exec.Command("bash", "-e", "-c", beat.Run)
+		cmd.Dir = dir
+		cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "RUNNER_TEMP="+tmp, "GITHUB_OUTPUT="+filepath.Join(tmp, "output"),
+			"GIT_CONFIG_GLOBAL=/dev/null", "BRANCH=main", "LOOP_MINUTES=60", "BEAT_SECONDS=0", "FAILS_MAX=3", "WORKLINE_VERSION=v0.0.0")
+		out, err := cmd.CombinedOutput()
+		if err == nil || !strings.Contains(string(out), "failed 3 beats in a row: the loop stops") {
+			t.Errorf("%s: a tick failing beat after beat does not stop the loop (err %v):\n%s", f, err, out)
+		}
+		if b, _ := os.ReadFile(filepath.Join(tmp, "output")); strings.Contains(string(b), "handover=true") {
+			t.Errorf("%s: a loop stopped by failures hands over to a successor", f)
+		}
+	}
+}
+
 // One loop at a time, handed over before 6 h
 // Given the loop's workflow,
 // When it is read,

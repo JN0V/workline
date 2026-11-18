@@ -95,7 +95,7 @@ workline tick --now 2026-11-16T02:20:00Z --json   # a fixed clock, for tests
 beat on GitHub, whose own schedule runs late or not at all
 ([ADR-0069's amendment](adr/0069-one-wake-every-five-minutes-starts-what-is-due.md#amendment-2026-11-17-a-beat-every-minute-no-event-moves-the-line)).
 
-- **One long job**: `workline tick --forge github --json` every minute,
+- **One long job**: `workline tick --forge github --json` every beat,
   its checkout kept between beats, so the conditional reads' cache in
   `.git/workline` too.
 - **A dry run**: each job tick lists is logged, as tick prints it, and
@@ -117,8 +117,12 @@ beat on GitHub, whose own schedule runs late or not at all
 - **Restarted** by its hourly schedule, or by hand (Run workflow).
 - **Its release**: v0.79.0 at least; an older one has no `tick`, and the
   loop says so and stops.
-- **Its beat**: 60 s, or the variable `WORKLINE_LOOP_BEAT_SECONDS`; a
-  longer one spares the job token's 1,000 calls an hour.
+- **Its beat**: 180 s, or the variable `WORKLINE_LOOP_BEAT_SECONDS`.
+  The job token's 1,000 calls an hour are the whole repository's; 60 s
+  once the loop's release reads conditionally
+  ([#1764](https://github.com/JN0V/workline/pull/1764)).
+- **Tick failing 10 beats in a row**: the loop stops, says why, and
+  starts no successor; its hourly schedule tries again.
 - **Its cost on a private repository**: about 1,440 runner minutes a day.
   Public repositories are not billed.
 - **The other workflows keep their triggers** for now;

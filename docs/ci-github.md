@@ -135,10 +135,11 @@ write run the default branch's workflow, never a pull request's own
      after v0.2.1. It reads the week's tokens from the `workline-tally-*`
      artifacts the jobs calling an agent keep 14 days (`actions: read`;
      [tokens in CI](weekly-sample.md#what-it-writes)).
-   - [workline-loop.yml](../defaults/ci/github/workline-loop.yml), from
-     v0.79.0: the line's beat, `workline tick` every minute; a dry run for
-     now, it logs what it would start and starts nothing
-     ([the GitHub loop](tick.md#the-github-loop)).
+   - [workline-loop.yml](../defaults/ci/github/workline-loop.yml),
+     optional, from v0.79.0: the line's beat, `workline tick` every 3
+     minutes; a dry run for now, it logs what it would start and starts
+     nothing. On a private repository it bills about 1,440 runner minutes
+     a day ([the GitHub loop](tick.md#the-github-loop)).
 2. **The agent's token**, if you want one: Settings → Secrets and variables
    → Actions → New repository secret. The templates call Claude when
    `CLAUDE_CODE_OAUTH_TOKEN` is set (`claude setup-token`), and no agent
