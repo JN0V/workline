@@ -32,7 +32,7 @@ var triggers = map[string]map[string]string{
 	"workline.yml":           {"pull_request": onCheck, "push": onCheck},
 	"workline-warn.yml":      {"pull_request": onCheck},
 	"workline-bounds.yml":    {"pull_request_target": onCheck},
-	"test.yml":               {"pull_request": onCheck, "push": onCheck, "schedule": onTime, "workflow_dispatch": onTime},
+	"test.yml":               {"pull_request": onCheck, "push": onCheck, "workflow_dispatch": onTime},
 	"release-please.yml":     {"push": onCheck},
 	"release.yml":            {"workflow_call": onCheck},
 	"release-candidate.yml":  {"push": onCheck},
