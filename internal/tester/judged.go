@@ -191,7 +191,7 @@ func (j judging) answered(dir, repo string, s Settings) (*verdict.Verdict, []str
 		}
 		return &verdict.Verdict{Status: verdict.Block, Summary: "the red proof waits for its judge"}, nil, nil, true, nil
 	}
-	if err := keepAnswer(filepath.Dir(filepath.Dir(dir)), j.Key, a); err != nil {
+	if err := keepAnswer(filepath.Dir(filepath.Dir(filepath.Dir(dir))), j.Key, a); err != nil {
 		return nil, nil, nil, false, err
 	}
 	v, tests, blobs := j.settle(a, "")
@@ -228,34 +228,61 @@ func inputKey(d *doubt) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// keptAnswer is the answer kept for key in the run, if any.
-func keptAnswer(runDir, key string) (redAnswer, bool) {
-	kept := map[string]redAnswer{}
-	data, err := os.ReadFile(filepath.Join(runDir, "out", judgedFile))
-	if err != nil || json.Unmarshal(data, &kept) != nil {
-		return redAnswer{}, false
+// runsFolder is the folder the runs of the project live in, each in its
+// own folder: the judge's answers are kept there too, beside them, so a
+// later run, in the step or the next tick, finds what an earlier one got.
+const runsFolder = ".workline-runs"
+
+// judgedFiles are the files an answer is kept in for the run at runDir: its
+// own out folder, and the runs' folder when runDir is one of its runs.
+func judgedFiles(runDir string) []string {
+	files := []string{filepath.Join(runDir, "out", judgedFile)}
+	if parent := filepath.Dir(runDir); filepath.Base(parent) == runsFolder {
+		files = append(files, filepath.Join(parent, judgedFile))
 	}
-	a, ok := kept[key]
-	return a, ok && key != ""
+	return files
 }
 
-// keepAnswer keeps a's answer under key in out, the run's out folder:
-// none without a key, as a proof kept before keys were.
-func keepAnswer(out, key string, a redAnswer) error {
+// keptAnswer is the answer kept for key, in the run or in an earlier run
+// of the project, if any.
+func keptAnswer(runDir, key string) (redAnswer, bool) {
+	if key == "" {
+		return redAnswer{}, false
+	}
+	for _, file := range judgedFiles(runDir) {
+		kept := map[string]redAnswer{}
+		data, err := os.ReadFile(file)
+		if err != nil || json.Unmarshal(data, &kept) != nil {
+			continue
+		}
+		if a, ok := kept[key]; ok {
+			return a, true
+		}
+	}
+	return redAnswer{}, false
+}
+
+// keepAnswer keeps a's answer under key for the run at runDir: none
+// without a key, as a proof kept before keys were.
+func keepAnswer(runDir, key string, a redAnswer) error {
 	if key == "" {
 		return nil
 	}
-	file := filepath.Join(out, judgedFile)
-	kept := map[string]redAnswer{}
-	if data, err := os.ReadFile(file); err == nil {
-		_ = json.Unmarshal(data, &kept) // unreadable: started anew
+	for _, file := range judgedFiles(runDir) {
+		kept := map[string]redAnswer{}
+		if data, err := os.ReadFile(file); err == nil {
+			_ = json.Unmarshal(data, &kept) // unreadable: started anew
+		}
+		kept[key] = a
+		data, err := json.Marshal(kept)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(file, data, 0o644); err != nil {
+			return err
+		}
 	}
-	kept[key] = a
-	data, err := json.Marshal(kept)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(file, data, 0o644)
+	return nil
 }
 
 // erroredFile keeps, beside the run, the new ids the red proof's run wrote
