@@ -1538,7 +1538,6 @@ func testRun(repo, roles, ai, forgeSpec, event string, target *forge.Target, noA
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
 		sayReasons(res)
-		sayReasons(res)
 	} else {
 		report(res)
 	}
