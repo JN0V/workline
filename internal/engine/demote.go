@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // A revert demotes (ADR-0042, `normal`; ADR-0026): a revert on the base of

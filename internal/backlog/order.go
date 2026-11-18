@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/scale"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // On is what an issue carries where an axis may be kept: its labels, its

@@ -18,8 +18,8 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // repro reads a bug in the tester's state marked workline:needs-repro:

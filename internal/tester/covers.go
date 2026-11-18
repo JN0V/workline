@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // CoversKind is the intention the tester's agent declares a scenario's

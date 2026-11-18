@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/testdef"
+	"github.com/JN0V/workline/internal/kit/testdef"
 )
 
 // The words not searched are those of the project's own languages

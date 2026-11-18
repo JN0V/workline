@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // Red fixed on main; No person's token: given a developer pull request

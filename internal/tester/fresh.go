@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // freshTree checks rev out in a repository of its own, apart, and says

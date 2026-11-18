@@ -14,8 +14,8 @@ import (
 	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/line"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // splitConfig is the trial copy's line in round 5: the reviewer reads the

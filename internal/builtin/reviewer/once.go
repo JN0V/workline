@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/judge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // After the run on ready, AI reads only what is new (ADR-0050, step 6):

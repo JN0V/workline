@@ -9,9 +9,9 @@ import (
 
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/role"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // What holds a release on the forge (ADR-0051, cut 1), each a finding's

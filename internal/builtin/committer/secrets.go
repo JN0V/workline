@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/tools"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // termList is the repository's own gitleaks config. A project may commit one

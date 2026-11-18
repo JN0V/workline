@@ -20,7 +20,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // greenRuns is how many times the head runs: each new test passes in all.

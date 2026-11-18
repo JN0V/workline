@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/engine"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // The outcome is the woken role's own run's, the first step: a handoff's

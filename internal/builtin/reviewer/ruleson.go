@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // Name is the reviewer's role, as a project routes it.

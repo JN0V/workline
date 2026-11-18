@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -102,7 +102,6 @@ func ScopeKept(comments []string) []string {
 	}
 	return out
 }
-
 
 // scopeKeptOf folds into a refine's Scope the new test files the
 // developer kept beside it (ScopeKept, ADR-0063 §9): each it does not

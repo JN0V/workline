@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // A replaced value left (ADR-0014, step 2): a version a fix replaces, still

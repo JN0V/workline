@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // Long thread, last reply read: an objection's thread of 250 comments ends

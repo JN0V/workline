@@ -139,11 +139,11 @@ func TestDetectedAndUnknown(t *testing.T) {
 
 // A pack never decides a verdict: its fields reach a role only as the
 // defaults of its settings (internal/role) and the test-file definition
-// (internal/testdef), the code navigation rows (internal/codenav: what is
+// (internal/kit/testdef), the code navigation rows (internal/codenav: what is
 // read, never a verdict), and the doctor and init read them; no package
 // that judges imports this one.
 func TestNoVerdictReadsAPack(t *testing.T) {
-	allowed := []string{"internal/testdef", "internal/codenav", "internal/role", "internal/doctor", "cmd/workline"}
+	allowed := []string{"internal/kit/testdef", "internal/codenav", "internal/role", "internal/doctor", "cmd/workline"}
 	root := filepath.Join("..", "..")
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {

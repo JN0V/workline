@@ -25,11 +25,11 @@ import (
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/testdef"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/role"
-	"github.com/JN0V/workline/internal/testdef"
-	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -41,39 +41,39 @@ const (
 
 // Settings are the role's settings, as merged by the engine.
 type Settings struct {
-	Base            string   `json:"base"`                 // where a review on a machine starts from, when no range is given
-	Ignore          []string `json:"ignore"`               // files that are not code: a change touching only these asks nobody
-	Lenses          []string `json:"lenses"`               // the lenses, in the order a merge request takes them in turn
-	LensesPerPush   int      `json:"lenses-per-push"`      // on a merge request: lenses a push gets
-	CommitsPerPush  int      `json:"commits-per-push"`     // on a merge request, after ready: new commits the lenses that warn read a push, the oldest first; 0: every one (ADR-0050)
-	FindingsMax     int      `json:"findings-max"`         // findings on the change reported a run; the rest counted
-	IssuesMax       int      `json:"issues-max"`           // issues opened a run for what lies outside the change
-	DiffLinesMax    int      `json:"diff-lines-max"`       // lines of the change's hunks one call is given; past them, the change is read in parts (#446)
-	PartsMax        int      `json:"parts-max"`            // parts a change too large for one call may be read in; past them, no lens asked (#446)
-	CodeLinesMax    int      `json:"code-lines-max"`       // lines of the files changed given to a lens, all together
-	CommentBlockMax int      `json:"comment-block-max"`    // lines of one comment added
-	StoryWords      []string `json:"story-words"`          // what tells a bug's story in a comment
-	AIFindings      Gate     `json:"ai-findings"`          // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
-	JudgeAtLeast    string   `json:"judge-at-least"`       // the independence a verification needs: context, model, provider
+	Base            string            `json:"base"`                   // where a review on a machine starts from, when no range is given
+	Ignore          []string          `json:"ignore"`                 // files that are not code: a change touching only these asks nobody
+	Lenses          []string          `json:"lenses"`                 // the lenses, in the order a merge request takes them in turn
+	LensesPerPush   int               `json:"lenses-per-push"`        // on a merge request: lenses a push gets
+	CommitsPerPush  int               `json:"commits-per-push"`       // on a merge request, after ready: new commits the lenses that warn read a push, the oldest first; 0: every one (ADR-0050)
+	FindingsMax     int               `json:"findings-max"`           // findings on the change reported a run; the rest counted
+	IssuesMax       int               `json:"issues-max"`             // issues opened a run for what lies outside the change
+	DiffLinesMax    int               `json:"diff-lines-max"`         // lines of the change's hunks one call is given; past them, the change is read in parts (#446)
+	PartsMax        int               `json:"parts-max"`              // parts a change too large for one call may be read in; past them, no lens asked (#446)
+	CodeLinesMax    int               `json:"code-lines-max"`         // lines of the files changed given to a lens, all together
+	CommentBlockMax int               `json:"comment-block-max"`      // lines of one comment added
+	StoryWords      []string          `json:"story-words"`            // what tells a bug's story in a comment
+	AIFindings      Gate              `json:"ai-findings"`            // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
+	JudgeAtLeast    string            `json:"judge-at-least"`         // the independence a verification needs: context, model, provider
 	JudgeByRole     map[string]string `json:"judge-at-least-by-role"` // a higher floor for a change a role made, by its commits' Workline-Role (the developer's: model, ADR-0054)
-	ForgeWrites     bool     `json:"forge-writes"`         // on a merge request: the comments on lines, the summary comment and the issues
-	FinderFloor     bool     `json:"finder-floor"`         // ask each lens to look for a number of candidates before it stops
-	Tests           []string `json:"-"`                    // the test files, the project's one definition (ADR-0065): what a judge reading tests is shown of them
-	TestsLinesMax   int      `json:"tests-lines-max"`      // lines of those tests a judge is shown, all together
-	JudgeLinesMax   int      `json:"judge-lines-max"`      // lines of code a judge is shown: the cause's function, then those it reaches; 0: 31 lines around the cause
-	JudgeReadRounds int      `json:"judge-read-rounds"`    // rounds of reads a judge of the code may ask before it answers (ADR-0045); 0: it reads none
-	JudgeReadMax    int      `json:"judge-read-lines-max"` // lines read for one judge, all its rounds together
-	LensesTogether  bool     `json:"lenses-together"`      // the lenses of a run asked in one call, the change given once
-	AIMaxTokens     int      `json:"ai-max-tokens"`        // what a run may spend, all calls together; the engine stops asking
-	IssueLinesMax   int      `json:"issue-lines-max"`      // lines of the issues the change closes the lenses are given, all together
-	TestimonyLines  int      `json:"testimony-lines-max"`  // lines of what the author says (commit messages, the merge request) the lenses are given
-	QuestionsMax    int      `json:"questions-max"`        // decisions put to a person a run; the rest counted
-	DiffAlone       bool     `json:"diff-alone"`           // ask the diff-alone facet too, apart, given the change only
-	SpecLenses      []string `json:"spec-lenses"`          // the lenses a spec is read through (#128)
-	PipelinePaths   []string `json:"pipeline-paths"`       // besides .github/, .gitlab-ci.yml and .workline/, what the pipeline runs: a change to them skips no commit (ADR-0051, cut 5)
-	SpecLinesMax    int      `json:"spec-lines-max"`       // lines of a spec the lenses are given; the rest cut, said
-	SpecRounds      int      `json:"spec-rounds"`          // on the forge: reviews in a row with a finding open, then a person (#128)
-	SpecsPerRun     int      `json:"specs-per-run"`        // on the forge: the specs a run reads; the rest wait for the next (#433)
+	ForgeWrites     bool              `json:"forge-writes"`           // on a merge request: the comments on lines, the summary comment and the issues
+	FinderFloor     bool              `json:"finder-floor"`           // ask each lens to look for a number of candidates before it stops
+	Tests           []string          `json:"-"`                      // the test files, the project's one definition (ADR-0065): what a judge reading tests is shown of them
+	TestsLinesMax   int               `json:"tests-lines-max"`        // lines of those tests a judge is shown, all together
+	JudgeLinesMax   int               `json:"judge-lines-max"`        // lines of code a judge is shown: the cause's function, then those it reaches; 0: 31 lines around the cause
+	JudgeReadRounds int               `json:"judge-read-rounds"`      // rounds of reads a judge of the code may ask before it answers (ADR-0045); 0: it reads none
+	JudgeReadMax    int               `json:"judge-read-lines-max"`   // lines read for one judge, all its rounds together
+	LensesTogether  bool              `json:"lenses-together"`        // the lenses of a run asked in one call, the change given once
+	AIMaxTokens     int               `json:"ai-max-tokens"`          // what a run may spend, all calls together; the engine stops asking
+	IssueLinesMax   int               `json:"issue-lines-max"`        // lines of the issues the change closes the lenses are given, all together
+	TestimonyLines  int               `json:"testimony-lines-max"`    // lines of what the author says (commit messages, the merge request) the lenses are given
+	QuestionsMax    int               `json:"questions-max"`          // decisions put to a person a run; the rest counted
+	DiffAlone       bool              `json:"diff-alone"`             // ask the diff-alone facet too, apart, given the change only
+	SpecLenses      []string          `json:"spec-lenses"`            // the lenses a spec is read through (#128)
+	PipelinePaths   []string          `json:"pipeline-paths"`         // besides .github/, .gitlab-ci.yml and .workline/, what the pipeline runs: a change to them skips no commit (ADR-0051, cut 5)
+	SpecLinesMax    int               `json:"spec-lines-max"`         // lines of a spec the lenses are given; the rest cut, said
+	SpecRounds      int               `json:"spec-rounds"`            // on the forge: reviews in a row with a finding open, then a person (#128)
+	SpecsPerRun     int               `json:"specs-per-run"`          // on the forge: the specs a run reads; the rest wait for the next (#433)
 }
 
 // alone is the facet given the change only, apart from the lenses (#126):
@@ -180,11 +180,11 @@ type Review struct {
 	Parts     int               `json:"parts,omitempty"` // the parts the change was read in, too large for one call (#446)
 	Complete  bool              `json:"complete"`        // every lens answered: the commits are recorded as reviewed
 	Record    Record            `json:"record"`
-	Local     bool              `json:"local"`            // the record is kept on this machine
-	Calls     []Spent           `json:"calls,omitempty"`  // what each call to an agent used
-	Reads     []JudgeRead       `json:"reads,omitempty"`  // what each judge read, a round each (ADR-0045)
-	Warn      string            `json:"warn,omitempty"`   // apart: the verdict's run; only: the run apart, the lenses that warn (ADR-0050)
-	Reused    int               `json:"reused,omitempty"` // findings judged before on the same patch, their verdicts kept (ADR-0050, step 6)
+	Local     bool              `json:"local"`              // the record is kept on this machine
+	Calls     []Spent           `json:"calls,omitempty"`    // what each call to an agent used
+	Reads     []JudgeRead       `json:"reads,omitempty"`    // what each judge read, a round each (ADR-0045)
+	Warn      string            `json:"warn,omitempty"`     // apart: the verdict's run; only: the run apart, the lenses that warn (ADR-0050)
+	Reused    int               `json:"reused,omitempty"`   // findings judged before on the same patch, their verdicts kept (ADR-0050, step 6)
 	Resolved  []string          `json:"resolved,omitempty"` // the conversations on lines of a review before the code answers now, by thread id (#1039)
 	Weighed   []string          `json:"weighed,omitempty"`  // what the run's judges said of the tester's answers that no test is needed (#1303)
 }

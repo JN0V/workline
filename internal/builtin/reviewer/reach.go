@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/codenav"
-	"github.com/JN0V/workline/internal/codepick"
+	"github.com/JN0V/workline/internal/kit/codepick"
 	"github.com/JN0V/workline/internal/pathglob"
 )
 

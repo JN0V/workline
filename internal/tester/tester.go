@@ -21,9 +21,9 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/testdef"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
-	"github.com/JN0V/workline/internal/testdef"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // Settings are the tester's project settings the check reads
@@ -563,8 +563,8 @@ type ran struct {
 	suite     map[string]string
 	classless map[string]bool
 	erred     map[string]string // the name of each case red by an error alone (readJUnit)
-	roots     []string // the folder it ran in, its links resolved too: an error's absolute path below it is from the root
-	reports   []string // the report files read, this run's
+	roots     []string          // the folder it ran in, its links resolved too: an error's absolute path below it is from the root
+	reports   []string          // the report files read, this run's
 }
 
 // buildRecord says whether id has the shape of a runner's record of a
@@ -814,7 +814,7 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 	cmd.Env = uncached(forge.ProjectEnv(os.Environ()))
 	cmd.Stdout, cmd.Stderr = &out, &out
 	cmd.WaitDelay = 5 * time.Second
-	err = cmd.Run() // a test that fails exits non-zero: the report says which
+	err = cmd.Run()      // a test that fails exits non-zero: the report says which
 	agent.KillGroup(cmd) // what it forked and left running ends with it (#1335)
 	// Its secrets masked before a reason quotes or cuts it (#1215).
 	masked := bytes.NewBufferString(forge.Mask(out.String()))

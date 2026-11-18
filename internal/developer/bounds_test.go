@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/testdef"
+	"github.com/JN0V/workline/internal/kit/testdef"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"

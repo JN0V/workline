@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // The summary comment hides each finding the table shows, and each nit,

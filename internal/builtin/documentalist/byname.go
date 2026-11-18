@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/JN0V/workline/internal/testdef"
+	"github.com/JN0V/workline/internal/kit/testdef"
 )
 
 // Sources by name: adopting a repository with no agent, a doc's sources

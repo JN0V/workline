@@ -16,8 +16,8 @@ import (
 	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // saidFile holds the verdict of a run that only says, on the issues,

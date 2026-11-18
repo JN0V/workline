@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/builtin/committer"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // commentStyles are the line-comment openers of a file, by its extension;

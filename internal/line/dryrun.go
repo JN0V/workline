@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/release"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // DryRun is a release's dry run (`route release --dry-run`, ADR-0050):

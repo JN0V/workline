@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/line"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // MainTitle is the one issue main's run after a merge keeps its findings

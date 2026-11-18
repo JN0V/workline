@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // Freshness says how long a doc stays trusted without being read again.

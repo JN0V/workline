@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/line"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 func TestLineSummaryPutsFindingsUnderTheirStep(t *testing.T) {

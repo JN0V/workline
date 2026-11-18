@@ -21,7 +21,7 @@ import (
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/intent"
 	judgment "github.com/JN0V/workline/internal/judge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 	"go.yaml.in/yaml/v3"
 )
 

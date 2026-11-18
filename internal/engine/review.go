@@ -10,7 +10,7 @@ import (
 	"github.com/JN0V/workline/internal/builtin/inspector"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // lineReview posts a sticky comment's review, {head, body, comments:

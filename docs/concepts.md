@@ -1,5 +1,5 @@
 ---
-sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, defaults/routing.yaml]
+sources: [internal/engine/engine.go, internal/line, internal/routing, internal/kit/verdict, defaults/routing.yaml]
 checked: 8538d558
 verified: agent:claude-code
 judged-in-parts: 5d66009
