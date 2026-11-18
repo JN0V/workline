@@ -1,6 +1,7 @@
 ---
 sources: [defaults/ci/github/workline-objection.yml, defaults/ci/github/workline-answer.yml, defaults/ci/github/workline-develop.yml, defaults/ci/gitlab/workline.gitlab-ci.yml, internal/engine/fromrun.go]
 checked: b34f0b15
+judged-in-parts: 786d304
 ---
 # An objection's jobs
 
@@ -85,9 +86,8 @@ flowchart LR
   run starts, never the objection run's `head_sha`: a re-run or a push
   since would leave it behind.
 - So it runs the Draft's code: what it leaves is not trusted.
-- On GitLab, it reads the forge with the bot's token, which that code
-  can reach: not fixed yet
-  ([#658](https://github.com/JN0V/workline/issues/658)).
+- On GitLab, it reads the forge with a separate read-only token, not
+  the bot's: that one is unset before the Draft's code runs.
 
 ## apply
 
