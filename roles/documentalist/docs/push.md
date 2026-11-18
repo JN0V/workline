@@ -1,8 +1,7 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: e1cbe478
+checked: 04d2af892
 verified: agent:claude-code
-judged-in-parts: c7e1e98
 ---
 # Documentalist — at the push and the adoption
 
@@ -45,6 +44,10 @@ moves to the commit the task gave.
   judges it [in parts](parts.md), there as with
   `workline docs`
   ([#458](https://github.com/JN0V/workline/issues/458)).
+- **A doc left to a person is said once** on a merge request, kept in a
+  comment of its own ("Docs left to a person"); a later push says it
+  again only when the doc or its sources changed
+  ([#1361](https://github.com/JN0V/workline/issues/1361)).
 
 ### A doc found with nothing to fix: no commit
 

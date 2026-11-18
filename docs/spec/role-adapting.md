@@ -2,10 +2,8 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/whys, skills]
 verified: agent:claude-code
-checked: 8538d558
-judged: b530b72
+checked: 04d2af892
 status: draft
-judged-in-parts: fa1d682
 ---
 # Adapting a role
 
@@ -68,8 +66,9 @@ and `test-homes` as the one definition of a test file
 the developer's bounds among them
 ([ADR-0063, §9](../adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)).
 Set once, in `roles.tester.settings`, it holds for all, locally and in
-CI, on GitHub and GitLab alike; unset or unread, the built-in generic
-patterns, which `workline doctor` says.
+CI, on GitHub and GitLab alike; unset, the patterns of the project's
+[language packs](../packs.md), else the generic ones, which `workline
+doctor` says.
 
 If a setting a role depends on cannot be resolved, the role says so and blocks.
 A check that silently passes for lack of configuration is still believed in,

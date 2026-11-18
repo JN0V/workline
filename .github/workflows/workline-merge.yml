@@ -4,15 +4,15 @@
 # .github/actions/engine, downloads it). Without `merge:` in
 # .workline/config.yaml, it stops at once. Hourly too, the safety net: a
 # pull request whose auto-merge GitHub missed, its checks green, merged by
-# the next run. And when a person closes the issue holding a demotion: the
+# the next run the loop dispatches. And when a person closes the issue holding a demotion: the
 # pull requests it held merge at once.
 name: workline merge
 on:
   pull_request_target: {types: [labeled, unlabeled, converted_to_draft]}
   issues: {types: [closed]}
-  schedule: [{cron: "53 * * * *"}]
-  # By hand, and by the loop when `workline tick` lists the merge
-  # (docs/tick.md): a run as the hourly one, named `workline merge`.
+  # No schedule: by hand, and by the loop when `workline tick` lists the
+  # merge, an hour after its last run (docs/tick.md), named `workline
+  # merge`. The template keeps its hourly cron, for a dry-run loop.
   workflow_dispatch:
 permissions: {}
 

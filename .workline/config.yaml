@@ -165,9 +165,13 @@ routing:
   wip: {ready: 10}
   # The loop's reconcile (docs/tick.md#turn-dispatching-on): while the
   # heartbeat waits, tick lists none; were its chain broken, 15 minutes
-  # apart, not every beat.
+  # apart, not every beat. The nightly and the simulator's seeds at the
+  # times their crons had: the loop starts them, workline's own
+  # workflows hold no cron for them (docs/github/own-workflows.md).
   timed:
     reconcile: {gap: 15}
+    nightly: {at: "17 2 * * *"}
+    seeds: {at: "41 3 * * *"}
   events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, "gate:lint", tester, reviewer, inspector],
     schedule: [documentalist, product-owner, reviewer], issue: [product-owner, reviewer, tester, developer]}
 
