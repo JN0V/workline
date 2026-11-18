@@ -2,6 +2,7 @@
 sources: [internal/builtin/committer/committer.go, internal/forge/github.go, internal/forge/gitlab.go, internal/forge/forge.go]
 checked: 582ca3c7
 verified: agent:claude-code
+judged-in-parts: eb16524
 ---
 # Committer — the squash title
 
