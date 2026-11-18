@@ -7,6 +7,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // Its pull request not opening gives the claim back the first time, the
@@ -15,7 +16,7 @@ import (
 func TestUnopenedGivesBackThenBlocks(t *testing.T) {
 	s := SettingsFrom(nil)
 	repo := t.TempDir()
-	first := unopened(Act{Issue: 159}, s, repo)
+	first := unopened(devmark.Act{Issue: 159}, s, repo)
 	label, _ := first[0]["label"].(map[string]any)
 	comment, _ := first[1]["comment"].(map[string]any)
 	body, _ := comment["body"].(string)
@@ -25,17 +26,17 @@ func TestUnopenedGivesBackThenBlocks(t *testing.T) {
 	if comment["sticky"] != "claim" || !strings.Contains(body, "gives this issue back") || !strings.Contains(body, intent.WhyMark) {
 		t.Errorf("first: comment %v", comment)
 	}
-	if a, ok := ReadAct(body); !ok || a.Act != "unopened" || a.Unopened != 1 {
+	if a, ok := devmark.ReadAct(body); !ok || a.Act != "unopened" || a.Unopened != 1 {
 		t.Errorf("first: record %+v in %q", a, body)
 	}
-	second := unopened(Act{Issue: 159, Unopened: 1}, s, repo)
+	second := unopened(devmark.Act{Issue: 159, Unopened: 1}, s, repo)
 	label, _ = second[0]["label"].(map[string]any)
 	comment, _ = second[1]["comment"].(map[string]any)
 	body, _ = comment["body"].(string)
 	if !slices.Contains(label["add"].([]string), backlog.LabelBlocked) || !slices.Contains(label["remove"].([]string), s.ClaimLabel) || !slices.Contains(label["remove"].([]string), backlog.LabelReady) {
 		t.Errorf("second: label %v", label)
 	}
-	if a, ok := ReadAct(body); !ok || a.Unopened != 2 || !strings.Contains(body, "blocks this issue") {
+	if a, ok := devmark.ReadAct(body); !ok || a.Unopened != 2 || !strings.Contains(body, "blocks this issue") {
 		t.Errorf("second: %+v in %q", a, body)
 	}
 }

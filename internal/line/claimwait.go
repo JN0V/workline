@@ -18,6 +18,7 @@ import (
 	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
@@ -121,7 +122,7 @@ func draftHolder(b forge.Backlog, mr forge.MergeRequest) string {
 	if !ok {
 		return "the developer's, a round on it once its checks end or one is red"
 	}
-	why, err := developer.DraftHolder(f, mr)
+	why, err := devmark.DraftHolder(f, mr)
 	switch {
 	case err != nil:
 		return "who holds it not read (" + forge.Said(err) + ")"
@@ -167,8 +168,8 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 	if !had {
 		now = Record{State: s.Name, Body: bodyHash(is.Body), V: recordV}
 	}
-	act := developer.ClaimActIn(forge.Bodies(notes))
-	same := developer.NoCodeOnSameBody(act, is.Body)
+	act := devmark.ClaimActIn(forge.Bodies(notes))
+	same := devmark.NoCodeOnSameBody(act, is.Body)
 	key, why := "", ""
 	switch {
 	case dated && !clock().Before(free) && same:
@@ -184,7 +185,7 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 		key = "hours:" + trail.Labeled
 		why = fmt.Sprintf("its claim, %s put on %s, has no pull request past claim-hours (%d): wakes the developer to let it go",
 			doing.Label, backlog.Day(trail.Labeled), h)
-	case developer.NoCodeOnOtherBody(act, is.Body):
+	case devmark.NoCodeOnOtherBody(act, is.Body):
 		key = "body:" + bodyHash(is.Body)
 		why = "its claim wrote no code, and its body changed since: wakes the developer to let it go"
 	}

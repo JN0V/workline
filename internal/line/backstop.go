@@ -219,7 +219,7 @@ func issueBackstop(f forge.Forge, b forge.Backlog, repo string, id int) (is *for
 
 // BackstopSaid says why issue id's runs reached its backstop, and what
 // a person does about it; "" when they did not, or when f lists no
-// comments. The developer's review round reads it (developer.Backstop).
+// comments. The developer's review round reads it (contract.Backstop).
 func BackstopSaid(f forge.Forge, repo string, id int) (string, error) {
 	b, ok := f.(forge.Backlog)
 	if !ok {

@@ -58,7 +58,7 @@ func TestAgentWordsRemoveAFolder(t *testing.T) {
 // TestClaimHoldsUnreadWordsWithNoPullRequest: no code, so no pull
 // request: the words that did not read go in the claim on the issue.
 func TestClaimHoldsUnreadWordsWithNoPullRequest(t *testing.T) {
-	a := Act{Act: "claim", Issue: 3, Unread: []string{"Its objections file could not be read. As it came:\n\n~~~\n- test: [x\n~~~\n"}}
+	a := devmark.Act{Act: "claim", Issue: 3, Unread: []string{"Its objections file could not be read. As it came:\n\n~~~\n- test: [x\n~~~\n"}}
 	body := claimBody(a, Settings{ClaimLabel: "workline:doing"})
 	if !strings.Contains(body, "Its agent's words, unread") || !strings.Contains(body, "- test: [x") {
 		t.Errorf("unread words not in the claim:\n%s", body)

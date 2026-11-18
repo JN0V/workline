@@ -9,10 +9,11 @@ package developer
 
 import (
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/devmark"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"slices"
 	"strings"
+
+	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
@@ -20,21 +21,6 @@ import (
 	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/work"
 )
-
-// ReadRecord reads the record of its code on its merge request id, from
-// workline's own comment; ok is false when there is none it can read.
-func ReadRecord(f forge.Forge, id int) (Act, bool, error) {
-	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: id})
-	if err != nil {
-		return Act{}, false, err
-	}
-	body, ok := kept.Last(forge.Marker("sticky=developer/" + devmark.RecordKey))
-	if !ok {
-		return Act{}, false, nil
-	}
-	a, ok := ReadAct(body)
-	return a, ok && a.Act == "code", nil
-}
 
 // written are the files its patches touch, its code and its tests apart,
 // by the project's one definition of a test file (ADR-0065).
@@ -90,7 +76,7 @@ func subjects(issue int, title, kind string, scope []string, s commitmsg.Setting
 // title, its body; ready only when green with no cap reached; the branch
 // from the tester's Draft, the tests in a commit apart; the record kept
 // on it.
-func mergeRequest(a Act, title string, sub Subjects) map[string]any {
+func mergeRequest(a devmark.Act, title string, sub Subjects) map[string]any {
 	ready := a.Proof != nil && a.Proof.Result == devmark.Green && len(a.Caps) == 0 && a.AgentFailed == ""
 	mr := map[string]any{"key": fmt.Sprint(a.Issue), "title": title, "body": body(a, ready), "draft": !ready,
 		"record": map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}, "message": sub.Code}
@@ -111,7 +97,7 @@ func mergeRequest(a Act, title string, sub Subjects) map[string]any {
 
 // body is its pull request's body: what closes, what changed, what was
 // left out, what ran, what was tried and not.
-func body(a Act, ready bool) string {
+func body(a devmark.Act, ready bool) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Closes #%d\n\n", a.Issue)
 	if ready {
@@ -174,13 +160,13 @@ func body(a Act, ready bool) string {
 
 // recordBody is the comment holding the record on its pull request: what
 // a fresh run reads of the last, and the auditor of its code.
-func recordBody(a Act) string {
+func recordBody(a devmark.Act) string {
 	r := a
 	r.Act, r.Passed = "code", nil
 	var b strings.Builder
 	b.WriteString("**The developer**'s record of this pull request, for its next runs and the auditor.\n\n")
 	for _, x := range r.Rounds {
-		fmt.Fprintf(&b, "- Review round %d: %d asked, %s", x.N, len(x.Asked), roundResult(x))
+		fmt.Fprintf(&b, "- Review round %d: %d asked, %s", x.N, len(x.Asked), devmark.RoundResult(x))
 		if x.Whys {
 			b.WriteString(", the five whys run")
 		}
@@ -191,37 +177,4 @@ func recordBody(a Act) string {
 	}
 	fmt.Fprintf(&b, "%s\n", r.Line())
 	return b.String()
-}
-
-// RoundLines are its review rounds as the auditor reads them: each, what
-// was asked and how it ended; "" for none (ADR-0046).
-func RoundLines(a Act) string {
-	var b strings.Builder
-	for _, x := range a.Rounds {
-		fmt.Fprintf(&b, "- Round %d: %s", x.N, roundResult(x))
-		if x.Whys {
-			b.WriteString(", the five whys run")
-		}
-		if x.Nits > 0 {
-			fmt.Fprintf(&b, ", %d nit%s not asked", x.Nits, devmark.Plural(x.Nits))
-		}
-		b.WriteString(".\n")
-		for _, t := range x.Asked {
-			fmt.Fprintf(&b, "  - asked: %s\n", t)
-		}
-	}
-	return b.String()
-}
-
-// roundResult says how a review round ended.
-func roundResult(x devmark.Round) string {
-	switch {
-	case x.Person:
-		return "its issue blocked"
-	case x.Result == "no-code":
-		return "no fix"
-	case x.Result == "not-pushed":
-		return "its fix not pushed, red on a green head"
-	}
-	return "its fix pushed, the tests " + x.Result
 }

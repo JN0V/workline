@@ -1,6 +1,7 @@
 ---
 sources: [internal/board/board.go, internal/forge/board.go, internal/doctor/board.go]
 checked: ba168505
+judged-in-parts: eb16524
 ---
 # Boards
 

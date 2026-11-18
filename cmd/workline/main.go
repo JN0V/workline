@@ -42,7 +42,6 @@ import (
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/contract"
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/doctor"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
@@ -72,7 +71,7 @@ import (
 func main() {
 	// A review round reads its issue's backstop as the line keeps it
 	// (ADR-0064, §5).
-	developer.Backstop = line.BackstopSaid
+	contract.Backstop = line.BackstopSaid
 	os.Exit(dispatch(os.Args[1:]))
 }
 

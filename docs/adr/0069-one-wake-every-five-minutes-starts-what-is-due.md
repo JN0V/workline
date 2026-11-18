@@ -17,7 +17,9 @@
   [ADR-0068] §8 (the wake script, print only)
 - **Research:** [reliable-schedule.md](../research/reliable-schedule.md)
 - **Amended:** [2026-11-17](#amendment-2026-11-17-a-beat-every-minute-no-event-moves-the-line):
-  a beat every minute, no event moves the line; the GitHub loop
+  a beat every minute, no event moves the line; the GitHub loop;
+  [2026-11-18](#amendment-2026-11-18-worklines-own-crons-go-once-dispatch-is-on):
+  workline's own crons go once dispatch is on
 
 Called **the tick** below, to keep it apart from
 [ADR-0068 §8](0068-the-line-steps-back-on-its-own-drift.md#8-the-wake-script-print-only)'s
@@ -305,7 +307,8 @@ run, blocked).
   tick` ([#1665]), released; tried on a copy; the pin's pull request,
   on the person's label; the loop in dry run beside today's workflows,
   a day; the event workflows removed one per pull request, crons kept
-  as restart until a week without a missed beat.
+  as restart until a week without a missed beat (not for workline's
+  own: [2026-11-18](#amendment-2026-11-18-worklines-own-crons-go-once-dispatch-is-on)).
 - **What it does not fix**: engine defects; the beat ends only the
   duplicate and cancelled runs events start.
 - **Supersedes, once decided**: the title's "every five minutes";
@@ -317,12 +320,28 @@ run, blocked).
   still move the line"; [Consequences](#consequences)' "288 ticks a
   day"; the [Slices](#slices).
 
+## Amendment (2026-11-18): workline's own crons go once dispatch is on
+
+Decided by the maintainer, 2026-11-18, after an independent review of
+the pull requests that drop them, starting with [#1816].
+
+- **No week's wait**: the 2026-11-17 amendment's "crons kept as restart
+  until a week without a missed beat" does not hold for workline's own
+  workflows.
+- **workline's own**: once the loop dispatches
+  ([docs/tick.md](../tick.md#turn-dispatching-on)), each job `workline
+  tick` lists loses its cron; the loop starts it, its hourly schedule
+  is the restart.
+- **The templates keep their crons**, for a project whose loop is a
+  dry run.
+
 [#607]: https://github.com/JN0V/workline/issues/607
 [#853]: https://github.com/JN0V/workline/issues/853
 [#1397]: https://github.com/JN0V/workline/issues/1397
 [#1549]: https://github.com/JN0V/workline/issues/1549
 [#1611]: https://github.com/JN0V/workline/issues/1611
 [#1665]: https://github.com/JN0V/workline/issues/1665
+[#1816]: https://github.com/JN0V/workline/pull/1816
 [ADR-0037]: 0037-the-schedule-runs-every-step.md
 [ADR-0059]: 0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md
 [ADR-0060]: 0060-the-person-is-on-the-loop.md

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/testmark"
 )
 
 // Each scenario takes the tests its entry declares, or its reason; one
@@ -115,7 +116,7 @@ func TestCoveredBy(t *testing.T) {
 		"CartTest.addsItem": "Add item", "shop.CartTest.addsItem": "Add item", "`addsItem`": "Add item",
 		"both": "", "TestAddItem": "", "": "", "CartTest.addsItem(int)[1]": "Add item",
 	} {
-		if got := CoveredBy(covers, id); got != want {
+		if got := testmark.CoveredBy(covers, id); got != want {
 			t.Errorf("CoveredBy(%q) = %q, want %q", id, got, want)
 		}
 	}

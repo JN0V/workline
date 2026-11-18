@@ -252,14 +252,14 @@ func TestMergeRequestReadyOnlyGreenUncapped(t *testing.T) {
 	green := &devmark.Proof{Result: devmark.Green, Command: "make test", Passed: 4}
 	for _, tc := range []struct {
 		name  string
-		a     Act
+		a     devmark.Act
 		draft bool
 	}{
-		{"green", Act{Issue: 7, Proof: green}, false},
-		{"green, a cap", Act{Issue: 7, Proof: green, Caps: []devmark.Cap{{Setting: "ai-max-tokens", Spent: 9, Allows: 5}}}, true},
-		{"red", Act{Issue: 7, Proof: &devmark.Proof{Result: devmark.Red, Red: []string{"t.a"}}}, true},
-		{"unproven", Act{Issue: 7, Proof: &devmark.Proof{Result: devmark.Unproven, Why: "no report"}}, true},
-		{"green, its agent failed", Act{Issue: 7, Proof: green, AgentFailed: "it gave up"}, true},
+		{"green", devmark.Act{Issue: 7, Proof: green}, false},
+		{"green, a cap", devmark.Act{Issue: 7, Proof: green, Caps: []devmark.Cap{{Setting: "ai-max-tokens", Spent: 9, Allows: 5}}}, true},
+		{"red", devmark.Act{Issue: 7, Proof: &devmark.Proof{Result: devmark.Red, Red: []string{"t.a"}}}, true},
+		{"unproven", devmark.Act{Issue: 7, Proof: &devmark.Proof{Result: devmark.Unproven, Why: "no report"}}, true},
+		{"green, its agent failed", devmark.Act{Issue: 7, Proof: green, AgentFailed: "it gave up"}, true},
 	} {
 		mr := mergeRequest(tc.a, "Add it", Subjects{})
 		if mr["draft"] != tc.draft {

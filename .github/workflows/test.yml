@@ -2,19 +2,21 @@
 # merge. Main's whole-repository checks are one run, workline.yml's
 # `route main` (ADR-0051, step 8); the links to other sites, gardening's,
 # at night. Its line on pull requests is workline.yml, the template.
-# Each night, the line simulator's seeded runs on new seeds (ADR-0063):
-# a pull request runs fixed ones.
+# Each night, the line simulator's seeded runs on new seeds (ADR-0063),
+# started by workline's loop when `workline tick` lists the seeds (03:41
+# UTC, routing.timed in .workline/config.yaml): a pull request runs fixed
+# ones.
 name: test
 # The seeds' runs named `workline test seeds`, what `workline tick` reads
 # to know they ran (docs/tick.md); the others as GitHub names them.
 run-name: >-
-  ${{ (github.event_name == 'schedule' || inputs.job == 'seeds') && 'workline test seeds' ||
+  ${{ (inputs.job == 'seeds') && 'workline test seeds' ||
   github.event.pull_request.title || github.event.head_commit.message || github.workflow }}
 on:
   push: {branches: [main]}
   pull_request:
-  schedule: [{cron: "41 3 * * *"}]
-  # By hand, and by the loop when `workline tick` lists the seeds.
+  # No schedule: by hand, and by the loop when `workline tick` lists the
+  # seeds (docs/tick.md).
   workflow_dispatch:
     inputs:
       job: {description: "seeds: the simulator's seeded runs, as the nightly; empty: the tests", required: false, default: ""}
@@ -25,7 +27,7 @@ jobs:
   # requires, waits for both and fails unless both passed.
   rest:
     name: test (all but the simulator)
-    if: github.event_name != 'schedule' && inputs.job != 'seeds'
+    if: inputs.job != 'seeds'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +39,7 @@ jobs:
       - run: go test -count=1 -timeout 20m $(go list ./... | grep -v '/tests/simulator$')
   simulator:
     name: test (simulator)
-    if: github.event_name != 'schedule' && inputs.job != 'seeds'
+    if: inputs.job != 'seeds'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,16 +49,16 @@ jobs:
       - uses: ./.github/actions/tests
       - run: go test -count=1 -timeout 20m ./tests/simulator/
   test:
-    if: always() && github.event_name != 'schedule' && inputs.job != 'seeds'
+    if: always() && inputs.job != 'seeds'
     needs: [rest, simulator]
     runs-on: ubuntu-latest
     steps:
       - run: test "$REST" = success && test "$SIM" = success
         env: {REST: "${{ needs.rest.result }}", SIM: "${{ needs.simulator.result }}"}
   seeds:
-    if: github.event_name == 'schedule' || inputs.job == 'seeds'
-    # One seeds run at a time: the nightly's and a dispatched one never
-    # run twice beside each other.
+    if: inputs.job == 'seeds'
+    # One seeds run at a time: two dispatched ones never run beside
+    # each other.
     concurrency: {group: workline-test-seeds, cancel-in-progress: false}
     runs-on: ubuntu-latest
     timeout-minutes: 90

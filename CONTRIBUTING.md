@@ -1,9 +1,7 @@
 <!-- workline
 sources: [cmd/workline, tests/conformance/pending.txt]
-checked: 8538d558
-judged: 010367e
+checked: 04d2af892
 verified: agent:claude-code
-judged-in-parts: b3b9aad
 -->
 # Contributing
 
