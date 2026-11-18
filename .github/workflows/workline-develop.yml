@@ -356,7 +356,7 @@ jobs:
           for page in 1 2 3 4 5; do
             gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$wf/runs?event=workflow_dispatch&branch=$GITHUB_REF_NAME&per_page=100&page=$page" \
               --jq '{n: (.workflow_runs | length), r: [.workflow_runs[] | select(.display_title == "workline develop heartbeat" or .display_title == "workline develop reconcile")]}' > page.json || {
-              echo "::warning title=workline::this workflow's runs not read: no reconcile started; the next event or the schedule asks again"; exit 0; }
+              echo "::warning title=workline::this workflow's runs not read: no reconcile started; the next event or the loop's reconcile asks again"; exit 0; }
             jq -s '.[0] + .[1].r' runs.json page.json > all.json && mv all.json runs.json
             jq -e '.n < 100 or any(.r[]; .conclusion == "success")' page.json > /dev/null && break
           done
@@ -371,7 +371,7 @@ jobs:
           if gh workflow run "$wf" -R "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f reconcile=true; then
             echo "the last reconcile ended at ${last:-no time found}: the reconciler's run started" | tee -a "$GITHUB_STEP_SUMMARY"
           else
-            echo "::warning title=workline::the reconciler's run not started: the next event or the schedule asks again"
+            echo "::warning title=workline::the reconciler's run not started: the next event or the loop's reconcile asks again"
           fi
 
   # Who keeps the line's verdicts, for the reconciler to read them
@@ -471,8 +471,8 @@ jobs:
       # The next reconcile, by the heartbeat (#845), even when this one
       # failed: its run waits the environment's wait timer, in minutes.
       # No such environment, or no wait timer (a private repository on
-      # GitHub's free plan has none), no heartbeat: said, the schedule and
-      # the events run the reconciler as they can.
+      # GitHub's free plan has none), no heartbeat: said, the loop's
+      # reconcile (`workline tick`) and the events run the reconciler.
       - name: The next reconcile, by the heartbeat
         if: always()
         env: {GH_TOKEN: "${{ github.token }}"}
@@ -481,13 +481,13 @@ jobs:
             --jq '[.protection_rules[]? | select(.type == "wait_timer") | .wait_timer][0] // 0' 2>/dev/null) || wait=0
           case "$wait" in ''|*[!0-9]*) wait=0 ;; esac
           if [ "$wait" -lt 5 ]; then
-            echo "no heartbeat: no environment workline-heartbeat with a wait timer of 5 minutes or more; the schedule and the line's events start the next reconcile, when GitHub runs them" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "no heartbeat: no environment workline-heartbeat with a wait timer of 5 minutes or more; the loop's reconcile (workline tick, 15 min apart) and the line's events start the next one" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           if gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f reconcile=next; then
             echo "the next reconcile in $wait min, by the heartbeat" | tee -a "$GITHUB_STEP_SUMMARY"
           else
-            echo "::warning title=workline::the heartbeat not started: the schedule or the line's next event starts the reconciler"
+            echo "::warning title=workline::the heartbeat not started: the loop's reconcile or the line's next event starts the reconciler"
           fi
 
   # A review round (ADR-0054, step 6): a fresh run on the developer's own
