@@ -46,6 +46,9 @@ How workline reads what `gh` gives:
 - **A host not reached**: `gh` does not tell a host that does not exist
   from a name not resolved for a moment. Nothing was sent: tried again.
 - **Many pages**: a read that fails on one is read again from the first.
+- **A 304 Not Modified** is no failure: the listing read
+  conditionally uses its last answer
+  ([the tick's cost](../tick.md#cost)).
 
 ## The API budget
 

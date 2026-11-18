@@ -1,6 +1,6 @@
 ---
-sources: [cmd/workline/tick.go, internal/tick, internal/routing/timed.go, internal/forge/runs.go, internal/line/tick.go, internal/line/backlog_due.go]
-checked: dc219018
+sources: [cmd/workline/tick.go, internal/tick, internal/routing/timed.go, internal/forge/runs.go, internal/forge/cond.go, internal/line/tick.go, internal/line/backlog_due.go]
+checked: aa842322
 ---
 # The tick
 
@@ -89,10 +89,21 @@ workline tick --now 2026-11-16T02:20:00Z --json   # a fixed clock, for tests
 ## Cost
 
 - **No agent, no token** of a model.
-- **GitHub reads, each tick**: the runs going (5 calls, one a status), each timed
-  job's workflow back to its time (1 call a page of 100, 5 pages at
-  most), the open issues when Ready's target is set (1 call a page),
-  and each issue's label events past Ready when Ready is below it.
-- **`--issues`**: the reconciler's reads, about 20 calls.
-- **Conditional reads** (an ETag's 304 costs no quota) are not used
-  yet: the forge layer has none.
+- **GitHub reads, each tick**: the runs going (1 call: the last day's
+  runs, every workflow), each timed job's workflow back to its time
+  (1 call a page of 100, 5 pages at most), the open issues when Ready's
+  target is set (1 call a page), and each issue's label events past
+  Ready when Ready is below it.
+- **Conditional reads**: each listing read again sends its last answer's
+  `ETag`; GitHub's `304 Not Modified` costs no quota, and the last
+  answer is used
+  ([#1762](https://github.com/JN0V/workline/issues/1762)).
+  - Kept in the clone, `.git/workline/etags.json`, a day at most.
+  - The times asked are to the hour, so that the same listing is asked
+    from one minute to the next.
+  - Said on stderr: `5 GitHub calls, 0 of them cost quota (5 answered
+    304 Not Modified)`.
+- **`--issues`**: the reconciler's reads, about 20 calls, not
+  conditional.
+- **A run going for more than a day**, waiting on a person's approval,
+  is not read as going.

@@ -36,6 +36,9 @@ type Result struct {
 	Items  []Item
 	Said   []string
 	Unread []string
+	// Calls: the forge's API calls this tick sent (GitHub's); Free, those
+	// answered 304 Not Modified, which cost no quota (#1762).
+	Calls, Free int
 }
 
 // Options: the repository, its routing, the forge (nil: none), when now
@@ -77,8 +80,12 @@ const backlogLookBack = 24 * time.Hour
 func (j job) names() []string { return append([]string{j.key}, j.aliases...) }
 
 // Due lists the jobs due at o.Now, in routing.TimedJobs' order.
-func Due(o Options) Result {
-	var r Result
+func Due(o Options) (r Result) {
+	sent, free := forge.Calls()
+	defer func() {
+		now, nowFree := forge.Calls()
+		r.Calls, r.Free = now-sent, nowFree-free
+	}()
 	runs, runsErr := forge.RunsOf(o.Forge)
 	var going []forge.Run
 	if runsErr == nil {

@@ -32,8 +32,19 @@ func run(repo, bin string, args ...string) ([]byte, error) {
 // from what gh prints, the answer's headers asked (--include): a status, a
 // Retry-After; gh is stopped when it prints no answer for a minute.
 func runInput(repo string, input []byte, bin string, args ...string) ([]byte, error) {
+	body, _, err := runAnswer(repo, input, bin, args...)
+	return body, err
+}
+
+// runHeader is run, with the last answer's headers, its HTTP status in
+// statusHeader: a 304 Not Modified is no failure.
+func runHeader(repo, bin string, args ...string) ([]byte, http.Header, error) {
+	return runAnswer(repo, nil, bin, args...)
+}
+
+func runAnswer(repo string, input []byte, bin string, args ...string) ([]byte, http.Header, error) {
 	if _, err := exec.LookPath(bin); err != nil {
-		return nil, fmt.Errorf("%w: %s is not installed", ErrUnreachable, bin)
+		return nil, nil, fmt.Errorf("%w: %s is not installed", ErrUnreachable, bin)
 	}
 	read := ghRead(args)
 	if asksHeads(args) {
@@ -41,12 +52,21 @@ func runInput(repo string, input []byte, bin string, args ...string) ([]byte, er
 	}
 	for try := 1; ; try++ {
 		c := ghOnce(repo, input, bin, args)
+		if bin == "gh" {
+			counted(c.pages, c.code == http.StatusNotModified)
+		}
 		if !c.failed {
-			return c.body, nil
+			if c.header == nil {
+				c.header = http.Header{}
+			}
+			if c.code != 0 {
+				c.header.Set(statusHeader, strconv.Itoa(c.code))
+			}
+			return c.body, c.header, nil
 		}
 		wait, note := again("GitHub", read, try, c.failure)
 		if wait < 0 || note != "" {
-			return nil, c.err(bin, args[0], note)
+			return nil, nil, c.err(bin, args[0], note)
 		}
 		time.Sleep(wait)
 	}
@@ -70,6 +90,9 @@ type ghCall struct {
 	msg     string // what it said failing
 	failed  bool
 	failure failure
+	code    int         // the last answer's HTTP status, when its headers were asked
+	header  http.Header // its headers
+	pages   int         // the answers it printed headers of: a page each
 }
 
 // ghOnce runs gh once, stopped when it prints nothing for retry.answerMax:
@@ -91,7 +114,13 @@ func ghOnce(repo string, input []byte, bin string, args []string) ghCall {
 	cmd.Stdout, cmd.Stderr = out, &errOut
 	err := cmd.Run()
 	code, header, body := heads(out.Bytes())
-	c := ghCall{body: body, msg: strings.TrimSpace(errOut.String()), failed: err != nil}
+	c := ghCall{body: body, msg: strings.TrimSpace(errOut.String()), failed: err != nil, code: code, header: header,
+		pages: len(headBlock.FindAllIndex(out.Bytes(), -1))}
+	if code == http.StatusNotModified {
+		// Nothing changed since the ETag sent: no body, which --jq
+		// fails to read; the caller uses its last answer (#1762).
+		c.failed, c.body = false, nil
+	}
 	if !c.failed {
 		return c
 	}

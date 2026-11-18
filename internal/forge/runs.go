@@ -92,42 +92,40 @@ func compareTimes(a, b string) int {
 // githubRunJQ keeps of a run what Run holds.
 const githubRunJQ = `{name: .display_title, workflow: (.path | split("/") | last | split("@") | first), status, success: (.conclusion == "success"), started: (.run_started_at // .created_at), updated: .updated_at}`
 
-// runStatusesGoing are the statuses of a run not completed: requested, a
-// run asked for and not yet queued, among them (#1761).
-var runStatusesGoing = []string{"requested", "queued", "waiting", "pending", "in_progress"}
+// goingLookBack: how far back the runs going are looked for. GitHub
+// cancels a run queued a day; one going longer, waiting on a person's
+// approval, is not read.
+const goingLookBack = 24 * time.Hour
 
-// RunsGoing reads the runs of each status not completed, page by page,
-// until a page holds fewer than 100 or RunsPages are read: 5 calls when
-// fewer than 100 of each.
+// RunsGoing reads the runs created in the last day, of every workflow,
+// and keeps those not completed: requested, queued, waiting, pending or
+// in progress (#1761). One call when fewer than 100 (#1762), RunsPages
+// at most; read conditionally, the listing costs no quota when no run
+// changed.
 func (g *github) RunsGoing() ([]Run, error) {
-	var all []Run
-	for _, status := range runStatusesGoing {
-		for page := 1; page <= RunsPages; page++ {
-			out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/actions/runs?per_page=100&page=%d&status=%s", page, status), "--jq", ".workflow_runs[] | "+githubRunJQ)
-			if err != nil {
-				return nil, err
-			}
-			runs, err := lines[Run](out)
-			if err != nil {
-				return nil, err
-			}
-			all = append(all, runs...)
-			if len(runs) < 100 {
-				break
-			}
-		}
-	}
-	return all, nil
+	all, err := g.runs("repos/{owner}/{repo}/actions/runs", time.Now().Add(-goingLookBack), `select(.status != "completed") | `)
+	return slices.DeleteFunc(all, func(r Run) bool { return !r.Going() }), err
 }
 
-// RunsSince reads workflow's runs created since, page by page, until a
-// page holds fewer than 100 or RunsPages are read.
+// RunsSince reads workflow's runs created since, page by page, until no
+// page follows or RunsPages are read.
 func (g *github) RunsSince(workflow string, since time.Time) ([]Run, error) {
+	all, err := g.runs(fmt.Sprintf("repos/{owner}/{repo}/actions/workflows/%s/runs", url.PathEscape(workflow)), since, "")
+	return slices.DeleteFunc(all, func(r Run) bool {
+		t, err := time.Parse(time.RFC3339, r.Started)
+		return err == nil && t.Before(since)
+	}), err
+}
+
+// runs reads a listing of runs created since, filter applied. since is
+// asked to the hour before: the same address from one tick to the next
+// within the hour, whose answer is then kept (#1762); the caller keeps
+// those it needs.
+func (g *github) runs(endpoint string, since time.Time, filter string) ([]Run, error) {
 	var all []Run
-	created := url.QueryEscape(">=" + since.UTC().Format(time.RFC3339))
+	created := url.QueryEscape(">=" + since.UTC().Truncate(time.Hour).Format(time.RFC3339))
 	for page := 1; page <= RunsPages; page++ {
-		out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/actions/workflows/%s/runs?per_page=100&page=%d&created=%s", url.PathEscape(workflow), page, created),
-			"--jq", ".workflow_runs[] | "+githubRunJQ)
+		out, next, err := g.listing(fmt.Sprintf("%s?per_page=100&page=%d&created=%s", endpoint, page, created), ".workflow_runs[] | "+filter+githubRunJQ)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +134,7 @@ func (g *github) RunsSince(workflow string, since time.Time) ([]Run, error) {
 			return nil, err
 		}
 		all = append(all, runs...)
-		if len(runs) < 100 {
+		if !next {
 			break
 		}
 	}
