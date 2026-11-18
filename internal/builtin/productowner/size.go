@@ -8,13 +8,13 @@ package productowner
 
 import (
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"slices"
 	"strconv"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/line"
-	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -45,7 +45,7 @@ func testsFirst(f any, is forge.Issue, runsTester bool) string {
 	if m, ok := f.(interface {
 		OpenMergeRequests(prefix string) ([]string, error)
 	}); ok {
-		if drafts, err := m.OpenMergeRequests(tester.TestsBranch); err == nil && slices.Contains(drafts, tester.TestsBranch+strconv.Itoa(is.ID)) {
+		if drafts, err := m.OpenMergeRequests(testmark.TestsBranch); err == nil && slices.Contains(drafts, testmark.TestsBranch+strconv.Itoa(is.ID)) {
 			return ""
 		}
 	}

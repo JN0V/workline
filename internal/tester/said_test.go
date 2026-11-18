@@ -1,6 +1,7 @@
 package tester
 
 import (
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"testing"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -22,7 +23,7 @@ func TestRefused(t *testing.T) {
 			backlog.Said("The tester", "wrote the acceptance tests of this issue, as a Draft", "each scenario", "next") + sticky}, ""},
 		{"none", nil, ""},
 	} {
-		if got := Refused(c.comments); got != c.want {
+		if got := testmark.Refused(c.comments); got != c.want {
 			t.Errorf("%s: Refused = %q, want %q", c.name, got, c.want)
 		}
 	}

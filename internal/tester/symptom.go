@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -180,10 +181,10 @@ func symptomGreen(repo string, rec record, main, draft string, s Settings) (verd
 	if err != nil {
 		return verdict.Verdict{}, err.Error()
 	}
-	if err := Worktree(repo, main, tree); err != nil {
+	if err := worktree.Worktree(repo, main, tree); err != nil {
 		return verdict.Verdict{}, err.Error()
 	}
-	defer RemoveWorktree(repo, tree)
+	defer worktree.RemoveWorktree(repo, tree)
 	laid := false
 	for _, file := range rec.files() {
 		ours, err := blob(repo, draft, file)

@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"os"
 	"os/exec"
 	"path"
@@ -180,7 +181,7 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 // testerIssue is the issue a tester's branch is for, 0 when not one.
 func testerIssue(branch string) int {
 	var n int
-	if _, err := fmt.Sscanf(strings.TrimPrefix(branch, tester.TestsBranch), "%d", &n); err != nil || !strings.HasPrefix(branch, tester.TestsBranch) {
+	if _, err := fmt.Sscanf(strings.TrimPrefix(branch, testmark.TestsBranch), "%d", &n); err != nil || !strings.HasPrefix(branch, testmark.TestsBranch) {
 		return 0
 	}
 	return n
@@ -596,7 +597,7 @@ func (o objection) key() string { return fmt.Sprintf("objection-%s:%d", o.Test, 
 // body is the objection's first comment on the test's line, in the form
 // the tester reads (roles/tester/README.md, frozen tests and objections).
 func (o objection) body() string {
-	return fmt.Sprintf("%s\n- test: %s\n- scenario: %s\n- kind: %s\n- why: %s", tester.ObjectionWord, o.Test, o.Scenario, o.Kind, o.Why)
+	return fmt.Sprintf("%s\n- test: %s\n- scenario: %s\n- kind: %s\n- why: %s", testmark.ObjectionWord, o.Test, o.Scenario, o.Kind, o.Why)
 }
 
 // scenarioOf is the issue's scenario an objection names: the one its name

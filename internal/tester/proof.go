@@ -51,12 +51,6 @@ func proofOf(notes []string) (Proof, bool) {
 	return Proof{}, false
 }
 
-// ReadProof is the kind an issue is proved by in place of a Draft: the
-// tester's, or the product owner's after "no test possible".
-func ReadProof(comments []string) (Proof, bool) {
-	return backlog.ReadProof(comments, "product-owner")
-}
-
 // proved ends a run whose agent wrote no test and named a kind instead:
 // recorded on the issue, and the issue moved on — to the state after its
 // own for a kind in ProofKinds, back to the product owner's for none.

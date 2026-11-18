@@ -2,6 +2,7 @@ package tester
 
 import (
 	"encoding/json"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,7 +49,7 @@ func TestPickLeavesAParkedReadyIssueToItsTests(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, is := range issues {
-		if is.ID == 1 && Untested(is, nil, nil) {
+		if is.ID == 1 && testmark.Untested(is, nil, nil) {
 			t.Error("a parked ready issue is said to wait for its tests")
 		}
 	}

@@ -10,6 +10,7 @@ package developer
 
 import (
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"os"
 	"os/exec"
@@ -119,7 +120,7 @@ func testerKept(f forge.Forge, issue int) ([]string, error) {
 	var out []string
 	for _, t := range threads {
 		for _, c := range t.Comments {
-			if !own.Wrote(c) || !tester.IsAnswered(c.Body) {
+			if !own.Wrote(c) || !testmark.IsAnswered(c.Body) {
 				continue
 			}
 			if ans, ok := tester.ReadAnswered(c.Body); ok && ans.Act == "kept" && !ans.Missing { // none needed: no test to make pass
@@ -190,7 +191,7 @@ func inFrozen(repo, at string, acceptance []string, name string) bool {
 // testerTip is the commit of the tester's branch for issue, as fetched
 // from origin, else local; "" when neither is there.
 func testerTip(repo string, issue int) string {
-	b := fmt.Sprintf("%s%d", tester.TestsBranch, issue)
+	b := fmt.Sprintf("%s%d", testmark.TestsBranch, issue)
 	for _, ref := range []string{"refs/remotes/origin/" + b, "refs/heads/" + b} {
 		if h, err := gitOut(repo, "rev-parse", "-q", "--verify", ref+"^{commit}"); err == nil && h != "" {
 			return h

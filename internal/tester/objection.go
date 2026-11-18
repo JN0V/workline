@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"os"
 	"os/exec"
@@ -37,23 +38,6 @@ import (
 	"github.com/JN0V/workline/internal/work"
 )
 
-// ObjectionWord opens an objection's first comment.
-const ObjectionWord = "workline:objection"
-
-// The tester's own comments in a thread carry answerMark, a person's turn
-// personMark, an objection it could not read unreadMark (the builder's
-// turn, not an answer counted): workline's own account may write for
-// other roles too.
-var (
-	answerMark = forge.Marker("tester-answer")
-	personMark = forge.Marker("tester-person-decides") // before ADR-0059: read, never written
-	// settleMark: past the tester's answers, the product owner settles
-	// (ADR-0059, decision 6); blockedMark: past it, the issue Blocked.
-	settleMark  = forge.Marker("tester-product-owner-settles")
-	blockedMark = forge.Marker("tester-objection-blocked")
-	unreadMark  = forge.Marker("tester-unreadable")
-)
-
 // The kinds an objection names, as the ADR words them.
 var kinds = []struct{ key, name, word string }{
 	{"interface", "wrong interface", "interface"},
@@ -65,37 +49,6 @@ var kinds = []struct{ key, name, word string }{
 	// tester adds it or says why none is needed (#1265). No scenario
 	// named: the tester reads them all.
 	{"missing", "a test missing", "missing"},
-}
-
-// ObjectionsWait says whether one of a Draft's conversations on a line is
-// an objection the tester has not answered, settled nor blocked (#1265):
-// what wakes its answer run where no forge's job does, the local forge's
-// reconcile. The run reads them again, who wrote each among them.
-func ObjectionsWait(threads []forge.Thread) bool {
-	return slices.ContainsFunc(threads, ObjectionWaits)
-}
-
-// ObjectionWaits says whether one conversation on a line is an objection
-// the tester has not answered, settled nor blocked.
-func ObjectionWaits(t forge.Thread) bool {
-	if t.Resolved || len(t.Comments) == 0 || (!strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) && !PersonsThread(t)) {
-		return false
-	}
-	last := t.Comments[len(t.Comments)-1].Body
-	return !slices.ContainsFunc([]string{answerMark, unreadMark, settleMark, personMark, blockedMark}, func(m string) bool { return strings.Contains(last, m) })
-}
-
-// PersonsThread says whether a conversation on a line was opened by a
-// person of the project (#1358): a review comment on the Draft, no
-// objection's form, no engine's marker. The tester reads it as a test
-// missing, naming no scenario.
-func PersonsThread(t forge.Thread) bool {
-	if len(t.Comments) == 0 {
-		return false
-	}
-	c := t.Comments[0]
-	body := strings.TrimSpace(c.Body)
-	return c.Insider && !c.Bot && body != "" && !strings.HasPrefix(body, ObjectionWord) && !strings.Contains(body, "<!-- workline:")
 }
 
 // What an answer run does, decided before any agent.
@@ -119,7 +72,7 @@ var fieldLine = regexp.MustCompile(`(?i)^\s*(?:[-*+]\s+)?(\**)\s*(test|scenario|
 func parseObjection(body string) (objection, []string) {
 	var o objection
 	text := strings.TrimSpace(body)
-	text = strings.TrimSpace(strings.TrimPrefix(text, ObjectionWord))
+	text = strings.TrimSpace(strings.TrimPrefix(text, testmark.ObjectionWord))
 	lines := strings.Split(text, "\n")
 	for i, l := range lines {
 		m := fieldLine.FindStringSubmatch(l)
@@ -371,7 +324,7 @@ func answerPre(runDir, repo string, s Settings) int {
 	}
 	var waiting []forge.Thread
 	for _, t := range threads {
-		if t.Resolved || len(t.Comments) == 0 || (!strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), ObjectionWord) && !PersonsThread(t)) {
+		if t.Resolved || len(t.Comments) == 0 || (!strings.HasPrefix(strings.TrimSpace(t.Comments[0].Body), testmark.ObjectionWord) && !testmark.PersonsThread(t)) {
 			continue
 		}
 		if last := t.Comments[len(t.Comments)-1]; len(neededFiles(runDir)) > 0 && lacked(last.Body) {
@@ -396,7 +349,7 @@ func answerPre(runDir, repo string, s Settings) int {
 	// The first comment's fields, then those the builder gave in a reply,
 	// the latest kept: an unreadable objection is completed in the thread.
 	o, _ := parseObjection(t.Comments[0].Body)
-	byPerson := PersonsThread(t)
+	byPerson := testmark.PersonsThread(t)
 	if byPerson {
 		// A person's review comment: a test missing, on the line it is on.
 		o = objection{Test: t.Path, Kind: "missing", Why: strings.TrimSpace(t.Comments[0].Body)}
@@ -503,7 +456,7 @@ func writeAnswerTask(runDir, repo string, a answer, t forge.Thread, is *forge.Is
 	fmt.Fprintf(&b, "## The objection: %s\n\n", kindName(a.Kind))
 	for i, c := range t.Comments {
 		who := "the builder"
-		if i == 0 && a.Kind == "missing" && PersonsThread(t) {
+		if i == 0 && a.Kind == "missing" && testmark.PersonsThread(t) {
 			who = "a person of the project"
 		}
 		switch {
@@ -657,7 +610,7 @@ func plainAnswer(a answer, s Settings) ([]intent.Intention, verdict.Verdict) {
 	switch a.Mode {
 	case modeMalformed:
 		return []intent.Intention{{Kind: "comment", Value: map[string]any{"thread": a.Thread, "body": fmt.Sprintf("**Not answered**: %s. An objection opens with `%s`, then `test:`, `scenario:` (its name in #%d), `kind:` (%s) and `why:`, one a line; reply in this thread with the ones to fix.\n\n%s",
-				a.Why, ObjectionWord, a.Issue, kindNames(), unreadMark)}}},
+				a.Why, testmark.ObjectionWord, a.Issue, kindNames(), unreadMark)}}},
 			verdict.Verdict{Status: verdict.Pass, Summary: "an objection the tester cannot read, said in its thread" + a.left(),
 				Findings: []verdict.Finding{{Rule: "objection-unreadable", Level: "warn", Where: a.URL, Message: a.Why}}}
 	case modeSettle:
@@ -1060,7 +1013,7 @@ func (a answer) move(to string) []intent.Intention {
 // lacked says whether a comment is the tester's answer that it lacks code.
 func lacked(body string) bool {
 	a, ok := ReadAnswered(body)
-	return ok && a.Act == "lacks-code" && IsAnswered(body)
+	return ok && a.Act == "lacks-code" && testmark.IsAnswered(body)
 }
 
 // inTestFolder says whether file sits in a folder holding one of the

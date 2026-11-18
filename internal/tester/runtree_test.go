@@ -1,6 +1,7 @@
 package tester
 
 import (
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,7 +25,7 @@ func TestRunTreeOutOfGitDir(t *testing.T) {
 		if err := os.MkdirAll(c.runDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := RunTree(repo, "HEAD", c.runDir, agent.WorktreeDir); err != nil {
+		if err := worktree.RunTree(repo, "HEAD", c.runDir, agent.WorktreeDir); err != nil {
 			t.Fatal(err)
 		}
 		tree := agent.Worktree(c.runDir)
@@ -44,7 +45,7 @@ func TestRunTreeOutOfGitDir(t *testing.T) {
 		if got := tree != filepath.Join(c.runDir, agent.WorktreeDir); got != c.linked {
 			t.Errorf("%s: out of the run %v, want %v", c.runDir, got, c.linked)
 		}
-		RemoveRunTree(repo, c.runDir, agent.WorktreeDir, tree)
+		worktree.RemoveRunTree(repo, c.runDir, agent.WorktreeDir, tree)
 		if _, err := os.Lstat(tree); err == nil {
 			t.Errorf("%s: its tree left", c.runDir)
 		}

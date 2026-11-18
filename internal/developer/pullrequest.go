@@ -9,6 +9,7 @@ package developer
 
 import (
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"slices"
 	"strings"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/kit/testdef"
-	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -146,7 +146,7 @@ func body(a Act, ready bool) string {
 		fmt.Fprintf(&b, "- New test files beside the issue's %s: %s; the product owner adds them to the %[1]s at its next run.\n", work.Name(work.Scope), files(a.Beside))
 	}
 	if len(a.Acceptance) > 0 {
-		fmt.Fprintf(&b, "- The tester's acceptance tests, read-only to the developer, from `%s%d`: %s.\n", tester.TestsBranch, a.Issue, files(a.Acceptance))
+		fmt.Fprintf(&b, "- The tester's acceptance tests, read-only to the developer, from `%s%d`: %s.\n", testmark.TestsBranch, a.Issue, files(a.Acceptance))
 	}
 	if a.RedUnproven != "" {
 		fmt.Fprintf(&b, "- **Red unproven**: their red proof on the base was not settled by the tester's judge: %s.\n", a.RedUnproven)

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"io"
 	"io/fs"
 	"maps"
@@ -35,7 +36,6 @@ import (
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
-	"github.com/JN0V/workline/internal/tester"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -1499,12 +1499,12 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		tree, err := os.MkdirTemp("", "workline-patches-")
 		if err == nil {
 			_ = os.Remove(tree) // git makes it
-			err = tester.Worktree(st.Repo, "HEAD", tree)
+			err = worktree.Worktree(st.Repo, "HEAD", tree)
 		}
 		if err != nil {
 			return fmt.Errorf("a worktree for the patches to comment: %w", err)
 		}
-		defer tester.RemoveWorktree(st.Repo, tree)
+		defer worktree.RemoveWorktree(st.Repo, tree)
 		ap.tree, commentRepo, commenting = tree, tree, true
 		for i, in := range intents {
 			if in.Kind == "patch" {
@@ -1529,13 +1529,13 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			// HEAD as it is, never a commit its agent put in its place
 			// in the git store its worktree shares (ADR-0056).
 			if _, err = git(st.Repo, nil, "--no-replace-objects", "-c", "core.hooksPath=/dev/null", "worktree", "add", "--detach", "--quiet", tree, "HEAD"); err != nil {
-				tester.RemoveWorktree(st.Repo, tree)
+				worktree.RemoveWorktree(st.Repo, tree)
 			}
 		}
 		if err != nil {
 			return fmt.Errorf("a worktree for the files to propose: %w", err)
 		}
-		defer tester.RemoveWorktree(st.Repo, tree)
+		defer worktree.RemoveWorktree(st.Repo, tree)
 		ap.tree = tree
 		for i, in := range intents {
 			if in.Kind == "patch" {
@@ -3495,7 +3495,7 @@ func newRunDir(repo, roleName string) (string, error) {
 func dropWorktree(repo, runDir string) {
 	for name, tree := range map[string]string{agent.WorktreeDir: agent.Worktree(runDir), agent.ReadTreeDir: agent.ReadTree(runDir)} {
 		if tree != "" {
-			tester.RemoveRunTree(repo, runDir, name, tree)
+			worktree.RemoveRunTree(repo, runDir, name, tree)
 		}
 	}
 }

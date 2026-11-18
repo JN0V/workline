@@ -8,6 +8,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"os"
 	"path/filepath"
 	"slices"
@@ -24,7 +25,6 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
-	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 	"go.yaml.in/yaml/v3"
 )
@@ -660,11 +660,11 @@ func (a *applier) refining(c backlog.Proposal) error {
 			if slices.Contains(is.Labels, backlog.LabelNeedsTests) || !testsFirst(a.repo, *is) {
 				return nil
 			}
-			drafts, err := f.OpenMergeRequests(tester.TestsBranch)
+			drafts, err := f.OpenMergeRequests(testmark.TestsBranch)
 			if err != nil {
 				return err
 			}
-			if !tester.Untested(*is, comments, drafts) {
+			if !testmark.Untested(*is, comments, drafts) {
 				return nil
 			}
 		}
@@ -857,7 +857,7 @@ func (a *applier) moveCard(issue, project int, option string) {
 func testsFirst(repo string, is forge.Issue) bool {
 	line, err := routing.Load(repo)
 	return err == nil && line.Runs("tester") &&
-		len(tester.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0
+		len(work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0
 }
 
 // featureMilestone puts a feature made ready in the next open milestone
@@ -990,12 +990,12 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		cfg.Tested = func(issue int) (bool, error) {
 			if !listed {
 				var err error
-				if drafts, err = f.OpenMergeRequests(tester.TestsBranch); err != nil {
+				if drafts, err = f.OpenMergeRequests(testmark.TestsBranch); err != nil {
 					return false, err
 				}
 				listed = true
 			}
-			return slices.Contains(drafts, tester.TestsBranch+strconv.Itoa(issue)), nil
+			return slices.Contains(drafts, testmark.TestsBranch+strconv.Itoa(issue)), nil
 		}
 		// After the tester's run the line started on it: an older proof,
 		// that run having failed, proves nothing now.

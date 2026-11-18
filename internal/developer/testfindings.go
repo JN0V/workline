@@ -11,6 +11,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"slices"
 	"strings"
 
@@ -112,7 +113,7 @@ func testRequests(repo string, b Bounds, mr int, l []Asked) intent.Intention {
 		}
 		sum := sha256.Sum256([]byte(x.Key))
 		comments = append(comments, forge.LineComment{Path: file, Line: line, Key: "missing-" + hex.EncodeToString(sum[:6]),
-			Body: fmt.Sprintf("%s\n- test: %s\n- kind: missing\n- why: %s", tester.ObjectionWord, file, why)})
+			Body: fmt.Sprintf("%s\n- test: %s\n- kind: missing\n- why: %s", testmark.ObjectionWord, file, why)})
 	}
 	batch := sha256.Sum256([]byte(strings.Join(keys, "\n")))
 	return intent.Intention{Kind: "comment", Value: map[string]any{

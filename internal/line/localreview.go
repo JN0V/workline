@@ -11,6 +11,8 @@ package line
 import (
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/testmark"
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"maps"
 	"os"
 	"os/exec"
@@ -24,7 +26,6 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // HeadVerdict is the line's verdict on head, as the merge policy reads it
@@ -208,7 +209,7 @@ func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Opti
 	}
 	answered := 0
 	for _, mr := range mrs {
-		if !strings.HasPrefix(mr.Branch, tester.TestsBranch) {
+		if !strings.HasPrefix(mr.Branch, testmark.TestsBranch) {
 			continue
 		}
 		where := fmt.Sprintf("!%d", mr.ID)
@@ -218,7 +219,7 @@ func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Opti
 				Message: "its conversations on lines not read, so no objection there is answered: " + forge.Said(err)})
 			continue
 		}
-		if !tester.ObjectionsWait(threads) {
+		if !testmark.ObjectionsWait(threads) {
 			continue
 		}
 		target := forge.Target{Kind: "merge-request", ID: mr.ID}
@@ -296,7 +297,7 @@ func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Opti
 				}
 			}
 		})
-		if after, err := th.Threads(mr.ID); err == nil && !tester.ObjectionsWait(after) {
+		if after, err := th.Threads(mr.ID); err == nil && !testmark.ObjectionsWait(after) {
 			answered++
 			continue
 		}
@@ -332,7 +333,7 @@ func answersDue(res *Result, cfg *routing.Config, f forge.Forge, o engine.Option
 	}
 	var due []Review
 	for _, mr := range mrs {
-		if !strings.HasPrefix(mr.Branch, tester.TestsBranch) {
+		if !strings.HasPrefix(mr.Branch, testmark.TestsBranch) {
 			continue
 		}
 		threads, err := th.Threads(mr.ID)
@@ -341,7 +342,7 @@ func answersDue(res *Result, cfg *routing.Config, f forge.Forge, o engine.Option
 				Message: "its conversations on lines not read, so no objection there is listed: " + forge.Said(err)})
 			continue
 		}
-		if !tester.ObjectionsWait(threads) {
+		if !testmark.ObjectionsWait(threads) {
 			continue
 		}
 		if _, said, err := answerTried(f, forge.Target{Kind: "merge-request", ID: mr.ID}); err == nil && said {
@@ -443,12 +444,12 @@ func HeadTree(repo, head string) (tree string, done func(), err error) {
 	dir, err := os.MkdirTemp("", "workline-review-")
 	if err == nil {
 		_ = os.Remove(dir) // git makes it
-		err = tester.Worktree(repo, head, dir)
+		err = worktree.Worktree(repo, head, dir)
 	}
 	if err != nil {
 		return "", nil, fmt.Errorf("its head %s could not be checked out apart: %v", short(head), err)
 	}
-	done = func() { tester.RemoveWorktree(repo, dir) }
+	done = func() { worktree.RemoveWorktree(repo, dir) }
 	if err := sameConfig(repo, dir); err != nil {
 		done()
 		return "", nil, fmt.Errorf("the project's config could not be laid in its head %s's tree: %v", short(head), err)
