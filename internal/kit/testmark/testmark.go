@@ -134,3 +134,8 @@ func Untested(is forge.Issue, comments, drafts []string) bool {
 	}
 	return len(work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0
 }
+
+// TesterAnswerKey starts the sticky key of the tester's answer to a
+// test finding, on the pull request whose review found it, its thread's
+// id after it (#1265).
+const TesterAnswerKey = "tester-answer-"

@@ -34,7 +34,6 @@ import (
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -332,7 +331,7 @@ func outranked(is forge.Issue, issues []forge.Issue, held map[int][]string) map[
 
 // letGo are the claims this run lets go: held no more, taken at a next
 // run. passed are the issues offered it passed over, why each.
-func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]tester.Proof, files []string, changed contract.Diffs) (id int, passed []devmark.Passed) {
+func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, testsFirst bool, letGo map[int]bool, proofs map[int]backlog.Proof, files []string, changed contract.Diffs) (id int, passed []devmark.Passed) {
 	open := map[int]bool{}
 	for _, is := range issues {
 		open[is.ID] = true
@@ -688,7 +687,7 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 	}
 	if b.Proof != nil {
 		fmt.Fprintf(&t, "\n## Its proof: %s, no new test\n\nThe tester recorded it in place of acceptance tests: %s. Its proof: %s.\n",
-			b.Proof.Kind, strings.TrimSuffix(b.Proof.Reason, "."), tester.ProofKinds[b.Proof.Kind])
+			b.Proof.Kind, strings.TrimSuffix(b.Proof.Reason, "."), backlog.ProofKinds[b.Proof.Kind])
 	}
 	t.WriteString("\n## The tests\n\n")
 	switch {
@@ -1155,8 +1154,8 @@ func fail(err error) int {
 // Draft open. Read only where the project routes the tester; with only,
 // the issue a run was started for, its own alone: each ready issue's
 // comments would spend the token's API budget at every step (#804).
-func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, testsFirst bool, only int) (map[int]tester.Proof, error) {
-	out := map[int]tester.Proof{}
+func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, testsFirst bool, only int) (map[int]backlog.Proof, error) {
+	out := map[int]backlog.Proof{}
 	if !testsFirst {
 		return out, nil
 	}

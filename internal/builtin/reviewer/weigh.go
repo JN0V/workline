@@ -21,13 +21,9 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
-
-// TesterAnswerKey starts the sticky key of the tester's answer to a
-// test finding, on the pull request whose review found it, its thread's
-// id after it (#1265).
-const TesterAnswerKey = "tester-answer-"
 
 // TesterAnswer is the tester's answer to a test finding of this review,
 // found on found and titled title, its thread at url: what it did, text —
@@ -225,7 +221,7 @@ func (st *state) weighing(repo string, s Settings) {
 		unread(err)
 		return
 	}
-	for _, c := range kept.Each("<!-- workline:sticky=tester/" + TesterAnswerKey) {
+	for _, c := range kept.Each("<!-- workline:sticky=tester/" + testmark.TesterAnswerKey) {
 		if a, ok := NoneNeeded(c); ok && a.Reason != "" {
 			st.Answers = append(st.Answers, a)
 		}
