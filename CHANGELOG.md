@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.80.0](https://github.com/JN0V/workline/compare/v0.79.0...v0.80.0) (2026-11-18)
+
+
+### Features
+
+* a role made only of role.yaml and prompts runs on ([#1700](https://github.com/JN0V/workline/issues/1700)) ([6e0c244](https://github.com/JN0V/workline/commit/6e0c244959602b67adafc3a208df18bbd8c5bf17))
+* **engine:** tick reads its listings conditionally ([#1764](https://github.com/JN0V/workline/issues/1764)) ([1ce628a](https://github.com/JN0V/workline/commit/1ce628a6edb296280b322873b87503bb7472c7ae))
+
+
+### Bug Fixes
+
+* a refused tester answer to an objection is said ([#1760](https://github.com/JN0V/workline/issues/1760)) ([59192af](https://github.com/JN0V/workline/commit/59192af9ddff7245a6b505aee42e8b5fb4f02e00))
+* answers to the spec reviewer missed or read twice ([#1628](https://github.com/JN0V/workline/issues/1628)) ([6bf9ac7](https://github.com/JN0V/workline/commit/6bf9ac7b6b2bcd72ba5609d37b762501287b6ff0))
+* **developer:** carry a settled merge to the apply in a bundle ([#1768](https://github.com/JN0V/workline/issues/1768)) ([3103177](https://github.com/JN0V/workline/commit/31031779ac92d5294a10106a9c9d8ce9ffa30db2))
+* **engine:** each gardening run is named by its job for tick ([#1763](https://github.com/JN0V/workline/issues/1763)) ([61cacae](https://github.com/JN0V/workline/commit/61cacae9655566ab693bb0ac27ca6f7a1a09e859))
+
 ## [0.79.0](https://github.com/JN0V/workline/compare/v0.78.5...v0.79.0) (2026-11-17)
 
 
