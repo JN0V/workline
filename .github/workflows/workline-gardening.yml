@@ -16,11 +16,11 @@ run-name: >-
   (contains(fromJSON('["backlog","nightly","docs"]'), inputs.job) && format('workline gardening {0}', inputs.job)) || 'workline gardening by hand' }}
 on:
   # No schedule: the loop dispatches each job `workline tick` lists
-  # (docs/tick.md), `job` its input: the nightly at 02:17 UTC and the
-  # simulator's seeds by routing.timed (.workline/config.yaml), the docs
-  # on Sunday 18:07 UTC by their shipped time, the backlog when Ready is
-  # below its target. The template keeps its docs cron, for a project
-  # whose loop is a dry run.
+  # (docs/tick.md), `job` its input: the nightly at 02:17 UTC by
+  # routing.timed (.workline/config.yaml), the docs on Sunday 18:07 UTC
+  # by their shipped time, the backlog when Ready is below its target.
+  # The template keeps its docs cron, for a project whose loop is a dry
+  # run.
   workflow_dispatch:
     inputs:
       job: {description: "the job run, its schedule's roles: backlog, nightly or docs; empty: as skip says", required: false, default: ""}
