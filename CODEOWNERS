@@ -19,16 +19,16 @@
 
 # The oversight that reads every other change: the reviewer's and the
 # auditor's prompts and settings.
-/roles/reviewer/instruction.md @JN0V
-/roles/reviewer/persona.md @JN0V
-/roles/reviewer/policy.md @JN0V
-/roles/reviewer/lenses/ @JN0V
+/roles/reviewer/prompts/instruction.md @JN0V
+/roles/reviewer/prompts/persona.md @JN0V
+/roles/reviewer/prompts/policy.md @JN0V
+/roles/reviewer/prompts/lenses/ @JN0V
 /roles/reviewer/kinds/ @JN0V
 /roles/reviewer/role.yaml @JN0V
-/roles/auditor/instruction.md @JN0V
-/roles/auditor/persona.md @JN0V
-/roles/auditor/policy.md @JN0V
-/roles/auditor/lenses/ @JN0V
+/roles/auditor/prompts/instruction.md @JN0V
+/roles/auditor/prompts/persona.md @JN0V
+/roles/auditor/prompts/policy.md @JN0V
+/roles/auditor/prompts/lenses/ @JN0V
 /roles/auditor/kinds/ @JN0V
 /roles/auditor/role.yaml @JN0V
 
