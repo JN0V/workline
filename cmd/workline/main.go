@@ -887,9 +887,18 @@ func docsCmd(args []string) int {
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
+	fail := func(code int, rule, msg string) int {
+		if *asJSON {
+			data, _ := json.MarshalIndent(&engine.Result{Status: verdict.Block, Summary: msg, Applied: []string{}, Refused: []string{},
+				Findings: []verdict.Finding{{Rule: rule, Message: msg}}}, "", "  ")
+			fmt.Println(string(data))
+		}
+		return code
+	}
 	root, err := gitRoot(*repo)
 	if err != nil {
-		return notInRepo()
+		code := notInRepo()
+		return fail(code, "not-in-repo", "not in a git repository")
 	}
 	if *reviewOnly {
 		// What an agent left in the working tree, or gardening run by hand.
@@ -902,18 +911,19 @@ func docsCmd(args []string) int {
 			return 0
 		case err != nil:
 			fmt.Fprintln(os.Stderr, "workline: reviewing needs a person, on a terminal")
-			return 64
+			return fail(64, "no-terminal", "reviewing needs a person, on a terminal")
 		}
 		defer tty.Close()
 		if _, err := review.Docs(root, docs, bufio.NewReader(tty), tty, review.Open); err != nil {
 			fmt.Fprintln(os.Stderr, "workline:", err)
-			return 1
+			return fail(1, "review-failed", err.Error())
 		}
 		return 0
 	}
 	if isSet(fs, "since") && revParse(root, *since) == "" {
-		fmt.Fprintf(os.Stderr, "workline: --since %s names no commit in this repository\n", *since)
-		return 1
+		msg := fmt.Sprintf("--since %s names no commit in this repository", *since)
+		fmt.Fprintln(os.Stderr, "workline: "+msg)
+		return fail(1, "since-unknown", msg)
 	}
 	start, from := docsJudgedFrom(root, *since)
 	rng := "HEAD"
@@ -933,12 +943,7 @@ func docsCmd(args []string) int {
 	fmt.Fprintf(out, "workline: judging the docs made suspect by the commits since %s\n", from)
 	judged, err := judgeDocs(root, rng, *ai, in, out)
 	if err != nil {
-		if *asJSON {
-			data, _ := json.MarshalIndent(&engine.Result{Status: verdict.Block, Summary: err.Error(), Applied: []string{}, Refused: []string{},
-				Findings: []verdict.Finding{{Rule: "config-invalid", Message: err.Error()}}}, "", "  ")
-			fmt.Println(string(data))
-		}
-		return 1
+		return fail(1, "config-invalid", err.Error())
 	}
 	if judged {
 		// Judged, and nothing left for a person: the next run starts here.
