@@ -23,7 +23,6 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // testerHolds is who asks a rewritten test into a round: the tester.
@@ -76,7 +75,7 @@ func testerFiles(f forge.Forge, issue int) (map[string]string, error) {
 		if testerIssue(mr.Branch) != issue {
 			continue
 		}
-		r, ok, err := tester.ReadRecord(f, mr.ID)
+		r, ok, err := testmark.ReadDraft(f, mr.ID)
 		if err != nil || !ok {
 			return nil, err
 		}
