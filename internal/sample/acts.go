@@ -1,12 +1,12 @@
 package sample
 
 import (
-	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
@@ -110,16 +110,6 @@ const recordedMarker = "<!-- workline:act "
 // its code moves to the shared record.
 var ownDraw = []string{docsRole, productOwner, reviewRole, commitRole, testRole, devRole}
 
-// recorded is one act as the shared record says it.
-type recorded struct {
-	Role string `json:"role"`
-	Kind string `json:"kind"`
-	Day  string `json:"day"`
-	Line string `json:"line"`
-	By   string `json:"by"`
-	At   string `json:"at"`
-}
-
 // recordedActs are the acts of the days [first, end) every role without a
 // draw of its own recorded on the issues, open or closed, oldest first:
 // one draw for any role, read and never written.
@@ -137,17 +127,18 @@ func recordedActs(f forge.Forge, b forge.Backlog, first, end string) ([]Act, []s
 			unread = append(unread, fmt.Sprintf("the acts recorded on %s: the issue could not be read: %v", ref, err))
 			continue
 		}
-		for i, body := range kept.Each(recordedMarker) {
-			rest := body[strings.Index(body, recordedMarker)+len(recordedMarker):]
-			var r recorded
-			dec := json.NewDecoder(strings.NewReader(rest))
-			if dec.Decode(&r) != nil || !strings.HasPrefix(strings.TrimLeft(rest[dec.InputOffset():], " \t"), "-->") || r.Role == "" || r.Kind == "" || slices.Contains(ownDraw, r.Role) {
+		for i, r := range engine.ReadActs(kept, forge.Target{Kind: "issue", ID: is.ID}) {
+			if r.Role == "" || r.Kind == "" || slices.Contains(ownDraw, r.Role) {
 				continue
 			}
 			if r.Day < first || (end != "" && r.Day >= end) {
 				continue
 			}
-			out = append(out, Act{Role: r.Role, Kind: r.Kind, Ref: ref, Day: r.Day, By: r.By, Line: r.Line, Commit: r.At,
+			var line string
+			if len(r.Items) > 0 {
+				line = fmt.Sprintf("read %d items", len(r.Items))
+			}
+			out = append(out, Act{Role: r.Role, Kind: r.Kind, Ref: ref, Day: r.Day, By: strings.Join(r.Models, ", "), Line: line, Commit: r.Commit,
 				key: fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%d", ref, r.Role, r.Kind, r.Day, i)})
 		}
 	}
