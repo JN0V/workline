@@ -1,5 +1,59 @@
 ---
-sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
+sources:
+  - internal/role/config.go#config
+  - internal/role/config.go#CheckConfig
+  - internal/role/config.go#Retired
+  - internal/role/config.go#asWritten
+  - internal/role/role.go#ProjectConfig
+  - internal/role/role.go#Board
+  - internal/role/role.go#LoadProjectConfig
+  - internal/role/role.go#Role.MergedSettings
+  - internal/role/role.go#Role.Enforcement
+  - internal/kit/verdict/verdict.go#Levels
+  - internal/role/personal.go#Role.WithPersonal
+  - internal/engine/engine.go#run
+  - internal/engine/engine.go#callAgent
+  - internal/engine/engine.go#personalSettings
+  - internal/engine/engine.go#keepRuns
+  - internal/engine/engine.go#newRunDir
+  - internal/engine/tally.go#TallyFile
+  - cmd/workline/main.go#personal
+  - cmd/workline/main.go#hookCmd
+  - internal/hooks/approve.go#Push.channels
+  - internal/agent/prompt.go#facetDirs
+  - internal/agent/seen.go#Seen
+  - internal/forge/forge.go#Open
+  - internal/forge/local.go#Local
+  - internal/forge/local.go#Local.StateOf
+  - internal/forge/local.go#InCI
+  - internal/forge/local.go#Local.writable
+  - internal/work/work.go#Path
+  - internal/release/release.go#Branches
+  - internal/release/release.go#Tags
+  - internal/routing/routing.go#Load
+  - internal/routing/routing.go#Config.StopsAtFirst
+  - defaults/routing.yaml#fail-fast
+  - defaults/routing.yaml#max-handoffs
+  - defaults/routing.yaml#wip
+  - defaults/routing.yaml#stale
+  - defaults/routing.yaml#revisit
+  - defaults/routing.yaml#budgets
+  - internal/stall/stall.go#DefaultHours
+  - internal/routing/timed.go#checkTimed
+  - roles/committer/role.yaml#settings.subject-max
+  - roles/committer/role.yaml#settings.rewrite
+  - roles/committer/role.yaml#personal
+  - roles/documentalist/role.yaml#settings.derive
+  - roles/documentalist/role.yaml#settings.history
+  - roles/documentalist/role.yaml#settings.versions
+  - roles/documentalist/role.yaml#settings.language
+  - roles/documentalist/role.yaml#settings.whole-chars
+  - roles/reviewer/role.yaml#settings.ai-findings
+  - roles/reviewer/role.yaml#settings.judge-lines-max
+  - roles/reviewer/role.yaml#settings.judge-read-rounds
+  - roles/reviewer/role.yaml#settings.diff-alone
+  - roles/reviewer/role.yaml#settings.spec-rounds
+  - roles/reviewer/role.yaml#settings.specs-per-run
 checked: e4e4287bc
 verified: agent:claude-code
 reader: 0b97bbc207c5
@@ -58,7 +112,7 @@ roles:
     settings:
       derive: {cases: "ls tests/*.yaml | wc -l"}   # fills <!-- workline:derive cases -->…<!-- workline:end --> in a doc
       history: ["docs/journal/**"]                 # records, beside changelogs and release notes (role.yaml)
-      whole-chars: 25000                           # sources judged whole up to this (25000 at most); more docs vouched, more tokens
+      whole-chars: 25000                           # sources judged whole up to this (25000 at most); more docs judged whole, more tokens
       versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
       language: fr                                 # the docs' language, for the removal rule; unset, read from each doc
       sample: {judge: "claude:opus", at-least: model, after: v1.4.0, ai-max-tokens: 400000}   # who reads the weekly sample, the least independence, nothing vouched for before your tag, the week's tokens; `panel: [three --ai values]` settles a dispute
@@ -118,10 +172,9 @@ reviewer on `schedule`, [#128](https://github.com/JN0V/workline/issues/128);
   (`0123456`, octal), an `e` between digits (`1234e56`, a float) — saying
   to quote it. A commit written unquoted is a number to YAML when all
   digits (`after: 7515148`): a setting naming a commit reads it as written.
-- **`whole-chars` above 25000** is refused: its task would pass the
-  documentalist's context budget, tokens estimated at 711 + 0.82 a
-  character ([#235](https://github.com/JN0V/workline/issues/235)), and
-  each doc's prompt would be refused instead.
+- **`whole-chars` above 25000** is refused: a doc's task would no longer
+  fit the documentalist's context
+  ([#235](https://github.com/JN0V/workline/issues/235)).
 
 ### How settings merge
 
@@ -150,7 +203,7 @@ rules) and `roles/<role>/<facet>` (your own facets; on macOS,
 
 | File | Holds |
 |---|---|
-| `.workline/config.yaml` | the project's settings, below |
+| `.workline/config.yaml` | the project's settings, [above](#worklineconfigyaml) |
 | `.workline/roles/<role>/<facet>` | a facet replacing the shipped one (`policy.md`, `instruction.md`…) |
 | `.workline/work/<id>.md` | a work item, without a forge |
 | `.git/workline/issues/<n>.md` | `forge: local`: an issue, never committed; `workline issues` reads them (below) |
@@ -159,7 +212,7 @@ rules) and `roles/<role>/<facet>` (your own facets; on macOS,
 | `.git/workline/reviewer-record` | the commits a review on this machine answered whole, not asked again (roles/reviewer) |
 | `.git/workline/inspector-record` | the gates' findings the inspector triaged on this machine, by fingerprint, not asked again (roles/inspector) |
 | `~/.config/workline/` (macOS: `~/Library/Application Support/workline/`) | yours: `config.yaml`, `allowed-identities`, `gitleaks.toml`, your facets in `roles/<role>/` ([above](#your-own-config)) |
-| `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking ([ADR-0004](adr/0004-follow-model-aliases-and-measure.md)) |
+| `~/.cache/workline/models-seen.yaml` (macOS: `~/Library/Caches/workline/`) | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking ([ADR-0004](adr/0004-follow-model-aliases-and-measure.md)) |
 
 A local issue holds its title, state, labels and milestone in its front
 matter, then its body and comments. With no forge (`none`), an issue a role

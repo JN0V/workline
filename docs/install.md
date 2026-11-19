@@ -1,15 +1,18 @@
 ---
 sources:
+  - .goreleaser.yaml#builds
   - .goreleaser.yaml#archives
   - go.mod
   - cmd/workline/cli.go#topHelp
+  - cmd/workline/cli.go#versionCmd
   - cmd/workline/main.go#setupCmd
   - cmd/workline/main.go#doctorCmd
   - internal/setup/setup.go#Run
   - internal/setup/setup.go#Shell
   - internal/tools/tools.go#known
-  - internal/agent/claude.go#claude.Propose
-checked: e2e165c2d
+  - internal/agent/claude.go#claudeSession
+  - internal/agent/claude.go#claudeEnv
+checked: 3bab32400
 verified: agent:claude-code
 ---
 # Install
@@ -21,8 +24,9 @@ workline runs in two places, each on its own or both:
 - **CI**: every merge request judged, gardening and the weekly sample on a
   schedule.
 
-You need git. No AI is needed for any step: without an agent every check
-still runs, and what needs judgement is listed for a person.
+You need git. The agent is a choice: without one, every check on facts
+still runs, and each role says what it skipped
+([principle 5](PRINCIPLES.md)).
 
 ## On your machine
 
@@ -37,7 +41,7 @@ curl -fsSL "https://github.com/JN0V/workline/releases/latest/download/workline_$
 workline version
 ```
 
-Or, with [Go](https://go.dev/dl/) 1.21 or later (into `$(go env GOPATH)/bin`,
+Or, with [Go](https://go.dev/dl/) 1.27.1 or later (into `$(go env GOPATH)/bin`,
 usually `~/go/bin`: add it to your `PATH`):
 
 ```sh
@@ -73,12 +77,12 @@ Run it again to change an answer; `--yes` takes the defaults; `--hooks`,
 
 | Answer | What judges |
 |---|---|
-| `none` | no AI: a refused message is explained, you rewrite it; suspect docs are listed for you |
+| `none` | no AI: the checks still run, each role says what it skipped |
 | `claude` | [Claude Code](https://docs.claude.com/en/docs/claude-code/setup): `setup` offers to install its CLI; run `claude` once to log in (below) |
 | `cmd:<command>` | any command: another provider's CLI, or a wrapper of your own ([the contract](usage.md#another-agent)) |
 
 - Claude logs in with a subscription or an API key; workline calls
-  `claude -p` with that login and holds no key of its own.
+  `claude` with that login and holds no key of its own.
 - Other agents built in (Codex, OpenCode…) are parked until a project needs
   one; `cmd:` runs any of them meanwhile
   ([#86](https://github.com/JN0V/workline/issues/86)).
