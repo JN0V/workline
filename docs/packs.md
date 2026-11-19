@@ -1,6 +1,28 @@
 ---
-sources: [internal/packs, internal/codenav/codenav.go, internal/doctor/packs.go, internal/routing/adopt.go]
-checked: 6088f02a
+sources:
+  - internal/packs/packs.go#Pack
+  - internal/packs/packs.go#Code
+  - internal/packs/packs.go#Code.check
+  - internal/packs/packs.go#CodeRows
+  - internal/packs/packs.go#parse
+  - internal/packs/packs.go#Available
+  - internal/packs/packs.go#Listed
+  - internal/packs/packs.go#TesterDefaults
+  - internal/packs/packs.go#Detected
+  - internal/packs/packs.go#Unknown
+  - internal/packs/packs.go#Knowing
+  - internal/packs/builtin/generic.yaml#test-paths
+  - internal/packs/builtin/go.yaml#about
+  - internal/packs/builtin/go.yaml#detect
+  - internal/packs/builtin/kotlin-gradle.yaml#about
+  - internal/packs/builtin/java-maven.yaml#about
+  - internal/packs/builtin/python-pytest.yaml#about
+  - internal/packs/builtin/js-jest.yaml#about
+  - internal/codenav/codenav.go#Of
+  - internal/routing/adopt.go#SetPacks
+  - internal/doctor/packs.go#languagePacks
+checked: 3bab32400
+verified: agent:claude-code
 ---
 # Language packs
 
@@ -26,6 +48,7 @@ One YAML file a language or ecosystem:
 | `test-paths` | the test files, as patterns, added to the generic ones: the tester's `test-paths` when it sets none |
 | `test-homes` | where a test's code lives, read before the generic homes: the tester's `test-homes` when it sets none |
 | `test-command` | a suggested test command, given by `workline doctor` when the tester has none; never run unless you set it |
+| `builtin-names` | the language's own names (built-in exceptions, standard library), which no project code defines |
 | `aside` | folders beside the code, ranked after it: the generic pack's only, for now |
 | `code-navigation` | how a language's functions are found with no build: [below](#code-navigation) |
 
@@ -33,9 +56,6 @@ One YAML file a language or ecosystem:
   ignored.
 - **A pack never decides a verdict**: its fields are a role's settings
   until the project sets its own.
-- **The other tables** (build errors, comment syntax, mutation tools)
-  still sit in the engine; they move to packs next
-  ([#1309](https://github.com/JN0V/workline/issues/1309)).
 
 ## The packs built in
 
@@ -51,9 +71,8 @@ One YAML file a language or ecosystem:
 
 ## Code navigation
 
-How the code picker and the reviewer's judge find a function with no
-build ([code navigation](research/code-navigation.md)): one row a
-language.
+How workline finds a language's functions with no build
+([code navigation](research/code-navigation.md)): one row a language.
 
 ```yaml
 code-navigation:
@@ -67,16 +86,15 @@ code-navigation:
 
 - **The other fields**: `outline` (braces, indent, or none),
   `containers`, `bodies`, `ignore`, `bases`, `preproc`, `line-ends`,
-  `param-headers`, `shell-quotes`, `bare-calls`; the built-in packs
-  show each. `definition: c-like` is the pattern C, Java, Kotlin and
+  `param-headers`, `shell-quotes`, `bare-calls`.
+  `definition: c-like` is the pattern C, Java, Kotlin and
   most brace languages share.
 - **Every built-in pack's rows are read**, whatever the list:
   navigation decides no verdict, and a Go project's shell scripts are
-  read too. The generic pack holds the languages with no pack of
-  their own yet (shell, C and C++, Rust, Swift…).
+  read too.
 - **A listed pack's rows come first**: yours wins on its extensions.
 - **A row it cannot read** (no `NAME`, a body it does not know, a
-  pattern that does not compile) stops the run, with the pack's name.
+  pattern that does not compile) is refused, with the pack's name.
 
 ## Choosing the packs
 
@@ -85,7 +103,7 @@ code-navigation:
   already, `packs: []` too. A marker in a test or aside folder (a
   fixture's `go.mod`) calls for none.
 - **Edit the list** as any setting: `packs: [go, kotlin-gradle]`. A name
-  with no pack stops every run, said: never skipped.
+  with no pack is an error, said: never skipped.
 - **A role's setting wins**: the tester's `test-paths` set, a pack's
   are not read.
 
@@ -109,28 +127,16 @@ test-command: "flutter test --machine | tojunit > {report}"
 
 ## The engine names no language
 
-For workline's own code: a test fails on a string of `internal/` that
-holds a pack's marker, extension or path pattern (`"build.gradle.kts"`,
-a regex on `\.kt`)
+For workline's own code: a language's knowledge goes in a pack, never
+in the engine
 ([Rule B](adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-b-no-ecosystem-pattern-in-the-engine)).
-
-- **Put it in a pack**: a new language's fix lands in its YAML.
-- **It converges** (every ecosystem needs it the same way): a
-  `// converges: <reason>` comment on its line; the review judges it.
-  `.xml` for a JUnit report needs none: no pack names it.
-- **Today's offenders** are listed in
-  [rule-b-baseline.txt](../internal/packs/testdata/rule-b-baseline.txt):
-  a line only shrinks, never added to.
 
 ## What `workline doctor` says
 
 - The packs listed, or none, with the ones the repository calls for.
-- **A pack detected, not listed** (a `build.gradle.kts` added since):
+- **A pack detected, not listed** (a `go.mod` added since):
   a warning, with the line to add.
 - **A pack listed, nothing calls for**: a note.
-- **A language no listed pack knows**, with its file count, from a
-  subset of [GitHub linguist](https://github.com/github-linguist/linguist)'s
-  extensions: the pack built in to list, else the file to write.
-- Which test paths every role reads: the tester's, the packs' with the
-  generic ones, or the generic ones alone.
+- **A language no listed pack knows**, with its file count: the pack
+  built in to list, else the file to write.
 - No `test-command` set: the listed packs' suggested ones.

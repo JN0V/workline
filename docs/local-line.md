@@ -1,7 +1,6 @@
 ---
 sources:
   - internal/forge/local.go#Local
-  - internal/forge/local.go#Local.dir
   - cmd/workline/main.go#issuesCmd
   - cmd/workline/main.go#initCmd
   - cmd/workline/main.go#initPacks
@@ -12,16 +11,15 @@ sources:
   - internal/doctor/tests.go#testCommandRuns
   - internal/doctor/tests.go#testsFix
   - internal/engine/engine.go#RunsDir
-  - internal/kit/worktree/worktree.go#RunTree
-checked: c46a93d6c
+checked: 3bab32400
 verified: agent:claude-code
 ---
 # The whole line with no forge
 
 From a need to a merged change on your machine, with no GitHub nor
 GitLab: the product owner refines, the tester writes the tests, the
-developer the code, the reviewer reads it; the merge policy merges a
-fix, you say yes to a feature.
+developer the code, the reviewer reads it; the merge policy merges what
+it may alone, you say yes to the rest.
 
 ```
 need ──► product owner ──► tester ──► developer ──► review ──► merge
@@ -73,17 +71,15 @@ roles:
 - **`test-command`**: any runner that writes a JUnit XML report
   ([the tester's settings](../roles/tester/README.md#settings)).
 - **`autonomy`**: how far the roles go alone ([autonomy](autonomy.md)).
-- **`merge`**: what merges with no yes of yours: at `normal`, a bug's
-  fix ([the merge policy](merge-policy.md)). Left out, you merge.
+- **`merge`**: what merges with no yes of yours
+  ([the merge policy](merge-policy.md)). Left out, you merge.
 
 ```sh
 workline doctor          # says a missing test-command, or one that cannot run here
 git add .workline/config.yaml && git commit -m "chore: adopt workline"
 ```
 
-The runs are kept in `.git/workline/runs`; an agent's worktree is made
-outside `.git/`, where Claude Code edits no file
-([#1304](https://github.com/JN0V/workline/issues/1304)).
+Each run is kept in `.git/workline/runs`.
 
 ## 3. Write the need
 
@@ -99,17 +95,16 @@ workline issues open "sc-late-fee takes NaN for an amount" \
 
 ## 4. Run each step
 
-`workline route issue --target issue:1 --ai claude` wakes the role the
-issue's state names, then moves it on:
-[run each step](local-line-steps.md), with how to answer the product
-owner and what to do when a step stalls.
+Each step wakes the role the issue's state names, and its result moves
+the issue on: [run each step](local-line-steps.md) gives the command,
+how to answer the product owner and what to do when a step stalls.
 
 ## 5. Review the merge request
 
-The reconciler runs the merge-request line and the review rounds, in a
-worktree apart: [review the merge request](local-line-review.md).
+The `merge-request` line routed above reads the developer's change:
+[review the merge request](local-line-review.md).
 
 ## 6. The merge
 
-`workline follow` merges what the policy says yes to, into `main` in
-this clone: [the merge](local-line-merge.md).
+What the policy says yes to merges into `main` in this clone, the rest
+waits for your yes: [the merge](local-line-merge.md).
