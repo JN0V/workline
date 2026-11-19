@@ -407,11 +407,13 @@ func commentRefusal(who, spec, repo string, t *forge.Target, r *engine.Result) {
 		return
 	}
 	// A judging role says its own verdict on its item: the reviewer's
-	// summary comment is its refusal; this says no second one. Only a run
+	// summary comment is its refusal, and the tester's blocked answer
+	// writes its own reply (on-block); this says no second one. Only a run
 	// the engine itself failed is said for it.
-	if who == "reviewer" && !slices.ContainsFunc(r.Findings, func(f verdict.Finding) bool {
+	engineFailed := slices.ContainsFunc(r.Findings, func(f verdict.Finding) bool {
 		return f.Rule == "config-invalid" || f.Rule == "engine-error"
-	}) {
+	})
+	if !engineFailed && (who == "reviewer" || (who == "tester" && r.Status == verdict.Block)) {
 		return
 	}
 	var b strings.Builder
