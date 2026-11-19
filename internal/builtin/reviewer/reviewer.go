@@ -26,6 +26,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/kit/commitmsg"
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
@@ -169,8 +170,8 @@ type candidates struct {
 	// By JudgeKey: what each important finding is judged on, its patch and
 	// its key (Answered); and, judged before on the same, the verdict kept,
 	// its judge not asked again (ADR-0050, step 6).
-	Same   map[string]Answered `json:"same,omitempty"`
-	Reused map[string]Answered `json:"reused,omitempty"`
+	Same   map[string]reviewmark.Answered `json:"same,omitempty"`
+	Reused map[string]reviewmark.Answered `json:"reused,omitempty"`
 }
 
 // Review is what the run found, as post reads it and out/review.json gives
@@ -1545,12 +1546,12 @@ func askJudges(runDir, repo string, s Settings, st state, c *candidates, n *int)
 		if st.Spec == nil {
 			same := sameAs(repo, st, s, f, l)
 			if c.Same == nil {
-				c.Same = map[string]Answered{}
+				c.Same = map[string]reviewmark.Answered{}
 			}
 			c.Same[JudgeKey(f)] = same
 			if before, ok := judgedBefore(st.Record, f.Lens, same, judgeFloor(repo, s, st)); ok {
 				if c.Reused == nil {
-					c.Reused = map[string]Answered{}
+					c.Reused = map[string]reviewmark.Answered{}
 				}
 				c.Reused[JudgeKey(f)] = before
 				continue
@@ -2005,13 +2006,14 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	unjudged := 0 // findings the judge was not asked of, the run's tokens spent
 	reused := 0   // findings judged before on the same patch, their verdicts kept (ADR-0050, step 6)
 	var readsDone []JudgeRead
-	var judged []Answered // the findings the judge kept or dropped (ADR-0046)
+	var judged []reviewmark. // the findings the judge kept or dropped (ADR-0046)
+					Answered
 	// Each keyed by what it was judged on, so the same finding on the same
 	// patch is not judged again; a yes keeps its independence, a no its
 	// reason (ADR-0050, step 6).
 	answered := func(f Finding, a readAnswer, yes bool, why string) {
 		same := c.Same[JudgeKey(f)]
-		j := Answered{Lens: f.Lens, Where: f.Where, At: st.Head, Patch: same.Patch, Finding: same.Finding, Yes: yes, Finder: a.Author, Judge: a.Model, Title: f.Title}
+		j := reviewmark.Answered{Lens: f.Lens, Where: f.Where, At: st.Head, Patch: same.Patch, Finding: same.Finding, Yes: yes, Finder: a.Author, Judge: a.Model, Title: f.Title}
 		if yes {
 			j.Level = a.Level
 		} else {
@@ -2559,7 +2561,7 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 	b.WriteString("The reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n")
 	b.WriteString(v.Record.String())
 	if v.Subject != "spec" { // what every run's judge answered, within the comment's size (ADR-0046)
-		b.WriteString(v.Record.judgedLines(SummaryMax - b.Len()))
+		b.WriteString(v.Record.judgedLines(reviewmark.SummaryMax - b.Len()))
 	}
 	return b.String()
 }
