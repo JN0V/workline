@@ -13,7 +13,7 @@ sources:
   - roles/committer/code/identity.go#Identity
   - roles/committer/code/committer.go#Pre
   - roles/committer/code/committer.go#Post
-checked: c46a93d6c
+checked: dd77bf922
 verified: agent:claude-code
 ---
 # Committer — secrets and identity

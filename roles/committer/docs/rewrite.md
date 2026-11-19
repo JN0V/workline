@@ -13,7 +13,7 @@ sources:
   - internal/engine/engine.go#Rewriter
   - internal/engine/engine.go#madeBy
   - roles/committer/role.yaml
-checked: c46a93d6c
+checked: dd77bf922
 verified: agent:claude-code
 ---
 # Committer — the rewrite
