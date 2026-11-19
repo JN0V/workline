@@ -2228,6 +2228,14 @@ func ProposeBranchFrom(f forge.Forge, repo, roleName, key, title, body string, d
 	return id, err
 }
 
+// ProposeBranchIn is ProposeBranch, the files written in tree, a worktree of
+// repo's HEAD, detached: the branch is built there, repo's checkout never
+// moved nor changed (#1405).
+func ProposeBranchIn(f forge.Forge, repo, tree, roleName, key, title, body string, draft bool, trailers string, written []string) (int, error) {
+	id, _, err := proposeBranch(f, repo, tree, roleName, key, title, body, draft, trailers, written, Proposal{}, "")
+	return id, err
+}
+
 // proposeBranch is ProposeBranchFrom, also returning the branch's tip once
 // committed. committed, when the branch's tip still, is a failed push's
 // commits: pushed as they are, nothing committed again (#739). tree, when
