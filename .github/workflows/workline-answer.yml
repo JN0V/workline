@@ -5,10 +5,12 @@
 # objection: the tester is not routed here yet, its Drafts open by hand.
 name: workline answer
 on:
-  workflow_run: {workflows: [workline objection], types: [completed]}
-  # By hand, and by the end of an answer (the next objection waiting) and by
-  # workline-develop.yml's reconciler (an objection no comment wakes): the
-  # Draft's branch, workline/tester/*.
+  # No event (#1871): workline-develop.yml's reconciler, dispatched by the
+  # loop (docs/tick.md) or the heartbeat, starts the answer on each Draft
+  # an objection or a reply in its thread waits on; by hand, and by the
+  # end of an answer (the next objection waiting): the Draft's branch,
+  # workline/tester/*. The template keeps its workflow_run on `workline
+  # objection`, for a project whose loop is a dry run.
   workflow_dispatch:
     inputs:
       branch: {description: "the tester's Draft branch, workline/tester/*", required: true}
