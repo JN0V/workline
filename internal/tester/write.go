@@ -20,13 +20,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/worktree"
 
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
@@ -796,18 +796,18 @@ func lintTests(repo, tree, base string, missing func(path, message string) bool)
 	// The reviewer's rules, as its review of the developer's pull request
 	// will run them: a finding in a frozen test is the tester's to mend,
 	// before its Draft opens (#1040).
-	if slices.Contains(line.Events["merge-request"], reviewer.Name) {
-		rules, err := reviewer.RulesOn(tree, base, "HEAD")
+	if slices.Contains(line.Events["merge-request"], reviewmark.Name) {
+		rules, err := contract.BuiltinReview().RulesOn(tree, base, "HEAD")
 		if err != nil {
 			mendable = false
-			rules = []verdict.Finding{{Rule: "check-error", Where: reviewer.Name, Message: err.Error()}}
+			rules = []verdict.Finding{{Rule: "check-error", Where: reviewmark.Name, Message: err.Error()}}
 		}
 		for _, f := range rules {
-			f.Rule, f.Message = "tests-lint", fmt.Sprintf("the %s's rule: %s (%s)", reviewer.Name, f.Message, f.Rule)
+			f.Rule, f.Message = "tests-lint", fmt.Sprintf("the %s's rule: %s (%s)", reviewmark.Name, f.Message, f.Rule)
 			found = append(found, f)
 		}
 		if len(rules) > 0 {
-			names = append(names, reviewer.Name+"'s rules")
+			names = append(names, reviewmark.Name+"'s rules")
 		}
 	}
 	if len(names) == 0 {

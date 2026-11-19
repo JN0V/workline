@@ -2,6 +2,9 @@ package contract
 
 import (
 	"testing"
+
+	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // refused says whether join panics.
@@ -15,10 +18,13 @@ func refused(join func()) (panicked bool) {
 // offered, the shipped registry's lookup is a programming error.
 func TestReviewAndDocsAreOfferedOnceAndWhole(t *testing.T) {
 	reviewed := func(string, string, string, string) (bool, error) { return true, nil }
+	rules := func(string, string, string) ([]verdict.Finding, error) { return nil, nil }
+	serve := func(string, string, string, []judge.Read, int, int) (string, int, []string) { return "", 0, nil }
+	review := func() *Review { return &Review{ReviewedAll: reviewed, RulesOn: rules, ServeReads: serve} }
 	coverage := func(string, []string) ([]string, []string, []string, error) { return nil, nil, nil, nil }
 	unread := func(string, []string) (string, error) { return "", nil }
 	r := NewRegistry()
-	r.Join("reviews", Role{Review: &Review{ReviewedAll: reviewed}, Docs: &Docs{Coverage: coverage, UnreadDocs: unread}})
+	r.Join("reviews", Role{Review: review(), Docs: &Docs{Coverage: coverage, UnreadDocs: unread}})
 	if v, n := r.Review(); v == nil || n != "reviews" {
 		t.Errorf("Review = %v, %q", v, n)
 	}
@@ -26,9 +32,11 @@ func TestReviewAndDocsAreOfferedOnceAndWhole(t *testing.T) {
 		t.Errorf("Docs = %v, %q", d, n)
 	}
 	for what, join := range map[string]func(){
-		"a second review":              func() { r.Join("two", Role{Review: &Review{ReviewedAll: reviewed}}) },
+		"a second review":              func() { r.Join("two", Role{Review: review()}) },
 		"a second docs":                func() { r.Join("three", Role{Docs: &Docs{Coverage: coverage, UnreadDocs: unread}}) },
-		"a review missing ReviewedAll": func() { NewRegistry().Join("x", Role{Review: &Review{}}) },
+		"a review missing ReviewedAll": func() { NewRegistry().Join("x", Role{Review: &Review{RulesOn: rules, ServeReads: serve}}) },
+		"a review missing RulesOn":     func() { NewRegistry().Join("x", Role{Review: &Review{ReviewedAll: reviewed, ServeReads: serve}}) },
+		"a review missing ServeReads":  func() { NewRegistry().Join("x", Role{Review: &Review{ReviewedAll: reviewed, RulesOn: rules}}) },
 		"docs missing Coverage":        func() { NewRegistry().Join("x", Role{Docs: &Docs{UnreadDocs: unread}}) },
 		"docs missing UnreadDocs":      func() { NewRegistry().Join("x", Role{Docs: &Docs{Coverage: coverage}}) },
 		"a record missing Into": func() {

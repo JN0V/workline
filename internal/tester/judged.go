@@ -18,7 +18,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/JN0V/workline/internal/builtin/reviewer"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/intent"
 	judgment "github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -181,7 +181,7 @@ func (j judging) answered(dir, repo string, s Settings) (*verdict.Verdict, []str
 		if rounds <= 0 || lines <= 0 {
 			return d.unproven(j.Red, "the judge asked to read past judge-read-rounds or judge-read-lines-max"+said(a.Why)), j.Added, j.Blobs, false, nil
 		}
-		served, n, refused := reviewer.ServeReads(repo, d.Base, j.Cause, a.Reads, lines, s.JudgeReadMax)
+		served, n, refused := contract.BuiltinReview().ServeReads(repo, d.Base, j.Cause, a.Reads, lines, s.JudgeReadMax)
 		j.Rounds = append(j.Rounds, judgeRound{Asked: a.Reads, Served: served, Lines: n, Refused: refused})
 		if err := os.Rename(filepath.Join(dir, "answer.yaml"), filepath.Join(dir, fmt.Sprintf("answer-%d.yaml", len(j.Rounds)))); err != nil {
 			return nil, nil, nil, false, err

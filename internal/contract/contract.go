@@ -32,14 +32,6 @@ type Role struct {
 	Docs      *Docs
 }
 
-// Review is what the engine asks of the role that reviews a change: the
-// reviewer's.
-type Review struct {
-	// ReviewedAll says whether the record a summary comment holds covers
-	// every commit base..head, by its id or its change's patch id (#1254).
-	ReviewedAll func(repo, base, head, summary string) (bool, error)
-}
-
 // Docs is what the doctor asks of the role that keeps the docs: the
 // documentalist's.
 type Docs struct {
@@ -111,6 +103,9 @@ func (r *Registry) Join(name string, role Role) {
 	defer r.mu.Unlock()
 	if _, ok := r.roles[name]; ok {
 		panic(fmt.Sprintf("contract: the role %q joined twice", name))
+	}
+	if role.Review != nil && (role.Review.RulesOn == nil || role.Review.ServeReads == nil) {
+		panic(fmt.Sprintf("contract: the role %q offers a review missing a function", name))
 	}
 	if role.Code != nil {
 		for n, other := range r.roles {
