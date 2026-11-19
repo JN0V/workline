@@ -3,7 +3,9 @@
 - **Status:** proposed, until the maintainer merges it; built by
   [#1630]'s [slices](#slices), all before v1.0
 - **Date:** 2026-11-15; the [layout](#6-the-layout-reached-before-10) on
-  2026-11-16, by the maintainer: before 1.0 anything may break, not after
+  2026-11-16, by the maintainer: before 1.0 anything may break, not
+  after; roles moved in batches from 2026-11-19
+  ([amendment](#amendment-2026-11-19-roles-move-in-batches))
 - **Settles:** [#1630]; how [ADR-0068]'s [step 6], the process engineer, is built
 - **Builds on:** [ADR-0046], [ADR-0065], [ADR-0066], [ADR-0068] §2 and
   §4; principles 4, 5, 6, 10, 12, 15 ([PRINCIPLES.md](../PRINCIPLES.md))
@@ -184,6 +186,17 @@ From [#1630], in order, each starting with its conformance case:
    nothing under `internal/` nor `cmd/`, run on a case of [#1629].
 8. **Cases** (c). 9. **Defaults** (d). 10. **Role code** (e), one
    role a pull request. External roles (`from`): after 1.0.
+
+## Amendment 2026-11-19: roles move in batches
+
+- **Decided by:** the maintainer, in a session on 2026-11-19, to reach
+  the layout sooner.
+- **Moves b and e go two or three roles a pull request**, not one:
+  their prompts, their code and their own docs pages together, one
+  pause of the line a batch; bigger reviews accepted.
+- **Unchanged**: each pull request moves files as they were and builds;
+  the import check holds on every head; a guarded file moves with its
+  `CODEOWNERS` lines in the same pull request.
 
 [#89]: https://github.com/JN0V/workline/issues/89
 [#1494]: https://github.com/JN0V/workline/issues/1494
