@@ -17,6 +17,7 @@ sources:
   - internal/forge/mask.go#Tokens
   - internal/agent/command.go#command.Propose
   - internal/forge/forge.go#Open
+  - internal/sample/sample.go#Options
 checked: 3bab32400
 verified: agent:claude-code
 ---
@@ -58,7 +59,7 @@ Each in detail: [the commands](commands.md),
 | [`workline issues`](commands-work.md#workline-issues) | reads and writes the issues kept in the clone (`forge: local`): `list`, `show`, `open`, `label`, `comment` |
 | [`workline issues import <file>`](commands-work.md#workline-issues-import) | turns a roadmap or backlog file into the forge's issues |
 | [`workline docs`](commands.md#workline-docs) | judges the docs made suspect since they were last judged; you review each change |
-| [`workline sample`](commands.md#workline-sample) | the week's sample of the docs the documentalist passed, read again; `--apply` writes it to the forge |
+| [`workline sample`](commands.md#workline-sample) | the week's sample, read again: the docs the documentalist passed and the other roles' acts; `--apply` writes it to the forge |
 | [`workline size`](commands.md#workline-size) | the normal size of an issue here, measured from the line's records, kept in one comment |
 | [`workline wake`](wake.md) | after a merge, prints where the line may be drifting, with no AI; `--issue` keeps it in one issue |
 | [`workline tick`](tick.md) | lists the line's jobs due now, each with why, with no AI: what a regular wake starts |
