@@ -175,6 +175,10 @@ beat on GitHub, whose own schedule runs late or not at all
   - They are removed one per pull request; on workline's own, the
     crons of the jobs tick lists first ([above](#the-github-loop))
   ([ADR-0069's amendment](adr/0069-one-wake-every-five-minutes-starts-what-is-due.md#amendment-2026-11-17-a-beat-every-minute-no-event-moves-the-line)).
+  - **workline's own develop**: no event; the reconcile tick lists
+    starts each issue's step and each review round due, 15 minutes and
+    a beat at most after what woke it
+    ([#1871](https://github.com/JN0V/workline/issues/1871)).
 
 ## Cost
 
