@@ -3717,20 +3717,22 @@ func inProcess(s contract.Step, repo string, env []string) int {
 	inProcessMu.Lock()
 	defer inProcessMu.Unlock()
 	was := os.Environ()
-	os.Clearenv()
-	for _, kv := range env {
-		if k, v, ok := strings.Cut(kv, "="); ok {
-			os.Setenv(k, v)
-		}
-	}
 	defer func() {
 		os.Clearenv()
 		for _, kv := range was {
 			if k, v, ok := strings.Cut(kv, "="); ok {
-				os.Setenv(k, v)
+				_ = os.Setenv(k, v) // best effort: the process's own environment
 			}
 		}
 	}()
+	os.Clearenv()
+	for _, kv := range env {
+		if k, v, ok := strings.Cut(kv, "="); ok {
+			if err := os.Setenv(k, v); err != nil {
+				return 1
+			}
+		}
+	}
 	if wd, err := os.Getwd(); err == nil {
 		if os.Chdir(repo) == nil {
 			defer os.Chdir(wd)
