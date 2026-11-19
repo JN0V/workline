@@ -735,7 +735,7 @@ func run(o Options, res *Result) error {
 	// The cuts a role declares are listed for its agent by the shared pre,
 	// which cuts nothing itself: they are no cut of this run.
 	for _, f := range verdict.CutFindings(runDir, res.Findings) {
-		if !(runsSharedPre(r) && slices.Contains(r.Cuts, f.Message)) {
+		if !runsSharedPre(r) || !slices.Contains(r.Cuts, f.Message) {
 			res.Findings = append(res.Findings, f)
 		}
 	}
