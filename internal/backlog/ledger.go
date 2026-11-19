@@ -761,7 +761,9 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			continue
 		}
 		w.st, w.before = st, FormatState(*st)
-		w.acts = recordLines(f, w.t, role)
+			if w.acts, err = recordLines(f, w.t, role); err != nil {
+				return err
+			}
 		p.stateOf(id, st)
 		if h, ok := p.Held[id]; ok {
 			// Its ready held for a person's comment (#1331): those
@@ -1164,14 +1166,14 @@ func Inert(text string) string {
 // comment, the hidden lines the apply step writes: read only from the
 // comment workline's own account wrote and no one else edited last. A line
 // in another's comment is never carried over.
-func recordLines(f forge.Forge, t forge.Target, role string) []string {
+func recordLines(f forge.Forge, t forge.Target, role string) ([]string, error) {
 	k, err := forge.ReadKept(f, t)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	c, ok := k.Last(StateMarker(role))
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	var out []string
 	for _, l := range strings.Split(c, "\n") {
@@ -1179,5 +1181,5 @@ func recordLines(f forge.Forge, t forge.Target, role string) []string {
 			out = append(out, l)
 		}
 	}
-	return out
+	return out, nil
 }
