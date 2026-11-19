@@ -1,7 +1,9 @@
 package sample
 
 import (
+	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -97,4 +99,58 @@ func foldActs(res *Result, f forge.Forge, former []int, id int) error {
 			Message: fmt.Sprintf("the product owner's own weekly issue, folded into #%d: told so, and closed", id)})
 	}
 	return nil
+}
+
+// recordedMarker opens an act in the shared record (ADR-0070 §3): a
+// comment of workline's own account, `<!-- workline:act {json} -->`.
+const recordedMarker = "<!-- workline:act "
+
+// ownDraw are the roles that still have a draw of their own: the shared
+// draw skips them, so no act is drawn twice. A role leaves the list when
+// its code moves to the shared record.
+var ownDraw = []string{docsRole, productOwner, reviewRole, commitRole, testRole, devRole}
+
+// recorded is one act as the shared record says it.
+type recorded struct {
+	Role string `json:"role"`
+	Kind string `json:"kind"`
+	Day  string `json:"day"`
+	Line string `json:"line"`
+	By   string `json:"by"`
+	At   string `json:"at"`
+}
+
+// recordedActs are the acts of the days [first, end) every role without a
+// draw of its own recorded on the issues, open or closed, oldest first:
+// one draw for any role, read and never written.
+func recordedActs(f forge.Forge, b forge.Backlog, first, end string) ([]Act, error) {
+	all, err := b.AllIssues()
+	if err != nil {
+		return nil, err
+	}
+	var out []Act
+	for _, is := range all {
+		ref := fmt.Sprintf("#%d", is.ID)
+		kept, err := forge.ReadKept(f, forge.Target{Kind: "issue", ID: is.ID})
+		if err != nil {
+			return nil, err
+		}
+		for i, body := range kept.Each(recordedMarker) {
+			rest := body[strings.Index(body, recordedMarker)+len(recordedMarker):]
+			end2 := strings.Index(rest, " -->")
+			if end2 < 0 {
+				continue
+			}
+			var r recorded
+			if json.Unmarshal([]byte(rest[:end2]), &r) != nil || r.Role == "" || r.Kind == "" || slices.Contains(ownDraw, r.Role) {
+				continue
+			}
+			if r.Day < first || (end != "" && r.Day >= end) {
+				continue
+			}
+			out = append(out, Act{Role: r.Role, Kind: r.Kind, Ref: ref, Day: r.Day, By: r.By, Line: r.Line, Commit: r.At,
+				key: fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%d", ref, r.Role, r.Kind, r.Day, i)})
+		}
+	}
+	return out, nil
 }
