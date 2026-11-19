@@ -643,7 +643,9 @@ jobs:
           case "$branch" in workline/developer/*) ;; *) echo "pull request $PR is not the developer's: no round"; exit 0;; esac
           # Merged or closed since it was read, its branch maybe deleted:
           # nothing to review, said, the run green.
-          state=$(gh pr view "$PR" --json state --jq .state 2>/dev/null) || state=
+          # A refused call is not an empty answer: said with its status, the step stops.
+          state=$(gh pr view "$PR" --json state --jq .state 2>gh-err.txt) ||
+            { echo "::error title=workline::gh pr view $PR failed: $(tr '\n' ' ' < gh-err.txt)"; exit 1; }
           case "$state" in MERGED|CLOSED) echo "pull request $PR is $(printf '%s' "$state" | tr A-Z a-z) meanwhile: no round"; exit 0;; esac
           git rev-parse -q --verify "origin/$branch^{commit}" >/dev/null ||
             { echo "pull request $PR: its branch $branch is gone, merged or closed meanwhile: no round"; exit 0; }
