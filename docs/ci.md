@@ -50,7 +50,7 @@ then one that applies, with the write token and no AI key
   own; the head's verdict waits only for what can block
   ([apart](../roles/reviewer/docs/apart.md)). The inspector's triage of
   what the gates found reads there too, given their result
-  ([the triage in CI](gates-in-ci.md#the-inspectors-triage)).
+  ([the triage in CI](gates-triage.md)).
 - **A draft asks no agent** until it is marked ready
   ([how](../roles/reviewer/docs/ready.md)).
 - **A merge queue or train runs the gates alone** on the merged result,

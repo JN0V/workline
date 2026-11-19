@@ -239,7 +239,7 @@ Run when the default branch moves (CI's `follow` job), with no agent.
 - **A local merge request merged with git** (`forge: local`): each open
   issue its body says it closes (`Closes #<n>`) is closed, with a comment
   saying why, and the request is written `merged`, once; the summary
-  counts both ([no forge](ci-other-forges.md#no-forge)).
+  counts both ([no forge](no-forge.md)).
 - Options: `--base` (default: the branch checked out), `--forge`,
   `--repo`, `--json`, `--summary`; `--verdict <file>`, a head's verdict
   `route --verdict` wrote, kept first (`--verdict-only`: nothing else);

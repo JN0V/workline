@@ -96,7 +96,7 @@ routing:
   event, and a state's label due starts that issue's own pipeline,
   `WORKLINE_TASK=develop` and `ISSUE_IID`, where the jobs
   `workline:develop:*` run it
-  ([the line of states on GitLab](../../../docs/gitlab-trigger.md#the-line-of-states-on-it)).
+  ([the line of states on GitLab](../../../docs/gitlab/line-of-states.md)).
   Hourly, a schedule with `WORKLINE_TASK=reconcile`.
 - **Run by hand** with no issue: the first ready issue nobody took.
 

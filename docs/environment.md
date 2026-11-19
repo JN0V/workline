@@ -1,6 +1,19 @@
 ---
-sources: [internal/forge/retry.go, internal/forge/mask.go, internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks, internal/line/payload.go]
-checked: cd8e8d0d
+sources:
+  - cmd/workline/main.go#hookCmd
+  - internal/agent/seen.go#Seen
+  - internal/sample/sample.go#Options
+  - internal/engine/engine.go#askJudge
+  - internal/builtin/reviewer/reviewer.go#askJudges
+  - tests/evaluation/eval_test.go#judge
+  - internal/forge/retry.go#RunsDirEnv
+  - internal/builtin/committer/secrets.go#commonList
+  - internal/forge/mask.go
+  - internal/tester/tester.go#shell
+  - internal/gate/gate.go#maskLog
+  - internal/agent/claude.go#lastLine
+  - internal/builtin/documentalist/examples.go#outputSaid
+checked: e2e165c2d
 verified: agent:claude-code
 judged: e343388
 ---
@@ -14,58 +27,19 @@ part of [the configuration](config.md).
 | `WORKLINE_AI` | the agent the git hook uses |
 | `WORKLINE_ROLES` | a folder of roles, as `--roles` |
 | `WORKLINE_MODELS_SEEN` | the file keeping the last model that answered each model asked (default: `models-seen.yaml` in your cache folder, `~/.cache/workline/` on Linux) |
-| `WORKLINE_JUDGE` | the agent reading the weekly sample (`workline sample`), before the `sample.judge` setting; the judge of a role's run (a reviewer's findings, a documentalist's split); and the evaluation's judge |
-| `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies; never seen by the project's commands ([the line's own](#the-lines-own)) |
-| `GITLAB_TOKEN` | the GitLab forge's token; else glab's, if glab is set up; else `CI_JOB_TOKEN`, which reaches no issue |
-| `CI_API_V4_URL`, `CI_PROJECT_ID` (or `CI_PROJECT_PATH`) | the GitLab instance and project, set by GitLab CI; elsewhere `GITLAB_HOST` and the `origin` remote |
-| `GH_TOKEN` | read by `gh`, which the GitHub forge calls |
-| `WORKLINE_APP`, `WORKLINE_APP_ID` | in GitHub Actions, the GitHub App's slug and id: who keeps the [merge policy](merge-policy.md)'s verdicts and holds its yes. No slug: the job's own token, nothing turned on. The id alone, in a job holding no App token: whose comments keep the records a role reads back ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)) |
-| `WORKLINE_GITLAB_TOKEN` | in GitLab CI, the bot's token: its user, as GitLab says, is workline's own account, whose notes keep the records a role reads back, even in a job reading with another token; it may ask GitLab's GraphQL who last edited them, as a job's own token may not |
+| `WORKLINE_JUDGE` | the agent reading the weekly sample (`workline sample`), before the `sample.judge` setting; the judge of a role's run (a reviewer's findings, [a documentalist's split](../roles/documentalist/docs/gardening.md#splitting-a-card)); and the evaluation's judge |
+| `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies; never seen by the project's commands ([the line's own](environment-roles.md#the-lines-own)) |
 | `GITLEAKS_CONFIG`, `GITLEAKS_CONFIG_TOML` | the committer's term list, before the repository's and yours |
-| `TRIGGER_PAYLOAD` | in GitLab CI, set by GitLab on a pipeline the issue webhook started: `route issue` with no `--target` reads the issue from it, a state's label put on or the reviewer's comment on a spec in refine; any other event runs nothing ([GitLab alone](gitlab-trigger.md#the-line-of-states-on-it)) |
-| `CI`, `GITHUB_ACTIONS`, `GITLAB_CI` | any set: `forge: local` refuses its writes, the clone being thrown away |
+
+- **The forge's and CI's variables**: tokens, the GitHub App, GitLab's
+  trigger ([the forge's variables](environment-forges.md)).
+- **A role's `pre` and `post`**: what they receive, and what the
+  project's commands never see ([a role's variables](environment-roles.md)).
 
 The agent's own credentials are its own, and workline holds no key:
 whichever agent you chose reads its own. Claude Code, for one, reads its
 login, or `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) or
 `ANTHROPIC_API_KEY`; an agent run through `cmd:` reads whatever it needs.
-
-A role's `pre` and `post` receive:
-
-- always: `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`, `WORKLINE_AI`,
-  `WORKLINE_ROLE`, `WORKLINE_BIN` and `WORKLINE_ROLES_DIR` (the folder of
-  roles);
-- `WORKLINE_FORGE` when a forge is given, `WORKLINE_TARGET`
-  (`merge-request:12`) with a target too;
-- `WORKLINE_AI_WAITS=ready` on a draft (`--input draft=true`): the
-  agent set aside, `WORKLINE_AI` is `none`
-  ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md#4-what-the-table-holds-to));
-- `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
-  `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`, and
-  `in/waiting.yaml`, the files each waiting task changes, and
-  `in/held.yaml`, those each other open merge request changes;
-- on a release tool's merge request: `WORKLINE_RELEASE_BRANCH`, the
-  branch, to every role ([ADR-0017](adr/0017-the-release-manager.md)); the reviewer
-  leaves the versions the tool bumps
-  ([#384](https://github.com/JN0V/workline/issues/384));
-- run by a handoff: the inputs `handoff-from` and `handoff-reason`.
-- in the round a role asks last (`in/then`): `WORKLINE_THEN`, its task.
-
-## The line's own
-
-The project's commands never see the line's own variables: its tests,
-as the tester's or the developer's proof, its checks, and the agent
-([#953](https://github.com/JN0V/workline/issues/953)).
-
-- **Which**: `WORKLINE_RUNS_DIR`, `WORKLINE_RATE_WAIT` (the wait for a
-  forge's rate a run of the line sets), and every variable `pre` and
-  `post` receive above, `WORKLINE_AI` among them: a project's test
-  never calls the run's agent.
-- **Why**: a project whose tests start workline's own engines would
-  take them for theirs: its runs written in the job's folder, the
-  oldest pruned, the live run with them.
-- **Kept**: what a person sets for their own use, such as
-  `WORKLINE_JUDGE`, `WORKLINE_ROLES` or `WORKLINE_MODELS_SEEN`.
 
 ## Secrets in quoted output
 
@@ -73,7 +47,7 @@ A command's output a comment quotes shows `***` in place of a secret
 ([#1215](https://github.com/JN0V/workline/issues/1215)): the tests' lines
 in a red proof, a check's log, an agent's failure, a docs example's output.
 
-- **Which**: the values of the forge's tokens above, and of each
+- **Which**: the values of the forge's tokens, and of each
   variable whose name ends in `_TOKEN`, `_KEY`, `_SECRET`, `_PASSWORD`,
   `_PAT` or `_CREDENTIALS`, case aside.
 - **Kept**: a value under 8 characters, and every variable's name.

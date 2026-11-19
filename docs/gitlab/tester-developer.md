@@ -1,7 +1,20 @@
 ---
-sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 8538d558
-verified: agent:documentalist
+sources:
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:issue
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:reconcile
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:start
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:develop
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:setup
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:objection
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:review
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:judge
+  - internal/forge/gitlab_hook.go#gitlab.SetIssueHook
+  - internal/agent/claude.go#shellTools
+  - roles/tester/role.yaml#events
+  - roles/developer/role.yaml#events
+  - Dockerfile
+checked: e2e165c2d
+verified: agent:claude-code
 judged: e8a46f7
 judged-in-parts: 9a88170
 ---
@@ -16,7 +29,7 @@ itself; for a comment on a merge request, a tool passes its numbers
 ## The line of states
 
 Routed `issue: [tester, developer]`
-([the line of states on GitLab](../gitlab-trigger.md#the-line-of-states-on-it)):
+([the line of states on GitLab](line-of-states.md)):
 
 - **The issue webhook**, its URL ending `variables[WORKLINE_TASK]=issue`:
   `workline:issue` reads the event, and a state's label put on an issue
@@ -27,8 +40,8 @@ Routed `issue: [tester, developer]`
   one pipeline an issue at a time.
 - **A pipeline schedule, hourly**, with `WORKLINE_TASK=reconcile`:
   `workline:reconcile` starts each step and review round an event
-  missed. `workline setup --yes` creates the hook; the schedule is yours
-  to create.
+  missed. The hook: [with GitLab alone](../gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone);
+  the schedule is yours to create.
 
 ## The tester
 
@@ -37,7 +50,7 @@ Routed `issue: [tester, developer]`
 - **An objection** on its Draft: a tool given the note webhook starts a
   pipeline on the default branch, with
   `WORKLINE_TASK=objection`, `MR_IID` and `MR_SOURCE_BRANCH`
-  ([the variables](../gitlab-trigger.md#how-the-pipeline-knows-what-to-do));
+  ([the variables](trigger-variables.md));
   the jobs `workline:objection:*` answer it
   ([what each job holds](../objection-jobs.md)).
 
@@ -62,6 +75,5 @@ Routed `issue: [tester, developer]`
   the developer's jobs a runner with `privileged = true` in its
   `[runners.docker]`. Refused, the developer says so and does not ask
   the agent ([its shell](../../roles/developer/docs/agent.md#claude)).
-- **Its bounds** on its merge request: the job `workline:bounds`, and
-  what keeps a merge request from editing it out, by tier
-  ([the bounds on GitLab](bounds.md)).
+- **Its bounds** on its merge request: a job, and what keeps a merge
+  request from editing it out, by tier ([the bounds on GitLab](bounds.md)).

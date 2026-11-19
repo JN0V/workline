@@ -136,7 +136,7 @@ AI reads only what is new.
     waits for ready, and asks, on GitLab, for a push or **Run
     pipeline** once it is.
   - A webhook or a tool starting pipelines from GitLab's events does
-    start one on ready ([`MR_READY`](../../../docs/gitlab-trigger.md#how-the-pipeline-knows-what-to-do)).
+    start one on ready ([`MR_READY`](../../../docs/gitlab/trigger-variables.md)).
   - Read with `GITLAB_TOKEN` when the job has one, else the job's own
     token; unread, one lens, said in the log.
 - **GitLab's notes** are read page by page, the newest first, until the
