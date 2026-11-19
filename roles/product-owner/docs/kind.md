@@ -1,5 +1,5 @@
 ---
-sources: [internal/backlog/kind.go, internal/engine/backlog.go, internal/builtin/productowner/kinds.go, roles/product-owner/role.yaml]
+sources: [internal/backlog/kind.go, internal/engine/backlog.go, roles/product-owner/code/kinds.go, roles/product-owner/role.yaml]
 checked: 19479f1b
 verified: agent:claude-code
 ---
@@ -75,7 +75,7 @@ changes. A light read gives it a kind
   `proposals-max` issues wait on a person.
 - **One call**: beside the full read when there is one; else a task of
   its own, `kind`, with a short instruction
-  ([tasks/kind.md](../tasks/kind.md)). It answers `kind` or
+  ([prompts/tasks/kind.md](../prompts/tasks/kind.md)). It answers `kind` or
   `note` only; anything else is dropped, said.
 - **Its cost**, by the engine's estimate on a real backlog: 400 to 600
   tokens an issue beside a full read; alone, about 6.4k tokens for 10

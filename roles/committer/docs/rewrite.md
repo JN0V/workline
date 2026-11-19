@@ -1,11 +1,11 @@
 ---
 sources:
-  - internal/builtin/committer/committer.go#Pre
-  - internal/builtin/committer/committer.go#rewriting
-  - internal/builtin/committer/committer.go#Post
-  - internal/builtin/committer/committer.go#Trailers
-  - internal/builtin/committer/committer.go#ownLine
-  - internal/builtin/committer/committer.go#ownLines
+  - roles/committer/code/committer.go#Pre
+  - roles/committer/code/committer.go#rewriting
+  - roles/committer/code/committer.go#Post
+  - roles/committer/code/committer.go#Trailers
+  - roles/committer/code/committer.go#ownLine
+  - roles/committer/code/committer.go#ownLines
   - internal/kit/commitmsg/commitmsg.go#KeepsHeader
   - cmd/workline/main.go#hookCmd
   - internal/engine/engine.go#withTrailers

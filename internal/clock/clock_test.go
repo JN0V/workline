@@ -12,7 +12,7 @@ import (
 // The packages the line simulator runs on its own clock (ADR-0063, step
 // 1): a time read there that skips Now would run on the machine's time,
 // and a trace would no longer replay.
-var seamed = []string{"../line", "../builtin/productowner", "../backlog"}
+var seamed = []string{"../line", "../../roles/product-owner/code", "../backlog"}
 
 var timeRead = regexp.MustCompile(`\btime\.(Now|Since|Until)\b`)
 

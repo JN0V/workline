@@ -16,7 +16,7 @@ import (
 // leaves the commit-msg hook with no rewrite.
 func TestLargestTaskFitsTheBudget(t *testing.T) {
 	t.Setenv("HOME", t.TempDir()) // the role's own facets, none of this machine's
-	r, err := role.Load("../../../roles", "committer")
+	r, err := role.Load("../..", "committer")
 	if err != nil {
 		t.Fatal(err)
 	}

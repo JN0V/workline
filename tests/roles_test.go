@@ -27,7 +27,9 @@ func TestRoleTopLevelHoldsOnlyWhatTheEngineLoads(t *testing.T) {
 	}
 	for _, r := range roles {
 		if !r.IsDir() {
-			t.Errorf("roles/%s: a file beside the roles", r.Name())
+			if r.Name() != "builtin.go" { // the list of the compiled-in roles
+				t.Errorf("roles/%s: a file beside the roles", r.Name())
+			}
 			continue
 		}
 		entries, err := fs.ReadDir(workline.Roles, "roles/"+r.Name())

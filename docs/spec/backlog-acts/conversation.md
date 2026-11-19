@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
+sources: [internal/backlog/backlog.go, roles/product-owner/code/productowner.go]
 status: draft
 checked: 8538d558
 verified: agent:claude-code

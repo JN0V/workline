@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/coverage.go, internal/builtin/productowner/productowner.go, cmd/workline/main.go, roles/product-owner/instruction.md]
+sources: [internal/backlog/coverage.go, roles/product-owner/code/productowner.go, cmd/workline/main.go, roles/product-owner/prompts/instruction.md]
 status: draft
 checked: 8538d558
 verified: agent:claude-code

@@ -17,7 +17,7 @@ sources:
   - internal/backlog/assume.go#DraftsSince
   - internal/backlog/assume.go#firstRead
   - internal/backlog/size.go#Config.SplitOff
-  - internal/builtin/productowner/productowner.go#Settings
+  - roles/product-owner/code/productowner.go#Settings
   - internal/kit/verdict/cut.go#CutRule
 checked: e2e165c2d
 verified: agent:claude-code

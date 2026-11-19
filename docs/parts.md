@@ -8,7 +8,7 @@ sources:
   - internal/agent/agent.go#Parse
   - internal/forge/github.go#github.api
   - internal/forge/gitlab.go#gitlab.api
-  - internal/builtin/committer/committer.go#Pre
+  - roles/committer/code/committer.go#Pre
   - roles/documentalist/role.yaml#events
 checked: c46a93d6c
 verified: agent:claude-code
