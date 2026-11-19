@@ -14,6 +14,12 @@ import (
 func TestTheRolesKeepingARecordOfferItsMerge(t *testing.T) {
 	const body = "**body**\n\n<!-- workline:triaged {\"fingerprint\":\"a\"} -->"
 	const found = "**found**\n\n<!-- workline:triaged {\"fingerprint\":\"b\"} -->"
+	// On this input the two roles' merges answer apart: the inspector's
+	// reads the triage records, the reviewer's reads none of them.
+	if reviewer.MergeSummary(body, "", found) == inspector.MergeComment(body, "", found) ||
+		reviewer.MergeInto(found, body, "", "m") == inspector.MergeInto(found, body, "", "m") {
+		t.Fatal("the input does not tell the reviewer's merges from the inspector's")
+	}
 	for name, own := range map[string]contract.Record{
 		"reviewer":  {Merge: reviewer.MergeSummary, Into: reviewer.MergeInto},
 		"inspector": {Merge: inspector.MergeComment, Into: inspector.MergeInto},

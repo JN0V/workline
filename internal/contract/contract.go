@@ -104,8 +104,8 @@ type Registry struct {
 func NewRegistry() *Registry { return &Registry{roles: map[string]Role{}} }
 
 // Join adds a role; a name joined twice, a second role offering Code,
-// Tests, Review or Docs, or a Record missing a merge, is a programming
-// error.
+// Tests, Review or Docs, or a Record, Review or Docs missing a function,
+// is a programming error.
 func (r *Registry) Join(name string, role Role) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -142,6 +142,12 @@ func (r *Registry) Join(name string, role Role) {
 	}
 	if role.Record != nil && (role.Record.Merge == nil || role.Record.Into == nil) {
 		panic(fmt.Sprintf("contract: the role %q offers a record missing a merge", name))
+	}
+	if role.Review != nil && role.Review.ReviewedAll == nil {
+		panic(fmt.Sprintf("contract: the role %q offers a review missing ReviewedAll", name))
+	}
+	if role.Docs != nil && (role.Docs.Coverage == nil || role.Docs.UnreadDocs == nil) {
+		panic(fmt.Sprintf("contract: the role %q offers docs missing a check", name))
 	}
 	r.roles[name] = role
 }
