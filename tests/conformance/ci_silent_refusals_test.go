@@ -25,18 +25,24 @@ type silentStep struct {
 // silentErrorLine is the line a Verdict step prints before it fails.
 const silentErrorLine = "::error title=workline::"
 
-// silentGitHubFiles are the role workflows the done criterion lists, in
-// each directory that holds them: workline's own and the template.
+// silentGitHubFiles are the role workflows the done criterion lists, as
+// the template holds them.
 var silentGitHubFiles = []string{"workline.yml", "workline-bounds.yml", "workline-warn.yml",
 	"workline-develop.yml", "workline-gardening.yml", "workline-answer.yml"}
 
-var silentGitHubDirs = []string{"../../.github/workflows", "../../defaults/ci/github"}
+// silentTemplateDir holds the GitHub templates. The workflows of
+// workline's own CI are read-only for the change, so the test holds the
+// templates, not them.
+const silentTemplateDir = "../../defaults/ci/github"
 
-// silentForgejoFiles are the workflow files of the Forgejo samples, held to the GitHub-style rules.
+// silentForgejoDir holds the Forgejo samples, held to the GitHub-style rules.
+const silentForgejoDir = "../../defaults/ci/forgejo"
+
+// silentForgejoFiles are the workflow files of the Forgejo samples.
 func silentForgejoFiles() []string {
 	var files []string
 	for _, ext := range []string{"*.yml", "*.yaml"} {
-		got, _ := filepath.Glob("../../defaults/ci/forgejo/" + ext)
+		got, _ := filepath.Glob(silentForgejoDir + "/" + ext)
 		files = append(files, got...)
 	}
 	return files
@@ -216,13 +222,12 @@ func silentGitLabGaps(t *testing.T) (said, kept []string) {
 	return said, kept
 }
 
-// silentAllGitHubStyle lists every GitHub-style file the done criterion holds.
+// silentAllGitHubStyle lists every GitHub-style file the done criterion
+// holds: the GitHub templates and the Forgejo samples.
 func silentAllGitHubStyle() []string {
 	var files []string
-	for _, dir := range silentGitHubDirs {
-		for _, f := range silentGitHubFiles {
-			files = append(files, filepath.Join(dir, f))
-		}
+	for _, f := range silentGitHubFiles {
+		files = append(files, filepath.Join(silentTemplateDir, f))
 	}
 	return append(files, silentForgejoFiles()...)
 }
@@ -268,21 +273,28 @@ func TestSilentRefusalsKeptWhenItFails(t *testing.T) {
 // Both copies
 // Given a workflow and its template,
 // When either is read,
-// Then both say the reason and keep the files the same way.
+// Then both say the reason and keep the files the same way: the GitHub
+// template and the Forgejo sample of the same file, where there is one.
 func TestSilentRefusalsBothCopies(t *testing.T) {
 	for _, f := range silentGitHubFiles {
 		var sigs []map[string]string
-		for _, dir := range silentGitHubDirs {
+		for _, dir := range []string{silentTemplateDir, silentForgejoDir} {
 			path := filepath.Join(dir, f)
+			if _, err := os.Stat(path); err != nil && dir == silentForgejoDir {
+				continue
+			}
 			said, kept, sig := silentGitHubGaps(t, path)
 			for _, g := range append(said, kept...) {
 				t.Error(g)
 			}
 			sigs = append(sigs, sig)
 		}
+		if len(sigs) < 2 {
+			continue
+		}
 		for name, own := range sigs[0] {
-			if tmpl, ok := sigs[1][name]; ok && !reflect.DeepEqual(own, tmpl) {
-				t.Errorf("%s: job %s: workline's own says and keeps `%s`, the template `%s`", f, name, own, tmpl)
+			if other, ok := sigs[1][name]; ok && !reflect.DeepEqual(own, other) {
+				t.Errorf("%s: job %s: the GitHub template says and keeps `%s`, the Forgejo sample `%s`", f, name, own, other)
 			}
 		}
 	}

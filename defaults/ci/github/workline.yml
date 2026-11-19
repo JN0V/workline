@@ -354,7 +354,7 @@ jobs:
       # What the line proposed, for workline-apply.yml to apply, and what
       # the documentalist found, for it to show beside the docs' lines.
       - uses: actions/upload-artifact@v4
-        if: steps.line.outputs.proposed == 'true' || steps.line.outputs.found == 'true' || failure() || (steps.line.outputs.status != '' && steps.line.outputs.status != '0')
+        if: github.event_name != 'merge_group' && (steps.line.outputs.proposed == 'true' || steps.line.outputs.found == 'true' || failure() || (steps.line.outputs.status != '' && steps.line.outputs.status != '0'))
         with: {name: workline-runs, path: "line.json\n.workline-runs\nreport/number", include-hidden-files: true}
 
       # The findings code scanning keeps: neither the documentalist's nor
