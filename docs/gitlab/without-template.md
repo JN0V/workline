@@ -1,5 +1,28 @@
 ---
-sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
+sources:
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:summary
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:develop
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:read
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:objection
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:review
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:issue
+  - Dockerfile
+  - cmd/workline/main.go#exitFor
+  - cmd/workline/main.go#runRole
+  - cmd/workline/main.go#importIssues
 checked: 8538d558
 verified: agent:claude-code
 judged: bf016b7
@@ -119,8 +142,6 @@ pipeline: as the template's `workline:issue` and `workline:reconcile`.
 
 ## What the jobs do
 
-- `--summary` needs the first release after v0.16.0
-  ([ci.md](../ci.md#what-a-job-shows)).
 - The judging job exits with the verdict: 1 block, 2 for a person, 3 the
   agent or forge unreachable. Make 3 a warning with `allow_failure:
   {exit_codes: [3]}`, as the template does.
@@ -130,13 +151,12 @@ pipeline: as the template's `workline:issue` and `workline:reconcile`.
 - On `garden`, the applying job then tends the merge requests gardening
   opened before: rebuilt on the branch, or closed when nothing is left to
   merge
-  ([ADR-0034, amended](../adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed));
-  the first release after v0.24.0.
+  ([ADR-0034, amended](../adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
 - On `release`, a judging job that does not pass holds the release: the
   release's gates, never the docs
   ([ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 - The [merge policy](../merge-policy.md), with `merge:` in the target
-  branch's `.workline/config.yaml`, workline 0.26 or later:
+  branch's `.workline/config.yaml`:
   - `judge:merge-request` writes the head's verdict (`--verdict`);
   - `apply:merge-request` then runs `workline follow --verdict` from the
     target branch, as the template's `workline:merge` does;

@@ -2,12 +2,13 @@
 sources:
   - docs/gitlab/without-template.md#gitlab-ciyml
   - docs/gitlab/without-template.md#ciworkline-jobsh
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:environment
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:garden
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:summary
   - internal/forge/gitlab.go#gitlab.connect
-checked: e2e165c2d
+checked: 3bab32400
 verified: agent:claude-code
 ---
 # Tokens and variables of a started pipeline
@@ -29,9 +30,10 @@ the write token out of the judging job's commands, not out of its reach.
 The template does the same, and gives its gardening judge the write token.
 It also scopes the tokens to the environment `workline`, which the jobs
 running your tools never declare ([the environment](environment.md)).
-Here the judging job runs the gates beside the agent's token; scoped
-there, both jobs of [the script](without-template.md) declare
-`environment: {name: workline, action: prepare}`, or they get no token.
+Here the judging job runs the gates beside the agent's token. Scoped
+there, the tokens reach only jobs that declare the environment: add
+`environment: {name: workline, action: prepare}` to both jobs of
+[the script](without-template.md), or they get no token.
 
 The Code Quality report shows on the merge request when the pipeline is
 the merge request's own; a pipeline started on its branch by a tool may not
