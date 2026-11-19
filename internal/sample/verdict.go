@@ -115,7 +115,7 @@ func kindOf(a Act) string {
 // project's own copy (.workline/roles/auditor/criteria/<role>/<kind>.md),
 // else the auditor's (criteria/<role>/<kind>.md), else the role's own
 // (criteria/<kind>.md). Until the questions move, kinds/<kind>.md is read
-// as a fallback, the project's first. A kind with no criteria anywhere is
+// as a last fallback, the project's first. A kind with no criteria anywhere is
 // judged on the auditor's generic question, whose text ships with a later
 // move: said missing.
 func (rd *reader) facet(roleName, kind string) (string, error) {
@@ -123,9 +123,9 @@ func (rd *reader) facet(roleName, kind string) (string, error) {
 	roles := filepath.Dir(rd.auditor.Dir)
 	paths := []string{
 		filepath.Join(project, "criteria", roleName, kind+".md"),
-		filepath.Join(project, "kinds", kind+".md"),
 		filepath.Join(rd.auditor.Dir, "criteria", roleName, kind+".md"),
 		filepath.Join(roles, roleName, "criteria", kind+".md"),
+		filepath.Join(project, "kinds", kind+".md"),
 		filepath.Join(rd.auditor.Dir, "kinds", kind+".md"),
 	}
 	for _, p := range paths {
