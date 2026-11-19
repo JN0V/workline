@@ -19,10 +19,12 @@ func TestSharedPreReadsTheRootInstructionWhenNotMoved(t *testing.T) {
 	if err := sharedPre(&role.Role{Name: "judge", Dir: dir}, []string{"WORKLINE_RUN_DIR=" + run}); err != nil {
 		t.Fatalf("a role with its instruction at the root does not run: %v", err)
 	}
-	// What the task holds is the shared pre's own business (main points it
-	// at the system prompt); that it ran and left a task is what counts.
-	if got, _ := os.ReadFile(filepath.Join(run, "in", "task.md")); len(got) == 0 {
-		t.Errorf("in/task.md is empty after a run on a root instruction")
+	got, err := os.ReadFile(filepath.Join(run, "in", "task.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != text {
+		t.Errorf("in/task.md = %q, want the root instruction %q", got, text)
 	}
 }
 
