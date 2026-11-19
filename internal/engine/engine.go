@@ -1446,6 +1446,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	if err != nil {
 		return err
 	}
+	ap.models = modelsUsed(res.Calls)
 	ap.plan = plan
 	done := map[int]bool{}
 	for _, i := range st.Applied {
@@ -1604,6 +1605,10 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		}
 	}
 	res.Findings = append(res.Findings, ap.findings...)
+	if f == nil && len(res.Applied) > 0 {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "act-not-sampled", Level: "info",
+			Message: "no forge: nothing is recorded of this act, which cannot be sampled"})
+	}
 	if ap.capped > 0 {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "issues-capped", Level: "warn",
 			Message: fmt.Sprintf("%d more issues not opened (issues-max %d): found again, they are opened at a later run", ap.capped, ap.opens.Max)})
@@ -1612,6 +1617,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		links(f, res)
 		// Written back first: what it labels is named in the summary
 		// (#428).
+		ap.recordBacklogActs(plan)
 		err := report(f, r.Name, plan)
 		res.Findings = append(res.Findings, plan.Findings...)
 		if res.Status == verdict.Pass {
@@ -2598,6 +2604,13 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		intents = nil
 		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	}
+	if line := forgedRecord(intents); line != "" {
+		res.Refused = append(res.Refused, "record")
+		a.refused = "a proposal holds a line in the form of an act's record, which only the apply step writes: " + line
+		a.findings = append(a.findings, verdict.Finding{Rule: "record-forged", Message: a.refused})
+		intents = nil
+		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+	}
 	if bad := outOfBounds(o.Repo, intents, r.Writes(settings), o.Scope); len(bad) > 0 {
 		res.Refused = append(append([]string{}, res.partRefused...), "patch")
 		a.refused = "a patch reaches outside the task or the role's duties: " + strings.Join(bad, ", ") + "; anything found there belongs in an issue"
@@ -2851,6 +2864,8 @@ func invalid(r *role.Role, in []intent.Intention, line *routing.Config) ([]strin
 			bad, why = append(bad, i.Kind), append(why, "a claim answers a part of a question (in/parts), or cites why a patch takes words out, beside it; never the question itself")
 		case !intent.Catalogue[i.Kind] || !r.Allows(i.Kind):
 			bad, why = append(bad, i.Kind), append(why, fmt.Sprintf("%s is not allowed for this role", i.Kind))
+		case len(r.Acts) > 0 && !slices.Contains(r.Acts, i.Kind):
+			bad, why = append(bad, i.Kind), append(why, fmt.Sprintf("%s is not an act this role declares (acts: %s)", i.Kind, strings.Join(r.Acts, ", ")))
 		case i.Kind == "handoff":
 			m, _ := i.Value.(map[string]any)
 			to, _ := m["role"].(string)
@@ -2882,6 +2897,7 @@ type applier struct {
 	capped      int               // findings not opened as issues, past issues-max
 	findings    []verdict.Finding // what the applying says
 	model       string            // the model whose answer is applied, as an announcement records it
+	models      []string          // the distinct models the run used, for the act's record
 	own         string            // the run's own trailers: its role, the agents and models that answered
 	scheme      *scale.Scheme     // where the project keeps each axis, detected at the first act writing one (ADR-0040)
 	ensured     map[string]bool   // the labels this run made sure the project has
@@ -2986,7 +3002,7 @@ func (a *applier) apply(in intent.Intention) error {
 			if !ok || target.Kind != "merge-request" {
 				return errors.New("a reply in a thread needs a merge request, on a forge that lists its threads")
 			}
-			return th.Reply(target.ID, thread, backlog.Inert(body))
+			return th.Reply(target.ID, thread, a.recorded(body, in.Kind, *target))
 		}
 		if sticky {
 			key, _ := m["sticky"].(string)
@@ -3023,11 +3039,11 @@ func (a *applier) apply(in intent.Intention) error {
 				// workline's own, the comment its record is read back
 				// from (ADR-0051); on an issue, the role's by its
 				// marker, whatever account wrote it (ADR-0038).
-				return forge.KeepOwn(a.forge, *target, backlog.Inert(body), marker, !only)
+				return forge.KeepOwn(a.forge, *target, a.recorded(body, in.Kind, *target), marker, !only)
 			}
-			return a.forge.Sticky(*target, backlog.Inert(body), marker, !only)
+			return a.forge.Sticky(*target, a.recorded(body, in.Kind, *target), marker, !only)
 		}
-		return a.forge.Comment(*target, backlog.Inert(body), a.marker())
+		return a.forge.Comment(*target, a.recorded(body, in.Kind, *target), a.marker())
 	case "verification":
 		// The tester's test plan, written in the issue it names (ADR-0066):
 		// added, or its own rewritten; another's kept as it reads.
@@ -4019,6 +4035,12 @@ func sharedPost(env []string) (int, error) {
 	}
 	if err := os.MkdirAll(filepath.Join(runDir, "out"), 0o755); err != nil {
 		return 0, err
+	}
+	// An answer the engine refused whole is a block, so the answer is
+	// asked for again as a role's own post blocks it (`promote-after`).
+	if why := envValue(env, "WORKLINE_AGENT_REFUSED"); why != "" {
+		data, _ := yaml.Marshal(map[string]string{"status": "block", "summary": "the agent's proposal was refused: " + why})
+		return 1, os.WriteFile(filepath.Join(runDir, "out", "verdict.yaml"), data, 0o644)
 	}
 	return 0, os.WriteFile(filepath.Join(runDir, "out", "verdict.yaml"), []byte("status: pass\n"), 0o644)
 }
