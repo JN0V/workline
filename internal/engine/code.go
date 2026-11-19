@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/clock"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
 )
@@ -184,7 +184,7 @@ func headTrouble(o FollowOptions, m forge.Merger, hand map[string]kept, w weighe
 // unreviewed says why no review reads the head, "" when one does: the
 // reviewer's verdict names it, or its record covers every commit of it,
 // a head rebased with no new change, on which the reviewer writes no
-// summary (reviewer.ReviewedAll).
+// summary (contract.Review).
 func unreviewed(repo string, w weighed, d devmark.Merge) string {
 	tip, why := w.tip, d.Unreviewed(w.tip)
 	if why != "" {
@@ -195,7 +195,7 @@ func unreviewed(repo string, w weighed, d devmark.Merge) string {
 	if why == "" || d.Summary == "" || d.Owed {
 		return why
 	}
-	all, err := reviewer.ReviewedAll(repo, w.baseTip, tip, d.Summary)
+	all, err := contract.BuiltinReview().ReviewedAll(repo, w.baseTip, tip, d.Summary)
 	switch {
 	case err != nil:
 		return why + " (what it read could not be compared with the head: " + err.Error() + ")"

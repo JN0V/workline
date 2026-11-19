@@ -36,7 +36,9 @@ import (
 
 // The role joins the engine by name (internal/contract).
 func init() {
-	contract.Join("reviewer", contract.Role{Pre: Pre, Post: Post, Record: &contract.Record{Merge: MergeSummary, Into: MergeInto}})
+	contract.Join("reviewer", contract.Role{Pre: Pre, Post: Post, Record: &contract.Record{Merge: MergeSummary, Into: MergeInto},
+		Review: &contract.Review{ReviewedAll: ReviewedAll},
+	})
 }
 
 const (

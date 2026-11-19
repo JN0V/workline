@@ -31,7 +31,9 @@ import (
 )
 
 // The role joins the engine by name (internal/contract).
-func init() { contract.Join("documentalist", contract.Role{Pre: Pre, Post: Post}) }
+func init() {
+	contract.Join("documentalist", contract.Role{Pre: Pre, Post: Post, Docs: &contract.Docs{Coverage: Coverage, UnreadDocs: UnreadDocs}})
+}
 
 // Settings are the role's settings, as merged by the engine.
 type Settings struct {
