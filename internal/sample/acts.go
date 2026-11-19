@@ -101,10 +101,6 @@ func foldActs(res *Result, f forge.Forge, former []int, id int) error {
 	return nil
 }
 
-// recordedMarker opens an act in the shared record (ADR-0070 §3): a
-// comment of workline's own account, `<!-- workline:act {json} -->`.
-const recordedMarker = "<!-- workline:act "
-
 // ownDraw are the roles that still have a draw of their own: the shared
 // draw skips them, so no act is drawn twice. A role leaves the list when
 // its code moves to the shared record.
