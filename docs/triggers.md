@@ -1,5 +1,38 @@
 ---
-sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, defaults/ci/gitlab/workline.gitlab-ci.yml, defaults/ci/github/workline.yml, defaults/ci/github/workline-gardening.yml, defaults/ci/github/workline-sample.yml, defaults/routing.yaml]
+sources:
+  - cmd/workline/main.go#hooksCmd
+  - cmd/workline/main.go#prePushLine
+  - roles/committer/role.yaml
+  - internal/kit/commitmsg/commitmsg.go#Settings
+  - cmd/workline/main.go#docsCmd
+  - cmd/workline/main.go#reviewCmd
+  - cmd/workline/main.go#routeCmd
+  - cmd/workline/main.go#runRole
+  - cmd/workline/main.go#testCmd
+  - cmd/workline/main.go#developCmd
+  - cmd/workline/main.go#importIssues
+  - cmd/workline/main.go#applyCmd
+  - cmd/workline/main.go#sampleCmd
+  - cmd/workline/main.go#followCmd
+  - cmd/workline/main.go#sizeCmd
+  - cmd/workline/main.go#gateCmd
+  - cmd/workline/tick.go#tickCmd
+  - internal/tick/tick.go#Due
+  - internal/forge/gitlab.go#gitlab.connect
+  - internal/engine/engine.go#Result
+  - internal/line/line.go#Result
+  - internal/report/report.go#FromLine
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:ready
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:reconcile
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
 checked: e4e4287bc
 verified: agent:claude-code
 reader: 2de353fab113
@@ -59,7 +92,7 @@ Each event that writes runs in two jobs
 
 ### Merge request
 
-The committer, the documentalist, the reviewer if routed; one run at a time ([#359](https://github.com/JN0V/workline/issues/359)):
+The committer, the documentalist, the reviewer if routed; one run at a time:
 
 ```sh
 workline route merge-request --ai "$ai" --no-apply \
@@ -69,10 +102,10 @@ workline apply --line line.json          # second job: the doc fixes as a diff i
 ```
 
 `--input draft=<true|false>`, on each run: `true` asks no agent of any
-step, the AI review waiting for ready; `false` has the reviewer read every
-lens once, on the whole change, on a merge request its record does not
-say every lens read; `--input lenses=all` asks it outright, when it becomes
-ready, as the templates do ([how](../roles/reviewer/docs/ready.md)).
+step, the AI review waiting for ready. When a merge request is ready and
+not reviewed since, the templates add `--input lenses=all`: the reviewer
+reads every lens once, on the whole change
+([how](../roles/reviewer/docs/ready.md)).
 
 In a merge queue or train, the same line with `--input queue=true` and
 the merged result's range runs the gates alone, no agent, no verdict
@@ -146,7 +179,8 @@ as above or below ([on GitLab](gitlab/line-of-states.md)).
 `workline tick --json` lists the line's jobs due now, each with why,
 no agent, nothing written: a regular beat (a loop, a schedule, a timer)
 starts those and nothing else ([the tick](tick.md)). It reads the runs
-on GitHub only: on GitLab, the reconcile alone is listed.
+on GitHub only: on GitLab, it lists the reconcile and the backlog when
+due, and no job timed by its last run, said on stderr.
 
 ### On a role's own merge request
 
@@ -169,15 +203,14 @@ Before your release tool tags; a non-zero exit holds it.
 - On a machine: `workline route release`.
 - At a tag (GitLab's `workline:release`): `workline route release --ai
   none --forge none`, no token. The jobs that publish need it.
-- Each night, a dry run: `workline route release --dry-run --forge
-  gitlab --json > dry-run.json` (no agent, writes nothing), then
+- On each schedule, a dry run: `workline route release --dry-run --forge
+  none --json > dry-run.json` (no agent, no token, writes nothing), then
   `workline apply --release-dry-run dry-run.json --forge gitlab` (token,
   no agent) ([the release](release.md)).
 - On a push to the default branch: `workline follow --base <branch>
   --forge gitlab` (token, no agent), `user.name` and `user.email` set
   first, as for `apply`. It closes the tester's Draft of a closed
-  issue, and takes the states' labels off closed issues
-  ([#999](https://github.com/JN0V/workline/issues/999)). With `merge:`, it runs
+  issue, and takes the states' labels off closed issues. With `merge:`, it runs
   the [merge policy](merge-policy.md): after each judge too, given the
   head's verdict `route --verdict` wrote (`--verdict <file>`).
 
@@ -201,9 +234,8 @@ one issue, the level the product owner's acts suggest among it
 
 ### Your own scanners
 
-`--sarif <file>` beside `--code-quality` writes the findings for GitHub's
-code scanning, on a merge request not the documentalist's, the
-reviewer's nor the gates' ([#412](https://github.com/JN0V/workline/issues/412)).
+`--sarif <file>` beside `--code-quality` writes every step's findings
+for GitHub's code scanning.
 `gate:<name>` steps, or `workline gate <name>`, run your own scanners; on
 a merge request given its `range`, or with `workline gate <name> --base
 <rev>`, only the findings the change adds count

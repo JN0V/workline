@@ -1,5 +1,55 @@
 ---
-sources: [cmd/workline, internal/hooks, internal/role/config.go, internal/doctor/doctor.go, internal/doctor/packs.go, internal/doctor/variables.go, internal/doctor/board.go, internal/doctor/hook.go, internal/doctor/workflows.go, internal/doctor/tests.go, internal/forge/gitlab_hook.go]
+sources:
+  - cmd/workline/main.go#hooksCmd
+  - internal/hooks/hooks.go#InstallGlobal
+  - internal/hooks/hooks.go#UninstallGlobal
+  - internal/hooks/hooks.go#InstallRepo
+  - internal/hooks/hooks.go#dispatcher
+  - cmd/workline/main.go#setupCmd
+  - internal/setup/setup.go#Run
+  - internal/setup/setup.go#contains
+  - internal/doctor/hook.go#issueHookOf
+  - internal/doctor/hook.go#issueNotes
+  - internal/forge/gitlab_hook.go#gitlab.SetIssueHook
+  - cmd/workline/main.go#initCmd
+  - cmd/workline/main.go#initPacks
+  - internal/routing/adopt.go#RoutePrePush
+  - cmd/workline/main.go#doctorCmd
+  - internal/doctor/doctor.go#machine
+  - internal/doctor/doctor.go#agent
+  - internal/doctor/doctor.go#repository
+  - internal/doctor/doctor.go#docs
+  - internal/doctor/doctor.go#hooksPath
+  - internal/doctor/doctor.go#forgeCommand
+  - internal/doctor/workflows.go#ciTemplates
+  - internal/doctor/levels.go#levels
+  - internal/doctor/packs.go#languagePacks
+  - internal/doctor/tests.go#testCommand
+  - internal/doctor/tests.go#testCommandRuns
+  - internal/doctor/languages.go#languages
+  - internal/doctor/conversations.go#findingsOnMergeRequests
+  - internal/doctor/guard.go#bypassGuard
+  - internal/doctor/event_policy.go#blockedEvent
+  - internal/doctor/guard.go#guardedList
+  - internal/doctor/variables.go#tokensScoped
+  - internal/doctor/variables.go#onGitLab
+  - internal/doctor/hook.go#issueHook
+  - internal/doctor/board.go#boards
+  - cmd/workline/cli.go#versionCmd
+  - cmd/workline/main.go#engineVersion
+  - cmd/workline/main.go#personal
+  - cmd/workline/main.go#prePush
+  - cmd/workline/main.go#prePushLine
+  - cmd/workline/main.go#prePushQuiet
+  - internal/hooks/approve.go#Push.channels
+  - internal/hooks/approve.go#Approve
+  - internal/hooks/approve.go#ask
+  - internal/hooks/approve.go#askOnce
+  - internal/hooks/approve.go#answerTimeout
+  - internal/hooks/editor.go#editorSocket
+  - internal/line/seconds.go#Result.Times
+  - internal/line/seconds.go#Result.OverBudget
+  - defaults/routing.yaml#budgets
 checked: e4e4287bc
 verified: agent:claude-code
 ---
@@ -80,24 +130,22 @@ changes nothing.
 - Where CI runs workline: each workflow pinning a release older than
   this engine (`WORKLINE_VERSION`), and each event routed that no
   GitHub workflow runs, with the template to copy; nothing when CI runs
-  no workline ([#1016](https://github.com/JN0V/workline/issues/1016)).
+  no workline.
 - With an `autonomy` set: the level each role runs at and where it
   comes from; a role with no levels, that it changes nothing for it
   ([autonomy](autonomy.md)).
 - The [language packs](packs.md) listed, the languages no pack listed
   knows, and a pack the marker files call for that is not listed.
 - The tester or the developer routed with no `test-command`: said, with
-  the setting to add
-  ([#1284](https://github.com/JN0V/workline/issues/1284)); set, it is
-  run on HEAD in a checkout apart, a minute at most, and one that fails
-  with no report is a warning, its error lines quoted
-  ([#1333](https://github.com/JN0V/workline/issues/1333)).
+  the setting to add; set, it is run on HEAD in a checkout apart, a
+  minute at most, and one that fails with no report is a warning, its
+  error lines quoted.
 - For each language the repository holds: which tools read it (lint,
   types, security, dependencies), which it lacks, and the gate check to
   add; a warning, never an error ([languages](languages.md)).
 - On GitHub: whether the default branch requires every conversation
   resolved before a merge, and how workline's findings reach pull
-  requests ([#412](https://github.com/JN0V/workline/issues/412)). A rule
+  requests. A rule
   it cannot read — classic branch protection, without an admin's token —
   is said. Whether this token can bypass the default branch's rulesets:
   nobody should, a warning names each one it can
@@ -121,9 +169,10 @@ changes nothing.
   starts it at once — the hook to the project's trigger URL, its issue
   events on (its note events too, the reviewer or the product owner routed on `issue`), not disabled, on the default branch, workline's trigger
   token; a token that may not read them (a Maintainer's may) is said.
-- With the product owner or the developer routed: the forge's board,
-  its columns matched to ready, doing and done, and to refine, tests and
-  blocked when it has them, read-only ([boards](boards.md)).
+- With the product owner, the tester or the developer routed: the
+  forge's board, its columns matched to ready, doing and done, and to
+  refine, tests and blocked when it has them, read-only
+  ([boards](boards.md)).
 - With `forge: cmd:<command>`: the command run once, writing nothing; one
   not found, failing or silent is a warning
   ([what the doctor checks](spec/forge-command.md#what-the-doctor-checks)).
