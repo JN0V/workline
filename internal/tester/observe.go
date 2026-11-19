@@ -17,18 +17,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/agent"
-	"github.com/JN0V/workline/internal/forge"
 )
-
-// Record is what the tester keeps on its Draft, as the auditor reads it.
-type Record = record
-
-// ReadRecord reads the record of the tester's Draft id from workline's own
-// comment; ok is false when there is none it can read.
-func ReadRecord(f forge.Forge, id int) (Record, bool, error) {
-	r, missing, err := readRecord(f, id)
-	return r, err == nil && missing == nil, err
-}
 
 // asked are the agents and models the run asked, as <agent>:<model>,
 // from its calls (out/calls.jsonl); a judge is not one.
