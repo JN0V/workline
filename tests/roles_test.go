@@ -12,10 +12,12 @@ import (
 
 // loaded names what the engine reads at a role's top level
 // (docs/spec/role-contract.md, "Layout"): beside it, only README.md, for
-// the role's users, and docs/, the pages about the role.
+// the role's users, and docs/, the pages about the role. prompts/ holds a
+// moved role's prompts, code/ its compiled-in code (docs/spec/layout.md).
 var loaded = map[string]bool{
 	"role.yaml": true, "persona.md": true, "instruction.md": true, "policy.md": true,
 	"pre": true, "post": true, "knowledge": true, "lenses": true, "kinds": true, "skills": true, "tasks": true,
+	"prompts": true, "code": true,
 }
 
 func TestRoleTopLevelHoldsOnlyWhatTheEngineLoads(t *testing.T) {
@@ -25,7 +27,9 @@ func TestRoleTopLevelHoldsOnlyWhatTheEngineLoads(t *testing.T) {
 	}
 	for _, r := range roles {
 		if !r.IsDir() {
-			t.Errorf("roles/%s: a file beside the roles", r.Name())
+			if r.Name() != "builtin.go" { // the list of the compiled-in roles
+				t.Errorf("roles/%s: a file beside the roles", r.Name())
+			}
 			continue
 		}
 		entries, err := fs.ReadDir(workline.Roles, "roles/"+r.Name())

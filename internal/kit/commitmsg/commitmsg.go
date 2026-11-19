@@ -1,7 +1,7 @@
 // Package commitmsg holds the committer's message checks: the rules a
 // commit message is held to, which other roles use too (the developer
 // writes its subjects to them, the reviewer looks for internal codes).
-// The committer role (internal/builtin/committer) runs them on commits.
+// The committer role (roles/committer/code) runs them on commits.
 package commitmsg
 
 import (

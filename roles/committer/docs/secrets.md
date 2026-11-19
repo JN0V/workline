@@ -1,18 +1,18 @@
 ---
 sources:
-  - internal/builtin/committer/secrets.go#termList
-  - internal/builtin/committer/secrets.go#Secrets
-  - internal/builtin/committer/secrets.go#scan
-  - internal/builtin/committer/secrets.go#MessageLeaks
-  - internal/builtin/committer/secrets.go#scannedPart
-  - internal/builtin/committer/secrets.go#gitleaks
-  - internal/builtin/committer/secrets.go#commonList
-  - internal/builtin/committer/secrets.go#stagedTermList
-  - internal/builtin/committer/identity.go#allowedIdentities
-  - internal/builtin/committer/identity.go#forgeIdentities
-  - internal/builtin/committer/identity.go#Identity
-  - internal/builtin/committer/committer.go#Pre
-  - internal/builtin/committer/committer.go#Post
+  - roles/committer/code/secrets.go#termList
+  - roles/committer/code/secrets.go#Secrets
+  - roles/committer/code/secrets.go#scan
+  - roles/committer/code/secrets.go#MessageLeaks
+  - roles/committer/code/secrets.go#scannedPart
+  - roles/committer/code/secrets.go#gitleaks
+  - roles/committer/code/secrets.go#commonList
+  - roles/committer/code/secrets.go#stagedTermList
+  - roles/committer/code/identity.go#allowedIdentities
+  - roles/committer/code/identity.go#forgeIdentities
+  - roles/committer/code/identity.go#Identity
+  - roles/committer/code/committer.go#Pre
+  - roles/committer/code/committer.go#Post
 checked: c46a93d6c
 verified: agent:claude-code
 ---

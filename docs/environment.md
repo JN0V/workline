@@ -7,7 +7,7 @@ sources:
   - internal/builtin/reviewer/reviewer.go#askJudges
   - tests/evaluation/eval_test.go#judge
   - internal/forge/retry.go#RunsDirEnv
-  - internal/builtin/committer/secrets.go#commonList
+  - roles/committer/code/secrets.go#commonList
   - internal/forge/mask.go
   - internal/tester/tester.go#shell
   - internal/gate/gate.go#maskLog

@@ -43,9 +43,11 @@ func checkImports(root string) ([]string, error) {
 			}
 			role := ""
 			if top == "roles" {
-				if parts := strings.Split(rel, "/"); len(parts) > 2 {
-					role = parts[1]
+				parts := strings.Split(rel, "/")
+				if len(parts) == 2 {
+					return nil // roles/builtin.go: the list of the compiled-in roles, no role's code
 				}
+				role = parts[1]
 			}
 			for _, spec := range file.Imports {
 				imp, err := strconv.Unquote(spec.Path.Value)

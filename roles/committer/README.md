@@ -4,8 +4,8 @@ sources:
   - defaults/routing.yaml#events
   - cmd/workline/main.go#hookCmd
   - cmd/workline/main.go#prePush
-  - internal/builtin/committer/committer.go#Pre
-  - internal/builtin/committer/committer.go#checkRange
+  - roles/committer/code/committer.go#Pre
+  - roles/committer/code/committer.go#checkRange
 checked: c46a93d6c
 verified: agent:claude-code
 judged-in-parts: eb16524

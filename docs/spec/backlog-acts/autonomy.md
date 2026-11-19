@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/autonomy.go, roles/product-owner/role.yaml, internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
+sources: [internal/backlog/autonomy.go, roles/product-owner/role.yaml, internal/backlog/backlog.go, roles/product-owner/code/productowner.go]
 status: draft
 checked: 8538d558
 verified: agent:claude-code

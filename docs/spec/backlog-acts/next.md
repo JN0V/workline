@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/depend.go, internal/backlog/order.go, internal/backlog/board.go, internal/builtin/productowner/productowner.go, internal/forge/forge.go]
+sources: [internal/backlog/depend.go, internal/backlog/order.go, internal/backlog/board.go, roles/product-owner/code/productowner.go, internal/forge/forge.go]
 status: draft
 checked: 8538d558
 verified: agent:claude-code
