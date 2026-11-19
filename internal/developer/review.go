@@ -1009,7 +1009,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		}
 	}
 	a.Rounds = append(a.Rounds, this)
-	out := append(slices.Concat(takes, patches), intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, s, notes, analysis, a.Widen)}},
+	out := append(slices.Concat(takes, patches), intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, s, notes, analysis, a.Widen, refused)}},
 		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}})
 	out = append(out, others...)
 	if len(this.Beside) > 0 {
@@ -1030,7 +1030,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 
 // roundBody is the round's comment on its pull request: what was asked,
 // what the developer did, its proof, the five whys.
-func roundBody(x devmark.Round, s Settings, notes []string, analysis string, w *devmark.Widen) string {
+func roundBody(x devmark.Round, s Settings, notes []string, analysis string, w *devmark.Widen, refused []devmark.Refusal) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The developer**, review round %d of %d: ", x.N, s.Rounds)
 	if x.Result == "not-pushed" {
@@ -1047,10 +1047,19 @@ func roundBody(x devmark.Round, s Settings, notes []string, analysis string, w *
 		b.WriteString("\n\n")
 	case x.Bounds == "blocked":
 		b.WriteString("no fix: the red check stays, its issue is blocked for a person, its reason on it; moved back to ready, the next round runs here.\n\n")
+	case x.Result == "no-code" && len(refused) > 0:
+		b.WriteString("its change is refused at apply, nothing landed.\n\n")
 	case x.Result == "no-code":
 		b.WriteString("no fix.\n\n")
 	default:
 		fmt.Fprintf(&b, "its fix pushed, the project's tests %s.\n\n", x.Result)
+	}
+	if len(refused) > 0 {
+		b.WriteString("Refused at apply, left out of its change:\n\n")
+		for _, r := range refused {
+			fmt.Fprintf(&b, "- `%s`: %s\n", r.File, r.Rule)
+		}
+		b.WriteString("\n")
 	}
 	if len(x.Beside) > 0 {
 		fmt.Fprintf(&b, "New test files beside the issue's %s: `%s`; the product owner adds them to the %[1]s at its next run.\n\n", scopeName, strings.Join(x.Beside, "`, `"))

@@ -674,7 +674,10 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	block := func(rule, msg string) int {
 		// Said in the thread too, where the builder looks (#1669): the
 		// engine posts on-block.yaml when the run is blocked.
-		said := a.reply("**The tester's answer is refused** (`" + rule + "`): " + msg)
+		// One sticky comment, whatever the reason: a second refusal updates
+		// it, it adds no reply (#1882).
+		said := intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "refused",
+			"body": "**The tester's answer is refused** (`" + rule + "`): " + msg + "\n\n" + answerMark}}
 		if err := intent.Write(filepath.Join(runDir, "out", "on-block.yaml"), []intent.Intention{said}); err != nil {
 			return fail(err)
 		}
