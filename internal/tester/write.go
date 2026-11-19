@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/worktree"
 	"os"
 	"os/exec"
 	"path"
@@ -20,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/JN0V/workline/internal/kit/worktree"
 
 	"go.yaml.in/yaml/v3"
 
@@ -38,7 +39,9 @@ import (
 )
 
 // The role joins the engine by name (internal/contract).
-func init() { contract.Join("tester", contract.Role{Pre: Pre, Post: Post}) }
+func init() {
+	contract.Join("tester", contract.Role{Pre: Pre, Post: Post, Tests: &contract.Tests{CommandRuns: commandRuns}})
+}
 
 const (
 	exitNothing  = 10 // pre: no question for the agent, its verdict final

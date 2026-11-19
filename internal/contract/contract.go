@@ -11,6 +11,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // Step is a role's built-in pre or post: it reads and writes the run
@@ -18,10 +19,12 @@ import (
 type Step func(runDir, repo string) int
 
 // Role is what a role's built-in code offers: either step may be nil;
-// Code, offered by the role whose code the engine merges.
+// Code, offered by the role whose code the engine merges; Tests, by the
+// role that runs the project's tests.
 type Role struct {
 	Pre, Post Step
 	Code      *Code
+	Tests     *Tests
 }
 
 // Code is what the engine and the line ask of the role whose code they
@@ -74,6 +77,13 @@ func (r *Registry) Join(name string, role Role) {
 		for n, other := range r.roles {
 			if other.Code != nil {
 				panic(fmt.Sprintf("contract: the role %q offers the code the engine merges, as %q does", name, n))
+			}
+		}
+	}
+	if role.Tests != nil {
+		for n, other := range r.roles {
+			if other.Tests != nil {
+				panic(fmt.Sprintf("contract: the role %q offers the project's tests, as %q does", name, n))
 			}
 		}
 	}
@@ -167,3 +177,36 @@ type Diffs func(forge.MergeRequest) ([]string, bool)
 // the line's reading (line.BackstopSaid), which keeps the record and the
 // normals; nil, never checked.
 var Backstop func(f forge.Forge, repo string, issue int) (string, error)
+
+// Tests is what the doctor asks of the role that runs the project's
+// tests: the tester's.
+type Tests struct {
+	// CommandRuns runs the test command its settings set on rev, apart,
+	// a minute at most watched: the command, and nil when it runs, else
+	// the finding of why not; an error when the settings do not read.
+	CommandRuns func(repo, rev string, settings map[string]any) (command string, f *verdict.Finding, err error)
+}
+
+// Tests is what the role that runs the project's tests offers, and that
+// role's name, one at most (Join); nil when none joined offers it.
+func (r *Registry) Tests() (*Tests, string) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, n := range r.names() {
+		if t := r.roles[n].Tests; t != nil {
+			return t, n
+		}
+	}
+	return nil, ""
+}
+
+// BuiltinTests is what the compiled-in role that runs the project's tests
+// offers; none joined is a programming error: the binary links the
+// tester (cmd/workline/builtins.go), a test its role or a fixture.
+func BuiltinTests() *Tests {
+	t, _ := builtins.Tests()
+	if t == nil {
+		panic("contract: no compiled-in role offers the project's tests")
+	}
+	return t
+}
