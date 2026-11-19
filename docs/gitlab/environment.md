@@ -59,7 +59,10 @@ can read them, even after `unset`, from its parent's start environment.
 - **No environment on the jobs that run your tools**: `workline:gates`,
   `workline:main`, `workline:release`, `workline:curator`. GitLab gives them no scoped
   variable. They still unset the agent's and the bot's tokens first,
-  for one left to every environment.
+  for one left to every environment. `workline:gates`, `workline:main`,
+  `workline:release:dry-run` and `workline:curator` unset all three:
+  `CLAUDE_CODE_OAUTH_TOKEN`, `WORKLINE_GITLAB_TOKEN` and `GITLAB_TOKEN`,
+  so the release's dry run runs your gates with no token.
 - **The stored base** ([main after a merge](main-after-merge.md))
   is read by `workline:base`, first: the bot's token, nothing checked
   out, no tool. Its artifact goes to `workline:gates`, or to
@@ -72,7 +75,7 @@ can read them, even after `unset`, from its parent's start environment.
   environment's variable. A job that needs the bot's token runs, and
   without it says so and stops, green.
 - **The release's dry run** declares `workline`, then unsets the
-  agent's and the bot's tokens, not `GITLAB_TOKEN`, before your
+  agent's, the bot's and `GITLAB_TOKEN` tokens, before your
   `release` line's gates run, on the default branch's code; its post
   holds the bot's.
 
