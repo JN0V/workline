@@ -170,6 +170,10 @@ then you keep or drop each change, doc by doc (`v` shows it).
 - Docs with changes not committed are refused, so the agent's are reviewed
   alone.
 - Once the run passed with nothing left to review, the ref moves to HEAD.
+- **`--json`** prints the result as JSON on stdout; a refusal prints one
+  too, its finding's rule naming the cause (`config-invalid`,
+  `not-in-repo`, `since-unknown`, `no-terminal`, `review-failed`), and the
+  reason stays on stderr.
 
 ### workline sample
 
