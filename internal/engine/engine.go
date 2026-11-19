@@ -4011,9 +4011,15 @@ func sharedPre(r *role.Role, env []string) error {
 	if runDir == "" {
 		return fmt.Errorf("WORKLINE_RUN_DIR is not set")
 	}
-	text, err := os.ReadFile(filepath.Join(r.Dir, "instruction.md"))
+	// A role with a prompts/ folder is read under it only, as the other
+	// prompts are; one without it, at its root.
+	path := filepath.Join(r.Dir, "instruction.md")
+	if st, err := os.Stat(filepath.Join(r.Dir, "prompts")); err == nil && st.IsDir() {
+		path = filepath.Join(r.Dir, "prompts", "instruction.md")
+	}
+	text, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("role %q has no instruction.md", r.Name)
+		return fmt.Errorf("role %q has no instruction.md (looked for %s)", r.Name, path)
 	}
 	if err := os.MkdirAll(filepath.Join(runDir, "in"), 0o755); err != nil {
 		return err
