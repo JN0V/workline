@@ -3,9 +3,11 @@ about: >
   No acceptance test applies: the tester's agent writes no test and
   names no proof kind, only why no test can check the issue's
   scenarios. The issue does not go back to the product owner and does
-  not fail: the tester says once, in its one comment, that no
-  acceptance test applies and quotes the agent's reason, and the issue
-  goes to the developer (ready). No Draft is opened.
+  not fail: the tester says, in its comment, that no acceptance test
+  applies and quotes the agent's reason, and the issue goes to the
+  developer (ready). No Draft is opened. The comment count is not
+  checked: the line's own record comment is written after every step
+  it routes, so the count is not the tester's alone.
 given:
   repo: tested
   setup:
@@ -28,5 +30,4 @@ expect:
     issues:
       - id: 3
         labels: ["workline:ready"]
-        comments: 1
         comment-contains: ["no acceptance test applies", "neither the multiply step's code nor its tests"]
