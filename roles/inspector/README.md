@@ -1,8 +1,8 @@
 ---
 sources:
   - roles/inspector/role.yaml
-  - roles/inspector/instruction.md
-  - roles/inspector/policy.md
+  - roles/inspector/prompts/instruction.md
+  - roles/inspector/prompts/policy.md
   - internal/builtin/inspector/inspector.go#Found
   - internal/builtin/inspector/inspector.go#prepare
   - internal/builtin/inspector/inspector.go#noAgent
