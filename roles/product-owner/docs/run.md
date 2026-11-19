@@ -33,6 +33,9 @@ waits for a run on the whole backlog.
   `workline:ready` taken off, or put back after the role moved the issue
   back to refine, a split's part closed as not planned, a closing
   reopened. That kind is proposed on that issue from then on.
+- **Parked**: an open issue labelled `workline:parked` is not read nor
+  offered next, until a person takes the label off
+  ([#1752](https://github.com/JN0V/workline/issues/1752)).
 - **The first run after a report issue**: its record moves to each
   issue's state, and the report is closed with a link to the filter.
 
@@ -116,8 +119,11 @@ Each issue comes with:
 - The engine checks each act when it applies it: never a section a person
   wrote, edited or deleted; `ready` only with Need, Validation and Scope, and no draft;
   a Scope's files read from its text, each path found or on a line
-  `New:`, or the Scope left out, the rest written
-  ([writing](writing.md)); an outsider's issue proposed; never closed as not planned.
+  `New:`, a line naming a path the repository lacks left out, the Scope
+  whole when no line is left ([writing](writing.md)); never `ready` on
+  an issue developing
+  ([#1504](https://github.com/JN0V/workline/issues/1504)); an
+  outsider's issue proposed; never closed as not planned.
 - An issue read and left with nothing that refines it — a kind or an
   order alone counts for nothing — is said in the summary, and on the
   issue: what it lacks, each act dropped and why, the agent's note, and
@@ -152,6 +158,10 @@ word decides.
   for any issue, unless you say otherwise ("not now", "leave it").
 - **Said with the "not now"**: a comment written before you took
   `workline:proposed` off brings nothing back.
+- **Asking a split**: your latest comment saying to split the issue has
+  it split, though `split` is off by default — proposed at `cautious`; never where
+  the project set `split` off itself
+  ([#1667](https://github.com/JN0V/workline/issues/1667)).
 
 On an issue waiting on you, it is "revise":
 

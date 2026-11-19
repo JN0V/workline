@@ -67,6 +67,9 @@ When the product owner pauses, or an issue gets nothing. Part of
   form), said on it when the agent rewrote nothing nor asked; write each
   as `- **Name:** Given …, When …, Then …`
   ([writing an issue](../roles/product-owner/docs/writing.md#the-rules)).
+- An issue labelled `workline:parked`: a person set it aside; no role
+  reads it until the label is taken off
+  ([#1752](https://github.com/JN0V/workline/issues/1752)).
 - `kind-missing`: a full read gave an issue no kind; the next light
   read gives it one
   ([the kind](../roles/product-owner/docs/kind.md)).

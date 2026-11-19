@@ -1,6 +1,25 @@
 ---
-sources: [internal/role/role.go, internal/doctor/levels.go, roles/product-owner/role.yaml, roles/developer/role.yaml]
-checked: 4447b0ab
+sources:
+  - internal/role/role.go#Role.MergedSettings
+  - internal/role/role.go#LoadProjectConfig
+  - internal/role/role.go#MergeLevels
+  - internal/role/role.go#LevelFrom
+  - internal/doctor/levels.go#levels
+  - internal/backlog/autonomy.go#ReadConfig
+  - internal/routing/adopt.go#SetAutonomy
+  - internal/routing/adopt.go#SetProjectAutonomy
+  - roles/product-owner/role.yaml#levels
+  - roles/product-owner/role.yaml#settings.acts
+  - roles/product-owner/role.yaml#settings.undone-max
+  - roles/developer/role.yaml#levels
+  - roles/developer/role.yaml#settings.review-rounds
+  - roles/developer/role.yaml#settings.autonomy
+  - roles/reviewer/role.yaml#settings.ai-findings
+  - internal/engine/routine.go#MergeNormal
+  - internal/engine/routine.go#kindCode
+  - internal/engine/routine.go#mergeKinds
+  - roles/developer/docs/merge.md#at-enterprising
+checked: e2e165c2d
 verified: agent:claude-code
 judged-in-parts: eb16524
 ---
@@ -62,8 +81,8 @@ A level is a role's only where it changes what the role does alone
 before a person:
 
 - **Tester**: its tests reach the default branch through a pull
-  request, which the merge's level governs; an objection is settled by
-  the product owner, never a person.
+  request, which the merge's level governs; an objection is settled
+  [as its page says](../roles/tester/README.md#frozen-tests-and-objections).
 - **Reviewer**: it judges, it decides nothing; whether its findings
   block is `ai-findings`, set by measures, not by trust.
 - **Committer, documentalist, inspector**: rules and budgets; nothing

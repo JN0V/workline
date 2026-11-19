@@ -17,8 +17,8 @@ The backlog's order puts an issue that waits on an open issue after it,
 whatever its priority; a cycle is said, never followed. Every run says,
 in the job's summary:
 
-- the first `next-max` (5) ready issues, not blocked, waiting on nothing
-  (`next-ready`),
+- the first `next-max` (5) ready issues, not blocked nor parked, waiting on
+  nothing (`next-ready`),
   each with its milestone and priority; never a split need;
 - each issue waiting (`waiting`) and each cycle (`dependency-cycle`);
 - each issue waiting on a person for more than `stuck-days` (14), with
