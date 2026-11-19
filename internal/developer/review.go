@@ -890,7 +890,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 	if len(patches) > 0 || len(takes) > 0 {
 		// The tester's rewrites first, as its record names them, then
 		// its agent's code: proven together, pushed together.
-		p, u, caps, found := proven(runDir, repo, r.At, where, slices.Concat(takes, patches), union(a.Acceptance, union(a.Code, a.Tests)), again(a.Proof), s)
+		p, u, caps, found := proven(runDir, repo, r.At, where, slices.Concat(takes, patches), union(a.Acceptance, union(a.Code, a.Tests)), Again(a.Proof), s)
 		this.Result, this.Turns, this.Tokens, this.Cached, this.Tools = p.Result, u.Turns, u.Tokens, u.Cached, u.Tools
 		// Only a frozen test red holds it: a red of its own tests is the
 		// next round's to fix, pushed as before.

@@ -51,23 +51,23 @@ func flakyOf(k *backlog.Proof, s Settings) *Flaky {
 	return &Flaky{Test: k.Test, Runs: n}
 }
 
-// again is the flaky-n-of-n proof a review round runs again: the one
+// Again is the flaky-n-of-n proof a review round runs again: the one
 // the issue run made, from its record.
-func again(p *devmark.Proof) *Flaky {
+func Again(p *devmark.Proof) *Flaky {
 	if p == nil || p.Runs == 0 {
 		return nil
 	}
 	return &Flaky{Test: p.Test, Runs: p.Runs}
 }
 
-// prove runs the project's test command on the patches laid on the commit
+// Prove runs the project's test command on the patches laid on the commit
 // the run read, stopped past the proof's seconds: a cap then. With a
 // proof-command naming `{packages}`, on the folders of the patches' files
 // and of also (the acceptance tests) alone; the pull request's own CI
 // runs the whole suite. A flaky-n-of-n proof runs it n.Runs times on
 // the one tree, `{test}` the named test; green only N runs of N, the
 // test passing in each.
-func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky, s Settings) (devmark.Proof, *devmark.Cap) {
+func Prove(repo, at string, patches []intent.Intention, also []string, n *Flaky, s Settings) (devmark.Proof, *devmark.Cap) {
 	// The flaky proof's test and runs first, kept whatever stops it: a
 	// review round reads them again from the record (again).
 	var p devmark.Proof
@@ -346,8 +346,8 @@ func agentFailed(where, why string) verdict.Finding {
 		Message: "its agent failed (" + why + "): what it edited is proven all the same; its pull request opens as a Draft"}
 }
 
-// proofFindings say the proof and the caps in the run's verdict.
-func proofFindings(where string, p devmark.Proof, caps []devmark.Cap) []verdict.Finding {
+// ProofFindings say the proof and the caps in the run's verdict.
+func ProofFindings(where string, p devmark.Proof, caps []devmark.Cap) []verdict.Finding {
 	var out []verdict.Finding
 	switch p.Result {
 	case devmark.Green:
@@ -409,6 +409,6 @@ func ProveMerge(rolesDir, repo, at string) devmark.Proof {
 		}
 	}
 	s.ProofCommand, s.rolesDir = "", rolesDir
-	p, _ := prove(repo, at, nil, nil, nil, s)
+	p, _ := Prove(repo, at, nil, nil, nil, s)
 	return p
 }
