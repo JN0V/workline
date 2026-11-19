@@ -123,26 +123,25 @@ type recorded struct {
 // recordedActs are the acts of the days [first, end) every role without a
 // draw of its own recorded on the issues, open or closed, oldest first:
 // one draw for any role, read and never written.
-func recordedActs(f forge.Forge, b forge.Backlog, first, end string) ([]Act, error) {
+func recordedActs(f forge.Forge, b forge.Backlog, first, end string) ([]Act, []string, error) {
 	all, err := b.AllIssues()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var out []Act
+	var unread []string
 	for _, is := range all {
 		ref := fmt.Sprintf("#%d", is.ID)
 		kept, err := forge.ReadKept(f, forge.Target{Kind: "issue", ID: is.ID})
 		if err != nil {
-			return nil, err
+			unread = append(unread, fmt.Sprintf("the acts recorded on %s: the issue could not be read: %v", ref, err))
+			continue
 		}
 		for i, body := range kept.Each(recordedMarker) {
 			rest := body[strings.Index(body, recordedMarker)+len(recordedMarker):]
-			end2 := strings.Index(rest, " -->")
-			if end2 < 0 {
-				continue
-			}
 			var r recorded
-			if json.Unmarshal([]byte(rest[:end2]), &r) != nil || r.Role == "" || r.Kind == "" || slices.Contains(ownDraw, r.Role) {
+			dec := json.NewDecoder(strings.NewReader(rest))
+			if dec.Decode(&r) != nil || !strings.HasPrefix(strings.TrimLeft(rest[dec.InputOffset():], " \t"), "-->") || r.Role == "" || r.Kind == "" || slices.Contains(ownDraw, r.Role) {
 				continue
 			}
 			if r.Day < first || (end != "" && r.Day >= end) {
@@ -152,5 +151,5 @@ func recordedActs(f forge.Forge, b forge.Backlog, first, end string) ([]Act, err
 				key: fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%d", ref, r.Role, r.Kind, r.Day, i)})
 		}
 	}
-	return out, nil
+	return out, unread, nil
 }
