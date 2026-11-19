@@ -38,14 +38,22 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		return nil, err
 	}
 	if who != "" {
-		return waits("", "from the developer's branch, but "+who+" is not workline's own")
+		why := "from the developer's branch, but " + who + " is not workline's own"
+		if err := sayWait(f, w, "commit", "**Waiting**: this pull request is "+why+".\n\n- A person reads it and merges it, or has the developer's branch pushed again by workline."); err != nil {
+			return nil, err
+		}
+		return waits("", why)
 	}
 	page, err := steersAny(o.Repo, w.baseTip, w.tip, n.steers)
 	if err != nil {
 		return nil, err
 	}
 	if page != "" {
-		return waits("", "the developer's, but it changes "+page)
+		why := "the developer's, but it changes " + page
+		if err := sayWait(f, w, "pages", "**Waiting for a person**: this pull request is "+why+", which only a person merges."); err != nil {
+			return nil, err
+		}
+		return waits("", why)
 	}
 	d, err := devmark.ReadMerge(f, w.mr)
 	if err != nil {
@@ -53,8 +61,14 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 	}
 	switch {
 	case d.Why != "":
+		if err := sayWait(f, w, "record", "**Waiting**: this pull request is from the developer's branch, but "+d.Why+"."); err != nil {
+			return nil, err
+		}
 		return waits("", "from the developer's branch, but "+d.Why)
 	case d.Kind == "":
+		if err := sayWait(f, w, "kind", fmt.Sprintf("**Waiting**: %s: whether it is a feature, a label on #%d says (`bug`, `enhancement`, `task`).", d.Says(), d.Issue)); err != nil {
+			return nil, err
+		}
 		return waits("", fmt.Sprintf("%s: whether it is a feature, a label on #%d says (`bug`, `enhancement`, `task`)", d.Says(), d.Issue))
 	case d.WaitsForAYes() && o.Merge != MergeEnterprising:
 		// Said once on it, where a person reviewing looks, the decision's
@@ -316,4 +330,10 @@ func featureMilestone(f forge.Forge, repo string, issue int) (string, error) {
 // the head the request is up to date).
 func baseFixable(v kept) bool {
 	return v.class == verdictRed
+}
+
+// sayWait says on the pull request why the merge job waits for it, in one
+// comment kept in place, a wait said again replacing the one before (#1882).
+func sayWait(f forge.Forge, w weighed, key, body string) error {
+	return f.Sticky(forge.Target{Kind: "merge-request", ID: w.mr.ID}, body, forge.Marker("merge-waits="+key), true)
 }
