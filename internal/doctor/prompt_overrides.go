@@ -19,6 +19,12 @@ func flatPrompts(r *Report, o Options) {
 	if cfg, err := os.UserConfigDir(); err == nil {
 		folders = append(folders, filepath.Join(cfg, "workline", "roles"))
 	}
+	// ~/.config/workline, where the run also reads them when it differs.
+	if home, err := os.UserHomeDir(); err == nil {
+		if d := filepath.Join(home, ".config", "workline", "roles"); d != folders[len(folders)-1] {
+			folders = append(folders, d)
+		}
+	}
 	for _, e := range entries {
 		roleDir := filepath.Join(o.RolesDir, e.Name())
 		for _, base := range folders {
