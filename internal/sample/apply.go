@@ -189,10 +189,11 @@ func failed(res *Result, err error) *Result {
 	return res
 }
 
-// stillVouched: the doc, as it is now, still carries the `checked` read,
-// in this repository alone.
+// stillVouched: the doc, as HEAD holds it (what the put-back rewrites, not
+// the person's working tree), still carries the `checked` read, in this
+// repository alone.
 func stillVouched(repo string, r Read) bool {
-	data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(r.Doc)))
+	data, err := exec.Command("git", "-C", repo, "--no-replace-objects", "show", "HEAD:"+r.Doc).Output()
 	if err != nil || len(r.Checked) != 1 || r.Checked[""] == "" {
 		return false
 	}
