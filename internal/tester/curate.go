@@ -99,13 +99,18 @@ func curatePre(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
+	if n := lastTests(h); s.GrowthLimit > 0 && h.Gardened > 0 && !GrowthDue(h.Gardened, n, s.GrowthLimit) {
+		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "the corpus did not grow beyond its limit",
+			Findings: []verdict.Finding{{Rule: "growth-within-limit", Level: "warn", Where: "growth-limit-percent",
+				Message: fmt.Sprintf("%d tests since %d at the last gardening: within %d%%", n, h.Gardened, s.GrowthLimit)}}})
+	}
 	t := curateTask{Base: strings.TrimSpace(head), Dir: dir, Frozen: frozen, Count: h.Count}
 	if data, err := json.Marshal(t); err != nil {
 		return fail(err)
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", curateTaskFile), data, 0o644); err != nil {
 		return fail(err)
 	}
-	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(curateTaskText(repo, dir, files, frozen, h, s)), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(curateTaskText(repo, dir, files, frozen, h, s)+mergeText(repo, s)), 0o644); err != nil {
 		return fail(err)
 	}
 	return 0
@@ -201,14 +206,15 @@ at most %d tests that are redundant, and remove them:
   a slow test a faster one dominates; one scenario tested twice.
 - **Kept**: a test that is the only one checking a behaviour, a bug's
   regression whose scenario no other test holds, a test in a frozen file.
-  Two tests that each check something the other does not are both kept:
-  never merged into one. When in doubt, keep it.
+  Two tests that each check something the other does not are both kept.
+  When in doubt, keep it.
 - **Obsolete**: a test whose commit message links a closed bug ("#N")
   and which covers no line that another test misses is obsolete: remove
   it. A test with no closed-bug link in its commit message is never
   proposed for removal as obsolete.
-- **Remove only**: never rewrite a test, never merge two into one, never
-  add a line. A test stays tied to its issue's scenario, and the proof
+- **Merge**: you may propose merging two tests in a note, never decide
+  it and never write it: the curator or a person decides.
+- **Remove only**: never rewrite a test, never add a line. A test stays tied to its issue's scenario, and the proof
   covers a removal only: a file with a line that is not the base's is
   refused.
 - **Answer**: each test file you change, whole, as a `+"`patch`"+` with `+"`file`"+`
@@ -288,6 +294,7 @@ func (t curateTask) weighed() error {
 		h.Curated = map[string]int{}
 	}
 	h.Curated[t.Dir] = t.Count
+	h.Gardened = lastTests(h)
 	return writeHistory(hist, h)
 }
 

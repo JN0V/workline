@@ -77,6 +77,11 @@ type Settings struct {
 	CuratorWindow   int    `json:"curator-window"`
 	SuiteMaxSeconds int    `json:"suite-max-seconds"`
 	CoverageReport  string `json:"coverage-report"`
+	// GrowthLimit is the percent the corpus may grow over the last
+	// gardening's count before the curator gardens it (0: always); TestCoverage
+	// is a JSON file, test -> covered lines, the merge proposals read (#264).
+	GrowthLimit  int    `json:"growth-limit-percent"`
+	TestCoverage string `json:"test-coverage-map"`
 	// The curator's removals (`workline test curate`, step 7): the test
 	// files it may change; files listing tests it never removes; the
 	// tests a run removes at most; the proof's command on the touched
