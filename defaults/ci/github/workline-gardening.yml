@@ -107,7 +107,7 @@ jobs:
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
-        if: steps.line.outputs.proposed == 'true'
+        if: steps.line.outputs.proposed == 'true' || failure() || (steps.line.outputs.status != '' && steps.line.outputs.status != '0')
         with: {name: workline-runs, path: "line.json\n.workline-runs", include-hidden-files: true}
 
       - name: Verdict
@@ -116,6 +116,11 @@ jobs:
           if [ "$status" = 3 ]; then
             echo "::warning title=workline::the agent could not be reached; the docs are listed in the summary, for a person"
             exit 0
+          fi
+          if [ "${status:-0}" != 0 ]; then
+            # The reason in the log: the summary, as an error annotation.
+            msg=$(jq -r '.summary // empty' line.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the run ended with status $status, see its result file}"
           fi
           exit "$status"
       # What this job's agent calls spent, a line a run: role, target,

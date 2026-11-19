@@ -283,6 +283,7 @@ workline:gates:
       --input range=$base..$CI_COMMIT_SHA --gates-kept .workline-kept
       --code-quality gl-code-quality-gates.json --summary gates-summary.md --summary gates-summary.html
       --json > gates.json || status=$?
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   # Its summary named its own: the judge, given this job's artifacts,
   # writes workline-summary.md afresh.
@@ -331,6 +332,7 @@ workline:judge:
       --verdict workline-verdict.json --verdict-head "${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" --json > line.json || status=$?
     - '[ -n "${WORKLINE_GITLAB_TOKEN:-}" ] || printf "\n- **warn lenses not run apart**: WORKLINE_GITLAB_TOKEN not set, they read in this job, on the path of the verdict\n" >> workline-summary.md'
     - *ids-keep                     # for this merge request's next pipeline
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   # An agent out of reach (3) warns, not taken for the change's fault: a
   # person judges what it would have.
@@ -434,6 +436,7 @@ workline:warn:
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA} $lenses ${draft:+--input draft=$draft}
       ${gates:+--gates-from $gates} --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - '[ "$status" != 3 ] || echo "workline: the agent could not be reached: the lenses that warn did not read this push"'
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - '[ "$status" = 0 ] || [ "$status" = 3 ] || exit $status'
   allow_failure: true
   after_script: *summary
@@ -535,6 +538,7 @@ workline:garden:judge:
     - *no-credential
     - status=0
     - workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns, as on a merge request
   after_script: [*summary, *tally]
@@ -564,6 +568,7 @@ workline:garden:apply:
     # kept in place, reported only. Needs the first
     # release after v0.73.0.
     - workline size --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   after_script: [*summary, *tally]
   artifacts:
@@ -629,6 +634,7 @@ workline:objection:judge:
     - status=0
     - workline test answer --merge-request "$MR_IID" --ai "$ai" --no-apply --forge gitlab --json > answer.json || status=$?
     - jq -r '(.pending // [])[0] // empty | split("/") | last' answer.json > answer-run   # a run left to apply, by name; none when it stopped before
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the objection waits for the next
   after_script: *tally
@@ -657,6 +663,7 @@ workline:objection:apply:
     - '[ "$(cat answer-head 2>/dev/null)" = "$head" ] || { echo "workline: the judge reports a head other than $head, the one read before it: nothing applied"; exit 1; }'
     - status=0
     - workline apply "$run" --from-merge-request "$MR_IID" --head "$head" --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   after_script: [*summary, *tally]
   artifacts:
@@ -799,6 +806,7 @@ workline:develop:judge:
         rm -rf .workline-test-ids; ids "$CI_DEFAULT_BRANCH" workline:develop:judge
         ! ls .workline-test-ids/*.json >/dev/null 2>&1 || (cd .workline-test-ids && ls *.json > index)
       fi
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the issue waits for the next run
   after_script: [*summary, *tally]
@@ -821,6 +829,7 @@ workline:develop:apply:
     - '[ -s line.json ] || { echo "nothing proposed: nothing to apply"; exit 0; }'
     - status=0
     - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html || status=$?
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   after_script: [*summary, *tally]
   artifacts:
@@ -881,6 +890,7 @@ workline:review:judge:
     - status=0
     - workline develop --merge-request "$MR_IID" --ai "$ai" --no-apply --forge gitlab --json > round.json || status=$?
     - jq -r '(.pending // [])[0] // empty | split("/") | last' round.json > round-run   # a run left to apply, by name
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the review waits for the next verdict
   after_script: *tally
@@ -907,6 +917,7 @@ workline:review:apply:
     - '[ "$(cat round-head 2>/dev/null)" = "$head" ] || { echo "workline: the judge reports a head other than $head, the one read before it: nothing applied"; exit 1; }'
     - status=0
     - workline apply "$run" --from-merge-request "$MR_IID" --head "$head" --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   after_script: [*summary, *tally]
   artifacts:
@@ -1013,6 +1024,7 @@ workline:curator:judge:
     - workline test curate --history curator-history.json --ai "$ai" --no-apply --forge gitlab --json > curate.json || status=$?
     - jq -r '(.pending // [])[0] // empty | split("/") | last' curate.json > curate-run   # a run left to apply, by name
     - jq -r '.summary // empty' curate.json
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the next week weighs again
   after_script: *tally
@@ -1036,6 +1048,7 @@ workline:curator:apply:
     - 'printf "%s" "$run" | grep -Eqx "[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+" && [ -d "$WORKLINE_RUNS_DIR/$run" ] || { echo "workline: the judge named no run of its own: $run"; exit 1; }'
     - status=0
     - workline apply "$run" --summary workline-summary.md --summary workline-summary.html || status=$?
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   after_script: [*summary, *tally]
   artifacts:
@@ -1063,6 +1076,7 @@ workline:release:
     - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
     - status=0
     - workline route release --ai none --forge none --summary workline-summary.md --summary workline-summary.html --json > release.json || status=$?
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   after_script: *summary
   artifacts:
@@ -1105,6 +1119,7 @@ workline:main:
       { echo "$CI_COMMIT_SHA"; cat .workline-kept/commits 2>/dev/null || true; } | awk 'NF && !seen[$0]++' | head -n 20 > .workline-kept/next || true
       : > .workline-kept/commits; while read -r c; do [ ! -s ".workline-kept/$c.json" ] || echo "$c" >> .workline-kept/commits; done < .workline-kept/next
       for f in .workline-kept/*.json; do grep -qxF "$(basename "$f" .json)" .workline-kept/commits || rm -f "$f"; done; rm -f .workline-kept/next
+    - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
   allow_failure: {exit_codes: [3]}  # a source repository out of reach warns, as on a merge request
   after_script: *summary
