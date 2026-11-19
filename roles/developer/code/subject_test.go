@@ -15,7 +15,7 @@ import (
 // roleCommitter is the committer's settings as its role ships them.
 func roleCommitter(t *testing.T) commitmsg.Settings {
 	t.Helper()
-	r, err := role.Load("../../roles", "committer")
+	r, err := role.Load("../..", "committer")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestSubjectFitsTheProjectsLimit(t *testing.T) {
 // A project config that cannot be read is said, never passed over in
 // silence: the role's own rules then, its limit kept.
 func TestCommitterSettingsUnreadSaid(t *testing.T) {
-	t.Setenv("WORKLINE_ROLES_DIR", "../../roles")
+	t.Setenv("WORKLINE_ROLES_DIR", "../..")
 	repo := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(repo, ".workline"), 0o755); err != nil {
 		t.Fatal(err)

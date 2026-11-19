@@ -1,7 +1,7 @@
 ---
 sources:
-  - internal/developer/proof.go
-  - internal/developer/developer.go
+  - roles/developer/code/proof.go
+  - roles/developer/code/developer.go
   - internal/tester/onchange.go
   - internal/tester/missing.go
   - internal/tester/fresh.go

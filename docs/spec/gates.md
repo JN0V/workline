@@ -18,8 +18,8 @@ sources:
   - internal/gate/sarif.go#parse
   - internal/line/line.go#runGate
   - cmd/workline/main.go#gateCmd
-  - internal/developer/bounds.go#ciFiles
-  - internal/developer/bounds.go#checker.rule
+  - roles/developer/code/bounds.go#ciFiles
+  - roles/developer/code/bounds.go#checker.rule
   - roles/committer/role.yaml#duties.writes
   - roles/developer/role.yaml#duties.writes
   - roles/documentalist/role.yaml#duties.writes

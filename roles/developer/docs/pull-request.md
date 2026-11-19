@@ -1,8 +1,8 @@
 ---
 sources:
-  - internal/developer/pullrequest.go
-  - internal/developer/subject.go
-  - internal/developer/developer.go
+  - roles/developer/code/pullrequest.go
+  - roles/developer/code/subject.go
+  - roles/developer/code/developer.go
   - internal/engine/engine.go
   - internal/agent/claude.go
   - internal/builtin/reviewer/once.go

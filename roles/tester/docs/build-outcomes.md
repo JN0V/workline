@@ -7,7 +7,7 @@ sources:
   - internal/tester/frozen.go#record
   - internal/tester/objection.go#record.rewritten
   - internal/tester/objection.go#unprovenSaid
-  - internal/developer/pullrequest.go#body
+  - roles/developer/code/pullrequest.go#body
 checked: c46a93d6c
 verified: agent:claude-code
 ---

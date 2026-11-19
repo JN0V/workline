@@ -9,8 +9,8 @@ import (
 	_ "github.com/JN0V/workline/internal/builtin/documentalist"
 	_ "github.com/JN0V/workline/internal/builtin/inspector"
 	_ "github.com/JN0V/workline/internal/builtin/reviewer"
-	_ "github.com/JN0V/workline/internal/developer"
 	_ "github.com/JN0V/workline/internal/tester"
 	_ "github.com/JN0V/workline/roles/committer/code"
+	_ "github.com/JN0V/workline/roles/developer/code"
 	_ "github.com/JN0V/workline/roles/product-owner/code"
 )

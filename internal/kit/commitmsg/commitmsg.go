@@ -42,7 +42,7 @@ type Settings struct {
 }
 
 // SettingsFrom reads the role's settings, as the engine merges them: the
-// developer writes its commits' subjects to them (internal/developer).
+// developer writes its commits' subjects to them (roles/developer/code).
 func SettingsFrom(m map[string]any) (Settings, error) {
 	var s Settings
 	data, err := json.Marshal(m)

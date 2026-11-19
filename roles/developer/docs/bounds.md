@@ -1,11 +1,11 @@
 ---
 sources:
-  - internal/developer/bounds.go
+  - roles/developer/code/bounds.go
   - internal/work/scope.go
-  - internal/developer/developer.go
-  - internal/developer/worktree.go
-  - internal/developer/words.go
-  - internal/developer/prbounds.go
+  - roles/developer/code/developer.go
+  - roles/developer/code/worktree.go
+  - roles/developer/code/words.go
+  - roles/developer/code/prbounds.go
   - defaults/ci/github/workline-bounds.yml
   - defaults/ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go

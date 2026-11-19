@@ -30,7 +30,7 @@ import (
 )
 
 // developerSaid is the developer's one comment on an issue: its claim,
-// a wait, or a claim let go (internal/developer, said.go).
+// a wait, or a claim let go (roles/developer/code, said.go).
 var developerSaid = forge.Marker("sticky=" + developerRole + "/claim")
 
 // freed says why issue is, in the developer's state s, is free for the
