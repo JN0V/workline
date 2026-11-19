@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/undo.go, internal/backlog/backlog.go, internal/backlog/acts.go, internal/sample/acts.go, internal/sample/draw.go, internal/backlog/autonomy.go, internal/backlog/ledger.go]
+sources: [internal/backlog/undo.go#findUndone, internal/backlog/undo.go#MovedBack, internal/backlog/undo.go#readiedByPerson, internal/backlog/undo.go#Plan.recordDone, internal/backlog/backlog.go#Plan.readRecord, internal/backlog/ledger.go#demoted, internal/backlog/ledger.go#UndoneMax, internal/backlog/acts.go#ReadActs, internal/backlog/acts.go#SuggestFromActs, internal/backlog/acts.go#SuggestAfter, internal/backlog/acts.go#SuggestUndone, internal/sample/draw.go#productOwnerActs, internal/sample/sample.go#pick, internal/sample/sample.go#OneIn, internal/sample/acts.go#formerActsTitle, internal/sample/acts.go#foldActs, internal/sample/acts.go#autonomyLines, internal/sample/acts.go#autonomyFinding]
 status: draft
-checked: 8538d558
+checked: 908c235f2
 verified: agent:claude-code
 ---
 # Trust
@@ -11,7 +11,7 @@ Part of [Acts on the backlog](../backlog-acts.md): the acts a person undoes, fou
 
 A closing is wrong when its issue is open again: the closed issue's state
 keeps the kind it was closed with (`closed`); found open at a later run,
-that is an act undone (`wrong-closing`), the issue read again.
+that is an act undone (`wrong-closing`), the issue [read again](reading.md).
 
 Any other act of the role's a person undoes is found the same way, at the
 next run — with or without an agent — from its issue's `done` and the
@@ -25,14 +25,15 @@ forge, the evidence in the finding `undone`:
 | milestone | its milestone is the one it had before (none included) |
 | ready | `workline:ready` (or `workline:needs-tests`, on its way there) is no longer on the open issue, a person took it off; workline's own account taking it off, as the forge's label events say, is a move of the line ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)), no act undone; so is an issue in doing, the developer's claim, whoever took the label off ([#1081](https://github.com/JN0V/workline/issues/1081)) |
 | unready | a person put the issue back to ready, or to its tests; the line doing so is no undo |
-| split | a child listed in the parent's state is closed as not planned (GitHub; GitLab keeps no reason) |
+| split | a child listed in the parent's state is closed as not planned (GitHub; [GitLab keeps no reason](opening.md)) |
 | depend | a blocker it added, still open, is no longer among the issue's blockers: the link or the line taken off |
 
 An act undone is kept in its issue's state (`undone`): that kind is
-proposed on that issue from then on (`undone-here`, ADR-0038, amended).
+proposed on that issue from then on ([`undone-here`](autonomy.md#the-levels), ADR-0038, amended).
 Undone `undone-max` times (3) across the open issues' states, closings
 reopened included, the kind is proposed on every issue (`demoted`) until
-fewer are. A title, priority or milestone a person set to a third value
+fewer are. A title, a milestone or — without the role's `priority` or `effort`
+— a priority a person set to a third value
 is theirs: the act is no longer watched. An act whose issue is closed is
 no longer watched; a split, once each child is closed or gone from the
 forge; a depend, once each blocker it added is closed — the link then
@@ -44,10 +45,10 @@ choice, and are not watched.
 
 Part of the weekly sample of every role's acts, with no setting
 (ADR-0046, folding in ADR-0033's issue of its own; `weekly-sample` is no
-longer read, `setting-gone`). `workline sample` reads every issue's
+longer read, [`setting-gone`](../../troubleshooting-product-owner.md#paused-or-nothing-at-all)). `workline sample` reads every issue's
 state, open and closed — one forge call an issue — for the acts done
 alone (`did`, a person's yes left out): of those whose day falls in the
-week sampled, one in ten of each kind, rounded up, drawn the same on a
+week sampled, one in ten [of each kind](../../weekly-sample.md), rounded up, drawn the same on a
 rerun, each re-checked by the auditor on what its record says it read
 (`at`, `model`, `body`; [The issue's state](state.md)). Each says, when
 a person undid it since, what shows it (a closing reopened, the state's

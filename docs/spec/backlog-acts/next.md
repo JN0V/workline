@@ -32,7 +32,7 @@ left hold a cycle: it is reported, the cycle's first issue by `Less` placed — 
 the order goes on — the cycle never followed. `ready` is allowed on a blocked issue,
 its sections say it is understood, not that it can start; but **the
 first ready issue offered** is the first in the order bearing
-`workline:ready`, not `workline:blocked`
+`workline:ready`, not `workline:blocked` nor `workline:parked`
 ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)),
 that waits on no open issue and has no parts
 (`backlog.Offered`, `backlog.NextReady`) — to whoever builds next, person
@@ -51,7 +51,7 @@ run, with or without an agent, from the forge as it is — nothing of them
 stored:
 
 - **Next** (`next-ready`): the first `next-max` (5) issues of the order
-  (`backlog.Order`): bearing `workline:ready`, not blocked, waiting on no open issue,
+  (`backlog.Order`): bearing `workline:ready`, not blocked nor parked, waiting on no open issue,
   no parts; each with its milestone and priority. At 0, none. With the
   role's `priority` or `effort` set, each with its cell of the grid
   instead — "High · Effort Low → quick win", a value missing said, its

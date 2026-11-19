@@ -30,7 +30,9 @@ role." —, a demotion of the merge policy, main's findings after a merge
 — its key `workline:main-findings`, or the release dry run's part,
 `workline:release-dry-run-end` —) is never read nor listed, and
 no act is done nor proposed on it (`workline-issue`, #429); a role's
-finding and an import are work. The order: an issue a person who counts commented on since the role read it
+finding and an import are work. Nor is an issue a person labelled
+`workline:parked` read
+([#1752](https://github.com/JN0V/workline/issues/1752)). The order: an issue a person who counts commented on since the role read it
 — waiting on them ([A person's answers](answers.md)), set aside, or neither: their
 word, read first, the agent told so —, or a question of the role's
 unanswered past `acts.ask.wait`, read once for its assumption

@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/backlog/acts.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go#State, internal/backlog/backlog.go#HiddenLevel, internal/backlog/backlog.go#ReadState, internal/backlog/backlog.go#readBlock, internal/backlog/backlog.go#hidden, internal/backlog/backlog.go#hide, internal/backlog/backlog.go#FenceFor, internal/backlog/backlog.go#yamlBlock, internal/backlog/backlog.go#openYAML, internal/backlog/backlog.go#Pending, internal/backlog/acts.go#Did, internal/backlog/undo.go#Done, internal/backlog/undo.go#Undo, internal/backlog/autonomy.go#Read, internal/backlog/autonomy.go#ReadFile, internal/backlog/plain.go#DescriptionName, internal/backlog/plain.go#RolesTop, internal/backlog/opening.go#Openings.finish, tests/conformance/cases/product-owner/no-state-no-act.yaml, tests/conformance/cases/product-owner/broken-state-writes-nothing.yaml]
 status: draft
 checked: 8538d558
 verified: agent:claude-code
@@ -38,27 +38,33 @@ proposed:                                # the acts proposed on it, each as deci
 done: [{act: ready, level: normal}]      # its acts done alone a person may undo (Trust)
 undone: [{act: rename, evidence: …, day: '2026-10-08'}]  # its acts a person undid: that kind proposed here
 did: [{act: refine, level: normal, day: '2026-10-08', at: 1a8e5a4, model: 'claude:claude-sonnet-5', body: 3f9a1c0e2b7d, line: …}]  # what the role did, its day, what it read; `yes` when a person's
-closed: close-duplicate                  # the kind it was closed with: open again, undone
+closed: close-duplicate                  # the kind it was closed with: open again, undone (Trust)
 label: workline:proposed                 # the label the role put on it while it waits on a person
 aside: 3f9a1c0e2b7d                      # set aside by a person, at this body: nothing proposed until it changes
 heard: 2                                 # the comments that count the role read: one more is a person's word since
+heard-last: '2894531207'                 # the id of the last of them: one deleted and another written is still unread
 revisions: 1                             # its drafts revised for a person's comments
 rules: 2                                 # the way of reading it was last read under (backlog.Reading)
 left: bob                                # left to a person past its revisions, after bob wrote: said above while it waits
-proof: {kind: docs-checks, reason: "…", answers: af1c2ed6ea0a}   # the proof kind it picked where the tester found no test possible, the tester's word it answers
+proof: {kind: docs-checks, reason: "…", answers: af1c2ed6ea0a}   # the proof kind it picked where the tester found no test possible, the tester's word it answers (No test possible)
 no-test: af1c2ed6ea0a                    # the tester's "no test possible" last given to the agent
+retest: af1c2ed6ea0a                     # the tester's "no test possible" it sent the issue back to its tests for, unchanged: tried again once
 silent: "it lacks Scope, …; `sources` dropped: …; its note: …"  # read and left with nothing that refines it, the acts dropped, and why: said above until the role acts on it
 unread: 3f9a1c0e2b7d                     # the body whose Validation it was told once to rewrite in a form the tester reads
 assumed: 2                               # the round of the question it took an assumption on (A question nobody answers)
 assumed-at: '2026-10-09T08:00:00Z'       # when: a person's comment after it answers it
 told: 2                                  # the round the agent was told is unanswered past acts.ask.wait
+size: large                              # the size tier the role granted, once: taken off, a person's (Split on size)
+split-after-tests: true                  # a bug predicted past its size at refine: split once its tests are written (Split on size)
+answer-held: 1                           # the counted comments it held when its ready was held for a person's answer: read once more
+dropped: 3f9a1c0e2b7d                    # the body whose Scope rewrite was dropped whole: the line wakes the role on it again, once
 ```
 
 The comment says, above the state, what the role did and proposes there,
 the state below it in an HTML comment, out of sight on the page and in the
 mail ([On the issue](on-the-issue.md)). The block's fence is longer than any
 run of backticks in it: a text holding a code fence is kept as written.
-What would end the HTML comment (`-->`, `--!>`) is escaped as `--&gt;`,
+What would end the HTML comment (`-->`, `--!>`) is escaped (`--&gt;`, `--!&gt;`),
 `&` as `&amp;`, and read back as written; a state an earlier engine
 folded in `<details>` still reads.
 
@@ -70,25 +76,28 @@ open issue's); `model`, the agents and models the run asked
 accepted. An engine before ADR-0046 kept none of them.
 
 `sections`, `wrote` and `deleted` keep each section under the heading it
-had in the body, and are read by its meaning (`work.Headings`,
-[ADR-0039](../../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)):
+had in the body, and are read by its meaning
+([ADR-0039](../../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md#old-names-read-forever)):
 a section deleted under one heading is never written under another of
 the same meaning.
 
 Two carrying the marker, the last is read: on GitLab only a note's author
 edits it, so one another token wrote is left, and the state is written
-anew after it (ADR-0023).
+anew after it
+([ADR-0023](../../adr/0023-the-project-bot-keeps-a-gitlab-backlog.md#decision)).
 
 An issue without that comment, or with one that does not read, is never
 acted on: an act on it is dropped (`no-state`, `state-broken`) and nothing is
 written on the issue. One that does not read is never taken for none, which
 would write a state anew over what the role held there: `pre` says it each
 run, a warning (`state-broken`, #302), until a person mends that comment or
-deletes it. The role's `pre` gives an issue it takes its first
-state, `confirmed` at the commit it read, with no sources until an act
-names them. An issue another role opens for what it found outside its task
+deletes it ([A record it cannot read](../../troubleshooting-product-owner.md#a-record-or-a-file-it-cannot-read)).
+The role's `pre` gives an issue with none its first state, `confirmed`
+at the commit the run is on, with no sources until an act names them; one not read in that run is read at a later one. An issue another role opens for what it found outside its task
 (the reviewer's, ADR-0020) gets its state from the engine as it is opened —
 its sources, and the commit it was seen at — and `needs-triage`; it is
 never read yet, so a later run reads it, in its catch-up after a person's
-issues, and its agent is told it
-is that role's draft to refine ([Opening issues](opening.md)).
+issues ([Reading](reading.md)), and its agent is told it is that role's
+draft to refine ([ADR-0018](../../adr/0018-the-product-owner.md#opening-issues-for-every-role),
+[Opening issues](opening.md)). The `proof` record is told in
+[No test possible](refine.md#no-test-possible-a-proof-kind-picked).

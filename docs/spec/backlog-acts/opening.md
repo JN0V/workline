@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/opening.go, internal/engine/engine.go, internal/engine/backlog.go]
+sources: [internal/backlog/opening.go#Opening, internal/backlog/opening.go#Opening.said, internal/backlog/opening.go#Openings, internal/backlog/opening.go#Openings.holder, internal/backlog/opening.go#Openings.Open, internal/backlog/opening.go#Openings.finish, internal/backlog/opening.go#CodeKey, internal/backlog/opening.go#TitleKey, internal/backlog/opening.go#LabelTriage, internal/backlog/backlog.go#ImportKey, internal/backlog/change.go#importedFrom, internal/engine/backlog.go#applier.openings, internal/engine/backlog.go#applier.openIssue, internal/engine/backlog.go#applier.split, internal/forge/forge.go#Forge, internal/forge/gitlab.go#gitlab.issues, internal/forge/local.go#Local.AllIssues]
 status: draft
-checked: 8538d558
+checked: 908c235f2
 judged: 8b6aecc
 verified: agent:claude-code
 ---
@@ -20,5 +20,5 @@ with no AI:
 | Open, holding it | Left as it is: nothing written, whichever role opened it. |
 | Closed as not planned or duplicate; for an import's text or a split's child, closed at all | A person's no, or a text settled: nothing written (`issue-closed`, said in the run). |
 | A finding's, closed otherwise | Done, or no reason kept (GitLab, the local forge): one comment, once, "found again" with the commit; left closed (`issue-closed`). |
-| New, past `issues-max` | Not opened, counted (`issues-capped`); found again, opened at a later run. Three by default; the product owner's import has its own cap (`open`). |
+| New, past `issues-max` | Not opened, counted (`issues-capped`); found again, opened at a later run. Three by default; the product owner's import has [its own cap](import.md) (`open`). |
 | New | Opened: the role named in a line — an import's hidden, `<!-- workline:opened from `ROADMAP.md`, lines 7 to 8 by the product-owner role -->`; a finding's, where the role found it when it says (`found`): "Found by the reviewer role while reviewing ccffcb2, outside that change."; for a finding, `<!-- workline:opened-by=<role> -->` and `needs-triage`; the product owner's state, written last, keeping a digest of the text it was opened with (`wrote: {Description: …}`) — a run stopped before it, resumed, finds the issue open and writes what it lacks. |

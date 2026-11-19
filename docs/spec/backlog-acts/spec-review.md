@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/spec.go, internal/backlog/backlog.go, internal/routing/routing.go, internal/builtin/productowner/productowner.go]
+sources: [internal/routing/routing.go#Config.Follows, internal/backlog/spec.go#SpecReviewer, internal/backlog/spec.go#SpecKey, internal/backlog/spec.go#SpecMarker, internal/backlog/spec.go#SpecReview, internal/backlog/spec.go#specRecord, internal/backlog/spec.go#SpecReview.String, internal/backlog/spec.go#SpecRecordUnread, internal/backlog/spec.go#SpecUnread, internal/backlog/spec.go#SpecHold, internal/backlog/spec.go#SpecCleared, internal/backlog/spec.go#LeftOpen, internal/backlog/spec.go#SpecOpen, internal/backlog/spec.go#SpecForTester, internal/backlog/spec.go#Rewritable, internal/backlog/spec.go#Revisable, internal/backlog/spec.go#Unrevised, internal/backlog/acts.go#DidDays, internal/builtin/productowner/productowner.go#bodyMax, internal/builtin/productowner/productowner.go#specFindings, internal/backlog/backlog.go#refined, internal/line/states.go#cleanReview, internal/backlog/backlog.go#BodyDigest, internal/backlog/backlog.go#Plan.recordDrafted, internal/engine/backlog.go#keepBody, internal/backlog/opening.go#Openings.finish, internal/backlog/backlog.go#ChildBody]
 status: draft
 checked: 8538d558
 verified: agent:claude-code
@@ -32,7 +32,8 @@ reads refined issues and keeps what it found in one comment on each, `<!-- workl
   accepts the issue.
 - **`ready` is held** by the engine's check (`backlog.SpecHold`), after
   the Need, Validation and Scope, whoever proposed it — the agent, or the engine
-  itself — and at every level: `spec-not-reviewed` (no record, or
+  itself — and at every level, a check, not a mode
+  ([ADR-0020](../../adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-07-128-a-spec-on-the-forge)): `spec-not-reviewed` (no record, or
   one for another body, its rounds not spent: a refine in the same run changes it),
   `spec-findings-open`, `spec-rounds-spent`. Findings in the
   Verification alone hold nothing: the tester's
@@ -51,21 +52,23 @@ reads refined issues and keeps what it found in one comment on each, `<!-- workl
     the forge's edit history;
   - never the Verification, the tester's: a finding there is given to
     the tester when it writes the tests (`backlog.SpecForTester`);
-  - the person's part, Need, Validation, an example, a bug's steps, only
-    while it is the role's own: a draft no person accepted, or a text
+  - the person's part, its Need and Validation (never an example nor a
+    bug's steps: `backlog.Revisable`), only while it is the role's own: a draft no person accepted, or a text
     whose digest is the one the state's `wrote` holds — recorded by every
     refine for what it wrote, and by a split for its children's four
     sections. A person's is kept (`section-kept`): the agent asks its
-    reporter. Issues refined before #128 have no `wrote`: their sections
+    reporter — none, once a person accepted the issue
+    ([#1356](https://github.com/JN0V/workline/issues/1356)). Issues refined before #128 have no `wrote`: their sections
     read as a person's, but a Need or Validation still marked a draft,
     the role's.
 - **Answered under the rule before**: the state's `revised` keeps the
   sections the role was given with a review (`answered`). A review it
   answered by asking a person for a section it may rewrite now
   (`backlog.Unrevised`) is read again once; the line counts refine's
-  step due again for it, once a review (its record's `revise`).
+  step due again for it, once a review (its record's `revise`,
+  [routing](../routing.md#once-a-state-the-record)).
 - **Released**: once the record holds the body as it is, nothing open,
-  not stopped, and the Need, Validation and Scope pass, `pre` proposes `ready` itself
+  not stopped — or its findings all in the Verification —, and the Need, Validation and Scope pass, `pre` proposes `ready` itself
   (`own`), with no agent, under `acts.ready`'s mode and cap.
   Never on an issue the product owner left open itself
   ([#1395](https://github.com/JN0V/workline/issues/1395);
@@ -78,7 +81,7 @@ reads refined issues and keeps what it found in one comment on each, `<!-- workl
   person's comment since is read by the agent first, whose own `ready`
   is taken; the body changed and reviewed again, the engine readies it.
 - **At once, on `issue`** ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md),
-  [routing](../routing.md)): refine's step runs the reviewer after the
+  [routing](../routing.md#the-line-of-states)): refine's step runs the reviewer after the
   product owner on that issue's spec alone; its review, written since,
   makes the step due again, and the product owner reads it then.
 - **Off** (the reviewer not after it in a line): nothing changes.
