@@ -672,6 +672,12 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		}
 	}
 	block := func(rule, msg string) int {
+		// Said in the thread too, where the builder looks (#1669): the
+		// engine posts on-block.yaml when the run is blocked.
+		said := a.reply("**The tester's answer is refused** (`" + rule + "`): " + msg)
+		if err := intent.Write(filepath.Join(runDir, "out", "on-block.yaml"), []intent.Intention{said}); err != nil {
+			return fail(err)
+		}
 		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the tester's answer is refused",
 			Findings: []verdict.Finding{{Rule: rule, Where: a.File, Message: msg}}})
 	}
