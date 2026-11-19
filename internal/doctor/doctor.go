@@ -280,6 +280,7 @@ func repository(r *Report, o Options) {
 			Fix:     "git fetch --unshallow   # in CI: actions/checkout's `fetch-depth: 0`, GitLab's `GIT_DEPTH: 0`"})
 	}
 	docs(r, o, cfg)
+	flatPrompts(r, o)
 	languages(r, o)
 	languagePacks(r, o, cfg)
 	testFiles(r, o, cfg)

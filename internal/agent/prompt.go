@@ -13,6 +13,7 @@ import (
 
 	"github.com/JN0V/workline"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -103,6 +104,23 @@ func facet(req Request, name string) (string, bool) {
 	return "", false
 }
 
+// flatOverrides refuses a run whose role has its prompts under prompts/ while
+// an override still holds a file at its old, flat path: it would no longer be
+// read, and the shipped prompt would run in its place unseen. Each such file
+// is named with the path it now goes to, even where the new one exists.
+func flatOverrides(req Request) error {
+	var lines []string
+	for _, dir := range facetDirs(req)[:len(facetDirs(req))-1] {
+		for _, f := range role.FlatPrompts(req.Role.Dir, dir) {
+			lines = append(lines, fmt.Sprintf("  %s: move it to %s (remove it, if that one exists)", f.Old, f.New))
+		}
+	}
+	if len(lines) == 0 {
+		return nil
+	}
+	return fmt.Errorf("role %q reads its prompts under prompts/ now; an override left at its old path would no longer be read:\n%s", req.Role.Name, strings.Join(lines, "\n"))
+}
+
 // Prompt assembles what the agent reads, in the contract's order. The
 // system prompt is what every call of the role shares, byte for byte from
 // one task to the next: persona, knowledge, instruction and output
@@ -111,6 +129,9 @@ func facet(req Request, name string) (string, bool) {
 // skills its pre named, a refused answer's feedback, and the policy,
 // last on purpose.
 func Prompt(req Request) (system, user string, err error) {
+	if err := flatOverrides(req); err != nil {
+		return "", "", err
+	}
 	persona, _ := facet(req, "persona.md")
 	if persona == "" {
 		persona = fmt.Sprintf("You are the %s of a software project. %s", req.Role.Name, req.Role.Mission)
