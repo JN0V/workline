@@ -40,11 +40,17 @@ func FlatPrompts(roleDir, override string) []FlatPrompt {
 		return nil
 	})
 	var out []FlatPrompt
-	_ = filepath.WalkDir(override, func(p string, d fs.DirEntry, err error) error {
+	// WalkDir does not follow a symlink given as its root: resolve it, and
+	// report paths under the folder as given.
+	root := override
+	if r, err := filepath.EvalSymlinks(override); err == nil {
+		root = r
+	}
+	_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
-		rel, rerr := filepath.Rel(override, p)
+		rel, rerr := filepath.Rel(root, p)
 		if rerr != nil || rel == "." {
 			return nil
 		}
@@ -56,7 +62,7 @@ func FlatPrompts(roleDir, override string) []FlatPrompt {
 			return nil
 		}
 		if shipped[rel] || isPromptPath(rel) {
-			out = append(out, FlatPrompt{Old: p, New: filepath.Join(override, "prompts", filepath.FromSlash(rel))})
+			out = append(out, FlatPrompt{Old: filepath.Join(override, filepath.FromSlash(rel)), New: filepath.Join(override, "prompts", filepath.FromSlash(rel))})
 		}
 		return nil
 	})
