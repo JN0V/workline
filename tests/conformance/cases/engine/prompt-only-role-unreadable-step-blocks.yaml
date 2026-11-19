@@ -1,0 +1,18 @@
+case: engine/prompt-only-role-unreadable-step-blocks
+about: "A role whose pre file exists but cannot be read (a link to itself, which stat cannot follow) does not pass: the run says the file cannot be read, and the shared pre does not run, so the agent is never asked."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p ../roles-unreadable && cp -r $FIXTURES/roles/prompt-only ../roles-unreadable/prompt-only && ln -s pre ../roles-unreadable/prompt-only/pre"
+run:
+  role: prompt-only
+  event: schedule
+  args: [--roles, ../roles-unreadable]
+  ai: |-
+    cmd:cat >/dev/null
+    echo '- note: "the agent ran"'
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: engine-error, message: "cannot be read"}

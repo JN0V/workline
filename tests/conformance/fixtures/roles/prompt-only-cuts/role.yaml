@@ -1,0 +1,15 @@
+contract: 1
+name: prompt-only-cuts
+mission: A role of the tests only, made of this file and its instruction, no pre and no post, declaring the cuts its shared pre must list in the run's in/cuts.
+
+events: [schedule]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: ["docs/**"]
+intentions: [patch, note]
+without-ai: pass
+cuts:
+  - "the thread is cut past 4000 characters: raise it in roles.prompt-only-cuts.settings.thread-max"
+  - "the history is cut past 90 days: raise it in roles.prompt-only-cuts.settings.history-days"

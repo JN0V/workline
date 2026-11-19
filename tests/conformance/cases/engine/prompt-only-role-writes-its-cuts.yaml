@@ -1,0 +1,11 @@
+case: engine/prompt-only-role-writes-its-cuts
+about: "A role declaring cuts, run on the shared pre: the run holds in/cuts listing each of them."
+given: {repo: basic}
+run: {role: prompt-only-cuts, event: schedule, ai: "cmd:echo '[]'"}
+expect:
+  status: pass
+  run-files:
+    in/cuts:
+      contains:
+        - "the thread is cut past 4000 characters"
+        - "the history is cut past 90 days"

@@ -1,0 +1,15 @@
+case: engine/prompt-only-role-says-its-prompt-once
+about: "A role folder holding only role.yaml and instruction.md, run with a fake agent: the agent's input holds the instruction text once, in its system prompt, not again as the task."
+given: {repo: basic}
+run:
+  role: prompt-only
+  event: schedule
+  # It leaves its note only when its input holds the instruction exactly once.
+  ai: |-
+    cmd:prompt=$(cat)
+    n=$(printf '%s\n' "$prompt" | grep -c 'Summarise the README in one line')
+    if [ "$n" = 1 ]; then echo '- note: "the instruction came once"'; else echo '[]'; fi
+expect:
+  status: pass
+  agent-calls: 1
+  notes: ["the instruction came once"]

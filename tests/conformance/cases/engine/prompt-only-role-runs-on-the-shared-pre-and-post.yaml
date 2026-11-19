@@ -13,4 +13,4 @@ expect:
   agent-calls: 1
   notes: ["got the instruction"]
   run-files:
-    in/task.md: {contains: "Summarise the README in one line"}
+    in/task.md: {contains: "Do what your instruction says."}
