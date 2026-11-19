@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.82.0](https://github.com/JN0V/workline/compare/v0.81.0...v0.82.0) (2026-11-19)
+
+
+### Features
+
+* tests miss a compiled-in role the binary forgets ([#1862](https://github.com/JN0V/workline/issues/1862)) ([3c78663](https://github.com/JN0V/workline/commit/3c78663d34e0e04113f53f426710ac01a54f4fd4))
+* the engine reads a role's prompts from its prompts folder ([#1780](https://github.com/JN0V/workline/issues/1780)) ([14262f9](https://github.com/JN0V/workline/commit/14262f9ce10e380b99e09800c4f24355229b8124))
+
+
+### Bug Fixes
+
+* a developer patch that does not apply is built ([#1841](https://github.com/JN0V/workline/issues/1841)) ([7c9031e](https://github.com/JN0V/workline/commit/7c9031e7ca6973071e12585162fdf57837feab35))
+* a developer's failed agent run rewrites the issue's record ([#1855](https://github.com/JN0V/workline/issues/1855)) ([091c0ba](https://github.com/JN0V/workline/commit/091c0ba44c86b95269367a955673f88b49a24306))
+* a review round failing twice the same way is ([#1864](https://github.com/JN0V/workline/issues/1864)) ([9d6554f](https://github.com/JN0V/workline/commit/9d6554f669b4352ac9f3ffd19938960e8375177b))
+* an issue in refine has no status after the product owner ([#1859](https://github.com/JN0V/workline/issues/1859)) ([645ffe2](https://github.com/JN0V/workline/commit/645ffe2fcbbff2c1d628385b8959086eab30b99e))
+* **internal:** a mistyped field in the reviewer's findings ([#1852](https://github.com/JN0V/workline/issues/1852)) ([639b1f6](https://github.com/JN0V/workline/commit/639b1f69ec816c4809424169167c050b8b5a540a))
+* reconcile prints 'no-state ' for an issue that does not ([#1869](https://github.com/JN0V/workline/issues/1869)) ([78e5eec](https://github.com/JN0V/workline/commit/78e5eec04be58e02c43dfffed4aa8b1d6efff702))
+* the judge is asked again on a broken build it already ([#1853](https://github.com/JN0V/workline/issues/1853)) ([26cc8fa](https://github.com/JN0V/workline/commit/26cc8faf6006fd50f85a018fea44982a76419865))
+* the weekly sample switches the person's checkout to its ([#1867](https://github.com/JN0V/workline/issues/1867)) ([072fad9](https://github.com/JN0V/workline/commit/072fad9dd4a239aba1010ddc15e0bb75c1009888))
+
 ## [0.81.0](https://github.com/JN0V/workline/compare/v0.80.0...v0.81.0) (2026-11-18)
 
 
