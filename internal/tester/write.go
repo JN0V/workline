@@ -40,7 +40,9 @@ import (
 
 // The role joins the engine by name (internal/contract).
 func init() {
-	contract.Join("tester", contract.Role{Pre: Pre, Post: Post, Tests: &contract.Tests{CommandRuns: commandRuns}})
+	contract.Join("tester", contract.Role{Pre: Pre, Post: Post, Tests: &contract.Tests{
+		CommandRuns: commandRuns, Settings: settingsFor, OnChange: onChangeFor,
+	}})
 }
 
 const (

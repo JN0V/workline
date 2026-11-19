@@ -3,6 +3,8 @@ package tester
 import (
 	"time"
 
+	"github.com/JN0V/workline/internal/contract"
+	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -42,4 +44,21 @@ func Runs(repo, rev string, s Settings, within time.Duration) *verdict.Finding {
 		f.Rule = "test-command-fails"
 	}
 	return f
+}
+
+// settingsFor is SettingsFrom for another role (contract.Tests): its
+// command and suite's seconds, what was read kept on an error.
+func settingsFor(merged map[string]any) (contract.TestSettings, error) {
+	s, err := SettingsFrom(merged)
+	return contract.TestSettings{Command: s.Command, SuiteMaxSeconds: s.SuiteMaxSeconds, Merged: merged}, err
+}
+
+// onChangeFor is OnChange for another role (contract.Tests), its
+// settings read again from the merged ones settingsFor read.
+func onChangeFor(repo, rev string, patches []intent.Intention, ts contract.TestSettings, deadline time.Time, scope contract.TestScope) (contract.TestOutcome, *verdict.Finding) {
+	s, err := SettingsFrom(ts.Merged)
+	if err != nil {
+		return contract.TestOutcome{}, &verdict.Finding{Rule: "settings-unread", Where: "tester", Message: err.Error()}
+	}
+	return OnChange(repo, rev, patches, s, deadline, scope)
 }

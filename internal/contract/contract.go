@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"slices"
 	"sync"
+	"time"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
@@ -104,8 +106,8 @@ type Registry struct {
 func NewRegistry() *Registry { return &Registry{roles: map[string]Role{}} }
 
 // Join adds a role; a name joined twice, a second role offering Code,
-// Tests, Review or Docs, or a Record, Review or Docs missing a function,
-// is a programming error.
+// Tests, Review or Docs, or a Record, Tests, Review or Docs missing a
+// function, is a programming error.
 func (r *Registry) Join(name string, role Role) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -145,6 +147,9 @@ func (r *Registry) Join(name string, role Role) {
 	}
 	if role.Review != nil && role.Review.ReviewedAll == nil {
 		panic(fmt.Sprintf("contract: the role %q offers a review missing ReviewedAll", name))
+	}
+	if role.Tests != nil && (role.Tests.CommandRuns == nil || role.Tests.Settings == nil || role.Tests.OnChange == nil) {
+		panic(fmt.Sprintf("contract: the role %q offers tests missing a function", name))
 	}
 	if role.Docs != nil && (role.Docs.Coverage == nil || role.Docs.UnreadDocs == nil) {
 		panic(fmt.Sprintf("contract: the role %q offers docs missing a check", name))
@@ -255,6 +260,23 @@ type Tests struct {
 	// a minute at most watched: the command, and nil when it runs, else
 	// the finding of why not; an error when the settings do not read.
 	CommandRuns func(repo, rev string, settings map[string]any) (command string, f *verdict.Finding, err error)
+	// Settings reads the role's settings, merged, for another role that
+	// runs the tests through it (the developer's proof); an error when
+	// they do not read, what was read kept.
+	Settings func(settings map[string]any) (TestSettings, error)
+	// OnChange runs the test command once on rev, the patches laid on it,
+	// in a fresh tree, stopped past deadline when one is set; a finding
+	// when it did not run whole. scope narrows it.
+	OnChange func(repo, rev string, patches []intent.Intention, settings TestSettings, deadline time.Time, scope TestScope) (TestOutcome, *verdict.Finding)
+}
+
+// TestSettings is what another role reads of the settings of the role
+// that runs the tests: its command, its suite's seconds, and the merged
+// settings they were read from, which OnChange reads again.
+type TestSettings struct {
+	Command         string
+	SuiteMaxSeconds int
+	Merged          map[string]any
 }
 
 // Tests is what the role that runs the project's tests offers, and that

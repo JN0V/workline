@@ -24,12 +24,12 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/kit/worktree"
 	"github.com/JN0V/workline/internal/role"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // Flaky is a flaky-n-of-n proof to run: the named test, Runs times.
@@ -80,7 +80,7 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 		return p, nil
 	}
 	p.Command = ts.Command
-	scope := tester.Scope{Files: also}
+	scope := contract.TestScope{Files: also}
 	if n != nil {
 		if !backlog.TestName.MatchString(n.Test) {
 			p.Result, p.Why = devmark.Unproven, "the tester's flaky-n-of-n record names no test to run"
@@ -114,7 +114,7 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 		deadline = time.Now().Add(time.Duration(s.ProofSeconds) * time.Second)
 	}
 	start := time.Now()
-	o, f := tester.OnChange(repo, at, patches, ts, deadline, scope)
+	o, f := contract.BuiltinTests().OnChange(repo, at, patches, ts, deadline, scope)
 	switch {
 	case f != nil && f.Rule == "proof-over-time" && f.Where == "suite-max-seconds":
 		// One run stopped at the tester's suite-max-seconds, before the
@@ -220,25 +220,25 @@ func withMain(repo, at string) (commit, why string, err error) {
 // testerSettings are the tester's settings, the project's over the role's:
 // its test command and report are the project's tests, one setting for
 // both roles.
-func testerSettings(repo string) (tester.Settings, error) {
+func testerSettings(repo string) (contract.TestSettings, error) {
 	return testerSettingsIn("", repo)
 }
 
 // testerSettingsIn are the tester's settings, its role read in rolesDir,
 // "" the one the engine gives a role's run.
-func testerSettingsIn(rolesDir, repo string) (tester.Settings, error) {
+func testerSettingsIn(rolesDir, repo string) (contract.TestSettings, error) {
 	if rolesDir == "" {
 		rolesDir = os.Getenv("WORKLINE_ROLES_DIR")
 	}
 	r, err := role.Load(rolesDir, "tester")
 	if err != nil {
-		return tester.Settings{}, fmt.Errorf("the tester's role, whose test-command the proof runs: %w", err)
+		return contract.TestSettings{}, fmt.Errorf("the tester's role, whose test-command the proof runs: %w", err)
 	}
 	cfg, err := role.LoadProjectConfig(repo)
 	if err != nil {
-		return tester.Settings{}, err
+		return contract.TestSettings{}, err
 	}
-	return tester.SettingsFrom(r.MergedSettings(cfg))
+	return contract.BuiltinTests().Settings(r.MergedSettings(cfg))
 }
 
 // Used is what the run's agent calls used, as the agents report it: the
