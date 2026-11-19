@@ -12,7 +12,7 @@ given:
     issues:
       - {"id": 20, "title": "Issue 20", "body": "Issue 20.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Did ready on #20'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
     merge-requests: []
-run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-by-criteria.sh" PROJECT-COPY-CRITERIA CRITERIA:'], then: apply}
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-by-criteria.sh" PROJECT-COPY-CRITERIA SHIPPED-COPY-CRITERIA ROLE-OWN-CRITERIA'], then: apply}
 expect:
   status: pass
   findings:
