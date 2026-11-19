@@ -1,0 +1,33 @@
+case: routing/no-test-written-twice-blocks
+about: >
+  A tester's run that ended twice with no test file proposed on the same
+  body: the two tries are spent. The line does not run a third one, which
+  would get the same input and cost an agent call for nothing: it moves
+  the issue to workline:blocked, and its comment says the tester could
+  not propose a test file and that a person acts. No agent asked.
+given:
+  repo: tested
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"tests\",\"body\":\"8a828a06be19\",\"hops\":1,\"errors\":{\"by\":{\"answer\":2},\"first\":{\"answer\":\"2026-11-04T12:00:00Z\"},\"last\":\"2026-11-04T20:00:00Z\",\"kind\":\"answer\",\"said\":\"no test file the tester may write was proposed for the issue's scenarios\"},\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:proposes-nothing"}
+expect:
+  agent-calls: 0
+  no-findings: [{rule: state-wakes}, {rule: state-retry}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comments: 1
+        comment-contains: ["**workline's line** blocks this issue.", "could not propose a test file", "a person"]

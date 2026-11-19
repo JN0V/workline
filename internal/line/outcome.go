@@ -33,6 +33,16 @@ const ErrorBudget = 2
 // the budget is spent. A window that gave it back would loop once a day.
 const ErrorWindow = 24 * time.Hour
 
+// AnswerBudget is how many runs in a row may end with no answer the
+// role could use (kind answer, as the tester's no-test-written): the same
+// input gets the same answer, so each try is an agent call for nothing.
+const AnswerBudget = 2
+
+// AnswerHold is the least time between such a run and the next on the
+// same body: longer than a machine error's back-off, a body changed by a
+// person lets it try at once (#1917).
+const AnswerHold = 6 * time.Hour
+
 // ErrorBackoff is the least time between a machine error and the run
 // again: the same reconcile, or an event right after, starts nothing.
 const ErrorBackoff = 10 * time.Minute
@@ -173,6 +183,8 @@ func typedDue(res *Result, name string, s routing.State, is forge.Issue, rec Rec
 	if errs := errorsOf(rec); errs != nil {
 		again, until, spent := errs.retry(at)
 		switch {
+		case spent != "" && name == "tester" && errs.Kind == "answer":
+			return blocked("no-test-written-spent", fmt.Sprintf("the tester could not propose a test file in its state %s: %s", s.Name, spent))
 		case spent != "":
 			return blocked("machine-error-spent", fmt.Sprintf("the %s's runs on it failed in its state %s: %s", name, s.Name, spent))
 		case !again:
@@ -247,6 +259,10 @@ func (e *Errors) retry(now time.Time) (due bool, until time.Time, spent string) 
 		return false, time.Time{}, fmt.Sprintf("its task is too big for its context (%s): %s", e.Kind, e.Said)
 	case e.Kind == ApplyKind && e.By[e.Kind] >= ApplyBudget:
 		return false, time.Time{}, fmt.Sprintf("its patch did not apply on %d runs in a row (%s): %s; the line does not compare heads: a person restarts it, worth doing once its tester's Draft or `main` has moved", e.By[e.Kind], e.Kind, e.Said)
+	case e.Kind == "answer" && e.By[e.Kind] >= AnswerBudget:
+		return false, time.Time{}, fmt.Sprintf("its run ended %d times with no answer it could use on the same body, so it could not propose what it was asked (%s): %s; a person rewrites its body and puts its label back, or does the work", e.By[e.Kind], e.Kind, e.Said)
+	case e.Kind == "answer" && err2 == nil && now.Before(last.Add(AnswerHold)):
+		return false, last.Add(AnswerHold), ""
 	case e.By[e.Kind] > ErrorBudget:
 		return false, time.Time{}, fmt.Sprintf("its run failed %d times (%s): %s", e.By[e.Kind], e.Kind, e.Said)
 	case err1 == nil && now.Sub(first) >= ErrorWindow:
