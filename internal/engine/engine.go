@@ -3737,11 +3737,16 @@ func inProcess(s contract.Step, repo string, env []string) int {
 			}
 		}
 	}
-	if wd, err := os.Getwd(); err == nil {
-		if os.Chdir(repo) == nil {
-			defer func() { _ = os.Chdir(wd) }()
-		}
+	wd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "built-in step: cannot read the working folder: %v\n", err)
+		return 1
 	}
+	if err := os.Chdir(repo); err != nil {
+		fmt.Fprintf(os.Stderr, "built-in step: cannot enter %s: %v\n", repo, err)
+		return 1
+	}
+	defer func() { _ = os.Chdir(wd) }()
 	return s(os.Getenv("WORKLINE_RUN_DIR"), repo)
 }
 
