@@ -1,6 +1,15 @@
 <!-- workline
-sources: [cmd/workline, tests/conformance/pending.txt]
-checked: 04d2af892
+sources:
+  - tests/conformance/runner_test.go#TestMain
+  - tests/conformance/pending.txt
+  - tests/evaluation/eval_test.go#TestEvaluation
+  - roles/committer/role.yaml#events
+  - roles/committer/role.yaml#settings
+  - internal/builtin/committer/secrets.go#Secrets
+  - .workline/config.yaml#routing
+  - .workline/config.yaml#gates
+  - .github/workflows/workline.yml#jobs.gates
+checked: e2e165c2d
 verified: agent:claude-code
 -->
 # Contributing

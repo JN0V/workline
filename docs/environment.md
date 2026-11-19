@@ -27,7 +27,7 @@ part of [the configuration](config.md).
 | `WORKLINE_AI` | the agent the git hook uses |
 | `WORKLINE_ROLES` | a folder of roles, as `--roles` |
 | `WORKLINE_MODELS_SEEN` | the file keeping the last model that answered each model asked (default: `models-seen.yaml` in your cache folder, `~/.cache/workline/` on Linux) |
-| `WORKLINE_JUDGE` | the agent reading the weekly sample (`workline sample`), before the `sample.judge` setting; the judge of a role's run (a reviewer's findings, [a documentalist's split](../roles/documentalist/docs/gardening.md#splitting-a-card)); and the evaluation's judge |
+| `WORKLINE_JUDGE` | the agent reading the weekly sample (`workline sample`), before the `sample.judge` setting; the judge of a role's run (a reviewer's findings, [a documentalist's split](../roles/documentalist/docs/gardening-condense.md#splitting-a-card)); and the evaluation's judge |
 | `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies; never seen by the project's commands ([the line's own](environment-roles.md#the-lines-own)) |
 | `GITLEAKS_CONFIG`, `GITLEAKS_CONFIG_TOML` | the committer's term list, before the repository's and yours |
 

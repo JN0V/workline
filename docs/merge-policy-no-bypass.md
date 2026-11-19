@@ -1,6 +1,10 @@
 ---
-sources: [internal/doctor/guard.go, internal/forge/github_merge.go]
-checked: e4e4287bc
+sources:
+  - internal/doctor/guard.go#noBypassDoc
+  - internal/doctor/guard.go#bypassWords
+  - internal/doctor/guard.go#bypassGuard
+  - internal/forge/github_merge.go#github.Bypass
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Nobody bypasses `main`

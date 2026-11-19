@@ -1,6 +1,23 @@
 <!-- workline
-sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/engine/follow.go, internal/engine/settle.go, Dockerfile]
-checked: 04d2af892
+sources:
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:objection:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:review:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:apply
+  - internal/engine/follow.go#recommit
+  - internal/engine/follow.go#signing
+  - internal/engine/uptodate.go#ownMergeCommit
+  - internal/engine/engine.go#commitWritten
+  - internal/engine/candidate.go#releaseAs
+  - internal/engine/candidate.go#cherryPick
+  - Dockerfile
+checked: e2e165c2d
 verified: agent:claude-code
 -->
 # Signed commits on GitLab
@@ -47,8 +64,9 @@ SSH key: the template signs its commits with it.
   writes it readable by all, which `ssh-keygen` refuses), and ended with
   a newline, without which `ssh-keygen` cannot read it.
 - **Every commit it pushes is then signed**: the roles' commits, and the
-  commits `follow` and the merge policy write, as git is set. workline
-  never picks a key of its own.
+  commits `follow` and the merge policy write, as git is set. Not yet
+  a release candidate's (`Release-As:`, its cherry-picks): unsigned.
+  workline never picks a key of its own.
 - **A key that cannot sign** fails the job, said, nothing pushed. A key
   given as a plain variable fails it too, the key never printed.
 - **No variable**: nothing changes.

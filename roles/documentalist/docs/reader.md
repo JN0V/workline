@@ -56,7 +56,7 @@ passes.
   (`reader-claim-dropped`).
 - A hunk quoting the page wrong — a context line with a space too many —
   is placed as for a suspect doc
-  ([hunks](judge.md#hunks-that-misquote-the-doc)): by the lines it
+  ([hunks](judge-hunks.md#hunks-that-misquote-the-doc)): by the lines it
   removes, found once in the page. The page gets the fix as placed
   ([#592](https://github.com/JN0V/workline/issues/592)).
 - A page's patch is withheld whole, the page left as it was

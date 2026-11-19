@@ -87,7 +87,7 @@ In the repository:
 
 1. Docs that name their sources: `workline init` on your machine proposes
    them, you review and commit
-   ([adopting a repository](../roles/documentalist/docs/push.md#adopting-a-repository)).
+   ([adopting a repository](../roles/documentalist/docs/adopt.md)).
 2. `.workline/config.yaml`, if the defaults do not suit — for a backlog of
    docs far behind, the caps on judging in parts, on by default when
    gardening ([ADR-0009](adr/0009-docs-far-behind-are-judged-in-parts.md)):

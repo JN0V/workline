@@ -1,6 +1,30 @@
 ---
-sources: [cmd/workline/wake.go, internal/wake, internal/forge/wake.go, .github/workflows/workline-apply.yml]
-checked: e4e4287bc
+sources:
+  - internal/wake/wake.go#readTree
+  - internal/wake/wake.go#readRole
+  - internal/wake/wake.go#readForge
+  - internal/wake/wake.go#isBug
+  - internal/wake/wake.go#adrPath
+  - internal/wake/wake.go#isADR
+  - internal/wake/wake.go#roleFile
+  - internal/wake/wake.go#isPrompt
+  - internal/wake/wake.go#Window
+  - internal/wake/wake.go#AreaFixes
+  - internal/wake/wake.go#Label
+  - internal/wake/wake.go#engineSource
+  - internal/wake/wake.go#engineTests
+  - internal/wake/wake.go#engineGlob
+  - internal/wake/wake.go#commandGlob
+  - internal/wake/wake.go#ruleCode
+  - internal/wake/wake.go#command
+  - internal/wake/wake.go#level
+  - internal/wake/wake.go#Options
+  - internal/wake/wake.go#git.mergePolicy
+  - internal/stall/stall.go#Read
+  - internal/stall/stall.go#DefaultHours
+  - internal/forge/wake.go#github.Labelled
+  - cmd/workline/wake.go#wakeCmd
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # The wake
@@ -42,54 +66,10 @@ After each merge, the wake prints where the line may be drifting
   `settings`, `{name: "…"}` under `cmd/`, `Rule: "…"` in Go. A project
   laid out otherwise gets its ADRs and the forge's triggers.
 
-## The issue
+## More
 
-- **One issue**, *workline: where the line may be drifting*, opened when
-  something is listed; edited in place when what it lists changes;
-  never commented on.
-- **Each trigger is kept 7 days**, the newest read of it: someone
-  reading once a week reads each one.
-- **Under the forge's size limit**: past it, the oldest triggers are
-  left out, and the issue says how many. An edit the forge refuses
-  anyway is a warning on the CI run, not only a log line.
-- **No merge skipped**: a read starts where the issue's last read ended,
-  when that is earlier on the branch than `--range`'s start: a run the
-  forge dropped from its queue is read by the next.
-- **The cord**: anyone, a person or a role, puts `step-back` on an issue
-  or a merge request; the next merge lists it. The wake makes the label
-  when it is missing.
-- **What was not read** is said under *Not read*, never taken for
-  nothing found: no forge, a read refused, a forge that keeps no
-  rulesets or no `workline/accepted` (GitLab). Closing links unread, no
-  merge is said to close none; its issue unread, the issue is left as it
-  is.
-
-## Run it
-
-```sh
-workline wake                                      # HEAD's first parent..HEAD, git alone
-workline wake --forge github --range <before>..<after>
-workline wake --forge github --range <before>..<after> --issue   # keep the issue
-```
-
-- **`--forge none`**, or no forge set: git's triggers alone; the
-  forge's are said unread.
-- **`--json`**: what it read, as data.
-- **On GitHub**: the job `wake` of
-  [workline-apply.yml](../.github/workflows/workline-apply.yml), on a
-  push to `main`, with `issues: write`, `pull-requests: read` and
-  `statuses: read`; the App's token when there is one, and its slug
-  in `WORKLINE_APP`: a `workline/accepted` only that App set is a yes,
-  another app's is not; with none named, the yes is said unread.
-- **GitLab and other CI**: the same command after a push to the default
-  branch, `--forge gitlab`; GitLab keeps no `workline/accepted`, so that
-  trigger is not read there. Not in the templates yet.
-
-## Cost
-
-- **No agent, no token** of a model
-  ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
-- **Forge reads**: the merges of 14 days (a page of 100 a call), their
-  closing issues (50 merge requests a call on GitHub, one each on
-  GitLab), the label, the rulesets, the statuses of the merged heads.
-  About 15 s on workline's history.
+- [The wake's issue](wake-issue.md): one issue, edited in place, each
+  trigger kept 7 days, the cord, what was not read.
+- [Running the wake](wake-run.md): the command, its job on GitHub,
+  and GitLab.
+- [The wake's cost](wake-cost.md): no agent, a few forge reads.
