@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go#State, internal/backlog/backlog.go#HiddenLevel, internal/backlog/backlog.go#ReadState, internal/backlog/backlog.go#readBlock, internal/backlog/backlog.go#hidden, internal/backlog/backlog.go#hide, internal/backlog/backlog.go#FenceFor, internal/backlog/backlog.go#yamlBlock, internal/backlog/backlog.go#openYAML, internal/backlog/backlog.go#Pending, internal/backlog/acts.go#Did, internal/backlog/undo.go#Done, internal/backlog/undo.go#Undo, internal/backlog/autonomy.go#Read, internal/backlog/autonomy.go#ReadFile, internal/backlog/plain.go#DescriptionName, internal/backlog/plain.go#RolesTop, internal/backlog/opening.go#Openings.finish, tests/conformance/cases/product-owner/no-state-no-act.yaml, tests/conformance/cases/product-owner/broken-state-writes-nothing.yaml]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # The issue's state

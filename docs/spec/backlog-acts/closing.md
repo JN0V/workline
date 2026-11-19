@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/obsolete.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go#Closing, internal/backlog/backlog.go#holds, internal/backlog/obsolete.go, internal/builtin/productowner/productowner.go#evidence, internal/builtin/productowner/productowner.go#marker]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # Closing

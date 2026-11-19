@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/whys, skills]
+sources: [internal/engine/backlog.go#links, internal/engine/demote.go#holds, internal/engine/engine.go#invalid, internal/engine/routine.go#normal, internal/engine/routine.go#normal.whose, internal/engine/routine.go#normal.asked, internal/role/config.go#config, internal/role/config.go#check, internal/agent/claude.go#claude, internal/agent/claude.go#without, internal/agent/prompt.go#facet, internal/agent/prompt.go#fence, internal/whys/whys.go#field, skills/five-whys/SKILL.md]
 verified: agent:claude-code
-checked: 04d2af892
+checked: a19e8cb0
 status: draft
 ---
 # Adapting a role

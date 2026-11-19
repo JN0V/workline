@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/autonomy.go, roles/product-owner/role.yaml, internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
+sources: [internal/backlog/autonomy.go, roles/product-owner/role.yaml, internal/backlog/backlog.go#drafts, internal/backlog/backlog.go#Pending, internal/backlog/backlog.go#Pending.Held, internal/backlog/backlog.go#Closing, internal/backlog/backlog.go#moves, internal/backlog/backlog.go#Setting, internal/backlog/backlog.go#number, internal/backlog/backlog.go#named, internal/backlog/backlog.go#questions, internal/backlog/backlog.go#question, internal/builtin/productowner/productowner.go#stuck]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # Autonomy and caps

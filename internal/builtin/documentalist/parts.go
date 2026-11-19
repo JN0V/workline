@@ -422,8 +422,12 @@ func planParts(d *Doc, repo string, share int) (plans []partPlan, why string, er
 		room = share
 	}
 	var files []string
+	// whole files are read whole; a file only named by parts is read in
+	// those parts' lines (ADR-0053: a task reads that part, not the file).
+	spans := map[string][][2]int{}
+	whole := map[string]bool{}
 	for _, src := range d.Sources {
-		_, p, _ := splitSource(src)
+		_, p, anchor := splitSource(src)
 		if strings.HasSuffix(p, ".md") {
 			continue
 		}
@@ -433,9 +437,28 @@ func planParts(d *Doc, repo string, share int) (plans []partPlan, why string, er
 		}
 		for _, f := range pathList(out) {
 			// Two parts of one file name it twice: read once, whole.
-			if f != "" && !strings.HasSuffix(f, ".md") && !slices.Contains(files, f) {
+			if f == "" || strings.HasSuffix(f, ".md") {
+				continue
+			}
+			if !slices.Contains(files, f) {
 				files = append(files, f)
 			}
+			if !isPart(p, anchor) || f != p {
+				whole[f] = true
+				continue
+			}
+			text, err := showFile(repo, f)
+			if err != nil {
+				return nil, "", err
+			}
+			part, found, err := partOf(f, text, anchor)
+			at := strings.Index(text, part)
+			if err != nil || !found || part == "" || at < 0 {
+				whole[f] = true
+				continue
+			}
+			from := 1 + strings.Count(text[:at], "\n")
+			spans[f] = append(spans[f], [2]int{from, from + strings.Count(strings.TrimSuffix(part, "\n"), "\n")})
 		}
 	}
 	cur := partPlan{Doc: d.Path}
@@ -463,28 +486,44 @@ func planParts(d *Doc, repo string, share int) (plans []partPlan, why string, er
 		size := func(from, to int) int {
 			return len(fmt.Sprintf("## %s, lines %d-%d of %d\n\n```\n```\n\n", f, from, to, len(lines))) + sum[to] - sum[from-1]
 		}
-		// A file that fits a part of its own is not cut to fill this one.
-		if used > 0 && used+size(1, len(lines)) > room && size(1, len(lines)) <= room {
-			flush()
-		}
-		for from := 1; from <= len(lines); {
-			to := from - 1
-			for to < len(lines) && used+size(from, to+1) <= room {
-				to++
-			}
-			if to < from { // not even a line fits what is left of this part
-				if used > 0 {
-					flush()
+		segs := [][2]int{{1, len(lines)}}
+		if sp := spans[f]; len(sp) > 0 && !whole[f] {
+			slices.SortFunc(sp, func(x, y [2]int) int { return x[0] - y[0] })
+			segs = nil
+			for _, r := range sp {
+				r[1] = min(r[1], len(lines))
+				if n := len(segs); n > 0 && r[0] <= segs[n-1][1]+1 {
+					segs[n-1][1] = max(segs[n-1][1], r[1])
 					continue
 				}
-				to = from // a line longer than a part is read alone
+				segs = append(segs, r)
 			}
-			cur.Files = append(cur.Files, partFile{Path: f, From: from, To: to, Lines: len(lines)})
-			used += size(from, to)
-			if to < len(lines) {
+		}
+		for _, seg := range segs {
+			lo, hi := seg[0], seg[1]
+			// A piece that fits a part of its own is not cut to fill this one.
+			if used > 0 && used+size(lo, hi) > room && size(lo, hi) <= room {
 				flush()
 			}
-			from = to + 1
+			for from := lo; from <= hi; {
+				to := from - 1
+				for to < hi && used+size(from, to+1) <= room {
+					to++
+				}
+				if to < from { // not even a line fits what is left of this part
+					if used > 0 {
+						flush()
+						continue
+					}
+					to = from // a line longer than a part is read alone
+				}
+				cur.Files = append(cur.Files, partFile{Path: f, From: from, To: to, Lines: len(lines)})
+				used += size(from, to)
+				if to < hi {
+					flush()
+				}
+				from = to + 1
+			}
 		}
 	}
 	flush()

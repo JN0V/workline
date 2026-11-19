@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/kit/codepick, internal/codenav, internal/builtin/productowner/productowner.go]
+sources: [internal/kit/codepick/codepick.go#around, internal/kit/codepick/codepick.go#imported, internal/kit/codepick/codepick.go#fitting, internal/codenav/codenav.go#table, internal/codenav/codenav.go#bounds, internal/codenav/outline.go#holds, internal/builtin/productowner/productowner.go#folders, internal/builtin/productowner/productowner.go#write, internal/builtin/productowner/productowner.go#elsewhere]
 status: draft
 checked: 04d2af892
 verified: agent:claude-code

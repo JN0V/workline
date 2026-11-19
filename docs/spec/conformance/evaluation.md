@@ -1,6 +1,6 @@
 ---
-sources: [tests/evaluation]
-checked: 8538d558
+sources: [tests/evaluation/auditor_test.go#TestAuditorCasesWithBlindJudge, tests/evaluation/checks_test.go#TestDriftedCasesGradeBoth, tests/evaluation/checks_test.go#TestDriftedWithFakeAgents, tests/evaluation/checks_test.go#TestReviewerCasesPointRight, tests/evaluation/checks_test.go#TestIntentAndClaimsCasesGiveTheirLens, tests/evaluation/checks_test.go#TestReviewerWithFakeAgent, tests/evaluation/checks_test.go#TestJudgeReplaySet, tests/evaluation/checks_test.go#TestJudgeReplayWithFakeJudge, tests/evaluation/checks_test.go#TestJudgeReplayReadingWithFakeJudge, tests/evaluation/eval_test.go#judge, tests/evaluation/judge_replay_test.go#TestJudgeReplay]
+checked: a19e8cb0
 judged: 62abc22
 verified: agent:claude-code
 ---

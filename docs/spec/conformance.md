@@ -1,6 +1,6 @@
 ---
-sources: [tests/conformance/runner_test.go, tests/evaluation, tests/simulator]
-checked: 83b24781
+sources: [tests/conformance/runner_test.go#build, tests/conformance/runner_test.go#given, tests/evaluation/checks_test.go#TestDeveloperWithStandIns, tests/evaluation/eval_test.go#split, tests/evaluation/eval_test.go#build, tests/evaluation/eval_test.go#grade, tests/evaluation/eval_test.go#vague, tests/evaluation/eval_test.go#judge, tests/simulator/agent_test.go#refused, tests/simulator/backstop_test.go#TestBackstopTrace, tests/simulator/check_test.go#target, tests/simulator/check_test.go#status, tests/simulator/check_test.go#maxRequests, tests/simulator/check_test.go#checks, tests/simulator/check_test.go#measure, tests/simulator/check_test.go#pending, tests/simulator/repo_test.go#fixture, tests/simulator/repo_test.go#closes, tests/simulator/rounds_test.go#TestBackstopStopsRounds, tests/simulator/sim_test.go#budget, tests/simulator/sim_test.go#trace, tests/simulator/sim_test.go#traces, tests/simulator/sim_test.go#answers]
+checked: a19e8cb0
 verified: agent:claude-code
 judged: ae14474
 ---

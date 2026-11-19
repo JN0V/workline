@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/builtin/productowner/productowner.go, internal/backlog/ledger.go, internal/backlog/opening.go]
+sources: [internal/builtin/productowner/productowner.go#commented, internal/builtin/productowner/productowner.go#author, internal/builtin/productowner/productowner.go#place, internal/builtin/productowner/productowner.go#sections, internal/builtin/productowner/productowner.go#folders, internal/builtin/productowner/productowner.go#writtenAt, internal/backlog/ledger.go#Reading, internal/backlog/ledger.go#BroughtBack, internal/backlog/ledger.go#lacking, internal/backlog/ledger.go#LeftBehind, internal/backlog/opening.go]
 status: draft
-checked: 44f06aba
+checked: a19e8cb0
 verified: agent:claude-code
 judged-in-parts: 87b34bc
 ---

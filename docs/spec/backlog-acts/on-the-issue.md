@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/backlog/say.go, internal/report/summary.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go#State, internal/backlog/backlog.go#FormatState, internal/backlog/backlog.go#hidden, internal/backlog/backlog.go#State.answers, internal/backlog/backlog.go#State.drafts, internal/backlog/backlog.go#drafts, internal/backlog/backlog.go#theirs, internal/backlog/backlog.go#Decide, internal/backlog/backlog.go#Plan.summary, internal/backlog/backlog.go#Plan.aside, internal/backlog/backlog.go#Plan.plain, internal/backlog/backlog.go#HasDraft, internal/backlog/backlog.go#Accepted, internal/backlog/backlog.go#question, internal/backlog/backlog.go#holds, internal/backlog/backlog.go#Plan.found, internal/backlog/backlog.go#refined, internal/backlog/backlog.go#Plan.Acts, internal/backlog/ledger.go#demoted, internal/backlog/ledger.go#Plan.Persist, internal/backlog/ledger.go#linkComments, internal/backlog/ledger.go#Inert, internal/backlog/say.go, internal/report/summary.go, internal/engine/backlog.go#onIssues, internal/engine/backlog.go#links, internal/engine/backlog.go#report]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # On the issue
