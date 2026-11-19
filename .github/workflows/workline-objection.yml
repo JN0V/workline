@@ -1,14 +1,14 @@
-# workline's tester woken by an objection, on its own repository: as
-# defaults/ci/github/workline-objection.yml, unchanged. It runs for any branch
-# workline/tester/* of this repository that gets an objection.
-# A comment opened by `workline:objection` on the tester's Draft, from a
-# person of the project or an App: noticed, with no token and no secret;
-# its end wakes workline-answer.yml. Why: docs/objection-jobs.md.
-# A person's reply in a thread on the developer's pull request: noticed
-# too, its end wakes workline-develop.yml's round (#1438).
+# workline's tester woken by an objection, on its own repository:
+# defaults/ci/github/workline-objection.yml, its jobs unchanged, on no
+# event (#1871). The template notices a comment on a line, with no token
+# and no secret, and its end wakes workline-answer.yml or
+# workline-develop.yml's round. Here workline-develop.yml's reconciler,
+# dispatched by the loop (docs/tick.md) or the heartbeat, starts the
+# answer on each Draft an objection or a reply waits on; its jobs skip
+# on a start by hand. Why the template's: docs/objection-jobs.md.
 name: workline objection
 on:
-  pull_request_review_comment: {types: [created]}
+  workflow_dispatch:
 permissions: {}
 
 jobs:
