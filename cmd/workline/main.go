@@ -18,7 +18,7 @@
 //	workline docs [--repo <dir>] [--ai ...]
 //	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--review] [--human-po yes|no] [--autonomy <level>] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
-//	workline builtin <role> pre|post      (called by the shipped roles' scripts)
+//	workline builtin <role> pre|post      (the engine runs it for a role with built-in code)
 package main
 
 import (

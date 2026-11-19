@@ -21,11 +21,13 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
@@ -3669,9 +3671,36 @@ func phase(role, step string) {
 
 // script runs roles/<name>/<step> in the repository and returns its exit code.
 //
-// A role with no such file runs the shared one (ADR-0070, §1), each step
-// on its own.
+// Each step on its own, the role's built-in code runs first, else its
+// file, else the shared one (ADR-0070, §1): a file beside built-in code is
+// not run.
 func script(r *role.Role, step, repo string, env []string) (int, error) {
+	if s, ok := contract.Builtins().Step(r.Name, step); ok {
+		phase(r.Name, step)
+		// Apart, as the role's script ran it (`workline builtin`): its own
+		// process, environment and folder, a crash its own. In this
+		// process only where the engine is a test binary, which has no
+		// such command.
+		self := Self()
+		if self == "" {
+			return 0, fmt.Errorf("%s of role %q: the engine's own path is unknown, its built-in code cannot run apart", step, r.Name)
+		}
+		if !strings.HasSuffix(self, ".test") {
+			cmd := exec.Command(self, "builtin", r.Name, step)
+			cmd.Dir, cmd.Env = repo, env
+			cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+			err := cmd.Run()
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
+				return exitErr.ExitCode(), nil
+			}
+			if err != nil {
+				return 0, fmt.Errorf("%s: %w", step, err)
+			}
+			return 0, nil
+		}
+		return inProcess(s, repo, env), nil
+	}
 	path := filepath.Join(r.Dir, step)
 	if _, err := os.Stat(path); err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
@@ -3698,6 +3727,44 @@ func script(r *role.Role, step, repo string, env []string) (int, error) {
 		return 0, fmt.Errorf("%s: %w", step, err)
 	}
 	return 0, nil
+}
+
+var inProcessMu sync.Mutex
+
+// inProcess runs a built-in step as `workline builtin` would in a script
+// of the role: in repo, with env as the process's environment, both put
+// back after.
+func inProcess(s contract.Step, repo string, env []string) int {
+	inProcessMu.Lock()
+	defer inProcessMu.Unlock()
+	was := os.Environ()
+	defer func() {
+		os.Clearenv()
+		for _, kv := range was {
+			if k, v, ok := strings.Cut(kv, "="); ok {
+				_ = os.Setenv(k, v) // best effort: the process's own environment
+			}
+		}
+	}()
+	os.Clearenv()
+	for _, kv := range env {
+		if k, v, ok := strings.Cut(kv, "="); ok {
+			if err := os.Setenv(k, v); err != nil {
+				return 1
+			}
+		}
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "built-in step: cannot read the working folder: %v\n", err)
+		return 1
+	}
+	if err := os.Chdir(repo); err != nil {
+		fmt.Fprintf(os.Stderr, "built-in step: cannot enter %s: %v\n", repo, err)
+		return 1
+	}
+	defer func() { _ = os.Chdir(wd) }()
+	return s(os.Getenv("WORKLINE_RUN_DIR"), repo)
 }
 
 // dirDigest hashes every file under dir, names and contents, in a stable order.

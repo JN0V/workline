@@ -38,7 +38,9 @@ roles/<name>/
 `pre` and `post` are executables in any language. The engine runs them; it does
 not care what they are written in.
 
-Each is optional, on its own (ADR-0070, §1). With no `pre`, the shared one
+Each is optional, on its own (ADR-0070, §1). For each step the engine
+runs the role's built-in code if it has any (a file beside it is not run),
+else the role's file, else the shared one. With no `pre`, the shared one
 writes `in/task.md` from the role's `instruction.md` and `in/skills` from
 its declared `context.skills`; a missing `instruction.md` stops the run,
 naming the file. With no `post`, the shared one passes and applies nothing:
