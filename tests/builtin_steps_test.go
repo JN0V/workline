@@ -9,14 +9,8 @@ import (
 	"github.com/JN0V/workline"
 	"github.com/JN0V/workline/internal/contract"
 
-	// The compiled-in roles, as cmd/workline lists them.
-	_ "github.com/JN0V/workline/internal/builtin/committer"
-	_ "github.com/JN0V/workline/internal/builtin/documentalist"
-	_ "github.com/JN0V/workline/internal/builtin/inspector"
-	_ "github.com/JN0V/workline/internal/builtin/productowner"
-	_ "github.com/JN0V/workline/internal/builtin/reviewer"
-	_ "github.com/JN0V/workline/internal/developer"
-	_ "github.com/JN0V/workline/internal/tester"
+	// The compiled-in roles, the list the binary imports.
+	_ "github.com/JN0V/workline/internal/builtin/all"
 )
 
 // Every shipped step that calls `workline builtin <role> <step>` finds
