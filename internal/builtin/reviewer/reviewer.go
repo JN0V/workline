@@ -1160,8 +1160,13 @@ func candidatesFor(size int) int {
 // lensText is what a lens asks: the project's own (.workline/roles/reviewer/
 // lenses/<lens>.md), else the role's.
 func lensText(repo, lens string) (string, error) {
-	for _, dir := range []string{filepath.Join(repo, ".workline", "roles", roleName()), filepath.Join(os.Getenv("WORKLINE_ROLES_DIR"), roleName())} {
-		if data, err := os.ReadFile(filepath.Join(dir, "lenses", lens+".md")); err == nil {
+	own := filepath.Join(os.Getenv("WORKLINE_ROLES_DIR"), roleName())
+	sub := ""
+	if st, err := os.Stat(filepath.Join(own, "prompts")); err == nil && st.IsDir() {
+		sub = "prompts" // a moved role: read under prompts/ only
+	}
+	for _, dir := range []string{filepath.Join(repo, ".workline", "roles", roleName()), own} {
+		if data, err := os.ReadFile(filepath.Join(dir, sub, "lenses", lens+".md")); err == nil {
 			return string(data), nil
 		}
 	}

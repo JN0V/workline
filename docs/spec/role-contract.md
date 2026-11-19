@@ -168,6 +168,12 @@ or reused on its own. The engine assembles them in a fixed order:
 | the task | `in/task.md`, then the skills `pre` named, then a refused answer's feedback | written by `pre` |
 | `policy.md` | the rules it must follow | no |
 
+A role may keep its facets, and its `knowledge/`, `lenses/`, `tasks/` and
+`skills/` folders, under a `prompts/` folder. A role that has one is read
+under `prompts/` only, in the project's `.workline/roles/<role>/prompts/`
+and the person's `roles/<role>/prompts/` as in the role's own folder; a file
+missing there is missing. A role without one is read from its top level.
+
 The first four are the system prompt: the same, byte for byte, in every
 call of the same role and mode (of a kind of task, for one with its own
 instruction; with a worktree or without, whose answer's shape differs).
