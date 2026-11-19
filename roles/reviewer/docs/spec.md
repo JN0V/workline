@@ -5,10 +5,10 @@ sources:
   - roles/reviewer/role.yaml#settings.spec-lines-max
   - roles/reviewer/role.yaml#settings.code-lines-max
   - roles/reviewer/role.yaml#settings.lenses-together
-  - roles/reviewer/lenses/ambiguous.md
-  - roles/reviewer/lenses/unverifiable.md
-  - roles/reviewer/lenses/out-of-scope.md
-  - roles/reviewer/lenses/contradicted.md
+  - roles/reviewer/prompts/lenses/ambiguous.md
+  - roles/reviewer/prompts/lenses/unverifiable.md
+  - roles/reviewer/prompts/lenses/out-of-scope.md
+  - roles/reviewer/prompts/lenses/contradicted.md
   - internal/builtin/reviewer/spec.go#prepareSpec
   - internal/builtin/reviewer/spec.go#readSpec
   - internal/builtin/reviewer/spec.go#specCut
