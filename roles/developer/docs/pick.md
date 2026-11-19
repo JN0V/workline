@@ -36,7 +36,7 @@ that is:
   issue whose Validation names scenarios waits until the tester's Draft
   of its tests is open ([the triggers](triggers.md#on-a-schedule)), or
   the tester recorded another kind of proof in its place
-  ([proof kinds](../../tester/docs/hand-over.md#a-proof-kind-not-always-a-new-test)):
+  ([proof kinds](../../tester/docs/proof-kinds.md#a-proof-kind-not-always-a-new-test)):
   taken then, the kind and its reason in its agent's task.
 
 `--issue <n>` looks at that one alone. Each ready issue passed over is

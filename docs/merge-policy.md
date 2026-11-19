@@ -67,7 +67,7 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   auto-merge on ([#1417](https://github.com/JN0V/workline/issues/1417)).
   The reviewer resolves its own
   once the code answers them
-  ([lines](../roles/reviewer/docs/lines.md#not-repeated-found-again));
+  ([lines](../roles/reviewer/docs/lines-again.md#not-repeated-found-again));
   a person resolves theirs
   ([#1039](https://github.com/JN0V/workline/issues/1039)).
 - **No one at a time, no update first**: a pull request behind its base
@@ -267,11 +267,11 @@ the candidate's issue, ships the version:
 - **Another forge** (`cmd:`): the operations `merge-state`, `auto-merge`,
   `guarded`, `accept`, `keep-verdict` and `verdict`
   ([forge command](spec/forge-command.md)); at `normal`, more
-  ([set up](merge-policy-normal.md#set-up)).
+  ([set up](merge-policy-reverts.md#set-up)).
 - **The local forge** (`forge: local`): nothing to set up. It has no
   auto-merge, so `workline follow` merges itself what the policy says
   yes to, in the clone, nothing pushed
-  ([the line with no forge](local-line.md#6-the-merge)).
+  ([the line with no forge](local-line-merge.md)).
 
 ## What the summary says
 

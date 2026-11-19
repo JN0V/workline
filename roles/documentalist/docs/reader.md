@@ -76,7 +76,7 @@ passes.
   merges workline's own docs alone (`normal`): a comment on it says so.
   A project lets these merge alone with
   `merge: {autonomy: normal, alone: [reader]}`
-  ([the merge policy](../../../docs/merge-policy-normal.md#the-readers-rewordings-wait-for-a-yes)).
+  ([the merge policy](../../../docs/merge-policy-routine.md#the-readers-rewordings-wait-for-a-yes)).
 - Each page read gets `reader: <hash>` in its header: its body as the
   merge request leaves it. While the page's body still matches, it is not
   read again. A page with no header gets one, in a comment no rendering

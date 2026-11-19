@@ -1,6 +1,19 @@
 ---
-sources: [cmd/workline/main.go, internal/forge/local.go, internal/forge/local_merge.go, internal/forge/local_threads.go, internal/doctor/tests.go]
-checked: e4e4287bc
+sources:
+  - internal/forge/local.go#Local
+  - internal/forge/local.go#Local.dir
+  - cmd/workline/main.go#issuesCmd
+  - cmd/workline/main.go#initCmd
+  - cmd/workline/main.go#initPacks
+  - internal/packs/builtin/python-pytest.yaml#detect
+  - internal/role/role.go#ProjectConfig
+  - defaults/routing.yaml#states
+  - internal/doctor/tests.go#testCommand
+  - internal/doctor/tests.go#testCommandRuns
+  - internal/doctor/tests.go#testsFix
+  - internal/engine/engine.go#RunsDir
+  - internal/kit/worktree/worktree.go#RunTree
+checked: c46a93d6c
 verified: agent:claude-code
 ---
 # The whole line with no forge
@@ -22,7 +35,8 @@ need ──► product owner ──► tester ──► developer ──► revi
   edits a section, as you would on a forge's page.
 - **An agent is needed** for the roles that write: `claude`, or any
   command as `cmd:` ([the agent](install.md#3-the-agent-your-choice)).
-  With `none`, each role says what it skipped.
+  With `none`, each role says what it skipped
+  ([principle 5](PRINCIPLES.md)).
 
 ## 1. Install and adopt
 
@@ -65,11 +79,10 @@ roles:
 ```sh
 workline doctor          # says a missing test-command, or one that cannot run here
 git add .workline/config.yaml && git commit -m "chore: adopt workline"
-export WORKLINE_RUNS_DIR=~/.cache/workline-runs   # outside the clone: see below
 ```
 
-`WORKLINE_RUNS_DIR` keeps the runs out of `.git/`: Claude Code refuses
-to edit a file under `.git/`, where the developer's worktree would be
+The runs are kept in `.git/workline/runs`; an agent's worktree is made
+outside `.git/`, where Claude Code edits no file
 ([#1304](https://github.com/JN0V/workline/issues/1304)).
 
 ## 3. Write the need
@@ -86,130 +99,17 @@ workline issues open "sc-late-fee takes NaN for an amount" \
 
 ## 4. Run each step
 
-Each run wakes the role the issue's state names, then moves the issue on:
-
-```sh
-workline route issue --target issue:1 --ai claude
-workline issues show 1   # what it wrote, and what it asks of you
-```
-
-| State label | Wakes | What you do |
-|---|---|---|
-| `workline:to-refine` | the product owner, then the reviewer on the spec | answer it (below) |
-| `workline:needs-tests` | the tester: tests on `workline/tester/issue-1`, a Draft `!1` | nothing |
-| `workline:ready` | the developer: code on `workline/developer/1`, `!2` | nothing |
-| `workline:developing` | nobody: its merge request waits for the review | review it (step 5) |
-
-Run the same command after each step until the issue is
-`workline:developing` with its merge request open.
-
-- **Your checkout stays as it is**: the tester's tests and the
-  developer's code are written and committed on their branch in a
-  worktree apart; your branch, and your changes not committed, are
-  never touched ([#1372](https://github.com/JN0V/workline/issues/1372)).
-
-### Answer the product owner
-
-At `normal`, it proposes its drafts and waits for your yes:
-
-```sh
-workline issues label 1 --add workline:accepted   # yes: it moves the issue on at its next run
-workline issues comment 1 --body "Refuse inf too."  # it revises what it proposes
-```
-
-A comment answers the reviewer's questions on the spec the same way:
-the product owner reads it at its next run and writes what it settles
-into the Scope.
-
-Its comment on the issue lists every answer
-([its run](../roles/product-owner/docs/run.md)).
+`workline route issue --target issue:1 --ai claude` wakes the role the
+issue's state names, then moves it on:
+[run each step](local-line-steps.md), with how to answer the product
+owner and what to do when a step stalls.
 
 ## 5. Review the merge request
 
-No forge runs a job on a push here: the reconciler does, from `main`.
-
-```sh
-workline route reconcile --ai claude  # reviews !2's new head, runs a round due
-workline issues show !2               # what the line found on it
-```
-
-- **The merge-request line** runs on each developer's request, not a
-  draft, whose head has no verdict yet: the committer, the tester's
-  check and the reviewer. Their findings go on `!2`.
-- **The line's verdict** on that head is kept in the clone, for the
-  merge (step 6). A new head is reviewed at the next reconcile.
-- **A block is said on `!2`**: which step blocked, its findings, what
-  you can do, in one comment edited at each run
-  ([#1327](https://github.com/JN0V/workline/issues/1327)).
-- **A review round**: a finding, or your comment
-  (`workline issues comment '!2' --body "…"`), wakes the developer at
-  the next reconcile. Its fix is committed on its branch, unless you
-  have that branch checked out: then it says so and waits.
-- **A test the review finds missing** goes to the tester, on its Draft
-  `!1`: the next reconcile runs its answer, which adds the test or says
-  why none is needed
-  ([#1265](https://github.com/JN0V/workline/issues/1265)).
-- **Each runs in a worktree of the head**, apart: your checkout is
-  never read nor written.
-- **The config it takes** is your clone's `.workline/config.yaml`, laid
-  in that worktree, even an uncommitted change: the
-  merge request's branch may hold another, committed one. This is
-  intended: the runs take the line you run. In CI the line reads the
-  config committed on the head.
-- **A comment names you**: a review round names the author of your
-  comment as the clone's `git config user.name`.
-- **By hand**:
-  - the line: `git checkout workline/developer/1`, then
-    `workline route merge-request --target merge-request:2 --ai claude`.
-    A doc fix it proposes goes in a comment on `!2`, never in your tree.
-  - a round, from any branch: `workline develop --merge-request 2 --ai claude`.
-    It runs in a worktree of `!2`'s head.
+The reconciler runs the merge-request line and the review rounds, in a
+worktree apart: [review the merge request](local-line-review.md).
 
 ## 6. The merge
 
-```sh
-git checkout main
-workline follow          # merges what the policy says yes to; closes its issue
-workline issues          # #1 closed, !1 and !2 merged
-```
-
-`workline follow` does what a forge's auto-merge would
-([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-10-1322-the-local-forge-merges-itself)):
-
-- **A bug's fix merges alone**: its tests red on `main` first, every
-  gate passed, the reviewer's verdict on its head, no Important finding.
-- **A feature or a task waits for your yes**, said on `!2`:
-  `workline issues label !2 --add workline:accepted`, then `follow`.
-- **Only the head that passed**: a commit since waits for the next
-  reconcile's review.
-- **Into `main` in this clone**: a merge commit naming `!2`; nothing is
-  pushed. `main` checked out with uncommitted changes, or a conflict:
-  nothing merges, the reason said on `!2` and on its issue.
-- **Behind `main`, which changed one of its files**: no run checks
-  `main` here, so `follow` merges `main` into its branch and runs your
-  `test-command` on that merge. Green: the branch moves there, the next
-  reconcile reviews it, the next `follow` merges it. Red: nothing moves,
-  the test named on `!2` and its issue
-  ([#1370](https://github.com/JN0V/workline/issues/1370)).
-- **A conflict with `main`** names its files: the next reconcile's
-  developer round merges `main` in, never a rebase
-  ([behind main](../roles/developer/docs/conflict.md)). One that fails
-  blocks the issue: you merge `main` into its branch, or close `!2`
-  ([#1354](https://github.com/JN0V/workline/issues/1354)).
-- **No `merge:` setting**: you merge with git, then `follow` closes the
-  issue:
-
-```sh
-git checkout main && git merge --ff-only workline/developer/1
-workline follow
-```
-
-## When a step stalls
-
-- **A state that wakes nobody**: `workline issues show 1` says why on
-  the issue; `workline route reconcile --ai claude` runs what is due.
-- **A run that changed nothing**: run again after the body or labels
-  change, or after you answer with `workline issues comment`; the line
-  does not ask twice on the same input.
-- **More**: [troubleshooting](troubleshooting.md),
-  [the product owner's](troubleshooting-product-owner.md).
+`workline follow` merges what the policy says yes to, into `main` in
+this clone: [the merge](local-line-merge.md).

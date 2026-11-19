@@ -11,7 +11,7 @@
 - **Research:** [forge-boards.md](../research/forge-boards.md)
 - **Amended by:** [ADR-0059](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md),
   three slots more, refine, tests and blocked, each moved with its
-  state's label ([boards](../boards.md#what-each-state-moves))
+  state's label ([boards](../board-moves.md#what-each-state-moves))
 
 ## Context
 

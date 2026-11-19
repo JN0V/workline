@@ -427,12 +427,12 @@ whose result moves the issue to the next. The table is the routing's
   state's off, in one call.
 - **Its card follows**: on a board with a column for the state, named
   as the state is (refine, tests, ready, doing, blocked), the card moves
-  with the label ([boards](../boards.md#what-each-state-moves)).
+  with the label ([boards](../board-moves.md#what-each-state-moves)).
 - **Who moves it**: the product owner's ready sends an issue with named
   scenarios to `tests` where the tester is routed, else to `ready`
   ([refine](backlog-acts/refine.md)); the tester's proven, linted Draft
   moves it to `ready`
-  ([the hand-over](../../roles/tester/docs/hand-over.md#when-the-tests-are-written)),
+  ([the hand-over](../../roles/tester/docs/written.md)),
   as its proof kind does; its "no test possible" sends it back to
   `refine`, where the product owner's ready with a proof kind moves it
   to `ready`
@@ -929,7 +929,7 @@ back to refine.
 [ADR-0060, decision 4](../adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind):
 a bug whose tests passed on the base waits in its tests' state, marked
 `workline:needs-repro`, its reporter asked by the tester
-([the hand-over](../../roles/tester/docs/hand-over.md#a-bug-not-reproduced)).
+([the hand-over](../../roles/tester/docs/proof-kinds.md#a-bug-not-reproduced)).
 The line reads it with no agent:
 
 - **Its body edited** since the tester's run: the tester runs again.

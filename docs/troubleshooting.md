@@ -188,7 +188,7 @@ The line of states says why on the issue and in the run's summary
   become a check's annotations, which open none.
 - **The reviewer's comments** are conversations by design. The reviewer
   resolves its own once the code answers them
-  ([how](../roles/reviewer/docs/lines.md#not-repeated-found-again)); a
+  ([how](../roles/reviewer/docs/lines-again.md#not-repeated-found-again)); a
   person resolves the rest. `workline follow` lists the open ones that
   hold an auto-merge
   ([#1039](https://github.com/JN0V/workline/issues/1039)).
@@ -221,7 +221,7 @@ The [merge policy](merge-policy.md) acts only with `merge:` in
   turned on — a forge with no auto-merge, a GitHub job's own token, a
   base that does not require `workline/accepted`
   ([set up](merge-policy.md#set-up)). The local forge merges itself
-  ([the merge](local-line.md#6-the-merge)).
+  ([the merge](local-line-merge.md)).
 - `auto-merge-refused` on the local forge: `main` checked out with
   uncommitted changes, a conflict, or a branch moved since it was
   weighed; commit or stash, rebase, or run the line again.

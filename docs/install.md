@@ -116,7 +116,7 @@ git commit --allow-empty -m "AC-3 fix the thing"
   `.workline/config.yaml`, or your own config), it refuses in about a
   second, as above.
 - **With an agent**, the same commit goes through, rewritten, 30 s at most
-  ([the committer](../roles/committer/README.md#rewrite-the-agent-30-s-at-most),
+  ([the committer](../roles/committer/docs/rewrite.md#rewrite-the-agent-30-s-at-most),
   [ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md)):
 
 ```text

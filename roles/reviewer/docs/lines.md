@@ -1,6 +1,22 @@
 ---
-sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/resolve.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/forge/threads.go, internal/engine/review.go]
-checked: 6aeb82bd
+sources:
+  - internal/builtin/reviewer/lines.go#lineComments
+  - internal/builtin/reviewer/lines.go#fileLine
+  - internal/builtin/reviewer/lines.go#holds
+  - internal/builtin/reviewer/lines.go#lineBody
+  - internal/builtin/reviewer/lines.go#ruleBody
+  - internal/builtin/reviewer/lines.go#shortMessage
+  - internal/builtin/reviewer/rules.go#storyRule
+  - internal/builtin/reviewer/rules.go#mechanical
+  - internal/builtin/reviewer/reviewer.go#found
+  - internal/builtin/reviewer/reviewer.go#group
+  - internal/builtin/reviewer/reviewer.go#members
+  - internal/builtin/reviewer/reviewer.go#summaryComment
+  - internal/builtin/reviewer/reviewer.go#apartNits
+  - internal/builtin/reviewer/reviewer.go#state.standingFindings
+  - internal/builtin/reviewer/reviewer.go#findingsTable
+  - internal/forge/review.go#Reviewed.Section
+checked: c46a93d6c
 judged: 39dcb7b
 verified: agent:claude-code
 ---
@@ -51,86 +67,18 @@ flowchart LR
   own rule: GitHub's "Require conversation resolution before merging" (a
   branch rule), GitLab's "All threads must be resolved" (merge checks).
   Each holds it until the code answers it
-  ([below](#not-repeated-found-again)), or a person resolves it. Nits
+  ([found again](lines-again.md#not-repeated-found-again)), or a person resolves it. Nits
   never hold it: they open no conversation.
-
-## The forge's own review
-
-| Forge | What it posts | A line its diff does not show |
-|---|---|---|
-| GitHub | one pull request review, event `COMMENT`, each comment on its line at the head reviewed | refuses the whole review (422) |
-| GitLab | a discussion on each line; a kept line given with its line before the change too | taken as a discussion on no line, silently |
-
-- **Never an approval**, nor a request for changes
-  ([ADR-0020](../../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)).
-- **Once, not twice**: on a merge request, its findings stay out of the
-  SARIF for code scanning, which would open a second conversation each
-  ([#412](https://github.com/JN0V/workline/issues/412)).
-- **The diff read first**: the pull request's files, the merge request's
-  diffs; a line the forge does not show is known before anything is posted.
-- **The summary comment** keeps a row for each finding on a line, its
-  title only, and links to the review: the one posted, else the merge request's
-  changes, where the comments show. The lenses that warn, read apart, post
-  a review and rows of their own, in their own comment ([apart](apart.md)).
-- **Other forges** (`local`, `cmd:`) take no comment on a line: each
-  finding, in full, in the summary comment.
-
-## Not repeated, found again
-
-- **A key is hidden in each comment**: the lens or rule, the file, the
-  line's text, spaces aside, and which of the lines reading so it is; a
-  line that cannot be read, its number. Lines added above keep it; a line
-  changed gets a new one.
-- **Still open on the merge request**: not posted again, counted in the
-  summary ("still open from before"). It matters on a later push that
-  reads a line again, and when every lens reads the whole change once
-  ready ([#129](https://github.com/JN0V/workline/issues/129)).
-- **Resolved by a person**, and found again: posted again, in a new review.
-- **Resolved by the reviewer once the code answers it**
-  ([#1039](https://github.com/JN0V/workline/issues/1039)), as a block
-  goes ([judge](judge.md#a-block-stands-until-a-commit-answers-it)):
-  - its line is no longer at the head: changed, or removed;
-  - or its lens reads the file again and finds it no more, its judge's
-    no included; for the tests lens, a test file touching it counts: in
-    its folder, named after it in a folder mirroring its own
-    (`src/test/…/GridTest.kt` for `src/main/…/Grid.kt`), or naming it
-    ([#1417](https://github.com/JN0V/workline/issues/1417)). A push
-    changing such a test asks the tests lens again, beside the lens in
-    turn, so that it reads it;
-  - or, a warning only, the developer's round answered it with a fix
-    pushed, its tests green, and the next run does not raise it again
-    ([#1050](https://github.com/JN0V/workline/issues/1050)): a warning
-    asks nothing, its lens may never read the file again.
-  - or the tester answered that no test is needed, and a judge found
-    the reason holds
-    ([judge](tester-answers.md)).
-  - The summary comment counts them, under **Resolved**.
-- **Left open**: found again, a block still standing, a lens that read
-  elsewhere, a warning nothing answered; one a person opened, or
-  answered in, stays theirs.
 - **A block standing from a review before**, no lens reading it again
   ([#326](https://github.com/JN0V/workline/issues/326)): its row in the
   summary comment, marked `**blocks**`; its comment on the line is not
   posted again, resolved or not.
 
-## When it cannot be on its line
+## In detail
 
-Never a failed run for it: each such finding goes, in full, into the
-summary comment under **Here only**, with why.
-
-- **A line the merge request's diff does not show**: a range reviewed
-  other than the merge request's, a file the forge gives no patch of
-  (binary, too large).
-- **A forge that refuses** (403, 422, 400; on GitLab 405, 406, 409 too):
-  a token that may not review, GitHub's without `pull-requests: write`.
-  Said in the run's findings too, `line-comment-refused`, a warning, and
-  in the job's summary.
-- **A fork's merge request**: nothing is applied there. On GitHub the
-  fork workflow comments the job's summary, each finding in full; on
-  GitLab nothing is commented
-  ([ci-gitlab](../../../docs/ci-gitlab.md#what-the-template-does)).
-- **A forge out of reach**: the run stops, resumable
-  (`workline apply <run>`); the comments already posted are found open,
-  not posted twice.
+- [The forge's own review](lines-forge.md): what each forge posts, and
+  when a finding cannot be on its line.
+- [Not repeated, found again](lines-again.md): a comment's hidden key,
+  and the conversations the reviewer resolves once the code answers.
 
 Tried live on both forges: [tried.md](tried.md#2026-10-12--each-finding-on-its-line-277-live).

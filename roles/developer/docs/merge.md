@@ -101,7 +101,7 @@ a feature or a task merges too, and the yes moves to the milestone's
     nothing.
 - **A bug the tester cannot reproduce** never reaches here: its
   reporter is asked, then it is Blocked
-  ([the hand-over](../../tester/docs/hand-over.md#a-bug-not-reproduced)).
+  ([the hand-over](../../tester/docs/proof-kinds.md#a-bug-not-reproduced)).
 - **A feature or a task waits for a person's yes**, the label
   `workline:accepted`: a `task` is a label an agent may put
   ([amended](../../../docs/adr/0060-the-person-is-on-the-loop.md#amendment-2026-11-03-a-task-waits-as-a-feature)).

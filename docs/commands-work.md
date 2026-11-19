@@ -41,7 +41,7 @@ first objection waiting on its Draft
 - **Checked out** at the branch's tip; another branch is never written.
 - **`--ai`**: none says so and answers nothing; the need itself, an
   unreadable form and a person's turn need no agent.
-- **`--state`**, **`--tried <state>`**: no agent, for CI ([why](objection-jobs.md#one-objection-a-run-the-queue-drained-github-only)).
+- **`--state`**, **`--tried <state>`**: no agent, for CI ([why](objection-jobs-queue.md)).
 
 `workline test measure --history <file>` is the curator's measures of
 the corpus on `HEAD`, no agent

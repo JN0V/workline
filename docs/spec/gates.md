@@ -96,7 +96,7 @@ since the branch's tip before it counts.
   PATH; one naming neither runs again. Else, or none kept for that
   commit, run again, the summary saying why. The folder is filled only
   from main's own runs, never from a store a branch could write
-  ([main after a merge](../main-after-merge.md#the-next-base)).
+  ([the next base](../next-base.md)).
 - **Compared one for one, never by line number**: the tool, the rule, the
   file (a rename followed), then the tool's own `fingerprints`, else its
   `partialFingerprints`, else the message and the text of the line, its

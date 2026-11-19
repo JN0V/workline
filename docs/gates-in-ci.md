@@ -53,7 +53,7 @@ The templates need the first release after v0.35.0.
 - **The merge base's findings**: read as main kept them, when kept with
   the same command, config and tool: the tools run once, at the head;
   else again at the merge base, said why
-  ([the next base](main-after-merge.md#the-next-base)).
+  ([the next base](next-base.md)).
 
 ## What the findings become
 
