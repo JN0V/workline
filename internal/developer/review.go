@@ -13,6 +13,7 @@ package developer
 // the auditor (ADR-0046).
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -55,6 +56,9 @@ type round struct {
 	// Backstop: why its issue's runs reached their backstop, no round run
 	// (ADR-0064, §5; backstop.go).
 	Backstop string `json:"backstop,omitempty"`
+	// Stalled: the round's stop, its last two outcomes the same failure at
+	// this head and base (#1769): no agent, said once on the pull request.
+	Stalled  *stall `json:"stalled,omitempty"`
 	At       string `json:"at,omitempty"`        // its branch's head, where its fix starts
 	GatesAt  string `json:"gates-at,omitempty"`  // the head the gates' findings asked were read at
 	ChecksAt string `json:"checks-at,omitempty"` // the head the project's red checks were read at
@@ -217,6 +221,9 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	// Its merge refused for a conflict with its base (ADR-0067): the
 	// round merges the base in, and asks nothing else.
 	if base, due := conflictNow(f, kept, a, repo, mr, head); due {
+		if code, stopped := stallPre(runDir, f, kept, repo, mr, r, head); stopped {
+			return code
+		}
 		return conflictPre(runDir, repo, s, f, b, mr, a, head, base)
 	}
 	// The review's test findings on code are the tester's (#1265): its
@@ -302,6 +309,9 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 			return fail(err)
 		}
 		return writeIntents(runDir, "fallback.yaml", handOff(r, bounds, repo))
+	}
+	if code, stopped := stallPre(runDir, f, kept, repo, mr, r, head); stopped {
+		return code
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("no agent: %d finding%s wait for a run with one, no round counted", len(r.Asked), devmark.Plural(len(r.Asked))),
@@ -555,6 +565,9 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	if a.Handed {
 		return false, nil
 	}
+	if s, _ := stalled(f, kept, repo, mr, branchHead(f, repo, mr.Branch)); s != nil {
+		return false, nil // the same failure twice at this head: no round (#1769)
+	}
 	if _, due := conflictNow(f, kept, a, repo, mr, branchHead(f, repo, mr.Branch)); due {
 		return true, nil // its merge refused for a conflict: a merge round (ADR-0067)
 	}
@@ -753,8 +766,12 @@ func reviewPost(runDir, repo string, s Settings) int {
 	if r.Ready {
 		return readyPost(runDir, r)
 	}
-	if r.Merge != "" && r.Backstop == "" {
+	if r.Merge != "" && r.Backstop == "" && r.Stalled == nil {
 		return mergePost(runDir, repo, s, r)
+	}
+	if r.Stalled != nil {
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "the same failure twice at this head: no round run",
+			Findings: []verdict.Finding{{Rule: "round-stalled", Level: "warn", Where: where, Message: r.Stalled.Message}}})
 	}
 	if r.Backstop != "" {
 		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("at its backstop: its issue #%d blocked, no round run", r.Record.Issue),
@@ -1187,4 +1204,89 @@ func disputes(a devmark.Act) int {
 // ceiling that hands it to a person (#1687).
 func rounds(a devmark.Act) int {
 	return max(a.Round, len(a.Rounds), disputes(a))
+}
+
+// stall is a round's stop (#1769): the failure it came twice, at a head
+// and a base.
+type stall struct {
+	Head    string `json:"head"`
+	Base    string `json:"base"`
+	Rule    string `json:"rule"`
+	Message string `json:"message"`
+	Said    bool   `json:"said,omitempty"` // said on the pull request already
+}
+
+var failedRound = regexp.MustCompile(`<!-- workline:round-failed (\{.*\}) -->`)
+
+const stallMarkKey = "sticky=developer/round-stop"
+
+// stalled reads the last two failed outcomes the engine left on the pull
+// request: the same head, base, rule and message as printed, at the
+// branch's head and its base's tip now, the round stops.
+func stalled(f forge.Forge, kept forge.Kept, repo string, mr forge.MergeRequest, head string) (*stall, bool) {
+	var last []stall
+	for _, body := range kept.Each("<!-- workline:round-failed ") {
+		m := failedRound.FindStringSubmatch(body)
+		if m == nil {
+			continue
+		}
+		var x stall
+		if json.Unmarshal([]byte(m[1]), &x) == nil {
+			last = append(last, x)
+		}
+	}
+	if len(last) < 2 || head == "" {
+		return nil, false
+	}
+	x, y := last[len(last)-1], last[len(last)-2]
+	if x != y || x.Head != head || x.Rule == "" {
+		return nil, false
+	}
+	base := ""
+	refs := []string{"refs/remotes/origin/" + mr.Base, "refs/heads/" + mr.Base}
+	if forge.KeepsBranches(f) {
+		refs = refs[1:]
+	}
+	for _, ref := range refs {
+		if tip, err := gitOut(repo, "rev-parse", "-q", "--verify", ref+"^{commit}"); err == nil && tip != "" {
+			base = tip
+			break
+		}
+	}
+	if x.Base != base {
+		return nil, false
+	}
+	if body, ok := kept.Last(forge.Marker(stallMarkKey)); ok && strings.Contains(body, stallRecord(x)) {
+		x.Said = true
+	}
+	return &x, true
+}
+
+func stallRecord(x stall) string {
+	return fmt.Sprintf("<!-- workline:round-stopped head=%s base=%s -->", x.Head, x.Base)
+}
+
+// stallPre stops the round when stalled: said once on the pull request,
+// no agent; said already, nothing is added.
+func stallPre(runDir string, f forge.Forge, kept forge.Kept, repo string, mr forge.MergeRequest, r round, head string) (int, bool) {
+	x, ok := stalled(f, kept, repo, mr, head)
+	if !ok {
+		return 0, false
+	}
+	where := fmt.Sprintf("merge request %d", r.MR)
+	if x.Said {
+		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "the same failure twice at this head: no round run, said already",
+			Findings: []verdict.Finding{{Rule: "round-stalled", Level: "info", Where: where, Message: x.Message}}}), true
+	}
+	r.Stalled = x
+	if err := writeIn(runDir, roundFile, r); err != nil {
+		return fail(err), true
+	}
+	body := fmt.Sprintf("**Stopped**: the last two rounds at this head ended the same way, `%s`: %s\n\n"+
+		"The two runs are the failed ones above, each with its record; no third round runs, no agent is called. "+
+		"The rounds start again when the branch's head or its base moves: a push to the branch, or a new commit on %s.\n\n%s",
+		x.Rule, x.Message, mr.Base, stallRecord(*x))
+	return writeIntents(runDir, "fallback.yaml", []intent.Intention{
+		{Kind: "comment", Value: map[string]any{"sticky": "round-stop", "body": body}},
+	}), true
 }
