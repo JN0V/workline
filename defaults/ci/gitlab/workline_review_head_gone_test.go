@@ -76,7 +76,9 @@ func runReviewHead(t *testing.T, state string, branchKept bool) (string, error) 
     gitStub := "#!/bin/sh\n" +
         "if [ \"$1\" = ls-remote ] && [ -n \"$STUB_BRANCH_SHA\" ]; then printf '%s\\trefs/heads/x\\n' \"$STUB_BRANCH_SHA\"; fi\n" +
         "exit 0\n"
-    curlStub := "#!/bin/sh\nprintf '{\"state\":\"%s\"}\\n' \"$STUB_MR_STATE\"\n"
+    curlStub := "#!/bin/sh\nout=\nwhile [ $# -gt 0 ]; do [ \"$1\" = -o ] && out=$2; shift; done\n" +
+        "body=$(printf '{\"state\":\"%s\"}' \"$STUB_MR_STATE\")\n" +
+        "if [ -n \"$out\" ]; then echo \"$body\" > \"$out\"; printf 200; else echo \"$body\"; fi\n"
     for name, body := range map[string]string{"git": gitStub, "curl": curlStub} {
         if err := os.WriteFile(filepath.Join(bin, name), []byte(body), 0o755); err != nil {
             t.Fatal(err)

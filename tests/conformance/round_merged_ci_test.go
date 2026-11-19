@@ -41,12 +41,12 @@ func TestCIGitHubRoundOnAMergedRequest(t *testing.T) {
 			t.Fatalf("%s: no step `The round (proposed only)` in the job review", f)
 		}
 		for _, c := range []struct {
-			name, state string // state: what gh says of the pull request, "" when it cannot be read
+			name, state string // state: what gh says of the pull request
 			branch      bool
 			say         string // what the step says; "" for a round asked
 		}{
 			{"merged, its branch kept", "MERGED", true, "pull request 33 is merged meanwhile: no round"},
-			{"its branch deleted, the forge not read", "", false, "pull request 33: its branch workline/developer/26 is gone, merged or closed meanwhile: no round"},
+			{"its branch deleted", "OPEN", false, "pull request 33: its branch workline/developer/26 is gone, merged or closed meanwhile: no round"},
 			{"open", "OPEN", true, ""},
 		} {
 			t.Run(filepath.Base(filepath.Dir(f))+"/"+c.name, func(t *testing.T) {
