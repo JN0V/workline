@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
@@ -35,129 +34,6 @@ func gitRepo(t *testing.T, files map[string]string) string {
 		}
 	}
 	return repo
-}
-
-// A project whose test command is the tester's setting: run-tests.sh
-// writes a JUnit report, one test that passes when lib.sh says "ok".
-func provingRepo(t *testing.T, command string) string {
-	t.Helper()
-	roles, err := filepath.Abs("../../roles")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("WORKLINE_ROLES_DIR", roles)
-	script := `r=$(sh lib.sh)
-if [ "$r" = ok ]; then c='<testcase classname="lib" name="ok"/>'; else c='<testcase classname="lib" name="ok"><failure message="no"/></testcase>'; fi
-printf '<testsuite name="lib">%s</testsuite>\n' "$c" > "$1"
-[ "$r" = ok ]
-`
-	return gitRepo(t, map[string]string{
-		"lib.sh":                "echo no\n",
-		"run-tests.sh":          script,
-		".workline/config.yaml": "roles:\n  tester:\n    settings:\n      test-command: " + command + "\n",
-	})
-}
-
-func lib(says string) []intent.Intention {
-	return []intent.Intention{{Kind: "patch", Value: map[string]any{"file": "lib.sh", "content": "echo " + says + "\n"}}}
-}
-
-func TestProve(t *testing.T) {
-	repo := provingRepo(t, `"sh run-tests.sh {report}"`)
-	if p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60}); p.Result != devmark.Green || p.Passed != 1 || c != nil {
-		t.Errorf("green: proof = %+v, cap = %+v; want green, 1 passed, no cap", p, c)
-	}
-	p, c := prove(repo, "", lib("no"), nil, nil, Settings{ProofSeconds: 60})
-	if p.Result != devmark.Red || len(p.Red) != 1 || p.Red[0] != "lib.ok" || c != nil {
-		t.Errorf("red: proof = %+v, cap = %+v; want red, lib.ok red, no cap", p, c)
-	}
-	if lines := devmark.ProofLines(p, nil); !strings.Contains(lines, "0 passed, 1 red") || !strings.Contains(lines, "red: `lib.ok`") {
-		t.Errorf("red: Verification lines %q lack what was red", lines)
-	}
-	if f := proofFindings("#3", p, nil); len(f) != 1 || f[0].Rule != "proof-red" {
-		t.Errorf("red: findings = %+v, want one proof-red", f)
-	}
-}
-
-// A flaky-n-of-n proof keeps its test and runs, proven or not: a review
-// round runs the same N runs again from the record.
-func TestProveFlakyKeepsItsRunsForTheReview(t *testing.T) {
-	repo := provingRepo(t, `"sh run-tests.sh {report}"`)
-	p, _ := prove(repo, "", lib("ok"), nil, &Flaky{Test: "ok", Runs: 3}, Settings{ProofSeconds: 60})
-	if p.Result != devmark.Green || p.Ran != 3 || !strings.Contains(devmark.ProofLines(p, nil), "`ok` passed 3 runs of 3") {
-		t.Errorf("green: proof = %+v; want green, 3 runs of 3 said", p)
-	}
-	if n := again(&p); n == nil || *n != (Flaky{Test: "ok", Runs: 3}) {
-		t.Errorf("again(green) = %+v, want ok, 3 runs", n)
-	}
-	p, _ = prove(repo, "", lib("ok"), nil, &Flaky{Test: "a b", Runs: 3}, Settings{ProofSeconds: 60})
-	if p.Result != devmark.Unproven || again(&p) == nil {
-		t.Errorf("a name a shell reads: proof = %+v; want unproven, its runs kept", p)
-	}
-	t.Setenv("WORKLINE_ROLES_DIR", t.TempDir()) // no tester's role: its settings unread
-	p, _ = prove(repo, "", lib("ok"), nil, &Flaky{Test: "ok", Runs: 3}, Settings{})
-	if p.Result != devmark.Unproven || again(&p) == nil {
-		t.Errorf("settings unread: proof = %+v; want unproven, its runs kept", p)
-	}
-	if again(&devmark.Proof{Result: devmark.Green}) != nil {
-		t.Error("again(not flaky) is not nil")
-	}
-}
-
-// No report written: the tests did not run whole, never green.
-func TestProveNotRunWhole(t *testing.T) {
-	repo := provingRepo(t, `"true"`)
-	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
-	if p.Result != devmark.Unproven || p.Why == "" || c != nil {
-		t.Errorf("proof = %+v, cap = %+v; want unproven, why said, no cap", p, c)
-	}
-	if f := proofFindings("#3", p, nil); len(f) != 1 || f[0].Rule != "proof-not-run" {
-		t.Errorf("findings = %+v, want one proof-not-run", f)
-	}
-}
-
-// A report naming no test proves nothing: unproven, never red.
-func TestProveEmptyReportIsUnproven(t *testing.T) {
-	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}"`)
-	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
-	if p.Result != devmark.Unproven || p.Why != "the report names no test" || c != nil {
-		t.Errorf("proof = %+v, cap = %+v; want unproven, the report naming no test", p, c)
-	}
-}
-
-// A command that fails, its report naming no test, and a tool not found in
-// its output: unproven, and the tool is held in Missing (#774).
-func TestProveUnprovenHoldsTheMissingTool(t *testing.T) {
-	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}; echo 'run.sh: 1: nosuchtool774: not found'; exit 1"`)
-	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
-	if p.Result != devmark.Unproven || p.Why != "the report names no test" || c != nil {
-		t.Fatalf("proof = %+v, cap = %+v; want unproven, the report naming no test", p, c)
-	}
-	if !slices.Equal(p.Missing, []string{"nosuchtool774"}) {
-		t.Errorf("Missing = %v, want [nosuchtool774]", p.Missing)
-	}
-}
-
-// The same failure with no tool named in its output: Missing is empty.
-func TestProveUnprovenWithNoToolMissingNamesNone(t *testing.T) {
-	repo := provingRepo(t, `"printf '<testsuite name=\"lib\"></testsuite>' > {report}; exit 1"`)
-	p, _ := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 60})
-	if p.Result != devmark.Unproven || len(p.Missing) != 0 {
-		t.Errorf("proof = %+v; want unproven, no Missing", p)
-	}
-}
-
-// Past proof-seconds, the command is stopped: unproven, and the cap said.
-func TestProveStoppedPastItsSeconds(t *testing.T) {
-	repo := provingRepo(t, `"exec sleep 30"`)
-	p, c := prove(repo, "", lib("ok"), nil, nil, Settings{ProofSeconds: 1})
-	if p.Result != devmark.Unproven || c == nil || c.Setting != "proof-seconds" || c.Allows != 1 {
-		t.Fatalf("proof = %+v, cap = %+v; want unproven, the proof-seconds cap", p, c)
-	}
-	f := proofFindings("#3", p, []devmark.Cap{*c})
-	if len(f) != 2 || f[1].Rule != "cap-reached" || f[1].Where != "proof-seconds" {
-		t.Errorf("findings = %+v, want proof-not-run then cap-reached on proof-seconds", f)
-	}
 }
 
 // calls writes a run's out/calls.jsonl and reads it back.

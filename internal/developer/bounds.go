@@ -32,7 +32,6 @@ import (
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/steer"
-	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -142,7 +141,7 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 		if n == 0 {
 			continue
 		}
-		r, ok, err := tester.ReadRecord(f, mr.ID)
+		r, ok, err := testmark.ReadDraft(f, mr.ID)
 		if err != nil {
 			return b, err
 		}

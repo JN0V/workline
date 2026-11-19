@@ -362,7 +362,7 @@ func mergePost(runDir, repo string, s Settings, r round) int {
 		}
 		var caps []devmark.Cap
 		var found []verdict.Finding
-		p, u, caps, found = proven(runDir, repo, at, where, nil, union(a.Acceptance, union(a.Code, a.Tests)), again(a.Proof), s)
+		p, u, caps, found = proven(runDir, repo, at, where, nil, union(a.Acceptance, union(a.Code, a.Tests)), Again(a.Proof), s)
 		for _, f := range found {
 			f.Message = strings.ReplaceAll(f.Message, "; its pull request opens as a Draft", "")
 			v.Findings = append(v.Findings, f)

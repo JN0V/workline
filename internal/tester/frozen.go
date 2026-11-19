@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -24,12 +23,13 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // recordKey is the record's sticky key: the comment's marker is
 // sticky=tester/tests, as the engine writes it.
-const recordKey = "tests"
+const recordKey = testmark.DraftRecordKey
 
 // record is what the tester keeps on its Draft: the issue, the base its
 // tests were proven red on, and each test file's blob.
@@ -63,7 +63,7 @@ type record struct {
 	RedUnproven string `json:"red-unproven,omitempty"`
 }
 
-var recordData = regexp.MustCompile(`<!-- workline:tester-record (\{.*\}) -->`)
+var recordData = testmark.DraftData
 
 // body is the comment a person reads: the tests, frozen, and how to
 // object; the record hidden at its end.

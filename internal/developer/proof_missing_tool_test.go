@@ -12,7 +12,7 @@ import (
 // Then the finding `proof-not-run` names that tool.
 func TestNotRunNamesTheTool(t *testing.T) {
 	p := devmark.Proof{Result: devmark.Unproven, Why: "the report names no test", Missing: []string{"jq"}}
-	f := proofFindings("#3", p, nil)
+	f := ProofFindings("#3", p, nil)
 	if len(f) != 1 || f[0].Rule != "proof-not-run" {
 		t.Fatalf("findings = %+v, want one proof-not-run", f)
 	}

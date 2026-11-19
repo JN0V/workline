@@ -3,6 +3,7 @@ package tester
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/JN0V/workline/internal/contract"
 )
@@ -35,5 +36,23 @@ func TestCommandRunsForTheDoctor(t *testing.T) {
 	}
 	if c, f, err := commandRuns(repo, rev, map[string]any{"test-command": "echo SDK location not found >&2; exit 1", "test-report": "report.xml"}); err != nil || c == "" || f == nil || f.Rule != "test-command-fails" {
 		t.Errorf("a command that fails: %q, %+v, %v", c, f, err)
+	}
+}
+
+// What the developer's proof asks: the settings as another role reads
+// them, what was read kept on an error; a run on settings that do not
+// read is a finding, never a run.
+func TestTheTestsAsAnotherRoleAsks(t *testing.T) {
+	m := map[string]any{"test-command": "go test", "suite-max-seconds": 90}
+	if ts, err := settingsFor(m); err != nil || ts.Command != "go test" || ts.SuiteMaxSeconds != 90 {
+		t.Errorf("settingsFor = %+v, %v", ts, err)
+	}
+	bad := map[string]any{"test-command": "go test", "suite-max-seconds": "lots"}
+	ts, err := settingsFor(bad)
+	if err == nil {
+		t.Errorf("unreadable settings read: %+v", ts)
+	}
+	if _, f := onChangeFor(t.TempDir(), "HEAD", nil, ts, time.Time{}, contract.TestScope{}); f == nil || f.Rule != "settings-unread" {
+		t.Errorf("a run on unreadable settings: %+v", f)
 	}
 }

@@ -12,82 +12,30 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
 )
-
-// Scope narrows a run to the folders a change touches (#703): Command,
-// holding `{packages}`, runs on the folders of Files that hold tests,
-// as the curator's proof command does. No Command naming `{packages}`,
-// or no such folder: the test command runs whole.
-//
-// Test and Runs: a flaky-n-of-n proof (ADR-0059, decision 4), the
-// command run Runs times on the one tree, `{test}` in it the test's name;
-// it stops at the first run not green or not passing Test.
-type Scope struct {
-	Command string
-	Files   []string
-	Test    string
-	Runs    int
-}
-
-// Outcome is one run of the project's test command: the tests it reported
-// passed and red (failed, an error, or skipped), and why the command
-// exited non-zero, "" when it exited 0; At, the commit its fresh tree
-// checked out.
-type Outcome struct {
-	Passed []string
-	Red    []string
-	Exit   string
-	At     string
-	// Packages: the folders the scoped command ran on, `./`-prefixed;
-	// none when the test command ran whole.
-	Packages []string
-	// Runs: the runs made, the last one's tests above; 1 but for a
-	// Scope's Runs.
-	Runs int
-	// Missing: the tools its output says were missing, when not green
-	// (#760).
-	Missing []string
-}
-
-// Green says the run proves the change: tests reported, none red, the
-// command exited 0.
-func (o Outcome) Green() bool { return len(o.Passed) > 0 && len(o.Red) == 0 && o.Exit == "" }
-
-// Passes says whether the run's report holds test, and passed: its id
-// whole, or its last part after a `.` or a `/` (`TestX` for
-// `pkg/x.TestX`).
-func (o Outcome) Passes(test string) (reported, passed bool) {
-	is := func(id string) bool {
-		return id == test || strings.HasSuffix(id, "."+test) || strings.HasSuffix(id, "/"+test)
-	}
-	if slices.ContainsFunc(o.Red, is) {
-		return true, false
-	}
-	ok := slices.ContainsFunc(o.Passed, is)
-	return ok, ok
-}
 
 // OnChange runs the project's test command once on rev, the patches laid on
 // it, in a fresh tree (fresh.go), stopped past deadline when one is set. A finding
 // when it did not run whole: a setting missing, a patch that does not
 // apply, no report read, or the deadline passed (rule proof-over-time).
 // A scope naming `{packages}` runs on the touched folders alone.
-func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline time.Time, scope Scope) (Outcome, *verdict.Finding) {
+func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline time.Time, scope contract.TestScope) (contract.TestOutcome, *verdict.Finding) {
 	if v := unset(s); v != nil {
-		return Outcome{}, &v.Findings[0]
+		return contract.TestOutcome{}, &v.Findings[0]
 	}
 	tree, at, done, f := freshTree(repo, rev)
 	if f != nil {
-		return Outcome{}, f
+		return contract.TestOutcome{}, f
 	}
 	defer done()
 	if v, err := layPatches(tree, patches); err != nil {
-		return Outcome{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
+		return contract.TestOutcome{}, &verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}
 	} else if v != nil {
-		return Outcome{}, &v.Findings[0]
+		return contract.TestOutcome{}, &v.Findings[0]
 	}
 	s.deadline = deadline
 	var pkgs []string
@@ -101,13 +49,13 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 		}
 	}
 	s.Command = strings.ReplaceAll(s.Command, "{test}", scope.Test)
-	var o Outcome
+	var o contract.TestOutcome
 	for i := 1; i <= max(1, scope.Runs); i++ {
 		r, f := runIn(tree, s, "on the change")
 		if f != nil {
 			return o, f
 		}
-		o = Outcome{Exit: r.failure, At: at, Packages: pkgs, Runs: i}
+		o = contract.TestOutcome{Exit: r.failure, At: at, Packages: pkgs, Runs: i}
 		for id, res := range r.results {
 			if res == passed {
 				o.Passed = append(o.Passed, id)
