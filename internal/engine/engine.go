@@ -1406,6 +1406,19 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	if err != nil {
 		return err
 	}
+	// Whatever way the round blocks, its outcome is recorded for the next
+	// rounds to compare (#1769).
+	defer func() {
+		if res.Status != verdict.Block || st.Role != "developer" {
+			return
+		}
+		for _, fd := range res.Findings {
+			if fd.Rule != "" && fd.Level != "info" && fd.Level != "warn" {
+				recordFailedRound(f, st, runDir, fd.Rule, stableMessage(fd.Message))
+				return
+			}
+		}
+	}()
 	// A role handing its work on an issue over in a merge request, with
 	// none to be opened: its patches would land on the person's branch,
 	// and what it says on the issue would name a branch that is not there
@@ -1566,7 +1579,6 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			}
 			res.Status, res.Summary = verdict.Block, "not pushed to the role's branch: nothing else is said"
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "not-pushed", Message: err.Error()})
-			recordFailedRound(f, st, runDir, "not-pushed", err.Error())
 			return nil
 		}
 		st.Pushed = true
@@ -4001,6 +4013,14 @@ func sharedPost(env []string) (int, error) {
 		return 0, err
 	}
 	return 0, os.WriteFile(filepath.Join(runDir, "out", "verdict.yaml"), []byte("status: pass\n"), 0o644)
+}
+
+var tempPath = regexp.MustCompile(`(?:/tmp|/var/folders|/private/tmp)[^\s:'"]*|workline-[A-Za-z]+-\d+`)
+
+// stableMessage is a message without what varies from run to run (a
+// temporary path), so two runs failing alike compare equal.
+func stableMessage(m string) string {
+	return tempPath.ReplaceAllString(m, "<tmp>")
 }
 
 // recordFailedRound leaves, on the role's merge request, the outcome of an
