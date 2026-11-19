@@ -1406,6 +1406,19 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	if err != nil {
 		return err
 	}
+	// Whatever way the round blocks, its outcome is recorded for the next
+	// rounds to compare (#1769).
+	defer func() {
+		if res.Status != verdict.Block || st.Role != "developer" {
+			return
+		}
+		for _, fd := range res.Findings {
+			if fd.Rule != "" && fd.Level != "info" && fd.Level != "warn" {
+				recordFailedRound(f, st, runDir, fd.Rule, stableMessage(fd.Message))
+				return
+			}
+		}
+	}()
 	// A role handing its work on an issue over in a merge request, with
 	// none to be opened: its patches would land on the person's branch,
 	// and what it says on the issue would name a branch that is not there
@@ -4000,4 +4013,48 @@ func sharedPost(env []string) (int, error) {
 		return 0, err
 	}
 	return 0, os.WriteFile(filepath.Join(runDir, "out", "verdict.yaml"), []byte("status: pass\n"), 0o644)
+}
+
+var tempPath = regexp.MustCompile(`(?:/tmp|/var/folders|/private/tmp)[^\s:'"]*|workline-[A-Za-z]+-\d+`)
+
+// stableMessage is a message without what varies from run to run (a
+// temporary path), so two runs failing alike compare equal.
+func stableMessage(m string) string {
+	return tempPath.ReplaceAllString(m, "<tmp>")
+}
+
+// recordFailedRound leaves, on the role's merge request, the outcome of an
+// apply that failed: its branch's head, its base's tip, the rule and the
+// message as printed, in a hidden record a later round reads back, to stop
+// when the same failure came twice (#1769). Best effort: a record not
+// written leaves the round as it was.
+func recordFailedRound(f forge.Forge, st runState, runDir, rule, message string) {
+	if f == nil || st.Target == nil || st.Target.Kind != "merge-request" {
+		return
+	}
+	mr, err := f.MergeRequest(st.Target.ID)
+	if err != nil {
+		return
+	}
+	head, err := git(st.Repo, nil, "rev-parse", "HEAD")
+	if err != nil {
+		return
+	}
+	base := ""
+	refs := []string{"refs/remotes/origin/" + mr.Base, "refs/heads/" + mr.Base}
+	if forge.KeepsBranches(f) {
+		refs = refs[1:]
+	}
+	for _, ref := range refs {
+		if tip, err := git(st.Repo, nil, "rev-parse", "-q", "--verify", ref+"^{commit}"); err == nil && strings.TrimSpace(tip) != "" {
+			base = strings.TrimSpace(tip)
+			break
+		}
+	}
+	rec, err := json.Marshal(map[string]string{"head": strings.TrimSpace(head), "base": base, "rule": rule, "message": message})
+	if err != nil {
+		return
+	}
+	body := fmt.Sprintf("**The %s**'s run did not end: %s. The record of it, for the next rounds.\n\n<!-- workline:round-failed %s -->", st.Role, rule, rec)
+	_ = f.Comment(*st.Target, body, forge.Marker("round-failed-run="+filepath.Base(runDir)))
 }
