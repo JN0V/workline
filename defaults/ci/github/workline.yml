@@ -137,7 +137,7 @@ jobs:
           mkdir -p report && echo "${{ github.event.pull_request.number }}" > report/number
       # Their result, for judge, and for workline-apply.yml to show.
       - uses: actions/upload-artifact@v4
-        if: "!cancelled() && (failure() || steps.gates.outputs.ran == 'true')"
+        if: "!cancelled() && (failure() || steps.gates.outputs.ran == 'true' || (steps.gates.outputs.status != '' && steps.gates.outputs.status != '0'))"
         with: {name: workline-gates, path: "gates.json\nreport/number", retention-days: 1}
       # Main after a merge: the gates compare with main's tip before it,
       # every finding kept by this commit; the whole repository's checks
