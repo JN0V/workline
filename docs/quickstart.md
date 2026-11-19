@@ -1,6 +1,18 @@
 ---
-sources: [cmd/workline, internal/setup, internal/doctor, internal/hooks]
-checked: e4e4287bc
+sources:
+  - cmd/workline/cli.go#topHelp
+  - cmd/workline/main.go#setupCmd
+  - cmd/workline/main.go#doctorPrint
+  - cmd/workline/main.go#initCmd
+  - cmd/workline/main.go#docsCmd
+  - cmd/workline/main.go#reviewCmd
+  - cmd/workline/main.go#report
+  - roles/committer/role.yaml#without-ai
+  - roles/committer/role.yaml#settings.internal-codes
+  - roles/committer/role.yaml#settings.rewrite
+  - roles/committer/role.yaml#settings.ai-max-seconds
+  - roles/committer/role.yaml#personal
+checked: c46a93d6c
 verified: agent:claude-code
 ---
 # Quickstart
@@ -33,11 +45,13 @@ git commit --allow-empty -m "AC-3 fix the thing"
 
 - **With an agent**, it is rewritten, 30 s at most (`fix: fix the thing`,
   `Refs: AC-3`), and printed
+  ([as install shows](install.md#4-every-commit-checked))
   ([ADR-0050](adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 - **Without AI**, or with `rewrite: false` in the committer's settings,
   the project's or your own, it blocks in about a second and says why,
   your message kept.
-- An empty `.workline/off` file turns workline off for a repository.
+- An empty `.workline/off` file turns workline off for a repository
+  ([install](install.md#4-every-commit-checked)).
 
 ## 3. Adopt a repository
 
@@ -52,7 +66,7 @@ without, it lists them, for you to write. Commit `.workline/config.yaml`
 too.
 
 From now on, a push counts the docs its commits made suspect, in one line,
-without an agent. Then, when you choose:
+without an agent ([install](install.md#5-adopt-a-repository)). Then, when you choose:
 
 ```sh
 workline docs            # the agent judges them; you keep or drop each change
@@ -71,16 +85,14 @@ repository of your own, after `setup`, `doctor` and `init --review`:
 ```sh
 workline doctor          # lists nothing missing; each item comes with its command
 workline docs            # documentalist: judges the docs made suspect since they were last judged
-workline review          # reviewer: reads the branch against the default branch
-workline run-role product-owner --event issue --target issue:<n> --ai claude --forge github
+workline review          # reviewer: reads the branch against main (--base to choose)
 ```
 
 - The repository needs a doc whose sources changed since the docs were
   last judged (else the last tag), a branch with a diff against the
   default branch, and one open issue `<n>`.
-- `--forge gitlab` for GitLab; `--ai` the agent you chose in `setup`.
-  Run without `--no-apply`, the product owner writes its comment or refined
-  section on the issue itself.
+- The product owner: start it on issue `<n>` with the command in
+  [install](install.md#5-adopt-a-repository).
 - `workline docs` ends with the agent judging the suspect docs, and lists
   the changes to keep or drop.
 - `workline review` prints the findings; when there are none it still

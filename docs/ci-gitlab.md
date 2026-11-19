@@ -124,7 +124,8 @@ Monday's workday. The release never waits for the docs
   `workline:curator:judge` and `:apply` propose a few redundant tests
   removed, proven ([how](../roles/tester/docs/removals.md)).
 - **Upgrading**: delete a schedule with `WORKLINE_TASK=release-docs`,
-  left from an older template; it runs nothing now.
+  left from an older template; it no longer gardens, but still runs the
+  release's dry run, and the curator when it is on.
 
 ### 4. The weekly sample
 

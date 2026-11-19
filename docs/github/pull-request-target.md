@@ -1,6 +1,15 @@
 <!-- workline
-sources: [defaults/ci/github/workline-bounds.yml, defaults/ci/github/workline-merge.yml, internal/doctor/event_policy.go]
-checked: 8b32cb8a0
+sources:
+  - defaults/ci/github/workline-bounds.yml#on
+  - defaults/ci/github/workline-bounds.yml#jobs.bounds.name
+  - defaults/ci/github/workline-merge.yml#on
+  - internal/doctor/event_policy.go#blockedEvent
+  - internal/doctor/event_policy.go#judgeEventPolicies
+  - internal/doctor/event_policy.go#actionsPolicy.allowedEvents
+  - internal/doctor/event_policy.go#actionsPolicy.covers
+  - internal/doctor/event_policy.go#coveringEventPolicies
+checked: c46a93d6c
+verified: agent:claude-code
 judged-in-parts: eb16524
 -->
 # pull_request_target in a public repository

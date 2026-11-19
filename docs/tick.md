@@ -88,7 +88,7 @@ workline tick --now 2026-11-16T02:20:00Z --json   # a fixed clock, for tests
   `forge` setting by default.
 - **Runs are read on GitHub** (and the conformance tests' fake forge).
   On GitLab, a forge kept in the clone or none, the runs are said not
-  read: the reconcile alone is listed.
+  read: only a reconcile with no time set is listed.
 
 ## The GitHub loop
 
@@ -100,7 +100,8 @@ beat on GitHub, whose own schedule runs late or not at all
   its checkout kept between beats, so the conditional reads' cache in
   `.git/workline` too.
 - **A dry run by default**: each job tick lists is logged, as tick
-  prints it, and nothing starts. The run's notice counts them:
+  prints it, and nothing starts; the run's notice, at its end, counts
+  them by name. A beat's log:
 
   ```text
   beat 12, 14:03:01 UTC: 2 due, a dry run
@@ -162,8 +163,9 @@ beat on GitHub, whose own schedule runs late or not at all
   ```
 
 - **Then**: Settings → Secrets and variables → Actions → Variables →
-  `WORKLINE_LOOP_DISPATCH` = `true`. The next beat reads it; `false` or
-  unset is a dry run again.
+  `WORKLINE_LOOP_DISPATCH` = `true`. The next loop run reads it: cancel
+  the one going, then Run workflow, to take it now. `false` or unset is
+  a dry run again.
 - **Event triggers next**: each workflow keeps its own while the loop
   dispatches beside it. Tick sees a run by its name only:
   - **Seen**: a scheduled run, named by its job; a dispatched one.

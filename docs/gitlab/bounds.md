@@ -1,8 +1,18 @@
 ---
-sources: [defaults/ci/gitlab/workline-bounds.gitlab-ci.yml, internal/doctor/guard.go, internal/forge/gitlab_guard.go]
-checked: 8538d558
+sources:
+  - defaults/ci/gitlab/workline-bounds.gitlab-ci.yml
+  - internal/doctor/guard.go#boundsGuard
+  - internal/doctor/guard.go#ciFiles
+  - internal/doctor/guard.go#ownerless
+  - internal/forge/gitlab_guard.go#Guard
+  - internal/forge/gitlab_guard.go#gitlab.PipelineGuard
+  - internal/forge/gitlab_guard.go#tier
+  - internal/steer/codeowners.go#ParseCodeowners
+  - internal/steer/codeowners.go#Codeowners.owns
+  - internal/developer/prbounds.go#BoundsKey
+checked: c46a93d6c
 judged: eb16524
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # The developer's bounds on GitLab
 

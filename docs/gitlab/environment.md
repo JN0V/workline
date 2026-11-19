@@ -1,6 +1,23 @@
 <!-- workline
-sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/doctor/variables.go, internal/forge/gitlab_variables.go]
-checked: 8538d558
+sources:
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:environment
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:base
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:gates
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
+  - internal/doctor/variables.go#Environment
+  - internal/doctor/variables.go#scopedTokens
+  - internal/doctor/variables.go#tokensScoped
+  - internal/doctor/variables.go#onGitLab
+  - internal/doctor/variables.go#matchScope
+  - internal/forge/gitlab_variables.go#VariableScopes
+  - internal/forge/gitlab_variables.go#gitlab.VariableScopes
+checked: 1d45ec45d
+verified: agent:claude-code
 judged-in-parts: eb16524
 -->
 # The tokens kept from your tools: the environment `workline`
@@ -41,8 +58,8 @@ can read them, even after `unset`, from its parent's start environment.
 
 - **No environment on the jobs that run your tools**: `workline:gates`,
   `workline:main`, `workline:release`, `workline:curator`. GitLab gives them no scoped
-  variable. They still unset the tokens first, for one left to every
-  environment.
+  variable. They still unset the agent's and the bot's tokens first,
+  for one left to every environment.
 - **The stored base** ([main after a merge](../main-after-merge.md#gitlab))
   is read by `workline:base`, first: the bot's token, nothing checked
   out, no tool. Its artifact goes to `workline:gates`, or to
@@ -54,9 +71,10 @@ can read them, even after `unset`, from its parent's start environment.
 - **No rule tests a token**: GitLab advises against `rules:` on an
   environment's variable. A job that needs the bot's token runs, and
   without it says so and stops, green.
-- **The release's dry run** declares `workline`, then unsets the tokens
-  before your `release` line's gates run, on the default branch's code;
-  its post holds the bot's.
+- **The release's dry run** declares `workline`, then unsets the
+  agent's and the bot's tokens, not `GITLAB_TOKEN`, before your
+  `release` line's gates run, on the default branch's code; its post
+  holds the bot's.
 
 ## What it does not stop
 

@@ -1,6 +1,18 @@
 ---
-sources: [internal/builtin/committer/committer.go, internal/forge/github.go, internal/forge/gitlab.go, internal/forge/forge.go]
-checked: 582ca3c7
+sources:
+  - roles/committer/role.yaml#settings.subject-max
+  - internal/builtin/committer/committer.go#checkRange
+  - internal/builtin/committer/committer.go#titleFix
+  - internal/builtin/committer/committer.go#squashed
+  - internal/forge/github.go#github.Squash
+  - internal/forge/gitlab.go#gitlab.Squash
+  - internal/forge/forge.go#Squash
+  - internal/forge/forge.go#TitleMax
+  - internal/builtin/documentalist/documentalist.go#mergeRequest
+  - internal/engine/engine.go#openMergeRequest
+  - internal/builtin/documentalist/title_test.go#TestMergeRequestTitlesPassTheSquashRule
+  - internal/sample/title_test.go#TestEngineTitlesPassTheSquashRule
+checked: c46a93d6c
 verified: agent:claude-code
 judged-in-parts: eb16524
 ---
@@ -24,8 +36,8 @@ commits' rules, and blocks the same way
 - **Not read**: a forge that does not say, or could not be read, gives a
   warning: the title is not checked.
 - **Checked on each push**, not on an edit. A title refused says the
-  fix: edit the title, then re-run the job (GitHub's `judge`, GitLab's
-  pipeline; one click) or push.
+  fix: edit the title, then re-run the job that checked it (one click)
+  or push.
 - **A person edits the title**: the AI rewrite is not built.
 - **workline's own merge requests** (the documentalist's, the weekly
   sample's, a role's) get titles of 63 characters at most, room left

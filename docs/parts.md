@@ -1,6 +1,16 @@
 ---
-sources: [cmd/workline, internal/agent/agent.go]
-checked: 04d2af892
+sources:
+  - cmd/workline/main.go#runRole
+  - cmd/workline/main.go#gateCmd
+  - internal/gate/gate.go#Check
+  - internal/hooks/hooks.go#dispatcher
+  - internal/agent/prompt.go#facetDirs
+  - internal/agent/agent.go#Parse
+  - internal/forge/github.go#github.api
+  - internal/forge/gitlab.go#gitlab.api
+  - internal/builtin/committer/committer.go#Pre
+  - roles/documentalist/role.yaml#events
+checked: c46a93d6c
 verified: agent:claude-code
 ---
 # Take only a part

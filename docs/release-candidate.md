@@ -1,6 +1,19 @@
 ---
-sources: [internal/engine/candidate.go, internal/engine/code.go, internal/engine/backlog.go, internal/forge/forge.go, defaults/ci/github/release-candidate.yml, defaults/ci/github/workline-merge.yml]
-checked: 8538d558
+sources:
+  - internal/engine/candidate.go#CandidateLabel
+  - internal/engine/candidate.go#NextMilestone
+  - internal/engine/candidate.go#releaseAs
+  - internal/engine/candidate.go#candidates
+  - internal/engine/candidate.go#candidateRun.milestone
+  - internal/engine/candidate.go#candidateRun.copy
+  - internal/engine/candidate.go#candidateRun.yes
+  - internal/engine/candidate.go#candidateRun.refused
+  - internal/engine/backlog.go#applier.featureMilestone
+  - defaults/ci/github/release-candidate.yml#jobs.candidate
+  - defaults/ci/github/workline-merge.yml#jobs.follow.if
+  - internal/engine/candidate.go#untried
+  - internal/forge/forge.go#Milestoned
+checked: 1d45ec45d
 verified: agent:claude-code
 ---
 # The release candidate
@@ -31,7 +44,8 @@ merge: {autonomy: enterprising}
   ([the developer's merge](../roles/developer/docs/merge.md)).
 - **It goes into a milestone** named by a version, `v1.4`: the product
   owner puts a feature there when it makes the issue ready; a task, or
-  a feature readied before, `workline follow` before it merges. The next open milestone
+  a feature readied before, `workline follow` before it merges
+  ([at `enterprising`](../roles/developer/docs/merge.md#at-enterprising)). The next open milestone
   whose candidate is not cut, its version not out yet; none, the next
   minor version, opened.
 - **Its issues all closed**, `workline follow` cuts `release/v1.4` from
@@ -56,9 +70,9 @@ merge: {autonomy: enterprising}
   issue's event runs on the default branch.
 - **Why not the GitHub pre-release**: unticking "pre-release" makes no
   `v1.4.0` tag, and GitLab has no such switch.
-- **Who**: a person who may push and merge; a bot's label, or one put
-  before the newest candidate was tagged, is taken off, said on the
-  issue.
+- **Who**: a person who may push and merge; a bot's label is no yes,
+  said in the summary. One put before the newest candidate was tagged
+  is taken off, said on the issue.
 - **What ships is what was tried**: the branch holds nothing past the
   candidate but the versions the tool bumps and its changelog; else the
   label is taken off until the next candidate.
@@ -77,7 +91,8 @@ merge: {autonomy: enterprising}
 - **Close the candidate's issue** to refuse it.
 - **Features and tasks then wait** for a person's yes on each pull request, as at
   `normal`, until a person who may push and merge closes the issue that
-  says it (as a revert's, [at `normal`](merge-policy-normal.md)).
+  says it (as a revert's, [at `normal`](merge-policy-normal.md);
+  [the developer's merge](../roles/developer/docs/merge.md#at-enterprising)).
 - **Fixes still merge alone.** Once the milestone's new issues are
   merged and copied, the next candidate's issue opens.
 
