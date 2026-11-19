@@ -111,15 +111,29 @@ func kindOf(a Act) string {
 	return ""
 }
 
-// facet is a kind's question: the project's own (.workline/roles/auditor/
-// kinds/<kind>.md), else the role's.
-func (rd *reader) facet(kind string) (string, error) {
-	for _, dir := range []string{filepath.Join(rd.o.Repo, ".workline", "roles", "auditor"), rd.auditor.Dir} {
-		if data, err := os.ReadFile(filepath.Join(dir, "kinds", kind+".md")); err == nil {
+// facet is what a well-done act of a kind is, the auditor's question: the
+// project's own copy (.workline/roles/auditor/criteria/<role>/<kind>.md),
+// else the auditor's (criteria/<role>/<kind>.md), else the role's own
+// (criteria/<kind>.md). Until the questions move, kinds/<kind>.md is read
+// as a fallback, the project's first. A kind with no criteria anywhere is
+// judged on the auditor's generic question, whose text ships with a later
+// move: said missing.
+func (rd *reader) facet(roleName, kind string) (string, error) {
+	project := filepath.Join(rd.o.Repo, ".workline", "roles", "auditor")
+	roles := filepath.Dir(rd.auditor.Dir)
+	paths := []string{
+		filepath.Join(project, "criteria", roleName, kind+".md"),
+		filepath.Join(project, "kinds", kind+".md"),
+		filepath.Join(rd.auditor.Dir, "criteria", roleName, kind+".md"),
+		filepath.Join(roles, roleName, "criteria", kind+".md"),
+		filepath.Join(rd.auditor.Dir, "kinds", kind+".md"),
+	}
+	for _, p := range paths {
+		if data, err := os.ReadFile(p); err == nil {
 			return strings.TrimSpace(string(data)), nil
 		}
 	}
-	return "", fmt.Errorf("the auditor has no kinds/%s.md", kind)
+	return "", fmt.Errorf("no criteria for a `%s` of the %s (criteria/%s.md): the auditor's generic question is missing", kind, roleName, kind)
 }
 
 // readAct has one act re-checked, and says its verdict.
@@ -134,7 +148,7 @@ func (rd *reader) readAct(a *Act) {
 		a.Why = noJudge
 		return
 	}
-	facet, err := rd.facet(kind)
+	facet, err := rd.facet(a.Role, kind)
 	if err != nil {
 		a.Why = err.Error() + "; for a person"
 		return

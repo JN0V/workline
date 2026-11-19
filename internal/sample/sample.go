@@ -628,7 +628,7 @@ func (rd *reader) readOne(c candidate) Read {
 		r.Verdict, r.Why = "not-read", "no judge is set (--judge, WORKLINE_JUDGE, or the `sample.judge` setting): for a person to read against its sources"
 		return r
 	}
-	question, err := rd.facet("checked")
+	question, err := rd.facet("documentalist", "checked")
 	if err != nil {
 		r.Verdict, r.Why = "not-read", err.Error()+"; for a person"
 		return r
