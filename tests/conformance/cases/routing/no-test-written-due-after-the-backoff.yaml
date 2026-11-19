@@ -1,0 +1,25 @@
+case: routing/no-test-written-due-after-the-backoff
+about: >
+  A tester's run that ended once with no test file proposed and no
+  reason, on the body an issue still has: its last run ended 15
+  minutes ago, past the 10 minutes' back-off a machine error waits.
+  The issue is not held 6 hours: it is due again after the usual
+  back-off, said why. Listing the due issues, it is due.
+given:
+  repo: tested
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"tests\",\"body\":\"8a828a06be19\",\"hops\":1,\"errors\":{\"by\":{\"answer\":1},\"first\":{\"answer\":\"2026-11-05T07:45:00Z\"},\"last\":\"2026-11-05T07:45:00Z\",\"kind\":\"answer\",\"said\":\"no test file the tester may write was proposed for the issue's scenarios\"},\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-retry, where: "#3"}
