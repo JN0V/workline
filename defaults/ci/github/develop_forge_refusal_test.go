@@ -128,3 +128,100 @@ func TestDevelopRoundStopsOnAForgeCallRefused(t *testing.T) {
 		})
 	}
 }
+
+// releaseWorkflow is the template of the release workflow.
+const releaseWorkflow = "workline-release.yml"
+
+// releaseScript reads the script of the first step of the release
+// workflow's job `again`.
+func releaseScript(t *testing.T, file string) string {
+	t.Helper()
+	data, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var w struct {
+		Jobs map[string]struct {
+			Steps []struct {
+				Run string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(data, &w); err != nil {
+		t.Fatalf("%s: %v", file, err)
+	}
+	steps := w.Jobs["again"].Steps
+	if len(steps) == 0 || steps[0].Run == "" {
+		t.Fatalf("%s: the job `again` has no step with a script", file)
+	}
+	return steps[0].Run
+}
+
+// Forge error said, for the release re-run
+// Given the release workflow's step, with two open release pull
+// requests, and a `gh run view` of the first one's run refused with 403,
+// When the step reads that run's status,
+// Then the log prints the call that failed (gh run view 101) and its
+// status (403) as an error line; the step does not act as if the forge
+// answered nothing: it still re-runs the second pull request's run (102),
+// and ends with an error, so the refusal is not lost.
+func TestReleaseSaysARefusedRunViewAndGoesOnToTheNextPullRequest(t *testing.T) {
+	sh, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skip("bash is not installed")
+	}
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "bin")
+	if err := os.Mkdir(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	calls := filepath.Join(dir, "calls")
+	gh := `case "$1 $2" in
+"pr list") echo "1 sha1"; echo "2 sha2";;
+"run list") case "$*" in *sha1*) echo 101;; *sha2*) echo 102;; esac;;
+"run watch") exit 0;;
+"run view") case "$3" in
+  101) echo 'gh: HTTP 403: Resource not accessible by integration (https://api.github.com/repos/o/r/actions/runs/101)' >&2; exit 1;;
+  *) echo completed;;
+  esac;;
+"run rerun") echo "gh run rerun $3" >> "$CALLS";;
+esac
+exit 0
+`
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte("#!/bin/sh\n"+gh), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(dir, "release.sh")
+	if err := os.WriteFile(script, []byte(releaseScript(t, releaseWorkflow)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(sh, "-e", script)
+	cmd.Dir = dir
+	cmd.Env = []string{
+		"PATH=" + bin + ":/usr/bin:/bin",
+		"CALLS=" + calls,
+		"GH_TOKEN=t", "GH_REPO=o/r", "EVENT=issues",
+		"MAIN_STARTED=", "MAIN_ENDED=",
+		"BRANCHES=^(release-please--)",
+	}
+	outBytes, runErr := cmd.CombinedOutput()
+	out := string(outBytes)
+	made, _ := os.ReadFile(calls)
+
+	said := false
+	for _, line := range strings.Split(out, "\n") {
+		if strings.HasPrefix(line, "::error") && strings.Contains(line, "gh run view 101") && strings.Contains(line, "403") {
+			said = true
+		}
+	}
+	if !said {
+		t.Errorf("no error line holding the call (gh run view 101) and its status (403) in the log:\n%s", out)
+	}
+	if !strings.Contains(string(made), "gh run rerun 102") {
+		t.Errorf("the refused call stopped the loop: the second pull request's run was not re-run; calls:\n%s", made)
+	}
+	var exit *exec.ExitError
+	if !errors.As(runErr, &exit) {
+		t.Errorf("the step did not end with an error after a refused call (err = %v):\n%s", runErr, out)
+	}
+}
