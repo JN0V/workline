@@ -7,8 +7,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/inspector"
-	"github.com/JN0V/workline/internal/builtin/reviewer"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
@@ -103,17 +102,14 @@ func (a *applier) mergedRecord(t forge.Target, key, body, read string) (string, 
 	}
 	marker := forge.Marker("sticky=" + a.role + "/" + key)
 	found, ok := kept.Last(marker)
+	rec := a.recordOf()
 	if ok && forge.Newer(found, body) {
 		// A later run's comment, applied first (#598): its text stays,
 		// this run's record merged into it; never the older text written
 		// over it, even when a record does not read: the comment is then
 		// left as it is, and this run's commits read again.
-		merge := reviewer.MergeInto
-		if a.role == "inspector" {
-			merge = inspector.MergeInto
-		}
 		said := "kept, this run's record merged into it"
-		out := merge(found, body, read, marker)
+		out := rec.Into(found, body, read, marker)
 		if out == "" {
 			said = "kept as it is, this run's record not merged (a record does not read); what it read is read again"
 			out = strings.TrimSpace(strings.Replace(found, marker, "", 1))
@@ -122,11 +118,20 @@ func (a *applier) mergedRecord(t forge.Target, key, body, read string) (string, 
 			Message: "the comment holds a later run's text, applied before this one: " + said})
 		return out, nil
 	}
-	switch {
-	case !ok:
+	if !ok {
 		return body, nil
-	case a.role == "inspector":
-		return inspector.MergeComment(body, read, found), nil
 	}
-	return reviewer.MergeSummary(body, read, found), nil
+	return rec.Merge(body, read, found), nil
+}
+
+// recordOf is how a's role merges its comment's record (contract.Record):
+// the reviewer's for a role that offers none, as before roles offered it.
+func (a *applier) recordOf() *contract.Record {
+	if r := contract.Builtins().RecordOf(a.role); r != nil {
+		return r
+	}
+	if r := contract.Builtins().RecordOf("reviewer"); r != nil {
+		return r
+	}
+	panic("contract: no compiled-in role offers how its comment's record merges")
 }

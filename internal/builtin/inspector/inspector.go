@@ -28,7 +28,9 @@ import (
 )
 
 // The role joins the engine by name (internal/contract).
-func init() { contract.Join("inspector", contract.Role{Pre: Pre, Post: Post}) }
+func init() {
+	contract.Join("inspector", contract.Role{Pre: Pre, Post: Post, Record: &contract.Record{Merge: MergeComment, Into: MergeInto}})
+}
 
 const (
 	exitNothing = 10 // no question for the agent: the verdict pre wrote is final

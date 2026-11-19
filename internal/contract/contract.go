@@ -20,11 +20,27 @@ type Step func(runDir, repo string) int
 
 // Role is what a role's built-in code offers: either step may be nil;
 // Code, offered by the role whose code the engine merges; Tests, by the
-// role that runs the project's tests.
+// role that runs the project's tests; Record, by a role whose sticky
+// comment keeps a record its next run reads.
 type Role struct {
 	Pre, Post Step
 	Code      *Code
 	Tests     *Tests
+	Record    *Record
+}
+
+// Record is how a role's sticky comment merges its record with the one
+// the comment holds by then (#375), what the engine asks as it applies a
+// run that read a record (the intention's `read`).
+type Record struct {
+	// Merge is body, this run's comment, its record merged with found's,
+	// the comment's now; read, the record the run read. A record that
+	// does not read leaves body as it is.
+	Merge func(body, read, found string) string
+	// Into is found, the comment's text from a later run applied first,
+	// body's record merged into it, marker taken out; "" when a record
+	// does not read (#598).
+	Into func(found, body, read, marker string) string
 }
 
 // Code is what the engine and the line ask of the role whose code they
@@ -88,6 +104,14 @@ func (r *Registry) Join(name string, role Role) {
 		}
 	}
 	r.roles[name] = role
+}
+
+// RecordOf is how the role name merges its sticky comment's record; nil
+// when it offers none.
+func (r *Registry) RecordOf(name string) *Record {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.roles[name].Record
 }
 
 // Step returns a role's built-in step, "pre" or "post"; false when the
