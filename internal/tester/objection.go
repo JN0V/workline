@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"maps"
 	"os"
 	"os/exec"
@@ -32,6 +31,7 @@ import (
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/whys"
@@ -874,13 +874,9 @@ func (a answer) toReview(text string) []intent.Intention {
 	if a.Kind != "missing" || a.From == 0 {
 		return nil
 	}
-	return []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": a.From, "sticky": TesterAnswerKey + a.Thread,
+	return []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": a.From, "sticky": testmark.TesterAnswerKey + a.Thread,
 		"body": reviewer.TesterAnswer(a.Found, a.Title, a.URL, text)}}}
 }
-
-// TesterAnswerKey starts the sticky key of a test missing's answer on
-// the reviewed pull request, its thread's id after it.
-const TesterAnswerKey = reviewer.TesterAnswerKey
 
 // otherFiles are the record's tests but file, sorted, each in code.
 func otherFiles(r record, file string) []string {

@@ -22,7 +22,6 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/routing"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // testsLens is the reviewer's lens whose findings on code are the
@@ -179,7 +178,7 @@ func toTesterOnly(r round, b Bounds, repo string) []intent.Intention {
 // the developer may do settles it.
 func disputed(rows []devmark.Asked, a devmark.Act, kept forge.Kept) []devmark.Asked {
 	needless := map[string]bool{}
-	for _, c := range kept.Each("<!-- workline:sticky=tester/" + tester.TesterAnswerKey) {
+	for _, c := range kept.Each("<!-- workline:sticky=tester/" + testmark.TesterAnswerKey) {
 		if a, ok := reviewer.NoneNeeded(c); ok {
 			needless[a.Where] = true
 		}
