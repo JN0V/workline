@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/kit/worktree"
 )
 
 // IssueTitle is the tracking issue's: one, kept open, a comment a week,
@@ -91,16 +93,7 @@ func Apply(file, repo string, f forge.Forge) *Result {
 	}
 	mr := 0
 	if len(standing) > 0 {
-		var written []string
-		for _, r := range standing {
-			if err := putBack(repo, r); err != nil {
-				return failed(res, err)
-			}
-			written = append(written, r.Doc)
-		}
-		mr, err = engine.ProposeBranch(f, repo, "documentalist", "sample-"+res.Week,
-			ResetTitle, resetBody(res, standing), false,
-			engine.OwnTrailer+": documentalist", written)
+		mr, err = proposePutBack(f, repo, res, standing)
 		if err != nil {
 			return failed(res, err)
 		}
@@ -159,6 +152,32 @@ func Apply(file, repo string, f forge.Forge) *Result {
 		res.Summary += fmt.Sprintf(", merge request #%d", mr)
 	}
 	return res
+}
+
+// proposePutBack writes the put-back docs in a worktree of HEAD apart and
+// commits them on the sample's branch there: the person's checkout never
+// leaves its branch, nor holds the files (#1405). The worktree is removed
+// whatever the outcome.
+func proposePutBack(f forge.Forge, repo string, res *Result, standing []Read) (int, error) {
+	tree, err := os.MkdirTemp("", "workline-sample-")
+	if err != nil {
+		return 0, err
+	}
+	_ = os.Remove(tree) // git makes it
+	defer worktree.RemoveWorktree(repo, tree)
+	if out, err := exec.Command("git", "-C", repo, "--no-replace-objects", "worktree", "add", "--detach", "--quiet", tree, "HEAD").CombinedOutput(); err != nil {
+		return 0, fmt.Errorf("a worktree for the put-back docs: %v: %s", err, strings.TrimSpace(string(out)))
+	}
+	var written []string
+	for _, r := range standing {
+		if err := putBack(tree, r); err != nil {
+			return 0, err
+		}
+		written = append(written, r.Doc)
+	}
+	return engine.ProposeBranchIn(f, repo, tree, "documentalist", "sample-"+res.Week,
+		ResetTitle, resetBody(res, standing), false,
+		engine.OwnTrailer+": documentalist", written)
 }
 
 func failed(res *Result, err error) *Result {
