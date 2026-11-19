@@ -1,5 +1,27 @@
 ---
-sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
+sources:
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:environment
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:garden
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:sample
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:read
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:develop
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:review
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:objection
+  - internal/doctor/variables.go#tokensScoped
+  - internal/forge/hold.go#HoldLabel
 checked: e4e4287bc
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -14,7 +36,7 @@ flowchart LR
     warn["<b>Merge request, a child pipeline</b><br/>workline:warn"]
     garden["<b>Schedule</b><br/>workline:garden:judge"]
     sample["<b>Schedule, WORKLINE_TASK=sample</b><br/>workline:sample:read"]
-    import["<b>By hand, WORKLINE_IMPORT</b><br/>workline:import:judge"]
+    import["<b>By hand, WORKLINE_IMPORT, two jobs you add</b><br/>workline:import:judge"]
     hook["<b>A webhook</b><br/>workline:develop · review · objection"]
   end
   subgraph none["No agent, nothing written"]
@@ -126,6 +148,9 @@ Monday's workday. The release never waits for the docs
 - **Upgrading**: delete a schedule with `WORKLINE_TASK=release-docs`,
   left from an older template; it no longer gardens, but still runs the
   release's dry run, and the curator when it is on.
+- **When it runs**: gitlab.com runs a schedule at its own interval, not
+  at the minute written (`13 17 * * *` ran at 18:08): expect it within
+  the hour after.
 
 ### 4. The weekly sample
 
@@ -141,7 +166,7 @@ with the variable `WORKLINE_TASK` set to `sample`.
   (`2026-W40`) on the schedule, then play it.
 - Its reading job holds `WORKLINE_GITLAB_TOKEN`, as gardening's does: it
   reads every role's acts on the issues and merge requests, and the
-  week's tokens each applying job kept in `workline-tally.jsonl`, 2 weeks
+  week's tokens the judging and applying jobs kept in `workline-tally.jsonl`, 2 weeks
   ([tokens in CI](weekly-sample.md#what-it-writes)).
 
 ### 5. Protect main
@@ -166,12 +191,6 @@ A release tool's merge request is held while an open issue is labelled
 starts on a label: run `workline:judge` again once it is off
 ([what holds a release](release-holds.md)).
 
-### When a schedule runs
-
-gitlab.com runs a schedule at its own interval, not at the minute written:
-a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
-18:08. Expect it within the hour after.
-
 ## What the template does
 
 Each job, what it reads and writes, the summary, and how the reviewer
@@ -181,17 +200,16 @@ and the documentalist read their records:
 ## The product owner
 
 `WORKLINE_GITLAB_TOKEN`'s `api` scope covers its issues
-([ADR-0023](adr/0023-the-project-bot-keeps-a-gitlab-backlog.md)):
-
-its token's role, who is of the project, and on GitLab Free what an issue waits on: [gitlab/product-owner.md](gitlab/product-owner.md).
+([ADR-0023](adr/0023-the-project-bot-keeps-a-gitlab-backlog.md)). Its
+token's role, who is of the project, and on GitLab Free what an issue
+waits on: [gitlab/product-owner.md](gitlab/product-owner.md).
 
 **Importing a file** ([how it works](ci.md#importing-a-file)): a pipeline
 run by hand (Build → Pipelines → Run pipeline, the variable
 `WORKLINE_IMPORT` the file), beside the template;
 `WORKLINE_GITLAB_READ_TOKEN`, `read_api`, Reporter
-([its variables](gitlab/trigger-tokens.md)):
-
-the two jobs to add are in [gitlab/import-jobs.md](gitlab/import-jobs.md).
+([its variables](gitlab/trigger-tokens.md)). The two jobs to add:
+[gitlab/import-jobs.md](gitlab/import-jobs.md).
 
 ## The tester and the developer
 
