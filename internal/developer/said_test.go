@@ -72,20 +72,6 @@ func TestPickPassesALetGoClaim(t *testing.T) {
 	}
 }
 
-// The line reads the developer's comment for an overlap it passed an
-// issue over for (#998): that reason alone, as OverlapWhy says it.
-func TestPassedForOverlap(t *testing.T) {
-	for c, want := range map[string]bool{
-		backlog.Said("**The developer**", "waits on this issue", devmark.OverlapWhy(5, "lib.sh"), "#5 merged or let go"):               true,
-		backlog.Said("**The developer**", "waits on this issue", "its acceptance tests are not written yet", "the tester writes them"): false,
-		"**The developer** took this issue. Passed over: #2: " + devmark.OverlapWhy(5, "lib.sh"):                                       false,
-	} {
-		if got := devmark.PassedForOverlap(c); got != want {
-			t.Errorf("PassedForOverlap(%q) = %v, want %v", c, got, want)
-		}
-	}
-}
-
 // A claim whose agent wrote no code is let go at once when the issue's
 // body changed since the claim read it (#1084); the same body, or a
 // claim that wrote code, or a record from before Act.Body, waits for

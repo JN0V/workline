@@ -43,6 +43,7 @@ func init() {
 	contract.Join("developer", contract.Role{Pre: Pre, Post: Post, Code: &contract.Code{
 		ProveMerge: ProveMerge, Guarded: Guarded,
 		RoundDue: RoundDue, Held: Held, Overlapping: Overlapping, Changed: Changed, RepoFiles: RepoFiles,
+		ClaimHours: func(m map[string]any) int { return SettingsFrom(m).ClaimHours },
 	}})
 }
 

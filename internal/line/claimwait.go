@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/developer"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
@@ -41,7 +41,7 @@ func (t *tally) claimHours() int {
 			}
 		}
 	}
-	t.hours = developer.SettingsFrom(m).ClaimHours
+	t.hours = contract.BuiltinCode().ClaimHours(m)
 	return t.hours
 }
 
@@ -65,7 +65,7 @@ func closedByMR(t *tally, id int) (forge.MergeRequest, bool) {
 // (#1271), naming who acts next. A ready one: its review, its checks and
 // its merge. A Draft: the developer's, a round on it at its checks' end
 // or a red one; a person's only when its record says so (a cap reached,
-// its agent failed, its rounds handed off: developer.DraftHolder). A
+// its agent failed, its rounds handed off: devmark.DraftHolder). A
 // change to the issue's body is the developer's review round's on mr
 // (developer.RoundDue): said by the reconciler when due.
 func mrWaits(res *Result, b forge.Backlog, repo string, doing routing.State, is forge.Issue, mr forge.MergeRequest) {
