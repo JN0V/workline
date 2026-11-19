@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/depend.go, internal/backlog/order.go, internal/backlog/board.go, internal/builtin/productowner/productowner.go, internal/forge/forge.go]
+sources: [internal/backlog/depend.go, internal/backlog/order.go, internal/backlog/board.go, internal/builtin/productowner/productowner.go#placed, internal/builtin/productowner/productowner.go#unestimated, internal/builtin/productowner/productowner.go#stuck, internal/builtin/productowner/productowner.go#sections, internal/forge/forge.go#Trail]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # The order, and what is next

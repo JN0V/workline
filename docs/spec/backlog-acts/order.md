@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/backlog/undo.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go, internal/forge/github_fields.go]
+sources: [internal/backlog/backlog.go#hidden, internal/backlog/backlog.go#named, internal/backlog/backlog.go#holds, internal/backlog/order.go, internal/backlog/undo.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go#place, internal/builtin/productowner/productowner.go#stuck, internal/builtin/productowner/productowner.go#estimates, internal/builtin/productowner/productowner.go#elsewhere, internal/engine/backlog.go#splitEffort, internal/engine/backlog.go#report, internal/forge/github_fields.go]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # Milestones and ordering

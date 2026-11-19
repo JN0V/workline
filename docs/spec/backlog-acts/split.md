@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/forge/forge.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go#drafts, internal/backlog/backlog.go#Quote, internal/backlog/backlog.go#moves, internal/backlog/backlog.go#conversation, internal/backlog/backlog.go#question, internal/backlog/backlog.go#holds, internal/backlog/opening.go, internal/engine/backlog.go#rename, internal/engine/backlog.go#report]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # Splitting and renaming

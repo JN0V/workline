@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/depend.go, internal/backlog/backlog.go, internal/forge/forge.go, internal/engine/backlog.go]
+sources: [internal/backlog/depend.go, internal/backlog/backlog.go#theirs, internal/backlog/backlog.go#holds, internal/forge/forge.go#Issue, internal/engine/backlog.go#links, internal/engine/backlog.go#report]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # What an issue waits on

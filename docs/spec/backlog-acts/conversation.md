@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
+sources: [internal/backlog/backlog.go#drafts, internal/backlog/backlog.go#theirs, internal/backlog/backlog.go#moves, internal/backlog/backlog.go#named, internal/backlog/backlog.go#conversation, internal/backlog/backlog.go#bullet, internal/backlog/backlog.go#questions, internal/backlog/backlog.go#question, internal/backlog/backlog.go#Agreement, internal/backlog/backlog.go#holds, internal/builtin/productowner/productowner.go#commented, internal/builtin/productowner/productowner.go#author, internal/builtin/productowner/productowner.go#sections, internal/builtin/productowner/productowner.go#marker, internal/builtin/productowner/productowner.go#final, internal/builtin/productowner/productowner.go#write, internal/builtin/productowner/productowner.go#elsewhere]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # The conversation with the reporter

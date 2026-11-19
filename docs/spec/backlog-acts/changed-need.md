@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/change.go, internal/builtin/productowner/changes.go, internal/builtin/productowner/productowner.go, internal/backlog/autonomy.go, internal/backlog/parent.go, internal/backlog/depend.go]
+sources: [internal/backlog/change.go, internal/builtin/productowner/changes.go, internal/builtin/productowner/productowner.go#sections, internal/builtin/productowner/productowner.go#marker, internal/builtin/productowner/productowner.go#elsewhere, internal/backlog/autonomy.go, internal/backlog/parent.go, internal/backlog/depend.go]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # A changed need

@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/kit/verdict, internal/report]
+sources: [internal/engine/backlog.go#applier.where, internal/engine/backlog.go#applier.level, internal/engine/backlog.go#applier.kind, internal/engine/backlog.go#applier.size, internal/engine/backlog.go#rename, internal/engine/backlog.go#applier.split, internal/engine/backlog.go#applier.undepend, internal/engine/backlog.go#applier.depend, internal/engine/backlog.go#applier.assume, internal/engine/backlog.go#report, internal/engine/candidate.go#minor, internal/engine/candidate.go#minor.title, internal/engine/candidate.go#minor.branch, internal/engine/demote.go#commits, internal/engine/demote.go#holds, internal/engine/engine.go#unopened, internal/engine/engine.go#applier, internal/engine/engine.go#applier.marker, internal/engine/engine.go#applier.apply, internal/engine/engine.go#applier.patch, internal/engine/engine.go#unanswered, internal/engine/follow.go#follow, internal/engine/merge.go#accepted, internal/engine/merge.go#later, internal/engine/routine.go#normal, internal/engine/routine.go#normal.whose, internal/engine/routine.go#normal.asked, internal/engine/routine.go#alone, internal/intent/intent.go#Intention, internal/intent/intent.go#sticky, internal/role/config.go#check, internal/role/role.go#Model, internal/agent/claude.go#claude, internal/agent/claude.go#without, internal/agent/command.go#command, internal/kit/verdict/verdict.go#Verdict, internal/report/gates.go#title, internal/report/main.go#today, internal/report/report.go#place, internal/report/report.go#SARIF, internal/report/summary.go#finding, internal/report/summary.go#message]
 verified: agent:claude-code
-checked: 04d2af892
+checked: a19e8cb0
 status: draft
 ---
 # Role outcome — verdict and intentions

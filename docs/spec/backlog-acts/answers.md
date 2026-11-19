@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/ledger.go, internal/builtin/productowner/productowner.go, internal/backlog/spec.go, internal/backlog/assume.go]
+sources: [internal/backlog/ledger.go#Counted, internal/backlog/ledger.go#Plan.labelWithin, internal/backlog/ledger.go#Plan.reply, internal/builtin/productowner/productowner.go#revise, internal/builtin/productowner/productowner.go#commented, internal/builtin/productowner/productowner.go#evidence, internal/builtin/productowner/productowner.go#author, internal/builtin/productowner/productowner.go#sections, internal/builtin/productowner/productowner.go#marker, internal/builtin/productowner/productowner.go#write, internal/backlog/spec.go, internal/backlog/assume.go]
 status: draft
-checked: 8538d558
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # A person's answers

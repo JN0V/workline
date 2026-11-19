@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/parent.go, internal/backlog/symptom.go, internal/builtin/productowner/productowner.go, internal/line/parent.go, internal/forge/forge.go, internal/forge/github.go, internal/forge/gitlab.go]
+sources: [internal/backlog/parent.go, internal/backlog/symptom.go, internal/builtin/productowner/productowner.go#evidence, internal/builtin/productowner/productowner.go#place, internal/builtin/productowner/productowner.go#final, internal/line/parent.go, internal/forge/forge.go#Issue, internal/forge/github.go#github, internal/forge/github.go#github.Issue, internal/forge/github.go#github.issues, internal/forge/github.go#github.Closers, internal/forge/github.go#github.Sticky, internal/forge/github.go#github.sticky]
 status: draft
-checked: a16d7f0a
+checked: a19e8cb0
 verified: agent:claude-code
 ---
 # A parent and its parts
