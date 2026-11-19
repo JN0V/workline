@@ -935,7 +935,7 @@ workline:release:dry-run:
     - *trust
     - workline version
     - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
-    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
     - workline route release --dry-run --forge none --summary workline-summary.md --summary workline-summary.html --json > dry-run.json
   allow_failure: {exit_codes: [3]}  # never 3: it asks no agent; as every night's job
   after_script: *summary
@@ -988,7 +988,7 @@ workline:curator:
   script:
     - *trust
     - workline version
-    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
     # The judge's, when one ran: it adds the folder it weighed.
     - 'h="$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_COMMIT_REF_NAME/raw/curator-history.json"; curl -fsS -H "JOB-TOKEN: $CI_JOB_TOKEN" -o curator-history.json "$h?job=workline%3Acurator%3Ajudge" || curl -fsS -H "JOB-TOKEN: $CI_JOB_TOKEN" -o curator-history.json "$h?job=workline%3Acurator" || { rm -f curator-history.json; echo "workline: no history of the curator''s: the first measure"; }'
     - workline test measure --history curator-history.json --summary workline-summary.md --summary workline-summary.html
