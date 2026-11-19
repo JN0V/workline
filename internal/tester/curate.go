@@ -203,6 +203,10 @@ at most %d tests that are redundant, and remove them:
   regression whose scenario no other test holds, a test in a frozen file.
   Two tests that each check something the other does not are both kept:
   never merged into one. When in doubt, keep it.
+- **Obsolete**: a test whose commit message links a closed bug ("#N")
+  and which covers no line that another test misses is obsolete: remove
+  it. A test with no closed-bug link in its commit message is never
+  proposed for removal as obsolete.
 - **Remove only**: never rewrite a test, never merge two into one, never
   add a line. A test stays tied to its issue's scenario, and the proof
   covers a removal only: a file with a line that is not the base's is
