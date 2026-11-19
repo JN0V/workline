@@ -1,0 +1,9 @@
+case: cli/docs-json-says-its-error
+about: "`workline docs --json` that fails on an early exit (a revision that names no commit) prints the JSON result on stdout, its finding's rule naming the real cause and not `config-invalid`, and still says the reason on stderr."
+given: {repo: basic}
+run: {cli: [docs, --since, v9.9, --ai, none, --json]}
+expect:
+  exit: 1
+  stdout: ['"status": "block"', '"rule": "', "v9.9", "names no commit"]
+  stdout-lacks: ['"rule": "config-invalid"']
+  stderr: ["v9.9", "names no commit"]
