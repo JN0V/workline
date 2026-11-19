@@ -64,11 +64,17 @@ jobs:
           jq -r 'def d: gsub("%";"%25") | gsub("\r";"%0D") | gsub("\n";"%0A"); def p: d | gsub(":";"%3A") | gsub(",";"%2C");
             .findings[]? | "::error file=\(.where // "" | p),title=workline bounds::\(.rule // "" | d): \(.message // "" | d)"' bounds.json || true
       - uses: actions/upload-artifact@v4
-        if: steps.bounds.outputs.run != ''
+        if: steps.bounds.outputs.run != '' || failure() || (steps.bounds.outputs.status != '' && steps.bounds.outputs.status != '0')
         with: {name: workline-bounds, path: .workline-runs, include-hidden-files: true, retention-days: 1}
       - name: Verdict
         env: {STATUS: "${{ steps.bounds.outputs.status }}"}
-        run: exit "${STATUS:-1}"
+        run: |
+          if [ "${STATUS:-1}" != 0 ]; then
+            # The reason in the log: the summary, as an error annotation.
+            msg=$(jq -r '.summary // empty' bounds.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the run ended with status $STATUS, see its result file}"
+          fi
+          exit "${STATUS:-1}"
 
   # The verdict kept on the pull request, its sticky comment, refused or
   # not: data from the job above, no code of the pull request.

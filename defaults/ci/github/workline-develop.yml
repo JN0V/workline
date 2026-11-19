@@ -203,7 +203,7 @@ jobs:
         with: {path: .git/workline/test-ids, key: "workline-test-ids-${{ github.run_id }}-${{ github.run_attempt }}"}
 
       - uses: actions/upload-artifact@v4
-        if: steps.line.outputs.proposed == 'true'
+        if: steps.line.outputs.proposed == 'true' || failure() || (steps.line.outputs.status != '' && steps.line.outputs.status != '0')
         with: {name: workline-runs, path: "line.json\n.workline-runs", include-hidden-files: true, retention-days: 1}
 
       - name: Verdict
@@ -212,6 +212,11 @@ jobs:
           if [ "$status" = 3 ]; then
             echo "::warning title=workline::the agent could not be reached; the issue waits for the next run"
             exit 0
+          fi
+          if [ "${status:-0}" != 0 ]; then
+            # The reason in the log: the summary, as an error annotation.
+            msg=$(jq -r '.summary // empty' line.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the run ended with status $status, see its result file}"
           fi
           exit "$status"
       # What this job's agent calls spent, a line a run: role, target,
@@ -671,7 +676,7 @@ jobs:
           echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' round.json)" >> "$GITHUB_OUTPUT"   # a run left to apply, by name
           jq -r '.summary // empty' round.json >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
-        if: steps.round.outputs.run != ''
+        if: steps.round.outputs.run != '' || failure() || (steps.round.outputs.status != '' && steps.round.outputs.status != '0')
         with: {name: workline-round, path: ".workline-runs", include-hidden-files: true, retention-days: 1}
       - name: Verdict
         env: {STATUS: "${{ steps.round.outputs.status }}"}
@@ -679,6 +684,11 @@ jobs:
           if [ "$STATUS" = 3 ]; then
             echo "::warning title=workline::the agent could not be reached; the review waits for the next verdict"
             exit 0
+          fi
+          if [ "${STATUS:-0}" != 0 ]; then
+            # The reason in the log: the summary, as an error annotation.
+            msg=$(jq -r '.summary // empty' round.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the run ended with status $STATUS, see its result file}"
           fi
           exit "${STATUS:-0}"
       # What this job's agent calls spent, a line a run: role, target,

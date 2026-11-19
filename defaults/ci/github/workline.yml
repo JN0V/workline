@@ -137,7 +137,7 @@ jobs:
           mkdir -p report && echo "${{ github.event.pull_request.number }}" > report/number
       # Their result, for judge, and for workline-apply.yml to show.
       - uses: actions/upload-artifact@v4
-        if: "!cancelled() && steps.gates.outputs.ran == 'true'"
+        if: "!cancelled() && (failure() || steps.gates.outputs.ran == 'true' || (steps.gates.outputs.status != '' && steps.gates.outputs.status != '0'))"
         with: {name: workline-gates, path: "gates.json\nreport/number", retention-days: 1}
       # Main after a merge: the gates compare with main's tip before it,
       # every finding kept by this commit; the whole repository's checks
@@ -158,10 +158,17 @@ jobs:
         if: "!cancelled() && steps.main.outputs.kept == 'true'"
         with: {path: "${{ runner.temp }}/workline-kept", key: "workline-gates-${{ github.sha }}"}
       - uses: actions/upload-artifact@v4
-        if: "!cancelled() && github.event_name == 'push'"
+        if: "!cancelled() && (failure() || github.event_name == 'push')"
         with: {name: workline-main, path: main.json, if-no-files-found: ignore, retention-days: 1}
       - name: Verdict
-        run: exit "${{ steps.gates.outputs.status || steps.main.outputs.status || 0 }}"
+        run: |
+          status=${{ steps.gates.outputs.status || steps.main.outputs.status || 0 }}
+          if [ "${status:-0}" != 0 ]; then
+            # The reason in the log: the summary, as an error annotation.
+            msg=$(jq -r '.summary // empty' gates.json main.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the run ended with status $status, see its result file}"
+          fi
+          exit "$status"
 
   judge:
     # After the gates, whatever their verdict: the line reads it. Not on
@@ -347,7 +354,7 @@ jobs:
       # What the line proposed, for workline-apply.yml to apply, and what
       # the documentalist found, for it to show beside the docs' lines.
       - uses: actions/upload-artifact@v4
-        if: steps.line.outputs.proposed == 'true' || steps.line.outputs.found == 'true'
+        if: github.event_name != 'merge_group' && (steps.line.outputs.proposed == 'true' || steps.line.outputs.found == 'true' || failure() || (steps.line.outputs.status != '' && steps.line.outputs.status != '0'))
         with: {name: workline-runs, path: "line.json\n.workline-runs\nreport/number", include-hidden-files: true}
 
       # The findings code scanning keeps: neither the documentalist's nor
@@ -364,6 +371,11 @@ jobs:
           if [ "$status" = 3 ]; then
             echo "::warning title=workline::the agent could not be reached; the docs are listed in the summary, for a person"
             exit 0
+          fi
+          if [ "${status:-0}" != 0 ]; then
+            # The reason in the log: the summary, as an error annotation.
+            msg=$(jq -r '.summary // empty' line.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the run ended with status $status, see its result file}"
           fi
           exit "$status"
       # What this job's agent calls spent, a line a run: role, target,
