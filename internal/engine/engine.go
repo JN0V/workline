@@ -732,7 +732,13 @@ func run(o Options, res *Result) error {
 	}
 	// What pre cut of the task past a cap is said to the person, not to
 	// the agent alone (#1159).
-	res.Findings = append(res.Findings, verdict.CutFindings(runDir, res.Findings)...)
+	// The cuts a role declares are listed for its agent by the shared pre,
+	// which cuts nothing itself: they are no cut of this run.
+	for _, f := range verdict.CutFindings(runDir, res.Findings) {
+		if !slices.Contains(r.Cuts, f.Message) {
+			res.Findings = append(res.Findings, f)
+		}
+	}
 	digest, err := dirDigest(filepath.Join(runDir, "in"))
 	if err != nil {
 		return err
