@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.84.0](https://github.com/JN0V/workline/compare/v0.83.0...v0.84.0) (2026-11-19)
+
+
+### Features
+
+* a check refuses the core importing a role, or a role ([#1923](https://github.com/JN0V/workline/issues/1923)) ([e6a5187](https://github.com/JN0V/workline/commit/e6a518736a542857e03a8a2cbbb4661e1382fd88))
+* the engine runs a role's built-in code with no pre ([#1896](https://github.com/JN0V/workline/issues/1896)) ([612e165](https://github.com/JN0V/workline/commit/612e16536e388448969039b36b6929cf71df5e60))
+
+
+### Bug Fixes
+
+* fix: weekly sample reads only the first act of a comment ([#1930](https://github.com/JN0V/workline/issues/1930)) ([636cd86](https://github.com/JN0V/workline/commit/636cd8629f7d3579b8d2d8e52ebec2bf5af36453))
+* silent refusals: a conformance case per slice, docs ([#1924](https://github.com/JN0V/workline/issues/1924)) ([27b58f4](https://github.com/JN0V/workline/commit/27b58f4219cb6390b6c2807fce98488432712c33))
+* silent refusals: every refusal said on its item, one ([#1936](https://github.com/JN0V/workline/issues/1936)) ([8b8a813](https://github.com/JN0V/workline/commit/8b8a8130bd19736cab75af337fa9a2390843d5f5))
+* the developer's proof runs on its branch's base, not on ([#1919](https://github.com/JN0V/workline/issues/1919)) ([7e573ca](https://github.com/JN0V/workline/commit/7e573cab527b97020407ddb897a155d88e598bbe))
+
 ## [0.83.0](https://github.com/JN0V/workline/compare/v0.82.0...v0.83.0) (2026-11-19)
 
 
