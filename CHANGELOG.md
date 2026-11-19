@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.83.0](https://github.com/JN0V/workline/compare/v0.82.0...v0.83.0) (2026-11-19)
+
+
+### Features
+
+* a prompt override left at its old path stops the run ([#1887](https://github.com/JN0V/workline/issues/1887)) ([3bab324](https://github.com/JN0V/workline/commit/3bab3240064daf04fffce5de0bbb78028a369050))
+* a prompt-only role gets its prompt once, its cuts ([#1872](https://github.com/JN0V/workline/issues/1872)) ([40e34a8](https://github.com/JN0V/workline/commit/40e34a8928a404c2b221dd7c47f0320cf51cb708))
+* every act a role applies carries one shared record ([#1877](https://github.com/JN0V/workline/issues/1877)) ([9ae7656](https://github.com/JN0V/workline/commit/9ae76563296af35e961851f1d0a08f4c4345bc43))
+* the weekly sample draws any role's acts from the ([#1894](https://github.com/JN0V/workline/issues/1894)) ([207c3b3](https://github.com/JN0V/workline/commit/207c3b374ed5cf5ef0856e895ec1401999337306))
+
+
+### Bug Fixes
+
+* **engine:** the shared pre misses instruction.md once moved to ([#1893](https://github.com/JN0V/workline/issues/1893)) ([44ee3a4](https://github.com/JN0V/workline/commit/44ee3a4211116674af586973066454797b6308ec))
+* sweep: every refusal, block or failure said in log ([#1781](https://github.com/JN0V/workline/issues/1781)) ([848310f](https://github.com/JN0V/workline/commit/848310f06b2d45cc1da3175c4a2ac2e0b56f7a69))
+
 ## [0.82.0](https://github.com/JN0V/workline/compare/v0.81.0...v0.82.0) (2026-11-19)
 
 
