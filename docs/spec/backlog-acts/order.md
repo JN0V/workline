@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/backlog/undo.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go, internal/forge/github_fields.go]
+sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/backlog/undo.go, internal/scale/scale.go, internal/scale/detect.go, roles/product-owner/code/productowner.go, internal/engine/backlog.go, internal/forge/github_fields.go]
 status: draft
 checked: 8538d558
 verified: agent:claude-code

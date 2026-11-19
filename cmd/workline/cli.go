@@ -35,7 +35,7 @@ func init() {
 		{name: "item", args: "ready <id> [options]", about: "move a work item to ready, once its " + required() + " are written", run: itemCmd},
 		{name: "issues", args: "[list] | show <n>|!<n> | open <title> | label <n> | comment <n> | import <file> [options]", about: "read and write the local forge's issues; import a roadmap or backlog file to the forge's issues", run: issuesCmd},
 		{name: "docs", args: "[options]", about: "judge the docs made suspect since they were last judged, then review each change", run: docsCmd},
-		{name: "sample", args: "[options] | --apply <file> [options]", about: "draw and read the week's sample of the docs the documentalist vouched for; --apply writes it to the forge", run: sampleCmd},
+		{name: "sample", args: "[options] | --apply <file> [options]", about: "draw the week's sample of every role's acts, the docs the documentalist passed among them: one in ten per role and kind; --apply writes it to the forge", run: sampleCmd},
 		{name: "size", args: "[options]", about: "measure the normal size of an issue from the line's records on the issues done, and keep it in one comment on the forge; an issue stops at 4× its normal, its backstop", run: sizeCmd},
 		{name: "wake", args: "[--range <before>..<after>] [options]", about: "after a merge to the default branch, print where the line may be drifting, with no AI; --issue keeps it in one issue", run: wakeCmd},
 		{name: "tick", args: "[--json] [--issues] [options]", about: "list the line's jobs due now, each with why, with no AI: what a regular wake starts, and nothing else", run: tickCmd},

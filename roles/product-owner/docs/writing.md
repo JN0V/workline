@@ -1,5 +1,5 @@
 ---
-sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
+sources: [roles/product-owner/prompts/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
 checked: db6103ad
 verified: agent:claude-code
 ---

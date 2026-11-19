@@ -24,12 +24,12 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/kit/worktree"
 	"github.com/JN0V/workline/internal/role"
-	"github.com/JN0V/workline/internal/tester"
 )
 
 // Flaky is a flaky-n-of-n proof to run: the named test, Runs times.
@@ -51,23 +51,23 @@ func flakyOf(k *backlog.Proof, s Settings) *Flaky {
 	return &Flaky{Test: k.Test, Runs: n}
 }
 
-// again is the flaky-n-of-n proof a review round runs again: the one
+// Again is the flaky-n-of-n proof a review round runs again: the one
 // the issue run made, from its record.
-func again(p *devmark.Proof) *Flaky {
+func Again(p *devmark.Proof) *Flaky {
 	if p == nil || p.Runs == 0 {
 		return nil
 	}
 	return &Flaky{Test: p.Test, Runs: p.Runs}
 }
 
-// prove runs the project's test command on the patches laid on the commit
+// Prove runs the project's test command on the patches laid on the commit
 // the run read, stopped past the proof's seconds: a cap then. With a
 // proof-command naming `{packages}`, on the folders of the patches' files
 // and of also (the acceptance tests) alone; the pull request's own CI
 // runs the whole suite. A flaky-n-of-n proof runs it n.Runs times on
 // the one tree, `{test}` the named test; green only N runs of N, the
 // test passing in each.
-func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky, s Settings) (devmark.Proof, *devmark.Cap) {
+func Prove(repo, at string, patches []intent.Intention, also []string, n *Flaky, s Settings) (devmark.Proof, *devmark.Cap) {
 	// The flaky proof's test and runs first, kept whatever stops it: a
 	// review round reads them again from the record (again).
 	var p devmark.Proof
@@ -80,7 +80,7 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 		return p, nil
 	}
 	p.Command = ts.Command
-	scope := tester.Scope{Files: also}
+	scope := contract.TestScope{Files: also}
 	if n != nil {
 		if !backlog.TestName.MatchString(n.Test) {
 			p.Result, p.Why = devmark.Unproven, "the tester's flaky-n-of-n record names no test to run"
@@ -114,7 +114,7 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 		deadline = time.Now().Add(time.Duration(s.ProofSeconds) * time.Second)
 	}
 	start := time.Now()
-	o, f := tester.OnChange(repo, at, patches, ts, deadline, scope)
+	o, f := contract.BuiltinTests().OnChange(repo, at, patches, ts, deadline, scope)
 	switch {
 	case f != nil && f.Rule == "proof-over-time" && f.Where == "suite-max-seconds":
 		// One run stopped at the tester's suite-max-seconds, before the
@@ -220,25 +220,25 @@ func withMain(repo, at string) (commit, why string, err error) {
 // testerSettings are the tester's settings, the project's over the role's:
 // its test command and report are the project's tests, one setting for
 // both roles.
-func testerSettings(repo string) (tester.Settings, error) {
+func testerSettings(repo string) (contract.TestSettings, error) {
 	return testerSettingsIn("", repo)
 }
 
 // testerSettingsIn are the tester's settings, its role read in rolesDir,
 // "" the one the engine gives a role's run.
-func testerSettingsIn(rolesDir, repo string) (tester.Settings, error) {
+func testerSettingsIn(rolesDir, repo string) (contract.TestSettings, error) {
 	if rolesDir == "" {
 		rolesDir = os.Getenv("WORKLINE_ROLES_DIR")
 	}
 	r, err := role.Load(rolesDir, "tester")
 	if err != nil {
-		return tester.Settings{}, fmt.Errorf("the tester's role, whose test-command the proof runs: %w", err)
+		return contract.TestSettings{}, fmt.Errorf("the tester's role, whose test-command the proof runs: %w", err)
 	}
 	cfg, err := role.LoadProjectConfig(repo)
 	if err != nil {
-		return tester.Settings{}, err
+		return contract.TestSettings{}, err
 	}
-	return tester.SettingsFrom(r.MergedSettings(cfg))
+	return contract.BuiltinTests().Settings(r.MergedSettings(cfg))
 }
 
 // Used is what the run's agent calls used, as the agents report it: the
@@ -346,8 +346,8 @@ func agentFailed(where, why string) verdict.Finding {
 		Message: "its agent failed (" + why + "): what it edited is proven all the same; its pull request opens as a Draft"}
 }
 
-// proofFindings say the proof and the caps in the run's verdict.
-func proofFindings(where string, p devmark.Proof, caps []devmark.Cap) []verdict.Finding {
+// ProofFindings say the proof and the caps in the run's verdict.
+func ProofFindings(where string, p devmark.Proof, caps []devmark.Cap) []verdict.Finding {
 	var out []verdict.Finding
 	switch p.Result {
 	case devmark.Green:
@@ -409,6 +409,6 @@ func ProveMerge(rolesDir, repo, at string) devmark.Proof {
 		}
 	}
 	s.ProofCommand, s.rolesDir = "", rolesDir
-	p, _ := prove(repo, at, nil, nil, nil, s)
+	p, _ := Prove(repo, at, nil, nil, nil, s)
 	return p
 }

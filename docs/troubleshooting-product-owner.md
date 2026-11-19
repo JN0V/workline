@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/productowner/productowner.go]
+sources: [roles/product-owner/code/productowner.go]
 checked: cee5a7af
 verified: agent:claude-code
 judged: 5c1573b

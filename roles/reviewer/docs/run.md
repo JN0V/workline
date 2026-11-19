@@ -1,5 +1,5 @@
 ---
-sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
+sources: [roles/reviewer/role.yaml, roles/reviewer/prompts/instruction.md, roles/reviewer/prompts/policy.md, roles/reviewer/prompts/lenses, internal/builtin/reviewer]
 checked: 44518314
 verified: agent:claude-code
 ---
@@ -94,7 +94,7 @@ flowchart LR
 ## 4. The lenses
 
 The lenses (`lenses/<lens>.md`, a project's own in
-`.workline/roles/reviewer/lenses/`): correctness, edge cases, tests,
+`.workline/roles/reviewer/prompts/lenses/`): correctness, edge cases, tests,
 intent, claims ([#126](https://github.com/JN0V/workline/issues/126)),
 simplicity, and comments, asked only when `story-words` flags a comment, beside the lens
 in turn, never in its place.

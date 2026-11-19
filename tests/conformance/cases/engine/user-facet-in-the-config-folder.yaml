@@ -4,7 +4,7 @@ given:
   repo: basic
   config: {roles: {committer: {settings: {rewrite: true}}}}
   setup:
-    - "mkdir -p \"$XDG_CONFIG_HOME/workline/roles/committer\" && printf 'Keep the word MARK-104.\\n' > \"$XDG_CONFIG_HOME/workline/roles/committer/policy.md\""
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline/roles/committer/prompts\" && printf 'Keep the word MARK-104.\\n' > \"$XDG_CONFIG_HOME/workline/roles/committer/prompts/policy.md\""
 run:
   role: committer
   event: commit-msg

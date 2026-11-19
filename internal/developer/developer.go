@@ -1047,7 +1047,7 @@ func refusalFindings(where string, refused []devmark.Refusal, said []string) []v
 // verdict says of them. Also: the files whose folders run beside the
 // patches' (the acceptance tests).
 func proven(runDir, repo, on, where string, patches []intent.Intention, also []string, n *Flaky, s Settings) (devmark.Proof, Used, []devmark.Cap, []verdict.Finding) {
-	p, over := prove(repo, on, patches, also, n, s)
+	p, over := Prove(repo, on, patches, also, n, s)
 	u := used(runDir)
 	caps := agentCaps(u, s)
 	if over != nil {
@@ -1058,7 +1058,7 @@ func proven(runDir, repo, on, where string, patches []intent.Intention, also []s
 		found = append(found, agentFailed(where, u.failed))
 	}
 	found = append(found, unreported(where, u, s)...)
-	return p, u, caps, append(found, proofFindings(where, p, caps)...)
+	return p, u, caps, append(found, ProofFindings(where, p, caps)...)
 }
 
 // drafted is the proof of a tester's Draft its agent wrote nothing on,

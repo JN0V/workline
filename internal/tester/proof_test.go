@@ -1,6 +1,9 @@
 package tester
 
-import "testing"
+import (
+	"github.com/JN0V/workline/internal/contract"
+	"testing"
+)
 
 // A flaky-n-of-n note names its test and runs on lines of their own,
 // taken out of its reason; another kind keeps its words whole.
@@ -33,7 +36,7 @@ func TestTestName(t *testing.T) {
 
 // The named test is found by its id whole or its last part.
 func TestOutcomePasses(t *testing.T) {
-	o := Outcome{Passed: []string{"pkg/x.TestA", "tests.test_b"}, Red: []string{"pkg/x.TestC"}}
+	o := contract.TestOutcome{Passed: []string{"pkg/x.TestA", "tests.test_b"}, Red: []string{"pkg/x.TestC"}}
 	cases := []struct {
 		test           string
 		reported, pass bool

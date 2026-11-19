@@ -1,5 +1,5 @@
 ---
-sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
+sources: [roles/product-owner/role.yaml, roles/product-owner/code, internal/backlog, internal/sample/acts.go]
 checked: 8538d558
 verified: agent:claude-code
 ---

@@ -704,8 +704,12 @@ func excerpt(content string, line int) string {
 // matter (`judge.question`): the project's lens, else the role's; "" when
 // it asks nothing of its own.
 func lensQuestion(repo, rolesDir, lens string) string {
+	sub := ""
+	if st, err := os.Stat(filepath.Join(rolesDir, "reviewer", "prompts")); err == nil && st.IsDir() {
+		sub = "prompts" // a moved role: read under prompts/ only, as the reviewer does
+	}
 	for _, dir := range []string{filepath.Join(repo, ".workline", "roles", "reviewer"), filepath.Join(rolesDir, "reviewer")} {
-		data, err := os.ReadFile(filepath.Join(dir, "lenses", lens+".md"))
+		data, err := os.ReadFile(filepath.Join(dir, sub, "lenses", lens+".md"))
 		if err != nil {
 			continue
 		}

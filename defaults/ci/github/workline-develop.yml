@@ -320,9 +320,17 @@ jobs:
         run: |
           workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --input room=true --json > room.json || true
           jq -r '.summary // empty' room.json | tee -a "$GITHUB_STEP_SUMMARY"
+          wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
+          # An issue with a run queued or running is not started again.
+          busy=$(for s in queued in_progress pending waiting; do
+            gh run list --workflow "$wf" --status "$s" --limit 100 --json displayTitle --jq '.[].displayTitle'
+          done) || busy=
           for n in $(jq -r '(.due // [])[]' room.json); do
             [ "$n" != "$ISSUE" ] || continue   # its own next step: started above
-            gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
+            if printf '%s\n' "$busy" | grep -qxF "workline develop #$n"; then
+              echo "#$n: a run of it is queued or running" >> "$GITHUB_STEP_SUMMARY"; continue
+            fi
+            gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
               echo "::warning title=workline::#$n's run not started: the reconciler starts it"
           done
 
@@ -503,7 +511,11 @@ jobs:
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |
           wait=$(gh api "repos/$GITHUB_REPOSITORY/environments/workline-heartbeat" \
-            --jq '[.protection_rules[]? | select(.type == "wait_timer") | .wait_timer][0] // 0' 2>/dev/null) || wait=0
+            --jq '[.protection_rules[]? | select(.type == "wait_timer") | .wait_timer][0] // 0' 2>gh-err.txt) || {
+            # no such environment (404) is no heartbeat; any other refusal is said and stops
+            if grep -q 'HTTP 404' gh-err.txt; then wait=0
+            else echo "::error title=workline::gh api environments/workline-heartbeat failed: $(tr '\n' ' ' < gh-err.txt)"; exit 1; fi
+          }
           case "$wait" in ''|*[!0-9]*) wait=0 ;; esac
           if [ "$wait" -lt 5 ]; then
             echo "no heartbeat: no environment workline-heartbeat with a wait timer of 5 minutes or more; the schedule and the line's events start the next reconcile, when GitHub runs them" | tee -a "$GITHUB_STEP_SUMMARY"
@@ -643,7 +655,9 @@ jobs:
           case "$branch" in workline/developer/*) ;; *) echo "pull request $PR is not the developer's: no round"; exit 0;; esac
           # Merged or closed since it was read, its branch maybe deleted:
           # nothing to review, said, the run green.
-          state=$(gh pr view "$PR" --json state --jq .state 2>/dev/null) || state=
+          # A refused call is not an empty answer: said with its status, the step stops.
+          state=$(gh pr view "$PR" --json state --jq .state 2>gh-err.txt) ||
+            { echo "::error title=workline::gh pr view $PR failed: $(tr '\n' ' ' < gh-err.txt)"; exit 1; }
           case "$state" in MERGED|CLOSED) echo "pull request $PR is $(printf '%s' "$state" | tr A-Z a-z) meanwhile: no round"; exit 0;; esac
           git rev-parse -q --verify "origin/$branch^{commit}" >/dev/null ||
             { echo "pull request $PR: its branch $branch is gone, merged or closed meanwhile: no round"; exit 0; }
