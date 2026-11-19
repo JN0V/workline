@@ -566,7 +566,9 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 		return false, nil
 	}
 	if s, _ := stalled(f, kept, repo, mr, branchHead(f, repo, mr.Branch)); s != nil {
-		return false, nil // the same failure twice at this head: no round (#1769)
+		// The same failure twice at this head: no agent round (#1769). Due
+		// only to say the stop, once: the round itself comments, no agent.
+		return !s.Said, nil
 	}
 	if _, due := conflictNow(f, kept, a, repo, mr, branchHead(f, repo, mr.Branch)); due {
 		return true, nil // its merge refused for a conflict: a merge round (ADR-0067)
