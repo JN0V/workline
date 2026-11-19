@@ -3,12 +3,16 @@ sources:
   - roles/inspector/role.yaml
   - roles/inspector/instruction.md
   - roles/inspector/policy.md
-  - internal/builtin/inspector
-  - internal/line/line.go
-  - defaults/ci/github/workline-warn.yml
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
-checked: 4cc417ab
+  - internal/builtin/inspector/inspector.go#Found
+  - internal/builtin/inspector/inspector.go#prepare
+  - internal/builtin/inspector/inspector.go#noAgent
+  - internal/builtin/inspector/inspector.go#settled
+  - internal/builtin/inspector/inspector.go#Post
+  - internal/builtin/inspector/inspector.go#settings
+  - internal/line/line.go#GatesInput
+  - internal/line/line.go#Run
+  - internal/engine/engine.go#Result.overBudget
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Inspector
@@ -50,7 +54,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   ([ADR-0049](../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#5-the-inspectors-judgement));
 - lint code where no tool does
   ([ADR-0049](../../docs/adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md#4-no-ai-linting-as-a-check));
-- run the tools: the gates do, in a job with no token;
+- run the tools: the gates do, in a job with no token
+  ([gates in CI](../../docs/gates-in-ci.md#the-job));
 - silence a finding, or change a tool's config: a person does.
 
 ## When, what it costs
@@ -62,7 +67,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - **Off the verdict's path**: the triage only warns. The templates run it
   apart from the verdict, beside the reviewer's lenses that warn, and
   post it once it answered
-  ([ADR-0050](../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget)).
+  ([ADR-0050](../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget),
+  [gates in CI](../../docs/gates-triage.md)).
 - **Cost**: one call a push with new findings; none with no new finding,
   nor for a finding triaged before. Capped at 20 findings and 100000
   tokens a run (`findings-max`, `ai-max-tokens`).
@@ -111,29 +117,9 @@ workline route merge-request --warn-only --gates-from gates.json --ai claude
 
 ## A run, in short
 
-1. **The gates' result**: the gate steps before it in the line, or the
-   file `--gates-from` gives, only for the commits the run judges.
-2. **The record**: hidden in its comment on a merge request, read only
-   from the one workline's own account wrote and no one else edited last
-   ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
-   on a machine, in `.git/workline/inspector-record`. A finding there is
-   not asked again.
-3. **One call**: the findings left, each with the head's code around it;
-   those triaged before named for their place in the order only.
-4. **Read back**: a triage naming no finding asked, saying not why it
-   matters, or calling a false positive without why is not kept, said,
-   and asked again at the next push.
-5. **The comment**: every new finding triaged, in the order to fix them,
-   25 at most, the run's summary holding the rest; the record hidden
-   below. With nothing triaged to show, only a comment an earlier push
-   left is edited. A push landing before it is posted: it is still
-   posted, and the push's run, which waits for it, asks only what is
-   new; both runs' records are merged
-   ([#580](https://github.com/JN0V/workline/issues/580)). Applied out
-   of order, the newer run's text stays
-   ([#598](https://github.com/JN0V/workline/issues/598)).
-6. **The verdict**: always a pass; each triage a warning in the run's
-   summary. Never in code scanning: workline posts it itself.
+The gates' result, the record of what was triaged before, one call, its
+answer read back, the comment, a verdict that always passes:
+[a run, step by step](docs/run.md).
 
 ## Settings
 

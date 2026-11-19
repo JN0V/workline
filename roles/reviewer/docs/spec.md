@@ -1,6 +1,24 @@
 ---
-sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, defaults/routing.yaml]
-checked: 44f06aba
+sources:
+  - roles/reviewer/role.yaml#events
+  - roles/reviewer/role.yaml#settings.spec-lenses
+  - roles/reviewer/role.yaml#settings.spec-lines-max
+  - roles/reviewer/role.yaml#settings.code-lines-max
+  - roles/reviewer/role.yaml#settings.lenses-together
+  - roles/reviewer/lenses/ambiguous.md
+  - roles/reviewer/lenses/unverifiable.md
+  - roles/reviewer/lenses/out-of-scope.md
+  - roles/reviewer/lenses/contradicted.md
+  - internal/builtin/reviewer/spec.go#prepareSpec
+  - internal/builtin/reviewer/spec.go#readSpec
+  - internal/builtin/reviewer/spec.go#specCut
+  - internal/builtin/reviewer/spec.go#askSpec
+  - internal/builtin/reviewer/spec.go#specIntro
+  - internal/builtin/reviewer/spec.go#inSpec
+  - internal/builtin/reviewer/spec.go#specMaterial
+  - internal/builtin/reviewer/reviewer.go#lensFindings
+  - internal/builtin/reviewer/reviewer.go#Post
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built
@@ -20,7 +38,7 @@ for code ([a run](run.md)), with lenses of its own.
     forge, up to `spec-lines-max` (the rest cut, said: `spec-cut`);
   - for a lens that `needs: code`, the code the spec names, at HEAD, up
     to `code-lines-max` lines, the rest named. None named: that lens is
-    not asked, said. [The code a spec names](#the-code-a-spec-names)
+    not asked, said. [The code a spec names](spec-code.md)
     says how it is found.
 - **The spec lenses** (`spec-lenses`, `subject: spec` in their front
   matter), together in one call, each judged by its own question:
@@ -38,127 +56,17 @@ for code ([a run](run.md)), with lenses of its own.
   (`docs/x.md:9`, `#12:3`, a line of the body), a symptom in its file at
   HEAD; not found, dropped (`finding-unfounded`). Every finding is the
   spec's author's: the product owner, or the person who wrote it.
-- **The judge, the verdict, the questions** as for code: each important
-  finding judged, a no dropped; what the lenses find warns (`ai-findings`,
-  by lens too); an open point only a person settles is a finding
-  holding `decision`.
+- **The judge, the verdict, the questions** as for code
+  ([the judge](judge.md)); an open point only a person settles is a
+  finding holding `decision`.
 - **No record** is kept: a spec is read whole each run. Nor a line per
   finding judged: the weekly sample draws a merge request's
   ([the code's](judge.md#every-finding-judged-kept-for-the-weekly-sample)).
 
-## The code a spec names
-
-What the `contradicted` lens is shown, and its judge when a finding
-quotes no code ([#425](https://github.com/JN0V/workline/issues/425)),
-found by [the code picker](../../../docs/spec/code-picker.md) the
-product owner and the tester share, up to `code-lines-max` (the judge's
-`judge-lines-max`), the rest said:
-
-- **The lines it names after a file**, and each definition of a name it
-  writes as code, whole, read as Markdown reads it:
-  - every word in backticks;
-  - in a fenced block, a word called (`f(`) or holding a capital or an
-    underscore;
-  - in the prose, a word called, or shaped as a name (`answerItems`,
-    `load_all`).
-- **A name defined in a file it names** is that one: one of the same
-  name elsewhere is counted, not shown.
-- **The files it names**, whole while they fit; else by those pieces.
-- **Then the lines naming a name**, a few a name.
-- **Never a plain word**: a capitalised one (`Parse` opening a
-  sentence, `When`) is English as often as a name. Write a function's
-  name in backticks.
-- **Never a path, a flag or a key**: `cmd/x/main.go`, `--all` and
-  `code-lines-max` name no function.
-
 ## On the forge
 
-Opt-in, off by default: the reviewer after the product owner in the
-gardening line
-([ADR-0020](../../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)):
+Opt-in: the reviewer after the product owner reads each issue it
+refines, and holds it from ready while an important finding is open.
 
-```yaml
-routing:
-  events: {schedule: [documentalist, product-owner, reviewer]}
-```
-
-- **Which issues**: those the product owner keeps (its state comment),
-  not `workline:ready` nor `workline:needs-tests`, their Need, Validation and Scope written (drafts too), their
-  body not read as it is. A person's text on top stands for the Need,
-  as the product owner reads it with its state
-  ([#1062](https://github.com/JN0V/workline/issues/1062)). None: no agent asked.
-  - On the line's `issue` event, the one issue the product owner just
-    ran on, its state comment written yet or not
-    ([#840](https://github.com/JN0V/workline/issues/840)).
-- **How many**: up to `specs-per-run` a run (5), in the backlog's order
-  ([#433](https://github.com/JN0V/workline/issues/433)), its priorities
-  read where the product owner's settings say the project keeps them
-  ([settings](../../product-owner/docs/settings.md#priority-and-effort)):
-  - each read as one alone: its lens call, its judges, its caps
-    (`findings-max`, `questions-max`), its comment;
-  - the rest wait, named in one finding (`spec-waits`), and come first
-    at the next run unless the backlog puts another before them;
-  - the run's tokens spent, the specs after are not read: nothing
-    written on them, each said (`spec-not-read`), read at the next run.
-- **What it writes**: one comment on the issue, edited each review:
-  - what holds it from ready, and who answers each section a finding
-    lies in: the product owner, the Scope whoever wrote it, and a Need
-    or a Validation that is its own; the person, a Need or a Validation
-    they wrote
-    ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md));
-    the tester, the Verification, answered as it writes the tests: such
-    findings alone hold nothing, spend no round, and the engine moves
-    the issue on with no agent
-    ([ADR-0066](../../../docs/adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md));
-  - the findings, the questions for a person;
-  - a hidden record (`workline:spec-review`): the body's digest, the
-    round, the important findings open and the sections they lie in.
-
-  A nit or a decision holds nothing; a finding its judge refused is
-  dropped.
-- **The hold** is the product owner's: its `ready` waits until the
-  reviewer read the body as it is and no important finding is open, then
-  the engine moves it, with no agent
-  ([backlog acts](../../../docs/spec/backlog-acts/refine.md)). Not while
-  the product owner's own question waits, nor after it moved the issue
-  back to refine on that body
-  ([a spec read before ready](../../../docs/spec/backlog-acts/spec-review.md)).
-- **The answer**: the product owner's next refine rewrites the sections
-  the findings lie in that are its own; a person's, it asks the reporter.
-  The body changed, the reviewer reads it again: one round more.
-- **In CI**: judged, then applied. On the gardening line the reviewer
-  reads what an earlier run refined, so a round takes two nights; on the
-  line's `issue` event it reads the spec in refine's own run, and its
-  review wakes the product owner again at once
-  ([the line of states](../../../docs/spec/routing.md#the-line-of-states)). `forge-writes: false` writes no
-  comment: ready then stays held, `spec-not-reviewed`.
-- **Without AI**: nothing read, nothing written, each spec said
-  (`not-reviewed`); ready held. The sixth round's question (below) needs
-  no agent: written all the same.
-- **An agent out of reach**: the run is blocked-external and writes
-  nothing, that question included; said, it waits for the next run.
-- **Its cost**: a spec 7k to 37k tokens in, judges included; five a night
-  stay within `ai-max-tokens`
-  ([measured](../../../docs/research/code-review.md#the-reviewers-cost-measured)).
-
-## Rounds, and a spec not settled
-
-How a spec's reviews on the forge end, or wait:
-
-- **Five rounds** (`spec-rounds`): reviews in a row that leave a finding
-  open. The sixth asks no agent, nor takes a place of `specs-per-run`:
-  the comment puts a question to a person, and the reviewer stops
-  reading it. The person can:
-  - accept it as it reads (`workline:accepted`);
-  - settle it and set `workline:ready`;
-  - or delete the comment, for five rounds more.
-- **A review not whole** (a lens failed, the tokens spent) keeps the last
-  record, its body unread: read again at the next run, the rounds counted
-  as before, ready still held.
-- **A record that does not read**
-  ([#302](https://github.com/JN0V/workline/issues/302)) is never taken
-  for none, which read the spec again at round 1, an agent call a night.
-  - The issue is passed over, ready held, the next issue read instead.
-  - Said each run (`spec-record-unread`), naming the issue and the line.
-  - Released when a person deletes the comment (read anew, round 1) or
-    accepts the issue (`workline:accepted`).
+- **Which issues, how many, in CI**: [a spec on the forge](spec-forge.md).
+- **Its comment, the hold, the rounds**: [a spec's hold and rounds](spec-rounds.md).

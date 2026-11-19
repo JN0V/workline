@@ -41,7 +41,7 @@ shipped, changed in `.workline/config.yaml` ([config](config.md)).
   documentalist; `--review` adds the reviewer to `merge-request`.
 - **The reviewer after the product owner**, in `schedule` or at once on
   `issue`, reads each spec it refines before it goes ready
-  ([a spec on the forge](../roles/reviewer/docs/spec.md#on-the-forge)).
+  ([a spec on the forge](../roles/reviewer/docs/spec-forge.md)).
 - **The inspector after the gates** in `merge-request` triages what they
   found the change adds, apart from the verdict
   ([the inspector](../roles/inspector/README.md#set-it-up)).

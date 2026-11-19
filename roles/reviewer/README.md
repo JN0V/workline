@@ -1,6 +1,6 @@
 ---
-sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, defaults/routing.yaml]
-checked: 8538d558
+sources: [roles/reviewer/role.yaml#events, roles/reviewer/role.yaml#apart, roles/reviewer/role.yaml#duties, roles/reviewer/role.yaml#part-intentions, roles/reviewer/role.yaml#without-ai, roles/reviewer/role.yaml#settings, cmd/workline/main.go#reviewCmd, internal/routing/adopt.go#AddReviewer, internal/builtin/reviewer/reviewer.go#settings, internal/builtin/reviewer/reviewer.go#ahead, defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge.script]
+checked: e2e165c2d
 verified: agent:claude-code
 ---
 # Reviewer
@@ -31,7 +31,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   call (the judge) checks each important one;
 - asks a person what only a person decides;
 - rules on the comments the change adds (an internal code), no agent; a
-  lens judges one a word list flags as telling the code's history;
+  lens judges one a word list flags as telling the code's history
+  ([more](docs/run.md#12-the-range-the-rules));
 - reads a spec before it is built too, a file or an issue: what is
   ambiguous, unverifiable, out of its scope, or contradicted by the code;
   on the forge, after the product owner refines an issue, its findings
@@ -54,7 +55,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 | `review` | `workline review`, on your machine before you push | `base..HEAD`, every lens |
 | `merge-request` | CI, opt-in: `workline init --review` adds it to the line; without it, the developer's fix waits for a person's yes ([why](../developer/docs/merge.md#what-each-gets-at-normal)) | a draft: the rules only, no lens ([more](docs/ready.md)); every lens once, on the whole change, when it becomes ready; then the commits not reviewed yet, one lens a push, five commits a push for a lens that warns ([more](docs/ready.md#after-ready-only-what-is-new)) |
 | `spec` | `workline review --spec <file>` or `--issue <n>` | the spec, every spec lens |
-| `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens |
+| `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | the issues the product owner refined, `specs-per-run` a run, every spec lens |
 | `issue` | the line of states, opt-in: `reviewer` in the `issue` line, after the product owner woke on an issue to refine | that issue's spec, at once ([line of states](../../docs/spec/routing.md#the-line-of-states)) |
 
 - **Outputs**: on a machine, the findings and `out/review.json` for your
@@ -64,7 +65,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   weekly sample ([more](docs/judge.md#every-finding-judged-kept-for-the-weekly-sample)),
   the findings for GitHub's code scanning or
   GitLab's Code Quality (`--sarif`, `--code-quality`), and an issue
-  (`needs-triage`) for each verified finding outside the change.
+  (`needs-triage`) for each verified finding outside the change
+  ([more](docs/run.md#56-the-quotes-and-whose-finding-it-is)).
 - **Cost**: one call for the lenses (all of them on a machine, together;
   one a push on a merge request, none on a draft), one judge call for each important
   finding, up to three when it reads the code it needs, none for one
@@ -81,7 +83,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   two calls, the lenses that block and those that warn, the change given
   to each ([apart](docs/apart.md)).
 - **Without AI**: the rules alone; the change is left for a person
-  (`not-reviewed`).
+  (`not-reviewed`, [more](docs/judge.md#8-the-verdict-and-what-goes-wrong)).
 - **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), released in v0.9.0; [where it stands](docs/status.md); each try in its pull request
   ([before 2026-10-13](docs/tried.md)).
 
@@ -134,7 +136,7 @@ gives them to your agent ([more](docs/run.md#on-a-machine)).
 `workline init --review` adds the reviewer to the project's merge-request
 line. On GitHub the judging job needs a read token (`GH_TOKEN`,
 `pull-requests: read`), which the [template](../../defaults/ci/github/workline.yml)
-gives it. Each important finding is a comment on its line; one still
+gives it ([more](docs/run.md#on-a-merge-request)). Each important finding is a comment on its line; one still
 open is not posted again ([more](docs/lines.md)). A blocked merge request
 still gets its comments ([more](docs/run.md#on-a-merge-request)).
 
@@ -163,7 +165,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | Key | Default | |
 |---|---|---|
 | `base` | `main` | where `workline review` starts without `--base` |
-| `ignore` | `*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
+| `ignore` | `*.md`, `**/*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
 | `lenses` | `[correctness, edge-cases, tests, intent, claims, simplicity, comments]` | in this order, in turn, on a merge request; a lens with nothing to read skipped; `comments` takes no turn, asked whenever `story-words` flags a comment |
 | `lenses-per-push` | `1` | `--input lenses=all` asks every one, on the whole change: the templates pass it when the merge request becomes ready |
 | `commits-per-push` | `5` | after ready: new commits a lens that warns reads a push, the oldest first; the rest at the next push, said; none left when what its own pipeline runs changes; `0`: every one ([more](docs/ready.md#after-ready-only-what-is-new)) |
@@ -172,7 +174,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `diff-alone` | `false` | `true`: one more call, given the change only |
 | `spec-lenses` | `[ambiguous, unverifiable, out-of-scope, contradicted]` | the lenses a spec is read through |
 | `spec-rounds` | `5` | on the forge: reviews in a row leaving a finding open, then a question to a person (1 to 20) |
-| `specs-per-run` | `5` | on the forge: the specs a night reads, the rest next night (1 to 20; [a spec](docs/spec.md#on-the-forge)) |
+| `specs-per-run` | `5` | on the forge: the specs a run reads, the rest at the next run (1 to 20; [a spec](docs/spec-forge.md)) |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
 | `story-words` | `used to`, `the bug was`, `previously` | a comment that may tell the code's history: a guess the `comments` lens judges; with no agent, or no lens with `hints: bug-story`, a warning |
 | `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}` (below) |
@@ -184,7 +186,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 - **`ai-findings` by lens**: a lens not named warns; of findings on one
   line, a verified one from a blocking lens leads.
 - **`lenses`**: intent and simplicity have nothing to read when the
-  change closes no issue, and are skipped; simplicity's findings are
+  change closes no issue, and are skipped ([more](docs/run.md#4-the-lenses)); simplicity's findings are
   nits, never judged nor asked of the developer, until its false alarms
   are counted on past pull requests
   ([ADR-0068](../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached),
@@ -192,7 +194,10 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 
 ### Caps
 
-What a run may read and write, and spend:
+What a run may read and write, and spend. On the line's run on an
+issue, the issue's size tier multiplies `diff-lines-max`,
+`code-lines-max` and `ai-max-tokens`
+([size tier](../../docs/spec/routing.md#once-a-state-the-record)):
 
 | Key | Default | |
 |---|---|---|
