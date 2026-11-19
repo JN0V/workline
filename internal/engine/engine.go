@@ -21,11 +21,13 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
@@ -3652,9 +3654,32 @@ func phase(role, step string) {
 
 // script runs roles/<name>/<step> in the repository and returns its exit code.
 //
-// A role with no such file runs the shared one (ADR-0070, §1), each step
-// on its own.
+// Each step on its own, the role's built-in code runs first, else its
+// file, else the shared one (ADR-0070, §1): a file beside built-in code is
+// not run.
 func script(r *role.Role, step, repo string, env []string) (int, error) {
+	if s, ok := contract.Builtins().Step(r.Name, step); ok {
+		phase(r.Name, step)
+		// Apart, as the role's script ran it (`workline builtin`): its own
+		// process, environment and folder, a crash its own. In this
+		// process only where the engine is a test binary, which has no
+		// such command.
+		if self := Self(); self != "" && !strings.HasSuffix(self, ".test") {
+			cmd := exec.Command(self, "builtin", r.Name, step)
+			cmd.Dir, cmd.Env = repo, env
+			cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+			err := cmd.Run()
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
+				return exitErr.ExitCode(), nil
+			}
+			if err != nil {
+				return 0, fmt.Errorf("%s: %w", step, err)
+			}
+			return 0, nil
+		}
+		return inProcess(s, repo, env), nil
+	}
 	path := filepath.Join(r.Dir, step)
 	if _, err := os.Stat(path); err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
@@ -3681,6 +3706,37 @@ func script(r *role.Role, step, repo string, env []string) (int, error) {
 		return 0, fmt.Errorf("%s: %w", step, err)
 	}
 	return 0, nil
+}
+
+var inProcessMu sync.Mutex
+
+// inProcess runs a built-in step as `workline builtin` would in a script
+// of the role: in repo, with env as the process's environment, both put
+// back after.
+func inProcess(s contract.Step, repo string, env []string) int {
+	inProcessMu.Lock()
+	defer inProcessMu.Unlock()
+	was := os.Environ()
+	os.Clearenv()
+	for _, kv := range env {
+		if k, v, ok := strings.Cut(kv, "="); ok {
+			os.Setenv(k, v)
+		}
+	}
+	defer func() {
+		os.Clearenv()
+		for _, kv := range was {
+			if k, v, ok := strings.Cut(kv, "="); ok {
+				os.Setenv(k, v)
+			}
+		}
+	}()
+	if wd, err := os.Getwd(); err == nil {
+		if os.Chdir(repo) == nil {
+			defer os.Chdir(wd)
+		}
+	}
+	return s(os.Getenv("WORKLINE_RUN_DIR"), repo)
 }
 
 // dirDigest hashes every file under dir, names and contents, in a stable order.
