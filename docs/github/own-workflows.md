@@ -44,6 +44,10 @@ engine ([ADR-0071](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md
   [the triggers test](../../tests/conformance/triggers_test.go) marks
   `onTemplate` each cron gone that a template keeps; test.yml, no
   template, simply lists none;
+- workline-develop.yml starts on no event: the reconcile the loop
+  dispatches starts each issue's step and review round due
+  ([#1871](https://github.com/JN0V/workline/issues/1871)); the template
+  keeps its events, the test marks each `onTemplateEvent`;
 - the tools the tests need beyond Go (gitleaks) come from
   [one action](../../.github/actions/tests/action.yml), in test.yml and in
   each job where a role runs the tests: the developer's and the tester's

@@ -2,14 +2,12 @@
 # defaults/ci/github/workline-develop.yml, on the release WORKLINE_VERSION
 # pins (ADR-0071 §1; .github/actions/engine), each job on the default
 # branch's commit. Go left set up where the tester's
-# test-command proves the code (judge, review). A person's label on an
-# issue runs the role its state wakes, the tester or the developer
-# (ADR-0059); the job that moves a state starts the next step; hourly, the
-# reconciler; by hand with no issue, the first ready one nobody took. On
-# its own pull request (workline/developer/…), the reviewer's verdict,
-# the gates' report, a person's comment or a project workflow failed on
-# its branch runs a review round; the reconciler starts one an event
-# missed.
+# test-command proves the code (judge, review). No event starts it here:
+# the reconciler, dispatched by the loop (docs/tick.md), starts each
+# issue's step, the role its state wakes, the tester or the developer
+# (ADR-0059), and each review round due on the developer's pull request
+# (workline/developer/…); the job that moves a state starts the next
+# step; by hand with no issue, the first ready one nobody took.
 #   judge, review          the agent and a read token.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
 #   heartbeat              no token; the environment workline-heartbeat, its wait
@@ -37,34 +35,21 @@ run-name: >-
   github.event.sender.type != 'Bot' && github.event.issue.state == 'open' && contains(join(github.event.issue.labels.*.name, ' '), 'workline:') &&
   format('workline develop #{0}', github.event.issue.number)) || github.workflow }}
 on:
-  # A person's label on an issue: its state wakes its role (ADR-0059).
-  # The engine's own labels wake nothing here: the job that set them
-  # starts the next step, by workflow_dispatch. A person's edit of an
-  # issue on the line, or comment on it, may be the answer it waits on,
-  # a draft's or a block's (#1414): its run asks the line first, no
-  # agent, and ends there when nothing is due.
-  issues: {types: [labeled, edited]}
+  # No event (ADR-0069's amendment of 2026-11-17, #1871): the loop
+  # dispatches the reconciler when `workline tick` lists it, 15 minutes
+  # at most after the last (routing.timed.reconcile, docs/tick.md), and
+  # the heartbeat (job heartbeat). It starts what a person's label, an
+  # answer on an issue, the reviewer's or the gates' comment, a person's
+  # comment or a project's run on the developer's branch used to start:
+  # each issue's step and each review round due. A job that moves a
+  # state starts the next step, by workflow_dispatch. The template keeps
+  # its events and its hourly cron, for a project whose loop is a dry
+  # run; the jobs keep their conditions on them, as the template's.
   workflow_dispatch:
     inputs:
       issue: {description: "the issue whose state's step runs; empty: the first ready issue nobody took", required: false, default: ""}
       pull-request: {description: "a review round on this pull request of the developer's, rather than an issue", required: false, default: ""}
       reconcile: {description: "true: the reconciler now, rather than an issue; next: once the heartbeat's wait timer passed", required: false, default: ""}
-  # On the developer's pull request, the reviewer's comment or the
-  # gates', written or edited by the App (a comment the job's own token
-  # writes wakes nothing), or a person's; on an issue, a person's.
-  issue_comment: {types: [created, edited]}
-  # A project's workflow that failed on the developer's branch: its
-  # checks red are a round (#917); all green on its Draft, a round that
-  # marks it ready (#969). Every workflow, workline's own left
-  # out by the job whose; check_suite and check_run never fire for
-  # GitHub Actions' own checks.
-  workflow_run: {workflows: ["*"], types: [completed], branches: ["workline/developer/**"]}
-  # No schedule: the reconciler is dispatched by the loop when `workline
-  # tick` lists it (docs/tick.md), 15 minutes at most after the last
-  # (routing.timed.reconcile), and by the heartbeat (job heartbeat); a
-  # person's label starts it again when both stopped: job reconcile-due.
-  # The template keeps its hourly cron, for a project whose loop is a
-  # dry run.
 permissions: {}
 
 env:
