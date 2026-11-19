@@ -3735,7 +3735,7 @@ func inProcess(s contract.Step, repo string, env []string) int {
 	}
 	if wd, err := os.Getwd(); err == nil {
 		if os.Chdir(repo) == nil {
-			defer os.Chdir(wd)
+			defer func() { _ = os.Chdir(wd) }()
 		}
 	}
 	return s(os.Getenv("WORKLINE_RUN_DIR"), repo)
