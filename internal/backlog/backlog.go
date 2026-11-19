@@ -1036,6 +1036,13 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	decided := map[string]bool{}
 	for _, i := range indexes {
 		c := closes[i]
+		if c.Do != "open" && c.Issue <= 0 {
+			// An act that names no issue (an issue's own state leaves it
+			// out): there is no issue to act on, and never an "#0" to name.
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "no-issue", Where: c.Do, Message: "the act names no issue: dropped"})
+			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c})
+			continue
+		}
 		if c.IfRefined && !p.refinedAlone(c.Issue, closes) {
 			continue // its text unchanged, or the agent decided on it: nothing to do
 		}
