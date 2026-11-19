@@ -761,6 +761,9 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			continue
 		}
 		w.st, w.before = st, FormatState(*st)
+			if w.acts, err = recordLines(f, w.t, role); err != nil {
+				return err
+			}
 		p.stateOf(id, st)
 		if h, ok := p.Held[id]; ok {
 			// Its ready held for a person's comment (#1331): those
@@ -856,12 +859,27 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		return err
 	}
 	for _, w := range writes {
+		now := p.Records[w.t.ID]
+		withActs := func(state string) string {
+			// The records of the acts so far stay in the comment, this run's
+			// after them.
+			if all := append(slices.Clone(w.acts), now...); len(all) > 0 {
+				// After the first paragraph: the comment still starts with
+				// what it says to a person, and ends with the hidden state.
+				head, rest, ok := strings.Cut(state, "\n\n")
+				if !ok {
+					return state + "\n\n" + strings.Join(all, "\n")
+				}
+				return head + "\n\n" + strings.Join(all, "\n") + "\n\n" + rest
+			}
+			return state
+		}
 		if r, ok := f.(forge.Renewer); ok && w.renew {
-			if err := r.Renew(w.t, FormatState(*w.st), StateMarker(role)); err != nil {
+			if err := r.Renew(w.t, withActs(FormatState(*w.st)), StateMarker(role)); err != nil {
 				return err
 			}
-		} else if after := FormatState(*w.st); after != w.before {
-			if err := f.Sticky(w.t, after, StateMarker(role), false); err != nil {
+		} else if after := FormatState(*w.st); after != w.before || len(now) > 0 {
+			if err := f.Sticky(w.t, withActs(after), StateMarker(role), false); err != nil {
 				return err
 			}
 		}
@@ -912,6 +930,7 @@ type stateWrite struct {
 	is           *forge.Issue
 	st           *State
 	before       string
+	acts         []string // the records of acts the state comment holds
 	add, remove  []string
 	wants, renew bool
 }
@@ -1141,4 +1160,26 @@ func Inert(text string) string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// recordLines are the lines of an act's record in the role's state
+// comment, the hidden lines the apply step writes: read only from the
+// comment workline's own account wrote and no one else edited last. A line
+// in another's comment is never carried over.
+func recordLines(f forge.Forge, t forge.Target, role string) ([]string, error) {
+	k, err := forge.ReadKept(f, t)
+	if err != nil {
+		return nil, err
+	}
+	c, ok := k.Last(StateMarker(role))
+	if !ok {
+		return nil, nil
+	}
+	var out []string
+	for _, l := range strings.Split(c, "\n") {
+		if strings.HasPrefix(l, "<!-- workline:act ") {
+			out = append(out, l)
+		}
+	}
+	return out, nil
 }

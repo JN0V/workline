@@ -1,0 +1,30 @@
+case: product-owner/act-record-same-form-as-any-role
+about: "An act of the product owner carries the same record as the act of a role made only of role.yaml and prompts: role, kind, run, day, commit, models, with nothing written for either role."
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: Client ids wrap
+        body: "## Need\n\nEach client keeps its own id.\n\n## Verification\n\nA test connects clients.\n\n## Validation\n\n- **Distinct ids:** Given a client connected, When the counter wraps, Then every client has its own id.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 50be807bebf9\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the counter is private and no test hook sets it.\",\"body\":\"50be807bebf9\"} -->\n<!-- workline:sticky=tester/issue -->"
+run: {role: product-owner, event: schedule, ai: "fake:no-test-rewrite-nine"}
+expect:
+  forge:
+    issues:
+      - id: 9
+        comment-contains:
+          - "workline:act"
+          - '"role":"product-owner"'
+          - '"kind":'
+          - '"run":'
+          - '"day":'
+          - '"commit":'
+          - '"models":'

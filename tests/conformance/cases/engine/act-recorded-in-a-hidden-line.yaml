@@ -1,0 +1,30 @@
+case: engine/act-recorded-in-a-hidden-line
+about: "A prompt-only role's proposal applied as a comment carries a hidden record written by the apply step: role, kind, run, day, commit, models, and the items it read with their states."
+given:
+  repo: basic
+  forge:
+    issues:
+      - {id: 1, title: "Export users", body: "Export the users as CSV.", labels: [], comments: []}
+run:
+  role: records-comment
+  event: schedule
+  target: {issue: 1}
+  ai: |-
+    cmd:printf 'model: sonnet\n' > "$WORKLINE_CALL"
+    printf '%s\n' '- comment: "The issue is clear."'
+expect:
+  status: pass
+  applied: [comment]
+  forge:
+    issues:
+      - id: 1
+        comment-contains:
+          - "workline:act"
+          - '"role":"records-comment"'
+          - '"kind":"comment"'
+          - '"run":'
+          - '"day":'
+          - '"commit":'
+          - '"models":'
+          - "sonnet"
+          - "open"

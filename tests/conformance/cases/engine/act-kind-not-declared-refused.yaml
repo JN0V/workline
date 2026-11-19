@@ -1,0 +1,20 @@
+case: engine/act-kind-not-declared-refused
+about: "A role that declares `acts: [comment]` whose agent proposes a comment and a label has the whole proposal refused, nothing applied, and a finding on the run names the label."
+given:
+  repo: basic
+  forge:
+    issues:
+      - {id: 1, title: "Export users", body: "Export the users as CSV.", labels: [], comments: []}
+run:
+  role: acts-comment-only
+  event: schedule
+  target: {issue: 1}
+  ai: |-
+    cmd:printf '%s\n' '- comment: "The issue is clear."' '- label: {add: [ready]}'
+expect:
+  refused: [label]
+  applied: []
+  findings: [{rule: intention-refused, message: "label"}]
+  forge:
+    issues:
+      - {id: 1, comments: 0, labels: []}

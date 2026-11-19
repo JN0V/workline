@@ -120,6 +120,9 @@ duties:
                                 # `test-paths` unset: the generic test files
 
 intentions: [commit-message, note]   # subset of the catalogue below
+acts: [note]                    # the kinds of act it applies; another is refused, the proposal whole.
+                                # Each act it applies as a comment carries a hidden record
+                                # (role, kind, run, day, commit, models, items read), the same for every role
 part-intentions: [claim]        # what a part of a question answers with (In parts);
                                 # claims when unset; a reviewer's lens, findings;
                                 # the inspector, triages

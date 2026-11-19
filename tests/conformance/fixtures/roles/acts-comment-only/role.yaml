@@ -1,0 +1,13 @@
+contract: 1
+name: acts-comment-only
+mission: A role of the tests only that may propose a comment or a label, and declares only the comment as its act.
+
+events: [schedule]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: ["docs/**"]
+intentions: [comment, label]
+acts: [comment]
+without-ai: pass

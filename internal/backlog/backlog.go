@@ -748,6 +748,10 @@ type Plan struct {
 	// (ADR-0038).
 	Report int  `yaml:"report,omitempty"`
 	Moved  bool `yaml:"moved,omitempty"`
+	// Records are the hidden lines recording this run's acts, by issue,
+	// which Persist writes in the issue's state comment, with those it
+	// holds already: the one comment the role keeps there.
+	Records map[int][]string `yaml:"-"`
 	// codeFirst are the issues this run names the code of: no ask on them
 	// (#548).
 	codeFirst map[int]bool

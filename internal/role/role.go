@@ -26,6 +26,10 @@ type Role struct {
 	Requires   []string `yaml:"requires"`
 	Uses       []string `yaml:"uses"`
 	Intentions []string `yaml:"intentions"`
+	// Acts are the kinds of act the role declares it applies: a proposal
+	// holding another kind is refused whole. Unset, any of its intentions
+	// is one, and a record's kind is the intention's.
+	Acts []string `yaml:"acts"`
 	// PartIntentions are what a part of a question may answer with
 	// (in/parts): claims when unset; a reviewer's lens answers findings.
 	PartIntentions []string `yaml:"part-intentions"`
@@ -158,6 +162,11 @@ func Load(rolesDir, name string) (*Role, error) {
 	}
 	if r.Name != name {
 		return nil, fmt.Errorf("role %q: role.yaml names itself %q", name, r.Name)
+	}
+	for _, k := range r.Acts {
+		if !slices.Contains(r.Intentions, k) {
+			return nil, fmt.Errorf("role %q: acts names %q, not one of its intentions", name, k)
+		}
 	}
 	for _, k := range r.OnBlock {
 		if !slices.Contains(r.Intentions, k) {
