@@ -130,7 +130,9 @@ func (rd *reader) facet(roleName, kind string) (string, error) {
 	}
 	for _, p := range paths {
 		if data, err := os.ReadFile(p); err == nil {
-			return strings.TrimSpace(string(data)), nil
+			if text := strings.TrimSpace(string(data)); text != "" {
+				return text, nil
+			}
 		}
 	}
 	return "", fmt.Errorf("no criteria for a `%s` of the %s (criteria/%s.md): the auditor's generic question is missing", kind, roleName, kind)
