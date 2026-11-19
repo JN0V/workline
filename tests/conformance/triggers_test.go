@@ -50,7 +50,7 @@ var triggers = map[string]map[string]string{
 	"workline-answer.yml": {"workflow_run": onTemplateEvent, "workflow_dispatch": onTime},
 	"workline-merge.yml": {"pull_request_target": onEvent, "issues": onEvent, "schedule": onTemplate,
 		"workflow_dispatch": onTime},
-	"workline-objection.yml": {"pull_request_review_comment": onEvent},
+	"workline-objection.yml": {"pull_request_review_comment": onTemplateEvent},
 	"workline-release.yml":   {"issues": onEvent, "workflow_run": onEvent},
 	// The verdict the checks' results set (workline/verdict): a proposed
 	// exception, kept until decided.
@@ -61,6 +61,12 @@ var triggers = map[string]map[string]string{
 // Only one copy differs: the template runs in a merge queue too.
 var templateOnly = map[string]map[string]string{
 	"workline.yml": {"merge_group": onCheck},
+}
+
+// ownOnly is this repository's alone: its objection workflow, its event
+// gone (#1871), starts by hand only.
+var ownOnly = map[string]map[string]string{
+	"workline-objection.yml": {"workflow_dispatch": onTime},
 }
 
 func TestEachWorkflowsTriggersListed(t *testing.T) {
@@ -96,6 +102,10 @@ func TestEachWorkflowsTriggersListed(t *testing.T) {
 			}
 			if strings.Contains(dir, "defaults") {
 				for k, v := range templateOnly[base] {
+					all[k] = v
+				}
+			} else {
+				for k, v := range ownOnly[base] {
 					all[k] = v
 				}
 			}

@@ -75,9 +75,10 @@ engine and their triggers
 - no cron where the loop dispatches the job
   ([`workline tick`](../tick.md#the-github-loop)): gardening, the sample,
   test.yml's seeds; the templates keep theirs, for a loop left a dry run;
-- workline-develop.yml and workline-answer.yml start on no event: the
-  reconcile the loop dispatches starts each issue's step, review round
-  and tester's answer due
+- workline-develop.yml, workline-answer.yml and
+  workline-objection.yml start on no event: the reconcile the loop
+  dispatches starts each issue's step, review round and tester's
+  answer due
   ([#1871](https://github.com/JN0V/workline/issues/1871)); the templates
   keep their events. workline-merge.yml keeps its label and issue
   events; the loop starts its hourly run;
