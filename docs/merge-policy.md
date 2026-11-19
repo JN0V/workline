@@ -1,5 +1,48 @@
 ---
-sources: [internal/engine/merge.go, internal/engine/queue.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, defaults/ci/github/workline-apply.yml, defaults/ci/github/workline-merge.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
+sources:
+  - internal/engine/merge.go#mergePolicy
+  - internal/engine/merge.go#weigh
+  - internal/engine/merge.go#armed
+  - internal/engine/merge.go#stalled
+  - internal/engine/merge.go#heldByConversations
+  - internal/engine/merge.go#personsCommentOpen
+  - internal/engine/merge.go#theYes
+  - internal/engine/merge.go#takenOff
+  - internal/engine/merge.go#accepted
+  - internal/engine/merge.go#forkGuarded
+  - internal/engine/merge.go#pushedAfterAt
+  - internal/engine/merge.go#releasePushers
+  - internal/engine/merge.go#releaseRebuild
+  - internal/engine/merge.go#ownRebuild
+  - internal/engine/merge.go#OwnMerge
+  - internal/engine/merge.go#ownRecord
+  - internal/engine/engine.go#madeBy
+  - internal/engine/merge.go#shortReview
+  - internal/engine/merge.go#HeadVerdict.class
+  - internal/engine/merge.go#HeadVerdict.waits
+  - internal/engine/merge.go#keepVerdict
+  - internal/engine/uptodate.go#upToDateAs
+  - internal/engine/uptodate.go#provenUpToDate
+  - internal/engine/queue.go#queueGroup
+  - internal/forge/merge.go#sumRuns
+  - internal/forge/merge.go#github.mergeToken
+  - internal/forge/github_merge.go#github.MergeState
+  - internal/forge/github_merge.go#mergeableStates
+  - internal/forge/github_merge.go#github.AutoMerge
+  - internal/forge/github_merge.go#github.Guarded
+  - internal/forge/github_merge.go#github.ownStatus
+  - internal/forge/github_merge.go#github.KeepVerdict
+  - internal/forge/gitlab_merge.go#gitlab.MergeState
+  - internal/forge/gitlab_merge.go#gitlab.pipelineBefore
+  - internal/forge/gitlab_merge.go#gitlab.AutoMerge
+  - internal/doctor/guard.go#bypassGuard
+  - cmd/workline/main.go#keepLocalVerdict
+  - defaults/ci/github/workline-merge.yml#on
+  - defaults/ci/github/workline-apply.yml#jobs.verdict
+  - defaults/ci/github/workline-apply.yml#jobs.queue
+  - defaults/ci/github/workline-apply.yml#jobs.follow
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
 checked: e4e4287bc
 verified: agent:claude-code
 ---
@@ -48,12 +91,10 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **An auto-merge the forge left is merged by the next run**: auto-merge
   on, the forge saying it would merge now (GitHub's merge state clean),
   `follow` merges it. GitHub's auto-merge waits for an event, a check
-  ending or a push, and may miss one
-  ([#993](https://github.com/JN0V/workline/issues/993)). An hourly run
-  catches one no event follows.
+  ending or a push, and may miss one. An hourly run catches one no
+  event follows.
 - **A person's comment with no answer holds it**: nothing merges,
-  auto-merge stays off, whatever the policy
-  ([#1358](https://github.com/JN0V/workline/issues/1358)). A role's
+  auto-merge stays off, whatever the policy. A role's
   reply that names a test answers it; so does the yes of the person who
   wrote it, put at or after it and still on: the trace written before a
   yes put in their name
@@ -64,12 +105,10 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   checks green, the forge not merging, and its base requiring every
   conversation resolved: `follow` lists each open one, linked, in its
   summary and once on the pull request, from the run that turns
-  auto-merge on ([#1417](https://github.com/JN0V/workline/issues/1417)).
-  The reviewer resolves its own
-  once the code answers them
+  auto-merge on. The reviewer resolves its own once the code answers
+  them
   ([lines](../roles/reviewer/docs/lines-again.md#not-repeated-found-again));
-  a person resolves theirs
-  ([#1039](https://github.com/JN0V/workline/issues/1039)).
+  a person resolves theirs.
 - **No one at a time, no update first**: a pull request behind its base
   merges as it is, none waiting for another
   ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped)).
@@ -96,10 +135,11 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **A push after the yes takes it back**: auto-merge off, the label off,
   one comment. When each head was pushed is the forge's word: GitHub's
   repository activity, GitLab's versions.
-- **A release tool's rebuild is no push**: the release merge request
-  (`FollowOptions.Release`) is force-pushed on each merge to the base, and
-  its yes holds on the rebuilt head when the rebuild adds only what the
-  line merged by itself:
+- **A release tool's rebuild is no push**: the release tool force-pushes
+  its pull request on each merge to the base; its yes holds on the
+  rebuilt head when the rebuild adds only what the line merged by itself:
+  - every push after the yes is the release tool's own, its App's: one
+    a person pushed, or by a hand the forge does not name, needs a yes;
   - the rebuilt head is one commit on the base, and every base commit
     between the covered head's base and the new one came from a merged
     pull request that carried no person's yes label; a feature, a task, a
@@ -116,20 +156,19 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **Each yes label by its own pushes**: `workline:accepted` put before a
   push and `workline:accepted-whole` after it, only the stale one goes
   off; the other covers the head and stands.
-- **workline's own commit is no push**, checked by its tree; its trailer
-  is needed, never taken on trust. The committer checks every commit all
-  the same:
-  - a role's branch rebuilt on the base, or a merge of the base workline
-    made before it stopped writing to people's branches
-    ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order),
-    step 10), never another branch — exactly what workline's own rebuild
-    or merge gives;
-  - a record: one commit changing, against its parent, only lines
-    workline writes in the docs — a header's `checked`, `judged`,
-    `judged-in-parts` or `verified`, a derived block as its command gives
-    it ([ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)).
+- **workline's own commit is no push**, checked by its tree, never by
+  its trailer alone. The committer checks every commit all the same:
+  - a role's branch (`workline/…`) rebuilt on the base: one commit,
+    exactly the covered change redone on it;
+  - a merge of the base, never of another branch, with workline's
+    trailer: exactly what workline's own merge gives;
+  - a record, with workline's trailer: one commit changing, against its
+    parent, only lines workline writes in the docs — a header's
+    `checked`, `judged`, `judged-in-parts` or `verified`, a derived block
+    as its command gives it
+    ([ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)).
 - **Still a push**: a docs fix changing a doc's text or another key, and
-  any commit with no workline trailer, whatever it changes; one whose
+  any other commit with no workline trailer, whatever it changes; one whose
   message the committer rewrote (`Workline-Role: committer`) is a
   person's.
 - **Held by the forge, not by a race**: GitHub keeps auto-merge on after a
@@ -141,7 +180,7 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **A merge queue** tests a group's commit against the same checks:
   `follow --merge-group` sets `workline/accepted` there as the head the
   group ends with holds it; the queue's run checks only the gates, the
-  yes and the verdict staying the head's ([a merge queue](merge-queue.md)).
+  yes staying the head's ([a merge queue](merge-queue.md)).
 
 ## Never without a person's yes
 
@@ -291,7 +330,7 @@ the candidate's issue, ships the version:
 | `checks-unread` | its head's checks could not be read: only the line's verdict counts |
 | `merge-state-unread`, `verdict-unread` | its state or its head's verdict could not be read: left as it is |
 | `auto-merge-refused`, `label-not-made` | the forge refused to turn auto-merge on, or to make the label |
-| `refusal-unsaid` | a refused merge, said on the request and its issue (a conflict's files named, [#1354](https://github.com/JN0V/workline/issues/1354)), could not be written there |
+| `refusal-unsaid` | a refused merge, said on the request and its issue (a conflict's files named), could not be written there |
 
 ## A red main
 
