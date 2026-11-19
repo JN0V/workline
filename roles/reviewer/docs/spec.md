@@ -126,6 +126,10 @@ routing:
 - **The answer**: the product owner's next refine rewrites the sections
   the findings lie in that are its own; a person's, it asks the reporter.
   The body changed, the reviewer reads it again: one round more.
+  A finding the last review held on a scenario is settled when a line
+  outside the Need, Verification and Validation opens with that
+  scenario's name, as a person answers it
+  ([#1356](https://github.com/JN0V/workline/issues/1356)).
 - **In CI**: judged, then applied. On the gardening line the reviewer
   reads what an earlier run refined, so a round takes two nights; on the
   line's `issue` event it reads the spec in refine's own run, and its

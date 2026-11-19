@@ -50,8 +50,8 @@ beside the verdict's, and posts once it answered.
   ([the record](run.md#3-the-record)).
 - **A push whose turn is the other run's lens**: nobody asked in this
   run; the commits are recorded and the turn moves on, as in the other.
-  A lens of this run whose block stands, the push changing its cause's
-  file, is asked instead
+  A lens of this run whose block stands, the push changing code, is
+  asked instead
   ([a block stands](judge.md#a-block-stands-until-a-commit-answers-it)).
   A lens of this run that did not answer on them is asked instead: no
   run records what it owes

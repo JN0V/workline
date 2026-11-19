@@ -50,8 +50,9 @@ else whether the quoted code fails:
   its file, whole up to `tests-lines-max`, the rest named; a no names the
   test;
 - intent ([#126](https://github.com/JN0V/workline/issues/126)): whether
-  the issue asks what the change does not do, or the change does what the
-  Scope leaves out. The judge is shown the issue, and for a cause in the
+  the issue asks what the change does not do, or the change touches a
+  file beyond the Scope, listed by the author or not, that the Need does
+  not need. The judge is shown the issue, and for a cause in the
   issue the whole merge request's change, commits reviewed before
   included, up to `code-lines-max` lines: a part an earlier push did is
   refused, not reported missing;
@@ -148,16 +149,17 @@ each finding that blocked, its cause quoted, beside the commits reviewed
 - **It goes** when a commit answers it:
   - its cause is no longer found on the change, on that side (the line
     changed, or removed);
-  - or its lens reads the cause's file again, in a whole review, and does
-    not find it, or its judge says no. Found again and verified, it is
+  - or its lens reads the change again, in a whole review whose commits
+    change code, and does not find it, or its judge says no: a fix may
+    lie in another file than its cause's
+    ([#1598](https://github.com/JN0V/workline/issues/1598)). Found again and verified, it is
     the new review's finding, shown once.
-- **Its lens reads a commit to its file**, whosever turn it is: a push
-  changing the cause's file asks it beside the lens in turn, so the
-  commit that may answer it is never recorded unread by it
+- **Its lens reads each push changing code**, whosever turn it is,
+  beside the lens in turn, the cause's file or another, so the commit
+  that may answer it is never recorded unread by it
   ([ADR-0020, amended](../../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-28-a-blocks-lens-reads-a-commit-to-its-file)).
-- **It stays past a commit elsewhere**: a lens that did not read the cause
-  again leaves it. One quoted from an issue stays until its lens reads the
-  issue again.
+- **It stays** while its lens did not read the change again. One quoted
+  from an issue stays until its lens reads the issue again.
 - **The tester answers that no test is needed**: a judge weighs the
   reason, even with no new commit; the block goes if it holds
   ([weighed](tester-answers.md)).

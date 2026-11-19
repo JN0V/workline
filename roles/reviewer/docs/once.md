@@ -37,7 +37,8 @@ to the judges: the same finding on the same patch is not judged again.
   - A cause in an issue: the whole change's patch id, and the issue's
     text.
 - **What else the judge reads** keys it too: the symptom's file, the tests
-  a tests judge reads, the issues an intent judge reads.
+  a tests judge reads, the issues an intent judge reads and the files
+  listed beyond their Scope.
 - **Not seen**: a commit changing another file the judge read, a caller.
   The verdict stands until the cause's file changes.
 

@@ -99,7 +99,7 @@ intent, claims ([#126](https://github.com/JN0V/workline/issues/126)),
 simplicity, and comments, asked only when `story-words` flags a comment, beside the lens
 in turn, never in its place.
 Every one on a machine; on a merge request one a push, in turn
-(`lenses-per-push`), with a block's lens when the push changes its file
+(`lenses-per-push`), with a block's lens when the push changes code
 ([more](judge.md#a-block-stands-until-a-commit-answers-it)), and the
 tests lens when it changes the test of a file it found untested
 ([more](lines.md)), every one
@@ -116,17 +116,21 @@ none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-ac
     reviewed yet, whole, their trailers left, and the merge request's
     title and body (`testimony-lines-max`);
   - each file they change once: whole, the change marked in it, while the
-    files fit `code-lines-max`; the others by the change's hunks. A change
+    files fit `code-lines-max`; the others by the change's hunks, each
+    widened to the block around it, found by indentation, up to a quarter
+    of `code-lines-max` ([#1334](https://github.com/JN0V/workline/issues/1334)). A change
     past one call (the budget, `diff-lines-max`): [in parts](parts.md).
   - each cut past one of these settings is said in the run, with the
     setting that raises it (`input-cut`).
 - **Intent** (`needs: issue`): a change saying `Closes #4` (or `fixes`,
   `resolves`, `implements`), in a commit or the merge request, has `#4` read
   from the forge, its Need, Verification and Scope given
-  (`issue-lines-max`).
+  (`issue-lines-max`), and the files the author lists under "Beyond the
+  Scope", with their reasons, from the merge request and its commits.
   - The lens says what the issue asks and the change does not do or
     prove, its cause quoted from the issue (`path: "#4"`), and what the
-    change does past the Scope.
+    change does past the Scope that the Need does not need: the Scope is
+    a hint, not a fence.
   - No issue closed: not asked, said in the summary; one that cannot be
     read: not asked, said (`issue-unread`).
 - **Simplicity** (`needs: issue`, [ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)): read with

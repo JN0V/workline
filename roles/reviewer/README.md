@@ -163,7 +163,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | Key | Default | |
 |---|---|---|
 | `base` | `main` | where `workline review` starts without `--base` |
-| `ignore` | `*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
+| `ignore` | `*.md`, `**/*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
 | `lenses` | `[correctness, edge-cases, tests, intent, claims, simplicity, comments]` | in this order, in turn, on a merge request; a lens with nothing to read skipped; `comments` takes no turn, asked whenever `story-words` flags a comment |
 | `lenses-per-push` | `1` | `--input lenses=all` asks every one, on the whole change: the templates pass it when the merge request becomes ready |
 | `commits-per-push` | `5` | after ready: new commits a lens that warns reads a push, the oldest first; the rest at the next push, said; none left when what its own pipeline runs changes; `0`: every one ([more](docs/ready.md#after-ready-only-what-is-new)) |
@@ -192,7 +192,10 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 
 ### Caps
 
-What a run may read and write, and spend:
+What a run may read and write, and spend. On the line's run on an
+issue, the issue's size tier multiplies `diff-lines-max`,
+`code-lines-max` and `ai-max-tokens`
+([size tier](../../docs/spec/routing.md#once-a-state-the-record)):
 
 | Key | Default | |
 |---|---|---|
