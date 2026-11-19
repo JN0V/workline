@@ -21,12 +21,34 @@ type Step func(runDir, repo string) int
 // Role is what a role's built-in code offers: either step may be nil;
 // Code, offered by the role whose code the engine merges; Tests, by the
 // role that runs the project's tests; Record, by a role whose sticky
-// comment keeps a record its next run reads.
+// comment keeps a record its next run reads; Review, by the role that
+// reviews a change; Docs, by the role that keeps the docs.
 type Role struct {
 	Pre, Post Step
 	Code      *Code
 	Tests     *Tests
 	Record    *Record
+	Review    *Review
+	Docs      *Docs
+}
+
+// Review is what the engine asks of the role that reviews a change: the
+// reviewer's.
+type Review struct {
+	// ReviewedAll says whether the record a summary comment holds covers
+	// every commit base..head, by its id or its change's patch id (#1254).
+	ReviewedAll func(repo, base, head, summary string) (bool, error)
+}
+
+// Docs is what the doctor asks of the role that keeps the docs: the
+// documentalist's.
+type Docs struct {
+	// Coverage sorts the docs under globs: those declaring their sources,
+	// those declaring none (`sources: []`), those declaring nothing.
+	Coverage func(repo string, globs []string) (tracked, none, untracked []string, err error)
+	// UnreadDocs says the files read as docs the role does not read; ""
+	// when there are none.
+	UnreadDocs func(repo string, globs []string) (string, error)
 }
 
 // Record is how a role's sticky comment merges its record with the one
@@ -81,8 +103,9 @@ type Registry struct {
 // fixture roles, apart from the shipped ones.
 func NewRegistry() *Registry { return &Registry{roles: map[string]Role{}} }
 
-// Join adds a role; a name joined twice, or a second role offering
-// Code, is a programming error.
+// Join adds a role; a name joined twice, a second role offering Code,
+// Tests, Review or Docs, or a Record, Review or Docs missing a function,
+// is a programming error.
 func (r *Registry) Join(name string, role Role) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -102,6 +125,29 @@ func (r *Registry) Join(name string, role Role) {
 				panic(fmt.Sprintf("contract: the role %q offers the project's tests, as %q does", name, n))
 			}
 		}
+	}
+	if role.Review != nil {
+		for n, other := range r.roles {
+			if other.Review != nil {
+				panic(fmt.Sprintf("contract: the role %q offers the review of a change, as %q does", name, n))
+			}
+		}
+	}
+	if role.Docs != nil {
+		for n, other := range r.roles {
+			if other.Docs != nil {
+				panic(fmt.Sprintf("contract: the role %q offers the docs, as %q does", name, n))
+			}
+		}
+	}
+	if role.Record != nil && (role.Record.Merge == nil || role.Record.Into == nil) {
+		panic(fmt.Sprintf("contract: the role %q offers a record missing a merge", name))
+	}
+	if role.Review != nil && role.Review.ReviewedAll == nil {
+		panic(fmt.Sprintf("contract: the role %q offers a review missing ReviewedAll", name))
+	}
+	if role.Docs != nil && (role.Docs.Coverage == nil || role.Docs.UnreadDocs == nil) {
+		panic(fmt.Sprintf("contract: the role %q offers docs missing a check", name))
 	}
 	r.roles[name] = role
 }
@@ -233,4 +279,50 @@ func BuiltinTests() *Tests {
 		panic("contract: no compiled-in role offers the project's tests")
 	}
 	return t
+}
+
+// offered is what the first role joined, by name, offers of one kind,
+// and its name; nil when none does.
+func offered[T any](r *Registry, of func(Role) *T) (*T, string) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, n := range r.names() {
+		if t := of(r.roles[n]); t != nil {
+			return t, n
+		}
+	}
+	return nil, ""
+}
+
+// Review is what the role that reviews a change offers, and its name; nil
+// when none joined offers it.
+func (r *Registry) Review() (*Review, string) {
+	return offered(r, func(role Role) *Review { return role.Review })
+}
+
+// Docs is what the role that keeps the docs offers, and its name; nil
+// when none joined offers it.
+func (r *Registry) Docs() (*Docs, string) {
+	return offered(r, func(role Role) *Docs { return role.Docs })
+}
+
+// BuiltinReview is what the compiled-in role that reviews a change
+// offers; none joined is a programming error: the binary links the
+// reviewer (cmd/workline/builtins.go), a test its role or a fixture.
+func BuiltinReview() *Review {
+	v, _ := builtins.Review()
+	if v == nil {
+		panic("contract: no compiled-in role offers the review of a change")
+	}
+	return v
+}
+
+// BuiltinDocs is what the compiled-in role that keeps the docs offers;
+// none joined is a programming error, as for BuiltinReview.
+func BuiltinDocs() *Docs {
+	d, _ := builtins.Docs()
+	if d == nil {
+		panic("contract: no compiled-in role offers the docs")
+	}
+	return d
 }
