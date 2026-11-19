@@ -24,7 +24,7 @@ roles/<name>/
   pre               optional; deterministic: gathers input, decides whether a decision is needed
   post              optional; deterministic: validates, decides the verdict
   lenses/*.md       the reviewer's: one facet per lens
-  kinds/*.md        the auditor's: one facet per kind of act
+  kinds/*.md        the auditor's: one facet per kind of act; criteria/<role>/*.md, its criteria for a role
   tasks/*.md        optional: a kind of task's own instruction (model.tasks)
   skills/<n>/SKILL.md  optional: the role's own copy of a shared skill (see "Shared skills")
   docs/             about the role, never loaded: reference pages, status.md, tried.md (archived)
