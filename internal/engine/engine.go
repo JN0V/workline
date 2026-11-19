@@ -3664,7 +3664,11 @@ func script(r *role.Role, step, repo string, env []string) (int, error) {
 		// process, environment and folder, a crash its own. In this
 		// process only where the engine is a test binary, which has no
 		// such command.
-		if self := Self(); self != "" && !strings.HasSuffix(self, ".test") {
+		self := Self()
+		if self == "" {
+			return 0, fmt.Errorf("%s of role %q: the engine's own path is unknown, its built-in code cannot run apart", step, r.Name)
+		}
+		if !strings.HasSuffix(self, ".test") {
 			cmd := exec.Command(self, "builtin", r.Name, step)
 			cmd.Dir, cmd.Env = repo, env
 			cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
