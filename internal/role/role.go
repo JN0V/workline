@@ -61,6 +61,9 @@ type Role struct {
 		Budget int      `yaml:"budget"`
 	} `yaml:"context"`
 	WithoutAI string `yaml:"without-ai"`
+	// Cuts are what the role's input is cut of, past a cap, each said in
+	// one line: the shared pre writes them to the run's in/cuts.
+	Cuts []string `yaml:"cuts"`
 	// MergeRequestAI `ready`: on a merge request, the agent is asked on the
 	// run at ready alone, never on a push after it (ADR-0051).
 	MergeRequestAI string         `yaml:"merge-request-ai"`

@@ -3649,6 +3649,9 @@ func phase(role, step string) {
 func script(r *role.Role, step, repo string, env []string) (int, error) {
 	path := filepath.Join(r.Dir, step)
 	if _, err := os.Stat(path); err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			return 0, fmt.Errorf("%s of role %q cannot be read: %w", step, r.Name, err)
+		}
 		switch step {
 		case "pre":
 			return 0, sharedPre(r, env)
@@ -3975,7 +3978,8 @@ func envValue(env []string, name string) string {
 }
 
 // sharedPre is the pre of a role that has none: the role's instruction
-// is the task, its declared skills are loaded. A prompt missing is an
+// is its system prompt (the task only points at it), its cuts are
+// listed and its declared skills are loaded. A prompt missing is an
 // error naming the file; nothing here judges.
 func sharedPre(r *role.Role, env []string) error {
 	runDir := envValue(env, "WORKLINE_RUN_DIR")
@@ -3989,8 +3993,20 @@ func sharedPre(r *role.Role, env []string) error {
 	if err := os.MkdirAll(filepath.Join(runDir, "in"), 0o755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), text, 0o644); err != nil {
+	if len(strings.TrimSpace(string(text))) == 0 {
+		return fmt.Errorf("role %q has an empty instruction.md", r.Name)
+	}
+	// The instruction is said once, in the system prompt: the task only
+	// points at it.
+	const task = "Do what your instruction says.\n"
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
 		return err
+	}
+	if len(r.Cuts) > 0 {
+		list := strings.Join(r.Cuts, "\n") + "\n"
+		if err := os.WriteFile(filepath.Join(runDir, "in", "cuts"), []byte(list), 0o644); err != nil {
+			return err
+		}
 	}
 	if len(r.Context.Skills) > 0 {
 		list := strings.Join(r.Context.Skills, "\n") + "\n"
