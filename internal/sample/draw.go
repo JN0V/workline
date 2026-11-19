@@ -532,6 +532,12 @@ func actsOfTheWindow(o Options, res *Result, h *heads, commits []string, first, 
 			acts = append(acts, po...)
 			res.Autonomy = au
 		}
+		if rec, unread, err := recordedActs(o.Forge, b, first, end); err != nil {
+			unreachable("the acts of the shared record", err)
+		} else {
+			acts = append(acts, rec...)
+			res.NotDrawn = append(res.NotDrawn, unread...)
+		}
 		if _, ok := o.Forge.(forge.Merged); !ok {
 			notDrawn("the reviewer's findings, the tester's acts, the developer's code, and the commits of a merge request squashed: this forge does not list the merge requests merged")
 			break
