@@ -179,8 +179,8 @@ as above or below ([on GitLab](gitlab/line-of-states.md)).
 `workline tick --json` lists the line's jobs due now, each with why,
 no agent, nothing written: a regular beat (a loop, a schedule, a timer)
 starts those and nothing else ([the tick](tick.md)). It reads the runs
-on GitHub only: on GitLab, it lists the reconcile and the backlog when
-due, and no job timed by its last run, said on stderr.
+on GitHub only: elsewhere, GitLab included, it lists only a reconcile
+with no time set, and says on stderr that the runs were not read.
 
 ### On a role's own merge request
 
