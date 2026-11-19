@@ -2609,14 +2609,14 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		a.refused = "a proposal holds a line in the form of an act's record, which only the apply step writes: " + line
 		a.findings = append(a.findings, verdict.Finding{Rule: "record-forged", Message: a.refused})
 		intents = nil
-		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+		_ = os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	}
 	if bad := outOfBounds(o.Repo, intents, r.Writes(settings), o.Scope); len(bad) > 0 {
 		res.Refused = append(append([]string{}, res.partRefused...), "patch")
 		a.refused = "a patch reaches outside the task or the role's duties: " + strings.Join(bad, ", ") + "; anything found there belongs in an issue"
 		a.findings = append(a.findings, verdict.Finding{Rule: "intention-refused", Message: a.refused})
 		intents = nil
-		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+		_ = os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	}
 	a.intents = intents
 
