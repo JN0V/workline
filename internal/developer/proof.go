@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -26,6 +27,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/tester"
 )
@@ -96,6 +98,17 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 	if at == "" {
 		at = "HEAD"
 	}
+	// The CI tests the merge with main: so does the proof (#1899).
+	merged, why, err := withMain(repo, at)
+	if err != nil {
+		p.Result, p.Why = devmark.Unproven, err.Error()
+		return p, nil
+	}
+	if why != "" {
+		p.Result, p.Why = devmark.Unproven, why
+		return p, nil
+	}
+	at = merged
 	var deadline time.Time
 	if s.ProofSeconds > 0 {
 		deadline = time.Now().Add(time.Duration(s.ProofSeconds) * time.Second)
@@ -152,6 +165,56 @@ func prove(repo, at string, patches []intent.Intention, also []string, n *Flaky,
 		p.Why = fmt.Sprintf("run %d of %d: %s", o.Runs, p.Runs, p.Why)
 	}
 	return p, nil
+}
+
+// mainRef is the ref of the project's main in repo: origin's default
+// branch, else main, as fetched or local; "" when none is found.
+func mainRef(repo string) string {
+	var names []string
+	if h, err := gitOut(repo, "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD"); err == nil {
+		names = append(names, strings.TrimPrefix(h, "origin/"))
+	}
+	names = append(names, "main")
+	for _, n := range names {
+		for _, r := range []string{"refs/remotes/origin/" + n, "refs/heads/" + n} {
+			if _, err := gitOut(repo, "rev-parse", "-q", "--verify", r+"^{commit}"); err == nil {
+				return r
+			}
+		}
+	}
+	return ""
+}
+
+// withMain is the commit the proof runs on: at with main merged in, as the
+// CI tests it, a merge commit kept in repo's objects only. at itself when
+// main is none, or already in it. why says a merge that conflicts: not
+// proven, never green.
+func withMain(repo, at string) (commit, why string, err error) {
+	head, herr := gitOut(repo, "rev-parse", "--verify", "-q", "--end-of-options", at+"^{commit}")
+	ref := mainRef(repo)
+	if herr != nil || ref == "" {
+		return at, "", nil // unread here: the fresh tree says it
+	}
+	tip, err := gitOut(repo, "rev-parse", "--verify", ref+"^{commit}")
+	if err != nil {
+		return at, "", nil
+	}
+	if exec.Command("git", "-C", repo, "merge-base", "--is-ancestor", tip, head).Run() == nil {
+		return head, "", nil
+	}
+	name := strings.TrimPrefix(strings.TrimPrefix(ref, "refs/remotes/origin/"), "refs/heads/")
+	tree, files, err := worktree.MergeTree(repo, head, tip)
+	if err != nil {
+		return "", "", fmt.Errorf("main merged into its code, in memory: %w", err)
+	}
+	if len(files) > 0 {
+		return "", fmt.Sprintf("its code conflicts with %s in %s: the proof does not run on a merge that conflicts; a merge round settles it", name, strings.Join(files, ", ")), nil
+	}
+	c, err := mergeCommit(repo, tree, head, tip, "workline: "+name+" merged in, for the proof")
+	if err != nil {
+		return "", "", err
+	}
+	return c, "", nil
 }
 
 // testerSettings are the tester's settings, the project's over the role's:
