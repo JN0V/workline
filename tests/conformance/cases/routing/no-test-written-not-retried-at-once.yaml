@@ -1,0 +1,29 @@
+case: routing/no-test-written-not-retried-at-once
+about: >
+  A tester's run that ended with no test file proposed, on the body an
+  issue still has: not due again at once. Its last run ended 15 minutes
+  ago with no-test-written, past the 10 minutes' back-off a machine error
+  waits, and the body has not changed since: the line holds the issue,
+  the tester is not woken on the same input, nothing written. Listing the
+  due issues, it is not due.
+given:
+  repo: tested
+  env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
+  config:
+    routing: {events: {issue: [tester]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["<!-- workline:line-record {\"state\":\"tests\",\"body\":\"8a828a06be19\",\"hops\":1,\"errors\":{\"by\":{\"answer\":1},\"first\":{\"answer\":\"2026-11-05T07:45:00Z\"},\"last\":\"2026-11-05T07:45:00Z\",\"kind\":\"answer\",\"said\":\"no test file the tester may write was proposed for the issue's scenarios\"},\"v\":1} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 0 issues due"
+  agent-calls: 0
+  no-findings: [{rule: state-wakes}, {rule: state-retry}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:needs-tests"], comments: 1}
