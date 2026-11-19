@@ -36,7 +36,7 @@ type History struct {
 	// Curated is, for each folder the curator weighed (step 7), the
 	// measure it was weighed after: another waits curator-window measures.
 	Curated map[string]int `json:"curated,omitempty"`
-	// Gardened is the corpus's test count at the last gardening: the
+	// Gardened is the corpus's test count when the last gardening round ended (every folder weighed): the
 	// baseline of growth-limit-percent.
 	Gardened int `json:"gardened,omitempty"`
 }

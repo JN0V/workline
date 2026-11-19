@@ -91,6 +91,14 @@ func curatePre(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	if dir == "" {
+		// Every folder is weighed: the round is over, the next growth is
+		// counted from the corpus as it is now.
+		if hist != "" && h.Gardened != lastTests(h) {
+			h.Gardened = lastTests(h)
+			if err := writeHistory(hist, h); err != nil {
+				return fail(err)
+			}
+		}
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no folder of tests to weigh",
 			Findings: []verdict.Finding{{Rule: "nothing-to-curate", Level: "warn", Where: "curator-paths",
 				Message: "each folder of tests is weighed already (an open pull request, or within curator-window measures), or over code-lines-max"}}})
@@ -294,7 +302,6 @@ func (t curateTask) weighed() error {
 		h.Curated = map[string]int{}
 	}
 	h.Curated[t.Dir] = t.Count
-	h.Gardened = lastTests(h)
 	return writeHistory(hist, h)
 }
 
