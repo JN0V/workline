@@ -137,6 +137,18 @@ func (a *applier) record(kind string, target forge.Target) string {
 // itemsRead are the issue or merge request and the comments on it, with
 // their states, as the forge tells them.
 func (a *applier) itemsRead(t forge.Target) []ActItem {
+	if items, ok := a.read[t]; ok {
+		return items
+	}
+	items := a.readItems(t)
+	if a.read == nil {
+		a.read = map[forge.Target][]ActItem{}
+	}
+	a.read[t] = items
+	return items
+}
+
+func (a *applier) readItems(t forge.Target) []ActItem {
 	items := []ActItem{}
 	if t.Kind == "issue" {
 		state := "open"

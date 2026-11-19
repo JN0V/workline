@@ -2592,7 +2592,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		})
 	}
 	intents = intent.Merge(fallback, intents)
-	os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+	_ = os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 		return nil, err
 	}
@@ -2602,7 +2602,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		a.findings = append(a.findings, verdict.Finding{Rule: "intention-refused", Message: why})
 		a.refused = why
 		intents = nil
-		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+		_ = os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	}
 	if line := forgedRecord(intents); line != "" {
 		res.Refused = append(res.Refused, "record")
@@ -2880,6 +2880,7 @@ func invalid(r *role.Role, in []intent.Intention, line *routing.Config) ([]strin
 // applier carries out intentions. This version knows the local ones.
 type applier struct {
 	repo, runDir string
+	read         map[forge.Target][]ActItem // items read per target, asked once a run
 	// tree: where the patches are written, when not in repo: a worktree
 	// apart, for patches that go in a comment (#1328).
 	tree        string
