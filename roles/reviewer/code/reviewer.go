@@ -1579,7 +1579,7 @@ func askJudges(runDir, repo string, s Settings, st state, c *candidates, n *int)
 				m += "\n" + whatFor(st.Issues, st.Beyond) // the spec, to weigh a comment against
 			}
 		}
-		if st.Spec == nil && len(st.Issues) > 0 {
+		if st.Spec == nil && len(st.Issues) > 0 && l.Judge.Reads != "tests" { // only where the material holds the spec
 			m += "\n" + commentNotSpec
 		}
 		*n++
