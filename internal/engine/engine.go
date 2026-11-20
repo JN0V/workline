@@ -2165,6 +2165,10 @@ type Proposal struct {
 	// developer's on the tester's Draft (ADR-0054). Its commits past the
 	// base are not a person's.
 	From string `yaml:"from,omitempty"`
+	// Merged is a commit of the base merged into From first, which was
+	// behind it: the branch starts from that merge, the engine's, git's
+	// clean merge of the two (#1941). "" for none.
+	Merged string `yaml:"merged,omitempty"`
 	// Commits are the files written, each group its own commit, in order;
 	// those no group names go in the last, Message its message (the
 	// developer's code and tests apart, ADR-0054).
@@ -2295,8 +2299,15 @@ func proposeBranch(f forge.Forge, repo, tree, roleName, key, title, body string,
 			// working tree is at the base's tip, which may have changed
 			// them since p.From left it, and a plain checkout refuses
 			// then (#856). Their change from the base's tip lands on
-			// p.From, the base's own changes to them not carried in.
-			start = []string{"checkout", "-q", "-m", "-B", branch, p.From}
+			// p.From, the base's own changes to them not carried in;
+			// with p.Merged, onto the base merged into p.From first.
+			from := p.From
+			if p.Merged != "" {
+				if from, err = mergedFrom(repo, p.From, p.Merged, base); err != nil {
+					return 0, "", err
+				}
+			}
+			start = []string{"checkout", "-q", "-m", "-B", branch, from}
 		}
 		steps = append(steps, start)
 		if len(written) > 0 { // none: the branch is p.From as it is (#1434)
@@ -2350,6 +2361,20 @@ func proposeBranch(f forge.Forge, repo, tree, roleName, key, title, body string,
 	}
 	id, err := f.OpenMergeRequest(branch, base, title, body, draft)
 	return id, tip, err
+}
+
+// mergedFrom is the commit a role's branch starts from when the commit
+// it names, from, is behind the base: base's commit merged into it, git's
+// clean merge, committed as the engine's own merges are (#1941).
+func mergedFrom(repo, from, merged, base string) (string, error) {
+	tree, files, err := worktree.MergeTree(repo, from, merged)
+	if err != nil {
+		return "", fmt.Errorf("%s merged into %s: %w", short(merged), short(from), err)
+	}
+	if len(files) > 0 {
+		return "", fmt.Errorf("%s does not merge into %s: they conflict in %s", short(merged), short(from), strings.Join(files, ", "))
+	}
+	return ownMergeCommit(repo, tree, from, merged, base, "the tester's Draft")
 }
 
 // mergeOnto runs start, the checkout that carries the files written onto
