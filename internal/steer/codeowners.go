@@ -103,10 +103,21 @@ func ParseCodeowners(p string, data []byte) *Codeowners {
 			defaults = strings.TrimSpace(m[2]) != ""
 			continue
 		}
-		f := strings.Fields(l)
+		f := strings.Fields(cutComment(l))
 		c.rules = append(c.rules, coRule{pattern: f[0], section: section, owned: len(f) > 1 || defaults})
 	}
 	return c
+}
+
+// cutComment cuts a rule line at its first unescaped `#` that follows a
+// blank: what follows is a comment, never an owner.
+func cutComment(l string) string {
+	for i := 1; i < len(l); i++ {
+		if l[i] == '#' && (l[i-1] == ' ' || l[i-1] == '\t') && (i < 2 || l[i-2] != '\\') {
+			return l[:i]
+		}
+	}
+	return l
 }
 
 // Owns says whether a file has an owner: in each section, the last rule
