@@ -1178,6 +1178,9 @@ func lensText(repo, lens string) (string, error) {
 	return "", fmt.Errorf("lens %q: no lenses/%s.md in the role", lens, lens)
 }
 
+// commentNotSpec tells the code's judge what outranks a code comment (#1357).
+const commentNotSpec = "## A code comment is not the spec\n\nThe issue's text and the person's answer in it outrank a comment in the code. A comment calling a behaviour intended is the code's words, not the spec: it does not make a finding against the issue's spec go away. Drop a finding for a comment only when no spec contradicts it, for instance when the issue is silent on the behaviour.\n"
+
 // judgeQuestion is what the judge of an important finding is asked when its
 // lens names no question of its own: whether the code fails.
 const judgeQuestion = "Is this finding about the code true: does the code quoted, as it reads, fail the way the finding says? Answer no if it is not a defect, if the code shown handles it, or if the finding only guesses."
@@ -1572,6 +1575,12 @@ func askJudges(runDir, repo string, s Settings, st state, c *candidates, n *int)
 			m = material(repo, st, s, f) + "\n" + whatFor(st.Issues, st.Beyond)
 		default:
 			m = material(repo, st, s, f)
+			if st.Spec == nil && l.Judge.Reads != "issue" && l.Judge.Reads != "tests" && issueOf(st, f.Cause.Path) == nil && len(st.Issues) > 0 {
+				m += "\n" + whatFor(st.Issues, st.Beyond) // the spec, to weigh a comment against
+			}
+		}
+		if st.Spec == nil && len(st.Issues) > 0 {
+			m += "\n" + commentNotSpec
 		}
 		*n++
 		key := fmt.Sprintf("%02d", *n)
