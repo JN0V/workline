@@ -6,7 +6,7 @@ sources:
   - internal/tester/write.go#unprovenOf
   - internal/tester/write.go#proveOnBase
   - internal/tester/frozen.go#record
-  - internal/tester/frozen.go#recordData
+  - internal/kit/testmark/draft.go#DraftData
   - internal/tester/frozen.go#record.body
   - internal/tester/frozen.go#readRecordKept
   - internal/tester/frozen.go#guard

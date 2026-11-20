@@ -29,6 +29,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
 )
@@ -121,7 +122,7 @@ func protected(f forge.Forge) (map[string]int, map[string]bool, error) {
 	}
 	frozen, curating := map[string]int{}, map[string]bool{}
 	for _, mr := range mrs {
-		if strings.HasPrefix(mr.Branch, "workline/tester/"+curateKey) {
+		if strings.HasPrefix(mr.Branch, "workline/tester/"+testmark.CurateKey) {
 			curating[mr.Branch] = true
 		}
 		if issueOf(mr.Branch) == 0 {
@@ -164,7 +165,7 @@ func pickFolder(repo string, s Settings, h History, curating map[string]bool) (s
 			}
 		}
 	}) {
-		if curating["workline/tester/"+intent.Slug(curateKey+dir)] {
+		if curating["workline/tester/"+intent.Slug(testmark.CurateKey+dir)] {
 			continue
 		}
 		if n, ok := h.Curated[dir]; ok && h.Count-n < window {
@@ -435,7 +436,7 @@ func curatePost(runDir, repo string, s Settings) int {
 		return write(runDir, *v)
 	}
 	mr := map[string]any{
-		"key":   curateKey + t.Dir,
+		"key":   testmark.CurateKey + t.Dir,
 		"title": fmt.Sprintf("test: curate %s, %d test%s fewer", t.Dir, len(p.removed)-len(p.added), plural(len(p.removed)-len(p.added))),
 		"body":  p.body(t, s, notes),
 	}

@@ -279,7 +279,7 @@ func localAnswers(res *Result, cfg *routing.Config, f forge.Forge, o engine.Opti
 			if in == nil {
 				in = map[string]string{}
 			}
-			in[NeedsInput] = said
+			in[engine.NeedsInput] = said
 			ao.Inputs = in
 			ran = len(res.Steps)
 			_, status = runRole(res, cfg, ao, 0)

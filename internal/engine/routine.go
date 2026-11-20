@@ -13,7 +13,6 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/role"
-	"github.com/JN0V/workline/internal/steer"
 )
 
 // The merge policy's `normal` level (ADR-0042, amended): workline's own
@@ -139,10 +138,6 @@ func notOwn(repo, baseTip, tip, committer string, local bool) (string, error) {
 	}
 	return "", nil
 }
-
-// steering is, at tip, what says whether a path never merges by the
-// policy alone, and why (internal/steer).
-var steering = steer.Files
 
 // notAllowed names the first file the branch changes since it left base
 // that workline may not change with no person's yes: one that is no doc of

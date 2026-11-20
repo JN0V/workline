@@ -82,10 +82,6 @@ func Annotate(from FromMergeRequest, build func(read func(path string) ([]byte, 
 		Message: fmt.Sprintf("%d %s of the documentalist, beside their lines: %s", n, map[bool]string{true: "finding", false: "findings"}[n == 1], where)}}
 }
 
-// GatesMarker keys the gates' summary comment on a merge request: one,
-// edited on each push.
-var GatesMarker = forge.GatesMarker
-
 // GatesToShow is what of the gates a merge request is shown: the
 // annotations and their check's words, the summary comment once the
 // check's page is known, and whether there is anything to say.
@@ -151,7 +147,7 @@ func ShowGates(from FromMergeRequest, g GatesToShow) []verdict.Finding {
 		}
 	}
 	to := forge.Target{Kind: "merge-request", ID: from.ID}
-	if err := f.Sticky(to, g.Comment(url), GatesMarker, g.Worth); err != nil {
+	if err := f.Sticky(to, g.Comment(url), forge.GatesMarker, g.Worth); err != nil {
 		return append(said, not("the summary comment was not written: "+forge.Said(err)))
 	}
 	if !g.Worth {

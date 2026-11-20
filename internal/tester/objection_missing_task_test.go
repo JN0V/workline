@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // missingTaskText writes the answer task of a "test missing" objection on
@@ -25,7 +26,7 @@ func missingTaskText(t *testing.T, frozen ...string) string {
 		}
 	}
 	a := answer{Issue: 7, File: frozen[0], Kind: "missing",
-		Scenarios: []Scenario{{Name: "Restart", Text: "Given …"}},
+		Scenarios: []work.Scenario{{Name: "Restart", Text: "Given …"}},
 		Objection: objection{Test: frozen[0], Kind: "missing", Why: "no test for the restart"},
 		Record:    record{Issue: 7, Files: files}}
 	if code := writeAnswerTask(runDir, repo, a, forge.Thread{}, &forge.Issue{Title: "Console"}, Settings{}); code != 0 {

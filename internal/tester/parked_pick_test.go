@@ -2,10 +2,11 @@ package tester
 
 import (
 	"encoding/json"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"github.com/JN0V/workline/internal/forge"
 )

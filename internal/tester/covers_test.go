@@ -8,13 +8,14 @@ import (
 
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/testmark"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // Each scenario takes the tests its entry declares, or its reason; one
 // test may cover two; a scenario with no entry, an entry naming none, or
 // one with neither tests nor reason, is a finding (ADR-0065, change 4).
 func TestHeldEntries(t *testing.T) {
-	sc := []Scenario{{Name: "Disabled console"}, {Name: "Enabled console"}, {Name: "Restart"}, {Name: "Look"}}
+	sc := []work.Scenario{{Name: "Disabled console"}, {Name: "Enabled console"}, {Name: "Restart"}, {Name: "Look"}}
 	intents := []intent.Intention{
 		{Kind: "patch", Value: "x"},
 		{Kind: "covers", Value: map[string]any{"scenario": "Disabled console", "tests": "test_disabled"}},
@@ -143,7 +144,7 @@ func TestRecovered(t *testing.T) {
 		t.Errorf("a record with no covers: %q %v", why, old.Covers)
 	}
 	// One test, two scenarios, renamed: each scenario's entry names it.
-	both := record{Tests: []string{"tests.test_new"}, Scenarios: []Scenario{{Name: "Enabled console"}, {Name: "Restart"}},
+	both := record{Tests: []string{"tests.test_new"}, Scenarios: []work.Scenario{{Name: "Enabled console"}, {Name: "Restart"}},
 		Covers: map[string][]string{"Enabled console": {"tests.test_old"}, "Restart": {"tests.test_old"}}}
 	entries := []intent.Intention{
 		{Kind: "covers", Value: map[string]any{"scenario": "Enabled console", "tests": "test_new"}},

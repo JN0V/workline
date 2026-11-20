@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/work"
 )
 
 func TestParseObjection(t *testing.T) {
@@ -40,7 +41,7 @@ func TestAnswerTaskGivesDeclaredTests(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repo, "test_console.py"), []byte("def test_old(): pass\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	a := answer{Issue: 3, File: "test_console.py", Kind: "over-specified", Scenario: Scenario{Name: "Restart", Text: "Given …"},
+	a := answer{Issue: 3, File: "test_console.py", Kind: "over-specified", Scenario: work.Scenario{Name: "Restart", Text: "Given …"},
 		Record: record{Covers: map[string][]string{"Restart": {"tests.test_old"}, "Enabled console": {"tests.test_old"}}}}
 	if code := writeAnswerTask(runDir, repo, a, forge.Thread{}, &forge.Issue{Title: "Console"}, Settings{}); code != 0 {
 		t.Fatalf("exit %d", code)

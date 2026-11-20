@@ -1,6 +1,7 @@
 package reviewer
 
 import (
+	"github.com/JN0V/workline/internal/codenav"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -204,7 +205,7 @@ func TestStripCode(t *testing.T) {
 		{`echo "${#x}" {`, true, `echo  {`},
 		{`msg := "it goes on`, false, `msg := `},
 	} {
-		if got := stripCode(c.line, c.shell); got != c.want {
+		if got := codenav.StripCode(c.line, c.shell); got != c.want {
 			t.Errorf("stripCode(%q) = %q, want %q", c.line, got, c.want)
 		}
 	}
@@ -232,7 +233,7 @@ func TestGuarded(t *testing.T) {
 		{"n++", []string{"n"}},
 		{"elif not done:", []string{"done"}},
 	} {
-		if got := guarded(stripCode(c.line, false)); !slices.Equal(got, c.want) {
+		if got := guarded(codenav.StripCode(c.line, false)); !slices.Equal(got, c.want) {
 			t.Errorf("guarded(%q) = %q, want %q", c.line, got, c.want)
 		}
 	}

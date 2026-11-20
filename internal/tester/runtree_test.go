@@ -1,11 +1,12 @@
 package tester
 
 import (
-	"github.com/JN0V/workline/internal/kit/worktree"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/worktree"
 
 	"github.com/JN0V/workline/internal/agent"
 )
