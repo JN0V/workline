@@ -959,6 +959,7 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 			Message: fmt.Sprintf("%d of the files changed given to the reviewer's agent by their hunks, not whole, past code-lines-max (%d lines in all): %s; the lenses %s did not run on the whole of them, only on what their hunks show; raise %s",
 				n, s.CodeLinesMax, strings.Join(past, ", "), strings.Join(st.Lenses, ", "), verdict.Setting("reviewer", "code-lines-max"))})
 	}
+	var plainFiles []File // hunked with context lines, fewer when the parts allowed are past
 	if len(hunked) > 0 {
 		// Each by whole functions where they fit (#1334), else 5 lines of context.
 		var plain []File
@@ -973,13 +974,7 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 		if wide.Len() > 0 {
 			units = append(units, fileDiffs(wide.String())...)
 		}
-		if len(plain) > 0 {
-			diff, err := git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", "--find-renames", st.lensFrom(), st.lensTo(), "--"}, pathspec(plain)...)...)
-			if err != nil {
-				return "", err
-			}
-			units = append(units, fileDiffs(diff)...)
-		}
+		plainFiles = plain
 	}
 	floor := func(size int) string {
 		if !s.FinderFloor { // a floor on candidates, never on what is shown; from the size of what is read
@@ -1067,6 +1062,63 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 	room, err := taskRoom(runDir, repo)
 	if err != nil {
 		return "", err
+	}
+	// A change that would take more parts than parts-max is first given less
+	// context per hunk (#1975): 3, 1, then 0 lines, the first that fits one
+	// call, else the first that fits parts-max.
+	if len(plainFiles) > 0 {
+		base := units
+		withContext := func(n int) ([]unit, error) {
+			diff, err := git(repo, append([]string{"diff", fmt.Sprintf("-U%d", n), "--no-color", "--no-ext-diff", "--find-renames", st.lensFrom(), st.lensTo(), "--"}, pathspec(plainFiles)...)...)
+			if err != nil {
+				return nil, err
+			}
+			return append(slices.Clone(base), fileDiffs(diff)...), nil
+		}
+		one := func(us []unit) bool {
+			text, size := lensMaterial(st.Testimony, purpose, us)
+			lines := 0
+			for _, u := range us {
+				lines += u.lines()
+			}
+			return (room == 0 || longest+len(floor(size))+1+len(text) <= room) && (s.DiffLinesMax <= 0 || lines <= s.DiffLinesMax)
+		}
+		many := func(us []unit) bool {
+			sort.SliceStable(us, func(i, j int) bool { return us[i].path < us[j].path })
+			skeleton, _ := lensMaterial(st.Testimony, purpose, nil)
+			share := 0
+			if room > 0 {
+				share = room - longest - len(floor(math.MaxInt)) - 1 - len(partNote(99, 99, files)) - len(skeleton)
+				if share < unitsRoomMin {
+					return false
+				}
+			}
+			return len(pack(us, share, s.DiffLinesMax)) <= s.PartsMax
+		}
+		full, err := withContext(contextLines)
+		if err != nil {
+			return "", err
+		}
+		units = full
+		if !one(full) && !many(slices.Clone(full)) {
+			var fitsParts []unit
+			for _, n := range []int{3, 1, 0} {
+				us, err := withContext(n)
+				if err != nil {
+					return "", err
+				}
+				if one(us) {
+					units, fitsParts = us, nil
+					break
+				}
+				if fitsParts == nil && many(slices.Clone(us)) {
+					fitsParts = us
+				}
+			}
+			if fitsParts != nil {
+				units = fitsParts
+			}
+		}
 	}
 	text, size := lensMaterial(st.Testimony, purpose, units)
 	diffLines := 0

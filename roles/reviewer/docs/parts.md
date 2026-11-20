@@ -65,3 +65,12 @@ A change that fits is asked in one call, as before.
   ([ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md)).
 - The diff-alone facet, off by default, stays one call, cut past
   `diff-lines-max`.
+
+## Less context before more parts
+
+A change of many small hunks grows with the context around each one. When
+the change would take more parts than `parts-max`, the reviewer first gives
+fewer lines of context per hunk: 3, then 1, then 0. It keeps the first that
+fits one call, else the first that fits `parts-max`. A change that fits with
+the full 5 lines keeps them. Declaring a change a mechanical substitution
+(replayed on the base) is not done yet.
