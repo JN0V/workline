@@ -1,9 +1,9 @@
 ---
 sources:
-  - internal/builtin/reviewer/reviewer.go#summaryComment
-  - internal/builtin/reviewer/lines.go#reviewOf
-  - internal/builtin/reviewer/record.go#keyOf
-  - internal/builtin/reviewer/record.go#loadRecord
+  - roles/reviewer/code/reviewer.go#summaryComment
+  - roles/reviewer/code/lines.go#reviewOf
+  - roles/reviewer/code/record.go#keyOf
+  - roles/reviewer/code/record.go#loadRecord
   - internal/sample/draw.go#reviewerActs
   - defaults/ci/github/workline-warn.yml#concurrency
   - defaults/ci/github/workline-apply.yml#jobs.apply.concurrency

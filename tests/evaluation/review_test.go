@@ -19,8 +19,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/intent"
+	reviewer "github.com/JN0V/workline/roles/reviewer/code"
 )
 
 // reviewCase is what a reviewer case plants and forbids.

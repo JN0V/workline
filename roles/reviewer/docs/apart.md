@@ -3,16 +3,16 @@ sources:
   - roles/reviewer/role.yaml#apart
   - roles/reviewer/role.yaml#settings.ai-findings
   - .workline/config.yaml#roles.reviewer.settings.ai-findings
-  - internal/builtin/reviewer/reviewer.go#prepare
-  - internal/builtin/reviewer/reviewer.go#state.side
-  - internal/builtin/reviewer/reviewer.go#Settings.ofSide
-  - internal/builtin/reviewer/reviewer.go#Settings.warns
-  - internal/builtin/reviewer/reviewer.go#otherSide
-  - internal/builtin/reviewer/reviewer.go#review
-  - internal/builtin/reviewer/reviewer.go#final
-  - internal/builtin/reviewer/reviewer.go#enforcement
-  - internal/builtin/reviewer/record.go#answering
-  - internal/builtin/reviewer/once.go#Record.leftTo
+  - roles/reviewer/code/reviewer.go#prepare
+  - roles/reviewer/code/reviewer.go#state.side
+  - roles/reviewer/code/reviewer.go#Settings.ofSide
+  - roles/reviewer/code/reviewer.go#Settings.warns
+  - roles/reviewer/code/reviewer.go#otherSide
+  - roles/reviewer/code/reviewer.go#review
+  - roles/reviewer/code/reviewer.go#final
+  - roles/reviewer/code/reviewer.go#enforcement
+  - roles/reviewer/code/record.go#answering
+  - roles/reviewer/code/once.go#Record.leftTo
 checked: e2e165c2d
 judged: a5cd2cf
 verified: agent:claude-code

@@ -39,7 +39,6 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/doctor"
 	"github.com/JN0V/workline/internal/engine"
@@ -62,6 +61,7 @@ import (
 	"github.com/JN0V/workline/internal/setup"
 	"github.com/JN0V/workline/internal/work"
 	documentalist "github.com/JN0V/workline/roles/documentalist/code"
+	reviewer "github.com/JN0V/workline/roles/reviewer/code"
 	tester "github.com/JN0V/workline/roles/tester/code"
 	"go.yaml.in/yaml/v3"
 )

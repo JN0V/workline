@@ -2,13 +2,13 @@
 sources:
   - defaults/routing.yaml#events.schedule
   - roles/reviewer/role.yaml#settings.specs-per-run
-  - internal/builtin/reviewer/specforge.go#onlyIssue
-  - internal/builtin/reviewer/specforge.go#waitingSpecs
-  - internal/builtin/reviewer/specforge.go#keepersOrder
-  - internal/builtin/reviewer/specforge.go#specOnForge
-  - internal/builtin/reviewer/specforge.go#settleSpecs
-  - internal/builtin/reviewer/specforge.go#waitingQuestions
-  - internal/builtin/reviewer/spec.go#prepareSpecs
+  - roles/reviewer/code/specforge.go#onlyIssue
+  - roles/reviewer/code/specforge.go#waitingSpecs
+  - roles/reviewer/code/specforge.go#keepersOrder
+  - roles/reviewer/code/specforge.go#specOnForge
+  - roles/reviewer/code/specforge.go#settleSpecs
+  - roles/reviewer/code/specforge.go#waitingQuestions
+  - roles/reviewer/code/spec.go#prepareSpecs
   - internal/backlog/backlog.go#Readied
   - internal/backlog/backlog.go#NotReady
   - internal/work/headings.go#Required

@@ -1,18 +1,18 @@
 ---
 sources:
-  - internal/builtin/reviewer/lines.go#lineKeyOf
+  - roles/reviewer/code/lines.go#lineKeyOf
   - internal/forge/review.go#LineComment
   - internal/forge/review.go#review
   - internal/forge/review.go#Reviewed.Section
-  - internal/builtin/reviewer/resolve.go#answered
-  - internal/builtin/reviewer/resolve.go#ofThisSide
-  - internal/builtin/reviewer/resolve.go#gone
-  - internal/builtin/reviewer/resolve.go#readAgain
-  - internal/builtin/reviewer/reviewer.go#testFiles
-  - internal/builtin/reviewer/record.go#retested
-  - internal/builtin/reviewer/resolve.go#resolvedLine
-  - internal/builtin/reviewer/resolve.go#fixedRows
-  - internal/builtin/reviewer/resolve.go#fixedWarn
+  - roles/reviewer/code/resolve.go#answered
+  - roles/reviewer/code/resolve.go#ofThisSide
+  - roles/reviewer/code/resolve.go#gone
+  - roles/reviewer/code/resolve.go#readAgain
+  - roles/reviewer/code/reviewer.go#testFiles
+  - roles/reviewer/code/record.go#retested
+  - roles/reviewer/code/resolve.go#resolvedLine
+  - roles/reviewer/code/resolve.go#fixedRows
+  - roles/reviewer/code/resolve.go#fixedWarn
   - internal/engine/review.go#applier.resolveThreads
 checked: c46a93d6c
 verified: agent:claude-code

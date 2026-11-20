@@ -3,9 +3,9 @@ package tests
 import (
 	"testing"
 
-	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/contract"
 	inspector "github.com/JN0V/workline/roles/inspector/code"
+	reviewer "github.com/JN0V/workline/roles/reviewer/code"
 )
 
 // The roles whose sticky comment keeps a record their next run reads

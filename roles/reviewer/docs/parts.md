@@ -1,5 +1,5 @@
 ---
-sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/parts.go, internal/builtin/reviewer/reviewer.go]
+sources: [roles/reviewer/role.yaml, roles/reviewer/code/parts.go, roles/reviewer/code/reviewer.go]
 checked: b830e2b9
 verified: agent:claude-code
 ---

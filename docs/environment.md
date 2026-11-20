@@ -4,7 +4,7 @@ sources:
   - internal/agent/seen.go#Seen
   - internal/sample/sample.go#Options
   - internal/engine/engine.go#askJudge
-  - internal/builtin/reviewer/reviewer.go#askJudges
+  - roles/reviewer/code/reviewer.go#askJudges
   - tests/evaluation/eval_test.go#judge
   - internal/forge/retry.go#RunsDirEnv
   - roles/committer/code/secrets.go#commonList

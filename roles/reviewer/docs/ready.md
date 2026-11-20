@@ -1,5 +1,5 @@
 ---
-sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, internal/builtin/reviewer/once.go, internal/engine/engine.go, defaults/ci/github/workline.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
+sources: [roles/reviewer/role.yaml, roles/reviewer/code/reviewer.go, roles/reviewer/code/record.go, roles/reviewer/code/once.go, internal/engine/engine.go, defaults/ci/github/workline.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
 checked: d03372bb
 verified: agent:claude-code
 ---

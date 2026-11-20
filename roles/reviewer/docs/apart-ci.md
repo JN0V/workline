@@ -2,7 +2,7 @@
 sources:
   - roles/reviewer/role.yaml#apart
   - internal/line/line.go#RunWith
-  - internal/builtin/reviewer/lines.go#reviewOf
+  - roles/reviewer/code/lines.go#reviewOf
   - defaults/ci/github/workline-apply.yml#jobs.verdict
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot-token
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child

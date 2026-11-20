@@ -1,8 +1,8 @@
 ---
 sources:
-  - internal/builtin/reviewer/spec.go#askSpec
-  - internal/builtin/reviewer/spec.go#specMaterial
-  - internal/builtin/reviewer/spec.go#namedCode
+  - roles/reviewer/code/spec.go#askSpec
+  - roles/reviewer/code/spec.go#specMaterial
+  - roles/reviewer/code/spec.go#namedCode
   - internal/kit/codepick/names.go#NamedIn
   - internal/kit/codepick/names.go#codeWords
   - internal/kit/codepick/names.go#APath

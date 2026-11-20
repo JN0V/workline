@@ -9,7 +9,7 @@ sources:
   - internal/forge/own.go#gitlab.own
   - internal/forge/own.go#ReadKept
   - internal/forge/own.go#Kept.Last
-  - internal/builtin/reviewer/record.go#loadRecord
+  - roles/reviewer/code/record.go#loadRecord
   - roles/inspector/code/record.go#loadRecord
   - roles/documentalist/code/kept.go#stickyOn
   - roles/documentalist/code/kept.go#othersKept.findings

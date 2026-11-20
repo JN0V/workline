@@ -6,7 +6,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:apply
   - internal/forge/at.go#At
   - internal/forge/at.go#Newer
-  - internal/builtin/reviewer/reviewer.go#summaryValue
+  - roles/reviewer/code/reviewer.go#summaryValue
   - roles/inspector/code/record.go#comment
   - internal/engine/review.go#applier.mergedRecord
 checked: e2e165c2d
