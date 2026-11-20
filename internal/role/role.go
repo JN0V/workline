@@ -65,6 +65,9 @@ type Role struct {
 		Budget int      `yaml:"budget"`
 	} `yaml:"context"`
 	WithoutAI string `yaml:"without-ai"`
+	// Inputs are what the shared pre reads for the role's agent, from
+	// AllowedInputs (ADR-0070, §2).
+	Inputs []string `yaml:"inputs"`
 	// Cuts are what the role's input is cut of, past a cap, each said in
 	// one line: the shared pre writes them to the run's in/cuts.
 	Cuts []string `yaml:"cuts"`
@@ -163,6 +166,11 @@ func Load(rolesDir, name string) (*Role, error) {
 	if r.Name != name {
 		return nil, fmt.Errorf("role %q: role.yaml names itself %q", name, r.Name)
 	}
+	for _, in := range r.Inputs {
+		if !slices.Contains(AllowedInputs, in) {
+			return nil, fmt.Errorf("role %q: inputs names %q, not one of the inputs allowed: %s", name, in, strings.Join(AllowedInputs, ", "))
+		}
+	}
 	for _, k := range r.Acts {
 		if !slices.Contains(r.Intentions, k) {
 			return nil, fmt.Errorf("role %q: acts names %q, not one of its intentions", name, k)
@@ -204,6 +212,9 @@ func Load(rolesDir, name string) (*Role, error) {
 	r.Dir = dir
 	return &r, nil
 }
+
+// AllowedInputs are the inputs a role may declare in `inputs`.
+var AllowedInputs = []string{"target", "commits", "issues", "wake", "sample", "runs"}
 
 // taskFacet is where a kind of task's own instruction is: a facet in the
 // role's tasks/ folder.

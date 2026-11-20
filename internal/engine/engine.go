@@ -3662,6 +3662,10 @@ func scriptEnv(runDir, roleName string, o Options) []string {
 	if o.Forge != "" && o.Forge != "none" {
 		env = append(env, "WORKLINE_FORGE="+o.Forge) // what the role may write to
 	}
+	env = append(env, "WORKLINE_REPO="+o.Repo)
+	if rng := o.Inputs["range"]; rng != "" {
+		env = append(env, "WORKLINE_RANGE="+rng)
+	}
 	if o.Target != nil && o.Forge != "" && o.Forge != "none" { // where a comment would go
 		env = append(env, fmt.Sprintf("WORKLINE_TARGET=%s:%d", o.Target.Kind, o.Target.ID))
 	}
@@ -4113,7 +4117,12 @@ func sharedPre(r *role.Role, env []string) error {
 	}
 	// The instruction is said once, in the system prompt: the task only
 	// points at it.
-	const task = "Do what your instruction says.\n"
+	task := "Do what your instruction says.\n"
+	given, cuts, err := readInputs(r, env)
+	if err != nil {
+		return err
+	}
+	task += given
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
 		return err
 	}
@@ -4122,6 +4131,9 @@ func sharedPre(r *role.Role, env []string) error {
 		if err := os.WriteFile(filepath.Join(runDir, "in", "cuts"), []byte(list), 0o644); err != nil {
 			return err
 		}
+	}
+	if err := sayInputCuts(runDir, cuts); err != nil {
+		return err
 	}
 	if len(r.Context.Skills) > 0 {
 		list := strings.Join(r.Context.Skills, "\n") + "\n"
