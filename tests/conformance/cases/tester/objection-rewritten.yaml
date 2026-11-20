@@ -1,7 +1,8 @@
 case: tester/objection-rewritten
 about: >
   The tester rewrites its test on an objection: its own commit on its
-  branch, on top, referring to the thread; the rewrite still names its
+  branch, on top, its subject naming the file's base name within the
+  committer's limit, the full path in the body (#1941); the rewrite still names its
   scenario and is red on the base; the record moves to it, and the reply
   says why, its hidden line naming the rewrite's blob for the auditor's
   weekly sample (ADR-0046).
@@ -33,7 +34,7 @@ expect:
     workline/tester/issue-3:
       tests/test_mul_two_by_three.sh: "tr -d"
   pushed-message:
-    workline/tester/issue-3: "Refs https://forge.example/merge-requests/1#thread-7"
+    workline/tester/issue-3: "test: rewrite test_mul_two_by_three.sh on an objection\n\nFile: tests/test_mul_two_by_three.sh\n\nRefs https://forge.example/merge-requests/1#thread-7"
   forge:
     merge-requests:
       - id: 1
