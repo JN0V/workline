@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -60,6 +61,10 @@ type Pack struct {
 	// role reads (ADR-0065, change 3).
 	TestPaths []string `yaml:"test-paths"`
 	TestHomes []Home   `yaml:"test-homes"`
+	// BuildErrors are the tester's build-errors rows when the project sets
+	// none, as the tester's setting writes them: how a broken build's error
+	// lines read, and which are a missing name.
+	BuildErrors []map[string]any `yaml:"build-errors"`
 	// Aside are folders beside a project's own code, ranked after it by
 	// the code picker: read from the generic pack only, until the code
 	// picker's tables move to packs.
@@ -333,19 +338,25 @@ func OfProject(repo string) ([]Pack, error) {
 
 // TesterDefaults are the tester's settings the listed packs give, each
 // field the union of theirs, then the generic pack's: test-paths,
-// test-homes. A pack adds what its ecosystem knows to what most share,
+// test-homes, build-errors. A pack adds what its ecosystem knows to what most share,
 // never narrows it: a Go project's tests/ folder stays tests. The
 // listed packs' homes come first, the first matching one wins; a listed
 // generic pack, the project's own file, stands for the built-in one.
 func TesterDefaults(listed []Pack) map[string]any {
 	var paths []any
 	var homes []any
+	var rows []any
 	seenP, seenH := map[string]bool{}, map[Home]bool{}
 	all := slices.Clone(listed)
 	if !slices.ContainsFunc(listed, func(p Pack) bool { return p.Name == Generic }) {
 		all = append(all, Builtin()[Generic])
 	}
 	for _, p := range all {
+		for _, r := range p.BuildErrors {
+			if !slices.ContainsFunc(rows, func(x any) bool { return reflect.DeepEqual(x, any(r)) }) {
+				rows = append(rows, r)
+			}
+		}
 		for _, t := range p.TestPaths {
 			if !seenP[t] {
 				seenP[t] = true
@@ -360,6 +371,9 @@ func TesterDefaults(listed []Pack) map[string]any {
 		}
 	}
 	out := map[string]any{}
+	if len(rows) > 0 {
+		out["build-errors"] = rows
+	}
 	if len(paths) > 0 {
 		out["test-paths"] = paths
 	}
