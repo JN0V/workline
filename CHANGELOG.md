@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.85.0](https://github.com/JN0V/workline/compare/v0.84.0...v0.85.0) (2026-11-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **roles:** the tester's and the inspector's code moved from internal/tester and internal/builtin/inspector to roles/tester/code and roles/inspector/code; their prompts, under roles/<name>/prompts/ since the earlier move, stay where they are.
+* **roles:** the developer's prompts moved under roles/<name>/prompts/; a person's prompt override left at the old flat path now stops the run; move it there (workline doctor names it).
+* **roles:** the committer's, product owner's and judge's prompts moved under roles/<name>/prompts/; a person's prompt override left at the old flat path now stops the run; move it there (workline doctor names it).
+* **roles:** the reviewer's and auditor's prompts moved under roles/<name>/prompts/; a person's prompt override left at the old flat path now stops the run; move it there (workline doctor names it).
+* **roles:** the tester's, inspector's and documentalist's prompts moved under roles/<name>/prompts/; a person's prompt override left at the old flat path now stops the run; move it there (workline doctor names it).
+
+### Features
+
+* the auditor judges an act against its role's ([#1925](https://github.com/JN0V/workline/issues/1925)) ([04747ed](https://github.com/JN0V/workline/commit/04747ed89235cdc0cdf27d1ff4e32a5e3b640b50))
+
+
+### Bug Fixes
+
+* gitLab release dry run keeps GITLAB_TOKEN while ([#1954](https://github.com/JN0V/workline/issues/1954)) ([06c8004](https://github.com/JN0V/workline/commit/06c8004bf6cfc51fb3ce3b5eec051d6d65cb54f0))
+* **internal:** bug: the tester relaunches without end ([#1937](https://github.com/JN0V/workline/issues/1937)) ([46f8547](https://github.com/JN0V/workline/commit/46f8547791cedce46726dd0bdadcd5f2fbc9c916))
+* prompt-only role: contract docs, cut warning ([#1952](https://github.com/JN0V/workline/issues/1952)) ([74e0b75](https://github.com/JN0V/workline/commit/74e0b7523c8765f164d4ee5bfcd3426eb2e44480))
+* silent refusals, CI: reason in the log, files kept ([#1958](https://github.com/JN0V/workline/issues/1958)) ([da72295](https://github.com/JN0V/workline/commit/da72295ca64b08b66be607d3971a5308706fe450))
+* silent refusals: a failed forge call said, never ([#1934](https://github.com/JN0V/workline/issues/1934)) ([d9a5541](https://github.com/JN0V/workline/commit/d9a5541f363e2b6163c4f745b5deb285be4aa58d))
+* **tester:** keep the objection commit subject short ([#1971](https://github.com/JN0V/workline/issues/1971)) ([7c650fc](https://github.com/JN0V/workline/commit/7c650fc5045a83e6065ee1a4f9fbc695377f665d))
+* **workflows:** bug: apply's room step re-dispatches ([#1932](https://github.com/JN0V/workline/issues/1932)) ([3d5a74c](https://github.com/JN0V/workline/commit/3d5a74cda01899848f35ec0f5645b9b649dcfb43))
+* workline sample --help says it reads only the docs ([#1944](https://github.com/JN0V/workline/issues/1944)) ([87b7ae3](https://github.com/JN0V/workline/commit/87b7ae3abedc9bb9958f7265885f2031eca915df))
+
+
+### Code Refactoring
+
+* **roles:** committer, product owner, judge into roles/ ([dd77bf9](https://github.com/JN0V/workline/commit/dd77bf9220a1a747405c3b1b934e38b731ab2f13))
+* **roles:** reviewer and auditor prompts, guarded ([7506b1e](https://github.com/JN0V/workline/commit/7506b1e2cfb5c1ece609c99f6b4b53b3b24463e2))
+* **roles:** tester, inspector, documentalist prompts ([fa64f32](https://github.com/JN0V/workline/commit/fa64f32238bf0035ba37f961fab1df1a1079beeb))
+* **roles:** the developer's code and prompts into roles/ ([5059043](https://github.com/JN0V/workline/commit/50590435c4ae10d4970943d9c05a73a7c1a8b004))
+* **roles:** the tester's and the inspector's code into roles/ ([63e165e](https://github.com/JN0V/workline/commit/63e165e57e062c0c73be834dec27eaabc1e61cdd))
+
 ## [0.84.0](https://github.com/JN0V/workline/compare/v0.83.0...v0.84.0) (2026-11-19)
 
 
