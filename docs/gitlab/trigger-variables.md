@@ -3,7 +3,7 @@ sources:
   - docs/gitlab/without-template.md#ciworkline-jobsh
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:base.rules
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge.rules
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn.rules
@@ -22,16 +22,16 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator.rules
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:judge.rules
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:propose.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:apply.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:sample.rules
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:objection:judge.script
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:review:judge.script
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:judge.script
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:objection:propose.script
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:review:propose.script
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:propose.script
 checked: e2e165c2d
 verified: agent:claude-code
 ---

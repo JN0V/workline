@@ -9,7 +9,7 @@ sources:
   - defaults/ci/github/workline-warn.yml#name
   - defaults/ci/github/workline-gardening.yml#name
   - defaults/ci/github/workline-gardening.yml#on
-  - defaults/ci/github/workline-gardening.yml#jobs.judge
+  - defaults/ci/github/workline-gardening.yml#jobs.propose
   - defaults/ci/github/workline-gardening.yml#jobs.apply
   - defaults/ci/github/workline-gardening.yml#jobs.curator
   - defaults/ci/github/workline-develop.yml#name
@@ -21,7 +21,7 @@ sources:
   - defaults/ci/github/workline-sample.yml#on
   - defaults/ci/github/issue-form-need.yml#name
   - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
@@ -70,7 +70,7 @@ then one that applies, with the write token and no AI key
 |---|---|---|---|
 | merge request | each one | the line on its commits | the doc fixes as a diff in a comment, nothing pushed to its branch; the doc findings beside their lines |
 | main after a merge | a push to the default branch | the gates, every finding kept as the next base; the whole repository's checks; no agent | one issue, edited when what it lists changes ([how](main-after-merge.md)) |
-| follow | a push to the default branch; with the merge policy, after each judge and when a label changes | — | auto-merge on for what a person accepted ([merge policy](merge-policy.md)) |
+| follow | a push to the default branch; with the merge policy, after each propose job and when a label changes | — | auto-merge on for what a person accepted ([merge policy](merge-policy.md)) |
 | gardening | weekly, Sunday evening; nightly to catch up a backlog | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
 | test corpus | with the gardening, opt-in | the tester's curator: each test's time, red and flaky ones over time, coverage; with an agent, a few redundant tests removed, proven | the job's summary, a history artifact ([how](../roles/tester/docs/curator.md)); a pull request ([how](../roles/tester/docs/removals.md)) |
 | an issue's state | a state's label on an issue, opt-in; hourly, a reconciler for what an event missed | the role its state wakes: the tester's tests, the developer's code, proven | the Draft or the pull request, the issue's next state; its next step started ([how](../roles/developer/docs/triggers.md)) |
@@ -85,7 +85,7 @@ then one that applies, with the write token and no AI key
 - **The gates run first, alone**, with no write token and no AI key
   ([gates in CI](gates-in-ci.md)).
 - **What only warns runs apart**: the reviewer's lenses that warn read
-  in a job of their own beside the judge, posting in a comment of their
+  in a job of their own beside the propose job, posting in a comment of their
   own; the head's verdict waits only for what can block
   ([apart](../roles/reviewer/docs/apart.md)). The inspector's triage of
   what the gates found reads there too, given their result
@@ -95,12 +95,12 @@ then one that applies, with the write token and no AI key
 - **A merge queue or train runs the gates alone** on the merged result,
   no agent; the checks it requires report there
   ([how](merge-queue.md)).
-- **A judge that fails still hands over**: the applying job runs whatever
-  the judge's outcome, and the pipeline fails by the judge's. It applies
+- **A propose job that fails still hands over**: the applying job runs whatever
+  the propose job's outcome, and the pipeline fails by the propose job's. It applies
   what the steps that passed proposed, and what a blocked role says why
   it blocks, such as its comments ([`on-block`](spec/role-contract.md#one-run)). An agent out of
   reach (3) warns on both forges.
-- **One judge per merge request at a time**: a push cancels the run still
+- **One propose job per merge request at a time**: a push cancels the run still
   judging the head before, and nothing of it is applied; the newer run
   reviews its commits too ([#359](https://github.com/JN0V/workline/issues/359)).
   GitLab needs a project setting ([how](ci-gitlab.md#6-one-pipeline-per-merge-request)).
@@ -161,7 +161,7 @@ who reads neither the log nor `line.json`:
 - **Another CI**: pass `--summary` to `route`, `apply` or `sample`, as
   `.md` or `.html`, whichever your CI shows.
 - **The applying job** writes its own: what it did on each issue, linked,
-  grouped as the judge's; what failed, the runs it left unapplied, and the
+  grouped as the propose job's; what failed, the runs it left unapplied, and the
   command that resumes them.
 
 On the merge request, each finding is beside its line, and none is a
@@ -229,12 +229,12 @@ A roadmap or backlog file is moved to issues once: by hand, `workline
 issues import <file>`, then `--apply`; or in CI, split as the other roles
 are ([ADR-0030](adr/0030-an-import-maps-every-item-to-its-issue-or-why-not.md)):
 
-- **Judge**: `workline issues import <file> --json > line.json` — the
+- **Propose**: `workline issues import <file> --json > line.json` — the
   agent, a read token; writes nothing; the map says what would be opened;
   `pending` lists its runs.
 - **Apply**: `workline apply --line line.json` — the write token, no
   agent; opens them.
-- A map with items not covered ends the judge 2: the apply still opens
+- A map with items not covered ends the propose job with 2: the apply still opens
   what was judged.
 - The jobs: [GitHub](ci-github.md#importing-a-file),
   [GitLab](ci-gitlab.md#the-product-owner).

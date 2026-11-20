@@ -1,6 +1,6 @@
 ---
 sources:
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:apply
@@ -19,7 +19,7 @@ judged-in-parts: b3b9aad
 Step 6 of [workline on GitLab CI](../ci-gitlab.md#6-one-pipeline-per-merge-request).
 
 A push cancels the pipeline still judging the merge request's head before
-([#359](https://github.com/JN0V/workline/issues/359)): `workline:judge` is
+([#359](https://github.com/JN0V/workline/issues/359)): `workline:propose` is
 `interruptible`, the jobs that write are not. GitLab does it when:
 
 - **Auto-cancel redundant pipelines** is checked (Settings → CI/CD →
@@ -29,7 +29,7 @@ A push cancels the pipeline still judging the merge request's head before
   that is not has started, GitLab cancels nothing
   ([GitLab's docs](https://docs.gitlab.com/ci/yaml/#interruptible)).
 
-One review at a time: `workline:judge` waits while `workline:apply` writes
+One review at a time: `workline:propose` waits while `workline:apply` writes
 the review before it, one resource group per merge request, then reviews
 only what is new ([#375](https://github.com/JN0V/workline/issues/375));
 `workline:warn` and `workline:warn:apply` likewise, in a resource group of

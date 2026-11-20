@@ -39,18 +39,18 @@ Part of [the lenses that warn, apart from the verdict](apart.md).
 
 ## In CI
 
-- **GitHub**: workline.yml's `judge` leaves them (`--warn-apart`);
+- **GitHub**: workline.yml's `propose` leaves them (`--warn-apart`);
   [workline-warn.yml](../../../defaults/ci/github/workline-warn.yml) asks them
   beside it (`--warn-only`); workline-apply.yml applies both, and keeps
-  the verdict from `judge` alone
+  the verdict from `propose` alone
   ([CI on GitHub](../../../docs/ci-github.md#set-up)). Without workline-warn.yml,
-  `judge` warns that nothing reads them; with an older
+  `propose` warns that nothing reads them; with an older
   workline-apply.yml, which does not name it, `warn` warns and reads
   nothing: unposted, its record would never move.
 - **GitLab**: `workline:warn`, after `workline:gates`, then
   `workline:warn:apply`, with the agent's token and the bot's; without
   the bot's, `workline:warn` says so and stops, and the lenses that warn
-  read in `workline:judge`, said in its log and summary. Both run in a
+  read in `workline:propose`, said in its log and summary. Both run in a
   child pipeline the merge request's does not wait for: "merge when the
   pipeline succeeds" waits for the verdict alone
   ([what the template does](../../../docs/gitlab/template.md)).

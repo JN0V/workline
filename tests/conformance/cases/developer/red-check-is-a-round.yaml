@@ -18,7 +18,7 @@ given:
       workline/developer/3:
         - {name: test, workflow: test, state: failure, job: 41, log: "2026-11-02T22:28:54.3390482Z ##[group]Run sh run-tests.sh\n2026-11-02T22:34:56.3602416Z --- FAIL: test_mul_two_by_three (0.01s)\n2026-11-02T22:34:56.3603400Z     mul 2 3: want 6, got 5\n2026-11-02T22:34:56.4395746Z ##[error]Process completed with exit code 1.\n"}
         - {name: lint, workflow: test, state: success, job: 42}
-        - {name: judge, workflow: workline, state: failure, job: 43, log: "the reviewer's own run failed"}
+        - {name: propose, workflow: workline, state: failure, job: 43, log: "the reviewer's own run failed"}
     issues:
       - id: 3
         title: "Multiply two numbers"
@@ -47,7 +47,7 @@ expect:
   run-files:
     in/task.md:
       contains: ["Review round 1 of 5", "a project check `test`: red at `", "--- FAIL: test_mul_two_by_three (0.01s)", "mul 2 3: want 6, got 5", "##[error]Process completed with exit code 1."]
-      not-contains: ["`judge`", "the reviewer's own run failed", "2026-11-02T22", "##[group]"]
+      not-contains: ["`propose`", "the reviewer's own run failed", "2026-11-02T22", "##[group]"]
   forge:
     merge-requests:
       - id: 2

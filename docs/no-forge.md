@@ -12,7 +12,7 @@ sources:
   - cmd/workline/main.go#sampleCmd
   - cmd/workline/main.go#docsJudgedRef
   - cmd/workline/main.go#docsJudgedFrom
-  - defaults/ci/github/workline-gardening.yml#jobs.judge
+  - defaults/ci/github/workline-gardening.yml#jobs.propose
 checked: e2e165c2d
 verified: agent:claude-code
 ---

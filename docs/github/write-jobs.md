@@ -27,10 +27,10 @@ the other jobs holding the write token.
   again only with the App's token; the [merge policy](../merge-policy.md) acts only with it,
   and needs "Allow auto-merge" (Settings → General).
 - `apply` reads the pull request's run as data, only the agents'
-  proposals ([more](../commands.md#workline-apply)), whatever `judge`
+  proposals ([more](../commands.md#workline-apply)), whatever `propose`
   concluded: one the reviewer holds still gets its comment
   ([#226](https://github.com/JN0V/workline/issues/226)). Its job is in
-  Actions, "workline apply"; the check is `judge`'s.
+  Actions, "workline apply"; the check is `propose`'s.
 - `apply` posts the reviewer's findings on their lines, a pull request
   review (`pull-requests: write`); a token without it leaves them in the
   summary comment, said

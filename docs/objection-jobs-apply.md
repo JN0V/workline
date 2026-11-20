@@ -7,9 +7,9 @@ sources:
 checked: c46a93d6c
 verified: agent:claude-code
 ---
-# What apply takes from the judge
+# What apply takes from the propose job
 
-Part of [An objection's jobs](objection-jobs.md): the judge ran the
+Part of [An objection's jobs](objection-jobs.md): the propose job ran the
 Draft's code, so apply reads its run as data.
 
 - The run's folder, named by the job, is checked by the engine too.

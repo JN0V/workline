@@ -66,8 +66,8 @@ func TestGitHubMainAfterAMergeRunsOnce(t *testing.T) {
 		for k, v := range mainPush {
 			ctx[k] = v
 		}
-		if j := wf.Jobs["judge"]; truthy(eval(t, j.If, ctx)) {
-			t.Errorf("%sworkline.yml: judge runs on main, beside the agent's token: %q", dir, j.If)
+		if j := wf.Jobs["propose"]; truthy(eval(t, j.If, ctx)) {
+			t.Errorf("%sworkline.yml: propose runs on main, beside the agent's token: %q", dir, j.If)
 		}
 		gates := wf.Jobs["gates"]
 		if len(gates.Permissions) != 1 || gates.Permissions["contents"] != "read" {

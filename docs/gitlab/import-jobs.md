@@ -11,7 +11,7 @@ declare the environment the tokens are scoped to
 ([the environment](environment.md)):
 
 ```yaml
-workline:import:judge:                     # the agent, a read token
+workline:import:propose:                     # the agent, a read token
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: test
   environment: {name: workline, action: prepare}   # its tokens' scope (environment.md)
@@ -26,7 +26,7 @@ workline:import:apply:                     # the write token, no agent
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy
   environment: {name: workline, action: prepare}
-  needs: [workline:import:judge]
+  needs: [workline:import:propose]
   rules: [{if: $WORKLINE_IMPORT, when: always}]
   script:
     - unset CLAUDE_CODE_OAUTH_TOKEN; export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN

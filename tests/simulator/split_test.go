@@ -41,13 +41,13 @@ func (r *recorder) Propose(req agent.Request) (agent.Call, error) {
 	return agent.Call{Agent: "fake", Model: "sim"}, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), []byte("[]\n"), 0o644)
 }
 
-// TestTrial56Split replays round 5's #56 (#1150) as CI runs it: a judge
+// TestTrial56Split replays round 5's #56 (#1150) as CI runs it: a propose job
 // job (product owner, then the reviewer, nothing applied), an apply job,
 // then the issue's next step asked of the line. The first reviewer read
 // the body before the apply wrote the drafts, so each next step found
 // drafts with no review: the product owner was called twice for nothing,
 // at 13:13:22 and 13:16:25. Each moment the line is asked: its step due,
-// and the roles its judge job calls.
+// and the roles its propose job calls.
 func TestTrial56Split(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("traces", "trial-56-split.json"))
 	if err != nil {
@@ -60,7 +60,7 @@ func TestTrial56Split(t *testing.T) {
 	cases := []struct {
 		moment string
 		due    bool     // its next step started
-		calls  []string // the roles its judge job asks
+		calls  []string // the roles its propose job asks
 	}{
 		// Call 1 applied: drafts, no review on them. The reviewer's turn,
 		// not the product owner's.
@@ -118,12 +118,12 @@ func TestTrial56Split(t *testing.T) {
 			if !due {
 				return
 			}
-			// The judge job it starts: nothing applied.
-			judge := base
-			judge.AI, judge.NoApply = "hook:split", true
-			res = line.RunWith(line.IssueEvent, judge, &line.Gates{})
+			// The propose job it starts: nothing applied.
+			propose := base
+			propose.AI, propose.NoApply = "hook:split", true
+			res = line.RunWith(line.IssueEvent, propose, &line.Gates{})
 			if !slices.Equal(uniq(rec.roles), c.calls) {
-				t.Fatalf("at %s, the judge job asked %v, want %v: %s", m.At, rec.roles, c.calls, res.Summary)
+				t.Fatalf("at %s, the propose job asked %v, want %v: %s", m.At, rec.roles, c.calls, res.Summary)
 			}
 			// The apply job: its review written, nothing important in it.
 			out, _ := json.Marshal(res)

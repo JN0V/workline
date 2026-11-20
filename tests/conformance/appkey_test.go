@@ -164,7 +164,7 @@ func environmentOf(v any) string {
 // reachedOnRun says whether a job may run on a workflow_run event: not
 // when it, or a job it needs, runs on other events alone (an `if` naming
 // event_name, never workflow_run). workline-develop.yml's issue line
-// (judge, apply) never runs on one: only its round does (#917).
+// (propose, apply) never runs on one: only its round does (#917).
 func reachedOnRun(jobs map[string]yaml.Node, name string) bool {
 	var job keyJob
 	if n, ok := jobs[name]; !ok || n.Decode(&job) != nil {
@@ -269,12 +269,12 @@ func TestReleasePleaseMovesEveryPin(t *testing.T) {
 }
 
 // A job holding the App's key after another run, the tester's answer as
-// #656 first wrote it: the judge's folder downloaded into the checkout,
+// #656 first wrote it: propose's folder downloaded into the checkout,
 // applied whole, by the path it named. Each is caught.
 func TestReadsRunAsDataRefusesAnAnswerAppliedWhole(t *testing.T) {
-	job := keyJob{Needs: "judge", Steps: []keyStep{
+	job := keyJob{Needs: "propose", Steps: []keyStep{
 		{Uses: "actions/download-artifact@v4", With: map[string]any{"name": "workline-answer", "path": ".workline-runs"}},
-		{Run: `workline apply "$RUN" --summary workline-summary.md`, Env: map[string]string{"RUN": "${{ needs.judge.outputs.run }}", "WORKLINE_APP": "${{ steps.app.outputs.app-slug }}"}},
+		{Run: `workline apply "$RUN" --summary workline-summary.md`, Env: map[string]string{"RUN": "${{ needs.propose.outputs.run }}", "WORKLINE_APP": "${{ steps.app.outputs.app-slug }}"}},
 	}}
 	got := readsRunAsData(job)
 	for _, want := range []string{"downloads the run's artifacts into the checkout", "applies a pull request's run without --from-merge-request"} {

@@ -27,8 +27,8 @@ From [workline on GitLab CI](../ci-gitlab.md#2-the-variables).
 ```mermaid
 flowchart LR
   base["<b>workline:base</b><br/>the bot's token, no tool"] --> gates["<b>workline:gates</b><br/>your tools, no token"]
-  gates --> judge["<b>workline:judge</b><br/>the agent's token"]
-  judge --> apply["<b>workline:apply</b><br/>the bot's token"]
+  gates --> propose["<b>workline:propose</b><br/>the agent's token"]
+  propose --> apply["<b>workline:apply</b><br/>the bot's token"]
 ```
 
 GitLab gives a project's variable to every job, unless it is scoped to

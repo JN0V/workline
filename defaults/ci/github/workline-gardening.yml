@@ -8,10 +8,10 @@
 # The review is on those pull requests; nothing is merged here.
 # The tester, when the line lists it, writes a ready issue's tests, one
 # issue a run, opened as a Draft: install your test runner in
-# judge, where it proves them red.
+# propose, where it proves them red.
 # The developer, when the line lists it, takes the first ready issue nobody
 # took, one a run, and opens its pull request: install your test
-# runner in judge, where it proves its code. workline-develop.yml takes an
+# runner in propose, where it proves its code. workline-develop.yml takes an
 # issue as soon as it is labelled ready.
 # The tester's curator measures the test corpus, opt-in (curator below).
 # And a release's dry run: what would hold the release if it were cut now,
@@ -19,7 +19,7 @@
 # waits for the docs.
 #
 # Two jobs, two trust zones, as for pull requests (workline.yml):
-#   judge  runs the line. With the secret CLAUDE_CODE_OAUTH_TOKEN (`claude
+#   propose runs the line. With the secret CLAUDE_CODE_OAUTH_TOKEN (`claude
 #          setup-token`, a Claude subscription), Claude judges, in the one
 #          step that needs the token; without it, only derived blocks are
 #          regenerated. It reads the open pull requests, and writes nothing.
@@ -67,7 +67,7 @@ env:
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
 jobs:
-  judge:
+  propose:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     # issues: the product owner, when the schedule line runs it, reads them.
@@ -141,7 +141,7 @@ jobs:
   # Also the curator's proven removal, when it proposed one (its job's
   # run): the write token, no agent's key.
   apply:
-    needs: [judge, curator]
+    needs: [propose, curator]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -172,7 +172,7 @@ jobs:
           echo "$bin" >> "$GITHUB_PATH"
           "$bin/workline" version
       - uses: actions/download-artifact@v4
-        if: needs.judge.outputs.proposed == 'true'
+        if: needs.propose.outputs.proposed == 'true'
         with: {name: workline-runs}
       - uses: actions/download-artifact@v4
         if: needs.curator.outputs.run != ''
@@ -181,7 +181,7 @@ jobs:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # workline's own account: the records it trusts
-          PROPOSED: ${{ needs.judge.outputs.proposed }}
+          PROPOSED: ${{ needs.propose.outputs.proposed }}
           CURATED: ${{ needs.curator.outputs.run }}   # the curator's run, when it proposed a removal
         run: |
           if [ -n "$APP" ]; then

@@ -4,15 +4,15 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:environment
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:garden
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:sample
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:read
@@ -32,11 +32,11 @@ reader: 9799dcaf51f3
 %%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
   subgraph reads["The agent, when its token is set"]
-    judge["<b>Merge request</b><br/>workline:judge"]
+    propose["<b>Merge request</b><br/>workline:propose"]
     warn["<b>Merge request, a child pipeline</b><br/>workline:warn"]
-    garden["<b>Schedule</b><br/>workline:garden:judge"]
+    garden["<b>Schedule</b><br/>workline:garden:propose"]
     sample["<b>Schedule, WORKLINE_TASK=sample</b><br/>workline:sample:read"]
-    import["<b>By hand, WORKLINE_IMPORT, two jobs you add</b><br/>workline:import:judge"]
+    import["<b>By hand, WORKLINE_IMPORT, two jobs you add</b><br/>workline:import:propose"]
     hook["<b>A webhook</b><br/>workline:develop · review · objection"]
   end
   subgraph none["No agent, nothing written"]
@@ -52,7 +52,7 @@ flowchart LR
     iapply["workline:import:apply"]
     dpost["workline:release:dry-run:post"]
   end
-  judge --> apply
+  propose --> apply
   warn --> wapply
   garden --> gapply
   sample --> swrite
@@ -68,10 +68,10 @@ another pipeline): [gitlab-trigger.md](gitlab-trigger.md).
 GitLab gives a variable to every job unless it is scoped to an
 environment: the template's jobs holding a token declare `workline`,
 those running your tools none ([the environment](gitlab/environment.md)).
-Among the others, it keeps the write token out of the judging jobs'
-commands, not out of their reach — gardening's judge (the scheduled run)
+Among the others, it keeps the write token out of the proposing jobs'
+commands, not out of their reach — gardening's propose job (the scheduled run)
 reads the open merge requests with it. The agent is installed only in
-the judging jobs.
+the proposing jobs.
 
 ## gitlab.com
 
@@ -143,7 +143,7 @@ Monday's workday. The release never waits for the docs
 - **The test corpus's measures**, opt-in (`WORKLINE_CURATOR=on`):
   `workline:curator`, no agent, no token; its image needs your test
   runner ([how](../roles/tester/docs/curator.md)). With Claude's token,
-  `workline:curator:judge` and `:apply` propose a few redundant tests
+  `workline:curator:propose` and `:apply` propose a few redundant tests
   removed, proven ([how](../roles/tester/docs/removals.md)).
 - **Upgrading**: delete a schedule with `WORKLINE_TASK=release-docs`,
   left from an older template; it no longer gardens, but still runs the
@@ -161,7 +161,7 @@ with the variable `WORKLINE_TASK` set to `sample`.
   to use pipeline variables", at **Maintainer**: a new gitlab.com project
   allows no one, and setting the variable is refused (403, "not authorized
   to set pipeline schedule variables").
-- The judge: the variable `WORKLINE_JUDGE`, or the `sample.judge` setting.
+- The propose job: the variable `WORKLINE_JUDGE`, or the `sample.judge` setting.
   Another week than the last whole one: set `WORKLINE_SAMPLE_WEEK`
   (`2026-W40`) on the schedule, then play it.
 - Its reading job holds `WORKLINE_GITLAB_TOKEN`, as gardening's does: it
@@ -188,7 +188,7 @@ publish need it (`needs: [workline:release]`)
 
 A release tool's merge request is held while an open issue is labelled
 `workline:hold-release` or main's pipeline is not green. No pipeline
-starts on a label: run `workline:judge` again once it is off
+starts on a label: run `workline:propose` again once it is off
 ([what holds a release](release-holds.md)).
 
 ## What the template does

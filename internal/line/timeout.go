@@ -107,7 +107,7 @@ func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec
 // passed is timedOut's.
 //
 // unreviewed: the same drafts, no review on this body yet, the review's
-// rounds not spent (specWaits) — as when CI's judge job ran the reviewer
+// rounds not spent (specWaits) — as when CI's propose job ran the reviewer
 // before its apply wrote them (#1150). The reviewer's step, alone: the
 // product owner could write nothing until it lands.
 func draftsHeld(is forge.Issue, labeled string, comments []string, notes []forge.Note, rec Record, had bool) (held, unreviewed bool) {

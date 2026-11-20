@@ -650,7 +650,7 @@ whose result moves the issue to the next. The table is the routing's
   Its drafts with no review yet on that body, the reviewer on the line:
   the step is the reviewer's alone, the product owner not called
   (`state-review-pending`; `alone` in the record). In CI, the reviewer
-  of the judge job read the body before the apply job wrote the drafts;
+  of the propose job read the body before the apply job wrote the drafts;
   its review lands, then the rule above holds it. A retry of that step
   after a machine error, and the once more of a review that did not
   come (`state-review-missing`), run the reviewer alone too; its errors

@@ -120,21 +120,21 @@ func TestGitHubTestIDsCarriedByTheCache(t *testing.T) {
 	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
 		// A pull request reads them by a prefix, its own newest else the
 		// default branch's, and keeps what is new under a key of its run.
-		judge := read(dir + "workline.yml").Jobs["judge"]
+		propose := read(dir + "workline.yml").Jobs["propose"]
 		pr := map[string]any{"github.run_id": "11", "github.run_attempt": "1"}
 		for k, v := range pullRequestPush {
 			pr[k] = v
 		}
-		if _, saved := cached(judge, pr); len(saved) != 0 {
+		if _, saved := cached(propose, pr); len(saved) != 0 {
 			t.Errorf("%sworkline.yml: the test ids kept with nothing new found", dir)
 		}
-		if !cleared(judge, pr) {
+		if !cleared(propose, pr) {
 			t.Errorf("%sworkline.yml: the test ids folder not emptied before the restore", dir)
 		}
 		pr["steps.found.outputs.new"] = "true"
-		restored, saved := cached(judge, pr)
+		restored, saved := cached(propose, pr)
 		if len(restored) != 1 || len(saved) != 1 {
-			t.Fatalf("%sworkline.yml: a pull request's judge restores %d and saves %d test-id caches, want one each", dir, len(restored), len(saved))
+			t.Fatalf("%sworkline.yml: a pull request's propose restores %d and saves %d test-id caches, want one each", dir, len(restored), len(saved))
 		}
 		if got := fmt.Sprint(restored[0].With["restore-keys"]); got != "workline-test-ids-" {
 			t.Errorf("%sworkline.yml: the test ids read by %q, want the prefix workline-test-ids-", dir, got)
@@ -142,7 +142,7 @@ func TestGitHubTestIDsCarriedByTheCache(t *testing.T) {
 		if k := expand(t, fmt.Sprint(saved[0].With["key"]), pr); k != "workline-test-ids-11-1" || expand(t, fmt.Sprint(restored[0].With["key"]), pr) != k {
 			t.Errorf("%sworkline.yml: the test ids kept as %q, want the run's own key", dir, k)
 		}
-		if run := ofStep(judge, "found").Run; !found(run, "", "", true) || found(run, "", "", false) {
+		if run := ofStep(propose, "found").Run; !found(run, "", "", true) || found(run, "", "", false) {
 			t.Errorf("%sworkline.yml: new ids not told, or none told new", dir)
 		} else if sum := "$(cat " + testIDsPath + "/*.json | sha256sum | cut -c1-64)"; found(`READ="`+sum+`"; `+run, "", "", true) {
 			t.Errorf("%sworkline.yml: the ids restored, unchanged, kept again", dir)
@@ -152,14 +152,14 @@ func TestGitHubTestIDsCarriedByTheCache(t *testing.T) {
 		for k, v := range mergeGroup {
 			group[k] = v
 		}
-		if r, s := cached(judge, group); len(r)+len(s) != 0 || truthy(eval(t, ofStep(judge, "found").If, group)) {
+		if r, s := cached(propose, group); len(r)+len(s) != 0 || truthy(eval(t, ofStep(propose, "found").If, group)) {
 			t.Errorf("%sworkline.yml: a queue's group reads or keeps test ids", dir)
 		}
 
 		// The tester's red proof on the default branch keeps them there,
 		// only when the tester ran and the developer did not; a person's
 		// label's run may not write the cache (#853).
-		dev := read(dir + "workline-develop.yml").Jobs["judge"]
+		dev := read(dir + "workline-develop.yml").Jobs["propose"]
 		dispatch := map[string]any{"github.event_name": "workflow_dispatch", "steps.due.outputs.due": "true",
 			"github.run_id": "12", "github.run_attempt": "1"}
 		if _, saved := cached(dev, dispatch); len(saved) != 0 {
@@ -194,9 +194,9 @@ func TestGitHubTestIDsCarriedByTheCache(t *testing.T) {
 }
 
 // On GitLab: workline:base reads the ids from the default branch's
-// workline:develop:judge and the merge request's own workline:judge, only
-// names of the engine's form; workline:judge lays them where the engine
-// reads them and keeps what its runs found; workline:develop:judge keeps
+// workline:develop:propose and the merge request's own workline:propose, only
+// names of the engine's form; workline:propose lays them where the engine
+// reads them and keeps what its runs found; workline:develop:propose keeps
 // its own only when the tester ran, else carries the job before's.
 func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 	top := readGitLab(t)
@@ -230,8 +230,8 @@ func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 		}
 		return b.String()
 	}
-	if j, _ := top["workline:judge"].(map[string]any); !strings.Contains(fmt.Sprint(j["needs"]), "job:workline:base") {
-		t.Errorf("GitLab: workline:judge is not given workline:base's artifacts: %v", j["needs"])
+	if j, _ := top["workline:propose"].(map[string]any); !strings.Contains(fmt.Sprint(j["needs"]), "job:workline:base") {
+		t.Errorf("GitLab: workline:propose is not given workline:base's artifacts: %v", j["needs"])
 	}
 	key := strings.Repeat("a", 64) + ".json"
 	served := strings.Repeat("b", 64) + ".json"
@@ -261,11 +261,11 @@ func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 		}
 		must(os.WriteFile(filepath.Join(d, "x.json"), []byte("{}"), 0o644))
 	}
-	serve("main", "workline:develop:judge", key)
-	serve("refs/merge-requests/7/head", "workline:judge", served)
+	serve("main", "workline:develop:propose", key)
+	serve("refs/merge-requests/7/head", "workline:propose", served)
 	run := func(dir, job string, env ...string) string {
 		script := lines(job, "script")
-		if job == "workline:develop:judge" { // from the ids on: the agent and the project's setup are not this test's
+		if job == "workline:develop:propose" { // from the ids on: the agent and the project's setup are not this test's
 			script = script[strings.Index(script, "ids() {"):]
 		}
 		cmd := exec.Command("sh", "-ec", script)
@@ -295,14 +295,14 @@ func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 		must(os.WriteFile(filepath.Join(dir, testIDsPath, strings.Repeat("0", 64)+".json"), []byte("{}"), 0o644))
 	}
 
-	// A merge request's pipeline: base, then judge in the same folder, as
+	// A merge request's pipeline: base, then propose in the same folder, as
 	// GitLab hands base's artifacts on.
 	dir := t.TempDir()
 	stale(dir)
 	run(dir, "workline:base", "CI_PIPELINE_SOURCE=merge_request_event")
 	urls, _ := os.ReadFile(filepath.Join(store, "urls"))
-	if !strings.Contains(string(urls), "/jobs/artifacts/main/raw/.workline-test-ids/index?job=workline:develop:judge") ||
-		!strings.Contains(string(urls), "/jobs/artifacts/refs/merge-requests/7/head/raw/.workline-test-ids/index?job=workline:judge") {
+	if !strings.Contains(string(urls), "/jobs/artifacts/main/raw/.workline-test-ids/index?job=workline:develop:propose") ||
+		!strings.Contains(string(urls), "/jobs/artifacts/refs/merge-requests/7/head/raw/.workline-test-ids/index?job=workline:propose") {
 		t.Errorf("workline:base reads the test ids from:\n%s", urls)
 	}
 	if got := ls(filepath.Join(dir, ".workline-test-ids")); !slices.Equal(got, []string{key, served}) {
@@ -311,15 +311,15 @@ func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(filepath.Dir(dir), "evil.json")); err == nil {
 		t.Errorf("a name out of the folder was written")
 	}
-	run(dir, "workline:judge", `LINE={"steps":[{"name":"tester"}]}`)
+	run(dir, "workline:propose", `LINE={"steps":[{"name":"tester"}]}`)
 	if given, _ := os.ReadFile(filepath.Join(dir, "given")); strings.Join(strings.Fields(string(given)), ",") != key+","+served {
 		t.Errorf("the engine was given %q in .git/workline/test-ids, want the two trees read", given)
 	}
 	if got := ls(filepath.Join(dir, ".workline-test-ids")); len(got) != 4 || got[3] != "index" {
-		t.Errorf("workline:judge keeps %v, want the three trees and their index", got)
+		t.Errorf("workline:propose keeps %v, want the three trees and their index", got)
 	}
 
-	// A merge train reads none: it runs no judge.
+	// A merge train reads none: it runs no propose job.
 	_ = os.Remove(filepath.Join(store, "urls"))
 	run(t.TempDir(), "workline:base", "CI_PIPELINE_SOURCE=merge_request_event", "CI_MERGE_REQUEST_EVENT_TYPE=merge_train")
 	if urls, _ := os.ReadFile(filepath.Join(store, "urls")); strings.Contains(string(urls), "test-ids") {
@@ -337,10 +337,10 @@ func TestGitLabTestIDsCarriedByArtifacts(t *testing.T) {
 	} {
 		dir := t.TempDir()
 		stale(dir)
-		run(dir, "workline:develop:judge", "LINE="+c.line, "ai=none")
+		run(dir, "workline:develop:propose", "LINE="+c.line, "ai=none")
 		got := ls(filepath.Join(dir, ".workline-test-ids"))
 		if len(got) != c.want+1 || got[0] != key {
-			t.Errorf("after %s, workline:develop:judge keeps %v, want %d trees and their index", c.line, got, c.want)
+			t.Errorf("after %s, workline:develop:propose keeps %v, want %d trees and their index", c.line, got, c.want)
 		}
 	}
 }

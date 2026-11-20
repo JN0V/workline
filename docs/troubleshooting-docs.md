@@ -45,7 +45,7 @@ the records are committed, or those docs judged again, at night. On GitLab, give
 
 - **Its marker in another's comment**: only workline's own account's
   comment is read; the warning names whose was not, and the account read.
-- **Not the account you expect**: on GitHub, give the judging jobs the
+- **Not the account you expect**: on GitHub, give the proposing jobs the
   App's id, `WORKLINE_APP_ID` (the templates do); on GitLab, name a
   service account holding workline's token, `gitlab: {bots:
   [<username>]}`

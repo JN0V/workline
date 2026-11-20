@@ -16,7 +16,7 @@ import (
 )
 
 // workline's own line runs a published release, pinned, as a user's does
-// (ADR-0071 §1): every job with a write token, and gates and judge, take
+// (ADR-0071 §1): every job with a write token, and gates and propose, take
 // the engine's action with the version WORKLINE_VERSION pins; warn, test
 // and the head pass run the head's engine. The pin is one value across the
 // workflows, and release-please never moves it.
@@ -31,7 +31,7 @@ var pinnedJobs = map[string][]string{
 	"workline-gardening.yml": nil,
 	"workline-merge.yml":     nil,
 	"workline-sample.yml":    nil,
-	"workline.yml":           {"gates", "judge", "pinned"},
+	"workline.yml":           {"gates", "propose", "pinned"},
 }
 
 // The workflows running a release ahead of the pin, and why: a command
@@ -42,7 +42,7 @@ var aheadJobs = map[string]string{
 }
 
 var headJobs = map[string][]string{
-	"workline.yml":      {"head-gates", "head-judge"},
+	"workline.yml":      {"head-gates", "head-propose"},
 	"workline-warn.yml": nil,
 }
 

@@ -83,7 +83,7 @@ func TestObjectionAnswerStateUnreadIsDue(t *testing.T) {
 	}
 	for _, dir := range answerCIDirs {
 		f := filepath.Join(dir, "workline-answer.yml")
-		head := answerN1Step(t, f, "judge", "The Draft's head")
+		head := answerN1Step(t, f, "propose", "The Draft's head")
 		state := answerN1Step(t, f, "apply", "The answer's state")
 		t.Run(filepath.Base(dir), func(t *testing.T) {
 			out, log := answerN1Run(t, head, old)

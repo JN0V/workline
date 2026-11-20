@@ -23,14 +23,14 @@ func gathered(t *testing.T) *regexp.Regexp {
 	return re
 }
 
-// judgesOfTally are the judge jobs whose apply job keeps a tally.
-func judgesOfTally(t *testing.T) []string {
+// proposersOfTally are the propose jobs whose apply job keeps a tally.
+func proposersOfTally(t *testing.T) []string {
 	t.Helper()
 	data, err := os.ReadFile("workline.gitlab-ci.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
-	var judges []string
+	var proposers []string
 	for _, line := range strings.Split(string(data), "\n") {
 		m := regexp.MustCompile(`^(workline:(?:[a-z-]+:)*)apply:`).FindStringSubmatch(line)
 		if m == nil {
@@ -40,34 +40,34 @@ func judgesOfTally(t *testing.T) []string {
 		if !strings.Contains(apply, "*tally") {
 			continue
 		}
-		judge := m[1] + "judge"
-		if regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(judge) + `:`).Match(data) {
-			judges = append(judges, judge)
+		propose := m[1] + "propose"
+		if regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(propose) + `:`).Match(data) {
+			proposers = append(proposers, propose)
 		}
 	}
-	if len(judges) == 0 {
-		t.Fatal("no judge job whose apply job keeps a tally found")
+	if len(proposers) == 0 {
+		t.Fatal("no propose job whose apply job keeps a tally found")
 	}
-	return judges
+	return proposers
 }
 
 // GitLab cancelled pipeline
-// Given a GitLab pipeline cancelled after its judge job ran,
+// Given a GitLab pipeline cancelled after its propose job ran,
 // When the weekly sample runs,
-// Then that judge's tokens are counted: the judge job writes and keeps its
+// Then that propose job's tokens are counted: the propose job writes and keeps its
 // own tally, and the weekly sample gathers it.
 func TestJudgeJobKeepsItsOwnTally(t *testing.T) {
 	re := gathered(t)
-	for _, judge := range judgesOfTally(t) {
-		block := strings.Join(jobBlock(t, judge), "\n")
+	for _, propose := range proposersOfTally(t) {
+		block := strings.Join(jobBlock(t, propose), "\n")
 		if !strings.Contains(block, "*tally") && !strings.Contains(block, "sample --tally") {
-			t.Errorf("%s writes no tally of its own: a pipeline cancelled before its apply job loses what it spent", judge)
+			t.Errorf("%s writes no tally of its own: a pipeline cancelled before its apply job loses what it spent", propose)
 		}
 		if !strings.Contains(block, "workline-tally.jsonl") {
-			t.Errorf("%s does not keep workline-tally.jsonl as an artifact", judge)
+			t.Errorf("%s does not keep workline-tally.jsonl as an artifact", propose)
 		}
-		if !re.MatchString(judge) {
-			t.Errorf("the weekly sample does not gather the tally of %s (pattern %s)", judge, re)
+		if !re.MatchString(propose) {
+			t.Errorf("the weekly sample does not gather the tally of %s (pattern %s)", propose, re)
 		}
 	}
 }

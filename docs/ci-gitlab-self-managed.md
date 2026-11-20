@@ -6,7 +6,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:environment
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:ready
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - internal/forge/gitlab.go#gitlab.connect
   - internal/forge/gitlab_merge.go#gitlab.AutoMerge
   - internal/agent/claude.go#shellTools

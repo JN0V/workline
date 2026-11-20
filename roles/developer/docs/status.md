@@ -171,7 +171,7 @@ hold:
 - **No forge token in its environment** (step 2, amended by
   [ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md)
   step 3): the CI tokens that mint or carry one out of its environment;
-  the templates' judging jobs keep no token in the clone. No refusal
+  the templates' proposing jobs keep no token in the clone. No refusal
   for a credential git would hand: the agent has the rights of whoever
   ran it, said once in the run's output and in the pull request
   ([the pull request](pull-request.md#who-opens-it)). Cases

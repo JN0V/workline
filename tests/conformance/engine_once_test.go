@@ -100,7 +100,7 @@ func TestOwnWorkflowsTakeTheEngineOnceACommit(t *testing.T) {
 			}
 		}
 	}
-	// gates and judge; apply, verdict and follow; merge's follow; the
+	// gates and propose; apply, verdict and follow; merge's follow; the
 	// gardening's two jobs and the sample's two.
 	if users < 10 {
 		t.Errorf("found %d jobs taking the engine from %s, want 10", users, engineAction)

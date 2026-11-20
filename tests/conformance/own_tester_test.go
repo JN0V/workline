@@ -12,9 +12,9 @@ import (
 // workline's own line routes the tester (ADR-0055, issue #264) and the
 // developer (ADR-0054, issue #696): both run the tester's test-command,
 // which runs Go, so each job that routes them leaves Go set up —
-// workline-develop.yml's judge, the line of states (ADR-0059), which
+// workline-develop.yml's propose, the line of states (ADR-0059), which
 // proves the tester's tests red and the developer's code green;
-// workline.yml's judge on the tester's own branches, where the green
+// workline.yml's propose on the tester's own branches, where the green
 // proof runs; workline-develop.yml's review round on the developer's
 // pull request.
 // Taken from the cache, the engine's action sets no Go up unless asked.
@@ -32,9 +32,9 @@ func TestOwnTesterHasGoWhereItRuns(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, c := range []struct{ role, event, workflow, job, want string }{
-		{"tester", "issue", "workline-develop.yml", "judge", "true"},
-		{"tester", "merge-request", "workline.yml", "judge", "'workline/tester/'"},
-		{"developer", "issue", "workline-develop.yml", "judge", "true"},
+		{"tester", "issue", "workline-develop.yml", "propose", "true"},
+		{"tester", "merge-request", "workline.yml", "propose", "'workline/tester/'"},
+		{"developer", "issue", "workline-develop.yml", "propose", "true"},
 		{"developer", "issue", "workline-develop.yml", "review", "true"},
 	} {
 		if !slices.Contains(cfg.Routing.Events[c.event], c.role) {

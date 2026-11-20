@@ -262,7 +262,7 @@ the candidate's issue, ships the version:
   ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
 - **The limits**:
   - the verdict is the pull request's run's word: one changing its
-    workflow can pass its own head, as its own `judge`; the yes covers
+    workflow can pass its own head, as its own `propose`; the yes covers
     that head;
   - on GitLab, whoever can run a pipeline can read the project bot's
     token, so a person who may push could act as it.
@@ -283,7 +283,7 @@ the candidate's issue, ships the version:
 ## Set up
 
 - **GitHub**: the [templates](ci-github.md) — `workline-apply.yml`'s
-  `verdict` and `follow` jobs run after `judge`, `queue` after a merge
+  `verdict` and `follow` jobs run after `propose`, `queue` after a merge
   queue's group, from the default branch;
   `workline-merge.yml` runs when a label is put or taken off, or a draft
   made, and hourly; on a demotion issue's close; at `enterprising`, on a
@@ -298,7 +298,7 @@ the candidate's issue, ships the version:
     from the App; "Require branches to be up to date" left off; its
     bypass list empty ([nobody bypasses `main`](merge-policy-no-bypass.md)).
 - **GitLab**: the [template](ci-gitlab.md)'s `workline:merge` job, after
-  the judge; the project bot's token; `workline:follow` on the hourly
+  the propose job; the project bot's token; `workline:follow` on the hourly
   reconcile schedule too. Merged results pipelines on
   (Premium): without them a merge request's pipeline tests its branch
   alone. A label starts no pipeline there: it

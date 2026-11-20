@@ -105,7 +105,7 @@ pull requests and nightly gardening of workline and of another project;
   shipped, changed in `.workline/config.yaml`.
 - A role behaves the same wherever it runs; only the trigger, the agent at
   hand and how its proposals are applied differ.
-- On a forge, one job judges, with the agent and no write token; another
+- On a forge, one job proposes, with the agent and no write token; another
   applies, with the write token and no AI key ([the jobs](docs/ci.md#the-jobs)).
 - Forges: GitHub and GitLab built in; none (`forge: local`, kept in the
   clone); any other through a command (`cmd:`,

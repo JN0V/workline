@@ -1,7 +1,7 @@
 case: routing/drafts-wait-review-pending
 about: >
   Drafts with no review yet call the reviewer alone (#1150): in CI the
-  reviewer ran in the judge job before the apply wrote the drafts, so it
+  reviewer ran in the propose job before the apply wrote the drafts, so it
   read nothing. The body changed since the line's last step, the
   reviewer is routed and its review is pending, not missing: the step
   is the reviewer's, the product owner not called before the review

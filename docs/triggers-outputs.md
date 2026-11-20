@@ -6,8 +6,8 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:garden
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
-  - defaults/ci/github/workline.yml#jobs.judge.permissions
-  - defaults/ci/github/workline-gardening.yml#jobs.judge
+  - defaults/ci/github/workline.yml#jobs.propose.permissions
+  - defaults/ci/github/workline-gardening.yml#jobs.propose
   - Dockerfile
   - docs/adr/0023-the-project-bot-keeps-a-gitlab-backlog.md#decision
   - docs/gitlab-trigger.md#what-premium-adds
@@ -41,7 +41,7 @@ The role and scopes each needs:
 |---|---|---|---|
 | apply on a merge request, gardening, sample | project access token (a bot of this project) | Developer | `api`, `write_repository` |
 | the product owner only | project access token | Reporter (not Planner: it may not give a split's child its parent) | `api` |
-| judging jobs that read the forge | any of the above, or a narrower one | Reporter | `read_api` |
+| proposing jobs that read the forge | any of the above, or a narrower one | Reporter | `read_api` |
 | several projects of a group | group access token (Premium on gitlab.com; every tier self-managed) | the same | the same |
 
 A group access token is used the same way, as `GITLAB_TOKEN`; it has not

@@ -1,7 +1,7 @@
 package line
 
 // A verdict blocked at the tester's green proof (#1502): no role reads
-// the verdict's tester step, so the block lived only in the judge job's
+// the verdict's tester step, so the block lived only in the propose job's
 // log. The line says it on the pull request, once a head, and its
 // issue waits for a named person: the proof could not run here.
 

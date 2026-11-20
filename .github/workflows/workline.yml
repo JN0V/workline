@@ -1,10 +1,10 @@
 # workline on its own pull requests: defaults/ci/github/workline.yml, but
-# gates installs golangci-lint, and gates and judge run the release
+# gates installs golangci-lint, and gates and propose run the release
 # WORKLINE_VERSION pins, as a user's line does; ADR-0017's "never the pin
 # that commit ships" guarded an untagged pin, this one is published and
 # tried (ADR-0071 §1). The job `pinned` checks the pinned release reads the
 # head; an engine-changing pull request also gets a head pass, non-blocking.
-# What judge proposes, workline-apply.yml applies on the pinned release.
+# What propose writes, workline-apply.yml applies on the pinned release.
 # Why each: docs/github/own-workflows.md.
 # workline on GitHub Actions — copy to .github/workflows/workline.yml, with
 # workline-apply.yml beside it.
@@ -21,11 +21,11 @@
 # default branch, applies what it proposed.
 #   gates  runs the project's gates alone (`gate:<name>` steps; the first
 #          release after v0.35.0), with no write token and no secret: their
-#          tools run the pull request's code. Their verdicts are judge's to
+#          tools run the pull request's code. Their verdicts are propose's to
 #          read; what they found the change adds, workline-apply.yml shows
 #          as the annotations of the check `workline gates` and one summary
 #          comment (ADR-0049). Install the tools they run in it.
-#   judge  runs the line; it can read the code, and holds no write token but
+#   propose runs the line; it can read the code, and holds no write token but
 #          code scanning's, which only uploads its findings as SARIF (free on
 #          public repositories; private ones need GitHub Advanced Security —
 #          remove that step otherwise). The documentalist's and the
@@ -67,10 +67,10 @@ permissions: {}
 # of a cancelled run is uploaded after (`!cancelled()`), nor applied
 # (workline-apply.yml). Each commit of main, a group of its own: none
 # cancels another, each the next base.
-concurrency: {group: "workline-judge-${{ github.event.pull_request.number || github.sha }}", cancel-in-progress: true}
+concurrency: {group: "workline-propose-${{ github.event.pull_request.number || github.sha }}", cancel-in-progress: true}
 
 env:
-  # The release gates and judge run (ADR-0071 §1): moved only in its own
+  # The release gates and propose run (ADR-0071 §1): moved only in its own
   # pull request, after its try on a copy; release-please never moves it.
   WORKLINE_VERSION: v0.84.0
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
@@ -79,7 +79,7 @@ jobs:
   # The project's gates (`gate:<name>` steps of routing's merge-request),
   # alone: their tools run the pull request's code — a linter's config or
   # plugin, a build —, so this job holds no write token and no secret, the
-  # agent's neither (ADR-0049). judge reads their verdicts; workline-apply.yml
+  # agent's neither (ADR-0049). propose reads their verdicts; workline-apply.yml
   # shows what they found the change adds. With no gate, it ends at once.
   gates:
     runs-on: ubuntu-latest
@@ -134,7 +134,7 @@ jobs:
           echo "ran=$(jq '(.steps // []) | length > 0' gates.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           mkdir -p report && echo "${{ github.event.pull_request.number }}" > report/number
-      # Their result, for judge, and for workline-apply.yml to show.
+      # Their result, for propose, and for workline-apply.yml to show.
       - uses: actions/upload-artifact@v4
         if: "!cancelled() && steps.gates.outputs.ran == 'true'"
         with: {name: workline-gates, path: "gates.json\nreport/number", retention-days: 1}
@@ -161,7 +161,7 @@ jobs:
       - name: Verdict
         run: exit "${{ steps.gates.outputs.status || steps.main.outputs.status || 0 }}"
 
-  judge:
+  propose:
     # After the gates, whatever their verdict: the line reads it. Not on
     # main, whose run is the gates' job's.
     needs: gates
@@ -405,7 +405,7 @@ jobs:
           echo "workline $WORKLINE_VERSION reads this head's .workline/config.yaml and its docs' front matter"
 
   # The head pass (ADR-0071 §1): a pull request that changes the engine
-  # gets gates and judge again on the engine built from its head, a new
+  # gets gates and propose again on the engine built from its head, a new
   # rule, lens, prompt, gate or `route main` exercised on its own pull
   # request. Non-blocking: its result is these two checks, told on the
   # pull request, never the line's verdict, which is the pinned release's.
@@ -433,7 +433,7 @@ jobs:
             echo "no engine path changed: the pinned release's verdict is the whole of it"
           fi
       # The engine built from this head, kept before any gate runs, for
-      # the head's judge and workline-warn.yml. Go set up for golangci-lint.
+      # the head's propose and workline-warn.yml. Go set up for golangci-lint.
       - uses: ./.github/actions/engine
         if: steps.engine.outputs.changed == 'true'
         with: {go: "true"}
@@ -474,10 +474,10 @@ jobs:
         if: steps.engine.outputs.changed == 'true'
         run: exit "${{ steps.gates.outputs.worst || 1 }}"
 
-  # judge on the head's engine, after its gates: proposals only, as judge
+  # propose on the head's engine, after its gates: proposals only, as propose
   # runs, its verdict this check's alone.
-  head-judge:
-    name: "workline judge on the head's engine (non-blocking)"
+  head-propose:
+    name: "workline propose on the head's engine (non-blocking)"
     needs: head-gates
     if: "!cancelled() && needs.head-gates.outputs.changed == 'true'"
     continue-on-error: true
@@ -504,7 +504,7 @@ jobs:
         if: env.HAS_CLAUDE == 'true' && steps.pr.outputs.draft != 'true'
         run: npm install -g @anthropic-ai/claude-code
       - uses: actions/download-artifact@v4
-        continue-on-error: true         # none: the judge errs on the gates, said
+        continue-on-error: true         # none: propose errs on the gates, said
         with: {name: workline-head-gates, path: "${{ runner.temp }}/gates"}
       - name: The line for this pull request, on the head's engine (proposals only)
         env:
@@ -525,10 +525,10 @@ jobs:
             --forge github --target "merge-request:$NUMBER" --branch "$HEAD_REF" \
             --input range="$RANGE" ${ready:+--input lenses=all} --input ready=${ready:+true} --input draft="$DRAFT" \
             --gates-from "$RUNNER_TEMP/gates/gates.json" --summary workline-summary.md --json > line.json || status=$?
-          echo "### judge on the head's engine: exit $status" >> "$GITHUB_STEP_SUMMARY"
+          echo "### propose on the head's engine: exit $status" >> "$GITHUB_STEP_SUMMARY"
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           case "$status" in
             0) ;;
-            3) echo "::warning title=workline::the agent could not be reached: the head's judge ran without it" ;;
+            3) echo "::warning title=workline::the agent could not be reached: the head's propose ran without it" ;;
             *) exit "$status" ;;
           esac

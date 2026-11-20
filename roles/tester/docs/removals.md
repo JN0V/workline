@@ -112,7 +112,7 @@ project gives Claude's token too:
 - **GitHub**: the `curator` job runs `test curate --no-apply` after the
   measure; the gardening's `apply` job, with the write token and no
   agent's key, opens the pull request.
-- **GitLab**: `workline:curator:judge` then `workline:curator:apply`.
+- **GitLab**: `workline:curator:propose` then `workline:curator:apply`.
 - **Your mutation tool**: in the image, or fetched by the command
   (`go run …@v0.6.0`).
 
