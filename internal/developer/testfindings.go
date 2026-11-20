@@ -38,15 +38,10 @@ func testFinding(a devmark.Asked) bool {
 	return !slices.ContainsFunc(alsoLenses(a.Text), func(l string) bool { return l != testsLens })
 }
 
-// alsoWords open, in a reviewer's row, the findings grouped under the
-// one leading its line, each "<lens>: <title>", apart by "; "
-// (internal/builtin/reviewer, message).
-const alsoWords = " (also found on this line — "
-
 // alsoLenses are the lenses of the findings a row's text groups under
 // the one leading it; none for a row of one finding.
 func alsoLenses(text string) []string {
-	_, rest, ok := strings.Cut(text, alsoWords)
+	_, rest, ok := strings.Cut(text, reviewmark.AlsoWords)
 	if !ok {
 		return nil
 	}

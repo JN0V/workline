@@ -1,8 +1,9 @@
 package reviewer
 
 import (
-	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 )
 
 // The patch a verdict is kept for (ADR-0050, step 6): the same after a

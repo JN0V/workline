@@ -2327,7 +2327,7 @@ func message(f Finding) string {
 			}
 			also = append(also, a)
 		}
-		m += " (also found on this line — " + strings.Join(also, "; ") + ")"
+		m += reviewmark.AlsoWords + strings.Join(also, "; ") + ")"
 	}
 	if f.Verified != "" {
 		m += " (" + f.Verified + ")"
