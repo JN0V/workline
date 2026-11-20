@@ -15,10 +15,10 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/routing"
@@ -179,7 +179,7 @@ func toTesterOnly(r round, b Bounds, repo string) []intent.Intention {
 func disputed(rows []devmark.Asked, a devmark.Act, kept forge.Kept) []devmark.Asked {
 	needless := map[string]bool{}
 	for _, c := range kept.Each("<!-- workline:sticky=tester/" + testmark.TesterAnswerKey) {
-		if a, ok := reviewer.NoneNeeded(c); ok {
+		if a, ok := reviewmark.NoneNeeded(c); ok {
 			needless[a.Where] = true
 		}
 	}

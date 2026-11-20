@@ -5,19 +5,17 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 )
-
-// Name is the reviewer's role, as a project routes it.
-const Name = "reviewer"
 
 // RulesOn runs the reviewer's rules, no agent, on what head adds to base
 // in repo, as the project sets them: the findings that block. Another
 // role runs them on what it writes before the reviewer does, so that a
 // frozen file never holds a rule's finding nobody may fix (#1040).
 func RulesOn(repo, base, head string) ([]verdict.Finding, error) {
-	r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), Name)
+	r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), reviewmark.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +45,7 @@ func RulesOn(repo, base, head string) ([]verdict.Finding, error) {
 		return nil, err
 	}
 	var blocks []verdict.Finding
-	for _, f := range verdict.Levels(found, cfg.Roles[Name].Enforce) {
+	for _, f := range verdict.Levels(found, cfg.Roles[reviewmark.Name].Enforce) {
 		if f.Blocks() {
 			blocks = append(blocks, f)
 		}
