@@ -94,7 +94,7 @@ jobs:
           HEAD_SHA: ${{ steps.head.outputs.head }}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
-          pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          pr=$(gh pr list --head "$BRANCH" --state open --json number,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0].number // empty')
           [ -n "$pr" ] || { echo "no open pull request from $BRANCH: nothing to answer"; exit 0; }
           # The Draft's tip; the engine already set up from the default
           # branch's checkout.
@@ -186,7 +186,7 @@ jobs:
         run: |
           printf '%s' "$RUN" | grep -Eqx '[0-9]{8}T[0-9]{6}\.[0-9]{9}-[a-z0-9-]+' && [ -d "$WORKLINE_RUNS_DIR/$RUN" ] ||
             { echo "::error title=workline::propose named no run of its own: $RUN"; exit 1; }
-          NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          NUMBER=$(gh pr list --head "$BRANCH" --state open --json number,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0].number // empty')
           [ -n "$NUMBER" ] || { echo "no open pull request from $BRANCH: nothing to apply"; exit 0; }
           if [ -n "$APP" ]; then
             git config user.name "$APP[bot]"
@@ -211,7 +211,7 @@ jobs:
           BRANCH: ${{ needs.propose.outputs.branch }}
           STATE: ${{ needs.propose.outputs.state }}
         run: |
-          NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          NUMBER=$(gh pr list --head "$BRANCH" --state open --json number,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0].number // empty')
           [ -n "$NUMBER" ] || exit 0
           [ "$STATE" != unread ] || { echo "the state was not read: none marked, the reconciler may start it again"; exit 0; }
           workline test answer --merge-request "$NUMBER" --tried "$STATE" --forge github ||
