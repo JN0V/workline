@@ -4,9 +4,12 @@ package workline
 
 import "embed"
 
-// Roles holds the roles/ folder as shipped.
+// Roles holds what each role ships, named one by one (docs/spec/layout.md,
+// "A role folder"): its role.yaml, prompts/ and kinds/, and its pre and
+// post. Never its code/, docs/, README.md nor cases: the binary carries no
+// file it does not read (ADR-0070, move c).
 //
-//go:embed all:roles
+//go:embed roles/*/role.yaml all:roles/*/prompts roles/*/kinds roles/*/pre roles/*/post
 var Roles embed.FS
 
 // Skills holds the shared skills, skills/<name>/SKILL.md in the Agent

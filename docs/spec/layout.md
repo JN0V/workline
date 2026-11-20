@@ -30,7 +30,7 @@ workline/
 │  ├─ builtin.go            the compiled-in roles, as blank imports
 │  ├─ committer/  developer/  tester/  reviewer/  documentalist/
 │  ├─ inspector/  product-owner/  auditor/
-│  ├─ judge/                its prompts only: an engine service, not a role
+│  ├─ judge/                role.yaml, prompts, docs/service.md: an engine service, not a role
 │  └─ process-engineer/     prompt-only (later: at its slice)
 ├─ skills/                  shared Agent Skills a role may load
 ├─ defaults/                THE LINE AS SHIPPED
@@ -76,9 +76,9 @@ roles/<name>/
 - **The auditor's criteria win**: `roles/auditor/criteria/<role>/<kind>.md`,
   guarded, is read before the role's own `criteria/<kind>.md`.
 - **The binary ships** `role.yaml`, `prompts/` and `criteria/` of each
-  role, named one by one in `workline.go` (today's `roles.go`, renamed
-  at move c); never `cases/`, `docs/` nor `code/` as files. A check in
-  `tests/` fails if a case is embedded.
+  role (`kinds/` until move a renames it), and its `pre` and `post`,
+  named one by one in `workline.go`; never `cases/`, `docs/`, `code/`
+  nor its README as files. A check in `tests/` fails if one is embedded.
 
 ## Guarded paths
 
