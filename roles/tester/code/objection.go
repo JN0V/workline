@@ -31,9 +31,11 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/whys"
 	"github.com/JN0V/workline/internal/work"
@@ -830,7 +832,7 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), out); err != nil {
 		return fail(err)
 	}
-	data, err := yaml.Marshal(map[string]any{"push": objectionCommit(a.File, a.URL, missing)})
+	data, err := yaml.Marshal(map[string]any{"push": objectionCommit(a.File, a.URL, missing, committerSettings(repo))})
 	if err != nil {
 		return fail(err)
 	}
@@ -850,16 +852,66 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 // clear a refusal on the tester's (#1941).
 const subjectMax = 72
 
+// committerSettings are the committer's settings for the project: its
+// subject limit and allowed types. Unread, the role's own as it ships
+// them, else the limit alone.
+func committerSettings(repo string) commitmsg.Settings {
+	r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), "committer")
+	if err != nil {
+		return commitmsg.Settings{SubjectMax: subjectMax}
+	}
+	own, _ := commitmsg.SettingsFrom(r.MergedSettings(&role.ProjectConfig{}))
+	if own.SubjectMax <= 0 {
+		own.SubjectMax = subjectMax
+	}
+	cfg, err := role.LoadProjectConfig(repo)
+	if err != nil {
+		return own
+	}
+	s, err := commitmsg.SettingsFrom(r.MergedSettings(cfg))
+	if err != nil {
+		return own
+	}
+	if s.SubjectMax <= 0 {
+		s.SubjectMax = subjectMax
+	}
+	return s
+}
+
 // objectionCommit is the message of the tester's commit on an
 // objection: the file's base name in the subject, the subject within
-// subjectMax whatever the path, the full path in the body.
-func objectionCommit(file, url string, missing bool) string {
-	s, short := "test: rewrite "+path.Base(file)+" on an objection", "test: rewrite a test on an objection"
-	if missing {
-		s, short = "test: add a test the review asks to "+path.Base(file), "test: add a test the review asks for"
+// the committer's limit whatever the path, of a type it allows, the full
+// path in the body.
+func objectionCommit(file, url string, missing bool, cs commitmsg.Settings) string {
+	typ := "test"
+	if len(cs.Types) > 0 && !slices.Contains(cs.Types, typ) {
+		typ = cs.Types[0]
 	}
-	if utf8.RuneCountInString(s) > subjectMax {
+	head := typ + ": "
+	s, short := head+"rewrite "+path.Base(file)+" on an objection", head+"rewrite a test on an objection"
+	if missing {
+		s, short = head+"add a test the review asks to "+path.Base(file), head+"add a test the review asks for"
+	}
+	limit := cs.SubjectMax
+	if limit <= 0 {
+		limit = subjectMax
+	}
+	if utf8.RuneCountInString(s) > limit {
 		s = short
+	}
+	if utf8.RuneCountInString(s) > limit {
+		var cut string
+		for _, w := range strings.Fields(s) {
+			next := strings.TrimSpace(cut + " " + w)
+			if utf8.RuneCountInString(next) > limit {
+				break
+			}
+			cut = next
+		}
+		if cut == "" || utf8.RuneCountInString(cut) <= utf8.RuneCountInString(head) {
+			cut = string([]rune(s)[:limit])
+		}
+		s = cut
 	}
 	return s + "\n\nFile: " + file + "\n\nRefs " + url
 }
