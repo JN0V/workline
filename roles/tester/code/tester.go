@@ -767,11 +767,11 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 	cmd.Stdout, cmd.Stderr = pw, pw
 	copied := make(chan struct{})
 	if err = cmd.Start(); err != nil {
-		pr.Close()
-		pw.Close()
+		_ = pr.Close()
+		_ = pw.Close()
 		return out, false, err
 	}
-	pw.Close() // only the command and what it forked hold the write end
+	_ = pw.Close() // only the command and what it forked hold the write end
 	go func() {
 		defer close(copied)
 		_, _ = io.Copy(&out, pr)
@@ -781,10 +781,10 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 	select {
 	case <-copied:
 	case <-time.After(2 * time.Second): // a daemon out of the group still holds it
-		pr.Close()
+		_ = pr.Close()
 		<-copied
 	}
-	pr.Close()
+	_ = pr.Close()
 	// Its secrets masked before a reason quotes or cuts it (#1215).
 	masked := bytes.NewBufferString(forge.Mask(out.String()))
 	return *masked, ctx.Err() != nil, err
