@@ -1,16 +1,16 @@
 ---
 sources:
-  - internal/builtin/documentalist/judge.go#parseDiff
-  - internal/builtin/documentalist/judge.go#misquoted
-  - internal/builtin/documentalist/judge.go#notApplying
-  - internal/builtin/documentalist/judge.go#placeWithin
-  - internal/builtin/documentalist/judge.go#placed
-  - internal/builtin/documentalist/judge.go#mended
-  - internal/builtin/documentalist/judge.go#blanksLetGo
-  - internal/builtin/documentalist/judge.go#quotedRight
-  - internal/builtin/documentalist/judge.go#writtenAnew
-  - internal/builtin/documentalist/judge.go#placedPatch
-  - internal/builtin/documentalist/judge.go#gitApplied
+  - roles/documentalist/code/judge.go#parseDiff
+  - roles/documentalist/code/judge.go#misquoted
+  - roles/documentalist/code/judge.go#notApplying
+  - roles/documentalist/code/judge.go#placeWithin
+  - roles/documentalist/code/judge.go#placed
+  - roles/documentalist/code/judge.go#mended
+  - roles/documentalist/code/judge.go#blanksLetGo
+  - roles/documentalist/code/judge.go#quotedRight
+  - roles/documentalist/code/judge.go#writtenAnew
+  - roles/documentalist/code/judge.go#placedPatch
+  - roles/documentalist/code/judge.go#gitApplied
   - internal/agent/prompt.go#Prompt
   - internal/engine/engine.go#leaveOut
 checked: e2e165c2d

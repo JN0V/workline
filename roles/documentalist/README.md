@@ -6,10 +6,10 @@ sources:
   - roles/documentalist/role.yaml#without-ai
   - roles/documentalist/role.yaml#merge-request-ai
   - roles/documentalist/role.yaml#settings
-  - internal/builtin/documentalist/freshness.go#wholeCharsMax
-  - internal/builtin/documentalist/freshness.go#checkWholeChars
+  - roles/documentalist/code/freshness.go#wholeCharsMax
+  - roles/documentalist/code/freshness.go#checkWholeChars
   - internal/kit/docmark/docmark.go#SampleSettings
-  - internal/builtin/documentalist/documentalist.go#preRun.sayShallow
+  - roles/documentalist/code/documentalist.go#preRun.sayShallow
   - cmd/workline/main.go#prePushLine
   - defaults/ci/github/workline-gardening.yml#on
 checked: e2e165c2d

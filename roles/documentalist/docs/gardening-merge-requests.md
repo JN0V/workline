@@ -1,16 +1,16 @@
 ---
 sources:
-  - internal/builtin/documentalist/documentalist.go#preRun.writeRecords
-  - internal/builtin/documentalist/kept.go#recordsMerged
-  - internal/builtin/documentalist/kept.go#asJudgedAt
+  - roles/documentalist/code/documentalist.go#preRun.writeRecords
+  - roles/documentalist/code/kept.go#recordsMerged
+  - roles/documentalist/code/kept.go#asJudgedAt
   - internal/forge/forge.go#MergeRequest
-  - internal/builtin/documentalist/documentalist.go#preRun.pauseIfBackpressure
-  - internal/builtin/documentalist/waiting.go#readWaiting
-  - internal/builtin/documentalist/waiting.go#holdWaitingTasks
-  - internal/builtin/documentalist/waiting.go#waiting.holds
-  - internal/builtin/documentalist/waiting.go#waiting.changing
-  - internal/builtin/documentalist/waiting.go#partsKey
-  - internal/builtin/documentalist/documentalist.go#preRun.rewriteWaits
+  - roles/documentalist/code/documentalist.go#preRun.pauseIfBackpressure
+  - roles/documentalist/code/waiting.go#readWaiting
+  - roles/documentalist/code/waiting.go#holdWaitingTasks
+  - roles/documentalist/code/waiting.go#waiting.holds
+  - roles/documentalist/code/waiting.go#waiting.changing
+  - roles/documentalist/code/waiting.go#partsKey
+  - roles/documentalist/code/documentalist.go#preRun.rewriteWaits
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
 checked: e2e165c2d

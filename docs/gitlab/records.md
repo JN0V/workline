@@ -11,9 +11,9 @@ sources:
   - internal/forge/own.go#Kept.Last
   - internal/builtin/reviewer/record.go#loadRecord
   - roles/inspector/code/record.go#loadRecord
-  - internal/builtin/documentalist/kept.go#stickyOn
-  - internal/builtin/documentalist/kept.go#othersKept.findings
-  - internal/builtin/documentalist/kept.go#readKept
+  - roles/documentalist/code/kept.go#stickyOn
+  - roles/documentalist/code/kept.go#othersKept.findings
+  - roles/documentalist/code/kept.go#readKept
 checked: e2e165c2d
 verified: agent:claude-code
 ---

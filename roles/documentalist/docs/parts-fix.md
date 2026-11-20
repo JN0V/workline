@@ -1,17 +1,17 @@
 ---
 sources:
   - roles/documentalist/role.yaml#settings.parts-move-checked
-  - internal/builtin/documentalist/parts.go#partsFor
-  - internal/builtin/documentalist/parts.go#fixTaskHeader
-  - internal/builtin/documentalist/parts.go#judgedInPartsPatch
-  - internal/builtin/documentalist/parts.go#holdJudgedInParts
-  - internal/builtin/documentalist/parts.go#held
-  - internal/builtin/documentalist/parts.go#vouchFor
-  - internal/builtin/documentalist/parts.go#unsupported
-  - internal/builtin/documentalist/parts.go#vouched
-  - internal/builtin/documentalist/parts.go#docSources
-  - internal/builtin/documentalist/parts.go#partsHeader
-  - internal/builtin/documentalist/parts.go#partsSupportedWhole
+  - roles/documentalist/code/parts.go#partsFor
+  - roles/documentalist/code/parts.go#fixTaskHeader
+  - roles/documentalist/code/parts.go#judgedInPartsPatch
+  - roles/documentalist/code/parts.go#holdJudgedInParts
+  - roles/documentalist/code/parts.go#held
+  - roles/documentalist/code/parts.go#vouchFor
+  - roles/documentalist/code/parts.go#unsupported
+  - roles/documentalist/code/parts.go#vouched
+  - roles/documentalist/code/parts.go#docSources
+  - roles/documentalist/code/parts.go#partsHeader
+  - roles/documentalist/code/parts.go#partsSupportedWhole
 checked: e2e165c2d
 verified: agent:claude-code
 ---

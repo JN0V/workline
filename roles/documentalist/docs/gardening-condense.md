@@ -1,19 +1,19 @@
 ---
 sources:
-  - internal/builtin/documentalist/documentalist.go#preRun.askRewrite
-  - internal/builtin/documentalist/condense.go#condensable
-  - internal/builtin/documentalist/condense.go#condenseCandidates
-  - internal/builtin/documentalist/records.go#isHistory
-  - internal/builtin/documentalist/records.go#historyStems
-  - internal/builtin/documentalist/condense.go#tooLargeToRewrite
-  - internal/builtin/documentalist/condense.go#writeCondenseTask
-  - internal/builtin/documentalist/condense.go#judgeCondense
-  - internal/builtin/documentalist/condense.go#normal
-  - internal/builtin/documentalist/condense.go#editedInPlace
-  - internal/builtin/documentalist/condense.go#bornChecked
-  - internal/builtin/documentalist/condense.go#applyDoc
-  - internal/builtin/documentalist/condense.go#pickSplit
-  - internal/builtin/documentalist/condense.go#writeSplitTask
+  - roles/documentalist/code/documentalist.go#preRun.askRewrite
+  - roles/documentalist/code/condense.go#condensable
+  - roles/documentalist/code/condense.go#condenseCandidates
+  - roles/documentalist/code/records.go#isHistory
+  - roles/documentalist/code/records.go#historyStems
+  - roles/documentalist/code/condense.go#tooLargeToRewrite
+  - roles/documentalist/code/condense.go#writeCondenseTask
+  - roles/documentalist/code/condense.go#judgeCondense
+  - roles/documentalist/code/condense.go#normal
+  - roles/documentalist/code/condense.go#editedInPlace
+  - roles/documentalist/code/condense.go#bornChecked
+  - roles/documentalist/code/condense.go#applyDoc
+  - roles/documentalist/code/condense.go#pickSplit
+  - roles/documentalist/code/condense.go#writeSplitTask
 checked: e2e165c2d
 verified: agent:claude-code
 ---

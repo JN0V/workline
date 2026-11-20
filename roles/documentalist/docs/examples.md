@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/examples.go, internal/builtin/documentalist/judge.go, roles/documentalist/role.yaml]
+sources: [roles/documentalist/code/examples.go, roles/documentalist/code/judge.go, roles/documentalist/role.yaml]
 checked: 7a57c53a
 verified: agent:claude-code
 ---

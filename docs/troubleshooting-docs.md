@@ -1,17 +1,17 @@
 ---
 sources:
   - cmd/workline/main.go#prePushLine
-  - internal/builtin/documentalist/documentalist.go#changed
-  - internal/builtin/documentalist/documentalist.go#docNames
-  - internal/builtin/documentalist/documentalist.go#touchesNames
-  - internal/builtin/documentalist/documentalist.go#holdsName
-  - internal/builtin/documentalist/documentalist.go#preRun.sayShallow
-  - internal/builtin/documentalist/documentalist.go#preRun.pauseIfBackpressure
-  - internal/builtin/documentalist/kept.go#othersKept
-  - internal/builtin/documentalist/kept.go#othersKept.findings
-  - internal/builtin/documentalist/kept.go#readKept
-  - internal/builtin/documentalist/kept.go#readKeptInput
-  - internal/builtin/documentalist/kept.go#recordsMerged
+  - roles/documentalist/code/documentalist.go#changed
+  - roles/documentalist/code/documentalist.go#docNames
+  - roles/documentalist/code/documentalist.go#touchesNames
+  - roles/documentalist/code/documentalist.go#holdsName
+  - roles/documentalist/code/documentalist.go#preRun.sayShallow
+  - roles/documentalist/code/documentalist.go#preRun.pauseIfBackpressure
+  - roles/documentalist/code/kept.go#othersKept
+  - roles/documentalist/code/kept.go#othersKept.findings
+  - roles/documentalist/code/kept.go#readKept
+  - roles/documentalist/code/kept.go#readKeptInput
+  - roles/documentalist/code/kept.go#recordsMerged
   - internal/engine/engine.go#writeWaiting
   - internal/engine/engine.go#writeHeld
   - roles/documentalist/role.yaml#settings.max-open-merge-requests

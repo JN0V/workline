@@ -1,17 +1,17 @@
 ---
 sources:
-  - internal/builtin/documentalist/documentalist.go#taskMaxChars
-  - internal/builtin/documentalist/documentalist.go#docEvidenceLines
-  - internal/builtin/documentalist/documentalist.go#suspectDoc.evidenceFor
-  - internal/builtin/documentalist/documentalist.go#preRun.giveSourcesNow
-  - internal/builtin/documentalist/documentalist.go#preRun.leaveForNextRound
-  - internal/builtin/documentalist/documentalist.go#suspectTask
-  - internal/builtin/documentalist/documentalist.go#docTask
-  - internal/builtin/documentalist/cite.go#citeTask
-  - internal/builtin/documentalist/freshness.go#wholeChars
-  - internal/builtin/documentalist/freshness.go#wholeCharsMax
-  - internal/builtin/documentalist/freshness.go#sourcesNow
-  - internal/builtin/documentalist/parts.go#vouchFor
+  - roles/documentalist/code/documentalist.go#taskMaxChars
+  - roles/documentalist/code/documentalist.go#docEvidenceLines
+  - roles/documentalist/code/documentalist.go#suspectDoc.evidenceFor
+  - roles/documentalist/code/documentalist.go#preRun.giveSourcesNow
+  - roles/documentalist/code/documentalist.go#preRun.leaveForNextRound
+  - roles/documentalist/code/documentalist.go#suspectTask
+  - roles/documentalist/code/documentalist.go#docTask
+  - roles/documentalist/code/cite.go#citeTask
+  - roles/documentalist/code/freshness.go#wholeChars
+  - roles/documentalist/code/freshness.go#wholeCharsMax
+  - roles/documentalist/code/freshness.go#sourcesNow
+  - roles/documentalist/code/parts.go#vouchFor
   - roles/documentalist/role.yaml#settings.ai-max-calls
   - roles/documentalist/role.yaml#settings.ai-max-tokens
   - roles/documentalist/role.yaml#settings.whole-chars

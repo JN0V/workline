@@ -1,17 +1,17 @@
 ---
 sources:
   - internal/engine/engine.go#pushToMergeRequest
-  - internal/builtin/documentalist/freshness.go#wholeCharsDefault
-  - internal/builtin/documentalist/documentalist.go#docNames
-  - internal/builtin/documentalist/documentalist.go#touchesNames
-  - internal/builtin/documentalist/documentalist.go#holdsName
-  - internal/builtin/documentalist/part.go#partChanged
-  - internal/builtin/documentalist/parts.go#leftForGardening
-  - internal/builtin/documentalist/parts.go#partsLater
-  - internal/builtin/documentalist/personsaid.go#personSaid.line
-  - internal/builtin/documentalist/personsaid.go#personSaidBody
-  - internal/builtin/documentalist/documentalist.go#checklist
-  - internal/builtin/documentalist/documentalist.go#preRun.leaveForNextRound
+  - roles/documentalist/code/freshness.go#wholeCharsDefault
+  - roles/documentalist/code/documentalist.go#docNames
+  - roles/documentalist/code/documentalist.go#touchesNames
+  - roles/documentalist/code/documentalist.go#holdsName
+  - roles/documentalist/code/part.go#partChanged
+  - roles/documentalist/code/parts.go#leftForGardening
+  - roles/documentalist/code/parts.go#partsLater
+  - roles/documentalist/code/personsaid.go#personSaid.line
+  - roles/documentalist/code/personsaid.go#personSaidBody
+  - roles/documentalist/code/documentalist.go#checklist
+  - roles/documentalist/code/documentalist.go#preRun.leaveForNextRound
   - internal/engine/engine.go#AIWaitsReady
   - internal/engine/engine.go#ReadyInput
   - internal/engine/engine.go#AIJudgedAtReady

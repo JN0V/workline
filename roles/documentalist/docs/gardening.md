@@ -1,17 +1,17 @@
 ---
 sources:
-  - internal/builtin/documentalist/documentalist.go#preRun.asksNothing
-  - internal/builtin/documentalist/documentalist.go#preRun.askStale
-  - internal/builtin/documentalist/freshness.go#staleForAgent
-  - internal/builtin/documentalist/freshness.go#staleTask
-  - internal/builtin/documentalist/freshness.go#unreadNote
-  - internal/builtin/documentalist/documentalist.go#preRun.askRewrite
-  - internal/builtin/documentalist/dedupe.go#pickDedupe
-  - internal/builtin/documentalist/dedupe.go#judgeDedupe
-  - internal/builtin/documentalist/mergecard.go#pickMergeCard
-  - internal/builtin/documentalist/mergecard.go#writeMergeCardTask
-  - internal/builtin/documentalist/mergecard.go#judgeMergeCard
-  - internal/builtin/documentalist/documentalist.go#preRun.askReader
+  - roles/documentalist/code/documentalist.go#preRun.asksNothing
+  - roles/documentalist/code/documentalist.go#preRun.askStale
+  - roles/documentalist/code/freshness.go#staleForAgent
+  - roles/documentalist/code/freshness.go#staleTask
+  - roles/documentalist/code/freshness.go#unreadNote
+  - roles/documentalist/code/documentalist.go#preRun.askRewrite
+  - roles/documentalist/code/dedupe.go#pickDedupe
+  - roles/documentalist/code/dedupe.go#judgeDedupe
+  - roles/documentalist/code/mergecard.go#pickMergeCard
+  - roles/documentalist/code/mergecard.go#writeMergeCardTask
+  - roles/documentalist/code/mergecard.go#judgeMergeCard
+  - roles/documentalist/code/documentalist.go#preRun.askReader
 checked: e2e165c2d
 verified: agent:claude-code
 ---

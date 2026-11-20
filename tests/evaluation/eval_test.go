@@ -34,11 +34,11 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/JN0V/workline/internal/builtin/documentalist"
 	wjudge "github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/role"
+	documentalist "github.com/JN0V/workline/roles/documentalist/code"
 )
 
 type caseFile struct {

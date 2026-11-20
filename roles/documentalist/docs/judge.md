@@ -1,10 +1,10 @@
 ---
 sources:
-  - internal/builtin/documentalist/judge.go#judgePatches
-  - internal/builtin/documentalist/judge.go#replacedInPart
-  - internal/builtin/documentalist/documentalist.go#suspectDoc
-  - internal/builtin/documentalist/notes.go#doubtedDocs
-  - internal/builtin/documentalist/notes.go#doubtSaid
+  - roles/documentalist/code/judge.go#judgePatches
+  - roles/documentalist/code/judge.go#replacedInPart
+  - roles/documentalist/code/documentalist.go#suspectDoc
+  - roles/documentalist/code/notes.go#doubtedDocs
+  - roles/documentalist/code/notes.go#doubtSaid
 checked: e2e165c2d
 verified: agent:claude-code
 ---

@@ -1,12 +1,12 @@
 ---
 sources:
-  - internal/builtin/documentalist/parts.go#partsFor
-  - internal/builtin/documentalist/parts.go#readParts
-  - internal/builtin/documentalist/parts.go#placeQuote
-  - internal/builtin/documentalist/parts.go#partsVerdict.fixEntry
-  - internal/builtin/documentalist/parts.go#sameWords
-  - internal/builtin/documentalist/parts.go#claim.supports
-  - internal/builtin/documentalist/parts.go#uncoveredSplit
+  - roles/documentalist/code/parts.go#partsFor
+  - roles/documentalist/code/parts.go#readParts
+  - roles/documentalist/code/parts.go#placeQuote
+  - roles/documentalist/code/parts.go#partsVerdict.fixEntry
+  - roles/documentalist/code/parts.go#sameWords
+  - roles/documentalist/code/parts.go#claim.supports
+  - roles/documentalist/code/parts.go#uncoveredSplit
 checked: e2e165c2d
 verified: agent:claude-code
 ---

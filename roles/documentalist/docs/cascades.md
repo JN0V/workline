@@ -1,14 +1,14 @@
 ---
 sources:
-  - internal/builtin/documentalist/documentalist.go#preRun.findSuspects
-  - internal/builtin/documentalist/documentalist.go#preRun.cutCascade
-  - internal/builtin/documentalist/documentalist.go#edge
-  - internal/builtin/documentalist/documentalist.go#preRun.askPropagate
-  - internal/builtin/documentalist/documentalist.go#trackingIssue
-  - internal/builtin/documentalist/documentalist.go#personIssue
-  - internal/builtin/documentalist/documentalist.go#docTask
-  - internal/builtin/documentalist/documentalist.go#isAuthority
-  - internal/builtin/documentalist/judge.go#truthChanged
+  - roles/documentalist/code/documentalist.go#preRun.findSuspects
+  - roles/documentalist/code/documentalist.go#preRun.cutCascade
+  - roles/documentalist/code/documentalist.go#edge
+  - roles/documentalist/code/documentalist.go#preRun.askPropagate
+  - roles/documentalist/code/documentalist.go#trackingIssue
+  - roles/documentalist/code/documentalist.go#personIssue
+  - roles/documentalist/code/documentalist.go#docTask
+  - roles/documentalist/code/documentalist.go#isAuthority
+  - roles/documentalist/code/judge.go#truthChanged
   - internal/engine/engine.go#renamedIssues
   - roles/documentalist/role.yaml#settings.truth
   - roles/documentalist/role.yaml#settings.propagation

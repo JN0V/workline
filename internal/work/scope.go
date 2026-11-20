@@ -123,7 +123,7 @@ func LineOff(p string) string {
 
 // InRepo is the file of files a Scope's word names: the word itself,
 // cleaned, or else the one file whose path ends with it, so `parts.go`
-// or `documentalist/parts.go` names internal/builtin/documentalist/parts.go
+// or `code/parts.go` names roles/documentalist/code/parts.go
 // when no other file ends so. "" when none does, or several.
 func InRepo(word string, files []string) string {
 	p := path.Clean(strings.ReplaceAll(word, `\`, "/"))
