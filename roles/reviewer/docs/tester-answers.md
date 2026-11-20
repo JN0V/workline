@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/reviewer/weigh.go, internal/builtin/reviewer/resolve.go, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go]
+sources: [roles/reviewer/code/weigh.go, roles/reviewer/code/resolve.go, roles/reviewer/code/reviewer.go, roles/reviewer/code/record.go]
 checked: 460795f9
 verified: agent:claude-code
 ---

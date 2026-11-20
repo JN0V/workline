@@ -28,10 +28,10 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/agent"
-	"github.com/JN0V/workline/internal/builtin/reviewer"
 	wjudge "github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/role"
+	reviewer "github.com/JN0V/workline/roles/reviewer/code"
 )
 
 const replayDir = "judge-replay"

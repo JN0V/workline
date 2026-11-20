@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/reviewer/once.go#sameAs, internal/builtin/reviewer/once.go#patchOf, internal/builtin/reviewer/once.go#judgeFloor, internal/builtin/reviewer/once.go#judgedBefore, internal/builtin/reviewer/intent.go#whatFor, internal/builtin/reviewer/reviewer.go#askJudges, internal/builtin/reviewer/reviewer.go#settled, internal/builtin/reviewer/reviewer.go#summary, internal/builtin/reviewer/record.go#Answered, internal/builtin/reviewer/record.go#saveLocal, roles/reviewer/role.yaml#settings.judge-at-least]
+sources: [roles/reviewer/code/once.go#sameAs, roles/reviewer/code/once.go#patchOf, roles/reviewer/code/once.go#judgeFloor, roles/reviewer/code/once.go#judgedBefore, roles/reviewer/code/intent.go#whatFor, roles/reviewer/code/reviewer.go#askJudges, roles/reviewer/code/reviewer.go#settled, roles/reviewer/code/reviewer.go#summary, internal/kit/reviewmark/judged.go#Answered, roles/reviewer/code/record.go#saveLocal, roles/reviewer/role.yaml#settings.judge-at-least]
 checked: e2e165c2d
 verified: agent:claude-code
 ---

@@ -1,5 +1,5 @@
 ---
-sources: [roles/reviewer/role.yaml#events, roles/reviewer/role.yaml#apart, roles/reviewer/role.yaml#duties, roles/reviewer/role.yaml#part-intentions, roles/reviewer/role.yaml#without-ai, roles/reviewer/role.yaml#settings, cmd/workline/main.go#reviewCmd, internal/routing/adopt.go#AddReviewer, internal/builtin/reviewer/reviewer.go#settings, internal/builtin/reviewer/reviewer.go#ahead, defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose.script]
+sources: [roles/reviewer/role.yaml#events, roles/reviewer/role.yaml#apart, roles/reviewer/role.yaml#duties, roles/reviewer/role.yaml#part-intentions, roles/reviewer/role.yaml#without-ai, roles/reviewer/role.yaml#settings, cmd/workline/main.go#reviewCmd, internal/routing/adopt.go#AddReviewer, roles/reviewer/code/reviewer.go#settings, roles/reviewer/code/reviewer.go#ahead, defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose.script]
 checked: e2e165c2d
 verified: agent:claude-code
 ---

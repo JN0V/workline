@@ -5,7 +5,7 @@ sources:
   - roles/developer/code/developer.go
   - internal/engine/engine.go
   - internal/agent/claude.go
-  - internal/builtin/reviewer/once.go
+  - roles/reviewer/code/once.go
   - internal/kit/devmark
 checked: a668abb2
 verified: agent:claude-code

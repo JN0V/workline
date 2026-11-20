@@ -12,8 +12,8 @@ sources:
   - internal/forge/gitlab_review.go#gitlab.shownLines
   - internal/forge/gitlab_review.go#gitlab.postLines
   - internal/engine/review.go#applier.lineReview
-  - internal/builtin/reviewer/lines.go#reviewOf
-  - internal/builtin/reviewer/lines.go#shortMessage
+  - roles/reviewer/code/lines.go#reviewOf
+  - roles/reviewer/code/lines.go#shortMessage
   - internal/report/report.go#ForCodeScanning
   - defaults/ci/github/workline-fork.yml#jobs.comment
 checked: c46a93d6c

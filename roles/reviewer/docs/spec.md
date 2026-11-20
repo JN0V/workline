@@ -9,15 +9,15 @@ sources:
   - roles/reviewer/prompts/lenses/unverifiable.md
   - roles/reviewer/prompts/lenses/out-of-scope.md
   - roles/reviewer/prompts/lenses/contradicted.md
-  - internal/builtin/reviewer/spec.go#prepareSpec
-  - internal/builtin/reviewer/spec.go#readSpec
-  - internal/builtin/reviewer/spec.go#specCut
-  - internal/builtin/reviewer/spec.go#askSpec
-  - internal/builtin/reviewer/spec.go#specIntro
-  - internal/builtin/reviewer/spec.go#inSpec
-  - internal/builtin/reviewer/spec.go#specMaterial
-  - internal/builtin/reviewer/reviewer.go#lensFindings
-  - internal/builtin/reviewer/reviewer.go#Post
+  - roles/reviewer/code/spec.go#prepareSpec
+  - roles/reviewer/code/spec.go#readSpec
+  - roles/reviewer/code/spec.go#specCut
+  - roles/reviewer/code/spec.go#askSpec
+  - roles/reviewer/code/spec.go#specIntro
+  - roles/reviewer/code/spec.go#inSpec
+  - roles/reviewer/code/spec.go#specMaterial
+  - roles/reviewer/code/reviewer.go#lensFindings
+  - roles/reviewer/code/reviewer.go#Post
 checked: dd77bf922
 verified: agent:claude-code
 ---

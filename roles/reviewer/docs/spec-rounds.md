@@ -1,14 +1,14 @@
 ---
 sources:
   - roles/reviewer/role.yaml#settings.spec-rounds
-  - internal/builtin/reviewer/specforge.go#specComment
-  - internal/builtin/reviewer/specforge.go#whoAnswers
-  - internal/builtin/reviewer/specforge.go#specRecord
-  - internal/builtin/reviewer/specforge.go#round
-  - internal/builtin/reviewer/specforge.go#specOnForge
-  - internal/builtin/reviewer/specforge.go#stopComment
-  - internal/builtin/reviewer/spec.go#answeredInSpec
-  - internal/builtin/reviewer/spec.go#answersScenario
+  - roles/reviewer/code/specforge.go#specComment
+  - roles/reviewer/code/specforge.go#whoAnswers
+  - roles/reviewer/code/specforge.go#specRecord
+  - roles/reviewer/code/specforge.go#round
+  - roles/reviewer/code/specforge.go#specOnForge
+  - roles/reviewer/code/specforge.go#stopComment
+  - roles/reviewer/code/spec.go#answeredInSpec
+  - roles/reviewer/code/spec.go#answersScenario
   - internal/backlog/spec.go#SpecReview.String
   - internal/backlog/spec.go#SpecHold
   - internal/backlog/spec.go#SpecCleared

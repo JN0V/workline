@@ -1,20 +1,20 @@
 ---
 sources:
-  - internal/builtin/reviewer/lines.go#lineComments
-  - internal/builtin/reviewer/lines.go#fileLine
-  - internal/builtin/reviewer/lines.go#holds
-  - internal/builtin/reviewer/lines.go#lineBody
-  - internal/builtin/reviewer/lines.go#ruleBody
-  - internal/builtin/reviewer/lines.go#shortMessage
-  - internal/builtin/reviewer/rules.go#storyRule
-  - internal/builtin/reviewer/rules.go#mechanical
-  - internal/builtin/reviewer/reviewer.go#found
-  - internal/builtin/reviewer/reviewer.go#group
-  - internal/builtin/reviewer/reviewer.go#members
-  - internal/builtin/reviewer/reviewer.go#summaryComment
-  - internal/builtin/reviewer/reviewer.go#apartNits
-  - internal/builtin/reviewer/reviewer.go#state.standingFindings
-  - internal/builtin/reviewer/reviewer.go#findingsTable
+  - roles/reviewer/code/lines.go#lineComments
+  - roles/reviewer/code/lines.go#fileLine
+  - roles/reviewer/code/lines.go#holds
+  - roles/reviewer/code/lines.go#lineBody
+  - roles/reviewer/code/lines.go#ruleBody
+  - roles/reviewer/code/lines.go#shortMessage
+  - roles/reviewer/code/rules.go#storyRule
+  - roles/reviewer/code/rules.go#mechanical
+  - roles/reviewer/code/reviewer.go#found
+  - roles/reviewer/code/reviewer.go#group
+  - roles/reviewer/code/reviewer.go#members
+  - roles/reviewer/code/reviewer.go#summaryComment
+  - roles/reviewer/code/reviewer.go#apartNits
+  - roles/reviewer/code/reviewer.go#state.standingFindings
+  - roles/reviewer/code/reviewer.go#findingsTable
   - internal/forge/review.go#Reviewed.Section
 checked: c46a93d6c
 judged: 39dcb7b
