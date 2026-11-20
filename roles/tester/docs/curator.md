@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/measure.go, internal/tester/coverage.go, defaults/ci/github/workline-gardening.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
+sources: [roles/tester/code/measure.go, roles/tester/code/coverage.go, defaults/ci/github/workline-gardening.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
 checked: 9cf386a3
 verified: agent:claude-code
 ---
@@ -99,7 +99,7 @@ told in the pull request [status](status.md) links):
 ## Not measured
 
 - **Per-test coverage**: a run per test. On workline's
-  `internal/tester`, 10 tests: 3.6 s one by one, 0.3 s together, twelve
+  `roles/tester/code`, 10 tests: 3.6 s one by one, 0.3 s together, twelve
   times; at that rate the 1,877 tests take 11 min more, the conformance
   cases also an engine built for coverage.
 - **Duplicates by name or shape**: a name says little (Go's `TestRun`

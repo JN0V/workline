@@ -1,18 +1,18 @@
 ---
 sources:
-  - internal/tester/judged.go#redQuestion
-  - internal/tester/redfirst.go#redFirst.facts
-  - internal/tester/judged.go#proveJudged
-  - internal/tester/judged.go#inputKey
-  - internal/tester/judged.go#judging.answered
-  - internal/tester/judged.go#judging.settle
-  - internal/tester/judged.go#judging.left
-  - internal/tester/judged.go#judging.material
-  - internal/tester/judged.go#doubt.broken
-  - internal/tester/judged.go#doubt.unproven
-  - internal/tester/build.go#unrooted
-  - internal/tester/tester.go#errorLines
-  - internal/tester/tester.go#runIn
+  - roles/tester/code/judged.go#redQuestion
+  - roles/tester/code/redfirst.go#redFirst.facts
+  - roles/tester/code/judged.go#proveJudged
+  - roles/tester/code/judged.go#inputKey
+  - roles/tester/code/judged.go#judging.answered
+  - roles/tester/code/judged.go#judging.settle
+  - roles/tester/code/judged.go#judging.left
+  - roles/tester/code/judged.go#judging.material
+  - roles/tester/code/judged.go#doubt.broken
+  - roles/tester/code/judged.go#doubt.unproven
+  - roles/tester/code/build.go#unrooted
+  - roles/tester/code/tester.go#errorLines
+  - roles/tester/code/tester.go#runIn
   - roles/tester/role.yaml#settings.judge-read-rounds
   - roles/tester/role.yaml#settings.judge-read-lines-max
 checked: c46a93d6c

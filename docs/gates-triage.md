@@ -6,7 +6,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:apply
   - defaults/ci/github/workline-apply.yml#on
   - defaults/ci/github/workline-apply.yml#jobs.apply.if
-  - internal/builtin/inspector/inspector.go#prepare
+  - roles/inspector/code/inspector.go#prepare
 checked: e2e165c2d
 verified: agent:claude-code
 ---

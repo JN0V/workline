@@ -1,12 +1,12 @@
 ---
 sources:
-  - internal/tester/write.go#Post
-  - internal/tester/said.go#refuseIssue
-  - internal/tester/said.go#refusePost
-  - internal/tester/said.go#sayBlock
-  - internal/tester/write.go#toMend
-  - internal/tester/notrun.go#notRun
-  - internal/tester/kept.go#guardedSaid
+  - roles/tester/code/write.go#Post
+  - roles/tester/code/said.go#refuseIssue
+  - roles/tester/code/said.go#refusePost
+  - roles/tester/code/said.go#sayBlock
+  - roles/tester/code/write.go#toMend
+  - roles/tester/code/notrun.go#notRun
+  - roles/tester/code/kept.go#guardedSaid
   - internal/kit/verdict/outcome.go#machineKinds
 checked: c46a93d6c
 verified: agent:claude-code

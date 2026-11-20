@@ -70,7 +70,7 @@ func TestBuildErrorsGo(t *testing.T) {
 // defaultBuildErrors is the role's build-errors, as role.yaml ships them.
 func defaultBuildErrors(t *testing.T) []buildRules {
 	t.Helper()
-	data, err := os.ReadFile("../../roles/tester/role.yaml")
+	data, err := os.ReadFile("../role.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
