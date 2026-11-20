@@ -3,13 +3,15 @@ package documentalist
 import (
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/docmark"
 )
 
 // A doc not given every source whole says what was read and what was not,
 // in the order its header names them, and nothing is said found wrong of the
 // rest (#120).
 func TestReadScopeSaysWhatWasNotRead(t *testing.T) {
-	sd := &suspectDoc{doc: &Doc{Sources: []string{"src/a.go", "src/b.go", "docs/x.md#y", "src/gone.go"}},
+	sd := &suspectDoc{doc: &docmark.Doc{Sources: []string{"src/a.go", "src/b.go", "docs/x.md#y", "src/gone.go"}},
 		read: []sourceRead{
 			{src: "src/a.go", what: "what changed in src/a.go since abc1234", part: true},
 			{src: "docs/x.md#y", what: "docs/x.md, judged in this same task"},
@@ -19,7 +21,7 @@ func TestReadScopeSaysWhatWasNotRead(t *testing.T) {
 	if got := sd.scope().String(); got != want {
 		t.Fatalf("scope = %q, want %q", got, want)
 	}
-	none := (&suspectDoc{doc: &Doc{Sources: []string{"src/a.go"}}}).scope().String()
+	none := (&suspectDoc{doc: &docmark.Doc{Sources: []string{"src/a.go"}}}).scope().String()
 	if none != "read: none of its sources; not read: src/a.go" {
 		t.Fatalf("scope of a doc given none of its sources = %q", none)
 	}

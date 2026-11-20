@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 )
@@ -72,7 +73,7 @@ func noSources(repo string, t Tree, globs []string) ([]verdict.Finding, map[stri
 // comment, which no preview, forge or PDF shows, where a frontmatter would
 // show on a forge and in a PDF (ADR-0007).
 func headerForm(content string) string {
-	if _, n := header(content); n > 0 {
+	if _, n := docmark.Header(content); n > 0 {
 		return "It has a header already (its first lines): add `sources` and `checked` inside it, keeping what is there."
 	}
 	return "It has no header. Add one at line 1, as a comment, which no rendering shows:\n\n```\n<!-- workline\nsources: [...]\nchecked: %s\n-->\n```"

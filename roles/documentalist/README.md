@@ -8,7 +8,7 @@ sources:
   - roles/documentalist/role.yaml#settings
   - internal/builtin/documentalist/freshness.go#wholeCharsMax
   - internal/builtin/documentalist/freshness.go#checkWholeChars
-  - internal/builtin/documentalist/sample.go#SampleSettings
+  - internal/kit/docmark/docmark.go#SampleSettings
   - internal/builtin/documentalist/documentalist.go#preRun.sayShallow
   - cmd/workline/main.go#prePushLine
   - defaults/ci/github/workline-gardening.yml#on

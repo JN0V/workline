@@ -14,6 +14,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -80,7 +81,7 @@ func targetMergeRequest() (forge.Target, bool) {
 // withoutRecords is a doc without the lines of its header recording when
 // it was read: two docs the same but for them say the same.
 func withoutRecords(content string) string {
-	_, n := header(content)
+	_, n := docmark.Header(content)
 	if n == 0 {
 		return content
 	}
@@ -97,7 +98,7 @@ func withoutRecords(content string) string {
 // headerValue is what a doc's header says in key, as written; "" when it
 // says nothing of it.
 func headerValue(content, key string) string {
-	_, n := header(content)
+	_, n := docmark.Header(content)
 	lines := strings.Split(content, "\n")
 	for i := 1; i < n-1; i++ {
 		if v, ok := strings.CutPrefix(lines[i], key+":"); ok {
@@ -110,7 +111,7 @@ func headerValue(content, key string) string {
 // withHeaderValue is a doc whose header sets key to value: the line
 // replaced, or added last; false for a doc with no header.
 func withHeaderValue(content, key, value string) (string, bool) {
-	_, n := header(content)
+	_, n := docmark.Header(content)
 	if n == 0 {
 		return content, false
 	}
@@ -128,7 +129,7 @@ func withHeaderValue(content, key, value string) (string, bool) {
 // docPaths are the paths whose state a doc's judgement stands on: the doc
 // and each of its sources, the section cut ("" the whole tree); false when
 // a source is in another repository, whose state this one does not hold.
-func docPaths(d *Doc) ([]string, bool) {
+func docPaths(d *docmark.Doc) ([]string, bool) {
 	paths := []string{d.Path}
 	for _, src := range d.Sources {
 		name, p, _ := splitSource(src)
@@ -397,7 +398,7 @@ func keepRecords(repo string, in keptInput, intents, fallback []intent.Intention
 			dropped = true // nothing recorded: `verified` alone, which `checked` goes with
 			continue
 		}
-		d, err := ParseDoc(p, []byte(was))
+		d, err := docmark.ParseDoc(p, []byte(was))
 		if err != nil || d == nil || at == "" {
 			committed = append(committed, p)
 			continue

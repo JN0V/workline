@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/JN0V/workline/internal/kit/docmark"
 )
 
 // A line count off (ADR-0014, step 2): a count of lines a doc gives for one
@@ -80,7 +82,7 @@ const countReach = 80
 
 // sourceFiles lists the tracked files a doc's sources cover, in this
 // repository: a file named, or every file under a folder named.
-func sourceFiles(d *Doc, files map[string]bool) []string {
+func sourceFiles(d *docmark.Doc, files map[string]bool) []string {
 	var out []string
 	seen := map[string]bool{}
 	for _, src := range d.Sources {
@@ -134,7 +136,7 @@ func derivedLines(content string) map[int]bool {
 // countsOff lists the line counts a doc states wrong for its source files,
 // counted in repo as it is now. A doc with no sources, a history doc and a
 // derived block say nothing checked here.
-func countsOff(repo string, files map[string]bool, d *Doc, content string) []countOff {
+func countsOff(repo string, files map[string]bool, d *docmark.Doc, content string) []countOff {
 	if d == nil || isHistory(d.Path) {
 		return nil
 	}
@@ -343,7 +345,7 @@ func isTableRule(s string) bool {
 // CountsOff reports, for every doc declaring its sources, each line count it
 // states wrong for one of them (ADR-0014, step 2). While one stands, the
 // doc's `checked` cannot move.
-func CountsOff(repo string, t Tree, docs []*Doc) []Problem {
+func CountsOff(repo string, t Tree, docs []*docmark.Doc) []Problem {
 	var out []Problem
 	for _, d := range docs {
 		for _, c := range countsOff(repo, t.Files, d, t.Docs[d.Path]) {

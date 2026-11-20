@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/docmark"
 )
 
 // Only the last comment workline's own account wrote is read as the
@@ -123,11 +124,11 @@ func TestParseKept(t *testing.T) {
 }
 
 func TestDocPaths(t *testing.T) {
-	got, ok := docPaths(&Doc{Path: "docs/a.md", Sources: []string{"src/a/", "./src/b.go#part", "src/a", "."}})
+	got, ok := docPaths(&docmark.Doc{Path: "docs/a.md", Sources: []string{"src/a/", "./src/b.go#part", "src/a", "."}})
 	if !ok || strings.Join(got, ",") != "docs/a.md,src/a,src/b.go," {
 		t.Errorf("docPaths = %q, %v", got, ok)
 	}
-	if _, ok := docPaths(&Doc{Path: "docs/a.md", Sources: []string{"api:docs/x.md"}}); ok {
+	if _, ok := docPaths(&docmark.Doc{Path: "docs/a.md", Sources: []string{"api:docs/x.md"}}); ok {
 		t.Error("a source in another repository: its state is not this one's")
 	}
 }

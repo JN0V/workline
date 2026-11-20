@@ -23,10 +23,11 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/agent"
-	"github.com/JN0V/workline/internal/builtin/documentalist"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
@@ -365,16 +366,16 @@ func actsWindow(role, window, first, end string) string {
 }
 
 // roleSettings are the documentalist's settings, the project's over the role's.
-func roleSettings(o Options) (documentalist.Settings, error) {
+func roleSettings(o Options) (docmark.SampleView, error) {
 	r, err := role.Load(o.RolesDir, "documentalist")
 	if err != nil {
-		return documentalist.Settings{}, err
+		return docmark.SampleView{}, err
 	}
 	cfg, err := role.LoadProjectConfig(o.Repo)
 	if err != nil {
-		return documentalist.Settings{}, err
+		return docmark.SampleView{}, err
 	}
-	return documentalist.SettingsFrom(r.MergedSettings(cfg))
+	return contract.BuiltinDocsSample().Settings(r.MergedSettings(cfg))
 }
 
 // Week reads an ISO week (2026-W40) and the instants it starts and ends, in
@@ -431,7 +432,7 @@ func window(repo string, from, to time.Time) (base, tip string, err error) {
 // commit of its head that moved the same `checked` says whose the move
 // was, and who vouched (ADR-0046); the act stays the squash's, its earlier
 // `checked` the one the branch had.
-func vouched(repo string, s documentalist.Settings, commits []string, h *heads) ([]candidate, error) {
+func vouched(repo string, s docmark.SampleView, commits []string, h *heads) ([]candidate, error) {
 	var out []candidate
 	seen := map[string]bool{}
 	for _, c := range commits {
@@ -506,12 +507,12 @@ func moved(repo, c, f string) (move, bool) {
 	if err != nil {
 		return move{}, false // removed
 	}
-	d, _ := documentalist.ParseDoc(f, []byte(after))
+	d, _ := docmark.ParseDoc(f, []byte(after))
 	if d == nil || len(d.Checked) == 0 {
 		return move{}, false
 	}
 	before, _ := git(repo, "show", c+"^:"+f)
-	prev, _ := documentalist.ParseDoc(f, []byte(before))
+	prev, _ := docmark.ParseDoc(f, []byte(before))
 	var previous map[string]string
 	if prev != nil {
 		previous = prev.Checked
@@ -545,14 +546,14 @@ func movedOnHead(repo string, heads []string, f string, checked map[string]strin
 // earnedInParts: the doc, as vouched for, records it was judged in parts at
 // the commit its `checked` names, as the documentalist writes it when its
 // parts supported every line stating something (#482).
-func earnedInParts(d *documentalist.Doc) bool {
+func earnedInParts(d *docmark.Doc) bool {
 	at, checked := d.JudgedInParts, d.Checked[""]
 	return len(d.Checked) == 1 && len(at) >= 7 && len(checked) >= 7 && (strings.HasPrefix(at, checked) || strings.HasPrefix(checked, at))
 }
 
 // verifiedByAgent: the doc's header says the documentalist vouched for it.
 func verifiedByAgent(content string) bool {
-	meta, _ := documentalist.Header(content)
+	meta, _ := docmark.Header(content)
 	for _, l := range strings.Split(meta, "\n") {
 		if v, ok := strings.CutPrefix(strings.TrimSpace(l), "verified:"); ok && strings.TrimSpace(v) == "agent:documentalist" {
 			return true
@@ -603,12 +604,12 @@ func (rd *reader) readOne(c candidate) Read {
 	repo, s, auditor, spec := rd.o.Repo, rd.settings, rd.auditor, rd.spec
 	r := Read{Doc: c.doc, Commit: short(repo, c.commit), In: c.in, Checked: c.checked, Previous: c.previous, By: c.by}
 	content, err := git(repo, "show", c.commit+":"+c.doc)
-	d, _ := documentalist.ParseDoc(c.doc, []byte(content))
+	d, _ := docmark.ParseDoc(c.doc, []byte(content))
 	if err != nil || d == nil {
 		r.Verdict, r.Why = "not-read", "the doc cannot be read as it was vouched for, for a person"
 		return r
 	}
-	evidence, fits, err := documentalist.SourcesAt(repo, d, s.WholeCap())
+	evidence, fits, err := contract.BuiltinDocsSample().SourcesAt(repo, d, s.WholeCap)
 	switch {
 	case err != nil:
 		r.Verdict, r.Why = "not-read", err.Error()+missingWords(rd.o.Forge, err)+"; for a person"
@@ -617,11 +618,11 @@ func (rd *reader) readOne(c candidate) Read {
 		// Its parts supported every line stating something (#482): earned,
 		// though no task could read its sources whole, nor can this one.
 		r.Verdict = "not-read"
-		r.Why = fmt.Sprintf("its `checked` was earned once judged in parts (`judged-in-parts` at the same commit): its sources take more than the %d characters the sample reads whole (whole-chars), so it is not read here; for a person to read against them", s.WholeCap())
+		r.Why = fmt.Sprintf("its `checked` was earned once judged in parts (`judged-in-parts` at the same commit): its sources take more than the %d characters the sample reads whole (whole-chars), so it is not read here; for a person to read against them", s.WholeCap)
 		return r
 	case !fits:
 		r.Verdict = "unearned"
-		r.Why = fmt.Sprintf("its sources at the commit `checked` names take more than the %d characters a doc's sources may take to be read whole (whole-chars): that `checked` could not have been earned (ADR-0014, step 0)", s.WholeCap())
+		r.Why = fmt.Sprintf("its sources at the commit `checked` names take more than the %d characters a doc's sources may take to be read whole (whole-chars): that `checked` could not have been earned (ADR-0014, step 0)", s.WholeCap)
 		return r
 	}
 	if spec == "" || spec == "none" {
@@ -698,7 +699,7 @@ func (rd *reader) readOne(c candidate) Read {
 // have, where else the sample looked for it, or how it would: a squash
 // leaves it on its merge request's head (ADR-0046).
 func missingWords(f forge.Forge, err error) string {
-	if !errors.Is(err, documentalist.ErrNotInClone) {
+	if !errors.Is(err, docmark.ErrNotInClone) {
 		return ""
 	}
 	if f == nil {
@@ -725,7 +726,7 @@ type claimed struct {
 // check reads the answer's claims against the doc and its sources: a
 // passage the doc holds, and a source's words found outside a comment at the
 // commit `checked` names, or a name the code no longer had then.
-func check(repo string, d *documentalist.Doc, content string, answer []intent.Intention, r *Read) {
+func check(repo string, d *docmark.Doc, content string, answer []intent.Intention, r *Read) {
 	notes, claims := 0, 0
 	for _, in := range answer {
 		switch in.Kind {
@@ -751,12 +752,12 @@ func check(repo string, d *documentalist.Doc, content string, answer []intent.In
 			why = "a `contradicted` claim gives its source's `path` and `quote`"
 		case c.Status == "contradicted":
 			p.Path, p.Quote = c.Source.Path, strings.Join(strings.Fields(c.Source.Quote), " ")
-			src, at, ok := documentalist.SourceFileAt(repo, d, c.Source.Path)
+			src, at, ok := contract.BuiltinDocsSample().SourceFileAt(repo, d, c.Source.Path)
 			if !ok {
 				why = fmt.Sprintf("%s is not a file under the doc's sources (%s) at the commit `checked` names", c.Source.Path, strings.Join(d.Sources, ", "))
 				break
 			}
-			found, code, line := documentalist.QuoteIn(c.Source.Path, src, c.Source.Quote)
+			found, code, line := contract.BuiltinDocsSample().QuoteIn(c.Source.Path, src, c.Source.Quote)
 			p.Line = line
 			switch {
 			case !found:
@@ -775,7 +776,7 @@ func check(repo string, d *documentalist.Doc, content string, answer []intent.In
 				why = "a `gone` claim is checked against this repository's code only"
 				break
 			}
-			if in, err := documentalist.InCodeAt(repo, rev, p.Name); err != nil || in {
+			if in, err := contract.BuiltinDocsSample().InCodeAt(repo, rev, p.Name); err != nil || in {
 				why = fmt.Sprintf("`%s` is in the code at %s", p.Name, rev)
 			}
 		default:
@@ -802,7 +803,7 @@ func check(repo string, d *documentalist.Doc, content string, answer []intent.In
 
 // task is what the judge is given: the doc whole as it was vouched for, and
 // its sources whole at the commit its `checked` names.
-func task(c candidate, d *documentalist.Doc, content string, evidence []string) string {
+func task(c candidate, d *docmark.Doc, content string, evidence []string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## The doc: %s, as vouched for in %.7s (`checked`: %s)\n\n", c.doc, c.commit, checkedWords(c.checked))
 	fmt.Fprintf(&b, "```markdown\n%s\n```\n\n## Its sources (%s), whole\n\n", strings.TrimRight(content, "\n"), strings.Join(d.Sources, ", "))

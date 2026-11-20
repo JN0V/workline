@@ -26,12 +26,13 @@ type Step func(runDir, repo string) int
 // comment keeps a record its next run reads; Review, by the role that
 // reviews a change; Docs, by the role that keeps the docs.
 type Role struct {
-	Pre, Post Step
-	Code      *Code
-	Tests     *Tests
-	Record    *Record
-	Review    *Review
-	Docs      *Docs
+	Pre, Post  Step
+	Code       *Code
+	Tests      *Tests
+	Record     *Record
+	Review     *Review
+	Docs       *Docs
+	DocsSample *DocsSample
 }
 
 // Docs is what the doctor asks of the role that keeps the docs: the
@@ -148,6 +149,14 @@ func (r *Registry) Join(name string, role Role) {
 	}
 	if role.Docs != nil && (role.Docs.Coverage == nil || role.Docs.UnreadDocs == nil) {
 		panic(fmt.Sprintf("contract: the role %q offers docs missing a check", name))
+	}
+	if role.DocsSample != nil {
+		role.DocsSample.whole(name)
+		for n, other := range r.roles {
+			if other.DocsSample != nil {
+				panic(fmt.Sprintf("contract: the role %q offers the docs' sample, as %q does", name, n))
+			}
+		}
 	}
 	r.roles[name] = role
 }

@@ -36,6 +36,7 @@ import (
 
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	wjudge "github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/role"
 )
@@ -626,7 +627,7 @@ func headerField(doc, field string) string {
 // body drops a doc's header, as the engine reads it: a frontmatter, or a
 // README's `<!-- workline` block.
 func body(s string) string {
-	_, n := documentalist.Header(s)
+	_, n := docmark.Header(s)
 	return strings.Join(strings.Split(s, "\n")[n:], "\n")
 }
 

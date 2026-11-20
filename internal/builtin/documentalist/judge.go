@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -454,7 +455,7 @@ func touchesDerived(old string, f fileDiff) bool {
 // checkedMatches says whether a doc's `checked`, as patched, names the commits
 // it was judged against: each one given at least by its 7-character prefix.
 func checkedMatches(content string, want map[string]string) bool {
-	d, err := ParseDoc("", []byte(content))
+	d, err := docmark.ParseDoc("", []byte(content))
 	if err != nil || d == nil {
 		return false
 	}
@@ -563,7 +564,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				person: "`checked` not moved: not every source of the doc was given whole in the task, so nobody could vouch for it; `judged` set instead"}
 		}
 		if moved {
-			d, _ := ParseDoc(f.path, []byte(now))
+			d, _ := docmark.ParseDoc(f.path, []byte(now))
 			if off := countsOff(repo, tree.Files, d, now); len(off) > 0 {
 				var said []string
 				for _, c := range off {
@@ -907,8 +908,8 @@ func withoutBlocks(f fileDiff, drop []citedBlock) fileDiff {
 // `checked` stays. ok is false when the doc has no header to record it in,
 // or the commit is not known.
 func asJudged(old, now, full string) (string, bool) {
-	_, n := header(old)
-	_, m := header(now)
+	_, n := docmark.Header(old)
+	_, m := docmark.Header(now)
 	if n == 0 || m == 0 || len(full) < 7 {
 		return "", false
 	}
@@ -1156,7 +1157,7 @@ func (j *judgedFixes) countFixed(f verdict.Finding) bool {
 	}
 	key := func(c countOff) string { return c.file + " " + c.stated }
 	was := ""
-	d, _ := ParseDoc(f.Where, []byte(j.before[f.Where]))
+	d, _ := docmark.ParseDoc(f.Where, []byte(j.before[f.Where]))
 	for _, c := range countsOff(j.repo, j.files, d, j.before[f.Where]) {
 		if c.message() == f.Message {
 			was = key(c)
@@ -1165,7 +1166,7 @@ func (j *judgedFixes) countFixed(f verdict.Finding) bool {
 	if was == "" {
 		return false
 	}
-	d, _ = ParseDoc(f.Where, []byte(now))
+	d, _ = docmark.ParseDoc(f.Where, []byte(now))
 	for _, c := range countsOff(j.repo, j.files, d, now) {
 		if key(c) == was {
 			return false
@@ -1176,7 +1177,7 @@ func (j *judgedFixes) countFixed(f verdict.Finding) bool {
 
 // checkedOf is what a doc's header says in `checked`, as written.
 func checkedOf(content string) string {
-	d, err := ParseDoc("", []byte(content))
+	d, err := docmark.ParseDoc("", []byte(content))
 	if err != nil || d == nil {
 		return ""
 	}
@@ -1186,7 +1187,7 @@ func checkedOf(content string) string {
 // judgedOf is what a doc's header says in `judged`, as written; never empty
 // for a doc whose header says nothing of it, so it is no prefix of a commit.
 func judgedOf(content string) string {
-	if d, err := ParseDoc("", []byte(content)); err == nil && d != nil && len(d.Judged) >= 7 {
+	if d, err := docmark.ParseDoc("", []byte(content)); err == nil && d != nil && len(d.Judged) >= 7 {
 		return d.Judged
 	}
 	return "-"

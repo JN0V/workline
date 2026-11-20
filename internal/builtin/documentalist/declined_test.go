@@ -57,7 +57,7 @@ func TestReaderDeclined(t *testing.T) {
 		held        bool
 		said        string
 	}{
-		{"closed by workline", "fake:" + state("Closed by workline's documentalist.\n\n" + forge.Marker("closed")), false, ""},
+		{"closed by workline", "fake:" + state("Closed by workline's documentalist.\n\n"+forge.Marker("closed")), false, ""},
 		{"closed by a person", "fake:" + state("Not what I want."), true, ""},
 		{"no forge", "", true, ""},
 		{"a forge that cannot be read", "fake:" + filepath.Join(t.TempDir(), "gone.json"), true, "whether workline closed workline/documentalist/reader-docs-guide-md itself could not be read"},

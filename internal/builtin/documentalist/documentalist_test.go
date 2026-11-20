@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/docmark"
 )
 
 func TestSection(t *testing.T) {
@@ -84,7 +86,7 @@ func TestSourcesAtSaysAHeadingGone(t *testing.T) {
 		"token-renewal": "",
 		"token-refresh": "no heading of docs/auth.md has the anchor #token-refresh",
 	} {
-		d, err := ParseDoc("docs/session.md", []byte("---\nsources: [docs/auth.md#"+anchor+"]\nchecked: "+head+"\n---\n# Sessions\n"))
+		d, err := docmark.ParseDoc("docs/session.md", []byte("---\nsources: [docs/auth.md#"+anchor+"]\nchecked: "+head+"\n---\n# Sessions\n"))
 		if err != nil || d == nil {
 			t.Fatalf("ParseDoc: %v", err)
 		}
@@ -197,7 +199,7 @@ func TestParseDocKeepsCommitsAsWritten(t *testing.T) {
 		{"checked: 1234567", "", "1234567"},
 		{"checked: {api: 0012e45}", "api", "0012e45"},
 	} {
-		d, err := ParseDoc("d.md", []byte("---\nsources: [a.go]\n"+c.fm+"\n---\n"))
+		d, err := docmark.ParseDoc("d.md", []byte("---\nsources: [a.go]\n"+c.fm+"\n---\n"))
 		if err != nil || d.Checked[c.repo] != c.want {
 			t.Errorf("%s: checked = %v, %v", c.fm, d.Checked, err)
 		}
@@ -206,7 +208,7 @@ func TestParseDocKeepsCommitsAsWritten(t *testing.T) {
 
 func TestHeaderComment(t *testing.T) {
 	doc := "<!-- workline\nsources: [cmd/workline]\nchecked: 11180e1\n-->\n<h1>Title</h1>\n\nText.\n"
-	d, err := ParseDoc("README.md", []byte(doc))
+	d, err := docmark.ParseDoc("README.md", []byte(doc))
 	if err != nil || d == nil || d.Checked[""] != "11180e1" || d.Sources[0] != "cmd/workline" {
 		t.Fatalf("ParseDoc = %+v, %v", d, err)
 	}
@@ -218,7 +220,7 @@ func TestHeaderComment(t *testing.T) {
 	if lines := scan(doc); lines[0].text != "<h1>Title</h1>" || lines[0].n != 5 {
 		t.Fatalf("scan starts at %+v, want line 5", lines[0])
 	}
-	if d, _ := ParseDoc("x.md", []byte("<!-- a plain comment -->\n# T\n")); d != nil {
+	if d, _ := docmark.ParseDoc("x.md", []byte("<!-- a plain comment -->\n# T\n")); d != nil {
 		t.Fatal("only a `<!-- workline` comment is a header")
 	}
 }
@@ -316,7 +318,7 @@ func TestCountsOffShapes(t *testing.T) {
 		if strings.HasPrefix(c.line, "| `Storage.h` | Main") {
 			content = "---\nsources: [c/include/Storage.h]\n---\n# T\n\n| File | Purpose | Lines |\n|---|---|---|\n" + c.line + "\n"
 		}
-		d, _ := ParseDoc("docs/t.md", []byte(content))
+		d, _ := docmark.ParseDoc("docs/t.md", []byte(content))
 		var got []string
 		for _, o := range countsOff(dir, files, d, content) {
 			got = append(got, o.named)
