@@ -55,7 +55,7 @@ list: `target` (the issue or merge request the run is on: its text, comments
 and labels, and a merge request's diff) and `commits` (the messages and diff of
 the run's range); `issues`, `wake`, `sample` and `runs` are named, read by a
 later change. Any other name is refused when the role loads, with the list. Each
-input has a cap (a diff 60000 bytes, a text 20000): a cut is kept in the task
+input has a cap (a diff 60000 bytes, a text 20000, all the comments together 60000, the oldest left out): a cut is kept in the task
 and said in `in/cuts`, so as an `input-cut` warning. An input the forge or git
 does not give stops the run, naming it. A
 `pre` or `post` file that cannot be read stops the run, naming the file.

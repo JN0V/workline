@@ -18,6 +18,8 @@ const (
 	textCap = 20000 // an issue's or merge request's text, one comment
 	diffCap = 60000 // a diff
 	logCap  = 20000 // the messages of a range
+
+	commentsCap = 60000 // all the comments of a target together
 )
 
 // capText cuts text to cap bytes, on a line, and says the cut.
@@ -129,7 +131,22 @@ func readTarget(env []string, cuts *[]string) (text, base, branch string, err er
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n## %s\n\n# %s\n\n%s\n\nLabels: %s\n", t, title, capText("target text", body, textCap, cuts), strings.Join(labels, ", "))
-	for _, c := range comments {
+	// The newest comments are kept, up to the total budget; the older ones
+	// left out are said.
+	start, used := len(comments), 0
+	for start > 0 {
+		n := min(len(comments[start-1]), textCap)
+		if used+n > commentsCap {
+			break
+		}
+		used += n
+		start--
+	}
+	if start > 0 {
+		*cuts = append(*cuts, fmt.Sprintf("target comments: the %d oldest of %d left out, the inputs' cap of %d bytes", start, len(comments), commentsCap))
+		b.WriteString(fmt.Sprintf("\n[%d older comments left out]\n", start))
+	}
+	for _, c := range comments[start:] {
 		b.WriteString("\n### Comment\n\n" + capText("target comment", c, textCap, cuts) + "\n")
 	}
 	return b.String(), base, branch, nil
