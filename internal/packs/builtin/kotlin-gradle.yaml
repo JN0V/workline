@@ -30,3 +30,17 @@ code-navigation:
     param-headers: true
     bases: '\b(?:class|object|interface)\s+\w+(?:<[^>]*>)?(?:\s*\([^)]*\))?\s*:\s*([A-Z]\w*)'
     keywords: "fun val var override companion object data sealed suspend lateinit internal open inline when typealias Unit Int Long Boolean String Any Float Double"
+# build-errors: how a broken build's errors read, Kotlin's and javac's.
+build-errors:
+  - error: '^e: (?P<file>.+?\.kts?)(?::\d+:\d+:?|: \(\d+, \d+\):) (?P<message>.+)$'
+    missing-name:
+      - '^Unresolved reference ''(?P<name>[^'']+)'''
+      - '^Unresolved reference: (?P<name>\S+)'
+      - '^No parameter with name ''(?P<name>[^'']+)'' found'
+      - '^Cannot find a parameter with this name: (?P<name>\S+)'
+    test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|internal)\s+)?fun\s+(?:`([^`]+)`|(\w+))\s*\('
+  - error: '^(?P<file>\S.*?\.java):\d+: error: (?P<message>.+)$'
+    missing-name:
+      - '^cannot find symbol$'
+    name-line: '^\s*symbol:\s+\w+\s+(?P<name>\w+)'
+    test-name: '(?m)@Test\b(?:\([^)]*\))?\s+(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|protected|private|static|final)\s+)*void\s+(\w+)\s*\('
