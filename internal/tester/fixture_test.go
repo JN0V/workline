@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/contract"
-	jdg "github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 	contract.Join("fixture-reviewer", contract.Role{Review: &contract.Review{
 		ReviewedAll: func(string, string, string, string) (bool, error) { return false, nil },
 		RulesOn:     func(string, string, string) ([]verdict.Finding, error) { return nil, nil },
-		ServeReads: func(string, string, string, []jdg.Read, int, int) (string, int, []string) {
+		ServeReads: func(string, string, string, []judgemark.Read, int, int) (string, int, []string) {
 			return "", 0, nil
 		},
 	}})

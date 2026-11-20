@@ -27,7 +27,7 @@ import (
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 	"go.yaml.in/yaml/v3"
@@ -643,11 +643,11 @@ func (rd *reader) readOne(c candidate) Read {
 	}
 	// Never the model that vouched: set to it, the judge is the other one
 	// (ADR-0005, the best independence available).
-	if alias, ok := strings.CutPrefix(spec, "claude:"); ok && judge.Provider(voucher) == "claude" {
+	if alias, ok := strings.CutPrefix(spec, "claude:"); ok && judgemark.Provider(voucher) == "claude" {
 		alias, _, _ = strings.Cut(alias, "@")
 		for _, m := range models {
 			if alias != "" && strings.Contains(m, alias) {
-				spec = judge.Pick("claude", m)
+				spec = judgemark.Pick("claude", m)
 				r.Why = fmt.Sprintf("the judge set is the model that vouched (%s): read by %s instead", voucher, spec)
 			}
 		}
@@ -663,7 +663,7 @@ func (rd *reader) readOne(c candidate) Read {
 	r.Independence = "unknown (no Workline-Model on the commit that vouched)"
 	level := ""
 	if voucher != "" {
-		level = judge.Independence(spec, call.Model, voucher, models)
+		level = judgemark.Independence(spec, call.Model, voucher, models)
 		r.Independence = fmt.Sprintf("%s (%s → %s)", level, strings.Join(c.by, ", "), orUnknown(call.Agent, call.Model))
 	}
 	switch {
@@ -678,11 +678,11 @@ func (rd *reader) readOne(c candidate) Read {
 		return r
 	}
 	if floor := s.Sample.AtLeast; floor != "" {
-		if _, ok := judge.Levels[floor]; !ok {
+		if _, ok := judgemark.Levels[floor]; !ok {
 			r.Verdict, r.Why = "not-read", fmt.Sprintf("sample.at-least %q is not provider, model or context", floor)
 			return r
 		}
-		if judge.Levels[level] < judge.Levels[floor] {
+		if judgemark.Levels[level] < judgemark.Levels[floor] {
 			r.Verdict, r.Why = "not-read", fmt.Sprintf("the judge stands below sample.at-least (%s): %s; for a person", floor, r.Independence)
 			return r
 		}

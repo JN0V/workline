@@ -80,7 +80,6 @@ pull requests and nightly gardening of workline and of another project;
 | [**Inspector**](roles/inspector/README.md) | explains the findings a merge request adds to your linters and scanners; never their verdict | [beta](roles/inspector/docs/status.md) |
 | [**Tester**](roles/tester/README.md) | writes a ready issue's tests from its scenarios, each proven red on its base before the code | [beta](roles/tester/docs/status.md) |
 | [**Developer**](roles/developer/README.md) | takes a ready issue nobody took, writes its code within bounds, opens its pull request, proven on the project's tests, and fixes its review | [beta](roles/developer/docs/status.md) |
-| [Judge](roles/judge/role.yaml) | answers one yes-or-no question for the other roles, from another context or model | [built](roles/judge/docs/status.md) |
 | [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts | [beta](roles/auditor/docs/status.md) |
 | [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
 | [Process engineer](https://github.com/JN0V/workline/issues/89) | will read the line's measures and propose fixes | planned |
@@ -90,6 +89,8 @@ pull requests and nightly gardening of workline and of another project;
 
 - What each role does and does not, its settings and costs: its page, or
   [all the roles](docs/roles.md).
+- The judge is not a role: a service the roles' checks consult for a
+  yes-or-no question ([the judge](roles/judge/docs/service.md)).
 - A planned role links to its issue, which holds its design.
 - V1, the product owner, the tester and the developer taking a need to
   a merged change on any repository, was accepted on 2026-11-11; the

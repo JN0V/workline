@@ -1,5 +1,5 @@
 ---
-sources: [internal/role/role.go#Model, internal/role/role.go#ProjectConfig, roles/documentalist/role.yaml#model, internal/engine/engine.go#taskKind, internal/agent/claude.go#claudeTier, internal/agent/claude.go#claudeEffort, internal/agent/agent.go#Parse, internal/agent/agent.go#Call, internal/agent/claude.go#claudeAnswer, internal/agent/seen.go#Notice, internal/engine/engine.go#askJudge, internal/judge/judge.go#Pick, internal/judge/judge.go#Independence, tests/evaluation/eval_test.go#judge, roles/reviewer/role.yaml#settings.judge-at-least]
+sources: [internal/role/role.go#Model, internal/role/role.go#ProjectConfig, roles/documentalist/role.yaml#model, internal/engine/engine.go#taskKind, internal/agent/claude.go#claudeTier, internal/agent/claude.go#claudeEffort, internal/agent/agent.go#Parse, internal/agent/agent.go#Call, internal/agent/claude.go#claudeAnswer, internal/agent/seen.go#Notice, internal/engine/engine.go#askJudge, internal/kit/judgemark/judgemark.go#Pick, internal/kit/judgemark/judgemark.go#Independence, tests/evaluation/eval_test.go#judge, roles/reviewer/role.yaml#settings.judge-at-least]
 checked: e2e165c2d
 verified: agent:claude-code
 ---
