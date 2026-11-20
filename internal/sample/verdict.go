@@ -16,7 +16,7 @@ import (
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 	"go.yaml.in/yaml/v3"
@@ -173,7 +173,7 @@ func (rd *reader) readAct(a *Act) {
 	a.Independence = "unknown (its record does not say the model that acted)"
 	level := ""
 	if m.author != "" && len(m.acted) > 0 {
-		level = judge.Independence(spec, call.Model, m.author, m.acted)
+		level = judgemark.Independence(spec, call.Model, m.author, m.acted)
 		a.Independence = fmt.Sprintf("%s (%s → %s)", level, strings.Join(m.acted, ", "), orUnknown(call.Agent, call.Model))
 	}
 	switch {
@@ -188,11 +188,11 @@ func (rd *reader) readAct(a *Act) {
 		return
 	}
 	if floor := rd.settings.Sample.AtLeast; floor != "" {
-		if _, ok := judge.Levels[floor]; !ok {
+		if _, ok := judgemark.Levels[floor]; !ok {
 			a.Why = fmt.Sprintf("sample.at-least %q is not provider, model or context", floor)
 			return
 		}
-		if judge.Levels[level] < judge.Levels[floor] {
+		if judgemark.Levels[level] < judgemark.Levels[floor] {
 			a.Why = fmt.Sprintf("the judge stands below sample.at-least (%s): %s; for a person", floor, a.Independence)
 			return
 		}

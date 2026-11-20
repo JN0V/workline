@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/worktree"
 	"io"
 	"io/fs"
@@ -3826,7 +3827,7 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 	}
 	spec := os.Getenv("WORKLINE_JUDGE")
 	if spec == "" {
-		spec = judge.Pick(o.AI, last)
+		spec = judgemark.Pick(o.AI, last)
 	}
 	judgeRole, err := role.Load(o.RolesDir, "judge")
 	if err != nil {
@@ -3844,7 +3845,7 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 	ans, err := judge.Ask(spec, bounded, q.Question, q.Material)
 	err = res.cutShort(err)
 	res.Calls = append(res.Calls, ans.Call) // its tokens count too; it is not the role's agent
-	level := judge.Independence(spec, ans.Model, o.AI, authorModels)
+	level := judgemark.Independence(spec, ans.Model, o.AI, authorModels)
 	who := fmt.Sprintf("independence: %s (%s → %s)", level, last, ans.Model)
 	switch {
 	case err != nil:
@@ -3928,7 +3929,7 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 	}
 	spec := os.Getenv("WORKLINE_JUDGE")
 	if spec == "" {
-		spec = judge.Pick(o.AI, last)
+		spec = judgemark.Pick(o.AI, last)
 	}
 	judgeRole, err := role.Load(o.RolesDir, "judge")
 	if err != nil {
@@ -3954,7 +3955,7 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 		if q.Author != "" {
 			last, authorModels = q.Author, []string{q.Author}
 			if os.Getenv("WORKLINE_JUDGE") == "" {
-				spec = judge.Pick(o.AI, last)
+				spec = judgemark.Pick(o.AI, last)
 			}
 		}
 		switch {
@@ -3992,7 +3993,7 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 				break
 			}
 			answer = map[string]any{"why": ans.Why, "model": ans.Model, "judge": spec,
-				"author": last, "level": judge.Independence(spec, ans.Model, o.AI, authorModels)}
+				"author": last, "level": judgemark.Independence(spec, ans.Model, o.AI, authorModels)}
 			switch { // a judge that may read: its reads, or unsure, in place of yes or no
 			case len(ans.Reads) > 0:
 				answer["reads"] = ans.Reads

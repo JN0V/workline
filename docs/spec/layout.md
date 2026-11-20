@@ -29,7 +29,8 @@ workline/
 ├─ roles/                   THE ROLES: one folder each, same skeleton
 │  ├─ builtin.go            the compiled-in roles, as blank imports
 │  ├─ committer/  developer/  tester/  reviewer/  documentalist/
-│  ├─ inspector/  product-owner/  auditor/  judge/
+│  ├─ inspector/  product-owner/  auditor/
+│  ├─ judge/                its prompts only: an engine service, not a role
 │  └─ process-engineer/     prompt-only (later: at its slice)
 ├─ skills/                  shared Agent Skills a role may load
 ├─ defaults/                THE LINE AS SHIPPED
@@ -134,10 +135,13 @@ cuts every import of a role before the role moves:
 - **`internal/contract/`**: the role interfaces (pre, post, draw,
   doctor checks, what the line asks a role), the types the line and a
   role share, and the registry each role joins in `init()`.
-- **`internal/kit/`**: helpers role code may use, `testdef`, `codepick`,
-  the committer's message checks, the verdict reading others share,
-  `worktree`, `testmark` and `devmark`: what the tester and the
-  developer leave on the forge that the line and other roles read.
+- **`internal/kit/`**: helpers role code may use: `testdef`,
+  `codepick`, `commitmsg` (the committer's message checks), `verdict`
+  (the verdict reading others share), `worktree`; and what a role
+  leaves on the forge that the line and other roles read: `testmark`
+  (the tester's), `devmark` (the developer's), `inspectmark` (the
+  inspector's triage), `reviewmark` (the reviewer's words), `judgemark`
+  (the judge's answers).
 - **No cycle**: `contract` and `kit` never import `engine`, `line` or
   `sample`. A role may: the product owner imports `engine` and `line`.
 - **`roles/builtin.go`** lists the compiled-in roles as blank imports;
@@ -148,9 +152,13 @@ cuts every import of a role before the role moves:
 - **The import check**, in `tests/`, reads `_test.go` files too: it
   fails if anything under `internal/` imports `roles/`, or a role's code
   another role's.
-- **Order, by size**: judge (300 lines), committer, inspector (1,100
-  each), product owner (2,800), developer (7,200), reviewer (8,100),
-  tester (9,600), documentalist (13,700); last, `sample`'s per-role draws.
+- **Order, by size**: committer, inspector (1,100 each), product owner
+  (2,800), developer (7,200), reviewer (8,100), tester (9,600),
+  documentalist (13,700); last, `sample`'s per-role draws.
+- **The judge is an engine service, not a role** (ADR-0070, [amendment
+  of 2026-11-20](../adr/0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md#amendment-2026-11-20-the-judge-is-an-engine-service)):
+  its code stays in `internal/judge/`, what others read of its answers in
+  `internal/kit/judgemark/`; its prompts in `roles/judge/prompts/`.
 
 ## An external role
 

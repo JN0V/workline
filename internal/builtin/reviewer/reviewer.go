@@ -24,8 +24,8 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/kit/commitmsg"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -2085,7 +2085,7 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 					Message: fmt.Sprintf("dropped, from the %s lens: %q at %s — the judge: %s (%s)", f.Lens, f.Title, f.Where, reason, who)})
 				answered(f, a, false, a.Why)
 				continue
-			case judge.Levels[a.Level] < judge.Levels[floor]:
+			case judgemark.Levels[a.Level] < judgemark.Levels[floor]:
 				f.Verified, f.Level = fmt.Sprintf("not verified: the judge stood at %s, below %s (%s)", a.Level, floor, a.Why), a.Level
 			default:
 				f.Verified, f.Level = "verified, "+who+read, a.Level

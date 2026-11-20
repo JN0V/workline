@@ -11,6 +11,9 @@ and hands over. This document defines what a role is, so that any engine, on any
 machine, can run it the same way. The engine is replaceable; this contract is not
 (ADR-0001).
 
+A service the engine consults is not a role: the judge has no event, no
+input nor output of its own ([ADR-0070, amended](../adr/0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md#amendment-2026-11-20-the-judge-is-an-engine-service)).
+
 ## Layout
 
 ```
