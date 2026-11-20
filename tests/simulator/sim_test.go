@@ -104,7 +104,7 @@ var traces = func() []trace {
 		// The product owner's answer unreadable twice in its run.
 		trace{name: "trial-35-po-unread", file: "trial-35", fresh: true, end: "done", by: map[string][]outcome{"product-owner": {malformed, malformed}}},
 		// Needs input, from each source: the engine (the product owner's
-		// files), the product owner (the tester's no test), a person (the
+		// files), the product owner (the tester's no test goes on to the developer), a person (the
 		// product owner's question, unanswered: the issue waits on its
 		// reporter). The developer's file beyond its Scope asks no one:
 		// applied, listed (ADR-0065, change 2).
