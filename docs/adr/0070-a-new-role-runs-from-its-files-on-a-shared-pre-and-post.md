@@ -7,7 +7,9 @@
   after; roles moved in batches from 2026-11-19
   ([amendment](#amendment-2026-11-19-roles-move-in-batches)); the judge
   an engine service from 2026-11-20
-  ([amendment](#amendment-2026-11-20-the-judge-is-an-engine-service))
+  ([amendment](#amendment-2026-11-20-the-judge-is-an-engine-service));
+  the cases stay in `tests/conformance/cases/` for 1.0
+  ([amendment](#amendment-2026-11-20-the-cases-stay-for-10))
 - **Settles:** [#1630]; how [ADR-0068]'s [step 6], the process engineer, is built
 - **Builds on:** [ADR-0046], [ADR-0065], [ADR-0066], [ADR-0068] §2 and
   §4; principles 4, 5, 6, 10, 12, 15 ([PRINCIPLES.md](../PRINCIPLES.md))
@@ -214,7 +216,23 @@ From [#1630], in order, each starting with its conformance case:
   `roles/judge/prompts/`, overridden like any role's
   ([a person's overrides](../spec/layout.md#a-persons-overrides)).
 
+## Amendment 2026-11-20: the cases stay for 1.0
+
+- **Decided by:** the maintainer, in a session on 2026-11-20.
+- **Move c ships without its cases part**: `workline.go` embeds each
+  role's files by name ([#1979]); the cases stay in
+  `tests/conformance/cases/<role>/`, never shipped, one `pending.txt`.
+- **Why**: the tester finds a test's package by walking up from its
+  file. From `roles/<name>/cases/x.yaml` it finds no package, so a
+  changed case would be proven in none on workline's own line; its
+  build-error pattern reads paths relative to `tests/conformance`.
+- **Later, after 1.0**: a tester setting naming the package of a set of
+  paths (`roles/*/cases/**` → `./tests/conformance`) would let the cases
+  move, one role a pull request ([#1982]).
+
 [#89]: https://github.com/JN0V/workline/issues/89
+[#1979]: https://github.com/JN0V/workline/pull/1979
+[#1982]: https://github.com/JN0V/workline/issues/1982
 [#1494]: https://github.com/JN0V/workline/issues/1494
 [#1629]: https://github.com/JN0V/workline/issues/1629
 [#1630]: https://github.com/JN0V/workline/issues/1630
