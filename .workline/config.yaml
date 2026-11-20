@@ -143,7 +143,15 @@ roles:
       # 41k tokens a spec, the dearest measured, fit 450k. Reverted with
       # the push's pull request.
       specs-per-run: 10
-      ai-max-tokens: 450000
+      # A change past one call is read in up to four parts here, not two
+      # (2026-11-20, #1113): 8 of 527 pull requests from 6 to 20 Nov ended
+      # review-not-whole, all a person's, mostly moves and renames; four
+      # parts would have read 7 of them. Four parts spend at most four
+      # budgets, 400k, and the judges keep a third of the run as with two
+      # (ADR-0020, amendment of 2026-10-17): 600k, above the specs' 410k.
+      # A cap, not a spend. workline:accepted-whole stays the backstop.
+      parts-max: 4
+      ai-max-tokens: 600000
 routing:
   # Before a push, the committer checks the commits leaving the machine, and
   # the documentalist has the docs they made suspect judged. On a pull
