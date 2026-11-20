@@ -26,7 +26,7 @@ service it may consult. Words used here:
   [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md),
   `checked` earned by what was read.
 
-The rest of the judge:
+The rest of the check:
 
 - [hunks that misquote the doc, and asking again](judge-hunks.md);
 - [what holds is applied](judge-applied.md), and what the run's findings
