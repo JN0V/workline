@@ -776,8 +776,9 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 		defer close(copied)
 		_, _ = io.Copy(&out, pr)
 	}()
-	err = cmd.Wait()     // a test that fails exits non-zero: the report says which
-	agent.KillGroup(cmd) // what it forked and left running ends with it (#1335), the pipe closes
+	err = cmd.Wait()        // a test that fails exits non-zero: the report says which
+	late = ctx.Err() != nil // judged when the leader ended, not after the output wait
+	agent.KillGroup(cmd)    // what it forked and left running ends with it (#1335), the pipe closes
 	select {
 	case <-copied:
 	case <-time.After(2 * time.Second): // a daemon out of the group still holds it
@@ -787,7 +788,7 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 	_ = pr.Close()
 	// Its secrets masked before a reason quotes or cuts it (#1215).
 	masked := bytes.NewBufferString(forge.Mask(out.String()))
-	return *masked, ctx.Err() != nil, err
+	return *masked, late, err
 }
 
 // overTime is the finding of a command stopped past the proof's budget.
