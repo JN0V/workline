@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -422,7 +423,20 @@ func (r *Role) MergedSettings(c *ProjectConfig) map[string]any {
 	}
 	own := r.Settings
 	if d := c.PackDefaults[r.Name]; len(d) > 0 {
+		rows, _ := d["build-errors"].([]any)
+		defaults, _ := own["build-errors"].([]any)
 		own = MergeSettings(own, d) // the packs' over the role's defaults, the project's over both
+		if len(rows) > 0 && len(defaults) > 0 {
+			// the packs' rows add to the role's, never narrow them: the
+			// role's come first, a row both give is kept once
+			merged := cloneSetting(defaults).([]any)
+			for _, r := range rows {
+				if !slices.ContainsFunc(merged, func(x any) bool { return reflect.DeepEqual(x, r) }) {
+					merged = append(merged, cloneSetting(r))
+				}
+			}
+			own["build-errors"] = merged
+		}
 	}
 	if len(r.Levels) == 0 {
 		return MergeSettings(own, project)
