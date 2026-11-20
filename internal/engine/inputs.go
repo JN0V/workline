@@ -144,7 +144,7 @@ func readTarget(env []string, cuts *[]string) (text, base, branch string, err er
 	}
 	if start > 0 {
 		*cuts = append(*cuts, fmt.Sprintf("target comments: the %d oldest of %d left out, the inputs' cap of %d bytes", start, len(comments), commentsCap))
-		b.WriteString(fmt.Sprintf("\n[%d older comments left out]\n", start))
+		fmt.Fprintf(&b, "\n[%d older comments left out]\n", start)
 	}
 	for _, c := range comments[start:] {
 		b.WriteString("\n### Comment\n\n" + capText("target comment", c, textCap, cuts) + "\n")
