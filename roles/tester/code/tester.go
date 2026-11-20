@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -757,13 +758,37 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 	agent.InGroup(cmd) // stopped with what it started; a detached daemon lives on (#1197)
 	cmd.Dir = dir
 	cmd.Env = uncached(forge.ProjectEnv(os.Environ()))
-	cmd.Stdout, cmd.Stderr = &out, &out
-	cmd.WaitDelay = 5 * time.Second
-	err = cmd.Run()      // a test that fails exits non-zero: the report says which
-	agent.KillGroup(cmd) // what it forked and left running ends with it (#1335)
+	// The output goes through a pipe of ours, an *os.File: Wait then returns
+	// when the leader exits, not when a daemon holding the pipe lets go.
+	pr, pw, perr := os.Pipe()
+	if perr != nil {
+		return out, false, perr
+	}
+	cmd.Stdout, cmd.Stderr = pw, pw
+	copied := make(chan struct{})
+	if err = cmd.Start(); err != nil {
+		_ = pr.Close()
+		_ = pw.Close()
+		return out, false, err
+	}
+	_ = pw.Close() // only the command and what it forked hold the write end
+	go func() {
+		defer close(copied)
+		_, _ = io.Copy(&out, pr)
+	}()
+	err = cmd.Wait()        // a test that fails exits non-zero: the report says which
+	late = ctx.Err() != nil // judged when the leader ended, not after the output wait
+	agent.KillGroup(cmd)    // what it forked and left running ends with it (#1335), the pipe closes
+	select {
+	case <-copied:
+	case <-time.After(2 * time.Second): // a daemon out of the group still holds it
+		_ = pr.Close()
+		<-copied
+	}
+	_ = pr.Close()
 	// Its secrets masked before a reason quotes or cuts it (#1215).
 	masked := bytes.NewBufferString(forge.Mask(out.String()))
-	return *masked, ctx.Err() != nil, err
+	return *masked, late, err
 }
 
 // overTime is the finding of a command stopped past the proof's budget.
