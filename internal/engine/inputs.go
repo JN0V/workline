@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -27,6 +28,10 @@ func capText(name, text string, limit int, cuts *[]string) string {
 	cut := text[:limit]
 	if i := strings.LastIndex(cut, "\n"); i > 0 {
 		cut = cut[:i+1]
+	} else {
+		for len(cut) > 0 && !utf8.RuneStart(text[len(cut)]) {
+			cut = cut[:len(cut)-1]
+		}
 	}
 	*cuts = append(*cuts, fmt.Sprintf("%s cut from %d to %d bytes, the inputs' cap", name, len(text), len(cut)))
 	return cut + "\n[cut]\n"
