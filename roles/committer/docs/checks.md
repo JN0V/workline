@@ -11,7 +11,7 @@ sources:
   - roles/committer/code/committer.go#Pre
   - roles/committer/code/committer.go#checkRange
   - roles/committer/role.yaml
-checked: c46a93d6c
+checked: dd77bf922
 verified: agent:claude-code
 ---
 # Committer — the checks

@@ -12,7 +12,7 @@ sources:
   - internal/line/line.go#GatesInput
   - internal/line/line.go#Run
   - internal/engine/engine.go#Result.overBudget
-checked: e2e165c2d
+checked: dd77bf922
 verified: agent:claude-code
 ---
 # Inspector
