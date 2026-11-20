@@ -64,7 +64,7 @@ the person's own pull request.**
 - **An engine-changing pull request** touches what the binary embeds or
   compiles: `cmd/`, `internal/`, `roles/`, `skills/`, `roles.go`,
   `defaults/routing.yaml`, `go.mod`, `go.sum`
-  ([roles.go](../../roles.go) and `internal/` hold the `go:embed`).
+  ([workline.go](../../workline.go), once `roles.go`, and `internal/` hold the `go:embed`).
 - **It also gets a head pass**: judge and gates built from its head,
   non-blocking, their results told on the pull request. A new rule,
   lens, prompt, gate or `route main` change is exercised on its own
@@ -152,7 +152,7 @@ the person's own pull request.**
 - **A fix reaches the line 1 to 2 h after its merge**, as for a user:
   release, try, pin. Fewer releases, each tried before the line takes it.
 - **The N-1 rule, a format ships in a release before it is used**:
-  role files ship inside the binary ([roles.go](../../roles.go)); for
+  role files ship inside the binary ([workline.go](../../workline.go), once `roles.go`); for
   every format the engine reads from the repository or a run
   (`.workline/config.yaml`, `.workline/roles/`, the docs' front
   matter, the artifacts warn and judge hand to apply), a release reads
