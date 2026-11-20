@@ -12,9 +12,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/JN0V/workline/internal/builtin/inspector"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/kit/inspectmark"
 )
 
 // gateHolds is how a round says a gate's finding: neither the reviewer's
@@ -60,7 +60,7 @@ func gateRows(comment string) (head string, asked []devmark.Asked) {
 // likely a false positive. An inspector's comment that does not read
 // adds nothing: the gates' own words stand.
 func triageDetails(asked []devmark.Asked, comment, head string) {
-	rec, err := inspector.ReadTriage(comment)
+	rec, err := inspectmark.ReadTriage(comment)
 	if err != nil {
 		return
 	}
@@ -106,7 +106,7 @@ func gatesAsked(kept forge.Kept, a devmark.Act, head string) (string, []devmark.
 	if at == "" || len(asked) == 0 || sameCommit(at, a.GatesAt) || head != "" && !sameCommit(at, head) {
 		return "", nil
 	}
-	if t, ok := kept.Last(inspector.Marker); ok {
+	if t, ok := kept.Last(inspectmark.Marker); ok {
 		triageDetails(asked, t, at)
 	}
 	return at, asked

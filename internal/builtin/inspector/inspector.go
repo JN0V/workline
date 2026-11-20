@@ -24,6 +24,7 @@ import (
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/inspectmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -55,55 +56,19 @@ type Settings struct {
 	ForgeWrites bool `json:"forge-writes"` // on a merge request: the comment, the record in it
 }
 
-// Found is one finding the gates report the change adds, as the inspector
-// reads it from their result: placed, named by its fingerprint, which
-// holds no line (ADR-0049, step 2).
-type Found struct {
-	ID          string `json:"id"` // t1 to triage now, r1 triaged before: what the task names it by
-	Gate        string `json:"gate"`
-	Check       string `json:"check"`
-	Tool        string `json:"tool,omitempty"`
-	Rule        string `json:"rule,omitempty"`
-	Level       string `json:"level,omitempty"`
-	Path        string `json:"path,omitempty"`
-	Line        int    `json:"line,omitempty"`
-	Message     string `json:"message,omitempty"`
-	Fingerprint string `json:"fingerprint"`
-}
-
-// Where is the finding's place, `path:line`.
-func (f Found) Where() string {
-	if f.Line > 0 {
-		return fmt.Sprintf("%s:%d", f.Path, f.Line)
-	}
-	return f.Path
-}
-
-// name is the rule a finding is shown by, its tool beside it.
-func (f Found) name() string {
-	n := f.Rule
-	if n == "" {
-		n = f.Check
-	}
-	if f.Tool != "" && f.Tool != n {
-		return fmt.Sprintf("%s (%s)", n, f.Tool)
-	}
-	return n
-}
-
 // Run is what the inspector settles, kept between pre's passes and read
 // by post: the findings at the head, the record, what to say.
 type Run struct {
-	Head     string            `json:"head"`
-	Found    []Found           `json:"found"`           // every new finding of the gates, triaged or not
-	Asked    []string          `json:"asked,omitempty"` // the fingerprints put to the agent this run
-	Record   Record            `json:"record"`
-	Read     string            `json:"read,omitempty"` // the record as the run read it: the apply merges the comment's with it (#580)
-	Local    bool              `json:"local"`          // the record is kept on this machine
-	Status   string            `json:"status"`
-	Summary  string            `json:"summary"`
-	Findings []verdict.Finding `json:"findings,omitempty"`
-	Said     []string          `json:"said,omitempty"` // lines the comment says beside the triage
+	Head     string              `json:"head"`
+	Found    []inspectmark.Found `json:"found"`           // every new finding of the gates, triaged or not
+	Asked    []string            `json:"asked,omitempty"` // the fingerprints put to the agent this run
+	Record   inspectmark.Record  `json:"record"`
+	Read     string              `json:"read,omitempty"` // the record as the run read it: the apply merges the comment's with it (#580)
+	Local    bool                `json:"local"`          // the record is kept on this machine
+	Status   string              `json:"status"`
+	Summary  string              `json:"summary"`
+	Findings []verdict.Finding   `json:"findings,omitempty"`
+	Said     []string            `json:"said,omitempty"` // lines the comment says beside the triage
 }
 
 // Pre prepares the triage: the gates' new findings read, those triaged
@@ -156,14 +121,14 @@ func prepare(runDir, repo string, s Settings) int {
 		// the comment written holds the record anew.
 		run.Findings = append(run.Findings, verdict.Finding{Rule: "record-unread", Level: "warn",
 			Message: "the record of what was triaged before, " + where + ", could not be read (" + err.Error() + "): every new finding is triaged again"})
-		rec = Record{}
+		rec = inspectmark.Record{}
 	}
 	run.Record = rec
-	run.Read, _ = rec.lines(nil, 1<<30)
-	var fresh []Found
+	run.Read, _ = rec.Lines(nil, 1<<30)
+	var fresh []inspectmark.Found
 	t, r := 0, 0
 	for i, f := range run.Found {
-		if _, ok := rec.find(f.Fingerprint); ok {
+		if _, ok := rec.Find(f.Fingerprint); ok {
 			r++
 			run.Found[i].ID = "r" + strconv.Itoa(r)
 			continue
@@ -247,7 +212,7 @@ func answered(runDir, repo string, s Settings) int {
 	if err != nil {
 		return notRead(fmt.Sprintf("does not read (%v)", err))
 	}
-	byID := map[string]Found{}
+	byID := map[string]inspectmark.Found{}
 	for _, f := range run.Found {
 		if slices.Contains(run.Asked, f.Fingerprint) || strings.HasPrefix(f.ID, "r") {
 			byID[f.ID] = f
@@ -282,7 +247,7 @@ func answered(runDir, repo string, s Settings) int {
 			}
 			continue
 		}
-		t := Triaged{Fingerprint: f.Fingerprint, Gate: f.Gate, Check: f.Check, Tool: f.Tool, Rule: f.Rule, Where: f.Where(), At: run.Head, Model: model,
+		t := inspectmark.Triaged{Fingerprint: f.Fingerprint, Gate: f.Gate, Check: f.Check, Tool: f.Tool, Rule: f.Rule, Where: f.Where(), At: run.Head, Model: model,
 			Matters: text(m["matters"]), Fix: text(m["fix"]), Why: text(m["why"])}
 		fp, _ := m["false-positive"].(bool)
 		t.FalsePositive = fp
@@ -301,18 +266,18 @@ func answered(runDir, repo string, s Settings) int {
 		if placed && place > 0 {
 			order[f.Fingerprint] = place
 		}
-		run.Record = run.Record.with(t)
+		run.Record = run.Record.With(t)
 	}
 	left := 0
 	for _, fp := range run.Asked {
-		if _, ok := run.Record.find(fp); !ok {
+		if _, ok := run.Record.Find(fp); !ok {
 			left++
 		}
 	}
 	if left > 0 {
 		run.Said = append(run.Said, fmt.Sprintf("Not triaged: %d, the agent's answer giving no triage that reads for %s, asked again at the next push.", left, plural(left, "it", "them")))
 	}
-	run.Record = run.Record.ordered(run.Found, order)
+	run.Record = run.Record.Ordered(run.Found, order)
 	return settled(runDir, s, run)
 }
 
@@ -338,13 +303,13 @@ func settled(runDir string, s Settings, run Run) int {
 	}
 	if len(shown) > 0 {
 		run.Summary += fmt.Sprintf("; %d likely %s", fps, plural(fps, "a false positive", "false positives"))
-		run.Summary += fmt.Sprintf("; fix first: %s (%s)", shown[0].Where, shown[0].ruleName())
+		run.Summary += fmt.Sprintf("; fix first: %s (%s)", shown[0].Where, shown[0].RuleName())
 	}
 	run.Summary += "; the gates' verdict stands"
 	for i, t := range shown {
-		msg := fmt.Sprintf("fix %d of %d, %s: %s", i+1, len(shown), t.ruleName(), sentence(t.Matters))
+		msg := fmt.Sprintf("fix %d of %d, %s: %s", i+1, len(shown), t.RuleName(), sentence(t.Matters))
 		if t.FalsePositive {
-			msg = fmt.Sprintf("fix %d of %d, %s: likely a false positive: %s %s", i+1, len(shown), t.ruleName(), sentence(t.Why), sentence(t.Matters))
+			msg = fmt.Sprintf("fix %d of %d, %s: likely a false positive: %s %s", i+1, len(shown), t.RuleName(), sentence(t.Why), sentence(t.Matters))
 		}
 		if t.Fix != "" {
 			msg += " Fix: " + sentence(t.Fix)
@@ -358,7 +323,7 @@ func settled(runDir string, s Settings, run Run) int {
 		// edited, never one opened to say nothing. With the record the run
 		// read, which the apply merges with the one the comment holds by
 		// then, a run applied since having written it (#580).
-		value := map[string]any{"sticky": stickyKey, "body": body, "read": run.Read}
+		value := map[string]any{"sticky": inspectmark.StickyKey, "body": body, "read": run.Read}
 		if len(shown) == 0 {
 			value["update-only"] = true
 		}
@@ -375,10 +340,10 @@ func settled(runDir string, s Settings, run Run) int {
 
 // current are the record's triages of the findings at the head, in the
 // order to fix them, each at its place there.
-func current(run Run) []Triaged {
-	var out []Triaged
+func current(run Run) []inspectmark.Triaged {
+	var out []inspectmark.Triaged
 	for _, f := range run.Found {
-		if t, ok := run.Record.find(f.Fingerprint); ok {
+		if t, ok := run.Record.Find(f.Fingerprint); ok {
 			t.Where = f.Where()
 			out = append(out, t)
 		}
@@ -388,7 +353,7 @@ func current(run Run) []Triaged {
 }
 
 // rank is a triage's place; none given, after those given.
-func rank(t Triaged) int {
+func rank(t inspectmark.Triaged) int {
 	if t.Order > 0 {
 		return t.Order
 	}
@@ -396,7 +361,7 @@ func rank(t Triaged) int {
 }
 
 // countNew is how many of the triages shown this run made.
-func countNew(run Run, shown []Triaged) int {
+func countNew(run Run, shown []inspectmark.Triaged) int {
 	n := 0
 	for _, t := range shown {
 		if slices.Contains(run.Asked, t.Fingerprint) {
@@ -432,7 +397,7 @@ func Post(runDir, repo string) int {
 // prints it: each gate step's new findings, once each by fingerprint. A
 // check whose fix is a command, a formatter's, is said, not triaged: its
 // fix is that command (gates.md).
-func readGates(file string) ([]Found, []string, error) {
+func readGates(file string) ([]inspectmark.Found, []string, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, nil, err
@@ -446,7 +411,7 @@ func readGates(file string) ([]Found, []string, error) {
 	if err := json.Unmarshal(data, &r); err != nil {
 		return nil, nil, err
 	}
-	var out []Found
+	var out []inspectmark.Found
 	var said []string
 	seen := map[string]bool{}
 	for _, st := range r.Steps {
@@ -466,7 +431,7 @@ func readGates(file string) ([]Found, []string, error) {
 				continue
 			}
 			seen[f.Fingerprint] = true
-			out = append(out, Found{Gate: name, Check: f.Check, Tool: f.Tool, Rule: f.Rule, Level: f.Level, Path: f.Path, Line: f.Line, Message: f.Message, Fingerprint: f.Fingerprint})
+			out = append(out, inspectmark.Found{Gate: name, Check: f.Check, Tool: f.Tool, Rule: f.Rule, Level: f.Level, Path: f.Path, Line: f.Line, Message: f.Message, Fingerprint: f.Fingerprint})
 		}
 	}
 	return out, said, nil

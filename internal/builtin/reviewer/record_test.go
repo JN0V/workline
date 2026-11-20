@@ -2,6 +2,7 @@ package reviewer
 
 import (
 	"fmt"
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -111,12 +112,12 @@ func TestSinceCountsTheCommitsNotReviewed(t *testing.T) {
 func TestJudgedLinesFitTheComment(t *testing.T) {
 	var r Record
 	for i := range 400 {
-		r.Judged = append(r.Judged, Answered{Lens: "edge-cases", Where: fmt.Sprintf("a/f%03d.go:%d", i, i+1), At: strings.Repeat("ab", 20),
+		r.Judged = append(r.Judged, reviewmark.Answered{Lens: "edge-cases", Where: fmt.Sprintf("a/f%03d.go:%d", i, i+1), At: strings.Repeat("ab", 20),
 			Yes: i%2 == 0, Finder: "claude-sonnet-5", Judge: "claude-opus-5", Title: "A title -- with --> in it, <b>and</b> a quote \""})
 	}
 	r.Gone = 2
 	all := r.judgedLines(1 << 20)
-	back, gone, held := ReadJudged("text\n" + all + "\ntext")
+	back, gone, held := reviewmark.ReadJudged("text\n" + all + "\ntext")
 	if !held || gone != 2 || !slices.Equal(back, r.Judged) {
 		t.Fatalf("read back: held %v, gone %d, %d lines, equal %v", held, gone, len(back), slices.Equal(back, r.Judged))
 	}
@@ -124,22 +125,22 @@ func TestJudgedLinesFitTheComment(t *testing.T) {
 		t.Errorf("%d comments closed, want 401: a title ended one", n)
 	}
 	body := strings.Repeat("x", 20000)
-	text := body + r.judgedLines(SummaryMax-len(body))
-	back, gone, _ = ReadJudged(text)
+	text := body + r.judgedLines(reviewmark.SummaryMax-len(body))
+	back, gone, _ = reviewmark.ReadJudged(text)
 	switch {
-	case len(text) > SummaryMax:
-		t.Errorf("the comment holds %d characters, over %d", len(text), SummaryMax)
+	case len(text) > reviewmark.SummaryMax:
+		t.Errorf("the comment holds %d characters, over %d", len(text), reviewmark.SummaryMax)
 	case len(back) == 0 || back[len(back)-1] != r.Judged[len(r.Judged)-1]:
 		t.Errorf("the newest line went")
 	case gone != 2+len(r.Judged)-len(back) || back[0] != r.Judged[len(r.Judged)-len(back)]:
 		t.Errorf("%d kept, %d gone: want the oldest gone, counted with the 2 before", len(back), gone)
-	case len(text)+300 < SummaryMax:
+	case len(text)+300 < reviewmark.SummaryMax:
 		t.Errorf("the comment holds %d characters: one more line would have fit", len(text))
 	}
-	if _, gone, _ := ReadJudged("<!-- workline:judged-lines gone=0 -->\n<!-- workline:judged {\"lens\": -->"); gone != 1 {
+	if _, gone, _ := reviewmark.ReadJudged("<!-- workline:judged-lines gone=0 -->\n<!-- workline:judged {\"lens\": -->"); gone != 1 {
 		t.Errorf("a line that does not read: %d gone, want 1", gone)
 	}
-	if _, _, held := ReadJudged("<!-- workline:record reviewed= runs=1 -->"); held {
+	if _, _, held := reviewmark.ReadJudged("<!-- workline:record reviewed= runs=1 -->"); held {
 		t.Errorf("a comment an engine before the lines wrote holds them")
 	}
 }
@@ -162,16 +163,16 @@ func TestJudgedLinesOutliveARecordDamaged(t *testing.T) {
 // comment no run wrote since, or one whose record does not read, is
 // written over as it is, and so is one when the record read does not.
 func TestMergeSummaryKeepsTheRunAppliedSince(t *testing.T) {
-	line := func(at string) Answered {
-		return Answered{Lens: "correctness", Where: "a.go:1", At: at, Yes: true, Title: "t"}
+	line := func(at string) reviewmark.Answered {
+		return reviewmark.Answered{Lens: "correctness", Where: "a.go:1", At: at, Yes: true, Title: "t"}
 	}
 	comment := func(r Record) string {
-		return "**workline reviewer** — x.\n\n" + r.String() + r.judgedLines(SummaryMax) + "\n\n<!-- workline:sticky=reviewer/summary -->"
+		return "**workline reviewer** — x.\n\n" + r.String() + r.judgedLines(reviewmark.SummaryMax) + "\n\n<!-- workline:sticky=reviewer/summary -->"
 	}
-	was := Record{Reviewed: []string{"a1"}, Runs: 1, Judged: []Answered{line("a1")}}
-	ours := Record{Reviewed: []string{"a1", "c3"}, Runs: 2, Judged: []Answered{line("a1"), line("c3")},
+	was := Record{Reviewed: []string{"a1"}, Runs: 1, Judged: []reviewmark.Answered{line("a1")}}
+	ours := Record{Reviewed: []string{"a1", "c3"}, Runs: 2, Judged: []reviewmark.Answered{line("a1"), line("c3")},
 		Blocks: []Block{{Lens: "correctness", Where: "a.go:1", Title: "t"}}}
-	body := "**workline reviewer** — ours.\n\n" + ours.String() + ours.judgedLines(SummaryMax)
+	body := "**workline reviewer** — ours.\n\n" + ours.String() + ours.judgedLines(reviewmark.SummaryMax)
 
 	if got := MergeSummary(body, was.Read(), comment(was)); got != body {
 		t.Errorf("no run applied since: the body changed:\n%s", got)
@@ -179,7 +180,7 @@ func TestMergeSummaryKeepsTheRunAppliedSince(t *testing.T) {
 	if got := MergeSummary(body, was.Read(), "<!-- workline:record runs=x -->"); got != body {
 		t.Errorf("a record damaged: the body changed:\n%s", got)
 	}
-	now := Record{Reviewed: []string{"a1", "b2"}, Runs: 2, Judged: []Answered{line("a1"), line("b2")}}
+	now := Record{Reviewed: []string{"a1", "b2"}, Runs: 2, Judged: []reviewmark.Answered{line("a1"), line("b2")}}
 	if got := MergeSummary(body, "no record", comment(now)); got != body {
 		t.Errorf("the record read does not read: the body changed, its runs counted twice:\n%s", got)
 	}
@@ -192,7 +193,7 @@ func TestMergeSummaryKeepsTheRunAppliedSince(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !slices.Equal(m.Reviewed, []string{"a1", "b2", "c3"}) || m.Runs != 3 || len(m.Blocks) != 1 ||
-		!slices.Equal(m.Judged, []Answered{line("a1"), line("b2"), line("c3")}) {
+		!slices.Equal(m.Judged, []reviewmark.Answered{line("a1"), line("b2"), line("c3")}) {
 		t.Errorf("merged: %+v; want a1 b2 c3, 3 runs, this run's block, every run's line once", m)
 	}
 }
@@ -219,7 +220,7 @@ func TestMergeInto(t *testing.T) {
 // A tests finding judged true, then false on a later run, asks its lens
 // back on no push (#1417): its last verdict alone counts.
 func TestRetestedReadsTheLastVerdict(t *testing.T) {
-	judged := []Answered{
+	judged := []reviewmark.Answered{
 		{Lens: "tests", Where: "calc/grid.go:3", Title: "grid untested", Yes: true},
 		{Lens: "tests", Where: "calc/grid.go:3", Title: "grid untested", Yes: false},
 	}

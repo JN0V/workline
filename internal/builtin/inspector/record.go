@@ -1,207 +1,16 @@
 package inspector
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/inspectmark"
 )
-
-// stickyKey keys the inspector's one comment on a merge request, edited
-// on each run, the record hidden in it.
-const stickyKey = "triage"
-
-// marker is the comment's, as the engine writes it.
-var marker = forge.Marker("sticky=inspector/" + stickyKey)
-
-// Triaged is one finding the agent triaged, kept by its fingerprint, which
-// holds no line: while it only moves, it is not asked again (ADR-0013).
-// At, the head it was triaged at; Model, who triaged it: what the weekly
-// sample draws (ADR-0046).
-type Triaged struct {
-	Fingerprint   string `json:"fingerprint"`
-	Gate          string `json:"gate,omitempty"`
-	Check         string `json:"check"`
-	Tool          string `json:"tool,omitempty"`
-	Rule          string `json:"rule,omitempty"`
-	Where         string `json:"where"`
-	At            string `json:"at"`
-	Model         string `json:"model,omitempty"`
-	Matters       string `json:"matters"`
-	Fix           string `json:"fix,omitempty"`
-	FalsePositive bool   `json:"false-positive,omitempty"`
-	Why           string `json:"why,omitempty"`
-	Order         int    `json:"order,omitempty"`
-}
-
-func (t Triaged) ruleName() string {
-	n := t.Rule
-	if n == "" {
-		n = t.Check
-	}
-	if t.Tool != "" && t.Tool != n {
-		return fmt.Sprintf("%s (%s)", n, t.Tool)
-	}
-	return n
-}
-
-// Record is every finding triaged on the merge request, the oldest first:
-// hidden in the comment, a line each; on a machine, in the git directory.
-type Record struct {
-	Triaged []Triaged `json:"triaged,omitempty"`
-}
-
-func (r Record) find(fingerprint string) (Triaged, bool) {
-	for _, t := range r.Triaged {
-		if t.Fingerprint == fingerprint {
-			return t, true
-		}
-	}
-	return Triaged{}, false
-}
-
-// with is the record holding t, in place of one of its fingerprint.
-func (r Record) with(t Triaged) Record {
-	out := Record{}
-	for _, o := range r.Triaged {
-		if o.Fingerprint != t.Fingerprint {
-			out.Triaged = append(out.Triaged, o)
-		}
-	}
-	out.Triaged = append(out.Triaged, t)
-	return out
-}
-
-// ordered sets each finding's place at the head: the agent's, given;
-// else the place it had, after those given; else the gates' order.
-func (r Record) ordered(found []Found, given map[string]int) Record {
-	type place struct {
-		given, had, at int
-		fp             string
-	}
-	var places []place
-	for i, f := range found {
-		t, ok := r.find(f.Fingerprint)
-		if !ok {
-			continue
-		}
-		p := place{given: given[f.Fingerprint], had: t.Order, at: i, fp: f.Fingerprint}
-		places = append(places, p)
-	}
-	key := func(p place) (int, int, int) {
-		if p.given > 0 {
-			return 0, p.given, p.at
-		}
-		if p.had > 0 {
-			return 1, p.had, p.at
-		}
-		return 2, 0, p.at
-	}
-	less := func(a, b place) bool {
-		a1, a2, a3 := key(a)
-		b1, b2, b3 := key(b)
-		if a1 != b1 {
-			return a1 < b1
-		}
-		if a2 != b2 {
-			return a2 < b2
-		}
-		return a3 < b3
-	}
-	for i := 1; i < len(places); i++ {
-		for j := i; j > 0 && less(places[j], places[j-1]); j-- {
-			places[j], places[j-1] = places[j-1], places[j]
-		}
-	}
-	rank := map[string]int{}
-	for i, p := range places {
-		rank[p.fp] = i + 1
-	}
-	out := Record{}
-	for _, t := range r.Triaged {
-		if n, ok := rank[t.Fingerprint]; ok {
-			t.Order = n
-		}
-		out.Triaged = append(out.Triaged, t)
-	}
-	return out
-}
-
-var triagedLine = regexp.MustCompile(`<!-- workline:triaged (.*?) -->`)
-
-// recordOpening opens each line of the record: a text holding one that
-// does not read holds a record damaged, never none.
-const recordOpening = "<!-- workline:triaged"
-
-// readRecord reads the record a text holds; none when it holds no line.
-func readRecord(text string) (Record, error) {
-	var r Record
-	lines := triagedLine.FindAllStringSubmatch(text, -1)
-	for _, m := range lines {
-		var t Triaged
-		if err := json.Unmarshal([]byte(m[1]), &t); err != nil || t.Fingerprint == "" {
-			return Record{}, fmt.Errorf("a line of the record does not read: %.80s", m[0])
-		}
-		r = r.with(t)
-	}
-	if len(lines) != strings.Count(text, recordOpening) {
-		return Record{}, errors.New("a line of the record is cut")
-	}
-	return r, nil
-}
-
-// ReadTriage is the record the inspector's comment holds: what the
-// developer's review round reads beside a gate's finding, why it matters
-// and how to fix it. Marker keys that comment.
-func ReadTriage(text string) (Record, error) { return readRecord(text) }
-
-// Marker keys the inspector's comment on a merge request.
-var Marker = marker
-
-// lines is the record as the comment hides it: a line each, the oldest
-// gone first past room, those of the findings at the head kept; past it
-// still, the oldest of those too, counted: they are asked again.
-func (r Record) lines(keep map[string]bool, room int) (string, int) {
-	all := make([]string, len(r.Triaged))
-	size := 0
-	for i, t := range r.Triaged {
-		all[i] = "\n<!-- workline:triaged " + hidden(t) + " -->"
-		size += len(all[i])
-	}
-	gone, left := map[int]bool{}, 0
-	for _, theirs := range []bool{false, true} {
-		for i := 0; i < len(all) && size > room; i++ {
-			if !gone[i] && keep[r.Triaged[i].Fingerprint] == theirs {
-				gone[i] = true
-				size -= len(all[i])
-				if theirs {
-					left++
-				}
-			}
-		}
-	}
-	var b strings.Builder
-	for i, l := range all {
-		if !gone[i] {
-			b.WriteString(l)
-		}
-	}
-	return b.String(), left
-}
-
-// hidden is a value as JSON on one line, safe in a comment hidden in
-// Markdown: a dash written as its escape, and `<`, `>` escaped by the
-// JSON library, so nothing the agent wrote ends the comment hiding it.
-func hidden(v any) string {
-	data, _ := json.Marshal(v)
-	return strings.ReplaceAll(string(data), "-", `\u002d`)
-}
 
 // commentMax is the most characters the comment holds: GitHub takes
 // 65,536. shownMax, the most triages it lists; the run's summary holds
@@ -214,7 +23,7 @@ const (
 // comment is the inspector's one comment on the merge request: the
 // triage of the findings at the head, in the order to fix them, and the
 // record hidden below.
-func comment(run Run, shown []Triaged) string {
+func comment(run Run, shown []inspectmark.Triaged) string {
 	var b strings.Builder
 	n := len(run.Found)
 	fps := 0
@@ -236,7 +45,7 @@ func comment(run Run, shown []Triaged) string {
 			fmt.Fprintf(&b, "\n%d more triaged, not listed here: the run's summary lists them all.\n", len(shown)-shownMax)
 			break
 		}
-		fmt.Fprintf(&b, "%d. **%s** at %s: ", i+1, span(t.ruleName()), span(t.Where))
+		fmt.Fprintf(&b, "%d. **%s** at %s: ", i+1, span(t.RuleName()), span(t.Where))
 		if t.FalsePositive {
 			b.WriteString("**likely a false positive**: " + sentence(inert(t.Why)) + " ")
 		}
@@ -259,7 +68,7 @@ func comment(run Run, shown []Triaged) string {
 	const note = "- %d triages not kept in this comment, past its size: asked again at the next push.\n"
 	body := strings.TrimRight(b.String(), "\n") + "\n"
 	at := forge.At(run.Head) // the head and the run, above the record (#598)
-	record, left := run.Record.lines(keep, commentMax-len(body)-len(note)-len(at)-10)
+	record, left := run.Record.Lines(keep, commentMax-len(body)-len(note)-len(at)-10)
 	if left > 0 {
 		body += fmt.Sprintf(note, left)
 	}
@@ -269,14 +78,14 @@ func comment(run Run, shown []Triaged) string {
 // task is the one part put to the agent: the findings to triage, each
 // with the head's code around it, and those triaged before, for their
 // place in the order only.
-func task(repo string, s Settings, run Run, asked []Found) string {
+func task(repo string, s Settings, run Run, asked []inspectmark.Found) string {
 	var b strings.Builder
 	b.WriteString("# The gates' new findings to triage\n\n")
 	fmt.Fprintf(&b, "The project's own tools, its gates, report these findings on the change, each new since the merge base. "+
 		"Their verdict decides whether the change may merge: you never change it. At the head, %s.\n\n", short(run.Head))
 	b.WriteString("For each finding to triage, answer one `triage`: why it matters in this project, in its own words, from the code shown; what to change; whether it looks like a false positive, and why; and its place in the order to fix every finding listed here, 1 the first.\n\n")
 	for _, f := range asked {
-		fmt.Fprintf(&b, "## %s — `%s`, %s", f.ID, oneLine(f.name()), f.Where())
+		fmt.Fprintf(&b, "## %s — `%s`, %s", f.ID, oneLine(f.Name()), f.Where())
 		if f.Level != "" {
 			fmt.Fprintf(&b, " (%s)", f.Level)
 		}
@@ -287,7 +96,7 @@ func task(repo string, s Settings, run Run, asked []Found) string {
 		b.WriteString(around(repo, run.Head, f, s.LinesAround))
 		b.WriteString("\n")
 	}
-	var before []Found
+	var before []inspectmark.Found
 	for _, f := range run.Found {
 		if strings.HasPrefix(f.ID, "r") {
 			before = append(before, f)
@@ -296,12 +105,12 @@ func task(repo string, s Settings, run Run, asked []Found) string {
 	if len(before) > 0 {
 		b.WriteString("## Triaged before, still new at the head\n\nGive each its place in the order only: `{finding: r1, order: 3}`.\n\n")
 		for _, f := range before {
-			t, _ := run.Record.find(f.Fingerprint)
+			t, _ := run.Record.Find(f.Fingerprint)
 			fp := ""
 			if t.FalsePositive {
 				fp = " (likely a false positive)"
 			}
-			fmt.Fprintf(&b, "- %s — `%s`, %s: %s%s\n", f.ID, oneLine(f.name()), f.Where(), t.Matters, fp)
+			fmt.Fprintf(&b, "- %s — `%s`, %s: %s%s\n", f.ID, oneLine(f.Name()), f.Where(), t.Matters, fp)
 		}
 	}
 	return b.String()
@@ -309,7 +118,7 @@ func task(repo string, s Settings, run Run, asked []Found) string {
 
 // around is the head's code around a finding's line, numbered, the line
 // marked; a file the head does not hold is said.
-func around(repo, head string, f Found, n int) string {
+func around(repo, head string, f inspectmark.Found, n int) string {
 	if f.Path == "" || f.Line <= 0 {
 		return "(no line named)\n"
 	}
@@ -343,36 +152,36 @@ func around(repo, head string, f Found, n int) string {
 // Only the last comment workline's own account wrote is read, the one
 // Sticky edits (ADR-0051): on a public merge request anyone may comment,
 // and the record is shown again under workline's name.
-func loadRecord(repo string, s Settings) (Record, string, bool, error) {
+func loadRecord(repo string, s Settings) (inspectmark.Record, string, bool, error) {
 	if t := mergeRequest(); t != nil && s.ForgeWrites {
 		where := fmt.Sprintf("in its comment on merge request %d", t.ID)
 		f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
 		if err != nil {
-			return Record{}, where, false, fmt.Errorf("the forge: %v", err)
+			return inspectmark.Record{}, where, false, fmt.Errorf("the forge: %v", err)
 		}
 		if f == nil {
-			return Record{}, where, false, errors.New("no forge to read the merge request's comments from")
+			return inspectmark.Record{}, where, false, errors.New("no forge to read the merge request's comments from")
 		}
 		kept, err := forge.ReadKept(f, *t)
 		if err != nil {
-			return Record{}, where, false, err
+			return inspectmark.Record{}, where, false, err
 		}
-		if text, ok := kept.Last(marker); ok {
-			r, err := readRecord(text)
+		if text, ok := kept.Last(inspectmark.Marker); ok {
+			r, err := inspectmark.ReadRecord(text)
 			return r, where, false, err
 		}
-		return Record{}, where, false, kept.Unread(marker)
+		return inspectmark.Record{}, where, false, kept.Unread(inspectmark.Marker)
 	}
 	file := localRecord(repo)
 	where := "in " + file
 	data, err := os.ReadFile(file)
 	if os.IsNotExist(err) {
-		return Record{}, where, true, nil
+		return inspectmark.Record{}, where, true, nil
 	}
 	if err != nil {
-		return Record{}, where, true, err
+		return inspectmark.Record{}, where, true, err
 	}
-	r, err := readRecord(string(data))
+	r, err := inspectmark.ReadRecord(string(data))
 	return r, where, true, err
 }
 
@@ -382,18 +191,18 @@ func loadRecord(repo string, s Settings) (Record, string, bool, error) {
 // a finding both triaged, the others' gone first past the comment's
 // size. A record that does not read leaves body as it is.
 func MergeComment(body, read, found string) string {
-	ours, err1 := readRecord(body)
-	now, err2 := readRecord(found)
-	was, err3 := readRecord(read)
+	ours, err1 := inspectmark.ReadRecord(body)
+	now, err2 := inspectmark.ReadRecord(found)
+	was, err3 := inspectmark.ReadRecord(read)
 	if err1 != nil || err2 != nil || err3 != nil {
 		return body
 	}
 	// Triaged by a run applied since this one read: a finding this run
 	// neither read nor triaged; one it read is its own to keep or leave.
-	var since []Triaged
+	var since []inspectmark.Triaged
 	for _, t := range now.Triaged {
-		_, read := was.find(t.Fingerprint)
-		_, own := ours.find(t.Fingerprint)
+		_, read := was.Find(t.Fingerprint)
+		_, own := ours.Find(t.Fingerprint)
 		if !read && !own {
 			since = append(since, t)
 		}
@@ -402,7 +211,7 @@ func MergeComment(body, read, found string) string {
 		return body
 	}
 	head := body
-	if at := strings.Index(body, recordOpening); at >= 0 {
+	if at := strings.Index(body, inspectmark.RecordOpening); at >= 0 {
 		head = strings.TrimSuffix(body[:at], "\n")
 	}
 	keep := map[string]bool{}
@@ -413,8 +222,8 @@ func MergeComment(body, read, found string) string {
 	// it left out: past it, only triages of the run applied since go, the
 	// oldest first and uncounted, as comment drops those of findings not
 	// at the head; none of ours goes, so the count is 0.
-	merged := Record{Triaged: append(since, ours.Triaged...)}
-	record, _ := merged.lines(keep, commentMax-len(head)-10)
+	merged := inspectmark.Record{Triaged: append(since, ours.Triaged...)}
+	record, _ := merged.Lines(keep, commentMax-len(head)-10)
 	return head + record
 }
 
@@ -425,14 +234,14 @@ func MergeComment(body, read, found string) string {
 // comment's own, is taken out: the apply writes it again. "" when a
 // record does not read.
 func MergeInto(found, body, read, marker string) string {
-	now, err1 := readRecord(found)
-	ours, err2 := readRecord(body)
-	was, err3 := readRecord(read)
+	now, err1 := inspectmark.ReadRecord(found)
+	ours, err2 := inspectmark.ReadRecord(body)
+	was, err3 := inspectmark.ReadRecord(read)
 	if err1 != nil || err2 != nil || err3 != nil {
 		return ""
 	}
 	head := strings.TrimSpace(strings.Replace(found, marker, "", 1))
-	if at := strings.Index(head, recordOpening); at >= 0 {
+	if at := strings.Index(head, inspectmark.RecordOpening); at >= 0 {
 		head = strings.TrimSuffix(head[:at], "\n")
 	}
 	keep := map[string]bool{}
@@ -441,12 +250,12 @@ func MergeInto(found, body, read, marker string) string {
 	}
 	merged := now
 	for _, t := range ours.Triaged {
-		_, read := was.find(t.Fingerprint)
-		if _, there := now.find(t.Fingerprint); !read && !there {
-			merged.Triaged = append([]Triaged{t}, merged.Triaged...)
+		_, read := was.Find(t.Fingerprint)
+		if _, there := now.Find(t.Fingerprint); !read && !there {
+			merged.Triaged = append([]inspectmark.Triaged{t}, merged.Triaged...)
 		}
 	}
-	record, _ := merged.lines(keep, commentMax-len(head)-10)
+	record, _ := merged.Lines(keep, commentMax-len(head)-10)
 	return head + record
 }
 
@@ -460,12 +269,12 @@ func localRecord(repo string) string {
 }
 
 // saveLocal keeps the record on this machine.
-func saveLocal(repo string, r Record) error {
+func saveLocal(repo string, r inspectmark.Record) error {
 	file := localRecord(repo)
 	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
 		return err
 	}
-	text, _ := r.lines(nil, 1<<30)
+	text, _ := r.Lines(nil, 1<<30)
 	return os.WriteFile(file, []byte(strings.TrimPrefix(text, "\n")+"\n"), 0o644)
 }
 

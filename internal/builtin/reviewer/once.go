@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -144,7 +145,7 @@ func (st state) leftSaid() string {
 // file's blob; Finding, a hash of the finding's lens, quotes and symptom,
 // and what else its judge reads (roles/reviewer/docs/once.md). Nothing
 // when git cannot tell: the finding is judged.
-func sameAs(repo string, st state, s Settings, f Finding, l Lens) Answered {
+func sameAs(repo string, st state, s Settings, f Finding, l Lens) reviewmark.Answered {
 	h := sha256.New()
 	put := func(parts ...string) {
 		for _, p := range parts {
@@ -161,14 +162,14 @@ func sameAs(repo string, st state, s Settings, f Finding, l Lens) Answered {
 		patch = patchOf(repo, st.Base, st.Head, f.Cause.Path)
 	}
 	if patch == "" {
-		return Answered{}
+		return reviewmark.Answered{}
 	}
 	if f.Symptom != nil {
 		put(f.Symptom.Path, norm(f.Symptom.Quote))
 		if f.Symptom.Path != f.Cause.Path {
 			sym := patchOf(repo, st.Base, st.Head, f.Symptom.Path)
 			if sym == "" {
-				return Answered{}
+				return reviewmark.Answered{}
 			}
 			put(sym)
 		}
@@ -178,14 +179,14 @@ func sameAs(repo string, st state, s Settings, f Finding, l Lens) Answered {
 		if files := testFiles(repo, st.Head, f.Cause.Path, s.Tests); len(files) > 0 {
 			blobs, err := git(repo, append([]string{"ls-tree", st.Head, "--"}, files...)...)
 			if err != nil {
-				return Answered{}
+				return reviewmark.Answered{}
 			}
 			put(blobs)
 		}
 	case "issue":
 		put(whatFor(st.Issues, st.Beyond))
 	}
-	return Answered{Patch: patch, Finding: hex.EncodeToString(h.Sum(nil)[:6])}
+	return reviewmark.Answered{Patch: patch, Finding: hex.EncodeToString(h.Sum(nil)[:6])}
 }
 
 // patchOf is the patch id of the change base..head to a file, or to every
@@ -247,9 +248,9 @@ func judgeFloor(repo string, s Settings, st state) string {
 // the same patch, by its lens: a no, or a yes at an independence
 // judge-at-least still takes. A line written before the keys holds none:
 // never the same.
-func judgedBefore(rec Record, lens string, same Answered, floor string) (Answered, bool) {
+func judgedBefore(rec Record, lens string, same reviewmark.Answered, floor string) (reviewmark.Answered, bool) {
 	if same.Patch == "" || same.Finding == "" {
-		return Answered{}, false
+		return reviewmark.Answered{}, false
 	}
 	if floor == "" {
 		floor = "context"
@@ -259,9 +260,9 @@ func judgedBefore(rec Record, lens string, same Answered, floor string) (Answere
 			continue
 		}
 		if j.Yes && judge.Levels[j.Level] < judge.Levels[floor] {
-			return Answered{}, false
+			return reviewmark.Answered{}, false
 		}
 		return j, true
 	}
-	return Answered{}, false
+	return reviewmark.Answered{}, false
 }

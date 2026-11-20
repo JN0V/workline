@@ -13,7 +13,7 @@ sources:
   - internal/line/seconds.go#Step.timed
   - roles/committer/role.yaml#settings
   - roles/committer/role.yaml#personal
-checked: e2e165c2d
+checked: dd77bf922
 verified: agent:claude-code
 ---
 # Every commit checked

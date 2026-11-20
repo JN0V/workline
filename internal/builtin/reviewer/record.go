@@ -14,6 +14,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 )
 
 // Record is what the reviewer remembers between runs (ADR-0013's way): the
@@ -41,8 +42,8 @@ type Record struct {
 	// Judged are the findings the judge answered, every run's, kept on a
 	// merge request for the weekly sample (ADR-0046); Gone, how many of
 	// them the summary comment no longer holds. Never on a machine.
-	Judged []Answered `json:"judged,omitempty"`
-	Gone   int        `json:"judged-gone,omitempty"`
+	Judged []reviewmark.Answered `json:"judged,omitempty"`
+	Gone   int                   `json:"judged-gone,omitempty"`
 	// Weighed are the tester's "none needed" answers the judge weighed,
 	// so that an answer is weighed once (#1303).
 	Weighed []Weighed `json:"weighed,omitempty"`
@@ -51,34 +52,6 @@ type Record struct {
 	// alone written anew (ADR-0050). "" elsewhere, or with none yet.
 	comment string
 }
-
-// Answered is a finding the judge answered: kept (yes) or dropped (no), at
-// the head the review read, with the models of the lens that found it and
-// of its judge. A line each in the summary comment, for the merge
-// request's life: the weekly sample draws the reviewer's acts from them
-// (ADR-0046). What it was judged on keys it too, so the same finding on
-// the same patch is not judged again, its verdict kept (ADR-0050, step 6):
-// the patch id of the merge request's change to the cause's file, and the
-// finding's own key; with the independence of a yes, the reason of a no.
-// A line written before them keys nothing: its finding is judged again.
-type Answered struct {
-	Lens    string `json:"lens"`
-	Where   string `json:"where"`
-	At      string `json:"at"`
-	Patch   string `json:"patch,omitempty"`
-	Finding string `json:"finding,omitempty"`
-	Level   string `json:"level,omitempty"`
-	Why     string `json:"why,omitempty"`
-	Yes     bool   `json:"yes"`
-	Finder  string `json:"finder"`
-	Judge   string `json:"judge"`
-	Title   string `json:"title"`
-}
-
-// SummaryMax is the most characters the summary comment holds: GitHub
-// takes 65,536, the engine adds to the review region when it applies. The
-// lines of the findings judged give way first, the oldest first.
-const SummaryMax = 60000
 
 // Block is a lens's finding that blocked a review: it stands, run after
 // run, while its cause is found again on the change and no review of its
@@ -92,15 +65,6 @@ type Block struct {
 	Side  string `json:"side,omitempty"` // where its cause was found, onHead, onRemoved or onClaim: looked for there alone (#570); none in a record before it
 }
 
-// SummaryKey keys the reviewer's one comment on a merge request; WarnKey,
-// the run apart's, the lenses that warn, when the review is split
-// (ADR-0050): each run its own comment and record, written by its own
-// applying job, which no other edits at the same time.
-const (
-	SummaryKey = "summary"
-	WarnKey    = "warn"
-)
-
 // splitMark is hidden in the summary comment of a review split (ADR-0050):
 // its record is the verdict's run's alone. One without it, written by a
 // run not split, holds every lens's turn: the run apart's first record.
@@ -109,9 +73,9 @@ const splitMark = "<!-- workline:warn-apart -->"
 // keyOf is the comment a run of that side keeps its summary and record in.
 func keyOf(side string) string {
 	if side == warnOnly {
-		return WarnKey
+		return reviewmark.WarnKey
 	}
-	return SummaryKey
+	return reviewmark.SummaryKey
 }
 
 // recordLine reads a record; one an engine wrote before patch ids holds no
@@ -124,10 +88,6 @@ var (
 	// weighedLine reads the tester's answers weighed, a line of their own
 	// after the blocks; an engine before them wrote none (#1303).
 	weighedLine = regexp.MustCompile(`<!-- workline:weighed (.*?) -->`)
-	// judgedHead opens the lines of the findings judged, saying how many
-	// the comment no longer holds; an engine before them wrote none.
-	judgedHead = regexp.MustCompile(`<!-- workline:judged-lines gone=(\d+) -->`)
-	judgedLine = regexp.MustCompile(`<!-- workline:judged (.*?) -->`)
 )
 
 // The openings of the record and of its blocks: a text holding one that
@@ -198,32 +158,12 @@ func (r Record) judgedLines(room int) string {
 	return head(r.Gone+drop) + strings.Join(lines[drop:], "")
 }
 
-// ReadJudged reads the lines of the findings judged in a summary comment:
-// each line; how many the comment no longer holds — past its size, or a
-// line that does not read; and whether it holds them at all: one an
-// engine before them wrote does not (ADR-0046).
-func ReadJudged(comment string) (judged []Answered, gone int, held bool) {
-	if m := judgedHead.FindStringSubmatch(comment); m != nil {
-		gone, _ = strconv.Atoi(m[1])
-		held = true
-	}
-	for _, m := range judgedLine.FindAllStringSubmatch(comment, -1) {
-		var j Answered
-		if err := json.Unmarshal([]byte(m[1]), &j); err != nil || j.Lens == "" || j.Where == "" {
-			gone++
-			continue
-		}
-		judged = append(judged, j)
-	}
-	return judged, gone, held
-}
-
 // parseRecord reads a record from a text holding one; an empty one when
 // none. A record or blocks that do not read are an error (#302): never
 // read as none. The findings judged read apart, and are kept still.
 func parseRecord(text string) (Record, error) {
 	var r Record
-	r.Judged, r.Gone, _ = ReadJudged(text)
+	r.Judged, r.Gone, _ = reviewmark.ReadJudged(text)
 	m := recordLine.FindStringSubmatch(text)
 	if m == nil {
 		if strings.Contains(text, recordOpening) || strings.Contains(text, blocksOpening) {
@@ -346,7 +286,7 @@ func answering(blocks []Block, files []File, skip map[string]string) []string {
 // their reading again (readAgain), and the turn of lenses may give the
 // push another lens. A push changing no such test asks none of them; a
 // finding judged true, then false on a later run, asks nothing.
-func retested(repo string, s Settings, head string, judged []Answered, files []File, skip map[string]string) []string {
+func retested(repo string, s Settings, head string, judged []reviewmark.Answered, files []File, skip map[string]string) []string {
 	changed := paths(files)
 	lensOf := lensReader(repo)
 	tested, last := map[string]bool{}, map[string]bool{}
@@ -626,8 +566,8 @@ func MergeSummary(body, read, found string) string {
 		}
 	}
 	out := body[:at] + merged.String()
-	if _, _, held := ReadJudged(body); held {
-		out += merged.judgedLines(SummaryMax - len(out))
+	if _, _, held := reviewmark.ReadJudged(body); held {
+		out += merged.judgedLines(reviewmark.SummaryMax - len(out))
 	}
 	return out
 }
@@ -659,8 +599,8 @@ func MergeInto(found, body, read, marker string) string {
 		}
 	}
 	out := found[:at] + merged.String()
-	if _, _, held := ReadJudged(found); held {
-		out += merged.judgedLines(SummaryMax - len(out))
+	if _, _, held := reviewmark.ReadJudged(found); held {
+		out += merged.judgedLines(reviewmark.SummaryMax - len(out))
 	}
 	return strings.TrimSpace(strings.Replace(out, marker, "", 1))
 }
@@ -681,7 +621,7 @@ func union(a, b []string) []string {
 func localRecord(repo, side string) string {
 	name := "reviewer-record"
 	if side == warnOnly {
-		name += "-" + WarnKey
+		name += "-" + reviewmark.WarnKey
 	}
 	dir, err := git(repo, "rev-parse", "--absolute-git-dir")
 	if err != nil {
@@ -745,7 +685,7 @@ func loadRecord(repo string, s Settings, side string) (Record, string, error) {
 		// owing them or that left some, which it takes up; its blocks and
 		// judged lines stay there. One a split review wrote is the
 		// verdict's run's alone: it starts from the base.
-		if c, ok := kept.Last(forge.Marker("sticky=reviewer/" + SummaryKey)); side == warnOnly && ok && !strings.Contains(c, splitMark) {
+		if c, ok := kept.Last(forge.Marker("sticky=reviewer/" + reviewmark.SummaryKey)); side == warnOnly && ok && !strings.Contains(c, splitMark) {
 			r, err := readRecord(c)
 			if err != nil {
 				return Record{}, where, nil

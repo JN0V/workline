@@ -81,11 +81,11 @@ func TestReadMergeWarnFindingDoesNotHold(t *testing.T) {
 	}
 }
 
-// The tester's answer counts: given a tests finding the developer sent to
-// the tester's Draft (the record names it), when the tester answers it,
-// then that finding is no longer counted open: the merge reads no finding
-// open for it, and the verdict's own comment is left as it is.
-func TestReadMergeTestsFindingSentToTesterIsNotOpen(t *testing.T) {
+// A finding from the lenses that warn is never counted open, whoever got
+// it: even when the developer's record says it went to the tester, the
+// merge reads no finding open for it, and the verdict's own comment is
+// left as it is.
+func TestReadMergeWarnFindingNeverHoldsWhoeverGotIt(t *testing.T) {
 	act := devmark.Act{
 		Act: "code", Issue: 1,
 		Tester: []string{"tests|a_test.go|a case is not tested"},
@@ -96,7 +96,7 @@ func TestReadMergeTestsFindingSentToTesterIsNotOpen(t *testing.T) {
 		findingsLine("warns", "tests", "a_test.go:3", "Important: a case is not tested")
 	m := mergeReadWith(t, act, summary, warn)
 	if len(m.Open) != 0 {
-		t.Errorf("findings open %q: a tests finding sent to the tester is not counted open", m.Open)
+		t.Errorf("findings open %q: a warn finding is never counted open, even when sent to the tester", m.Open)
 	}
 	if !strings.Contains(m.Summary, "verdict pass") {
 		t.Errorf("the verdict's comment is not read as it is: %q", m.Summary)

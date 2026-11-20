@@ -1,6 +1,9 @@
 package reviewer
 
-import "testing"
+import (
+	"github.com/JN0V/workline/internal/kit/reviewmark"
+	"testing"
+)
 
 // The patch a verdict is kept for (ADR-0050, step 6): the same after a
 // rebase onto a base that changed another file; a new one once the branch
@@ -36,8 +39,8 @@ func TestPatchOfKeepsARebaseNotAChange(t *testing.T) {
 // its lens; a yes below judge-at-least is judged again, and a line written
 // before the keys never matches.
 func TestJudgedBeforeTheLastAtTheFloor(t *testing.T) {
-	same := Answered{Patch: "p1", Finding: "f1"}
-	rec := Record{Judged: []Answered{
+	same := reviewmark.Answered{Patch: "p1", Finding: "f1"}
+	rec := Record{Judged: []reviewmark.Answered{
 		{Lens: "correctness", Where: "a.go:3"},
 		{Lens: "correctness", Patch: "p1", Finding: "f1", Yes: false, Why: "first"},
 		{Lens: "correctness", Patch: "p1", Finding: "f1", Yes: true, Level: "model"},
@@ -49,10 +52,10 @@ func TestJudgedBeforeTheLastAtTheFloor(t *testing.T) {
 	if _, ok := judgedBefore(rec, "correctness", same, "provider"); ok {
 		t.Error("a yes at model kept under judge-at-least provider")
 	}
-	if _, ok := judgedBefore(rec, "correctness", Answered{Patch: "p2", Finding: "f1"}, ""); ok {
+	if _, ok := judgedBefore(rec, "correctness", reviewmark.Answered{Patch: "p2", Finding: "f1"}, ""); ok {
 		t.Error("kept on another patch")
 	}
-	if _, ok := judgedBefore(rec, "correctness", Answered{}, ""); ok {
+	if _, ok := judgedBefore(rec, "correctness", reviewmark.Answered{}, ""); ok {
 		t.Error("kept with no key")
 	}
 }

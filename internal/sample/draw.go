@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 )
 
 // Every role's acts in the weekly sample (ADR-0046): one in ten of the
@@ -172,8 +172,8 @@ func productOwnerActs(b forge.Backlog, first, end, until string) ([]Act, *Autono
 // warnMarker, the comment of its lenses that warn, read apart from the
 // verdict (ADR-0050), whose judged lines are drawn as the summary's.
 var (
-	summaryMarker = forge.Marker("sticky=reviewer/" + reviewer.SummaryKey)
-	warnMarker    = forge.Marker("sticky=reviewer/" + reviewer.WarnKey)
+	summaryMarker = forge.Marker("sticky=reviewer/" + reviewmark.SummaryKey)
+	warnMarker    = forge.Marker("sticky=reviewer/" + reviewmark.WarnKey)
 )
 
 var (
@@ -205,12 +205,12 @@ func reviewerActs(repo string, f forge.Forge, b forge.Backlog, mrs []forge.Merge
 			if !strings.Contains(c, warnMarker) {
 				continue
 			}
-			judged, gone, _ := reviewer.ReadJudged(c)
+			judged, gone, _ := reviewmark.ReadJudged(c)
 			for _, j := range judged {
 				out = append(out, judgedAct(ref, j))
 			}
 			if gone > 0 {
-				unread = append(unread, fmt.Sprintf("%s on %s whose lines the comment of its lenses that warn no longer holds: past its size (%d characters, the oldest gone first), or not readable", plural(gone, "finding")+" judged", ref, reviewer.SummaryMax))
+				unread = append(unread, fmt.Sprintf("%s on %s whose lines the comment of its lenses that warn no longer holds: past its size (%d characters, the oldest gone first), or not readable", plural(gone, "finding")+" judged", ref, reviewmark.SummaryMax))
 			}
 			break
 		}
@@ -218,13 +218,13 @@ func reviewerActs(repo string, f forge.Forge, b forge.Backlog, mrs []forge.Merge
 			if !strings.Contains(c, summaryMarker) {
 				continue
 			}
-			judged, gone, held := reviewer.ReadJudged(c)
+			judged, gone, held := reviewmark.ReadJudged(c)
 			if held {
 				for _, j := range judged {
 					out = append(out, judgedAct(ref, j))
 				}
 				if gone > 0 {
-					unread = append(unread, fmt.Sprintf("%s on %s whose lines its summary comment no longer holds: past its size (%d characters, the oldest gone first), or not readable", plural(gone, "finding")+" judged", ref, reviewer.SummaryMax))
+					unread = append(unread, fmt.Sprintf("%s on %s whose lines its summary comment no longer holds: past its size (%d characters, the oldest gone first), or not readable", plural(gone, "finding")+" judged", ref, reviewmark.SummaryMax))
 				}
 				break
 			}
@@ -248,7 +248,7 @@ func reviewerActs(repo string, f forge.Forge, b forge.Backlog, mrs []forge.Merge
 
 // judgedAct is a finding judged, as its line says: kept or dropped, at the
 // head its review read, by the models of its lens and its judge.
-func judgedAct(ref string, j reviewer.Answered) Act {
+func judgedAct(ref string, j reviewmark.Answered) Act {
 	kind := "dropped"
 	if j.Yes {
 		kind = "kept"

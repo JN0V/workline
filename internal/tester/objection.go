@@ -28,9 +28,9 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
@@ -212,7 +212,7 @@ func reviewedOn(why string) (n int, found, title string) {
 		return 0, "", ""
 	}
 	n, _ = strconv.Atoi(m[1])
-	return n, m[2], reviewer.FindingTitle(m[3])
+	return n, m[2], reviewmark.FindingTitle(m[3])
 }
 
 const answerFile = "answer.json"
@@ -884,7 +884,7 @@ func (a answer) toReview(text string) []intent.Intention {
 		return nil
 	}
 	return []intent.Intention{{Kind: "comment", Value: map[string]any{"merge-request": a.From, "sticky": testmark.TesterAnswerKey + a.Thread,
-		"body": reviewer.TesterAnswer(a.Found, a.Title, a.URL, text)}}}
+		"body": reviewmark.TesterAnswer(a.Found, a.Title, a.URL, text)}}}
 }
 
 // otherFiles are the record's tests but file, sorted, each in code.
