@@ -38,11 +38,6 @@ const ErrorWindow = 24 * time.Hour
 // input gets the same answer, so each try is an agent call for nothing.
 const AnswerBudget = 2
 
-// AnswerHold is the least time between such a run and the next on the
-// same body: longer than a machine error's back-off, a body changed by a
-// person lets it try at once (#1917).
-const AnswerHold = 6 * time.Hour
-
 // ErrorBackoff is the least time between a machine error and the run
 // again: the same reconcile, or an event right after, starts nothing.
 const ErrorBackoff = 10 * time.Minute
@@ -261,8 +256,6 @@ func (e *Errors) retry(now time.Time) (due bool, until time.Time, spent string) 
 		return false, time.Time{}, fmt.Sprintf("its patch did not apply on %d runs in a row (%s): %s; the line does not compare heads: a person restarts it, worth doing once its tester's Draft or `main` has moved", e.By[e.Kind], e.Kind, e.Said)
 	case e.Kind == "answer" && e.By[e.Kind] >= AnswerBudget:
 		return false, time.Time{}, fmt.Sprintf("its run ended %d times with no answer it could use on the same body, so it could not propose what it was asked (%s): %s; a person rewrites its body and puts its label back, or does the work", e.By[e.Kind], e.Kind, e.Said)
-	case e.Kind == "answer" && err2 == nil && now.Before(last.Add(AnswerHold)):
-		return false, last.Add(AnswerHold), ""
 	case e.By[e.Kind] > ErrorBudget:
 		return false, time.Time{}, fmt.Sprintf("its run failed %d times (%s): %s", e.By[e.Kind], e.Kind, e.Said)
 	case err1 == nil && now.Sub(first) >= ErrorWindow:

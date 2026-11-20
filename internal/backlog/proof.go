@@ -363,10 +363,31 @@ func ReadProof(comments []string, role string) (Proof, bool) {
 	if p.Kind != KindNone {
 		return p, true
 	}
+	if handedOver(comments) {
+		// The tester handed the issue over to the developer: no
+		// acceptance test applies, no frozen test (#1941). The older "no
+		// test possible" went back to the product owner, below.
+		return p, true
+	}
 	_, digest, _ := NoTest(comments)
 	st, found, err := ReadState(comments, role)
 	if !found || err != nil || st.Proof == nil || st.Proof.Answers != digest || ProofKinds[st.Proof.Kind] == "" {
 		return Proof{}, false
 	}
 	return *st.Proof, true
+}
+
+// NoTestApplies is what the tester's comment says when no acceptance
+// test applies to an issue and it goes on to the developer (#1941).
+const NoTestApplies = "no acceptance test applies"
+
+// handedOver says whether the tester's last comment says no acceptance
+// test applies.
+func handedOver(comments []string) bool {
+	for _, c := range slices.Backward(comments) {
+		if strings.Contains(c, testerSticky) {
+			return strings.Contains(c, NoTestApplies)
+		}
+	}
+	return false
 }
