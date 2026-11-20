@@ -87,6 +87,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
 		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `enterprising`, but a release candidate was refused: features and tasks wait for a person's yes on each pull request until a person closes %s.\n\n- To accept this one, put the label `%s`.",
 			d.Says(), n.demoted[kindFeature], backlog.AcceptedLabel(f))
+		body += headTrouble(o, m, hand, w)
 		if err := f.Sticky(t, body, forge.Marker("merge-waits="+d.Kind), true); err != nil {
 			return nil, err
 		}
