@@ -1,8 +1,9 @@
 package reviewer
 
 import (
-	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 )
 
 // The tester's answer reads back as it is written, its reason without

@@ -2,13 +2,14 @@ package reviewer
 
 import (
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 )
 
 // gitSteps runs git in repo, and commits a file there, each returning what
