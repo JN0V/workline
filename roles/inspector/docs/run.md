@@ -2,21 +2,21 @@
 sources:
   - internal/line/line.go#GatesInput
   - internal/line/line.go#foundFor.read
-  - internal/builtin/inspector/record.go#loadRecord
-  - internal/builtin/inspector/record.go#localRecord
+  - roles/inspector/code/record.go#loadRecord
+  - roles/inspector/code/record.go#localRecord
   - internal/forge/own.go#Kept.Last
-  - internal/builtin/inspector/record.go#task
-  - internal/builtin/inspector/inspector.go#answered
-  - internal/builtin/inspector/inspector.go#settled
-  - internal/builtin/inspector/inspector.go#current
-  - internal/builtin/inspector/record.go#shownMax
-  - internal/builtin/inspector/record.go#comment
+  - roles/inspector/code/record.go#task
+  - roles/inspector/code/inspector.go#answered
+  - roles/inspector/code/inspector.go#settled
+  - roles/inspector/code/inspector.go#current
+  - roles/inspector/code/record.go#shownMax
+  - roles/inspector/code/record.go#comment
   - roles/inspector/role.yaml#on-moved-on
   - defaults/ci/github/workline-warn.yml#jobs.warn.concurrency
   - defaults/ci/github/workline-apply.yml#jobs.apply.concurrency
   - internal/engine/review.go#applier.mergedRecord
   - internal/forge/at.go#At
-  - internal/builtin/inspector/inspector.go#Post
+  - roles/inspector/code/inspector.go#Post
   - internal/report/report.go#ForCodeScanning
 checked: e2e165c2d
 verified: agent:claude-code

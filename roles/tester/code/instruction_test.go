@@ -12,7 +12,7 @@ import (
 // The tester's instruction tells it to isolate git, as the project's
 // own tests do.
 func TestInstructionIsolatesGit(t *testing.T) {
-	data, err := os.ReadFile("../../roles/tester/prompts/instruction.md")
+	data, err := os.ReadFile("../prompts/instruction.md")
 	if err != nil {
 		t.Fatal(err)
 	}

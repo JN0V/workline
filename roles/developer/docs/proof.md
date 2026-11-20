@@ -2,9 +2,9 @@
 sources:
   - roles/developer/code/proof.go
   - roles/developer/code/developer.go
-  - internal/tester/onchange.go
-  - internal/tester/missing.go
-  - internal/tester/fresh.go
+  - roles/tester/code/onchange.go
+  - roles/tester/code/missing.go
+  - roles/tester/code/fresh.go
   - roles/developer/role.yaml
   - internal/kit/devmark
 checked: 9cf386a3

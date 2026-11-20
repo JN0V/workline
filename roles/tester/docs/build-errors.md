@@ -1,17 +1,17 @@
 ---
 sources:
-  - internal/tester/build.go#BuildErrors
-  - internal/tester/build.go#compileBuildErrors
-  - internal/tester/build.go#buildErrorsIn
-  - internal/tester/build.go#missingIn
-  - internal/tester/build.go#fromRootOn
-  - internal/tester/build.go#nameIn
-  - internal/tester/build.go#quotedName
-  - internal/tester/build.go#testNames
-  - internal/tester/tester.go#unset
+  - roles/tester/code/build.go#BuildErrors
+  - roles/tester/code/build.go#compileBuildErrors
+  - roles/tester/code/build.go#buildErrorsIn
+  - roles/tester/code/build.go#missingIn
+  - roles/tester/code/build.go#fromRootOn
+  - roles/tester/code/build.go#nameIn
+  - roles/tester/code/build.go#quotedName
+  - roles/tester/code/build.go#testNames
+  - roles/tester/code/tester.go#unset
   - roles/tester/role.yaml#settings.build-errors
-  - internal/tester/write.go#lintTests
-  - internal/tester/write.go#missingNamed
+  - roles/tester/code/write.go#lintTests
+  - roles/tester/code/write.go#missingNamed
 checked: c46a93d6c
 verified: agent:claude-code
 ---

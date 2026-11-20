@@ -1,14 +1,14 @@
 ---
 sources:
-  - internal/tester/tester.go#prove
-  - internal/tester/tester.go#Check
-  - internal/tester/tester.go#unbuiltTests
-  - internal/tester/redfirst.go#redFirst.lacks
-  - internal/tester/redfirst.go#redFirst.named
-  - internal/tester/redfirst.go#redFirst.fast
-  - internal/tester/build.go#namedIn
-  - internal/tester/judged.go#doubt.waiting
-  - internal/tester/junit.go#readJUnit
+  - roles/tester/code/tester.go#prove
+  - roles/tester/code/tester.go#Check
+  - roles/tester/code/tester.go#unbuiltTests
+  - roles/tester/code/redfirst.go#redFirst.lacks
+  - roles/tester/code/redfirst.go#redFirst.named
+  - roles/tester/code/redfirst.go#redFirst.fast
+  - roles/tester/code/build.go#namedIn
+  - roles/tester/code/judged.go#doubt.waiting
+  - roles/tester/code/junit.go#readJUnit
 checked: c46a93d6c
 verified: agent:claude-code
 ---

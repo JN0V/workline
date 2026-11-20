@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/write.go, internal/backlog/verification.go, internal/backlog/spec.go, internal/engine/engine.go]
+sources: [roles/tester/code/write.go, internal/backlog/verification.go, internal/backlog/spec.go, internal/engine/engine.go]
 checked: 7329ab10
 verified: agent:claude-code
 ---

@@ -1,11 +1,11 @@
 ---
 sources:
-  - internal/tester/write.go#Pre
-  - internal/tester/write.go#testsDone
-  - internal/tester/write.go#lintTests
-  - internal/tester/write.go#lintFound
-  - internal/tester/said.go#refuseIssue
-  - internal/tester/said.go#refusePost
+  - roles/tester/code/write.go#Pre
+  - roles/tester/code/write.go#testsDone
+  - roles/tester/code/write.go#lintTests
+  - roles/tester/code/write.go#lintFound
+  - roles/tester/code/said.go#refuseIssue
+  - roles/tester/code/said.go#refusePost
   - internal/engine/engine.go#unmoved
   - internal/backlog/backlog.go#Readied
   - internal/kit/verdict/outcome.go#machineKinds

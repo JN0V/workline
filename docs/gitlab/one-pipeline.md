@@ -7,7 +7,7 @@ sources:
   - internal/forge/at.go#At
   - internal/forge/at.go#Newer
   - internal/builtin/reviewer/reviewer.go#summaryValue
-  - internal/builtin/inspector/record.go#comment
+  - roles/inspector/code/record.go#comment
   - internal/engine/review.go#applier.mergedRecord
 checked: e2e165c2d
 verified: agent:claude-code

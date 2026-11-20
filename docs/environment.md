@@ -9,7 +9,7 @@ sources:
   - internal/forge/retry.go#RunsDirEnv
   - roles/committer/code/secrets.go#commonList
   - internal/forge/mask.go
-  - internal/tester/tester.go#shell
+  - roles/tester/code/tester.go#shell
   - internal/gate/gate.go#maskLog
   - internal/agent/claude.go#lastLine
   - internal/builtin/documentalist/examples.go#outputSaid

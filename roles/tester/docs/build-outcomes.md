@@ -1,12 +1,12 @@
 ---
 sources:
-  - internal/tester/write.go#Post
-  - internal/tester/write.go#draftBody
-  - internal/tester/write.go#unprovenOf
-  - internal/tester/judged.go#doubt.unproven
-  - internal/tester/frozen.go#record
-  - internal/tester/objection.go#record.rewritten
-  - internal/tester/objection.go#unprovenSaid
+  - roles/tester/code/write.go#Post
+  - roles/tester/code/write.go#draftBody
+  - roles/tester/code/write.go#unprovenOf
+  - roles/tester/code/judged.go#doubt.unproven
+  - roles/tester/code/frozen.go#record
+  - roles/tester/code/objection.go#record.rewritten
+  - roles/tester/code/objection.go#unprovenSaid
   - roles/developer/code/pullrequest.go#body
 checked: c46a93d6c
 verified: agent:claude-code

@@ -61,8 +61,8 @@ import (
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/sample"
 	"github.com/JN0V/workline/internal/setup"
-	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
+	tester "github.com/JN0V/workline/roles/tester/code"
 	"go.yaml.in/yaml/v3"
 )
 
