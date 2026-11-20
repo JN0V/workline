@@ -5,7 +5,7 @@ verified: agent:claude-code
 ---
 # Documentalist — the judge's claims
 
-Part of [the judge](judge.md): what backs a word taken out of a doc. The
+Part of [the check](judge.md): what backs a word taken out of a doc. The
 steps cited are those of
 [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md);
 DomoticsCore is a C++ project the role runs on in CI

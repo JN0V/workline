@@ -37,7 +37,7 @@ Part of [the committer](../README.md).
   a second, keeps your message in the file git named, and prints
   `git commit -e -F <that file>` to take it up again.
 
-## Judge (`post`, no AI)
+## Check (`post`, no AI)
 
 - The rewrite must pass the same checks, but `possible-internal-code`: the
   agent judged it.

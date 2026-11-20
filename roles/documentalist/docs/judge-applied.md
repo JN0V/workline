@@ -11,7 +11,7 @@ verified: agent:claude-code
 ---
 # Documentalist — what holds is applied
 
-Part of [the judge](judge.md).
+Part of [the check](judge.md).
 
 ## What holds is applied
 

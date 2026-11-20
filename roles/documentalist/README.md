@@ -184,7 +184,7 @@ regenerates derived blocks.
   [in parts](docs/parts.md);
   [gardening](docs/gardening.md): its tasks, one merge request per task;
   [pages read for their reader](docs/reader.md).
-- [The judge](docs/judge.md): what `post` refuses of the agent's patches;
+- [The check](docs/judge.md): what `post` refuses of the agent's patches;
   [its claims](docs/judge-claims.md): what backs a word taken out;
   [code examples](docs/examples.md): said unverified, or checked by your
   command.

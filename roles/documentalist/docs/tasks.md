@@ -72,7 +72,7 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   and sets `judged`, the judge refusing a move (`checked-unread`), and the
   doc stays suspect for a person. The same holds for docs due and for
   stale docs. What the run says of it names what was read
-  and what was not ([the judge](judge-findings.md#what-the-finding-says)).
+  and what was not ([the check](judge-findings.md#what-the-finding-says)).
 - **A source that cannot be read** — a file gone, a section whose
   heading is renamed or removed, a named part gone from its file — is
   never given as empty: the doc is
@@ -106,7 +106,7 @@ the parts — says that every word a patch takes out of a body is cited
 - a comment is not evidence: with nothing else to cite, the words stay,
   and a `note` says what could not be confirmed, naming its doc in `doc`:
   that doc's `checked` does not move (`checked-over-note`,
-  [the judge](judge.md#moving-checked)).
+  [the check](judge.md#moving-checked)).
 
 ## Judged in parts
 

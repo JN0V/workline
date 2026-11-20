@@ -20,7 +20,7 @@ verified: agent:claude-code
 ---
 # Documentalist — what the finding says
 
-Part of [the judge](judge.md).
+Part of [the check](judge.md).
 
 ## What the finding says
 

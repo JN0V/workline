@@ -90,7 +90,7 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
   moved or `judged` recorded; the code examples a fix wrote, unverified
   or checked ([code examples](examples.md)); for a doc whose sources did
   not all go whole, what was read and what was not
-  ([the judge](judge-findings.md#what-the-finding-says)).
+  ([the check](judge-findings.md#what-the-finding-says)).
 
 ## When the base moves
 
