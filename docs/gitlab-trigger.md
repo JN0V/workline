@@ -16,7 +16,7 @@ sources:
   - internal/backlog/depend.go#Blockers
   - internal/backlog/depend.go#WithBlockers
   - internal/backlog/depend.go#blockedByLine
-checked: 3bab32400
+checked: b2a36983f
 judged: 9a88170
 verified: agent:documentalist
 ---

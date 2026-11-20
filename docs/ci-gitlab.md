@@ -22,7 +22,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:objection
   - internal/doctor/variables.go#tokensScoped
   - internal/forge/hold.go#HoldLabel
-checked: e4e4287bc
+checked: b2a36983f
 verified: agent:claude-code
 reader: 9799dcaf51f3
 ---

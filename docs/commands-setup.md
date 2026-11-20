@@ -18,7 +18,8 @@ sources:
   - internal/doctor/doctor.go#machine
   - internal/doctor/doctor.go#agent
   - internal/doctor/doctor.go#repository
-  - internal/doctor/doctor.go#docs
+  - roles/documentalist/code/documentalist.go#Coverage
+  - roles/documentalist/code/unread.go#UnreadDocs
   - internal/doctor/doctor.go#hooksPath
   - internal/doctor/doctor.go#forgeCommand
   - internal/doctor/workflows.go#ciTemplates
@@ -50,7 +51,7 @@ sources:
   - internal/line/seconds.go#Result.Times
   - internal/line/seconds.go#Result.OverBudget
   - defaults/routing.yaml#budgets
-checked: e4e4287bc
+checked: b2a36983f
 verified: agent:claude-code
 ---
 # The commands that set up

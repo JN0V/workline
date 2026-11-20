@@ -19,7 +19,7 @@ sources:
   - defaults/ci/github/workline-develop.yml#jobs.identity.environment
   - defaults/ci/github/workline-develop.yml#jobs.review-apply.environment
   - defaults/ci/github/workline-bounds.yml#jobs.bounds-apply.environment
-checked: e2e165c2d
+checked: b2a36983f
 verified: agent:claude-code
 ---
 # The GitHub App and its key

@@ -7,7 +7,7 @@ sources:
   - defaults/ci/github/workline-develop.yml#jobs.reconcile
   - internal/line/states.go#roundsDue
   - roles/developer/code/review.go#RoundDue
-checked: e2e165c2d
+checked: b2a36983f
 verified: agent:claude-code
 -->
 # The reconciler's heartbeat
@@ -73,7 +73,8 @@ gh api -X POST repos/OWNER/REPO/environments/workline-heartbeat/deployment-branc
 - **The wait timer is the period**, in minutes; under 5, no heartbeat.
 - **Without the environment**: each reconcile says "no heartbeat" in
   its summary; the schedule and the line's events run it, as GitHub
-  can.
+  can. Only a missing environment is read so: any other refusal of
+  GitHub's API on it is said as an error, and that step fails.
 - **A shorter or longer period**: see [below](#a-shorter-or-longer-period).
 - **To stop it**: delete the environment, or take its wait timer off.
   The heartbeat waiting is then rejected, its run failed, and no
