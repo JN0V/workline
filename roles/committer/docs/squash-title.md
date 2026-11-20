@@ -8,9 +8,9 @@ sources:
   - internal/forge/gitlab.go#gitlab.Squash
   - internal/forge/forge.go#Squash
   - internal/forge/forge.go#TitleMax
-  - internal/builtin/documentalist/documentalist.go#mergeRequest
+  - roles/documentalist/code/documentalist.go#mergeRequest
   - internal/engine/engine.go#openMergeRequest
-  - internal/builtin/documentalist/title_test.go#TestMergeRequestTitlesPassTheSquashRule
+  - roles/documentalist/code/title_test.go#TestMergeRequestTitlesPassTheSquashRule
   - internal/sample/title_test.go#TestEngineTitlesPassTheSquashRule
 checked: dd77bf922
 verified: agent:claude-code

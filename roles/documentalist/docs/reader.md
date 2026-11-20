@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/reader.go, internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml, internal/engine/routine.go]
+sources: [roles/documentalist/code/readertask.go, roles/documentalist/code/reader.go, roles/documentalist/code/documentalist.go, roles/documentalist/role.yaml, internal/engine/routine.go]
 checked: affb7424
 verified: agent:claude-code
 ---

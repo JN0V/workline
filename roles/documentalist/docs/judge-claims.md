@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go, internal/builtin/documentalist/counts.go]
+sources: [roles/documentalist/code/judge.go, roles/documentalist/code/words.go, roles/documentalist/code/cite.go, roles/documentalist/code/comments.go, roles/documentalist/code/counts.go]
 checked: affb7424
 verified: agent:claude-code
 ---

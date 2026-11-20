@@ -4,9 +4,9 @@ sources:
   - internal/line/line.go#runGate
   - internal/line/line.go#nothingCounted
   - internal/line/line.go#stepsOf
-  - internal/builtin/documentalist/documentalist.go#newPreRun
-  - internal/builtin/documentalist/documentalist.go#preRun.checkHygiene
-  - internal/builtin/documentalist/hygiene.go#Hygiene
+  - roles/documentalist/code/documentalist.go#newPreRun
+  - roles/documentalist/code/documentalist.go#preRun.checkHygiene
+  - roles/documentalist/code/hygiene.go#Hygiene
   - internal/report/main.go#MainTitle
   - cmd/workline/main.go#noteBaseRed
   - defaults/ci/github/workline.yml#on

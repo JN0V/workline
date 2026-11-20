@@ -2,12 +2,12 @@
 sources:
   - cmd/workline/main.go#initCmd
   - internal/routing/adopt.go#RoutePrePush
-  - internal/builtin/documentalist/adopt.go#noSources
-  - internal/builtin/documentalist/adopt.go#sourcesTask
-  - internal/builtin/documentalist/adopt.go#judgeSources
-  - internal/builtin/documentalist/byname.go#codeByName
-  - internal/builtin/documentalist/byname.go#byName
-  - internal/builtin/documentalist/byname.go#isTest
+  - roles/documentalist/code/adopt.go#noSources
+  - roles/documentalist/code/adopt.go#sourcesTask
+  - roles/documentalist/code/adopt.go#judgeSources
+  - roles/documentalist/code/byname.go#codeByName
+  - roles/documentalist/code/byname.go#byName
+  - roles/documentalist/code/byname.go#isTest
 checked: e2e165c2d
 verified: agent:claude-code
 ---

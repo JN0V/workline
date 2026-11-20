@@ -3,22 +3,22 @@ sources:
   - roles/documentalist/role.yaml#settings.judge-in-parts
   - roles/documentalist/role.yaml#settings.parts-max
   - roles/documentalist/role.yaml#settings.parts-max-per-run
-  - internal/builtin/documentalist/documentalist.go#preRun.giveSourcesNow
-  - internal/builtin/documentalist/documentalist.go#preRun.holdJudged
-  - internal/builtin/documentalist/documentalist.go#preRun.askSuspects
-  - internal/builtin/documentalist/documentalist.go#preRun.askStale
-  - internal/builtin/documentalist/documentalist.go#preRun.asksNothing
-  - internal/builtin/documentalist/documentalist.go#preRun.inPartsTask
-  - internal/builtin/documentalist/parts.go#leftForGardening
-  - internal/builtin/documentalist/parts.go#partsLater
-  - internal/builtin/documentalist/parts.go#restInParts
-  - internal/builtin/documentalist/parts.go#holdJudgedInParts
-  - internal/builtin/documentalist/parts.go#held
-  - internal/builtin/documentalist/parts.go#planParts
-  - internal/builtin/documentalist/parts.go#partsRoom
-  - internal/builtin/documentalist/parts.go#partsTaskHeader
-  - internal/builtin/documentalist/parts.go#tooWide
-  - internal/builtin/documentalist/parts.go#readLongestAgoFirst
+  - roles/documentalist/code/documentalist.go#preRun.giveSourcesNow
+  - roles/documentalist/code/documentalist.go#preRun.holdJudged
+  - roles/documentalist/code/documentalist.go#preRun.askSuspects
+  - roles/documentalist/code/documentalist.go#preRun.askStale
+  - roles/documentalist/code/documentalist.go#preRun.asksNothing
+  - roles/documentalist/code/documentalist.go#preRun.inPartsTask
+  - roles/documentalist/code/parts.go#leftForGardening
+  - roles/documentalist/code/parts.go#partsLater
+  - roles/documentalist/code/parts.go#restInParts
+  - roles/documentalist/code/parts.go#holdJudgedInParts
+  - roles/documentalist/code/parts.go#held
+  - roles/documentalist/code/parts.go#planParts
+  - roles/documentalist/code/parts.go#partsRoom
+  - roles/documentalist/code/parts.go#partsTaskHeader
+  - roles/documentalist/code/parts.go#tooWide
+  - roles/documentalist/code/parts.go#readLongestAgoFirst
 checked: e2e165c2d
 verified: agent:claude-code
 ---

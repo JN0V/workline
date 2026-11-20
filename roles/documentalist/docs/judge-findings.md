@@ -1,20 +1,20 @@
 ---
 sources:
-  - internal/builtin/documentalist/documentalist.go#notVouched
-  - internal/builtin/documentalist/judge.go#judgedFixes.placesSaid
-  - internal/builtin/documentalist/documentalist.go#readScope.String
-  - internal/builtin/documentalist/documentalist.go#outcomes
-  - internal/builtin/documentalist/documentalist.go#mergeRequest
-  - internal/builtin/documentalist/values.go#valuesLeft
-  - internal/builtin/documentalist/values.go#replacedVersions
-  - internal/builtin/documentalist/values.go#versions
-  - internal/builtin/documentalist/values.go#versionsIn
-  - internal/builtin/documentalist/values.go#sourceFilesOf
-  - internal/builtin/documentalist/values.go#versionRange
-  - internal/builtin/documentalist/values.go#versionMarker
-  - internal/builtin/documentalist/values.go#versionLater
-  - internal/builtin/documentalist/values.go#saidAsNowAt
-  - internal/builtin/documentalist/values.go#tag
+  - roles/documentalist/code/documentalist.go#notVouched
+  - roles/documentalist/code/judge.go#judgedFixes.placesSaid
+  - roles/documentalist/code/documentalist.go#readScope.String
+  - roles/documentalist/code/documentalist.go#outcomes
+  - roles/documentalist/code/documentalist.go#mergeRequest
+  - roles/documentalist/code/values.go#valuesLeft
+  - roles/documentalist/code/values.go#replacedVersions
+  - roles/documentalist/code/values.go#versions
+  - roles/documentalist/code/values.go#versionsIn
+  - roles/documentalist/code/values.go#sourceFilesOf
+  - roles/documentalist/code/values.go#versionRange
+  - roles/documentalist/code/values.go#versionMarker
+  - roles/documentalist/code/values.go#versionLater
+  - roles/documentalist/code/values.go#saidAsNowAt
+  - roles/documentalist/code/values.go#tag
 checked: e2e165c2d
 verified: agent:claude-code
 ---

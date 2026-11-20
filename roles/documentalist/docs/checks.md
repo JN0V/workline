@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
+sources: [roles/documentalist/code/documentalist.go, roles/documentalist/code/identifiers.go, roles/documentalist/code/derive.go, roles/documentalist/code/freshness.go, roles/documentalist/code/counts.go, roles/documentalist/role.yaml]
 checked: 04d2af892
 verified: agent:claude-code
 ---

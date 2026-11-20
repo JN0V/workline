@@ -12,7 +12,7 @@ sources:
   - roles/tester/code/tester.go#shell
   - internal/gate/gate.go#maskLog
   - internal/agent/claude.go#lastLine
-  - internal/builtin/documentalist/examples.go#outputSaid
+  - roles/documentalist/code/examples.go#outputSaid
 checked: dd77bf922
 verified: agent:claude-code
 judged: e343388

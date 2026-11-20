@@ -1,11 +1,11 @@
 ---
 sources:
-  - internal/builtin/documentalist/documentalist.go#splitSource
+  - roles/documentalist/code/documentalist.go#splitSource
   - internal/kit/docmark/docmark.go#ParseDoc
-  - internal/builtin/documentalist/documentalist.go#projectRepos
-  - internal/builtin/documentalist/documentalist.go#external
-  - internal/builtin/documentalist/documentalist.go#places
-  - internal/builtin/documentalist/documentalist.go#places.get
+  - roles/documentalist/code/documentalist.go#projectRepos
+  - roles/documentalist/code/documentalist.go#external
+  - roles/documentalist/code/documentalist.go#places
+  - roles/documentalist/code/documentalist.go#places.get
 checked: d722a840
 verified: agent:claude-code
 judged-in-parts: c7e1e98

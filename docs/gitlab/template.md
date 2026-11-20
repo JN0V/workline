@@ -10,7 +10,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue
-  - internal/builtin/documentalist/documentalist.go#preRun.sayShallow
+  - roles/documentalist/code/documentalist.go#preRun.sayShallow
 checked: e2e165c2d
 verified: agent:claude-code
 judged: e8a46f7

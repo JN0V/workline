@@ -1,7 +1,7 @@
 ---
 sources:
   - internal/sample
-  - internal/builtin/documentalist/sample.go
+  - roles/documentalist/code/sample.go
   - defaults/ci/github/workline-sample.yml
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:sample
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:read

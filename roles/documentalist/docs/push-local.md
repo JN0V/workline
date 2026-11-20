@@ -4,9 +4,9 @@ sources:
   - cmd/workline/main.go#docsJudgedRef
   - cmd/workline/main.go#docsCmd
   - internal/review/review.go#Docs
-  - internal/builtin/documentalist/documentalist.go#preRun.findSuspects
-  - internal/builtin/documentalist/documentalist.go#rangeFiles
-  - internal/builtin/documentalist/documentalist.go#preRun.checkHygiene
+  - roles/documentalist/code/documentalist.go#preRun.findSuspects
+  - roles/documentalist/code/documentalist.go#rangeFiles
+  - roles/documentalist/code/documentalist.go#preRun.checkHygiene
   - roles/documentalist/role.yaml#events
 checked: e2e165c2d
 verified: agent:claude-code

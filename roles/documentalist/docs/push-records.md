@@ -1,14 +1,14 @@
 ---
 sources:
-  - internal/builtin/documentalist/kept.go#keptRecord
-  - internal/builtin/documentalist/kept.go#keptBody
-  - internal/builtin/documentalist/kept.go#readKept
-  - internal/builtin/documentalist/kept.go#holdKept
-  - internal/builtin/documentalist/kept.go#keepRecords
-  - internal/builtin/documentalist/kept.go#keptOn
-  - internal/builtin/documentalist/kept.go#stickyOn
-  - internal/builtin/documentalist/kept.go#othersKept.findings
-  - internal/builtin/documentalist/kept.go#recordsMerged
+  - roles/documentalist/code/kept.go#keptRecord
+  - roles/documentalist/code/kept.go#keptBody
+  - roles/documentalist/code/kept.go#readKept
+  - roles/documentalist/code/kept.go#holdKept
+  - roles/documentalist/code/kept.go#keepRecords
+  - roles/documentalist/code/kept.go#keptOn
+  - roles/documentalist/code/kept.go#stickyOn
+  - roles/documentalist/code/kept.go#othersKept.findings
+  - roles/documentalist/code/kept.go#recordsMerged
   - internal/forge/own.go#Kept.Last
   - internal/forge/own.go#github.own
   - internal/forge/own.go#gitlab.own

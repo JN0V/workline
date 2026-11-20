@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
+sources: [roles/documentalist/code/hygiene.go, roles/documentalist/code/external.go, roles/documentalist/code/adr.go, roles/documentalist/code/unread.go, roles/documentalist/code/reader.go, roles/documentalist/role.yaml]
 checked: 8538d558
 verified: agent:claude-code
 ---

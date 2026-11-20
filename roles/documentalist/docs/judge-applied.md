@@ -1,11 +1,11 @@
 ---
 sources:
-  - internal/builtin/documentalist/documentalist.go#Post
-  - internal/builtin/documentalist/judge.go#asJudged
-  - internal/builtin/documentalist/judge.go#judgedFixes.countFixed
-  - internal/builtin/documentalist/documentalist.go#preRun.holdJudged
-  - internal/builtin/documentalist/parts.go#holdJudgedInParts
-  - internal/builtin/documentalist/parts.go#held
+  - roles/documentalist/code/documentalist.go#Post
+  - roles/documentalist/code/judge.go#asJudged
+  - roles/documentalist/code/judge.go#judgedFixes.countFixed
+  - roles/documentalist/code/documentalist.go#preRun.holdJudged
+  - roles/documentalist/code/parts.go#holdJudgedInParts
+  - roles/documentalist/code/parts.go#held
 checked: e2e165c2d
 verified: agent:claude-code
 ---

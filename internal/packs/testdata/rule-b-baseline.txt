@@ -10,9 +10,6 @@
 # `// converges: <reason>` comment on its line.
 internal/agent/claude.go package.json 1
 internal/agent/prompt.go .go 9
-internal/builtin/documentalist/cite.go .go 1
-internal/builtin/documentalist/part.go .go 2
-internal/builtin/documentalist/parts.go .go 1
 internal/builtin/reviewer/reads.go .go 1
 internal/builtin/reviewer/rules.go .cjs 1
 internal/builtin/reviewer/rules.go .go 1
