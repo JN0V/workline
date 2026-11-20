@@ -12,11 +12,11 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// answerWorkflows are the two copies of the answer workflow: the
-// template the project ships and the project's own workflow.
+// answerWorkflows is the answer workflow template the project ships.
+// The project's own .github/workflows copy is CI the developer may not
+// change, so no test here depends on it.
 var answerWorkflows = []string{
 	"workline-answer.yml",
-	"../../../.github/workflows/workline-answer.yml",
 }
 
 var (
@@ -154,7 +154,7 @@ exit 0
 // When the answer workflow runs,
 // Then the answer is read and applied on the Draft's pull request only:
 // the answer, the apply and the state it marks all name pull request 7.
-// It reads both copies of the workflow, the template and the project's own.
+// It reads the workflow template the project ships.
 func TestAnswerWorkflowKeepsToTheDraftNotAForkPullRequest(t *testing.T) {
 	if _, err := exec.LookPath("bash"); err != nil {
 		t.Skip("bash is not installed")
