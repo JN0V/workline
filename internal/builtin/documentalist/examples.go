@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -92,7 +93,7 @@ func examplesWritten(repo string, files map[string]bool, path, old, now string) 
 		}
 	}
 	counted := map[int][]countOff{}
-	if d, _ := ParseDoc(path, []byte(old)); d != nil && len(gone) > 0 {
+	if d, _ := docmark.ParseDoc(path, []byte(old)); d != nil && len(gone) > 0 {
 		for _, c := range countsOff(repo, files, d, old) {
 			counted[c.line] = append(counted[c.line], c)
 		}
@@ -366,7 +367,7 @@ func (j *judgedFixes) inExample(path string, from, count int) bool {
 	if len(w) == 0 {
 		return false
 	}
-	_, head := header(j.after[path])
+	_, head := docmark.Header(j.after[path])
 	if count == 0 { // lines taken out after line from, inside one example
 		for _, f := range w {
 			if from+head >= f.from && from+head+1 <= f.to {

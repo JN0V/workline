@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -313,11 +314,11 @@ func TestVouchFor(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	d := &Doc{Path: "d.md", Sources: []string{"x.go"}}
+	d := &docmark.Doc{Path: "d.md", Sources: []string{"x.go"}}
 	all := &partsVerdict{kept: []claim{claimOf(t, 0, `{lines: "9", status: supported, quote: "Tokens last one hour.", source: {path: x.go, lines: "1", quote: "package x"}}`)}}
 	for _, tc := range []struct {
 		name      string
-		d         *Doc
+		d         *docmark.Doc
 		content   string
 		uncovered string
 		v         *partsVerdict
@@ -325,7 +326,7 @@ func TestVouchFor(t *testing.T) {
 	}{
 		{"a claim dropped", d, doc, "", &partsVerdict{kept: all.kept, dropped: 1}, "a claim of its parts was dropped"},
 		{"a line naming the code no part speaks of", d, doc, "line 9 names `Refresh`", all, "a line names the code"},
-		{"a source a doc", &Doc{Path: "d.md", Sources: []string{"x.go", "notes.md"}}, doc, "", all, "its sources hold docs, which no part reads: notes.md"},
+		{"a source a doc", &docmark.Doc{Path: "d.md", Sources: []string{"x.go", "notes.md"}}, doc, "", all, "its sources hold docs, which no part reads: notes.md"},
 		{"a line no part supports", d, doc + "Refresh tokens last a week.\n", "", all, "no part supports line 10"},
 		{"nothing stated", d, "---\nsources: [x.go]\nchecked: abc1234\n---\n# D\n", "", &partsVerdict{}, "no line of it states something"},
 		{"`checked` for several repositories", d, strings.Replace(doc, "checked: abc1234", "checked: {\"\": abc1234, api: def5678}", 1), "", all, "its `checked` is not one commit on one line"},

@@ -13,9 +13,10 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/documentalist"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
@@ -31,7 +32,7 @@ import (
 // reader reads the week's sample: the judge it asks, and what it spent.
 type reader struct {
 	o         Options
-	settings  documentalist.Settings
+	settings  docmark.SampleView
 	auditor   *role.Role
 	judgeRole *role.Role // the panel's judges
 	spec      string
@@ -303,7 +304,7 @@ func settle(a *Act, m *material, answer []intent.Intention) {
 			case it == nil:
 				why = fmt.Sprintf("%s is none of what the act was done on (%s)", p.Path, m.names())
 			case it.code:
-				found, code, line := documentalist.QuoteIn(it.name, it.full, c.Source.Quote)
+				found, code, line := contract.BuiltinDocsSample().QuoteIn(it.name, it.full, c.Source.Quote)
 				p.Line = line
 				switch {
 				case !found:

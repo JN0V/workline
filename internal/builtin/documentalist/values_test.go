@@ -5,7 +5,9 @@ import "testing"
 // A pin follows a release's bump; the release a feature came in, or a
 // minimum, does not (#346).
 func TestSaysAsNow(t *testing.T) {
-	doc := func(body string) string { return "---\nsources: [ci/job.yml]\nchecked: abc1234\n---\n# The job\n\n" + body }
+	doc := func(body string) string {
+		return "---\nsources: [ci/job.yml]\nchecked: abc1234\n---\n# The job\n\n" + body
+	}
 	for _, c := range []struct {
 		name, body, v string
 		want          bool

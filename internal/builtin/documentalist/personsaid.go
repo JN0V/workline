@@ -12,6 +12,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -115,7 +116,7 @@ func parsePersonSaid(body string) map[string]keptRecord {
 // full the first time, then, while neither the doc nor its sources change,
 // that they are unchanged since. A text not leaving the doc to a person
 // is returned as it is.
-func (p *personSaid) line(doc string, d *Doc, text string) string {
+func (p *personSaid) line(doc string, d *docmark.Doc, text string) string {
 	p.decide(doc)
 	if !strings.Contains(text, personJudges) || !p.on || d == nil {
 		return text

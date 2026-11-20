@@ -14,6 +14,7 @@ import (
 	"unicode"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -391,7 +392,7 @@ func rangeText(r lineRange) string {
 // partsRoom is the room a part leaves for a doc's sources, or why the doc
 // cannot be judged in parts whatever its sources hold: too long itself, or
 // sources in another repository.
-func partsRoom(d *Doc, repo string) (room int, why string, err error) {
+func partsRoom(d *docmark.Doc, repo string) (room int, why string, err error) {
 	content, err := os.ReadFile(filepath.Join(repo, d.Path))
 	if err != nil {
 		return 0, "", err
@@ -413,7 +414,7 @@ func partsRoom(d *Doc, repo string) (room int, why string, err error) {
 // into consecutive pieces, each read, so no line goes unread. Sources that
 // are docs are left out: a doc following another is propagation, not
 // evidence. why says why the doc cannot be judged in parts.
-func planParts(d *Doc, repo string, share int) (plans []partPlan, why string, err error) {
+func planParts(d *docmark.Doc, repo string, share int) (plans []partPlan, why string, err error) {
 	room, why, err := partsRoom(d, repo)
 	if err != nil || why != "" {
 		return nil, why, err
@@ -956,7 +957,7 @@ func uncovered(content string, kept []claim) string {
 }
 
 // sourceText is the text of the files of code among a doc's sources.
-func sourceText(d *Doc, repo string) (string, error) {
+func sourceText(d *docmark.Doc, repo string) (string, error) {
 	var b strings.Builder
 	seen := map[string]bool{}
 	for _, src := range d.Sources {
@@ -1053,7 +1054,7 @@ func uncoveredSplit(content string, kept []claim, held string) (all, inSource, g
 // parts at: a diff replacing the line that closes the header (or the one it
 // replaces), so it applies after the fix, wherever the fix left that line.
 func judgedInPartsPatch(p, content, at string) (string, error) {
-	_, n := header(content)
+	_, n := docmark.Header(content)
 	if n == 0 {
 		return "", fmt.Errorf("%s: a doc judged in parts has a header", p)
 	}
@@ -1073,7 +1074,7 @@ func judgedInPartsPatch(p, content, at string) (string, error) {
 // every line stating something quoted, where it stands, in a part's support
 // from the code. The caller asks it only when nothing was found wrong, in
 // conflict or to be read together.
-func vouchFor(d *Doc, content, at, uncovered string, v *partsVerdict, repo string) (why, patch string, err error) {
+func vouchFor(d *docmark.Doc, content, at, uncovered string, v *partsVerdict, repo string) (why, patch string, err error) {
 	switch {
 	case v.dropped == 1:
 		return "a claim of its parts was dropped, unread", "", nil
@@ -1103,7 +1104,7 @@ func vouchFor(d *Doc, content, at, uncovered string, v *partsVerdict, repo strin
 
 // docSources are the files among a doc's sources that are docs: no part
 // reads them, as evidence (planParts), so nothing read them against it.
-func docSources(d *Doc, repo string) ([]string, error) {
+func docSources(d *docmark.Doc, repo string) ([]string, error) {
 	var out []string
 	for _, src := range d.Sources {
 		_, p, _ := splitSource(src)
@@ -1230,7 +1231,7 @@ func linesSaid(lines []int) string {
 // a reading short of that, gone. ok is false when its `checked` is not one
 // commit on one line.
 func vouched(content, at string) (string, bool) {
-	_, n := header(content)
+	_, n := docmark.Header(content)
 	if n == 0 {
 		return "", false
 	}
@@ -1324,7 +1325,7 @@ func holdJudgedInParts(docs map[string]*suspectDoc, repo string) {
 // held says whether a doc judged at a commit waits: none of its sources
 // changed since, so it is not put before an agent again. A commit a squash
 // or a rebase left out of HEAD stands for the one that brought it there.
-func held(d *Doc, at, repo string) bool {
+func held(d *docmark.Doc, at, repo string) bool {
 	if at == "" {
 		return false
 	}

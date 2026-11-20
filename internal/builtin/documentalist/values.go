@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -348,7 +349,7 @@ func saysAsNow(content, v string) bool {
 // sourceFilesOf lists the files of this repository a doc names in its
 // sources, folders left out: siblings share a file, not a folder. The files
 // saying the project's version (`versions.files`) are every doc's.
-func sourceFilesOf(d *Doc, files map[string]bool) map[string]bool {
+func sourceFilesOf(d *docmark.Doc, files map[string]bool) map[string]bool {
 	out := map[string]bool{}
 	for _, p := range versions.files {
 		if files[p] {
@@ -415,7 +416,7 @@ func valuesLeft(fixes []fixedDoc, docs map[string]string, files map[string]bool,
 				report(f.path, v, fmt.Sprintf("%s, which this fix replaces with %s, is still said on %s: change it there too, or say why it stays", v, strings.Join(sortedSet(replaced[v]), ", "), lineList(at)))
 			}
 		}
-		d, _ := ParseDoc(f.path, []byte(docs[f.path]))
+		d, _ := docmark.ParseDoc(f.path, []byte(docs[f.path]))
 		if d == nil {
 			continue
 		}
@@ -424,7 +425,7 @@ func valuesLeft(fixes []fixedDoc, docs map[string]string, files map[string]bool,
 			if p == f.path || isHistory(p) {
 				continue
 			}
-			o, _ := ParseDoc(p, []byte(docs[p]))
+			o, _ := docmark.ParseDoc(p, []byte(docs[p]))
 			if o == nil {
 				continue
 			}

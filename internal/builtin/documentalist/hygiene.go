@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -107,7 +108,7 @@ type line struct {
 // scan splits a doc into lines, skipping its frontmatter.
 func scan(content string) []line {
 	all := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
-	_, start := header(content)
+	_, start := docmark.Header(content)
 	var out []line
 	fence, lang := "", ""
 	for i := start; i < len(all); i++ {
@@ -163,7 +164,7 @@ func lineCount(content string) int {
 }
 
 func docType(content string) string {
-	block, n := header(content)
+	block, n := docmark.Header(content)
 	if n == 0 {
 		return ""
 	}
@@ -178,7 +179,7 @@ func docType(content string) string {
 // 2026-10-04`): its history is left as it is, out of condensing, budgets and
 // duplicate checks. Its links are still checked and still resolve.
 func archived(content string) bool {
-	block, n := header(content)
+	block, n := docmark.Header(content)
 	if n == 0 {
 		return false
 	}

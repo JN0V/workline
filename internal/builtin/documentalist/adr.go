@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -62,7 +63,7 @@ func decisions(t Tree) map[int]*adr {
 // "Status:" line, else the first paragraph under a "Status" heading; and the
 // records its frontmatter says it supersedes.
 func decisionStatus(content string) (status string, supersedes []int) {
-	if block, n := header(content); n > 0 {
+	if block, n := docmark.Header(content); n > 0 {
 		var fm struct {
 			Status     string `yaml:"status"`
 			Supersedes any    `yaml:"supersedes"`

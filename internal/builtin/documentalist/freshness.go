@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -21,7 +22,7 @@ type Freshness struct {
 // world that changed around it, even when its sources did not (Google's
 // freshness dates). Docs already suspect or pending are being handled, and a
 // commit that cannot be read is reported by the suspect check.
-func staleDocs(docs []*Doc, pl *places, f Freshness, now time.Time, skip func(string) bool) []verdict.Finding {
+func staleDocs(docs []*docmark.Doc, pl *places, f Freshness, now time.Time, skip func(string) bool) []verdict.Finding {
 	if f.StaleAfterDays <= 0 {
 		return []verdict.Finding{{Rule: "setting-missing", Level: "block",
 			Message: "freshness.stale-after-days is not set, so no doc was checked for freshness; set it, or turn the rule off with `enforce`"}}
@@ -100,7 +101,7 @@ func taskChars(s Settings) int {
 
 // staleForAgent picks the stale docs to put before the agent, each with its
 // sources as they are now; a doc whose sources do not fit says so.
-func staleForAgent(findings []verdict.Finding, byPath map[string]*Doc, pl *places, s Settings) map[string]*suspectDoc {
+func staleForAgent(findings []verdict.Finding, byPath map[string]*docmark.Doc, pl *places, s Settings) map[string]*suspectDoc {
 	out := map[string]*suspectDoc{}
 	for i := range findings {
 		f := &findings[i]
@@ -132,13 +133,13 @@ func unreadNote(err error) string {
 // sourcesNow is each source of a doc as it is now: a section of a doc, or
 // every text file under a path. err is errTooLarge past limit characters,
 // or says which source cannot be read.
-func sourcesNow(d *Doc, pl *places, limit int) ([]string, error) {
+func sourcesNow(d *docmark.Doc, pl *places, limit int) ([]string, error) {
 	return sourcesAs(d, pl, limit, "as it is now")
 }
 
 // sourcesAs is sourcesNow at the revisions pl reads, each source titled as
 // it is said there ("as it is now", "at the commit `checked` names").
-func sourcesAs(d *Doc, pl *places, limit int, as string) ([]string, error) {
+func sourcesAs(d *docmark.Doc, pl *places, limit int, as string) ([]string, error) {
 	var evidence []string
 	size := 0
 	add := func(title, lang, text string) bool {

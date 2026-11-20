@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -47,7 +48,7 @@ func uncoveredMessage(t *testing.T, source, docLine string) string {
 	}
 	t.Setenv("WORKLINE_PARTS", "answered")
 
-	sd := &suspectDoc{doc: &Doc{Path: "docs/env.md", Sources: []string{"ci/w.yml"}}}
+	sd := &suspectDoc{doc: &docmark.Doc{Path: "docs/env.md", Sources: []string{"ci/w.yml"}}}
 	var findings []verdict.Finding
 	total := 0
 	if _, _, _, _, _, err := partsFor(runDir, repo, []*suspectDoc{sd}, Settings{}, &total, &findings); err != nil {

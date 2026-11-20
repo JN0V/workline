@@ -2,7 +2,6 @@ package documentalist
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -17,55 +17,6 @@ import (
 // internal/sample) reads with the role's own rules: which files are docs,
 // how much of their sources may be read whole, and a quote found outside a
 // comment of a source, at the commit a doc's `checked` names.
-
-// SampleSettings is the `sample` setting: the judge reading the sample, and
-// the least independence from the model that vouched it may stand at.
-type SampleSettings struct {
-	Judge   string `json:"judge"`    // an --ai value: claude:opus, cmd:…
-	AtLeast string `json:"at-least"` // provider, model or context (ADR-0005)
-	// After: a commit (a tag) before which nothing is sampled — the
-	// release whose engine earns `checked` (ADR-0014, step 0).
-	After Ref `json:"after"`
-	// AIMaxTokens: the tokens a week's sample may spend, every call
-	// together (in, cache included, and out); past it, the acts left are
-	// not read, said. 0: SampleTokens (ADR-0046).
-	AIMaxTokens int `json:"ai-max-tokens"`
-	// Panel: the three judges that settle a dispute (ADR-0046), as --ai
-	// values; unset, Claude's three models when the judge is Claude's.
-	Panel []string `json:"panel"`
-}
-
-// SampleTokens is the weekly sample's cap on tokens when the setting
-// names none (ADR-0046).
-const SampleTokens = 400000
-
-// TokensCap is the weekly sample's cap on tokens.
-func (s SampleSettings) TokensCap() int {
-	if s.AIMaxTokens > 0 {
-		return s.AIMaxTokens
-	}
-	return SampleTokens
-}
-
-// Ref is a setting naming a commit or a tag. Written unquoted, a commit of
-// digits only (7515148) is a number to YAML: it is read as the text it is.
-// One YAML would read otherwise than written (0123456, octal) never gets
-// here: the config is refused, saying to quote it (role.CheckConfig).
-type Ref string
-
-func (r *Ref) UnmarshalJSON(data []byte) error {
-	text := string(data)
-	if text != "" && strings.Trim(text, "0123456789") == "" {
-		*r = Ref(text)
-		return nil
-	}
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return fmt.Errorf("a commit or a tag, as text: %s", text)
-	}
-	*r = Ref(s)
-	return nil
-}
 
 // SettingsFrom reads the role's settings as the engine merged them.
 func SettingsFrom(merged map[string]any) (Settings, error) {
@@ -78,6 +29,13 @@ func SettingsFrom(merged map[string]any) (Settings, error) {
 	return s, err
 }
 
+// sampleView is the settings as the weekly sample reads them
+// (contract.DocsSample).
+func sampleView(merged map[string]any) (docmark.SampleView, error) {
+	s, err := SettingsFrom(merged)
+	return docmark.SampleView{Sample: s.Sample, Docs: s.Docs, WholeCap: s.WholeCap()}, err
+}
+
 // IsDoc says whether a path is one of the docs the settings name.
 func (s Settings) IsDoc(p string) bool { return matchAny(s.Docs, p) }
 
@@ -85,16 +43,9 @@ func (s Settings) IsDoc(p string) bool { return matchAny(s.Docs, p) }
 // judged whole.
 func (s Settings) WholeCap() int { return wholeChars(s) }
 
-// Header is a doc's header, as written, and how many lines it takes.
-func Header(content string) (meta string, lines int) { return header(content) }
-
-// ErrNotInClone is a `checked` naming a commit the clone does not have: a
-// squash may have left it off the branch (ADR-0046).
-var ErrNotInClone = errors.New("a commit this clone does not have")
-
 // at reads each repository a doc's sources are in at the commit its
 // `checked` names there.
-func at(repo string, d *Doc) (*places, error) {
+func at(repo string, d *docmark.Doc) (*places, error) {
 	var cfg projectRepos
 	if data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml")); err == nil {
 		if err := yaml.Unmarshal(data, &cfg); err != nil {
@@ -112,7 +63,7 @@ func at(repo string, d *Doc) (*places, error) {
 			return nil, err
 		}
 		if _, err := git(where.dir, "cat-file", "-e", commit+"^{commit}"); err != nil {
-			return nil, fmt.Errorf("`checked` names %s, %w", commit, ErrNotInClone)
+			return nil, fmt.Errorf("`checked` names %s, %w", commit, docmark.ErrNotInClone)
 		}
 		pl.known[name] = place{where.dir, commit}
 	}
@@ -123,7 +74,7 @@ func at(repo string, d *Doc) (*places, error) {
 // names, as a task shows it. fits is false past limit characters: then the
 // doc's `checked` could not have been earned by reading them (ADR-0014). An
 // error is a source that cannot be read at all.
-func SourcesAt(repo string, d *Doc, limit int) (evidence []string, fits bool, err error) {
+func SourcesAt(repo string, d *docmark.Doc, limit int) (evidence []string, fits bool, err error) {
 	pl, err := at(repo, d)
 	if err != nil {
 		return nil, false, err
@@ -140,7 +91,7 @@ func SourcesAt(repo string, d *Doc, limit int) (evidence []string, fits bool, er
 
 // SourceFileAt is a file under one of a doc's sources at the commit its
 // `checked` names (`name:file` for another repository's), and that commit.
-func SourceFileAt(repo string, d *Doc, p string) (content, commit string, ok bool) {
+func SourceFileAt(repo string, d *docmark.Doc, p string) (content, commit string, ok bool) {
 	repoName, file := "", strings.TrimPrefix(path.Clean(strings.TrimPrefix(p, "./")), "b/")
 	if n, f, cut := strings.Cut(file, ":"); cut && !strings.Contains(n, "/") {
 		repoName, file = n, f
