@@ -1,10 +1,8 @@
 ---
 sources:
-  - internal/doctor/guard.go#noBypassDoc
-  - internal/doctor/guard.go#bypassWords
   - internal/doctor/guard.go#bypassGuard
   - internal/forge/github_merge.go#github.Bypass
-checked: e2e165c2d
+checked: bd254cd75
 verified: agent:claude-code
 ---
 # Nobody bypasses `main`
@@ -89,3 +87,8 @@ From GitLab's documentation, not tried on a project yet:
   would hold the ruleset too: an option, not tried, never required.
 - **With no forge**, nothing enforces who merges
   ([the line with no forge](local-line.md)).
+
+## Where it is read
+
+- **`workline doctor`'s four words**: `bypassGuard`, in `guard.go`.
+- **What GitHub says the token can bypass**: `Bypass`, in `github_merge.go`.

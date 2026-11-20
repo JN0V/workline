@@ -3,21 +3,10 @@ sources:
   - defaults/routing.yaml#events.release
   - defaults/ci/github/workline-gardening.yml#jobs.dry-run
   - defaults/ci/github/workline-gardening.yml#jobs.dry-run-post
-  - defaults/ci/github/workline-apply.yml#jobs.main
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue
-  - internal/line/dryrun.go#dryRunOn
-  - tests/conformance/cases/release/dry-run-at-a-release-has-nothing-to-cut.yaml
-  - tests/conformance/cases/release/dry-run-warns-runs-every-step.yaml
-  - tests/conformance/cases/release/holds-not-read-without-a-forge.yaml
-  - internal/report/dryrun.go#WithDryRun
-  - internal/report/dryrun.go#keptDryRun
-  - cmd/workline/main.go#keepDryRun
-  - cmd/workline/main.go#exitFor
-  - tests/conformance/cases/cli/release-dry-run-asks-no-agent.yaml
-checked: e2e165c2d
+checked: bd254cd75
 verified: agent:claude-code
 ---
 # The release: a dry run with gardening, a check at the tag

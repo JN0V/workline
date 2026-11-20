@@ -1,6 +1,12 @@
 ---
-sources: [internal/engine/routine.go#routineCandidate, internal/engine/routine.go#weighRoutine, internal/engine/routine.go#notOwn, internal/engine/routine.go#notAllowed, internal/engine/routine.go#routineKind, internal/engine/routine.go#admit, internal/engine/routine.go#alone, internal/engine/merge.go#OwnCommit, internal/engine/merge.go#docPage, internal/engine/merge.go#rolePage, internal/forge/local_merge.go#LocalApp, internal/forge/local_merge.go#Local.app, internal/forge/local_merge.go#localAuthor, internal/engine/routine.go#readMark, internal/engine/routine.go#normal.asked, internal/engine/routine.go#RoutineKinds, internal/engine/routine.go#mergeKinds]
-checked: c46a93d6c
+sources:
+  - internal/engine/routine.go#weighRoutine
+  - internal/engine/routine.go#routineKind
+  - internal/engine/routine.go#notAllowed
+  - internal/engine/routine.go#RoutineKinds
+  - internal/engine/merge.go#OwnCommit
+  - internal/forge/local_merge.go#LocalApp
+checked: bd254cd75
 verified: agent:claude-code
 ---
 # Routine work at `normal`
@@ -81,3 +87,11 @@ and:
 | Said | When |
 |---|---|
 | `waits-for-a-yes` | a push, a commit or a page not workline's; a kind demoted; `reader`, not let merge alone |
+
+## Where it is read
+
+- **Whether one merges alone, and its kind**: `weighRoutine` and
+  `routineKind`, in `routine.go`; the four kinds, `RoutineKinds`.
+- **What never merges alone**: `notAllowed`, in `routine.go`.
+- **A commit that is workline's own**: `OwnCommit`, in `merge.go`.
+- **The local forge's App**: `LocalApp`, in `local_merge.go`.

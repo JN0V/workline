@@ -1,6 +1,11 @@
 ---
-sources: [internal/role/role.go#Merge, internal/role/role.go#MergeLevels, internal/steer/steer.go#Files, internal/steer/steer.go#Agent, internal/steer/steer.go#agentNames, internal/steer/steer.go#IsCodeowners, internal/steer/codeowners.go#githubPlaces, internal/steer/codeowners.go#gitlabPlaces, internal/steer/codeowners.go#CodeownersPlaces, internal/steer/codeowners.go#PlacesOf, internal/steer/codeowners.go#Codeowners.Holds, internal/engine/merge.go#mergePolicy, internal/engine/routine.go#notAllowed, internal/engine/code.go#steersAny, internal/doctor/guard.go#guardedList]
-checked: c46a93d6c
+sources:
+  - internal/steer/codeowners.go#CodeownersPlaces
+  - internal/steer/steer.go#Agent
+  - internal/engine/code.go#steersAny
+  - internal/doctor/guard.go#guardedList
+  - internal/engine/merge.go#mergePolicy
+checked: bd254cd75
 verified: agent:claude-code
 reader: efab3a2a0b35
 judged-in-parts: 87b34bc
@@ -61,3 +66,13 @@ and:
 | `waits-for-a-yes` | the release tool's, or one from a fork; the others: [routine work](merge-policy-routine.md#what-the-summary-says), [the developer's code](merge-policy-code.md#what-the-summary-says) |
 | `merge-app-unknown` | the token is no App's: nothing merges alone |
 | `merge-demoted` and the other words of a revert | [reverts](merge-policy-reverts.md#what-the-summary-says) |
+
+## Where it is read
+
+- **The policy and its level**: `mergePolicy`, in `merge.go`.
+- **The paths `CODEOWNERS` gives an owner**: `CodeownersPlaces`, in
+  `codeowners.go`.
+- **With no `CODEOWNERS`, the files that steer agents**: `Agent`, in
+  `steer.go`.
+- **A pull request changing one**: `steersAny`, in `code.go`.
+- **The list `workline doctor` says**: `guardedList`, in `guard.go`.

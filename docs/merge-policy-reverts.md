@@ -1,6 +1,9 @@
 ---
-sources: [internal/engine/demote.go#demotions, internal/engine/demote.go#holds, internal/engine/demote.go#demote, internal/engine/demote.go#mergedAlone, internal/engine/demote.go#demotedTitle, internal/engine/demote.go#revertWindow, internal/forge/merge.go#ReadStatus, internal/forge/merge.go#github.mark, internal/forge/merge.go#github.marked, internal/forge/github_merge.go#github.ownStatus, internal/forge/local_merge.go#Local.mark, internal/forge/local_merge.go#Local.marked, internal/forge/local_merge.go#Local.closing, defaults/ci/github/workline-merge.yml#on, defaults/ci/github/workline-merge.yml#jobs.follow.if]
-checked: c46a93d6c
+sources:
+  - internal/engine/demote.go#demotions
+  - internal/engine/demote.go#revertWindow
+  - internal/engine/demote.go#mergeWindow
+checked: bd254cd75
 verified: agent:claude-code
 ---
 # Reverts at `normal`
@@ -47,3 +50,9 @@ and:
 | `revert-unread` | a revert tied to no merge request: every kind demoted |
 | `merge-restored`, `restore-ignored`, `restore-unread` | a demotion's issue closed by a person who may lift it; by anyone else; unread |
 | `merge-record-lost`, `merge-unmarked` | no mark of the App's on the base's last 100 commits while a merge made alone is in its history, or a forge that keeps none: every kind held |
+
+## Where it is read
+
+- **A revert read and its kind demoted**: `demotions`, in `demote.go`.
+- **The base's last 100 commits**, for the App's marks: `revertWindow`; the
+  last 1000, for a merge made alone: `mergeWindow`.

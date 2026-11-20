@@ -1,14 +1,9 @@
 ---
 sources:
-  - internal/line/line.go#RunWith
-  - internal/line/line.go#QueueInput
-  - internal/line/line.go#queueSaid
   - internal/line/seconds.go#momentOf
   - internal/line/seconds.go#Measure
-  - internal/line/seconds.go#Result.Times
-  - internal/line/seconds.go#Result.OverBudget
   - defaults/routing.yaml#budgets.queue
-checked: e2e165c2d
+checked: bd254cd75
 judged: e4550b8
 verified: agent:claude-code
 ---
@@ -46,6 +41,8 @@ workline's run there guards that combination only
   The summary says each gate's seconds; over that minute, one line more
   names the gate that took the most, never a block (`queue` in
   [the budgets](spec/routing.md#each-steps-seconds-a-moments-budget)).
+  `Measure`, in `seconds.go`, sets it from the `queue` budget of
+  `routing.yaml`, once `momentOf` has found the run is a queue's.
 
 ## GitHub: a merge queue
 

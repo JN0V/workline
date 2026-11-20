@@ -1,6 +1,10 @@
 ---
-sources: [internal/engine/code.go#weighCode, internal/engine/code.go#unreviewed, internal/engine/code.go#reviewedTip, internal/engine/code.go#pushedAt, internal/engine/code.go#unreproduced, internal/kit/devmark/merge.go#Merge, internal/kit/devmark/merge.go#Merge.Unreviewed, internal/kit/devmark/merge.go#Merge.WaitsForAYes, internal/kit/devmark/merge.go#ReadMerge, internal/kit/devmark/merge.go#IssueKind, internal/backlog/assume.go#DefaultWait]
-checked: c46a93d6c
+sources:
+  - internal/engine/code.go#weighCode
+  - internal/engine/code.go#unreproduced
+  - internal/kit/devmark/merge.go#Merge.WaitsForAYes
+  - internal/backlog/assume.go#DefaultWait
+checked: bd254cd75
 verified: agent:claude-code
 ---
 # The developer's code at `normal`
@@ -40,3 +44,12 @@ and:
 |---|---|
 | `review-to-come` | the developer's code, the reviewer in the line, its verdict not on the head yet: it waits for it, 24 h at most |
 | `waits-for-a-yes` | the developer's feature or task, a fix whose bug no test reproduced, a fix no review read at its head, or a finding open |
+
+## Where it is read
+
+- **The kind and its gates**: `weighCode`, in `code.go`.
+- **A fix whose bug no test reproduced**: `unreproduced`, in `code.go`.
+- **A feature or a task, a fix with no yes**: `WaitsForAYes`, in `merge.go`
+  of `devmark`.
+- **The 24 h**: `DefaultWait`, in `assume.go`, unless `acts.ask.wait`
+  says another.

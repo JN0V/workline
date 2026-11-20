@@ -1,49 +1,17 @@
 ---
 sources:
   - internal/engine/merge.go#mergePolicy
-  - internal/engine/merge.go#weigh
-  - internal/engine/merge.go#armed
-  - internal/engine/merge.go#stalled
   - internal/engine/merge.go#heldByConversations
-  - internal/engine/merge.go#personsCommentOpen
-  - internal/engine/merge.go#theYes
-  - internal/engine/merge.go#takenOff
-  - internal/engine/merge.go#accepted
-  - internal/engine/merge.go#forkGuarded
-  - internal/engine/merge.go#pushedAfterAt
-  - internal/engine/merge.go#releasePushers
   - internal/engine/merge.go#releaseRebuild
-  - internal/engine/merge.go#ownRebuild
-  - internal/engine/merge.go#OwnMerge
-  - internal/engine/merge.go#ownRecord
-  - internal/engine/engine.go#madeBy
-  - internal/engine/merge.go#shortReview
-  - internal/engine/merge.go#HeadVerdict.class
-  - internal/engine/merge.go#HeadVerdict.waits
-  - internal/engine/merge.go#keepVerdict
-  - internal/engine/uptodate.go#upToDateAs
-  - internal/engine/uptodate.go#provenUpToDate
-  - internal/engine/queue.go#queueGroup
-  - internal/forge/merge.go#sumRuns
-  - internal/forge/merge.go#github.mergeToken
-  - internal/forge/github_merge.go#github.MergeState
-  - internal/forge/github_merge.go#mergeableStates
+  - internal/engine/merge.go#forkGuarded
   - internal/forge/github_merge.go#github.AutoMerge
-  - internal/forge/github_merge.go#github.Guarded
-  - internal/forge/github_merge.go#github.ownStatus
-  - internal/forge/github_merge.go#github.KeepVerdict
-  - internal/forge/gitlab_merge.go#gitlab.MergeState
-  - internal/forge/gitlab_merge.go#gitlab.pipelineBefore
-  - internal/forge/gitlab_merge.go#gitlab.AutoMerge
-  - internal/doctor/guard.go#bypassGuard
-  - cmd/workline/main.go#keepLocalVerdict
   - defaults/ci/github/workline-merge.yml#on
   - defaults/ci/github/workline-apply.yml#jobs.verdict
   - defaults/ci/github/workline-apply.yml#jobs.queue
   - defaults/ci/github/workline-apply.yml#jobs.follow
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
-checked: e4e4287bc
+checked: bd254cd75
 verified: agent:claude-code
 ---
 # The merge policy
@@ -348,3 +316,11 @@ At `normal`, more words:
 What was tried, live: the documentalist's
 [tried.md](../roles/documentalist/docs/tried.md#2026-10-12--the-merge-policy-cautious-live);
 what is left: [status.md](../roles/documentalist/docs/status.md).
+
+## Where it is read
+
+- **The policy, the level and the yes**: `mergePolicy`, in `merge.go`.
+- **A conversation that holds it**: `heldByConversations`, in `merge.go`.
+- **A release tool's rebuild, no push**: `releaseRebuild`, in `merge.go`.
+- **A fork**: `forkGuarded`, in `merge.go`.
+- **GitHub's auto-merge**: `AutoMerge`, in `github_merge.go`.
