@@ -107,7 +107,7 @@ jobs:
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
-        if: steps.line.outputs.proposed == 'true'
+        if: steps.line.outputs.proposed == 'true' || failure() || (steps.line.outputs.status != '' && steps.line.outputs.status != '0')
         with: {name: workline-runs, path: "line.json\n.workline-runs", include-hidden-files: true}
 
       - name: Verdict
@@ -116,6 +116,11 @@ jobs:
           if [ "$status" = 3 ]; then
             echo "::warning title=workline::the agent could not be reached; the docs are listed in the summary, for a person"
             exit 0
+          fi
+          if [ "${status:-0}" != 0 ]; then
+            # The reason in the log: the summary, as an error annotation.
+            msg=$(jq -r '.summary // empty' line.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the run ended with status $status, see its result file}"
           fi
           exit "$status"
       # What this job's agent calls spent, a line a run: role, target,
@@ -321,12 +326,17 @@ jobs:
         run: |
           status=0
           workline test curate --history curator-history.json --ai claude --no-apply --forge github --json > curate.json || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' curate.json)" >> "$GITHUB_OUTPUT"   # a run left to apply, by name
           jq -r '"**The curator**: " + (.summary // "")' curate.json >> "$GITHUB_STEP_SUMMARY"
           if [ "$status" = 3 ]; then echo "::warning title=workline::the agent could not be reached; the next week weighs again"; exit 0; fi
+          if [ "$status" != 0 ]; then
+            msg=$(jq -r '.summary // empty' curate.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the run ended with status $status, see its result file}"
+          fi
           exit "$status"
       - uses: actions/upload-artifact@v4
-        if: steps.curate.outputs.run != ''
+        if: steps.curate.outputs.run != '' || failure() || (steps.curate.outputs.status != '' && steps.curate.outputs.status != '0')
         with: {name: workline-curate, path: ".workline-runs", include-hidden-files: true, retention-days: 1}
       - uses: actions/upload-artifact@v4
         if: always()

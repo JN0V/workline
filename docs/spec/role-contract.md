@@ -41,9 +41,13 @@ not care what they are written in.
 Each is optional, on its own (ADR-0070, §1). For each step the engine
 runs the role's built-in code if it has any (a file beside it is not run),
 else the role's file, else the shared one. With no `pre`, the shared one
-writes `in/task.md` from the role's `instruction.md` and `in/skills` from
-its declared `context.skills`; a missing `instruction.md` stops the run,
-naming the file. With no `post`, the shared one passes and applies nothing:
+writes `in/task.md`, which only says "Do what your instruction says." (the
+instruction is the system prompt), `in/cuts` from the role's `cuts` key (listed
+for the agent: the shared `pre` cuts nothing, so no `input-cut` warning is
+shown for them) and `in/skills` from its declared `context.skills`; an
+`instruction.md` missing, empty or unreadable stops the run, naming the file.
+A `pre` or `post` file that cannot be read stops the run, naming the file.
+With no `post`, the shared one passes and applies nothing:
 what the agent proposed is held to the role's `intentions` and
 `duties.writes` where it is applied, an intention not declared or a write
 outside the duties refused and named.

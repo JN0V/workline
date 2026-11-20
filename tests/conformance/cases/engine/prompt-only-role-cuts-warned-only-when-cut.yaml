@@ -1,0 +1,7 @@
+case: engine/prompt-only-role-cuts-warned-only-when-cut
+about: "A role declaring cuts, run on the shared pre, in a run that cuts nothing: the run passes and no input-cut warning is shown."
+given: {repo: basic}
+run: {role: prompt-only-cuts, event: schedule, ai: "cmd:echo '[]'"}
+expect:
+  status: pass
+  no-findings: [{rule: input-cut}]
