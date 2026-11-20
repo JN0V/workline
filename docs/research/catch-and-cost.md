@@ -148,7 +148,7 @@ commit (2026-09-23) to `a317e3fa`. What workline decides from it:
    reviewer and the inspector. Each role keeps a hidden record its own
    apply job writes. The reviewer reads the first comment holding its
    marker, from any author, and writes the last
-   ([record.go](../../internal/builtin/reviewer/record.go), `loadRecord`).
+   ([record.go](../../roles/reviewer/code/record.go), `loadRecord`).
 3. **The documentalist's own PRs and `checked` lines**: 30 items; one
    night's gardening opened 4 bugs ([#605] to [#608]); [#606], a false
    `verified:`, merged itself to main; the night starts 4.5 to 7 h late,
