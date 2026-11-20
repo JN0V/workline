@@ -140,7 +140,7 @@ roles:
       # The push of 2026-11-14: each backlog run reads up to ten specs,
       # not five, so a run can fill Ready to its limit (10); the run of
       # 18:12 UTC readied 5, Ready back to 2 within the hour. Ten at about
-      # 41k tokens a spec, the dearest measured, fit 450k. Reverted with
+      # 41k tokens a spec, the dearest measured, fit 600k. Reverted with
       # the push's pull request.
       specs-per-run: 10
       # A change past one call is read in up to four parts here, not two
