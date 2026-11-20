@@ -25,7 +25,7 @@ func TestObjectionCommitSubjectWithinLimit(t *testing.T) {
 		{longer, false, "test: rewrite a test on an objection"},
 		{longer, true, "test: add a test the review asks for"},
 	} {
-		msg := objectionCommit(c.file, "https://example.test/pr/1#c2", c.missing)
+		msg := objectionCommit(c.file, "https://example.test/pr/1#c2", c.missing, commitmsg.Settings{SubjectMax: subjectMax, Types: []string{"test"}})
 		subject, body, _ := strings.Cut(msg, "\n\n")
 		if subject != c.want {
 			t.Errorf("%s (missing %v): subject %q, want %q", c.file, c.missing, subject, c.want)
