@@ -74,18 +74,13 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p backlog.P
 	if p.Kind == backlog.KindNone {
 		p.Body = t.Body       // the body it read: sent again unchanged, Blocked (#815)
 		p.Retried = t.Retried // after a retest: no second one (#1053)
-		to, did, rule = "", "finds no test possible for this issue", "no-test-possible"
-		for _, o := range line.States {
-			if o.Role == "product-owner" {
-				to = o.Name
-			}
+		// No acceptance test applies: the issue goes on to the developer,
+		// with no test, the reason said once here.
+		to, did, rule = s.Next, "finds that no acceptance test applies to this issue", "no-test-possible"
+		next = "it is " + s.Next + ": the developer builds it with no frozen test, and its pull request says no acceptance test applied"
+		if !ours {
+			to, next = "", "whoever builds it does so with no frozen test; its state kept, not the tester's"
 		}
-		if to == "" {
-			return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "no test possible, and no state of the product owner's to send it to",
-				Findings: []verdict.Finding{{Rule: "no-product-owner-state", Where: where,
-					Message: "the routing's states name none the product owner's: the issue keeps its state; add one, or have a person settle it"}}})
-		}
-		next = "back to the product owner (" + to + "): it picks a proof kind, or rewrites the scenarios; a person of the project may name one in a comment, `proof: <kind> — why`"
 	}
 	var move []intent.Intention
 	if to != "" {

@@ -530,6 +530,9 @@ func Pre(runDir, repo string) int {
 	bounds.Kind, _ = devmark.IssueKind(is.Labels)
 	if p, ok := proofs[id]; ok && bounds.Draft == 0 {
 		bounds.Proof = &p
+		if p.Kind == backlog.KindNone {
+			act.NoAcceptance = p.Reason
+		}
 	}
 	// Its code starts from the tester's Draft: the acceptance tests on it
 	// run in the proof (ADR-0054, step 4).
@@ -687,8 +690,13 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 			"A test that cannot pass within your bounds (it calls a command against its documented rule, for instance without a flag its no-terminal rule requires) is such an objection, of kind `contradicts`: object to it in that file, never in a text note, which reaches no tester.\n")
 	}
 	if b.Proof != nil {
-		fmt.Fprintf(&t, "\n## Its proof: %s, no new test\n\nThe tester recorded it in place of acceptance tests: %s. Its proof: %s.\n",
-			b.Proof.Kind, strings.TrimSuffix(b.Proof.Reason, "."), backlog.ProofKinds[b.Proof.Kind])
+		if b.Proof.Kind == backlog.KindNone {
+			fmt.Fprintf(&t, "\n## No acceptance test applies\n\nThe tester found that no acceptance test can check this issue: %s. There is no frozen test: build the issue from its Need and its Validation.\n",
+				strings.TrimSuffix(b.Proof.Reason, "."))
+		} else {
+			fmt.Fprintf(&t, "\n## Its proof: %s, no new test\n\nThe tester recorded it in place of acceptance tests: %s. Its proof: %s.\n",
+				b.Proof.Kind, strings.TrimSuffix(b.Proof.Reason, "."), backlog.ProofKinds[b.Proof.Kind])
+		}
 	}
 	t.WriteString("\n## The tests\n\n")
 	switch {
