@@ -23,6 +23,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"go.yaml.in/yaml/v3"
 
@@ -829,11 +830,7 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), out); err != nil {
 		return fail(err)
 	}
-	push := fmt.Sprintf("test: rewrite %s on an objection\n\nRefs %s", a.File, a.URL)
-	if missing {
-		push = fmt.Sprintf("test: add a test the review asks to %s\n\nRefs %s", a.File, a.URL)
-	}
-	data, err := yaml.Marshal(map[string]any{"push": push})
+	data, err := yaml.Marshal(map[string]any{"push": objectionCommit(a.File, a.URL, missing)})
 	if err != nil {
 		return fail(err)
 	}
@@ -846,6 +843,25 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 	}
 	proof.Summary = done + ", red on the base: " + proof.Summary + whysSaid(a) + left
 	return write(runDir, *proof)
+}
+
+// subjectMax is the committer's subject limit as it ships: a subject
+// past it is refused, and the developer, which only adds commits, cannot
+// clear a refusal on the tester's (#1941).
+const subjectMax = 72
+
+// objectionCommit is the message of the tester's commit on an
+// objection: the file's base name in the subject, the subject within
+// subjectMax whatever the path, the full path in the body.
+func objectionCommit(file, url string, missing bool) string {
+	s, short := "test: rewrite "+path.Base(file)+" on an objection", "test: rewrite a test on an objection"
+	if missing {
+		s, short = "test: add a test the review asks to "+path.Base(file), "test: add a test the review asks for"
+	}
+	if utf8.RuneCountInString(s) > subjectMax {
+		s = short
+	}
+	return s + "\n\nFile: " + file + "\n\nRefs " + url
 }
 
 // laidWhole is file as diff leaves it, laid on HEAD on an index of its
