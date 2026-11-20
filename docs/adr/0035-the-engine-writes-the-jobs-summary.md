@@ -31,7 +31,7 @@
 - **Markdown, the look GitHub's jq gave**; **HTML for a file named
   `.html`**, every text escaped. Repeatable, to write both.
 - **Added to, never overwritten**, as `$GITHUB_STEP_SUMMARY` is: the
-  applying job receives the judging job's file and adds what it applied;
+  applying job receives the proposing job's file and adds what it applied;
   one page tells the whole run.
 - **GitHub**: the templates pass `--summary` and copy the file to
   `$GITHUB_STEP_SUMMARY`; no jq rebuilds it.

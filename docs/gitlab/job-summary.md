@@ -23,7 +23,7 @@ Part of [what the GitLab template does](template.md).
   `workline-summary.html`, linked from the job's page (its annotations)
   and, for a merge request, from the merge request's page (`expose_as`);
   `workline-summary.md` printed at the end of the log. The applying
-  job adds what it applied to the judging job's. The HTML opens through
+  job adds what it applied to the proposing job's. The HTML opens through
   GitLab Pages, on by default on gitlab.com; without Pages, the link
   downloads it.
   - **Kept as artifacts** a day, but:

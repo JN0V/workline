@@ -42,7 +42,7 @@ took a commit on their branch, 41 of 42 in two weeks
   - a forge that does not say which commit a merge request became
     (`local`, `cmd:`);
   - a comment the job cannot read, said (`record-unread`): on GitLab, give
-    the judging job `GITLAB_TOKEN`
+    the proposing job `GITLAB_TOKEN`
     ([ci-gitlab.md](../../../docs/ci-gitlab.md#what-the-template-does));
   - a doc with a source in another repository.
 - Only the comment workline's own account wrote is read: the GitHub App,

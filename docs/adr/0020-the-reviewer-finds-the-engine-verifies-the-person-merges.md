@@ -205,13 +205,13 @@ merge-request line; on in workline's own repository.
 - **The comment**: what blocks first, marked `**blocks**`, then the
   warnings. The record moves when every lens answered, as on a pass; a
   rule that blocks writes the comment too, the record left as it was.
-- **The templates**: the trust split is kept. The judging job, with the
+- **The templates**: the trust split is kept. The proposing job, with the
   AI key, fails by the verdict; the applying job, with the write token
   and no AI key, runs whatever the judge's outcome (`if: always()`,
   `when: always`) and writes what is pending. GitLab's gardening apply
-  had no `when: always` (#142); GitLab's judging jobs now warn on an
+  had no `when: always` (#142); GitLab's proposing jobs now warn on an
   agent out of reach (3), as GitHub's do.
-- **Rejected**: posting the comment from the judging job (a write token
+- **Rejected**: posting the comment from the proposing job (a write token
   beside the AI key, against
   [principle 6](../PRINCIPLES.md)); a third job only for the comment
   (one more job for what `workline apply` already does).
@@ -492,7 +492,7 @@ merge-request line; on in workline's own repository.
   silently (both tried live, roles/reviewer/docs/tried.md). Such a
   finding, or one a forge refuses (a token without the right), goes in
   full into the summary comment, said, never a failed run.
-- **The trust split kept**: the judging job proposes the comments with
+- **The trust split kept**: the proposing job proposes the comments with
   the summary, the applying job posts them with the write token
   ([principle 6](../PRINCIPLES.md)).
 - **Rejected**: one comment a line, the lenses grouped (resolving one

@@ -85,6 +85,6 @@ curl -fsS -X POST --form token="$TRIGGER_TOKEN" --form ref=main \
 
 Tried on a pipeline the API started (2026-10-06):
 
-- the judging job of `garden`, without an agent, and its summary;
+- the proposing job of `garden`, without an agent, and its summary;
 - `import`, both jobs, the engine of the branch and a planted answer;
 - the other tasks, not yet.

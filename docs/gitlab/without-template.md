@@ -142,7 +142,7 @@ pipeline: as the template's `workline:issue` and `workline:reconcile`.
 
 ## What the jobs do
 
-- The judging job exits with the verdict: 1 block, 2 for a person, 3 the
+- The proposing job exits with the verdict: 1 block, 2 for a person, 3 the
   agent or forge unreachable. Make 3 a warning with `allow_failure:
   {exit_codes: [3]}`, as the template does.
 - The applying job still runs (`when: always`) and applies what passed,
@@ -152,7 +152,7 @@ pipeline: as the template's `workline:issue` and `workline:reconcile`.
   opened before: rebuilt on the branch, or closed when nothing is left to
   merge
   ([ADR-0034, amended](../adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
-- On `release`, a judging job that does not pass holds the release: the
+- On `release`, a proposing job that does not pass holds the release: the
   release's gates, never the docs
   ([ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 - The [merge policy](../merge-policy.md), with `merge:` in the target

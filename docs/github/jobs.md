@@ -33,7 +33,7 @@ Part of [workline on GitHub Actions](../ci-github.md): each job's rights, its lo
   the gardening template gives both.
 - A GitHub call that fails for a moment is tried again first, a write
   only when GitHub did not take it ([which](calls.md)).
-- **The sample**: the propose job is the repository variable `WORKLINE_JUDGE`,
+- **The sample**: the judge is the repository variable `WORKLINE_JUDGE`,
   or the `sample.judge` setting; its reading job reads the issues and pull
   requests, for every role's acts. For another week than the last whole
   one, run the workflow by hand (Actions → workline sample → Run workflow)

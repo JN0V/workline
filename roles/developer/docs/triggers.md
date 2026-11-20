@@ -120,7 +120,7 @@ routing:
 - **`--open-merge-request`**: its code goes to a pull request of its
   own. A line without it blocks (`no-merge-request`), the agent not
   asked, nothing claimed. `workline develop` always opens one.
-- **Your test runner** in the judging job: the code is proven there
+- **Your test runner** in the proposing job: the code is proven there
   ([the proof](proof.md)); [the project's environment](#the-projects-environment).
 - **Two jobs**: the propose job holds the agent and a read token for the
   pick; the engine gives the agent no forge token. The applying job
@@ -134,8 +134,8 @@ routing:
     fetched.
   - GitLab: they fetch every branch, then take the runner's job token
     out of the clone's git config (`.workline:no-credential`).
-- **GitHub, one run an issue**: the concurrency group is on the propose job
-  job, after its `if`, named by the issue (`workline-issue-<n>`),
+- **GitHub, one run an issue**: the concurrency group is on the propose job,
+  after its `if`, named by the issue (`workline-issue-<n>`),
   whichever role its state wakes.
   - A label that is not workline's, or the engine's own, never takes
     the group, so it never drops an issue's waiting run.

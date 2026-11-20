@@ -74,7 +74,7 @@ note's author, or a Maintainer, edits a note.
 
 ## Amendment (2026-10-20): comments read without the members list
 
-On a self-managed GitLab, the judging job, with only `CI_JOB_TOKEN`, read
+On a self-managed GitLab, the proposing job, with only `CI_JOB_TOKEN`, read
 a merge request's notes but not `members/all` (401). Reading the
 reviewer's comment went through the members, so it failed: each push
 reviewed the whole merge request again (`record-unread`,
@@ -106,7 +106,7 @@ reviewed the whole merge request again (`record-unread`,
   a note whose author the members cannot tell. Not otherwise: that token
   may be a person's, the last resort above, whose word must still count.
 
-Not chosen: giving the judging job a token of its own, which a project
+Not chosen: giving the proposing job a token of its own, which a project
 then has to make and rotate; taking an unknown author for a person of
 the project; reusing the committer's `forge-identities`, which lists
 commit addresses, not usernames.

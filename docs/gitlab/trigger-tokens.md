@@ -26,11 +26,11 @@ the jobs a tool starts hold, and where.
 A merge request's source branch is rarely protected: a protected variable
 never reaches its pipeline. The trigger token acts as the user who owns it.
 GitLab gives every variable to every job of the pipeline: the script keeps
-the write token out of the judging job's commands, not out of its reach.
+the write token out of the proposing job's commands, not out of its reach.
 The template does the same, and gives its gardening propose job the write token.
 It also scopes the tokens to the environment `workline`, which the jobs
 running your tools never declare ([the environment](environment.md)).
-Here the judging job runs the gates beside the agent's token. Scoped
+Here the proposing job runs the gates beside the agent's token. Scoped
 there, the tokens reach only jobs that declare the environment: add
 `environment: {name: workline, action: prepare}` to both jobs of
 [the script](without-template.md), or they get no token.

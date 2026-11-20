@@ -1331,7 +1331,7 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 }
 
 // The release pull request's docs are judged at night, with the gardening
-// (ADR-0050, §7): its judging job runs the schedule line with a forge that
+// (ADR-0050, §7): its proposing job runs the schedule line with a forge that
 // lists the open merge requests and --open-merge-request, which is when
 // the line takes up the release; on GitHub, the job that applies names
 // the App, so that the release's fix is the App's pull request only when

@@ -40,7 +40,7 @@ commit you read them at. A doc that names no `sources` is never suspect:
 `record-unread` (a warning): the documentalist's comment keeping the
 records of docs found with nothing to fix, or of the merge requests
 merged, could not be read:
-the records are committed, or those docs judged again, at night. On GitLab, give the judging job `GITLAB_TOKEN`
+the records are committed, or those docs judged again, at night. On GitLab, give the proposing job `GITLAB_TOKEN`
 ([more](../roles/documentalist/docs/push-records.md)).
 
 - **Its marker in another's comment**: only workline's own account's

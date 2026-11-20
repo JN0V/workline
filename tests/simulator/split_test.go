@@ -42,7 +42,7 @@ func (r *recorder) Propose(req agent.Request) (agent.Call, error) {
 }
 
 // TestTrial56Split replays round 5's #56 (#1150) as CI runs it: a propose job
-// job (product owner, then the reviewer, nothing applied), an apply job,
+// (product owner, then the reviewer, nothing applied), an apply job,
 // then the issue's next step asked of the line. The first reviewer read
 // the body before the apply wrote the drafts, so each next step found
 // drafts with no review: the product owner was called twice for nothing,

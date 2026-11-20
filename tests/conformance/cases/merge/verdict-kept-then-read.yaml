@@ -1,5 +1,5 @@
 case: merge/verdict-kept-then-read
-about: "The head's verdict, where `follow` reads it (#321): the judging job wrote the line's verdict on the head (`workline route --verdict`); the job holding the write token keeps it where only that token writes — on GitHub, the status `workline/verdict`, set by the App, bound by the forge to the commit (`workline follow --verdict`) — and reads it back, as a later run does: the accepted pull request's auto-merge is turned on, the yes held on that head (`workline/accepted`) (ADR-0042)."
+about: "The head's verdict, where `follow` reads it (#321): the proposing job wrote the line's verdict on the head (`workline route --verdict`); the job holding the write token keeps it where only that token writes — on GitHub, the status `workline/verdict`, set by the App, bound by the forge to the commit (`workline follow --verdict`) — and reads it back, as a later run does: the accepted pull request's auto-merge is turned on, the yes held on that head (`workline/accepted`) (ADR-0042)."
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}

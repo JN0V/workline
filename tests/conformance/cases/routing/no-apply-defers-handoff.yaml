@@ -1,5 +1,5 @@
 case: routing/no-apply-defers-handoff
-about: With --no-apply, a handoff cannot run in the judging job; the line says so instead of dropping it.
+about: With --no-apply, a handoff cannot run in the proposing job; the line says so instead of dropping it.
 given:
   repo: released
   config: {routing: {events: {merge: [hands-over]}, handoffs: [{from: hands-over, to: documentalist}]}}

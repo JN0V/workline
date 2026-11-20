@@ -23,7 +23,7 @@ Part of [what the GitLab template does](template.md): how the reviewer
 and the documentalist read back what their comments keep.
 
 - **The reviewer** ([ADR-0020](../adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)):
-  - the judging job reads its summary comment to review only new commits,
+  - the proposing job reads its summary comment to review only new commits,
     with `GITLAB_TOKEN` (`read_api`): the notes alone, never the
     project's members, which a token may not list (401,
     [#552](https://github.com/JN0V/workline/issues/552)); the job's own

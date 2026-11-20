@@ -161,7 +161,7 @@ with the variable `WORKLINE_TASK` set to `sample`.
   to use pipeline variables", at **Maintainer**: a new gitlab.com project
   allows no one, and setting the variable is refused (403, "not authorized
   to set pipeline schedule variables").
-- The propose job: the variable `WORKLINE_JUDGE`, or the `sample.judge` setting.
+- The judge: the variable `WORKLINE_JUDGE`, or the `sample.judge` setting.
   Another week than the last whole one: set `WORKLINE_SAMPLE_WEEK`
   (`2026-W40`) on the schedule, then play it.
 - Its reading job holds `WORKLINE_GITLAB_TOKEN`, as gardening's does: it

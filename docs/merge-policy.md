@@ -239,7 +239,7 @@ the candidate's issue, ships the version:
 
 ## Where the head's verdict lives
 
-- The judging job writes it: `workline route … --verdict <file>`.
+- The proposing job writes it: `workline route … --verdict <file>`.
 - **GitHub**: a job of its own keeps it, `workline follow --verdict <file>
   --verdict-only`: the status `workline/verdict` on the head, set by the
   App. Only the statuses `follow`'s own token set are read: one a person

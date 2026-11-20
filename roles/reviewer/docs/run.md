@@ -226,7 +226,7 @@ none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-ac
 ## On a merge request
 
 `workline init --review` adds the reviewer to the project's merge-request
-line. The judging job reads the summary comment, to know what was
+line. The proposing job reads the summary comment, to know what was
 reviewed: on GitHub it needs a read token (`GH_TOKEN`,
 `pull-requests: read`), which
 [defaults/ci/github/workline.yml](../../../defaults/ci/github/workline.yml) gives it. The
@@ -247,7 +247,7 @@ lenses that only warn read apart, in a comment of their own ([apart](apart.md)).
 - **The record moves** as on a pass when every lens answered: the next
   push reviews only the new commits. A rule that blocks writes the comment
   too, the record left as it was: no lens ran.
-- **The job still fails**: the judging job by the verdict, while the
+- **The job still fails**: the proposing job by the verdict, while the
   applying one writes the comment (`if: always()`, `when: always`).
 
 ### Every lens once when it becomes ready

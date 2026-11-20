@@ -196,7 +196,7 @@ switches `normal` off.
   issue with no proposal is context.
 - **Slowing down**: `proposals-max` (10).
 - **The night's summary**, grouped, one line an issue linked, 10 a group
-  then "and N more" and the filter: the judging job decides the plan,
+  then "and N more" and the filter: the proposing job decides the plan,
   reading only, and says it; the applying job does that plan
   ([On the issue](../spec/backlog-acts/on-the-issue.md)).
 - **`enterprising`** raises the caps; `ready` never has a draft.

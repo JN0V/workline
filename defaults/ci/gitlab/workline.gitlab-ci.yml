@@ -33,7 +33,7 @@
 #   The findings show in the merge request's Code Quality report, on every tier.
 #   Each job also writes its summary (`--summary`): what ran, each step's
 #   verdict, the findings, what waits to be applied; the applying job adds
-#   what it applied to the judging job's. workline-summary.md is printed at
+#   what it applied to the proposing job's. workline-summary.md is printed at
 #   the end of the log; workline-summary.html, a page GitLab shows (an .md
 #   artifact it only downloads), is linked from the job's page (Annotations)
 #   and from the merge request's (`expose_as`). `--summary` needs the first
@@ -1001,7 +1001,7 @@ workline:curator:
     - workline version
     - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
     # The propose job's, when one ran: it adds the folder it weighed.
-    - 'h="$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_COMMIT_REF_NAME/raw/curator-history.json"; curl -fsS -H "JOB-TOKEN: $CI_JOB_TOKEN" -o curator-history.json "$h?job=workline%3Acurator%3Ajudge" || curl -fsS -H "JOB-TOKEN: $CI_JOB_TOKEN" -o curator-history.json "$h?job=workline%3Acurator" || { rm -f curator-history.json; echo "workline: no history of the curator''s: the first measure"; }'
+    - 'h="$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_COMMIT_REF_NAME/raw/curator-history.json"; curl -fsS -H "JOB-TOKEN: $CI_JOB_TOKEN" -o curator-history.json "$h?job=workline%3Acurator%3Apropose" || curl -fsS -H "JOB-TOKEN: $CI_JOB_TOKEN" -o curator-history.json "$h?job=workline%3Acurator" || { rm -f curator-history.json; echo "workline: no history of the curator''s: the first measure"; }'
     - workline test measure --history curator-history.json --summary workline-summary.md --summary workline-summary.html
   after_script: *summary
   artifacts:

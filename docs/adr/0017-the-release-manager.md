@@ -230,7 +230,7 @@ next starts.
    once its fix is merged; a depth-1 clone is refused; a hotfix tag merged
    back is not taken for the last release.
    *Built* (2026-10-03), the bar's last two met by conformance cases
-   (documentalist/release-*); the judging job, which holds no forge token,
+   (documentalist/release-*); the proposing job, which holds no forge token,
    is given the branch (`--branch`), the forge asked otherwise; the
    setting is `release: {branches, tags}`. The sandbox try waits.
 5. **Doctor and `init`**, later: the tool detected, one recommended when
