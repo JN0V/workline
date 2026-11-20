@@ -85,10 +85,10 @@ routing:
     issue's step is named `workline develop #<n>`. The reconciler and
     the night skip an issue with such a run queued or running; the next
     step starts its run even so, which ends at once if not due.
-  - **Not due, ended at once**: `judge` asks the line first, no agent;
+  - **Not due, ended at once**: `propose` asks the line first, no agent;
     a step acted on already ends there, before your setup steps and the
     agent are installed.
-  - The `judge` job holds the agent and a read token, your setup steps
+  - The `propose` job holds the agent and a read token, your setup steps
     run there ([below](#the-projects-environment)); `apply` holds the
     App's key, no AI key.
 - **GitLab**: the project's issue webhook, pointed at its own trigger
@@ -120,22 +120,22 @@ routing:
 - **`--open-merge-request`**: its code goes to a pull request of its
   own. A line without it blocks (`no-merge-request`), the agent not
   asked, nothing claimed. `workline develop` always opens one.
-- **Your test runner** in the judging job: the code is proven there
+- **Your test runner** in the proposing job: the code is proven there
   ([the proof](proof.md)); [the project's environment](#the-projects-environment).
-- **Two jobs**: the judge holds the agent and a read token for the
+- **Two jobs**: the propose job holds the agent and a read token for the
   pick; the engine gives the agent no forge token. The applying job
   holds the write token, no AI key.
-- **No token left in the judge's clone**: the agent's git would read it
+- **No token left in the propose job's clone**: the agent's git would read it
   ([the pull request](pull-request.md#who-opens-it)).
-  - The judging jobs: the developer's own, and the gardening's, whose
+  - The proposing jobs: the developer's own, and the gardening's, whose
     schedule may run it.
   - GitHub: they check out with `persist-credentials: false`; the
     review round takes its branch from that checkout, every branch
     fetched.
   - GitLab: they fetch every branch, then take the runner's job token
     out of the clone's git config (`.workline:no-credential`).
-- **GitHub, one run an issue**: the concurrency group is on the judge
-  job, after its `if`, named by the issue (`workline-issue-<n>`),
+- **GitHub, one run an issue**: the concurrency group is on the propose job,
+  after its `if`, named by the issue (`workline-issue-<n>`),
   whichever role its state wakes.
   - A label that is not workline's, or the engine's own, never takes
     the group, so it never drops an issue's waiting run.
@@ -205,7 +205,7 @@ Cases: `developer/routing-schedule-runs-developer`,
 
 The proof needs every tool your test job installs: one missing turns a
 test red on the proof alone, and the pull request opens a Draft. Your
-setup steps run in the developer's judging jobs (`judge`, `review`),
+setup steps run in the developer's proposing jobs (`propose`, `review`),
 from the default branch, before the agent and the proof:
 
 - **GitHub**: a composite action,
@@ -214,7 +214,7 @@ from the default branch, before the agent and the proof:
   runs it when it is there.
 - **GitLab**: redefine `.workline:setup` in your `.gitlab-ci.yml`, its
   `script` your test job's setup commands; the jobs
-  `workline:develop:judge` and `workline:review:judge` run it. Their
+  `workline:develop:propose` and `workline:review:propose` run it. Their
   `image` too, when your tests need another.
 - **None**: the runner, or the image, as it is.
 - **A step that fails** fails the job, named in its log: never a red

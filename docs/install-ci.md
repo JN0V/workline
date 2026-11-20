@@ -5,7 +5,7 @@ sources:
   - defaults/ci/github/workline-apply.yml#on
   - defaults/ci/github/workline-warn.yml#on
   - defaults/ci/github/workline-fork.yml#on
-  - defaults/ci/github/workline-gardening.yml#jobs.judge
+  - defaults/ci/github/workline-gardening.yml#jobs.propose
   - defaults/ci/github/workline-sample.yml#name
   - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline

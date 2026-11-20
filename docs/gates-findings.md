@@ -66,5 +66,5 @@ found the change adds:
   ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
   A fork's merge request runs in the fork, which has neither.
 - **Its summary** is `gates-summary.html`, linked from its page: the
-  judge writes its own.
+  propose job writes its own.
 - **One more job a pipeline**, and its minutes.

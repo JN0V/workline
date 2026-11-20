@@ -274,7 +274,7 @@ the documentalist and the inspector, any bot's or person of the project's.
 
 - **A record is read only from the comment workline's own account
   wrote**: the GitHub App, by its slug or its id (`WORKLINE_APP_ID`, which
-  the judging jobs get); else the token's user, `github-actions[bot]` for
+  the proposing jobs get); else the token's user, `github-actions[bot]` for
   a job's own token; on GitLab, `WORKLINE_GITLAB_TOKEN`'s user, or one the
   project names in `gitlab: {bots}`. The reviewer, the inspector and the
   documentalist read so, through one helper.

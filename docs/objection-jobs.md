@@ -2,8 +2,8 @@
 sources:
   - defaults/ci/github/workline-objection.yml
   - defaults/ci/github/workline-answer.yml#on
-  - defaults/ci/github/workline-answer.yml#jobs.judge.permissions
-  - defaults/ci/github/workline-answer.yml#jobs.judge.env
+  - defaults/ci/github/workline-answer.yml#jobs.propose.permissions
+  - defaults/ci/github/workline-answer.yml#jobs.propose.env
   - defaults/ci/github/workline-answer.yml#jobs.apply.environment
   - defaults/ci/github/workline-answer.yml#jobs.apply.permissions
   - defaults/ci/github/workline-develop.yml#on.workflow_run
@@ -24,16 +24,16 @@ comment opened by `workline:objection` on the tester's Draft
 ```mermaid
 flowchart LR
   notice["<b>notice</b><br/>no token"]
-  judge["<b>judge</b><br/>AI key, read rights"]
+  propose["<b>propose</b><br/>AI key, read rights"]
   apply["<b>apply</b><br/>write token<br/>default branch"]
-  notice --> judge -- "a run, as data" --> apply
+  notice --> propose -- "a run, as data" --> apply
 ```
 
-- [The judge and apply jobs](objection-jobs-judge.md): what each holds,
+- [The propose and apply jobs](objection-jobs-propose.md): what each holds,
   on GitHub and on GitLab.
 - [One objection a run](objection-jobs-queue.md): the queue drained,
   on GitHub.
-- [What apply takes from the judge](objection-jobs-apply.md): the run
+- [What apply takes from the propose job](objection-jobs-apply.md): the run
   read as data, only what the Draft's line may do.
 
 ## Who wakes it (GitHub)

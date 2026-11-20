@@ -310,7 +310,7 @@ func readKept(runDir, repo string, suspects map[string]*suspectDoc) ([]verdict.F
 			records, err := keptOn(f, t, &u)
 			if err != nil {
 				findings = append(findings, verdict.Finding{Rule: "record-unread", Level: "warn",
-					Message: fmt.Sprintf("the documentalist's comment on merge request %d could not be read (%v): a doc found with nothing to fix gets its record committed, as before, and those it kept are judged again; on GitLab, give the judging job GITLAB_TOKEN (read_api)", t.ID, err)})
+					Message: fmt.Sprintf("the documentalist's comment on merge request %d could not be read (%v): a doc found with nothing to fix gets its record committed, as before, and those it kept are judged again; on GitLab, give the proposing job GITLAB_TOKEN (read_api)", t.ID, err)})
 			} else {
 				in.Keep = true
 				for _, p := range slices.Sorted(maps.Keys(records)) {

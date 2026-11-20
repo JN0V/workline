@@ -1,7 +1,7 @@
 ---
 sources:
   - defaults/ci/github/workline.yml#on
-  - defaults/ci/github/workline.yml#jobs.judge.steps
+  - defaults/ci/github/workline.yml#jobs.propose.steps
   - defaults/ci/github/workline-apply.yml#jobs.queue
   - internal/engine/queue.go#queueGroup
   - .github/workflows/workline.yml#on
@@ -21,10 +21,10 @@ Part of [a merge queue or a merge train](../merge-queue.md).
   `merge_group` too. Without it, the checks the queue requires never
   report on its commit, and it waits until its timeout
   ([GitHub's docs](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue)).
-- **The checks**: `judge` reads the gates' verdict on the group's
+- **The checks**: `propose` reads the gates' verdict on the group's
   commit from the `gates` job, and gives it: the check the ruleset
   requires, as on a pull request.
-- **No agent installed**: `judge` installs one on a pull request only,
+- **No agent installed**: `propose` installs one on a pull request only,
   never on a group.
 - **With the [merge policy](../merge-policy.md)**: the base requires
   `workline/accepted` from the App, on the group's commit too.

@@ -33,10 +33,10 @@ reader: fe1505d43360
 flowchart LR
   gates["<b>Pull request</b><br/>gates: no secret"]
   subgraph reads["The AI key, read rights"]
-    judge["<b>Pull request</b><br/>judge"]
-    garden["<b>Nightly or weekly</b><br/>gardening: judge"]
+    propose["<b>Pull request</b><br/>propose"]
+    garden["<b>Nightly or weekly</b><br/>gardening: propose"]
     sample["<b>Mondays</b><br/>sample: read"]
-    import["<b>By hand</b><br/>import: judge"]
+    import["<b>By hand</b><br/>import: propose"]
   end
   subgraph writes["The write token, no AI key: the default branch's runs"]
     apply["apply"]
@@ -46,9 +46,9 @@ flowchart LR
     swrite["sample: write"]
     iapply["import: apply"]
   end
-  gates --> judge
-  judge --> apply
-  judge -- "a fork's" --> fork
+  gates --> propose
+  propose --> apply
+  propose -- "a fork's" --> fork
   garden --> gapply
   sample --> swrite
   import --> iapply
@@ -80,7 +80,7 @@ request's own
    waits for someone to approve them): [set it up](ci-github-app.md) — variable
    `WORKLINE_APP_ID`, its key `WORKLINE_APP_PRIVATE_KEY` in the
    environment `workline-app`, which only the default branch may use.
-4. **Protect main** (Settings → Rules): pull requests only, the `judge`
+4. **Protect main** (Settings → Rules): pull requests only, the `propose`
    check required (workline.yml's verdict); with the developer,
    `workline bounds` too, its source GitHub Actions. The review is on the pull
    request ([ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)):
@@ -91,32 +91,32 @@ request's own
 5. **A private repository** without GitHub Advanced Security: remove the
    `upload-sarif` step of workline.yml, code scanning being paid there.
 
-Then open a pull request changing code a doc describes: `judge` judges it,
+Then open a pull request changing code a doc describes: `propose` reads it,
 and `apply`, with the App, posts the doc's fix in a comment, nothing
 pushed to its branch.
 
 ## The pull requests' workflows
 
-- [workline.yml](../defaults/ci/github/workline.yml): `judge` on each pull
+- [workline.yml](../defaults/ci/github/workline.yml): `propose` on each pull
   request, its own run: no write token. Before it, `gates` runs your
   gates alone: add the install of their tools there
   ([gates in CI](gates-in-ci.md)). On each push to `main`, `gates`
   runs main's line alone, its findings kept as the next base
   ([main after a merge](main-after-merge.md)).
 - [workline-warn.yml](../defaults/ci/github/workline-warn.yml): `warn` beside
-  `judge`, the reviewer's lenses that only warn, apart from the
+  `propose`, the reviewer's lenses that only warn, apart from the
   verdict ([apart](../roles/reviewer/docs/apart.md)), and the
   inspector's triage of what `gates` found, once that job is done
-  ([the triage in CI](gates-triage.md)); without it, `judge` warns
+  ([the triage in CI](gates-triage.md)); without it, `propose` warns
   that nothing reads them.
 - [workline-apply.yml](../defaults/ci/github/workline-apply.yml), from the
   default branch:
-  - `apply` after each `judge`, the doc fixes in a comment, nothing
+  - `apply` after each `propose`, the doc fixes in a comment, nothing
     pushed to the branch, and after each `warn`, the comment of the
     lenses that warn;
   - `main` after main's run: what it found, in one issue;
   - with the [merge policy](merge-policy.md), `verdict` and `follow` run
-    after `judge`, and `queue` after a merge queue's group;
+    after `propose`, and `queue` after a merge queue's group;
   - rename `main` in its `push:` for another default branch.
 - [workline-merge.yml](../defaults/ci/github/workline-merge.yml), with the merge
   policy: `follow` on a label put or taken off, and hourly; at

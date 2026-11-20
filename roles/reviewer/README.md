@@ -1,5 +1,5 @@
 ---
-sources: [roles/reviewer/role.yaml#events, roles/reviewer/role.yaml#apart, roles/reviewer/role.yaml#duties, roles/reviewer/role.yaml#part-intentions, roles/reviewer/role.yaml#without-ai, roles/reviewer/role.yaml#settings, cmd/workline/main.go#reviewCmd, internal/routing/adopt.go#AddReviewer, internal/builtin/reviewer/reviewer.go#settings, internal/builtin/reviewer/reviewer.go#ahead, defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge.script]
+sources: [roles/reviewer/role.yaml#events, roles/reviewer/role.yaml#apart, roles/reviewer/role.yaml#duties, roles/reviewer/role.yaml#part-intentions, roles/reviewer/role.yaml#without-ai, roles/reviewer/role.yaml#settings, cmd/workline/main.go#reviewCmd, internal/routing/adopt.go#AddReviewer, internal/builtin/reviewer/reviewer.go#settings, internal/builtin/reviewer/reviewer.go#ahead, defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose.script]
 checked: e2e165c2d
 verified: agent:claude-code
 ---
@@ -134,7 +134,7 @@ gives them to your agent ([more](docs/run.md#on-a-machine)).
 ## On a merge request
 
 `workline init --review` adds the reviewer to the project's merge-request
-line. On GitHub the judging job needs a read token (`GH_TOKEN`,
+line. On GitHub the proposing job needs a read token (`GH_TOKEN`,
 `pull-requests: read`), which the [template](../../defaults/ci/github/workline.yml)
 gives it ([more](docs/run.md#on-a-merge-request)). Each important finding is a comment on its line; one still
 open is not posted again ([more](docs/lines.md)). A blocked merge request

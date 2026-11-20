@@ -38,7 +38,7 @@ the findings a change adds go, and how
 - **What a gate step holds**: on a merge request, each check's count
   and each new finding, named by a fingerprint holding no line number.
 - **The gates alone** (`--gates-only`), in a job with no write token;
-  the judging job reads their verdicts (`--gates-from`).
+  the proposing job reads their verdicts (`--gates-from`).
 
 ## Where they go
 

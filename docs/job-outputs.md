@@ -5,7 +5,7 @@ sources:
   - internal/agent/agent.go#Call
   - internal/engine/engine.go#callAgent
   - internal/report/report.go#Write
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge.artifacts
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose.artifacts
   - internal/report/summary.go#AppendSummary
   - internal/report/summary.go#Summary
   - internal/engine/engine.go#RunsDir

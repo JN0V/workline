@@ -74,7 +74,7 @@ func TestGitHubMergeQueueRunsTheGatesAlone(t *testing.T) {
 	}
 	// One run per group, never sharing a pull request's lock: GitHub keeps
 	// one run pending per group, and cancels the one pending before.
-	for where, c := range map[string]map[string]any{"the workflow": wf.Concurrency, "judge": wf.Jobs["judge"].Concurrency} {
+	for where, c := range map[string]map[string]any{"the workflow": wf.Concurrency, "propose": wf.Jobs["propose"].Concurrency} {
 		group := expand(t, fmt.Sprint(c["group"]), mergeGroup)
 		if !strings.HasSuffix(group, "gh-readonly-queue/main/pr-7-c0c0") {
 			t.Errorf("workline.yml, %s: a queue's group runs in concurrency group %q, shared by every group", where, group)
@@ -91,17 +91,17 @@ func TestGitHubMergeQueueRunsTheGatesAlone(t *testing.T) {
 			name: "a merge queue's group", event: mergeGroup, head: "4e4d",
 			route: map[string][]string{
 				"gates": {"--gates-only", "--input queue=true", "--input range=b0b0..4e4d"},
-				"judge": {"--ai none", "--forge none", "--input queue=true", "--input range=b0b0..4e4d", "--gates-from"},
+				"propose": {"--ai none", "--forge none", "--input queue=true", "--input range=b0b0..4e4d", "--gates-from"},
 			},
-			never: map[string][]string{"judge": {"--verdict", "--target", "lenses=all", "--sarif"}},
+			never: map[string][]string{"propose": {"--verdict", "--target", "lenses=all", "--sarif"}},
 		},
 		{
 			name: "a pull request's push", event: pullRequestPush, head: "c0c0",
 			route: map[string][]string{
 				"gates": {"--gates-only", "--input range=b0b0..c0c0"},
-				"judge": {"--ai \"$ai\"", "--target merge-request:7", "--input range=b0b0..c0c0", "--verdict workline-verdict.json"},
+				"propose": {"--ai \"$ai\"", "--target merge-request:7", "--input range=b0b0..c0c0", "--verdict workline-verdict.json"},
 			},
-			never: map[string][]string{"gates": {"queue="}, "judge": {"queue="}},
+			never: map[string][]string{"gates": {"queue="}, "propose": {"queue="}},
 		},
 	} {
 		// The repository gives the agent's token, the App's key elsewhere;
@@ -111,7 +111,7 @@ func TestGitHubMergeQueueRunsTheGatesAlone(t *testing.T) {
 		for k, v := range c.event {
 			ctx[k] = v
 		}
-		for _, name := range []string{"gates", "judge"} {
+		for _, name := range []string{"gates", "propose"} {
 			j := wf.Jobs[name]
 			if j.If != "" && !truthy(eval(t, j.If, ctx)) {
 				t.Errorf("%s: job %s does not run (if %q): the check the queue requires never reports", c.name, name, j.If)
@@ -163,10 +163,10 @@ func TestGitHubMergeQueueRunsTheGatesAlone(t *testing.T) {
 					t.Errorf("%s, job %s: uploads to code scanning", c.name, name)
 				}
 				// The job's verdict is the line's, the queue's run's.
-				if s.Name == "Verdict" && name == "judge" {
+				if s.Name == "Verdict" && name == "propose" {
 					ctx["steps.queue.outputs.status"] = "1"
 					if got := expand(t, s.Run, ctx); !strings.Contains(got, "status=1\n") {
-						t.Errorf("%s: judge's verdict is not the queue's run's:\n%s", c.name, got)
+						t.Errorf("%s: propose's verdict is not the queue's run's:\n%s", c.name, got)
 					}
 				}
 			}
@@ -264,7 +264,7 @@ func TestGitLabMergeTrainRunsTheGatesAlone(t *testing.T) {
 	// started by workline:warn:child, which the merge request's pipeline
 	// does not wait for: GitLab gives it parent_pipeline as its source, and
 	// the merge request's CI_MERGE_REQUEST_* variables.
-	every := []string{"workline:base", "workline:gates", "workline:judge", "workline:apply", "workline:warn:child", "workline:merge"}
+	every := []string{"workline:base", "workline:gates", "workline:propose", "workline:apply", "workline:warn:child", "workline:merge"}
 	for _, c := range []struct {
 		kind   string // CI_MERGE_REQUEST_EVENT_TYPE
 		source string // CI_PIPELINE_SOURCE, when not the merge request's

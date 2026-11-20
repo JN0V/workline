@@ -7,7 +7,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:setup
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:objection
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:review
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
   - internal/forge/gitlab_hook.go#gitlab.SetIssueHook
   - internal/agent/claude.go#shellTools
   - roles/tester/role.yaml#events

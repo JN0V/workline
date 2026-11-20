@@ -97,7 +97,7 @@ person, 5 set aside by a person"; a night whose agent was not asked says
 so first, never "nothing to do". Each issue labelled is named, and one
 not labelled yet for `proposals-max` is said.
 
-The judging job, which writes nothing (`--no-apply`), decides the acts
+The proposing job, which writes nothing (`--no-apply`), decides the acts
 already and says them: "to do alone, once applied", "to propose, once
 applied". The applying job does exactly that plan.
 

@@ -2,7 +2,7 @@
 sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:summary
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:tally
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
@@ -11,7 +11,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:propose
 checked: e2e165c2d
 verified: agent:claude-code
 ---
@@ -23,16 +23,16 @@ Part of [what the GitLab template does](template.md).
   `workline-summary.html`, linked from the job's page (its annotations)
   and, for a merge request, from the merge request's page (`expose_as`);
   `workline-summary.md` printed at the end of the log. The applying
-  job adds what it applied to the judging job's. The HTML opens through
+  job adds what it applied to the proposing job's. The HTML opens through
   GitLab Pages, on by default on gitlab.com; without Pages, the link
   downloads it.
   - **Kept as artifacts** a day, but:
     - a week: `workline:merge`, `workline:follow`, `workline:release`,
       `workline:release:dry-run:post`, `workline:main:issue`;
-    - two weeks: each judge and apply, whose agent's calls the weekly
+    - two weeks: each propose job and apply, whose agent's calls the weekly
       sample tallies;
     - 30 days: `workline:main`, the next base `workline:gates` reads;
-    - 90 days: `workline:curator` and its judge.
+    - 90 days: `workline:curator` and its propose job.
   - Tried on gitlab.com (2026-10-06), the engine of the branch: a
     scheduled gardening job, the sample's read, and a gardening job
     started through the pipelines API each printed it, and the job's page

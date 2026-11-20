@@ -23,10 +23,10 @@ sources:
   - internal/line/line.go#Result
   - internal/report/report.go#FromLine
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:ready
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:reconcile
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release

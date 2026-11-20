@@ -125,7 +125,7 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 
 The tests it runs are the tester's `test-command` and `test-report`
 ([the tester](../tester/README.md)), or `proof-command` on the touched
-folders. In CI, the judge job takes the project's setup steps first
+folders. In CI, the propose job takes the project's setup steps first
 ([the triggers](docs/triggers.md#the-projects-environment)).
 
 ## Cost

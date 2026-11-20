@@ -194,13 +194,13 @@ round ([the role contract](role-contract.md#one-run), "Again");
 `workline apply --line <result>` applies them in the job that holds the token
 and no AI key, and stops at the first that does not pass, saying the runs
 left after it (`runs-not-applied`) and the command that resumes them. A role
-keeping a backlog decides its acts in the judging job, reading the forge
+keeping a backlog decides its acts in the proposing job, reading the forge
 only, and keeps that plan for the apply
 ([on the issue](backlog-acts/on-the-issue.md)).
 
 The gates go before, in a job of their own, with no write token and no
 agent's: `--gates-only` runs the event's gate steps alone, each one, and
-the judging job's line, given that result (`--gates-from`), reads each
+the proposing job's line, given that result (`--gates-from`), reads each
 gate step's verdict there and runs none; one not there is a `check-error`
 ([gates](gates.md#shown-on-the-merge-request)). A role step after a gate
 step is given what the gates found: the input `gates`, a file holding
@@ -222,11 +222,11 @@ never given it. With `--warn-only`, the line runs only those steps, given
 are refused. Given `--gates-from`, it hands the gates' job's result to
 those steps (`gates`), only for the commits it judges, else said
 (`gates-unread`), and reads no verdict there. Its
-proposals are applied as the judging job's, by a job of their own: the
+proposals are applied as the proposing job's, by a job of their own: the
 head's verdict is never theirs
 ([apart](../../roles/reviewer/docs/apart.md)).
 
-Where the merge request's code can change its judging job (GitHub), the
+Where the merge request's code can change its proposing job (GitHub), the
 job that applies runs from the base and reads only the run's proposals
 (`--from-merge-request <n> --head <sha>`): refused whole, a role not on
 merge requests or a proposal its role never makes, an act on the
@@ -650,7 +650,7 @@ whose result moves the issue to the next. The table is the routing's
   Its drafts with no review yet on that body, the reviewer on the line:
   the step is the reviewer's alone, the product owner not called
   (`state-review-pending`; `alone` in the record). In CI, the reviewer
-  of the judge job read the body before the apply job wrote the drafts;
+  of the propose job read the body before the apply job wrote the drafts;
   its review lands, then the rule above holds it. A retry of that step
   after a machine error, and the once more of a review that did not
   come (`state-review-missing`), run the reviewer alone too; its errors

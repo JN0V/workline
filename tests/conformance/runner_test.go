@@ -132,7 +132,7 @@ type runSpec struct {
 	GatesOnly bool `yaml:"gates-only"`
 	// GatesJob: the route reads its gates' verdicts from a run of the
 	// gates alone made first, with these variables (--gates-from), as CI's
-	// judging job reads that job's; GatesFrom, from this file instead,
+	// proposing job reads that job's; GatesFrom, from this file instead,
 	// relative to the case's folder.
 	GatesJob  *gatesJob `yaml:"gates-job"`
 	GatesFrom string    `yaml:"gates-from"`

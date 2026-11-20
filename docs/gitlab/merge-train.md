@@ -3,7 +3,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:base
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:gates
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge.rules
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge

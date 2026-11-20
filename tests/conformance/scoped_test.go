@@ -98,7 +98,7 @@ func TestGitLabTokensKeptFromTheProjectsTools(t *testing.T) {
 		// What needs the bot's token says so when it lacks it, before
 		// anything uses it; the judge, the dry run and the base's read do
 		// without it.
-		if slices.Contains(used, "WORKLINE_GITLAB_TOKEN") && name != "workline:judge" && name != "workline:base" && name != "workline:release:dry-run" {
+		if slices.Contains(used, "WORKLINE_GITLAB_TOKEN") && name != "workline:propose" && name != "workline:base" && name != "workline:release:dry-run" {
 			said := -1
 			for i, l := range lines(name) {
 				switch {

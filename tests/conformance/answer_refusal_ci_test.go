@@ -74,7 +74,7 @@ func answerRefusalRun(t *testing.T, dir, script, workline string, env ...string)
 // A refused answer said, in the template and in workline's own workflow
 // Given a tester's answer the engine refuses (exit 1, no pending run, its
 // run folder holding out/on-block.yaml),
-// When the judge and apply jobs of workline-answer.yml run,
+// When the propose and apply jobs of workline-answer.yml run,
 // Then the run is named for apply, the artifact is kept with answer.json,
 // the Verdict step prints the reason as an error, and apply finds the run
 // where two upload paths put it, then applies it: the comment in the thread.
@@ -92,8 +92,8 @@ func TestAnswerRefusalSaidInJobAndThread(t *testing.T) {
 		jobs := answerRefusalJobs(t, f)
 		t.Run(filepath.Base(dir), func(t *testing.T) {
 			var answer, upload, verdict, apply *answerRefusalStep
-			for i := range jobs["judge"] {
-				s := &jobs["judge"][i]
+			for i := range jobs["propose"] {
+				s := &jobs["propose"][i]
 				switch {
 				case s.Name == "The answer (proposed only)":
 					answer = s

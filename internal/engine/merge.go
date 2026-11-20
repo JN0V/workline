@@ -26,7 +26,7 @@ import (
 // first (ADR-0051, cut 2); no agent is called.
 
 // HeadVerdict is the line's verdict on a merge request's head, written by
-// the judging job (`workline route --verdict`), kept by the job that
+// the proposing job (`workline route --verdict`), kept by the job that
 // writes (`workline follow --verdict`).
 type HeadVerdict struct {
 	Head     string            `json:"head"`

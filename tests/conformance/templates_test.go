@@ -107,7 +107,7 @@ func TestGitHubTemplatesFetchWholeHistory(t *testing.T) {
 
 // A job that hangs ends at its own timeout, never at GitHub's 6 h: each job
 // of the GitHub templates sets timeout-minutes; one that runs the
-// developer or the tester with an agent, the issue's judge or a review
+// developer or the tester with an agent, the issue's propose job or a review
 // round, above their caps. GitLab's jobs running them too: the project's
 // 1 h default is below the developer's caps (#1197).
 func TestTemplatesTimeEachJob(t *testing.T) {
@@ -152,7 +152,7 @@ func TestTemplatesTimeEachJob(t *testing.T) {
 		}
 	}
 	if n == 0 || capped < 2 {
-		t.Fatalf("%d jobs, %d running the developer or the tester with an agent: want the issue's judge and the review round", n, capped)
+		t.Fatalf("%d jobs, %d running the developer or the tester with an agent: want the issue's propose job and the review round", n, capped)
 	}
 	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
 	if err != nil {
@@ -162,7 +162,7 @@ func TestTemplatesTimeEachJob(t *testing.T) {
 	if err := yaml.Unmarshal(data, &gl); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"workline:develop:judge", "workline:review:judge"} {
+	for _, name := range []string{"workline:develop:propose", "workline:review:propose"} {
 		job, _ := gl[name].(map[string]any)
 		d, err := time.ParseDuration(fmt.Sprint(job["timeout"]))
 		if err != nil || d.Seconds() <= float64(need) {
@@ -220,7 +220,7 @@ func TestGitLabTemplateKeepsTheSummary(t *testing.T) {
 			continue
 		}
 		n++
-		// The gates' job names its own: the judge, given its artifacts,
+		// The gates' job names its own: the propose job, given its artifacts,
 		// writes workline-summary.md afresh.
 		sum := "workline-summary"
 		if strings.Contains(script, "--gates-only") {
@@ -315,10 +315,10 @@ func TestGitHubApplyJobsWriteTheirSummary(t *testing.T) {
 	}
 }
 
-// A judge that fails — a step blocked, the reviewer held by a finding —
+// A propose job that fails — a step blocked, the reviewer held by a finding —
 // still leaves what it proposed to apply (#226, #142): the job that applies
-// runs whatever the judge's outcome, and the pipeline still fails by the
-// judge's. An agent out of reach (3) warns, as on GitHub, never fails.
+// runs whatever the propose job's outcome, and the pipeline still fails by the
+// propose job's. An agent out of reach (3) warns, as on GitHub, never fails.
 
 func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
 	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
@@ -329,7 +329,7 @@ func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
 	if err := yaml.Unmarshal(data, &top); err != nil {
 		t.Fatal(err)
 	}
-	applies, judges := 0, 0
+	applies, proposers := 0, 0
 	for name, v := range top {
 		job, ok := v.(map[string]any)
 		if !ok || strings.HasPrefix(name, ".") {
@@ -341,11 +341,11 @@ func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
 			applies++
 			rules, _ := job["rules"].([]any)
 			if len(rules) == 0 {
-				t.Errorf("job %s: no rules of its own: GitLab skips it when the judge fails (on_success)", name)
+				t.Errorf("job %s: no rules of its own: GitLab skips it when the propose job fails (on_success)", name)
 			}
 			for _, r := range rules {
 				if m, _ := r.(map[string]any); fmt.Sprint(m["when"]) != "always" {
-					t.Errorf("job %s: rule %v is not `when: always`: a failed judge would skip it", name, m)
+					t.Errorf("job %s: rule %v is not `when: always`: a failed propose job would skip it", name, m)
 				}
 			}
 		case strings.Contains(script, "--warn-only"):
@@ -358,15 +358,15 @@ func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
 			// (3), is never published: no failure allowed
 			// (TestGitLabReleaseJobAtATag).
 		case strings.Contains(script, "workline route") && !strings.Contains(script, "--gates-only"):
-			judges++
+			proposers++
 			af, _ := job["allow_failure"].(map[string]any)
 			if fmt.Sprint(af["exit_codes"]) != "[3]" {
 				t.Errorf("job %s: allow_failure %v: an agent out of reach (3) fails it, where GitHub warns", name, job["allow_failure"])
 			}
 		}
 	}
-	if applies < 2 || judges < 2 {
-		t.Fatalf("found %d applying and %d judging jobs, want the merge request's and the gardening's", applies, judges)
+	if applies < 2 || proposers < 2 {
+		t.Fatalf("found %d applying and %d proposing jobs, want the merge request's and the gardening's", applies, proposers)
 	}
 }
 
@@ -395,7 +395,7 @@ func TestGitHubApplyRunsWhenTheJudgeFails(t *testing.T) {
 		if err := yaml.Unmarshal(data, &wf); err != nil {
 			t.Fatal(err)
 		}
-		// After the judge's workflow, run on its completion: whatever its
+		// After the propose job's workflow, run on its completion: whatever its
 		// conclusion, unless the job's condition reads it — but for a run a
 		// newer push cancelled (#359).
 		afterAny := wf.On.WorkflowRun != nil && slices.Equal(wf.On.WorkflowRun.Types, []string{"completed"})
@@ -407,7 +407,7 @@ func TestGitHubApplyRunsWhenTheJudgeFails(t *testing.T) {
 				n++
 				reads := strings.Contains(strings.ReplaceAll(job.If, notCancelled, ""), "conclusion")
 				if afterAny && reads || !afterAny && !strings.HasPrefix(job.If, "always()") {
-					t.Errorf("%s, job %s: if %q: a failed judge would skip it", filepath.Base(f), name, job.If)
+					t.Errorf("%s, job %s: if %q: a failed propose job would skip it", filepath.Base(f), name, job.If)
 				}
 			}
 		}
@@ -417,13 +417,13 @@ func TestGitHubApplyRunsWhenTheJudgeFails(t *testing.T) {
 	}
 }
 
-// notCancelled is how a job after the judge's workflow skips a run a
+// notCancelled is how a job after the propose job's workflow skips a run a
 // newer push cancelled.
 const notCancelled = "github.event.workflow_run.conclusion != 'cancelled'"
 
 // One line per merge request at a time (#359): a push cancels the run
 // still judging the head before — on GitHub, the workflow's concurrency
-// group per pull request; on GitLab, an interruptible judge —, and nothing of a cancelled
+// group per pull request; on GitLab, an interruptible propose job —, and nothing of a cancelled
 // run is uploaded after, applied, kept, followed or commented. The jobs that
 // write on a merge request's pipeline are never interruptible: one begun
 // goes to its end.
@@ -460,13 +460,13 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 		return wf
 	}
 	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
-		judges := 0
+		proposers := 0
 		wf := read(dir + "workline.yml")
 		if group := ownGroup(fmt.Sprint(wf.Concurrency["group"])); !strings.Contains(group, "${{ github.event.pull_request.number }}") || wf.Concurrency["cancel-in-progress"] != true {
 			t.Errorf("%sworkline.yml: no concurrency group per pull request cancelling the run in progress: %v", dir, wf.Concurrency)
 		}
 		// The run apart from the verdict (ADR-0050): one per pull request
-		// too, in a group of its own, never cancelling the judge's.
+		// too, in a group of its own, never cancelling the propose job's.
 		warn := read(dir + "workline-warn.yml")
 		if group := fmt.Sprint(warn.Concurrency["group"]); !strings.Contains(group, "${{ github.event.pull_request.number }}") || group == fmt.Sprint(wf.Concurrency["group"]) || warn.Concurrency["cancel-in-progress"] != true {
 			t.Errorf("%sworkline-warn.yml: no concurrency group of its own per pull request cancelling the run in progress: %v", dir, warn.Concurrency)
@@ -492,9 +492,9 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 			if !route {
 				continue
 			}
-			judges++
+			proposers++
 		}
-		if judges == 0 {
+		if proposers == 0 {
 			t.Errorf("%sworkline.yml: no job runs the merge request's line", dir)
 		}
 		for _, f := range []string{"workline-apply.yml", "workline-fork.yml"} {
@@ -532,25 +532,25 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 			continue // the merge request's, or its child's: what only warns
 		}
 		n++
-		// Every job that writes nothing (the judge, the gates, what reads
+		// Every job that writes nothing (the propose job, the gates, what reads
 		// their base) is interruptible: one that is not, once started,
 		// keeps GitLab from cancelling the whole pipeline.
 		script := fmt.Sprint(job["script"])
-		judge := !strings.Contains(script, "workline apply") && !strings.Contains(script, "workline follow")
+		propose := !strings.Contains(script, "workline apply") && !strings.Contains(script, "workline follow")
 		why := "a job that writes goes to its end"
-		if judge {
-			why = "a push must cancel the judge still on the head before"
+		if propose {
+			why = "a push must cancel the propose job still on the head before"
 		}
-		if got, set := job["interruptible"]; !set || got != judge {
-			t.Errorf("job %s: interruptible %v, want %v: %s", name, got, judge, why)
+		if got, set := job["interruptible"]; !set || got != propose {
+			t.Errorf("job %s: interruptible %v, want %v: %s", name, got, propose, why)
 		}
 	}
 	if n < 3 {
-		t.Fatalf("found %d jobs of a merge request's pipeline, want the judge and the two that write", n)
+		t.Fatalf("found %d jobs of a merge request's pipeline, want the propose job and the two that write", n)
 	}
 }
 
-// One review at a time per merge request (#375): the judge and the apply
+// One review at a time per merge request (#375): the propose job and the apply
 // share a lock, neither cancelling the other, so a push is judged once
 // the review before it is written, and reads its record. On GitHub, a
 // concurrency group per pull request; on GitLab, a resource group per
@@ -593,7 +593,7 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 			// workline's head pass (ADR-0071 §1) reads the record but leaves
 			// nothing for an apply to write: out of the lock, never waiting
 			// on the line's review.
-			if name == "head-judge" {
+			if name == "head-propose" {
 				for _, s := range job.Steps {
 					if strings.HasPrefix(s.Uses, "actions/upload-artifact@") {
 						t.Errorf("%s, job %s: the head pass uploads what an apply could read", file, name)
@@ -623,7 +623,7 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 	if err := yaml.Unmarshal(data, &top); err != nil {
 		t.Fatal(err)
 	}
-	for name, want := range map[string]string{"workline:judge": "workline-review-$CI_MERGE_REQUEST_IID", "workline:apply": "workline-review-$CI_MERGE_REQUEST_IID",
+	for name, want := range map[string]string{"workline:propose": "workline-review-$CI_MERGE_REQUEST_IID", "workline:apply": "workline-review-$CI_MERGE_REQUEST_IID",
 		"workline:warn": "workline-warn-$CI_MERGE_REQUEST_IID", "workline:warn:apply": "workline-warn-$CI_MERGE_REQUEST_IID"} {
 		job, _ := top[name].(map[string]any)
 		if got := job["resource_group"]; got != want {
@@ -632,7 +632,7 @@ func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
 	}
 }
 
-// The judge says when no workflow reads the lenses it left apart, and the
+// The propose job says when no workflow reads the lenses it left apart, and the
 // run apart when no workflow applies what it proposed: each check runs as
 // its workflow holds it, in a folder of workflows with and without the
 // other, and never takes its own text for the other (ADR-0050).
@@ -710,11 +710,11 @@ func TestWarnApartSaysWhatIsMissing(t *testing.T) {
 		return warned
 	}
 	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
-		judge := script(dir+"workline.yml", "Whether anything reads the lenses that warn")
-		if !warns(judge, map[string]string{"workline.yml": dir + "workline.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
+		propose := script(dir+"workline.yml", "Whether anything reads the lenses that warn")
+		if !warns(propose, map[string]string{"workline.yml": dir + "workline.yml", "workline-apply.yml": dir + "workline-apply.yml"}) {
 			t.Errorf("%sworkline.yml: no warning with no workline-warn.yml beside it", dir)
 		}
-		if warns(judge, map[string]string{"workline.yml": dir + "workline.yml", "workline-warn.yml": dir + "workline-warn.yml"}) {
+		if warns(propose, map[string]string{"workline.yml": dir + "workline.yml", "workline-warn.yml": dir + "workline-warn.yml"}) {
 			t.Errorf("%sworkline.yml: warns with workline-warn.yml beside it", dir)
 		}
 		// The run apart reads only where something applies what it
@@ -741,7 +741,7 @@ func TestWarnApartSaysWhatIsMissing(t *testing.T) {
 		routed = ""
 		triageJudge := script(dir+"workline.yml", "The line for this pull request (proposals only)")
 		if !strings.Contains(triageJudge, `select(.name == "reviewer" or .name == "inspector")`) {
-			t.Errorf("%sworkline.yml: the judge says not that nothing reads the inspector's triage it left apart", dir)
+			t.Errorf("%sworkline.yml: the propose job says not that nothing reads the inspector's triage it left apart", dir)
 		}
 		if line := script(dir+"workline-warn.yml", "What only warns, apart from the verdict (proposals only)"); !strings.Contains(line, `${gates:+--gates-from "$gates"}`) {
 			t.Errorf("%sworkline-warn.yml: the run apart is not given the gates' result for the inspector", dir)
@@ -754,11 +754,11 @@ func TestWarnApartSaysWhatIsMissing(t *testing.T) {
 }
 
 // What only warns runs apart from the verdict, never holding it (ADR-0050):
-// the judge leaves the reviewer's lenses that warn (--warn-apart), a run of
+// the propose job leaves the reviewer's lenses that warn (--warn-apart), a run of
 // their own reads them (--warn-only), writing no verdict and uploading no
 // SARIF, and fails no check by what it finds; the head's verdict is kept
-// from the judge's run alone. On GitLab, that job and its apply never fail
-// the pipeline, and the merge policy reads the judge alone.
+// from the propose job's run alone. On GitLab, that job and its apply never fail
+// the pipeline, and the merge policy reads the propose job alone.
 func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 	type workflow struct {
 		On struct {
@@ -787,15 +787,15 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 		return wf, string(data)
 	}
 	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
-		judge, _ := read(dir + "workline.yml")
+		propose, _ := read(dir + "workline.yml")
 		left := false
-		for _, job := range judge.Jobs {
+		for _, job := range propose.Jobs {
 			for _, s := range job.Steps {
 				left = left || strings.Contains(s.Run, "workline route merge-request") && strings.Contains(s.Run, "--warn-apart")
 			}
 		}
 		if !left {
-			t.Errorf("%sworkline.yml: the judge's line does not leave what only warns apart (--warn-apart)", dir)
+			t.Errorf("%sworkline.yml: the propose job's line does not leave what only warns apart (--warn-apart)", dir)
 		}
 		warn, text := read(dir + "workline-warn.yml")
 		if !strings.Contains(text, "workline route merge-request --warn-only") {
@@ -826,7 +826,7 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 		}
 		apply, _ := read(dir + "workline-apply.yml")
 		if r := apply.On.WorkflowRun; r == nil || !slices.Equal(r.Workflows, []string{"workline", "workline warn"}) {
-			t.Errorf("%sworkline-apply.yml: does not apply both runs, the judge's and the one apart: %+v", dir, r)
+			t.Errorf("%sworkline-apply.yml: does not apply both runs, the propose job's and the one apart: %+v", dir, r)
 		}
 		for name, job := range apply.Jobs {
 			keeps := false
@@ -846,11 +846,11 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 	if err := yaml.Unmarshal(data, &top); err != nil {
 		t.Fatal(err)
 	}
-	judge, _ := top["workline:judge"].(map[string]any)
-	// The judge leaves the lenses that warn only where workline:warn runs,
-	// the bot's token set; without it they read in the judge, said in its
+	propose, _ := top["workline:propose"].(map[string]any)
+	// The propose job leaves the lenses that warn only where workline:warn runs,
+	// the bot's token set; without it they read in the propose job, said in its
 	// log and its summary: never lost in silence.
-	steps, _ := judge["script"].([]any)
+	steps, _ := propose["script"].([]any)
 	var route string
 	var says []string
 	for _, s := range steps {
@@ -863,7 +863,7 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 		}
 	}
 	if !strings.Contains(route, "${WORKLINE_GITLAB_TOKEN:+--warn-apart}") || strings.Contains(strings.ReplaceAll(route, "${WORKLINE_GITLAB_TOKEN:+--warn-apart}", ""), "--warn-apart") {
-		t.Errorf("workline:judge: leaves what only warns apart whether or not workline:warn can run: %s", route)
+		t.Errorf("workline:propose: leaves what only warns apart whether or not workline:warn can run: %s", route)
 	}
 	for _, token := range []string{"", "bot"} {
 		dir := t.TempDir()
@@ -874,7 +874,7 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 		said := strings.Contains(string(out), "WORKLINE_GITLAB_TOKEN not set") && strings.Contains(string(summary), "WORKLINE_GITLAB_TOKEN not set")
 		apart := strings.Contains(string(out), "route[--warn-apart]")
 		if err != nil || said != (token == "") || apart != (token != "") {
-			t.Errorf("workline:judge, WORKLINE_GITLAB_TOKEN %q: said in log and summary %v, left apart %v (%v)\n%s", token, said, apart, err, out)
+			t.Errorf("workline:propose, WORKLINE_GITLAB_TOKEN %q: said in log and summary %v, left apart %v (%v)\n%s", token, said, apart, err, out)
 		}
 	}
 	warn, _ := top["workline:warn"].(map[string]any)
@@ -917,7 +917,7 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 		}
 		dir := t.TempDir()
 		curl := "#!/bin/sh\nout=; for a; do [ \"$prev\" = -o ] && out=$a; prev=$a; url=$a; done\n" +
-			"case $url in */pipelines/7/jobs*) echo '[{\"id\":41,\"name\":\"workline:judge\"},{\"id\":42,\"name\":\"workline:gates\"}]' ;;\n" +
+			"case $url in */pipelines/7/jobs*) echo '[{\"id\":41,\"name\":\"workline:propose\"},{\"id\":42,\"name\":\"workline:gates\"}]' ;;\n" +
 			"*/jobs/42/artifacts/gates.json) echo '{\"steps\":[]}' > \"$out\" ;;\n*) exit 22 ;; esac\n"
 		if err := os.WriteFile(filepath.Join(dir, "curl"), []byte(curl), 0o755); err != nil {
 			t.Fatal(err)
@@ -941,8 +941,8 @@ func TestWarnApartNeverHoldsTheVerdict(t *testing.T) {
 			t.Errorf("job %s: allow_failure %v: what only warns would fail the pipeline the merge waits on", name, job["allow_failure"])
 		}
 	}
-	if merge, _ := top["workline:merge"].(map[string]any); fmt.Sprint(merge["needs"]) != "[workline:judge]" {
-		t.Errorf("workline:merge: needs %v: the head's verdict is the judge's alone", merge["needs"])
+	if merge, _ := top["workline:merge"].(map[string]any); fmt.Sprint(merge["needs"]) != "[workline:propose]" {
+		t.Errorf("workline:merge: needs %v: the head's verdict is the propose job's alone", merge["needs"])
 	}
 }
 
@@ -1034,7 +1034,7 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 		}
 	}
 	if n < 4 {
-		t.Fatalf("found %d steps running the merge request's line, want the template's and workline's own, the judge's and the run apart's", n)
+		t.Fatalf("found %d steps running the merge request's line, want the template's and workline's own, the propose job's and the run apart's", n)
 	}
 }
 
@@ -1153,7 +1153,7 @@ func TestTemplatesInstallNoAgentOnADraft(t *testing.T) {
 		}
 	}
 	// The draft state is read before the agent is installed.
-	for _, job := range []string{"workline:judge", "workline:warn"} {
+	for _, job := range []string{"workline:propose", "workline:warn"} {
 		j, _ := top[job].(map[string]any)
 		script := fmt.Sprint(j["script"])
 		at, install := strings.Index(script, "lenses=;"), strings.Index(script, "npm install")
@@ -1182,10 +1182,10 @@ func TestGitLabTemplateAsksEveryLensWhenReady(t *testing.T) {
 	if len(ready) != 1 {
 		t.Fatalf(".workline:ready: %v, want one script", top[".workline:ready"])
 	}
-	judge, _ := top["workline:judge"].(map[string]any)
-	if script := fmt.Sprint(judge["script"]); !strings.Contains(script, "--input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA} $lenses ${draft:+--input draft=$draft}") ||
+	propose, _ := top["workline:propose"].(map[string]any)
+	if script := fmt.Sprint(propose["script"]); !strings.Contains(script, "--input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA} $lenses ${draft:+--input draft=$draft}") ||
 		!strings.Contains(script, "lenses=;") {
-		t.Errorf("workline:judge does not run .workline:ready and pass $lenses and the draft state (#359): %s", script)
+		t.Errorf("workline:propose does not run .workline:ready and pass $lenses and the draft state (#359): %s", script)
 	}
 	// The API as GitLab answers it: the merge request, then its notes, the
 	// most recently updated first, a hundred a page (NOTES_<page>, the
@@ -1261,13 +1261,13 @@ printf '%s' "$f"
 		if c.rest != "" && !strings.Contains(string(out), "page[50]") {
 			t.Errorf("%s: not stopped at page 50:\n%s", c.name, out)
 		}
-		// The draft state the judge passes on (#359), as the job or the API says it.
+		// The draft state the propose job passes on (#359), as the job or the API says it.
 		want := c.draft
 		if c.mr != "" {
 			want = map[bool]string{true: "true", false: "false"}[strings.Contains(c.mr, "true")]
 		}
 		if !strings.Contains(string(out), "draft["+want+"]") {
-			t.Errorf("%s: draft not %q for the judge:\n%s", c.name, want, out)
+			t.Errorf("%s: draft not %q for the propose job:\n%s", c.name, want, out)
 		}
 	}
 }
@@ -1331,7 +1331,7 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 }
 
 // The release pull request's docs are judged at night, with the gardening
-// (ADR-0050, §7): its judging job runs the schedule line with a forge that
+// (ADR-0050, §7): its proposing job runs the schedule line with a forge that
 // lists the open merge requests and --open-merge-request, which is when
 // the line takes up the release; on GitHub, the job that applies names
 // the App, so that the release's fix is the App's pull request only when
@@ -1385,11 +1385,11 @@ func TestGardeningJudgesTheReleaseAtNight(t *testing.T) {
 		t.Fatal(err)
 	}
 	garden, _ := top[".workline:garden"].(map[string]any)
-	job, _ := top["workline:garden:judge"].(map[string]any)
+	job, _ := top["workline:garden:propose"].(map[string]any)
 	script := fmt.Sprint(job["script"])
 	if !strings.Contains(fmt.Sprint(garden["before_script"]), "export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN") ||
 		!strings.Contains(script, "--forge gitlab") || !strings.Contains(script, "--open-merge-request") {
-		t.Errorf("workline:garden:judge does not list the open merge requests with the project's token: no release is judged at night: %s", script)
+		t.Errorf("workline:garden:propose does not list the open merge requests with the project's token: no release is judged at night: %s", script)
 	}
 }
 
@@ -1434,13 +1434,13 @@ func TestMergePolicyRunsWhenADemotionIsClosed(t *testing.T) {
 	}
 }
 
-// The merge policy (ADR-0042) acts after each judge, its verdict kept by a
+// The merge policy (ADR-0042) acts after each propose job, its verdict kept by a
 // job no newer run cancels — in no concurrency group, where `follow` is in
 // one —, and when a label is put or taken off — never in the workflow
-// holding `judge`, whose run on a label would show the check skipped, which
+// holding `propose`, whose run on a label would show the check skipped, which
 // GitHub takes as passed for a required check. Both from the default
 // branch's workflow, never the pull request's own (ADR-0044): the verdict is
-// kept, and follow run, when the judge's workflow completes.
+// kept, and follow run, when the propose job's workflow completes.
 func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 	type workflow struct {
 		On struct {
@@ -1481,13 +1481,13 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		judged := read(dir + "workline.yml")
 		for _, ty := range []string{"labeled", "unlabeled", "converted_to_draft"} {
 			if slices.Contains(judged.On.PullRequest.Types, ty) || judged.On.Target != nil {
-				t.Errorf("%sworkline.yml: runs on %s, where judge would show skipped", dir, ty)
+				t.Errorf("%sworkline.yml: runs on %s, where propose would show skipped", dir, ty)
 			}
 		}
 		var route string
 		for name, job := range judged.Jobs {
 			// workline's head pass gives no verdict (ADR-0071 §1).
-			if name == "head-judge" {
+			if name == "head-propose" {
 				continue
 			}
 			for _, s := range job.Steps {
@@ -1501,7 +1501,7 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 			}
 		}
 		if !strings.Contains(route, "--verdict workline-verdict.json") {
-			t.Errorf("%sworkline.yml: judge does not write the head's verdict", dir)
+			t.Errorf("%sworkline.yml: propose does not write the head's verdict", dir)
 		}
 		after := read(dir + "workline-apply.yml")
 		if r := after.On.WorkflowRun; r == nil || !slices.Equal(r.Workflows, []string{"workline", "workline warn"}) || !slices.Equal(r.Types, []string{"completed"}) {
@@ -1541,8 +1541,8 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		if wf.On.Target == nil || !slices.Contains(wf.On.Target.Types, "labeled") || !slices.Contains(wf.On.Target.Types, "unlabeled") {
 			t.Errorf("%s: does not run on a label put and taken off", filepath.Base(f))
 		}
-		if _, ok := wf.Jobs["judge"]; ok {
-			t.Errorf("%s: holds a judge job, which would show skipped on a label", filepath.Base(f))
+		if _, ok := wf.Jobs["propose"]; ok {
+			t.Errorf("%s: holds a propose job, which would show skipped on a label", filepath.Base(f))
 		}
 		// The safety net (#993): an auto-merge the forge missed, no event
 		// after it, is merged by the next run within the hour; on
@@ -1660,9 +1660,9 @@ func TestGitHubFindingsReachTheApplyingJob(t *testing.T) {
 		return wf
 	}
 	for _, dir := range []string{"../../defaults/ci/github/", "../../.github/workflows/"} {
-		judge := read(dir + "workline.yml").Jobs["judge"]
+		propose := read(dir + "workline.yml").Jobs["propose"]
 		found, uploaded := false, false
-		for _, s := range judge.Steps {
+		for _, s := range propose.Steps {
 			found = found || strings.Contains(s.Run, `echo "found=`)
 			uploaded = uploaded || s.With.Name == "workline-runs" && strings.Contains(s.If, "steps.line.outputs.found == 'true'")
 		}
@@ -1675,12 +1675,12 @@ func TestGitHubFindingsReachTheApplyingJob(t *testing.T) {
 	}
 }
 
-// The judge's filter telling the documentalist found something reads the
+// The propose job's filter telling the documentalist found something reads the
 // line's result as the engine writes it: a documentalist step's findings,
 // handed off too, yes; another role's, or none, no.
 func TestGitHubJudgeTellsTheDocumentalistFound(t *testing.T) {
 	if _, err := exec.LookPath("jq"); err != nil {
-		t.Skip("jq is not installed: the judge's filter is not run here")
+		t.Skip("jq is not installed: the propose job's filter is not run here")
 	}
 	found := regexp.MustCompile(`echo "found=\$\(jq '([^']+)' line\.json\)"`)
 	step := func(name string, findings ...verdict.Finding) line.Step {
@@ -1719,7 +1719,7 @@ func TestGitHubJudgeTellsTheDocumentalistFound(t *testing.T) {
 
 // The gates run in a job of their own, their tools the change's code: on
 // GitHub, one holding a read token alone and no secret, the agent's
-// neither, its checkout keeping no token; the judge reads their verdicts
+// neither, its checkout keeping no token; the propose job reads their verdicts
 // and never runs a gate (ADR-0049). On GitLab, which gives every job the
 // project's variables, the gates' job unsets the agent's token and the
 // project bot's first, and its Code Quality report is what GitLab shows.
@@ -1788,18 +1788,18 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 			t.Errorf("%s: %d jobs run the gates alone, want %d", f, running, want)
 		}
 		// Main's run after a merge is the gates' job's alone (ADR-0050).
-		judge := wf.Jobs["judge"]
-		if fmt.Sprint(judge.Needs) != "gates" || judge.If != "!cancelled() && github.event_name != 'push'" {
-			t.Errorf("%s: judge does not run after the gates whatever their verdict (needs %v, if %q)", f, judge.Needs, judge.If)
+		propose := wf.Jobs["propose"]
+		if fmt.Sprint(propose.Needs) != "gates" || propose.If != "!cancelled() && github.event_name != 'push'" {
+			t.Errorf("%s: propose does not run after the gates whatever their verdict (needs %v, if %q)", f, propose.Needs, propose.If)
 		}
 		read := false
-		for _, s := range judge.Steps {
+		for _, s := range propose.Steps {
 			if strings.Contains(s.Run, "workline route merge-request") {
 				read = strings.Contains(s.Run, `--gates-from "$RUNNER_TEMP/gates/gates.json"`)
 			}
 		}
 		if !read {
-			t.Errorf("%s: judge's line runs the gates itself, beside the agent's token: no --gates-from", f)
+			t.Errorf("%s: propose's line runs the gates itself, beside the agent's token: no --gates-from", f)
 		}
 	}
 	data, err := os.ReadFile("../../defaults/ci/gitlab/workline.gitlab-ci.yml")
@@ -1821,14 +1821,14 @@ func TestGatesRunWithNoTokenNorAgent(t *testing.T) {
 	if reports, _ := gates["artifacts"].(map[string]any)["reports"].(map[string]any); fmt.Sprint(reports["codequality"]) != "gl-code-quality-gates.json" {
 		t.Errorf("workline:gates: GitLab is not given its Code Quality report: %v", reports)
 	}
-	judge, _ := top["workline:judge"].(map[string]any)
+	propose, _ := top["workline:propose"].(map[string]any)
 	// workline:base's artifacts too: the tests' ids it read (#1407).
-	if needs, _ := judge["needs"].([]any); !strings.Contains(fmt.Sprint(judge["script"]), "--gates-from gates.json") || len(needs) == 0 || fmt.Sprint(needs[0]) != "workline:gates" {
-		t.Errorf("workline:judge: does not read the gates' verdicts from their job (needs %v)", judge["needs"])
+	if needs, _ := propose["needs"].([]any); !strings.Contains(fmt.Sprint(propose["script"]), "--gates-from gates.json") || len(needs) == 0 || fmt.Sprint(needs[0]) != "workline:gates" {
+		t.Errorf("workline:propose: does not read the gates' verdicts from their job (needs %v)", propose["needs"])
 	}
-	for _, r := range judge["rules"].([]any) {
+	for _, r := range propose["rules"].([]any) {
 		if m, _ := r.(map[string]any); fmt.Sprint(m["when"]) != "always" {
-			t.Errorf("workline:judge: rule %v is not `when: always`: gates that did not pass would skip the line", m)
+			t.Errorf("workline:propose: rule %v is not `when: always`: gates that did not pass would skip the line", m)
 		}
 	}
 }
@@ -1896,7 +1896,7 @@ func TestCuratorMeasuresWithNoWriteToken(t *testing.T) {
 }
 
 // The developer's ready trigger (ADR-0054, step 5): an issue labelled
-// ready runs the project's `issue` line on it, the judge with no write
+// ready runs the project's `issue` line on it, the propose job with no write
 // token and the line proposing only (--no-apply, --open-merge-request),
 // one run at a time; the job that applies holds the App's key, no AI key.
 // On GitLab, the same from a pipeline a tool starts (WORKLINE_TASK=develop).
@@ -1923,28 +1923,28 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 	if err := yaml.Unmarshal(data, &wf); err != nil {
 		t.Fatal(err)
 	}
-	judge := wf.Jobs["judge"]
-	// The group on the judge, after its `if`, per issue: a label other
+	propose := wf.Jobs["propose"]
+	// The group on the propose job, after its `if`, per issue: a label other
 	// than ready never takes it, so never drops a ready issue's run.
-	if _, ok := wf.On["issues"]; !ok || wf.Concurrency != nil || judge.Concurrency["cancel-in-progress"] != false ||
-		!strings.Contains(fmt.Sprint(judge.Concurrency["group"]), "github.event.issue.number") {
-		t.Errorf("workline-develop.yml: not woken by an issue's label, or its group not on the judge, one an issue: %v %v %v", wf.On, wf.Concurrency, judge.Concurrency)
+	if _, ok := wf.On["issues"]; !ok || wf.Concurrency != nil || propose.Concurrency["cancel-in-progress"] != false ||
+		!strings.Contains(fmt.Sprint(propose.Concurrency["group"]), "github.event.issue.number") {
+		t.Errorf("workline-develop.yml: not woken by an issue's label, or its group not on the propose job, one an issue: %v %v %v", wf.On, wf.Concurrency, propose.Concurrency)
 	}
 	// A person's state label wakes it, never the engine's own (ADR-0059).
-	if !strings.Contains(judge.If, "startsWith(github.event.label.name, 'workline:')") || !strings.Contains(judge.If, "github.event.sender.type != 'Bot'") ||
-		judge.Permissions["contents"] != "read" {
-		t.Errorf("workline-develop.yml, judge: not on a person's state label, or holds a write token: %q %v", judge.If, judge.Permissions)
+	if !strings.Contains(propose.If, "startsWith(github.event.label.name, 'workline:')") || !strings.Contains(propose.If, "github.event.sender.type != 'Bot'") ||
+		propose.Permissions["contents"] != "read" {
+		t.Errorf("workline-develop.yml, propose: not on a person's state label, or holds a write token: %q %v", propose.If, propose.Permissions)
 	}
 	// A person's comment or body edit on an issue on the line wakes it,
 	// asked first whether due (#1414): never the App's, never one on a
 	// pull request, a comment only from the project's people or the
 	// issue's author. Neither wakes the reconciler (#1397).
 	issues, _ := wf.On["issues"].(map[string]any)
-	if !strings.Contains(fmt.Sprint(issues["types"]), "edited") || !strings.Contains(judge.If, "github.event.action == 'edited'") ||
-		!strings.Contains(judge.If, "github.event_name == 'issue_comment' && !github.event.issue.pull_request && github.event.sender.type != 'Bot'") ||
-		!strings.Contains(judge.If, "author_association") || !strings.Contains(judge.If, "github.event.issue.user.login") ||
-		strings.Count(judge.If, "contains(join(github.event.issue.labels.*.name, ' '), 'workline:')") != 2 {
-		t.Errorf("workline-develop.yml, judge: a person's comment or edit on an issue on the line does not wake it, or wakes it from anyone: %v %q", issues, judge.If)
+	if !strings.Contains(fmt.Sprint(issues["types"]), "edited") || !strings.Contains(propose.If, "github.event.action == 'edited'") ||
+		!strings.Contains(propose.If, "github.event_name == 'issue_comment' && !github.event.issue.pull_request && github.event.sender.type != 'Bot'") ||
+		!strings.Contains(propose.If, "author_association") || !strings.Contains(propose.If, "github.event.issue.user.login") ||
+		strings.Count(propose.If, "contains(join(github.event.issue.labels.*.name, ' '), 'workline:')") != 2 {
+		t.Errorf("workline-develop.yml, propose: a person's comment or edit on an issue on the line does not wake it, or wakes it from anyone: %v %q", issues, propose.If)
 	}
 	if due := wf.Jobs["reconcile-due"].If; strings.Contains(due, "issue_comment") || strings.Contains(due, "edited") {
 		t.Errorf("workline-develop.yml, reconcile-due: a comment or an edit would start the reconciler: %q", due)
@@ -2032,17 +2032,17 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 		t.Errorf("workline-develop.yml, reconcile: the verdicts read with no App named: env named %v, statuses %q, needs %v", named, rec.Permissions["statuses"], rec.Needs)
 	}
 	// A heartbeat's run starts no issue's step.
-	if !strings.Contains(judge.If, "inputs.reconcile == ''") {
-		t.Errorf("workline-develop.yml, judge: a heartbeat's run would take an issue: %q", judge.If)
+	if !strings.Contains(propose.If, "inputs.reconcile == ''") {
+		t.Errorf("workline-develop.yml, propose: a heartbeat's run would take an issue: %q", propose.If)
 	}
 	routed := false
-	for _, s := range judge.Steps {
+	for _, s := range propose.Steps {
 		if strings.Contains(s.Run, "workline route issue") {
 			routed = strings.Contains(s.Run, "--no-apply") && strings.Contains(s.Run, "--open-merge-request") && strings.Contains(s.Run, "--target issue:")
 		}
 	}
 	if !routed {
-		t.Error("workline-develop.yml, judge: does not run the issue line on the issue, proposing only, its pull request opened")
+		t.Error("workline-develop.yml, propose: does not run the issue line on the issue, proposing only, its pull request opened")
 	}
 	for _, s := range wf.Jobs["apply"].Steps {
 		if strings.Contains(s.Run, "workline apply") && s.Env["CLAUDE_CODE_OAUTH_TOKEN"] != "" {
@@ -2073,10 +2073,10 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 			t.Errorf("%s does not start each due issue's own pipeline: %s", name, script)
 		}
 	}
-	j, _ := top["workline:develop:judge"].(map[string]any)
+	j, _ := top["workline:develop:propose"].(map[string]any)
 	script := fmt.Sprint(j["script"])
 	if !strings.Contains(script, "workline route issue ${ISSUE_IID:+--target issue:$ISSUE_IID}") || !strings.Contains(script, "--no-apply") || !strings.Contains(script, "--open-merge-request") {
-		t.Errorf("workline:develop:judge does not run the issue line on ISSUE_IID, proposing only: %s", script)
+		t.Errorf("workline:develop:propose does not run the issue line on ISSUE_IID, proposing only: %s", script)
 	}
 	if a, _ := top["workline:develop:apply"].(map[string]any); !strings.Contains(fmt.Sprint(a["script"]), "workline apply --line line.json") {
 		t.Errorf("workline:develop:apply does not apply the line: %v", a["script"])
@@ -2085,7 +2085,7 @@ func TestDeveloperTemplatesRouteTheReadyIssue(t *testing.T) {
 
 // The developer's review round (ADR-0054, step 6): on GitHub, the
 // reviewer's comment or a person's wakes it on the developer's pull
-// request, the judge with no write token, proposing only on its branch's
+// request, the propose job with no write token, proposing only on its branch's
 // head; the apply holds no agent's token and applies from the merge
 // request at that head. On GitLab, the same from WORKLINE_TASK=review.
 func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
@@ -2148,9 +2148,9 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	}
 	// A comment takes an issue only on an issue, never on a pull request
 	// (#1414): the round has it.
-	if strings.Count(wf.Jobs["judge"].If, "issue_comment") != 1 || !strings.Contains(wf.Jobs["judge"].If, "github.event_name == 'issue_comment' && !github.event.issue.pull_request") ||
-		!strings.Contains(wf.Jobs["judge"].If, "github.event_name == 'issues'") {
-		t.Errorf("workline-develop.yml, judge: a comment on a pull request would take an issue: %q", wf.Jobs["judge"].If)
+	if strings.Count(wf.Jobs["propose"].If, "issue_comment") != 1 || !strings.Contains(wf.Jobs["propose"].If, "github.event_name == 'issue_comment' && !github.event.issue.pull_request") ||
+		!strings.Contains(wf.Jobs["propose"].If, "github.event_name == 'issues'") {
+		t.Errorf("workline-develop.yml, propose: a comment on a pull request would take an issue: %q", wf.Jobs["propose"].If)
 	}
 	ran := false
 	for _, s := range review.Steps {
@@ -2201,9 +2201,9 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 	if !strings.Contains(fmt.Sprint(base["rules"]), `$WORKLINE_TASK == "review"`) || !strings.Contains(fmt.Sprint(base["before_script"]), "workline/developer/*") {
 		t.Errorf(".workline:review: not run by WORKLINE_TASK=review on the developer's branch: %v", base)
 	}
-	j, _ := top["workline:review:judge"].(map[string]any)
+	j, _ := top["workline:review:propose"].(map[string]any)
 	if script := fmt.Sprint(j["script"]); !strings.Contains(script, `workline develop --merge-request "$MR_IID"`) || !strings.Contains(script, "--no-apply") {
-		t.Errorf("workline:review:judge does not run the round, proposing only: %s", script)
+		t.Errorf("workline:review:propose does not run the round, proposing only: %s", script)
 	}
 	if a, _ := top["workline:review:apply"].(map[string]any); !strings.Contains(fmt.Sprint(a["script"]), `--from-merge-request "$MR_IID" --head "$head"`) {
 		t.Errorf("workline:review:apply does not apply from the merge request: %v", a["script"])
@@ -2213,17 +2213,17 @@ func TestDeveloperTemplatesRunTheReviewRound(t *testing.T) {
 // The developer's agent runs commands in a worktree of the checkout
 // (ADR-0056, step 2): the jobs that run it leave no token in the clone's
 // git config, where its git would read it and the engine would refuse to
-// start it: its own jobs, and the gardening's judge, which may run it on
+// start it: its own jobs, and the gardening's propose job, which may run it on
 // the schedule. On GitHub, a checkout without persisted credentials; on
 // GitLab, the runner's job token taken out before the line runs.
 func TestDeveloperJudgesKeepNoCredential(t *testing.T) {
 	// The jobs that may run the developer's agent: its own, and the
-	// gardening's judge, whose schedule line may list it.
-	judges := map[string][]string{
-		"../../defaults/ci/github/workline-develop.yml": {"judge", "review"}, "../../.github/workflows/workline-develop.yml": {"judge", "review"},
-		"../../defaults/ci/github/workline-gardening.yml": {"judge"}, "../../.github/workflows/workline-gardening.yml": {"judge"},
+	// gardening's propose job, whose schedule line may list it.
+	proposers := map[string][]string{
+		"../../defaults/ci/github/workline-develop.yml": {"propose", "review"}, "../../.github/workflows/workline-develop.yml": {"propose", "review"},
+		"../../defaults/ci/github/workline-gardening.yml": {"propose"}, "../../.github/workflows/workline-gardening.yml": {"propose"},
 	}
-	for f, names := range judges {
+	for f, names := range proposers {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
@@ -2261,7 +2261,7 @@ func TestDeveloperJudgesKeepNoCredential(t *testing.T) {
 	if err := yaml.Unmarshal(data, &top); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"workline:develop:judge", "workline:review:judge", "workline:garden:judge"} {
+	for _, name := range []string{"workline:develop:propose", "workline:review:propose", "workline:garden:propose"} {
 		j, _ := top[name].(map[string]any)
 		script := fmt.Sprint(j["script"])
 		cut := strings.Index(script, `git config remote.origin.url "$CI_SERVER_URL/$CI_PROJECT_PATH.git"`)
@@ -2295,7 +2295,7 @@ func TestDeveloperJobsRunTheirAgentsShellAndTheHead(t *testing.T) {
 		if err := yaml.Unmarshal(data, &wf); err != nil {
 			t.Fatalf("%s: %v", f, err)
 		}
-		for _, name := range []string{"judge", "review"} {
+		for _, name := range []string{"propose", "review"} {
 			shell := false
 			for _, s := range wf.Jobs[name].Steps {
 				shell = shell || strings.Contains(s.Run, "@anthropic-ai/claude-code") && strings.Contains(s.Run, "apt-get install") &&
@@ -2394,7 +2394,7 @@ func TestDeveloperJudgesRunTheProjectsSetupSteps(t *testing.T) {
 	if err := yaml.Unmarshal(data, &wf); err != nil {
 		t.Fatal(err)
 	}
-	for _, job := range []string{"judge", "review"} {
+	for _, job := range []string{"propose", "review"} {
 		setup, at, line := -1, -1, -1
 		for i, s := range wf.Jobs[job].Steps {
 			switch {
@@ -2422,7 +2422,7 @@ func TestDeveloperJudgesRunTheProjectsSetupSteps(t *testing.T) {
 	if hook, ok := top[".workline:setup"]; !ok || !strings.Contains(nodeText(&hook), "script") {
 		t.Error(".workline:setup: no hook for the project's setup steps")
 	}
-	for job, before := range map[string]string{"workline:develop:judge": "workline route issue", "workline:review:judge": "git fetch -q origin \"$MR_SOURCE_BRANCH\""} {
+	for job, before := range map[string]string{"workline:develop:propose": "workline route issue", "workline:review:propose": "git fetch -q origin \"$MR_SOURCE_BRANCH\""} {
 		j := top[job]
 		text := nodeText(&j)
 		ref := strings.Index(text, "!reference ['.workline:setup', script]")

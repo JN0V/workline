@@ -2,13 +2,13 @@
 # defaults/ci/github/workline-develop.yml, on the release WORKLINE_VERSION
 # pins (ADR-0071 §1; .github/actions/engine), each job on the default
 # branch's commit. Go left set up where the tester's
-# test-command proves the code (judge, review). No event starts it here:
+# test-command proves the code (propose, review). No event starts it here:
 # the reconciler, dispatched by the loop (docs/tick.md), starts each
 # issue's step, the role its state wakes, the tester or the developer
 # (ADR-0059), and each review round due on the developer's pull request
 # (workline/developer/…); the job that moves a state starts the next
 # step; by hand with no issue, the first ready one nobody took.
-#   judge, review          the agent and a read token.
+#   propose, review        the agent and a read token.
 #   apply, review-apply    the App's key (environment workline-app), no AI key.
 #   heartbeat              no token; the environment workline-heartbeat, its wait
 #                          timer the gap between two reconciles (#845): 55 min,
@@ -59,7 +59,7 @@ env:
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
 jobs:
-  judge:
+  propose:
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs['pull-request'] == '' && inputs.reconcile == '') ||
       (github.event_name == 'issues' && startsWith(github.event.label.name, 'workline:') && github.event.sender.type != 'Bot' &&
@@ -203,8 +203,8 @@ jobs:
         with: {name: "workline-tally-${{ github.job }}", path: workline-tally.jsonl, if-no-files-found: ignore, retention-days: 14, overwrite: true}
 
   apply:
-    needs: judge
-    if: always() && needs.judge.outputs.proposed == 'true'
+    needs: propose
+    if: always() && needs.propose.outputs.proposed == 'true'
     runs-on: ubuntu-latest
     environment: workline-app       # the App's key: the default branch only (ADR-0044)
     # actions: the next step started, by workflow_dispatch (ADR-0059).

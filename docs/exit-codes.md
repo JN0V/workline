@@ -8,7 +8,7 @@ sources:
   - internal/sample/sample.go#draw
   - cmd/workline/main.go#doctorPrint
   - internal/doctor/doctor.go#Run
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
   - defaults/ci/github/workline-apply.yml#jobs.follow.if
 checked: e2e165c2d

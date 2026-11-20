@@ -204,7 +204,7 @@ Each refusal is written on the issue ([how](docs/refused.md)).
   - Then as `test write`. None waiting: it says so and passes.
   - It needs `--open-merge-request`, as the gardening templates give
     it; without, `no-merge-request` blocks.
-  - Install your test runner in the gardening's judge job: the tests are
+  - Install your test runner in the gardening's propose job: the tests are
     proven red there.
 - **On an objection**, in CI:
   - GitHub: [workline-objection.yml](../../defaults/ci/github/workline-objection.yml)
@@ -217,7 +217,7 @@ Each refusal is written on the issue ([how](docs/refused.md)).
     starts the template's `workline:objection:*` jobs
     ([how](../../docs/gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)).
   - Woken by a person of the project or an App installed on it only.
-- **Both** judge with no write token (`--no-apply`); a job apart
+- **Both** propose with no write token (`--no-apply`); a job apart
   applies, holding it and no agent's key (`workline apply <run>`; an
   objection's from the default branch, its run as data:
   [what each job holds](../../docs/objection-jobs.md)).

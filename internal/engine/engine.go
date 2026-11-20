@@ -2067,7 +2067,7 @@ func diffBlock(diff string) string {
 }
 
 // rolesHere is where the roles a run was judged with are on this machine. A
-// run judged on another — CI's judge job, applied by its apply job — names
+// run judged on another — CI's propose job, applied by its apply job — names
 // the cache the engine's built-in roles were extracted to there; here they
 // are extracted again from this engine.
 func rolesHere(dir string) string {

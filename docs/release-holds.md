@@ -10,7 +10,7 @@ sources:
   - internal/forge/hold.go#gitlab.Holding
   - internal/release/release.go#Settings.IsBranch
   - internal/forge/gitlab.go#gitlab.connect
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
 checked: e2e165c2d
 verified: agent:claude-code
 judged-in-parts: 786d304
@@ -77,7 +77,7 @@ glab label create --name workline:hold-release --description "Holds the release 
   label's change, and once main's runs end
   ([what holds a release on GitHub](github/release-holds.md)).
 - **GitLab**: no pipeline starts on a label. Once the label is off, or
-  main green after the wait ran out, run the release merge request's `workline:judge` job
+  main green after the wait ran out, run the release merge request's `workline:propose` job
   again. It reads with `GITLAB_TOKEN` (`read_api`); the job's own token
   reaches no issue, so the release is held, said.
 

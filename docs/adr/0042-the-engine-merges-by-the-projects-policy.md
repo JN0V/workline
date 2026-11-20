@@ -215,7 +215,7 @@ Built for workline's own routine pull requests: the
   Making `judge` fail instead was not chosen: a person putting the label
   again would wait for the job to run again. On GitLab the merge waits
   for the new head's pipeline, which holds `workline:merge`.
-- **Each head's verdict, where only the App writes it**: the judging job
+- **Each head's verdict, where only the App writes it**: the proposing job
   writes it (`route --verdict`); a job of its own keeps it on GitHub as the
   status `workline/verdict`, set by the App, bound by the forge to the
   commit — in no concurrency group, so no newer run cancels it, and only

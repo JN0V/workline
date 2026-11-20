@@ -60,7 +60,7 @@ flowchart LR
   - on a machine, the agent has the person's rights, their git
     credentials included, as their own coding agent has; nothing is
     refused;
-  - in CI, the templates' judging jobs keep no write token in the clone
+  - in CI, the templates' proposing jobs keep no write token in the clone
     ([the triggers](triggers.md#what-both-need));
   - the run says it once, `agent-rights` in its output, and its body
     under `## Verification`;

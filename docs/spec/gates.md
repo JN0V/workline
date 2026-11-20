@@ -113,7 +113,7 @@ what the push adds since the branch's tip before it counts.
 - **Where the forge shows a finding beside its line**, with no
   conversation to resolve, never code scanning; the gates alone
   (`--gates-only`), in a job of their own with no write token, the
-  judging job reading their verdicts (`--gates-from`):
+  proposing job reading their verdicts (`--gates-from`):
   [the new findings shown](gates-shown.md),
   [explained](../../roles/inspector/README.md).
 - **On GitLab**, the tokens scoped to the environment `workline` never

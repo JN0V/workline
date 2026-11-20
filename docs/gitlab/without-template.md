@@ -3,13 +3,13 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:summary
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:develop
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:read
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
@@ -47,17 +47,17 @@ variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.85.0, WORKLINE_RUNS_DIR: $CI_PROJ
     when: always
     paths: [workline-summary.html, workline-summary.md]
     reports: {annotations: workline-annotations.json}
-workline:judge:
+workline:propose:
   extends: .workline
   stage: test
-  script: [sh ci/workline-job.sh judge]
+  script: [sh ci/workline-job.sh propose]
   artifacts:
     paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json, sample.json, workline-verdict.json]
     reports: {codequality: gl-code-quality.json, annotations: workline-annotations.json}
 workline:apply:
   extends: .workline
   stage: deploy
-  needs: [workline:judge]
+  needs: [workline:propose]
   when: always
   resource_group: workline-follow   # one at a time: follow and the merge policy push
   script: [sh ci/workline-job.sh apply]
@@ -75,7 +75,7 @@ here; for another, install it instead and set `ai` to a `cmd:`
 #!/bin/sh
 set -eu
 step=$1; ai=none; sum="--summary workline-summary.md --summary workline-summary.html"   # what the job's page shows
-if [ "$step" = judge ]; then                      # reads the forge, writes nothing
+if [ "$step" = propose ]; then                      # reads the forge, writes nothing
   [ -z "${WORKLINE_GITLAB_READ_TOKEN:-}" ] || export GITLAB_TOKEN="$WORKLINE_GITLAB_READ_TOKEN"
   if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then   # the agent: Claude here, one choice among others
     if [ "${MR_DRAFT:-}" = true ]; then ai=claude  # a draft asks none: nothing to install
@@ -94,29 +94,29 @@ fi
 case "$WORKLINE_TASK" in garden|product-owner|release|develop) git checkout -q -B "$CI_COMMIT_REF_NAME";; esac
 status=0
 case "$step:$WORKLINE_TASK" in
-  judge:merge-request)
+  propose:merge-request)
     git fetch --quiet origin "$MR_BASE_SHA"
     workline route merge-request --ai "$ai" --no-apply --forge gitlab \
       --target "merge-request:$MR_IID" --branch "$MR_SOURCE_BRANCH" \
       --input "range=$MR_BASE_SHA..$CI_COMMIT_SHA" ${MR_READY:+--input lenses=all} ${MR_DRAFT:+--input draft=$MR_DRAFT} \
       --code-quality gl-code-quality.json --verdict workline-verdict.json $sum --json > line.json || status=$? ;;
-  judge:garden)
+  propose:garden)
     workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request $sum --json > line.json || status=$? ;;
-  judge:product-owner)
+  propose:product-owner)
     workline run-role product-owner --event schedule --ai "$ai" --no-apply --forge gitlab $sum --json > po.json || status=$?
     jq '{pending: [."run-dir"]}' po.json > line.json ;;
-  judge:develop)
+  propose:develop)
     workline route issue ${ISSUE_IID:+--target issue:$ISSUE_IID} --ai "$ai" --no-apply --forge gitlab --open-merge-request $sum --json > line.json || status=$? ;;
-  judge:release)
+  propose:release)
     workline route release --ai "$ai" --no-apply --forge gitlab --open-merge-request $sum --json > line.json || status=$? ;;
-  judge:import)                                   # the issues it would open; apply:* opens them
+  propose:import)                                   # the issues it would open; apply:* opens them
     workline issues import "$WORKLINE_IMPORT" --ai "$ai" --forge gitlab $sum --json > line.json || status=$? ;;
-  judge:sample)
+  propose:sample)
     workline sample --forge gitlab --out sample.json $sum || status=$?; [ "$status" != 1 ] && status=0 ;;
   apply:sample) [ ! -s sample.json ] || workline sample --apply sample.json --forge gitlab $sum ;;
-  judge:follow) ;;                                # no agent: all in the applying job
+  propose:follow) ;;                                # no agent: all in the applying job
   apply:follow) workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab $sum || status=$? ;;
-  judge:main) workline route main --ai none --forge none --input "range=${MAIN_BEFORE:-}..$CI_COMMIT_SHA" $sum --json > line.json || status=$? ;;
+  propose:main) workline route main --ai none --forge none --input "range=${MAIN_BEFORE:-}..$CI_COMMIT_SHA" $sum --json > line.json || status=$? ;;
   apply:main) [ ! -s line.json ] || workline apply --main line.json --forge gitlab $sum || status=$? ;;
   apply:merge-request)                            # then the merge policy, by the target branch's config
     [ ! -f line.json ] || workline apply --line line.json $sum || status=$?
@@ -134,7 +134,7 @@ exit "$status"
 ```
 
 Not in this script: `objection` and `review`, on a role's own merge
-request. Their judge and apply run as the template's
+request. Their propose and apply run as the template's
 `workline:objection:*` and `workline:review:*` jobs do
 ([the commands](../triggers.md#on-a-roles-own-merge-request)). Nor
 `issue` and `reconcile`, which start each due issue's `develop`
@@ -142,7 +142,7 @@ pipeline: as the template's `workline:issue` and `workline:reconcile`.
 
 ## What the jobs do
 
-- The judging job exits with the verdict: 1 block, 2 for a person, 3 the
+- The proposing job exits with the verdict: 1 block, 2 for a person, 3 the
   agent or forge unreachable. Make 3 a warning with `allow_failure:
   {exit_codes: [3]}`, as the template does.
 - The applying job still runs (`when: always`) and applies what passed,
@@ -152,12 +152,12 @@ pipeline: as the template's `workline:issue` and `workline:reconcile`.
   opened before: rebuilt on the branch, or closed when nothing is left to
   merge
   ([ADR-0034, amended](../adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
-- On `release`, a judging job that does not pass holds the release: the
+- On `release`, a proposing job that does not pass holds the release: the
   release's gates, never the docs
   ([ADR-0051](../adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 - The [merge policy](../merge-policy.md), with `merge:` in the target
   branch's `.workline/config.yaml`:
-  - `judge:merge-request` writes the head's verdict (`--verdict`);
+  - `propose:merge-request` writes the head's verdict (`--verdict`);
   - `apply:merge-request` then runs `workline follow --verdict` from the
     target branch, as the template's `workline:merge` does;
   - `apply:follow` runs the policy too, each time the default branch

@@ -9,7 +9,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// answerStep is a step of the answer workflow's judge job.
+// answerStep is a step of the answer workflow's propose job.
 type answerStep struct {
 	Name string         `yaml:"name"`
 	If   string         `yaml:"if"`
@@ -19,8 +19,8 @@ type answerStep struct {
 	Env  map[string]any `yaml:"env"`
 }
 
-// answerJudgeSteps reads the steps of the judge job of an answer workflow.
-func answerJudgeSteps(t *testing.T, file string) []answerStep {
+// answerProposeSteps reads the steps of the propose job of an answer workflow.
+func answerProposeSteps(t *testing.T, file string) []answerStep {
 	t.Helper()
 	data, err := os.ReadFile(file)
 	if err != nil {
@@ -34,7 +34,7 @@ func answerJudgeSteps(t *testing.T, file string) []answerStep {
 	if err := yaml.Unmarshal(data, &w); err != nil {
 		t.Fatalf("%s: %v", file, err)
 	}
-	return w.Jobs["judge"].Steps
+	return w.Jobs["propose"].Steps
 }
 
 // The reason in the job
@@ -47,7 +47,7 @@ func answerJudgeSteps(t *testing.T, file string) []answerStep {
 func TestAnswerRefusalIsAnnotatedAndKept(t *testing.T) {
 	file := "workline-answer.yml"
 	var upload, verdict *answerStep
-	steps := answerJudgeSteps(t, file)
+	steps := answerProposeSteps(t, file)
 	for i := range steps {
 		s := &steps[i]
 		switch {
@@ -58,7 +58,7 @@ func TestAnswerRefusalIsAnnotatedAndKept(t *testing.T) {
 		}
 	}
 	if upload == nil || verdict == nil {
-		t.Fatalf("%s: judge job lacks its answer artifact upload (%v) or its Verdict step (%v)", file, upload != nil, verdict != nil)
+		t.Fatalf("%s: propose job lacks its answer artifact upload (%v) or its Verdict step (%v)", file, upload != nil, verdict != nil)
 	}
 	if c := upload.If; !strings.Contains(c, "always()") && !strings.Contains(c, "failure()") && !strings.Contains(c, "outputs.status") {
 		t.Errorf("%s: the answer artifact is uploaded `if: %s`, which a refused answer (no pending run) never meets", file, c)

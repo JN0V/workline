@@ -91,8 +91,8 @@ func TestLineOfStatesChainsAndReconciles(t *testing.T) {
 			!strings.Contains(wf.RunName, "inputs.reconcile == 'true' && 'workline develop reconcile'") {
 			t.Errorf("%s: the reconciler's runs not named, its store: run-name %q", file, wf.RunName)
 		}
-		if judge := wf.Jobs["judge"]; !strings.Contains(judge.If, "inputs.reconcile == ''") {
-			t.Errorf("%s, judge: runs on the reconciler's dispatch too: %q", file, judge.If)
+		if propose := wf.Jobs["propose"]; !strings.Contains(propose.If, "inputs.reconcile == ''") {
+			t.Errorf("%s, propose: runs on the reconciler's dispatch too: %q", file, propose.If)
 		}
 		lineRunsOnce(t, file, data)
 	}
@@ -100,7 +100,7 @@ func TestLineOfStatesChainsAndReconciles(t *testing.T) {
 
 // lineRunsOnce checks one event starts one run of an issue's step (#806):
 // each run of an issue is named for it, every start of one is skipped
-// while a run of that issue is queued or running, and the judge asks the
+// while a run of that issue is queued or running, and propose asks the
 // line whether the step is due before it sets up the agent and the
 // proof.
 func lineRunsOnce(t *testing.T, file string, data []byte) {
@@ -129,12 +129,12 @@ func lineRunsOnce(t *testing.T, file string, data []byte) {
 	}
 	startsOnce(t, file, data)
 	due, set := -1, -1
-	for i, s := range wf.Jobs["judge"].Steps {
+	for i, s := range wf.Jobs["propose"].Steps {
 		switch {
 		case s.ID == "due":
 			due = i
 			if !strings.Contains(s.Run, "--input reconcile=list") || !strings.Contains(s.Run, "--ai none") {
-				t.Errorf("%s, judge: its due step does not ask the line, no agent", file)
+				t.Errorf("%s, propose: its due step does not ask the line, no agent", file)
 			}
 		case s.ID == "line" || strings.Contains(s.Run, "npm install") || s.Uses == "./.github/actions/tests" ||
 			s.Uses == "./.github/actions/workline-setup":
@@ -142,12 +142,12 @@ func lineRunsOnce(t *testing.T, file string, data []byte) {
 				set = i
 			}
 			if !strings.Contains(s.If, "steps.due.outputs.due == 'true'") {
-				t.Errorf("%s, judge: step %d runs though the issue's step is not due: if %q", file, i, s.If)
+				t.Errorf("%s, propose: step %d runs though the issue's step is not due: if %q", file, i, s.If)
 			}
 		}
 	}
 	if due < 0 || due > set {
-		t.Errorf("%s, judge: no due step before the agent and the proof are set up", file)
+		t.Errorf("%s, propose: no due step before the agent and the proof are set up", file)
 	}
 }
 

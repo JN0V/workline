@@ -2,10 +2,10 @@
 sources:
   - .github/workflows/workline.yml#on
   - .github/workflows/workline.yml#env
-  - .github/workflows/workline.yml#jobs.judge.permissions
+  - .github/workflows/workline.yml#jobs.propose.permissions
   - .github/workflows/workline.yml#jobs.pinned
   - .github/workflows/workline.yml#jobs.head-gates.name
-  - .github/workflows/workline.yml#jobs.head-judge.name
+  - .github/workflows/workline.yml#jobs.head-propose.name
   - .github/workflows/workline-warn.yml#name
   - .github/actions/engine/action.yml#name
   - .github/actions/tests/action.yml
@@ -47,7 +47,7 @@ engine and their triggers
   [the gate](../../.workline/config.yaml);
 - **the pinned release**: every job with a write token (develop, answer,
   apply, bounds, merge, gardening, sample), the loop, and gates and
-  judge, run the release `WORKLINE_VERSION` names, as a user's line
+  propose, run the release `WORKLINE_VERSION` names, as a user's line
   does: a defect on `main` never runs the merge of its own fix;
   - downloaded by [the engine's action](../../.github/actions/engine/action.yml),
     its checksum checked as the templates do; it must say that version,
@@ -61,7 +61,7 @@ engine and their triggers
   version; it must name the commit checked out, unmodified, or the job
   fails;
 - **the head pass**: a pull request changing the engine
-  ([its paths](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#1-the-line-runs-a-pinned-release)) also runs gates and judge on its head's
+  ([its paths](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#1-the-line-runs-a-pinned-release)) also runs gates and propose on its head's
   engine, in two checks named "… on the head's engine (non-blocking)":
   they never hold the line's verdict;
 - **the N-1 rule**: the check "workline: the pinned release reads the
@@ -117,7 +117,7 @@ With release-please, never a tag by hand
   lists;
 - the App's token, not the job's: a pull request opened with
   `GITHUB_TOKEN` starts no workflow, so its checks would never run;
-- on that pull request, `judge` holds it while an open issue is labelled
+- on that pull request, `propose` holds it while an open issue is labelled
   `workline:hold-release` or main's tip is not green
   ([what holds a release](../release-holds.md)); release-please keeps it
   on `main` (`always-update`);

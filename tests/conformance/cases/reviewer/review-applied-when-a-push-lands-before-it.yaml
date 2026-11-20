@@ -1,5 +1,5 @@
 case: reviewer/review-applied-when-a-push-lands-before-it
-about: "A push lands while the run before it waits to be applied (#375). The push's judging job waits for that apply: one lock a pull request, which the judging and the applying jobs share. The apply, as GitHub's job of the base runs it, finds the branch moved on from the head its run judged: only the review of that head is applied, its summary comment and the record in it, said; never a patch, a label nor a verdict. The push's run reads that record: it reviews only the new commit, and the judge is not asked again. The comment keeps both runs' commits and the line of the finding the first judged (ADR-0046)."
+about: "A push lands while the run before it waits to be applied (#375). The push's proposing job waits for that apply: one lock a pull request, which the proposing and the applying jobs share. The apply, as GitHub's job of the base runs it, finds the branch moved on from the head its run judged: only the review of that head is applied, its summary comment and the record in it, said; never a patch, a label nor a verdict. The push's run reads that record: it reviews only the new commit, and the judge is not asked again. The comment keeps both runs' commits and the line of the finding the first judged (ADR-0046)."
 given:
   repo: reviewed
   setup:

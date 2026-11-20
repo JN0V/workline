@@ -82,29 +82,29 @@ func unsetNames(text string) map[string]bool {
     return names
 }
 
-// The judge holds no write token
+// The propose job holds no write token
 // Given a GitLab project with the template's objection jobs,
-// When an objection wakes `workline:objection:judge`,
+// When an objection wakes `workline:objection:propose`,
 // Then the job's environment holds no token that can push or comment.
 func TestTheJudgeHoldsNoWriteToken(t *testing.T) {
-    judge := strings.Join(jobBlock(t, "workline:objection:judge"), "\n")
+    propose := strings.Join(jobBlock(t, "workline:objection:propose"), "\n")
     parent := strings.Join(jobBlock(t, ".workline:objection"), "\n")
 
-    effective := judge
-    if !strings.Contains(judge, "before_script:") {
+    effective := propose
+    if !strings.Contains(propose, "before_script:") {
         effective += "\n" + parent
     }
     if strings.Contains(effective, "export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN") {
-        t.Errorf("the judge exports the bot's token as GITLAB_TOKEN")
+        t.Errorf("the propose job exports the bot's token as GITLAB_TOKEN")
     }
     if strings.Contains(effective, "*bot-token") {
-        t.Errorf("the judge requires the bot's token (WORKLINE_GITLAB_TOKEN)")
+        t.Errorf("the propose job requires the bot's token (WORKLINE_GITLAB_TOKEN)")
     }
 
     names := unsetNames(effective)
     unsets := names["WORKLINE_GITLAB_TOKEN"] && names["GITLAB_TOKEN"]
     otherEnv := false
-    for _, line := range strings.Split(judge, "\n") {
+    for _, line := range strings.Split(propose, "\n") {
         l := strings.TrimSpace(line)
         if strings.HasPrefix(l, "environment:") && !strings.Contains(l, "*environment") {
             otherEnv = true
@@ -112,6 +112,6 @@ func TestTheJudgeHoldsNoWriteToken(t *testing.T) {
     }
     ok := unsets || otherEnv
     if !ok {
-        t.Errorf("the judge still receives the bot's token: it neither leaves the environment workline nor unsets WORKLINE_GITLAB_TOKEN and GITLAB_TOKEN, each as its own word, before its script")
+        t.Errorf("the propose job still receives the bot's token: it neither leaves the environment workline nor unsets WORKLINE_GITLAB_TOKEN and GITLAB_TOKEN, each as its own word, before its script")
     }
 }

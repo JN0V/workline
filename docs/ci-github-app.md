@@ -26,7 +26,7 @@ verified: agent:claude-code
 
 ```mermaid
 flowchart LR
-  pr["<b>A pull request's run</b><br/>workline.yml: judge"] -- "what it proposed,<br/>its verdict" --> base["<b>The default branch's runs</b><br/>workline-apply.yml"]
+  pr["<b>A pull request's run</b><br/>workline.yml: propose"] -- "what it proposed,<br/>its verdict" --> base["<b>The default branch's runs</b><br/>workline-apply.yml"]
   env["<b>Environment workline-app</b><br/>the App's key"] --> base
 ```
 
@@ -54,7 +54,7 @@ branch's workflow
      accept the new permission on its installation;
    - generate a private key, install the App on the repository.
 2. **Its ID**: Settings → Secrets and variables → Actions → Variables →
-   `WORKLINE_APP_ID`. The judging jobs read it too, holding no key: a
+   `WORKLINE_APP_ID`. The proposing jobs read it too, holding no key: a
    role reads its record back only from a comment the App wrote
    ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
 3. **Its key, in an environment**: Settings → Environments → New
@@ -66,7 +66,7 @@ branch's workflow
 4. **No repository secret of that name**: delete
    `WORKLINE_APP_PRIVATE_KEY` from the repository's secrets if it is
    there. It reaches every branch's workflow
-   ([`judge` warns](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#decision)).
+   ([`propose` warns](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#decision)).
 
 The same with `gh`, by an admin of the repository:
 

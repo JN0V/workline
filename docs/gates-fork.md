@@ -17,9 +17,9 @@ On GitHub, a fork's run gets a read-only token and no secret
 The gates still run; what they find is told, not shown beside the lines.
 
 - **What it gets**:
-  - the jobs `gates` and `judge` as checks, red when a gate counts what
+  - the jobs `gates` and `propose` as checks, red when a gate counts what
     the change adds;
-  - one comment, the judge's report, from workline-fork.yml: each gate's
+  - one comment, the propose job's report, from workline-fork.yml: each gate's
     verdict, its new findings counted, and the first five places of
     those over the gate's `max` (`src/auth/clean.go:10 errcheck`);
   - the run's file `workline-gates`, kept a day: every new finding, its

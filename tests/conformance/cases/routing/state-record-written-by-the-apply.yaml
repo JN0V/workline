@@ -3,7 +3,7 @@ about: >
   Judged with no write token (--no-apply), the issue line leaves its
   record to the job that applies (`workline apply --line`), after the
   runs (ADR-0059): the tester's Draft opened, the issue moved to ready,
-  then the line's record written on it. The judging job writes nothing.
+  then the line's record written on it. The proposing job writes nothing.
 given:
   repo: tested
   setup:

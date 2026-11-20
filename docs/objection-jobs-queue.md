@@ -1,7 +1,7 @@
 ---
 sources:
   - defaults/ci/github/workline-answer.yml#on
-  - defaults/ci/github/workline-answer.yml#jobs.judge
+  - defaults/ci/github/workline-answer.yml#jobs.propose
   - defaults/ci/github/workline-answer.yml#jobs.apply
   - internal/line/answerstate.go#answerState
   - internal/line/answerstate.go#MarkAnswerTried

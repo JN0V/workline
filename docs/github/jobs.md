@@ -2,7 +2,7 @@
 sources:
   - defaults/ci/github/workline-loop.yml#jobs.loop
   - .github/workflows/workline-apply.yml#jobs.wake
-  - defaults/ci/github/workline-gardening.yml#jobs.judge.permissions
+  - defaults/ci/github/workline-gardening.yml#jobs.propose.permissions
   - defaults/ci/github/workline-gardening.yml#jobs.apply.permissions
   - defaults/ci/github/workline-sample.yml#on
   - defaults/ci/github/workline-sample.yml#jobs.read.permissions
@@ -16,11 +16,11 @@ judged: 220b6dc
 
 Part of [workline on GitHub Actions](../ci-github.md): each job's rights, its locks, and what it writes.
 
-- **`judge`**: what it reads, when it runs, and its locks
-  ([the `judge` job](judge-job.md)).
+- **`propose`**: what it reads, when it runs, and its locks
+  ([the `propose` job](propose-job.md)).
 - **The jobs that write**: `apply`, `follow` and each pair's second job
   ([the jobs that write](write-jobs.md)).
-- **On a merge queue's group** (`merge_group`): what `gates`, `judge`
+- **On a merge queue's group** (`merge_group`): what `gates`, `propose`
   and `queue` do there ([a merge queue](../merge-queue.md#github-a-merge-queue)).
 - **The loop** (`workline-loop.yml`): `actions: write`, to start what
   `workline tick` lists and its own successor; contents, issues and pull
@@ -40,5 +40,5 @@ Part of [workline on GitHub Actions](../ci-github.md): each job's rights, its lo
   with its `week` input (`2026-W40`).
 - **The summary**: each job's summary page (`$GITHUB_STEP_SUMMARY`), the
   applying job's saying what it did and what failed; a fork's pull request
-  gets the judge's as a comment
+  gets the propose job's as a comment
   ([what a job shows](../ci.md#what-a-job-shows)).

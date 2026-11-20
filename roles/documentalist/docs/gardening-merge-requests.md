@@ -11,7 +11,7 @@ sources:
   - internal/builtin/documentalist/waiting.go#waiting.changing
   - internal/builtin/documentalist/waiting.go#partsKey
   - internal/builtin/documentalist/documentalist.go#preRun.rewriteWaits
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
 checked: e2e165c2d
 verified: agent:claude-code

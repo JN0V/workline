@@ -72,7 +72,7 @@ agent and holds the write token, as `apply` does (principle 6).
 ### Not chosen
 
 - **Riding the release pull request's run** — it has no write token in
-  its judging job, its `apply` job runs only when something was proposed,
+  its proposing job, its `apply` job runs only when something was proposed,
   and it runs only when the release tool pushes its branch, which a push
   to main that changes nothing in its pull request may not do.
 - **Rebasing** (or cherry-picking) the branch — the conflict this is about

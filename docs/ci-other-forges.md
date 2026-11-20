@@ -1,10 +1,10 @@
 ---
 sources:
-  - defaults/ci/github/workline.yml#jobs.judge.permissions
-  - defaults/ci/github/workline.yml#jobs.judge.env
+  - defaults/ci/github/workline.yml#jobs.propose.permissions
+  - defaults/ci/github/workline.yml#jobs.propose.env
   - defaults/ci/github/workline-apply.yml#jobs.apply.permissions
-  - defaults/ci/github/workline-gardening.yml#jobs.judge.permissions
-  - defaults/ci/github/workline-gardening.yml#jobs.judge.env
+  - defaults/ci/github/workline-gardening.yml#jobs.propose.permissions
+  - defaults/ci/github/workline-gardening.yml#jobs.propose.env
   - defaults/ci/github/workline-gardening.yml#jobs.apply.permissions
   - defaults/ci/github/workline-sample.yml#jobs.read.permissions
   - defaults/ci/github/workline-sample.yml#jobs.read.env
@@ -23,7 +23,7 @@ verified: agent:claude-code
 %%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
   subgraph forgejo["Forgejo or Gitea: the GitHub workflows"]
-    reads["<b>The agent, read rights</b><br/>judge · gardening: judge<br/>sample: read · import: judge"]
+    reads["<b>The agent, read rights</b><br/>propose · gardening: propose<br/>sample: read · import: propose"]
     writes["<b>FORGEJO_TOKEN, no agent</b><br/>apply · gardening: apply<br/>sample: write · import: apply<br/>follow, on a push to main"]
     reads --> writes
   end

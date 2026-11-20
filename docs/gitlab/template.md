@@ -3,7 +3,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot-token
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
@@ -29,8 +29,8 @@ Part of [workline on GitLab CI](../ci-gitlab.md): what each job of
 - **A fork's merge request** runs in the fork, which has neither variable:
   judged without an agent, nothing applied or commented
   ([its gates](../gates-fork.md)).
-- **A judge that fails**: the applying jobs still run (`when: always`),
-  the pipeline failed by the judge's job.
+- **A propose job that fails**: the applying jobs still run (`when: always`),
+  the pipeline failed by the propose job.
   - Gardening: what steps passed before one blocked is applied
     ([#142](https://github.com/JN0V/workline/issues/142)).
   - A role that blocks still posts its comments, the reviewer's as the
@@ -40,7 +40,7 @@ Part of [workline on GitLab CI](../ci-gitlab.md): what each job of
     tried again first ([which](calls.md)).
 - **`workline:follow`**, each push to the default branch and the hourly reconcile schedule, its bot's token,
   no agent: the [merge policy](../merge-policy.md), when set, also after
-  each judge (`workline:merge`).
+  each propose job (`workline:merge`).
 - **`workline:main`**, each push to the default branch, no token, no
   agent: the gates, their findings kept in its artifacts as the next base
   `workline:gates` reads, and the whole repository's checks;
