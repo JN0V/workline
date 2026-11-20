@@ -1,7 +1,7 @@
 package contract
 
 import (
-	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -17,5 +17,5 @@ type Review struct {
 	RulesOn func(repo, base, head string) ([]verdict.Finding, error)
 	// ServeReads serves reads a judge asked, as a judge of the code's are:
 	// the text served, the lines it holds, each read refused with why.
-	ServeReads func(repo, rev, cause string, reads []judge.Read, left, linesMax int) (served string, lines int, refused []string)
+	ServeReads func(repo, rev, cause string, reads []judgemark.Read, left, linesMax int) (served string, lines int, refused []string)
 }

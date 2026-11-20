@@ -1,6 +1,7 @@
 package judge
 
 import (
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"reflect"
 	"testing"
 )
@@ -9,11 +10,11 @@ import (
 // reads it, then it is a read of the lines naming expandHome, and the judge
 // is asked again.
 func TestAnswerReadingBareGrep(t *testing.T) {
-	got, err := answerReading(Answer{}, []byte("- grep: \"expandHome\"\n"))
+	got, err := answerReading(judgemark.Answer{}, []byte("- grep: \"expandHome\"\n"))
 	if err != nil {
 		t.Fatalf("a bare grep is a read, not an error: %v", err)
 	}
-	if want := []Read{{Grep: "expandHome"}}; !reflect.DeepEqual(got.Reads, want) {
+	if want := []judgemark.Read{{Grep: "expandHome"}}; !reflect.DeepEqual(got.Reads, want) {
 		t.Errorf("reads = %+v, want %+v", got.Reads, want)
 	}
 	if got.Yes || got.Unsure {

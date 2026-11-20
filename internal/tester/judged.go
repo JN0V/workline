@@ -20,7 +20,7 @@ import (
 
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/intent"
-	judgment "github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -96,10 +96,10 @@ type judging struct {
 }
 
 type judgeRound struct {
-	Asked   []judgment.Read `json:"asked"`
-	Served  string          `json:"served"`
-	Lines   int             `json:"lines"`
-	Refused []string        `json:"refused,omitempty"`
+	Asked   []judgemark.Read `json:"asked"`
+	Served  string           `json:"served"`
+	Lines   int              `json:"lines"`
+	Refused []string         `json:"refused,omitempty"`
 }
 
 // redAnswer is the judge's answer as the engine wrote it (answer.yaml).
@@ -108,7 +108,7 @@ type redAnswer struct {
 	Unsure               bool
 	Why, Model, Level    string
 	Error, Judge, Author string
-	Reads                []judgment.Read
+	Reads                []judgemark.Read
 }
 
 // proveJudged is proveOnBase, its doubt put to the judge: asked, post

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -60,7 +61,7 @@ func (rd *reader) panelSpecs() []string {
 	if p := rd.settings.Sample.Panel; len(p) > 0 {
 		return p
 	}
-	if judge.Provider(rd.spec) == "claude" {
+	if judgemark.Provider(rd.spec) == "claude" {
 		return []string{"claude:opus", "claude:sonnet", "claude:haiku"}
 	}
 	return nil

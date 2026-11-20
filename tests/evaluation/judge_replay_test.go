@@ -30,6 +30,7 @@ import (
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/builtin/reviewer"
 	wjudge "github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/role"
 )
 
@@ -154,12 +155,12 @@ type tokenStop struct {
 }
 
 // ask is a judge's call, unless the replay spent its tokens.
-func (s *tokenStop) ask(call func() (wjudge.Answer, error)) (wjudge.Answer, error) {
+func (s *tokenStop) ask(call func() (judgemark.Answer, error)) (judgemark.Answer, error) {
 	s.mu.Lock()
 	if s.max > 0 && s.inTo >= s.max {
 		s.stopped = true
 		s.mu.Unlock()
-		return wjudge.Answer{}, fmt.Errorf("%s %d tokens in, its stop at %d", stopSaid, s.inTo, s.max)
+		return judgemark.Answer{}, fmt.Errorf("%s %d tokens in, its stop at %d", stopSaid, s.inTo, s.max)
 	}
 	s.mu.Unlock()
 	a, err := call()
@@ -184,7 +185,7 @@ func (s *tokenStop) spent() int {
 // engine asks it (askQuestions): the question, the material, the judge's
 // facets of today; a no drops the finding.
 func askReplay(spec string, judgeRole *role.Role, it replayItem, stop *tokenStop) replayAnswer {
-	ans, err := stop.ask(func() (wjudge.Answer, error) { return wjudge.Ask(spec, judgeRole, it.Question, it.Material) })
+	ans, err := stop.ask(func() (judgemark.Answer, error) { return wjudge.Ask(spec, judgeRole, it.Question, it.Material) })
 	a := replayAnswer{Asked: true, Why: ans.Why, Err: err}
 	if !stopped(err) { // a call refused at the stop was never made
 		a.Calls = []agent.Call{ans.Call}
@@ -205,8 +206,8 @@ func askReplay(spec string, judgeRole *role.Role, it replayItem, stop *tokenStop
 // commit, in repo, within rounds and lines.
 func askReading(spec string, judgeRole *role.Role, it replayItem, repo string, rounds, lines int, stop *tokenStop) replayAnswer {
 	cause, _, _ := strings.Cut(it.Where, ":")
-	j := reviewer.JudgeReading(repo, it.Commit, it.Question, it.Material, cause, rounds, lines, func(q, m string) (wjudge.Answer, error) {
-		return stop.ask(func() (wjudge.Answer, error) { return wjudge.AskReading(spec, judgeRole, q, m) })
+	j := reviewer.JudgeReading(repo, it.Commit, it.Question, it.Material, cause, rounds, lines, func(q, m string) (judgemark.Answer, error) {
+		return stop.ask(func() (judgemark.Answer, error) { return wjudge.AskReading(spec, judgeRole, q, m) })
 	})
 	a := replayAnswer{Asked: true, Said: j.Said, Shown: j.Shown, Why: j.Why, Calls: j.Calls, Reads: j.Asked, Served: j.Rounds, Lines: j.Lines, Quoted: j.Quoted}
 	if j.Said == "" {

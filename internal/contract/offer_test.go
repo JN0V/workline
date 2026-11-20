@@ -3,7 +3,7 @@ package contract
 import (
 	"testing"
 
-	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -19,7 +19,7 @@ func refused(join func()) (panicked bool) {
 func TestReviewAndDocsAreOfferedOnceAndWhole(t *testing.T) {
 	reviewed := func(string, string, string, string) (bool, error) { return true, nil }
 	rules := func(string, string, string) ([]verdict.Finding, error) { return nil, nil }
-	serve := func(string, string, string, []judge.Read, int, int) (string, int, []string) { return "", 0, nil }
+	serve := func(string, string, string, []judgemark.Read, int, int) (string, int, []string) { return "", 0, nil }
 	review := func() *Review { return &Review{ReviewedAll: reviewed, RulesOn: rules, ServeReads: serve} }
 	coverage := func(string, []string) ([]string, []string, []string, error) { return nil, nil, nil, nil }
 	unread := func(string, []string) (string, error) { return "", nil }

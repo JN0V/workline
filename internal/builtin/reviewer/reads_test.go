@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 )
 
 // What a judge reads (ADR-0045): from git at the commit, within the lines
@@ -20,7 +20,7 @@ func TestServe(t *testing.T) {
 		"a/x.go": "package a\n\nfunc Shared() {}\n", "b/x.go": "package b\n\nfunc Shared() {}\n", "c/x.go": "package c\n\nfunc Shared() {}\n"})
 	head := strings.TrimSpace(must(git(repo, "rev-parse", "HEAD")))
 
-	rd := serve(repo, head, "calc/calc.go", []judge.Read{{Name: "sum"}, {Path: "calc/calc.go", Lines: "3-11"}}, 12, 400)
+	rd := serve(repo, head, "calc/calc.go", []judgemark.Read{{Name: "sum"}, {Path: "calc/calc.go", Lines: "3-11"}}, 12, 400)
 	if !strings.Contains(rd.Served, "### calc/sum.go, lines 3 to 10: `sum`, read") || !strings.Contains(rd.Served, "6  \tfor _, v := range values[1:] {") {
 		t.Errorf("a name is read where its file's folder defines it:\n%s", rd.Served)
 	}
@@ -31,7 +31,7 @@ func TestServe(t *testing.T) {
 		t.Errorf("what was read is kept, to find a no's quote in: %v", rd.Shown)
 	}
 
-	rd = serve(repo, head, "calc/calc.go", []judge.Read{{Path: "../x.go"}, {Path: "/etc/passwd"}, {Path: "notes.txt"}, {Path: "calc"}, {Path: "calc/sum.go", Lines: "40-50"}, {Path: "calc/sum.go", Lines: "ten"}, {Why: "nothing"}}, 400, 400)
+	rd = serve(repo, head, "calc/calc.go", []judgemark.Read{{Path: "../x.go"}, {Path: "/etc/passwd"}, {Path: "notes.txt"}, {Path: "calc"}, {Path: "calc/sum.go", Lines: "40-50"}, {Path: "calc/sum.go", Lines: "ten"}, {Why: "nothing"}}, 400, 400)
 	for _, want := range []string{"Not read: ../x.go: outside the repository.", "Not read: /etc/passwd: outside the repository.",
 		"Not read: notes.txt: not a file the repository tracks at", "Not read: calc: not a file the repository tracks at",
 		"Not read: calc/sum.go:40-50: past its end (12 lines).", "Not read: calc/sum.go:ten: its lines do not read",
@@ -44,14 +44,14 @@ func TestServe(t *testing.T) {
 		t.Errorf("nothing read: %d lines, %v", rd.Lines, rd.Refused)
 	}
 
-	rd = serve(repo, head, "calc/calc.go", []judge.Read{{Grep: "total"}, {Grep: "values"}, {Grep: "nowhere_said"}, {Name: "Nowhere"}}, 400, 400)
+	rd = serve(repo, head, "calc/calc.go", []judgemark.Read{{Grep: "total"}, {Grep: "values"}, {Grep: "nowhere_said"}, {Name: "Nowhere"}}, 400, 400)
 	if !strings.Contains(rd.Served, "Not read: grep `total`: written in 55 places, past 50") || !strings.Contains(rd.Served, "### grep `values`: ") ||
 		!strings.Contains(rd.Served, "calc/sum.go:6: for _, v := range values[1:] {") || !strings.Contains(rd.Served, "Not read: grep `nowhere_said`: written nowhere at") ||
 		!strings.Contains(rd.Served, "Not read: `Nowhere`: no definition found at") {
 		t.Errorf("a word's places, at most 50; none, said:\n%s", rd.Served)
 	}
 
-	rd = serve(repo, head, "wide.go", []judge.Read{{Name: "Shared"}, {Name: "sum"}, {Name: "calc.Mean()"}}, 400, 400)
+	rd = serve(repo, head, "wide.go", []judgemark.Read{{Name: "Shared"}, {Name: "sum"}, {Name: "calc.Mean()"}}, 400, 400)
 	if !strings.Contains(rd.Served, "Not read: `Shared`: defined in too many places to tell which") ||
 		!strings.Contains(rd.Served, "Not read: `sum`: no definition found") || !strings.Contains(rd.Served, "### calc/calc.go, lines 3 to 6: `Mean`, read") {
 		t.Errorf("a name defined far away in many places is refused, an unexported one is not seen from another folder, a qualified one is read:\n%s", rd.Served)
@@ -73,17 +73,17 @@ func TestQuoted(t *testing.T) {
 	st := state{Head: head, Issues: []ClosedIssue{{ID: 4, Text: "## Need\n\nThe mean of every value."}}}
 	r := reading{Material: "### calc/calc.go, lines 3 to 6: `Mean`\n\n```diff\n+++ b/calc/sum.go\n@@ -1,2 +4,2 @@\n```\n"}
 	for _, c := range []struct {
-		q          judge.Quote
+		q          judgemark.Quote
 		where, why string
 	}{
-		{judge.Quote{Path: "calc/calc.go", Text: "return sum(values) /\n len(values)"}, "calc/calc.go:5", ""},
-		{judge.Quote{Path: "./calc/sum.go", Text: "func sum(values []int) int {"}, "calc/sum.go:4", ""},
-		{judge.Quote{Path: "#4", Text: "The mean of every value."}, "#4", ""},
-		{judge.Quote{Path: "calc/sum.go", Text: "for _, v := range values[1:] {"}, "", "its quote, at calc/sum.go:6, is not in what it was shown or read"},
-		{judge.Quote{Path: "calc/calc.go", Text: "if len(values) == 0"}, "", "its quote is not found in calc/calc.go at "},
-		{judge.Quote{Path: "calc/none.go", Text: "x"}, "", "its quote names calc/none.go, not a file at "},
-		{judge.Quote{Path: "#5", Text: "x"}, "", "its quote names #5, not an issue the change closes"},
-		{judge.Quote{Path: "calc/calc.go"}, "", "it quotes no line"},
+		{judgemark.Quote{Path: "calc/calc.go", Text: "return sum(values) /\n len(values)"}, "calc/calc.go:5", ""},
+		{judgemark.Quote{Path: "./calc/sum.go", Text: "func sum(values []int) int {"}, "calc/sum.go:4", ""},
+		{judgemark.Quote{Path: "#4", Text: "The mean of every value."}, "#4", ""},
+		{judgemark.Quote{Path: "calc/sum.go", Text: "for _, v := range values[1:] {"}, "", "its quote, at calc/sum.go:6, is not in what it was shown or read"},
+		{judgemark.Quote{Path: "calc/calc.go", Text: "if len(values) == 0"}, "", "its quote is not found in calc/calc.go at "},
+		{judgemark.Quote{Path: "calc/none.go", Text: "x"}, "", "its quote names calc/none.go, not a file at "},
+		{judgemark.Quote{Path: "#5", Text: "x"}, "", "its quote names #5, not an issue the change closes"},
+		{judgemark.Quote{Path: "calc/calc.go"}, "", "it quotes no line"},
 	} {
 		where, why := r.quoted(repo, st, &c.q)
 		if where != c.where || !strings.HasPrefix(why, c.why) || (c.why == "") != (why == "") {
@@ -91,7 +91,7 @@ func TestQuoted(t *testing.T) {
 		}
 	}
 	r.Rounds = []readRound{{Shown: []seen{{"calc/sum.go", 6, 6}}}}
-	if where, why := r.quoted(repo, st, &judge.Quote{Path: "calc/sum.go", Text: "for _, v := range values[1:] {"}); where != "calc/sum.go:6" || why != "" {
+	if where, why := r.quoted(repo, st, &judgemark.Quote{Path: "calc/sum.go", Text: "for _, v := range values[1:] {"}); where != "calc/sum.go:6" || why != "" {
 		t.Errorf("a quote from what the judge read is found: %q %q", where, why)
 	}
 	if _, why := r.quoted(repo, st, nil); why != "it quotes no line" {
@@ -110,7 +110,7 @@ func TestReadingLeft(t *testing.T) {
 	if got := r.said(); got != "" {
 		t.Errorf("nothing asked, nothing said: %q", got)
 	}
-	r.Rounds[0].Asked = []judge.Read{{Name: "sum"}, {Path: "a.go", Lines: "1-3"}}
+	r.Rounds[0].Asked = []judgemark.Read{{Name: "sum"}, {Path: "a.go", Lines: "1-3"}}
 	if got := r.said(); got != ", having read `sum`, a.go:1-3" {
 		t.Errorf("what it read, said: %q", got)
 	}
@@ -134,26 +134,26 @@ func TestJudgeReading(t *testing.T) {
 	repo := gitRepo(t, map[string]string{"calc/calc.go": calcGo, "calc/sum.go": sumGo})
 	head := strings.TrimSpace(must(git(repo, "rev-parse", "HEAD")))
 	material := "## The finding\n\nMean leaves out the first value.\n\n## calc/calc.go, lines 3 to 6\n" // as before #127: ##
-	no := func(path, text string) judge.Answer {
-		return judge.Answer{Why: "it adds every value", Quote: &judge.Quote{Path: path, Text: text}}
+	no := func(path, text string) judgemark.Answer {
+		return judgemark.Answer{Why: "it adds every value", Quote: &judgemark.Quote{Path: path, Text: text}}
 	}
 	for _, c := range []struct {
 		name    string
-		answers []judge.Answer
+		answers []judgemark.Answer
 		said    string
 		shown   string
 		rounds  int
 	}{
-		{"read then no, quoting what it read", []judge.Answer{{Reads: []judge.Read{{Name: "sum"}}}, no("calc/sum.go", "for _, v := range values[1:] {")}, "no", "dropped", 1},
-		{"no, quoting what it was shown", []judge.Answer{no("calc/calc.go", "return sum(values) / len(values)")}, "no", "dropped", 0},
-		{"no, quoting what it never saw", []judge.Answer{no("calc/sum.go", "total := 0")}, "no", "not verified: the judge said no (judge-no-unquoted): its quote, at calc/sum.go:5", 0},
-		{"yes", []judge.Answer{{Yes: true, Why: "it fails"}}, "yes", "verified", 0},
-		{"unsure", []judge.Answer{{Unsure: true, Why: "cannot tell"}}, "unsure", "not verified: the judge cannot tell (judge-unsure): cannot tell", 0},
-		{"reads past its rounds", []judge.Answer{{Reads: []judge.Read{{Name: "sum"}}}, {Reads: []judge.Read{{Name: "Mean"}}}, {Reads: []judge.Read{{Name: "Report"}}}}, "unsure", "not verified: the judge cannot tell (judge-unsure): it asked to read again, no read left", 2},
+		{"read then no, quoting what it read", []judgemark.Answer{{Reads: []judgemark.Read{{Name: "sum"}}}, no("calc/sum.go", "for _, v := range values[1:] {")}, "no", "dropped", 1},
+		{"no, quoting what it was shown", []judgemark.Answer{no("calc/calc.go", "return sum(values) / len(values)")}, "no", "dropped", 0},
+		{"no, quoting what it never saw", []judgemark.Answer{no("calc/sum.go", "total := 0")}, "no", "not verified: the judge said no (judge-no-unquoted): its quote, at calc/sum.go:5", 0},
+		{"yes", []judgemark.Answer{{Yes: true, Why: "it fails"}}, "yes", "verified", 0},
+		{"unsure", []judgemark.Answer{{Unsure: true, Why: "cannot tell"}}, "unsure", "not verified: the judge cannot tell (judge-unsure): cannot tell", 0},
+		{"reads past its rounds", []judgemark.Answer{{Reads: []judgemark.Read{{Name: "sum"}}}, {Reads: []judgemark.Read{{Name: "Mean"}}}, {Reads: []judgemark.Read{{Name: "Report"}}}}, "unsure", "not verified: the judge cannot tell (judge-unsure): it asked to read again, no read left", 2},
 	} {
 		var materials []string
 		calls := 0
-		j := JudgeReading(repo, head, "Does it fail?", material, "calc/calc.go", 2, 400, func(q, m string) (judge.Answer, error) {
+		j := JudgeReading(repo, head, "Does it fail?", material, "calc/calc.go", 2, 400, func(q, m string) (judgemark.Answer, error) {
 			materials = append(materials, m)
 			a := c.answers[calls]
 			a.Call.TokensIn = 100
@@ -170,8 +170,8 @@ func TestJudgeReading(t *testing.T) {
 			t.Errorf("%s: the first question says it may read:\n%s", c.name, materials[0])
 		}
 	}
-	if j := JudgeReading(repo, head, "q", material, "calc/calc.go", 2, 400, func(q, m string) (judge.Answer, error) {
-		return judge.Answer{}, fmt.Errorf("the agent is gone")
+	if j := JudgeReading(repo, head, "q", material, "calc/calc.go", 2, 400, func(q, m string) (judgemark.Answer, error) {
+		return judgemark.Answer{}, fmt.Errorf("the agent is gone")
 	}); j.Said != "" || j.Shown != "not verified: the agent is gone" || len(j.Calls) != 1 {
 		t.Errorf("no answer: %+v", j)
 	}

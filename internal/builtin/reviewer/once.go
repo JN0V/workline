@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
@@ -237,7 +237,7 @@ func judgeFloor(repo string, s Settings, st state) string {
 		return floor
 	}
 	for _, r := range strings.FieldsFunc(out, func(c rune) bool { return c == ',' || c == '\n' }) {
-		if f := s.JudgeByRole[strings.TrimSpace(r)]; judge.Levels[f] > judge.Levels[floor] {
+		if f := s.JudgeByRole[strings.TrimSpace(r)]; judgemark.Levels[f] > judgemark.Levels[floor] {
 			floor = f
 		}
 	}
@@ -259,7 +259,7 @@ func judgedBefore(rec Record, lens string, same reviewmark.Answered, floor strin
 		if j.Lens != lens || j.Patch != same.Patch || j.Finding != same.Finding {
 			continue
 		}
-		if j.Yes && judge.Levels[j.Level] < judge.Levels[floor] {
+		if j.Yes && judgemark.Levels[j.Level] < judgemark.Levels[floor] {
 			return reviewmark.Answered{}, false
 		}
 		return j, true
