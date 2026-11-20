@@ -3,7 +3,7 @@ package tests
 // The developer's proof on the real tester (docs/spec/layout.md, Tests):
 // the developer asks the tester to run the project's tests through the
 // registry (contract.Tests), so these tests link both, as the binary
-// does. Moved from internal/developer/proof*_test.go, as they were.
+// does. Moved from the developer's proof*_test.go, as they were.
 
 import (
 	"os"
@@ -13,9 +13,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/developer"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
+	_ "github.com/JN0V/workline/roles" // the compiled-in roles: the tester runs the proof
+	developer "github.com/JN0V/workline/roles/developer/code"
 )
 
 // proofRepo is a repository holding files, committed on main.

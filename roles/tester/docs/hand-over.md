@@ -10,7 +10,7 @@ sources:
   - internal/tester/frozen.go#record.body
   - internal/tester/frozen.go#readRecordKept
   - internal/tester/frozen.go#guard
-  - internal/developer/bounds.go#checker.rule
+  - roles/developer/code/bounds.go#checker.rule
   - internal/tester/green.go#greenRuns
   - internal/tester/green.go#judge
   - internal/engine/done.go

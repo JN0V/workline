@@ -1,10 +1,10 @@
 ---
 sources:
-  - internal/developer/conflict.go
+  - roles/developer/code/conflict.go
   - internal/engine/uptodate.go
   - internal/engine/engine.go
   - internal/engine/code.go
-  - internal/developer/review.go
+  - roles/developer/code/review.go
 checked: 8cfadcb5
 verified: agent:claude-code
 ---

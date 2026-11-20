@@ -9,7 +9,7 @@ sources:
   - internal/forge/gitlab_guard.go#tier
   - internal/steer/codeowners.go#ParseCodeowners
   - internal/steer/codeowners.go#Codeowners.owns
-  - internal/developer/prbounds.go#BoundsKey
+  - roles/developer/code/prbounds.go#BoundsKey
 checked: 3bab32400
 judged: eb16524
 verified: agent:claude-code

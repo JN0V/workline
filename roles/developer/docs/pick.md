@@ -1,6 +1,6 @@
 ---
 sources:
-  - internal/developer/developer.go
+  - roles/developer/code/developer.go
   - internal/tester/proof.go
   - internal/kit/testmark
   - internal/kit/devmark

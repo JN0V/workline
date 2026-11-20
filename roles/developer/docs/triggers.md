@@ -1,7 +1,7 @@
 ---
 sources:
   - roles/developer/role.yaml
-  - internal/developer/developer.go
+  - roles/developer/code/developer.go
   - internal/line/states.go
   - internal/line/round.go
   - internal/line/budget.go

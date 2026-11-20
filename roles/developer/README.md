@@ -2,7 +2,7 @@
 sources:
   - roles/developer/role.yaml
   - defaults/ci/github/workline-develop.yml
-  - internal/developer
+  - roles/developer/code
 checked: 27437193
 verified: agent:claude-code
 ---

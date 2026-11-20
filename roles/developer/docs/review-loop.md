@@ -1,11 +1,11 @@
 ---
 sources:
-  - internal/developer/review.go
-  - internal/developer/rewrite.go
-  - internal/developer/gates.go
-  - internal/developer/checks.go
-  - internal/developer/widen.go
-  - internal/developer/ready.go
+  - roles/developer/code/review.go
+  - roles/developer/code/rewrite.go
+  - roles/developer/code/gates.go
+  - roles/developer/code/checks.go
+  - roles/developer/code/widen.go
+  - roles/developer/code/ready.go
   - internal/forge/checks.go
   - roles/developer/role.yaml
   - defaults/ci/github/workline-develop.yml

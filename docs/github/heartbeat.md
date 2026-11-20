@@ -6,7 +6,7 @@ sources:
   - defaults/ci/github/workline-develop.yml#jobs.reconcile-due
   - defaults/ci/github/workline-develop.yml#jobs.reconcile
   - internal/line/states.go#roundsDue
-  - internal/developer/review.go#RoundDue
+  - roles/developer/code/review.go#RoundDue
 checked: e2e165c2d
 verified: agent:claude-code
 -->

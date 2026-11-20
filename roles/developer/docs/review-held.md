@@ -1,8 +1,8 @@
 ---
 sources:
-  - internal/developer/review.go
-  - internal/developer/widen.go
-  - internal/developer/rewrite.go
+  - roles/developer/code/review.go
+  - roles/developer/code/widen.go
+  - roles/developer/code/rewrite.go
   - internal/kit/devmark
 checked: 8ddc4e54
 verified: agent:claude-code
