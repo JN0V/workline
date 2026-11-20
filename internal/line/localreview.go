@@ -25,6 +25,7 @@ import (
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 )
 
@@ -457,19 +458,24 @@ func HeadTree(repo, head string) (tree string, done func(), err error) {
 	return dir, done, nil
 }
 
-// sameConfig lays repo's .workline/config.yaml, as the reconciler read
-// it, in tree: its runs take the line the person runs, even a config not
-// committed yet, as a checkout of the head would keep it.
+// sameConfig lays repo's .workline/config.yaml and tuning.yaml, as the
+// reconciler read them, in tree: its runs take the line the person runs,
+// even a config not committed yet, as a checkout of the head would keep it.
 func sameConfig(repo, tree string) error {
-	data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml"))
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
+	for _, name := range []string{"config.yaml", role.TuningFile} {
+		data, err := os.ReadFile(filepath.Join(repo, ".workline", name))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Join(tree, ".workline"), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(tree, ".workline", name), data, 0o644); err != nil {
+			return err
+		}
 	}
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Join(tree, ".workline"), 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(filepath.Join(tree, ".workline", "config.yaml"), data, 0o644)
+	return nil
 }
