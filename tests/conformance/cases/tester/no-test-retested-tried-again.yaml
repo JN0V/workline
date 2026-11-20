@@ -20,14 +20,14 @@ given:
         body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"
         comments:
           - "```yaml\nsources: []\nconfirmed: d8c4dff\nretest: 1d507da29cc3\n```\n\n<!-- workline:sticky=product-owner/state -->"
-          - "**The tester** finds no test possible for this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the code of the multiply step was not in its task.\",\"body\":\"4ddd2750a5af\"} -->\n<!-- workline:sticky=tester/issue -->"
+          - "**The tester** finds that no acceptance test applies to this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the code of the multiply step was not in its task.\",\"body\":\"4ddd2750a5af\"} -->\n<!-- workline:sticky=tester/issue -->"
 run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-proof-none"}
 expect:
   status: pass
   agent-calls: 1
-  findings: [{rule: no-test-possible, level: info, where: "#3"}]
+  findings: [{rule: no-test-applies, level: info, where: "#3"}]
   forge:
     issues:
       - id: 3
-        labels: ["workline:to-refine"]
-        comment-contains: ["**The tester** finds no test possible for this issue.", "no test checks a feeling.", "\"retried\":true"]
+        labels: ["workline:ready"]
+        comment-contains: ["**The tester** finds that no acceptance test applies to this issue.", "no test checks a feeling.", "\"retried\":true"]

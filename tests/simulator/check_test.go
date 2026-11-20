@@ -341,6 +341,11 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 		case needsRole:
 			ok = st == "due" && (again.Woke[cl.Issue] == "product-owner" || next == "product-owner") ||
 				st == "waiting" && strings.Contains(said, "product owner")
+			if cl.Role == "tester" {
+				// No acceptance test applies: the tester hands the issue
+				// over to the developer (#1941).
+				ok = ok || st == "due" && (again.Woke[cl.Issue] == "developer" || next == "developer")
+			}
 		case needsPerson:
 			ok = st == "waiting"
 		}

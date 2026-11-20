@@ -2,8 +2,9 @@ case: tester/feature-all-green-asked-again-kept
 about: >
   A feature whose every test passes on the base (#1156): the answer's to
   mend, asked once more, told which tests pass there. Its second answer
-  keeps each scenario as today, no test written: no test possible, the
-  reasons said, back to the product owner, never blocked for a person.
+  keeps each scenario as today, no test written: no acceptance test
+  applies, the reasons said, the issue handed over to the developer, never
+  blocked for a person.
 given:
   repo: tested
   setup:
@@ -22,10 +23,10 @@ run: {test: [write, --issue, "3"], ai: "fake:tester-all-green-then-kept"}
 expect:
   status: pass
   agent-calls: 2
-  summary: "no new test: none; the issue moves to refine"
+  summary: "no new test: none; the issue moves to ready"
   forge:
     issues:
-      - {id: 3, labels: ["workline:to-refine"], comment-contains: ["finds no test possible", "kept as today: add already sums a negative number"]}
+      - {id: 3, labels: ["workline:ready"], comment-contains: ["no acceptance test applies", "kept as today: add already sums a negative number"]}
   run-files:
     out/feedback.md: {contains: ["test-green-on-base", "tests.test_add_minus_one", "kept as today"]}
   not-pushed: [workline/tester/issue-3]
