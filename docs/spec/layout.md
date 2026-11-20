@@ -38,7 +38,7 @@ workline/
 │  └─ ci/                   github/  gitlab/  forgejo/  job templates
 ├─ docs/                    FOR PEOPLE: guides, spec/, adr/, research/
 ├─ tests/                   CHECKS ACROSS THE ENGINE
-│  ├─ conformance/          runner, engine cases; runs each role's cases/
+│  ├─ conformance/          runner; cases/<role>/ its cases, every role's
 │  ├─ evaluation/           real-agent evals (cost tokens)
 │  └─ *_test.go             the checks once at the root (roles, agents' rules)
 ├─ .workline/               this repository's own line: config.yaml;
@@ -60,7 +60,6 @@ roles/<name>/
 ├─ role.yaml        required  the contract: mission, events, inputs, acts, duties
 ├─ README.md        required  for people, opens with a diagram
 ├─ docs/status.md   required  criteria to leave beta, built, missing
-├─ cases/           required  its conformance cases
 ├─ prompts/         optional  what the agent reads: instruction, policy,
 │                             persona, knowledge/, lenses/, tasks/, skills/
 ├─ criteria/        optional  <kind>.md: what a well-done act of that kind is
@@ -77,7 +76,7 @@ roles/<name>/
   guarded, is read before the role's own `criteria/<kind>.md`.
 - **The binary ships** `role.yaml`, `prompts/` and `criteria/` of each
   role (`kinds/` until move a renames it), and its `pre` and `post`,
-  named one by one in `workline.go`; never `cases/`, `docs/`, `code/`
+  named one by one in `workline.go`; never cases, `docs/`, `code/`
   nor its README as files. A check in `tests/` fails if one is embedded.
 
 ## Guarded paths
