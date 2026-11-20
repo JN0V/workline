@@ -56,16 +56,12 @@ const (
 	closureDepth = 2
 )
 
-// Scenario is one of an issue's Validation scenarios: its name, as the
-// test names it, and its Given / When / Then.
-type Scenario = work.Scenario
-
 // task is what pre leaves for post, in in/tests-task.json.
 type task struct {
-	Issue     int        `json:"issue"`
-	Title     string     `json:"title"`
-	Base      string     `json:"base"`
-	Scenarios []Scenario `json:"scenarios"`
+	Issue     int             `json:"issue"`
+	Title     string          `json:"title"`
+	Base      string          `json:"base"`
+	Scenarios []work.Scenario `json:"scenarios"`
 	// Labels: the issue's, as pre read them; its state, which the tests'
 	// result moves on (ADR-0059).
 	Labels []string `json:"labels,omitempty"`
@@ -96,7 +92,7 @@ const taskFile = "tests-task.json"
 // Scenarios reads the named scenarios of a Validation section, in the
 // forms people write them (work.Scenarios): the one parser the product
 // owner, the tester and the developer read them with.
-func Scenarios(validation string) []Scenario { return work.Scenarios(validation) }
+func Scenarios(validation string) []work.Scenario { return work.Scenarios(validation) }
 
 // Pre prepares the task: the issue the run targets, ready, its named
 // scenarios, the Scope's code and the tests beside it.
@@ -477,7 +473,7 @@ func Post(runDir, repo string) int {
 			// Read, and no test written nor kind named: no test possible,
 			// its notes the reason, back to the product owner (#794). An
 			// answer with no reason is no work: retried (#1194).
-			return proved(runDir, repo, t, intents, Proof{Kind: KindNone, Reason: reason})
+			return proved(runDir, repo, t, intents, backlog.Proof{Kind: backlog.KindNone, Reason: reason})
 		}
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "no test written",
 			Findings: []verdict.Finding{{Rule: rule, Where: where, Message: msg}}})

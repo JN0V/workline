@@ -9,6 +9,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/testmark"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // The record other roles read of the tester's Draft (testmark.ReadDraft)
@@ -16,9 +17,9 @@ import (
 // fields the same, none where it reads none.
 func TestTheDraftOthersReadIsTheTestersRecord(t *testing.T) {
 	full := record{Issue: 7, Base: "abc", Files: map[string]string{"a_test.go": "b1"}, Tests: []string{"TestA"},
-		Scenarios: []Scenario{{Name: "adds"}}, Covers: map[string][]string{"adds": {"TestA"}}, RedUnproven: "a build broke"}
+		Scenarios: []work.Scenario{{Name: "adds"}}, Covers: map[string][]string{"adds": {"TestA"}}, RedUnproven: "a build broke"}
 	own := func(body string) forge.FakeComment {
-		return forge.FakeComment{Body: body + "\n<!-- workline:sticky=tester/" + recordKey + " -->", Own: true}
+		return forge.FakeComment{Body: body + "\n<!-- workline:sticky=tester/" + testmark.DraftRecordKey + " -->", Own: true}
 	}
 	bodies := map[int][]forge.FakeComment{
 		1: {own(full.body())},

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // What a test assumes, said in a note `assumes: …`, is listed on the
@@ -130,7 +131,7 @@ func TestWriteCodeGivesAFunctionDeepInAFile(t *testing.T) {
 
 func TestScenarios(t *testing.T) {
 	got := Scenarios("Intro line.\n\n- **Old debt:** Given `main` with 140 findings, When a merge request\n  adds one, Then only that one blocks.\n- **Moved code**: Given a move, When the gate runs, Then nothing new.\n- Given no name, When read, Then dropped.\n")
-	want := []Scenario{
+	want := []work.Scenario{
 		{Name: "Old debt", Text: "Given `main` with 140 findings, When a merge request adds one, Then only that one blocks."},
 		{Name: "Moved code", Text: "Given a move, When the gate runs, Then nothing new."},
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // CoversKind is the intention the tester's agent declares a scenario's
@@ -78,10 +79,10 @@ func sameScenario(entry, name string) bool {
 // declares; said, the reason of each no test can check; the findings of
 // a scenario with no entry, an entry naming none, or one with neither
 // tests nor reason, each the answer's to mend.
-func held(covers []declared, scenarios []Scenario) (tested map[string][]string, said map[string]string, findings []verdict.Finding) {
+func held(covers []declared, scenarios []work.Scenario) (tested map[string][]string, said map[string]string, findings []verdict.Finding) {
 	tested, said = map[string][]string{}, map[string]string{}
 	for _, c := range covers {
-		i := slices.IndexFunc(scenarios, func(sc Scenario) bool { return sameScenario(c.Scenario, sc.Name) })
+		i := slices.IndexFunc(scenarios, func(sc work.Scenario) bool { return sameScenario(c.Scenario, sc.Name) })
 		switch {
 		case i < 0:
 			var names []string
@@ -197,7 +198,7 @@ func fileNamed(t string, written []string) (file, name string, ok bool) {
 // found holds each scenario's declared ids to the new tests: matched, the
 // tests each scenario is proven by; the findings of an id found nowhere,
 // or the tail of several tests, the answer's to mend, asked again.
-func found(tested map[string][]string, scenarios []Scenario, newTests, written []string) (matched map[string][]string, findings []verdict.Finding) {
+func found(tested map[string][]string, scenarios []work.Scenario, newTests, written []string) (matched map[string][]string, findings []verdict.Finding) {
 	matched = map[string][]string{}
 	for _, sc := range scenarios {
 		for _, id := range tested[sc.Name] {

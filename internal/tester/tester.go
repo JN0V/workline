@@ -9,7 +9,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/worktree"
 	"os"
 	"os/exec"
 	"path"
@@ -19,6 +18,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/JN0V/workline/internal/kit/worktree"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/forge"

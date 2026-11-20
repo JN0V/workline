@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	conformanceFile = "tests/conformance/cases/merge/local-fix-merges-alone.yaml"
-	conformanceCase = "merge/local-fix-merges-alone"
+	conformanceFile   = "tests/conformance/cases/merge/local-fix-merges-alone.yaml"
+	conformanceCase   = "merge/local-fix-merges-alone"
 	conformanceFrozen = conformanceFile + ":" + conformanceCase
-	conformanceID = "github.com/JN0V/workline/tests/conformance.TestConformance/" + conformanceCase
+	conformanceID     = "github.com/JN0V/workline/tests/conformance.TestConformance/" + conformanceCase
 )
 
 // Given a case frozen as `<file>.yaml:<folder>/<case>`, When the head's
@@ -39,7 +39,7 @@ func TestFrozenInConformanceSubtestMissing(t *testing.T) {
 	ids := map[string]bool{
 		otherID: true,
 		"github.com/JN0V/workline/tests/conformance.TestConformance/merge/local-fix-merges-alone-not": true,
-		"github.com/JN0V/workline/tests/conformance.TestConformance":                                   true,
+		"github.com/JN0V/workline/tests/conformance.TestConformance":                                  true,
 	}
 	if got, want := r.frozenIn(other+":merge/local-red-line-holds", ids), []string{otherID}; !slices.Equal(got, want) {
 		t.Errorf("frozenIn of the case a report names = %q, want %q", got, want)
@@ -59,8 +59,8 @@ func TestFrozenInConformanceSubtestElsewhere(t *testing.T) {
 	r := record{Files: map[string]string{conformanceFile: "a1"}}
 	ids := map[string]bool{
 		conformanceID: true,
-		"github.com/JN0V/workline/tests/conformance.TestOther/" + conformanceCase: true,
-		"github.com/JN0V/workline/internal/line.TestConformance/" + conformanceCase:  true,
+		"github.com/JN0V/workline/tests/conformance.TestOther/" + conformanceCase:     true,
+		"github.com/JN0V/workline/internal/line.TestConformance/" + conformanceCase:   true,
 		"github.com/JN0V/workline/cmd/conformance.TestConformance/" + conformanceCase: true,
 		conformanceCase: true,
 	}

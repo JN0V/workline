@@ -19,10 +19,6 @@ import (
 	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
-// RefusedKey is the sticky comment's key that says a refused merge, on
-// the merge request and on each issue it closes.
-const RefusedKey = devmark.RefusedKey
-
 // refusedMark is the data line the comment on an issue carries while its
 // merge request's merge is refused, read back by the reconciler.
 const refusedMark = "merge-refused "
@@ -32,9 +28,9 @@ const refusedMark = "merge-refused "
 // merge request that closes it.
 func refusedSticky(mr int) string {
 	if mr > 0 {
-		return forge.Marker(fmt.Sprintf("sticky=%s mr=%d", RefusedKey, mr))
+		return forge.Marker(fmt.Sprintf("sticky=%s mr=%d", devmark.RefusedKey, mr))
 	}
-	return forge.Marker("sticky=" + RefusedKey)
+	return forge.Marker("sticky=" + devmark.RefusedKey)
 }
 
 // Refusal is what a refused merge's comment on an issue keeps for the

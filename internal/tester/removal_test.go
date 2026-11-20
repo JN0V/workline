@@ -42,7 +42,7 @@ func TestKeepsBase(t *testing.T) {
 	}
 	for _, c := range []struct {
 		name, file, now, was string
-		isNew, ok           bool
+		isNew, ok            bool
 	}{
 		{"a whole Go test removed", "calc_test.go", cut(goBase, "func TestAddAgain(t *testing.T) {\n\tif Add(1, 1) != 2 {\n\t\tt.Fatal(\"1 + 1\")\n\t}\n}\n"), goBase, false, true},
 		{"a Go test and its import removed", "calc_test.go", cut(goBase, "\t\"strings\"\n", "func TestTrim(t *testing.T) {\n\tif strings.TrimSpace(\" a \") != \"a\" {\n\t\tt.Fatal(\"trim\")\n\t}\n}\n"), goBase, false, true},

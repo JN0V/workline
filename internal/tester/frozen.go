@@ -25,11 +25,8 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
-
-// recordKey is the record's sticky key: the comment's marker is
-// sticky=tester/tests, as the engine writes it.
-const recordKey = testmark.DraftRecordKey
 
 // record is what the tester keeps on its Draft: the issue, the base its
 // tests were proven red on, and each test file's blob.
@@ -51,7 +48,7 @@ type record struct {
 	Errored []string `json:"errored,omitempty"`
 	// Scenarios: the issue's, as the run that wrote the tests read them,
 	// for the auditor (ADR-0046); none in a record written before.
-	Scenarios []Scenario `json:"scenarios,omitempty"`
+	Scenarios []work.Scenario `json:"scenarios,omitempty"`
 	// Covers: each scenario's tests, as the agent declared them and the
 	// red proof found them (ADR-0065, change 4): the developer's
 	// objection names a scenario by them. None in a record written before,
@@ -62,8 +59,6 @@ type record struct {
 	// says it too. None when proven.
 	RedUnproven string `json:"red-unproven,omitempty"`
 }
-
-var recordData = testmark.DraftData
 
 // body is the comment a person reads: the tests, frozen, and how to
 // object; the record hidden at its end.
@@ -107,7 +102,7 @@ func (r record) files() []string {
 // recordIntention is the comment keeping r on the merge request a run
 // targets.
 func (r record) intention() map[string]any {
-	return map[string]any{"comment": map[string]any{"sticky": recordKey, "body": r.body()}}
+	return map[string]any{"comment": map[string]any{"sticky": testmark.DraftRecordKey, "body": r.body()}}
 }
 
 // readRecord reads the record from workline's own comment on the merge
@@ -127,7 +122,7 @@ func readRecordKept(f forge.Forge, id int) (record, *verdict.Finding, forge.Kept
 	if err != nil {
 		return record{}, nil, kept, err
 	}
-	marker := forge.Marker("sticky=tester/" + recordKey)
+	marker := forge.Marker("sticky=tester/" + testmark.DraftRecordKey)
 	body, ok := kept.Last(marker)
 	if !ok {
 		msg := "the tester's branch holds no record of its tests in workline's own comment: which tests are frozen cannot be told, nothing is read as unchanged"
@@ -136,7 +131,7 @@ func readRecordKept(f forge.Forge, id int) (record, *verdict.Finding, forge.Kept
 		}
 		return record{}, &verdict.Finding{Rule: "tester-record-missing", Where: where, Message: msg}, kept, nil
 	}
-	m := recordData.FindStringSubmatch(body)
+	m := testmark.DraftData.FindStringSubmatch(body)
 	var r record
 	if m == nil || json.Unmarshal([]byte(m[1]), &r) != nil || len(r.Files) == 0 {
 		return record{}, &verdict.Finding{Rule: "tester-record-missing", Where: where,
@@ -148,8 +143,8 @@ func readRecordKept(f forge.Forge, id int) (record, *verdict.Finding, forge.Kept
 // issueOf is the issue a tester's branch is for, 0 when the branch is not
 // one.
 func issueOf(branch string) int {
-	n, err := strconv.Atoi(strings.TrimPrefix(branch, branchPrefix))
-	if !strings.HasPrefix(branch, branchPrefix) || err != nil || n <= 0 {
+	n, err := strconv.Atoi(strings.TrimPrefix(branch, testmark.TestsBranch))
+	if !strings.HasPrefix(branch, testmark.TestsBranch) || err != nil || n <= 0 {
 		return 0
 	}
 	return n

@@ -11,6 +11,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -27,7 +28,7 @@ func refuseIssue(runDir string, n int, v verdict.Verdict, next string) int {
 		why = v.Findings[0].Message
 	}
 	said := []intent.Intention{{Kind: "comment", Value: map[string]any{"issue": n, "sticky": "issue", "on-block": true,
-		"body": backlog.Said("The tester", refusedPre, why, next)}}}
+		"body": backlog.Said("The tester", testmark.RefusedPre, why, next)}}}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), said); err != nil {
 		return fail(err)
 	}
@@ -85,7 +86,7 @@ func sayBlock(runDir string, n int, v *verdict.Verdict) int {
 			next = "the line keeps its labels and runs the tester again, its comment saying when; past its tries, a person reads it"
 		}
 		said := []intent.Intention{{Kind: "comment", Value: map[string]any{"issue": n, "sticky": "issue",
-			"body": backlog.Said("The tester", refusedRun, why, next) + mark}}}
+			"body": backlog.Said("The tester", testmark.RefusedRun, why, next) + mark}}}
 		if err := intent.Write(filepath.Join(runDir, "out", "on-block.yaml"), said); err != nil {
 			return fail(err)
 		}

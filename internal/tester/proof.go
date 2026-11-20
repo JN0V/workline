@@ -21,51 +21,32 @@ import (
 	"github.com/JN0V/workline/internal/work"
 )
 
-// The proof kinds and the record, the backlog's: the product owner picks
-// one too, after "no test possible".
-const (
-	KindNewTests = backlog.KindNewTests
-	KindFlaky    = backlog.KindFlaky
-	KindSuite    = backlog.KindSuite
-	KindDocs     = backlog.KindDocs
-	KindNone     = backlog.KindNone
-)
-
-// Proof is the tester's record of a kind in place of a Draft.
-type Proof = backlog.Proof
-
-// ProofKinds are the kinds a tester records in place of a Draft.
-var ProofKinds = backlog.ProofKinds
-
-// TestName is a test's name as a proof-command takes it in `{test}`.
-var TestName = backlog.TestName
-
 // proofOf reads the kind a note names, and its reason; false when no note
 // names one.
-func proofOf(notes []string) (Proof, bool) {
+func proofOf(notes []string) (backlog.Proof, bool) {
 	for _, n := range notes {
 		if p, ok := backlog.ProofNote(n); ok {
 			return p, true
 		}
 	}
-	return Proof{}, false
+	return backlog.Proof{}, false
 }
 
 // proved ends a run whose agent wrote no test and named a kind instead:
 // recorded on the issue, and the issue moved on — to the state after its
 // own for a kind in ProofKinds, back to the product owner's for none.
-func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) int {
+func proved(runDir, repo string, t task, intents []intent.Intention, p backlog.Proof) int {
 	where := fmt.Sprintf("#%d", t.Issue)
 	if p.Reason == "" {
 		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "a proof kind with no reason",
 			Findings: []verdict.Finding{{Rule: "proof-reason-missing", Where: where, Message: "the note names the kind `" + p.Kind + "` and no reason: each kind says why no new test fits"}}})
 	}
-	if p.Kind != KindNone && ProofKinds[p.Kind] == "" {
+	if p.Kind != backlog.KindNone && backlog.ProofKinds[p.Kind] == "" {
 		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "an unknown proof kind",
 			Findings: []verdict.Finding{{Rule: "proof-kind-unknown", Where: where,
-				Message: fmt.Sprintf("`%s` is no proof kind: %s, %s or %s, or %s when no test is possible", p.Kind, KindFlaky, KindSuite, KindDocs, KindNone)}}})
+				Message: fmt.Sprintf("`%s` is no proof kind: %s, %s or %s, or %s when no test is possible", p.Kind, backlog.KindFlaky, backlog.KindSuite, backlog.KindDocs, backlog.KindNone)}}})
 	}
-	if p.Kind == KindFlaky && !TestName.MatchString(p.Test) {
+	if p.Kind == backlog.KindFlaky && !backlog.TestName.MatchString(p.Test) {
 		msg := "the note names no test (`test: <name>`): the developer's proof runs it N times"
 		if p.Test != "" {
 			msg = "the test `" + p.Test + "` is no name a test command takes: letters, digits and `_ . / : -`"
@@ -86,11 +67,11 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p Proof) in
 	s, ok := line.StateOf(t.Labels)
 	ours := ok && s.Role == "tester" && s.Next != ""
 	to, did, rule := s.Next, "records the proof of this issue: "+p.Kind+", no new test", "proof-recorded"
-	next := "it is " + s.Next + ": whoever builds it proves it so, " + ProofKinds[p.Kind]
+	next := "it is " + s.Next + ": whoever builds it proves it so, " + backlog.ProofKinds[p.Kind]
 	if !ours {
-		to, next = "", "whoever builds it proves it so, "+ProofKinds[p.Kind]+"; its state kept, not the tester's"
+		to, next = "", "whoever builds it proves it so, "+backlog.ProofKinds[p.Kind]+"; its state kept, not the tester's"
 	}
-	if p.Kind == KindNone {
+	if p.Kind == backlog.KindNone {
 		p.Body = t.Body       // the body it read: sent again unchanged, Blocked (#815)
 		p.Retried = t.Retried // after a retest: no second one (#1053)
 		to, did, rule = "", "finds no test possible for this issue", "no-test-possible"

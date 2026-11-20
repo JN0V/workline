@@ -47,10 +47,6 @@ const AnswerHold = 6 * time.Hour
 // again: the same reconcile, or an event right after, starts nothing.
 const ErrorBackoff = 10 * time.Minute
 
-// NeedsInput gives a role run again for a needs-input of the engine what
-// its agent said it lacked: the paths it named, comma-separated.
-const NeedsInput = engine.NeedsInput
-
 // Errors are the machine errors of a step's runs on its input, in its
 // state: by kind, how many and when its first came, its own window; when
 // the last came, its kind and what it said. A new input — the state
@@ -203,7 +199,7 @@ func typedDue(res *Result, name string, s routing.State, is forge.Issue, rec Rec
 		// Not given in its step (it did not end, or read): given now.
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: where,
 			Message: fmt.Sprintf("the %s said it lacks code: run again, given %s", name, n.Said)})
-		return true, rec, map[string]string{NeedsInput: n.Said}, nil, false
+		return true, rec, map[string]string{engine.NeedsInput: n.Said}, nil, false
 	}
 	return false, rec, nil, nil, false
 }

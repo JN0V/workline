@@ -3,11 +3,12 @@ package tester
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/JN0V/workline/internal/kit/testmark"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -23,15 +24,15 @@ func TestAnswerLongThreadEndingWithTheTestersReplyPostsNothing(t *testing.T) {
 	for i := 2; i <= 250; i++ {
 		c := forge.FakeComment{Body: fmt.Sprintf("builder: comment %d", i), Author: "builder"}
 		if i%2 == 1 {
-			c = forge.FakeComment{Body: fmt.Sprintf("tester: reply %d\n\n%s", i, answerMark), Author: bot}
+			c = forge.FakeComment{Body: fmt.Sprintf("tester: reply %d\n\n%s", i, testmark.AnswerMark), Author: bot}
 		}
 		replies = append(replies, c)
 	}
 	// 250 comments: the objection, then 249 replies, the last the tester's.
-	replies[len(replies)-1] = forge.FakeComment{Body: "tester: the last reply\n\n" + answerMark, Author: bot}
+	replies[len(replies)-1] = forge.FakeComment{Body: "tester: the last reply\n\n" + testmark.AnswerMark, Author: bot}
 	state := forge.FakeState{MergeRequests: []forge.FakeItem{{
-		ID: 7, Branch: branchPrefix + "790", Labels: []string{},
-		Comments: []forge.FakeComment{{Body: rec.body() + "\n" + forge.Marker("sticky=tester/"+recordKey), Author: bot}},
+		ID: 7, Branch: testmark.TestsBranch + "790", Labels: []string{},
+		Comments: []forge.FakeComment{{Body: rec.body() + "\n" + forge.Marker("sticky=tester/"+testmark.DraftRecordKey), Author: bot}},
 		Threads: []forge.FakeThread{{ID: "T1", Path: "a_test.go", Line: 3, Author: "builder",
 			Body: testmark.ObjectionWord + "\ntest: a_test.go", Replies: replies}},
 	}}}

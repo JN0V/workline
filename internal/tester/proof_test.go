@@ -1,15 +1,17 @@
 package tester
 
 import (
-	"github.com/JN0V/workline/internal/contract"
 	"testing"
+
+	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/contract"
 )
 
 // A flaky-n-of-n note names its test and runs on lines of their own,
 // taken out of its reason; another kind keeps its words whole.
 func TestProofOfNamesTheFlakyTest(t *testing.T) {
 	p, ok := proofOf([]string{"proof: flaky-n-of-n — it fails one run in five.\ntest: pkg.TestRetry\nruns: 20\n"})
-	if !ok || p.Kind != KindFlaky || p.Test != "pkg.TestRetry" || p.Runs != 20 || p.Reason != "it fails one run in five." {
+	if !ok || p.Kind != backlog.KindFlaky || p.Test != "pkg.TestRetry" || p.Runs != 20 || p.Reason != "it fails one run in five." {
 		t.Errorf("flaky: %+v, want its test, 20 runs, the reason alone", p)
 	}
 	p, _ = proofOf([]string{"proof: flaky-n-of-n — why\nruns: many"})
@@ -28,7 +30,7 @@ func TestTestName(t *testing.T) {
 		"TestRetry": true, "tests.test_retry": true, "pkg/x.TestA/sub-1": true,
 		"": false, "a b": false, "x;rm -rf": false, "$(id)": false, "a'b": false,
 	} {
-		if TestName.MatchString(name) != want {
+		if backlog.TestName.MatchString(name) != want {
 			t.Errorf("TestName(%q) = %v, want %v", name, !want, want)
 		}
 	}
