@@ -1,10 +1,10 @@
 ---
 sources:
-  - internal/developer/proof.go
-  - internal/developer/developer.go
-  - internal/tester/onchange.go
-  - internal/tester/missing.go
-  - internal/tester/fresh.go
+  - roles/developer/code/proof.go
+  - roles/developer/code/developer.go
+  - roles/tester/code/onchange.go
+  - roles/tester/code/missing.go
+  - roles/tester/code/fresh.go
   - roles/developer/role.yaml
   - internal/kit/devmark
 checked: 9cf386a3
@@ -101,6 +101,11 @@ Step 3 of
   to iterate; a green it reports is not read.
 - **Never in its agent's worktree**: the proof checks the start commit
   out in a repository of its own, apart, its code laid on it.
+- **On the merge with main**: when the commit is behind main, the proof
+  runs on it with main merged in, as the CI tests it, so a test red only
+  on the merge is red here and named. Not behind: it runs as it is. A
+  merge that conflicts is not run: unproven, the conflict with main and
+  its files said, never green.
 - **What the agent left is not there**: an ignored or untracked file
   outside its diff, a cache, a build output.
 - **Nothing of the store the worktree shares is read**: it borrows the

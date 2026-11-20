@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog/parent.go, internal/backlog/symptom.go, internal/builtin/productowner/productowner.go, internal/line/parent.go, internal/forge/forge.go, internal/forge/github.go, internal/forge/gitlab.go]
+sources: [internal/backlog/parent.go, internal/backlog/symptom.go, roles/product-owner/code/productowner.go, internal/line/parent.go, internal/forge/forge.go, internal/forge/github.go, internal/forge/gitlab.go]
 status: draft
 checked: a16d7f0a
 verified: agent:claude-code

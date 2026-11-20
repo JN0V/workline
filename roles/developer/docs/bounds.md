@@ -1,11 +1,11 @@
 ---
 sources:
-  - internal/developer/bounds.go
+  - roles/developer/code/bounds.go
   - internal/work/scope.go
-  - internal/developer/developer.go
-  - internal/developer/worktree.go
-  - internal/developer/words.go
-  - internal/developer/prbounds.go
+  - roles/developer/code/developer.go
+  - roles/developer/code/worktree.go
+  - roles/developer/code/words.go
+  - roles/developer/code/prbounds.go
   - defaults/ci/github/workline-bounds.yml
   - defaults/ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go
@@ -96,7 +96,7 @@ is beyond it: listed, never refused.
   - a test the definition misses is code: beyond the Scope, listed;
     `workline doctor` says how to set `test-paths`;
   - one named like a class of the main code is beside it too: the
-    reviewer's [`tests` lens](../../reviewer/lenses/tests.md) judges
+    reviewer's [`tests` lens](../../reviewer/prompts/lenses/tests.md) judges
     whether it replaces that class when the tests run (a JVM
     classpath);
   - the root is a home only to a Scope file at the root: a Scope
@@ -246,7 +246,7 @@ did not foresee, a build file, a test fake, a helper
   round lists its own in its commit's message and its comment. The
   verdict says them (`beyond-scope`, info); the record keeps them.
 - **Judged**: the reviewer's
-  [`intent` lens](../../reviewer/lenses/intent.md) reads the list and
+  [`intent` lens](../../reviewer/prompts/lenses/intent.md) reads the list and
   flags a file off the task; the auditor samples the lists
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
 - **Before**: a file outside the Scope was refused, and the step asked

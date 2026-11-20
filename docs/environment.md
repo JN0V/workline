@@ -7,13 +7,13 @@ sources:
   - internal/builtin/reviewer/reviewer.go#askJudges
   - tests/evaluation/eval_test.go#judge
   - internal/forge/retry.go#RunsDirEnv
-  - internal/builtin/committer/secrets.go#commonList
+  - roles/committer/code/secrets.go#commonList
   - internal/forge/mask.go
-  - internal/tester/tester.go#shell
+  - roles/tester/code/tester.go#shell
   - internal/gate/gate.go#maskLog
   - internal/agent/claude.go#lastLine
   - internal/builtin/documentalist/examples.go#outputSaid
-checked: e2e165c2d
+checked: dd77bf922
 verified: agent:claude-code
 judged: e343388
 ---

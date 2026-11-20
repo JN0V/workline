@@ -221,7 +221,7 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 			why = fmt.Sprintf("the %s said again it lacks code in its state %s, given what it named, and nothing changed since: %s; a person names the files it needs in a comment", name, s.Name, l.Said)
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "needs-spent", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
 		case l.Said != "":
-			inputs = map[string]string{NeedsInput: l.Said}
+			inputs = map[string]string{engine.NeedsInput: l.Said}
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: where,
 				Message: fmt.Sprintf("the %s said it lacks code on this same input: run again, given %s", name, l.Said)})
 		case rec.State == BlockedState && rec.From == s.Name:
@@ -719,7 +719,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	before, steps, pend := len(res.Findings), len(res.Steps), len(res.Pending)
 	first := steps // the step's runs, counted in its record (ADR-0064)
 	_, status := runRole(res, cfg, o, 0)
-	out, given := outcomeOf(res.Steps[steps:], status), st.inputs[NeedsInput] != "" // given what it lacked on its input (#1157)
+	out, given := outcomeOf(res.Steps[steps:], status), st.inputs[engine.NeedsInput] != "" // given what it lacked on its input (#1157)
 	if needsCode(out) && !given && status != verdict.BlockedExternal && sameState(f, cfg, st) {
 		// Its agent named the code it lacked (ADR-0063, §5): Due at once,
 		// given it — the role runs again, once, in this step.
@@ -729,19 +729,19 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		if in == nil {
 			in = map[string]string{}
 		}
-		in[NeedsInput] = oneLine(out.Said)
+		in[engine.NeedsInput] = oneLine(out.Said)
 		o.Inputs = in
 		steps = len(res.Steps)
 		_, status = runRole(res, cfg, o, 0)
 		out, given = outcomeOf(res.Steps[steps:], status), true
-		if said := oneLine(out.Said); needsCode(out) && status != verdict.BlockedExternal && saysNew(in[NeedsInput], said) && sameState(f, cfg, st) {
+		if said := oneLine(out.Said); needsCode(out) && status != verdict.BlockedExternal && saysNew(in[engine.NeedsInput], said) && sameState(f, cfg, st) {
 			// Given what it named, it names other code, none of it given
 			// yet: a folder's files led it to the file it needs (#1410).
 			// Run again once more, given that; said again, it is blocked.
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-given", Level: "info", Where: fmt.Sprintf("#%d", st.write.Issue),
 				Message: fmt.Sprintf("the %s said it lacks other code than it was given: run again at once, given %s", st.role, said)})
 			in = maps.Clone(in)
-			in[NeedsInput] += ", " + said // what led it there given still
+			in[engine.NeedsInput] += ", " + said // what led it there given still
 			o.Inputs = in
 			steps = len(res.Steps)
 			_, status = runRole(res, cfg, o, 0)

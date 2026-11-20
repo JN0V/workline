@@ -32,7 +32,7 @@ permissions: {}
 concurrency: {group: "workline-warn-${{ github.event.pull_request.number }}", cancel-in-progress: true}
 
 env:
-  WORKLINE_VERSION: v0.82.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  WORKLINE_VERSION: v0.84.0          # a release of workline: update it to take a newer one (x-release-please-version)
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
 jobs:
@@ -149,7 +149,7 @@ jobs:
           mkdir -p report && echo "${{ github.event.pull_request.number }}" > report/number
       # Applied by workline-apply.yml, from the default branch.
       - uses: actions/upload-artifact@v4
-        if: steps.line.outputs.proposed == 'true'
+        if: steps.line.outputs.proposed == 'true' || failure() || (steps.line.outputs.status != '' && steps.line.outputs.status != '0')
         with: {name: workline-runs, path: "line.json\n.workline-runs\nreport/number", include-hidden-files: true}
       # Never the head's verdict: what only warns fails no check. An agent
       # out of reach (3) is said; only the engine's own error fails the job.
@@ -160,7 +160,10 @@ jobs:
           case "$STATUS" in
             0) ;;
             3) echo "::warning title=workline::the agent could not be reached: the lenses that warn did not read this push" ;;
-            *) exit "${STATUS:-1}" ;;
+            *)
+              msg=$(jq -r '.summary // empty' line.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+              echo "::error title=workline::${msg:-the run ended with status $STATUS, see its result file}"
+              exit "${STATUS:-1}" ;;
           esac
       # What this job's agent calls spent, a line a run: role, target,
       # calls, tokens, seconds; no prompt, no diff. Kept 14 days for the

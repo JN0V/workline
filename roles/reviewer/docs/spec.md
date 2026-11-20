@@ -5,10 +5,10 @@ sources:
   - roles/reviewer/role.yaml#settings.spec-lines-max
   - roles/reviewer/role.yaml#settings.code-lines-max
   - roles/reviewer/role.yaml#settings.lenses-together
-  - roles/reviewer/lenses/ambiguous.md
-  - roles/reviewer/lenses/unverifiable.md
-  - roles/reviewer/lenses/out-of-scope.md
-  - roles/reviewer/lenses/contradicted.md
+  - roles/reviewer/prompts/lenses/ambiguous.md
+  - roles/reviewer/prompts/lenses/unverifiable.md
+  - roles/reviewer/prompts/lenses/out-of-scope.md
+  - roles/reviewer/prompts/lenses/contradicted.md
   - internal/builtin/reviewer/spec.go#prepareSpec
   - internal/builtin/reviewer/spec.go#readSpec
   - internal/builtin/reviewer/spec.go#specCut
@@ -18,7 +18,7 @@ sources:
   - internal/builtin/reviewer/spec.go#specMaterial
   - internal/builtin/reviewer/reviewer.go#lensFindings
   - internal/builtin/reviewer/reviewer.go#Post
-checked: e2e165c2d
+checked: dd77bf922
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built

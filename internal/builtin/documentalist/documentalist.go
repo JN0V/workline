@@ -24,6 +24,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/tools"
@@ -31,7 +32,13 @@ import (
 )
 
 // The role joins the engine by name (internal/contract).
-func init() { contract.Join("documentalist", contract.Role{Pre: Pre, Post: Post}) }
+func init() {
+	contract.Join("documentalist", contract.Role{Pre: Pre, Post: Post,
+		Docs: &contract.Docs{Coverage: Coverage, UnreadDocs: UnreadDocs},
+		DocsSample: &contract.DocsSample{Settings: sampleView,
+			SourcesAt: SourcesAt, SourceFileAt: SourceFileAt, QuoteIn: QuoteIn, InCodeAt: InCodeAt},
+	})
+}
 
 // Settings are the role's settings, as merged by the engine.
 type Settings struct {
@@ -90,82 +97,13 @@ type Settings struct {
 	WholeChars int `json:"whole-chars"`
 	// Sample: who reads the weekly sample of the docs vouched for
 	// (ADR-0014, step 4; workline sample).
-	Sample SampleSettings `json:"sample"`
+	Sample docmark.SampleSettings `json:"sample"`
 	// Examples: the command checking the code examples a fix writes, run
 	// on a checkout with the fixed docs in it (examples.go); unset, they
 	// are said unverified.
 	Examples struct {
 		Check string `json:"check"`
 	} `json:"examples"`
-}
-
-// Doc is a documentation file that declares its sources.
-type Doc struct {
-	Path    string
-	Sources []string
-	Checked map[string]string // repository name ("" = this one) -> commit
-	// JudgedInParts is the commit the doc was last judged in parts at: it is
-	// not put before an agent again until a source changes after it.
-	JudgedInParts string
-	// Judged is the commit an agent judged the doc whole at without vouching
-	// for every sentence: held the same way.
-	Judged string
-}
-
-// frontmatter is the YAML block at the top of a doc.
-type frontmatter struct {
-	Sources []string `yaml:"sources"`
-	// A node, not a string: read as YAML, a commit like 11180e1 is a number.
-	Checked       yaml.Node `yaml:"checked"`
-	JudgedInParts yaml.Node `yaml:"judged-in-parts"`
-	Judged        yaml.Node `yaml:"judged"`
-}
-
-// header returns a doc's header — YAML between `---` lines, or, where a
-// frontmatter would show on the forge (a README), between `<!-- workline` and
-// `-->` — and how many lines it takes. A doc without one has no header.
-func header(content string) (meta string, lines int) {
-	all := strings.Split(content, "\n")
-	var end string
-	switch {
-	case len(all) > 0 && all[0] == "---":
-		end = "---"
-	case len(all) > 0 && strings.TrimSpace(all[0]) == "<!-- workline":
-		end = "-->"
-	default:
-		return "", 0
-	}
-	for i := 1; i < len(all); i++ {
-		if strings.TrimSpace(all[i]) == end {
-			return strings.Join(all[1:i], "\n"), i + 1
-		}
-	}
-	return "", 0
-}
-
-// ParseDoc reads a doc's header. A doc without sources is not tracked.
-func ParseDoc(path string, content []byte) (*Doc, error) {
-	block, n := header(string(content))
-	if n == 0 {
-		return nil, nil
-	}
-	var fm frontmatter
-	if err := yaml.Unmarshal([]byte(block), &fm); err != nil {
-		return nil, fmt.Errorf("%s: frontmatter: %w", path, err)
-	}
-	if len(fm.Sources) == 0 {
-		return nil, nil
-	}
-	d := &Doc{Path: path, Sources: fm.Sources, Checked: map[string]string{}, JudgedInParts: fm.JudgedInParts.Value, Judged: fm.Judged.Value}
-	switch c := fm.Checked; c.Kind {
-	case yaml.ScalarNode:
-		d.Checked[""] = c.Value
-	case yaml.MappingNode:
-		for i := 0; i+1 < len(c.Content); i += 2 {
-			d.Checked[c.Content[i].Value] = c.Content[i+1].Value
-		}
-	}
-	return d, nil
 }
 
 // splitSource turns "api:docs/x.md#part" into ("api", "docs/x.md", "part").
@@ -180,7 +118,7 @@ func splitSource(s string) (repo, path, anchor string) {
 // body drops a doc's header: recording who checked a doc is not a change of
 // what it says.
 func body(content string) string {
-	_, n := header(content)
+	_, n := docmark.Header(content)
 	if n == 0 {
 		return content
 	}
@@ -625,7 +563,7 @@ func (p *places) get(name string) (place, error) {
 
 // suspectDoc is a doc to put before the agent, with what made it suspect.
 type suspectDoc struct {
-	doc      *Doc
+	doc      *docmark.Doc
 	why      []string
 	evidence []string
 	// tooLarge: the doc, with what changed in its sources, does not fit in a
@@ -786,8 +724,8 @@ type preRun struct {
 	runDir, repo string
 	s            Settings
 	tree         Tree
-	docs         []*Doc
-	byPath       map[string]*Doc
+	docs         []*docmark.Doc
+	byPath       map[string]*docmark.Doc
 	pl           *places
 
 	touched map[string]bool // the files the commits in range touched
@@ -854,7 +792,7 @@ func newPreRun(runDir, repo string) (*preRun, error) {
 	}
 	r := &preRun{runDir: runDir, repo: repo, s: s, tree: tree, docs: docs,
 		pl:       &places{repo: repo, gitDir: gitDir, cfg: cfg, known: map[string]place{}},
-		byPath:   map[string]*Doc{},
+		byPath:   map[string]*docmark.Doc{},
 		suspects: map[string]*suspectDoc{}, propagate: map[string]*suspectDoc{}}
 
 	// Given the commits of a push or a merge request, only the docs they
@@ -1193,7 +1131,7 @@ func (r *preRun) checkHygiene() error {
 	// Line counts off: counted by the engine, never vouched for (ADR-0014).
 	counted := docs
 	if r.atPush {
-		counted = slices.DeleteFunc(slices.Clone(docs), func(d *Doc) bool { return !r.ofPush[d.Path] })
+		counted = slices.DeleteFunc(slices.Clone(docs), func(d *docmark.Doc) bool { return !r.ofPush[d.Path] })
 	}
 	counts := CountsOff(r.repo, tree, counted)
 	for _, p := range append(append(r.problems, gone...), counts...) {
@@ -2333,7 +2271,7 @@ func trackedFiles(repo string) (map[string]bool, error) {
 }
 
 // trackedDocs lists the docs that declare their sources.
-func trackedDocs(t Tree, globs []string) ([]*Doc, error) {
+func trackedDocs(t Tree, globs []string) ([]*docmark.Doc, error) {
 	paths := make([]string, 0, len(t.Docs))
 	for p := range t.Docs {
 		if matchAny(globs, p) {
@@ -2341,9 +2279,9 @@ func trackedDocs(t Tree, globs []string) ([]*Doc, error) {
 		}
 	}
 	sort.Strings(paths)
-	var docs []*Doc
+	var docs []*docmark.Doc
 	for _, p := range paths {
-		d, err := ParseDoc(p, []byte(t.Docs[p]))
+		d, err := docmark.ParseDoc(p, []byte(t.Docs[p]))
 		if err != nil {
 			return nil, err
 		}
@@ -2432,7 +2370,7 @@ func touches(files map[string]bool, path string) bool {
 // undocumented reports, by folder, the files matching the documented globs
 // that no doc names in its sources: those the commits add, given a range,
 // else all of them.
-func undocumented(t Tree, docs []*Doc, globs []string, added map[string]bool, ranged bool) []verdict.Finding {
+func undocumented(t Tree, docs []*docmark.Doc, globs []string, added map[string]bool, ranged bool) []verdict.Finding {
 	if len(globs) == 0 {
 		return nil
 	}
@@ -2475,7 +2413,7 @@ func undocumented(t Tree, docs []*Doc, globs []string, added map[string]bool, ra
 // docTouched says whether the commits touched one of the doc's own sources.
 // Such a doc is judged whole, every changed source with it: moving
 // `checked` vouches for all of them.
-func docTouched(d *Doc, touched map[string]bool) bool {
+func docTouched(d *docmark.Doc, touched map[string]bool) bool {
 	for _, src := range d.Sources {
 		if name, path, _ := splitSource(src); name == "" && touches(touched, path) {
 			return true
@@ -2525,7 +2463,7 @@ func Coverage(repo string, globs []string) (tracked, none, untracked []string, e
 // declaresSources says whether a doc's header has a `sources` key, even an
 // empty one, and what it lists. A header that does not parse declares nothing.
 func declaresSources(content string) (bool, []string) {
-	block, n := header(content)
+	block, n := docmark.Header(content)
 	if n == 0 {
 		return false, nil
 	}

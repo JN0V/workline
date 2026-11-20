@@ -11,6 +11,9 @@ and hands over. This document defines what a role is, so that any engine, on any
 machine, can run it the same way. The engine is replaceable; this contract is not
 (ADR-0001).
 
+A service the engine consults is not a role: the judge has no event, no
+input nor output of its own ([ADR-0070, amended](../adr/0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md#amendment-2026-11-20-the-judge-is-an-engine-service)).
+
 ## Layout
 
 ```
@@ -24,7 +27,7 @@ roles/<name>/
   pre               optional; deterministic: gathers input, decides whether a decision is needed
   post              optional; deterministic: validates, decides the verdict
   lenses/*.md       the reviewer's: one facet per lens
-  kinds/*.md        the auditor's: one facet per kind of act
+  kinds/*.md        the auditor's: one facet per kind of act; criteria/<role>/*.md, its criteria for a role
   tasks/*.md        optional: a kind of task's own instruction (model.tasks)
   skills/<n>/SKILL.md  optional: the role's own copy of a shared skill (see "Shared skills")
   docs/             about the role, never loaded: reference pages, status.md, tried.md (archived)
@@ -38,10 +41,16 @@ roles/<name>/
 `pre` and `post` are executables in any language. The engine runs them; it does
 not care what they are written in.
 
-Each is optional, on its own (ADR-0070, §1). With no `pre`, the shared one
-writes `in/task.md` from the role's `instruction.md` and `in/skills` from
-its declared `context.skills`; a missing `instruction.md` stops the run,
-naming the file. With no `post`, the shared one passes and applies nothing:
+Each is optional, on its own (ADR-0070, §1). For each step the engine
+runs the role's built-in code if it has any (a file beside it is not run),
+else the role's file, else the shared one. With no `pre`, the shared one
+writes `in/task.md`, which only says "Do what your instruction says." (the
+instruction is the system prompt), `in/cuts` from the role's `cuts` key (listed
+for the agent: the shared `pre` cuts nothing, so no `input-cut` warning is
+shown for them) and `in/skills` from its declared `context.skills`; an
+`instruction.md` missing, empty or unreadable stops the run, naming the file.
+A `pre` or `post` file that cannot be read stops the run, naming the file.
+With no `post`, the shared one passes and applies nothing:
 what the agent proposed is held to the role's `intentions` and
 `duties.writes` where it is applied, an intention not declared or a write
 outside the duties refused and named.
@@ -387,7 +396,7 @@ token), **apply** (trusted, no AI key).
    It runs apart from a Claude Code session it may be started from: that session's variables are dropped
    ([measured](../research/claude-session-env.md)). A `cmd:` agent is not
    sandboxed, so read-only is its command's promise, not the engine's.*
-4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
+4. **Check — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
    Writes `out/verdict.yaml`. It guards what the AI must not decide (for
    example, the committer's `post` refuses a rewritten message that fails the
    same checks, or carries a secret). A question no check can answer, `post` does not answer: it

@@ -2,17 +2,17 @@
 sources:
   - internal/kit/testmark/testmark.go#TestsBranch
   - internal/kit/testmark/testmark.go#TestsSubject
-  - internal/tester/write.go#draftBody
-  - internal/tester/write.go#unprovenOf
-  - internal/tester/write.go#proveOnBase
-  - internal/tester/frozen.go#record
-  - internal/tester/frozen.go#recordData
-  - internal/tester/frozen.go#record.body
-  - internal/tester/frozen.go#readRecordKept
-  - internal/tester/frozen.go#guard
-  - internal/developer/bounds.go#checker.rule
-  - internal/tester/green.go#greenRuns
-  - internal/tester/green.go#judge
+  - roles/tester/code/write.go#draftBody
+  - roles/tester/code/write.go#unprovenOf
+  - roles/tester/code/write.go#proveOnBase
+  - roles/tester/code/frozen.go#record
+  - internal/kit/testmark/draft.go#DraftData
+  - roles/tester/code/frozen.go#record.body
+  - roles/tester/code/frozen.go#readRecordKept
+  - roles/tester/code/frozen.go#guard
+  - roles/developer/code/bounds.go#checker.rule
+  - roles/tester/code/green.go#greenRuns
+  - roles/tester/code/green.go#judge
   - internal/engine/done.go
 checked: c46a93d6c
 verified: agent:claude-code

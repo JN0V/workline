@@ -1,18 +1,18 @@
 ---
 sources:
   - roles/inspector/role.yaml
-  - roles/inspector/instruction.md
-  - roles/inspector/policy.md
-  - internal/builtin/inspector/inspector.go#Found
-  - internal/builtin/inspector/inspector.go#prepare
-  - internal/builtin/inspector/inspector.go#noAgent
-  - internal/builtin/inspector/inspector.go#settled
-  - internal/builtin/inspector/inspector.go#Post
-  - internal/builtin/inspector/inspector.go#settings
+  - roles/inspector/prompts/instruction.md
+  - roles/inspector/prompts/policy.md
+  - internal/kit/inspectmark/inspectmark.go#Found
+  - roles/inspector/code/inspector.go#prepare
+  - roles/inspector/code/inspector.go#noAgent
+  - roles/inspector/code/inspector.go#settled
+  - roles/inspector/code/inspector.go#Post
+  - roles/inspector/code/inspector.go#settings
   - internal/line/line.go#GatesInput
   - internal/line/line.go#Run
   - internal/engine/engine.go#Result.overBudget
-checked: e2e165c2d
+checked: dd77bf922
 verified: agent:claude-code
 ---
 # Inspector

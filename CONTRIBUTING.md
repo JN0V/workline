@@ -5,7 +5,7 @@ sources:
   - tests/evaluation/eval_test.go#TestEvaluation
   - roles/committer/role.yaml#events
   - roles/committer/role.yaml#settings
-  - internal/builtin/committer/secrets.go#Secrets
+  - roles/committer/code/secrets.go#Secrets
   - .workline/config.yaml#routing
   - .workline/config.yaml#gates
   - .github/workflows/workline.yml#jobs.gates

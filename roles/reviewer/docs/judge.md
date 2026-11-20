@@ -1,5 +1,5 @@
 ---
-sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/codenav]
+sources: [roles/reviewer/role.yaml, roles/reviewer/prompts/lenses, internal/builtin/reviewer, internal/codenav]
 checked: 6088f02a
 verified: agent:claude-code
 ---

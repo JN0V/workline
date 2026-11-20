@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -80,7 +81,7 @@ type citedBlock struct {
 // its body, by the doc's old line numbers; the header (`checked`, `judged`)
 // is left out.
 func bodyBlocks(old string, f fileDiff) []citedBlock {
-	_, head := header(old)
+	_, head := docmark.Header(old)
 	var out []citedBlock
 	for hi, h := range f.hunks {
 		n := h.oldStart
@@ -219,9 +220,9 @@ func (cc *citeContext) attribute(claims []citeClaim, docs map[string]string, fil
 // sources (a comment too: the removal rule judges that), or the name it says
 // gone among the lines the run removes.
 func (cc *citeContext) standsFor(c citeClaim, docPath, old string, f fileDiff) bool {
-	d, _ := ParseDoc(docPath, []byte(old))
+	d, _ := docmark.ParseDoc(docPath, []byte(old))
 	if d == nil {
-		d = &Doc{Path: docPath}
+		d = &docmark.Doc{Path: docPath}
 	}
 	wide := lineRange{from: max(1, c.Lines.from-placeWithin), to: c.Lines.to + placeWithin}
 	for _, b := range bodyBlocks(old, f) {
@@ -278,7 +279,7 @@ type citeCheck struct {
 // check reads one claim against the doc's sources: a quote outside any
 // comment of a file under them, or a name the code had when the doc was
 // last edited and has no more, said by the lines the block removes.
-func (cc *citeContext) check(c citeClaim, d *Doc, b citedBlock) citeCheck {
+func (cc *citeContext) check(c citeClaim, d *docmark.Doc, b citedBlock) citeCheck {
 	switch c.Status {
 	case "gone":
 		name := strings.Trim(c.Name, "`() ")
@@ -414,7 +415,7 @@ func quoteLines(p, content, quote string) []lineRange {
 
 // source returns a file under one of the doc's sources, as it is now; for
 // another repository's source, the path is `name:file`.
-func (cc *citeContext) source(d *Doc, p string) (string, bool) {
+func (cc *citeContext) source(d *docmark.Doc, p string) (string, bool) {
 	repoName, file := "", p
 	if n, f, ok := strings.Cut(p, ":"); ok && !strings.Contains(n, "/") {
 		repoName, file = n, f
@@ -508,9 +509,9 @@ type placeRefusal struct {
 // that hold; the line counts the engine reports off in the doc; and the
 // comments given as the only reason for a fix, for a person.
 func (cc *citeContext) citationRefusals(docPath, old string, f fileDiff, claims []citeClaim, unread int, alone bool) (refused []placeRefusal, held []string, off []countOff, comments []verdict.Finding) {
-	d, _ := ParseDoc(docPath, []byte(old))
+	d, _ := docmark.ParseDoc(docPath, []byte(old))
 	if d == nil {
-		d = &Doc{Path: docPath}
+		d = &docmark.Doc{Path: docPath}
 	}
 	// A line count the engine counted off is cited by the engine itself,
 	// when the fix brings it to the engine's number.

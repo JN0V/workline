@@ -12,6 +12,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -403,11 +404,11 @@ func applyDoc(old string, f fileDiff, diff string) (now, rule, why string) {
 // bornChecked says whether a new doc's header holds `checked`, whatever
 // else it holds: tracked or not, it would read as vouched for.
 func bornChecked(content string) bool {
-	meta, n := header(content)
+	meta, n := docmark.Header(content)
 	if n == 0 {
 		return false
 	}
-	var fm frontmatter
+	var fm docmark.Frontmatter
 	return yaml.Unmarshal([]byte(meta), &fm) != nil || !fm.Checked.IsZero()
 }
 

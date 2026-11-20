@@ -10,9 +10,8 @@ sources:
   - defaults/ci/github/workline-gardening.yml#jobs.judge
   - Dockerfile
   - docs/adr/0023-the-project-bot-keeps-a-gitlab-backlog.md#decision
-  - docs/ci-gitlab.md#2-the-variables
   - docs/gitlab-trigger.md#what-premium-adds
-checked: e2e165c2d
+checked: 3bab32400
 verified: agent:claude-code
 ---
 # Jobs' needs and outputs
@@ -41,7 +40,7 @@ The role and scopes each needs:
 | Use | Token | Role | Scopes |
 |---|---|---|---|
 | apply on a merge request, gardening, sample | project access token (a bot of this project) | Developer | `api`, `write_repository` |
-| the product owner only | project access token | Reporter (not Planner: it may not give a split its parent) | `api` |
+| the product owner only | project access token | Reporter (not Planner: it may not give a split's child its parent) | `api` |
 | judging jobs that read the forge | any of the above, or a narrower one | Reporter | `read_api` |
 | several projects of a group | group access token (Premium on gitlab.com; every tier self-managed) | the same | the same |
 

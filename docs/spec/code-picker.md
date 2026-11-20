@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/kit/codepick, internal/codenav, internal/builtin/productowner/productowner.go]
+sources: [internal/kit/codepick, internal/codenav, roles/product-owner/code/productowner.go]
 status: draft
-checked: 04d2af892
+checked: dd77bf922
 verified: agent:claude-code
 ---
 # The code picker

@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/JN0V/workline/internal/builtin/documentalist"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/role"
@@ -330,7 +330,7 @@ func docs(r *Report, o Options, cfg *role.ProjectConfig) {
 		return
 	}
 	globs := stringList(d.MergedSettings(cfg)["docs"])
-	tracked, none, untracked, err := documentalist.Coverage(o.Repo, globs)
+	tracked, none, untracked, err := contract.BuiltinDocs().Coverage(o.Repo, globs)
 	if err != nil {
 		r.add(Check{Area: "repository", Rule: "docs-unreadable", Where: where, Level: Error, Message: err.Error()})
 		return
@@ -355,7 +355,7 @@ func docs(r *Report, o Options, cfg *role.ProjectConfig) {
 			Message: fmt.Sprintf("%s; %d say nothing, so they are never found suspect: %s", described, len(untracked), sample(untracked)),
 			Fix:     "workline init   # proposes their sources, with an agent; without one, lists them"})
 	}
-	if msg, err := documentalist.UnreadDocs(o.Repo, globs); err != nil {
+	if msg, err := contract.BuiltinDocs().UnreadDocs(o.Repo, globs); err != nil {
 		r.add(Check{Area: "repository", Rule: "docs-unreadable", Where: where, Level: Error, Message: err.Error()})
 	} else if msg != "" {
 		r.add(Check{Area: "repository", Rule: "docs-not-read", Where: where, Level: Warn, Message: msg})

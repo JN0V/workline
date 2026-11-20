@@ -24,8 +24,9 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/kit/commitmsg"
+	"github.com/JN0V/workline/internal/kit/judgemark"
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
@@ -36,7 +37,9 @@ import (
 
 // The role joins the engine by name (internal/contract).
 func init() {
-	contract.Join("reviewer", contract.Role{Pre: Pre, Post: Post, Record: &contract.Record{Merge: MergeSummary, Into: MergeInto}})
+	contract.Join("reviewer", contract.Role{Pre: Pre, Post: Post, Record: &contract.Record{Merge: MergeSummary, Into: MergeInto},
+		Review: &contract.Review{ReviewedAll: ReviewedAll, RulesOn: RulesOn, ServeReads: ServeReads},
+	})
 }
 
 const (
@@ -119,42 +122,42 @@ type Quote struct {
 // state is what pre found on its first pass, for the passes after the
 // lenses and the judge answered.
 type state struct {
-	Head       string             `json:"head"`
-	From       string             `json:"from"`             // where the commits not reviewed yet start
-	Before     string             `json:"before,omitempty"` // where the diff a lens reads starts, when not From: From with the base merged in (#134)
-	Base       string             `json:"base"`
-	Change     Change             `json:"change"` // the whole range's
-	Mechanical []verdict.Finding  `json:"mechanical"`
-	Commits    []string           `json:"commits"`
-	Patches    []string           `json:"patches,omitempty"` // the patch ids of the commits' changes, recorded with them (#286)
-	Lenses     []string           `json:"lenses"`
-	Together   bool               `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
-	Parts      int                `json:"parts,omitempty"`    // the parts the change is read in, too large for one call (#446); 0: whole
-	Alone      bool               `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
-	Record     Record             `json:"record"`
-	Every      bool               `json:"every,omitempty"` // every lens asked on the whole change, the run on ready (#129, #359)
-	Advisories []verdict.Finding  `json:"advisories,omitempty"`
-	Issues     []ClosedIssue      `json:"issues,omitempty"`    // the issues the change says it closes, as read (#126)
-	Testimony  string             `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
-	Beyond     string             `json:"beyond,omitempty"`    // the files the author lists beyond the issue's Scope, and why, for the intent lens (ADR-0065)
-	Skipped    []string           `json:"skipped,omitempty"`   // lenses not asked, each with why
-	Hints      []Hint             `json:"hints,omitempty"`     // the comments the story guess flags, for the lens judging them (ADR-0065, Rule A)
-	Spec       *Spec              `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
-	Part       string             `json:"part,omitempty"`      // one spec of several a run reads: what its parts' names start with (#433)
-	Specs      []state            `json:"specs,omitempty"`     // on the forge: the specs the run reads, each reviewed as if alone (#433)
-	Stops      []intent.Intention `json:"stops,omitempty"`     // on the forge: the comments putting to a person the specs whose rounds are spent (#128)
-	Stopped    []string           `json:"stopped,omitempty"`   // what the run's summary says of each of those
-	Waits      []string           `json:"waits,omitempty"`     // on the forge: the specs left for the next run, past specs-per-run (#433)
-	Standing   []Block            `json:"standing,omitempty"`  // the last review's findings that block, still standing (#326)
-	Read       string             `json:"read,omitempty"`      // the record as read: the apply merges the comment it finds with it (#375)
-	Warn       string             `json:"warn,omitempty"`      // apart: the verdict's run, the lenses that block; only: the run apart, those that warn (ADR-0050)
-	Upto       string             `json:"upto,omitempty"`      // the newest commit the lenses read, past commits-per-push new commits: the rest left (ADR-0050, step 6); "": the head
-	Fresh      int                `json:"fresh,omitempty"`     // with Upto: the new commits of the push
-	Left       []string           `json:"left,omitempty"`      // with Upto: the new commits left for the next run, oldest first
-	Line       []string           `json:"line,omitempty"`      // the line's own files the change touches: no commit skipped nor left (ADR-0051, cut 5)
-	Weigh      []weigh            `json:"weigh,omitempty"`     // the tester's answers that no test is needed a judge weighs this run (#1303)
-	Held       string             `json:"held,omitempty"`      // with Weigh and nothing new to read: the summary of the review held
-	Answers    []Answer           `json:"answers,omitempty"`   // the tester's answers that no test is needed, on the merge request (#1303)
+	Head       string              `json:"head"`
+	From       string              `json:"from"`             // where the commits not reviewed yet start
+	Before     string              `json:"before,omitempty"` // where the diff a lens reads starts, when not From: From with the base merged in (#134)
+	Base       string              `json:"base"`
+	Change     Change              `json:"change"` // the whole range's
+	Mechanical []verdict.Finding   `json:"mechanical"`
+	Commits    []string            `json:"commits"`
+	Patches    []string            `json:"patches,omitempty"` // the patch ids of the commits' changes, recorded with them (#286)
+	Lenses     []string            `json:"lenses"`
+	Together   bool                `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
+	Parts      int                 `json:"parts,omitempty"`    // the parts the change is read in, too large for one call (#446); 0: whole
+	Alone      bool                `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
+	Record     Record              `json:"record"`
+	Every      bool                `json:"every,omitempty"` // every lens asked on the whole change, the run on ready (#129, #359)
+	Advisories []verdict.Finding   `json:"advisories,omitempty"`
+	Issues     []ClosedIssue       `json:"issues,omitempty"`    // the issues the change says it closes, as read (#126)
+	Testimony  string              `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
+	Beyond     string              `json:"beyond,omitempty"`    // the files the author lists beyond the issue's Scope, and why, for the intent lens (ADR-0065)
+	Skipped    []string            `json:"skipped,omitempty"`   // lenses not asked, each with why
+	Hints      []Hint              `json:"hints,omitempty"`     // the comments the story guess flags, for the lens judging them (ADR-0065, Rule A)
+	Spec       *Spec               `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
+	Part       string              `json:"part,omitempty"`      // one spec of several a run reads: what its parts' names start with (#433)
+	Specs      []state             `json:"specs,omitempty"`     // on the forge: the specs the run reads, each reviewed as if alone (#433)
+	Stops      []intent.Intention  `json:"stops,omitempty"`     // on the forge: the comments putting to a person the specs whose rounds are spent (#128)
+	Stopped    []string            `json:"stopped,omitempty"`   // what the run's summary says of each of those
+	Waits      []string            `json:"waits,omitempty"`     // on the forge: the specs left for the next run, past specs-per-run (#433)
+	Standing   []Block             `json:"standing,omitempty"`  // the last review's findings that block, still standing (#326)
+	Read       string              `json:"read,omitempty"`      // the record as read: the apply merges the comment it finds with it (#375)
+	Warn       string              `json:"warn,omitempty"`      // apart: the verdict's run, the lenses that block; only: the run apart, those that warn (ADR-0050)
+	Upto       string              `json:"upto,omitempty"`      // the newest commit the lenses read, past commits-per-push new commits: the rest left (ADR-0050, step 6); "": the head
+	Fresh      int                 `json:"fresh,omitempty"`     // with Upto: the new commits of the push
+	Left       []string            `json:"left,omitempty"`      // with Upto: the new commits left for the next run, oldest first
+	Line       []string            `json:"line,omitempty"`      // the line's own files the change touches: no commit skipped nor left (ADR-0051, cut 5)
+	Weigh      []weigh             `json:"weigh,omitempty"`     // the tester's answers that no test is needed a judge weighs this run (#1303)
+	Held       string              `json:"held,omitempty"`      // with Weigh and nothing new to read: the summary of the review held
+	Answers    []reviewmark.Answer `json:"answers,omitempty"`   // the tester's answers that no test is needed, on the merge request (#1303)
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -167,8 +170,8 @@ type candidates struct {
 	// By JudgeKey: what each important finding is judged on, its patch and
 	// its key (Answered); and, judged before on the same, the verdict kept,
 	// its judge not asked again (ADR-0050, step 6).
-	Same   map[string]Answered `json:"same,omitempty"`
-	Reused map[string]Answered `json:"reused,omitempty"`
+	Same   map[string]reviewmark.Answered `json:"same,omitempty"`
+	Reused map[string]reviewmark.Answered `json:"reused,omitempty"`
 }
 
 // Review is what the run found, as post reads it and out/review.json gives
@@ -1543,12 +1546,12 @@ func askJudges(runDir, repo string, s Settings, st state, c *candidates, n *int)
 		if st.Spec == nil {
 			same := sameAs(repo, st, s, f, l)
 			if c.Same == nil {
-				c.Same = map[string]Answered{}
+				c.Same = map[string]reviewmark.Answered{}
 			}
 			c.Same[JudgeKey(f)] = same
 			if before, ok := judgedBefore(st.Record, f.Lens, same, judgeFloor(repo, s, st)); ok {
 				if c.Reused == nil {
-					c.Reused = map[string]Answered{}
+					c.Reused = map[string]reviewmark.Answered{}
 				}
 				c.Reused[JudgeKey(f)] = before
 				continue
@@ -2003,13 +2006,14 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	unjudged := 0 // findings the judge was not asked of, the run's tokens spent
 	reused := 0   // findings judged before on the same patch, their verdicts kept (ADR-0050, step 6)
 	var readsDone []JudgeRead
-	var judged []Answered // the findings the judge kept or dropped (ADR-0046)
+	var judged []reviewmark. // the findings the judge kept or dropped (ADR-0046)
+					Answered
 	// Each keyed by what it was judged on, so the same finding on the same
 	// patch is not judged again; a yes keeps its independence, a no its
 	// reason (ADR-0050, step 6).
 	answered := func(f Finding, a readAnswer, yes bool, why string) {
 		same := c.Same[JudgeKey(f)]
-		j := Answered{Lens: f.Lens, Where: f.Where, At: st.Head, Patch: same.Patch, Finding: same.Finding, Yes: yes, Finder: a.Author, Judge: a.Model, Title: f.Title}
+		j := reviewmark.Answered{Lens: f.Lens, Where: f.Where, At: st.Head, Patch: same.Patch, Finding: same.Finding, Yes: yes, Finder: a.Author, Judge: a.Model, Title: f.Title}
 		if yes {
 			j.Level = a.Level
 		} else {
@@ -2081,7 +2085,7 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 					Message: fmt.Sprintf("dropped, from the %s lens: %q at %s — the judge: %s (%s)", f.Lens, f.Title, f.Where, reason, who)})
 				answered(f, a, false, a.Why)
 				continue
-			case judge.Levels[a.Level] < judge.Levels[floor]:
+			case judgemark.Levels[a.Level] < judgemark.Levels[floor]:
 				f.Verified, f.Level = fmt.Sprintf("not verified: the judge stood at %s, below %s (%s)", a.Level, floor, a.Why), a.Level
 			default:
 				f.Verified, f.Level = "verified, "+who+read, a.Level
@@ -2323,7 +2327,7 @@ func message(f Finding) string {
 			}
 			also = append(also, a)
 		}
-		m += " (also found on this line — " + strings.Join(also, "; ") + ")"
+		m += reviewmark.AlsoWords + strings.Join(also, "; ") + ")"
 	}
 	if f.Verified != "" {
 		m += " (" + f.Verified + ")"
@@ -2557,7 +2561,7 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 	b.WriteString("The reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n")
 	b.WriteString(v.Record.String())
 	if v.Subject != "spec" { // what every run's judge answered, within the comment's size (ADR-0046)
-		b.WriteString(v.Record.judgedLines(SummaryMax - b.Len()))
+		b.WriteString(v.Record.judgedLines(reviewmark.SummaryMax - b.Len()))
 	}
 	return b.String()
 }

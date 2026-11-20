@@ -10,9 +10,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/kit/worktree"
 )
@@ -197,7 +197,7 @@ func stillVouched(repo string, r Read) bool {
 	if err != nil || len(r.Checked) != 1 || r.Checked[""] == "" {
 		return false
 	}
-	d, _ := documentalist.ParseDoc(r.Doc, data)
+	d, _ := docmark.ParseDoc(r.Doc, data)
 	return d != nil && len(d.Checked) == 1 && d.Checked[""] == r.Checked[""]
 }
 
@@ -216,7 +216,7 @@ func putBack(repo string, r Read) error {
 	if err != nil {
 		return err
 	}
-	_, n := documentalist.Header(string(data))
+	_, n := docmark.Header(string(data))
 	lines := strings.Split(string(data), "\n")
 	var head []string
 	judged := false

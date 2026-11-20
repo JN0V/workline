@@ -1,7 +1,7 @@
 // Package commitmsg holds the committer's message checks: the rules a
 // commit message is held to, which other roles use too (the developer
 // writes its subjects to them, the reviewer looks for internal codes).
-// The committer role (internal/builtin/committer) runs them on commits.
+// The committer role (roles/committer/code) runs them on commits.
 package commitmsg
 
 import (
@@ -42,7 +42,7 @@ type Settings struct {
 }
 
 // SettingsFrom reads the role's settings, as the engine merges them: the
-// developer writes its commits' subjects to them (internal/developer).
+// developer writes its commits' subjects to them (roles/developer/code).
 func SettingsFrom(m map[string]any) (Settings, error) {
 	var s Settings
 	data, err := json.Marshal(m)

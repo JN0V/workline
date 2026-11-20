@@ -1,5 +1,5 @@
 ---
-sources: [internal/tester/green.go, internal/tester/runcache.go, internal/tester/symptom.go, internal/tester/frozen.go, internal/tester/renamed.go, internal/tester/tester.go]
+sources: [roles/tester/code/green.go, roles/tester/code/runcache.go, roles/tester/code/symptom.go, roles/tester/code/frozen.go, roles/tester/code/renamed.go, roles/tester/code/tester.go]
 checked: 9cf386a3
 verified: agent:claude-code
 ---

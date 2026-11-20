@@ -15,6 +15,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -67,7 +68,7 @@ var readerLine = regexp.MustCompile(`^reader:\s*(\S+)\s*$`)
 
 // readerRecord is the hash a page's header records it was read as, or "".
 func readerRecord(content string) string {
-	meta, n := header(content)
+	meta, n := docmark.Header(content)
 	if n == 0 {
 		return ""
 	}
@@ -83,7 +84,7 @@ func readerRecord(content string) string {
 // as; a page with no header gets one, in a comment no rendering shows.
 func withRecord(content, hash string) string {
 	line := "reader: " + hash
-	_, n := header(content)
+	_, n := docmark.Header(content)
 	if n == 0 {
 		return "<!-- workline\n" + line + "\n-->\n" + content
 	}
@@ -541,7 +542,7 @@ func judgeReader(repo string, r *readerTask, intents, fallback []intent.Intentio
 // claim quotes, and every link, code span, number and heading the page had
 // still there. It returns why not, or "".
 func readerChecks(was, now string, f fileDiff, claims []claim) (rule, why string) {
-	if before, _ := header(was); before != headerOf(now) {
+	if before, _ := docmark.Header(was); before != headerOf(now) {
 		return "header", "the header changed; leave it as it is"
 	}
 	for _, b := range bodyBlocks(was, f) {
@@ -585,7 +586,7 @@ var (
 
 // headerOf is a doc's header, "" when it has none.
 func headerOf(content string) string {
-	h, _ := header(content)
+	h, _ := docmark.Header(content)
 	return h
 }
 

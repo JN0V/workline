@@ -1,7 +1,7 @@
 ---
 sources:
   - roles/tester/role.yaml
-  - internal/tester
+  - roles/tester/code
   - internal/kit/testmark
   - defaults/ci/github/workline-objection.yml
   - defaults/ci/github/workline-answer.yml

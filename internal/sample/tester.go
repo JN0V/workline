@@ -11,7 +11,6 @@ import (
 	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -33,7 +32,7 @@ var testerKinds = []string{"tests", "kept", "rewritten", "whys", "removal"}
 // testerAct is what a tester's act is re-checked against, read with it.
 type testerAct struct {
 	mr       int
-	record   tester.Record
+	record   testmark.Draft
 	recorded bool
 	answered testmark.Answered
 	thread   []forge.Note // an answer's thread, up to it
@@ -89,7 +88,7 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 			out = append(out, Act{Role: testRole, Kind: "removal", Ref: ref, Commit: commit, Day: day, By: by, Line: subject, key: commit,
 				tester: &testerAct{mr: m.ID, body: full.Body}})
 		case strings.HasPrefix(m.Branch, testmark.TestsBranch):
-			r, ok, err := tester.ReadRecord(f, m.ID)
+			r, ok, err := testmark.ReadDraft(f, m.ID)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -136,7 +135,7 @@ func mergedCommits(repo string, m forge.MergeRequest) (list string, found bool, 
 
 // answeredOn are the tester's answers kept or rewritten in the threads of
 // its merge request id, each from its reply's hidden line.
-func answeredOn(f forge.Forge, id int, ref string, r tester.Record, recorded bool) ([]Act, string, error) {
+func answeredOn(f forge.Forge, id int, ref string, r testmark.Draft, recorded bool) ([]Act, string, error) {
 	th, ok := f.(forge.Threaded)
 	if !ok {
 		return nil, "the tester's answers to objections: this forge lists no conversation on a line", nil

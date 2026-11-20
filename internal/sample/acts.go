@@ -2,9 +2,11 @@ package sample
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
@@ -97,4 +99,44 @@ func foldActs(res *Result, f forge.Forge, former []int, id int) error {
 			Message: fmt.Sprintf("the product owner's own weekly issue, folded into #%d: told so, and closed", id)})
 	}
 	return nil
+}
+
+// ownDraw are the roles that still have a draw of their own: the shared
+// draw skips them, so no act is drawn twice. A role leaves the list when
+// its code moves to the shared record.
+var ownDraw = []string{docsRole, productOwner, reviewRole, commitRole, testRole, devRole}
+
+// recordedActs are the acts of the days [first, end) every role without a
+// draw of its own recorded on the issues, open or closed, oldest first:
+// one draw for any role, read and never written.
+func recordedActs(f forge.Forge, b forge.Backlog, first, end string) ([]Act, []string, error) {
+	all, err := b.AllIssues()
+	if err != nil {
+		return nil, nil, err
+	}
+	var out []Act
+	var unread []string
+	for _, is := range all {
+		ref := fmt.Sprintf("#%d", is.ID)
+		kept, err := forge.ReadKept(f, forge.Target{Kind: "issue", ID: is.ID})
+		if err != nil {
+			unread = append(unread, fmt.Sprintf("the acts recorded on %s: the issue could not be read: %v", ref, err))
+			continue
+		}
+		for i, r := range engine.ReadActs(kept, forge.Target{Kind: "issue", ID: is.ID}) {
+			if r.Role == "" || r.Kind == "" || slices.Contains(ownDraw, r.Role) {
+				continue
+			}
+			if r.Day < first || (end != "" && r.Day >= end) {
+				continue
+			}
+			var line string
+			if len(r.Items) > 0 {
+				line = fmt.Sprintf("read %d items", len(r.Items))
+			}
+			out = append(out, Act{Role: r.Role, Kind: r.Kind, Ref: ref, Day: r.Day, By: strings.Join(r.Models, ", "), Line: line, Commit: r.Commit,
+				key: fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%d", ref, r.Role, r.Kind, r.Day, i)})
+		}
+	}
+	return out, unread, nil
 }

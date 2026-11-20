@@ -3,7 +3,7 @@ sources:
   - cmd/workline/main.go#parseTarget
   - defaults/routing.yaml#states
   - internal/routing/states.go#Config.Wakes
-  - internal/tester/write.go#testsDone
+  - roles/tester/code/write.go#testsDone
   - internal/kit/devmark/devmark.go#Branch
   - internal/engine/engine.go#proposeBranch
   - cmd/workline/main.go#localRange

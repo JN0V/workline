@@ -6,16 +6,13 @@ sources:
   - defaults/ci/github/workline-warn.yml#on
   - defaults/ci/github/workline-fork.yml#on
   - defaults/ci/github/workline-gardening.yml#jobs.judge
-  - defaults/ci/github/workline-sample.yml#jobs.read
-  - defaults/ci/github/workline-sample.yml#jobs.write
+  - defaults/ci/github/workline-sample.yml#name
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:environment
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot-token
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:sample
   - internal/doctor/workflows.go#ciTemplates
-  - internal/builtin/documentalist/documentalist.go#preRun.sayShallow
-checked: e2e165c2d
+checked: 3bab32400
 verified: agent:claude-code
 ---
 # Install in CI
@@ -42,9 +39,8 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
   ([what to set](github/pull-request-target.md)).
 - **GitLab**: include
   [defaults/ci/gitlab/workline.gitlab-ci.yml](../defaults/ci/gitlab/workline.gitlab-ci.yml),
-  then add pipeline schedules, gardening, the sample and, with the line
-  of states, the hourly reconciler and the issue webhook
-  ([ci-gitlab.md](ci-gitlab.md#gitlabcom); a [self-managed
+  then add pipeline schedules, gardening and the sample, and what the
+  line of states needs ([ci-gitlab.md](ci-gitlab.md#gitlabcom); a [self-managed
   instance](ci-gitlab-self-managed.md)).
 - **Another forge** (Gitea, Forgejo…) or [none](no-forge.md): [ci-other-forges.md](ci-other-forges.md).
 - **A board**, GitHub's project or GitLab's: what to switch on so the
@@ -62,8 +58,7 @@ What the templates need:
 - Without the agent's token, the templates run with no agent: every check
   still runs. For another agent, change their `--ai` to a `cmd:`.
 - The whole history is needed: docs are compared since their `checked`,
-  the release since its tag. A job cloning too shallow reports
-  `shallow-clone`, never a pass.
+  the release since its tag.
 - The templates run the release named by `WORKLINE_VERSION` at their top:
   update it for a newer one; `workline doctor` names any pinned older.
 - A pipeline started by a tool rather than by the forge (GitLab's trigger

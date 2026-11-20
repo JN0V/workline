@@ -15,7 +15,8 @@ sources:
   - internal/forge/gitlab.go#gitlab.AddBlocker
   - internal/backlog/depend.go#Blockers
   - internal/backlog/depend.go#WithBlockers
-checked: 8538d558
+  - internal/backlog/depend.go#blockedByLine
+checked: 3bab32400
 judged: 9a88170
 verified: agent:documentalist
 ---
@@ -67,10 +68,8 @@ reconcile: [the line of states on GitLab](gitlab/line-of-states.md).
 Everything runs locally first. `forge: gitlab` in `.workline/config.yaml`
 and `glab auth login` (or `GITLAB_TOKEN` and `GITLAB_HOST`) let the
 product owner's run read your issues from a laptop
-([its command](triggers.md)); `forge: local` keeps issues and merge requests in the clone,
-nothing pushed. The hooks and `workline docs` need no forge;
-`workline review` only for the issues it opens on what lies outside the
-change.
+([its command](triggers.md)); `forge: local` keeps issues and merge
+requests in the clone, nothing pushed ([no forge](no-forge.md)).
 
 ## What Premium adds
 

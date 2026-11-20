@@ -1,5 +1,17 @@
 ---
-sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/doctor/variables.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
+sources:
+  - internal/doctor/doctor.go#Run
+  - internal/doctor/doctor.go#machine
+  - internal/doctor/doctor.go#repository
+  - internal/doctor/doctor.go#hooksPath
+  - internal/doctor/conversations.go#findingsOnMergeRequests
+  - internal/doctor/variables.go#tokensScoped
+  - internal/hooks/hooks.go#HandsOver
+  - internal/forge/local.go#InCI
+  - internal/forge/local.go#Local.writable
+  - cmd/workline/main.go#doctorCmd
+  - cmd/workline/main.go#doctorPrint
+  - cmd/workline/cli.go#misuse
 checked: e4e4287bc
 verified: agent:claude-code
 ---
@@ -19,9 +31,8 @@ tokens — and `--json` prints every finding.
 - **The binary moved**: the hooks call it where it was when installed.
   Install it to the same place, or run `workline hooks install --global`
   again.
-- **Written by another version**: doctor says `hooks-outdated`. Older
-  hooks skipped a repository's own `.git/hooks/` from a linked worktree
-  ([#551](https://github.com/JN0V/workline/issues/551)). Run `workline
+- **Written by another version**: doctor says `hooks-outdated`: they
+  may skip a repository's own hooks. Run `workline
   hooks install --global` again; `--repo` too, then commit
   `.githooks/commit-msg`.
 - **A repository sets its own `core.hooksPath`** (husky, lefthook…): git
@@ -34,7 +45,7 @@ tokens — and `--json` prints every finding.
   The fix it prints:
   - the path is `.githooks` or `.git/hooks` (the main one, from a linked
     worktree too): unset it (`git config --local
-    --unset core.hooksPath`); the global hooks run workline, then hand over
+    --unset core.hooksPath`, or `--worktree` where it is set there); the global hooks run workline, then hand over
     to that folder;
   - another folder: add `workline hook <hook> "$@" || exit $?` at the top of
     each hook there. `pre-push` reads the pushed refs on its input: a hook
@@ -181,8 +192,7 @@ The line of states says why on the issue and in the run's summary
 - **Conversations to resolve**: GitHub's rule "require conversation
   resolution" holds the merge while one is open. `workline doctor` says
   whether the default branch has it.
-- **Code scanning's**: workline before
-  [#412](https://github.com/JN0V/workline/issues/412) sent every finding
+- **Code scanning's**: an older workline sent every finding
   there, one conversation each. Copy `defaults/ci/github/workline.yml` and
   `workline-apply.yml` of this release: the documentalist's findings
   become a check's annotations, which open none.
@@ -190,8 +200,7 @@ The line of states says why on the issue and in the run's summary
   resolves its own once the code answers them
   ([how](../roles/reviewer/docs/lines-again.md#not-repeated-found-again)); a
   person resolves the rest. `workline follow` lists the open ones that
-  hold an auto-merge
-  ([#1039](https://github.com/JN0V/workline/issues/1039)).
+  hold an auto-merge.
 - **`gh pr merge --admin` refused**, "Repository rule violations": by
   design, nobody bypasses `main`. Put `workline:accepted` on it; in an
   emergency, the written way round

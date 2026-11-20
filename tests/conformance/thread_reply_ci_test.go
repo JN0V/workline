@@ -17,7 +17,8 @@ import (
 // end wakes workline-develop.yml's whose, which runs as the default
 // branch holds it: a round, the project's runs not read. The App's reply
 // is noticed by no job, and wakes nothing. In the templates and in
-// workline's own workflows.
+// workline's own workflows, whose objection workflow starts on no event
+// (#1871).
 func TestCIGitHubThreadReplyWakesTheRound(t *testing.T) {
 	type step struct {
 		ID  string            `yaml:"id"`
@@ -48,7 +49,11 @@ func TestCIGitHubThreadReplyWakesTheRound(t *testing.T) {
 	for _, dir := range []string{"../../defaults/ci/github", "../../.github/workflows"} {
 		on, jobs := read(filepath.Join(dir, "workline-objection.yml"))
 		replied := jobs["replied"]
-		if _, ok := on["pull_request_review_comment"]; !ok || len(replied.Permissions) != 0 || replied.Permissions == nil ||
+		// workline's own starts on no event (#1871): its reconcile reads
+		// what the template's event notices; the template keeps it.
+		_, ok := on["pull_request_review_comment"]
+		ok = ok || strings.Contains(dir, ".github")
+		if !ok || len(replied.Permissions) != 0 || replied.Permissions == nil ||
 			!strings.Contains(norm(replied.If), "startsWith(github.event.pull_request.head.ref, 'workline/developer/')") ||
 			!strings.Contains(norm(replied.If), "github.event.comment.user.type != 'Bot'") ||
 			!strings.Contains(norm(replied.If), "github.event.pull_request.head.repo.full_name == github.repository") ||

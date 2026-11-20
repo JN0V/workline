@@ -25,7 +25,6 @@ How far each goes alone before a person is its level:
 | Tester | writes the tests of an issue waiting for them from its scenarios, each proven red on the base, frozen to the builder | `issue`, `schedule` and `merge-request` (opt-in), an objection on its Draft, `workline test` | [tester](../roles/tester/README.md) |
 | Developer | takes the first ready issue nobody took and writes its code within bounds, proves it on the project's tests, opens a pull request, ready or a Draft, and fixes its review | `workline develop`, `issue` and `schedule` (opt-in), a review or a red check on its pull request, its bounds on `merge-request` (opt-in) | [developer](../roles/developer/README.md) |
 | Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import`, `issue` | [product owner](../roles/product-owner/README.md) |
-| Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
 | Auditor | re-checks a weekly sample of every role's acts | `workline sample` | [auditor](../roles/auditor/role.yaml) |
 
 ## Which role runs when
@@ -57,17 +56,19 @@ shipped, changed in `.workline/config.yaml` ([config](config.md)).
 
 ## Behind the others
 
-Two roles never run on an event of their own:
+The **auditor** never runs on an event of its own: it re-checks, each
+week, one in ten of every role's acts (`workline sample`,
+[ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)): the docs
+the documentalist confirmed, the product owner's acts, the reviewer's
+judged findings, the committer's rewrites, the tester's acts, the
+developer's code, each against what it was done on.
 
-- the **judge** answers one yes-or-no question a role's check cannot (a
-  reviewer's finding, a closing as obsolete, a dispute in the weekly
-  sample), from another context or model than the one judged;
-- the **auditor** re-checks, each week, one in ten of every role's acts
-  (`workline sample`, [ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)): the docs the
-  documentalist confirmed, the product owner's acts, the reviewer's judged
-  findings, the committer's rewrites, the tester's acts, the developer's
-  code, each against
-  what it was done on.
+The **judge** is not a role: it is a service the engine consults when a
+role's check cannot answer a yes-or-no question (a reviewer's finding, a
+closing as obsolete, a dispute in the weekly sample), from another context
+or model than the one judged. Its prompts can be overridden in
+`roles/judge/prompts/` ([the judge](../roles/judge/docs/service.md),
+[ADR-0070, amended](adr/0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md#amendment-2026-11-20-the-judge-is-an-engine-service)).
 
 How to run each role from a hook, a script or a CI job:
 [triggers.md](triggers.md). What a role is, for those who write one:

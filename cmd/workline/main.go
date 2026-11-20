@@ -18,7 +18,7 @@
 //	workline docs [--repo <dir>] [--ai ...]
 //	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--review] [--human-po yes|no] [--autonomy <level>] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
-//	workline builtin <role> pre|post      (called by the shipped roles' scripts)
+//	workline builtin <role> pre|post      (the engine runs it for a role with built-in code)
 package main
 
 import (
@@ -61,8 +61,8 @@ import (
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/sample"
 	"github.com/JN0V/workline/internal/setup"
-	"github.com/JN0V/workline/internal/tester"
 	"github.com/JN0V/workline/internal/work"
+	tester "github.com/JN0V/workline/roles/tester/code"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -401,11 +401,19 @@ func commentRefusal(who, spec, repo string, t *forge.Target, r *engine.Result) {
 	if t == nil || r == nil || (r.Status != verdict.Block && r.Status != verdict.BlockedExternal) {
 		return
 	}
-	// A role that judged says its own verdict on its item; this says a run
-	// the engine itself refused or failed, which no role spoke for.
-	if !slices.ContainsFunc(r.Findings, func(f verdict.Finding) bool {
+	// A forge that is unreachable cannot be told: the run is resumed, and
+	// its log says it.
+	if r.Status == verdict.BlockedExternal && slices.ContainsFunc(r.Findings, func(f verdict.Finding) bool { return f.Rule == "forge-unreachable" }) {
+		return
+	}
+	// A judging role says its own verdict on its item: the reviewer's
+	// summary comment is its refusal, and the tester's blocked answer
+	// writes its own reply (on-block); this says no second one. Only a run
+	// the engine itself failed is said for it.
+	engineFailed := slices.ContainsFunc(r.Findings, func(f verdict.Finding) bool {
 		return f.Rule == "config-invalid" || f.Rule == "engine-error"
-	}) {
+	})
+	if !engineFailed && (who == "reviewer" || (who == "tester" && r.Status == verdict.Block)) {
 		return
 	}
 	var b strings.Builder
@@ -887,9 +895,18 @@ func docsCmd(args []string) int {
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
+	fail := func(code int, rule, msg string) int {
+		if *asJSON {
+			data, _ := json.MarshalIndent(&engine.Result{Status: verdict.Block, Summary: msg, Applied: []string{}, Refused: []string{},
+				Findings: []verdict.Finding{{Rule: rule, Message: msg}}}, "", "  ")
+			fmt.Println(string(data))
+		}
+		return code
+	}
 	root, err := gitRoot(*repo)
 	if err != nil {
-		return notInRepo()
+		code := notInRepo()
+		return fail(code, "not-in-repo", "not in a git repository")
 	}
 	if *reviewOnly {
 		// What an agent left in the working tree, or gardening run by hand.
@@ -902,18 +919,19 @@ func docsCmd(args []string) int {
 			return 0
 		case err != nil:
 			fmt.Fprintln(os.Stderr, "workline: reviewing needs a person, on a terminal")
-			return 64
+			return fail(64, "no-terminal", "reviewing needs a person, on a terminal")
 		}
 		defer tty.Close()
 		if _, err := review.Docs(root, docs, bufio.NewReader(tty), tty, review.Open); err != nil {
 			fmt.Fprintln(os.Stderr, "workline:", err)
-			return 1
+			return fail(1, "review-failed", err.Error())
 		}
 		return 0
 	}
 	if isSet(fs, "since") && revParse(root, *since) == "" {
-		fmt.Fprintf(os.Stderr, "workline: --since %s names no commit in this repository\n", *since)
-		return 1
+		msg := fmt.Sprintf("--since %s names no commit in this repository", *since)
+		fmt.Fprintln(os.Stderr, "workline: "+msg)
+		return fail(1, "since-unknown", msg)
 	}
 	start, from := docsJudgedFrom(root, *since)
 	rng := "HEAD"
@@ -933,12 +951,7 @@ func docsCmd(args []string) int {
 	fmt.Fprintf(out, "workline: judging the docs made suspect by the commits since %s\n", from)
 	judged, err := judgeDocs(root, rng, *ai, in, out)
 	if err != nil {
-		if *asJSON {
-			data, _ := json.MarshalIndent(&engine.Result{Status: verdict.Block, Summary: err.Error(), Applied: []string{}, Refused: []string{},
-				Findings: []verdict.Finding{{Rule: "config-invalid", Message: err.Error()}}}, "", "  ")
-			fmt.Println(string(data))
-		}
-		return 1
+		return fail(1, "config-invalid", err.Error())
 	}
 	if judged {
 		// Judged, and nothing left for a person: the next run starts here.

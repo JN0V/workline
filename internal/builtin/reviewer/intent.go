@@ -51,7 +51,7 @@ func whatFor(issues []ClosedIssue, beyond string) string {
 
 // beyondHeading heads the developer's list of the files it changed
 // beyond the issue's Scope, on its pull request and in a round's commit
-// (internal/developer, BeyondHeading).
+// (roles/developer/code, BeyondHeading).
 var beyondHeading = "Beyond the " + work.Name(work.Scope)
 
 // beyondListed are the bullets listed under a heading or a line

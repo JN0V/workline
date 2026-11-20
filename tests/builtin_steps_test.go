@@ -10,7 +10,7 @@ import (
 	"github.com/JN0V/workline/internal/contract"
 
 	// The compiled-in roles, the list the binary imports.
-	_ "github.com/JN0V/workline/internal/builtin/all"
+	_ "github.com/JN0V/workline/roles"
 )
 
 // Every shipped step that calls `workline builtin <role> <step>` finds

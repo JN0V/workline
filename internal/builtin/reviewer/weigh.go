@@ -15,67 +15,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
-
-// TesterAnswer is the tester's answer to a test finding of this review,
-// found on found and titled title, its thread at url: what it did, text —
-// a test added, or **None needed** and why. The title names the finding
-// the answer is for, its line moved or another finding on the same line.
-func TesterAnswer(found, title, url, text string) string {
-	on := ""
-	if found != "" {
-		on = " on `" + found + "`"
-		if t := strings.ReplaceAll(FindingTitle(title), "”", "\""); t != "" {
-			on += ", “" + t + "”"
-		}
-	}
-	return fmt.Sprintf("**The tester** answers a test finding of this review%s, sent to its Draft ([the thread](%s)): %s", on, url, text)
-}
-
-// FindingTitle is a finding's title as a row, its line or the record
-// says it: its severity, its why, what it was grouped with and where it
-// was found left out.
-func FindingTitle(s string) string {
-	s = strings.TrimPrefix(strings.TrimSpace(s), "Important:")
-	for _, sep := range []string{" — ", "; also ", " (found "} {
-		s, _, _ = strings.Cut(s, sep)
-	}
-	return strings.TrimSpace(s)
-}
-
-// noneNeededWords read a "none needed" answer as TesterAnswer says it:
-// the place the review found the finding on, its title, then the reason.
-var noneNeededWords = regexp.MustCompile("(?s)\\*\\*The tester\\*\\* answers a test finding of this review on `([^`]+)`(?:, “([^”]*)”)?, sent to its Draft \\(\\[the thread\\]\\([^)]*\\)\\): \\*\\*None needed\\*\\*: (.*)")
-
-// Answer is the tester's answer that no test is needed for a finding:
-// the place the review found it on, its title ("" from a tester before
-// titles), and the reason.
-type Answer struct {
-	Where  string `json:"where"`
-	Title  string `json:"title,omitempty"`
-	Reason string `json:"reason"`
-}
-
-// NoneNeeded reads a comment of the tester's on a reviewed pull request
-// (TesterAnswer): the finding it answers that no test is needed for, and
-// its reason, the markers hidden after it left out. ok is false for any
-// other comment.
-func NoneNeeded(body string) (Answer, bool) {
-	m := noneNeededWords.FindStringSubmatch(body)
-	if m == nil {
-		return Answer{}, false
-	}
-	reason, _, _ := strings.Cut(m[3], "<!-- workline:")
-	return Answer{Where: m[1], Title: m[2], Reason: strings.TrimSpace(reason)}, true
-}
 
 // fileOf is the file of a place, path:line.
 func fileOf(where string) string {
@@ -88,10 +36,10 @@ func fileOf(where string) string {
 // answerTo is the tester's reason, among answers, for the finding titled
 // title at where: one naming it by its title, on its file, its line moved
 // or not; one with no title, on its line. The last one said wins.
-func answerTo(answers []Answer, where, title string) (string, bool) {
+func answerTo(answers []reviewmark.Answer, where, title string) (string, bool) {
 	reason, found := "", false
 	for _, a := range answers {
-		if a.Title != "" && (a.Title != FindingTitle(title) || fileOf(a.Where) != fileOf(where)) || a.Title == "" && a.Where != where {
+		if a.Title != "" && (a.Title != reviewmark.FindingTitle(title) || fileOf(a.Where) != fileOf(where)) || a.Title == "" && a.Where != where {
 			continue
 		}
 		reason, found = a.Reason, true
@@ -143,7 +91,7 @@ func (w Weighed) of(lens, where, title string) bool {
 		return false
 	}
 	if w.Title != "" {
-		return w.Title == FindingTitle(title) && fileOf(w.Where) == fileOf(where)
+		return w.Title == reviewmark.FindingTitle(title) && fileOf(w.Where) == fileOf(where)
 	}
 	return w.Where == where
 }
@@ -222,7 +170,7 @@ func (st *state) weighing(repo string, s Settings) {
 		return
 	}
 	for _, c := range kept.Each("<!-- workline:sticky=tester/" + testmark.TesterAnswerKey) {
-		if a, ok := NoneNeeded(c); ok && a.Reason != "" {
+		if a, ok := reviewmark.NoneNeeded(c); ok && a.Reason != "" {
 			st.Answers = append(st.Answers, a)
 		}
 	}
@@ -236,7 +184,7 @@ func (st *state) weighing(repo string, s Settings) {
 	}
 	asked := func(lens, where, title string) bool {
 		return slices.ContainsFunc(st.Weigh, func(w weigh) bool {
-			return w.Lens == lens && fileOf(w.Where) == fileOf(where) && FindingTitle(w.Title) == FindingTitle(title)
+			return w.Lens == lens && fileOf(w.Where) == fileOf(where) && reviewmark.FindingTitle(w.Title) == reviewmark.FindingTitle(title)
 		})
 	}
 	var stands []Block
@@ -363,7 +311,7 @@ func (st *state) weighed(runDir string) (said []string, settled int, unweighed [
 				Message: fmt.Sprintf("the tester's answer that no test is needed was not weighed (%s): the %s finding stands, weighed next run", why, w.Lens)})
 			continue
 		}
-		v := Weighed{Lens: w.Lens, Where: w.Where, Title: FindingTitle(w.Title), Answer: answerKey(w.Reason), Holds: !*a.Yes, Why: oneLine(a.Why, 200), Judge: a.Model}
+		v := Weighed{Lens: w.Lens, Where: w.Where, Title: reviewmark.FindingTitle(w.Title), Answer: answerKey(w.Reason), Holds: !*a.Yes, Why: oneLine(a.Why, 200), Judge: a.Model}
 		st.Record.Weighed = unionWeighed(st.Record.Weighed, []Weighed{v})
 		what, verdict := "stands", "the reason does not hold"
 		if v.Holds {

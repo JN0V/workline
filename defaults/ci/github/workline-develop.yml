@@ -70,7 +70,7 @@ on:
 permissions: {}
 
 env:
-  WORKLINE_VERSION: v0.82.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  WORKLINE_VERSION: v0.84.0          # a release of workline: update it to take a newer one (x-release-please-version)
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
 jobs:
@@ -203,7 +203,7 @@ jobs:
         with: {path: .git/workline/test-ids, key: "workline-test-ids-${{ github.run_id }}-${{ github.run_attempt }}"}
 
       - uses: actions/upload-artifact@v4
-        if: steps.line.outputs.proposed == 'true'
+        if: steps.line.outputs.proposed == 'true' || failure() || (steps.line.outputs.status != '' && steps.line.outputs.status != '0')
         with: {name: workline-runs, path: "line.json\n.workline-runs", include-hidden-files: true, retention-days: 1}
 
       - name: Verdict
@@ -212,6 +212,11 @@ jobs:
           if [ "$status" = 3 ]; then
             echo "::warning title=workline::the agent could not be reached; the issue waits for the next run"
             exit 0
+          fi
+          if [ "${status:-0}" != 0 ]; then
+            # The reason in the log: the summary, as an error annotation.
+            msg=$(jq -r '.summary // empty' line.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the run ended with status $status, see its result file}"
           fi
           exit "$status"
       # What this job's agent calls spent, a line a run: role, target,
@@ -320,9 +325,17 @@ jobs:
         run: |
           workline route reconcile --ai none --forge github --open-merge-request --input reconcile=list --input room=true --json > room.json || true
           jq -r '.summary // empty' room.json | tee -a "$GITHUB_STEP_SUMMARY"
+          wf=$(basename "${GITHUB_WORKFLOW_REF%%@*}")
+          # An issue with a run queued or running is not started again.
+          busy=$(for s in queued in_progress pending waiting; do
+            gh run list --workflow "$wf" --status "$s" --limit 100 --json displayTitle --jq '.[].displayTitle'
+          done) || busy=
           for n in $(jq -r '(.due // [])[]' room.json); do
             [ "$n" != "$ISSUE" ] || continue   # its own next step: started above
-            gh workflow run "$(basename "${GITHUB_WORKFLOW_REF%%@*}")" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
+            if printf '%s\n' "$busy" | grep -qxF "workline develop #$n"; then
+              echo "#$n: a run of it is queued or running" >> "$GITHUB_STEP_SUMMARY"; continue
+            fi
+            gh workflow run "$wf" --ref "$GITHUB_REF_NAME" -f issue="$n" ||
               echo "::warning title=workline::#$n's run not started: the reconciler starts it"
           done
 
@@ -503,7 +516,11 @@ jobs:
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |
           wait=$(gh api "repos/$GITHUB_REPOSITORY/environments/workline-heartbeat" \
-            --jq '[.protection_rules[]? | select(.type == "wait_timer") | .wait_timer][0] // 0' 2>/dev/null) || wait=0
+            --jq '[.protection_rules[]? | select(.type == "wait_timer") | .wait_timer][0] // 0' 2>gh-err.txt) || {
+            # no such environment (404) is no heartbeat; any other refusal is said and stops
+            if grep -q 'HTTP 404' gh-err.txt; then wait=0
+            else echo "::error title=workline::gh api environments/workline-heartbeat failed: $(tr '\n' ' ' < gh-err.txt)"; exit 1; fi
+          }
           case "$wait" in ''|*[!0-9]*) wait=0 ;; esac
           if [ "$wait" -lt 5 ]; then
             echo "no heartbeat: no environment workline-heartbeat with a wait timer of 5 minutes or more; the schedule and the line's events start the next reconcile, when GitHub runs them" | tee -a "$GITHUB_STEP_SUMMARY"
@@ -643,7 +660,9 @@ jobs:
           case "$branch" in workline/developer/*) ;; *) echo "pull request $PR is not the developer's: no round"; exit 0;; esac
           # Merged or closed since it was read, its branch maybe deleted:
           # nothing to review, said, the run green.
-          state=$(gh pr view "$PR" --json state --jq .state 2>/dev/null) || state=
+          # A refused call is not an empty answer: said with its status, the step stops.
+          state=$(gh pr view "$PR" --json state --jq .state 2>gh-err.txt) ||
+            { echo "::error title=workline::gh pr view $PR failed: $(tr '\n' ' ' < gh-err.txt)"; exit 1; }
           case "$state" in MERGED|CLOSED) echo "pull request $PR is $(printf '%s' "$state" | tr A-Z a-z) meanwhile: no round"; exit 0;; esac
           git rev-parse -q --verify "origin/$branch^{commit}" >/dev/null ||
             { echo "pull request $PR: its branch $branch is gone, merged or closed meanwhile: no round"; exit 0; }
@@ -657,7 +676,7 @@ jobs:
           echo "run=$(jq -r '(.pending // [])[0] // empty | split("/") | last' round.json)" >> "$GITHUB_OUTPUT"   # a run left to apply, by name
           jq -r '.summary // empty' round.json >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
-        if: steps.round.outputs.run != ''
+        if: steps.round.outputs.run != '' || failure() || (steps.round.outputs.status != '' && steps.round.outputs.status != '0')
         with: {name: workline-round, path: ".workline-runs", include-hidden-files: true, retention-days: 1}
       - name: Verdict
         env: {STATUS: "${{ steps.round.outputs.status }}"}
@@ -665,6 +684,11 @@ jobs:
           if [ "$STATUS" = 3 ]; then
             echo "::warning title=workline::the agent could not be reached; the review waits for the next verdict"
             exit 0
+          fi
+          if [ "${STATUS:-0}" != 0 ]; then
+            # The reason in the log: the summary, as an error annotation.
+            msg=$(jq -r '.summary // empty' round.json 2>/dev/null | head -c 2000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=workline::${msg:-the run ended with status $STATUS, see its result file}"
           fi
           exit "${STATUS:-0}"
       # What this job's agent calls spent, a line a run: role, target,

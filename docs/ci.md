@@ -1,5 +1,44 @@
 ---
-sources: [defaults/ci/github, defaults/ci/gitlab, defaults/ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
+sources:
+  - defaults/ci/github/workline.yml#name
+  - defaults/ci/github/workline.yml#on
+  - defaults/ci/github/workline.yml#concurrency
+  - defaults/ci/github/workline.yml#env
+  - defaults/ci/github/workline-apply.yml#name
+  - defaults/ci/github/workline-apply.yml#jobs.apply
+  - defaults/ci/github/workline-warn.yml#name
+  - defaults/ci/github/workline-gardening.yml#name
+  - defaults/ci/github/workline-gardening.yml#on
+  - defaults/ci/github/workline-gardening.yml#jobs.judge
+  - defaults/ci/github/workline-gardening.yml#jobs.apply
+  - defaults/ci/github/workline-gardening.yml#jobs.curator
+  - defaults/ci/github/workline-develop.yml#name
+  - defaults/ci/github/workline-objection.yml#name
+  - defaults/ci/github/workline-answer.yml#name
+  - defaults/ci/github/workline-release.yml#name
+  - defaults/ci/github/workline-merge.yml#name
+  - defaults/ci/github/workline-sample.yml#name
+  - defaults/ci/github/workline-sample.yml#on
+  - defaults/ci/github/issue-form-need.yml#name
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:judge
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
+  - defaults/routing.yaml#fail-fast
+  - roles/documentalist/role.yaml#settings.max-open-merge-requests
+  - roles/documentalist/role.yaml#settings.ai-max-tokens
+  - roles/documentalist/role.yaml#settings.judge-in-parts
+  - roles/documentalist/role.yaml#settings.parts-max
+  - roles/documentalist/role.yaml#settings.parts-max-per-run
+  - roles/product-owner/role.yaml#settings.issues-per-run
+  - roles/product-owner/role.yaml#settings.autonomy
+  - roles/product-owner/role.yaml#settings.acts
+  - roles/product-owner/role.yaml#levels
+  - internal/agent/agent.go#Parse
+  - cmd/workline/main.go#initCmd
+  - cmd/workline/main.go#issuesCmd
+  - internal/doctor/conversations.go#findingsOnMergeRequests
 checked: 8538d558
 judged: a8574a5
 verified: agent:claude-code
@@ -7,7 +46,7 @@ reader: 8aab3bd261d9
 ---
 # Setting up workline in CI
 
-Docs are judged on each merge request and by gardening at night
+Docs are judged on each merge request and by the gardening
 ([ADR-0010](adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md)):
 both run in CI. What workline writes goes where the project lives
 ([ADR-0016](adr/0016-writes-go-where-the-project-lives.md)). This page
@@ -179,8 +218,8 @@ In short:
   [defaults/ci/github/issue-form-need.yml](../defaults/ci/github/issue-form-need.yml), copied
   to `.github/ISSUE_TEMPLATE/need.yml`, has a person's issue arrive with
   them written;
-- it also splits, renames, orders and says what an issue waits on
-  ([ADR-0022](adr/0022-a-split-keeps-the-need-a-rename-keeps-a-persons-title.md),
+- its acts turned on (off by default), it also splits, renames, orders
+  and says what an issue waits on ([ADR-0022](adr/0022-a-split-keeps-the-need-a-rename-keeps-a-persons-title.md),
   [ADR-0028](adr/0028-an-issue-names-what-it-waits-on.md)): a person's
   title, priority or link is kept.
 
@@ -195,8 +234,8 @@ are ([ADR-0030](adr/0030-an-import-maps-every-item-to-its-issue-or-why-not.md)):
   `pending` lists its runs.
 - **Apply**: `workline apply --line line.json` — the write token, no
   agent; opens them.
-- Needs the first release after v0.17.0. A map with items not covered ends
-  the judge 2: the apply still opens what was judged.
+- A map with items not covered ends the judge 2: the apply still opens
+  what was judged.
 - The jobs: [GitHub](ci-github.md#importing-a-file),
   [GitLab](ci-gitlab.md#the-product-owner).
 

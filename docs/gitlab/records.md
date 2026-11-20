@@ -10,7 +10,7 @@ sources:
   - internal/forge/own.go#ReadKept
   - internal/forge/own.go#Kept.Last
   - internal/builtin/reviewer/record.go#loadRecord
-  - internal/builtin/inspector/record.go#loadRecord
+  - roles/inspector/code/record.go#loadRecord
   - internal/builtin/documentalist/kept.go#stickyOn
   - internal/builtin/documentalist/kept.go#othersKept.findings
   - internal/builtin/documentalist/kept.go#readKept

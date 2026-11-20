@@ -1,6 +1,26 @@
 <!-- workline
-sources: [defaults/ci/gitlab/workline.gitlab-ci.yml, defaults/ci/github/workline-fork.yml, defaults/routing.yaml, internal/forge/forge.go, internal/agent/agent.go, defaults/ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, defaults/ci/github/workline.yml, defaults/ci/forgejo/workline-forge.sh, defaults/ci/github/workline-gardening.yml, defaults/ci/github/workline-sample.yml]
-checked: e4e4287bc
+sources:
+  - cmd/workline/cli.go#init
+  - defaults/routing.yaml#events
+  - defaults/routing.yaml#states
+  - defaults/routing.yaml#reconcile-max
+  - defaults/routing.yaml#budgets.push
+  - internal/forge/forge.go#Open
+  - roles/committer/role.yaml#events
+  - roles/committer/role.yaml#settings.rewrite
+  - roles/committer/role.yaml#settings.ai-max-seconds
+  - roles/documentalist/role.yaml#events
+  - roles/documentalist/role.yaml#merge-request-ai
+  - roles/reviewer/role.yaml#events
+  - roles/inspector/role.yaml#events
+  - roles/product-owner/role.yaml#events
+  - defaults/ci/github/workline.yml#on
+  - defaults/ci/github/workline-gardening.yml#on
+  - internal/gate/gate.go#Check
+  - internal/gate/gate.go#Gate.Validate
+  - internal/gate/gate.go#execute
+  - internal/gate/sarif.go#readSARIF
+checked: 3bab32400
 verified: agent:claude-code
 reader: e375241655b6
 -->
@@ -60,7 +80,6 @@ pull requests and nightly gardening of workline and of another project;
 | [**Inspector**](roles/inspector/README.md) | explains the findings a merge request adds to your linters and scanners; never their verdict | [beta](roles/inspector/docs/status.md) |
 | [**Tester**](roles/tester/README.md) | writes a ready issue's tests from its scenarios, each proven red on its base before the code | [beta](roles/tester/docs/status.md) |
 | [**Developer**](roles/developer/README.md) | takes a ready issue nobody took, writes its code within bounds, opens its pull request, proven on the project's tests, and fixes its review | [beta](roles/developer/docs/status.md) |
-| [Judge](roles/judge/role.yaml) | answers one yes-or-no question for the other roles, from another context or model | [built](roles/judge/docs/status.md) |
 | [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts | [beta](roles/auditor/docs/status.md) |
 | [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
 | [Process engineer](https://github.com/JN0V/workline/issues/89) | will read the line's measures and propose fixes | planned |
@@ -70,6 +89,8 @@ pull requests and nightly gardening of workline and of another project;
 
 - What each role does and does not, its settings and costs: its page, or
   [all the roles](docs/roles.md).
+- The judge is not a role: a service the roles' checks consult for a
+  yes-or-no question ([the judge](roles/judge/docs/service.md)).
 - A planned role links to its issue, which holds its design.
 - V1, the product owner, the tester and the developer taking a need to
   a merged change on any repository, was accepted on 2026-11-11; the
@@ -85,10 +106,10 @@ pull requests and nightly gardening of workline and of another project;
 - A role behaves the same wherever it runs; only the trigger, the agent at
   hand and how its proposals are applied differ.
 - On a forge, one job judges, with the agent and no write token; another
-  applies, with the write token and no AI key.
+  applies, with the write token and no AI key ([the jobs](docs/ci.md#the-jobs)).
 - Forges: GitHub and GitLab built in; none (`forge: local`, kept in the
-  clone); any other through a command (`cmd:`, a Forgejo and Gitea sample,
-  untried on a live instance).
+  clone); any other through a command (`cmd:`,
+  [a Forgejo and Gitea sample](docs/ci-forgejo.md), untried on a live instance).
 
 ```mermaid
 flowchart LR
@@ -122,7 +143,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | each push to it; on GitHub, marked ready too | committer; documentalist; reviewer and inspector, opt-in | the docs' fix in a comment, the agent once at ready; each finding on its line, and one summary comment; the findings in the forge's code-scanning view; the job's summary |
 | a release tool's (release-please…) | as any other, the docs never holding it; an issue labelled to hold it, or main not green, holds it ([how](docs/release-holds.md)) | its checks |
 | a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
-| a role's own: a comment on the tester's Draft, a verdict on the developer's | tester: answers an objection; developer: fixes its review | a reply or a rewritten test; the fix, pushed on its branch |
+| a role's own: a comment on the tester's Draft, a verdict on the developer's | [tester](roles/tester/README.md): answers an objection; [developer](roles/developer/README.md): fixes its review | a reply or a rewritten test; the fix, pushed on its branch |
 
 - The review is on the merge request; a person accepts it, or, by the
   [merge policy](docs/merge-policy.md), a reproduced bug's fix merges alone.
@@ -131,8 +152,8 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
   [its jobs that write](defaults/ci/github/workline-apply.yml) and
   [its fork job](defaults/ci/github/workline-fork.yml),
   [the release's holds read again](defaults/ci/github/workline-release.yml),
-  [GitLab CI](defaults/ci/gitlab/workline.gitlab-ci.yml). Setting up:
-  [CI](docs/ci.md).
+  [GitLab CI](defaults/ci/gitlab/workline.gitlab-ci.yml). What each job
+  writes, and setting up: [CI](docs/ci.md#the-jobs).
 
 ### main: schedules and releases
 
@@ -140,8 +161,8 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 |---|---|---|
 | after each merge (`workline route main`) | the merge request's gates, every finding kept as the next base; documentalist, the whole repository, no agent | one issue, edited when what it lists changes ([how](docs/main-after-merge.md)) |
 | gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, reviewer, tester, developer, opt-in | one merge request per task, kept on main or closed; the issues |
-| the weekly sample (`workline sample`) | auditor: one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
-| each push to main (`workline follow`) | the engine, no agent: with the [merge policy](docs/merge-policy.md), turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too | the forge's auto-merge |
+| the weekly sample (`workline sample`) | [auditor](roles/auditor/role.yaml): one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
+| each push to main (`workline follow`) | the engine, no agent: with the [merge policy](docs/merge-policy.md), turns auto-merge on for what a person accepted | the forge's auto-merge |
 | with the gardening (`workline route release --dry-run`) | what would hold the release if it were cut now, no agent | a part of main's issue ([how](docs/release.md)) |
 | before your release tool tags (`workline route release`); on GitLab, at a tag | your release's gates, none by default | a non-zero exit holds the release |
 
@@ -151,19 +172,20 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
   [workline-apply.yml](defaults/ci/github/workline-apply.yml); on GitLab, three pipeline
   schedules, a push to the default branch and a tag, all in the same
   [template](defaults/ci/gitlab/workline.gitlab-ci.yml).
-- Each command in detail: [usage](docs/usage.md#commands).
+- What each job writes: [CI](docs/ci.md#the-jobs); each command in detail:
+  [usage](docs/usage.md#commands).
 
 ### The issues
 
 | Who | What |
 |---|---|
-| product owner, on gardening or at once on an issue to refine | reads a share of the open issues against the code: completes them, readies the evident ones, proposes the rest on each issue, `workline:proposed` |
+| [product owner](roles/product-owner/README.md), on gardening or at once on an issue to refine | reads a share of the open issues against the code: completes them, readies the evident ones, proposes the rest on each issue, `workline:proposed` |
 | `workline issues import <file>` | a roadmap file to issues |
-| tester, opt-in | a ready issue's tests, proven red, in a Draft |
-| developer, opt-in | a ready issue's code, proven, in a pull request; the issue labelled ready, or the gardening |
+| [tester](roles/tester/README.md), opt-in | a ready issue's tests, proven red, in a Draft |
+| [developer](roles/developer/README.md), opt-in | a ready issue's code, proven, in a pull request; the issue labelled ready, or the gardening |
 | the line of states | each state label wakes its role: to refine, needs tests, ready; an hourly reconciler catches what an event missed ([how](docs/spec/routing.md#the-line-of-states)) |
-| reviewer | a finding outside the change: an issue, `needs-triage` |
-| documentalist | the code disagrees with a decision a doc records: an issue |
+| [reviewer](roles/reviewer/README.md) | a finding outside the change: an issue, `needs-triage` |
+| [documentalist](roles/documentalist/README.md) | the code disagrees with a decision a doc records: an issue |
 | a person | accepts: the label `workline:accepted`, a parent closed |
 
 ## Gates
@@ -174,15 +196,15 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
   in SARIF (the common format of static-analysis tools) counted against a
   `max` set before it runs.
 - Three outcomes for each check: **pass**, **finding**, or **error** — a
-  tool missing, crashed or unreadable fails the gate, never passes it
-  (an `optional` check is still reported).
+  tool missing, timed out, or its SARIF missing or unreadable fails the
+  gate, never passes it.
 - Run with `workline gate <name>`, or as `gate:<name>` in a routing
   sequence.
 - On a merge request, only the findings the change adds count, told
-  against the merge base: old debt never blocks
+  against the merge base: old debt never blocks. Main's run after a merge
+  keeps every finding by commit: a merge request based on it reads them
+  rather than run its tools there again
   ([new findings](docs/spec/gates.md#on-a-merge-request-the-findings-the-change-adds)).
-  Main's run after a merge keeps every finding by commit: a merge
-  request based on it reads them rather than run its tools there again.
 - In CI, the gates run in a job with no token; what they add is shown
   beside its line: on GitHub a check and one comment, on GitLab Code
   Quality ([gates in CI](docs/gates-in-ci.md)).

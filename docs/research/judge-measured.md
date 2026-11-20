@@ -2,7 +2,7 @@
 
 **Question.** When the reviewer's judge drops a finding ("no") or lets it
 be shown ("yes"), is it right? The measure the
-[judge's status](../../roles/judge/docs/status.md) asks for its third
+[judge's status](../../roles/judge/docs/service.md) asks for its third
 criterion ([ADR-0036](../adr/0036-a-roles-status-is-earned-by-written-criteria.md#amendment-2026-10-13)).
 
 **Verdict.** Its "yes" are right; its "no" drop true findings, mostly

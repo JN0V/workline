@@ -9,8 +9,8 @@ sources:
   - internal/forge/gitlab_guard.go#tier
   - internal/steer/codeowners.go#ParseCodeowners
   - internal/steer/codeowners.go#Codeowners.owns
-  - internal/developer/prbounds.go#BoundsKey
-checked: c46a93d6c
+  - roles/developer/code/prbounds.go#BoundsKey
+checked: 3bab32400
 judged: eb16524
 verified: agent:claude-code
 ---
@@ -37,9 +37,10 @@ flowchart LR
 - **Include it** beside the template:
   `include: [{local: ci/workline.gitlab-ci.yml}, {local: ci/workline-bounds.gitlab-ci.yml}]`
   ([the file](../../defaults/ci/gitlab/workline-bounds.gitlab-ci.yml)).
-- **Its token**: `WORKLINE_GITLAB_TOKEN`, to read the issue and keep the
-  verdict on the merge request. Without it the job fails: the bounds
-  unread never pass.
+- **Its token**: `WORKLINE_GITLAB_TOKEN`, scoped to the environment
+  `workline`, to read the issue and keep the verdict on the merge
+  request, in one comment: it needs write access. Without it the job
+  fails: the bounds unread never pass.
 - **It counts**: Settings → Merge requests → *Pipelines must succeed*.
 
 ## What keeps it, by tier

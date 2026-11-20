@@ -1,0 +1,28 @@
+case: auditor/sample-rounds-a-recorded-kind-up
+about: "One in ten of a role's recorded acts, per kind, rounded up (ADR-0046): 3 recorded `triage` acts of the week draw 1; 11 draw 2."
+given:
+  repo: vouched
+  forge:
+    issues:
+      - {id: 1, title: "Issue 1", body: "Issue 1.", labels: [], comments: [{body: '<!-- workline:act {"role":"triager","kind":"triage","day":"2026-01-07"} -->', own: true}]}
+      - {id: 2, title: "Issue 2", body: "Issue 2.", labels: [], comments: [{body: '<!-- workline:act {"role":"triager","kind":"triage","day":"2026-01-07"} -->', own: true}]}
+      - {id: 3, title: "Issue 3", body: "Issue 3.", labels: [], comments: [{body: '<!-- workline:act {"role":"triager","kind":"triage","day":"2026-01-07"} -->', own: true}]}
+      - {id: 4, title: "Issue 4", body: "Issue 4.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+      - {id: 5, title: "Issue 5", body: "Issue 5.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+      - {id: 6, title: "Issue 6", body: "Issue 6.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+      - {id: 7, title: "Issue 7", body: "Issue 7.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+      - {id: 8, title: "Issue 8", body: "Issue 8.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+      - {id: 9, title: "Issue 9", body: "Issue 9.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+      - {id: 10, title: "Issue 10", body: "Issue 10.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+      - {id: 11, title: "Issue 11", body: "Issue 11.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+      - {id: 12, title: "Issue 12", body: "Issue 12.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+      - {id: 13, title: "Issue 13", body: "Issue 13.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+      - {id: 14, title: "Issue 14", body: "Issue 14.", labels: [], comments: [{body: '<!-- workline:act {"role":"sorter","kind":"triage","day":"2026-01-08"} -->', own: true}]}
+    merge-requests: []
+run: {sample: [--week, 2026-W02, --judge, none], then: apply}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 15, title: "workline: the weekly sample of every role's acts", comment-contains: "| `triage` | 3 | 1 |"}
+      - {id: 15, comment-contains: "| `triage` | 11 | 2 |"}

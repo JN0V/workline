@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.84.0](https://github.com/JN0V/workline/compare/v0.83.0...v0.84.0) (2026-11-19)
+
+
+### Features
+
+* a check refuses the core importing a role, or a role ([#1923](https://github.com/JN0V/workline/issues/1923)) ([e6a5187](https://github.com/JN0V/workline/commit/e6a518736a542857e03a8a2cbbb4661e1382fd88))
+* the engine runs a role's built-in code with no pre ([#1896](https://github.com/JN0V/workline/issues/1896)) ([612e165](https://github.com/JN0V/workline/commit/612e16536e388448969039b36b6929cf71df5e60))
+
+
+### Bug Fixes
+
+* fix: weekly sample reads only the first act of a comment ([#1930](https://github.com/JN0V/workline/issues/1930)) ([636cd86](https://github.com/JN0V/workline/commit/636cd8629f7d3579b8d2d8e52ebec2bf5af36453))
+* silent refusals: a conformance case per slice, docs ([#1924](https://github.com/JN0V/workline/issues/1924)) ([27b58f4](https://github.com/JN0V/workline/commit/27b58f4219cb6390b6c2807fce98488432712c33))
+* silent refusals: every refusal said on its item, one ([#1936](https://github.com/JN0V/workline/issues/1936)) ([8b8a813](https://github.com/JN0V/workline/commit/8b8a8130bd19736cab75af337fa9a2390843d5f5))
+* the developer's proof runs on its branch's base, not on ([#1919](https://github.com/JN0V/workline/issues/1919)) ([7e573ca](https://github.com/JN0V/workline/commit/7e573cab527b97020407ddb897a155d88e598bbe))
+
+## [0.83.0](https://github.com/JN0V/workline/compare/v0.82.0...v0.83.0) (2026-11-19)
+
+
+### Features
+
+* a prompt override left at its old path stops the run ([#1887](https://github.com/JN0V/workline/issues/1887)) ([3bab324](https://github.com/JN0V/workline/commit/3bab3240064daf04fffce5de0bbb78028a369050))
+* a prompt-only role gets its prompt once, its cuts ([#1872](https://github.com/JN0V/workline/issues/1872)) ([40e34a8](https://github.com/JN0V/workline/commit/40e34a8928a404c2b221dd7c47f0320cf51cb708))
+* every act a role applies carries one shared record ([#1877](https://github.com/JN0V/workline/issues/1877)) ([9ae7656](https://github.com/JN0V/workline/commit/9ae76563296af35e961851f1d0a08f4c4345bc43))
+* the weekly sample draws any role's acts from the ([#1894](https://github.com/JN0V/workline/issues/1894)) ([207c3b3](https://github.com/JN0V/workline/commit/207c3b374ed5cf5ef0856e895ec1401999337306))
+
+
+### Bug Fixes
+
+* **engine:** the shared pre misses instruction.md once moved to ([#1893](https://github.com/JN0V/workline/issues/1893)) ([44ee3a4](https://github.com/JN0V/workline/commit/44ee3a4211116674af586973066454797b6308ec))
+* sweep: every refusal, block or failure said in log ([#1781](https://github.com/JN0V/workline/issues/1781)) ([848310f](https://github.com/JN0V/workline/commit/848310f06b2d45cc1da3175c4a2ac2e0b56f7a69))
+
 ## [0.82.0](https://github.com/JN0V/workline/compare/v0.81.0...v0.82.0) (2026-11-19)
 
 

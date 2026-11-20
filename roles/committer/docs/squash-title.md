@@ -1,9 +1,9 @@
 ---
 sources:
   - roles/committer/role.yaml#settings.subject-max
-  - internal/builtin/committer/committer.go#checkRange
-  - internal/builtin/committer/committer.go#titleFix
-  - internal/builtin/committer/committer.go#squashed
+  - roles/committer/code/committer.go#checkRange
+  - roles/committer/code/committer.go#titleFix
+  - roles/committer/code/committer.go#squashed
   - internal/forge/github.go#github.Squash
   - internal/forge/gitlab.go#gitlab.Squash
   - internal/forge/forge.go#Squash
@@ -12,7 +12,7 @@ sources:
   - internal/engine/engine.go#openMergeRequest
   - internal/builtin/documentalist/title_test.go#TestMergeRequestTitlesPassTheSquashRule
   - internal/sample/title_test.go#TestEngineTitlesPassTheSquashRule
-checked: c46a93d6c
+checked: dd77bf922
 verified: agent:claude-code
 judged-in-parts: eb16524
 ---

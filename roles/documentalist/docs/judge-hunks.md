@@ -18,7 +18,7 @@ verified: agent:claude-code
 ---
 # Documentalist — hunks, and asking again
 
-Part of [the judge](judge.md).
+Part of [the check](judge.md).
 
 ## Hunks that misquote the doc
 

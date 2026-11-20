@@ -6,14 +6,14 @@ sources:
   - cmd/workline/main.go#hooksCmd
   - cmd/workline/main.go#hookCmd
   - cmd/workline/main.go#report
-  - internal/builtin/committer/committer.go#Post
-  - internal/builtin/committer/committer.go#rewriting
+  - roles/committer/code/committer.go#Post
+  - roles/committer/code/committer.go#rewriting
   - internal/kit/commitmsg/commitmsg.go#Check
   - internal/line/seconds.go#Result.Times
   - internal/line/seconds.go#Step.timed
   - roles/committer/role.yaml#settings
   - roles/committer/role.yaml#personal
-checked: e2e165c2d
+checked: dd77bf922
 verified: agent:claude-code
 ---
 # Every commit checked

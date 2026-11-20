@@ -1,11 +1,11 @@
 ---
 sources:
-  - internal/builtin/committer/committer.go#Pre
-  - internal/builtin/committer/committer.go#rewriting
-  - internal/builtin/committer/committer.go#Post
-  - internal/builtin/committer/committer.go#Trailers
-  - internal/builtin/committer/committer.go#ownLine
-  - internal/builtin/committer/committer.go#ownLines
+  - roles/committer/code/committer.go#Pre
+  - roles/committer/code/committer.go#rewriting
+  - roles/committer/code/committer.go#Post
+  - roles/committer/code/committer.go#Trailers
+  - roles/committer/code/committer.go#ownLine
+  - roles/committer/code/committer.go#ownLines
   - internal/kit/commitmsg/commitmsg.go#KeepsHeader
   - cmd/workline/main.go#hookCmd
   - internal/engine/engine.go#withTrailers
@@ -13,7 +13,7 @@ sources:
   - internal/engine/engine.go#Rewriter
   - internal/engine/engine.go#madeBy
   - roles/committer/role.yaml
-checked: c46a93d6c
+checked: dd77bf922
 verified: agent:claude-code
 ---
 # Committer — the rewrite
@@ -37,7 +37,7 @@ Part of [the committer](../README.md).
   a second, keeps your message in the file git named, and prints
   `git commit -e -F <that file>` to take it up again.
 
-## Judge (`post`, no AI)
+## Check (`post`, no AI)
 
 - The rewrite must pass the same checks, but `possible-internal-code`: the
   agent judged it.

@@ -10,6 +10,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/steer"
 )
 
 // gitRepo is a repository for a test, and a way to run git in it.
@@ -114,7 +115,7 @@ func TestSteering(t *testing.T) {
 	}
 	run("add", ".")
 	run("commit", "-q", "-m", "docs: agents read these")
-	steers, err := steering(repo, run("rev-parse", "HEAD"))
+	steers, err := steer.Files(repo, run("rev-parse", "HEAD"))
 	if err != nil {
 		t.Fatal(err)
 	}

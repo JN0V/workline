@@ -36,6 +36,8 @@ import (
 
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	wjudge "github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/docmark"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/role"
 )
 
@@ -625,7 +627,7 @@ func headerField(doc, field string) string {
 // body drops a doc's header, as the engine reads it: a frontmatter, or a
 // README's `<!-- workline` block.
 func body(s string) string {
-	_, n := documentalist.Header(s)
+	_, n := docmark.Header(s)
 	return strings.Join(strings.Split(s, "\n")[n:], "\n")
 }
 
@@ -688,10 +690,10 @@ func judge(question string, c *caseFile, r *run) (string, error) {
 	}
 	graded := os.Getenv("WORKLINE_EVAL")
 	floor := os.Getenv("WORKLINE_JUDGE_AT_LEAST")
-	if _, ok := wjudge.Levels[floor]; floor != "" && !ok {
+	if _, ok := judgemark.Levels[floor]; floor != "" && !ok {
 		return "", fmt.Errorf("WORKLINE_JUDGE_AT_LEAST %q is not provider, model or context", floor)
 	}
-	if floor == "provider" && wjudge.Independence(spec, "", graded, nil) != "provider" {
+	if floor == "provider" && judgemark.Independence(spec, "", graded, nil) != "provider" {
 		return "", fmt.Errorf("WORKLINE_JUDGE is of the graded agent's provider, and at least another provider is asked")
 	}
 	judgeRole, err := role.Load("../../roles", "judge")
@@ -714,12 +716,12 @@ func judge(question string, c *caseFile, r *run) (string, error) {
 	for _, call := range r.res.Calls {
 		models = append(models, call.Model)
 	}
-	level := wjudge.Independence(spec, ans.Model, graded, models)
+	level := judgemark.Independence(spec, ans.Model, graded, models)
 	r.judgedBy = ans.Model + " (" + level + ")"
 	if err != nil {
 		return "", err
 	}
-	if wjudge.Levels[level] < wjudge.Levels[floor] {
+	if judgemark.Levels[level] < judgemark.Levels[floor] {
 		return "", fmt.Errorf("the judge, %s, is independent only at the %s level; at least %s is asked", ans.Model, level, floor)
 	}
 	if ans.Yes {

@@ -432,15 +432,10 @@ func claudeEnv(environ []string) []string {
 	return without(withoutTokens(environ), claudeSession)
 }
 
-// ForgeTokens are the variables holding what writes to the forge or signs
-// for workline (forge.Tokens). No agent is handed one (principle 6): it
-// proposes, the engine acts. The agent's own login passes.
-var ForgeTokens = forge.Tokens
-
 // withoutTokens is the environment an agent is called with: no forge
 // token, nor the line's own settings for its forge calls.
 func withoutTokens(environ []string) []string {
-	return forge.ProjectEnv(without(environ, ForgeTokens))
+	return forge.ProjectEnv(without(environ, forge.Tokens))
 }
 
 func without(environ, names []string) []string {

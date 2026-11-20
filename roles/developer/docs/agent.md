@@ -3,9 +3,9 @@ sources:
   - internal/agent/claude.go
   - internal/agent/command.go
   - internal/agent/prompt.go
-  - internal/developer/developer.go
+  - roles/developer/code/developer.go
   - internal/agent/closing.go
-  - internal/developer/words.go
+  - roles/developer/code/words.go
   - internal/kit/devmark
 checked: e5e6a3f8
 verified: agent:claude-code

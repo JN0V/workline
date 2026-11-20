@@ -888,7 +888,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-app-unknown", Level: "warn",
 				Message: "at `" + o.Merge + "`, the token is no App's — a person's, or the forge does not say whose —: nothing is taken for workline's own work, every merge request waits for a person's yes, as at `cautious`"})
 		} else {
-			if n.steers, err = steering(o.Repo, tip); err != nil {
+			if n.steers, err = steer.Files(o.Repo, tip); err != nil {
 				return "", err
 			}
 			if n.demoted, err = demotions(f, o, tip, n.app, local, res); err != nil {

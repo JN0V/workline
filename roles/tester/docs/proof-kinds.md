@@ -1,22 +1,22 @@
 ---
 sources:
-  - internal/tester/proof.go#proofOf
-  - internal/tester/proof.go#proved
-  - internal/tester/proof.go#sentBack
-  - internal/tester/needs.go#needsOf
-  - internal/tester/needs.go#needed
-  - internal/tester/needs.go#neededFiles
-  - internal/tester/write.go#writeReading
-  - internal/tester/write.go#assumesWord
-  - internal/tester/write.go#assumed
-  - internal/tester/write.go#draftBody
+  - roles/tester/code/proof.go#proofOf
+  - roles/tester/code/proof.go#proved
+  - roles/tester/code/proof.go#sentBack
+  - roles/tester/code/needs.go#needsOf
+  - roles/tester/code/needs.go#needed
+  - roles/tester/code/needs.go#neededFiles
+  - roles/tester/code/write.go#writeReading
+  - roles/tester/code/write.go#assumesWord
+  - roles/tester/code/write.go#assumed
+  - roles/tester/code/write.go#draftBody
   - internal/agent/agent.go#ReadsFiles
   - internal/backlog/proof.go#ProofKinds
   - internal/backlog/proof.go#ProofNote
   - internal/backlog/proof.go#NoTestStands
-  - internal/tester/repro.go#notShown
-  - internal/tester/repro.go#unreproduced
-  - internal/tester/repro.go#bugProof
+  - roles/tester/code/repro.go#notShown
+  - roles/tester/code/repro.go#unreproduced
+  - roles/tester/code/repro.go#bugProof
   - roles/product-owner/role.yaml#settings.acts.ask
 checked: c46a93d6c
 verified: agent:claude-code

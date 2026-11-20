@@ -103,7 +103,7 @@ Step by step, with every rule: [a run on code](docs/run.md).
 4. **The lenses**: correctness, edge cases, tests, intent (the issue the
    change closes), claims (what its author says), simplicity (more than
    the issue needs, nits only), in one call; a project adds its own
-   in `.workline/roles/reviewer/lenses/`.
+   in `.workline/roles/reviewer/prompts/lenses/`.
 5. **The quotes**: each cause found again in the code, the issue or the
    author's words; not found, dropped.
 6. **Whose finding**: a cause in the change goes to its author; elsewhere,

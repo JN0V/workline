@@ -8,7 +8,7 @@ sources:
   - internal/line/states.go#roundsDue
   - internal/engine/merge.go#SayVerdict
   - internal/forge/local.go#Local.Notes
-  - internal/tester/objection.go#kinds
+  - roles/tester/code/objection.go#kinds
 checked: c46a93d6c
 verified: agent:claude-code
 ---

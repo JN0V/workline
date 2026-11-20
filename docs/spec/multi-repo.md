@@ -1,7 +1,7 @@
 ---
 sources:
   - internal/builtin/documentalist/documentalist.go#splitSource
-  - internal/builtin/documentalist/documentalist.go#ParseDoc
+  - internal/kit/docmark/docmark.go#ParseDoc
   - internal/builtin/documentalist/documentalist.go#projectRepos
   - internal/builtin/documentalist/documentalist.go#external
   - internal/builtin/documentalist/documentalist.go#places

@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/agent"
-	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -39,12 +39,12 @@ type reading struct {
 // readRound is one round of reads: what the judge asked, and what it was
 // given back.
 type readRound struct {
-	Asked   []judge.Read `json:"asked"`
-	Note    string       `json:"note,omitempty"`    // what it said beside its reads
-	Served  string       `json:"served"`            // the text it was given back
-	Lines   int          `json:"lines"`             // lines served
-	Shown   []seen       `json:"shown,omitempty"`   // where they lie
-	Refused []string     `json:"refused,omitempty"` // reads not served, each with why
+	Asked   []judgemark.Read `json:"asked"`
+	Note    string           `json:"note,omitempty"`    // what it said beside its reads
+	Served  string           `json:"served"`            // the text it was given back
+	Lines   int              `json:"lines"`             // lines served
+	Shown   []seen           `json:"shown,omitempty"`   // where they lie
+	Refused []string         `json:"refused,omitempty"` // reads not served, each with why
 }
 
 // seen is lines of a file a judge was shown or read.
@@ -60,8 +60,8 @@ type readAnswer struct {
 	Unsure                   bool
 	Why, Model, Level, Error string
 	Judge, Author            string
-	Reads                    []judge.Read
-	Quote                    *judge.Quote
+	Reads                    []judgemark.Read
+	Quote                    *judgemark.Quote
 }
 
 func readingOf(dir string) (reading, bool) {
@@ -97,7 +97,7 @@ func (r reading) said() string {
 }
 
 // readsSaid is each read, as said.
-func readsSaid(reads []judge.Read) []string {
+func readsSaid(reads []judgemark.Read) []string {
 	out := make([]string, len(reads))
 	for i, r := range reads {
 		out[i] = r.String()
@@ -157,7 +157,7 @@ type Judged struct {
 // no stands on its quote, found again. cause is the finding's file, where
 // a name is looked for first. The evaluation's replay asks the measured
 // questions so (tests/evaluation).
-func JudgeReading(repo, head, question, material, cause string, rounds, linesMax int, ask func(question, material string) (judge.Answer, error)) Judged {
+func JudgeReading(repo, head, question, material, cause string, rounds, linesMax int, ask func(question, material string) (judgemark.Answer, error)) Judged {
 	s := Settings{JudgeReadRounds: rounds, JudgeReadMax: linesMax}
 	r := reading{Question: question, Material: material, Cause: cause}
 	var j Judged
@@ -248,7 +248,7 @@ func answerIn(dir string) (readAnswer, error) {
 // left lines all together (of linesMax, judge-read-lines-max): each read
 // whole while it fits, cut past it, the rest named; a read refused is
 // said, with why.
-func serve(repo, head, cause string, reads []judge.Read, left, linesMax int) readRound {
+func serve(repo, head, cause string, reads []judgemark.Read, left, linesMax int) readRound {
 	rd := readRound{Asked: reads}
 	var b strings.Builder
 	refuse := func(what, why string) {
@@ -401,7 +401,7 @@ func grepWord(repo, head, word string) ([]grepHit, string) {
 // quoted finds a no's quote again: at head, in the file it names (or the
 // issue the change closes), within what the judge was shown or read.
 // where: its place; why: why it is not found.
-func (r reading) quoted(repo string, st state, q *judge.Quote) (where, why string) {
+func (r reading) quoted(repo string, st state, q *judgemark.Quote) (where, why string) {
 	if q == nil || norm(q.Text) == "" {
 		return "", "it quotes no line"
 	}
@@ -494,7 +494,7 @@ func covered(spans []seen, p string, pl Place) bool {
 // as a judge of the code's are: from git at rev, at most left lines of
 // linesMax, a name looked for near cause first. It gives the text served,
 // the lines it holds, and each read refused with why.
-func ServeReads(repo, rev, cause string, reads []judge.Read, left, linesMax int) (served string, lines int, refused []string) {
+func ServeReads(repo, rev, cause string, reads []judgemark.Read, left, linesMax int) (served string, lines int, refused []string) {
 	rd := serve(repo, rev, cause, reads, left, linesMax)
 	return rd.Served, rd.Lines, rd.Refused
 }

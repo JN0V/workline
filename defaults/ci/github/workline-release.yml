@@ -42,7 +42,10 @@ jobs:
           while read -r pr sha; do
             run=$(gh run list --workflow workline.yml --commit "$sha" --event pull_request --limit 1 --json databaseId --jq '.[0].databaseId // empty')
             if [ -z "$run" ]; then echo "#$pr: no workline run on $sha yet"; continue; fi
-            gh run watch "$run" --exit-status > /dev/null 2>&1 || true   # one still running ends first
+            # one still running ends first; a run that failed is no refusal, a refused call is
+            gh run watch "$run" --exit-status > /dev/null 2>&1 || true
+            gh run view "$run" --json status --jq .status > /dev/null 2> gh-err.txt ||
+              { echo "::error title=workline::gh run watch $run failed: $(tr '\n' ' ' < gh-err.txt)"; exit 1; }
             # Green, started after main's push and ended after its runs: it read this
             # tip and waited for it (--release-wait), nothing to read again.
             if [ "$EVENT" = workflow_run ] && gh run view "$run" --json conclusion,createdAt,updatedAt --jq "select(.conclusion == \"success\" and .createdAt > \"$MAIN_STARTED\" and .updatedAt > \"$MAIN_ENDED\")" | grep -q .; then

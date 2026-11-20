@@ -3,7 +3,11 @@
 - **Status:** proposed, until the maintainer merges it; built by
   [#1630]'s [slices](#slices), all before v1.0
 - **Date:** 2026-11-15; the [layout](#6-the-layout-reached-before-10) on
-  2026-11-16, by the maintainer: before 1.0 anything may break, not after
+  2026-11-16, by the maintainer: before 1.0 anything may break, not
+  after; roles moved in batches from 2026-11-19
+  ([amendment](#amendment-2026-11-19-roles-move-in-batches)); the judge
+  an engine service from 2026-11-20
+  ([amendment](#amendment-2026-11-20-the-judge-is-an-engine-service))
 - **Settles:** [#1630]; how [ADR-0068]'s [step 6], the process engineer, is built
 - **Builds on:** [ADR-0046], [ADR-0065], [ADR-0066], [ADR-0068] §2 and
   §4; principles 4, 5, 6, 10, 12, 15 ([PRINCIPLES.md](../PRINCIPLES.md))
@@ -184,6 +188,31 @@ From [#1630], in order, each starting with its conformance case:
    nothing under `internal/` nor `cmd/`, run on a case of [#1629].
 8. **Cases** (c). 9. **Defaults** (d). 10. **Role code** (e), one
    role a pull request. External roles (`from`): after 1.0.
+
+## Amendment 2026-11-19: roles move in batches
+
+- **Decided by:** the maintainer, in a session on 2026-11-19, to reach
+  the layout sooner.
+- **Moves b and e go two or three roles a pull request**, not one:
+  their prompts, their code and their own docs pages together, one
+  pause of the line a batch; bigger reviews accepted.
+- **Unchanged**: each pull request moves files as they were and builds;
+  the import check holds on every head; a guarded file moves with its
+  `CODEOWNERS` lines in the same pull request.
+
+## Amendment 2026-11-20: the judge is an engine service
+
+- **Decided by:** the maintainer, in a session on 2026-11-20.
+- **The judge is not a role**: it is a second reader the engine
+  consults for a yes or a no on another's work (ADR-0005, ADR-0045). No
+  event runs it, it hands nothing off, it offers no step.
+- **Move e no longer lists it**: its code stays in `internal/judge/`,
+  which the engine and the sample import as a core service; what others
+  read of its answers (its kinds, how far it stands from the author,
+  which one to pick) lives in `internal/kit/judgemark/`.
+- **Its prompts stay customisable** where they are, in
+  `roles/judge/prompts/`, overridden like any role's
+  ([a person's overrides](../spec/layout.md#a-persons-overrides)).
 
 [#89]: https://github.com/JN0V/workline/issues/89
 [#1494]: https://github.com/JN0V/workline/issues/1494

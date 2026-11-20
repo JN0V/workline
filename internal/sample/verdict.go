@@ -13,10 +13,11 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/builtin/documentalist"
+	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/judge"
+	"github.com/JN0V/workline/internal/kit/docmark"
+	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/role"
 	"go.yaml.in/yaml/v3"
@@ -31,7 +32,7 @@ import (
 // reader reads the week's sample: the judge it asks, and what it spent.
 type reader struct {
 	o         Options
-	settings  documentalist.Settings
+	settings  docmark.SampleView
 	auditor   *role.Role
 	judgeRole *role.Role // the panel's judges
 	spec      string
@@ -111,15 +112,31 @@ func kindOf(a Act) string {
 	return ""
 }
 
-// facet is a kind's question: the project's own (.workline/roles/auditor/
-// kinds/<kind>.md), else the role's.
-func (rd *reader) facet(kind string) (string, error) {
-	for _, dir := range []string{filepath.Join(rd.o.Repo, ".workline", "roles", "auditor"), rd.auditor.Dir} {
-		if data, err := os.ReadFile(filepath.Join(dir, "kinds", kind+".md")); err == nil {
-			return strings.TrimSpace(string(data)), nil
+// facet is what a well-done act of a kind is, the auditor's question: the
+// project's own copy (.workline/roles/auditor/criteria/<role>/<kind>.md),
+// else the auditor's (criteria/<role>/<kind>.md), else the role's own
+// (criteria/<kind>.md). Until the questions move, kinds/<kind>.md is read
+// as a last fallback, the project's first. A kind with no criteria anywhere is
+// judged on the auditor's generic question, whose text ships with a later
+// move: said missing.
+func (rd *reader) facet(roleName, kind string) (string, error) {
+	project := filepath.Join(rd.o.Repo, ".workline", "roles", "auditor")
+	roles := filepath.Dir(rd.auditor.Dir)
+	paths := []string{
+		filepath.Join(project, "criteria", roleName, kind+".md"),
+		filepath.Join(rd.auditor.Dir, "criteria", roleName, kind+".md"),
+		filepath.Join(roles, roleName, "criteria", kind+".md"),
+		filepath.Join(project, "kinds", kind+".md"),
+		filepath.Join(rd.auditor.Dir, "kinds", kind+".md"),
+	}
+	for _, p := range paths {
+		if data, err := os.ReadFile(p); err == nil {
+			if text := strings.TrimSpace(string(data)); text != "" {
+				return text, nil
+			}
 		}
 	}
-	return "", fmt.Errorf("the auditor has no kinds/%s.md", kind)
+	return "", fmt.Errorf("no criteria for a `%s` of the %s (criteria/%s.md): the auditor's generic question is missing", kind, roleName, kind)
 }
 
 // readAct has one act re-checked, and says its verdict.
@@ -134,7 +151,7 @@ func (rd *reader) readAct(a *Act) {
 		a.Why = noJudge
 		return
 	}
-	facet, err := rd.facet(kind)
+	facet, err := rd.facet(a.Role, kind)
 	if err != nil {
 		a.Why = err.Error() + "; for a person"
 		return
@@ -157,7 +174,7 @@ func (rd *reader) readAct(a *Act) {
 	a.Independence = "unknown (its record does not say the model that acted)"
 	level := ""
 	if m.author != "" && len(m.acted) > 0 {
-		level = judge.Independence(spec, call.Model, m.author, m.acted)
+		level = judgemark.Independence(spec, call.Model, m.author, m.acted)
 		a.Independence = fmt.Sprintf("%s (%s → %s)", level, strings.Join(m.acted, ", "), orUnknown(call.Agent, call.Model))
 	}
 	switch {
@@ -172,11 +189,11 @@ func (rd *reader) readAct(a *Act) {
 		return
 	}
 	if floor := rd.settings.Sample.AtLeast; floor != "" {
-		if _, ok := judge.Levels[floor]; !ok {
+		if _, ok := judgemark.Levels[floor]; !ok {
 			a.Why = fmt.Sprintf("sample.at-least %q is not provider, model or context", floor)
 			return
 		}
-		if judge.Levels[level] < judge.Levels[floor] {
+		if judgemark.Levels[level] < judgemark.Levels[floor] {
 			a.Why = fmt.Sprintf("the judge stands below sample.at-least (%s): %s; for a person", floor, a.Independence)
 			return
 		}
@@ -287,7 +304,7 @@ func settle(a *Act, m *material, answer []intent.Intention) {
 			case it == nil:
 				why = fmt.Sprintf("%s is none of what the act was done on (%s)", p.Path, m.names())
 			case it.code:
-				found, code, line := documentalist.QuoteIn(it.name, it.full, c.Source.Quote)
+				found, code, line := contract.BuiltinDocsSample().QuoteIn(it.name, it.full, c.Source.Quote)
 				p.Line = line
 				switch {
 				case !found:
@@ -688,8 +705,12 @@ func excerpt(content string, line int) string {
 // matter (`judge.question`): the project's lens, else the role's; "" when
 // it asks nothing of its own.
 func lensQuestion(repo, rolesDir, lens string) string {
+	sub := ""
+	if st, err := os.Stat(filepath.Join(rolesDir, "reviewer", "prompts")); err == nil && st.IsDir() {
+		sub = "prompts" // a moved role: read under prompts/ only, as the reviewer does
+	}
 	for _, dir := range []string{filepath.Join(repo, ".workline", "roles", "reviewer"), filepath.Join(rolesDir, "reviewer")} {
-		data, err := os.ReadFile(filepath.Join(dir, "lenses", lens+".md"))
+		data, err := os.ReadFile(filepath.Join(dir, sub, "lenses", lens+".md"))
 		if err != nil {
 			continue
 		}

@@ -1,7 +1,7 @@
 ---
 sources:
-  - internal/developer/developer.go
-  - internal/tester/proof.go
+  - roles/developer/code/developer.go
+  - roles/tester/code/proof.go
   - internal/kit/testmark
   - internal/kit/devmark
 checked: 07ca9b9b

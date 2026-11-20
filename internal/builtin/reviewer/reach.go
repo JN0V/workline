@@ -20,16 +20,7 @@ import (
 	"github.com/JN0V/workline/internal/pathglob"
 )
 
-// language is how functions are found in a family of files.
-type language = codenav.Language
-
-func languageOf(file string) *language { return codenav.Of(file) }
-
-var (
-	notCalls  = codenav.NotCalls
-	stripCode = codenav.StripCode
-	callsIn   = codenav.CallsIn
-)
+func languageOf(file string) *codenav.Language { return codenav.Of(file) }
 
 // navigate sets the code navigation rows to the project's packs'; a
 // pack it cannot read leaves the built-in rows: role.LoadProjectConfig
@@ -88,7 +79,7 @@ func asFn(file string, f codenav.Func, ok bool) fn {
 
 // defs finds where each name is defined, in the files of the languages
 // given (nil: every language), at the head: one search for every name.
-func (r *reacher) defs(names []string, langs []*language) map[string][]fn {
+func (r *reacher) defs(names []string, langs []*codenav.Language) map[string][]fn {
 	out := map[string][]fn{}
 	var ok []string
 	for _, n := range names {
@@ -116,7 +107,7 @@ func (r *reacher) defs(names []string, langs []*language) map[string][]fn {
 	if err != nil {
 		return out // none found: git grep fails
 	}
-	res := map[*language]*regexp.Regexp{}
+	res := map[*codenav.Language]*regexp.Regexp{}
 	for _, h := range strings.Split(strings.TrimSpace(hits), "\n") {
 		file, n, line, okh := hit(h, r.head)
 		if !okh || pathglob.Any(r.skip, file) {
@@ -271,7 +262,7 @@ func reach(repo, head string, tests []string, f Finding, at int, symptomAt int, 
 			}
 			w := around(file, at, fmt.Sprintf("the lines around %s, no function found around it (%s)", what, lang))
 			if l := languageOf(file); l != nil { // what those lines call stands for their function's calls
-				w.calls = callsIn(l, r.lines(file)[w.from-1:w.to], "")
+				w.calls = codenav.CallsIn(l, r.lines(file)[w.from-1:w.to], "")
 			}
 			return w, true
 		case shown[g.key()]:
@@ -300,7 +291,7 @@ func reach(repo, head string, tests []string, f Finding, at int, symptomAt int, 
 	}
 	var wants []want
 	var many []string
-	add := func(names []string, langs []*language, why string) {
+	add := func(names []string, langs []*codenav.Language, why string) {
 		found := r.defs(names, langs)
 		for _, n := range names {
 			ds, m := pick(found[n], f.Cause.Path)
@@ -319,7 +310,7 @@ func reach(repo, head string, tests []string, f Finding, at int, symptomAt int, 
 		if cause.name != "" {
 			by = fmt.Sprintf("called by `%s`", cause.name)
 		}
-		add(cause.calls, []*language{l}, by)
+		add(cause.calls, []*codenav.Language{l}, by)
 		if cause.name != "" {
 			for _, c := range r.callers(cause) {
 				wants = append(wants, want{c, fmt.Sprintf("calls `%s`", cause.name)})
@@ -372,7 +363,7 @@ func (c Change) reaches(repo, head, path string, p Place) int {
 	hash := l.HashComments // a `#` opens a comment
 	used := map[string]bool{}
 	for _, line := range lines[p.From-1 : p.To] {
-		for _, n := range names(stripCode(line, hash)) {
+		for _, n := range names(codenav.StripCode(line, hash)) {
 			used[n] = true
 		}
 	}
@@ -380,7 +371,7 @@ func (c Change) reaches(repo, head, path string, p Place) int {
 		if rm.At < in.from || rm.At > in.to || p.From <= rm.At { // a removal of its function, above the quote
 			continue
 		}
-		for _, n := range guarded(stripCode(rm.Text, hash)) {
+		for _, n := range guarded(codenav.StripCode(rm.Text, hash)) {
 			if used[n] {
 				return rm.At
 			}
@@ -424,7 +415,7 @@ func init() {
 		throw raise try catch except finally int string bool float double char long short byte void local my`) {
 		notNames[w] = true
 	}
-	for w := range notCalls {
+	for w := range codenav.NotCalls {
 		notNames[w] = true
 	}
 }
