@@ -1,6 +1,9 @@
-# Judge — where it stands (2026-11-12)
+# The judge — a service of the engine
 
-**In one line:** asked on real use by the documentalist (a fix it
+**In one line:** not a role but a service the engine consults
+([ADR-0070, amended](../../../docs/adr/0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md#amendment-2026-11-20-the-judge-is-an-engine-service)):
+it answers one yes-or-no question a role's check cannot. Its prompts can
+be overridden in `roles/judge/prompts/`. Asked on real use by the documentalist (a fix it
 vouches for), the reviewer (each important finding) and the product owner
 (a closing as obsolete), at the best independence available from the
 agent judged ([ADR-0005](../../../docs/adr/0005-independence-takes-the-best-level-available.md)). Built on 2026-10-15.
@@ -8,9 +11,9 @@ agent judged ([ADR-0005](../../../docs/adr/0005-independence-takes-the-best-leve
 A try since 2026-10-13 is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
 
-## The three criteria
+## Its measures (2026-11-12)
 
-Built on 2026-10-15, by the maintainer, against the three criteria of
+When it was counted a role, built on 2026-10-15, by the maintainer, against the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md):
 
 1. **Nothing buildable in Missing**: met, 2026-10-14. The judge reads
