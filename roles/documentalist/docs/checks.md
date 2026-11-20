@@ -137,7 +137,7 @@ step 2): a count of lines next to a file the doc names among its sources
   research record, or a doc of the project's `history` globs: role.yaml)
   or a derived block.
 - **Reported** with the file, the count stated and the real one. While one
-  stands, `checked` cannot move ([the judge](judge.md#moving-checked)).
+  stands, `checked` cannot move ([the check](judge.md#moving-checked)).
 - **No agent counts**, and only lines are counted: tests, fields and other
   counts go through a project's `derive`, never guessed.
 

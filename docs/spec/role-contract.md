@@ -393,7 +393,7 @@ token), **apply** (trusted, no AI key).
    It runs apart from a Claude Code session it may be started from: that session's variables are dropped
    ([measured](../research/claude-session-env.md)). A `cmd:` agent is not
    sandboxed, so read-only is its command's promise, not the engine's.*
-4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
+4. **Check — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
    Writes `out/verdict.yaml`. It guards what the AI must not decide (for
    example, the committer's `post` refuses a rewritten message that fails the
    same checks, or carries a secret). A question no check can answer, `post` does not answer: it

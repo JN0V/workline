@@ -5,7 +5,7 @@ verified: agent:claude-code
 ---
 # Documentalist — the code examples a fix writes
 
-Part of [the judge](judge.md). The removal rule reads the words a fix
+Part of [the check](judge.md). The removal rule reads the words a fix
 takes out; no word says whether a code example compiles, or runs right.
 On DomoticsCore, a fix rewrote an example that compiled and was wrong at
 run time; its pull request said "fixed in 8 places", the example among

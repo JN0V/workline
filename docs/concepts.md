@@ -60,11 +60,11 @@ The words the other pages use, each in a few lines. The rules behind them:
    mechanical checks.
 2. **Propose** (the agent) answers with proposals from the role's closed
    list: a patch, a comment, an issue, a commit message…
-3. **Judge** (no AI) refuses a proposal that breaks the role's rules.
+3. **Check** (no AI) refuses a proposal that breaks the role's rules.
 4. **Apply** (the engine, no AI) writes what was accepted: the working
    tree, a commit, a comment, an issue.
 
-In CI, `--no-apply` stops after judging; `workline apply` runs later, in
+In CI, `--no-apply` stops after the check; `workline apply` runs later, in
 a job that holds the write token and no AI key. Each run is kept in
 `.git/workline/runs/` ([one run](spec/role-contract.md#one-run)).
 

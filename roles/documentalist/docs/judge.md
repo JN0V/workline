@@ -8,10 +8,11 @@ sources:
 checked: e2e165c2d
 verified: agent:claude-code
 ---
-# Documentalist — the judge
+# Documentalist — the check
 
-Part of [the documentalist](../README.md). `post` judges the agent's
-answer with no AI, before anything is applied. Words used here:
+Part of [the documentalist](../README.md). `post` checks the agent's
+answer with no AI, before anything is applied; the judge is the engine's
+service it may consult. Words used here:
 
 - **vouched for**: `checked` moved to the commit the task gave — the doc
   read true against its sources;
