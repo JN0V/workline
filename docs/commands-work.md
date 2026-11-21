@@ -1,17 +1,27 @@
 ---
-sources: [cmd/workline, internal/engine/engine.go, internal/hooks, internal/line/states.go]
-checked: e4e4287bc
+sources:
+  - cmd/workline/main.go#testCmd
+  - cmd/workline/main.go#developCmd
+  - cmd/workline/main.go#routeCmd
+  - cmd/workline/main.go#reviewCmd
+  - cmd/workline/main.go#itemCmd
+  - cmd/workline/main.go#issuesCmd
+  - cmd/workline/main.go#importIssues
+checked: b2a36983f
 verified: agent:claude-code
 ---
 # The commands that do the work
 
 The tester's, the developer's, the reviewer's and the backlog's commands,
 with every option and case; part of [the commands](commands.md).
+A run of `test`, `develop`, `review` or `route` that does not pass says
+why on stderr, its summary then each `rule: message`; with `--json`,
+stdout keeps the result alone.
 
 ## workline test
 
 `workline test check --base <ref>` is the tester's red-first check, with
-no agent ([tester](../roles/tester/README.md#check-a-change)); it returns 0 or 1:
+no agent ([tester](../roles/tester/README.md#check-a-change)); it returns 0 or 1, or 2 when a red is unproven and waits for a person:
 
 - **The new tests**: those the head's JUnit report holds and the
   base's does not, the test command run in a checkout apart for each.

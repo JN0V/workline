@@ -3,7 +3,8 @@ sources:
   - defaults/ci/github/workline.yml#name
   - defaults/ci/github/workline.yml#on
   - defaults/ci/github/workline.yml#concurrency
-  - defaults/ci/github/workline.yml#env
+  - defaults/ci/github/workline.yml#env.WORKLINE_VERSION
+  - defaults/ci/github/workline.yml#env.WORKLINE_RUNS_DIR
   - defaults/ci/github/workline-apply.yml#name
   - defaults/ci/github/workline-apply.yml#jobs.apply
   - defaults/ci/github/workline-warn.yml#name
@@ -20,7 +21,9 @@ sources:
   - defaults/ci/github/workline-sample.yml#name
   - defaults/ci/github/workline-sample.yml#on
   - defaults/ci/github/issue-form-need.yml#name
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_VERSION
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_IMAGE
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_RUNS_DIR
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
@@ -39,7 +42,7 @@ sources:
   - cmd/workline/main.go#initCmd
   - cmd/workline/main.go#issuesCmd
   - internal/doctor/conversations.go#findingsOnMergeRequests
-checked: 8538d558
+checked: cd70f3299
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -75,12 +78,21 @@ then one that applies, with the write token and no AI key
 | test corpus | with the gardening, opt-in | the tester's curator: each test's time, red and flaky ones over time, coverage; with an agent, a few redundant tests removed, proven | the job's summary, a history artifact ([how](../roles/tester/docs/curator.md)); a pull request ([how](../roles/tester/docs/removals.md)) |
 | an issue's state | a state's label on an issue, opt-in; hourly, a reconciler for what an event missed | the role its state wakes: the tester's tests, the developer's code, proven | the Draft or the pull request, the issue's next state; its next step started ([how](../roles/developer/docs/triggers.md)) |
 | a role's own merge request | an objection on the tester's Draft; a verdict, a gate or a test red, or a person's comment on the developer's | the tester's answer; the developer's review round | the reply or the rewritten test; the fix, pushed on its branch ([objections](objection-jobs.md), [review loop](../roles/developer/docs/review-loop.md)) |
+
+## The other jobs
+
+With the gardening, or by hand:
+
+| Task | When | Judges | Applies |
+|---|---|---|---|
 | normal size | with the gardening | the normal size of an issue, from the line's records; no agent | one comment kept in place ([how](commands.md#workline-size)) |
 | release dry run | with the gardening | what would hold the release if it were cut now; no agent | a part of main's issue ([how](release.md)) |
 | release merge request | each of its runs; on GitHub, again when the hold label changes or main's runs end | an open issue labelled `workline:hold-release`, main's tip not green: read, never run again | its check pending while main runs, red when held ([how](release-holds.md)) |
 | release, GitLab | a tag pipeline | the release's line, no agent, no token | — : red when it holds the release, so the jobs publishing it wait ([how](release.md#at-a-tag-on-gitlab)) |
 | sample | weekly | the docs and acts drawn | an issue comment, a merge request |
 | import | by hand | a file's items | the issues |
+
+## What every job follows
 
 - **The gates run first, alone**, with no write token and no AI key
   ([gates in CI](gates-in-ci.md)).

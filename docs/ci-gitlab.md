@@ -1,6 +1,7 @@
 ---
 sources:
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_IMAGE
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_RUNS_DIR
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:environment
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
@@ -22,7 +23,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:objection
   - internal/doctor/variables.go#tokensScoped
   - internal/forge/hold.go#HoldLabel
-checked: e4e4287bc
+checked: b2a36983f
 verified: agent:claude-code
 reader: 9799dcaf51f3
 ---
@@ -116,8 +117,7 @@ to the environment **`workline`**:
   then the variable. It expires within a year: rotate it the same way
   (`glab variable update`).
 - **Where project access tokens are not offered** (GitLab documents them as
-  Premium on gitlab.com; one was made on a Free user's project,
-  2026-10-05): a personal access token, `api` and `write_repository`, of
+  Premium on gitlab.com): a personal access token, `api` and `write_repository`, of
   an account made for the line, added to the project as Developer. The
   job's own `CI_JOB_TOKEN` reaches no issue: it is never enough.
 - **The agent's credentials**, if you want an agent to judge, scoped to
@@ -149,8 +149,7 @@ Monday's workday. The release never waits for the docs
   left from an older template; it no longer gardens, but still runs the
   release's dry run, and the curator when it is on.
 - **When it runs**: gitlab.com runs a schedule at its own interval, not
-  at the minute written (`13 17 * * *` ran at 18:08): expect it within
-  the hour after.
+  at the minute written: expect it within the hour after.
 
 ### 4. The weekly sample
 
