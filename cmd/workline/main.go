@@ -1260,6 +1260,9 @@ func testCmd(args []string) int {
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	noApply := fs.Bool("no-apply", false, "write, answer, curate: judge, apply nothing; a job apart applies it with `workline apply <run>`, holding the write token and no agent's key")
 	history := fs.String("history", "", "measure, curate: the curator's history file, read before and written after (curate: the folder it weighed); CI passes it from one run to the next as an artifact (missing: the first measure)")
+	mode := fs.String("mode", "local", "sets: local (the changed modules), pr (and their dependents) or release (all)")
+	manifest := fs.String("manifest", "", "sets: a JSON file, each module to the modules it depends on")
+	changed := fs.String("changed", "", "sets: the changed files, comma separated")
 	var summaryFiles multi
 	fs.Var(&summaryFiles, "summary", "measure: also add the measures to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	sub, code, done := parseAfter(fs, args, "check, measure, curate, write or answer")
@@ -1267,6 +1270,22 @@ func testCmd(args []string) int {
 		return code
 	}
 	switch {
+	case sub == "sets":
+		var files []string
+		for _, f := range strings.Split(*changed, ",") {
+			if f = strings.TrimSpace(f); f != "" {
+				files = append(files, f)
+			}
+		}
+		mods, err := tester.SetsLines(*manifest, *mode, files)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		for _, m := range mods {
+			fmt.Println(m)
+		}
+		return 0
 	case sub == "write":
 		if *issue <= 0 {
 			return misuse(fs, "write needs --issue <n>, the ready issue to write the tests of")

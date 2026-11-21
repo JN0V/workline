@@ -296,3 +296,13 @@ The command, by ecosystem:
 | cargo nextest | `cargo nextest run --profile ci`, `test-report` set to its JUnit path |
 | Maven | `mvn test`, `test-report: "**/target/surefire-reports/*.xml"` |
 | Gradle | `./gradlew test`, `test-report: "**/build/test-results/**/*.xml"` |
+
+## Test sets and gardening (#264)
+
+- `workline test sets --manifest deps.json --mode local|pr|release --changed a/x.go,b/y.go`
+  prints the modules whose tests run (`deps.json`: each module to the
+  modules it depends on).
+- `growth-limit-percent`: the curator gardens only once the corpus
+  grew beyond it since the last gardening (kept in the history).
+- `test-coverage-map`: per-test coverage; the curator's task then lists
+  merge proposals. They are proposed only: the curator or a person decides.
