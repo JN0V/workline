@@ -2,16 +2,13 @@
 sources:
   - internal/line/hold.go#releaseHolds
   - internal/line/hold.go#waitHolds
-  - internal/line/hold.go#onlyPending
-  - internal/line/hold.go#onlyUnread
   - internal/forge/hold.go#HoldLabel
-  - internal/forge/hold.go#tipOf
+  - internal/release/release.go#Settings.IsBranch
   - internal/forge/hold.go#github.Holding
   - internal/forge/hold.go#gitlab.Holding
-  - internal/release/release.go#Settings.IsBranch
-  - internal/forge/gitlab.go#gitlab.connect
+  - defaults/ci/github/workline.yml#jobs.propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
-checked: e2e165c2d
+checked: bd254cd75
 verified: agent:claude-code
 judged-in-parts: 786d304
 ---
@@ -40,9 +37,9 @@ Nothing is run again for it: what is read is the forge's.
 ## What holds it
 
 The release tool's merge request (its branch, as `release: branches:`
-names them, [config](config.md)) blocks, its check red, while:
+names them, [config](config.md); `release.go` tells them) blocks, its check red, while:
 
-- **an open issue carries the label `workline:hold-release`**: whoever
+- **an open issue carries the label `workline:hold-release`** (`hold.go`, in the forge's folder, names it): whoever
   may label issues holds the release. Take the label off, or close the
   issue, to let it go. Each such issue is named in the check.
 - **a check on the default branch's tip is red, or not done**: the tests
@@ -68,8 +65,8 @@ glab label create --name workline:hold-release --description "Holds the release 
 
 - **While main's checks run**: the release's check waits for them,
   pending, then turns green or red with them, 30 minutes at most
-  (`route --release-wait 30m` in both templates:
-  [GitHub's](github/release-holds.md)). A forge's required
+  (`route --release-wait 30m` in both templates, `workline.yml`'s
+  `propose` job on GitHub and `workline:propose` on GitLab: [GitHub's](github/release-holds.md); `hold.go`, in the line's folder, does the waiting). A forge's required
   check cannot say "pending" otherwise: a job that ended is green or
   red. Only when nothing else holds the release. A read of the forge
   that fails meanwhile does not end the wait.

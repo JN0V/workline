@@ -3,10 +3,7 @@ sources:
   - cmd/workline/main.go#routeCmd
   - cmd/workline/main.go#followCmd
   - internal/line/line.go#QueueInput
-  - internal/line/line.go#queueSaid
-  - internal/line/line.go#Gates.step
-  - defaults/ci/github/workline-apply.yml#jobs.queue
-checked: e2e165c2d
+checked: bd254cd75
 verified: agent:claude-code
 ---
 # The commands, for another CI
@@ -28,3 +25,8 @@ workline route merge-request --ai none --forge none --input queue=true \
 - **The yes on a group** (GitHub): `workline follow --forge github
   --merge-group <the group's branch> --head <its commit>`, with the
   App's token.
+
+## Where it is read
+
+`main.go` reads the flags of both commands; `line.go` builds the input of
+`queue`.

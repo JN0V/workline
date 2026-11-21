@@ -29,7 +29,7 @@ sources:
   - release-please-config.json
   - .github/workflows/release.yml#name
   - .goreleaser.yaml#release
-checked: 3bab32400
+checked: b2a36983f
 verified: agent:claude-code
 judged: 220b6dc
 ---
@@ -120,7 +120,7 @@ With release-please, never a tag by hand
 - on that pull request, `propose` holds it while an open issue is labelled
   `workline:hold-release` or main's tip is not green
   ([what holds a release](../release-holds.md)); release-please keeps it
-  on `main` (`always-update`);
+  up to date with `main` (its config's always-update setting);
 - the person merges it each Monday, sooner for a fix that touches a
   real user: that is the decision. release-please tags the
   merged commit `vX.Y.Z` and writes the release with its notes; in the

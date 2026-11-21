@@ -45,7 +45,7 @@ sources:
   - internal/engine/follow.go#maxDraftRebuilds
   - internal/engine/done.go#settleDone
   - internal/forge/local.go#Local.SettleMerges
-checked: e4e4287bc
+checked: b2a36983f
 verified: agent:claude-code
 ---
 # The commands, in detail

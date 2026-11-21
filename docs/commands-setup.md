@@ -19,6 +19,8 @@ sources:
   - internal/doctor/doctor.go#agent
   - internal/doctor/doctor.go#repository
   - internal/doctor/doctor.go#docs
+  - roles/documentalist/code/documentalist.go#Coverage
+  - roles/documentalist/code/unread.go#UnreadDocs
   - internal/doctor/doctor.go#hooksPath
   - internal/doctor/doctor.go#forgeCommand
   - internal/doctor/workflows.go#ciTemplates
@@ -50,7 +52,7 @@ sources:
   - internal/line/seconds.go#Result.Times
   - internal/line/seconds.go#Result.OverBudget
   - defaults/routing.yaml#budgets
-checked: e4e4287bc
+checked: b2a36983f
 verified: agent:claude-code
 ---
 # The commands that set up
@@ -122,11 +124,15 @@ Adopts this repository; run it again to do what is left.
 Says what is set up, with the command that sets up each thing missing;
 changes nothing.
 
+### On this machine and in this repository
+
 - On this machine: git, the global hooks (and whether this version wrote
   them), the agent, the tools the roles use.
 - In this repository: which hooks git runs there, whether the
   documentalist runs before a push, how many docs declare their sources,
   which files read as docs it does not read.
+### CI, languages and tests
+
 - Where CI runs workline: each workflow pinning a release older than
   this engine (`WORKLINE_VERSION`), and each event routed that no
   GitHub workflow runs, with the template to copy; nothing when CI runs
@@ -143,14 +149,16 @@ changes nothing.
 - For each language the repository holds: which tools read it (lint,
   types, security, dependencies), which it lacks, and the gate check to
   add; a warning, never an error ([languages](languages.md)).
+### The forge
+
 - On GitHub: whether the default branch requires every conversation
   resolved before a merge, and how workline's findings reach pull
-  requests. A rule
-  it cannot read — classic branch protection, without an admin's token —
-  is said. Whether this token can bypass the default branch's rulesets:
+  requests. A rule it cannot read — classic branch protection, without
+  an admin's token — is said.
+- On GitHub too: whether this token can bypass the default branch's rulesets:
   nobody should, a warning names each one it can
-  ([nobody bypasses `main`](merge-policy-no-bypass.md)). On a public
-  repository, whether an active Actions event policy lets the workflows
+  ([nobody bypasses `main`](merge-policy-no-bypass.md)).
+- On a public GitHub repository: whether an active Actions event policy lets the workflows
   on `pull_request_target` run: a warning when not
   ([pull_request_target](github/pull-request-target.md)). `--forge` names
   the forge; by default the project's `forge`, else GitHub when its

@@ -1,23 +1,21 @@
 ---
 sources:
   - defaults/routing.yaml#events.release
-  - defaults/ci/github/workline-gardening.yml#jobs.dry-run
-  - defaults/ci/github/workline-gardening.yml#jobs.dry-run-post
-  - defaults/ci/github/workline-apply.yml#jobs.main
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue
   - internal/line/dryrun.go#dryRunOn
+  - cmd/workline/main.go#keepDryRun
+  - cmd/workline/main.go#exitFor
+  - internal/report/dryrun.go#keptDryRun
+  - internal/backlog/ledger.go#Inert
   - tests/conformance/cases/release/dry-run-at-a-release-has-nothing-to-cut.yaml
   - tests/conformance/cases/release/dry-run-warns-runs-every-step.yaml
   - tests/conformance/cases/release/holds-not-read-without-a-forge.yaml
-  - internal/report/dryrun.go#WithDryRun
-  - internal/report/dryrun.go#keptDryRun
-  - cmd/workline/main.go#keepDryRun
-  - cmd/workline/main.go#exitFor
   - tests/conformance/cases/cli/release-dry-run-asks-no-agent.yaml
-checked: e2e165c2d
+  - defaults/ci/github/workline-gardening.yml#jobs.dry-run
+  - defaults/ci/github/workline-gardening.yml#jobs.dry-run-post
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
+checked: a91f3ef9b
 verified: agent:claude-code
 ---
 # The release: a dry run with gardening, a check at the tag
@@ -109,3 +107,21 @@ workline route release --ai none --forge none                             # at t
 
 - The agent is never asked by the dry run: `--ai` naming one is refused.
 - Without a forge (`--forge none`), nothing is posted.
+
+## Where it is read
+
+- **The dry run, no agent**: `dryrun.go` starts it on the branch that is
+  checked out, nothing applied; on a tip that is a release already, there
+  is nothing to cut. The gardening job runs it on main.
+- **Posting its result**: `workline apply --release-dry-run` is read by
+  `main.go`, which reads the file the dry run wrote and posts it in main's
+  issue, put in, edited, or taken out when nothing holds. Before it is
+  posted, `Inert` in `ledger.go` escapes each line that starts with `/`, so
+  GitLab runs no quick action from it; `main.go` turns the status of a run
+  into its exit code. When main's issue is rewritten after a merge, `dryrun.go`,
+  in the report, takes the dry run's part out and puts it back as it was.
+- **The cases that guard it**, in `tests/conformance/cases/`:
+  `dry-run-at-a-release-has-nothing-to-cut.yaml`,
+  `dry-run-warns-runs-every-step.yaml`,
+  `holds-not-read-without-a-forge.yaml` and
+  `release-dry-run-asks-no-agent.yaml`.
