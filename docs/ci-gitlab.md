@@ -1,6 +1,7 @@
 ---
 sources:
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_IMAGE
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_RUNS_DIR
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:environment
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude

@@ -3,7 +3,7 @@ sources:
   - defaults/ci/github/workline.yml#name
   - defaults/ci/github/workline.yml#on
   - defaults/ci/github/workline.yml#concurrency
-  - defaults/ci/github/workline.yml#env
+  - defaults/ci/github/workline.yml#env.WORKLINE_RUNS_DIR
   - defaults/ci/github/workline-apply.yml#name
   - defaults/ci/github/workline-apply.yml#jobs.apply
   - defaults/ci/github/workline-warn.yml#name
@@ -20,7 +20,8 @@ sources:
   - defaults/ci/github/workline-sample.yml#name
   - defaults/ci/github/workline-sample.yml#on
   - defaults/ci/github/issue-form-need.yml#name
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_IMAGE
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_RUNS_DIR
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
