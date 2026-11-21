@@ -47,6 +47,10 @@ func run(name, wf, status, started string) forge.Run {
 	return forge.Run{Name: name, Workflow: wf, Status: status, Started: started, Updated: started}
 }
 
+// succeeded marks a run as ended well: only such a run counts as a
+// backlog run (#1765).
+func succeeded(r forge.Run) forge.Run { r.Success = true; return r }
+
 // done: every shipped timed job ran since its time.
 var done = []forge.Run{
 	run("workline merge", "workline-merge.yml", "completed", "2026-11-16T02:00:00Z"),
@@ -79,13 +83,13 @@ func TestDue(t *testing.T) {
 		{"backlog due", po, 6, done, "", []string{"reconcile", "backlog"}, ""},
 		{"backlog going", po, 6, append(slices.Clone(done), run("workline gardening backlog", "workline-gardening.yml", "queued", "2026-11-16T02:18:00Z")),
 			"", []string{"reconcile"}, `backlog: "workline gardening backlog" queued`},
-		{"backlog ran, readied none, nothing left Ready", po, 6, append(slices.Clone(done), run("workline gardening", "workline-gardening.yml", "completed", "2026-11-16T01:47:00Z")),
+		{"backlog ran, readied none, nothing left Ready", po, 6, append(slices.Clone(done), succeeded(run("workline gardening", "workline-gardening.yml", "completed", "2026-11-16T01:47:00Z"))),
 			"", []string{"reconcile"}, "readied none"},
 		{"reconcile going", po, 10, append(slices.Clone(done), run("workline develop heartbeat", "workline-develop.yml", "waiting", "2026-11-16T02:16:00Z")),
 			"", nil, `reconcile: "workline develop heartbeat" waiting`},
 		{"nightly due", po, 10, append(slices.Clone(done), run("workline gardening nightly", "workline-gardening.yml", "completed", "2026-11-15T02:19:00Z")),
 			"", []string{"reconcile", "nightly"}, ""},
-		{"nightly done", po, 10, append(slices.Clone(done), run("workline gardening nightly", "workline-gardening.yml", "completed", "2026-11-16T02:17:00Z")),
+		{"nightly done", po, 10, append(slices.Clone(done), succeeded(run("workline gardening nightly", "workline-gardening.yml", "completed", "2026-11-16T02:17:00Z"))),
 			"", []string{"reconcile"}, "nightly: ran at 2026-11-16T02:17:00Z"},
 		{"merge's gap passed", po, 10, []forge.Run{done[1], done[2], run("workline merge", "workline-merge.yml", "completed", "2026-11-16T01:19:00Z")},
 			"", []string{"reconcile", "merge"}, ""},
