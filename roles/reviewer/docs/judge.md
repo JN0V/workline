@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/prompts/lenses, roles/reviewer/code, internal/codenav]
-checked: 6088f02a
+checked: 60a7720e
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -36,6 +36,13 @@ build ([research](../../../docs/research/code-navigation.md)), up to
 - references by `git grep -w` at the head; a name defined in the cause's
   file first, then its folder; in more than two other places, named, none
   shown; test files left to the tests judge.
+
+**A code comment is not the spec**: where the judge is shown the issue's
+text, it is told that the issue and a person's answer in it outrank a
+comment in the code. A comment calling a behaviour intended does not drop
+a finding against the issue's spec; it drops one only when no spec
+contradicts it, the issue being silent on the behaviour. For a cause
+outside the issue's files, the judge is shown the issue for this.
 
 **Its question** is the lens's (the front matter of `lenses/<lens>.md`),
 else whether the quoted code fails:

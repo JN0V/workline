@@ -1,3 +1,12 @@
+---
+sources:
+  - internal/scale/scale.go#WeightOf
+  - internal/scale/scale.go#Own
+  - internal/backlog/board.go#NextMaxLimit
+  - roles/product-owner/role.yaml#settings
+checked: 60a7720e
+verified: agent:claude-code
+---
 # Priority and effort, proposed
 
 Part of [the product owner](../README.md). Proposed by

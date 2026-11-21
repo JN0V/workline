@@ -6,7 +6,7 @@ sources:
   - defaults/ci/github/workline-objection.yml
   - defaults/ci/github/workline-answer.yml
   - defaults/ci/github/workline-gardening.yml
-checked: e4e4287bc
+checked: 60a7720e
 verified: agent:claude-code
 ---
 # Tester
@@ -172,7 +172,9 @@ Each refusal is written on the issue ([how](docs/refused.md)).
   takes the first objection waiting, checked out at the branch's tip.
   The agent reads the scenario first, then answers in the thread:
   - *kept*, with its reason;
-  - *rewritten*: its own commit on the branch, `Refs` the thread. It
+  - *rewritten*: its own commit on the branch, `Refs` the thread. Its subject keeps within the
+    committer's subject limit and starts with a type the committer allows
+    (`test` unless the project's settings forbid it). It
     must be red on the base, and keep its scenarios' declared tests,
     or name the new ones in a `covers` entry. The record
     and the reply follow only once the commit is pushed.
