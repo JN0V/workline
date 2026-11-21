@@ -514,12 +514,27 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a d
 	if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
 		return r, false, err
 	}
-	own, err := forge.OwnAccount(f)
+	_, err = forge.OwnAccount(f)
 	if err != nil {
 		return r, false, fmt.Errorf("%w: %w", errOwnAccount, err)
 	}
+	// The comments of the review threads count as notes: a person's
+	// reply there is asked as one in the main conversation.
+	if th, ok := f.(forge.Threaded); ok {
+		threads, err := th.Threads(id)
+		if err != nil {
+			return r, false, err
+		}
+		for _, t := range threads {
+			for _, c := range t.Comments {
+				if c.ID != "" && !slices.ContainsFunc(notes, func(n forge.Note) bool { return n.ID == c.ID }) {
+					notes = append(notes, c)
+				}
+			}
+		}
+	}
 	for _, n := range notes {
-		if !n.Insider || n.Bot || own.Wrote(n) || slices.Contains(a.Heard, n.ID) || strings.Contains(n.Body, "<!-- workline:") {
+		if !n.Insider || n.Bot || kept.Wrote(n) || slices.Contains(a.Heard, n.ID) || strings.Contains(n.Body, "<!-- workline:") {
 			continue
 		}
 		r.Heard = append(r.Heard, n.ID)
