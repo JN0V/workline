@@ -51,6 +51,10 @@ type Settings struct {
 	// (`build.gradle.kts`, `pom.xml`): set, `{packages}` is the modules
 	// a change touches, not the folders holding tests (#1176).
 	ModuleFiles []string `json:"module-files"`
+	// Packages map a glob to the package its files run in, `{packages}`
+	// taking it for a file the glob names: `roles/*/cases/**` to
+	// `./tests/conformance`. Unset, a file's package is found walking up.
+	Packages map[string]string `json:"packages"`
 	// CodeLinesMax caps the lines of code and tests given to the agent
 	// when it writes an issue's tests, all files together.
 	CodeLinesMax int `json:"code-lines-max"`

@@ -40,7 +40,7 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 	s.deadline = deadline
 	var pkgs []string
 	if strings.Contains(scope.Command, "{packages}") {
-		if pkgs = Packages(tree, scope.Files, s.Paths, s.ModuleFiles); len(pkgs) > 0 {
+		if pkgs = Packages(tree, scope.Files, s.Paths, s.ModuleFiles, s.Packages); len(pkgs) > 0 {
 			args := strings.Join(pkgs, " ")
 			if run := caseGroups(scope.Files, pkgs); run != "" {
 				args += " -run '" + run + "'"
@@ -84,6 +84,11 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 // file a test pattern names (`**/*_test.go`; not `tests/**`, which names
 // a folder). A file with none above it adds none: no test to run there.
 //
+// mapping, the tester's packages setting, a glob to a package: a file the
+// glob names is in that package, whatever tests lie above it (a role's
+// conformance cases, `roles/*/cases/**` to `./tests/conformance`); the
+// others are found as above.
+//
 // modules, the tester's module-files, set: the build modules instead
 // (#1176), as Gradle or Maven take them: the nearest folder above each
 // file holding a file one of them names (`build.gradle.kts`, `pom.xml`,
@@ -91,7 +96,7 @@ func OnChange(repo, rev string, patches []intent.Intention, s Settings, deadline
 // `gradle/libs.versions.toml`) reaches every module: none, the whole
 // suite runs; with a build file at the root, so does a file outside any
 // other module (`docs/x.md`). With none there, such a file adds none.
-func Packages(tree string, files, patterns, modules []string) []string {
+func Packages(tree string, files, patterns, modules []string, mapping map[string]string) []string {
 	if len(modules) > 0 {
 		return buildModules(tree, files, modules)
 	}
@@ -116,8 +121,17 @@ func Packages(tree string, files, patterns, modules []string) []string {
 		holds[dir] = false
 		return false
 	}
+	globs := make([]string, 0, len(mapping))
+	for g := range mapping {
+		globs = append(globs, g)
+	}
+	slices.Sort(globs)
 	var out []string
 	for _, f := range files {
+		if i := slices.IndexFunc(globs, func(g string) bool { return pathglob.Match(g, path.Clean(f)) }); i >= 0 {
+			out = append(out, mapping[globs[i]])
+			continue
+		}
 		for dir := path.Dir(path.Clean(f)); ; dir = path.Dir(dir) {
 			if tests(dir) {
 				out = append(out, pkgArg(dir))

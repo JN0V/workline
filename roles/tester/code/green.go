@@ -320,6 +320,9 @@ func conformanceQualified(pkg, file string) bool {
 	dir := path.Dir(file)
 	for dir != "." && dir != "/" {
 		if path.Base(dir) == "cases" {
+			if strings.HasPrefix(path.Dir(dir), "roles/") {
+				return qualifiedBy(pkg, conformancePkg+"/x") // a role's cases run in the suite
+			}
 			return qualifiedBy(pkg, path.Join(path.Dir(dir), "x"))
 		}
 		dir = path.Dir(dir)
