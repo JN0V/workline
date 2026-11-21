@@ -141,9 +141,9 @@ roles:
 
 ## Where the numbers are set
 
-- **One in ten**: `OneIn`, in `sample.go`.
-- **Three issues a week at most**: `defectsMax`, in `count.go`.
-- **The 400000-token cap**: `SampleTokens`, in `docmark.go`, when no
+- **One in ten**: `sample.go` sets it.
+- **Three issues a week at most**: `count.go` sets it.
+- **The 400000-token cap**: `docmark.go` sets it, when no
   `ai-max-tokens` is set.
 - **The schedule**: `workline-sample.yml` on GitHub; on GitLab the jobs
   `workline:sample:read` and `workline:sample:write`.

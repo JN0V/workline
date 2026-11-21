@@ -3,6 +3,10 @@ sources:
   - internal/engine/candidate.go#CandidateLabel
   - internal/engine/candidate.go#NextMilestone
   - internal/engine/candidate.go#releaseAs
+  - internal/engine/candidate.go#candidateRun.milestone
+  - internal/engine/candidate.go#candidateRun.copy
+  - internal/engine/candidate.go#candidateRun.yes
+  - internal/engine/candidate.go#candidateRun.refused
   - defaults/ci/github/release-candidate.yml#jobs.candidate
   - defaults/ci/github/workline-merge.yml#jobs.follow.if
 checked: bd254cd75

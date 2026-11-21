@@ -3,6 +3,12 @@ sources:
   - defaults/routing.yaml#events.release
   - internal/line/dryrun.go#dryRunOn
   - cmd/workline/main.go#keepDryRun
+  - cmd/workline/main.go#exitFor
+  - internal/report/dryrun.go#keptDryRun
+  - tests/conformance/cases/release/dry-run-at-a-release-has-nothing-to-cut.yaml
+  - tests/conformance/cases/release/dry-run-warns-runs-every-step.yaml
+  - tests/conformance/cases/release/holds-not-read-without-a-forge.yaml
+  - tests/conformance/cases/cli/release-dry-run-asks-no-agent.yaml
   - defaults/ci/github/workline-gardening.yml#jobs.dry-run
   - defaults/ci/github/workline-gardening.yml#jobs.dry-run-post
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
@@ -103,7 +109,16 @@ workline route release --ai none --forge none                             # at t
 
 ## Where it is read
 
-- **The dry run, no agent**: `dryrun.go` starts it on the release branch's
-  tip.
-- **Keeping its result for the apply**: `main.go` writes the file that
-  `workline apply --release-dry-run` reads.
+- **The dry run, no agent**: `dryrun.go` starts it on the branch that is
+  checked out, nothing applied; on a tip that is a release already, there
+  is nothing to cut. The gardening job runs it on main.
+- **Posting its result**: `workline apply --release-dry-run` is read by
+  `main.go`, which reads the file the dry run wrote and posts it in main's
+  issue, put in, edited, or taken out when nothing holds. `dryrun.go`, in
+  the report, cuts and defuses what the file says, and `main.go` turns
+  the status of a run into its exit code.
+- **The cases that guard it**, in `tests/conformance/cases/`:
+  `dry-run-at-a-release-has-nothing-to-cut.yaml`,
+  `dry-run-warns-runs-every-step.yaml`,
+  `holds-not-read-without-a-forge.yaml` and
+  `release-dry-run-asks-no-agent.yaml`.

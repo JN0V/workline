@@ -4,10 +4,15 @@ sources:
   - internal/engine/merge.go#theYes
   - internal/engine/merge.go#accepted
   - internal/engine/merge.go#heldByConversations
+  - internal/engine/merge.go#personsCommentOpen
+  - internal/engine/merge.go#stalled
+  - internal/engine/uptodate.go#upToDateAs
+  - internal/engine/uptodate.go#provenUpToDate
   - internal/engine/merge.go#releaseRebuild
   - internal/engine/merge.go#forkGuarded
   - internal/engine/queue.go#queueGroup
   - internal/forge/github_merge.go#github.AutoMerge
+  - internal/forge/gitlab_merge.go#gitlab.AutoMerge
   - defaults/ci/github/workline-merge.yml#on
   - defaults/ci/github/workline-apply.yml#jobs.verdict
   - defaults/ci/github/workline-apply.yml#jobs.queue
@@ -331,4 +336,8 @@ what is left: [status.md](../roles/documentalist/docs/status.md).
 - **A release tool's rebuild, no push**: `merge.go` tells it from a push.
 - **A fork**: `merge.go` guards it.
 - **The queue**: `queue.go` groups the pull requests that wait to merge.
+- **A person's comment left open**: `merge.go` finds the comments with no
+  answer, and a pull request the forge has left stalled.
+- **Up to date**: `uptodate.go` tells whether a head was proven up to date.
 - **GitHub's auto-merge**: `github_merge.go` turns it on.
+- **GitLab's auto-merge**: `gitlab_merge.go` turns it on.

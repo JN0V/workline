@@ -42,7 +42,7 @@ workline's run there guards that combination only
   names the gate that took the most, never a block (`queue` in
   [the budgets](spec/routing.md#each-steps-seconds-a-moments-budget)).
   `Measure`, in `seconds.go`, sets it from the `queue` budget of
-  `routing.yaml`, once `momentOf` has found the run is a queue's.
+  `routing.yaml`, once it has found the run is a queue's.
 
 ## GitHub: a merge queue
 
