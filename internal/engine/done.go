@@ -103,7 +103,7 @@ func closedBy(f forge.Forge, is forge.Issue, repo, base, branch string) string {
 }
 
 // unmerged tells whether the Draft's branch holds a file that base does
-// not hold as the branch does: its tests never reached base. A branch
+// not hold at all: its tests never reached base. A branch
 // that cannot be read is said unmerged: nothing proves they did (#1321).
 func unmerged(repo, base, branch string) bool {
 	if repo == "" {
@@ -124,9 +124,10 @@ func unmerged(repo, base, branch string) bool {
 		return true
 	}
 	for _, file := range strings.Fields(out) {
-		a, errA := git(repo, nil, "rev-parse", "--verify", "-q", ref+":"+file)
-		b, errB := git(repo, nil, "rev-parse", "--verify", "-q", base+":"+file)
-		if errA == nil && (errB != nil || strings.TrimSpace(a) != strings.TrimSpace(b)) {
+		_, errA := git(repo, nil, "rev-parse", "--verify", "-q", ref+":"+file)
+		_, errB := git(repo, nil, "rev-parse", "--verify", "-q", base+":"+file)
+		// a file base holds is reached, even edited there since (#1321)
+		if errA == nil && errB != nil {
 			return true
 		}
 	}
