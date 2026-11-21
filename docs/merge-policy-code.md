@@ -4,7 +4,7 @@ sources:
   - internal/engine/code.go#unreproduced
   - internal/kit/devmark/merge.go#Merge.WaitsForAYes
   - internal/backlog/assume.go#DefaultWait
-checked: bd254cd75
+checked: a2f65b253
 verified: agent:claude-code
 ---
 # The developer's code at `normal`
