@@ -50,6 +50,9 @@ rendering shows, or in a frontmatter the doc has.
     `FROM tool:v1.2.0`.
   - A doc the release commit bumps too says the new version: not
     suspect.
+  - **A part named** (`ci.yml#env.VERSION`) is read so on every run,
+    not only the release's: the bump stays in every later run's
+    history. A whole file bumped by hand elsewhere is still a change.
 - **A `checked` the branch does not hold** — one of a merge request since
   squashed or rebased — stands for the commit that brought it there, as
   does a `judged` or `judged-in-parts`
