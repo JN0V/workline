@@ -22,7 +22,7 @@ sources:
   - defaults/ci/github/workline-sample.yml#on
   - defaults/ci/github/workline-sample.yml#jobs.read.permissions
   - defaults/ci/github/workline-loop.yml#name
-checked: b2a36983f
+checked: 44127ac8
 verified: agent:claude-code
 reader: fe1505d43360
 ---
