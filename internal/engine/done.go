@@ -175,7 +175,7 @@ func changeOnBase(repo, base, mb, ref, file string) bool {
 	if err != nil {
 		return false
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	env := []string{"GIT_INDEX_FILE=" + filepath.Join(dir, "index")}
 	if _, err := run(env, nil, "read-tree", base); err != nil {
 		return false
