@@ -141,7 +141,7 @@ pushed to its branch.
 - [workline-gardening.yml](../defaults/ci/github/workline-gardening.yml):
   gardening, weekly, Sunday 18:07 UTC, so that its pull request lands
   before Monday's workday though GitHub may start it hours late; each
-  run named by its job, `workline gardening docs` there, as
+  run named by its job, `workline gardening docs and backlog` there, as
   [the tick](tick.md#what-it-lists) reads them; its `apply` runs every
   time ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
 - The same workflow runs **a release's dry run** too, `dry-run` then `dry-run-post`:
