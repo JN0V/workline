@@ -144,7 +144,7 @@ pushed to its branch.
   run named by its job, `workline gardening docs` there, as
   [the tick](tick.md#what-it-lists) reads them; its `apply` runs every
   time ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
-  It runs **a release's dry run** too, `dry-run` then `dry-run-post`:
+- The same workflow runs **a release's dry run** too, `dry-run` then `dry-run-post`:
   what would hold the release if it were cut now, said in main's
   issue ([how](release.md);
   [ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).

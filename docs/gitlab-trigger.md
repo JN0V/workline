@@ -48,7 +48,8 @@ GitLab is needed:
   project's clone with a Maintainer's token, creates both: the hook on
   issue events, and on note events where the reviewer or the product
   owner is routed on `issue`; `workline doctor` checks them
-  ([the commands](commands-setup.md#workline-setup)). On a self-managed instance, an administrator allows
+  ([the commands](commands-setup.md#workline-setup)).
+  On a self-managed instance, an administrator allows
   webhooks to reach the local network (Admin → Network → Outbound
   requests), as the hook calls GitLab itself (untried).
 - **Every issue change fires it**: a title edit, a new issue, a label

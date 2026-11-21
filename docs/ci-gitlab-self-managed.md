@@ -40,9 +40,8 @@ own changes. **Not tried yet on one**: tell us what differs.
   ([its runner](gitlab/tester-developer.md#the-developer)).
 - **Tokens**: project access tokens exist on every tier of a self-managed
   instance. Scope them to the environment `workline`, as on gitlab.com
-  ([how](gitlab/environment.md)): on a self-managed 19.2.4-ee, a variable
-  so scoped reached only the jobs declaring that environment
-  ([#520](https://github.com/JN0V/workline/issues/520)).
+  ([how](gitlab/environment.md)); the try is in
+  [#520](https://github.com/JN0V/workline/issues/520).
 - **The reviewer when a merge request becomes ready**: before GitLab
   17.10, no `CI_MERGE_REQUEST_DRAFT`, so the merge request is read from
   the API, before the agent is installed, none on a draft; a job token

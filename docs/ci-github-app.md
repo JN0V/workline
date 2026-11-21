@@ -47,8 +47,8 @@ branch's workflow
    - organization permission **Projects**, read and write, when the
      work shows on an organisation's project: the roles move its cards
      ([boards](board-github.md#who-may-write-a-github-project));
-   - **Checks** writes the checks `workline findings` and `workline gates`: the documentalist's
-     findings beside their lines, none a conversation to resolve
+   - **Checks** writes the checks `workline findings` (the documentalist's) and `workline gates` (the
+     gates' new findings): the findings beside their lines, none a conversation to resolve
      ([#412](https://github.com/JN0V/workline/issues/412)). An App made
      before: Settings → Developer settings → your App → Permissions, then
      accept the new permission on its installation;
