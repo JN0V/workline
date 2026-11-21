@@ -3,7 +3,7 @@ sources:
   - internal/line/seconds.go#momentOf
   - internal/line/seconds.go#Measure
   - defaults/routing.yaml#budgets.queue
-checked: bd254cd75
+checked: 3f432ab14
 judged: e4550b8
 verified: agent:claude-code
 ---

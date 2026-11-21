@@ -3,7 +3,7 @@ sources:
   - internal/engine/demote.go#demotions
   - internal/engine/demote.go#revertWindow
   - internal/engine/demote.go#mergeWindow
-checked: bd254cd75
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # Reverts at `normal`
