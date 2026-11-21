@@ -526,9 +526,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a d
 			return r, false, err
 		}
 		for _, t := range threads {
-			for _, c := range t.Comments {
-				notes = append(notes, c)
-			}
+			notes = append(notes, t.Comments...)
 		}
 	}
 	for _, n := range notes {
