@@ -1,0 +1,11 @@
+case: documentalist/version-bump-on-a-named-part-other-change-suspect
+about: "A doc naming a part of a file that holds a version, `ci/job.yml#env.VERSION`, is still suspect when that part changes in any other way than one version put in place of another: here the version is no longer pinned."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p ci && printf 'env:\\n  VERSION: v1.2.0   # x-release-please-version\\n  NAME: tool\\n' > ci/job.yml && printf -- '---\\nsources: [ci/job.yml#env.VERSION]\\nchecked: HEAD\\n---\\n# The job\\n\\nThe job runs the release in `VERSION`: update it to take a newer one.\\n' > docs/tech/job.md && git add ci docs && git commit -qm 'ci: the job'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/job.md && git commit -qam 'docs: confirm the job doc'"
+    - "sed -i 's/v1.2.0   # x-release-please-version/latest/' ci/job.yml && git commit -qam 'ci: take the latest release'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  findings: [{rule: suspect, where: docs/tech/job.md}]
