@@ -5,6 +5,7 @@ sources:
   - cmd/workline/main.go#keepDryRun
   - cmd/workline/main.go#exitFor
   - internal/report/dryrun.go#keptDryRun
+  - internal/backlog/ledger.go#Inert
   - tests/conformance/cases/release/dry-run-at-a-release-has-nothing-to-cut.yaml
   - tests/conformance/cases/release/dry-run-warns-runs-every-step.yaml
   - tests/conformance/cases/release/holds-not-read-without-a-forge.yaml
@@ -14,7 +15,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
-checked: bd254cd75
+checked: a91f3ef9b
 verified: agent:claude-code
 ---
 # The release: a dry run with gardening, a check at the tag
@@ -114,9 +115,11 @@ workline route release --ai none --forge none                             # at t
   is nothing to cut. The gardening job runs it on main.
 - **Posting its result**: `workline apply --release-dry-run` is read by
   `main.go`, which reads the file the dry run wrote and posts it in main's
-  issue, put in, edited, or taken out when nothing holds. `dryrun.go`, in
-  the report, cuts and defuses what the file says, and `main.go` turns
-  the status of a run into its exit code.
+  issue, put in, edited, or taken out when nothing holds. Before it is
+  posted, `main.go` escapes each line that starts with `/`, so GitLab
+  runs no quick action from it, and turns the status of a run into its
+  exit code. When main's issue is rewritten after a merge, `dryrun.go`,
+  in the report, takes the dry run's part out and puts it back as it was.
 - **The cases that guard it**, in `tests/conformance/cases/`:
   `dry-run-at-a-release-has-nothing-to-cut.yaml`,
   `dry-run-warns-runs-every-step.yaml`,
