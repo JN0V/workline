@@ -69,6 +69,10 @@ type Act struct {
 	// (step 4).
 	From       string   `json:"from,omitempty"`
 	Acceptance []string `json:"acceptance,omitempty"`
+	// Merged: the base's commit merged into From, which was behind it,
+	// for its code to start on the base's paths; its branch starts from
+	// that merge (#1941).
+	Merged string `json:"merged,omitempty"`
 	// RedUnproven: why the tester's red proof of those tests was not
 	// settled by its judge (ADR-0065): said on its pull request.
 	RedUnproven string   `json:"red-unproven,omitempty"`

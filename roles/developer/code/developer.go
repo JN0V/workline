@@ -532,14 +532,26 @@ func Pre(runDir, repo string) int {
 		bounds.Proof = &p
 	}
 	// Its code starts from the tester's Draft: the acceptance tests on it
-	// run in the proof (ADR-0054, step 4).
+	// run in the proof (ADR-0054, step 4). A Draft behind the base gets
+	// the base merged in first, in this clone only: its agent's diff then
+	// applies on the base's paths (#1941).
+	from, conflicts, err := draftOnBase(repo, bounds.Head, at)
+	if err != nil {
+		return fail(err)
+	}
+	if len(conflicts) > 0 {
+		return draftBehind(runDir, repo, id, bounds.Head, at, conflicts, said)
+	}
 	act.From, act.Acceptance, act.RedUnproven = bounds.Head, bounds.acceptance(), bounds.RedUnproven
+	if from != bounds.Head {
+		act.Merged = at
+	}
 	if err := writeIn(runDir, pickFile, act); err != nil {
 		return fail(err)
 	}
 	on := at
-	if bounds.Head != "" {
-		on = bounds.Head // its code starts from the tester's Draft
+	if from != "" {
+		on = from // its code starts from the tester's Draft, the base in it
 	}
 	ts, tsErr := testerSettings(repo) // none set, or unread, is said in the question; the proof says it again
 	return ask(runDir, repo, on, bounds, taskText(is, bounds, ts.Command, tsErr, s))
@@ -832,6 +844,12 @@ func Post(runDir, repo string) int {
 	on := a.At
 	if a.From != "" {
 		on = a.From // the tester's Draft, its acceptance tests on it
+	}
+	if a.Merged != "" {
+		// The base merged into it, as pre made it: the same commit.
+		if on, _, err = draftOnBase(repo, a.From, a.Merged); err != nil || on == "" {
+			return fail(fmt.Errorf("the base %s merged into the tester's Draft %s again: %v", devmark.ShortSHA(a.Merged), devmark.ShortSHA(a.From), err))
+		}
 	}
 	kept, refused, said, unread, why, err := held(runDir, repo, on, b, claim, proposed)
 	if err != nil {

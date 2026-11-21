@@ -8,7 +8,8 @@ given:
   repo: tested-draft
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
-    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && git commit -q -am 'feat: subtract' && git push -q origin main"
+    - "git checkout -q workline/tester/issue-3 && printf 'add() { echo $(( $1 + $2 )); }\\n' > lib.sh && git commit -q -am 'style: space the sum' && git push -q origin workline/tester/issue-3 && git checkout -q main"
+    - "printf 'More.\\n' >> README.md && git commit -q -am 'docs: more' && git push -q origin main"
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:

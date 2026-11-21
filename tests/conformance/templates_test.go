@@ -2462,12 +2462,19 @@ func TestGardeningRunsNamedByTheirJob(t *testing.T) {
 		if err := yaml.Unmarshal(data, &wf); err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(wf.RunName, "github.event.schedule == '7 18 * * 0' && 'workline gardening docs'") {
-			t.Errorf("%s: the docs run is not named `workline gardening docs`: run-name %q", f, wf.RunName)
+		// The template's Sunday run runs every role, the product owner
+		// too: `docs and backlog` (#1765); this repository's, the
+		// documentalist alone: `docs`.
+		docs := "workline gardening docs"
+		if strings.HasPrefix(f, "../../defaults/") {
+			docs += " and backlog"
+		}
+		if !strings.Contains(wf.RunName, "github.event.schedule == '7 18 * * 0' && '"+docs+"'") {
+			t.Errorf("%s: the docs run is not named `%s`: run-name %q", f, docs, wf.RunName)
 		}
 		named := strings.Contains(wf.RunName, "(github.event.schedule && 'workline gardening ")
 		for _, s := range wf.On.Schedule {
-			if !named && !regexp.MustCompile(`github\.event\.schedule == '`+regexp.QuoteMeta(s.Cron)+`' && 'workline gardening (backlog|nightly|docs)'`).MatchString(wf.RunName) {
+			if !named && !regexp.MustCompile(`github\.event\.schedule == '`+regexp.QuoteMeta(s.Cron)+`' && 'workline gardening (backlog|nightly|docs( and backlog)?)'`).MatchString(wf.RunName) {
 				t.Errorf("%s: the schedule %q's run is not named by its job: run-name %q", f, s.Cron, wf.RunName)
 			}
 		}

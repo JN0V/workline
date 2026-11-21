@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.86.0](https://github.com/JN0V/workline/compare/v0.85.0...v0.86.0) (2026-11-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* the embedded roles (workline.Roles, roles.go renamed workline.go) hold each role's role.yaml, prompts/, kinds/, pre and post only, no longer its code/, docs/ nor README.md; the binary is 1.9 MB smaller.
+* **roles:** the reviewer's code moved from internal/builtin/reviewer to roles/reviewer/code; its prompts, under roles/reviewer/prompts/ since the earlier move, stay where they are.
+* **roles:** the documentalist's code moved from internal/builtin/documentalist to roles/documentalist/code; its prompts, under roles/documentalist/prompts/ since the earlier move, stay where they are.
+* the CI job that runs the line is named propose, no longer judge, in every GitHub and GitLab template (workline:propose, workline:garden:propose, …); a required check or a needs: naming judge must name propose; the weekly tally reads only the propose jobs' tallies, so the week of the change counts no tally left by a judge job.
+
+### Bug Fixes
+
+* answer workflow can read a fork pull request on the ([#1985](https://github.com/JN0V/workline/issues/1985)) ([308787e](https://github.com/JN0V/workline/commit/308787e923ed601b2f29309e17ba8a53f2e3d74e))
+* daemon is killed only after the 5s output wait ([#2002](https://github.com/JN0V/workline/issues/2002)) ([8d8668a](https://github.com/JN0V/workline/commit/8d8668a2f0c8c3a8f220f816e448c549923998d6))
+* **developer:** start on main merged into a Draft behind it ([#2009](https://github.com/JN0V/workline/issues/2009)) ([1e10f0d](https://github.com/JN0V/workline/commit/1e10f0d6448fbb03ff7656fdd66b1a9b3de7683d))
+* **engine:** refused-candidate wait still silent on a red ([#2012](https://github.com/JN0V/workline/issues/2012)) ([da1f9ea](https://github.com/JN0V/workline/commit/da1f9eae6fac1e12f9bb3cdfe25c2d1b1b88dcf3))
+* **internal:** gradle Java projects lose javac error rows ([#2011](https://github.com/JN0V/workline/issues/2011)) ([0108834](https://github.com/JN0V/workline/commit/01088344033a28a0180ea494eaf4fd44ebe9dac3))
+* **reviewer:** the reviewer's judge drops a defect the code's ([#2015](https://github.com/JN0V/workline/issues/2015)) ([8891b61](https://github.com/JN0V/workline/commit/8891b61fca8fc6320cd8fb78335c78b30a5630a4))
+* **roles:** the tester's objection commit subject ignores the ([#1998](https://github.com/JN0V/workline/issues/1998)) ([99d82f5](https://github.com/JN0V/workline/commit/99d82f5533d6296210fa74d2ff45af1a7b0ad56e))
+* **steer:** trailing comment counts as an owner ([#2010](https://github.com/JN0V/workline/issues/2010)) ([16d8f0d](https://github.com/JN0V/workline/commit/16d8f0d9335a3e9237bbcb240f19881aa0f769a8))
+
+
+### Continuous Integration
+
+* the job that runs the line is propose, paired with apply ([9323f67](https://github.com/JN0V/workline/commit/9323f678b56cd2a30b7285f6ad169511f1ed6e50))
+
+
+### Code Refactoring
+
+* **roles:** the documentalist's code into roles/ ([e3ab32f](https://github.com/JN0V/workline/commit/e3ab32fefa8aa9db302d03d68a93e98129734258))
+* **roles:** the reviewer's code into roles/ ([d93943f](https://github.com/JN0V/workline/commit/d93943fc6c9adb8ccbde655cf3208f075a5ac296))
+* the binary embeds what each role's run reads ([1946eba](https://github.com/JN0V/workline/commit/1946ebad818abaf850c01055a0a0d1360e07b5b8))
+
 ## [0.85.0](https://github.com/JN0V/workline/compare/v0.84.0...v0.85.0) (2026-11-20)
 
 

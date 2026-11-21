@@ -57,7 +57,9 @@ flowchart LR
   a reconcile
   ([#1761](https://github.com/JN0V/workline/issues/1761)).
 - **The nightly keeps the backlog**: a `workline gardening nightly` run
-  counts as a backlog run too; a docs run does not
+  or a `workline gardening docs and backlog` run (the template's full
+  Sunday run, the product owner too) counts as a backlog run too, when
+  it succeeded; a docs run alone does not
   ([#1765](https://github.com/JN0V/workline/issues/1765)).
 - **Going**: a run requested, queued, waiting, pending or in progress,
   started in the last day: one waiting longer on a person's approval

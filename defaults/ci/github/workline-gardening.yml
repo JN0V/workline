@@ -36,13 +36,13 @@
 #          let Actions create pull requests (Settings → Actions → General).
 name: workline gardening
 # Each run named by its job, what `workline tick` reads to know it ran
-# (docs/tick.md): the docs on Sunday; any other schedule you add, the
+# (docs/tick.md): the full run on Sunday, every role, `docs and backlog`; any other schedule you add, the
 # nightly; by hand, the job its input names, else `workline gardening
 # by hand`, a name no job of the tick claims.
 run-name: >-
-  ${{ (github.event.schedule == '7 18 * * 0' && 'workline gardening docs') ||
+  ${{ (github.event.schedule == '7 18 * * 0' && 'workline gardening docs and backlog') ||
   (github.event.schedule && 'workline gardening nightly') ||
-  (contains(fromJSON('["backlog","nightly","docs"]'), inputs.job) && format('workline gardening {0}', inputs.job)) || 'workline gardening by hand' }}
+  (contains(fromJSON('["backlog","nightly","docs","docs and backlog"]'), inputs.job) && format('workline gardening {0}', inputs.job)) || 'workline gardening by hand' }}
 on:
   # Sundays, 18:07 UTC: the docs pull request lands before Monday's
   # workday, though GitHub may start a run hours late; nightly
@@ -51,7 +51,7 @@ on:
   schedule: [{cron: "7 18 * * 0"}]
   workflow_dispatch:
     inputs:
-      job: {description: "the job this run is named for: backlog, nightly or docs (it runs the schedule line all the same)", required: false, default: ""}
+      job: {description: "the job this run is named for: backlog, nightly, docs or docs and backlog (it runs the schedule line all the same)", required: false, default: ""}
 permissions: {}
 
 # One run at a time per job: a backlog run (the nightly's too) waits for
@@ -62,7 +62,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  WORKLINE_VERSION: v0.85.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  WORKLINE_VERSION: v0.86.0          # a release of workline: update it to take a newer one (x-release-please-version)
   # the job summary (--summary) needs the first release after v0.16.0
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 

@@ -89,6 +89,9 @@ func mergeRequest(a devmark.Act, title string, sub Subjects) map[string]any {
 	if a.From != "" {
 		mr["from"] = a.From
 	}
+	if a.Merged != "" {
+		mr["merged"] = a.Merged
+	}
 	if len(a.Tests) > 0 {
 		mr["commits"] = []map[string]any{{"message": sub.Tests, "files": a.Tests}}
 	}

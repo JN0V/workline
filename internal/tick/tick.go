@@ -65,10 +65,11 @@ var jobs = map[string]job{
 	"reconcile": {"workline develop reconcile", "workline-develop.yml", []string{"workline develop heartbeat"}},
 	// The gardening's runs before its run-name (#1761) have no name of
 	// their own: read as the backlog's. Since, each is named by its job;
-	// the nightly keeps the backlog too (#1765).
-	"backlog": {"workline gardening backlog", "workline-gardening.yml", []string{"workline gardening", "workline gardening nightly"}},
+	// the nightly and the template's full Sunday run (the product owner
+	// too) keep the backlog too (#1765); only a succeeded one counts.
+	"backlog": {"workline gardening backlog", "workline-gardening.yml", []string{"workline gardening", "workline gardening nightly", "workline gardening docs and backlog"}},
 	"nightly": {"workline gardening nightly", "workline-gardening.yml", nil},
-	"docs":    {"workline gardening docs", "workline-gardening.yml", nil},
+	"docs":    {"workline gardening docs", "workline-gardening.yml", []string{"workline gardening docs and backlog"}},
 	"merge":   {"workline merge", "workline-merge.yml", nil},
 	"sample":  {"workline sample", "workline-sample.yml", nil},
 	"seeds":   {"workline test seeds", "test.yml", nil},
@@ -173,6 +174,9 @@ func Due(o Options) (r Result) {
 			if err != nil {
 				continue // said once, by runsOf or above
 			}
+			if t.name == "nightly" { // only a succeeded run counts (#1765)
+				past = slices.DeleteFunc(slices.Clone(past), func(r forge.Run) bool { return !r.Success })
+			}
 			if run, ran := lastOf(past, j.names(), t.from); ran {
 				r.Said = append(r.Said, fmt.Sprintf("%s: ran at %s (%q), not due", t.name, run.Started, run.Name))
 				continue
@@ -230,7 +234,7 @@ func backlog(o Options, r *Result, runsOf func(string) ([]forge.Run, error), j j
 		last = "unread"
 	} else if past, err := runsOf(j.workflow); err != nil {
 		last = "unread"
-	} else if run, ok := lastOf(past, j.names(), from); ok {
+	} else if run, ok := lastOf(slices.DeleteFunc(slices.Clone(past), func(r forge.Run) bool { return !r.Success }), j.names(), from); ok {
 		last = run.Started + "/" + run.Updated
 		if run.Updated == "" {
 			last = run.Started + "/" + run.Started
