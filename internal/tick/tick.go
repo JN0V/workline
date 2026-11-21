@@ -69,7 +69,7 @@ var jobs = map[string]job{
 	// too) keep the backlog too (#1765); only a succeeded one counts.
 	"backlog": {"workline gardening backlog", "workline-gardening.yml", []string{"workline gardening", "workline gardening nightly", "workline gardening docs and backlog"}},
 	"nightly": {"workline gardening nightly", "workline-gardening.yml", nil},
-	"docs":    {"workline gardening docs", "workline-gardening.yml", nil},
+	"docs":    {"workline gardening docs", "workline-gardening.yml", []string{"workline gardening docs and backlog"}},
 	"merge":   {"workline merge", "workline-merge.yml", nil},
 	"sample":  {"workline sample", "workline-sample.yml", nil},
 	"seeds":   {"workline test seeds", "test.yml", nil},
@@ -173,6 +173,9 @@ func Due(o Options) (r Result) {
 			past, err := runsOf(j.workflow)
 			if err != nil {
 				continue // said once, by runsOf or above
+			}
+			if t.name == "nightly" { // only a succeeded run counts (#1765)
+				past = slices.DeleteFunc(slices.Clone(past), func(r forge.Run) bool { return !r.Success })
 			}
 			if run, ran := lastOf(past, j.names(), t.from); ran {
 				r.Said = append(r.Said, fmt.Sprintf("%s: ran at %s (%q), not due", t.name, run.Started, run.Name))

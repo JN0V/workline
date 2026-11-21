@@ -89,7 +89,7 @@ func TestDue(t *testing.T) {
 			"", nil, `reconcile: "workline develop heartbeat" waiting`},
 		{"nightly due", po, 10, append(slices.Clone(done), run("workline gardening nightly", "workline-gardening.yml", "completed", "2026-11-15T02:19:00Z")),
 			"", []string{"reconcile", "nightly"}, ""},
-		{"nightly done", po, 10, append(slices.Clone(done), run("workline gardening nightly", "workline-gardening.yml", "completed", "2026-11-16T02:17:00Z")),
+		{"nightly done", po, 10, append(slices.Clone(done), succeeded(run("workline gardening nightly", "workline-gardening.yml", "completed", "2026-11-16T02:17:00Z"))),
 			"", []string{"reconcile"}, "nightly: ran at 2026-11-16T02:17:00Z"},
 		{"merge's gap passed", po, 10, []forge.Run{done[1], done[2], run("workline merge", "workline-merge.yml", "completed", "2026-11-16T01:19:00Z")},
 			"", []string{"reconcile", "merge"}, ""},
