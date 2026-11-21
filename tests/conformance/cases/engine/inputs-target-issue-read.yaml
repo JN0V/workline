@@ -1,0 +1,27 @@
+case: engine/inputs-target-issue-read
+about: "A role declaring `inputs: [target]`, run on issue 12: the task it gives its agent holds the issue's title and body, its comments and its labels."
+given:
+  repo: basic
+  forge:
+    issues:
+      - id: 12
+        title: "Export users as CSV"
+        body: "The export button writes nothing when the list is empty."
+        labels: [bug, needs-triage]
+        comments:
+          - "Reproduced on v2.3 with the staging data."
+run:
+  role: reads-target
+  event: schedule
+  target: {issue: 12}
+  ai: "cmd:echo '[]'"
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains:
+        - "Export users as CSV"
+        - "The export button writes nothing when the list is empty."
+        - "Reproduced on v2.3 with the staging data."
+        - "bug"
+        - "needs-triage"

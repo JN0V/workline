@@ -1,0 +1,13 @@
+contract: 1
+name: reads-commits
+mission: A role of the tests only, made of this file and its instruction, declaring inputs [commits], so its shared pre gives its agent the commits of a range.
+
+events: [schedule, merge-request]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: ["docs/**"]
+intentions: [note]
+without-ai: pass
+inputs: [commits]
