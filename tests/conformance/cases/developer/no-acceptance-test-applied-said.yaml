@@ -1,0 +1,32 @@
+case: developer/no-acceptance-test-applied-said
+about: >
+  An issue the tester handed over because no acceptance test applies
+  (its comment records the kind none) is built by the developer with
+  no frozen test, where it would wait for a Draft. Its pull request
+  says no acceptance test applied.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 2
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        comments: ["**The tester** finds that no acceptance test applies to this issue.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"no test can check it from the task given\"} -->\n<!-- workline:sticky=tester/issue -->"]
+run: {develop: [], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  agent-calls: 1
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        body-contains: ["no acceptance test applied"]
