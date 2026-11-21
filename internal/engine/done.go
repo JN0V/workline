@@ -26,7 +26,7 @@ const testerDraft = "workline/tester/issue-"
 // the states' labels off the closed issues bearing one; open, the
 // branches of the roles' open merge requests. A forge that could not be
 // read is said, a warning: the next run tends what this one could not.
-func settleDone(f forge.Forge, open, states []string, res *Result) string {
+func settleDone(f forge.Forge, repo, base string, open, states []string, res *Result) string {
 	drafts, cleared := 0, 0
 	warn := func(where string, err error) {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "done-not-tended", Level: "warn", Where: where,
@@ -45,7 +45,7 @@ func settleDone(f forge.Forge, open, states []string, res *Result) string {
 		if !is.Closed {
 			continue
 		}
-		why := closedBy(f, *is)
+		why := closedBy(f, *is, repo, base, branch)
 		if err := f.CloseMergeRequest(branch, "Closed by workline: "+why+".", forge.Marker("closed")); err != nil {
 			warn(branch, err)
 			continue
@@ -82,7 +82,7 @@ func settleDone(f forge.Forge, open, states []string, res *Result) string {
 // closedBy says why an issue's Draft is closed: the merge request that
 // closed the issue, built from the Draft's tests, when the forge names
 // one.
-func closedBy(f forge.Forge, is forge.Issue) string {
+func closedBy(f forge.Forge, is forge.Issue, repo, base, branch string) string {
 	why := fmt.Sprintf("#%d is closed", is.ID)
 	if is.Reason == "not_planned" || is.Reason == "duplicate" {
 		return why + " as " + strings.ReplaceAll(is.Reason, "_", " ") + ": its tests have nothing left to prove"
@@ -96,7 +96,41 @@ func closedBy(f forge.Forge, is forge.Issue) string {
 			}
 		}
 	}
+	if unmerged(repo, base, branch) {
+		return why + ": its tests are not on " + base + " and stay on " + branch
+	}
 	return why + ": its tests have nothing left to merge here"
+}
+
+// unmerged tells whether the Draft's branch holds a file that base does
+// not hold as the branch does: its tests never reached base. A branch
+// that cannot be read is said unmerged: nothing proves they did (#1321).
+func unmerged(repo, base, branch string) bool {
+	if repo == "" {
+		return true
+	}
+	ref := "refs/heads/" + branch
+	if _, err := git(repo, nil, "rev-parse", "--verify", "-q", ref); err != nil {
+		ref = "refs/remotes/origin/" + branch
+		if _, err := git(repo, nil, "rev-parse", "--verify", "-q", ref); err != nil {
+			return true
+		}
+	}
+	if base == "" {
+		base = "main"
+	}
+	out, err := git(repo, nil, "diff", "--name-only", base+"..."+ref)
+	if err != nil {
+		return true
+	}
+	for _, file := range strings.Fields(out) {
+		a, errA := git(repo, nil, "rev-parse", "--verify", "-q", ref+":"+file)
+		b, errB := git(repo, nil, "rev-parse", "--verify", "-q", base+":"+file)
+		if errA == nil && (errB != nil || strings.TrimSpace(a) != strings.TrimSpace(b)) {
+			return true
+		}
+	}
+	return false
 }
 
 // closedBearing is the closed issues bearing one of labels: a call a
