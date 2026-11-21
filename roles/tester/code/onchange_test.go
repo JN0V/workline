@@ -27,14 +27,14 @@ func TestPackagesWalkUpToTests(t *testing.T) {
 		}
 	}
 	patterns := []string{"**/*_test.go", "tests/**"}
-	got := Packages(tree, []string{"internal/a/a.go", "tests/conformance/cases/dev/x.yaml", "docs/x.md", "cmd/tool/main.go", "internal/a/gone/b.go", "web/src/x.ts"}, patterns, nil)
+	got := Packages(tree, []string{"internal/a/a.go", "tests/conformance/cases/dev/x.yaml", "docs/x.md", "cmd/tool/main.go", "internal/a/gone/b.go", "web/src/x.ts"}, patterns, nil, nil)
 	if want := []string{"./internal/a", "./tests/conformance"}; !slices.Equal(got, want) {
 		t.Errorf("Packages = %v, want %v", got, want)
 	}
 	if err := os.WriteFile(filepath.Join(tree, "root_test.go"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if got := Packages(tree, []string{"docs/x.md"}, patterns, nil); !slices.Equal(got, []string{"."}) {
+	if got := Packages(tree, []string{"docs/x.md"}, patterns, nil, nil); !slices.Equal(got, []string{"."}) {
 		t.Errorf("a file under a root holding tests: %v, want [.]", got)
 	}
 }
@@ -74,14 +74,14 @@ func TestPackagesBuildModules(t *testing.T) {
 		{[]string{"core/session/src/main/kotlin/x/A.kt", "build.gradle.kts"}, nil},
 		{[]string{"docs/x.md", "core/timelapse/src/main/kotlin/x/B.kt"}, nil},
 	} {
-		if got := Packages(tree, tt.files, patterns, modules); !slices.Equal(got, tt.want) {
+		if got := Packages(tree, tt.files, patterns, modules, nil); !slices.Equal(got, tt.want) {
 			t.Errorf("Packages(%v) = %v, want %v", tt.files, got, tt.want)
 		}
 	}
 	if err := os.Remove(filepath.Join(tree, "build.gradle.kts")); err != nil {
 		t.Fatal(err)
 	}
-	got := Packages(tree, []string{"docs/x.md", "core/timelapse/src/main/kotlin/x/B.kt"}, patterns, modules)
+	got := Packages(tree, []string{"docs/x.md", "core/timelapse/src/main/kotlin/x/B.kt"}, patterns, modules, nil)
 	if want := []string{"./core/timelapse"}; !slices.Equal(got, want) {
 		t.Errorf("no root module: Packages = %v, want %v: a file with no module above adds none", got, want)
 	}

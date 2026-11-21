@@ -514,6 +514,8 @@ type result struct {
 func TestConformance(t *testing.T) {
 	pending := readPending(t)
 	files, _ := filepath.Glob("cases/*/*.yaml")
+	inRoles, _ := filepath.Glob("../../roles/*/cases/*.yaml")
+	files = append(files, inRoles...)
 	sort.Strings(files)
 	if len(files) == 0 {
 		t.Fatal("no cases found")
@@ -525,6 +527,9 @@ func TestConformance(t *testing.T) {
 			name := c.Case
 			if name == "" {
 				name = strings.TrimSuffix(strings.TrimPrefix(f, "cases/"), ".yaml")
+				if role, ok := roleOfCase(f); ok {
+					name = role + "/" + strings.TrimSuffix(filepath.Base(f), ".yaml")
+				}
 			}
 			t.Run(name, func(t *testing.T) { t.Error(err) })
 			continue
@@ -547,6 +552,24 @@ func TestConformance(t *testing.T) {
 // a key no field of caseFile names is an error naming the key and the file.
 // The forge a case gives, and a person's edits to it, are the simulated
 // forge's to read: checked against its own type, by the JSON library's.
+// roleOfCase is the role whose folder holds the case file
+// (`../../roles/<role>/cases/<case>.yaml`).
+func roleOfCase(file string) (string, bool) {
+	rest, ok := strings.CutPrefix(filepath.ToSlash(file), "../../roles/")
+	role, _, found := strings.Cut(rest, "/cases/")
+	return role, ok && found
+}
+
+// caseDir is the folder of a case's group: `cases/<group>`, else the
+// folder `roles/<group>/cases` of the role of that name.
+func caseDir(name string) string {
+	group := filepath.Dir(name)
+	if _, err := os.Stat(filepath.Join("cases", group)); err == nil {
+		return filepath.Join("cases", group)
+	}
+	return filepath.Join("..", "..", "roles", group, "cases")
+}
+
 func readCase(file string) (caseFile, error) {
 	var c caseFile
 	data, err := os.ReadFile(file)
@@ -765,7 +788,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		args = append(args, "--gates-only")
 	}
 	if c.Run.GatesFrom != "" {
-		from, _ := filepath.Abs(filepath.Join("cases", filepath.Dir(c.Case), c.Run.GatesFrom))
+		from, _ := filepath.Abs(filepath.Join(caseDir(c.Case), c.Run.GatesFrom))
 		args = append(args, "--gates-from", from)
 	}
 	if c.Run.WarnApart {
