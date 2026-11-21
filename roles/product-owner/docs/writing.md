@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/prompts/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
-checked: db6103ad
+checked: 60a7720e
 verified: agent:claude-code
 ---
 # Writing an issue a person reads
@@ -97,7 +97,7 @@ nothing says which one is hers.
 
 ## Scope
 
-`internal/gate`: the runs on the base and the head.
+the gate package: the runs on the base and the head.
 <details><summary>Tools a project may declare</summary>golangci-lint,
 govulncheck, Semgrep, CodeQL, osv-scanner, Trivy, ESLint, Ruff</details>
 ```
@@ -127,7 +127,7 @@ Users who exclude a folder with a trailing slash still upload it:
 
 ## Scope
 
-`matchExclude` in `internal/filter/glob.go`.
+the exclude matcher, `src/exclude.go`.
 ```
 
 ## Each thing said once

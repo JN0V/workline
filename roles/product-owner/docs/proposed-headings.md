@@ -1,3 +1,11 @@
+---
+sources:
+  - internal/work/headings.go#Required
+  - internal/backlog/kind.go
+  - roles/product-owner/role.yaml#settings
+checked: 60a7720e
+verified: agent:claude-code
+---
 # The proposed headings
 
 Part of [the product owner](../README.md). Proposed by
@@ -77,7 +85,7 @@ Users who exclude a folder with a trailing slash still upload all of it.
 
 ## Implementation notes
 
-`matchExclude` in `internal/filter/glob.go`.
+the exclude matcher, `src/exclude.go`.
 ```
 
 - **The person who accepts is named in the When**: the accountant, the

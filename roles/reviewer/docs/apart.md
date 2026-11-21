@@ -13,7 +13,7 @@ sources:
   - roles/reviewer/code/reviewer.go#enforcement
   - roles/reviewer/code/record.go#answering
   - roles/reviewer/code/once.go#Record.leftTo
-checked: e2e165c2d
+checked: 60a7720e
 judged: a5cd2cf
 verified: agent:claude-code
 ---

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml#events, roles/reviewer/role.yaml#apart, roles/reviewer/role.yaml#duties, roles/reviewer/role.yaml#part-intentions, roles/reviewer/role.yaml#without-ai, roles/reviewer/role.yaml#settings, cmd/workline/main.go#reviewCmd, internal/routing/adopt.go#AddReviewer, roles/reviewer/code/reviewer.go#settings, roles/reviewer/code/reviewer.go#ahead, defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose.script]
-checked: e2e165c2d
+checked: 60a7720e
 verified: agent:claude-code
 ---
 # Reviewer

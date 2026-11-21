@@ -14,7 +14,7 @@ sources:
   - roles/reviewer/code/resolve.go#fixedRows
   - roles/reviewer/code/resolve.go#fixedWarn
   - internal/engine/review.go#applier.resolveThreads
-checked: c46a93d6c
+checked: 60a7720e
 verified: agent:claude-code
 ---
 # Reviewer — not repeated, found again
