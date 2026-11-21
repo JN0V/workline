@@ -15,7 +15,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
-checked: a91f3ef9b
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # The release: a dry run with gardening, a check at the tag

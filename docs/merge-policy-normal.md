@@ -5,7 +5,7 @@ sources:
   - internal/engine/code.go#steersAny
   - internal/doctor/guard.go#guardedList
   - internal/engine/merge.go#mergePolicy
-checked: bd254cd75
+checked: 3f432ab14
 verified: agent:claude-code
 reader: efab3a2a0b35
 judged-in-parts: 87b34bc
