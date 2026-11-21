@@ -116,9 +116,9 @@ workline route release --ai none --forge none                             # at t
 - **Posting its result**: `workline apply --release-dry-run` is read by
   `main.go`, which reads the file the dry run wrote and posts it in main's
   issue, put in, edited, or taken out when nothing holds. Before it is
-  posted, `main.go` escapes each line that starts with `/`, so GitLab
-  runs no quick action from it, and turns the status of a run into its
-  exit code. When main's issue is rewritten after a merge, `dryrun.go`,
+  posted, `Inert` in `ledger.go` escapes each line that starts with `/`, so
+  GitLab runs no quick action from it; `main.go` turns the status of a run
+  into its exit code. When main's issue is rewritten after a merge, `dryrun.go`,
   in the report, takes the dry run's part out and puts it back as it was.
 - **The cases that guard it**, in `tests/conformance/cases/`:
   `dry-run-at-a-release-has-nothing-to-cut.yaml`,
