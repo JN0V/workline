@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -353,6 +354,9 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	if err := yaml.Unmarshal(data, &c); err != nil {
 		return nil, &ConfigError{err.Error()}
 	}
+	if err := mergeTuning(repo, &c); err != nil {
+		return nil, err
+	}
 	if len(c.Packs) > 0 {
 		listed, err := packs.Listed(repo, c.Packs)
 		if err != nil {
@@ -377,6 +381,77 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 		}
 	}
 	return &c, nil
+}
+
+// TuningFile is the unguarded half of the project's config, beside
+// config.yaml: roles' settings that tune the line (a timeout, a cap), not
+// authority. CODEOWNERS holds config.yaml alone (ADR-0068 §4).
+const TuningFile = "tuning.yaml"
+
+// mergeTuning reads <repo>/.workline/tuning.yaml, if any, into c: only
+// `roles.<role>.settings` may be in it, and a setting already in
+// config.yaml is refused, naming both files.
+func mergeTuning(repo string, c *ProjectConfig) error {
+	data, err := os.ReadFile(filepath.Join(repo, ".workline", TuningFile))
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	fail := func(format string, a ...any) error {
+		return &ConfigError{fmt.Sprintf(".workline/%s: ", TuningFile) + fmt.Sprintf(format, a...)}
+	}
+	if err := CheckConfig(data); err != nil {
+		return err
+	}
+	var doc map[string]any
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return fail("%v", err)
+	}
+	for k := range doc {
+		if k != "roles" {
+			return fail("holds %q: only roles.<role>.settings are tuning, the rest is authority and stays in config.yaml", k)
+		}
+	}
+	var t ProjectConfig
+	if err := yaml.Unmarshal(data, &t); err != nil {
+		return fail("%v", err)
+	}
+	names := make([]string, 0, len(t.Roles))
+	for name := range t.Roles {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		r := t.Roles[name]
+		if len(r.Enforce) > 0 {
+			return fail("roles.%s.enforce is authority: it stays in config.yaml", name)
+		}
+		have := c.Roles[name]
+		keys := make([]string, 0, len(r.Settings))
+		for k := range r.Settings {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			if _, dup := have.Settings[k]; dup {
+				return &ConfigError{fmt.Sprintf("roles.%s.settings.%s is set in both config.yaml and %s: one key, one file", name, k, TuningFile)}
+			}
+			if have.Settings == nil {
+				have.Settings = map[string]any{}
+			}
+			have.Settings[k] = r.Settings[k]
+		}
+		if c.Roles == nil {
+			c.Roles = map[string]struct {
+				Settings map[string]any    `yaml:"settings"`
+				Enforce  map[string]string `yaml:"enforce"`
+			}{}
+		}
+		c.Roles[name] = have
+	}
+	return nil
 }
 
 // AutonomyLevels are the levels the project's default may name
