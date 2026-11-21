@@ -8,7 +8,7 @@ sources:
   - internal/forge/hold.go#gitlab.Holding
   - defaults/ci/github/workline.yml#jobs.propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
-checked: bd254cd75
+checked: 3f432ab14
 verified: agent:claude-code
 judged-in-parts: 786d304
 ---

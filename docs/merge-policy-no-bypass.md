@@ -2,7 +2,7 @@
 sources:
   - internal/doctor/guard.go#bypassGuard
   - internal/forge/github_merge.go#github.Bypass
-checked: bd254cd75
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # Nobody bypasses `main`
