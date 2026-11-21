@@ -1082,8 +1082,22 @@ func roundBody(x devmark.Round, s Settings, notes []string, analysis string, w *
 	}
 	if len(notes) > 0 {
 		b.WriteString("\nWhat it did:\n\n")
+		said := map[string]bool{}
 		for _, n := range notes {
-			fmt.Fprintf(&b, "- %s\n", strings.ReplaceAll(strings.TrimSpace(n), "\n", " "))
+			named := false
+			for _, r := range refused {
+				if !strings.Contains(n, r.File) {
+					continue
+				}
+				named = true
+				if !said[r.File] {
+					said[r.File] = true
+					fmt.Fprintf(&b, "- `%s`: refused at apply (%s); a person must write this change.\n", r.File, r.Rule)
+				}
+			}
+			if !named {
+				fmt.Fprintf(&b, "- %s\n", strings.ReplaceAll(strings.TrimSpace(n), "\n", " "))
+			}
 		}
 	}
 	if analysis != "" {
