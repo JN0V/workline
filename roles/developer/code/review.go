@@ -527,9 +527,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a d
 		}
 		for _, t := range threads {
 			for _, c := range t.Comments {
-				if c.ID != "" && !slices.ContainsFunc(notes, func(n forge.Note) bool { return n.ID == c.ID }) {
-					notes = append(notes, c)
-				}
+				notes = append(notes, c)
 			}
 		}
 	}
