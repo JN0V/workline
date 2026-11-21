@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.87.0](https://github.com/JN0V/workline/compare/v0.86.0...v0.87.0) (2026-11-21)
+
+
+### Features
+
+* a nightly or docs run that keeps the backlog ([#1999](https://github.com/JN0V/workline/issues/1999)) ([44127ac](https://github.com/JN0V/workline/commit/44127ac8f8a9cdde90ba51ac78dae2334056f235))
+
 ## [0.86.0](https://github.com/JN0V/workline/compare/v0.85.0...v0.86.0) (2026-11-21)
 
 
