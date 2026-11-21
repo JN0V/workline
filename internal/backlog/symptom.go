@@ -54,6 +54,9 @@ type Symptom struct {
 	Green bool     `json:"green"`
 	// Ran: when the tester's run started, RFC 3339.
 	Ran string `json:"ran,omitempty"`
+	// Merge: the ready merge request that brings the tests to the default
+	// branch, 0 when none was needed or opened (#1321).
+	Merge int `json:"merge,omitempty"`
 	// Why: what it found, said to a person: the tests green, or why not.
 	Why string `json:"why"`
 }
@@ -78,7 +81,11 @@ func (s Symptom) Said() string {
 	if !s.Green {
 		return s.Why
 	}
-	return fmt.Sprintf("its reproduction test%s %s green on %s at %s, three runs out of three", map[bool]string{true: "", false: "s"}[len(s.Tests) == 1], codeList(s.Tests), s.Branch, shortSHA(s.Commit))
+	said := fmt.Sprintf("its reproduction test%s %s green on %s at %s, three runs out of three", map[bool]string{true: "", false: "s"}[len(s.Tests) == 1], codeList(s.Tests), s.Branch, shortSHA(s.Commit))
+	if s.Merge > 0 {
+		said += fmt.Sprintf("; they reach %s through merge request %d", s.Branch, s.Merge)
+	}
+	return said
 }
 
 // ReadSymptom reads the tester's proof on issue id from its comments,

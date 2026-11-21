@@ -114,3 +114,7 @@ person unlinked is no longer one. An issue whose state lists a split
 - **The line tells it** where its state wakes nobody, a part closed or a
   yes put on since it last read it
   ([routing](../routing.md#a-parent-told-as-its-parts-close)).
+
+## A bug's reproduction tests (#1321)
+
+A bug's parent closed on a green proof names the ready merge request that keeps its reproduction tests on the default branch. One a person accepted with no green proof says in its closing comment that its tests are not merged, and why.

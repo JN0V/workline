@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/worktree"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -134,13 +135,25 @@ func proveSymptom(repo string, f forge.Forge, id int, parts []int, s Settings) (
 		sym.Why = fmt.Sprintf("its Draft's branch %s could not be read (%v)", mr.Branch, err)
 		return sym, nil
 	}
-	v, why := symptomGreen(repo, rec, main, draft, s)
+	v, why, laid := symptomGreen(repo, rec, main, draft, s)
 	if why != "" {
 		sym.Why = why
 		return sym, nil
 	}
 	sym.Green = v.Status == verdict.Pass
 	if sym.Green {
+		if laid != "" {
+			n, err := keepTests(repo, f, id, sym.Branch, laid)
+			if errors.Is(err, forge.ErrUnreachable) {
+				return sym, err
+			}
+			if err != nil {
+				sym.Green = false
+				sym.Why = fmt.Sprintf("its reproduction tests are green on %s at %s, but their merge request could not be opened (%v): not kept on %s", sym.Branch, short(main), err, sym.Branch)
+				return sym, nil
+			}
+			sym.Merge = n
+		}
 		sym.Why = sym.Said()
 		return sym, nil
 	}
@@ -177,20 +190,20 @@ func tip(repo, ref string) (string, error) {
 // the Draft's; one main holds as the Draft does is left; one both
 // changed since the record's base is merged three ways (#1259: the
 // tester adds to a file others add to).
-func symptomGreen(repo string, rec record, main, draft string, s Settings) (verdict.Verdict, string) {
+func symptomGreen(repo string, rec record, main, draft string, s Settings) (verdict.Verdict, string, string) {
 	tree, err := os.MkdirTemp("", "workline-symptom-")
 	if err != nil {
-		return verdict.Verdict{}, err.Error()
+		return verdict.Verdict{}, err.Error(), ""
 	}
 	if err := worktree.Worktree(repo, main, tree); err != nil {
-		return verdict.Verdict{}, err.Error()
+		return verdict.Verdict{}, err.Error(), ""
 	}
 	defer worktree.RemoveWorktree(repo, tree)
 	laid := false
 	for _, file := range rec.files() {
 		ours, err := blob(repo, draft, file)
 		if err != nil {
-			return verdict.Verdict{}, fmt.Sprintf("its test file %s is not on its Draft's branch", file)
+			return verdict.Verdict{}, fmt.Sprintf("its test file %s is not on its Draft's branch", file), ""
 		}
 		theirs, _ := blob(repo, main, file)
 		if theirs == ours {
@@ -198,37 +211,45 @@ func symptomGreen(repo string, rec record, main, draft string, s Settings) (verd
 		}
 		text, err := git(repo, "cat-file", "blob", ours)
 		if err != nil {
-			return verdict.Verdict{}, err.Error()
+			return verdict.Verdict{}, err.Error(), ""
 		}
 		if theirs != "" {
 			if text, err = merge3(repo, rec.Base, file, theirs, ours); err != nil {
-				return verdict.Verdict{}, fmt.Sprintf("its test file %s does not merge over %s: %v", file, short(main), err)
+				return verdict.Verdict{}, fmt.Sprintf("its test file %s does not merge over %s: %v", file, short(main), err), ""
 			}
 		}
 		path := filepath.Join(tree, filepath.FromSlash(file))
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return verdict.Verdict{}, err.Error()
+			return verdict.Verdict{}, err.Error(), ""
 		}
 		if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
-			return verdict.Verdict{}, err.Error()
+			return verdict.Verdict{}, err.Error(), ""
 		}
 		if _, err := git(tree, "add", "--", file); err != nil {
-			return verdict.Verdict{}, err.Error()
+			return verdict.Verdict{}, err.Error(), ""
 		}
 		laid = true
 	}
 	if laid {
 		if _, err := git(tree, "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", "-c", "user.name=workline", "-c", "user.email=workline@invalid",
 			"commit", "-q", "--no-verify", "-m", "test: the reproduction tests over the default branch"); err != nil {
-			return verdict.Verdict{}, err.Error()
+			return verdict.Verdict{}, err.Error(), ""
 		}
+	}
+	head := ""
+	if laid {
+		out, err := git(tree, "rev-parse", "HEAD")
+		if err != nil {
+			return verdict.Verdict{}, err.Error(), ""
+		}
+		head = strings.TrimSpace(out)
 	}
 	v, doubt := green(tree, rec, s)
 	if doubt != nil {
 		v = doubt.unproven("no judge is asked at a parent's closing")
 		v.Status = verdict.Human
 	}
-	return v, ""
+	return v, "", head
 }
 
 // blob is file's blob at rev, "" with an error when rev has none.
@@ -269,4 +290,22 @@ func merge3(repo, base, file, theirs, ours string) (string, error) {
 		return "", errors.New("its lines and main's conflict")
 	}
 	return string(out), nil
+}
+
+// keepTests brings the tests laid over base, commit head, to base through
+// a ready merge request, as any test does (#1321): its branch is built on
+// base's tip, and base itself is never written. It is the tests' own, apart
+// from the Draft, which stays what it is. The merge request's number.
+func keepTests(repo string, f forge.Forge, id int, base, head string) (int, error) {
+	branch := fmt.Sprintf("%stests-of-issue-%d", strings.TrimSuffix(testmark.TestsBranch, "issue-"), id)
+	if _, err := git(repo, "remote", "get-url", "origin"); err == nil {
+		if _, err := git(repo, "push", "-q", "--force", "origin", head+":refs/heads/"+branch); err != nil {
+			return 0, err
+		}
+	} else if _, err := git(repo, "branch", "-f", branch, head); err != nil {
+		return 0, err
+	}
+	title := fmt.Sprintf("test: the reproduction of #%d, kept on %s", id, base)
+	body := fmt.Sprintf("The reproduction tests of #%d, written on its Draft before its split, green on %s three runs out of three once its parts were closed: kept on %s so the symptom cannot come back unseen.\n\nBuilt by the tester on %s's tip.", id, base, base, base)
+	return f.OpenMergeRequest(branch, base, title, body, false)
 }

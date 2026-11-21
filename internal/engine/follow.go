@@ -137,7 +137,7 @@ func Follow(o FollowOptions) *Result {
 	if s, ok := f.(forge.Settler); ok {
 		res.Summary += "; " + settleMerges(s, res) // done.go
 	}
-	res.Summary += "; " + settleDone(f, open, o.States, res) // done.go
+	res.Summary += "; " + settleDone(f, repo, base, open, o.States, res) // done.go
 	o.Base = base
 	if local && o.Merge == MergeEnterprising {
 		// No release candidate is cut here for a person to try: a feature
@@ -170,7 +170,7 @@ func Follow(o FollowOptions) *Result {
 			if err != nil {
 				return fail(err)
 			}
-			res.Summary += "; then " + settleMerges(s, res) + "; " + settleDone(f, still, o.States, res)
+			res.Summary += "; then " + settleMerges(s, res) + "; " + settleDone(f, repo, base, still, o.States, res)
 		}
 	}
 	return res

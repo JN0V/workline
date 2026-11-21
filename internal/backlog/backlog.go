@@ -663,6 +663,9 @@ type Proposal struct {
 	// comment says it (#1212); the parent is then closed alone past
 	// cautious, the test named. "" otherwise: proposed, as any parent.
 	Symptom string `yaml:"symptom,omitempty"`
+	// Unproven: why a bug's parent has no green proof of its reproduction
+	// tests; they are not merged unproven, and a closing says so (#1321).
+	Unproven string `yaml:"unproven,omitempty"`
 	// Ticked, the engine's: who ticked this proposal's box in the report, a
 	// person of the project — checked again on the forge, the act done as
 	// the record says, never as the intention does (ADR-0025).
@@ -2021,7 +2024,7 @@ func (p *Plan) checkParent(id int, st *State) (rule, why string) {
 // cautious; otherwise why it stays a person's is added to c.Why. A
 // feature's or a task's parent is left as it is: proposed.
 func (p *Plan) bugParent(c *Proposal, st *State) {
-	c.Symptom = ""
+	c.Symptom, c.Unproven = "", ""
 	if kind, _ := KindOf(p.issues[c.Issue].Labels); kind != KindBug {
 		return
 	}
@@ -2038,6 +2041,7 @@ func (p *Plan) bugParent(c *Proposal, st *State) {
 			}
 		}
 	}
+	c.Unproven = why
 	c.Why = strings.TrimSuffix(strings.TrimSpace(c.Why), ".") + "; its closing is a person's: " + why
 }
 
@@ -3887,7 +3891,11 @@ func Comment(c Proposal, role string) string {
 			// A bug's, its reporter's symptom proven gone (#1212).
 			return fmt.Sprintf("Fixed: its parts are closed, and %s; what each part delivered is said in the comment on its parts.\n\nClosed by the %s role. Reopen it to undo.", c.Symptom, role)
 		}
-		return fmt.Sprintf("Accepted: its parts are closed, what each delivered said in the comment on its parts.\n\n%s. Reopen it to undo.", by)
+		said := "Accepted: its parts are closed, what each delivered said in the comment on its parts."
+		if c.Unproven != "" {
+			said += fmt.Sprintf("\n\nIts reproduction tests are not merged: they have no green proof (%s).", strings.TrimSuffix(c.Unproven, "."))
+		}
+		return fmt.Sprintf("%s\n\n%s. Reopen it to undo.", said, by)
 	}
 	head := "Obsolete: the code it is about changed."
 	if c.Reason == "duplicate" {
