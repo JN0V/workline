@@ -123,13 +123,28 @@ func unmerged(repo, base, branch string) bool {
 	if err != nil {
 		return true
 	}
+	mb, _ := git(repo, nil, "merge-base", base, ref)
+	mb = strings.TrimSpace(mb)
 	for _, file := range strings.Fields(out) {
-		_, errA := git(repo, nil, "rev-parse", "--verify", "-q", ref+":"+file)
-		_, errB := git(repo, nil, "rev-parse", "--verify", "-q", base+":"+file)
-		// a file base holds is reached, even edited there since (#1321)
-		if errA == nil && errB != nil {
+		a, errA := git(repo, nil, "rev-parse", "--verify", "-q", ref+":"+file)
+		if errA != nil {
+			continue
+		}
+		b, errB := git(repo, nil, "rev-parse", "--verify", "-q", base+":"+file)
+		if errB != nil {
 			return true
 		}
+		if strings.TrimSpace(a) == strings.TrimSpace(b) {
+			continue
+		}
+		// a file the Draft added, edited on base since, is reached; a file
+		// that already existed is reached only by the Draft's own content
+		if mb != "" {
+			if _, err := git(repo, nil, "rev-parse", "--verify", "-q", mb+":"+file); err != nil {
+				continue
+			}
+		}
+		return true
 	}
 	return false
 }
