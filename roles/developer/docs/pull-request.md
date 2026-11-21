@@ -102,6 +102,21 @@ flowchart LR
 | `## Verification` | with whose rights its agent ran; what ran and its result, each cap reached ([the proof](proof.md)) |
 | `## Tried` | its tests on a fresh checkout; not the issue's Verification commands, nor a person's use |
 
+## A Draft behind the default branch
+
+The default branch moved after the tester pushed its Draft
+([#1941](https://github.com/JN0V/workline/issues/1941)):
+
+- **It merges clean**: the default branch is merged into the Draft, in
+  the run's clone only. Its agent starts there, on the default branch's
+  paths. Its branch starts from the same merge, committed by the engine
+  at apply; the tester's branch is never pushed.
+- **It conflicts**: no agent is asked, nothing claimed. The issue is
+  blocked, the files in conflict named on it; the tester or a person
+  brings the Draft up to date, then moves the issue back.
+- Cases `developer/pr-from-draft-behind-a-moved-file`,
+  `draft-conflicting-with-main-blocks`.
+
 ## When it does not open
 
 A conflict on the Draft, a forge that refuses it: the engine applies at

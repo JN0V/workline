@@ -1,8 +1,8 @@
 case: developer/unopened-gives-claim-back
 about: >
-  Its pull request does not open (#856): here its code, written on the
-  tester's Draft, conflicts with what main changed since in the same
-  lines. The claim is given back at once, the reason in the claim's own
+  Its pull request does not open (#856): here its code, written on
+  main merged into the tester's Draft (#1941), conflicts with what the
+  Draft changed in the line beside. The claim is given back at once, the reason in the claim's own
   comment, its record counting the failure: the next run takes the
   issue again, once. The working tree is left as it was: its code was
   written apart, never in the checkout (#1372).
@@ -10,7 +10,8 @@ given:
   repo: tested-draft
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
-    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && git commit -q -am 'feat: subtract' && git push -q origin main"
+    - "git checkout -q workline/tester/issue-3 && printf 'add() { echo $(( $1 + $2 )); }\\n' > lib.sh && git commit -q -am 'style: space the sum' && git push -q origin workline/tester/issue-3 && git checkout -q main"
+    - "printf 'More.\\n' >> README.md && git commit -q -am 'docs: more' && git push -q origin main"
   config:
     roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
   forge:
@@ -32,7 +33,7 @@ expect:
   no-findings: [{rule: engine-error}]
   not-pushed: [workline/developer/3]
   files:
-    lib.sh: {contains: "sub()", lacks: "mul()"}
+    lib.sh: {contains: "add()", lacks: "mul()"}
   forge:
     issues:
       - id: 3

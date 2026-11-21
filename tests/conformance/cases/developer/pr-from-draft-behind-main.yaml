@@ -1,9 +1,9 @@
 case: developer/pr-from-draft-behind-main
 about: >
   The tester's Draft started from an older main, and main changed since
-  the file the developer's code writes (#856): its branch is built on
-  the Draft all the same, main's change to that file not carried in,
-  its pull request opened, the claim kept.
+  the file the developer's code writes (#856): main is merged into the
+  Draft first (#1941), the agent's whole file replacing main's change
+  to it, its pull request opened, the claim kept.
 given:
   repo: tested-draft
   setup:

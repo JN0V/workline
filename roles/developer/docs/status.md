@@ -148,6 +148,13 @@ hold:
   ([the triggers](triggers.md#two-runs-on-one-issue)). Cases
   `developer/skips-issue-without-tests`,
   `backs-off-issue-taken-meanwhile`.
+- **A Draft behind the default branch**
+  ([#1941](https://github.com/JN0V/workline/issues/1941)): the default
+  branch merged into it in the run's clone, its agent on its paths; a
+  conflict blocks the issue, the files named, no agent asked
+  ([the pull request](pull-request.md#a-draft-behind-the-default-branch)).
+  Cases `developer/pr-from-draft-behind-a-moved-file`,
+  `draft-conflicting-with-main-blocks`.
 - **A pull request that does not open**
   ([#856](https://github.com/JN0V/workline/issues/856)): its code
   merged onto a Draft the default branch has moved past; a failure
