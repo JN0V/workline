@@ -1,6 +1,7 @@
 <!-- workline
 sources:
   - defaults/ci/github/workline-develop.yml#run-name
+  - defaults/ci/github/workline-develop.yml#env.WORKLINE_VERSION
   - defaults/ci/github/workline-develop.yml#jobs.heartbeat
   - defaults/ci/github/workline-develop.yml#jobs.reconcile-due
   - defaults/ci/github/workline-develop.yml#jobs.reconcile
