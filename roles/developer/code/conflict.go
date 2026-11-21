@@ -19,12 +19,14 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/kit/worktree"
+	"github.com/JN0V/workline/internal/routing"
 )
 
 var conflictRecord = regexp.MustCompile(`<!-- workline:conflict head=([0-9a-f]{40,64}) base=([0-9a-f]{40,64}) -->`)
@@ -193,14 +195,65 @@ func bundleMerge(runDir, repo, tree, head, base string) error {
 	return nil
 }
 
+// draftOnBase is the commit the agent's code starts from on the tester's
+// Draft at head: head itself when it holds base already, else base merged
+// into it, in this clone only, nothing pushed (#1941): the same commit at
+// each call, dated as head is, so post finds pre's again. The engine makes
+// the one its branch starts from (`merged:`). The files in conflict when
+// it does not merge clean; no Draft, "".
+func draftOnBase(repo, head, base string) (from string, conflicts []string, err error) {
+	if head == "" || base == "" {
+		return head, nil, nil
+	}
+	if exec.Command("git", "-C", repo, "merge-base", "--is-ancestor", base, head).Run() == nil {
+		return head, nil, nil
+	}
+	tree, files, err := worktree.MergeTree(repo, head, base)
+	if err != nil {
+		return "", nil, fmt.Errorf("the base merged into the tester's Draft, in memory: %w", err)
+	}
+	if len(files) > 0 {
+		return "", files, nil
+	}
+	date, err := gitOut(repo, "log", "-1", "--format=%cI", head)
+	if err != nil {
+		return "", nil, fmt.Errorf("the tester's Draft's date: %w", err)
+	}
+	from, err = mergeCommit(repo, tree, head, base, "workline: the base merged into the tester's Draft",
+		"GIT_AUTHOR_DATE="+date, "GIT_COMMITTER_DATE="+date)
+	return from, nil, err
+}
+
+// draftBehind stops the pick on a tester's Draft the base no longer
+// merges into: no code built on a stale base, the issue blocked, the
+// files in conflict said on it. Nothing claimed.
+func draftBehind(runDir, repo string, id int, head, base string, files []string, said []intent.Intention) int {
+	where := fmt.Sprintf("#%d", id)
+	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
+	if line, err := routing.Load(repo); err == nil {
+		if ad, rm, err := line.Move("blocked"); err == nil {
+			add, remove = ad, rm
+		}
+	}
+	why := fmt.Sprintf("the tester's Draft at %s does not merge with the base at %s: they conflict in %s; code written on the Draft as it is would not apply on the base",
+		devmark.ShortSHA(head), devmark.ShortSHA(base), "`"+strings.Join(files, "`, `")+"`")
+	body := backlog.Said(who, "blocks this issue", why,
+		"the tester's Draft is brought up to date with the base, by the tester or a person, then the issue moved back by its label")
+	v := verdict.Verdict{Status: verdict.Pass, Summary: where + ": the tester's Draft conflicts with the base; blocked for a person",
+		Findings: []verdict.Finding{{Rule: "draft-behind", Level: "warn", Where: where, Message: why}}}
+	return say(runDir, v, append(said,
+		intent.Intention{Kind: "label", Value: map[string]any{"issue": id, "add": add, "remove": remove, "card": "blocked"}},
+		sayOn(id, body)))
+}
+
 // mergeCommit is the merge of base into head with tree, made apart for
 // the proof: the engine makes the one pushed, with its message. It needs
 // no identity of the checkout's: a review job's runner has none (#1439).
-func mergeCommit(repo, tree, head, base, msg string) (string, error) {
+func mergeCommit(repo, tree, head, base, msg string, env ...string) (string, error) {
 	cmd := exec.Command("git", "-C", repo, "commit-tree", tree, "-p", head, "-p", base, "-m", msg)
-	cmd.Env = append(os.Environ(),
+	cmd.Env = append(append(os.Environ(),
 		"GIT_AUTHOR_NAME=workline", "GIT_AUTHOR_EMAIL=workline@localhost",
-		"GIT_COMMITTER_NAME=workline", "GIT_COMMITTER_EMAIL=workline@localhost")
+		"GIT_COMMITTER_NAME=workline", "GIT_COMMITTER_EMAIL=workline@localhost"), env...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
