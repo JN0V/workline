@@ -41,15 +41,13 @@ When no new test fits, the tester's agent names the proof that does
   labelled ready by hand keeps its state.
 - **The developer** takes it as it takes one with a Draft, the kind in
   its task ([the pick](../../developer/docs/pick.md#which-issue)).
-- **`none`**, no test possible: the issue goes back to the product
-  owner's state, refine, the reason said and recorded
-  (`no-test-possible`). The product owner then picks a kind, or
-  rewrites the text and sends it back to its tests, or, the reason
-  being the tester's own, sends it back unchanged once (its next
-  `none` recorded `retried`) — or, none of these, the line blocks it
-  ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked));
-  with no agent, a person of the project names one in a comment,
-  `proof: <kind> — why`.
+- **`none`**, no acceptance test applies: the tester says so once, in
+  its one comment, quoting the reason (`no-test-possible`), and the
+  issue goes on to the developer with no frozen test; the developer's
+  pull request says no acceptance test applied. A bug goes on the same
+  way, provided the comment says why no test applies. The same issue
+  sent to its tests again on the same body is blocked, a person asked
+  ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked)).
 - **No reason, no answer**: never "no test possible"
   ([how](refused.md)).
 - **Read tools** (`claude`): the agent finds what it lacks in a

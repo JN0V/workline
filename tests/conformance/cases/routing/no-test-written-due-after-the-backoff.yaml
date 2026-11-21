@@ -1,11 +1,10 @@
-case: routing/no-test-written-not-retried-at-once
+case: routing/no-test-written-due-after-the-backoff
 about: >
-  A tester's run that ended with no test file proposed, on the body an
-  issue still has: not due again at once. Its last run ended 15 minutes
-  ago with no-test-written, past the 10 minutes' back-off a machine error
-  waits, and the body has not changed since: the line holds the issue,
-  the tester is not woken on the same input, nothing written. Listing the
-  due issues, it is not due.
+  A tester's run that ended once with no test file proposed and no
+  reason, on the body an issue still has: its last run ended 15
+  minutes ago, past the 10 minutes' back-off a machine error waits.
+  The issue is not held 6 hours: it is due again after the usual
+  back-off, said why. Listing the due issues, it is due.
 given:
   repo: tested
   env: {WORKLINE_CLOCK: "2026-11-05T08:00:00Z"}
@@ -21,9 +20,6 @@ given:
 run: {route: reconcile, open-merge-request: true, ai: none, input: {reconcile: list}}
 expect:
   status: pass
-  summary: "reconcile: 0 issues due"
   agent-calls: 0
-  no-findings: [{rule: state-wakes}, {rule: state-retry}]
-  forge:
-    issues:
-      - {id: 3, labels: ["workline:needs-tests"], comments: 1}
+  findings:
+    - {rule: state-retry, where: "#3"}

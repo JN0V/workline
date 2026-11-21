@@ -75,9 +75,12 @@ type Act struct {
 	Merged string `json:"merged,omitempty"`
 	// RedUnproven: why the tester's red proof of those tests was not
 	// settled by its judge (ADR-0065): said on its pull request.
-	RedUnproven string   `json:"red-unproven,omitempty"`
-	Code        []string `json:"code,omitempty"`
-	Tests       []string `json:"tests,omitempty"`
+	RedUnproven string `json:"red-unproven,omitempty"`
+	// NoAcceptance: the tester's reason when no acceptance test applied to
+	// the issue: its pull request says so.
+	NoAcceptance string   `json:"no-acceptance,omitempty"`
+	Code         []string `json:"code,omitempty"`
+	Tests        []string `json:"tests,omitempty"`
 	// The review loop (step 6): the rounds run, the reviewer's runs and
 	// a person's comments read already, the findings asked before (to
 	// tell one still there), the five whys run, a person handed it.

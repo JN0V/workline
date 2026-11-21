@@ -28,8 +28,8 @@ An issue it does not take is refused before any agent is asked
   the reason on the board
   ([routing](../../../docs/spec/routing.md#once-a-state-the-record)).
 - **No test written**, the agent's answer read and no kind named: no
-  test possible, its notes the reason, back to the product owner as
-  [`none`](proof-kinds.md#a-proof-kind-not-always-a-new-test) does
+  test applies, its notes the reason, handed over to the developer as
+  [`none`](proof-kinds.md#a-proof-kind-not-always-a-new-test) is
   ([#794](https://github.com/JN0V/workline/issues/794)).
 - **No reason, no answer**: an agent that names no kind, writes no
   test and gives no reason, or stops at its turn cap first, did no

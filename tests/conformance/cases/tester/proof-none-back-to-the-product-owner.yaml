@@ -26,5 +26,5 @@ expect:
   forge:
     issues:
       - id: 3
-        labels: ["workline:to-refine"]
-        comment-contains: ["**The tester** finds no test possible for this issue.", "no test checks a feeling", "back to the product owner (refine)", "a person of the project may name one in a comment", "tester-proof {\"kind\":\"none\"", "\"body\":\"9e210b1ef9d0\""]
+        labels: ["workline:ready"]
+        comment-contains: ["**The tester** finds that no acceptance test applies to this issue.", "no test checks a feeling", "it is ready", "tester-proof {\"kind\":\"none\"", "\"body\":\"9e210b1ef9d0\""]

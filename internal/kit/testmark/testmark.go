@@ -115,7 +115,15 @@ func Refused(comments []string) string {
 // ReadProof is the kind an issue is proved by in place of a Draft: the
 // tester's, or the product owner's after "no test possible".
 func ReadProof(comments []string) (backlog.Proof, bool) {
-	return backlog.ReadProof(comments, "product-owner")
+	if p, ok := backlog.ReadProof(comments, "product-owner"); ok {
+		return p, true
+	}
+	// No acceptance test applies: the tester handed the issue over to the
+	// developer, with no test to freeze.
+	if reason, _, ok := backlog.NoTest(comments); ok {
+		return backlog.Proof{Kind: backlog.KindNone, Reason: reason}, true
+	}
+	return backlog.Proof{}, false
 }
 
 // Untested says whether a ready issue still waits for its tests (#788):

@@ -339,6 +339,10 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 			// in the same step, a person (ADR-0063, §5): Waiting.
 			ok = st == "due" || st == "waiting" && givenBefore(calls, cl)
 		case needsRole:
+			if cl.Role == "tester" { // no acceptance test applies: handed to the developer
+				ok = st == "due" && (again.Woke[cl.Issue] == "developer" || next == "developer")
+				break
+			}
 			ok = st == "due" && (again.Woke[cl.Issue] == "product-owner" || next == "product-owner") ||
 				st == "waiting" && strings.Contains(said, "product owner")
 		case needsPerson:
