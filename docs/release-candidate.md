@@ -134,7 +134,7 @@ merge: {autonomy: enterprising}
 
 ## Where it is read
 
-- **The label `workline:candidate`**: `CandidateLabel`, in `candidate.go`.
-- **The milestone a feature goes into**: `NextMilestone`, in `candidate.go`.
-- **The version asked for**, by the `Release-As:` footer: `releaseAs`, in
-  `candidate.go`.
+- **The label `workline:candidate`**: `candidate.go` names it.
+- **The milestone a feature goes into**: `candidate.go` picks the next one.
+- **The version asked for**, by the `Release-As:` footer: `candidate.go`
+  reads it.

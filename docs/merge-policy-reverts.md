@@ -53,6 +53,7 @@ and:
 
 ## Where it is read
 
-- **A revert read and its kind demoted**: `demotions`, in `demote.go`.
-- **The base's last 100 commits**, for the App's marks: `revertWindow`; the
-  last 1000, for a merge made alone: `mergeWindow`.
+- **A revert read and its kind demoted**: `demote.go` reads the base's
+  commits for reverts.
+- **How far back it reads**: the base's last 100 commits, for the App's
+  marks, and the last 1000, for a merge made alone, both in `demote.go`.

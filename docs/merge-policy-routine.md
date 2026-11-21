@@ -90,8 +90,8 @@ and:
 
 ## Where it is read
 
-- **Whether one merges alone, and its kind**: `weighRoutine` and
-  `routineKind`, in `routine.go`; the four kinds, `RoutineKinds`.
-- **What never merges alone**: `notAllowed`, in `routine.go`.
-- **A commit that is workline's own**: `OwnCommit`, in `merge.go`.
-- **The local forge's App**: `LocalApp`, in `local_merge.go`.
+- **Whether one merges alone, and its kind**: `routine.go` weighs the pull
+  request and names one of the four kinds.
+- **What never merges alone**: `routine.go` holds the list.
+- **A commit that is workline's own**: `merge.go` tells it by its marks.
+- **The local forge's App**: `local_merge.go` plays it.

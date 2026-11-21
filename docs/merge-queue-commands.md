@@ -28,5 +28,5 @@ workline route merge-request --ai none --forge none --input queue=true \
 
 ## Where it is read
 
-`routeCmd` and `followCmd`, in `main.go`, read the flags; `QueueInput`, in
-`line.go`, is the input `queue`.
+`main.go` reads the flags of both commands; `line.go` builds the input of
+`queue`.

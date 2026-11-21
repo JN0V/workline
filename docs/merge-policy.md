@@ -1,9 +1,12 @@
 ---
 sources:
   - internal/engine/merge.go#mergePolicy
+  - internal/engine/merge.go#theYes
+  - internal/engine/merge.go#accepted
   - internal/engine/merge.go#heldByConversations
   - internal/engine/merge.go#releaseRebuild
   - internal/engine/merge.go#forkGuarded
+  - internal/engine/queue.go#queueGroup
   - internal/forge/github_merge.go#github.AutoMerge
   - defaults/ci/github/workline-merge.yml#on
   - defaults/ci/github/workline-apply.yml#jobs.verdict
@@ -319,8 +322,13 @@ what is left: [status.md](../roles/documentalist/docs/status.md).
 
 ## Where it is read
 
-- **The policy, the level and the yes**: `mergePolicy`, in `merge.go`.
-- **A conversation that holds it**: `heldByConversations`, in `merge.go`.
-- **A release tool's rebuild, no push**: `releaseRebuild`, in `merge.go`.
-- **A fork**: `forkGuarded`, in `merge.go`.
-- **GitHub's auto-merge**: `AutoMerge`, in `github_merge.go`.
+- **The policy, the level and the yes**: `merge.go` reads the level, and
+  finds the person's yes on the pull request's label events, set aside
+  the labels not taken from a person.
+- **The label that accepts a pull request**: `merge.go` tells it from the
+  other labels.
+- **A conversation that holds it**: `merge.go` looks for an open one.
+- **A release tool's rebuild, no push**: `merge.go` tells it from a push.
+- **A fork**: `merge.go` guards it.
+- **The queue**: `queue.go` groups the pull requests that wait to merge.
+- **GitHub's auto-merge**: `github_merge.go` turns it on.

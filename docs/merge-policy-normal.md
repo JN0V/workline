@@ -69,10 +69,10 @@ and:
 
 ## Where it is read
 
-- **The policy and its level**: `mergePolicy`, in `merge.go`.
-- **The paths `CODEOWNERS` gives an owner**: `CodeownersPlaces`, in
-  `codeowners.go`.
-- **With no `CODEOWNERS`, the files that steer agents**: `Agent`, in
-  `steer.go`.
-- **A pull request changing one**: `steersAny`, in `code.go`.
-- **The list `workline doctor` says**: `guardedList`, in `guard.go`.
+- **The policy and its level**: `merge.go` reads the level the project set.
+- **The paths `CODEOWNERS` gives an owner**: `codeowners.go` lists them.
+- **With no `CODEOWNERS`, the files that steer agents**: `steer.go` lists
+  them.
+- **A pull request changing one**: `code.go` checks the pull request's files
+  against that list.
+- **The list `workline doctor` says**: `guard.go` writes it.

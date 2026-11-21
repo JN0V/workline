@@ -90,5 +90,6 @@ From GitLab's documentation, not tried on a project yet:
 
 ## Where it is read
 
-- **`workline doctor`'s four words**: `bypassGuard`, in `guard.go`.
-- **What GitHub says the token can bypass**: `Bypass`, in `github_merge.go`.
+- **`workline doctor`'s four words**: `guard.go` finds which of the four
+  applies.
+- **What GitHub says the token can bypass**: `github_merge.go` asks GitHub.

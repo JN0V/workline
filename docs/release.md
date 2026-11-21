@@ -1,6 +1,8 @@
 ---
 sources:
   - defaults/routing.yaml#events.release
+  - internal/line/dryrun.go#dryRunOn
+  - cmd/workline/main.go#keepDryRun
   - defaults/ci/github/workline-gardening.yml#jobs.dry-run
   - defaults/ci/github/workline-gardening.yml#jobs.dry-run-post
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
@@ -98,3 +100,10 @@ workline route release --ai none --forge none                             # at t
 
 - The agent is never asked by the dry run: `--ai` naming one is refused.
 - Without a forge (`--forge none`), nothing is posted.
+
+## Where it is read
+
+- **The dry run, no agent**: `dryrun.go` starts it on the release branch's
+  tip.
+- **Keeping its result for the apply**: `main.go` writes the file that
+  `workline apply --release-dry-run` reads.

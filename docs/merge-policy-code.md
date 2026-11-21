@@ -47,9 +47,10 @@ and:
 
 ## Where it is read
 
-- **The kind and its gates**: `weighCode`, in `code.go`.
-- **A fix whose bug no test reproduced**: `unreproduced`, in `code.go`.
-- **A feature or a task, a fix with no yes**: `WaitsForAYes`, in `merge.go`
-  of `devmark`.
-- **The 24 h**: `DefaultWait`, in `assume.go`, unless `acts.ask.wait`
-  says another.
+- **The kind and its gates**: `code.go` weighs the developer's pull request
+  against the gates above.
+- **A fix whose bug no test reproduced**: `code.go` also says whether a test
+  reproduced it.
+- **A feature or a task, a fix with no yes**: `merge.go`, in the developer's
+  marks, says whether the pull request waits for a person's yes.
+- **The 24 h**: `assume.go` fixes the wait at 24 h. No setting changes it.
