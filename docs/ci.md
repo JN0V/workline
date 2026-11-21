@@ -22,6 +22,8 @@ sources:
   - defaults/ci/github/issue-form-need.yml#name
   - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_IMAGE
   - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_RUNS_DIR
+  - defaults/ci/gitlab/workline.gitlab-ci.yml#variables.WORKLINE_VERSION
+  - defaults/ci/github/workline-apply.yml#env.WORKLINE_VERSION
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply

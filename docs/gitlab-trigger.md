@@ -43,15 +43,17 @@ GitLab is needed:
 - **Variables in the URL** reach the jobs:
   `&variables[WORKLINE_TASK]=issue`. Event fields such as the issue's
   number do not: the engine reads them from `$TRIGGER_PAYLOAD` itself.
-- **What it needs**: any tier, Free included; a Maintainer to create the
-  hook and the trigger token. `workline setup --yes`, run in the
-  project's clone with a Maintainer's token, creates both: the hook on
-  issue events, and on note events where the reviewer or the product
-  owner is routed on `issue`; `workline doctor` checks them
-  ([the commands](commands-setup.md#workline-setup)).
-  On a self-managed instance, an administrator allows
-  webhooks to reach the local network (Admin → Network → Outbound
-  requests), as the hook calls GitLab itself (untried).
+- **What it needs**:
+  - any tier, Free included;
+  - a Maintainer to create the hook and the trigger token.
+    `workline setup --yes`, run in the project's clone with a
+    Maintainer's token, creates both: the hook on issue events, and on
+    note events where the reviewer or the product owner is routed on
+    `issue`. `workline doctor` checks them
+    ([the commands](commands-setup.md#workline-setup));
+  - on a self-managed instance, an administrator allows webhooks to
+    reach the local network (Admin → Network → Outbound requests), as
+    the hook calls GitLab itself (untried).
 - **Every issue change fires it**: a title edit, a new issue, a label
   the engine itself sets; with note events, every comment, on a merge
   request too. The engine exits at once on any other event than a
