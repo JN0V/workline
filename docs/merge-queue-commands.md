@@ -3,7 +3,7 @@ sources:
   - cmd/workline/main.go#routeCmd
   - cmd/workline/main.go#followCmd
   - internal/line/line.go#QueueInput
-checked: bd254cd75
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # The commands, for another CI

@@ -6,7 +6,7 @@ sources:
   - internal/engine/routine.go#RoutineKinds
   - internal/engine/merge.go#OwnCommit
   - internal/forge/local_merge.go#LocalApp
-checked: bd254cd75
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # Routine work at `normal`

@@ -9,7 +9,7 @@ sources:
   - internal/engine/candidate.go#candidateRun.refused
   - defaults/ci/github/release-candidate.yml#jobs.candidate
   - defaults/ci/github/workline-merge.yml#jobs.follow.if
-checked: bd254cd75
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # The release candidate
