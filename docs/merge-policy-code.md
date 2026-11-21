@@ -32,6 +32,10 @@ Part of [the merge policy at `normal`](merge-policy-normal.md).
 - **A feature or a task waits for a person's yes**, said once on it: a
   `task` is a label an agent may put
   ([#937](https://github.com/JN0V/workline/issues/937)).
+- **The comment that asks for the yes says what the label alone will
+  not mend**: a red verdict on the head, or a conflict with main. The
+  pull request merges once the line passes on a new head, or once it is
+  brought up to date with its base.
 - **Told by the issue it closes**, never by the agent: the rules, the
   labels and the record on [the developer's merge](../roles/developer/docs/merge.md).
 
