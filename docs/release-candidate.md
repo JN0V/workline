@@ -3,17 +3,13 @@ sources:
   - internal/engine/candidate.go#CandidateLabel
   - internal/engine/candidate.go#NextMilestone
   - internal/engine/candidate.go#releaseAs
-  - internal/engine/candidate.go#candidates
   - internal/engine/candidate.go#candidateRun.milestone
   - internal/engine/candidate.go#candidateRun.copy
   - internal/engine/candidate.go#candidateRun.yes
   - internal/engine/candidate.go#candidateRun.refused
-  - internal/engine/backlog.go#applier.featureMilestone
   - defaults/ci/github/release-candidate.yml#jobs.candidate
   - defaults/ci/github/workline-merge.yml#jobs.follow.if
-  - internal/engine/candidate.go#untried
-  - internal/forge/forge.go#Milestoned
-checked: 1d45ec45d
+checked: bd254cd75
 verified: agent:claude-code
 ---
 # The release candidate
@@ -139,3 +135,10 @@ merge: {autonomy: enterprising}
   candidate only, and `main` does not get the version's changelog: the
   next candidate's notes list the last one's changes again
   ([#879](https://github.com/JN0V/workline/issues/879)).
+
+## Where it is read
+
+- **The label `workline:candidate`**: `candidate.go` names it.
+- **The milestone a feature goes into**: `candidate.go` picks the next one.
+- **The version asked for**, by the `Release-As:` footer: `candidate.go`
+  reads it.

@@ -1,6 +1,10 @@
 ---
-sources: [internal/engine/code.go#weighCode, internal/engine/code.go#unreviewed, internal/engine/code.go#reviewedTip, internal/engine/code.go#pushedAt, internal/engine/code.go#unreproduced, internal/kit/devmark/merge.go#Merge, internal/kit/devmark/merge.go#Merge.Unreviewed, internal/kit/devmark/merge.go#Merge.WaitsForAYes, internal/kit/devmark/merge.go#ReadMerge, internal/kit/devmark/merge.go#IssueKind, internal/backlog/assume.go#DefaultWait]
-checked: c46a93d6c
+sources:
+  - internal/engine/code.go#weighCode
+  - internal/engine/code.go#unreproduced
+  - internal/kit/devmark/merge.go#Merge.WaitsForAYes
+  - internal/backlog/assume.go#DefaultWait
+checked: a2f65b253
 verified: agent:claude-code
 ---
 # The developer's code at `normal`
@@ -28,6 +32,10 @@ Part of [the merge policy at `normal`](merge-policy-normal.md).
 - **A feature or a task waits for a person's yes**, said once on it: a
   `task` is a label an agent may put
   ([#937](https://github.com/JN0V/workline/issues/937)).
+- **The comment that asks for the yes says what the label alone will
+  not mend**: a red verdict on the head, or a conflict with main. The
+  pull request merges once the line passes on a new head, or once it is
+  brought up to date with its base.
 - **Told by the issue it closes**, never by the agent: the rules, the
   labels and the record on [the developer's merge](../roles/developer/docs/merge.md).
 
@@ -40,3 +48,13 @@ and:
 |---|---|
 | `review-to-come` | the developer's code, the reviewer in the line, its verdict not on the head yet: it waits for it, 24 h at most |
 | `waits-for-a-yes` | the developer's feature or task, a fix whose bug no test reproduced, a fix no review read at its head, or a finding open |
+
+## Where it is read
+
+- **The kind and its gates**: `code.go` weighs the developer's pull request
+  against the gates above.
+- **A fix whose bug no test reproduced**: `code.go` also says whether a test
+  reproduced it.
+- **A feature or a task, a fix with no yes**: `merge.go`, in the developer's
+  marks, says whether the pull request waits for a person's yes.
+- **The 24 h**: `assume.go` fixes the wait at 24 h. No setting changes it.

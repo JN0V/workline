@@ -1,14 +1,13 @@
 ---
 sources:
-  - internal/sample
-  - roles/documentalist/code/sample.go
+  - internal/sample/sample.go#OneIn
+  - internal/sample/count.go#defectsMax
+  - internal/kit/docmark/docmark.go#SampleTokens
   - defaults/ci/github/workline-sample.yml
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:sample
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:read
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
-  - roles/auditor
-  - roles/product-owner/role.yaml
-checked: 04d2af892
+  - roles/auditor/role.yaml
+checked: a2f65b253
 verified: agent:claude-code
 ---
 # The weekly sample
@@ -139,3 +138,14 @@ roles:
 - **Nothing to turn on for the product owner**: its acts are drawn like
   any role's. Its former `weekly-sample` setting is no longer read, and
   its run says so.
+
+## Where the numbers are set
+
+- **One in ten**: `sample.go` sets it.
+- **Three issues a week at most**: `count.go` sets it.
+- **The 400000-token cap**: `docmark.go` sets it, when no
+  `ai-max-tokens` is set.
+- **The schedule**: `workline-sample.yml` on GitHub; on GitLab the jobs
+  `workline:sample:read` and `workline:sample:write`.
+- **The auditor's questions, a kind of act each**: its `role.yaml` and its
+  `kinds/` folder.
