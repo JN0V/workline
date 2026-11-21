@@ -8,8 +8,12 @@ package engine
 // an issue an earlier run missed is tended by the next.
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -119,13 +123,16 @@ func unmerged(repo, base, branch string) bool {
 	if base == "" {
 		base = "main"
 	}
-	out, err := git(repo, nil, "diff", "--name-only", base+"..."+ref)
+	out, err := git(repo, nil, "diff", "-z", "--name-only", base+"..."+ref)
 	if err != nil {
 		return true
 	}
 	mb, _ := git(repo, nil, "merge-base", base, ref)
 	mb = strings.TrimSpace(mb)
-	for _, file := range strings.Fields(out) {
+	for _, file := range strings.Split(out, "\x00") {
+		if file == "" {
+			continue
+		}
 		a, errA := git(repo, nil, "rev-parse", "--verify", "-q", ref+":"+file)
 		if errA != nil {
 			continue
@@ -147,6 +154,34 @@ func unmerged(repo, base, branch string) bool {
 		return true
 	}
 	return false
+}
+
+// changeOnBase tells whether the Draft's change to one file, from the
+// merge-base, applies in reverse on base: its content is there.
+func changeOnBase(repo, base, mb, ref, file string) bool {
+	run := func(env []string, stdin []byte, args ...string) ([]byte, error) {
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env = append(os.Environ(), env...)
+		if stdin != nil {
+			cmd.Stdin = bytes.NewReader(stdin)
+		}
+		return cmd.Output()
+	}
+	patch, err := run(nil, nil, "diff", "--binary", mb, ref, "--", file)
+	if err != nil || len(patch) == 0 {
+		return false
+	}
+	dir, err := os.MkdirTemp("", "workline-unmerged-")
+	if err != nil {
+		return false
+	}
+	defer os.RemoveAll(dir)
+	env := []string{"GIT_INDEX_FILE=" + filepath.Join(dir, "index")}
+	if _, err := run(env, nil, "read-tree", base); err != nil {
+		return false
+	}
+	_, err = run(env, patch, "apply", "-R", "--check", "--cached")
+	return err == nil
 }
 
 // closedBearing is the closed issues bearing one of labels: a call a
