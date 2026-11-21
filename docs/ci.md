@@ -42,7 +42,7 @@ sources:
   - cmd/workline/main.go#initCmd
   - cmd/workline/main.go#issuesCmd
   - internal/doctor/conversations.go#findingsOnMergeRequests
-checked: b2a36983f
+checked: cd70f3299
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
