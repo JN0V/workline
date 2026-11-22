@@ -1,6 +1,6 @@
 ---
 sources: [roles/tester/code/write.go, internal/backlog/verification.go, internal/backlog/spec.go, internal/engine/engine.go]
-checked: 7329ab10
+checked: b85f39148
 verified: agent:claude-code
 ---
 # The issue's Verification: the tester's test plan

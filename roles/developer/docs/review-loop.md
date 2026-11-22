@@ -11,7 +11,7 @@ sources:
   - defaults/ci/github/workline-develop.yml
   - defaults/ci/gitlab/workline.gitlab-ci.yml
   - internal/kit/devmark
-checked: 3ec4d022
+checked: 7c650fc50
 verified: agent:claude-code
 ---
 # The review loop

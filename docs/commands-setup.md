@@ -52,7 +52,7 @@ sources:
   - internal/line/seconds.go#Result.Times
   - internal/line/seconds.go#Result.OverBudget
   - defaults/routing.yaml#budgets
-checked: b2a36983f
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # The commands that set up

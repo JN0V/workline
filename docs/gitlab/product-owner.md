@@ -4,7 +4,7 @@ sources:
   - internal/forge/gitlab.go#gitlab.insider
   - internal/forge/gitlab.go#gitlab.blockedBy
   - internal/forge/gitlab.go#gitlab.AddSubIssue
-checked: 582ca3c7
+checked: eabf3222b
 -->
 # The product owner on GitLab
 

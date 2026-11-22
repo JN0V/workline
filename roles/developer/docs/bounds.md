@@ -10,7 +10,7 @@ sources:
   - defaults/ci/gitlab/workline-bounds.gitlab-ci.yml
   - internal/steer/steer.go
   - internal/kit/devmark
-checked: 8ddc4e54
+checked: 7c650fc50
 verified: agent:claude-code
 ---
 # The bounds: what its code may never touch

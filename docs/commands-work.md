@@ -7,7 +7,7 @@ sources:
   - cmd/workline/main.go#itemCmd
   - cmd/workline/main.go#issuesCmd
   - cmd/workline/main.go#importIssues
-checked: b2a36983f
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # The commands that do the work

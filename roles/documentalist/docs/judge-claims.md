@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/code/judge.go, roles/documentalist/code/words.go, roles/documentalist/code/cite.go, roles/documentalist/code/comments.go, roles/documentalist/code/counts.go]
-checked: affb7424
+checked: 9323f678b
 verified: agent:claude-code
 ---
 # Documentalist — the judge's claims

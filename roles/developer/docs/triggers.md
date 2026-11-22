@@ -8,7 +8,7 @@ sources:
   - defaults/ci/github/workline-develop.yml
   - defaults/ci/gitlab/workline.gitlab-ci.yml
   - internal/kit/devmark
-checked: c1990cb1
+checked: 56278a72f
 verified: agent:claude-code
 ---
 # The triggers
