@@ -284,8 +284,20 @@ func HandedOver(comments []string) (Proof, bool) {
 	if !ok || p.Kind != KindNone || p.Body != "" || p.Reason == "" {
 		return Proof{}, false
 	}
-	return p, true
+	// Marked by the comment's own words, not by a missing body: a record
+	// from before #815 has no body either, and is no hand-over.
+	for _, c := range slices.Backward(comments) {
+		if strings.Contains(c, testerSticky) {
+			return p, strings.Contains(c, HandedOverSaid)
+		}
+	}
+	return Proof{}, false
 }
+
+// HandedOverSaid is what the tester's comment says when it hands an issue
+// over to the developer, no acceptance test applying (#1941); the comment
+// of "no test possible" sent back to the product owner says another.
+const HandedOverSaid = "**The tester** finds that no acceptance test applies to this issue."
 
 // NoTest is the tester's "no test possible" on an issue, and its digest:
 // what a product owner's pick answers. False when the tester's last word
