@@ -34,7 +34,7 @@ func proofOf(notes []string) (backlog.Proof, bool) {
 
 // proved ends a run whose agent wrote no test and named a kind instead:
 // recorded on the issue, and the issue moved on — to the state after its
-// own for a kind in ProofKinds, back to the product owner's for none.
+// own, for none too: no acceptance test applies, the developer goes on.
 func proved(runDir, repo string, t task, intents []intent.Intention, p backlog.Proof) int {
 	where := fmt.Sprintf("#%d", t.Issue)
 	if p.Reason == "" {
@@ -72,20 +72,11 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p backlog.P
 		to, next = "", "whoever builds it proves it so, "+backlog.ProofKinds[p.Kind]+"; its state kept, not the tester's"
 	}
 	if p.Kind == backlog.KindNone {
-		p.Body = t.Body       // the body it read: sent again unchanged, Blocked (#815)
-		p.Retried = t.Retried // after a retest: no second one (#1053)
-		to, did, rule = "", "finds no test possible for this issue", "no-test-possible"
-		for _, o := range line.States {
-			if o.Role == "product-owner" {
-				to = o.Name
-			}
-		}
-		if to == "" {
-			return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "no test possible, and no state of the product owner's to send it to",
-				Findings: []verdict.Finding{{Rule: "no-product-owner-state", Where: where,
-					Message: "the routing's states name none the product owner's: the issue keeps its state; add one, or have a person settle it"}}})
-		}
-		next = "back to the product owner (" + to + "): it picks a proof kind, or rewrites the scenarios; a person of the project may name one in a comment, `proof: <kind> — why`"
+		// No acceptance test applies: handed over to the developer, who
+		// builds it with no frozen test (#1941). The record takes no body:
+		// it is no word sent back to the product owner.
+		did, rule = "finds that no acceptance test applies to this issue", "no-test-applies"
+		next = "it goes on to the developer, who builds it with no frozen test; its pull request says no acceptance test applied"
 	}
 	var move []intent.Intention
 	if to != "" {
@@ -96,7 +87,7 @@ func proved(runDir, repo string, t task, intents []intent.Intention, p backlog.P
 		remove = slices.DeleteFunc(remove, func(l string) bool { return !slices.Contains(t.Labels, l) })
 		move = []intent.Intention{{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove, "card": to}}}
 	}
-	// The record, none too: the product owner's pick answers it.
+	// The record, none too: the developer reads it.
 	data, _ := json.Marshal(p)
 	body := backlog.Said("The tester", did, p.Reason, next) + "\n<!-- workline:" + backlog.ProofMark + string(data) + " -->"
 	intents = append(append(slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "note" }), move...),

@@ -1,0 +1,20 @@
+case: engine/inputs-diff-past-its-cap-cut-and-said
+about: "A role declaring `inputs: [commits]`, run on a range whose diff is far past the input's cap: the task it gives its agent holds the start of the diff and not its end, and the run's in/cuts says the diff was cut."
+given:
+  repo: basic
+  setup:
+    - "git checkout -qb feature"
+    - "seq 1 400000 | sed 's/^/line-/' > big.txt && git add big.txt && git commit -qm 'feat: add a very large file'"
+run:
+  role: reads-commits
+  event: merge-request
+  input: {range: "main..feature"}
+  ai: "cmd:echo '[]'"
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains: "+line-1"
+      not-contains: "line-400000"
+    in/cuts:
+      contains: "diff"

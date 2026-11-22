@@ -126,6 +126,9 @@ func body(a devmark.Act, ready bool) string {
 	if len(a.Beside) > 0 {
 		fmt.Fprintf(&b, "- New test files beside the issue's %s: %s; the product owner adds them to the %[1]s at its next run.\n", work.Name(work.Scope), files(a.Beside))
 	}
+	if a.NoTest {
+		b.WriteString("- The tester found that no acceptance test applied to this issue: no test is frozen for it.\n")
+	}
 	if len(a.Acceptance) > 0 {
 		fmt.Fprintf(&b, "- The tester's acceptance tests, read-only to the developer, from `%s%d`: %s.\n", testmark.TestsBranch, a.Issue, files(a.Acceptance))
 	}

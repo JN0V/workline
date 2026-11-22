@@ -78,7 +78,7 @@ func unreproduced(runDir string, t task, intents []intent.Intention, proof verdi
 
 // bugProof says why a proof kind does not fit a bug: only new tests, red
 // on the base, show it (ADR-0060); "" when the issue is no bug, or the
-// kind is none (no test possible: back to the product owner).
+// kind is none (no acceptance test applies: handed over to the developer, #1941).
 func bugProof(t task, p backlog.Proof) string {
 	if kind, _ := backlog.KindOf(t.Labels); kind != backlog.KindBug || p.Kind == backlog.KindNone || p.Kind == backlog.KindNewTests {
 		return ""
