@@ -29,33 +29,8 @@ rendering shows, or in a frontmatter the doc has.
 - **Only where it looks**: a doc naming a file's part (`f.go#Name`) or
   names in backticks is suspect when they change; a part gone is said.
 - **No change**: a commit changing only docs' headers, who checked them;
-  nor, on a release tool's pull request, one only putting a version number
-  in place of another, line for line — the tool's bump, which would hold
-  every release — unless the doc pins the version replaced
-  ([#346](https://github.com/JN0V/workline/issues/346)):
-  - **A pin** follows the bump, so the doc is suspect: the version said
-    as the one to use, in a code block, an install line (`@v1.2.0`), an
-    image's tag, or plain prose ("Clock **1.2.0**"). In a code block, the
-    code pins whatever word comes before: `since: v1.2.0`, `--from
-    v1.2.0` ([#571](https://github.com/JN0V/workline/issues/571)). An
-    HTML tag or a blockquote around it is markup, its `>` no range:
-    `<code>v1.2.0</code>`, `> v1.2.0`
-    ([#569](https://github.com/JN0V/workline/issues/569)).
-  - **History** does not: the version right after "from", "since",
-    "after", "before", "added in", "fixed in", "at least", or before "or
-    later", "and newer", `+`, quoted or not, in prose (across a line
-    break too) or a code block's comment (`# since 1.2.0`, by the
-    block's language, over lines too); a range (`>=1.2.0`), in code
-    too. A word between pins it: "Install from tag v1.2.0",
-    `FROM tool:v1.2.0`.
-  - A doc the release commit bumps too says the new version: not
-    suspect.
-  - **On every run**, not only the release's, as the bump stays in
-    every later run's history:
-    - a part named (`ci.yml#env.VERSION`): any bump;
-    - a whole file: a bump on a line the tool marks
-      (`x-release-please-version`, its manifest).
-  - A whole file's version bumped by hand, elsewhere, is still a change.
+  nor a release tool's version bump, unless the doc pins the version
+  replaced ([version bumps](#version-bumps)).
 - **A `checked` the branch does not hold** — one of a merge request since
   squashed or rebased — stands for the commit that brought it there, as
   does a `judged` or `judged-in-parts`
@@ -73,6 +48,38 @@ rendering shows, or in a frontmatter the doc has.
   ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 - **The chain is followed**: a suspect technical section makes the product
   docs depending on it suspect too.
+
+### Version bumps
+
+A commit only putting a version number in place of another, line for
+line, is the release tool's bump, which would hold every release. It is
+no change unless the doc pins the version replaced
+([#346](https://github.com/JN0V/workline/issues/346)):
+
+- **A pin** follows the bump, so the doc is suspect: the version said
+  as the one to use, in a code block, an install line (`@v1.2.0`), an
+  image's tag, or plain prose ("Clock **1.2.0**"). In a code block, the
+  code pins whatever word comes before: `since: v1.2.0`, `--from
+  v1.2.0` ([#571](https://github.com/JN0V/workline/issues/571)). An
+  HTML tag or a blockquote around it is markup, its `>` no range:
+  `<code>v1.2.0</code>`, `> v1.2.0`
+  ([#569](https://github.com/JN0V/workline/issues/569)).
+- **History** does not: the version right after "from", "since",
+  "after", "before", "added in", "fixed in", "at least", or before "or
+  later", "and newer", `+`, quoted or not, in prose (across a line
+  break too) or a code block's comment (`# since 1.2.0`, by the
+  block's language, over lines too); a range (`>=1.2.0`), in code
+  too. A word between pins it: "Install from tag v1.2.0",
+  `FROM tool:v1.2.0`.
+- A doc the release commit bumps too says the new version: not
+  suspect.
+- **On every run**, not only the release's, as the bump stays in
+  every later run's history:
+  - a part named (`ci.yml#env.VERSION`): any bump;
+  - a whole file: a bump on a line the tool marks
+    (`x-release-please-version`, its manifest).
+- **By hand**: a whole file's version bumped off the release's pull
+  request, on a line no tool marks, is a change like any.
 
 ### Identifiers gone
 
