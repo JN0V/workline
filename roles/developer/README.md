@@ -12,7 +12,7 @@ sources:
   - roles/developer/code/conflict.go#mergePost
   - roles/developer/code/proof.go
   - roles/developer/code/bounds.go
-checked: 60a7720e
+checked: dde7525a
 verified: agent:claude-code
 ---
 # Developer
