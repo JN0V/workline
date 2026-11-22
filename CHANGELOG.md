@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.88.0](https://github.com/JN0V/workline/compare/v0.87.0...v0.88.0) (2026-11-22)
+
+
+### Features
+
+* a prompt-only role reads the issue and commits it ([#2005](https://github.com/JN0V/workline/issues/2005)) ([a404f56](https://github.com/JN0V/workline/commit/a404f56b93c975873e39b005bbffe4f816adf6b3))
+
+
+### Bug Fixes
+
+* bug: an issue no test fits fails at the tester ([#2039](https://github.com/JN0V/workline/issues/2039)) ([06fe2e1](https://github.com/JN0V/workline/commit/06fe2e1340507f83b5d189fad70c9c9f0d61c0e1))
+
 ## [0.87.0](https://github.com/JN0V/workline/compare/v0.86.0...v0.87.0) (2026-11-22)
 
 
