@@ -2,6 +2,7 @@
 sources: [tests/conformance/runner_test.go]
 checked: e54dae8d9
 verified: agent:claude-code
+judged-in-parts: 06fe2e1
 ---
 # Conformance — what a case expects
 

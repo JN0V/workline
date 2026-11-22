@@ -13,6 +13,7 @@ sources:
   - tests/conformance/cases/reviewer/review-applied-when-a-push-lands-before-it.yaml
 checked: e2e165c2d
 verified: agent:claude-code
+judged-in-parts: 06fe2e1
 ---
 # The `propose` job on GitHub
 
@@ -43,8 +44,8 @@ it runs, and its locks.
   ([the green proof](../../roles/tester/docs/green-proof.md#what-it-runs)).
 - **One `propose` per pull request at a time** (`concurrency`): a push
   cancels the run still on the head before; the newer run reviews its
-  commits too, and `apply`, `verdict`, `follow` and the fork's comment skip
-  a cancelled run ([#359](https://github.com/JN0V/workline/issues/359)).
+  commits too, and `apply`, `verdict` and the fork's comment skip
+  a cancelled run, `follow` one of a pull request ([#359](https://github.com/JN0V/workline/issues/359)).
   A cancelled run on ready leaves every lens to the next run.
 - **One review at a time**: `propose` waits while `apply` writes the review
   before it, then reviews only what is new; `apply` writes it even once
