@@ -11,6 +11,7 @@ sources:
   - roles/tester/code/objection.go#kinds
 checked: c46a93d6c
 verified: agent:claude-code
+judged: 99d82f5
 ---
 # Review the merge request
 

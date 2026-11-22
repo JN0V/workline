@@ -9,6 +9,7 @@ sources:
 checked: 9323f678b
 verified: agent:claude-code
 judged-in-parts: c7e1e98
+judged: ffb1253
 ---
 # Several repositories — v1 (draft)
 
