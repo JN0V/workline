@@ -190,8 +190,11 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 	// moved to it (#2029), a person moves it to a commit of the default branch.
 	offBase := false
 	if base := gitrange.Base(rangeOf(runDir)); base != "" {
-		_, err := git(repo, "merge-base", "--is-ancestor", head, base)
-		offBase = err != nil
+		onBase, err := isAncestor(repo, head, base)
+		if err != nil {
+			return "", nil, nil, nil, nil, err
+		}
+		offBase = !onBase
 	}
 	var fixes strings.Builder
 	judged, inParts, vouched = map[string]map[string]string{}, map[string]string{}, map[string]string{}

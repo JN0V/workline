@@ -1,7 +1,9 @@
 package documentalist
 
 import (
+	"errors"
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/JN0V/workline/internal/gitrange"
@@ -13,13 +15,13 @@ import (
 // lacks: a squash merge drops the commits of the branch, and the header would
 // name a commit main does not hold (#2029). Only the docs whose `checked` the
 // range changed are looked at, this repository's commit only.
-func (r *preRun) checkedNotAncestor() {
+func (r *preRun) checkedNotAncestor() error {
 	if !r.atPush {
-		return
+		return nil
 	}
 	base := gitrange.Base(rangeOf(r.runDir))
 	if base == "" {
-		return
+		return nil
 	}
 	for _, d := range r.docs {
 		now := d.Checked[""]
@@ -40,6 +42,25 @@ func (r *preRun) checkedNotAncestor() {
 				Message: fmt.Sprintf("`checked` names %s, a commit the base %s does not hold: a squash merge drops it; name a commit of the default branch", short, strings.TrimSpace(shortRef(base)))})
 		}
 	}
+	return nil
+}
+
+// isAncestor tells whether a is an ancestor of b: git exits 1 for "no", and
+// any other failure (a base not fetched, a commit missing from a shallow
+// clone: 128) is an error, never a "no".
+func isAncestor(repo, a, b string) (bool, error) {
+	cmd := exec.Command("git", "-C", repo, "merge-base", "--is-ancestor", a, b)
+	var errOut strings.Builder
+	cmd.Stderr = &errOut
+	err := cmd.Run()
+	if err == nil {
+		return true, nil
+	}
+	var exit *exec.ExitError
+	if errors.As(err, &exit) && exit.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, fmt.Errorf("%s", strings.TrimSpace(errOut.String()))
 }
 
 func shortRef(s string) string {
