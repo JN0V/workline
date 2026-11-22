@@ -407,9 +407,11 @@ func holdsName(l string, names map[string]bool) bool {
 // must follow the bump — never as history: the release a feature came in,
 // a minimum, stay true at every later release (saysAsNow, #346). The
 // tool's own bump says nothing else a doc describes, and would make the
-// release's docs suspect at every release. Elsewhere a bump is a change
-// like any: the docs it touches are judged (the evaluation's
-// drifted-version-bump).
+// release's docs suspect at every release. A doc naming a part of a file
+// (`ci.yml#env.VERSION`) is read so on every run: the bump stays in the
+// history of every later run, and the part names exactly what the doc
+// describes. Elsewhere, for a whole file, a bump is a change like any: the
+// docs it touches are judged (the evaluation's drifted-version-bump).
 func dropBumps(dir, commits, path, doc string) string {
 	if commits == "" || strings.HasPrefix(commits, "(") {
 		return commits
@@ -889,7 +891,7 @@ func (r *preRun) findSuspects() error {
 				commits = fmt.Sprintf("(`checked` names %s, which %s does not hold, and no commit brought it there)", checked, where.rev)
 			} else if err == nil {
 				commits, err = changed(where.dir, checked, where.rev, path, anchor, docNames(tree.Docs[d.Path]))
-				if err == nil && name == "" && os.Getenv("WORKLINE_RELEASE_BRANCH") != "" {
+				if err == nil && name == "" && (isPart(path, anchor) || os.Getenv("WORKLINE_RELEASE_BRANCH") != "") {
 					commits = dropBumps(where.dir, commits, path, tree.Docs[d.Path])
 				}
 			}
@@ -1077,6 +1079,9 @@ func (r *preRun) checkHygiene() error {
 		}
 	}
 	r.findings = append(r.findings, undocumented(tree, docs, s.Documented, added, r.ranged)...)
+	if err := r.checkedNotAncestor(); err != nil {
+		return err
+	}
 	// Docs the role does not read: said when gardening and when adopting,
 	// not on each change, which adds nothing to them.
 	if ev := os.Getenv("WORKLINE_EVENT"); ev == "schedule" || ev == "init" {

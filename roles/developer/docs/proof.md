@@ -7,7 +7,7 @@ sources:
   - roles/tester/code/fresh.go
   - roles/developer/role.yaml
   - internal/kit/devmark
-checked: 9cf386a3
+checked: b85f39148
 verified: agent:claude-code
 ---
 # The proof and the caps: ready or a Draft

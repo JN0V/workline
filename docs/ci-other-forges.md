@@ -13,7 +13,7 @@ sources:
   - defaults/ci/github/workline-apply.yml#jobs.follow.if
   - docs/github/import-jobs.md
   - internal/forge/local.go#Local
-checked: b2a36983f
+checked: 3f432ab14
 judged: cd97f28
 verified: agent:claude-code
 ---

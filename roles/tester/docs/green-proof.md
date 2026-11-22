@@ -1,6 +1,6 @@
 ---
 sources: [roles/tester/code/green.go, roles/tester/code/runcache.go, roles/tester/code/symptom.go, roles/tester/code/frozen.go, roles/tester/code/renamed.go, roles/tester/code/tester.go]
-checked: 9cf386a3
+checked: b85f39148
 verified: agent:claude-code
 ---
 # The green proof: three runs out of three
