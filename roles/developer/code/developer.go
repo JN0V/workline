@@ -698,7 +698,10 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 			"The engine reads that file and takes it out of your diff; the tester keeps or rewrites each objection.\n\n" +
 			"A test that cannot pass within your bounds (it calls a command against its documented rule, for instance without a flag its no-terminal rule requires) is such an objection, of kind `contradicts`: object to it in that file, never in a text note, which reaches no tester.\n")
 	}
-	if b.Proof != nil {
+	if b.Proof != nil && b.Proof.Kind == backlog.KindNone {
+		fmt.Fprintf(&t, "\n## No acceptance test applies\n\nThe tester found that no acceptance test applies to this issue, and handed it over: %s. There is no frozen test; build the issue from its text, and its project's own tests prove the rest.\n",
+			strings.TrimSuffix(b.Proof.Reason, "."))
+	} else if b.Proof != nil {
 		fmt.Fprintf(&t, "\n## Its proof: %s, no new test\n\nThe tester recorded it in place of acceptance tests: %s. Its proof: %s.\n",
 			b.Proof.Kind, strings.TrimSuffix(b.Proof.Reason, "."), backlog.ProofKinds[b.Proof.Kind])
 	}
@@ -931,6 +934,7 @@ func Post(runDir, repo string) int {
 			return 1 // blocked: the exit its verdict says (role contract)
 		}
 		a.Proof, a.Caps = &p, caps
+		a.NoTest = b.Proof != nil && b.Proof.Kind == backlog.KindNone
 		a.Turns, a.Tokens, a.Cached, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Cached, u.Tools, u.failed
 		v.Findings = append(v.Findings, found...)
 		title := issueTitle(runDir, a.Issue)

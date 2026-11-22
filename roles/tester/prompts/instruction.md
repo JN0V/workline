@@ -92,4 +92,4 @@ When no new test fits the issue as a whole, write no test: answer one
   `test_retry`), and `runs: <N>`, the runs it must pass, each one.
 - `existing-suite`: a refactor; the project's suite, unchanged and green.
 - `docs-checks`: a change to the docs alone; the documentalist's checks.
-- `none`: no test is possible; why. The product owner then decides.
+- `none`: no test is possible; why. The issue then goes on to the developer, with no frozen test.
