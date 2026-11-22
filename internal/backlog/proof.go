@@ -275,6 +275,18 @@ func testerRecord(comments []string) (Proof, bool) {
 	return Proof{}, false
 }
 
+// HandedOver is the tester's word that no acceptance test applies to an
+// issue, which it handed over to the developer (#1941): its record of
+// kind none, taking no body, as the one sent back to the product owner
+// does (#815). False when the tester's last word is another.
+func HandedOver(comments []string) (Proof, bool) {
+	p, ok := testerRecord(comments)
+	if !ok || p.Kind != KindNone || p.Body != "" || p.Reason == "" {
+		return Proof{}, false
+	}
+	return p, true
+}
+
 // NoTest is the tester's "no test possible" on an issue, and its digest:
 // what a product owner's pick answers. False when the tester's last word
 // on it is another.

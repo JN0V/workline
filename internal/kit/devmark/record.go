@@ -69,6 +69,10 @@ type Act struct {
 	// (step 4).
 	From       string   `json:"from,omitempty"`
 	Acceptance []string `json:"acceptance,omitempty"`
+	// NoTest: the tester found that no acceptance test applies to the
+	// issue and handed it over: no frozen test, said in its pull request
+	// (#1941).
+	NoTest bool `json:"no-test,omitempty"`
 	// Merged: the base's commit merged into From, which was behind it,
 	// for its code to start on the base's paths; its branch starts from
 	// that merge (#1941).
