@@ -27,6 +27,7 @@ import (
 	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/tools"
 	"go.yaml.in/yaml/v3"
 )
@@ -407,12 +408,14 @@ func holdsName(l string, names map[string]bool) bool {
 // must follow the bump — never as history: the release a feature came in,
 // a minimum, stay true at every later release (saysAsNow, #346). The
 // tool's own bump says nothing else a doc describes, and would make the
-// release's docs suspect at every release. A doc naming a part of a file
-// (`ci.yml#env.VERSION`) is read so on every run: the bump stays in the
-// history of every later run, and the part names exactly what the doc
-// describes. Elsewhere, for a whole file, a bump is a change like any: the
-// docs it touches are judged (the evaluation's drifted-version-bump).
-func dropBumps(dir, commits, path, doc string) string {
+// release's docs suspect at every release. The bump stays in the history of
+// every later run, so it is read so on every run: on a part of a file
+// (`ci.yml#env.VERSION`), which names exactly what the doc describes, any
+// bump; on a whole file, with marked, only the bumps the tool marks
+// (release.OnlyBumps: `x-release-please-version`, its manifest). A whole
+// file's version bumped by hand is a change like any: the docs it touches
+// are judged (the evaluation's drifted-version-bump).
+func dropBumps(dir, commits, path, doc string, marked bool) string {
 	if commits == "" || strings.HasPrefix(commits, "(") {
 		return commits
 	}
@@ -421,11 +424,21 @@ func dropBumps(dir, commits, path, doc string) string {
 		hash, _, _ := strings.Cut(l, " ")
 		bump, old := versionsOnly(dir, hash, path)
 		pinned := slices.ContainsFunc(old, func(v string) bool { return saysAsNow(doc, v) })
-		if !bump || pinned {
+		if !bump || pinned || marked && !toolBump(dir, hash, path) {
 			kept = append(kept, l)
 		}
 	}
 	return strings.Join(kept, "\n")
+}
+
+// toolBump says whether a commit bumped versions in path only as a release
+// tool does, by its own marks (release.OnlyBumps).
+func toolBump(dir, commit, path string) bool {
+	diff, err := git(dir, "diff", "-U0", "--no-color", "--no-ext-diff", commit+"^", commit, "--", path)
+	if err != nil {
+		return false
+	}
+	return release.OnlyBumps(path, diff, func() (string, error) { return git(dir, "show", commit+":"+path) })
 }
 
 func headersOnly(dir, commit, path string) bool {
@@ -891,8 +904,9 @@ func (r *preRun) findSuspects() error {
 				commits = fmt.Sprintf("(`checked` names %s, which %s does not hold, and no commit brought it there)", checked, where.rev)
 			} else if err == nil {
 				commits, err = changed(where.dir, checked, where.rev, path, anchor, docNames(tree.Docs[d.Path]))
-				if err == nil && name == "" && (isPart(path, anchor) || os.Getenv("WORKLINE_RELEASE_BRANCH") != "") {
-					commits = dropBumps(where.dir, commits, path, tree.Docs[d.Path])
+				if err == nil && name == "" {
+					marked := !isPart(path, anchor) && os.Getenv("WORKLINE_RELEASE_BRANCH") == ""
+					commits = dropBumps(where.dir, commits, path, tree.Docs[d.Path], marked)
 				}
 			}
 			if _, ok := err.(external); ok {
