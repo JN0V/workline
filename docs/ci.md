@@ -43,7 +43,7 @@ sources:
   - cmd/workline/main.go#issuesCmd
   - internal/doctor/conversations.go#findingsOnMergeRequests
 checked: 3f432ab14
-judged: a8574a5
+judged: 06fe2e1
 verified: agent:claude-code
 reader: 8aab3bd261d9
 ---
