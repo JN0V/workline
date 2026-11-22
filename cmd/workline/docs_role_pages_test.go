@@ -296,12 +296,19 @@ pick:
 // When the front matter is dropped (awk), the link targets are removed
 // (sed) and grep looks for an engine path or a `package.Symbol`,
 // Then it prints no line.
+//
+// A page with no front matter has none to drop: every line is scanned.
 func TestRolePagesNoEngineInternals(t *testing.T) {
 	target := regexp.MustCompile(`\]\([^)]*\)`)
 	internals := regexp.MustCompile(`(internal|roles/[a-z-]+/code)/[a-z]+|\b[a-z]+\.[A-Z][A-Za-z]+\b`)
 	for _, page := range rolePageList {
 		_, text := roleFront(t, page)
+		// n counts the `---` lines passed; the body starts at two. Without
+		// front matter the body starts at the first line.
 		n := 0
+		if !strings.HasPrefix(text, "---\n") {
+			n = 2
+		}
 		for _, l := range strings.Split(text, "\n") {
 			if l == "---" && n < 2 {
 				n++
