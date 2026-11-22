@@ -1,12 +1,12 @@
 case: routing/own-commit-not-judged-again
-about: "A merge request whose last commit is workline's own — its trailer says so, the doc's fix — is not judged again: the fix it pushed would otherwise wake the line, which would pay to judge it, and push again. The commits before it are judged, the doc fixed in the tree: no agent asked."
+about: "A merge request whose last commit is workline's own — its trailer says so — is still checked for a `checked` its base lacks (#2029): the fix may not name a commit of the branch, which a squash merge drops. Here it names the base's commit, so it passes the check and the doc, its sources changed since, is judged: one agent call."
 given:
   repo: documented
   setup:
     - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
-    - "sed -i \"s/one hour/two hours/; s/^checked: .*/checked: $(git rev-parse --short HEAD)/\" docs/tech/auth.md && git commit -qam 'docs: follow tokens lasting two hours' -m 'Workline-Role: documentalist'"
+    - "sed -i \"s/one hour/two hours/; s/^checked: .*/checked: $(git rev-parse --short HEAD~1)/\" docs/tech/auth.md && git commit -qam 'docs: follow tokens lasting two hours' -m 'Workline-Role: documentalist'"
 run: {route: merge-request, input: {range: "HEAD~2..HEAD"}, ai: "fake:doc-fixed", no-apply: true}
 expect:
   status: pass
-  agent-calls: 0
+  agent-calls: 1
   steps: [committer, documentalist]

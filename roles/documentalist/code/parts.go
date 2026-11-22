@@ -13,6 +13,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -185,6 +186,13 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 	if err != nil {
 		return "", nil, nil, nil, nil, err
 	}
+	// On a branch, HEAD is a commit a squash merge drops: `checked` is not
+	// moved to it (#2029), a person moves it to a commit of the default branch.
+	offBase := false
+	if base := gitrange.Base(rangeOf(runDir)); base != "" {
+		_, err := git(repo, "merge-base", "--is-ancestor", head, base)
+		offBase = err != nil
+	}
 	var fixes strings.Builder
 	judged, inParts, vouched = map[string]map[string]string{}, map[string]string{}, map[string]string{}
 	partial := map[string][]partialCite{}
@@ -277,6 +285,8 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		}
 		dropSaid := false // what keeps `checked` from moving says the claims dropped
 		switch {
+		case entry == "" && s.PartsMoveChecked && offBase:
+			sd.note = "(" + summary + ", nothing found wrong. `checked` stays: it would name a commit of the branch, which a squash merge drops; a person moves it to a commit of the default branch once merged)"
 		case entry == "" && s.PartsMoveChecked:
 			why, vouch, err := vouchFor(sd.doc, string(content), at, u, verdictOf, repo)
 			if err != nil {
