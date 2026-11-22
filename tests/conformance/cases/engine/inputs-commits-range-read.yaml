@@ -1,0 +1,25 @@
+case: engine/inputs-commits-range-read
+about: "A role declaring `inputs: [commits]`, run on a range of 3 commits: the task it gives its agent holds the three messages and the diff of the range."
+given:
+  repo: basic
+  setup:
+    - "git checkout -qb feature"
+    - "echo alpha-body > alpha.txt && git add alpha.txt && git commit -qm 'feat: add alpha'"
+    - "echo beta-body > beta.txt && git add beta.txt && git commit -qm 'fix: repair beta'"
+    - "echo gamma-body > gamma.txt && git add gamma.txt && git commit -qm 'docs: explain gamma'"
+run:
+  role: reads-commits
+  event: merge-request
+  input: {range: "main..feature"}
+  ai: "cmd:echo '[]'"
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains:
+        - "feat: add alpha"
+        - "fix: repair beta"
+        - "docs: explain gamma"
+        - "+alpha-body"
+        - "+beta-body"
+        - "+gamma-body"
