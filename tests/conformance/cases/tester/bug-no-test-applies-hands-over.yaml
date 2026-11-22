@@ -1,0 +1,31 @@
+case: tester/bug-no-test-applies-hands-over
+about: >
+  A bug too: its scenarios no acceptance test can check, the tester's
+  agent writes no test and gives its reason. The bug is handed over to the
+  developer as any issue is, ready, with no test that fails on the base,
+  because the tester's one comment on it says why no acceptance test
+  applies; it is not sent back to the product owner.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "mul gives a sum"
+        labels: ["bug", "workline:needs-tests"]
+        body: "## Need\n\nI want to multiply.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"
+run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-no-test-noted"}
+expect:
+  status: pass
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["bug", "workline:ready"]
+        comments: 1
+        comment-contains: ["no acceptance test applies", "neither the multiply step's code nor its tests"]
+        comment-lacks: ["back to the product owner"]
