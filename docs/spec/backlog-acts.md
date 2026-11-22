@@ -2,7 +2,7 @@
 type: reference
 sources: [roles/product-owner/role.yaml]
 status: draft
-checked: a7467d4f
+checked: 39782994c
 judged: 5c1573b
 verified: agent:documentalist
 ---

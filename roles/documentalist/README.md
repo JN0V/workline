@@ -42,7 +42,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - A doc names its code in `sources`, and the commit it was last checked
   against in `checked`; a commit changing one of those sources where it
   touches what the doc names makes the doc *suspect*
-  ([more](docs/push.md)). A source may name a part of a file: a heading,
+  ([more](docs/push.md)). A `checked` a pull request sets must name a
+  commit its base holds: a squash merge drops the branch's commits, so
+  the check fails (`checked-not-ancestor`) on any other. A source may name a part of a file: a heading,
   a Go declaration, a YAML key.
 - With no agent: finds the suspect docs, and checks sizes, duplicates, dead
   links, identifiers gone from the code, decisions superseded, derived

@@ -12,7 +12,7 @@ sources:
   - internal/forge/gitlab_merge.go#gitlab.AutoMerge
   - internal/agent/claude.go#shellTools
   - Dockerfile
-checked: b2a36983f
+checked: 3f432ab14
 judged: c9d96e2
 verified: agent:claude-code
 judged-in-parts: e8a46f7

@@ -1079,6 +1079,9 @@ func (r *preRun) checkHygiene() error {
 		}
 	}
 	r.findings = append(r.findings, undocumented(tree, docs, s.Documented, added, r.ranged)...)
+	if err := r.checkedNotAncestor(); err != nil {
+		return err
+	}
 	// Docs the role does not read: said when gardening and when adopting,
 	// not on each change, which adds nothing to them.
 	if ev := os.Getenv("WORKLINE_EVENT"); ev == "schedule" || ev == "init" {

@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/code/productowner.go]
-checked: cee5a7af
+checked: 7506b1e2c
 verified: agent:claude-code
 judged: 5c1573b
 judged-in-parts: 5c1573b

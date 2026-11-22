@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 4eaa098f
+checked: e54dae8d9
 verified: agent:claude-code
 ---
 # Conformance — what a case expects

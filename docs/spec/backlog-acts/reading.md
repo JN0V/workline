@@ -2,7 +2,7 @@
 type: reference
 sources: [roles/product-owner/code/productowner.go, internal/backlog/ledger.go, internal/backlog/opening.go]
 status: draft
-checked: 44f06aba
+checked: 7506b1e2c
 verified: agent:claude-code
 judged-in-parts: 87b34bc
 ---

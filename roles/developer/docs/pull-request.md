@@ -7,7 +7,7 @@ sources:
   - internal/agent/claude.go
   - roles/reviewer/code/once.go
   - internal/kit/devmark
-checked: a668abb2
+checked: 8891b61fc
 verified: agent:claude-code
 ---
 # The pull request

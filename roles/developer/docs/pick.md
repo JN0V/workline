@@ -4,7 +4,7 @@ sources:
   - roles/tester/code/proof.go
   - internal/kit/testmark
   - internal/kit/devmark
-checked: 07ca9b9b
+checked: b85f39148
 verified: agent:claude-code
 ---
 # The pick

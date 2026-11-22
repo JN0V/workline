@@ -1,6 +1,6 @@
 ---
 sources: [roles/tester/code/measure.go, roles/tester/code/coverage.go, defaults/ci/github/workline-gardening.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
-checked: 9cf386a3
+checked: b85f39148
 verified: agent:claude-code
 ---
 # The curator's measures

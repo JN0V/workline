@@ -1,6 +1,6 @@
 ---
 sources: [internal/linters, internal/doctor/languages.go]
-checked: 2a1d3636
+checked: 2f3330f4d
 ---
 # Languages and the tools that read them
 
