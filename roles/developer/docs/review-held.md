@@ -4,7 +4,7 @@ sources:
   - roles/developer/code/widen.go
   - roles/developer/code/rewrite.go
   - internal/kit/devmark
-checked: 8ddc4e54
+checked: 7c650fc50
 verified: agent:claude-code
 ---
 # A round with no fix pushed

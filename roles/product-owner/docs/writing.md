@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/prompts/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
-checked: db6103ad
+checked: 7506b1e2c
 verified: agent:claude-code
 ---
 # Writing an issue a person reads

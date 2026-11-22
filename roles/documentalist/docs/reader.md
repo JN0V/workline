@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/code/readertask.go, roles/documentalist/code/reader.go, roles/documentalist/code/documentalist.go, roles/documentalist/role.yaml, internal/engine/routine.go]
-checked: affb7424
+checked: 9323f678b
 verified: agent:claude-code
 ---
 # Documentalist — pages read for their reader

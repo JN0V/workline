@@ -6,7 +6,7 @@ sources:
   - roles/documentalist/code/documentalist.go#external
   - roles/documentalist/code/documentalist.go#places
   - roles/documentalist/code/documentalist.go#places.get
-checked: d722a840
+checked: 9323f678b
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---

@@ -5,7 +5,7 @@ sources:
   - internal/engine/engine.go
   - internal/engine/code.go
   - roles/developer/code/review.go
-checked: 8cfadcb5
+checked: 7c650fc50
 verified: agent:claude-code
 ---
 # A pull request behind main

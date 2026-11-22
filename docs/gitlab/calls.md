@@ -3,7 +3,7 @@ sources:
   - internal/forge/retry.go
   - internal/forge/gitlab.go#gitlab.api
   - internal/forge/gitlab.go#gitlab.graphql
-checked: 582ca3c7
+checked: eabf3222b
 -->
 # A GitLab call that fails for a moment
 

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/prompts/instruction.md, roles/reviewer/prompts/policy.md, roles/reviewer/prompts/lenses, roles/reviewer/code]
-checked: 44518314
+checked: e3ab32fef
 verified: agent:claude-code
 ---
 # Reviewer — a run on code

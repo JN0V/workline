@@ -15,7 +15,7 @@ sources:
   - internal/forge/merge.go#Closing
   - internal/forge/merge.go#command.mark
   - internal/forge/merge.go#command.marked
-checked: b2a36983f
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # workline on Gitea, Forgejo, Codeberg…

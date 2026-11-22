@@ -7,7 +7,7 @@ sources:
   - internal/agent/closing.go
   - roles/developer/code/words.go
   - internal/kit/devmark
-checked: e5e6a3f8
+checked: 7c650fc50
 verified: agent:claude-code
 ---
 # The agent: where it works, what it gets

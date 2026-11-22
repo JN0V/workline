@@ -7,7 +7,7 @@ sources:
   - defaults/ci/github/workline-develop.yml#jobs.reconcile
   - internal/line/states.go#roundsDue
   - roles/developer/code/review.go#RoundDue
-checked: dcefe87b8
+checked: 3f432ab14
 verified: agent:claude-code
 -->
 # The reconciler's heartbeat
