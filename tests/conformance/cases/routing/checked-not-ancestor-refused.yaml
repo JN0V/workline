@@ -1,0 +1,11 @@
+case: routing/checked-not-ancestor-refused
+about: "A merge request whose doc names, in `checked`, a commit its base lacks (a commit of the branch, which a squash merge drops) is refused: the check fails and names the doc and the commit."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "sed -i \"s/one hour/two hours/; s/^checked: .*/checked: $(git rev-parse --short HEAD)/\" docs/tech/auth.md && git commit -qam 'docs: follow tokens lasting two hours'"
+run: {route: merge-request, input: {range: "HEAD~2..HEAD"}, ai: none, no-apply: true}
+expect:
+  status: block
+  findings: [{rule: checked-not-ancestor, where: docs/tech/auth.md}]
