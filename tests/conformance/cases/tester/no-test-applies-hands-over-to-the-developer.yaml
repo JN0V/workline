@@ -5,7 +5,9 @@ about: >
   check. The tester does not send the issue back to the product owner nor
   fail: its one comment says that no acceptance test applies and why,
   quoting the agent's reason, and the issue goes on to the developer,
-  ready.
+  ready. The comment is checked by its content, not by a count of the
+  issue's comments, since the line also writes its own state record
+  comment on every step it wakes.
 given:
   repo: tested
   setup:
@@ -27,6 +29,5 @@ expect:
     issues:
       - id: 3
         labels: ["workline:ready"]
-        comments: 1
         comment-contains: ["no acceptance test applies", "neither the multiply step's code nor its tests"]
         comment-lacks: ["back to the product owner"]
