@@ -1,0 +1,11 @@
+case: documentalist/version-bump-on-a-whole-file-by-hand-suspect
+about: "A doc naming a whole file, `ci/job.yml`, is still suspect, off a release tool's pull request, when a commit bumps a version no release tool marks there: a version bumped by hand is a change like any, and the docs it touches are judged (the evaluation's drifted-version-bump)."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p ci && printf 'env:\\n  VERSION: v1.2.0\\n  NAME: tool\\n' > ci/job.yml && printf -- '---\\nsources: [ci/job.yml]\\nchecked: HEAD\\n---\\n# The job\\n\\nThe job runs the release in `VERSION`: update it to take a newer one.\\n' > docs/tech/job.md && git add ci docs && git commit -qm 'ci: the job'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/job.md && git commit -qam 'docs: confirm the job doc'"
+    - "sed -i 's/v1.2.0/v1.3.0/' ci/job.yml && git commit -qam 'feat: 1.3.0'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  findings: [{rule: suspect, where: docs/tech/job.md}]

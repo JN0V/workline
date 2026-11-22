@@ -1,0 +1,12 @@
+case: documentalist/version-bump-on-a-whole-file-not-suspect
+about: "A doc naming a whole file, `ci/job.yml`, is not made suspect by a commit that only bumps a version on a line its release tool marks (`x-release-please-version`), on any run, not only the release's: the bump stays in the history of every later run, and it changes nothing the doc says unless the doc pins the version replaced."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p ci && printf 'env:\\n  VERSION: v1.2.0   # x-release-please-version\\n  NAME: tool\\n' > ci/job.yml && printf -- '---\\nsources: [ci/job.yml]\\nchecked: HEAD\\n---\\n# The job\\n\\nThe job runs the release in `VERSION`: update it to take a newer one.\\n' > docs/tech/job.md && git add ci docs && git commit -qm 'ci: the job'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/job.md && git commit -qam 'docs: confirm the job doc'"
+    - "sed -i 's/v1.2.0/v1.3.0/' ci/job.yml && git commit -qam 'chore(main): release 1.3.0'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: suspect, where: docs/tech/job.md}, {rule: unknown}]
