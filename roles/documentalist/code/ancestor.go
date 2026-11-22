@@ -33,7 +33,17 @@ func (r *preRun) checkedNotAncestor() error {
 				continue
 			}
 		}
-		if _, err := git(r.repo, "merge-base", "--is-ancestor", now+"^{commit}", base); err != nil {
+		held := false
+		if _, err := git(r.repo, "rev-parse", "--verify", "--quiet", now+"^{commit}"); err == nil {
+			// The commit exists: only git's "no" (exit 1) refuses it; any
+			// other failure is an error, never a squash-dropped commit.
+			ok, aerr := isAncestor(r.repo, now+"^{commit}", base)
+			if aerr != nil {
+				return fmt.Errorf("checked-not-ancestor: %s: %w", d.Path, aerr)
+			}
+			held = ok
+		}
+		if !held {
 			short := now
 			if len(short) > 12 {
 				short = short[:12]
