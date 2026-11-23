@@ -1,6 +1,7 @@
 package forge
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -59,7 +60,7 @@ func (f *Fake) Threads(id int) ([]Thread, error) {
 		}
 		th := Thread{ID: tid, Path: t.Path, Line: t.Line, Resolved: t.Resolved,
 			URL:      fmt.Sprintf("https://forge.example/merge-requests/%d#thread-%s", id, tid),
-			Comments: []Note{{Body: t.Body, Author: t.Author, Insider: t.Insider, Bot: t.Bot, Created: t.Created}}}
+			Comments: []Note{{Body: t.Body, Author: t.Author, Insider: t.Insider, Bot: t.Bot, Created: t.Created, ID: tid}}}
 		for _, r := range t.Replies {
 			th.Comments = append(th.Comments, Note(r))
 		}
@@ -283,7 +284,15 @@ func (g *gitlab) Threads(id int) ([]Thread, error) {
 		th := Thread{ID: d.ID, Path: first.Position.New, Line: first.Position.Line, Resolved: first.Resolved,
 			URL: fmt.Sprintf("%s#note_%d", web, first.ID)}
 		for _, n := range d.Notes {
-			th.Comments = append(th.Comments, Note{Body: n.Body, Author: n.Author.Username, Bot: n.Author.Bot, Created: n.Created, ID: strconv.Itoa(n.ID)})
+			bot := n.Author.Bot || g.botNamed(n.Author.Username)
+			in, err := g.insider(n.Author.Username)
+			switch {
+			case errors.Is(err, ErrAuthorsUnknown):
+				bot = bot || g.selfBot(n.Author.Username) // none of the project, as Notes reads it
+			case err != nil:
+				return nil, err
+			}
+			th.Comments = append(th.Comments, Note{Body: n.Body, Author: n.Author.Username, Insider: in, Bot: bot, Created: n.Created, ID: strconv.Itoa(n.ID)})
 		}
 		all = append(all, th)
 	}
