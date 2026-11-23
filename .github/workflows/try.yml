@@ -1,0 +1,34 @@
+# Try a ref or a release of workline on a real GitHub copy, by hand
+# (ADR-0071 §2): the same scripts/try-on-copy.sh the maintainer runs on
+# their machine. It makes a scratch repository from the trial copy at its
+# fixed tag and runs one issue end to end; the run concludes success on
+# green only. TRY_TOKEN is a token allowed to create repositories (the
+# scratch one) and to read this repository's runs; GITHUB_TOKEN cannot.
+name: try
+on:
+  workflow_dispatch:
+    inputs:
+      target: {description: "a version (X.Y.Z) or a ref (a branch, a commit, refs/pull/N/head)", required: true, type: string}
+permissions: {contents: read}
+
+# One try at a time: a second one waits for the first, never cancels it;
+# the script also refuses while another run of try.yml is in progress.
+concurrency:
+  group: try
+  cancel-in-progress: false
+
+jobs:
+  try:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ secrets.TRY_TOKEN }}
+      TARGET: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      # git pushes to the scratch repository with TRY_TOKEN, through gh.
+      - run: gh auth setup-git
+      - run: bash scripts/try-on-copy.sh "$TARGET" "${{ github.repository }}"
