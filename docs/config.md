@@ -56,7 +56,7 @@ sources:
   - roles/reviewer/role.yaml#settings.specs-per-run
 checked: e4e4287bc
 verified: agent:claude-code
-reader: 0b97bbc207c5
+reader: ce73d8d5f995
 ---
 # Configuration
 

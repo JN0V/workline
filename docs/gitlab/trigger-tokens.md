@@ -10,6 +10,7 @@ sources:
   - internal/forge/gitlab.go#gitlab.connect
 checked: 3bab32400
 verified: agent:claude-code
+reader: 0f3e75c013d8
 ---
 # Tokens and variables of a started pipeline
 
@@ -23,17 +24,12 @@ the jobs a tool starts hold, and where.
 | the agent's credentials | whichever agent you chose; for Claude, `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`, a Claude subscription) or `ANTHROPIC_API_KEY` | yes | the same |
 | `WORKLINE_SIGNING_KEY` | where the project refuses unsigned commits: the bot's SSH private key, type File ([signed commits](signed-commits.md)) | no: GitLab masks no value of several lines | the same |
 
-A merge request's source branch is rarely protected: a protected variable
-never reaches its pipeline. The trigger token acts as the user who owns it.
-GitLab gives every variable to every job of the pipeline: the script keeps
-the write token out of the proposing job's commands, not out of its reach.
-The template does the same, and gives its gardening propose job the write token.
-It also scopes the tokens to the environment `workline`, which the jobs
-running your tools never declare ([the environment](environment.md)).
-Here the proposing job runs the gates beside the agent's token. Scoped
-there, the tokens reach only jobs that declare the environment: add
-`environment: {name: workline, action: prepare}` to both jobs of
-[the script](without-template.md), or they get no token.
+- A merge request's source branch is rarely protected: a protected variable never reaches its pipeline.
+- The trigger token acts as the user who owns it.
+- GitLab gives every variable to every job of the pipeline: the script keeps the write token out of the proposing job's commands, not out of its reach.
+- The template does the same, and gives its gardening propose job the write token.
+- It also scopes the tokens to the environment `workline`, which the jobs running your tools never declare ([the environment](environment.md)).
+- Here the proposing job runs the gates beside the agent's token. Scoped there, the tokens reach only jobs that declare the environment: add `environment: {name: workline, action: prepare}` to both jobs of [the script](without-template.md), or they get no token.
 
 The Code Quality report shows on the merge request when the pipeline is
 the merge request's own; a pipeline started on its branch by a tool may not

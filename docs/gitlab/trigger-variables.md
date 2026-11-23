@@ -34,15 +34,21 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:propose.script
 checked: e2e165c2d
 verified: agent:claude-code
+reader: 735aaf4c142e
 ---
 # How a started pipeline knows what to do
 
 Part of [GitLab: pipelines a tool starts](../gitlab-trigger.md): the
 variables a tool, or the webhook's URL, passes.
 
-GitLab sets `CI_PIPELINE_SOURCE`: `trigger` (a trigger token), `api` (the
-pipelines API), `pipeline` (another project's `trigger:` job),
-`parent_pipeline` (a child pipeline) — never `schedule` nor
+GitLab sets `CI_PIPELINE_SOURCE`:
+
+- `trigger` (a trigger token)
+- `api` (the pipelines API)
+- `pipeline` (another project's `trigger:` job)
+- `parent_pipeline` (a child pipeline)
+
+Never `schedule` nor
 `merge_request_event`, so none of the template's jobs run but in its own
 child of a merge request's pipeline, what only warns, the line of states
 (`workline:issue`), the tester's
