@@ -1538,7 +1538,8 @@ func namesTest(body string) bool {
 // answeredByTheirYes tells a person's comment their own yes answered: a
 // yes they put at or after it that they have not taken off themselves
 // since. One a bot took off, the line on a push, still answers it: the
-// new head waits for a new yes, the comment stays answered (ADR-0068 §7).
+// new head waits for a new yes, the comment stays answered, as the
+// trace an assistant writes before a yes put in the person's name.
 func answeredByTheirYes(n forge.Note, labels []forge.LabelEvent) bool {
 	if n.Author == "" || n.Created == "" {
 		return false
@@ -1566,7 +1567,7 @@ func answeredByTheirYes(n forge.Note, labels []forge.LabelEvent) bool {
 // comment after it answers it, the line's verdict and this hold apart; so
 // does the yes of the person who wrote it, put at or after it: it covers
 // what they said before it, as the trace of a yes put in their name
-// (ADR-0068 §7). A bot taking that yes off on a push asks for a new yes,
+// (answeredByTheirYes). A bot taking that yes off on a push asks for a new yes,
 // it does not reopen what it answered; the person taking it off
 // themselves does. "" when none waits.
 func personsCommentOpen(f forge.Forge, id int, labels []forge.LabelEvent) (string, error) {
