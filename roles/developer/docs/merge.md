@@ -52,6 +52,12 @@ a feature or a task merges too, and the yes moves to the milestone's
 
 ## What each gets, at `normal`
 
+A fix merges alone when it passes every gate, was read by the reviewer
+at its head, and its bug was reproduced first. A feature or a task
+waits for a person's yes.
+
+### A fix: every gate passed
+
 - **A fix merges with no person's yes**, recorded as the kind
   `code`, once every gate passes:
   - workline's own, as the forge says it: opened and pushed by its App,
@@ -65,6 +71,8 @@ a feature or a task merges too, and the yes moves to the milestone's
     nit holds nothing. Its findings are read from the comment's hidden
     findings record: a comment with a table and no record, or a record
     that does not parse, holds the pull request for a person's yes.
+### A fix the reviewer read at its head
+
 - **A fix the reviewer read at its head**
   ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)):
   - the reviewer's summary comment names the pull request's head, and
@@ -90,6 +98,8 @@ a feature or a task merges too, and the yes moves to the milestone's
     behind `main`, the engine merges `main` in first, so the line runs
     again on a head with `main`'s fixes
     ([conflict.md](conflict.md#when)).
+### A fix, its bug reproduced first
+
 - **A fix, its bug reproduced first**
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind)):
   - its record names the tester's Draft its code started from, and
@@ -102,6 +112,8 @@ a feature or a task merges too, and the yes moves to the milestone's
 - **A bug the tester cannot reproduce** never reaches here: its
   reporter is asked, then it is Blocked
   ([the hand-over](../../tester/docs/proof-kinds.md#a-bug-not-reproduced)).
+### A feature, a task, a revert
+
 - **A feature or a task waits for a person's yes**, the label
   `workline:accepted`: a `task` is a label an agent may put
   ([amended](../../../docs/adr/0060-the-person-is-on-the-loop.md#amendment-2026-11-03-a-task-waits-as-a-feature)).

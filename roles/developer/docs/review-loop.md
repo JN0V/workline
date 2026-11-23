@@ -45,83 +45,6 @@ step 6).
   comments heard), the reviewer's comment and its comments on lines,
   the gates' and the inspector's comments, the project's checks at its
   head, and the issue. Nothing else.
-- **A gate red**: each new finding of the gates' summary comment is
-  asked, at its place, with what [the inspector](../../inspector/README.md)
-  said of it: why it matters, its fix. Only a report on its branch's
-  head; once a report, its head kept in the record. A check that did
-  not run asks nothing.
-- **A project check red** ([#917](https://github.com/JN0V/workline/issues/917)):
-  a check of the project's own CI failed at its branch's head, its
-  tests run whole where the proof ran a part. Asked once every project
-  check there is done, the end of its failed steps' log in the task
-  (80 lines, 6 kB at most). Once a head: the head kept in the record.
-  - **The project's**: workline's own are left out, a job of a
-    workflow named `workline …`, a check or status named `workline…`:
-    their records say what to fix.
-  - **Read on GitHub**; the checks not read are said (`checks-unread`).
-- **A test the tester rewrote** ([#939](https://github.com/JN0V/workline/issues/939)):
-  after an objection, the tester's Draft holds an acceptance test
-  otherwise than this branch.
-  - **Taken as the tester's record names it**: the round lays it on
-    its branch, the agent's worktree holding it, proves it with the
-    rest and pushes it.
-  - **The record follows**: its start commit moves to the Draft's
-    head, so [the bounds](bounds.md) hold the new test.
-  - **Not in the record**: never taken, and no round due for it.
-- **The issue's body changed** ([#1271](https://github.com/JN0V/workline/issues/1271)):
-  a person rewrote the issue after the code was written; the record
-  keeps the body it read.
-  - **Asked as a person's comment is**: the issue as it reads now is
-    in the task; the agent holds its code to it.
-  - **Once a body**: the new one kept in the record. A record from
-    before has none to compare: nothing asked.
-  - **A person's change only**: the engine's own `Blocked by` line,
-    added or rewritten, starts no round.
-  - **No event wakes it**: the hourly reconciler starts it, the issue
-    saying so.
-- **The reviewer's rules alone** ([#1040](https://github.com/JN0V/workline/issues/1040)):
-  rules that hold the lenses count no review run. A summary read at
-  another head is a new verdict all the same, its head kept in the
-  record (`review-at`).
-- **A finding in a frozen test**: the developer may not change that
-  file. The round asks its agent to object to the test at that line,
-  the finding as its why; [the tester](../../tester/README.md)
-  rewrites it, and the next round takes the rewrite. Its Draft closed:
-  nothing to object to, the rounds run out to a person.
-- **A test finding on code is the tester's**
-  ([#1265](https://github.com/JN0V/workline/issues/1265)): the tests
-  lens finds a behaviour with no test, on a line of code, and the
-  tester's Draft is open.
-  - **Sent, not asked**: an objection of kind `missing` on a line of
-    the Draft's tests, naming the pull request; the agent is told it,
-    not asked to fix it. The tester adds the test or says why none is
-    needed; a test added is taken by the next round.
-  - **Once**: the record keeps it sent; a review raising it again asks
-    no one.
-  - **Alone**: no agent, no round counted; the rounds never run out on
-    test findings.
-  - **Only disputes count**: past round 5 means five rounds that each
-    answered a blocking finding of the reviewer; a round on a red check,
-    a tester's rewrite or a warning alone is no dispute, and runs on.
-  - **None needed, still blocking**: the tester answers on the pull
-    request that no test is needed; the reviewer's judge weighs the
-    reason, and a reason that holds lifts the block
-    ([weighed](../../reviewer/docs/tester-answers.md)).
-    The review still blocking on the finding, no round settles it: its issue goes `workline:blocked`,
-    the reason on it and on the pull request, for a person who reads
-    both.
-  - **The developer's still**: one on a test file, one asked again from
-    the record when a round resumes, or a row where the reviewer groups
-    a finding of another lens under it (code to fix on the same line).
-- **The reviewer's findings, from its record**
-  ([#705](https://github.com/JN0V/workline/issues/705)): read from the
-  hidden `workline:findings` line of its comment (each finding's lens,
-  place, severity, text), never from its table's words.
-  - **No record** beside a table, or one that does not parse: nothing
-    asked, the run says why (`findings-record-unread`).
-- **A finding on its line**: its row shows only a title; the round
-  reads it whole from the reviewer's comment on that line. Only
-  workline's own account's comment is read.
 - **What it asks the agent**: the findings that block, and those that
   warn and are Important; a gate's new finding; a project check red;
   a person's comment, as a finding; the issue's new body. Nits are counted, never asked.
@@ -142,6 +65,11 @@ step 6).
   tokens and tools.
 - **The reviewer decides a finding is fixed**
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)).
+
+What a round reads beside the reviewer's verdict, a gate or a check
+red, the issue rewritten: [what a round reads](review-inputs.md). A
+finding on a test, or a test the tester rewrote:
+[tests in a round](review-tests.md).
 
 ## A round with no fix pushed
 
