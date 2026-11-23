@@ -66,8 +66,9 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	}
 	// The base's tests by their ids alone: those a run of the same tree
 	// by the same command found, when one is kept (runcache.go), else
-	// one run of it.
-	baseIDs, at, kept := readIDs(repo, mb, s.Command, s.Report)
+	// one run of it. Scoped, the command as run would name the folders
+	// the base holds: the Draft's red proof kept that same run.
+	baseIDs, at, kept := readIDs(repo, mb, onBase(repo, mb, s), s.Report)
 	if kept {
 		fmt.Fprintf(os.Stderr, "workline: tester: the base %s's %d tests as a run of the same tree found them at %s UTC, not run again\n",
 			short(mb), len(baseIDs), at.Format("2006-01-02 15:04:05"))
@@ -216,6 +217,22 @@ func scopeOf(tree string, rec record, s Settings) []string {
 	}
 	slices.Sort(files)
 	return Packages(tree, files, s.Paths, s.ModuleFiles)
+}
+
+// onBase is the command run on the base rev: {packages} named by those
+// of s.packages rev holds, as run does.
+func onBase(repo, rev string, s Settings) string {
+	if len(s.packages) == 0 {
+		return s.Command
+	}
+	var here []string
+	for _, p := range s.packages {
+		dir := strings.TrimPrefix(strings.TrimPrefix(p, "."), "/") // "." is the root, rev's own tree
+		if out, err := git(repo, "cat-file", "-t", rev+":"+dir); err == nil && strings.TrimSpace(out) == "tree" {
+			here = append(here, p)
+		}
+	}
+	return strings.ReplaceAll(s.Command, "{packages}", strings.Join(here, " "))
 }
 
 // anyRed says whether a run holds a test not passed: the head runs
