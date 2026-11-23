@@ -124,6 +124,7 @@ func suspectPages(out string) map[string]bool {
 // When `workline docs --ai none` runs on the commits since the oldest of them,
 // Then none of the seventeen is listed as suspect.
 func TestMergeReleasePagesNotSuspect(t *testing.T) {
+	docsTestsOnly(t)
 	_, _, _, git, docs := mergeReleaseWorkspace(t, false)
 	shas := []string{"merge-base", "--octopus"}
 	for _, p := range mergeReleasePages {
@@ -171,6 +172,7 @@ func TestNarrowSourcesRelatedChange(t *testing.T) {
 // entry is a file path or a `file#symbol` (no folder), and its file name or
 // symbol name appears in the page's text.
 func TestMergeReleaseSourcesNarrowAndNamed(t *testing.T) {
+	docsTestsOnly(t)
 	for _, p := range mergeReleasePages {
 		sources, _, body := mergeReleaseHeader(t, p)
 		if len(sources) == 0 {

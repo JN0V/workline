@@ -11,6 +11,16 @@ import (
 	"testing"
 )
 
+// docsTestsOnly skips a test that reads this repository's docs as they
+// stand: the weekly gardening run sets WORKLINE_DOCS_TESTS=1, a pull
+// request's run does not.
+func docsTestsOnly(t *testing.T) {
+	t.Helper()
+	if os.Getenv("WORKLINE_DOCS_TESTS") == "" {
+		t.Skip("reads the docs as they stand: run weekly with WORKLINE_DOCS_TESTS=1")
+	}
+}
+
 // userPages are the seventeen user pages on the commands and CI.
 var userPages = []string{
 	"docs/commands.md",
@@ -160,6 +170,7 @@ func userPageDocsRun(t *testing.T, edit bool) string {
 // When `workline docs --ai none` runs on it,
 // Then none of the seventeen pages is listed as suspect.
 func TestUserPagesNoneSuspect(t *testing.T) {
+	docsTestsOnly(t)
 	out := userPageDocsRun(t, false)
 	for _, m := range userSuspect.FindAllStringSubmatch(out, -1) {
 		if slices.Contains(userPages, m[1]) {
@@ -175,6 +186,7 @@ func TestUserPagesNoneSuspect(t *testing.T) {
 // Then it is a file path, or `path#name`: never a directory, never a path
 // holding a glob character (`*`, `?`, `[`).
 func TestUserPagesSourcesAreNarrow(t *testing.T) {
+	docsTestsOnly(t)
 	for _, page := range userPages {
 		sources, has, _ := userPageRead(t, page)
 		if !has {
@@ -200,6 +212,7 @@ func TestUserPagesSourcesAreNarrow(t *testing.T) {
 // When `workline docs --ai none` runs on it,
 // Then none of the seventeen pages is listed as suspect.
 func TestUserPagesNoneSuspectAfterAnOutsideCommit(t *testing.T) {
+	docsTestsOnly(t)
 	out := userPageDocsRun(t, true)
 	for _, m := range userSuspect.FindAllStringSubmatch(out, -1) {
 		if slices.Contains(userPages, m[1]) {
@@ -217,6 +230,7 @@ func TestUserPagesNoneSuspectAfterAnOutsideCommit(t *testing.T) {
 // Then each is found, and the pages name no hidden command (`hook`,
 // `builtin`).
 func TestUserPagesNameOnlyWhatTheCodeHolds(t *testing.T) {
+	docsTestsOnly(t)
 	var corpus strings.Builder
 	add := func(root string) {
 		_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
