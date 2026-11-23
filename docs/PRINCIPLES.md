@@ -3,6 +3,8 @@
 The rules every role, spec and line of engine code follows; an unclear
 choice is settled against this page.
 
+## Who decides, who works
+
 1. **People at both ends, the machine in between.** People state the need, how
    the result is verified and who validates it; they accept the result, or
    write beforehand the narrow class the line accepts for them.
@@ -12,6 +14,8 @@ choice is settled against this page.
    ([ADR-0066](adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)).
 3. **Each role reads only what it needs.** No catch-all constitution; a context
    budget per role.
+## Checks, AI and the forge
+
 4. **Tools for what converges, AI for judgement.** Scripts do what is
    mechanical and converges
    ([ADR-0065](adr/0065-code-only-what-converges-language-knowledge-in-packs.md)).
@@ -37,6 +41,8 @@ choice is settled against this page.
    setting or a marker (a label or comment the engine reads) is added
    only where a case cannot hold the defect, and its issue says why
    ([ADR-0068](adr/0068-the-line-steps-back-on-its-own-drift.md#3-principles-4-and-7-reworded)).
+## Scope and reach
+
 8. **Stay on the task.** Anything found outside the task's scope is handed
    to the role whose scope it is, not fixed on the spot.
 9. **Cut cascades.** Only direct consequences are handled in a change; the rest
@@ -45,6 +51,8 @@ choice is settled against this page.
     GitLab CI or on a server, with any coding agent.
 11. **Few dependencies.** Single binaries, pinned; nothing pulls a tree of
     packages into a job that holds tokens.
+## Failing, borrowing, guessing
+
 12. **Fail loud, never pass silently.** A check that did not run, a setting
     that is missing, an outside service that failed: each is said, and none is
     read as a pass.
