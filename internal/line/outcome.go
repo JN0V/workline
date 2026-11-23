@@ -279,7 +279,7 @@ func failedBody(w StateWrite, role string) string {
 	last, _ := time.Parse(time.RFC3339, e.Last)
 	next := fmt.Sprintf("the line runs %s again on it from %s, %d of %d tries for this kind of error; the issue's labels and state are kept",
 		who, last.Add(ErrorBackoff).UTC().Format("2006-01-02 15:04 UTC"), min(e.By[e.Kind], ErrorBudget), ErrorBudget)
-	if e.By[e.Kind] > ErrorBudget {
+	if e.By[e.Kind] > ErrorBudget || (e.Kind == ApplyKind && e.By[e.Kind] >= ApplyBudget) {
 		next = "its tries are spent: the line moves it to Blocked for a person at its next run, the error said"
 	}
 	return backlog.Said("workline's line", fmt.Sprintf("saw %s's run on this issue fail (%s)", who, e.Kind), e.Said, next)
