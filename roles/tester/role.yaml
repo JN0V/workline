@@ -27,7 +27,8 @@ mission: Each test a change adds is proven red on its base before the code makes
 #        (coverage and killed mutants before and after), opened as a pull
 #        request merged by the project's merge policy.
 # The red-first check alone, `workline test check --base <ref>`, runs no
-# role and no agent (step 1); the curator's measures,
+# role and no agent (step 1); `workline test sets --manifest <json> --mode
+# local|pr|release --changed <files>` names the modules whose tests run; the curator's measures,
 # `workline test measure --history <file>`, neither (step 6).
 events: [issue, schedule, merge-request, objection, curate]
 
@@ -194,6 +195,12 @@ settings:
   curator-window: 12
   suite-max-seconds: 600
   coverage-report: ""
+  # Gardening (#264): the percent the corpus may grow over its count at
+  # the last gardening before the curator gardens it again (0: no limit);
+  # a JSON file, test -> covered lines, from which merges are proposed
+  # (proposed only, a person or the curator decides). Unset: none proposed.
+  growth-limit-percent: 0
+  test-coverage-map: ""
   # The curator's removals (`workline test curate`, ADR-0055 step 7): the
   # test files it may change (none: test-paths; leave out a test whose
   # coverage the report cannot see, one running a built binary); files
