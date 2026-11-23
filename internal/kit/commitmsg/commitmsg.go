@@ -25,6 +25,9 @@ type Settings struct {
 	Types              []string `json:"types"`
 	InternalCodes      []string `json:"internal-codes"`
 	InternalCodesAllow []string `json:"internal-codes-allow"`
+	// InternalCodesAllowPatterns are public names given as patterns (RFC-[0-9]+),
+	// the role's own; the entries of InternalCodesAllow are literal text.
+	InternalCodesAllowPatterns []string `json:"internal-codes-allow-patterns"`
 	InternalCodesMaybe []string `json:"internal-codes-maybe"`
 	AllowedIdentities  []string `json:"allowed-identities"`
 	ForgeIdentities    []string `json:"forge-identities"`
@@ -161,7 +164,7 @@ func homeShort(path string) string {
 // possibleCodes finds what looks like a code with no dash, F207: often
 // internal, as often a public name, nRF52. Which one needs judgement.
 func possibleCodes(subject string, s Settings) ([]string, error) {
-	codes, err := internalCodes(subject, Settings{InternalCodes: s.InternalCodesMaybe, InternalCodesAllow: s.InternalCodesAllow})
+	codes, err := internalCodes(subject, Settings{InternalCodes: s.InternalCodesMaybe, InternalCodesAllow: s.InternalCodesAllow, InternalCodesAllowPatterns: s.InternalCodesAllowPatterns})
 	var out []string
 	for _, c := range codes {
 		if sure, _ := internalCodes(c, Settings{InternalCodes: s.InternalCodes}); len(sure) == 0 {
@@ -234,7 +237,20 @@ func isWordByte(b byte) bool {
 
 func internalCodes(subject string, s Settings) ([]string, error) {
 	cleaned := subject
+	for _, a := range s.InternalCodesAllowPatterns {
+		if a == "" {
+			continue
+		}
+		re, err := regexp.Compile(`(?i)\b(?:` + a + `)\b`)
+		if err != nil {
+			return nil, fmt.Errorf("internal-codes-allow-patterns %q: %w", a, err)
+		}
+		cleaned = re.ReplaceAllString(cleaned, " ")
+	}
 	for _, a := range s.InternalCodesAllow {
+		if a == "" { // it would match between every two characters
+			continue
+		}
 		// an entry is literal text, not a pattern; \b only beside a word
 		// character, as it never matches beside punctuation such as `+`.
 		pat := regexp.QuoteMeta(a)

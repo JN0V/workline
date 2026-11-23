@@ -80,7 +80,7 @@ var (
 func summaryOf(title string, s commitmsg.Settings) string {
 	t := issueRef.ReplaceAllString(title, " ")
 	codes, _ := commitmsg.InternalCodes(t, s)
-	maybe, _ := commitmsg.InternalCodes(t, commitmsg.Settings{InternalCodes: s.InternalCodesMaybe, InternalCodesAllow: s.InternalCodesAllow})
+	maybe, _ := commitmsg.InternalCodes(t, commitmsg.Settings{InternalCodes: s.InternalCodesMaybe, InternalCodesAllow: s.InternalCodesAllow, InternalCodesAllowPatterns: s.InternalCodesAllowPatterns})
 	for _, c := range append(codes, maybe...) {
 		t = regexp.MustCompile(`\b`+regexp.QuoteMeta(c)+`\b`).ReplaceAllString(t, " ")
 	}
