@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.89.1](https://github.com/JN0V/workline/compare/v0.89.0...v0.89.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* **ci:** a non-blocking check warns, never turns red ([#2093](https://github.com/JN0V/workline/issues/2093)) ([57ac87f](https://github.com/JN0V/workline/commit/57ac87f1310ebe590668dba40b280c9f41a642e5))
+* **ci:** the head's propose fails at its bound, not cancels ([#2089](https://github.com/JN0V/workline/issues/2089)) ([ca17a0f](https://github.com/JN0V/workline/commit/ca17a0fa9c5ca65deab4ead6e72aae7347bf999c))
+* **committer:** squash only, branch commit subjects only warn ([#2098](https://github.com/JN0V/workline/issues/2098)) ([ebc5645](https://github.com/JN0V/workline/commit/ebc56451a68726d7f3184415791727e957842797))
+* **engine:** a push no longer reopens a person's traced comment ([#2099](https://github.com/JN0V/workline/issues/2099)) ([3b7f3a2](https://github.com/JN0V/workline/commit/3b7f3a25b672317787c912dcfc48fbc5944baed4))
+* **tester:** an empty base run is no red-first refusal ([#2104](https://github.com/JN0V/workline/issues/2104)) ([7f6afdc](https://github.com/JN0V/workline/commit/7f6afdc16803a7b9e6ecebd7c69e2577e107c01e))
+
+
+### Performance
+
+* **tester:** run the green proof once, on the tests' folders ([#2102](https://github.com/JN0V/workline/issues/2102)) ([824277c](https://github.com/JN0V/workline/commit/824277c65b5a749189f6add254ed4f35858db49f))
+
 ## [0.89.0](https://github.com/JN0V/workline/compare/v0.88.1...v0.89.0) (2026-11-23)
 
 
