@@ -8,8 +8,12 @@ package engine
 // an issue an earlier run missed is tended by the next.
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -26,7 +30,7 @@ const testerDraft = "workline/tester/issue-"
 // the states' labels off the closed issues bearing one; open, the
 // branches of the roles' open merge requests. A forge that could not be
 // read is said, a warning: the next run tends what this one could not.
-func settleDone(f forge.Forge, open, states []string, res *Result) string {
+func settleDone(f forge.Forge, repo, base string, open, states []string, res *Result) string {
 	drafts, cleared := 0, 0
 	warn := func(where string, err error) {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "done-not-tended", Level: "warn", Where: where,
@@ -45,7 +49,7 @@ func settleDone(f forge.Forge, open, states []string, res *Result) string {
 		if !is.Closed {
 			continue
 		}
-		why := closedBy(f, *is)
+		why := closedBy(f, *is, repo, base, branch)
 		if err := f.CloseMergeRequest(branch, "Closed by workline: "+why+".", forge.Marker("closed")); err != nil {
 			warn(branch, err)
 			continue
@@ -82,7 +86,7 @@ func settleDone(f forge.Forge, open, states []string, res *Result) string {
 // closedBy says why an issue's Draft is closed: the merge request that
 // closed the issue, built from the Draft's tests, when the forge names
 // one.
-func closedBy(f forge.Forge, is forge.Issue) string {
+func closedBy(f forge.Forge, is forge.Issue, repo, base, branch string) string {
 	why := fmt.Sprintf("#%d is closed", is.ID)
 	if is.Reason == "not_planned" || is.Reason == "duplicate" {
 		return why + " as " + strings.ReplaceAll(is.Reason, "_", " ") + ": its tests have nothing left to prove"
@@ -96,7 +100,88 @@ func closedBy(f forge.Forge, is forge.Issue) string {
 			}
 		}
 	}
+	if unmerged(repo, base, branch) {
+		return why + ": its tests are not on " + base + " and stay on " + branch
+	}
 	return why + ": its tests have nothing left to merge here"
+}
+
+// unmerged tells whether the Draft's branch holds a file that base does
+// not hold at all: its tests never reached base. A branch
+// that cannot be read is said unmerged: nothing proves they did (#1321).
+func unmerged(repo, base, branch string) bool {
+	if repo == "" {
+		return true
+	}
+	ref := "refs/heads/" + branch
+	if _, err := git(repo, nil, "rev-parse", "--verify", "-q", ref); err != nil {
+		ref = "refs/remotes/origin/" + branch
+		if _, err := git(repo, nil, "rev-parse", "--verify", "-q", ref); err != nil {
+			return true
+		}
+	}
+	if base == "" {
+		base = "main"
+	}
+	out, err := git(repo, nil, "diff", "-z", "--name-only", base+"..."+ref)
+	if err != nil {
+		return true
+	}
+	mb, _ := git(repo, nil, "merge-base", base, ref)
+	mb = strings.TrimSpace(mb)
+	for _, file := range strings.Split(out, "\x00") {
+		if file == "" {
+			continue
+		}
+		a, errA := git(repo, nil, "rev-parse", "--verify", "-q", ref+":"+file)
+		if errA != nil {
+			continue
+		}
+		b, errB := git(repo, nil, "rev-parse", "--verify", "-q", base+":"+file)
+		if errB != nil {
+			return true
+		}
+		if strings.TrimSpace(a) == strings.TrimSpace(b) {
+			continue
+		}
+		// a file the Draft added, edited on base since, is reached; a file
+		// that already existed is reached only by the Draft's own content
+		if mb != "" {
+			if _, err := git(repo, nil, "rev-parse", "--verify", "-q", mb+":"+file); err != nil {
+				continue
+			}
+		}
+		return true
+	}
+	return false
+}
+
+// changeOnBase tells whether the Draft's change to one file, from the
+// merge-base, applies in reverse on base: its content is there.
+func changeOnBase(repo, base, mb, ref, file string) bool {
+	run := func(env []string, stdin []byte, args ...string) ([]byte, error) {
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env = append(os.Environ(), env...)
+		if stdin != nil {
+			cmd.Stdin = bytes.NewReader(stdin)
+		}
+		return cmd.Output()
+	}
+	patch, err := run(nil, nil, "diff", "--binary", mb, ref, "--", file)
+	if err != nil || len(patch) == 0 {
+		return false
+	}
+	dir, err := os.MkdirTemp("", "workline-unmerged-")
+	if err != nil {
+		return false
+	}
+	defer func() { _ = os.RemoveAll(dir) }()
+	env := []string{"GIT_INDEX_FILE=" + filepath.Join(dir, "index")}
+	if _, err := run(env, nil, "read-tree", base); err != nil {
+		return false
+	}
+	_, err = run(env, patch, "apply", "-R", "--check", "--cached")
+	return err == nil
 }
 
 // closedBearing is the closed issues bearing one of labels: a call a

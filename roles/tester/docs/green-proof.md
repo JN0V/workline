@@ -196,3 +196,7 @@ random order each find it more often. Put the runner's option in
   ([#940](https://github.com/JN0V/workline/issues/940)), nor its runs'
   folder, `WORKLINE_RUNS_DIR`, where a suite's engines would prune the
   live run ([#953](https://github.com/JN0V/workline/issues/953)).
+
+## A bug's reproduction tests are kept on the default branch (#1321)
+
+When the tests of a bug's parent are green over the default branch, the tester does not leave them in the throwaway copy: it pushes them, built on the branch's tip, as `workline/tester/tests-of-issue-<n>`, and opens a ready merge request that goes through review and the merge policy like any test. The default branch itself is never written. The comment on the parent names the merge request. Red, flaky, or not merging over the branch: nothing is merged, and the closing stays a person's. A parent a person accepted with no green proof says in its closing comment that its tests are not merged, and why.
