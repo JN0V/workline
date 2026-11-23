@@ -903,6 +903,13 @@ func docsCmd(args []string) int {
 		}
 		return code
 	}
+	pass := func() int {
+		if *asJSON {
+			data, _ := json.MarshalIndent(&engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}, "", "  ")
+			fmt.Println(string(data))
+		}
+		return 0
+	}
 	root, err := gitRoot(*repo)
 	if err != nil {
 		code := notInRepo()
@@ -916,7 +923,7 @@ func docsCmd(args []string) int {
 		switch {
 		case len(docs) == 0:
 			fmt.Fprintln(os.Stderr, "workline: no doc changed in the working tree")
-			return 0
+			return pass()
 		case err != nil:
 			fmt.Fprintln(os.Stderr, "workline: reviewing needs a person, on a terminal")
 			return fail(64, "no-terminal", "reviewing needs a person, on a terminal")
@@ -926,7 +933,7 @@ func docsCmd(args []string) int {
 			fmt.Fprintln(os.Stderr, "workline:", err)
 			return fail(1, "review-failed", err.Error())
 		}
-		return 0
+		return pass()
 	}
 	if isSet(fs, "since") && revParse(root, *since) == "" {
 		msg := fmt.Sprintf("--since %s names no commit in this repository", *since)
@@ -938,7 +945,7 @@ func docsCmd(args []string) int {
 	if start != "" {
 		if head := revParse(root, "HEAD"); head == revParse(root, start) {
 			fmt.Fprintf(os.Stderr, "workline: no commit since the docs were last judged (%s)\n", from)
-			return 0
+			return pass()
 		}
 		rng = start + "..HEAD"
 	}
@@ -960,11 +967,7 @@ func docsCmd(args []string) int {
 			fmt.Fprintf(out, "workline: docs judged up to %.7s (%s)\n", head, docsJudgedRef)
 		}
 	}
-	if *asJSON {
-		data, _ := json.MarshalIndent(&engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}, "", "  ")
-		fmt.Println(string(data))
-	}
-	return 0
+	return pass()
 }
 
 // sampleCmd draws the week's sample of every role's acts (ADR-0046) and
