@@ -204,7 +204,7 @@ jobs:
               echo "::warning title=workline::#$n's run not started: the reconciler starts it"
           done
 
-  # The tests that read the docs as they stand (ADR-0073), on the docs run
+  # The tests that read the docs as they stand, on the docs run
   # only: a pull request's `test` skips them. A failure is said in one open
   # issue, kept up to date, never a red pull request.
   docs-tests:

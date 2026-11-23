@@ -14,11 +14,11 @@ import (
 
 // docsTestsOnly skips a test that reads this repository's docs as they
 // stand: the weekly gardening run sets WORKLINE_DOCS_TESTS=1, a pull
-// request's run does not (ADR-0073).
+// request's run does not.
 func docsTestsOnly(t *testing.T) {
 	t.Helper()
 	if os.Getenv("WORKLINE_DOCS_TESTS") == "" {
-		t.Skip("reads the docs as they stand: run weekly with WORKLINE_DOCS_TESTS=1 (ADR-0073)")
+		t.Skip("reads the docs as they stand: run weekly with WORKLINE_DOCS_TESTS=1")
 	}
 }
 

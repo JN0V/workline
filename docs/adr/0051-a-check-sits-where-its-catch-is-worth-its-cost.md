@@ -226,6 +226,29 @@ merges assumed to stay for real conflicts.
   week later; one truth fix at a release; strict's unmeasured catch.
   Their sensors: the documentalist's AI at ready, the red-main count.
 
+## Amendment 2026-11-23: the tests that read the docs run weekly
+
+- **Why**: cut 3 gives up a docs obligation per pull request, yet some
+  tests still enforce it by reading this repository's docs as they
+  stand. On a loaded machine they take about 200 s (`TestUserPages*`) and
+  235 s (`TestMergeReleasePagesNotSuspect`), against about 50 s for the
+  rest of `cmd/workline`; they pass on `main`, so they have caught stale
+  `checked` stamps, no code defect.
+- **Gated, not deleted**: these skip unless `WORKLINE_DOCS_TESTS=1`:
+  `TestUserPages*`, `TestEveryCheckedIsAnAncestorOfMain`,
+  `TestMergeReleasePagesNotSuspect`,
+  `TestMergeReleaseSourcesNarrowAndNamed`.
+- **Kept in the required suite**: tests that build a synthetic
+  repository to prove an engine behaviour
+  (`TestDocsCheckRefusesCheckedNotAnAncestor`,
+  `TestNarrowSourcesRelatedChange`).
+- **Weekly**: the docs run of the gardening workflow runs the gated tests
+  and says a failure in one open issue, closed when a later run passes.
+  Never a red pull request.
+- **Unchanged**: the documentalist's own `suspect` report.
+- Run them by hand before a release:
+  `WORKLINE_DOCS_TESTS=1 go test ./cmd/workline/ ./tests/`.
+
 ## Open
 
 - **Forbidden terms in CI**, decided by the maintainer on 2026-10-21:
