@@ -56,6 +56,8 @@ var triggers = map[string]map[string]string{
 	// exception, kept until decided.
 	"workline-apply.yml": {"workflow_run": onEvent, "push": onEvent},
 	"workline-fork.yml":  {"workflow_run": onEvent},
+	// A try on a copy, by hand (#1730): this repository's alone.
+	"try.yml": {"workflow_dispatch": onTime},
 }
 
 // Only one copy differs: the template runs in a merge queue too.
