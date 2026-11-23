@@ -45,6 +45,8 @@ to it.
   the job stays green, and the next run asks again
   ([ADR-0037, amended](../../../docs/adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
 
+### What the judge refuses
+
 The judge refuses a condense patch when:
 
 - it touches another existing doc;

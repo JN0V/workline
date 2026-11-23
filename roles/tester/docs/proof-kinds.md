@@ -43,30 +43,32 @@ When no new test fits, the tester's agent names the proof that does
   its task ([the pick](../../developer/docs/pick.md#which-issue)).
 - **`none`**, no test possible: the issue goes back to the product
   owner's state, refine, the reason said and recorded
-  (`no-test-possible`). The product owner then picks a kind, or
-  rewrites the text and sends it back to its tests, or, the reason
-  being the tester's own, sends it back unchanged once (its next
-  `none` recorded `retried`) — or, none of these, the line blocks it
-  ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked));
-  with no agent, a person of the project names one in a comment,
-  `proof: <kind> — why`.
+  (`no-test-possible`). The product owner then
+  ([refine](../../../docs/spec/backlog-acts/refine.md#no-test-possible-a-proof-kind-picked)):
+  - picks a kind, or rewrites the text and sends it back to its tests;
+  - or, the reason being the tester's own, sends it back unchanged
+    once (its next `none` recorded `retried`);
+  - or, none of these, the line blocks it.
+  - With no agent, a person of the project names one in a comment,
+    `proof: <kind> — why`.
 - **No reason, no answer**: never "no test possible"
   ([how](refused.md)).
+### Lacking code, sent back, refused
+
 - **Read tools** (`claude`): the agent finds what it lacks in a
   read-only copy, writes the test, and lists what it could not confirm
   in `assumes:` notes, shown on the Draft as **Assumed**
   ([ADR-0063 §8](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them)).
 - **Short of code** (`needs: <paths> — why`), an agent without read
-  tools: it lacks a file
-  its test needs, never "no test possible". Its task already holds, as
-  declarations, what the test and the Scope include or import, two
-  steps deep, and asks it to name every file it lacks in one note.
-  The issue keeps its state,
-  the files said on it (`needs-code`); the line gives them to the
-  tester, run again at once, those files first in its code
-  ([the code picker](../../../docs/spec/code-picker.md)); then a person
-  if still lacking
-  ([the record](../../../docs/spec/routing.md#once-a-state-the-record)).
+  tools: it lacks a file its test needs, never "no test possible".
+  - Its task already holds, as declarations, what the test and the
+    Scope include or import, two steps deep, and asks it to name every
+    file it lacks in one note.
+  - The issue keeps its state, the files said on it (`needs-code`); the
+    line gives them to the tester, run again at once, those files first
+    in its code ([the code picker](../../../docs/spec/code-picker.md));
+    then a person if still lacking
+    ([the record](../../../docs/spec/routing.md#once-a-state-the-record)).
 - **Sent back unchanged**: the record keeps the digest of the body the
   tester read. The same body back in its tests, no kind picked, goes to
   `workline:blocked` with no agent, once, said on it
