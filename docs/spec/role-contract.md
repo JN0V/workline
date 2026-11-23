@@ -50,7 +50,15 @@ instruction is the system prompt), `in/cuts` from the role's `cuts` key (listed
 for the agent: the shared `pre` cuts nothing, so no `input-cut` warning is
 shown for them) and `in/skills` from its declared `context.skills`; an
 `instruction.md` missing, empty or unreadable stops the run, naming the file.
-A `pre` or `post` file that cannot be read stops the run, naming the file.
+The role's `inputs` add to the task what the shared `pre` reads, from a fixed
+list: `target` (the issue or merge request the run is on: its text, comments
+and labels, and a merge request's diff) and `commits` (the messages and diff of
+the run's range); `issues`, `wake`, `sample` and `runs` are named, read by a
+later change. Any other name is refused when the role loads, with the list. Each
+input has a cap (a diff 60000 bytes, a text 20000, all the comments together 60000, the oldest left out): a cut is kept in the task
+and said in `in/cuts`, so as an `input-cut` warning. An input the forge or git
+does not give stops the run, naming it. A
+`pre` or `post` file that cannot be read stops the run, naming the file.
 With no `post`, the shared one passes and applies nothing:
 what the agent proposed is held to the role's `intentions` and
 `duties.writes` where it is applied, an intention not declared or a write
@@ -109,6 +117,9 @@ model:                          # what kind of thinking, never a model name
     #   its own instruction facet, read in place of instruction.md, and the
     #   few intentions its agent answers with; any other it answers is
     #   dropped, said. What pre falls back on keeps the role's intentions.
+
+inputs: []                      # what the shared pre reads for the agent: target,
+                                # commits (more to come: issues, wake, sample, runs)
 
 context:
   knowledge: []                 # which knowledge/ files to load; none by default

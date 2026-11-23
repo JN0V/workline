@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.88.0](https://github.com/JN0V/workline/compare/v0.87.0...v0.88.0) (2026-11-22)
+
+
+### Features
+
+* a prompt-only role reads the issue and commits it ([#2005](https://github.com/JN0V/workline/issues/2005)) ([a404f56](https://github.com/JN0V/workline/commit/a404f56b93c975873e39b005bbffe4f816adf6b3))
+
+
+### Bug Fixes
+
+* bug: an issue no test fits fails at the tester ([#2039](https://github.com/JN0V/workline/issues/2039)) ([06fe2e1](https://github.com/JN0V/workline/commit/06fe2e1340507f83b5d189fad70c9c9f0d61c0e1))
+
+## [0.87.0](https://github.com/JN0V/workline/compare/v0.86.0...v0.87.0) (2026-11-22)
+
+
+### Features
+
+* a nightly or docs run that keeps the backlog ([#1999](https://github.com/JN0V/workline/issues/1999)) ([44127ac](https://github.com/JN0V/workline/commit/44127ac8f8a9cdde90ba51ac78dae2334056f235))
+
+
+### Bug Fixes
+
+* a page's checked commit can be missing from main ([#2035](https://github.com/JN0V/workline/issues/2035)) ([4649baf](https://github.com/JN0V/workline/commit/4649bafc78427417e6f5544b103ee594dbd29ae8))
+* a round note says a refused change was made ([#2023](https://github.com/JN0V/workline/issues/2023)) ([12bff60](https://github.com/JN0V/workline/commit/12bff60901b28db4c63c8a265c195fe114eb8c59))
+* **docs:** check merge and release pages against main ([#2026](https://github.com/JN0V/workline/issues/2026)) ([b9655f4](https://github.com/JN0V/workline/commit/b9655f4bf07f011d33a58ec1f06a52d0d62a4404))
+* **documentalist:** a marked bump of a whole file is no change ([#2037](https://github.com/JN0V/workline/issues/2037)) ([ffb1253](https://github.com/JN0V/workline/commit/ffb1253740a24e847b4459f4429bf910770fe7d6))
+* **documentalist:** a version bump on a named part is no change ([#2028](https://github.com/JN0V/workline/issues/2028)) ([33d98f2](https://github.com/JN0V/workline/commit/33d98f204f36bf3c7bcd45a9ffccaba5f15545c1))
+
 ## [0.86.0](https://github.com/JN0V/workline/compare/v0.85.0...v0.86.0) (2026-11-21)
 
 

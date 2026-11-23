@@ -38,11 +38,6 @@ const ErrorWindow = 24 * time.Hour
 // input gets the same answer, so each try is an agent call for nothing.
 const AnswerBudget = 2
 
-// AnswerHold is the least time between such a run and the next on the
-// same body: longer than a machine error's back-off, a body changed by a
-// person lets it try at once (#1917).
-const AnswerHold = 6 * time.Hour
-
 // ErrorBackoff is the least time between a machine error and the run
 // again: the same reconcile, or an event right after, starts nothing.
 const ErrorBackoff = 10 * time.Minute
@@ -257,8 +252,6 @@ func (e *Errors) retry(now time.Time) (due bool, until time.Time, spent string) 
 		return false, time.Time{}, fmt.Sprintf("its patch did not apply on %d runs in a row (%s): %s; the line does not compare heads: a person restarts it, worth doing once its tester's Draft or `main` has moved", e.By[e.Kind], e.Kind, e.Said)
 	case e.Kind == "answer" && e.By[e.Kind] >= AnswerBudget:
 		return false, time.Time{}, fmt.Sprintf("its run ended %d times with no answer it could use on the same body, so it could not propose what it was asked (%s): %s; a person rewrites its body and puts its label back, or does the work", e.By[e.Kind], e.Kind, e.Said)
-	case e.Kind == "answer" && err2 == nil && now.Before(last.Add(AnswerHold)):
-		return false, last.Add(AnswerHold), ""
 	case e.By[e.Kind] > ErrorBudget:
 		return false, time.Time{}, fmt.Sprintf("its run failed %d times (%s): %s", e.By[e.Kind], e.Kind, e.Said)
 	case err1 == nil && now.Sub(first) >= ErrorWindow:
@@ -283,10 +276,13 @@ func outcomeOf(steps []Step, status string) verdict.Outcome {
 func failedBody(w StateWrite, role string) string {
 	e := w.Record.Errors
 	who := "the " + strings.ReplaceAll(role, "-", " ")
-	last, _ := time.Parse(time.RFC3339, e.Last)
+	last, err := time.Parse(time.RFC3339, e.Last)
+	if err != nil {
+		last = clock().UTC().Add(-ErrorBackoff) // no time kept: judge it as of now
+	}
 	next := fmt.Sprintf("the line runs %s again on it from %s, %d of %d tries for this kind of error; the issue's labels and state are kept",
 		who, last.Add(ErrorBackoff).UTC().Format("2006-01-02 15:04 UTC"), min(e.By[e.Kind], ErrorBudget), ErrorBudget)
-	if e.By[e.Kind] > ErrorBudget {
+	if _, _, spent := e.retry(last.Add(ErrorBackoff)); spent != "" { // the next run, at its backoff's end, blocks it, whatever the kind
 		next = "its tries are spent: the line moves it to Blocked for a person at its next run, the error said"
 	}
 	return backlog.Said("workline's line", fmt.Sprintf("saw %s's run on this issue fail (%s)", who, e.Kind), e.Said, next)

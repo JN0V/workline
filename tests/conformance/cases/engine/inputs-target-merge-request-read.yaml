@@ -1,0 +1,29 @@
+case: engine/inputs-target-merge-request-read
+about: "A role declaring `inputs: [target]`, run on merge request 1: the task it gives its agent holds the merge request's title and text and the diff of its branch."
+given:
+  repo: basic
+  setup:
+    - "git checkout -qb feature && echo 'unique-diff-line-xyz' > notes.txt && git add notes.txt && git commit -qm 'docs: add notes'"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: feature
+        base: main
+        title: "Add the notes file"
+        body: "This adds a notes file for the team."
+        labels: []
+        comments: []
+run:
+  role: reads-target
+  event: merge-request
+  target: {merge-request: 1}
+  input: {range: "main..feature"}
+  ai: "cmd:echo '[]'"
+expect:
+  status: pass
+  run-files:
+    in/task.md:
+      contains:
+        - "Add the notes file"
+        - "This adds a notes file for the team."
+        - "+unique-diff-line-xyz"

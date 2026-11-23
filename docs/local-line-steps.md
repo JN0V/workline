@@ -11,6 +11,7 @@ sources:
   - internal/engine/engine.go#applier.patch
 checked: c46a93d6c
 verified: agent:claude-code
+judged: 06fe2e1
 ---
 # Run each step
 

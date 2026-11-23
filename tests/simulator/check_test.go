@@ -327,8 +327,8 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 		if !cl.Kind.needs() || !c.on(pNeeds) || c.known && knownNeeds(cl) || a == nil || a.Closed {
 			continue
 		}
-		if cl.Kind == needsRole && cl.Role == "developer" {
-			continue // a file beyond the Scope is applied, asked of no one (ADR-0065, change 2)
+		if cl.Kind == needsRole && (cl.Role == "developer" || cl.Role == "tester") {
+			continue // a file beyond the Scope is applied, asked of no one (ADR-0065, change 2); no acceptance test applies: the tester hands over to the developer (#1941)
 		}
 		st, said := status(again, cl.Issue)
 		_, next, _ := w.cfg.Wakes(a.Labels, line.IssueEvent)

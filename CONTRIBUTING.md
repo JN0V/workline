@@ -11,6 +11,7 @@ sources:
   - .github/workflows/workline.yml#jobs.gates
 checked: e2e165c2d
 verified: agent:claude-code
+judged: 7ec23a5
 -->
 # Contributing
 

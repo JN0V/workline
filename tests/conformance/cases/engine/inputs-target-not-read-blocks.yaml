@@ -1,0 +1,17 @@
+case: engine/inputs-target-not-read-blocks
+about: "A role declaring `inputs: [target]`, run on issue 99 which the forge does not give: the run does not pass, says the target input was not read, and the agent is never asked."
+given:
+  repo: basic
+  forge:
+    issues:
+      - {id: 1, title: "Export users", body: "Export the users as CSV.", labels: [], comments: []}
+run:
+  role: reads-target
+  event: schedule
+  target: {issue: 99}
+  ai: "cmd:echo '[]'"
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: engine-error, message: "target"}

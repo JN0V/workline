@@ -1,0 +1,13 @@
+contract: 1
+name: reads-target
+mission: A role of the tests only, made of this file and its instruction, declaring inputs [target], so its shared pre gives its agent the issue or merge request it runs on.
+
+events: [schedule, merge-request]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: ["docs/**"]
+intentions: [note]
+without-ai: pass
+inputs: [target]

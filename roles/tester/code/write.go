@@ -471,7 +471,7 @@ func Post(runDir, repo string) int {
 			msg = "the agent's answer was refused whole: " + why
 		} else if reason := strings.Join(append(notes, reasons(intents)...), " "); os.Getenv("WORKLINE_AGENT_ANSWERED") == "true" && strings.TrimSpace(reason) != "" {
 			// Read, and no test written nor kind named: no test possible,
-			// its notes the reason, back to the product owner (#794). An
+			// its notes the reason, the issue goes on to the developer (#1941). An
 			// answer with no reason is no work: retried (#1194).
 			return proved(runDir, repo, t, intents, backlog.Proof{Kind: backlog.KindNone, Reason: reason})
 		}

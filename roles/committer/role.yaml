@@ -49,9 +49,11 @@ settings:
   # A project or a person adds its own (nRF52). The ESP32 and ESP8266 chips:
   # the only public names among the codes with no dash of a firmware
   # library's 300 latest commits, 14 subjects (2026-10-19).
-  internal-codes-allow: [UTF-8, UTF-16, UTF8, UTF16, SHA-1, SHA-256, SHA-512, SHA1, SHA256, SHA512, ISO-8601, 'RFC-[0-9]+', 'CVE-[0-9]+',
-    'IPv[46]', x86, x64, arm64, amd64, win32, win64, 'H26[45]', 'MP[34]', 'HTTP[23]', OAuth2, 'ES20[0-9]{2}', 'v[0-9]+', 'Go1[0-9]+',
-    'ESP(32|8266)']
+  # Each entry is literal text, case ignored; the patterns are below.
+  internal-codes-allow: [UTF-8, UTF-16, UTF8, UTF16, SHA-1, SHA-256, SHA-512, SHA1, SHA256, SHA512, ISO-8601, x86, x64, arm64, amd64,
+    win32, win64, OAuth2, ESP32, ESP8266]
+  # Public names given as patterns, for the project to add to; whole words.
+  internal-codes-allow-patterns: ['RFC-[0-9]+', 'CVE-[0-9]+', 'IPv[46]', 'H26[45]', 'MP[34]', 'HTTP[23]', 'ES20[0-9]{2}', 'v[0-9]+', 'Go1[0-9]+']
   # Author and committer addresses allowed, as patterns; with the user's own
   # list (README, "Identity"). Both empty: identities are not checked.
   allowed-identities: []
