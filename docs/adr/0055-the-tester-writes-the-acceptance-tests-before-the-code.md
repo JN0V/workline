@@ -493,3 +493,61 @@ where a test lives is judgement, a frozen test is the rule that converges.
 - **Left as they are**: the developer's bounds still refuse any edit to
   a frozen file, a shared one whole; the curator still keeps a frozen
   file whole while its Draft is open.
+
+## Amendment 2026-11-23: the green proof on the tests' folders, once
+
+Step 5 as built ran the whole suite four times: the base, then the head
+three times. Measured on workline, the `propose` job of
+[#2027](https://github.com/JN0V/workline/pull/2027)'s last push
+(run 45202938433):
+
+| Run | Took |
+|---|---|
+| the base | 13 min 19 s |
+| the head, run 1 of 3 | 16 min 29 s |
+| the head, run 2 of 3 | 15 min 58 s |
+| the head, run 3 of 3 | 15 min 55 s |
+| the tester, in all | 61 min 43 s, of a verdict of 62 min 25 s |
+
+The verdict's budget is about 3 min
+([ADR-0050](0050-each-act-has-its-moment-and-a-wait-budget.md)); the reviewer took
+1.7 s. The frozen tests were one file, in one package.
+
+- **The folders of the tester's tests alone**: with `draft-command`
+  naming `{packages}`, the green proof runs it, base and head, on the
+  folders holding the record's test files, as the Draft's red proof
+  already does ([#979](https://github.com/JN0V/workline/issues/979)).
+  Said by `proof-scope`, informing. The pull request's own test job
+  runs the whole suite; a new test the builder adds elsewhere is its
+  to run. Unset, `test-command` runs whole, as before.
+- **The base read back**: scoped, the base's ids are looked up under
+  the command as run there, its folders those the base holds: the
+  Draft's red proof kept that same run
+  ([#1338](https://github.com/JN0V/workline/issues/1338)), so the base
+  is not run again where the ids are carried.
+- **What it saves, not more**: a folder is as slow as its slowest
+  package. [#2027](https://github.com/JN0V/workline/pull/2027)'s
+  tests are in `cmd/workline`, 631 s alone in that push's test job:
+  about 21 min for base and head, 11 with the base read back, against
+  62. A test-name filter would go further; it is language knowledge,
+  left to a pack.
+- **The head once, again only when red**: a second run in the same
+  checkout tells flaky (green in one) from red (red in both). Three runs
+  always cost two suites on every pull request to catch a test that
+  fails one run in three while passing the first.
+- **The flake filter's record**: the three runs blocked pull requests
+  as flaky when the whole suite outran Go's 10 min timeout
+  ([#1430](https://github.com/JN0V/workline/issues/1430): 11 simulator
+  tests "flaky" on [#1422](https://github.com/JN0V/workline/pull/1422),
+  green in the test job): the runs' length, not the tests.
+  From 2026-11-19 12:27 to 2026-11-23 17:43 UTC, 676 `workline`
+  runs, 107 of them failed on a pull request: one green proof
+  blocked, on `workline/developer/1616`, a test red in each of the 3
+  runs (`test-red-on-head`): the first run alone told it. No
+  `test-flaky`.
+- **Kept**: the red-first proof is the Draft's, unchanged; the tests
+  required are still the record's ids, each in the head's report and
+  green; a test the base had, flaky here, still warns.
+- **Where it applies**: every project. A project with no
+  `draft-command` gets the single head run; one with it, the folders
+  too.

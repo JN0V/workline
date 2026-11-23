@@ -1,6 +1,6 @@
 case: tester/green-red-on-head-blocks
 about: >
-  On the closing pull request, a frozen test red in each of the three runs is
+  On the closing pull request, a frozen test red in the first run and again in the second is
   not flaky: the code does not do what it checks; blocking, the test
   named.
 given:
@@ -18,5 +18,5 @@ given:
 run: {role: tester, event: merge-request, target: {merge-request: 1}}
 expect:
   status: block
-  findings: [{rule: test-red-on-head, where: tests.test_mul_two_by_three, message: "red in each of the 3 runs"}]
+  findings: [{rule: test-red-on-head, where: tests.test_mul_two_by_three, message: "red in each of the 2 runs"}]
   no-findings: [{rule: test-flaky}]

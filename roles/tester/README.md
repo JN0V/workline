@@ -40,8 +40,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 - runs on its own: an issue labelled `workline:needs-tests` at once,
   one a scheduled run, and an objection as it is posted ([below](#when-it-runs)); hands its Draft to whoever
   builds ([hand-over](docs/hand-over.md));
-- proves each test it froze green three runs out of three on the pull
-  request that closes the issue: one red is flaky, one missing blocks ([how](docs/green-proof.md));
+- proves each test it froze green on the pull request that closes the
+  issue, run again when red: red once is flaky, one missing blocks ([how](docs/green-proof.md));
 - `workline test measure`: the corpus's measures, no agent, weekly in
   CI: count, time, slowest, red and flaky over time ([how](docs/curator.md));
 - `workline test curate`: the agent proposes a few redundant tests
@@ -275,7 +275,7 @@ Under `roles: {tester: {settings: …}}` in `.workline/config.yaml`
 | Key | Default | |
 |---|---|---|
 | `test-command` | none | runs the project's tests and writes a JUnit XML report; `{report}` is its path. The developer proves its code with it too |
-| `draft-command` | none: `test-command` | proves a Draft red on the folders holding its tests alone, `{packages}`, not the whole suite twice ([#979](https://github.com/JN0V/workline/issues/979)) |
+| `draft-command` | none: `test-command` | proves a Draft red, and its pull request green, on the folders holding its tests alone, `{packages}`, not the whole suite ([#979](https://github.com/JN0V/workline/issues/979), [the green proof](docs/green-proof.md#what-it-runs)) |
 | `module-files` | none | the file marking a build module, by name alone: `build.gradle.kts` or `pom.xml`. `{packages}` is then the modules a change touches; with a build file at the root, a file outside any module runs the whole suite. The command turns a folder into its task ([#1176](https://github.com/JN0V/workline/issues/1176)) |
 | `test-report` | `junit.xml` | where the report is written, from the root: a path, or a pattern, `**` spanning folders, each file it names read. Removed before each run, but a file git tracks, in a nested repository, or through a folder linked outside the root, as Bazel's `bazel-testlogs/*/*/test.xml`: kept, read only if the run rewrites it into a JUnit report ([#1175](https://github.com/JN0V/workline/issues/1175), [#1185](https://github.com/JN0V/workline/issues/1185), [#1189](https://github.com/JN0V/workline/issues/1189)) |
 | `test-paths` | none: the packs' | the test files, as patterns; every role reads them, the one definition of a test file ([ADR-0065](../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)). Unset: the listed [packs'](../../docs/packs.md) with the generic pack's, else the generic pack's alone: `test/`, `tests/`, `Tests/`, `__tests__/` folders, `test_*`, `*_test.*`, `*_spec.*`, `*.test.*`, `*.spec.*`, said by `workline doctor`. The only files `test write` may add; a new one beside the Scope is not listed beyond it by the developer ([its bounds](../developer/docs/bounds.md#what-it-checks)) |

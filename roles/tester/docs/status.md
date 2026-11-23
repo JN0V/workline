@@ -6,7 +6,7 @@ base with the red-first check (`workline test check`, no agent), and
 opens them as a Draft; it keeps them from the builder, and answers an
 objection to one (`workline test answer`); a scheduled run takes one
 ready issue a night, an objection wakes its answer; on the closing pull
-request, each new test passes three runs out of three; a weekly job
+request, each new test passes on the head; a weekly job
 measures the corpus, no agent (`workline test measure`), and proposes
 a few redundant tests removed, proven with no agent (`workline test
 curate`). Steps 1 to 8 of
@@ -197,9 +197,10 @@ Cases in `tests/conformance/cases/tester/`:
   `workline:objection:*` jobs on a pipeline a note webhook starts.
 - **The green proof** (step 5), no agent: on the pull request closing
   the issue, marked ready, the developer's among them, the record read
-  from the tester's Draft ([#1281](https://github.com/JN0V/workline/issues/1281)); the base once, then the head three times in one fresh
-  checkout; a new test red in some runs is flaky and blocks
-  (`test-flaky`), red in all is `test-red-on-head`; a flaky test the
+  from the tester's Draft ([#1281](https://github.com/JN0V/workline/issues/1281)); the base once, then the head once in one fresh
+  checkout, again when red; a new test red in one run is flaky and blocks
+  (`test-flaky`), red in both is `test-red-on-head`; with `draft-command`,
+  on the tests' folders alone; a flaky test the
   base had warns; a Draft waits ([the page](green-proof.md)). Each
   test id the record keeps must run: one missing blocks,
   `frozen-test-missing` ([#1255](https://github.com/JN0V/workline/issues/1255));
