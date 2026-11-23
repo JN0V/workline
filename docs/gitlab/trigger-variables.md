@@ -42,12 +42,18 @@ variables a tool, or the webhook's URL, passes.
 
 GitLab sets `CI_PIPELINE_SOURCE`: `trigger` (a trigger token), `api` (the
 pipelines API), `pipeline` (another project's `trigger:` job),
-`parent_pipeline` (a child pipeline) — never `schedule` nor
-`merge_request_event`, so none of the template's jobs run but in its own
-child of a merge request's pipeline, what only warns, the line of states
-(`workline:issue`), the tester's
-answer to an objection, the developer's ready issue and its review round, below
-(and `workline:release` on a tag). The tool, or
+`parent_pipeline` (a child pipeline); never `schedule` nor
+`merge_request_event`.
+
+So none of the template's jobs run, but:
+
+- in its own child of a merge request's pipeline, what only warns;
+- the line of states (`workline:issue`);
+- the tester's answer to an objection, the developer's ready issue and
+  its review round, below;
+- `workline:release` on a tag.
+
+The tool, or
 the webhook's URL ([the webhook](../gitlab-trigger.md#a-label-or-a-comment-with-gitlab-alone)), passes
 what to do as variables. The names below are this page's; the engine reads
 none of them:

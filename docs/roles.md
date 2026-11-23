@@ -7,14 +7,15 @@ judged-in-parts: 786d304
 ---
 # The roles
 
-Each role holds one human role's job, reads only what it needs, and its
-checks work without AI; for now a role may need an agent where working
-without one would make it rigid ([principles](PRINCIPLES.md)). Its page says what it does and does not do,
-its events, every setting with its default, what it writes, what it costs
-and where it stands: planned, beta or built, by
-[written criteria](adr/0036-a-roles-status-is-earned-by-written-criteria.md).
-How far each goes alone before a person is its level:
-[autonomy](autonomy.md).
+- **A role** holds one human role's job, reads only what it needs, and its
+  checks work without AI; for now it may need an agent where working
+  without one would make it rigid ([principles](PRINCIPLES.md)).
+- **Its page** says what it does and does not do, its events, every
+  setting with its default, what it writes, what it costs and where it
+  stands: planned, beta or built, by
+  [written criteria](adr/0036-a-roles-status-is-earned-by-written-criteria.md).
+- **How far each goes alone** before a person is its level:
+  [autonomy](autonomy.md).
 
 | Role | Does | Runs on | Page |
 |---|---|---|---|

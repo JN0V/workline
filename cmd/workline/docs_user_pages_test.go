@@ -11,12 +11,15 @@ import (
 	"testing"
 )
 
-// userPages are the fourteen user pages on the commands and CI.
+// userPages are the seventeen user pages on the commands and CI.
 var userPages = []string{
 	"docs/commands.md",
 	"docs/commands-setup.md",
 	"docs/commands-work.md",
+	"docs/commands-follow.md",
+	"docs/commands-reconcile.md",
 	"docs/ci.md",
+	"docs/ci-product-owner.md",
 	"docs/ci-github.md",
 	"docs/ci-gitlab.md",
 	"docs/gitlab-trigger.md",
@@ -155,7 +158,7 @@ func userPageDocsRun(t *testing.T, edit bool) string {
 //
 // Given the commit of this run,
 // When `workline docs --ai none` runs on it,
-// Then none of the fourteen pages is listed as suspect.
+// Then none of the seventeen pages is listed as suspect.
 func TestUserPagesNoneSuspect(t *testing.T) {
 	out := userPageDocsRun(t, false)
 	for _, m := range userSuspect.FindAllStringSubmatch(out, -1) {
@@ -167,7 +170,7 @@ func TestUserPagesNoneSuspect(t *testing.T) {
 
 // Narrow sources
 //
-// Given each of the fourteen pages,
+// Given each of the seventeen pages,
 // When each `sources` entry is checked,
 // Then it is a file path, or `path#name`: never a directory, never a path
 // holding a glob character (`*`, `?`, `[`).
@@ -195,7 +198,7 @@ func TestUserPagesSourcesAreNarrow(t *testing.T) {
 // Given a commit that edits only `internal/doctor/doctor.go`, which no page
 // names in its `sources`,
 // When `workline docs --ai none` runs on it,
-// Then none of the fourteen pages is listed as suspect.
+// Then none of the seventeen pages is listed as suspect.
 func TestUserPagesNoneSuspectAfterAnOutsideCommit(t *testing.T) {
 	out := userPageDocsRun(t, true)
 	for _, m := range userSuspect.FindAllStringSubmatch(out, -1) {
