@@ -90,7 +90,7 @@ roles:
 - **Your answer**: 👍 on the week's comment agrees with all of it; 👎 and a
   reply naming rows (`not 3, 7`) contests those, the rest agreed. A reply
   answers the week it follows, or the week it names (`2026-W41: not 3`).
-- **It is yours**: an assistant puts it only on three conditions, never
+  It is yours: an assistant puts it only on three conditions, never
   for a panel of agents
   ([ADR-0068 §7](adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated)):
   - your instruction for that item, now (that week);
