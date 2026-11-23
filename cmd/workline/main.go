@@ -1332,6 +1332,7 @@ func testCmd(args []string) int {
 		if *asJSON {
 			out, _ := json.MarshalIndent(res, "", "  ")
 			fmt.Println(string(out))
+			sayReasons(res)
 		} else {
 			report(res)
 			for _, l := range m.Lines {
