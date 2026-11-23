@@ -13,13 +13,15 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// mergeReleasePages are the twelve user pages on the merge policy, the
+// mergeReleasePages are the seventeen user pages on the merge policy, the
 // merge queue, release holds, the weekly sample and the release.
 var mergeReleasePages = []string{
 	"merge-policy", "merge-queue", "release-holds", "weekly-sample",
 	"merge-policy-code", "merge-policy-no-bypass", "merge-policy-normal",
 	"merge-policy-reverts", "merge-policy-routine", "merge-queue-commands",
 	"release", "release-candidate",
+	"merge-policy-holds", "merge-policy-one-head", "merge-policy-verdict",
+	"merge-policy-setup", "merge-policy-summary",
 }
 
 // suspectLine is how `workline docs` lists a doc made suspect.
@@ -42,7 +44,7 @@ func mergeReleaseHeader(t *testing.T, page string) (sources []string, checked, b
 }
 
 // mergeReleaseWorkspace builds the engine from this tree and clones this
-// repository, git isolated from the machine. With move, the twelve pages'
+// repository, git isolated from the machine. With move, the seventeen pages'
 // `checked` name the clone's HEAD, in one commit on top of it. It returns
 // the binary, the clone, that HEAD, a git runner in the clone and a
 // runner of `workline docs --ai none --since <rev>` in the clone.
@@ -118,9 +120,9 @@ func suspectPages(out string) map[string]bool {
 }
 
 // Scenario: Twelve pages not suspect
-// Given the twelve pages, each with the commit its `checked` names,
+// Given the seventeen pages, each with the commit its `checked` names,
 // When `workline docs --ai none` runs on the commits since the oldest of them,
-// Then none of the twelve is listed as suspect.
+// Then none of the seventeen is listed as suspect.
 func TestMergeReleasePagesNotSuspect(t *testing.T) {
 	_, _, _, git, docs := mergeReleaseWorkspace(t, false)
 	shas := []string{"merge-base", "--octopus"}
@@ -165,7 +167,7 @@ func TestNarrowSourcesRelatedChange(t *testing.T) {
 }
 
 // Scenario: Sources are narrow and named
-// Given each of the twelve pages, When I read its `sources` header, Then every
+// Given each of the seventeen pages, When I read its `sources` header, Then every
 // entry is a file path or a `file#symbol` (no folder), and its file name or
 // symbol name appears in the page's text.
 func TestMergeReleaseSourcesNarrowAndNamed(t *testing.T) {

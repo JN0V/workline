@@ -58,7 +58,7 @@ merge: {autonomy: normal}   # a project's choice, never a default
 
 ## What the summary says
 
-As at `cautious` ([each word](merge-policy.md#what-the-summary-says)),
+As at `cautious` ([each word](merge-policy-summary.md)),
 and:
 
 | Said | When |
