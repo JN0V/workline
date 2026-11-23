@@ -58,7 +58,7 @@ permissions: {}
 # the one going, so two product owners never act on the same issues; a
 # docs run likewise, beside it.
 concurrency:
-  group: ${{ (github.event.schedule == '7 18 * * 0' || inputs.job == 'docs') && 'workline-gardening-docs' || 'workline-gardening-backlog' }}
+  group: ${{ inputs.job == 'docs' && 'workline-gardening-docs' || 'workline-gardening-backlog' }}
   cancel-in-progress: false
 
 env:
