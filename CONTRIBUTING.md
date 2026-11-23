@@ -9,8 +9,8 @@ sources:
   - .workline/config.yaml#routing
   - .workline/config.yaml#gates
   - .github/workflows/workline.yml#jobs.gates
-checked: e2e165c2d
-verified: agent:claude-code
+checked: ca63666
+verified: agent:documentalist
 judged: 7ec23a5
 -->
 # Contributing
