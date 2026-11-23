@@ -1,0 +1,29 @@
+case: merge/persons-trace-stays-answered-after-a-push
+about: >
+  A person writes the trace of their yes, then puts `workline:accepted`; a push follows and the line takes the yes off. The trace was answered by their yes: the push asks for a new yes on the new head, it does not turn the trace into an open comment. Its auto-merge on, no hold is said on it, and nothing is turned on until a yes is put again.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: zed
+        labels: []
+        auto-merge: true
+        label-events:
+          - {label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}
+          - {label: workline:accepted, added: false, author: workline-bot, bot: true, created: "2026-01-04T10:30:00Z"}
+        pushes: [{head: feat/sessions, at: "2026-01-04T10:29:00Z", by: zed}]
+        comments:
+          - {body: "Accepted on dana's explicit instruction in a session.", author: dana, insider: true, created: "2026-01-04T09:59:58Z"}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  no-findings: [{rule: persons-comment-open, where: "#7"}, {rule: auto-merge-on, where: "#7"}]

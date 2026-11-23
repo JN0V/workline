@@ -591,7 +591,7 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		case method == "GET":
 			out := []map[string]any{}
 			for i, c := range it.Comments {
-				out = append(out, map[string]any{"id": noteID(i, c), "body": c.Body, "system": false, "author": user(c.Author)})
+				out = append(out, map[string]any{"id": noteID(i, c), "body": c.Body, "system": false, "author": user(c.Author), "created_at": c.Created})
 			}
 			for i, t := range it.Threads { // a discussion's note is a note too, as GitLab lists it
 				out = append(out, map[string]any{"id": id*1000 + 500 + i + 1, "body": t.Body, "system": false, "author": user(tokenUser), "type": "DiffNote"})
