@@ -437,8 +437,9 @@ type MergeRequest struct {
 // subject of a commit on the base, Suffix after it.
 type Squash struct {
 	On bool `json:"on"` // the forge's settings let it squash the merge request
-	// Only: the forge lands a merge request by squash and no other way, so
-	// the branch's commits never reach the base, only the squash's subject.
+	// Only: the forge lands a merge request by squash and no other way, its
+	// message quoting none of the branch's commits: they never reach the
+	// base, only the squash's subject.
 	Only bool `json:"only,omitempty"`
 	// LoneCommit: with one commit, the squash takes that commit's subject,
 	// not the title (GitHub's "default to commit or pull request title").

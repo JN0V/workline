@@ -1340,19 +1340,22 @@ var draftPrefix = regexp.MustCompile(`(?i)^\s*(\[draft\]|\(draft\)|draft:)\s*`)
 // merge request be squashed, its title the subject (GitLab's default
 // template), nothing added after it. "always" squashes every merge
 // request: a merge commit, if the project makes one, carries the squash,
-// never the branch's commits.
+// never the branch's commits, unless the squash's template quotes them.
 func (g *gitlab) Squash(int) (Squash, error) {
 	out, err := g.api("projects/:id")
 	if err != nil {
 		return Squash{}, err
 	}
 	var p struct {
-		Option string `json:"squash_option"`
+		Option   string `json:"squash_option"`
+		Template string `json:"squash_commit_template"`
 	}
 	if err := decode(out, &p); err != nil {
 		return Squash{}, err
 	}
-	return Squash{On: p.Option != "never", Only: p.Option == "always"}, nil
+	quotes := strings.Contains(p.Template, "%{all_commits}") || strings.Contains(p.Template, "%{first_commit}") ||
+		strings.Contains(p.Template, "%{first_multiline_commit}")
+	return Squash{On: p.Option != "never", Only: p.Option == "always" && !quotes}, nil
 }
 
 // ListMergeRequests reads each open merge request: one from another
