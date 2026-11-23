@@ -244,9 +244,11 @@ merges assumed to stay for real conflicts.
   one subject the base receives: the committer blocks on it, and the
   branch's commit messages are said as warnings, not blocked.
 - **Read from the forge**: on GitHub, squash merging on, merge commits
-  and rebase merging off; on GitLab, the squash option "Require"
-  (`always`). A forge that allows another way, or could not be read,
-  keeps every commit blocking.
+  and rebase merging off, the squash's body not the commits' messages;
+  on GitLab, the squash option "Require" (`always`), its template
+  quoting no commit. A forge that allows another way, puts the commits'
+  messages in the squash, or could not be read, keeps every commit
+  blocking.
 - **Why**: on workline, squash only, from 2026-11-16 to 11-23, the
   committer blocked 35 heads of 11 pull requests, each on a branch
   commit's subject, never on a title: none of those subjects could reach
