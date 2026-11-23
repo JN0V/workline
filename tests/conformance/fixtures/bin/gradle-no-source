@@ -1,0 +1,14 @@
+#!/bin/sh
+# gradle-no-source <report> <folder>...: run-modules as Gradle runs a
+# module with no test sources (#2091): no test_*.sh under any <folder>,
+# it says NO-SOURCE, writes no report and exits 0; else run-modules.
+report=$1
+shift
+for d in "$@"; do
+  [ -d "$d" ] && [ -n "$(find "$d" -name 'test_*.sh' | head -n 1)" ] && exec sh "$(dirname "$0")/run-modules" "$report" "$@"
+done
+for d in "$@"; do
+  echo "> Task :${d#./}:testDebugUnitTest NO-SOURCE"
+done
+printf '\nBUILD SUCCESSFUL in 2s\n'
+exit 0
