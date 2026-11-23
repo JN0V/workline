@@ -215,8 +215,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, persist-credentials: false}
-      - uses: actions/setup-go@v5
-        with: {go-version-file: go.mod}
+      - uses: ./.github/actions/engine
+        with: {version: "${{ env.WORKLINE_VERSION }}", go: "true"}
       - uses: ./.github/actions/tests
       - name: The docs tests
         env: {WORKLINE_DOCS_TESTS: "1"}
