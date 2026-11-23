@@ -4,8 +4,6 @@ sources:
   - .github/workflows/workline.yml#env
   - .github/workflows/workline.yml#jobs.propose.permissions
   - .github/workflows/workline.yml#jobs.pinned
-  - .github/workflows/workline.yml#jobs.head-gates.name
-  - .github/workflows/workline.yml#jobs.head-propose.name
   - .github/workflows/workline-warn.yml#name
   - .github/actions/engine/action.yml#name
   - .github/actions/tests/action.yml
@@ -29,7 +27,7 @@ sources:
   - release-please-config.json
   - .github/workflows/release.yml#name
   - .goreleaser.yaml#release
-checked: ca17a0fa9
+checked: 57ac87f13
 verified: agent:claude-code
 judged: 220b6dc
 ---
@@ -60,13 +58,11 @@ engine and their triggers
   request's commit, once a commit, by the same action without a
   version; it must name the commit checked out, unmodified, or the job
   fails;
-- **the head pass**: a pull request changing the engine
-  ([its paths](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#1-the-line-runs-a-pinned-release)) also runs gates and propose on its head's
-  engine, in two checks named "… on the head's engine (non-blocking)":
-  they never hold the line's verdict, and never turn red: a step that
-  fails, or the head's propose stopped at 45 min, gives a warning on a
-  green check; 45 min sits under the job's timeout, so the run is never
-  cancelled ([#2088](https://github.com/JN0V/workline/issues/2088));
+- **no head pass**: gates and propose run the pinned release alone. A
+  second pass on the engine built from the head (the first design of
+  [ADR-0071](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#amendment-2026-11-23-the-head-pass-is-dropped))
+  was dropped: the [try on a copy](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#2-two-real-tries-one-command)
+  already runs a new engine on real repositories;
 - **the N-1 rule**: the check "workline: the pinned release reads the
   head" runs the pinned release on the head's `.workline/config.yaml`
   and the front matter of the docs it touches, and fails naming what
