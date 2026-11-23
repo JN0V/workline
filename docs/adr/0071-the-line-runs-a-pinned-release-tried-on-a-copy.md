@@ -47,8 +47,8 @@ the person's own pull request.**
   | Workflow | Write rights | Engine |
   |---|---|---|
   | develop, answer, apply, bounds, merge, gardening, sample | yes | pinned release |
-  | workline: judge | no write but `security-events` | pinned release; head pass apart (below) |
-  | workline: gates, on a pull request and a push to `main` | no | pinned release; head pass apart; Go set up for the gate's own tool |
+  | workline: judge | no write but `security-events` | pinned release |
+  | workline: gates, on a pull request and a push to `main` | no | pinned release; Go set up for the gate's own tool |
   | warn | no | head: it only warns |
   | test | no | head: `go test`, conformance, simulator |
 
@@ -65,7 +65,8 @@ the person's own pull request.**
   compiles: `cmd/`, `internal/`, `roles/`, `skills/`, `roles.go`,
   `defaults/routing.yaml`, `go.mod`, `go.sum`
   ([workline.go](../../workline.go), once `roles.go`, and `internal/` hold the `go:embed`).
-- **It also gets a head pass**: judge and gates built from its head,
+- **It also got a head pass**, dropped on 2026-11-23
+  ([amendment](#amendment-2026-11-23-the-head-pass-is-dropped)): judge and gates built from its head,
   non-blocking, their results told on the pull request. A new rule,
   lens, prompt, gate or `route main` change is exercised on its own
   pull request.
@@ -162,6 +163,24 @@ the person's own pull request.**
   pinned release on the head's `.workline/` and docs, and on the
   head's artifacts, and fails when they do not parse.
 - **A release's try is paid once**; a ref try per fix to a line path.
+
+## Amendment 2026-11-23: the head pass is dropped
+
+- **What it was**: the non-blocking jobs `head-gates` and `head-propose`
+  of workline's own `workline.yml`, gates and propose on the engine built
+  from an engine-changing head (§1). Users' templates never had them.
+- **Why it goes**, by an independent analysis of the week to 2026-11-23
+  ([#2096](https://github.com/JN0V/workline/issues/2096)):
+  - about 71 runner-hours a week;
+  - 5 timeouts that cancelled green runs, leaving 3 pull requests with
+    no verdict;
+  - 9 runs of 531 diverged from the pinned pass, none shown to be a real
+    catch (the one still on an open pull request ended at the job's 45
+    minute stop, not on a finding);
+  - the try on a copy (§2) already runs a new engine on real
+    repositories.
+- **What stays**: the pinned release's verdict, `warn` and `test` on the
+  head's engine, and the N-1 check that the pinned release reads the head.
 
 ## Build order
 

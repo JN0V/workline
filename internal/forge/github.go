@@ -787,9 +787,11 @@ func (g *github) MarkReady(id int) error {
 
 // Squash reads whether the repository allows squash merging, and which
 // subject GitHub gives the squash: the title, or a lone commit's subject.
-// GitHub adds " (#N)" after it.
+// GitHub adds " (#N)" after it. Squash is the only way when merge commits
+// and rebase merging are both off, and the squash's body does not take the
+// branch's commit messages.
 func (g *github) Squash(id int) (Squash, error) {
-	out, err := g.api("graphql", "-f", "query=query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { squashMergeAllowed squashMergeCommitTitle } }",
+	out, err := g.api("graphql", "-f", "query=query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { squashMergeAllowed squashMergeCommitTitle mergeCommitAllowed rebaseMergeAllowed squashMergeCommitMessage } }",
 		"-F", "owner={owner}", "-F", "name={repo}")
 	if err != nil {
 		return Squash{}, err
@@ -799,6 +801,9 @@ func (g *github) Squash(id int) (Squash, error) {
 			Repository struct {
 				Allowed bool   `json:"squashMergeAllowed"`
 				Title   string `json:"squashMergeCommitTitle"`
+				Merge   bool   `json:"mergeCommitAllowed"`
+				Rebase  bool   `json:"rebaseMergeAllowed"`
+				Body    string `json:"squashMergeCommitMessage"`
 			} `json:"repository"`
 		} `json:"data"`
 	}
@@ -806,7 +811,7 @@ func (g *github) Squash(id int) (Squash, error) {
 		return Squash{}, err
 	}
 	r := v.Data.Repository
-	return Squash{On: r.Allowed, LoneCommit: r.Title == "COMMIT_OR_PR_TITLE", Suffix: fmt.Sprintf(" (#%d)", id)}, nil
+	return Squash{On: r.Allowed, Only: r.Allowed && !r.Merge && !r.Rebase && r.Body != "COMMIT_MESSAGES", LoneCommit: r.Title == "COMMIT_OR_PR_TITLE", Suffix: fmt.Sprintf(" (#%d)", id)}, nil
 }
 
 // ListMergeRequests reads each open pull request: one from a fork, or

@@ -18,8 +18,8 @@ sources:
   - roles/reviewer/code/spec.go#specMaterial
   - roles/reviewer/code/reviewer.go#lensFindings
   - roles/reviewer/code/reviewer.go#Post
-checked: dd77bf922
-verified: agent:claude-code
+checked: cf8d4d9f
+verified: human:JN0V
 ---
 # Reviewer — a spec before it is built
 

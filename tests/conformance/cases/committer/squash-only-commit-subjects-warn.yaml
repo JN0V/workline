@@ -1,0 +1,15 @@
+case: committer/squash-only-commit-subjects-warn
+about: "On a merge request the forge lands by squash only, the title is the one subject that reaches the base: a branch commit's subject the rules refuse is said, and does not block."
+given:
+  repo: basic
+  setup:
+    - "git tag base && echo a >> main.go && git commit -qam 'fix: AC-3' && echo b >> main.go && git commit -qam 'feat: add a greeting'"
+  forge:
+    squash: {on: true, only: true, suffix: " (#{n})"}
+    merge-requests: [{id: 5, title: "feat: add a greeting", labels: [], comments: []}]
+run: {role: committer, event: merge-request, input: {range: "base..HEAD"}, target: {merge-request: 5}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "only the title lands on the base"
+  findings: [{rule: internal-code, level: warn, where: "commit"}]
