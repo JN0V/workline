@@ -1,14 +1,15 @@
 case: tester/green-flaky-blocks
 about: >
-  A test red in one run of three is flaky: blocking, the test named,
-  never retried until green. The code here fails its third call, kept in
-  a counter all checkouts share: the first test of the second run.
+  A test red in the head's first run runs again; red in one run of two,
+  it is flaky: blocking, the test named, never retried until green. The
+  code here fails its first call, kept in a counter all checkouts share:
+  the first test of the first run.
 given:
   repo: tested-draft
   setup:
     - |
       cat >> lib.sh <<'L'
-      mul() { c="$(git rev-parse --git-common-dir)/mul-calls"; n=$(($(cat "$c" 2>/dev/null || echo 0) + 1)); echo $n > "$c"; [ $n -eq 3 ] && { echo 1; return; }; echo $(($1 * $2)); }
+      mul() { c="$(git rev-parse --git-common-dir)/mul-calls"; n=$(($(cat "$c" 2>/dev/null || echo 0) + 1)); echo $n > "$c"; [ $n -eq 1 ] && { echo 1; return; }; echo $(($1 * $2)); }
       L
       git commit -qam 'feat: multiply'
   config:
@@ -23,5 +24,5 @@ run: {role: tester, event: merge-request, target: {merge-request: 1}}
 expect:
   status: block
   agent-calls: 0
-  findings: [{rule: test-flaky, where: tests.test_mul_by_zero, message: "passed 2 of 3 runs, red in run 2"}]
+  findings: [{rule: test-flaky, where: tests.test_mul_by_zero, message: "passed 1 of 2 runs, red in run 1"}]
   no-findings: [{rule: test-flaky, where: tests.test_mul_two_by_three}, {rule: test-red-on-head}]

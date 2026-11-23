@@ -17,7 +17,7 @@ mission: Each test a change adds is proven red on its base before the code makes
 #        tester wrote, changed or deleted by another, blocks
 #        (tester-test-changed); routed where the project lists it. Then,
 #        the pull request marked ready, the green proof (step 5): each
-#        new test passes on the head three runs out of three (test-flaky).
+#        new test passes on the head, run again only when red (test-flaky).
 # objection: `workline test answer --merge-request <n>` — the first
 #        objection waiting on the tester's Draft, kept or rewritten
 #        (step 3); in CI, woken by the comment (workline-objection.yml).
@@ -97,9 +97,9 @@ settings:
   # and read only if the run rewrites it into a JUnit report (`pom.xml`
   # under `**/*.xml`); a pattern leaving the root (`../`, `/`) is refused.
   test-report: junit.xml
-  # The Draft's red proof on the folders holding its tests alone
-  # ({packages}), on the base and with the tests, writing test-report;
-  # unset: test-command, the whole suite, on each. E.g.
+  # The Draft's red proof, and the green proof on its pull request, on
+  # the folders holding its tests alone ({packages}), writing
+  # test-report; unset: test-command, the whole suite, on each. E.g.
   # `gotestsum --junitfile {report} -- {packages}`, `python -m pytest
   # --junitxml={report} {packages}`.
   draft-command: ""

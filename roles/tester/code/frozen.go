@@ -71,7 +71,7 @@ func (r record) body() string {
 		fmt.Fprintf(&b, "| `%s` | `%s` |\n", f, short(r.Files[f]))
 	}
 	if len(r.Tests) > 0 {
-		fmt.Fprintf(&b, "\nThe green proof requires each of these tests on the code, three runs out of three: `%s`.\n", strings.Join(r.Tests, "`, `"))
+		fmt.Fprintf(&b, "\nThe green proof requires each of these tests on the code, green on the head: `%s`.\n", strings.Join(r.Tests, "`, `"))
 		var alone []string
 		for _, t := range r.Tests {
 			if fileAlone(r, t) {

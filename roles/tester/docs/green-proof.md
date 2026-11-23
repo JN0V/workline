@@ -3,7 +3,7 @@ sources: [roles/tester/code/green.go, roles/tester/code/runcache.go, roles/teste
 checked: b85f39148
 verified: agent:claude-code
 ---
-# The green proof: three runs out of three
+# The green proof: each frozen test green on the head
 
 Part of [the tester](../README.md). Step 5 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan):
@@ -13,8 +13,8 @@ a test that passes once and fails the next time proves nothing.
 flowchart LR
   pr["<b>Closing pull request</b><br/>marked ready"]
   base["<b>Base</b><br/>one run"]
-  head["<b>Head</b><br/>three runs"]
-  out["<b>Each frozen test</b><br/>green 3 of 3"]
+  head["<b>Head</b><br/>one run, again if red"]
+  out["<b>Each frozen test</b><br/>green"]
   pr --> base --> head --> out
 ```
 
@@ -102,7 +102,10 @@ flowchart LR
       the base, the head's first run here (merged up to date, its tree
       is the next base);
     - found, the base is not run again, said on the run's error output;
-      the head's three runs always are.
+      the head always runs.
+    - Scoped to the tests' folders, the key is the command as run on
+      the base, its folders those the base holds: the Draft's red
+      proof wrote it.
     - A fresh clone keeps none: the base runs.
   - **In CI**, the templates carry the folder from the tester's run to
     each pull request's guard, and to its next push, where no other
@@ -111,14 +114,21 @@ flowchart LR
     ([GitHub](../../../docs/github/jobs.md),
     [GitLab](../../../docs/gitlab/review-jobs.md)); never a run where the
     developer ran. A file of another tree, command or report is not read.
-- **The head three times**, one run after the other, in one fresh
-  checkout. Each run is `test-command`, its report read as JUnit XML,
-  stopped at `suite-max-seconds`, its last lines said
+- **The head once**, in one fresh checkout. Each run is
+  `test-command`, its report read as JUnit XML, stopped at
+  `suite-max-seconds`, its last lines said
   ([#1425](https://github.com/JN0V/workline/issues/1425)).
-- **Never again until green**: three runs, not "until it passes".
+- **Again only when a test is red**: one more run in the same
+  checkout tells flaky (green in the other run) from red (red in
+  both). Never a third: not "until it passes".
+- **The tests' folders alone**, when `draft-command` names
+  `{packages}`: the base and the head run it on the folders holding
+  the tester's test files, said by `proof-scope`. The pull request's
+  own test job runs the whole suite. Unset, `test-command` runs whole
+  ([ADR-0055, amended 2026-11-23](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#amendment-2026-11-23-the-green-proof-on-the-tests-folders-once)).
 - **Why one checkout**: a second run there reuses the runner's build
   cache. On a copy of workline, a Go package: 4.5 s the first run,
-  1 s each next one; the whole proof about 10 s, not 22 s.
+  1 s the next.
 - **A test that a run before it breaks** (a file it leaves, a port it
   holds) fails on a person's second run too: it counts as flaky.
 
@@ -126,15 +136,16 @@ flowchart LR
 
 | Finding | Blocks | When |
 |---|---|---|
-| `test-flaky` | yes | a new test passed in some runs, not all: the runs it was red in are named |
+| `test-flaky` | yes | a new test red in the first run, green in the second: the run it was red in is named |
 | `test-flaky` | no, warns | a test the base already had is flaky here: not the change's |
-| `frozen-test-missing` | yes | a test of the record is in none of the three runs: its id is named; for a `file:name` beside other new tests, only on the judge's "dropped" |
+| `frozen-test-missing` | yes | a test of the record is in none of the runs: its id is named; for a `file:name` beside other new tests, only on the judge's "dropped" |
 | `frozen-test-judged` | no, informs | the judge says a `file:name` test ran under another name |
 | `frozen-unproven` | no, warns | the judge did not tell, or no agent: a person reads the change |
-| `test-red-on-head` | yes | a frozen or new test is red, skipped or missing in each of the three runs |
+| `test-red-on-head` | yes | a frozen or new test is red, skipped or missing in both runs |
 | `frozen-ids-unknown` | no, warns | an older record names files, not tests: the head's new tests are taken |
 | `no-new-test` | yes | an older record, and the head's reports name no test the base's does not |
 | `setting-missing`, `report-missing` | yes | no command, or a run wrote no report |
+| `proof-scope` | no, informs | the proof ran the folders of the tester's tests alone, named |
 
 - **A flaky test of the tester's**: find the cause in the code first;
   a test that cannot hold, object on its line
@@ -156,8 +167,7 @@ in QA does, rerunning the reproduction once the fixes merged.
   parent, no agent, given `symptom`, before the product owner.
   - The Draft's test files, as its commits changed them since the
     record's base, are merged over the default branch's current commit.
-  - The green proof runs there: the record's tests, three runs out of
-    three.
+  - The green proof runs there: the record's tests, green on it.
 - **What it says**: one comment on the parent,
   `<!-- workline:sticky=tester/symptom -->`: green, the tests and the
   commit named; or why not.
@@ -174,8 +184,8 @@ in QA does, rerunning the reproduction once the fixes merged.
 
 ## Random order, by ecosystem
 
-A test that passes only after another is flaky too. Three runs in a
-random order each find it more often. Put the runner's option in
+A test that passes only after another is flaky too. A random order
+finds it more often. Put the runner's option in
 `test-command`; it does no harm to the red-first check.
 
 | Runner | Random order |
@@ -188,7 +198,7 @@ random order each find it more often. Put the runner's option in
 
 - **Go**: `gotestsum --junitfile {report} -- -shuffle=on ./...`
 - **Go's result cache**: Go would replay the first run's pass in the
-  next ones. Each run gets `-count=1` in `GOFLAGS`, unless the project
+  next one. Each run gets `-count=1` in `GOFLAGS`, unless the project
   set a `-count` there; other runners ignore it.
 - **The job's environment, not the line's**: the runs never see the
   line's own variables ([the list](../../../docs/environment-roles.md#the-lines-own)):

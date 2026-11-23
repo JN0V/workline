@@ -36,8 +36,7 @@ const SymptomInput = "symptom"
 const SymptomAfterInput = "symptom-after"
 
 // Symptom is the tester's proof of a bug's parent: its Draft's tests,
-// laid over the default branch's commit, green three runs out of three
-// or not, and why.
+// laid over the default branch's commit, green on it or not, and why.
 type Symptom struct {
 	Issue int `json:"issue"`
 	// Draft: the tester's Draft the tests come from, 0 when none was found.
@@ -78,7 +77,7 @@ func (s Symptom) Said() string {
 	if !s.Green {
 		return s.Why
 	}
-	return fmt.Sprintf("its reproduction test%s %s green on %s at %s, three runs out of three", map[bool]string{true: "", false: "s"}[len(s.Tests) == 1], codeList(s.Tests), s.Branch, shortSHA(s.Commit))
+	return fmt.Sprintf("its reproduction test%s %s green on %s at %s", map[bool]string{true: "", false: "s"}[len(s.Tests) == 1], codeList(s.Tests), s.Branch, shortSHA(s.Commit))
 }
 
 // ReadSymptom reads the tester's proof on issue id from its comments,
