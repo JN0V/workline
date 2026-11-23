@@ -96,8 +96,8 @@ flowchart LR
   ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)):
   at `normal`, a reproduced bug's fix alone, a feature or a task once a
   person says yes ([the merge](../../developer/docs/merge.md)).
-- **Green three times**: once marked ready, each new test passes on the
-  head three runs out of three; one red is flaky and blocks
+- **Green on the head**: once marked ready, each new test passes on
+  the head, run again when red; red once is flaky and blocks
   (`test-flaky`, [the proof](green-proof.md)).
 - **Once merged**: the next push to the base runs `workline follow`, no
   agent. It closes the Draft of the closed issue, its comment naming the
