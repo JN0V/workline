@@ -29,7 +29,7 @@ sources:
   - release-please-config.json
   - .github/workflows/release.yml#name
   - .goreleaser.yaml#release
-checked: 7c339e2f2
+checked: 3f28f2e5b
 verified: agent:claude-code
 judged: 220b6dc
 ---
