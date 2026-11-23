@@ -1,18 +1,21 @@
 ---
 sources:
-  - internal/doctor/doctor.go#Run
-  - internal/doctor/doctor.go#machine
-  - internal/doctor/doctor.go#repository
-  - internal/doctor/doctor.go#hooksPath
-  - internal/doctor/conversations.go#findingsOnMergeRequests
-  - internal/doctor/variables.go#tokensScoped
-  - internal/hooks/hooks.go#HandsOver
-  - internal/forge/local.go#InCI
-  - internal/forge/local.go#Local.writable
-  - cmd/workline/main.go#doctorCmd
-  - cmd/workline/main.go#doctorPrint
-  - cmd/workline/cli.go#misuse
-checked: e4e4287bc
+  - cmd/workline/main.go
+  - cmd/workline/cli.go
+  - internal/doctor/doctor.go
+  - internal/doctor/variables.go
+  - internal/hooks/hooks.go
+  - internal/forge/local.go
+  - internal/engine/merge.go
+  - internal/engine/engine.go
+  - internal/engine/annotate.go
+  - roles/reviewer/code/reviewer.go
+  - roles/documentalist/code/documentalist.go
+  - docs/spec/routing.md
+  - docs/languages.md
+  - docs/troubleshooting-docs.md
+  - roles/product-owner/code/productowner.go
+checked: d847c019
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -54,7 +57,7 @@ tokens — and `--json` prints every finding.
 - **`pre-push` does nothing**: it runs only when `.workline/config.yaml`
   routes `pre-push` (`workline init` does). `git push --no-verify` skips it.
 - **A commit goes through unchecked for secrets**: gitleaks is missing; the
-  verdict says `secrets-not-checked`. `workline setup` installs it.
+  verdict says it checked no secrets. `workline setup` installs it.
 
 ## A command fails before it runs
 
@@ -90,9 +93,8 @@ goes ready, a hidden record that does not read: in
 
 - `ai-max-tokens` (documentalist, reviewer): the run spent its cap; the rest
   waits for the next run. The reviewer leaves the commits unrecorded
-  (`review-not-whole`, `lens-failed`) and says what each call used. `ai-max-calls`, `parts-max-per-run`, the product owner's
-  `issues-per-run` and `code-lines-max`, the reviewer's `diff-lines-max`,
-  `code-lines-max` and `tests-lines-max` size each run (each role's page).
+  (`review-not-whole`, `lens-failed`) and says what each call used. `ai-max-calls`, `parts-max-per-run`, `code-lines-max`, the reviewer's
+  `diff-lines-max` and `tests-lines-max` size each run (each role's page).
 - `input-cut` (a warning): the agent read part of what the run gives it;
   the line says what, how much of it, and the setting that raises it.
 - `size-crossed`: a role's run on an issue was too big for it: its task
@@ -114,9 +116,8 @@ goes ready, a hidden record that does not read: in
   label, or split it into new issues
   ([routing](spec/routing.md#the-line-of-states)).
 - `size-tier` (info): every size target of the run multiplied by its
-  issue's tier label; take it off to undo. `size-person`, `size-kept`,
-  `size-once`, `split-depth`, `split-off`, `too-big-unasked`: a grant or
-  a split on size dropped
+  issue's tier label; take it off to undo. A grant or a split on size
+  that is dropped says why in its finding
   ([why](spec/backlog-acts/refine.md#granting-a-size)).
 - `ai-max-seconds` (committer): the rewrite took more than the 30 s it
   may; the message is refused with its reasons, as with no agent.
@@ -223,7 +224,7 @@ The [merge policy](merge-policy.md) acts only with `merge:` in
   test reproduced; the release tool's always.
 - `merge-app-unknown`: at `normal`, the token is a person's, or the forge
   does not say its App (GitHub: `WORKLINE_APP`): nothing merges alone.
-- `merge-record-lost`: at `normal`, no mark of the App's on the base's last
+- A merge record lost: at `normal`, no mark of the App's on the base's last
   100 commits — the first run too —: someone who may push and merge closes
   the issue it names, and workline's own work merges alone again.
 - `merge-unsupported`, `merge-token`, `merge-unguarded`: nothing is
@@ -238,3 +239,17 @@ The [merge policy](merge-policy.md) acts only with `merge:` in
   forge without auto-merge; on the local forge, `route merge-request`
   could not keep its verdict in the clone: the request waits, run the
   line again.
+
+## Where this page reads from
+
+The commands and findings above are read from `cmd/workline/main.go` and
+`cmd/workline/cli.go` (the commands and their exit codes),
+`internal/doctor/doctor.go` and `internal/doctor/variables.go` (what doctor
+says), `internal/hooks/hooks.go` (when a hook hands over),
+`internal/forge/local.go` (the local forge), `internal/engine/merge.go`,
+`internal/engine/engine.go` and `internal/engine/annotate.go` (the engine's
+findings), `roles/reviewer/code/reviewer.go`,
+`roles/documentalist/code/documentalist.go` and
+`roles/product-owner/code/productowner.go` (their caps), and the pages
+[routing](spec/routing.md), [languages](languages.md) and
+[the docs' troubleshooting](troubleshooting-docs.md).

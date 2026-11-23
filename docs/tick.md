@@ -10,7 +10,7 @@ sources:
   - internal/line/tick.go#BacklogDue
   - defaults/ci/github/workline-loop.yml#on
   - defaults/ci/github/workline-loop.yml#jobs.loop
-checked: 3bab32400
+checked: d847c019
 verified: agent:claude-code
 ---
 # The tick
@@ -193,3 +193,12 @@ beat on GitHub, whose own schedule runs late or not at all
   ([#1762](https://github.com/JN0V/workline/issues/1762)).
   - Said on stderr: `workline: tick: 5 GitHub calls, 0 of them cost
     quota (5 answered 304 Not Modified)`.
+
+## Where this page reads from
+
+The command is `cmd/workline/tick.go` and its rules `internal/tick/tick.go`;
+the timed jobs and their shipped times, `internal/routing/timed.go`; the
+backlog's due rule, `internal/line/tick.go`; the runs going and the forges
+that list none, `internal/forge/runs.go`; the loop, `workline-loop.yml`.
+The reconciler it lists beside the line:
+[the reconciler](spec/routing.md#the-reconciler).

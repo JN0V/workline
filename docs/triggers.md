@@ -1,39 +1,17 @@
 ---
 sources:
-  - cmd/workline/main.go#hooksCmd
-  - cmd/workline/main.go#prePushLine
+  - cmd/workline/main.go
+  - cmd/workline/tick.go
   - roles/committer/role.yaml
-  - internal/kit/commitmsg/commitmsg.go#Settings
-  - cmd/workline/main.go#docsCmd
-  - cmd/workline/main.go#reviewCmd
-  - cmd/workline/main.go#routeCmd
-  - cmd/workline/main.go#runRole
-  - cmd/workline/main.go#testCmd
-  - cmd/workline/main.go#developCmd
-  - cmd/workline/main.go#importIssues
-  - cmd/workline/main.go#applyCmd
-  - cmd/workline/main.go#sampleCmd
-  - cmd/workline/main.go#followCmd
-  - cmd/workline/main.go#sizeCmd
-  - cmd/workline/main.go#gateCmd
-  - cmd/workline/tick.go#tickCmd
-  - internal/tick/tick.go#Due
-  - internal/forge/gitlab.go#gitlab.connect
-  - internal/engine/engine.go#Result
-  - internal/line/line.go#Result
-  - internal/report/report.go#FromLine
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:ready
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:reconcile
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
-checked: e4e4287bc
+  - internal/kit/commitmsg/commitmsg.go
+  - internal/tick/tick.go
+  - internal/forge/gitlab.go
+  - internal/forge/runs.go
+  - internal/engine/engine.go
+  - internal/line/line.go
+  - internal/report/report.go
+  - defaults/ci/gitlab/workline.gitlab-ci.yml
+checked: d847c019
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -245,3 +223,15 @@ a merge request given its `range`, or with `workline gate <name> --base
 
 The clone, variables and tools each job needs, GitLab's tokens, the exit
 codes and what a run writes: [jobs' needs and outputs](triggers-outputs.md).
+
+## Where this page reads from
+
+The commands and flags are read from `cmd/workline/main.go` and
+`cmd/workline/tick.go`; the committer's rewrite and its 30 s from
+`roles/committer/role.yaml` and `internal/kit/commitmsg/commitmsg.go`; the
+tick from `internal/tick/tick.go` and `internal/forge/runs.go`; the forge's
+token from `internal/forge/gitlab.go`; the run's result and what it
+writes from `internal/engine/engine.go`, `internal/line/line.go` and
+`internal/report/report.go`; the GitLab jobs from
+`defaults/ci/gitlab/workline.gitlab-ci.yml`. The rules behind them:
+[routing](spec/routing.md#the-line-of-states).

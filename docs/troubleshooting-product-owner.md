@@ -1,6 +1,14 @@
 ---
-sources: [roles/product-owner/code/productowner.go]
-checked: 7506b1e2c
+sources:
+  - roles/product-owner/code/productowner.go
+  - roles/product-owner/code/changes.go
+  - roles/reviewer/code/specforge.go
+  - internal/report/summary.go
+  - internal/backlog/backlog.go
+  - internal/backlog/autonomy.go
+  - internal/backlog/ledger.go
+  - internal/backlog/spec.go
+checked: d847c019
 verified: agent:claude-code
 judged: 5c1573b
 judged-in-parts: 5c1573b
@@ -94,3 +102,14 @@ When the product owner pauses, or an issue gets nothing. Part of
 - `lines-unread`: an issue imported from a file, whose lines cannot be
   followed — the commit it was opened at gone after a force-push, or
   beyond a shallow clone: fetch the whole history (`fetch-depth: 0`).
+
+## Where this page reads from
+
+The findings above are read from `roles/product-owner/code/productowner.go`
+and `roles/product-owner/code/changes.go` (the role's run),
+`roles/reviewer/code/specforge.go` (the reviewer's read of a spec),
+`internal/report/summary.go` (the run's summary), and
+`internal/backlog/backlog.go`, `internal/backlog/autonomy.go`,
+`internal/backlog/ledger.go` and `internal/backlog/spec.go` (the backlog's
+rules). The line of states they refer to:
+[routing](spec/routing.md#the-line-of-states).

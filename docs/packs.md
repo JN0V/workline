@@ -1,27 +1,17 @@
 ---
 sources:
-  - internal/packs/packs.go#Pack
-  - internal/packs/packs.go#Code
-  - internal/packs/packs.go#Code.check
-  - internal/packs/packs.go#CodeRows
-  - internal/packs/packs.go#parse
-  - internal/packs/packs.go#Available
-  - internal/packs/packs.go#Listed
-  - internal/packs/packs.go#TesterDefaults
-  - internal/packs/packs.go#Detected
-  - internal/packs/packs.go#Unknown
-  - internal/packs/packs.go#Knowing
-  - internal/packs/builtin/generic.yaml#test-paths
-  - internal/packs/builtin/go.yaml#about
-  - internal/packs/builtin/go.yaml#detect
-  - internal/packs/builtin/kotlin-gradle.yaml#about
-  - internal/packs/builtin/java-maven.yaml#about
-  - internal/packs/builtin/python-pytest.yaml#about
-  - internal/packs/builtin/js-jest.yaml#about
-  - internal/codenav/codenav.go#Of
-  - internal/routing/adopt.go#SetPacks
-  - internal/doctor/packs.go#languagePacks
-checked: 3bab32400
+  - internal/packs/packs.go
+  - internal/packs/builtin/generic.yaml
+  - internal/packs/builtin/go.yaml
+  - internal/packs/builtin/kotlin-gradle.yaml
+  - internal/packs/builtin/java-maven.yaml
+  - internal/packs/builtin/python-pytest.yaml
+  - internal/packs/builtin/js-jest.yaml
+  - internal/codenav/codenav.go
+  - internal/routing/adopt.go
+  - internal/doctor/packs.go
+  - docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md
+checked: d847c019
 verified: agent:claude-code
 ---
 # Language packs
@@ -47,6 +37,7 @@ One YAML file a language or ecosystem:
 | `detect` | `files`: marker names, at any depth (`go.mod`); `extensions`: the languages it knows, for `workline doctor` |
 | `test-paths` | the test files, as patterns, added to the generic ones: the tester's `test-paths` when it sets none |
 | `test-homes` | where a test's code lives, read before the generic homes: the tester's `test-homes` when it sets none |
+| `build-errors` | how a broken build's error lines read, and which are a missing name: the tester's `build-errors` when it sets none |
 | `test-command` | a suggested test command, given by `workline doctor` when the tester has none; never run unless you set it |
 | `builtin-names` | the language's own names (built-in exceptions, standard library), which no project code defines |
 | `aside` | folders beside the code, ranked after it: the generic pack's only, for now |
@@ -72,7 +63,8 @@ One YAML file a language or ecosystem:
 ## Code navigation
 
 How workline finds a language's functions with no build
-([code navigation](research/code-navigation.md)): one row a language.
+([code navigation](research/code-navigation.md)): one row a language; what the picker does with them:
+[the code picker](spec/code-picker.md#what-it-reads).
 
 ```yaml
 code-navigation:
@@ -140,3 +132,13 @@ in the engine
 - **A language no listed pack knows**, with its file count: the pack
   built in to list, else the file to write.
 - No `test-command` set: the listed packs' suggested ones.
+
+## Where this page reads from
+
+The fields and how they merge are read from `internal/packs/packs.go`; the
+packs built in from `internal/packs/builtin/` (`generic.yaml`, `go.yaml`,
+`kotlin-gradle.yaml`, `java-maven.yaml`, `python-pytest.yaml`,
+`js-jest.yaml`); code navigation from `internal/codenav/codenav.go`; what
+`workline init` lists from `internal/routing/adopt.go`; what the doctor says
+from `internal/doctor/packs.go`; the rule behind them from
+[ADR-0065](adr/0065-code-only-what-converges-language-knowledge-in-packs.md#language-packs).
