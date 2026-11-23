@@ -204,6 +204,44 @@ jobs:
               echo "::warning title=workline::#$n's run not started: the reconciler starts it"
           done
 
+  # The tests that read the docs as they stand, on the docs run
+  # only: a pull request's `test` skips them. A failure is said in one open
+  # issue, kept up to date, never a red pull request.
+  docs-tests:
+    if: github.event.schedule == '7 18 * * 0' || inputs.job == 'docs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: {contents: read, issues: write}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: ./.github/actions/engine
+        with: {version: "${{ env.WORKLINE_VERSION }}", go: "true"}
+      - uses: ./.github/actions/tests
+      - name: The docs tests
+        env: {WORKLINE_DOCS_TESTS: "1"}
+        run: |
+          status=0
+          go test -count=1 -v -timeout 25m -run 'TestUserPages|TestRolePages|TestEveryCheckedIsAnAncestorOfMain|TestMergeReleasePagesNotSuspect|TestMergeReleaseSourcesNarrowAndNamed' ./cmd/workline/ ./tests/ > docs-tests-full.txt 2>&1 || status=$?
+          # A renamed test must not pass silently: each pattern must have run.
+          for t in TestUserPages TestRolePages TestEveryCheckedIsAnAncestorOfMain TestMergeReleasePagesNotSuspect TestMergeReleaseSourcesNarrowAndNamed; do
+            grep -q -- "--- PASS: $t" docs-tests-full.txt || { echo "no passing test named $t* ran" >> docs-tests-full.txt; status=1; }
+          done
+          grep -E -- '^(--- |ok|FAIL|panic|no passing)' docs-tests-full.txt | tail -n 200 > docs-tests.txt
+          [ "$status" = 0 ] || echo failed > docs-tests.failed
+          cat docs-tests.txt >> "$GITHUB_STEP_SUMMARY"
+      - name: Said in the issue
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          title="docs tests: what the weekly run found"
+          n=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -e docs-tests.failed ]; then
+            body=$(printf 'The tests that read the docs as they stand failed on the weekly run (%s).\n\n```\n%s\n```\n' "$GITHUB_RUN_ID" "$(head -c 60000 docs-tests.txt)")
+            if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$title" --body "$body"; fi
+          elif [ -n "$n" ]; then
+            gh issue close "$n" --comment "The weekly run passed ($GITHUB_RUN_ID)."
+          fi
+
   # A release's dry run, every night this runs (ADR-0050): what would hold
   # the release if it were cut now from this branch's tip. The release's
   # line, every step, no agent, nothing applied: said as warnings, never a

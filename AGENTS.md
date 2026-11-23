@@ -61,6 +61,9 @@ Whatever the agent, a person's assistant works the way the line does
   night moves `checked` only for docs whose sources fit a task whole: few of
   workline's do
   ([ADR-0051](docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)).
+  The tests that read the docs as they stand skip on a pull request
+  (`WORKLINE_DOCS_TESTS=1` runs them); the weekly docs run reports them
+  ([ADR-0051 amendment](docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#amendment-2026-11-23-the-tests-that-read-the-docs-run-weekly)).
 - **Conformance first**: a behaviour starts as a case in tests/conformance/cases/;
   `pending.txt` lists what does not pass yet and must never lie. README's
   case count is a derived block: leave it as it is, gardening regenerates

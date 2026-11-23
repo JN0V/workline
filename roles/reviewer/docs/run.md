@@ -1,7 +1,7 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/prompts/instruction.md, roles/reviewer/prompts/policy.md, roles/reviewer/prompts/lenses, roles/reviewer/code]
-checked: e3ab32fef
-verified: agent:claude-code
+checked: cf8d4d9f
+verified: human:JN0V
 ---
 # Reviewer — a run on code
 

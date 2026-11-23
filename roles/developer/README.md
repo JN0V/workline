@@ -2,9 +2,18 @@
 sources:
   - roles/developer/role.yaml
   - defaults/ci/github/workline-develop.yml
-  - roles/developer/code
-checked: 56278a72f
-verified: agent:claude-code
+  - roles/developer/code/developer.go#Pre
+  - roles/developer/code/developer.go#Post
+  - roles/developer/code/developer.go#pick
+  - roles/developer/code/developer.go#SettingsFrom
+  - roles/developer/code/developer.go#Held
+  - roles/developer/code/conflict.go#conflictPre
+  - roles/developer/code/conflict.go#draftBehind
+  - roles/developer/code/conflict.go#mergePost
+  - roles/developer/code/proof.go
+  - roles/developer/code/bounds.go
+checked: 0bbe8345
+verified: human:JN0V
 ---
 # Developer
 
@@ -50,6 +59,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 - **Opens it on the tester's Draft**, the acceptance tests with it,
   its code and tests in commits apart, its record hidden on it; in CI,
   the agent holds no forge token ([the pull request](docs/pull-request.md)).
+  When the tester found that no acceptance test applies, it builds from
+  the issue's text, and its pull request says no test was frozen.
 - **Runs when routed**: when an issue is labelled ready, and on the
   schedule ([the triggers](docs/triggers.md)).
 - **Fixes the review** of its pull request, a fresh run a verdict, a
@@ -62,6 +73,10 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   agent ([the merge](docs/merge.md)).
 - **Behind main, in conflict**: one round merges `main` in, settling
   the markers only; never a rebase ([behind main](docs/conflict.md)).
+- **A Draft behind main**: the default branch merged into it in the
+  run's clone before the agent starts; in conflict, no agent is asked and
+  the issue is blocked, the files named
+  ([the pull request](docs/pull-request.md#a-draft-behind-the-default-branch)).
 - **With no agent**: names the issue it would take; claims nothing.
 
 **Measured** on planted issues and a copy of a real repository:

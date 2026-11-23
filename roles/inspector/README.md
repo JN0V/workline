@@ -12,8 +12,8 @@ sources:
   - internal/line/line.go#GatesInput
   - internal/line/line.go#Run
   - internal/engine/engine.go#Result.overBudget
-checked: dd77bf922
-verified: agent:claude-code
+checked: cf8d4d9f
+verified: human:JN0V
 ---
 # Inspector
 

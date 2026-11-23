@@ -49,5 +49,6 @@ Messages git writes itself (`Merge …`, `Revert "…"`, `fixup! …`, `squash! 
 ## The squash title
 
 On a merge request the forge may squash, the subject it lands on the
-base is checked by the same rules, room left for GitHub's ` (#N)`
+base is checked by the same rules, room left for GitHub's ` (#N)`.
+Where the forge squashes only, the commits' messages only warn
 ([more](squash-title.md)).
