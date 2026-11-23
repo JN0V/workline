@@ -100,7 +100,7 @@ func ParseCodeowners(p string, data []byte) *Codeowners {
 				defaults = false
 				continue
 			}
-			defaults = strings.TrimSpace(m[2]) != ""
+			defaults = strings.TrimSpace(cutComment(" "+m[2])) != ""
 			continue
 		}
 		f := strings.Fields(cutComment(l))
