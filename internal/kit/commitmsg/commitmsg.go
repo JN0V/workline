@@ -228,10 +228,23 @@ func skipped(subject string) bool {
 // adds (roles/reviewer).
 func InternalCodes(text string, s Settings) ([]string, error) { return internalCodes(text, s) }
 
+func isWordByte(b byte) bool {
+	return b == '_' || b >= '0' && b <= '9' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z'
+}
+
 func internalCodes(subject string, s Settings) ([]string, error) {
 	cleaned := subject
 	for _, a := range s.InternalCodesAllow {
-		re, err := regexp.Compile(`(?i)\b` + a + `\b`)
+		// an entry is literal text, not a pattern; \b only beside a word
+		// character, as it never matches beside punctuation such as `+`.
+		pat := regexp.QuoteMeta(a)
+		if a != "" && isWordByte(a[0]) {
+			pat = `\b` + pat
+		}
+		if a != "" && isWordByte(a[len(a)-1]) {
+			pat += `\b`
+		}
+		re, err := regexp.Compile(`(?i)` + pat)
 		if err != nil {
 			return nil, fmt.Errorf("internal-codes-allow %q: %w", a, err)
 		}
