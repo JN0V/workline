@@ -1,0 +1,37 @@
+case: tester/green-module-without-tests-on-base
+about: >
+  The tester's first test of a build module that has none (#2091): the
+  green proof, scoped to that module, runs the base, where the module
+  has no test. As Gradle does, the runner says NO-SOURCE, writes no
+  report and exits 0: an empty run, as the red proof reads it, not a
+  proof that did not run. The test is green on the head.
+given:
+  repo: tested
+  setup:
+    - "mkdir app && printf 'plugins {}\\n' > app/build.gradle.kts && git add app && git commit -qm 'build: a module'"
+    - git checkout -q -b workline/tester/issue-3
+    - |
+      cat > app/test_mul_two_by_three.sh <<'T'
+      # Scenario: Two by three
+      # Given the library, When I multiply 2 by 3, Then I get 6.
+      . ./lib.sh
+      [ "$(mul 2 3)" = 6 ]
+      T
+      git add app && git commit -qm "test: the acceptance tests of #3"
+    - "printf 'mul() { echo $(($1 * $2)); }\\n' >> lib.sh && git commit -qam 'feat: multiply'"
+  config:
+    roles: {tester: {settings: {test-command: "exit 3", test-paths: ["**/test_*.sh"],
+      module-files: [build.gradle.kts],
+      draft-command: "sh \"$FIXTURES/bin/gradle-no-source\" {report} {packages}"}}}
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        body: "Closes #3"
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"app/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"tests\":[\"app.test_mul_two_by_three\"]} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {role: tester, event: merge-request, target: {merge-request: 1}}
+expect:
+  status: pass
+  summary: "the tester's 1 test green on the head"
+  agent-calls: 0
+  no-findings: [{rule: report-missing}, {rule: test-red-on-head}]

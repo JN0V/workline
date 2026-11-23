@@ -65,7 +65,10 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 			short(mb), len(baseIDs), at.Format("2006-01-02 15:04:05"))
 	} else {
 		baseRun, f := run(repo, mb, nil, "", s, "on the base "+short(mb))
-		if f != nil {
+		// No report and exit 0 on the base: a module with no test yet
+		// (Gradle's NO-SOURCE), an empty run, as the red proof reads it
+		// (#2091). The head's runs still need their report.
+		if f != nil && (f.Rule != "report-missing" || baseRun.failure != exitedZero) {
 			return *refuse("the green proof did not run", *f), nil
 		}
 		baseIDs = map[string]bool{}

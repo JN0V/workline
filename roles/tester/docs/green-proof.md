@@ -107,6 +107,9 @@ flowchart LR
       the base, its folders those the base holds: the Draft's red
       proof wrote it.
     - A fresh clone keeps none: the base runs.
+  - **No report and exit 0 on the base** is an empty run, as Gradle's
+    `NO-SOURCE` for a module with no test yet; the head's runs still
+    need their report ([#2091](https://github.com/JN0V/workline/issues/2091)).
   - **In CI**, the templates carry the folder from the tester's run to
     each pull request's guard, and to its next push, where no other
     branch writes ([#1407](https://github.com/JN0V/workline/issues/1407)):

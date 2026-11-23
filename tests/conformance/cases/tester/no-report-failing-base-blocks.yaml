@@ -1,0 +1,18 @@
+case: tester/no-report-failing-base-blocks
+about: >
+  On the base the test command writes no report and exits non-zero: no
+  empty run, as a module with no test is (#2091), but a command that
+  did not run. The red-first check is refused, report-missing.
+given:
+  repo: tested
+  setup:
+    - git checkout -q -b change
+    - |
+      printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && printf '. ./lib.sh\n[ "$(mul 2 3)" = 6 ]\n' > tests/test_mul.sh && git add . && git commit -qm "feat: multiply"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh out/other.xml; exit 3"}}}
+run: {test: [check, --base, main]}
+expect:
+  status: block
+  summary: "the red-first check did not run"
+  findings: [{rule: report-missing, where: junit.xml, message: "on the base"}]

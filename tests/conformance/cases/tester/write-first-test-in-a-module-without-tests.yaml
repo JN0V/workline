@@ -1,0 +1,31 @@
+case: tester/write-first-test-in-a-module-without-tests
+about: >
+  The tester writes the first test of a build module that has none
+  (#2091). Its draft-command runs that module alone, as Gradle does: on
+  the base, with no test sources, it says NO-SOURCE, writes no report
+  and exits 0. That base run is an empty run, no test green there, so
+  the new test is still proven red with the tests laid on the base.
+given:
+  repo: tested
+  setup:
+    - "mkdir -p mod/src/test && printf 'plugins {}\\n' > mod/build.gradle.kts && git add mod && git commit -qm 'build: a module'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "true", test-paths: ["**/src/test/**"],
+      module-files: [build.gradle.kts, build.gradle],
+      draft-command: "sh \"$FIXTURES/bin/gradle-no-source\" {report} {packages}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA test a scenario, in mod/src/test/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-mul-in.sh mod/src/test"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  agent-calls: 1
+  findings: [{rule: proof-scope, level: info, where: draft-command, message: "the folders holding the tests alone, ./mod:"}]
+  pushed:
+    workline/tester/issue-3:
+      mod/src/test/test_mul_two_by_three.sh: "Scenario: Two by three"
