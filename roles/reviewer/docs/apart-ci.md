@@ -58,6 +58,6 @@ Part of [the lenses that warn, apart from the verdict](apart.md).
   the run apart ends at once.
 - **The inspector's triage** reads in the same run, given what the gates
   found, its own comment beside this one; with it routed, the run waits
-  for the gates' job first, but on a draft
+  for the gates' job first, but on a draft on GitHub
   ([the inspector](../../inspector/README.md),
   [its triage in CI](../../../docs/gates-triage.md)).

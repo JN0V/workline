@@ -128,7 +128,7 @@ workline test write --issue 42 --ai claude
 | `test-green-on-base` | a test is not proven red; asked again once, told how to mend it (one passing on the base may keep its scenario as today), then blocked. A feature's answer keeping every scenario as today is `none`, handed over to the developer |
 | `no-new-test` | the report names no test of the files written: the project's runner did not run them, the filter that may skip them named (a PlatformIO `test_filter`); the next run gives the agent this reason |
 | `bug-not-reproduced` | a bug's tests all pass on the base: `workline:needs-repro`, its reporter asked ([how](docs/proof-kinds.md#a-bug-not-reproduced)) |
-| `no-test-written` | no test proposed, the answer unread or refused whole; an answer that does not read is asked again once first. An answer read with no test nor kind is `none`, handed over to the developer: no acceptance test applies |
+| `no-test-written` | no test proposed, the answer unread or refused whole; an answer that does not read is asked again once first. An answer read with no test nor kind, but a reason, is `none`, handed over to the developer: no acceptance test applies |
 
 Each refusal is written on the issue ([how](docs/refused.md)).
 
@@ -197,7 +197,7 @@ Each refusal is written on the issue ([how](docs/refused.md)).
 
 - **At once**, routed on `issue` too: an issue labelled
   `workline:needs-tests` ([the hand-over](docs/written.md)).
-- **At night**, list it in the `schedule` line, after the product owner
+- **On the schedule**, weekly in the template, list it in the `schedule` line, after the product owner
   and the reviewer
   ([routing](../../docs/spec/routing.md#the-line)):
   `schedule: [documentalist, product-owner, reviewer, tester]`.

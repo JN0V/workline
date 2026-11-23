@@ -10,8 +10,7 @@ verified: agent:claude-code
 
 Part of [the product owner](../README.md). Proposed by
 [ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
-built in parts ([#435](https://github.com/JN0V/workline/issues/435)):
-each thing said once is built, under today's names
+built in parts: each thing said once is built, under today's names
 ([writing an issue](writing.md#each-thing-said-once)), and the kind
 ([the kind it sets](kind.md)); the names and a bug's steps are not yet.
 Below, the same issues under the proposed names, each thing said once.
@@ -138,15 +137,17 @@ the link checker: it names the lychee page and stops.
    Its line says: "Ready waits for steps to reproduce; set
    workline:ready to start without them."
 2. A person sets `workline:ready`. That night the engine adds
-   `workline:needs-repro`, with no comment.
+   `workline:needs-steps`, with no comment: a new label, as
+   `workline:needs-repro` already means a bug the tester could not
+   reproduce.
 3. Someone writes the steps, or accepts the role's draft of them. The
-   engine takes `workline:needs-repro` off; also when the kind stops
+   engine takes `workline:needs-steps` off; also when the kind stops
    being bug, or `ready` comes off.
 
-- A filter on `workline:needs-repro` lists every bug worked on without
+- A filter on `workline:needs-steps` lists every bug worked on without
   its steps; past `stuck-days`, the summary lists it as stuck.
 - Taken off by a person, it is never set again on that issue.
-- One colon on GitLab: `workline::needs-repro` would replace
+- One colon on GitLab: `workline::needs-steps` would replace
   `workline::proposed`.
 
 ## The kind the role sets
@@ -170,8 +171,8 @@ Proposed still:
 ## Through a project's own form
 
 A bug form asks "What happened?", "How can we reproduce it?", "What did
-you expect?" and "Version". The project adds its labels to the names
-read:
+you expect?" and "Version". The project would add its labels to the
+names read, through a `headings:` setting proposed, not built:
 
 ```yaml
 roles:

@@ -97,7 +97,7 @@ nothing says which one is hers.
 
 ## Scope
 
-the gate package: the runs on the base and the head.
+`core/gate/**`: the runs on the base and the head.
 <details><summary>Tools a project may declare</summary>golangci-lint,
 govulncheck, Semgrep, CodeQL, osv-scanner, Trivy, ESLint, Ruff</details>
 ```
@@ -204,6 +204,5 @@ the product owner goes on with its best answer, written plainly.
 
 New names for these sections, and a bug readied only with its steps,
 are proposed, not built:
-[the proposed headings](proposed-headings.md),
-[#435](https://github.com/JN0V/workline/issues/435). The kind set by
+[the proposed headings](proposed-headings.md). The kind set by
 the role is built: [the kind it sets](kind.md).

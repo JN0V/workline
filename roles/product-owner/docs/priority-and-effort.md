@@ -75,7 +75,7 @@ Priority: labels priority::*, created. Effort: GitLab's weight.
 
 - **Created labels** on GitHub take the fields' option names, so a
   repository moved to an organisation maps them one to one.
-- **On GitLab Free**, the `priority::1` to `::4` labels the role creates
+- **On GitLab with scoped labels**, the `priority::1` to `::4` labels the role creates
   are ranked: GitLab's own "Label priority" sort then lists Urgent first.
 
 ## Next
@@ -105,7 +105,7 @@ person to see at once; too many Urgents also trip the flag on estimates
 stuck on one value:
 
 ```markdown
-Set to Urgent tonight, to check: #214 Exports drop the last row of a file
+Set to Urgent, to check: #214 Exports drop the last row of a file
 ```
 
 On a public repository whose fields are visible to organization members

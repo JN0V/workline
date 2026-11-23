@@ -24,7 +24,8 @@ flowchart LR
   yes at `normal`: a `task` set here never merges alone
   ([ADR-0060](../../../docs/adr/0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind),
   [the developer's merge](../../developer/docs/merge.md)).
-- **An issue with no kind** waits for a person's yes, as a feature.
+- **An issue with no kind** waits for a kind label (`bug`, `enhancement`,
+  `task`), even at `enterprising`.
 - **At `merge: {autonomy: enterprising}`**, a feature merges alone too:
   made ready, it is put in the next open milestone, whose release
   candidate a person tries
