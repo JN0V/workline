@@ -8,7 +8,7 @@ sources:
   - internal/backlog/autonomy.go
   - internal/backlog/ledger.go
   - internal/backlog/spec.go
-checked: d847c019
+checked: ca636665
 verified: agent:claude-code
 judged: 5c1573b
 judged-in-parts: 5c1573b

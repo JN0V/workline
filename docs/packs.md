@@ -11,7 +11,7 @@ sources:
   - internal/routing/adopt.go
   - internal/doctor/packs.go
   - docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md
-checked: d847c019
+checked: ca636665
 verified: agent:claude-code
 ---
 # Language packs

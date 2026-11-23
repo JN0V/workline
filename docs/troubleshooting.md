@@ -15,7 +15,7 @@ sources:
   - docs/languages.md
   - docs/troubleshooting-docs.md
   - roles/product-owner/code/productowner.go
-checked: d847c019
+checked: ca636665
 verified: agent:claude-code
 ---
 # Troubleshooting

@@ -11,7 +11,7 @@ sources:
   - internal/doctor/tests.go#testCommandRuns
   - internal/doctor/tests.go#testsFix
   - internal/engine/engine.go#RunsDir
-checked: d847c019
+checked: ca636665
 verified: agent:claude-code
 ---
 # The whole line with no forge

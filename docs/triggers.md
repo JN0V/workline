@@ -11,7 +11,7 @@ sources:
   - internal/line/line.go
   - internal/report/report.go
   - defaults/ci/gitlab/workline.gitlab-ci.yml
-checked: d847c019
+checked: ca636665
 verified: agent:claude-code
 reader: 2de353fab113
 ---

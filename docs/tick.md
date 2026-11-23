@@ -10,7 +10,7 @@ sources:
   - internal/line/tick.go#BacklogDue
   - defaults/ci/github/workline-loop.yml#on
   - defaults/ci/github/workline-loop.yml#jobs.loop
-checked: d847c019
+checked: ca636665
 verified: agent:claude-code
 ---
 # The tick
