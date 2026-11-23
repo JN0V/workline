@@ -17,8 +17,8 @@ import (
 
 // workline's own line runs a published release, pinned, as a user's does
 // (ADR-0071 §1): every job with a write token, and gates and propose, take
-// the engine's action with the version WORKLINE_VERSION pins; warn, test
-// and the head pass run the head's engine. The pin is one value across the
+// the engine's action with the version WORKLINE_VERSION pins; warn and test
+// run the head's engine. The pin is one value across the
 // workflows, and release-please never moves it.
 
 // The workflows and jobs that run the pinned release; any other job taking
@@ -42,7 +42,6 @@ var aheadJobs = map[string]string{
 }
 
 var headJobs = map[string][]string{
-	"workline.yml":      {"head-gates", "head-propose"},
 	"workline-warn.yml": nil,
 }
 
@@ -64,8 +63,7 @@ func TestOwnLineRunsThePinnedRelease(t *testing.T) {
 		var wf struct {
 			Env  map[string]string `yaml:"env"`
 			Jobs map[string]struct {
-				ContinueOnError bool         `yaml:"continue-on-error"`
-				Steps           []engineStep `yaml:"steps"`
+				Steps []engineStep `yaml:"steps"`
 			} `yaml:"jobs"`
 		}
 		if err := yaml.Unmarshal(data, &wf); err != nil {
@@ -101,10 +99,6 @@ func TestOwnLineRunsThePinnedRelease(t *testing.T) {
 				case !wantPin && !wantHead:
 					t.Errorf("%s, job %s: takes the engine, in no list of ADR-0071's table", base, name)
 				}
-			}
-			// The head pass never holds the line's verdict.
-			if isHead && base == "workline.yml" && slices.Contains(heads, name) && !job.ContinueOnError {
-				t.Errorf("%s, job %s: the head pass is not continue-on-error: it would block the line", base, name)
 			}
 		}
 	}
