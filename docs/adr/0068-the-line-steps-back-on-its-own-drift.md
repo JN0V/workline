@@ -223,6 +223,16 @@ theirs), they need not read the change line by line:
   traced, who instructed it on which summary.
 - **Silence is never a yes** to merge, release or delete
   ([ADR-0060] §1, [ADR-0038]).
+- **Amended 2026-11-23: the trace stays answered.** The comment that
+  traces a yes, written by the person (or their assistant) before it,
+  is answered by that yes. A push takes the yes off (the yes covers
+  one head); it does not turn the trace into a person's comment that
+  holds the pull request. Only the person taking their own yes off
+  reopens what it answered. Measured over 2026-11-16 → 11-23: of 21
+  holds, 10 were requests for a change, 11 were traces or procedural
+  notes; the ones left after [#1732] and [#1794] are this case
+  ([#2027], [#2082]). GitHub's "Request changes" review state was not
+  taken as the only hold: none of the 10 requests used it.
 
 ### 8. The wake script, print only
 
@@ -352,6 +362,10 @@ Each part of its step's issue, none blocking.
 [ADR-0065]: 0065-code-only-what-converges-language-knowledge-in-packs.md
 [ADR-0066]: 0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md
 [#89]: https://github.com/JN0V/workline/issues/89
+[#1732]: https://github.com/JN0V/workline/pull/1732
+[#1794]: https://github.com/JN0V/workline/pull/1794
+[#2027]: https://github.com/JN0V/workline/pull/2027
+[#2082]: https://github.com/JN0V/workline/pull/2082
 [#155]: https://github.com/JN0V/workline/issues/155
 [#1452]: https://github.com/JN0V/workline/pull/1452
 [#1463]: https://github.com/JN0V/workline/pull/1463
