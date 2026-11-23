@@ -5,7 +5,7 @@ sources:
   - defaults/ci/github/workline-apply.yml#jobs.queue
   - internal/engine/queue.go#queueGroup
   - .github/workflows/workline.yml#on
-checked: e2e165c2d
+checked: 7c339e2f2
 verified: agent:claude-code
 ---
 # A merge queue on GitHub
