@@ -39,6 +39,17 @@ commits' rules, and blocks the same way
   fix: edit the title, then re-run the job that checked it (one click)
   or push.
 - **A person edits the title**: the AI rewrite is not built.
+- **Squash only, the title alone blocks**: where the forge lands a merge
+  request by squash and no other way, the branch's commit messages never
+  reach the base. Their findings are warnings; secrets, forbidden terms
+  and identities still block
+  ([ADR-0051's amendment](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#amendment-2026-11-23-squash-only-the-title-blocks)).
+  Read from the forge, nothing to set:
+  - GitHub: squash merging on, merge commits and rebase merging off,
+    the squash's message not "Default to commit messages";
+  - GitLab: the squash option "Require", the squash template quoting no
+    commit (`%{all_commits}`, `%{first_commit}`,
+    `%{first_multiline_commit}`).
 - **workline's own merge requests** (the documentalist's, the weekly
   sample's, a role's) get titles of 63 characters at most, room left
   for ` (#12345)`: a long path gives way to a count ("docs: bring 2 docs

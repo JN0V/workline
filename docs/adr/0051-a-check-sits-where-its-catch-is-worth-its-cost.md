@@ -8,7 +8,8 @@
   and [ADR-0014] amended); step 10 built ([ADR-0041] removed); the rest
   not yet
   ([the build order](#build-order)); one point open, one decided
-  ([open](#open))
+  ([open](#open)); amended 2026-11-23
+  ([squash only](#amendment-2026-11-23-squash-only-the-title-blocks))
 - **Date:** 2026-10-21
 - **Decided by:** the maintainer, on 2026-10-21: the principle and five
   cuts, as a panel of three lenses (latency, reliability, cost) refined
@@ -235,6 +236,26 @@ merges assumed to stay for real conflicts.
   term is ever written here.
 - **The builder's own cost**: 79% of a product PR's tokens, the next
   lever; not decided here.
+
+
+## Amendment (2026-11-23): squash only, the title blocks
+
+- **Where the forge lands by squash and no other way**, the title is the
+  one subject the base receives: the committer blocks on it, and the
+  branch's commit messages are said as warnings, not blocked.
+- **Read from the forge**: on GitHub, squash merging on, merge commits
+  and rebase merging off, the squash's body not the commits' messages;
+  on GitLab, the squash option "Require" (`always`), its template
+  quoting no commit. A forge that allows another way, puts the commits'
+  messages in the squash, or could not be read, keeps every commit
+  blocking.
+- **Why**: on workline, squash only, from 2026-11-16 to 11-23, the
+  committer blocked 35 heads of 11 pull requests, each on a branch
+  commit's subject, never on a title: none of those subjects could reach
+  `main`. One pull request waited 38 h on a 96-character one, then was
+  closed.
+- **Unchanged**: secrets, forbidden terms and identities in a commit
+  still block; the hooks still check each commit on the machine.
 
 [#464]: https://github.com/JN0V/workline/issues/464
 [#580]: https://github.com/JN0V/workline/issues/580

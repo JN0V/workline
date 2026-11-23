@@ -43,7 +43,7 @@ code, rewrite commits already made (on a merge request it lists them, for
 |---|---|---|
 | `commit-msg` | the global git hook (`workline hooks install --global`) | the message being written, what the commit adds |
 | `pre-push` | the global hook, when `.workline/config.yaml` routes it | every commit pushed |
-| `merge-request` | CI (`workline route merge-request --input range=<base>..<head>`) | every commit of the range; [the subject a squash lands](docs/squash-title.md) |
+| `merge-request` | CI (`workline route merge-request --input range=<base>..<head>`) | every commit of the range; [the subject a squash lands](docs/squash-title.md), alone blocking where the forge squashes only |
 
 The global hook still hands over to the hooks installed before workline
 ([workline hooks](../../docs/commands-setup.md#workline-hooks)).
