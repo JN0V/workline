@@ -521,7 +521,11 @@ jobs:
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           ready=; case "$ACTION:$EVENT_DRAFT:$DRAFT" in opened:*:false|ready_for_review:*|*:true:false) ready=1 ;; esac
           status=0
-          workline route merge-request --ai "$ai" --no-apply --warn-apart \
+          # Bounded under the job's 60 min: a job past its timeout-minutes
+          # ends cancelled, and so does the run, which workline-apply.yml
+          # takes for a newer push's and writes no verdict on (#2088). A
+          # command past its own bound fails this job alone, non-blocking.
+          timeout -k 1m 55m workline route merge-request --ai "$ai" --no-apply --warn-apart \
             --forge github --target "merge-request:$NUMBER" --branch "$HEAD_REF" \
             --input range="$RANGE" ${ready:+--input lenses=all} --input ready=${ready:+true} --input draft="$DRAFT" \
             --gates-from "$RUNNER_TEMP/gates/gates.json" --summary workline-summary.md --json > line.json || status=$?
@@ -530,5 +534,6 @@ jobs:
           case "$status" in
             0) ;;
             3) echo "::warning title=workline::the agent could not be reached: the head's propose ran without it" ;;
+            124|137) echo "::warning title=workline::the head's propose ran past 55 min: stopped, this check fails, the line's verdict stands"; exit "$status" ;;
             *) exit "$status" ;;
           esac
