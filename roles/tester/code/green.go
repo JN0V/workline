@@ -1,19 +1,12 @@
 package tester
 
-// The green proof (ADR-0055, step 5): on the pull request that closes the
-// issue, marked ready — the developer's, stacked on the tester's Draft, or
-// the Draft itself — each test the tester froze passes on the head: the
-// project's test command once, in one fresh checkout of the head, and
-// once more only when a test there is red. A test red in one run and
-// green in the other is flaky: blocking, named, never run again until
-// green (TestGen-LLM's flakiness filter, cheaper). With a draft-command
-// naming {packages}, the proof runs on the folders of the tester's test
-// files alone, base and head: the pull request's own test job runs the
-// whole suite (ADR-0055, amended 2026-11-23). The tests required are the
-// ids the tester's record keeps, never the head's tests the base lacks: a
-// change to the build that stops one running blocks, named (ADR-0065,
-// change 2). A test the change adds beyond them, in the folders run, is
-// required green too.
+// The green proof, on the pull request that closes the issue, marked
+// ready: each test the tester froze passes on the head, run once in a
+// fresh checkout, again only when one is red, to tell flaky from red.
+// With a draft-command naming {packages}, base and head run the folders
+// of the tester's test files alone; the pull request's test job runs the
+// whole suite. Required: the ids the tester's record keeps, and the new
+// tests beside them in the folders run (roles/tester/docs/green-proof.md).
 
 import (
 	"fmt"
@@ -27,8 +20,7 @@ import (
 )
 
 // greenRuns is how many times the head runs at most: a second run only
-// when the first holds a red test, to tell a flaky test from a red one
-// (ADR-0055, amended 2026-11-23: three always made it 4 suites long).
+// when the first holds a red test, to tell a flaky test from a red one.
 const greenRuns = 2
 
 // green runs the green proof on HEAD, against the merge base of the
@@ -59,8 +51,7 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	}
 	defer done()
 	// The folders of the tester's test files alone, when draft-command
-	// names {packages}: the whole suite four times took 61 of a proof's
-	// 62 min (ADR-0055, amended 2026-11-23).
+	// names {packages}: not the whole suite, which the test job runs.
 	if pkgs := scopeOf(tree, rec, s); len(pkgs) > 0 {
 		s.Command, s.packages = s.DraftCommand, pkgs
 	}
