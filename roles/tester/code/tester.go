@@ -179,6 +179,12 @@ func prove(repo, base string, s Settings) proven {
 	}
 	s.tests = ch.tests
 	baseRun, f := run(repo, ch.base, nil, "", s, "on the base "+short(ch.base))
+	// No report and exit 0 on the base: a module with no test yet, as
+	// Gradle skips one (NO-SOURCE), is an empty run, none green (#2091).
+	var empty *verdict.Finding
+	if f != nil && f.Rule == "report-missing" && baseRun.failure == exitedZero {
+		empty, f = f, nil
+	}
 	if f != nil {
 		return refused(refuse("the red-first check did not run", *f))
 	}
@@ -231,6 +237,11 @@ func prove(repo, base string, s Settings) proven {
 		}
 	}
 	if noReport != nil && len(errs) == 0 {
+		if empty != nil {
+			// None with the tests either, and no build error read: the
+			// command writes no report at all, the base's finding.
+			return refused(refuse("the red-first check did not run", *empty))
+		}
 		// No report and no error a row reads: the tests' own to mend,
 		// asked again with what the command said, never final.
 		return refused(&verdict.Verdict{Status: verdict.Block, Summary: "the test command wrote no report with the change's tests, and no error a build-errors row reads",

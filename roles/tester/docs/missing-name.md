@@ -72,6 +72,10 @@ flowchart LR
   quoted: the only case a person is waited for.
 - **No report and no error a row reads**: `report-missing`
   ([what it quotes](build-judge.md#no-report), [what follows](build-outcomes.md#asked-once-more)).
+- **A module with no test yet**: on the base, no report and exit 0, as
+  Gradle's `NO-SOURCE`, is an empty run, no test green there. Exiting
+  non-zero, it is `report-missing`
+  ([#2091](https://github.com/JN0V/workline/issues/2091)).
 - **The tests' names**, when nothing built them: read from the test
   files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`). A
   test the base's report names, in a file the tests were added to, is

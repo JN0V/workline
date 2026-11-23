@@ -38,6 +38,9 @@ what the fast path or [the judge](build-judge.md) does to the run.
   with the build's error.
 - **No report and no error a row reads** (`report-missing`): on the
   tests' run, the agent is asked once more; on the base alone, final.
+  None on the base with exit 0, a module with no test yet, is an empty
+  run; none with the tests either is final, the base's finding
+  ([#2091](https://github.com/JN0V/workline/issues/2091)).
 
 ## A test named by its file
 
