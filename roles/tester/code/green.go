@@ -2,15 +2,18 @@ package tester
 
 // The green proof (ADR-0055, step 5): on the pull request that closes the
 // issue, marked ready — the developer's, stacked on the tester's Draft, or
-// the Draft itself — each test the tester froze passes on the head three
-// runs out of three: the project's test command, three times one after
-// the other, in one fresh checkout of the head. A
-// test red in some runs and green in others is flaky: blocking, named,
-// never run again until green (TestGen-LLM's flakiness filter, cheaper:
-// three runs, not five). The tests required are the ids the tester's
-// record keeps, never the head's tests the base lacks: a change to the
-// build that stops one running blocks, named (ADR-0065, change 2). A test
-// the change adds beyond them is required green too.
+// the Draft itself — each test the tester froze passes on the head: the
+// project's test command once, in one fresh checkout of the head, and
+// once more only when a test there is red. A test red in one run and
+// green in the other is flaky: blocking, named, never run again until
+// green (TestGen-LLM's flakiness filter, cheaper). With a draft-command
+// naming {packages}, the proof runs on the folders of the tester's test
+// files alone, base and head: the pull request's own test job runs the
+// whole suite (ADR-0055, amended 2026-11-23). The tests required are the
+// ids the tester's record keeps, never the head's tests the base lacks: a
+// change to the build that stops one running blocks, named (ADR-0065,
+// change 2). A test the change adds beyond them, in the folders run, is
+// required green too.
 
 import (
 	"fmt"
@@ -23,8 +26,10 @@ import (
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
-// greenRuns is how many times the head runs: each new test passes in all.
-const greenRuns = 3
+// greenRuns is how many times the head runs at most: a second run only
+// when the first holds a red test, to tell a flaky test from a red one
+// (ADR-0055, amended 2026-11-23: three always made it 4 suites long).
+const greenRuns = 2
 
 // green runs the green proof on HEAD, against the merge base of the
 // record's base and HEAD. A frozen test named from its file that no head
@@ -38,6 +43,26 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	mb, err := mergeBase(repo, rec.Base)
 	if err != nil {
 		return *refuse("the green proof did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}), nil
+	}
+	// The head's runs share one fresh checkout: a second build there is
+	// the runner's cache, not a new compile (Go: 1 s, not 4.5 s, on
+	// workline's tester package). A test that a run before it breaks is
+	// flaky too: it fails on a person's second run.
+	head, err := git(repo, "rev-parse", "--verify", "HEAD")
+	if err != nil {
+		return *refuse("the green proof did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}), nil
+	}
+	head = strings.TrimSpace(head) // the commit run: its ids kept by its tree, even if HEAD moves meanwhile
+	tree, done, f := checkout(repo, head)
+	if f != nil {
+		return *refuse("the green proof did not run", *f), nil
+	}
+	defer done()
+	// The folders of the tester's test files alone, when draft-command
+	// names {packages}: the whole suite four times took 61 of a proof's
+	// 62 min (ADR-0055, amended 2026-11-23).
+	if pkgs := scopeOf(tree, rec, s); len(pkgs) > 0 {
+		s.Command, s.packages = s.DraftCommand, pkgs
 	}
 	// The base's tests by their ids alone: those a run of the same tree
 	// by the same command found, when one is kept (runcache.go), else
@@ -56,31 +81,28 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 			baseIDs[id] = true
 		}
 	}
-	// The head's runs share one fresh checkout: a second build there is
-	// the runner's cache, not a new compile (Go: 1 s, not 4.5 s, on
-	// workline's tester package). A test that a run before it breaks is
-	// flaky too: it fails on a person's second run.
-	head, err := git(repo, "rev-parse", "--verify", "HEAD")
-	if err != nil {
-		return *refuse("the green proof did not run", verdict.Finding{Rule: "check-error", Where: "test", Message: err.Error()}), nil
+	hs := s
+	if len(s.packages) > 0 {
+		hs.Command = strings.ReplaceAll(s.Command, "{packages}", strings.Join(s.packages, " "))
 	}
-	head = strings.TrimSpace(head) // the commit run: its ids kept by its tree, even if HEAD moves meanwhile
-	tree, done, f := checkout(repo, head)
-	if f != nil {
-		return *refuse("the green proof did not run", *f), nil
-	}
-	defer done()
 	var runs []ran
 	for i := 1; i <= greenRuns; i++ {
-		r, f := runIn(tree, s, fmt.Sprintf("on the head, run %d of %d", i, greenRuns))
+		where := "on the head"
+		if i > 1 {
+			where = "on the head again, a test red in the first run"
+		}
+		r, f := runIn(tree, hs, where)
 		if f != nil {
 			return *refuse("the green proof did not run", *f), nil
 		}
 		runs = append(runs, r)
+		if !r.anyRed() {
+			break
+		}
 	}
 	// The head's tests, kept as its first run found them: once merged up
 	// to date, its tree is the next pull request's base.
-	keepIDs(repo, head, s.Command, s.Report, runs[0])
+	keepIDs(repo, head, hs.Command, s.Report, runs[0])
 	ids := map[string]bool{}
 	for _, r := range runs {
 		for id := range r.results {
@@ -167,15 +189,45 @@ func green(repo string, rec record, s Settings) (verdict.Verdict, *renamed) {
 	if len(rec.Tests) == 0 {
 		what = fmt.Sprintf("%d new test%s", len(added), plural(len(added)))
 	}
-	v.Summary = what + " green on the head, three runs out of three"
+	v.Summary = what + greenSaid
+	if len(s.packages) > 0 {
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "proof-scope", Level: "info", Where: "draft-command",
+			Message: "run on the folders holding the tester's tests alone, " + strings.Join(s.packages, " ") + ": the pull request's own checks run the whole suite"})
+	}
 	return settled(v), doubt
 }
 
 // greenSaid and redSaid end a green proof's summary, passed or not.
 const (
-	greenSaid = " green on the head, three runs out of three"
-	redSaid   = ", not each found green on the head three runs out of three"
+	greenSaid = " green on the head"
+	redSaid   = ", not each found green on the head"
 )
+
+// scopeOf is the folders the green proof runs, those holding the
+// record's test files in tree, when draft-command names {packages}; none
+// otherwise: the test command, the whole suite.
+func scopeOf(tree string, rec record, s Settings) []string {
+	if !strings.Contains(s.DraftCommand, "{packages}") || len(rec.Files) == 0 {
+		return nil
+	}
+	var files []string
+	for f := range rec.Files {
+		files = append(files, f)
+	}
+	slices.Sort(files)
+	return Packages(tree, files, s.Paths, s.ModuleFiles)
+}
+
+// anyRed says whether a run holds a test not passed: the head runs
+// again to tell flaky from red.
+func (r ran) anyRed() bool {
+	for _, res := range r.results {
+		if res != passed {
+			return true
+		}
+	}
+	return false
+}
 
 // settled is v blocking, its summary said so, when a finding blocks.
 func settled(v verdict.Verdict) verdict.Verdict {

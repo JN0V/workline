@@ -92,8 +92,9 @@ type Settings struct {
 	MutationReport  string   `json:"curator-mutation-report"`
 	ProofSeconds    int      `json:"curator-proof-seconds"`
 	// DraftCommand proves a Draft's tests red on the base on the folders
-	// that hold them alone ({packages}), base and tests; unset, or naming
-	// no {packages}: test-command, the whole suite, twice (#979).
+	// that hold them alone ({packages}), base and tests, and green on its
+	// pull request's head; unset, or naming no {packages}: test-command,
+	// the whole suite (#979).
 	DraftCommand string `json:"draft-command"`
 	// deadline, when set, stops a test command past it (the proof's
 	// budget); budget names the setting it comes of, when not

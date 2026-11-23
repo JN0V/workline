@@ -1,14 +1,16 @@
-case: tester/green-three-runs-pass
+case: tester/green-one-run-pass
 about: >
   The green proof (ADR-0055, step 5): on the pull request that closes the
   issue, the tester's branch marked ready, each test the tester froze
-  passes on the head three runs out of three, in one fresh checkout of it; it passes.
+  passes on the head, in one fresh checkout of it: green in the first
+  run, the head runs once, and it passes. The suite runs twice, base and
+  head, not four times.
 given:
   repo: tested-draft
   setup:
     - "printf 'mul() { echo $(($1 * $2)); }\n' >> lib.sh && git commit -qam 'feat: multiply'"
   config:
-    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+    roles: {tester: {settings: {test-command: "f=\"$(git rev-parse --git-common-dir)/../suite-runs.txt\"; echo $(( $(cat \"$f\" 2>/dev/null || echo 0) + 1 )) > \"$f\"; sh run-tests.sh {report}"}}}
   forge:
     merge-requests:
       - id: 1
@@ -18,6 +20,8 @@ given:
 run: {role: tester, event: merge-request, target: {merge-request: 1}}
 expect:
   status: pass
-  summary: "the tester's 2 tests green on the head, three runs out of three"
+  summary: "the tester's 2 tests green on the head"
   agent-calls: 0
   no-findings: [{rule: test-flaky}, {rule: test-red-on-head}]
+  files:
+    suite-runs.txt: {contains: ["2"], lacks: ["3"]}

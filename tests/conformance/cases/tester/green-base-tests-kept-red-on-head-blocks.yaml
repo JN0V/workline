@@ -2,7 +2,7 @@ case: tester/green-base-tests-kept-red-on-head-blocks
 about: >
   The base's test ids read back from a run of the same tree (#1338) change
   nothing the green proof requires: on the guard's second run, the base
-  not run again, a frozen test red in each of the head's three runs still
+  not run again, a frozen test red in each of the head's two runs still
   blocks, named.
 given:
   repo: tested-draft
@@ -19,7 +19,7 @@ given:
 run: {role: tester, event: merge-request, target: {merge-request: 1}, then: again}
 expect:
   status: block
-  findings: [{rule: test-red-on-head, where: tests.test_mul_two_by_three, message: "red in each of the 3 runs"}]
+  findings: [{rule: test-red-on-head, where: tests.test_mul_two_by_three, message: "red in each of the 2 runs"}]
   no-findings: [{rule: test-flaky}]
   files:
-    suite-runs.txt: {contains: ["7"], lacks: ["8"]}
+    suite-runs.txt: {contains: ["5"], lacks: ["6"]}

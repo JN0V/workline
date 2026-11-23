@@ -18,6 +18,6 @@ given:
 run: {role: tester, event: merge-request, target: {merge-request: 1}}
 expect:
   status: pass
-  summary: "the tester's 1 test green on the head, three runs out of three"
+  summary: "the tester's 1 test green on the head"
   agent-calls: 0
   no-findings: [{rule: frozen-test-missing}, {rule: test-red-on-head}]

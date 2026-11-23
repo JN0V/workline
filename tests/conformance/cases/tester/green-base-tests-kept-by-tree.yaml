@@ -3,9 +3,9 @@ about: >
   The green proof runs the base once only to tell its tests from the new
   ones, by their ids (#1338). A run of the same tree by the same command,
   its command exited 0, found them already: the guard on the next push
-  reads them back, keyed by the tree's hash, and runs the head alone, its
-  three runs as before. Here the guard runs twice on the same pull
-  request: the base runs once, the head six times, seven runs, not eight.
+  reads them back, keyed by the tree's hash, and runs the head alone.
+  Here the guard runs twice on the same pull request, the head green in
+  its first run: the base runs once, the head twice, three runs, not four.
 given:
   repo: tested-draft
   setup:
@@ -21,8 +21,8 @@ given:
 run: {role: tester, event: merge-request, target: {merge-request: 1}, then: again}
 expect:
   status: pass
-  summary: "the tester's 2 tests green on the head, three runs out of three"
+  summary: "the tester's 2 tests green on the head"
   agent-calls: 0
   no-findings: [{rule: test-flaky}, {rule: test-red-on-head}]
   files:
-    suite-runs.txt: {contains: ["7"], lacks: ["8"]}
+    suite-runs.txt: {contains: ["3"], lacks: ["4"]}
