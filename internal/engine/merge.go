@@ -1535,21 +1535,44 @@ func namesTest(body string) bool {
 	return false
 }
 
+// answeredByTheirYes tells a person's comment their own yes answered: a
+// yes they put at or after it that they have not taken off themselves
+// since. One a bot took off, the line on a push, still answers it: the
+// new head waits for a new yes, the comment stays answered, as the
+// trace an assistant writes before a yes put in the person's name.
+func answeredByTheirYes(n forge.Note, labels []forge.LabelEvent) bool {
+	if n.Author == "" || n.Created == "" {
+		return false
+	}
+	// Each yes label on its own: swapping one for another keeps the yes.
+	answered := map[string]bool{}
+	for _, e := range labels {
+		switch {
+		case !accepted(e.Label):
+		case e.Added && e.Writer && !e.Bot && e.Author == n.Author &&
+			e.Created != "" && !later(n.Created, e.Created):
+			answered[e.Label] = true
+		case !e.Added && !e.Bot:
+			// Taken off by a person, or by whom the forge does not say:
+			// that yes no longer answers it.
+			delete(answered, e.Label)
+		}
+	}
+	return len(answered) > 0
+}
+
 // personsCommentOpen says, quoted short, the first person's comment on a
 // merge request that no role has answered: a comment of the request or a
 // conversation on a line, left by a person of the project. A role's own
 // comment after it answers it, the line's verdict and this hold apart; so
-// does the yes of the person who wrote it, put at or after it and still
-// on: it covers what they said before it, as the trace of a yes put in
-// their name (ADR-0068 §7). "" when none waits.
+// does the yes of the person who wrote it, put at or after it: it covers
+// what they said before it, as the trace of a yes put in their name
+// (answeredByTheirYes). A bot taking that yes off on a push asks for a new yes,
+// it does not reopen what it answered; the person taking it off
+// themselves does. "" when none waits.
 func personsCommentOpen(f forge.Forge, id int, labels []forge.LabelEvent) (string, error) {
 	t := forge.Target{Kind: "merge-request", ID: id}
-	yes, _ := theYes(labels, accepted)
-	// theirs: the standing yes is the writer's own, given at or after it.
-	theirs := func(n forge.Note) bool {
-		return yes != nil && n.Author != "" && yes.Author == n.Author &&
-			n.Created != "" && yes.Created != "" && !later(n.Created, yes.Created)
-	}
+	theirs := func(n forge.Note) bool { return answeredByTheirYes(n, labels) }
 	b, ok := f.(forge.Backlog)
 	var notes []forge.Note
 	var err error

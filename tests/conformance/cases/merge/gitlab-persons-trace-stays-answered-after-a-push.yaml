@@ -1,0 +1,30 @@
+case: merge/gitlab-persons-trace-stays-answered-after-a-push
+about: >
+  On GitLab: a Developer writes the trace of their yes, then puts `workline::accepted`; a push follows and the project access token the line runs with takes the yes off. The trace was answered by that yes: the push asks for a new yes, it does not hold the merge request on the trace.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    members: [{username: dana, access_level: 30}]
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: zed
+        labels: []
+        auto-merge: true
+        label-events:
+          - {label: "workline::accepted", added: true, author: dana, created: "2026-01-04T10:00:00Z"}
+          - {label: "workline::accepted", added: false, author: project_1_bot_3f2a, created: "2026-01-04T10:30:00Z"}
+        pushes: [{head: feat/sessions, at: "2026-01-04T10:29:00Z"}]
+        comments:
+          - {body: "Accepted on dana's explicit instruction in a session.", author: dana, insider: true, created: "2026-01-04T09:59:58Z"}
+run: {follow: [--base, main], forge: gitlab}
+expect:
+  status: pass
+  no-findings: [{rule: persons-comment-open, where: "!7"}, {rule: auto-merge-on, where: "!7"}]
