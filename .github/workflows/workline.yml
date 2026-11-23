@@ -410,7 +410,9 @@ jobs:
   # request. Non-blocking: its result is these two checks, told on the
   # pull request, never the line's verdict, which is the pinned release's.
   # Nothing it uploads is read by workline-apply.yml. The gates, as above:
-  # a read token alone, no secret.
+  # a read token alone, no secret. A non-blocking check never turns red:
+  # each step that can fail goes on, and the last one tells what failed
+  # as a warning, the job green.
   head-gates:
     name: "workline gates on the head's engine (non-blocking)"
     if: github.event_name == 'pull_request'
@@ -421,6 +423,8 @@ jobs:
     outputs: {changed: "${{ steps.engine.outputs.changed }}"}
     steps:
       - uses: actions/checkout@v4
+        id: checkout
+        continue-on-error: true
         with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}", persist-credentials: false}
       # ADR-0071's closed list: what the binary embeds or compiles.
       - name: Whether the change is the engine's
@@ -435,10 +439,14 @@ jobs:
       # The engine built from this head, kept before any gate runs, for
       # the head's propose and workline-warn.yml. Go set up for golangci-lint.
       - uses: ./.github/actions/engine
+        id: build
         if: steps.engine.outputs.changed == 'true'
+        continue-on-error: true
         with: {go: "true"}
       - uses: ./.github/actions/tests   # golangci-lint, as the gates job pins it
+        id: tools
         if: steps.engine.outputs.changed == 'true'
+        continue-on-error: true
       - name: The base's findings, kept by main
         id: base
         if: steps.engine.outputs.changed == 'true'
@@ -446,6 +454,7 @@ jobs:
         run: echo "sha=$(git merge-base "$BASE" "$HEAD" || echo "$BASE")" >> "$GITHUB_OUTPUT"
       - uses: actions/cache/restore@v4
         if: steps.engine.outputs.changed == 'true'
+        continue-on-error: true
         with: {path: "${{ runner.temp }}/workline-kept", key: "workline-gates-${{ steps.base.outputs.sha }}"}
       # The gates alone, then `route main` on the same range, no agent;
       # each said in the job's summary.
@@ -469,13 +478,26 @@ jobs:
           echo "worst=$worst" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         if: "!cancelled() && steps.engine.outputs.changed == 'true'"
+        continue-on-error: true
         with: {name: workline-head-gates, path: gates.json, if-no-files-found: ignore, retention-days: 1}
+      # A warning, never a red check: the line's verdict is the pinned
+      # release's.
       - name: Said
-        if: steps.engine.outputs.changed == 'true'
-        run: exit "${{ steps.gates.outputs.worst || 1 }}"
+        if: "!cancelled() && steps.engine.outputs.changed == 'true'"
+        env:
+          WORST: "${{ steps.gates.outputs.worst }}"
+          FAILED: "${{ steps.checkout.outcome == 'failure' && 'checkout ' || '' }}${{ steps.build.outcome == 'failure' && 'engine ' || '' }}${{ steps.tools.outcome == 'failure' && 'tools ' || '' }}"
+        run: |
+          [ -z "$FAILED" ] || echo "::warning title=workline::the head pass's setup failed (${FAILED% }): its gates could not run as they should; the line's verdict stands"
+          case "$WORST" in
+            0) ;;
+            "") echo "::warning title=workline::the head's gates did not finish: the line's verdict stands" ;;
+            *) echo "::warning title=workline::the head's gates failed with status $WORST: the line's verdict stands" ;;
+          esac
 
   # propose on the head's engine, after its gates: proposals only, as propose
-  # runs, its verdict this check's alone.
+  # runs, its verdict this check's alone. Never red, as head-gates: what
+  # failed or ran too long is a warning, the job green.
   head-propose:
     name: "workline propose on the head's engine (non-blocking)"
     needs: head-gates
@@ -489,10 +511,16 @@ jobs:
       HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"
     steps:
       - uses: actions/checkout@v4
+        id: checkout
+        continue-on-error: true
         with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}", persist-credentials: false}
       - uses: ./.github/actions/engine
+        id: build
+        continue-on-error: true
         with: {keep: "false"}
       - uses: ./.github/actions/tests
+        id: tools
+        continue-on-error: true
       - name: The pull request, a draft or not
         id: pr
         env: {GH_TOKEN: "${{ github.token }}", EVENT_DRAFT: "${{ github.event.pull_request.draft }}", NUMBER: "${{ github.event.pull_request.number }}"}
@@ -501,12 +529,16 @@ jobs:
           case "$draft" in true|false) ;; *) draft=$EVENT_DRAFT; echo "::warning title=workline::the pull request's draft state could not be read, the event's taken: $EVENT_DRAFT" ;; esac
           echo "draft=$draft" >> "$GITHUB_OUTPUT"
       - name: Claude, when the repository gives its token
+        id: claude
         if: env.HAS_CLAUDE == 'true' && steps.pr.outputs.draft != 'true'
+        continue-on-error: true
         run: npm install -g @anthropic-ai/claude-code
       - uses: actions/download-artifact@v4
         continue-on-error: true         # none: propose errs on the gates, said
         with: {name: workline-head-gates, path: "${{ runner.temp }}/gates"}
       - name: The line for this pull request, on the head's engine (proposals only)
+        id: propose
+        continue-on-error: true
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
@@ -524,8 +556,8 @@ jobs:
           # Bounded at 45 min, room under the job's 60 for its setup: a job
           # past its timeout-minutes ends cancelled, and so does the run,
           # which workline-apply.yml takes for a newer push's and writes no
-          # verdict on (#2088). A command past its own bound fails this job
-          # alone, non-blocking.
+          # verdict on (#2088). Past its bound, or failed, a warning: this
+          # check stays green, the line's verdict stands.
           timeout -k 1m 45m workline route merge-request --ai "$ai" --no-apply --warn-apart \
             --forge github --target "merge-request:$NUMBER" --branch "$HEAD_REF" \
             --input range="$RANGE" ${ready:+--input lenses=all} --input ready=${ready:+true} --input draft="$DRAFT" \
@@ -535,6 +567,12 @@ jobs:
           case "$status" in
             0) ;;
             3) echo "::warning title=workline::the agent could not be reached: the head's propose ran without it" ;;
-            124|137) echo "::warning title=workline::the head's propose ran past 45 min: stopped, this check fails, the line's verdict stands"; exit "$status" ;;
-            *) exit "$status" ;;
+            124|137) echo "::warning title=workline::the head's propose timed out at 45 min: stopped, the line's verdict stands" ;;
+            *) echo "::warning title=workline::the head's propose failed with status $status: the line's verdict stands" ;;
           esac
+      - name: Said
+        if: "!cancelled()"
+        env:
+          FAILED: "${{ steps.checkout.outcome == 'failure' && 'checkout ' || '' }}${{ steps.build.outcome == 'failure' && 'engine ' || '' }}${{ steps.tools.outcome == 'failure' && 'tools ' || '' }}${{ steps.claude.outcome == 'failure' && 'claude ' || '' }}${{ steps.propose.outcome == 'failure' && 'propose ' || '' }}"
+        run: |
+          [ -z "$FAILED" ] || echo "::warning title=workline::the head pass's steps failed (${FAILED% }): its propose could not run as it should; the line's verdict stands"
