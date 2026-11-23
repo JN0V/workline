@@ -34,7 +34,9 @@ and `pre-push`, every commit of the range given as `--input range=<base>..<head>
 | `possible-internal-code` | a code with no dash (`F207`), as often a public name (`nRF52`): the agent judges it |
 
 - `internal-codes-allow` lists public names that look like an internal
-  code (`SHA-256`, `RFC-1234`); a refusal gives the line that lets one
+  code (`SHA-256`, `C++`), each entry literal text, case ignored;
+  `internal-codes-allow-patterns` holds the ones given as patterns
+  (`RFC-[0-9]+`); a refusal gives the line that lets one
   through, yours or the project's. The [reviewer](../../reviewer/README.md)
   reads the same lists in the comments a change adds.
 - `internal-codes-maybe` holds the patterns of codes with no dash. The
