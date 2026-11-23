@@ -1,7 +1,7 @@
 ---
 sources: [roles/product-owner/prompts/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
-checked: 7506b1e2c
-verified: agent:claude-code
+checked: cf8d4d9f
+verified: human:JN0V
 ---
 # Writing an issue a person reads
 
@@ -97,7 +97,7 @@ nothing says which one is hers.
 
 ## Scope
 
-`internal/gate`: the runs on the base and the head.
+`core/gate/**`: the runs on the base and the head.
 <details><summary>Tools a project may declare</summary>golangci-lint,
 govulncheck, Semgrep, CodeQL, osv-scanner, Trivy, ESLint, Ruff</details>
 ```
@@ -127,7 +127,7 @@ Users who exclude a folder with a trailing slash still upload it:
 
 ## Scope
 
-`matchExclude` in `internal/filter/glob.go`.
+the exclude matcher, `src/exclude.go`.
 ```
 
 ## Each thing said once
@@ -204,6 +204,5 @@ the product owner goes on with its best answer, written plainly.
 
 New names for these sections, and a bug readied only with its steps,
 are proposed, not built:
-[the proposed headings](proposed-headings.md),
-[#435](https://github.com/JN0V/workline/issues/435). The kind set by
+[the proposed headings](proposed-headings.md). The kind set by
 the role is built: [the kind it sets](kind.md).

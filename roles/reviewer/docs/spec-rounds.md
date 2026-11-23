@@ -13,8 +13,8 @@ sources:
   - internal/backlog/spec.go#SpecHold
   - internal/backlog/spec.go#SpecCleared
   - internal/backlog/spec.go#LeftOpen
-checked: e2e165c2d
-verified: agent:claude-code
+checked: cf8d4d9f
+verified: human:JN0V
 ---
 # Reviewer — a spec's hold and rounds
 
@@ -59,8 +59,8 @@ how its reviews end.
 
 How a spec's reviews on the forge end, or wait:
 
-- **Five rounds** (`spec-rounds`): reviews in a row that leave a finding
-  open. The sixth asks no agent, nor takes a place of `specs-per-run`:
+- **Five rounds** (`spec-rounds`): reviews in a row that leave an important
+  finding open. The sixth asks no agent, nor takes a place of `specs-per-run`:
   the comment puts a question to a person, and the reviewer stops
   reading it. The person can:
   - accept it as it reads (`workline:accepted`);

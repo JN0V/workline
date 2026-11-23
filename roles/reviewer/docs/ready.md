@@ -1,7 +1,7 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/code/reviewer.go, roles/reviewer/code/record.go, roles/reviewer/code/once.go, internal/engine/engine.go, defaults/ci/github/workline.yml, defaults/ci/gitlab/workline.gitlab-ci.yml]
-checked: e3ab32fef
-verified: agent:claude-code
+checked: 0bbe8345
+verified: human:JN0V
 ---
 # Reviewer — no lens on a draft, every lens once when it becomes ready, then what is new
 

@@ -16,9 +16,9 @@ sources:
   - roles/reviewer/code/reviewer.go#state.standingFindings
   - roles/reviewer/code/reviewer.go#findingsTable
   - internal/forge/review.go#Reviewed.Section
-checked: c46a93d6c
+checked: cf8d4d9f
 judged: 39dcb7b
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Reviewer — each finding on its line
 

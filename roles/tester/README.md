@@ -6,8 +6,8 @@ sources:
   - defaults/ci/github/workline-objection.yml
   - defaults/ci/github/workline-answer.yml
   - defaults/ci/github/workline-gardening.yml
-checked: e4e4287bc
-verified: agent:claude-code
+checked: 0bbe8345
+verified: human:JN0V
 ---
 # Tester
 
@@ -128,7 +128,7 @@ workline test write --issue 42 --ai claude
 | `test-green-on-base` | a test is not proven red; asked again once, told how to mend it (one passing on the base may keep its scenario as today), then blocked. A feature's answer keeping every scenario as today is `none`, handed over to the developer |
 | `no-new-test` | the report names no test of the files written: the project's runner did not run them, the filter that may skip them named (a PlatformIO `test_filter`); the next run gives the agent this reason |
 | `bug-not-reproduced` | a bug's tests all pass on the base: `workline:needs-repro`, its reporter asked ([how](docs/proof-kinds.md#a-bug-not-reproduced)) |
-| `no-test-written` | no test proposed, the answer unread or refused whole; an answer that does not read is asked again once first. An answer read with no test nor kind is `none`, handed over to the developer: no acceptance test applies |
+| `no-test-written` | no test proposed, the answer unread or refused whole; an answer that does not read is asked again once first. An answer read with no test nor kind, but a reason, is `none`, handed over to the developer: no acceptance test applies |
 
 Each refusal is written on the issue ([how](docs/refused.md)).
 
@@ -172,7 +172,9 @@ Each refusal is written on the issue ([how](docs/refused.md)).
   takes the first objection waiting, checked out at the branch's tip.
   The agent reads the scenario first, then answers in the thread:
   - *kept*, with its reason;
-  - *rewritten*: its own commit on the branch, `Refs` the thread. It
+  - *rewritten*: its own commit on the branch, `Refs` the thread. Its subject keeps within the
+    committer's subject limit and starts with a type the committer allows
+    (`test` unless the project's settings forbid it). It
     must be red on the base, and keep its scenarios' declared tests,
     or name the new ones in a `covers` entry. The record
     and the reply follow only once the commit is pushed.
@@ -195,7 +197,7 @@ Each refusal is written on the issue ([how](docs/refused.md)).
 
 - **At once**, routed on `issue` too: an issue labelled
   `workline:needs-tests` ([the hand-over](docs/written.md)).
-- **At night**, list it in the `schedule` line, after the product owner
+- **On the schedule**, weekly in the template, list it in the `schedule` line, after the product owner
   and the reviewer
   ([routing](../../docs/spec/routing.md#the-line)):
   `schedule: [documentalist, product-owner, reviewer, tester]`.
