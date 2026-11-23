@@ -14,6 +14,7 @@ sources:
   - internal/forge/local.go#InCI
 checked: e2e165c2d
 verified: agent:claude-code
+reader: d001d7cd4440
 ---
 # The forge's variables
 

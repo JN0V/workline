@@ -10,6 +10,7 @@ sources:
   - internal/forge/gitlab.go#gitlab.connect
 checked: 3bab32400
 verified: agent:claude-code
+reader: 0f3e75c013d8
 ---
 # Tokens and variables of a started pipeline
 

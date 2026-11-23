@@ -34,6 +34,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:propose.script
 checked: e2e165c2d
 verified: agent:claude-code
+reader: 735aaf4c142e
 ---
 # How a started pipeline knows what to do
 
