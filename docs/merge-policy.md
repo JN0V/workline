@@ -19,7 +19,7 @@ sources:
   - defaults/ci/github/workline-apply.yml#jobs.follow
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
-checked: 6591de7ea
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # The merge policy

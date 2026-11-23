@@ -3,7 +3,7 @@ sources:
   - internal/engine/merge.go#personsCommentOpen
   - internal/engine/merge.go#heldByConversations
   - internal/engine/merge.go#mergePolicy
-checked: 6591de7ea
+checked: 3f432ab14
 verified: agent:claude-code
 ---
 # What holds a pull request
