@@ -245,7 +245,7 @@ workline test check --base origin/main
 | `setting-missing` | yes | `test-command` or `test-report` is not set |
 | `test-command-fails` | yes | writing an issue's tests: the test command, run on the base before the agent, failed with no report |
 | `setting-invalid` | yes | `test-report` leaves the repository's root, a `module-files` name holds a `/`, or `build-errors` does not compile |
-| `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML; its error lines quoted. With the change's tests and no error a row reads, the agent is asked once more ([missing name](docs/missing-name.md)). On the base, none with exit 0 is an empty run: a module with no test yet ([#2091](https://github.com/JN0V/workline/issues/2091)) |
+| `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML; its error lines quoted. With the change's tests and no error a row reads, the agent is asked once more ([missing name](docs/missing-name.md)) |
 | `tests-not-built` | no, warns | tests the base ran are not in the report of the base with the change's tests: their build broke there |
 | `suite-record` | no, informs | the change's tests alone: a new case is the runner's record of its suite, not a test, not frozen |
 | `no-new-test` | no, warns | the change touches test files, but no new test is in the report |
