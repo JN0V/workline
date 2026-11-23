@@ -221,7 +221,10 @@ jobs:
       - name: The docs tests
         env: {WORKLINE_DOCS_TESTS: "1"}
         run: |
-          go test -count=1 -timeout 25m -run 'TestUserPages|TestEveryCheckedIsAnAncestorOfMain|TestMergeReleasePagesNotSuspect|TestMergeReleaseSourcesNarrowAndNamed' ./cmd/workline/ ./tests/ 2>&1 | tail -n 200 > docs-tests.txt || echo failed > docs-tests.failed
+          status=0
+          go test -count=1 -timeout 25m -run 'TestUserPages|TestEveryCheckedIsAnAncestorOfMain|TestMergeReleasePagesNotSuspect|TestMergeReleaseSourcesNarrowAndNamed' ./cmd/workline/ ./tests/ > docs-tests-full.txt 2>&1 || status=$?
+          tail -n 200 docs-tests-full.txt > docs-tests.txt
+          [ "$status" = 0 ] || echo failed > docs-tests.failed
           cat docs-tests.txt >> "$GITHUB_STEP_SUMMARY"
       - name: Said in the issue
         env: {GH_TOKEN: "${{ github.token }}"}
