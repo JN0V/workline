@@ -348,8 +348,18 @@ func checkRange(runDir, repo, rng string) int {
 		return fail(err)
 	}
 	secrets = append(secrets, who...)
-	title := squashed(repo, rng, s)
+	title, only := squashed(repo, rng, s)
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "every commit message is clear"}
+	if only && len(findings) > 0 {
+		// The forge lands by squash only: the branch's subjects never reach
+		// the base, the title does. Said to their authors, not blocked.
+		for i := range findings {
+			findings[i].Level = "warn"
+		}
+		advisories = append(findings, advisories...)
+		findings = nil
+		v.Summary = "only the title lands on the base, the forge squashing every merge request: the commits' messages are said, not blocked"
+	}
 	switch blocking := slices.ContainsFunc(title, func(f verdict.Finding) bool { return f.Level != "warn" }); {
 	case len(findings) > 0 && blocking:
 		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i), and the title the squash lands: " + titleFix}
@@ -380,12 +390,14 @@ const titleFix = "edit the merge request's title, then re-run this job (one clic
 // the base (ADR-0051): the merge request's title, or its one commit's
 // subject where the forge takes that, room left for what the forge adds
 // after it, GitHub's " (#N)". Only on a merge request a forge may squash;
-// what could not be read is said, never read as a pass.
-func squashed(repo, rng string, s commitmsg.Settings) []verdict.Finding {
+// what could not be read is said, never read as a pass. only: the forge
+// lands by squash and no other way, so the title is the one subject the
+// base receives.
+func squashed(repo, rng string, s commitmsg.Settings) (found []verdict.Finding, only bool) {
 	kind, id, _ := strings.Cut(os.Getenv("WORKLINE_TARGET"), ":")
 	n, err := strconv.Atoi(id)
 	if kind != "merge-request" || err != nil {
-		return nil
+		return nil, false
 	}
 	unread := func(why string) []verdict.Finding {
 		return []verdict.Finding{{Rule: "title-unread", Level: "warn", Where: "title",
@@ -393,25 +405,25 @@ func squashed(repo, rng string, s commitmsg.Settings) []verdict.Finding {
 	}
 	f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
 	if err != nil {
-		return unread("the forge could not be opened (" + err.Error() + ")")
+		return unread("the forge could not be opened (" + err.Error() + ")"), false
 	}
 	if f == nil {
-		return nil // no forge: no merge request to read
+		return nil, false // no forge: no merge request to read
 	}
 	sq, ok := f.(forge.Squasher)
 	if !ok {
-		return unread("this forge does not say whether it squashes")
+		return unread("this forge does not say whether it squashes"), false
 	}
 	how, err := sq.Squash(n)
 	if err != nil {
-		return unread("whether the forge squashes could not be read (" + err.Error() + ")")
+		return unread("whether the forge squashes could not be read (" + err.Error() + ")"), false
 	}
 	if !how.On {
-		return nil
+		return nil, false
 	}
 	mr, err := f.MergeRequest(n)
 	if err != nil {
-		return unread("the merge request could not be read (" + err.Error() + ")")
+		return unread("the merge request could not be read (" + err.Error() + ")"), false
 	}
 	subject, where := mr.Title, "title"
 	if how.LoneCommit {
@@ -424,9 +436,9 @@ func squashed(repo, rng string, s commitmsg.Settings) []verdict.Finding {
 	if s.SubjectMax > 0 {
 		room.SubjectMax = s.SubjectMax - utf8.RuneCountInString(how.Suffix)
 	}
-	found, err := commitmsg.Check(subject, room)
+	found, err = commitmsg.Check(subject, room)
 	if err != nil {
-		return unread(err.Error())
+		return unread(err.Error()), false
 	}
 	for i := range found {
 		found[i].Where = where
@@ -437,7 +449,7 @@ func squashed(repo, rng string, s commitmsg.Settings) []verdict.Finding {
 			found[i].Level = "warn" // as on commits already made: said
 		}
 	}
-	return found
+	return found, how.Only
 }
 
 // rewriting is what the hook says before the agent rewrites a refused

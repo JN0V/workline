@@ -1,0 +1,15 @@
+case: committer/squash-only-title-still-blocks
+about: "On a merge request the forge lands by squash only, the title the squash lands blocks as before; the branch commits' subjects are only said."
+given:
+  repo: basic
+  setup:
+    - "git tag base && echo a >> main.go && git commit -qam 'fix: AC-3' && echo b >> main.go && git commit -qam 'feat: add a greeting'"
+  forge:
+    squash: {on: true, only: true, suffix: " (#{n})"}
+    merge-requests: [{id: 5, title: "fix: AC-3", labels: [], comments: []}]
+run: {role: committer, event: merge-request, input: {range: "base..HEAD"}, target: {merge-request: 5}}
+expect:
+  status: block
+  agent-calls: 0
+  summary: "the squash would land a subject the rules refuse: edit the merge request's title"
+  findings: [{rule: internal-code, where: title}, {rule: internal-code, level: warn, where: "commit"}]
