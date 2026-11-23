@@ -213,4 +213,10 @@ gates:
 # from the App (docs/merge-policy.md). At `normal`, workline's own routine
 # pull requests (records, derived blocks, docs) merge with no label; the
 # App's key is out of a pull request's run (ADR-0044).
-merge: {autonomy: normal}
+# `alone: [reader]` lets the documentalist's rewordings merge so too: of
+# its pull requests of the week to 2026-11-23, 21 of 22 (records, derived,
+# docs) already merged alone and only the one `reader` waited for a label,
+# four lines, none reverted. A revert demotes the kind again
+# (docs/merge-policy-reverts.md). This repository only: the shipped default
+# keeps `reader` waiting for a yes.
+merge: {autonomy: normal, alone: [reader]}
