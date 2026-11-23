@@ -112,6 +112,7 @@ func roleDocsRun(t *testing.T, file string, mutate func(string) string) string {
 // When `workline docs --ai none` runs on it,
 // Then none of the role READMEs and pages of the lot is listed as suspect.
 func TestRolePagesNoneSuspect(t *testing.T) {
+	docsTestsOnly(t)
 	out := userPageDocsRun(t, false)
 	for _, m := range userSuspect.FindAllStringSubmatch(out, -1) {
 		if slices.Contains(rolePageList, m[1]) {
@@ -127,6 +128,7 @@ func TestRolePagesNoneSuspect(t *testing.T) {
 // Then `sources` lists at least one file or symbol, and each entry exists
 // in the repository.
 func TestRolePagesSourcesNotEmptied(t *testing.T) {
+	docsTestsOnly(t)
 	for _, page := range rolePageList {
 		sources, has, _ := userPageRead(t, page)
 		if !has || len(sources) == 0 {
@@ -166,6 +168,7 @@ func TestRolePagesSourcesNotEmptied(t *testing.T) {
 // changed a file the page names in `sources`: the page was read against
 // the code at the head of the pull request, not an older commit.
 func TestRolePagesCheckedMoved(t *testing.T) {
+	docsTestsOnly(t)
 	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
 	t.Setenv("GIT_CONFIG_SYSTEM", os.DevNull)
 	git := func(args ...string) (string, error) {
@@ -209,6 +212,7 @@ func TestRolePagesCheckedMoved(t *testing.T) {
 // Then `verified` is set and names who read the page. (That the pull
 // request description lists that reader is for a person to see.)
 func TestRolePagesVerifiedRecorded(t *testing.T) {
+	docsTestsOnly(t)
 	for _, page := range rolePageList {
 		fields, _ := roleFront(t, page)
 		if strings.TrimSpace(fields["verified"]) == "" {
@@ -225,6 +229,7 @@ func TestRolePagesVerifiedRecorded(t *testing.T) {
 // `workline docs --ai none` runs,
 // Then the README is not listed as suspect.
 func TestRolePagesNarrowSources(t *testing.T) {
+	docsTestsOnly(t)
 	const page = "roles/developer/README.md"
 	const pkg = "roles/developer/code"
 	sources, _, _ := userPageRead(t, page)
@@ -299,6 +304,7 @@ pick:
 //
 // A page with no front matter has none to drop: every line is scanned.
 func TestRolePagesNoEngineInternals(t *testing.T) {
+	docsTestsOnly(t)
 	target := regexp.MustCompile(`\]\([^)]*\)`)
 	internals := regexp.MustCompile(`(internal|roles/[a-z-]+/code)/[a-z]+|\b[a-z]+\.[A-Z][A-Za-z]+\b`)
 	for _, page := range rolePageList {
