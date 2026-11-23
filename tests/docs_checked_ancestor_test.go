@@ -12,6 +12,16 @@ import (
 	"github.com/JN0V/workline/internal/kit/docmark"
 )
 
+// docsTestsOnly skips a test that reads this repository's docs as they
+// stand: the weekly gardening run sets WORKLINE_DOCS_TESTS=1, a pull
+// request's run does not (ADR-0073).
+func docsTestsOnly(t *testing.T) {
+	t.Helper()
+	if os.Getenv("WORKLINE_DOCS_TESTS") == "" {
+		t.Skip("reads the docs as they stand: run weekly with WORKLINE_DOCS_TESTS=1 (ADR-0073)")
+	}
+}
+
 // checkedGit runs git in dir, git isolated from the machine, and gives its
 // output and its error.
 func checkedGit(t *testing.T, dir string, args ...string) (string, error) {
@@ -42,6 +52,7 @@ func checkedGit(t *testing.T, dir string, args ...string) (string, error) {
 // commit) must be a commit that `git merge-base --is-ancestor` finds in the
 // history of HEAD, the tip of main.
 func TestEveryCheckedIsAnAncestorOfMain(t *testing.T) {
+	docsTestsOnly(t)
 	root, err := filepath.Abs("..")
 	if err != nil {
 		t.Fatal(err)
