@@ -103,6 +103,9 @@ flowchart LR
       is the next base);
     - found, the base is not run again, said on the run's error output;
       the head always runs.
+    - Scoped to the tests' folders, the key is the command as run on
+      the base, its folders those the base holds: the Draft's red
+      proof wrote it.
     - A fresh clone keeps none: the base runs.
   - **In CI**, the templates carry the folder from the tester's run to
     each pull request's guard, and to its next push, where no other

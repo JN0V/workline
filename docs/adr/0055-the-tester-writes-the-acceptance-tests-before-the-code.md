@@ -520,6 +520,17 @@ The verdict's budget is about 3 min
   Said by `proof-scope`, informing. The pull request's own test job
   runs the whole suite; a new test the builder adds elsewhere is its
   to run. Unset, `test-command` runs whole, as before.
+- **The base read back**: scoped, the base's ids are looked up under
+  the command as run there, its folders those the base holds: the
+  Draft's red proof kept that same run
+  ([#1338](https://github.com/JN0V/workline/issues/1338)), so the base
+  is not run again where the ids are carried.
+- **What it saves, not more**: a folder is as slow as its slowest
+  package. [#2027](https://github.com/JN0V/workline/pull/2027)'s
+  tests are in `cmd/workline`, 631 s alone in that push's test job:
+  about 21 min for base and head, 11 with the base read back, against
+  62. A test-name filter would go further; it is language knowledge,
+  left to a pack.
 - **The head once, again only when red**: a second run in the same
   checkout tells flaky (green in one) from red (red in both). Three runs
   always cost two suites on every pull request to catch a test that
