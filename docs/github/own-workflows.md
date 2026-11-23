@@ -29,7 +29,7 @@ sources:
   - release-please-config.json
   - .github/workflows/release.yml#name
   - .goreleaser.yaml#release
-checked: 3f432ab14
+checked: 3f28f2e5b
 verified: agent:claude-code
 judged: 220b6dc
 ---
@@ -63,7 +63,9 @@ engine and their triggers
 - **the head pass**: a pull request changing the engine
   ([its paths](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#1-the-line-runs-a-pinned-release)) also runs gates and propose on its head's
   engine, in two checks named "… on the head's engine (non-blocking)":
-  they never hold the line's verdict;
+  they never hold the line's verdict; the head's propose stops at 45 min,
+  under its job's timeout, so it fails rather than cancels the run
+  ([#2088](https://github.com/JN0V/workline/issues/2088));
 - **the N-1 rule**: the check "workline: the pinned release reads the
   head" runs the pinned release on the head's `.workline/config.yaml`
   and the front matter of the docs it touches, and fails naming what
