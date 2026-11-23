@@ -2,6 +2,7 @@
 sources: [roles/documentalist/code/documentalist.go, roles/documentalist/code/identifiers.go, roles/documentalist/code/derive.go, roles/documentalist/code/freshness.go, roles/documentalist/code/counts.go, roles/documentalist/role.yaml]
 checked: 04d2af892
 verified: agent:claude-code
+judged-in-parts: ca63666
 ---
 # Documentalist — the checks
 

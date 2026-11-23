@@ -32,22 +32,24 @@ When it was counted a role, built on 2026-10-15, by the maintainer, against the 
      ([replayed](../../../docs/research/judge-measured.md#replayed-2026-10-14)),
      on by default since
      ([ADR-0045, amended](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#amendment-2026-10-14-on-by-default)).
-3. **AI verdicts measured**: met on real use, 2026-10-14: 40 of its 229
-   verdicts on workline's pull requests read again in the code, its "yes"
-   right 19 of 20, its "no" 12 of 20
-   ([the judge, measured](../../../docs/research/judge-measured.md)).
-   Measured again on the same 40, 2026-10-14, the judge that reads
-   against today's: it keeps 6 of the 8 true findings dropped and lets 2
-   of 12 false ones through, shown not verified
-   ([replayed](../../../docs/research/judge-measured.md#replayed-2026-10-14));
-   on by default since
-   ([ADR-0045, amended](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#amendment-2026-10-14-on-by-default)). Also
-   inside the other roles' measures: the documentalist's `drifted` cases
-   ([ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)),
-   the reviewer's bench. Read again by the auditor's weekly sample,
-   W42 to W45: of 42 findings the judge dropped, 25 stand, 1 false,
-   8 unproven, 8 not read; no answer from the maintainer yet
-   ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275)).
+3. **AI verdicts measured**: met on real use, 2026-10-14.
+   - 40 of its 229 verdicts on workline's pull requests read again in
+     the code, its "yes" right 19 of 20, its "no" 12 of 20
+     ([the judge, measured](../../../docs/research/judge-measured.md)).
+   - Measured again on the same 40, 2026-10-14, the judge that reads
+     against today's: it keeps 6 of the 8 true findings dropped and lets
+     2 of 12 false ones through, shown not verified
+     ([replayed](../../../docs/research/judge-measured.md#replayed-2026-10-14));
+     on by default since
+     ([ADR-0045, amended](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#amendment-2026-10-14-on-by-default)).
+   - Also inside the other roles' measures: the documentalist's
+     `drifted` cases
+     ([ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)),
+     the reviewer's bench.
+   - Read again by the auditor's weekly sample, W42 to W45: of 42
+     findings the judge dropped, 25 stand, 1 false, 8 unproven, 8 not
+     read; no answer from the maintainer yet
+     ([the count](https://github.com/JN0V/workline/issues/155#issuecomment-6265992275)).
 
 ## Built
 

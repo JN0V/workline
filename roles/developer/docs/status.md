@@ -192,7 +192,7 @@ hold:
   `merge-request`, no agent; each file its branch changed held to the
   bounds read at the base's tip, whoever pushed, a file beyond the
   Scope said, never refused; its record kept on the pull request
-  ([the bounds](bounds.md#on-the-pull-request)). Cases
+  ([the bounds](bounds-check.md)). Cases
   `developer/pr-bounds-says-a-file-beyond-the-scope`,
   `pr-bounds-refuses-frozen-test`, `pr-bounds-refuses-steering-file`,
   `pr-bounds-passes-in-scope`, `pr-bounds-skips-a-persons-branch`,
@@ -203,7 +203,7 @@ hold:
   GitHub's `workline bounds`, from the default branch's definition;
   GitLab's `workline:bounds`, kept by a policy (Ultimate) or code
   owners (Premium), the tier read by the doctor
-  ([the bounds](bounds.md#in-ci); tried in
+  ([the bounds](bounds-check.md#in-ci); tried in
   [#731](https://github.com/JN0V/workline/pull/731)). Tests
   `TestCIGitHubBoundsCheckFromBase`, `TestCIGitLabBoundsGuardByTier`;
   cases `setup/doctor-bounds-guard-*`.
@@ -250,7 +250,7 @@ hold:
 - **A gate red is a round** ([#891](https://github.com/JN0V/workline/issues/891)):
   the gates' new findings at its head asked once a report, the
   inspector's triage beside each; the reconciler starts a round an
-  event missed ([the review loop](review-loop.md#a-round)). Cases
+  event missed ([what a round reads](review-inputs.md)). Cases
   `developer/gate-finding-is-a-round`, `gate-finding-read-once`,
   `gate-finding-of-an-older-head-waits`,
   `routing/reconcile-lists-a-developer-round-due`.
@@ -258,7 +258,7 @@ hold:
   its CI's checks at its head, workline's own left out, asked once a
   head when all are done, the end of the failed steps' log in the task;
   a failed workflow wakes it, the reconciler as fallback
-  ([the review loop](review-loop.md#a-round)). Cases
+  ([what a round reads](review-inputs.md)). Cases
   `developer/red-check-is-a-round`, `red-check-read-once`,
   `red-check-waits-for-the-others`, `red-check-of-workline-asks-nothing`,
   `routing/reconcile-lists-a-red-check-round`.
@@ -327,7 +327,7 @@ hold:
   write acceptance tests; past the last round, the issue was blocked.
   Now each goes to the tester's Draft, an objection of kind `missing`,
   once; alone, no agent and no round counted
-  ([the review loop](review-loop.md#a-round)). Cases
+  ([tests in a round](review-tests.md)). Cases
   `developer/round-sends-a-test-finding-to-the-tester`,
   `round-splits-code-and-test-findings`,
   `round-five-test-findings-not-blocked`,

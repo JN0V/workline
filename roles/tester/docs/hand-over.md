@@ -89,7 +89,7 @@ flowchart LR
   Draft, not in its own pull request
   ([the form](../README.md#frozen-tests-and-objections)); the tester
   keeps it or rewrites it, on top of the branch. The developer's next
-  round takes the rewrite ([a round](../../developer/docs/review-loop.md#a-round)).
+  round takes the rewrite ([tests in a round](../../developer/docs/review-tests.md)).
 - **Closes**: once the tests are green, the description says
   `Closes #<n>`, and the Draft is marked ready. It then merges by the
   project's policy
