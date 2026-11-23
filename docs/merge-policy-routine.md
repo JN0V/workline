@@ -81,7 +81,7 @@ Part of [the merge policy at `normal`](merge-policy-normal.md).
 
 ## What the summary says
 
-As at `cautious` ([each word](merge-policy.md#what-the-summary-says)),
+As at `cautious` ([each word](merge-policy-summary.md)),
 and:
 
 | Said | When |

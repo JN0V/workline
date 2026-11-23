@@ -42,10 +42,12 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - A doc names its code in `sources`, and the commit it was last checked
   against in `checked`; a commit changing one of those sources where it
   touches what the doc names makes the doc *suspect*
-  ([more](docs/push.md)). A `checked` a pull request sets must name a
-  commit its base holds: a squash merge drops the branch's commits, so
-  the check fails (`checked-not-ancestor`) on any other. A source may name a part of a file: a heading,
-  a Go declaration, a YAML key.
+  ([more](docs/push.md)):
+  - a source may name a part of a file: a heading, a Go declaration, a
+    YAML key;
+  - a `checked` a pull request sets must name a commit its base holds:
+    a squash merge drops the branch's commits, so the check fails
+    (`checked-not-ancestor`) on any other.
 - With no agent: finds the suspect docs, and checks sizes, duplicates, dead
   links, identifiers gone from the code, decisions superseded, derived
   blocks; when gardening, whether user pages serve their reader
@@ -62,6 +64,8 @@ instead), fix what a change did not touch (other suspect docs wait for
 gardening), commit on your machine without asking (`workline docs` asks,
 doc by doc), or make a push wait on an agent
 ([at the push](docs/push-local.md)).
+
+## When it runs
 
 | Event | Fired by | Does |
 |---|---|---|

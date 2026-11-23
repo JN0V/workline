@@ -43,6 +43,8 @@ Each in detail: [the commands](commands.md),
 [the commands that do the work](commands-work.md), and
 [the commands that set up](commands-setup.md).
 
+### Run the line and its roles
+
 | Command | Does |
 |---|---|
 | [`workline run-role <role> --event <event>`](commands.md#workline-run-role) | runs one role on an event: prepare, propose, judge, apply |
@@ -55,6 +57,11 @@ Each in detail: [the commands](commands.md),
 | [`workline test answer --merge-request <n>`](commands-work.md#workline-test) | the tester answers an objection to one of its tests: kept, or rewritten |
 | [`workline test measure`, `test curate`](commands-work.md#workline-test) | the tester's curator measures the test corpus; curate weighs it against its history |
 | [`workline develop`](commands-work.md#workline-develop) | the developer takes the first ready issue nobody took and claims it; `--merge-request <n>`: a review round on its pull request; `--bounds`: checks its files against its issue's bounds |
+
+### The backlog, the docs and main
+
+| Command | Does |
+|---|---|
 | [`workline item ready <id>`](commands-work.md#workline-item-ready) | moves a work item to `ready`, once its sections are written |
 | [`workline issues`](commands-work.md#workline-issues) | reads and writes the issues kept in the clone (`forge: local`): `list`, `show`, `open`, `label`, `comment` |
 | [`workline issues import <file>`](commands-work.md#workline-issues-import) | turns a roadmap or backlog file into the forge's issues |
@@ -63,7 +70,12 @@ Each in detail: [the commands](commands.md),
 | [`workline size`](commands.md#workline-size) | the normal size of an issue here, measured from the line's records, kept in one comment |
 | [`workline wake`](wake.md) | after a merge, prints where the line may be drifting, with no AI; `--issue` keeps it in one issue |
 | [`workline tick`](tick.md) | lists the line's jobs due now, each with why, with no AI: what a regular wake starts |
-| [`workline follow`](commands.md#workline-follow) | turns auto-merge on for what a person accepted, with the [merge policy](merge-policy.md); `--gardening`: rebuilds the roles' merge requests on their base's new tip |
+| [`workline follow`](commands-follow.md) | turns auto-merge on for what a person accepted, with the [merge policy](merge-policy.md); `--gardening`: rebuilds the roles' merge requests on their base's new tip |
+
+### Set up
+
+| Command | Does |
+|---|---|
 | [`workline hooks install --global`](commands-setup.md#workline-hooks) | installs the git hooks for every repository (`--repo`: this one); `uninstall` removes them |
 | [`workline setup`](commands-setup.md#workline-setup) | sets workline up on this machine, asking what to enable |
 | [`workline init`](commands-setup.md#workline-init) | adopts this repository |

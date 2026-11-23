@@ -97,7 +97,7 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
 Each night, after applying what it proposed, gardening tends the merge
 requests it opened before (`workline follow --gardening`,
 [ADR-0034, amended](../../../docs/adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed);
-[the command](../../../docs/commands.md#workline-follow)).
+[the command](../../../docs/commands-follow.md)).
 One the base moved under is:
 
 - **rebuilt** on the base's tip, its change redone, the merge request kept:

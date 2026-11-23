@@ -14,15 +14,19 @@ verified: agent:claude-code
 
 Every week, the auditor re-checks one in ten of every role's acts, per
 kind of act
-([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)): the
-docs the documentalist vouched for, read whole against their sources
-([ADR-0014](adr/0014-checked-is-earned-by-what-was-read.md), step 4), the
-product owner's acts done alone, the findings the reviewer's judge kept
-or dropped on every run
-([a line each in its summary comment](../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample),
-and in that of its lenses that warn, [read apart](../roles/reviewer/docs/apart.md)),
-the committer's rewrites, the tester's tests, its answers to objections,
-the five whys it gave, and its curator's removals, the developer's code.
+([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)):
+
+- **The documentalist**: the docs it vouched for, read whole against
+  their sources ([ADR-0014](adr/0014-checked-is-earned-by-what-was-read.md), step 4).
+- **The product owner**: its acts done alone.
+- **The reviewer**: the findings its judge kept or dropped on every run
+  ([a line each in its summary comment](../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample),
+  and in that of its lenses that warn, [read apart](../roles/reviewer/docs/apart.md)).
+- **The committer**: its rewrites.
+- **The tester**: its tests, its answers to objections, the five whys it
+  gave, and its curator's removals.
+- **The developer**: its code.
+
 How to schedule it: on
 [GitHub](ci-github.md), [GitLab](ci-gitlab.md#4-the-weekly-sample),
 [another forge or none](ci-other-forges.md).
@@ -48,12 +52,14 @@ roles:
   ([#482](https://github.com/JN0V/workline/issues/482)): its sources do
   not fit to be read whole, so it is listed for a person, never called
   unearned nor put back.
-- **What a product owner's act was done on**: the issue's text it read,
-  found by the digest its record keeps — the body now, else the version
-  GitHub's edit history keeps; for a refine, the issue as it reads now
-  beside it —, and the code at the commit it read. A text gone from the
-  forge is not read, for you: GitLab keeps no edit history. An act
-  recorded before this record is read as its issue reads now, and named.
+- **What a product owner's act was done on**:
+  - the issue's text it read, found by the digest its record keeps: the
+    body now, else the version GitHub's edit history keeps; for a refine,
+    the issue as it reads now beside it;
+  - and the code at the commit it read.
+  - A text gone from the forge is not read, for you: GitLab keeps no edit
+    history. An act recorded before this record is read as its issue
+    reads now, and named.
 - **A squash**: a merge request's commits are read on its head, which
   the forge keeps (GitHub's `refs/pull/<n>/head`, GitLab's
   `refs/merge-requests/<iid>/head`). The commit there that moved a doc's
@@ -78,45 +84,53 @@ roles:
   ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
   Its former issue of its own, still open, is told where the weeks went,
   and closed.
-- **Tokens, by kind of work**: the fresh tokens the line's runs on the
-  machine spent in the week, from its runs folder, no agent. Product: a
-  feature or a bug, or a merge request closing one or typed `feat`,
-  `fix`, `refactor`, `perf`, `test`. Upkeep: a task, or a `docs`,
-  `chore`, `style`, `ci`, `build` merge request, and the sample's own
-  judge calls (a run named `sample`). Releases apart; a run on neither
-  (no type, another type) is unknown, and said. The upkeep share is
-  the measure of [ADR-0052](adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)'s
-  third criterion, moved after 1.0 ([#610](https://github.com/JN0V/workline/issues/610)).
-  The builder's own sessions are not counted: no record of the line
-  holds them.
-- **In CI**, a job's run folders go with its short-lived artifacts:
-  each job calling an agent keeps its runs' tally (`workline sample
-  --tally`: role, target, tokens, seconds; no prompt, no diff) 14 days,
-  as an artifact, kept in a cancelled run too, and from every attempt of a
-  re-run (GitHub, `workline-tally-<job>-<attempt>`; GitLab, the judge's,
-  the applying job's and the sample's `workline-tally.jsonl`). A run
-  folder dropped after 50 runs leaves its line in the runs folder's
-  tally, written with the rest. The sample's job gathers them as its runs
-  folder's tally, this project's own only, never a fork's
-  ([ADR-0019](adr/0019-the-line-evaluates-itself.md#amendment-2026-11-12-a-runs-tally-is-a-ci-artifact)).
-  The weekly comment is the lasting record.
 - **What could not be drawn** is listed, with why: the findings judged
   whose lines a merge request's summary comment no longer holds, past its
   size; a comment written before the lines, its last run's alone.
 - **Your answer**: 👍 on the week's comment agrees with all of it; 👎 and a
   reply naming rows (`not 3, 7`) contests those, the rest agreed. A reply
   answers the week it follows, or the week it names (`2026-W41: not 3`).
-  It is yours: an assistant puts it only on three conditions: your
-  instruction for that item, now (that week), an independent analysis
-  (a run other than the one that drew the sample, not briefed with its
-  conclusion), and the act traced
-  in a comment; never for a panel of agents
-  ([ADR-0068 §7](adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated)).
-  The count, one comment on the same issue, is written again each week
-  from every week
+  It is yours: an assistant puts it only on three conditions, never
+  for a panel of agents
+  ([ADR-0068 §7](adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated)):
+  - your instruction for that item, now (that week);
+  - an independent analysis: a run other than the one that drew the
+    sample, not briefed with its conclusion;
+  - the act traced in a comment.
+- **The count**, one comment on the same issue, is written again each
+  week from every week
   ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#kept-and-counted-with-the-maintainers-agreement)),
   with how the issues the auditor opened fared: one closed as not
   planned is a false alarm of its own.
+
+### The week's tokens
+
+- **Tokens, by kind of work**: the fresh tokens the line's runs on the
+  machine spent in the week, from its runs folder, no agent.
+  - Product: a feature or a bug, or a merge request closing one or typed
+    `feat`, `fix`, `refactor`, `perf`, `test`.
+  - Upkeep: a task, or a `docs`, `chore`, `style`, `ci`, `build` merge
+    request, and the sample's own judge calls (a run named `sample`).
+  - Releases apart; a run on neither (no type, another type) is unknown,
+    and said.
+- **The upkeep share** is the measure of
+  [ADR-0052](adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md)'s
+  third criterion, moved after 1.0 ([#610](https://github.com/JN0V/workline/issues/610)).
+  The builder's own sessions are not counted: no record of the line
+  holds them.
+- **In CI**, a job's run folders go with its short-lived artifacts:
+  - each job calling an agent keeps its runs' tally (`workline sample
+    --tally`: role, target, tokens, seconds; no prompt, no diff) 14 days,
+    as an artifact;
+  - kept in a cancelled run too, and from every attempt of a re-run
+    (GitHub, `workline-tally-<job>-<attempt>`; GitLab, the judge's, the
+    applying job's and the sample's `workline-tally.jsonl`).
+- **A run folder dropped after 50 runs** leaves its line in the runs
+  folder's tally, written with the rest.
+- **The sample's job gathers them** as its runs folder's tally, this
+  project's own only, never a fork's
+  ([ADR-0019](adr/0019-the-line-evaluates-itself.md#amendment-2026-11-12-a-runs-tally-is-a-ci-artifact)).
+  The weekly comment is the lasting record.
 
 ## What it costs
 

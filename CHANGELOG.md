@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.89.0](https://github.com/JN0V/workline/compare/v0.88.1...v0.89.0) (2026-11-23)
+
+
+### Features
+
+* the developer reads a person's reply in a review thread ([#2032](https://github.com/JN0V/workline/issues/2032)) ([ca63666](https://github.com/JN0V/workline/commit/ca6366654208b27d7d486fa7f9f91c56d265e984))
+
 ## [0.88.1](https://github.com/JN0V/workline/compare/v0.88.0...v0.88.1) (2026-11-23)
 
 

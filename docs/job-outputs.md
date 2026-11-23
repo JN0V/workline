@@ -38,12 +38,13 @@ Part of [jobs' needs and outputs](triggers-outputs.md).
   ([ci.md](ci.md#what-a-job-shows)).
 - **Runs**: `$WORKLINE_RUNS_DIR` (else `.git/workline/runs/`), each with
   `out/calls.jsonl`, the agent's answer and what was refused.
-- **On the forge**: a comment on the merge request (the documentalist's list
-  for a person, the reviewer's summary), edited on each run; the
-  reviewer's findings on their lines, in the forge's review; doc fixes
-  as a diff in a comment, nothing pushed to its branch; gardening's
-  merge requests on `workline/<role>/<task>`; issues (the product owner's comment and
-  label `workline:proposed` on each issue it proposes on; the sample's
-  tracking issue, of every role's acts; a reviewer's
-  finding outside
-  the change, `needs-triage`) and labels.
+- **On the forge**:
+  - a comment on the merge request (the documentalist's list for a
+    person, the reviewer's summary), edited on each run;
+  - the reviewer's findings on their lines, in the forge's review;
+  - doc fixes as a diff in a comment, nothing pushed to its branch;
+  - gardening's merge requests on `workline/<role>/<task>`;
+  - issues and labels: the product owner's comment and label
+    `workline:proposed` on each issue it proposes on; the sample's
+    tracking issue, of every role's acts; a reviewer's finding outside
+    the change, `needs-triage`.
