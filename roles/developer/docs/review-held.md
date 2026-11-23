@@ -73,7 +73,7 @@ settle, never the round's to force
   pushed code or not; the issue stays in Doing, the record saying it
   objected at this head.
   - **A rewrite**: the next round takes it
-    ([a test the tester rewrote](review-loop.md#a-round)).
+    ([a test the tester rewrote](review-tests.md)).
   - **A test kept**: news, read by the hourly reconciler. The round
     asks again at the same head what it held, the tester's answer
     named. No second wait there: no fix, it blocks for a person.

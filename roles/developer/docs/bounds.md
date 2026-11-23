@@ -52,70 +52,12 @@ Another role's prompt, a role's folder, a file named a prompt are
 applied: the reviewer reads them
 ([ADR-0068 §4](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)).
 
-Any other file is applied. One the Scope does not hold, as read below,
+Any other file is applied. One the Scope does not hold, as read next,
 is beyond it: listed, never refused.
 
-**What the Scope holds:**
-
-- the paths and globs in backticks in the issue's Scope
-  ([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)):
-  - a path, a line after it taken off (`parts.go:943`); a bare file
-    name read as the one tracked file whose path ends with it;
-  - a glob as the files it matches, new ones too (`core/session/**`,
-    `src/calc/*.sh`), never its whole folder;
-  - a new file's path, on a line `New:` as the product owner writes it;
-  - a path with a `/` only when it has a file's extension, ends with
-    `/`, or its first folder is the repository's (`dorny/paths-filter`
-    or `actions/checkout@v4.1`, an Action, holds nothing);
-  - never a name alone: a class (`TracingViewModel`) or a module
-    (`core:session`) holds no file. Its code is beyond the Scope;
-- the paths in plain words in the Scope that the repository holds, a
-  file or a folder (`docs/ci.md, internal/doctor`);
-- the product owner's `sources` for the issue;
-- the tests beside them, new or not: a test file in a Scope file's
-  folder or under a Scope folder (`mul_test.go` beside `mul.go`). A
-  test file is one the project's
-  [one definition](../../tester/README.md#settings) names: the tester's
-  `test-paths`, else the listed [packs'](../../../docs/packs.md) with
-  the built-in generic patterns, else those alone
-  ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)).
-  A Scope `src` holds no test at the root;
-- a new test file beside the Scope
-  ([ADR-0063, §9](../../../docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#9-the-developers-write-fence)):
-  - a test file by that definition, not in the commit the rules are
-    read at;
-  - its home, its code's folder by the tester's `test-homes`, is a
-    Scope path's folder, holds one, or is in one:
-    `app/src/test/kotlin/x/FakeRepo.kt` beside a Scope
-    `app/src/main/kotlin/x/Repo.kt`, with
-    `{tests: "**/src/test/kotlin/**", code: "**/src/main/kotlin/**"}`;
-  - unset, the listed packs' homes, then the generic ones: the folder
-    holding its `test` or `tests` folder, else its own:
-    `Storage/test/test_name/test_name.cpp` beside a Scope
-    `Storage/include/Storage.h`;
-  - a test the definition misses is code: beyond the Scope, listed;
-    `workline doctor` says how to set `test-paths`;
-  - one named like a class of the main code is beside it too: the
-    reviewer's [`tests` lens](../../reviewer/prompts/lenses/tests.md) judges
-    whether it replaces that class when the tests run (a JVM
-    classpath);
-  - the root is a home only to a Scope file at the root: a Scope
-    `src/x.py` holds no `tests/test_x.py`;
-  - a test written so stays beside the Scope in the next rounds, its
-    record naming it, though the pull request's head holds it;
-  - a folder pattern takes any new file under it: `*/test/**` takes a
-    `test/CMakeLists.txt` or a `conftest.py` too; name files
-    (`**/test_*.cpp`) for tests alone;
-  - said and folded in: listed on the pull request and on the issue
-    (`workline:scope-kept`), added to the Scope at the product owner's
-    next refine;
-  - an existing helper or fixture a frozen test may read, away from
-    the Scope's folders, is never one: it is beyond the Scope; the
-    reviewer checks a listed helper that sets up the test runner
-    (Kotest's `ProjectConfig`): it changes how every test runs.
-
-**Never in the Scope**: a Scope or source naming the repository's root
-(`.`, `./`): it is dropped, else every file would be in it.
+**What the Scope holds**: its paths and globs, the product owner's
+`sources`, and the tests beside them, new ones too:
+[what the Scope holds](bounds-scope.md).
 
 **Every patch refused** when the engine cannot read the gates' config
 or the files that steer agents (`bounds-unread`), the error said,
@@ -158,60 +100,9 @@ what each agent gets: [the agent](agent.md)).
 
 ## On the pull request
 
-The same rules hold on its pull request, as a check, on the agent's
-commits. A guarded file (`steering-file`, `gate-file`) that only a
-person's commits changed (none carries `Workline-Role`, and neither its author nor its committer is a bot) does not block:
-the check says a person wrote it, and it merges on the person's
-`workline:accepted` alone. The agent's is refused
-([ADR-0058](../../../docs/adr/0058-the-forge-guards-the-project-not-the-agents-environment.md#4-the-developers-bounds-become-a-check-on-its-pull-request)).
-The check above, before the push, stays a fast first pass.
-
-- **Run**: `workline develop --bounds --merge-request <n>`, or the
-  developer listed on the `merge-request` event's line
-  (`routing.events.merge-request`). No agent.
-- **Which pull requests**: a `workline/developer/<n>` branch, held to
-  issue `n`'s bounds. Another branch is a person's: it passes, said
-  (`not-a-developers-branch`), and is reviewed as theirs.
-- **What it reads**: each file the head changed since its merge base,
-  its rules read at the base's tip, never at the head: a pull request
-  cannot loosen its own check. The head and base: `--input
-  range=<base>..<head>`, else the branches as fetched.
-- **Frozen tests**: from the tester's record, with each test's blob. A
-  test as the tester wrote it passes; changed or deleted, it blocks,
-  deleted even when the range shows no trace of it. Frozen tests it
-  cannot read (a record unread, a start commit not fetched) block,
-  `frozen-tests-unknown`, never a pass.
-  - A test file two Drafts froze, testers adding to a file the base
-    holds, is read against the issue's own Draft.
-- **A refused file blocks**, named with its rule; a link out of the
-  tree is `symlink-out`. Its next round or a person reverts it.
-- **A file beyond the Scope passes**, said (`beyond-scope`, info),
-  whoever pushed it: the reviewer's `intent` lens judges it.
-- **Kept for the auditor**: a comment on the pull request,
-  `sticky=developer/bounds`, its hidden record `act: bounds` with each
-  file refused and each beyond the Scope, kept even when it blocks.
-
-### In CI
-
-- **GitHub**: [workline-bounds.yml](../../../defaults/ci/github/workline-bounds.yml),
-  the check `workline bounds`; require it on the default branch, its
-  source GitHub Actions ([set up](../../../docs/ci-github.md#set-up)).
-  - It runs on `pull_request_target`: the default branch's copy of
-    the workflow, never the pull request's.
-  - It never runs the pull request's code: the base checked out, the
-    head fetched for git to diff, a read token, no agent.
-  - A job apart, with the App's key, keeps its verdict on the pull
-    request. Another branch's pull request skips the job, which the
-    rule takes as passed.
-  - A workflow on the branch naming a job `workline bounds` adds a
-    second check of that name: both are required, so the red one
-    still blocks.
-- **GitLab**: the job `workline:bounds`
-  ([the file](../../../defaults/ci/gitlab/workline-bounds.gitlab-ci.yml)). GitLab
-  runs a merge request's pipeline from its own branch: a pipeline
-  execution policy (Ultimate) or code owners (Premium) keep the job;
-  on Free, the review. `workline doctor` reads the tier
-  ([on GitLab](../../../docs/gitlab/bounds.md)).
+The same rules hold on its pull request, as a check on the agent's
+commits; a guarded file only a person's commits changed does not block:
+[the bounds on the pull request](bounds-check.md).
 
 ## Why these rules
 
