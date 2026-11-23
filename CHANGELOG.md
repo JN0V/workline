@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.88.1](https://github.com/JN0V/workline/compare/v0.88.0...v0.88.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* allow-list entries are used as raw regular expressions ([#2058](https://github.com/JN0V/workline/issues/2058)) ([d484038](https://github.com/JN0V/workline/commit/d4840388c7cf81370e5bd8784d75b0e18488e964))
+* docs --json prints nothing on its success early exits ([#2062](https://github.com/JN0V/workline/issues/2062)) ([e33a68e](https://github.com/JN0V/workline/commit/e33a68e012c79b41d6c82e5cf568b5132b3bf7c7))
+* **line:** apply failure comment says tries remain when the ([#2056](https://github.com/JN0V/workline/issues/2056)) ([63140c0](https://github.com/JN0V/workline/commit/63140c08766976f486331f3faafeba539ee703ff))
+* **steer:** section header with only a comment counts as having ([#2055](https://github.com/JN0V/workline/issues/2055)) ([8f17394](https://github.com/JN0V/workline/commit/8f17394077b9a7039b5e907078ae17ee31948d77))
+* sunday full run shares the docs concurrency group ([#2065](https://github.com/JN0V/workline/issues/2065)) ([cf8d4d9](https://github.com/JN0V/workline/commit/cf8d4d9fd16954f9161b05dbcdda3e88d893d175))
+* **workline:** test measure --json says no reason ([#2061](https://github.com/JN0V/workline/issues/2061)) ([2c8cb52](https://github.com/JN0V/workline/commit/2c8cb52566a5d62335e559de256d75e9dde45d25))
+
 ## [0.88.0](https://github.com/JN0V/workline/compare/v0.87.0...v0.88.0) (2026-11-22)
 
 
