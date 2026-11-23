@@ -7,7 +7,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:bot-token
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
-checked: 53a5d2c6
+checked: 0bbe8345
 verified: human:JN0V
 ---
 # Reviewer — the verdict, and the run apart in CI

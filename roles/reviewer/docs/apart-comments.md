@@ -8,7 +8,7 @@ sources:
   - defaults/ci/github/workline-warn.yml#concurrency
   - defaults/ci/github/workline-apply.yml#jobs.apply.concurrency
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:apply
-checked: 53a5d2c6
+checked: 0bbe8345
 verified: human:JN0V
 ---
 # Reviewer — the two comments and their records
