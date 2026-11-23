@@ -15,7 +15,7 @@ sources:
   - internal/backlog/spec.go#SpecHold
   - internal/backlog/spec.go#UnreadRecord
   - internal/backlog/spec.go#SpecUnread
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # Reviewer — a spec on the forge

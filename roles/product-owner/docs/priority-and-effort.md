@@ -4,7 +4,7 @@ sources:
   - internal/scale/scale.go#Own
   - internal/backlog/board.go#NextMaxLimit
   - roles/product-owner/role.yaml#settings
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # Priority and effort, proposed

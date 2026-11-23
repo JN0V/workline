@@ -16,7 +16,7 @@ sources:
   - roles/reviewer/code/reviewer.go#state.standingFindings
   - roles/reviewer/code/reviewer.go#findingsTable
   - internal/forge/review.go#Reviewed.Section
-checked: 60a7720e
+checked: cf8d4d9f
 judged: 39dcb7b
 verified: agent:claude-code
 ---

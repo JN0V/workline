@@ -1,6 +1,6 @@
 ---
 sources: [internal/backlog/kind.go, internal/engine/backlog.go, roles/product-owner/code/kinds.go, roles/product-owner/role.yaml]
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # The kind it sets

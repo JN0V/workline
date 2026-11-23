@@ -19,7 +19,7 @@ sources:
   - internal/backlog/size.go#Config.SplitOff
   - roles/product-owner/code/productowner.go#Settings
   - internal/kit/verdict/cut.go#CutRule
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # Product owner — settings

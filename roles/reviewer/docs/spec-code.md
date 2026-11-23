@@ -7,7 +7,7 @@ sources:
   - internal/kit/codepick/names.go#codeWords
   - internal/kit/codepick/names.go#APath
   - internal/kit/codepick/codepick.go#Picker.codeNames
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # Reviewer — the code a spec names

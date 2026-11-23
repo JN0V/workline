@@ -16,7 +16,7 @@ sources:
   - roles/reviewer/code/lines.go#shortMessage
   - internal/report/report.go#ForCodeScanning
   - defaults/ci/github/workline-fork.yml#jobs.comment
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # Reviewer — the forge's own review

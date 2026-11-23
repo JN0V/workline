@@ -18,7 +18,7 @@ sources:
   - roles/reviewer/code/spec.go#specMaterial
   - roles/reviewer/code/reviewer.go#lensFindings
   - roles/reviewer/code/reviewer.go#Post
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built

@@ -3,7 +3,7 @@ sources:
   - internal/work/headings.go#Required
   - internal/backlog/kind.go
   - roles/product-owner/role.yaml#settings
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # The proposed headings

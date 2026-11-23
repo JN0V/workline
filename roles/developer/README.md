@@ -12,7 +12,7 @@ sources:
   - roles/developer/code/conflict.go#mergePost
   - roles/developer/code/proof.go
   - roles/developer/code/bounds.go
-checked: dde7525a
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # Developer
@@ -59,6 +59,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 - **Opens it on the tester's Draft**, the acceptance tests with it,
   its code and tests in commits apart, its record hidden on it; in CI,
   the agent holds no forge token ([the pull request](docs/pull-request.md)).
+  When the tester found that no acceptance test applies, it builds from
+  the issue's text, and its pull request says no test was frozen.
 - **Runs when routed**: when an issue is labelled ready, and on the
   schedule ([the triggers](docs/triggers.md)).
 - **Fixes the review** of its pull request, a fresh run a verdict, a

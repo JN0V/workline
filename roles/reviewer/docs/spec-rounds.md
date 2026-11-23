@@ -13,7 +13,7 @@ sources:
   - internal/backlog/spec.go#SpecHold
   - internal/backlog/spec.go#SpecCleared
   - internal/backlog/spec.go#LeftOpen
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # Reviewer — a spec's hold and rounds

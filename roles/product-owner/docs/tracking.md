@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/code, internal/backlog]
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # Product owner — what each run tracks
@@ -42,8 +42,8 @@ Each act done alone a person may undo is kept in its issue's state:
   ([the kind](kind.md#a-persons-kind-holds));
 - found at the next run: that kind is proposed on that issue from then on;
 - never a move of the line: a ready that workline's own account took
-  off, as the forge's label events say — the tester finding no test
-  possible — is no ready undone, nor one swapped for the developer's
+  off, as the forge's label events say — the developer blocking the
+  issue — is no ready undone, nor one swapped for the developer's
   claim, whoever took it off; one an older engine kept so is taken off
   the state
   ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md));

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/code/weigh.go, roles/reviewer/code/resolve.go, roles/reviewer/code/reviewer.go, roles/reviewer/code/record.go]
-checked: 60a7720e
+checked: cf8d4d9f
 verified: agent:claude-code
 ---
 # Reviewer — the tester's "none needed", weighed
