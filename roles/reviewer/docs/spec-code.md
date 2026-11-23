@@ -8,7 +8,7 @@ sources:
   - internal/kit/codepick/names.go#APath
   - internal/kit/codepick/codepick.go#Picker.codeNames
 checked: cf8d4d9f
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Reviewer — the code a spec names
 

@@ -15,7 +15,7 @@ sources:
   - roles/reviewer/code/resolve.go#fixedWarn
   - internal/engine/review.go#applier.resolveThreads
 checked: cf8d4d9f
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Reviewer — not repeated, found again
 

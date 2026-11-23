@@ -1,7 +1,7 @@
 ---
 sources: [internal/backlog/kind.go, internal/engine/backlog.go, roles/product-owner/code/kinds.go, roles/product-owner/role.yaml]
 checked: cf8d4d9f
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # The kind it sets
 

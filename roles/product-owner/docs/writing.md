@@ -1,7 +1,7 @@
 ---
 sources: [roles/product-owner/prompts/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
 checked: cf8d4d9f
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Writing an issue a person reads
 

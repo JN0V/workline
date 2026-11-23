@@ -13,7 +13,7 @@ sources:
   - roles/developer/code/proof.go
   - roles/developer/code/bounds.go
 checked: 53a5d2c6
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Developer
 

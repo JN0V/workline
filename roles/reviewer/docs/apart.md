@@ -15,7 +15,7 @@ sources:
   - roles/reviewer/code/once.go#Record.leftTo
 checked: cf8d4d9f
 judged: a5cd2cf
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Reviewer — the lenses that warn, apart from the verdict
 

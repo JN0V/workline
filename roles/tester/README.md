@@ -7,7 +7,7 @@ sources:
   - defaults/ci/github/workline-answer.yml
   - defaults/ci/github/workline-gardening.yml
 checked: 53a5d2c6
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Tester
 

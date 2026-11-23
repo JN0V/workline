@@ -5,7 +5,7 @@ sources:
   - internal/backlog/board.go#NextMaxLimit
   - roles/product-owner/role.yaml#settings
 checked: cf8d4d9f
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Priority and effort, proposed
 

@@ -14,7 +14,7 @@ sources:
   - internal/backlog/spec.go#SpecCleared
   - internal/backlog/spec.go#LeftOpen
 checked: cf8d4d9f
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Reviewer — a spec's hold and rounds
 

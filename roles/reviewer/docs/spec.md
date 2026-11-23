@@ -19,7 +19,7 @@ sources:
   - roles/reviewer/code/reviewer.go#lensFindings
   - roles/reviewer/code/reviewer.go#Post
 checked: cf8d4d9f
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Reviewer — a spec before it is built
 

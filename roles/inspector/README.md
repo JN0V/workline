@@ -13,7 +13,7 @@ sources:
   - internal/line/line.go#Run
   - internal/engine/engine.go#Result.overBudget
 checked: cf8d4d9f
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Inspector
 

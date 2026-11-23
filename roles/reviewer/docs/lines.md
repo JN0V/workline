@@ -18,7 +18,7 @@ sources:
   - internal/forge/review.go#Reviewed.Section
 checked: cf8d4d9f
 judged: 39dcb7b
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # Reviewer — each finding on its line
 

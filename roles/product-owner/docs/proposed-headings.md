@@ -4,7 +4,7 @@ sources:
   - internal/backlog/kind.go
   - roles/product-owner/role.yaml#settings
 checked: cf8d4d9f
-verified: agent:claude-code
+verified: human:JN0V
 ---
 # The proposed headings
 
