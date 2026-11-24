@@ -13,7 +13,7 @@ sources:
   - roles/documentalist/code/judge.go#gitApplied
   - internal/agent/prompt.go#Prompt
   - internal/engine/engine.go#leaveOut
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — hunks, and asking again

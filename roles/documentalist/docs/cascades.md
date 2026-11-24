@@ -12,7 +12,7 @@ sources:
   - internal/engine/engine.go#renamedIssues
   - roles/documentalist/role.yaml#settings.truth
   - roles/documentalist/role.yaml#settings.propagation
-checked: 8538d558
+checked: e81df7b34
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---

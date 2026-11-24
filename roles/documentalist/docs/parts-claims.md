@@ -7,7 +7,7 @@ sources:
   - roles/documentalist/code/parts.go#sameWords
   - roles/documentalist/code/parts.go#claim.supports
   - roles/documentalist/code/parts.go#uncoveredSplit
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — the parts' answers

@@ -19,7 +19,7 @@ sources:
   - roles/documentalist/code/parts.go#partsTaskHeader
   - roles/documentalist/code/parts.go#tooWide
   - roles/documentalist/code/parts.go#readLongestAgoFirst
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — judged in parts

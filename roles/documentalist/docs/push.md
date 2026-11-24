@@ -20,7 +20,7 @@ sources:
   - roles/documentalist/role.yaml#events
   - roles/documentalist/role.yaml#merge-request-ai
   - defaults/ci/github/workline.yml#concurrency
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — at the push and the adoption
