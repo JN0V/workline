@@ -837,7 +837,10 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	case st.role == backlog.Keeper && w.State == refineState:
 		// Its read of refine: read again on the same input after a block,
 		// it would get the same (#1157).
-		ranOn("", 0, status == verdict.Pass && w.State == refineState && leftAsFound(f, st.write.Issue, w))
+		// Given the code it named in this step and drafting nothing, on a
+		// first read too: idle on the body it was woken on (#1875).
+		ranOn("", 0, status == verdict.Pass && w.State == refineState &&
+			(leftAsFound(f, st.write.Issue, st.rec) || given && leftAsFound(f, st.write.Issue, w)))
 	case w.Last[st.role].State == w.State:
 		// It had what it needed on its state's input: nothing lacked now.
 		st.write.Record.Last = withLast(w.Last, st.role, nil)

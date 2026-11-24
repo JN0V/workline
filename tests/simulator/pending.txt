@@ -33,7 +33,9 @@ trial-19-replay i1-status expected-end
 trial-20-replay i1-status expected-end
 trial-33-replay i1-status expected-end
 trial-34-replay expected-end
-trial-35-replay i1-status expected-end
+# #35: given the folder it named, the product owner's next answer quotes
+# nothing and drafts nothing: blocked for a person, said (#1875).
+trial-35-replay expected-end
 trial-36-replay i1-status expected-end
 # The product owner names WebUI.h, given at once in its step; its next
 # answer drafts nothing, and the same tick's second run wakes it again,
