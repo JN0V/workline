@@ -21,9 +21,9 @@ Part of [the reviewer](../README.md): what a run writes, what it costs, and what
 
 ## Cost
 
-- **Cost**: one call for the lenses:
-  - all of them on a machine, together; one a push on a merge request,
-    none on a draft;
+- **Cost**:
+  - one call for the lenses: all of them on a machine, together; one a
+    push on a merge request, none on a draft;
   - one judge call for each important finding, up to three when it
     reads the code it needs, none for one judged before on the same
     patch ([judged once](once.md));
@@ -31,9 +31,9 @@ Part of [the reviewer](../README.md): what a run writes, what it costs, and what
     ([weighed](tester-answers.md)); a spec, one call;
   - a change too large for one call: a call a part
     ([in parts](parts.md)).
-  - Capped at 300000 tokens a run (`ai-max-tokens`) and by the `*-max`
-    [settings](settings.md#caps). Measured:
-    [research](../../../docs/research/code-review.md#the-reviewers-cost-measured).
+- **Capped** at 300000 tokens a run (`ai-max-tokens`) and by the `*-max`
+  [settings](settings.md#caps). Measured:
+  [research](../../../docs/research/code-review.md#the-reviewers-cost-measured).
 
 - **The run when a merge request becomes ready** costs more: every lens
   on the whole change, a full review as on a machine, under the same cap

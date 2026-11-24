@@ -7,7 +7,7 @@ verified: agent:claude-code
 
 ```mermaid
 flowchart LR
-  when["<b>When</b><br/>once a week<br/>`workline sample`"]
+  when["<b>When</b><br/>once a week<br/>workline sample"]
   role(["Auditor"])
   draws["<b>Draws</b><br/>one act in ten<br/>per role and kind"]
   reads["<b>Re-checks</b><br/>each act against<br/>what it was done on"]
@@ -24,7 +24,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 **Does**:
 
 - draws, each week, one in ten of every role's acts done alone, per kind:
-  the docs the documentalist vouched for, the product owner's acts, the
+  the docs whose `checked` the documentalist moved, the product owner's acts, the
   reviewer's judged findings, the committer's rewrites, the tester's
   acts, the developer's code;
 - asks a judge, one call an act, whether the act holds against what it
@@ -65,7 +65,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   documentalist's `settings` in `.workline/config.yaml`
   ([config reference](../../docs/config.md)).
 - **Who reads**: `judge`, an `--ai` value; `panel`, the three judges of
-  a dispute; `after`, to leave out what was vouched for before a commit.
+  a dispute; `after`, to leave out what was checked before a commit.
 - **Cap**: `ai-max-tokens`, the tokens a week may spend.
 - **Every key**, and the week and the judge:
   [the weekly sample](../../docs/weekly-sample.md#settings).

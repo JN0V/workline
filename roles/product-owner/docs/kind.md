@@ -78,8 +78,8 @@ changes. A light read gives it a kind
   its own, `kind`, with a short instruction
   ([prompts/tasks/kind.md](../prompts/tasks/kind.md)). It answers `kind` or
   `note` only; anything else is dropped, said.
-- **Its cost**, by the engine's estimate on a real backlog, is a small
-  part of a full read
+- **Its cost**, by the engine's estimate on a real backlog: it adds
+  little to a full read, and alone costs about a quarter of one
   ([measures](../../../docs/research/token-costs-measured.md#product-owner)).
 
 ## A person's kind holds

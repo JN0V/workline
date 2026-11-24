@@ -26,7 +26,7 @@ judged-in-parts: ca63666
 | Tester | writes the tests of an issue waiting for them from its scenarios, each proven red on the base, frozen to the builder | `issue`, `schedule` and `merge-request` (opt-in), an objection on its Draft, `workline test` | [tester](../roles/tester/README.md) |
 | Developer | takes the first ready issue nobody took and writes its code within bounds, proves it on the project's tests, opens a pull request, ready or a Draft, and fixes its review | `workline develop`, `issue` and `schedule` (opt-in), a review or a red check on its pull request, its bounds on `merge-request` (opt-in) | [developer](../roles/developer/README.md) |
 | Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import`, `issue` | [product owner](../roles/product-owner/README.md) |
-| Auditor | re-checks a weekly sample of every role's acts | `workline sample` | [auditor](../roles/auditor/role.yaml) |
+| Auditor | re-checks a weekly sample of every role's acts | `workline sample` | [auditor](../roles/auditor/README.md) |
 
 ## Which role runs when
 
