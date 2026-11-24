@@ -3,7 +3,7 @@
 - **Status:** accepted (2026-10-14); built: every role's acts drawn,
   re-checked, settled by a panel and counted; the reviewer's line per
   finding judged, the oldest going first past the comment's size
-  ([the reviewer's judge](../../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample));
+  ([the reviewer's judge](../../roles/reviewer/docs/verdict.md#every-finding-judged-kept-for-the-weekly-sample));
   the committer's trailers; the product owner's fields and its issue
   folded in (2026-10-17, [settled while building](#settled-while-building));
   the tester's acts (2026-10-28, [the tester's row](#amendment-2026-10-28-the-testers-row));

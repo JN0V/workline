@@ -9,18 +9,21 @@ Part of [a run on code](run.md): step 4, what each lens reads and answers.
 
 ## 4. The lenses
 
-The lenses (`lenses/<lens>.md`, a project's own in
-`.workline/roles/reviewer/prompts/lenses/`): correctness, edge cases, tests,
-intent, claims ([#126](https://github.com/JN0V/workline/issues/126)),
-simplicity, and comments, asked only when `story-words` flags a comment, beside the lens
-in turn, never in its place.
-Every one on a machine; on a merge request one a push, in turn
-(`lenses-per-push`), with a block's lens when the push changes code
-([more](verdict.md#a-block-stands-until-a-commit-answers-it)), and the
-tests lens when it changes the test of a file it found untested
-([more](lines.md)), every one
-with `--input lenses=all`, once when it becomes ready ([at ready](run.md#every-lens-once-when-it-becomes-ready));
-none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
+- The lenses (`lenses/<lens>.md`, a project's own in
+  `.workline/roles/reviewer/prompts/lenses/`): correctness, edge cases,
+  tests, intent, claims ([#126](https://github.com/JN0V/workline/issues/126)),
+  simplicity.
+- Comments, asked only when `story-words` flags a comment, beside the
+  lens in turn, never in its place.
+- On a machine: every one.
+- On a merge request: one a push, in turn (`lenses-per-push`).
+  - Add a block's lens when the push changes code
+    ([more](verdict.md#a-block-stands-until-a-commit-answers-it)).
+  - Add the tests lens when it changes the test of a file it found
+    untested ([more](lines.md)).
+- Every one with `--input lenses=all`, once when it becomes ready
+  ([at ready](run.md#every-lens-once-when-it-becomes-ready)).
+- None on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
 
 ### Asking them
 
