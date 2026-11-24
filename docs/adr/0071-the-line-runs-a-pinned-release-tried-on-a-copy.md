@@ -224,6 +224,29 @@ It replaces §2 until 1.0, and §1's gate on a `try.yml` run.
 - **Not chosen**: a CI workflow holding a token that may create
   repositories, and scratch repositories to make and delete each try.
 
+## Amendment 2026-11-24: what the first real try taught
+
+The first real try, and an independent review of the script
+([#2135](https://github.com/JN0V/workline/issues/2135),
+[#2136](https://github.com/JN0V/workline/issues/2136)), add to the
+amendment above:
+
+- **The lock**: the script releases the lock it took at any exit; a
+  lock it cannot create for another reason than a running try is
+  refused as such.
+- **Its own upgrade branch**: the script rebuilds `workline-<version>`
+  from the copy's main at each run, and force-pushes it, with lease,
+  only when its tree changed. A rerun with nothing changed pushes
+  nothing.
+- **The canned issue enters the line test-first**: it opens with
+  `workline:needs-tests` and its kind (`bug`), so the copy's line
+  starts on it and its merge by policy needs no person.
+- **A label on an issue starts no merge**: a fix green and accepted by
+  policy, not merged after 15 minutes, gets the copy's `workline merge`
+  workflow dispatched once. The script never labels nor merges.
+- **Exit codes**: 0 green, 1 red, 2 waiting on the person, 3 refused. A
+  command that fails is refused before the lock, red after it.
+
 ## Build order
 
 Before Thursday 2026-11-19:

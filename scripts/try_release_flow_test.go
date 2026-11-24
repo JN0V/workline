@@ -44,6 +44,7 @@ case "$1 $2" in
   "issue list") answer issues.json ;;
   "issue create") echo "https://github.com/JN0V/TraceGlass-trial/issues/9" ;;
   "issue view") answer "issue-$pos.json" ;;
+  "workflow run") ;;
   *) echo "unexpected gh $*" >&2; exit 1 ;;
 esac
 `
@@ -151,11 +152,18 @@ func (f forge) set(name, json string) { write(f.t, filepath.Join(f.gh, name), js
 
 func (f forge) run(args ...string) (string, int) {
 	f.t.Helper()
+	return f.runEnv(nil, args...)
+}
+
+// runEnv runs the script with env added to the forge's.
+func (f forge) runEnv(env []string, args ...string) (string, int) {
+	f.t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "bash", append([]string{"try-release.sh", "--minutes", "0"}, args...)...)
 	cmd.Env = append(gitEnv(), "PATH="+f.gh+string(os.PathListSeparator)+os.Getenv("PATH"),
 		"TRY_GIT_URL="+f.gitURL, "TRY_POLL=0", "TRY_LABEL_MINUTES=0", "TRY_REPO=", "TRY_WORKLINE=")
+	cmd.Env = append(cmd.Env, env...)
 	out, err := cmd.CombinedOutput()
 	if e, ok := err.(*exec.ExitError); ok {
 		return string(out), e.ExitCode()
@@ -167,6 +175,8 @@ func (f forge) run(args ...string) (string, int) {
 }
 
 func (f forge) calls() string { return calls(f.t, filepath.Join(f.gh, "gh.log")) }
+
+const lockDeleted = "api -X DELETE repos/JN0V/TraceGlass-trial/git/refs/tags/workline-try-lock"
 
 func TestTryReleaseNoMergedUpgradeWaitsForThePersonsLabel(t *testing.T) {
 	f := newForge(t)
@@ -185,6 +195,9 @@ func TestTryReleaseNoMergedUpgradeWaitsForThePersonsLabel(t *testing.T) {
 	c := f.calls()
 	if strings.Contains(c, "issue create") || strings.Contains(c, "label") && !strings.Contains(c, "labels") {
 		t.Errorf("an issue opened or a label was put before the upgrade merged:\n%s", c)
+	}
+	if !strings.Contains(c, lockDeleted) {
+		t.Errorf("the lock was not released at exit:\n%s", c)
 	}
 	// The branch pushed: the release's pin, the copy's own line kept.
 	show := exec.Command("git", "--git-dir", strings.TrimPrefix(f.gitURL, "file://")+"/JN0V/TraceGlass-trial.git",
@@ -223,8 +236,12 @@ func TestTryReleaseGreenWhenTheCannedIssueMergesByPolicy(t *testing.T) {
 			t.Errorf("the verdict misses %q:\n%s", want, out)
 		}
 	}
-	if c := f.calls(); !strings.Contains(c, "issue create -R JN0V/TraceGlass-trial --title A matrix of 8 numbers") {
-		t.Errorf("the second canned issue was not opened:\n%s", c)
+	c := f.calls()
+	if !strings.Contains(c, "issue create -R JN0V/TraceGlass-trial --title A matrix of 8 numbers crashes the composition with an index error --label workline:needs-tests --label bug") {
+		t.Errorf("the second canned issue was not opened test-first with its kind:\n%s", c)
+	}
+	if strings.Contains(c, "workflow run") {
+		t.Errorf("the merge workflow was dispatched for an issue closed by a merge:\n%s", c)
 	}
 }
 
@@ -240,5 +257,109 @@ func TestTryReleaseRedWhenTheFixMergedOnAPersonsLabel(t *testing.T) {
 	}
 	if c := f.calls(); strings.Contains(c, "issue create") {
 		t.Errorf("a run after this version's issue closed opened another:\n%s", c)
+	}
+}
+
+// A rerun with the upgrade branch already holding the rebuilt tree pushes
+// nothing: a git on the PATH logs each call before the real one runs.
+func TestTryReleaseRerunWithNothingChangedPushesNothing(t *testing.T) {
+	f := newForge(t)
+	real, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gitLog := filepath.Join(f.gh, "git.log")
+	write(t, filepath.Join(f.gh, "git"), "#!/usr/bin/env bash\necho \"$*\" >> \""+gitLog+"\"\nexec \""+real+"\" \"$@\"\n")
+	f.set("pr-open.json", `[{"number":7,"url":"https://github.com/JN0V/TraceGlass-trial/pull/7"}]`)
+	f.set("checks.json", `[{"bucket":"pass"}]`)
+	f.set("pr-7.json", `{"mergeable":"MERGEABLE","state":"OPEN"}`)
+	if out, code := f.run("v9.9.9"); code != 2 {
+		t.Fatalf("first run: exit %d, want 2:\n%s", code, out)
+	}
+	if !strings.Contains(calls(t, gitLog), "push") {
+		t.Fatalf("the first run pushed no upgrade branch:\n%s", calls(t, gitLog))
+	}
+	if err := os.Remove(gitLog); err != nil {
+		t.Fatal(err)
+	}
+	out, code := f.run("v9.9.9")
+	if code != 2 {
+		t.Fatalf("rerun: exit %d, want 2:\n%s", code, out)
+	}
+	if g := calls(t, gitLog); strings.Contains(g, "push") {
+		t.Errorf("a rerun with nothing changed pushed:\n%s", g)
+	}
+	if c := f.calls(); strings.Contains(c, "pr create") {
+		t.Errorf("a rerun opened a second upgrade pull request:\n%s", c)
+	}
+}
+
+// A command's own failure (tar's 2, git's 128) is red, exit 1, never read
+// as "waiting" (2); the lock is released all the same.
+func TestTryReleaseAFailingCommandIsRed(t *testing.T) {
+	t.Run("tar", func(t *testing.T) {
+		f := newForge(t)
+		asset := "workline_" + runtime.GOOS + "_" + runtime.GOARCH + ".tar.gz"
+		garbage := "not an archive\n"
+		sum := sha256.Sum256([]byte(garbage))
+		f.set(filepath.Join("rel", asset), garbage)
+		f.set(filepath.Join("rel", "checksums.txt"), hex.EncodeToString(sum[:])+"  "+asset+"\n")
+		out, code := f.run("v9.9.9")
+		if code != 1 || !strings.Contains(out, "red: a command failed (exit 2)") {
+			t.Errorf("exit %d, want 1 and a red naming tar's code:\n%s", code, out)
+		}
+		if c := f.calls(); !strings.Contains(c, lockDeleted) {
+			t.Errorf("the lock was not released after a red:\n%s", c)
+		}
+	})
+	t.Run("git clone", func(t *testing.T) {
+		f := newForge(t)
+		f.gitURL = "file:///nonexistent-try-release"
+		out, code := f.run("v9.9.9")
+		if code != 1 || !strings.Contains(out, "red: a command failed (exit 128)") {
+			t.Errorf("exit %d, want 1 and a red naming git's code:\n%s", code, out)
+		}
+		if c := f.calls(); !strings.Contains(c, lockDeleted) {
+			t.Errorf("the lock was not released after a red:\n%s", c)
+		}
+	})
+}
+
+// The fix green and accepted by policy, not merged: the script dispatches
+// the copy's merge workflow once, and never labels. A fix not accepted
+// yet, or accepted on a person's label, is left as it is.
+func TestTryReleaseDispatchesTheMergeOnceForAFixAcceptedByPolicy(t *testing.T) {
+	green := `{"__typename":"CheckRun","name":"test","conclusion":"SUCCESS"}`
+	accepted := `{"__typename":"StatusContext","context":"workline/accepted","state":"SUCCESS"}`
+	for _, c := range []struct {
+		name, pr string
+		want     bool
+	}{
+		{"accepted by policy", `{"state":"OPEN","isDraft":false,"labels":[{"name":"bug"}],"statusCheckRollup":[` + green + `,` + accepted + `]}`, true},
+		{"not accepted yet", `{"state":"OPEN","isDraft":false,"labels":[],"statusCheckRollup":[` + green + `]}`, false},
+		{"a check pending", `{"state":"OPEN","isDraft":false,"labels":[],"statusCheckRollup":[{"__typename":"CheckRun","name":"test","conclusion":""},` + accepted + `]}`, false},
+		{"a person's label", `{"state":"OPEN","isDraft":false,"labels":[{"name":"workline:accepted"}],"statusCheckRollup":[` + green + `,` + accepted + `]}`, false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			f := newForge(t)
+			f.set("pr-merged.json", `[{"number":5,"url":"https://github.com/JN0V/TraceGlass-trial/pull/5"}]`)
+			f.set("issues.json", `[{"number":8,"title":"An outline of 65536 by 65536 pixels with no pixels crashes instead of being refused","state":"OPEN","stateReason":null,"body":"<!-- workline-try: v9.9.9 -->"}]`)
+			f.set("issue-8.json", `{"state":"OPEN","closedByPullRequestsReferences":[{"number":10}]}`)
+			f.set("pr-10.json", c.pr)
+			out, code := f.runEnv([]string{"TRY_DISPATCH_MINUTES=0"}, "v9.9.9")
+			if code != 1 || !strings.Contains(out, "no pull request merged for the canned issue") {
+				t.Fatalf("exit %d, want 1 when the time runs out:\n%s", code, out)
+			}
+			calls := f.calls()
+			if got := strings.Count(calls, "workflow run workline-merge.yml -R JN0V/TraceGlass-trial"); got != map[bool]int{true: 1, false: 0}[c.want] {
+				t.Errorf("dispatched %d times, want it %v:\n%s", got, c.want, calls)
+			}
+			if said := strings.Contains(out, "dispatched the copy's workline merge workflow once"); said != c.want {
+				t.Errorf("the output says the dispatch %v, want %v:\n%s", said, c.want, out)
+			}
+			if strings.Contains(calls, "edit") || strings.Contains(calls, "merge ") {
+				t.Errorf("the script labelled or merged:\n%s", calls)
+			}
+		})
 	}
 }
