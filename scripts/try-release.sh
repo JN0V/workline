@@ -1,28 +1,9 @@
 #!/usr/bin/env bash
-# Try a release of workline before the line's pin moves (ADR-0071 §2).
-#
-#   scripts/try-release.sh [--dry-run] [--minutes N] <vX.Y.Z>
-#
-# Run by the person, under their own `gh` session, on the permanent trial
-# copy (JN0V/TraceGlass-trial). It proves three facts:
-#   1. the release downloads, its checksum matches, `workline doctor` is clean;
-#   2. the copy's upgrade pull request (the copy runs the previous version)
-#      is green and mergeable under its ruleset: the person labels it, the
-#      script never does;
-#   3. after that merge, one canned real issue goes through forge events to
-#      a pull request merged by policy, with the copy's real agent.
-# It prints green or red with the links. Run again after a stop: each step
-# finds what an earlier run did (the pull request, the issue) and goes on.
-#
-#   --dry-run    print the plan, call no forge, change nothing
-#   --minutes N  how long the canned issue gets to reach a merge (default 240)
-#
-# Environment: TRY_REPO (default JN0V/TraceGlass-trial), TRY_WORKLINE
-# (JN0V/workline), TRY_POLL seconds between two reads of the forge (300),
-# TRY_CHECKS_MINUTES (90), TRY_LABEL_MINUTES the wait for the person's
-# label and the merge (120).
-# Exit: 0 green, 1 red, 2 waiting on the person (run again after the merge),
-# 3 refused (bad arguments, another try running).
+# Try a release of workline on the permanent trial copy, under the person's
+# own gh session: the release and doctor, the copy's upgrade pull request
+# (the person labels it), then one canned issue merged by policy.
+# Why and how: docs/adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md
+# Exit: 0 green, 1 red, 2 waiting on the person, 3 refused.
 set -euo pipefail
 
 REPO=${TRY_REPO:-JN0V/TraceGlass-trial}
@@ -32,7 +13,18 @@ CHECKS_MINUTES=${TRY_CHECKS_MINUTES:-90}
 LABEL_MINUTES=${TRY_LABEL_MINUTES:-120}
 LOCK=workline-try-lock   # a tag on the copy: one try at a time, whoever runs it
 
-usage() { echo "usage: try-release.sh [--dry-run] [--minutes N] <vX.Y.Z>" >&2; exit 3; }
+usage() {
+  cat >&2 <<'EOF'
+usage: try-release.sh [--dry-run] [--minutes N] <vX.Y.Z>
+  --dry-run    print the plan, call no forge, change nothing
+  --minutes N  how long the canned issue gets to reach a merge (default 240)
+Run it again after a stop: it finds the pull request and the issue it made.
+Environment: TRY_REPO (JN0V/TraceGlass-trial), TRY_WORKLINE (JN0V/workline),
+TRY_POLL seconds between two reads (300), TRY_CHECKS_MINUTES (90),
+TRY_LABEL_MINUTES, the wait for the person's label and the merge (120).
+EOF
+  exit 3
+}
 
 dry=false
 minutes=240
@@ -220,7 +212,7 @@ if [ -z "$merged" ] && [ -z "$pr" ]; then
   git commit --quiet -m "ci: workline workflows at $version"
   git push --quiet -u origin "refs/heads/$branch"
   gh pr create -R "$REPO" --base main --head "$branch" --title "ci: workline workflows at $version" --body \
-"Moves the copy's workline workflows from $from to $version: the templates' change between the two, the copy's own lines kept. A try of the release ([ADR-0071](https://github.com/$WORKLINE/blob/main/docs/adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#amendment-2026-11-24-a-try-is-a-script-on-the-permanent-copy)), opened by scripts/try-release.sh." >/dev/null
+"Moves the copy's workline workflows from $from to $version: the templates' change between the two, the copy's own lines kept. A try of the release ([the try](https://github.com/$WORKLINE/blob/main/docs/adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#amendment-2026-11-24-a-try-is-a-script-on-the-permanent-copy)), opened by scripts/try-release.sh." >/dev/null
   cd - >/dev/null
   pr=$(pr_of open)
   fresh=true
