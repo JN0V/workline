@@ -47,11 +47,12 @@ func TestLensesInTurnPassOver(t *testing.T) {
 	}
 }
 
-// An issue is given by its Need, Verification and Scope; one without them,
-// whole.
+// An issue is given by its Need, Example, Steps, Validation,
+// Verification and Scope, nothing else; one without them, whole.
 func TestIssueText(t *testing.T) {
-	text := issueText(&forge.Issue{ID: 4, Title: "Mean", Body: "## Need\n\nA mean.\n\n## Validation\n\nRead it.\n\n## Scope\n\ncalc/\n"})
-	if !strings.Contains(text, "#### Need\n\nA mean.") || !strings.Contains(text, "#### Scope\n\ncalc/") || strings.Contains(text, "Read it.") {
+	text := issueText(&forge.Issue{ID: 4, Title: "Mean", Body: "## Need\n\nA mean.\n\n## Example\n\n[2, 4] gives 3.\n\n## Validation\n\nRead it.\n\n## Notes\n\nAside.\n\n## Scope\n\ncalc/\n"})
+	if !strings.Contains(text, "#### Need\n\nA mean.") || !strings.Contains(text, "#### Scope\n\ncalc/") || !strings.Contains(text, "#### Validation\n\nRead it.") ||
+		!strings.Contains(text, "#### Example\n\n[2, 4] gives 3.") || strings.Contains(text, "Aside.") {
 		t.Errorf("sections:\n%s", text)
 	}
 	if text := issueText(&forge.Issue{ID: 5, Title: "Bug", Body: "It crashes on []."}); !strings.Contains(text, "It crashes on [].") {

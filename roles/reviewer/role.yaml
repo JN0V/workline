@@ -47,11 +47,12 @@ duties:
   writes: []         # never the code: the author fixes, a person merges
 
 # A lens answers findings, each its cause quoted; the engine finds the quote
-# again, and tells the change's from the rest. What it then proposes is the
+# again, and tells the change's from the rest. The intent lens answers each
+# scenario of the issue too: the code doing it quoted, or a finding. What it then proposes is the
 # engine's own: an issue for what lies outside the change, and one summary
 # comment on the merge request carrying each finding on its line, in the
 # forge's own review (#277). Never a patch, never an approval.
-part-intentions: [finding]
+part-intentions: [finding, scenario]
 intentions: [issue, comment, note]
 # A finding that blocks is when the author most needs the comment: a
 # blocked run still applies these, which only say what was found, the
@@ -164,8 +165,9 @@ settings:
   # person makes; never judged, never blocking. The rest counted.
   questions-max: 3
   # The issues the change closes (`Closes #4`), read from the forge: their
-  # Need, Verification and Scope, for a lens that `needs: issue` (intent).
-  issue-lines-max: 80
+  # Need, Example, Steps to reproduce, Validation, Verification and Scope,
+  # for a lens that `needs: issue` (intent).
+  issue-lines-max: 160
   # What a run may spend, all calls together, tokens in and out as the agent
   # reports them; once spent, nothing more is asked, said, and the commits
   # are not recorded as reviewed. The call that crosses it is paid. 0: no cap.

@@ -1,0 +1,25 @@
+case: reviewer/intent-answers-each-validation-scenario
+about: "The intent lens reads the issue's Example, Steps to reproduce and Validation with its Need, and answers each Validation scenario: the code doing it quoted, or a finding. A scenario shown done by code found again at the head is no finding; one whose code is not found, or that the lens leaves unanswered, becomes an important finding on the issue, judged: silence is never \"no finding\"."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\ttotal := 0|\\tif len(values) == 0 {\\n\\t\\treturn 0\\n\\t}\\n\\ttotal := 0|' calc/calc.go && git commit -qam 'fix: an empty list averages 0' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean survives an empty list
+        body: "## Need\n\nAn empty list gives 0 instead of a crash.\n\n## Example\n\nAverage([]) gives 0.\n\n## Validation\n\n- **Empty list:** Given no values, When the mean is asked, Then it is 0.\n- **Zeros skipped:** Given [0, 2, 4], When the mean is asked, Then it is 3.\n- **Negatives kept:** Given [-2, 4], When the mean is asked, Then it is 1.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: intent}, ai: "fake:review-intent-scenarios"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-intent}, {task: judge, for: judge/01}, {task: judge, for: judge/02}]
+  findings:
+    - {rule: intent, where: "#4", message: "No code shown doing the scenario \"Zeros skipped\""}
+    - {rule: scenario-unshown, message: "the scenario \"Zeros skipped\", shown done: its code is not found in calc/calc.go"}
+  no-findings: [{rule: intent, message: "Empty list"}]
+  run-files:
+    in/parts/1-intent/task.md: {contains: "#### Validation\n\n- **Empty list:** Given no values"}

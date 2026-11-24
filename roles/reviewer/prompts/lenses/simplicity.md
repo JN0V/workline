@@ -1,6 +1,6 @@
 ---
 # Asked only of a change saying it closes an issue (`Closes #4`), the
-# issue's Need, Verification and Scope given to it, as to intent; its
+# issue's sections given to it, as to intent; its
 # judge is shown the issue and the change. Advisory until its false
 # alarms are counted on past pull requests (ADR-0068, step 4; #1497):
 # `severity: nit` shows each finding as a nit, never judged, never asked

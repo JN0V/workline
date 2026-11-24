@@ -47,13 +47,18 @@ Part of [a run on code](run.md): step 4, what each lens reads and answers.
 
 - **Intent** (`needs: issue`): a change saying `Closes #4` (or `fixes`,
   `resolves`, `implements`), in a commit or the merge request, has `#4` read
-  from the forge, its Need, Verification and Scope given
-  (`issue-lines-max`), and the files the author lists under "Beyond the
-  Scope", with their reasons, from the merge request and its commits.
+  from the forge, its Need, Example, Steps to reproduce, Validation,
+  Verification and Scope given (`issue-lines-max`), and the files the
+  author lists under "Beyond the Scope", with their reasons, from the
+  merge request and its commits.
   - The lens says what the issue asks and the change does not do or
     prove, its cause quoted from the issue (`path: "#4"`), and what the
     change does past the Scope that the Need does not need: the Scope is
     a hint, not a fence.
+  - Each Validation scenario is answered: the code doing it and its test
+    quoted (`scenario`), or a finding. One answered neither way, or whose
+    code is not found at the head, becomes an important finding its
+    judge keeps or drops: silence is never "no finding".
   - No issue closed: not asked, said in the summary; one that cannot be
     read: not asked, said (`issue-unread`).
 - **Simplicity** (`needs: issue`, [ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)): read with

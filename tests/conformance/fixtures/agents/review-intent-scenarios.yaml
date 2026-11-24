@@ -1,0 +1,11 @@
+# The intent lens on the `reviewed` fixture once a commit closing #4 makes
+# an empty list average 0: it shows the scenario "Empty list" done, its
+# code quoted as it reads; it shows "Zeros skipped" done by a line the
+# code does not hold; it answers nothing of "Negatives kept".
+calls:
+  - - scenario:
+        scenario: Empty list
+        code: {path: calc/calc.go, quote: "if len(values) == 0 {"}
+    - scenario:
+        scenario: Zeros skipped
+        code: {path: calc/calc.go, quote: "if v == 0 {"}
