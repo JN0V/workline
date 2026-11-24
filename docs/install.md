@@ -12,7 +12,7 @@ sources:
   - internal/tools/tools.go#known
   - internal/agent/claude.go#claudeSession
   - internal/agent/claude.go#claudeEnv
-checked: 3bab32400
+checked: 542fc9cb6
 verified: agent:claude-code
 ---
 # Install
@@ -85,7 +85,7 @@ Run it again to change an answer; `--yes` takes the defaults; `--hooks`,
   `claude` with that login and holds no key of its own.
 - Other agents built in (Codex, OpenCode…) are parked until a project needs
   one; `cmd:` runs any of them meanwhile
-  ([#86](https://github.com/JN0V/workline/issues/86)).
+  ([another agent](usage.md#another-agent)).
 
 - The answer goes to `ai:` in `~/.config/workline/config.yaml` (macOS:
   `~/Library/Application Support/workline/config.yaml`), for all your
