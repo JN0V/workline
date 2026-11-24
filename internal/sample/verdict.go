@@ -118,7 +118,7 @@ func kindOf(a Act) string {
 // (criteria/<kind>.md). A kind with no criteria anywhere is judged on the
 // auditor's generic question, whose text ships with a later move: said
 // missing. A copy left at the old path, kinds/<kind>.md, the project's or
-// the auditor's folder's, is read no more: the act is not judged, the
+// the auditor's folder's, is no longer read: the act is not judged, the
 // report says where it goes, or that it goes once its new copy is there.
 func (rd *reader) facet(roleName, kind string) (string, error) {
 	project := filepath.Join(rd.o.Repo, ".workline", "roles", "auditor")
@@ -133,9 +133,9 @@ func (rd *reader) facet(roleName, kind string) (string, error) {
 		}
 		moved := fmt.Sprintf("%s/criteria/%s/%s.md", dir.name, roleName, kind)
 		if _, err := os.Stat(filepath.Join(dir.path, "criteria", roleName, kind+".md")); err == nil {
-			return "", fmt.Errorf("%s/kinds/%s.md is read no more, and %s holds its criteria now: remove the old file", dir.name, kind, moved)
+			return "", fmt.Errorf("%s/kinds/%s.md is no longer read, and %s holds its criteria now: remove the old file", dir.name, kind, moved)
 		}
-		return "", fmt.Errorf("%s/kinds/%s.md is read no more: move it to %s", dir.name, kind, moved)
+		return "", fmt.Errorf("%s/kinds/%s.md is no longer read: move it to %s", dir.name, kind, moved)
 	}
 	paths := []string{
 		filepath.Join(project, "criteria", roleName, kind+".md"),

@@ -14,6 +14,6 @@ run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-by-cri
 expect:
   status: pass
   findings:
-    - {rule: sample-not-read, where: "#20", message: "remove the old file"}
+    - {rule: sample-not-read, where: "#20", message: ".workline/roles/auditor/kinds/ready.md is no longer read, and .workline/roles/auditor/criteria/product-owner/ready.md holds its criteria now: remove the old file"}
   no-findings:
     - {rule: act-stands, where: "#20"}

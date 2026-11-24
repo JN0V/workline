@@ -14,6 +14,6 @@ run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-by-cri
 expect:
   status: pass
   findings:
-    - {rule: sample-not-read, where: "#20", message: "kinds/ready.md is read no more: move it to"}
+    - {rule: sample-not-read, where: "#20", message: "kinds/ready.md is no longer read: move it to"}
   no-findings:
     - {rule: act-stands, where: "#20"}

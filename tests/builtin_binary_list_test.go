@@ -114,7 +114,7 @@ func binaryRoles(t *testing.T) []string {
 //
 // Every shipped role with code/ is one the binary's list compiles in;
 // the failure names each one the list leaves out.
-func TestTheBinaryForgetsNoRoleAShippedStepCalls(t *testing.T) {
+func TestTheBinaryForgetsNoRoleWithCode(t *testing.T) {
 	in := binaryRoles(t)
 	for _, role := range shippedRoles(t) {
 		if !slices.Contains(in, role) {
@@ -130,7 +130,7 @@ func TestTheBinaryForgetsNoRoleAShippedStepCalls(t *testing.T) {
 // Then that test passes.
 //
 // The binary's list compiles in exactly the shipped roles with code/.
-func TestTheBinaryListHoldsExactlyTheRolesTheShippedStepsCall(t *testing.T) {
+func TestTheBinaryListHoldsExactlyTheRolesWithCode(t *testing.T) {
 	if got, want := binaryRoles(t), shippedRoles(t); !slices.Equal(got, want) {
 		t.Errorf("the binary's list compiles in %v; the shipped roles with code/ are %v", got, want)
 	}

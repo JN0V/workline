@@ -92,8 +92,8 @@ them, so a guarded file is never unguarded for a commit:
 
 - **Other roles' `criteria/`** stay unguarded: a soft one shows in
   the wake script; the auditor's copy, guarded, wins.
-- **A project's old `.workline/roles/auditor/kinds/<kind>.md`** is read
-  no more: the act is not judged, the report says where it goes.
+- **A project's old `.workline/roles/auditor/kinds/<kind>.md`** is no
+  longer read: the act is not judged, the report says where it goes.
 
 ## Kinds of role
 
