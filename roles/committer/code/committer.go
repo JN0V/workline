@@ -1,5 +1,5 @@
 // Package committer holds the deterministic checks of the committer role
-// (roles/committer). The role's pre and post scripts call them through
+// (roles/committer). The engine runs them as the role's pre and post,
 // `workline builtin committer pre|post`.
 package committer
 

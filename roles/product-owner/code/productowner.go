@@ -1,8 +1,8 @@
 // Package productowner holds the deterministic steps of the product owner
 // role (roles/product-owner): pre lists the open issues with what the engine
 // knows of each; the acts the agent proposes are checked when the engine
-// applies them (internal/backlog). The role's scripts call them through
-// `workline builtin product-owner pre|post`.
+// applies them (internal/backlog). The engine runs them as the role's pre
+// and post, `workline builtin product-owner pre|post`.
 package productowner
 
 import (

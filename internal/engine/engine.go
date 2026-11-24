@@ -3713,7 +3713,7 @@ func phase(role, step string) {
 func script(r *role.Role, step, repo string, env []string) (int, error) {
 	if s, ok := contract.Builtins().Step(r.Name, step); ok {
 		phase(r.Name, step)
-		// Apart, as the role's script ran it (`workline builtin`): its own
+		// Apart, as `workline builtin <role> pre|post`: its own
 		// process, environment and folder, a crash its own. In this
 		// process only where the engine is a test binary, which has no
 		// such command.
@@ -3767,9 +3767,9 @@ func script(r *role.Role, step, repo string, env []string) (int, error) {
 
 var inProcessMu sync.Mutex
 
-// inProcess runs a built-in step as `workline builtin` would in a script
-// of the role: in repo, with env as the process's environment, both put
-// back after.
+// inProcess runs a built-in step as `workline builtin <role> pre|post`
+// would: in repo, with env as the process's environment, both put back
+// after.
 func inProcess(s contract.Step, repo string, env []string) int {
 	inProcessMu.Lock()
 	defer inProcessMu.Unlock()
