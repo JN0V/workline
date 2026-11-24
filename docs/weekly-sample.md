@@ -20,7 +20,7 @@ kind of act
   their sources ([ADR-0014](adr/0014-checked-is-earned-by-what-was-read.md), step 4).
 - **The product owner**: its acts done alone.
 - **The reviewer**: the findings its judge kept or dropped on every run
-  ([a line each in its summary comment](../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample),
+  ([a line each in its summary comment](../roles/reviewer/docs/verdict.md#every-finding-judged-kept-for-the-weekly-sample),
   and in that of its lenses that warn, [read apart](../roles/reviewer/docs/apart.md)).
 - **The committer**: its rewrites.
 - **The tester**: its tests, its answers to objections, the five whys it

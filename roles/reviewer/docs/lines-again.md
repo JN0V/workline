@@ -34,7 +34,7 @@ Part of [each finding on its line](lines.md).
 - **Resolved by a person**, and found again: posted again, in a new review.
 - **Resolved by the reviewer once the code answers it**
   ([#1039](https://github.com/JN0V/workline/issues/1039)), as a block
-  goes ([judge](judge.md#a-block-stands-until-a-commit-answers-it)):
+  goes ([judge](verdict.md#a-block-stands-until-a-commit-answers-it)):
   - its line is no longer at the head: changed, or removed;
   - or its lens reads the file again and finds it no more, its judge's
     no included; for the tests lens, a test file touching it counts: in

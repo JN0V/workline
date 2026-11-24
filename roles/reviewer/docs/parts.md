@@ -20,7 +20,7 @@ A change that fits is asked in one call, as before.
   issue the change closes, and every file the change touches, by name.
 - **Then a share of the files**, in the order of their paths, whole or
   by their hunks, as one call reads them
-  ([what the lenses read](run.md#4-the-lenses)):
+  ([what the lenses read](run-lenses.md#4-the-lenses)):
   - packed to fill the budget, room kept for an answer asked again;
   - a file that fits a part of its own is not cut to fill the one
     before;
@@ -42,7 +42,7 @@ A change that fits is asked in one call, as before.
   which part (`lens-failed`); the other parts' findings are shown; the
   commits are not recorded as reviewed.
 - **The run's tokens**: parts and judges share `ai-max-tokens`; once
-  spent, nothing more is asked, said ([the budget](judge.md#the-budget)).
+  spent, nothing more is asked, said ([the budget](verdict.md#the-budget)).
 
 ## Past parts-max
 

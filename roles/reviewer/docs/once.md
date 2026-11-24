@@ -15,7 +15,7 @@ to the judges: the same finding on the same patch is not judged again.
 ## What is kept
 
 - **Its verdict**, read from its line in the comment
-  ([every finding judged](judge.md#every-finding-judged-kept-for-the-weekly-sample)):
+  ([every finding judged](verdict.md#every-finding-judged-kept-for-the-weekly-sample)):
   no judge asked.
 - **Said** on the finding: "judged reviewing `abc1234`: the same finding
   on the same patch, not judged again". The summary counts them.
@@ -54,6 +54,6 @@ comes back when commits are read again:
 - a record that does not read
   ([the run on ready](ready.md#the-run-on-ready));
 - commits a conflict altered in a rebase
-  ([the record](run.md#3-the-record)).
+  ([the record](run-record.md#3-the-record)).
 
 On a machine, no line is kept: every finding is judged.
