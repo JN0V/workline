@@ -132,15 +132,15 @@ func body(a devmark.Act, ready bool) string {
 	if len(a.Acceptance) > 0 {
 		fmt.Fprintf(&b, "- The tester's acceptance tests, read-only to the developer, from `%s%d`: %s.\n", testmark.TestsBranch, a.Issue, files(a.Acceptance))
 	}
-	if len(a.Unproven) > 0 {
-		fmt.Fprintf(&b, "- **Unproven**, no test proves it, as the tester said: %s. Each is an open Important finding: this merges on a person's yes only.\n", strings.Join(a.Unproven, ", "))
-	}
 	if a.RedUnproven != "" {
 		fmt.Fprintf(&b, "- **Red unproven**: their red proof on the base was not settled by the tester's judge: %s.\n", a.RedUnproven)
 	}
 	if len(a.Beyond) > 0 {
 		fmt.Fprintf(&b, "\n## %s\n\nFiles changed beyond the issue's %s, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.\n\n%s",
 			BeyondHeading, work.Name(work.Scope), devmark.BeyondLines(a.Beyond))
+	}
+	if len(a.Unproven) > 0 {
+		fmt.Fprintf(&b, "\n## %s\n\n%s\n\n%s\n", UnprovenHeading, unprovenLead, strings.Join(a.Unproven, "\n"))
 	}
 	if len(a.Refused) > 0 {
 		b.WriteString("\n## Left out\n\nRefused at apply, out of its bounds: an issue for a person, not this change.\n\n")
@@ -165,6 +165,20 @@ func body(a devmark.Act, ready bool) string {
 	b.WriteString("\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n" +
 		"- Not tried: the commands the issue names to verify it, nor a person's use of it.\n")
 	return b.String()
+}
+
+// UnprovenHeading heads the scenarios the tester said no test proves, on
+// its pull request: the reviewer's tests lens reads them there.
+const UnprovenHeading = "Unproven"
+
+const unprovenLead = "Scenarios of the issue no test proves, as the tester said, each with its reason: the reviewer's tests lens weighs whether a test can prove it."
+
+// unprovenLine is a scenario no test proves, as its pull request lists it.
+func unprovenLine(scenario, why string) string {
+	if why == "" {
+		return "- **" + scenario + "**"
+	}
+	return "- **" + scenario + "**: " + devmark.InertText(why)
 }
 
 // recordBody is the comment holding the record on its pull request: what

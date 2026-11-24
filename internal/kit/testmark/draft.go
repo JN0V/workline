@@ -28,9 +28,16 @@ type Draft struct {
 	Scenarios   []work.Scenario     `json:"scenarios,omitempty"`
 	Covers      map[string][]string `json:"covers,omitempty"`
 	RedUnproven string              `json:"red-unproven,omitempty"`
-	// Unproven: the scenarios no test proves, as the tester said why;
-	// none in a record written before.
-	Unproven []string `json:"unproven,omitempty"`
+	// Unproven: the scenarios no test proves, each with the tester's
+	// reason; none in a record written before.
+	Unproven []Unproven `json:"unproven,omitempty"`
+}
+
+// Unproven is a scenario no test proves, and why, as the tester said it:
+// the reviewer's tests lens weighs whether a test can prove it.
+type Unproven struct {
+	Scenario string `json:"scenario"`
+	Why      string `json:"why,omitempty"`
 }
 
 // ReadDraft reads the tester's record on its Draft id from workline's own

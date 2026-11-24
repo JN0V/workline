@@ -16,9 +16,7 @@ Part of [the merge policy at `normal`](merge-policy-normal.md).
 - **A fifth kind, `code`**: the developer's pull request for an issue
   its labels call a fix, every gate passed and no finding of
   the reviewer's open that blocks or is Important; findings it cannot
-  read from the reviewer's record hold it. A scenario the tester said
-  no test proves is an open Important finding too
-  ([the merge](../roles/developer/docs/merge.md)).
+  read from the reviewer's record hold it.
 - **A fix, once the reviewer read its head**: the reviewer's summary
   names the pull request's head, read by its lenses, or its record
   covers a head rebased since, or the engine's own clean merge of the

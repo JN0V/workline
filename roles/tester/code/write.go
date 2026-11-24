@@ -1077,8 +1077,12 @@ func draftBody(t task, tested map[string][]string, said map[string]string, alone
 			}
 		}
 		if u := unprovenScenarios(t, said); len(u) > 0 {
-			fmt.Fprintf(&b, "\n**Unproven**: %s. No test proves %s: on the pull request that builds it, each is an open Important finding, "+
-				"so it merges on a person's yes only.\n", strings.Join(u, ", "), map[bool]string{true: "it", false: "them"}[len(u) == 1])
+			names := make([]string, len(u))
+			for i, x := range u {
+				names[i] = x.Scenario
+			}
+			fmt.Fprintf(&b, "\n**Unproven**: %s. No test proves %s: the pull request that builds it lists %[2]s, "+
+				"and the reviewer's tests lens weighs whether a test can.\n", strings.Join(names, ", "), map[bool]string{true: "it", false: "them"}[len(u) == 1])
 		}
 	}
 	if len(assumes) > 0 {

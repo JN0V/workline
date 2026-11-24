@@ -140,6 +140,7 @@ type state struct {
 	Issues     []ClosedIssue       `json:"issues,omitempty"`    // the issues the change says it closes, as read (#126)
 	Testimony  string              `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
 	Beyond     string              `json:"beyond,omitempty"`    // the files the author lists beyond the issue's Scope, and why, for the intent lens (ADR-0065)
+	Unproven   string              `json:"unproven,omitempty"`  // the scenarios the tester said no test proves, as the pull request lists them, for the tests lens
 	Skipped    []string            `json:"skipped,omitempty"`   // lenses not asked, each with why
 	Hints      []Hint              `json:"hints,omitempty"`     // the comments the story guess flags, for the lens judging them (ADR-0065, Rule A)
 	Spec       *Spec               `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
@@ -439,6 +440,7 @@ func prepare(runDir, repo string, s Settings) int {
 	if len(st.Issues) > 0 {
 		st.Beyond = beyondListed(mr, msgs)
 	}
+	st.Unproven = unprovenListed(mr)
 	// An issue cut is said once the lenses are asked to read it, with
 	// the testimony's: a change no lens reads says why, not what they
 	// would have read.
@@ -999,6 +1001,9 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 		}
 		if l.Hints != "" {
 			l.Text = strings.TrimSpace(l.Text) + hintsText(st.Hints)
+		}
+		if lens == testsLens {
+			l.Text = strings.TrimSpace(l.Text) + unprovenText(st.Unproven)
 		}
 		read[lens] = l
 	}

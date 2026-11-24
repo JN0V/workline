@@ -95,14 +95,13 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 	case len(d.Open) > 0:
 		// Said once on it, edited in place, as the waits above are.
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
-		whose := d.Whose()
-		body := fmt.Sprintf("**Waiting for a person's yes**: %s, but %s findings are open:\n\n- %s\n\n- To accept this one anyway, put the label `%s`.\n- Or fix the findings: the next push is read again.",
-			d.Says(), whose, strings.Join(d.Open, "\n- "), backlog.AcceptedLabel(f))
+		body := fmt.Sprintf("**Waiting for a person's yes**: %s, but the reviewer's findings are open:\n\n- %s\n\n- To accept this one anyway, put the label `%s`.\n- Or fix the findings: the next push is read again.",
+			d.Says(), strings.Join(d.Open, "\n- "), backlog.AcceptedLabel(f))
 		body += headTrouble(o, m, hand, w)
 		if err := f.Sticky(t, body, forge.Marker("merge-waits=findings"), true); err != nil {
 			return nil, err
 		}
-		return waits("warn", fmt.Sprintf("%s, but %s findings are open: %s", d.Says(), whose, strings.Join(d.Open, "; ")))
+		return waits("warn", fmt.Sprintf("%s, but the reviewer's findings are open: %s", d.Says(), strings.Join(d.Open, "; ")))
 	}
 	// A head the line blocks is said so, never "no review": its reviewer
 	// may not have run, a role before it blocking (#1327).

@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/JN0V/workline/internal/kit/testmark"
 )
 
 // keptPrefix opens the reason of a scenario kept as it is today: its test
@@ -149,10 +151,11 @@ func grepped(repo, base, word string, files []string) bool {
 }
 
 // unprovenScenarios are the issue's scenarios, in its order, that no test
-// proves: said rather than tested, but for one kept as today that an
-// existing test of the base guards (guardedSaid kept its reason).
-func unprovenScenarios(t task, said map[string]string) []string {
-	var out []string
+// proves, each with its reason: said rather than tested, but for one kept
+// as today that an existing test of the base guards (guardedSaid kept its
+// reason).
+func unprovenScenarios(t task, said map[string]string) []testmark.Unproven {
+	var out []testmark.Unproven
 	for _, sc := range t.Scenarios {
 		n, ok := said[sc.Name]
 		if !ok {
@@ -161,7 +164,7 @@ func unprovenScenarios(t task, said map[string]string) []string {
 		if r := strings.ToLower(strings.TrimSpace(n)); strings.HasPrefix(r, keptPrefix) && !strings.HasPrefix(n, unguarded) {
 			continue // guarded by a test the base holds
 		}
-		out = append(out, sc.Name)
+		out = append(out, testmark.Unproven{Scenario: sc.Name, Why: strings.Join(strings.Fields(n), " ")})
 	}
 	return out
 }

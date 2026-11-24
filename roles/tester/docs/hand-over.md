@@ -46,9 +46,10 @@ flowchart LR
     a scenario no test can check is listed as not tested, with why.
   - **Unproven**: each scenario no test proves, named — not tested,
     or kept as today with no existing test found to guard it. Kept in
-    its record: on the developer's pull request, each is an open
-    Important finding, so it merges on a person's yes only
-    ([the merge](../../developer/docs/merge.md)).
+    its record with its reason; a rewrite that covers one takes it off.
+    The developer's pull request lists them for the reviewer's tests
+    lens, which asks for a test where one can prove the scenario
+    ([the lenses](../../reviewer/docs/run-lenses.md#4-the-lenses)).
   - What the proof said: each test red on the base, by an assertion,
     a missing name the issue names, or a broken build the judge read.
     A test whose package did not build is named `file:name`, or by

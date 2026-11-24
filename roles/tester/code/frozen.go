@@ -59,10 +59,11 @@ type record struct {
 	// says it too. None when proven.
 	RedUnproven string `json:"red-unproven,omitempty"`
 	// Unproven: the scenarios no test proves — no test can check them, or
-	// kept as today with no existing test found to guard them: each an
-	// open Important finding for the merge (testmark.Draft). None in a
-	// record written before.
-	Unproven []string `json:"unproven,omitempty"`
+	// kept as today with no existing test found to guard them —, each
+	// with its reason: the developer's pull request lists them for the
+	// reviewer's tests lens. A rewrite covering one takes it off
+	// (recovered). None in a record written before.
+	Unproven []testmark.Unproven `json:"unproven,omitempty"`
 }
 
 // body is the comment a person reads: the tests, frozen, and how to

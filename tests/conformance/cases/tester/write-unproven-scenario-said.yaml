@@ -1,9 +1,9 @@
 case: tester/write-unproven-scenario-said
 about: >
   A scenario no test proves is said unproven: its entry gives a reason
-  in place of a test. The Draft lists it under Unproven, an open
-  Important finding on the pull request that builds it, and its record
-  keeps it for the developer and the merge.
+  in place of a test. The Draft lists it under Unproven, and its record
+  keeps it with its reason, for the developer's pull request and the
+  reviewer's tests lens there.
 given:
   repo: tested
   setup:
@@ -24,6 +24,6 @@ expect:
   forge:
     merge-requests:
       - id: 1
-        body-contains: ["**Unproven**: By zero. No test proves it", "an open Important finding"]
+        body-contains: ["**Unproven**: By zero. No test proves it: the pull request that builds it lists it, and the reviewer's tests lens weighs whether a test can."]
         body-lacks: ["**Unproven**: Two by three"]
-        comment-contains: ['"unproven":["By zero"]']
+        comment-contains: ['"unproven":[{"scenario":"By zero","why":"a person reads the printed table by eye"}]']

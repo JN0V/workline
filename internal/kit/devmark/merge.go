@@ -31,17 +31,13 @@ func IssueKind(labels []string) (kind, label string) {
 	return "", ""
 }
 
-// UnprovenText is what an open finding says of a scenario no test proves.
-const UnprovenText = "no test proves this scenario, as the tester said: a person tries it"
-
 // Merge is what the merge policy reads of a developer's pull request.
 type Merge struct {
 	Issue int    // the issue its record names
 	Kind  string // the issue's kind; "" when no label says it
 	Label string // the label that told the kind
 	// Open are the reviewer's findings on it that block, or warn and are
-	// Important, as its comment says them now: a nit holds nothing. Each
-	// scenario no test proves is one too, the tester's.
+	// Important, as its comment says them now: a nit holds nothing.
 	Open []string
 	// Why it is not read as the developer's, or not whole: "" when it is.
 	Why string
@@ -82,26 +78,6 @@ func (m Merge) Unreviewed(head string) string {
 	return ""
 }
 
-// Whose says whose findings Open holds: "the reviewer's", "the
-// tester's" (a scenario no test proves), or both.
-func (m Merge) Whose() string {
-	tester, reviewer := false, false
-	for _, o := range m.Open {
-		if strings.HasPrefix(o, "warns tester `") && strings.HasSuffix(o, UnprovenText) {
-			tester = true
-		} else {
-			reviewer = true
-		}
-	}
-	switch {
-	case tester && reviewer:
-		return "the reviewer's and the tester's"
-	case tester:
-		return "the tester's"
-	}
-	return "the reviewer's"
-}
-
 // WaitsForAYes says its kind waits for a person's yes: a feature or a
 // task, at `enterprising` a yes on its milestone's release candidate.
 // Only a fix merges alone (ADR-0060, #937).
@@ -137,12 +113,6 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 		return Merge{Issue: a.Issue, Why: "the developer handed it to a person past its last review round"}, nil
 	}
 	m := Merge{Issue: a.Issue, Reproduced: a.From != "" && len(a.Acceptance) > 0}
-	// A scenario no test proves holds it as an Important finding of the
-	// reviewer's does, said in the same form: a person tries it, and
-	// says yes.
-	for _, sc := range a.Unproven {
-		m.Open = append(m.Open, fmt.Sprintf("warns tester `%s`: Important: %s", sc, UnprovenText))
-	}
 	is, err := f.Issue(a.Issue)
 	if err != nil {
 		// One pull request's issue gone, or unreadable, holds that one

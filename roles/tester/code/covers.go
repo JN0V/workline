@@ -283,6 +283,8 @@ func (r *record) recovered(intents []intent.Intention, newTests []string, file s
 		covers[sc] = slices.Compact(slices.Sorted(slices.Values(append(covers[sc], ids...))))
 	}
 	r.Covers = covers
+	// A scenario a test covers now is no longer unproven.
+	r.Unproven = slices.DeleteFunc(r.Unproven, func(u testmark.Unproven) bool { return len(covers[u.Scenario]) > 0 })
 	return ""
 }
 

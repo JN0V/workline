@@ -550,7 +550,7 @@ func Pre(runDir, repo string) int {
 	if len(conflicts) > 0 {
 		return draftBehind(runDir, repo, id, bounds.Head, at, conflicts, said)
 	}
-	act.From, act.Acceptance, act.RedUnproven, act.Unproven = bounds.Head, bounds.acceptance(), bounds.RedUnproven, bounds.Unproven
+	act.From, act.Acceptance, act.RedUnproven = bounds.Head, bounds.acceptance(), bounds.RedUnproven
 	if from != bounds.Head {
 		act.Merged = at
 	}
@@ -943,6 +943,9 @@ func Post(runDir, repo string) int {
 		}
 		a.Proof, a.Caps = &p, caps
 		a.NoTest = b.Proof != nil && b.Proof.Kind == backlog.KindNone
+		for _, u := range b.Unproven {
+			a.Unproven = append(a.Unproven, unprovenLine(u.Scenario, u.Why))
+		}
 		a.Turns, a.Tokens, a.Cached, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Cached, u.Tools, u.failed
 		v.Findings = append(v.Findings, found...)
 		title := issueTitle(runDir, a.Issue)

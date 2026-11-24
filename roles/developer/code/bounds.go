@@ -87,9 +87,10 @@ type Bounds struct {
 	// RedUnproven: why the judge did not settle the Draft's red proof
 	// (ADR-0065), as its record says; its pull request says it too.
 	RedUnproven string `json:"red-unproven,omitempty"`
-	// Unproven: the scenarios no test of the Draft proves, as its record
-	// says them: open Important findings for the merge.
-	Unproven []string `json:"unproven,omitempty"`
+	// Unproven: the scenarios no test of the Draft proves, each with the
+	// tester's reason, as its record says them: its pull request lists
+	// them for the reviewer's tests lens.
+	Unproven []testmark.Unproven `json:"unproven,omitempty"`
 	// Proof: the kind of proof the tester recorded in place of a Draft
 	// (ADR-0059, decision 4), when it did.
 	Proof *backlog.Proof `json:"proof,omitempty"`
