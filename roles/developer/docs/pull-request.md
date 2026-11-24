@@ -100,7 +100,7 @@ flowchart LR
 | first line | `Closes #<n>`; `Part of #<n>` when it leaves some out ([below](#a-part-of-its-issue)) |
 | `## Changes` | its code, its tests, the tester's acceptance tests it starts from |
 | `## Beyond the Scope` | each file changed beyond the issue's Scope, its agent's reason; only when one was ([the bounds](bounds.md#beyond-the-scope)) |
-| `## Left out` | each file refused at apply, each Scope path left for a person, its agent's note; only when one was |
+| `## Left out` | each file refused at apply, each Scope path left for a person, its agent's note; only when one is |
 | `## Verification` | with whose rights its agent ran; what ran and its result, each cap reached ([the proof](proof.md)) |
 | `## Tried` | its tests on a fresh checkout; not the issue's Verification commands, nor a person's use |
 
@@ -109,24 +109,22 @@ flowchart LR
 It never says `Closes #<n>` on part of the work: the issue would close
 with work still to do.
 
-- **A part when**:
-  - a file is refused as a person's to change (a gate's, the CI's, a
+- **A part, by facts only**:
+  - a file refused as a person's to change (a gate's, the CI's, a
     steering file, not text) ([the bounds](bounds.md));
-  - its issue's Scope names such a file, and its code wrote none;
-  - its agent's note says what it left out.
+  - a path its issue's Scope section names that only a person writes,
+    and its code wrote none. The product owner's sources do not count.
+  - Its agent's note alone makes no part: it is said under Left out.
 - **Its body says `Part of #<n>`**: the merge leaves the issue open.
-  The pick still reads the pull request as the issue's.
-- **An issue for a person** is opened with it, `A person's part of
-  #<n>: <title>`, a sub-issue of the issue, or a task in its
-  `## Sub-issues` list on a forge with none.
-  - Written as [the product owner writes one](../../product-owner/docs/writing.md):
-    Need and Validation on top, the files left in its Scope.
-  - Opened once: a run again finds it by its title.
-- **The issue, with an open part, is offered to no run**: a person
-  finishes the part, then closes it.
+  The pick and the line still read the pull request as the issue's.
+- **Once it is open, the issue is blocked for a person**, what is left
+  said on it in one comment. The pull request is reviewed and merges
+  as any; the person makes the rest, then closes the issue.
+- **A review round** that leaves a person's file out does the same:
+  its `Closes #<n>` becomes `Part of #<n>`, the issue blocked.
 - Cases `developer/partial-refused-says-part-of`,
-  `partial-scope-guarded-says-part-of`,
-  `skips-issue-with-open-part-of-pr`.
+  `partial-scope-guarded-says-part-of`, `partial-not-from-sources`,
+  `round-refusal-says-part-of`, `skips-issue-with-open-part-of-pr`.
 
 ## A Draft behind the default branch
 

@@ -1616,6 +1616,14 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			return nil
 		}
 	}
+	// Its own pull request said a part of its issue, asked by the role
+	// (the developer's round leaving a person's file out).
+	if n := ownPartOf(runDir); n > 0 && onTarget {
+		if err := partOfOwn(f, st, n); err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-of-unsaid", Level: "warn", Where: fmt.Sprintf("#%d", n),
+				Message: "its merge request could not be said a part of the issue, its `Closes` left: " + forge.Said(err)})
+		}
+	}
 	for _, i := range after {
 		if stopped, err := applyOne(i); stopped || err != nil {
 			return err
@@ -1708,6 +1716,17 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 					return fmt.Errorf("the record on the merge request opened: %w", err)
 				}
 			}
+			// What the role asked done once it is open: the developer's
+			// issue blocked for a person when its pull request is a part.
+			then, err := onOpening(runDir, "opened")
+			if err != nil {
+				return err
+			}
+			for _, in := range then {
+				if err := ap.apply(in); err != nil {
+					return fmt.Errorf("once its merge request opened, %s: %w", in.Kind, err)
+				}
+			}
 		}
 	}
 	res.MergeRequest = st.MergeRequest
@@ -1753,25 +1772,36 @@ func openedRecord(runDir string) (key, body string) {
 // it opens does not open, for a reason other than a forge out of reach or
 // a branch left to a person: out/merge-request.yaml's `unopened:`, labels
 // and comments alone (the developer's claim given back, #856).
-func unopened(runDir string) ([]intent.Intention, error) {
-	var mr struct {
-		Unopened []map[string]any `yaml:"unopened"`
-	}
+func unopened(runDir string) ([]intent.Intention, error) { return onOpening(runDir, "unopened") }
+
+// onOpening are the intentions out/merge-request.yaml lists under key:
+// `unopened`, applied when it does not open; `opened`, once it is open.
+// Labels and comments alone.
+func onOpening(runDir, key string) ([]intent.Intention, error) {
+	var mr map[string][]map[string]any
 	data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml"))
 	if err != nil {
 		return nil, nil
 	}
-	if err := yaml.Unmarshal(data, &mr); err != nil {
+	var all map[string]any
+	if err := yaml.Unmarshal(data, &all); err != nil {
 		return nil, fmt.Errorf("out/merge-request.yaml: %w", err)
 	}
+	if all[key] == nil {
+		return nil, nil
+	}
+	only, _ := yaml.Marshal(map[string]any{key: all[key]})
+	if err := yaml.Unmarshal(only, &mr); err != nil {
+		return nil, fmt.Errorf("out/merge-request.yaml: %s: %w", key, err)
+	}
 	var out []intent.Intention
-	for i, m := range mr.Unopened {
+	for i, m := range mr[key] {
 		if len(m) != 1 {
-			return nil, fmt.Errorf("out/merge-request.yaml: unopened entry %d must have exactly one kind", i+1)
+			return nil, fmt.Errorf("out/merge-request.yaml: %s entry %d must have exactly one kind", key, i+1)
 		}
 		for k, v := range m {
 			if k != "label" && k != "comment" {
-				return nil, fmt.Errorf("out/merge-request.yaml: unopened entry %d is a %s: a label or a comment only", i+1, k)
+				return nil, fmt.Errorf("out/merge-request.yaml: %s entry %d is a %s: a label or a comment only", key, i+1, k)
 			}
 			out = append(out, intent.Intention{Kind: k, Value: v})
 		}
@@ -1839,6 +1869,38 @@ func ownReady(runDir string) bool {
 		return false
 	}
 	return mr.Ready
+}
+
+// ownPartOf is the issue the role asks its own merge request said a part
+// of: out/merge-request.yaml's `part-of: <n>`; 0 for none.
+func ownPartOf(runDir string) int {
+	var mr struct {
+		PartOf int `yaml:"part-of"`
+	}
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err != nil || yaml.Unmarshal(data, &mr) != nil {
+		return 0
+	}
+	return mr.PartOf
+}
+
+// partOfOwn makes the role's own merge request a part of issue n: its
+// `Closes #n` line `Part of #n`, so its merge leaves the issue open. Never
+// another's branch; a body saying it already is left.
+func partOfOwn(f forge.Forge, st runState, n int) error {
+	mr, err := f.MergeRequest(st.Target.ID)
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(mr.Branch, branchPrefix(st.Role)) || !mr.Here {
+		return fmt.Errorf("merge request %d comes from %s, not a branch of the %s's own", st.Target.ID, mr.Branch, st.Role)
+	}
+	closes := regexp.MustCompile(fmt.Sprintf(`(?m)^Closes #%d$`, n))
+	body := closes.ReplaceAllString(mr.Body, fmt.Sprintf("Part of #%d", n))
+	if body == mr.Body {
+		return nil
+	}
+	_, err = f.OpenMergeRequest(mr.Branch, mr.Base, mr.Title, body, mr.Draft)
+	return err
 }
 
 // markOwnReady marks the merge request ready for review: from the role's

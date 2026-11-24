@@ -903,7 +903,6 @@ func Post(runDir, repo string) int {
 		v.Summary += "; blocked for a person"
 		return writeBlockedProtected(runDir, repo, a, s, told, refused, v)
 	}
-	var rest []intent.Intention // the issue for a person, when its pull request is a part of its issue
 	if len(patches) == 0 && draft == nil {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: fmt.Sprintf("its agent wrote no code: nothing to prove, no pull request; blocked for a person after %d hours on the same body, said on the issue", s.ClaimHours)})
@@ -949,20 +948,20 @@ func Post(runDir, repo string) int {
 		title := issueTitle(runDir, a.Issue)
 		cs, unread := committerSettings(repo, where)
 		v.Findings = append(v.Findings, unread...)
-		// Part of its issue only: a file refused as a person's, a Scope
-		// path only a person writes left, or its agent's note of what it
-		// left out.
-		note := noteOf(kept[len(claim):], a.Issue)
+		// Part of its issue only, by facts: a file refused as a
+		// person's, or a path of its Scope only a person writes, left.
 		a.Left = leftToAPerson(repo, b, refused)
-		a.Partial = len(personsRefusals(refused)) > 0 || len(a.Left) > 0 || note != ""
+		a.Partial = len(personsRefusals(refused)) > 0 || len(a.Left) > 0
 		mr := mergeRequest(a, title, subjects(a.Issue, title, b.Kind, b.Scope, cs))
 		mr["unopened"] = unopened(a, s, repo)
-		if note != "" {
+		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
 			mr["body"] = withNote(fmt.Sprint(mr["body"]), note)
 		}
 		if a.Partial {
-			rest = append(rest, personsPart(a, title, note))
-			v.Summary += fmt.Sprintf("; a part of #%d, the rest in an issue for a person", a.Issue)
+			// Once its pull request is open: the issue waits for a person
+			// for the rest, said on it.
+			mr["opened"] = asMaps(personsPart(repo, a, s))
+			v.Summary += fmt.Sprintf("; a part of #%d: blocked for a person once its pull request opens", a.Issue)
 		}
 		if mr["draft"] == true {
 			v.Summary += "; a Draft: " + p.Result
@@ -981,7 +980,7 @@ func Post(runDir, repo string) int {
 	}
 	// The claim carries the record, the refusals in it (ADR-0046).
 	// What pre said on the other issues follows it.
-	if code := writeIntents(runDir, "", slices.Concat(claimOf(a, s), told, kept[len(claim):], rest)); code != 0 {
+	if code := writeIntents(runDir, "", slices.Concat(claimOf(a, s), told, kept[len(claim):])); code != 0 {
 		return code
 	}
 	return writeVerdict(runDir, v)
@@ -1238,9 +1237,9 @@ func onlyProtected(refused []devmark.Refusal) bool {
 	return true
 }
 
-// writeBlockedProtected claims the issue and blocks it for a person in
-// the same run, the refused files and why said on it (#1418).
-func writeBlockedProtected(runDir, repo string, a devmark.Act, s Settings, told []intent.Intention, refused []devmark.Refusal, v verdict.Verdict) int {
+// blockedForAPerson blocks the issue for a person, its claim off, why
+// said on it and what the person does next.
+func blockedForAPerson(repo string, issue int, s Settings, why, next string) []intent.Intention {
 	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
 	if line, err := routing.Load(repo); err == nil {
 		if ad, rm, err := line.Move("blocked"); err == nil {
@@ -1250,17 +1249,22 @@ func writeBlockedProtected(runDir, repo string, a devmark.Act, s Settings, told 
 	if !slices.Contains(remove, s.ClaimLabel) {
 		remove = append(remove, s.ClaimLabel)
 	}
+	return []intent.Intention{
+		{Kind: "label", Value: map[string]any{"issue": issue, "add": add, "remove": remove, "card": "blocked"}},
+		{Kind: "comment", Value: map[string]any{"issue": issue, "body": backlog.Said(who, "blocks this issue", why, next)}},
+	}
+}
+
+// writeBlockedProtected claims the issue and blocks it for a person in
+// the same run, the refused files and why said on it (#1418).
+func writeBlockedProtected(runDir, repo string, a devmark.Act, s Settings, told []intent.Intention, refused []devmark.Refusal, v verdict.Verdict) int {
 	var b strings.Builder
 	for _, r := range refused {
 		fmt.Fprintf(&b, "`%s`: %s; ", r.File, why(r))
 	}
-	say := backlog.Said(who, "blocks this issue",
+	out := slices.Concat(claimOf(a, s), told, blockedForAPerson(repo, a.Issue, s,
 		"its agent's only changes were refused at apply: "+strings.TrimSuffix(b.String(), "; "),
-		"a person makes the change, or decides it, then moves the issue back by its label")
-	out := slices.Concat(claimOf(a, s), told, []intent.Intention{
-		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
-		{Kind: "comment", Value: map[string]any{"issue": a.Issue, "body": say}},
-	})
+		"a person makes the change, or decides it, then moves the issue back by its label"))
 	if code := writeIntents(runDir, "", out); code != 0 {
 		return code
 	}

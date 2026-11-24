@@ -103,10 +103,10 @@ func mergeRequest(a devmark.Act, title string, sub Subjects) map[string]any {
 func body(a devmark.Act, ready bool) string {
 	var b strings.Builder
 	if a.Partial {
-		// Never `Closes` on part of the work: the issue stays open, the
-		// rest in an issue for a person.
+		// Never `Closes` on part of the work: the issue stays open,
+		// blocked for a person, the rest said on it.
 		fmt.Fprintf(&b, "Part of #%d\n\n", a.Issue)
-		fmt.Fprintf(&b, "**A part of #%d, not all of it**: what is left out below goes to an issue for a person, a sub-issue of #%[1]d, opened with this pull request. Its merge leaves #%[1]d open.\n\n", a.Issue)
+		fmt.Fprintf(&b, "**A part of #%d, not all of it**: what is left out below is a person's to do; #%[1]d is blocked for them, said there. Its merge leaves #%[1]d open.\n\n", a.Issue)
 	} else {
 		fmt.Fprintf(&b, "Closes #%d\n\n", a.Issue)
 	}

@@ -1,15 +1,19 @@
 package developer
 
-// A pull request that is a part of its issue, not all of it: a file
-// refused, a Scope path only a person writes left, or its agent's note of
-// what it left out. It says `Part of #n`, never `Closes #n`, and an issue
-// for a person, a sub-issue of it, holds the rest
+// A pull request that is a part of its issue, not all of it, by facts: a
+// file refused as a person's, or a path its Scope section names that only
+// a person writes, left. It says `Part of #n`, never `Closes #n`, and the
+// issue is blocked for a person, what is left said on it
 // (docs/pull-request.md#a-part-of-its-issue).
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
+
+	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
@@ -25,13 +29,14 @@ func personsRefusals(refused []devmark.Refusal) []devmark.Refusal {
 	})
 }
 
-// leftToAPerson are the paths the issue's Scope names that only a person
-// changes — a gate's, the CI's, a steering file —, none refused already:
-// its code wrote none of them, so they are left for a person.
+// leftToAPerson are the paths the issue's Scope section names (not the
+// product owner's sources) that only a person changes — a gate's, the
+// CI's, a steering file —, none refused already: its code wrote none of
+// them, so they are left for a person.
 func leftToAPerson(repo string, b Bounds, refused []devmark.Refusal) []string {
 	c := newChecker(repo, b)
 	var out []string
-	for _, p := range b.Scope {
+	for _, p := range b.Named {
 		switch c.rule(p) {
 		case "gate-file", "steering-file":
 		default:
@@ -46,33 +51,44 @@ func leftToAPerson(repo string, b Bounds, refused []devmark.Refusal) []string {
 	return slices.Compact(out)
 }
 
-// personsPart is the issue for a person that holds what its pull request
-// left out, a sub-issue of its issue, written as the product owner writes
-// one (roles/product-owner/docs/writing.md): the person's part on top,
-// the paths below the line. Keyed by its title: a run again finds it.
-func personsPart(a devmark.Act, title, note string) intent.Intention {
-	t := fmt.Sprintf("A person's part of #%d", a.Issue)
-	if title = strings.TrimSpace(title); title != "" {
-		t += ": " + title
-	}
-	var b strings.Builder
-	fmt.Fprintf(&b, "Part of #%d.\n\n", a.Issue)
-	b.WriteString("## Need\n\nA person finishes what the developer's pull request left out: files only a person may change, or work its agent could not do.\n\n")
-	b.WriteString("## Validation\n\n- **The rest done:** Given the developer's pull request for the parent issue merged, " +
-		"When a person makes each change the Scope lists, Then the parent issue's Validation passes in full.\n\n")
-	b.WriteString("---\n\n## Scope\n\n")
+// personsPart blocks the issue for a person once its pull request, a
+// part of it, is open: what is left said on it. The pull request still
+// merges by the line; the person makes the rest, then closes the issue.
+func personsPart(repo string, a devmark.Act, s Settings) []intent.Intention {
+	var left []string
 	for _, r := range personsRefusals(a.Refused) {
-		fmt.Fprintf(&b, "- `%s`: %s\n", r.File, why(r))
+		left = append(left, fmt.Sprintf("`%s`: %s", r.File, why(r)))
 	}
 	for _, p := range a.Left {
-		fmt.Fprintf(&b, "- `%s`: %s\n", p, leftWhy)
+		left = append(left, fmt.Sprintf("`%s`: %s", p, leftWhy))
 	}
-	if note != "" {
-		b.WriteString("\nIts agent's note of what it left out:\n\n")
-		for _, l := range strings.Split(strings.TrimSpace(devmark.InertText(note)), "\n") {
-			b.WriteString("> " + l + "\n")
+	out := blockedForAPerson(repo, a.Issue, s,
+		"its pull request is a part of it, `Part of #"+fmt.Sprint(a.Issue)+"`; left for a person: "+strings.Join(left, "; "),
+		"the line reviews and merges the pull request as any; a person makes these changes, then closes this issue")
+	out[1].Value.(map[string]any)["sticky"] = "partial" // one comment, edited: a round says it again in place
+	return out
+}
+
+// asMaps are intentions as out/merge-request.yaml lists them, one kind
+// each.
+func asMaps(in []intent.Intention) []map[string]any {
+	out := make([]map[string]any, len(in))
+	for i, x := range in {
+		out[i] = map[string]any{x.Kind: x.Value}
+	}
+	return out
+}
+
+// markPartOf asks the engine, in out/merge-request.yaml, to say its own
+// pull request a part of the issue: `Closes #n` in its body made
+// `Part of #n`, what the round asked there kept.
+func markPartOf(runDir string, issue int) error {
+	mr := map[string]any{}
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
+		if err := yaml.Unmarshal(data, &mr); err != nil {
+			return err
 		}
 	}
-	fmt.Fprintf(&b, "\nThe developer's pull request for #%d says `Part of #%[1]d`: its merge leaves #%[1]d open.\n", a.Issue)
-	return intent.Intention{Kind: "issue", Value: map[string]any{"title": t, "body": b.String(), "parent": a.Issue}}
+	mr["part-of"] = issue
+	return writeMergeRequest(runDir, mr)
 }

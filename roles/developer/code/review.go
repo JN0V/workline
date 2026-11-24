@@ -885,6 +885,17 @@ func reviewPost(runDir, repo string, s Settings) int {
 			Message: fmt.Sprintf("%d test finding%s of the review sent to the tester, on its Draft !%d (#1265)", len(r.ToTester), devmark.Plural(len(r.ToTester)), b.Draft)})
 	}
 	a.Refused = append(a.Refused, refused...)
+	// A round that leaves a person's file out makes its pull request a
+	// part of its issue, as at its opening: said `Part of`, the issue
+	// blocked for a person. Once only.
+	partOf := false
+	if !a.Partial {
+		a.Left = leftToAPerson(repo, b, a.Refused)
+		if a.Partial = len(personsRefusals(a.Refused)) > 0 || len(a.Left) > 0; a.Partial {
+			partOf = true
+			v.Summary += fmt.Sprintf(", now a part of #%d: blocked for a person", a.Issue)
+		}
+	}
 	if r.Back {
 		a.Widen.Back = true
 	}
@@ -1032,6 +1043,12 @@ func reviewPost(runDir, repo string, s Settings) int {
 	case r.Back:
 		// Back from the product owner, its bounds wider: taken again.
 		out = append(out, moveTo(repo, "doing", a.Issue, []string{s.ClaimLabel}, []string{backlog.LabelReady}))
+	}
+	if partOf {
+		out = append(out, personsPart(repo, a, s)...)
+		if err := markPartOf(runDir, a.Issue); err != nil {
+			return fail(err)
+		}
 	}
 	if err := writeIntents(runDir, "", out); err != 0 {
 		return err
