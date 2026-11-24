@@ -280,7 +280,7 @@ token), **apply** (trusted, no AI key).
    on the tier `model.tasks.part` names, each call counted and kept like
    any other, named by its part (`for: <name>` in `out/calls.jsonl`); a part answers only what the role's
    `part-intentions` name — `claim`s when it names none, a reviewer's lens
-   `finding`s, the inspector `triage`s — which are never applied: they inform. The answers are put
+   `finding`s (and the intent lens `scenario`s), the inspector `triage`s — which are never applied: they inform. The answers are put
    back as `in/parts/<name>/answer.yaml`, and `pre` runs again, with
    `WORKLINE_PARTS=answered`, to put them together — no AI — and write the
    one question that follows, `in/task.md`, or none. Only then is the digest
