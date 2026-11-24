@@ -13,7 +13,7 @@ sources:
   - internal/engine/engine.go#Result
   - internal/engine/engine.go#Run
   - internal/line/line.go#runRole
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # A role's variables
@@ -23,8 +23,10 @@ Part of [the environment](environment.md).
 A role's `pre` and `post` receive:
 
 - always: `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`, `WORKLINE_AI`,
-  `WORKLINE_ROLE`, `WORKLINE_BIN` and `WORKLINE_ROLES_DIR` (the folder of
-  roles);
+  `WORKLINE_ROLE`, `WORKLINE_BIN`, `WORKLINE_ROLES_DIR` (the folder of
+  roles) and `WORKLINE_REPO` (the repository the run works in);
+- `WORKLINE_RANGE` when the run is given a commit range
+  (`--input range=...`);
 - `WORKLINE_FORGE` when a forge is given, `WORKLINE_TARGET`
   (`merge-request:12`) with a target too;
 - `WORKLINE_AI_WAITS=ready` on a draft (`--input draft=true`): the

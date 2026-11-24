@@ -23,7 +23,7 @@ a call again before it calls the forge unreachable:
   have taken it, and sending it twice could post a note twice. The run
   ends `blocked-external`, said: "a write: not sent again, GitLab may have
   taken it". Run it again later
-  ([troubleshooting](../troubleshooting.md#token-caps-and-the-agent)).
+  ([troubleshooting](../troubleshooting-limits.md)).
 - **3 tries in all**, 2 s then 4 s apart. A `Retry-After` GitLab sends is
   waited for instead, up to 60 s; a longer one is not, said.
 - **Never tried again**: a host that does not exist, a certificate

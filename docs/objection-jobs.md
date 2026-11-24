@@ -11,7 +11,7 @@ sources:
   - defaults/ci/github/workline-develop.yml#jobs.reconcile
   - internal/engine/fromrun.go#onHead
   - internal/engine/fromrun.go#ResumeFrom
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 judged-in-parts: 786d304
 ---

@@ -12,7 +12,7 @@ sources:
   - roles/committer/role.yaml#settings.rewrite
   - roles/committer/role.yaml#settings.ai-max-seconds
   - roles/committer/role.yaml#personal
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Quickstart

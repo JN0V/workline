@@ -15,7 +15,7 @@ sources:
   - internal/engine/engine.go#writeWaiting
   - internal/engine/engine.go#writeHeld
   - roles/documentalist/role.yaml#settings.max-open-merge-requests
-checked: 8538d558
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Troubleshooting the docs
@@ -40,7 +40,7 @@ commit you read them at. A doc that names no `sources` is never suspect:
 `record-unread` (a warning): the documentalist's comment keeping the
 records of docs found with nothing to fix, or of the merge requests
 merged, could not be read:
-the records are committed, or those docs judged again, at night. On GitLab, give the proposing job `GITLAB_TOKEN`
+the records are committed, or those docs judged again, at night. On GitLab, give the proposing job `GITLAB_TOKEN` (the template sets it from `WORKLINE_GITLAB_TOKEN`)
 ([more](../roles/documentalist/docs/push-records.md)).
 
 - **Its marker in another's comment**: only workline's own account's

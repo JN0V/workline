@@ -16,7 +16,7 @@ sources:
   - internal/backlog/ledger.go#LabelProposed
   - internal/sample/apply.go#IssueTitle
   - internal/backlog/opening.go#LabelTriage
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # What a job gives back

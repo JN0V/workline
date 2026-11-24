@@ -6,7 +6,7 @@ sources:
   - "defaults/ci/gitlab/workline.gitlab-ci.yml#workline:objection:head"
   - "defaults/ci/gitlab/workline.gitlab-ci.yml#workline:objection:propose"
   - "defaults/ci/gitlab/workline.gitlab-ci.yml#workline:objection:apply"
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The propose and apply jobs
@@ -26,8 +26,8 @@ on GitHub and on GitLab.
   (`--no-apply`).
 - It checks out the Draft's head, and runs your test command there: a
   rewrite must be red on the base.
-- On GitHub, that head is the Draft's open pull request's tip when the
-  run starts, never the objection run's `head_sha`: a re-run or a push
+- On GitHub, that head is the tip of the Draft's open pull request of
+  this repository (a fork's is not taken) when the run starts, never the objection run's `head_sha`: a re-run or a push
   since would leave it behind.
 - So it runs the Draft's code: what it leaves is not trusted.
 - On GitLab, it reads the forge with a separate read-only token, not

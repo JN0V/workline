@@ -10,7 +10,7 @@ sources:
   - internal/line/tick.go#BacklogDue
   - defaults/ci/github/workline-loop.yml#on
   - defaults/ci/github/workline-loop.yml#jobs.loop
-checked: 3bab32400
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The tick
@@ -50,8 +50,9 @@ flowchart LR
 
 - **A run's name is its key**: a run going under it keeps the job off
   the list; a run started under it since the job's time makes it done,
-  whoever started it, green or not. A run under another name is not
-  seen.
+  whoever started it, green or not, but for the nightly and the
+  backlog, where only a succeeded run counts. A run under another name
+  is not seen.
 - **Runs from before those names**: a gardening run named `workline
   gardening` counts as a backlog run, a `workline develop heartbeat` as
   a reconcile
@@ -60,7 +61,8 @@ flowchart LR
   or a `workline gardening docs and backlog` run (the template's full
   Sunday run, the product owner too) counts as a backlog run too, when
   it succeeded; a docs run alone does not
-  ([#1765](https://github.com/JN0V/workline/issues/1765)).
+  ([#1765](https://github.com/JN0V/workline/issues/1765)). That full
+  run counts as a docs run too.
 - **Going**: a run requested, queued, waiting, pending or in progress,
   started in the last day: one waiting longer on a person's approval
   is not read as going.

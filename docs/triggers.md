@@ -33,7 +33,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
-checked: e4e4287bc
+checked: e81df7b34
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -42,7 +42,9 @@ reader: 2de353fab113
 workline listens for nothing: whatever starts the work — a git hook, a
 scheduler, a CI pipeline, an internal tool — runs one command, the same on
 a laptop and in a job. The CI templates ([ci.md](ci.md)) are these commands
-wrapped; this page gives them bare. GitLab pipelines started by the API, a
+wrapped; this page gives them bare, and
+[more triggers](triggers-more.md) the product owner alone, a release,
+the weekly sample, an import and your own scanners. GitLab pipelines started by the API, a
 trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 
 ## On your machine
@@ -51,7 +53,7 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 |---|---|---|
 | each commit's message | the global `commit-msg` hook (`workline hooks install --global`) | yours, to rewrite a refused message, 30 s at most (`rewrite: false`, the project's or yours, turns it off) |
 | before a push | the global `pre-push` hook, when the project routes `pre-push`; by hand: `workline route pre-push --ai none --input range=origin/main..HEAD` | never |
-| docs made suspect | `workline docs` (`--since <rev>`; `--review` with no agent) | yours |
+| docs made suspect | `workline docs` (`--since <rev>`; `--review` with no agent; `--json`, the reason of a refusal staying on stderr) | yours |
 | a branch's code | `workline review` (`--base`, `--lenses`, `--json`) | yours |
 | a spec, before it is built | `workline review --spec <file>` or `--issue <n>` | yours |
 | gardening | `workline route schedule` (`--forge local --open-merge-request` keeps its merge requests as local branches) | yours |
@@ -75,7 +77,7 @@ Each event that writes runs in two jobs
 ([ADR-0016](adr/0016-writes-go-where-the-project-lives.md),
 [principle 6](PRINCIPLES.md)):
 
-- one judges with the agent and no write token (`--no-apply`);
+- one proposes with the agent and no write token (`--no-apply`);
 - one applies with the write token and no AI key;
 - `WORKLINE_RUNS_DIR` names where the runs are kept: carry that folder and
   the `--json` result from the first job to the second, at the same path;
@@ -83,9 +85,13 @@ Each event that writes runs in two jobs
   request's own run), the second runs from the base: `--from-merge-request
   <n> --head <sha>` ([more](commands.md#workline-apply));
 - the gates run first, in a job with no write token and no AI key:
-  `route <event> --gates-only --json > gates.json`, which the judge reads
+  `route <event> --gates-only --json > gates.json`, which the proposing job reads
   (`--gates-from gates.json`) and the second job shows (`apply --gates
   gates.json`, on GitHub; [gates in CI](gates-in-ci.md)).
+
+A run the engine refuses or blocks, given a target and no `--no-apply`,
+says why in one comment on its issue or merge request, updated in place;
+with `--json`, the reason is also on stderr.
 
 `$ai` below is your choice of agent: `none`, `claude`, `cmd:<command>`
 ([usage](usage.md)).
@@ -147,15 +153,6 @@ or closed when nothing is left to merge
 `size` keeps an issue's normal size in one comment
 ([the command](commands.md#workline-size)).
 
-### The product owner alone
-
-On its own trigger:
-
-```sh
-workline run-role product-owner --event schedule --ai "$ai" --no-apply --forge gitlab --json > po.json
-workline apply "$(jq -r '."run-dir"' po.json)"
-```
-
 ### An issue's state
 
 With the tester and the developer routed on `issue`, when a state's
@@ -195,51 +192,6 @@ workline test answer --merge-request <iid> --ai "$ai" --no-apply --forge gitlab 
 workline develop --merge-request <iid> --ai "$ai" --no-apply --forge gitlab --json > round.json
 workline apply <run-dir> --from-merge-request <iid> --head <sha> --forge gitlab
 ```
-
-### Release
-
-Before your release tool tags; a non-zero exit holds it.
-
-- On a machine: `workline route release`.
-- At a tag (GitLab's `workline:release`): `workline route release --ai
-  none --forge none`, no token. The jobs that publish need it.
-- On each schedule, a dry run: `workline route release --dry-run --forge
-  none --json > dry-run.json` (no agent, no token, writes nothing), then
-  `workline apply --release-dry-run dry-run.json --forge gitlab` (token,
-  no agent) ([the release](release.md)).
-- On a push to the default branch: `workline follow --base <branch>
-  --forge gitlab` (token, no agent), `user.name` and `user.email` set
-  first, as for `apply`. It closes the tester's Draft of a closed
-  issue, and takes the states' labels off closed issues. With `merge:`, it runs
-  the [merge policy](merge-policy.md): after each judge too, given the
-  head's verdict `route --verdict` wrote (`--verdict <file>`).
-
-### Weekly sample
-
-`workline sample --forge gitlab --out sample.json` (agent, reads the
-forge, writes nothing; `--week 2026-W40`): every role's acts drawn
-([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)). Then `workline sample --apply
-sample.json --forge gitlab` (token, no agent), which writes the week on
-one issue, the level the product owner's acts suggest among it
-([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
-
-### Import
-
-- `workline issues import <file> --apply` has the agent and the write
-  token in one process: run it by hand.
-- In a pipeline, split it as any other role: `workline issues import
-  <file> --json > line.json` (agent, a read token, writes nothing), then
-  `workline apply --line line.json` (write token, no agent);
-  [ci.md](ci.md#importing-a-file).
-
-### Your own scanners
-
-`--sarif <file>` beside `--code-quality` writes every step's findings
-for GitHub's code scanning.
-`gate:<name>` steps, or `workline gate <name>`, run your own scanners; on
-a merge request given its `range`, or with `workline gate <name> --base
-<rev>`, only the findings the change adds count
-([new findings](spec/gates.md#on-a-merge-request-the-findings-the-change-adds)).
 
 ## What a job needs and gives back
 

@@ -43,7 +43,7 @@ rule as [on GitLab](../gitlab/calls.md):
   may have taken it, and sending it twice could post a comment twice.
   The failure says so: "a write: not sent again, GitHub may have taken
   it". Run it again later
-  ([troubleshooting](../troubleshooting.md#token-caps-and-the-agent)).
+  ([troubleshooting](../troubleshooting-limits.md)).
 - **3 tries in all**, 2 s then 4 s apart. The wait GitHub asks is waited
   for instead, up to 60 s; a longer one is not, said:
   - its `Retry-After`;

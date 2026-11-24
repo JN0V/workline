@@ -12,7 +12,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:claude
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:sample
   - internal/doctor/workflows.go#ciTemplates
-checked: 3bab32400
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Install in CI

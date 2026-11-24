@@ -3,7 +3,7 @@ sources:
   - internal/engine/merge.go#mergePolicy
   - internal/engine/merge.go#heldByConversations
   - internal/engine/merge.go#personsCommentOpen
-checked: 3f432ab14
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # What the merge summary says

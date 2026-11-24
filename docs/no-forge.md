@@ -13,7 +13,7 @@ sources:
   - cmd/workline/main.go#docsJudgedRef
   - cmd/workline/main.go#docsJudgedFrom
   - defaults/ci/github/workline-gardening.yml#jobs.propose
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # workline with no forge
