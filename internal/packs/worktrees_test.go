@@ -5,11 +5,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
-// copyRepo copies the repository's files into dst, leaving out its git
-// data, the agents' worktrees and the runs' folders.
+// copyRepo copies the repository's files into dst, leaving out every
+// hidden file and folder: its git data, the agents' worktrees, the runs'
+// folders, and what a sandbox puts at the root (a masked .bash_profile
+// nobody may read). The build and the walk under test need none of them.
 func copyRepo(t *testing.T, src, dst string) {
 	t.Helper()
 	err := filepath.WalkDir(src, func(p string, d fs.DirEntry, err error) error {
@@ -20,10 +23,13 @@ func copyRepo(t *testing.T, src, dst string) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() {
-			if d.Name() == ".git" || d.Name() == ".claude" || d.Name() == ".workline-runs" {
+		if p != src && strings.HasPrefix(d.Name(), ".") {
+			if d.IsDir() {
 				return filepath.SkipDir
 			}
+			return nil
+		}
+		if d.IsDir() {
 			return os.MkdirAll(filepath.Join(dst, rel), 0o755)
 		}
 		if !d.Type().IsRegular() {
