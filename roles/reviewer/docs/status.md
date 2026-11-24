@@ -162,7 +162,7 @@ its measure in
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.
 - **Quotes found again; the change's findings told from the rest**:
-  `finding-without-quote-dropped`,
+  `finding-without-quote-dropped`, `finding-misquoted-judged`,
   `finding-cause-in-diff-is-fixed-by-author`,
   `finding-cause-outside-diff-becomes-issue`, `quote-over-lines-found`.
 - **A removal's exposed lines are the change's**:

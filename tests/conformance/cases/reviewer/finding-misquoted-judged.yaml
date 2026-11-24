@@ -1,0 +1,17 @@
+case: reviewer/finding-misquoted-judged
+about: "An important finding whose cause is not found again, in a file the change touches, is not dropped on the misquote: its judge is shown the quote said not found, the file at the head and what the change did to it, and keeps or drops it; kept, it is on the change, on no line (finding-misquoted said)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-unfounded"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-correctness}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: correctness, where: "calc/calc.go", message: "Important: the count is wrong"}
+    - {rule: finding-misquoted, message: "kept for its judge, from the correctness lens: \"the count is wrong\" — its cause is not found in calc/calc.go"}
+  no-findings: [{rule: finding-unfounded}]
+  run-files:
+    in/judge/01/question.yaml:
+      contains: ["is not found again in calc/calc.go at the head", ": the file at the head", "return total / (len(values) - 1)"]

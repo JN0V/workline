@@ -18,6 +18,11 @@ claim, in what the author said.
 
 - A file moved, quoted on its old path, is found on its new one.
 - Not found: dropped, said (`finding-unfounded`).
+  - Except an important one quoting a file the change touches: kept for
+    its judge, said (`finding-misquoted`). The judge reads the quote said
+    not found, the file at the head and the change to it; kept, the
+    finding is on the change, on no line.
+  - Its symptom not found: left out, the finding kept on its cause.
 - Two on one line are grouped, never one dropped
   ([#229](https://github.com/JN0V/workline/issues/229)).
 

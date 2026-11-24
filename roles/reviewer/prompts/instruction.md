@@ -7,8 +7,9 @@ Report each defect as a `finding`:
 
 - `cause`: the file and the line, or the few lines, that cause it, quoted
   exactly as they read — the files' text, without line numbers or the
-  diff's `+` and `-`. The engine looks for the quote again: a finding
-  whose quote it does not find is dropped.
+  diff's `+` and `-`. The engine looks for the quote again: a nit
+  whose quote it does not find is dropped, an important one judged on
+  its whole file, on no line.
 - `symptom`, only when the defect shows somewhere else than its cause —
   a caller the change broke: that place, quoted the same way.
 - `severity`: `important` when it breaks something — wrong behaviour, lost
