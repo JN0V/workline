@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.89.3](https://github.com/JN0V/workline/compare/v0.89.2...v0.89.3) (2026-11-24)
+
+
+### Bug Fixes
+
+* **scripts:** try-release labels, merge dispatch, exit codes ([#2139](https://github.com/JN0V/workline/issues/2139)) ([f4da197](https://github.com/JN0V/workline/commit/f4da197fdd45a4240bf18b198a38e92ccffa7955))
+* the nightly simulator fails on i1 and i2 ([#2134](https://github.com/JN0V/workline/issues/2134)) ([614ef6c](https://github.com/JN0V/workline/commit/614ef6cbe4e49df3dd118d96993c4b73ef13f48a))
+
 ## [0.89.2](https://github.com/JN0V/workline/compare/v0.89.1...v0.89.2) (2026-11-24)
 
 
