@@ -133,3 +133,11 @@ func TestDeveloperFailureKeepsItsRecord(t *testing.T) {
 		}
 	}
 }
+
+// TestDeveloperBrokenAfterNeedsRoleMovesNothing: Given an issue the
+// developer takes after a wait and a needs-role, When the developer's
+// run ends broken, Then the issue's labels, state and hops are as before
+// (#1875).
+func TestDeveloperBrokenAfterNeedsRoleMovesNothing(t *testing.T) {
+	holdsUnder(t, "workline-1003", pI3, []string{"progress,waiting,needs-role,progress,broken"})
+}
