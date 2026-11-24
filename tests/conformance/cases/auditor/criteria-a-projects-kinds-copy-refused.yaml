@@ -1,0 +1,19 @@
+case: auditor/criteria-a-projects-kinds-copy-refused
+about: "A project's copy left at the old path, `.workline/roles/auditor/kinds/<kind>.md`, is no longer read since the questions moved to `criteria/<role>/<kind>.md` (ADR-0070 §6, move a): the act is not judged on the shipped criteria in its place; the report names where the file goes, the act left for a person."
+given:
+  repo: vouched
+  env: {WORKLINE_ROLES: "$WORK/roles"}
+  setup:
+    - "mkdir ../roles && for r in \"$FIXTURES\"/../../../roles/*/; do ln -s \"$(cd \"$r\" && pwd)\" \"../roles/$(basename \"$r\")\"; done"
+    - "mkdir -p .workline/roles/auditor/kinds && printf 'OLD-PATH-CRITERIA: a ready issue is one this project can build.\\n' > .workline/roles/auditor/kinds/ready.md"
+  forge:
+    issues:
+      - {"id": 20, "title": "Issue 20", "body": "Issue 20.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Did ready on #20'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests: []
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-by-criteria.sh" NO-CRITERIA-GIVEN'], then: apply}
+expect:
+  status: pass
+  findings:
+    - {rule: sample-not-read, where: "#20", message: ".workline/roles/auditor/criteria/product-owner/ready.md"}
+  no-findings:
+    - {rule: act-stands, where: "#20"}

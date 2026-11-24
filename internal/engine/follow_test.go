@@ -182,7 +182,7 @@ func TestDocPage(t *testing.T) {
 		"roles/documentalist/docs/push.md": true, "roles/reviewer/docs/lenses/x.md": true,
 		"roles/reviewer/instruction.md": false, "roles/reviewer/lenses/correctness.md": false,
 		"roles/reviewer/persona.md": false, "roles/documentalist/knowledge/doc-model.md": false,
-		"roles/auditor/kinds/split.md": false, "roles/x/skills/s/SKILL.md": false, "roles/notes.md": false,
+		"roles/auditor/criteria/product-owner/split.md": false, "roles/x/skills/s/SKILL.md": false, "roles/notes.md": false,
 		"roles/x/docs/roles/y/persona.md": false, "roles/x/docs/AGENTS.md": false,
 		".workline/roles/committer/policy.md": false, ".github/copilot-instructions.md": false,
 		"AGENTS.md": false, "sub/CLAUDE.md": false, "docs/x.go": false,

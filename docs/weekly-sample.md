@@ -162,4 +162,4 @@ roles:
 - **The schedule**: `workline-sample.yml` on GitHub; on GitLab the jobs
   `workline:sample:read` and `workline:sample:write`.
 - **The auditor's questions, a kind of act each**: its `role.yaml` and its
-  `kinds/` folder.
+  `criteria/<role>/` folders.

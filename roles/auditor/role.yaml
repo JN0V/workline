@@ -8,7 +8,7 @@ mission: Re-check an act another role did alone against what it was done on, and
 # findings the reviewer's judge kept or dropped, the committer's rewrites,
 # the tester's tests, its answers to objections and its curator's removals,
 # the developer's code —
-# one call an act, its kind's question in kinds/<kind>.md, at the best
+# one call an act, its kind's question in criteria/<role>/<kind>.md, at the best
 # independence available from the models that acted (ADR-0005). The engine
 # checks every quote it gives; it applies nothing.
 model:

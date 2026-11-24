@@ -24,7 +24,7 @@ import (
 )
 
 // Each act drawn is re-checked by one auditor call, asked its kind's
-// question (kinds/<kind>.md) on what the act was done on, a finding blind,
+// question (criteria/<role>/<kind>.md) on what the act was done on, a finding blind,
 // never on a model that acted. An answer against the act is false only
 // with a quote the engine finds again; the calls stop at the sample's
 // ai-max-tokens (ADR-0046, docs/commands.md#workline-sample).
@@ -115,19 +115,20 @@ func kindOf(a Act) string {
 // facet is what a well-done act of a kind is, the auditor's question: the
 // project's own copy (.workline/roles/auditor/criteria/<role>/<kind>.md),
 // else the auditor's (criteria/<role>/<kind>.md), else the role's own
-// (criteria/<kind>.md). Until the questions move, kinds/<kind>.md is read
-// as a last fallback, the project's first. A kind with no criteria anywhere is
-// judged on the auditor's generic question, whose text ships with a later
-// move: said missing.
+// (criteria/<kind>.md). A kind with no criteria anywhere is judged on the
+// auditor's generic question, whose text ships with a later move: said
+// missing. The project's copy left at the old path, kinds/<kind>.md, is
+// read no more: the act is not judged, the report says where it goes.
 func (rd *reader) facet(roleName, kind string) (string, error) {
 	project := filepath.Join(rd.o.Repo, ".workline", "roles", "auditor")
 	roles := filepath.Dir(rd.auditor.Dir)
+	if _, err := os.Stat(filepath.Join(project, "kinds", kind+".md")); err == nil {
+		return "", fmt.Errorf("the project's .workline/roles/auditor/kinds/%s.md is read no more: move it to .workline/roles/auditor/criteria/%s/%s.md (ADR-0070, move a)", kind, roleName, kind)
+	}
 	paths := []string{
 		filepath.Join(project, "criteria", roleName, kind+".md"),
 		filepath.Join(rd.auditor.Dir, "criteria", roleName, kind+".md"),
 		filepath.Join(roles, roleName, "criteria", kind+".md"),
-		filepath.Join(project, "kinds", kind+".md"),
-		filepath.Join(rd.auditor.Dir, "kinds", kind+".md"),
 	}
 	for _, p := range paths {
 		if data, err := os.ReadFile(p); err == nil {

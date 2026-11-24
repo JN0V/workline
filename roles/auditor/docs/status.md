@@ -82,10 +82,10 @@ hold:
   who vouched ([#466](https://github.com/JN0V/workline/issues/466)):
   documentalist's `sample-squashed-*`.
 - **Each act re-checked**, one call an act, its kind's question
-  (`kinds/*.md`), a finding blind, never on a model that acted, false
+  (`criteria/<role>/*.md`), a finding blind, never on a model that acted, false
   only with a quote found again, within the week's tokens
   ([#205](https://github.com/JN0V/workline/issues/205)): auditor's
-  `verdict-*`. A grant of a size, `kinds/size.md`: false where a split
+  `verdict-*`. A grant of a size, `criteria/product-owner/size.md`: false where a split
   was possible
   ([ADR-0064, §6](../../../docs/adr/0064-size-is-a-target-not-a-wall.md#6-every-grant-observed)).
 - **Its verdicts kept and counted**
@@ -120,15 +120,15 @@ hold:
   objection answered kept or rewritten, from its reply's hidden line; a
   curator's removal, from its commit and pull request; the five whys a
   third answer gave, drawn apart (step 8 of the tester); each with its
-  own question (`kinds/tests.md`, `kept.md`, `rewritten.md`, `whys.md`,
-  `removal.md`)
+  own question (`criteria/tester/tests.md`, `kept.md`, `rewritten.md`,
+  `whys.md`, `removal.md`)
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-28-the-testers-row)): auditor's
   `sample-draws-the-testers-acts`, `verdict-reads-the-testers-acts`.
   Tried with stub tester runs and a real judge, on
   [#669](https://github.com/JN0V/workline/pull/669).
 - **The developer's code** (2026-10-29): on its merge requests merged,
   its own commits and the record on its pull request; its question in
-  `kinds/code.md`
+  `criteria/developer/code.md`
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-29-the-developers-row)):
   auditor's `sample-draws-the-developers-code`. No real judge yet.
 

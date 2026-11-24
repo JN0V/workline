@@ -6,7 +6,7 @@ given:
   setup:
     - "mkdir ../roles && for r in \"$FIXTURES\"/../../../roles/*/; do ln -s \"$(cd \"$r\" && pwd)\" \"../roles/$(basename \"$r\")\"; done"
     - "rm ../roles/auditor ../roles/product-owner && cp -r \"$FIXTURES/../../../roles/auditor\" ../roles/auditor && cp -r \"$FIXTURES/../../../roles/product-owner\" ../roles/product-owner"
-    - "rm ../roles/auditor/kinds/ready.md"
+    - "rm ../roles/auditor/criteria/product-owner/ready.md"
     - "mkdir -p .workline/roles/auditor/criteria/product-owner ../roles/auditor/criteria/product-owner ../roles/product-owner/criteria && printf '  \\n\\n\\t\\n' > .workline/roles/auditor/criteria/product-owner/ready.md && printf '\\n   \\n' > ../roles/auditor/criteria/product-owner/ready.md && printf '\\n\\n' > ../roles/product-owner/criteria/ready.md"
   forge:
     issues:

@@ -23,13 +23,13 @@
 /roles/reviewer/prompts/persona.md @JN0V
 /roles/reviewer/prompts/policy.md @JN0V
 /roles/reviewer/prompts/lenses/ @JN0V
-/roles/reviewer/kinds/ @JN0V
+/roles/reviewer/criteria/ @JN0V
 /roles/reviewer/role.yaml @JN0V
 /roles/auditor/prompts/instruction.md @JN0V
 /roles/auditor/prompts/persona.md @JN0V
 /roles/auditor/prompts/policy.md @JN0V
 /roles/auditor/prompts/lenses/ @JN0V
-/roles/auditor/kinds/ @JN0V
+/roles/auditor/criteria/ @JN0V
 /roles/auditor/role.yaml @JN0V
 
 # The wake script and its triggers (ADR-0068 §8): what prints the line's
