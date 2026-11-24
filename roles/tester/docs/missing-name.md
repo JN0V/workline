@@ -110,4 +110,4 @@ flowchart LR
   past the tenth are not read. `-gcflags=-e` in the test command shows
   them all.
 - **The judge's tokens**: asked only past the fast path; measured on a
-  real build on [#1252](https://github.com/JN0V/workline/pull/1252#tried): 2k to 7.5k tokens in a call.
+  real build ([what a call spent](../../../docs/research/token-costs-measured.md#tester)).

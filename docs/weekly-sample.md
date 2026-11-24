@@ -134,9 +134,9 @@ roles:
 
 ## What it costs
 
-- **One call an act**, about 4k to 12k tokens; about 380k on a week as
-  busy as workline's busiest
-  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#cost-a-week)).
+- **One call an act**; what a call and a busy week spent:
+  [measures](research/token-costs-measured.md#auditor),
+  [ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#cost-a-week).
 - **The cap**: `sample: {ai-max-tokens: 400000}` by default; the acts
   left past it are listed unread.
 

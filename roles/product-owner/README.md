@@ -162,8 +162,8 @@ roles:
 ## Cost
 
 - **One call a run** (standard tier, context budget 120k tokens,
-  estimated): 45k to 62k tokens in for four issues on a real backlog, up
-  to 97.6k with their code; `issues-per-run`, `code-lines-max` and
+  estimated; [what it cost](../../docs/research/token-costs-measured.md#product-owner)):
+  `issues-per-run`, `code-lines-max` and
   `code-bytes-max` size it,
   and a run reads only the issues that fit the budget, the rest first at
   the next run.

@@ -97,6 +97,6 @@ passes.
 ## Cost
 
 - On workline at v0.30.0, measured with a recording agent (no tokens): 3
-  pages a run, a prompt of 43,187 characters, about 36k tokens estimated
-  (711 + 0.82 a character); each page about 9k to 10k of it.
+  pages a run; the figures, estimated at 711 + 0.82 tokens a character,
+  are in [the measures](../../../docs/research/token-costs-measured.md#documentalist).
 - `reader.agent-pages: 0` reads no page.

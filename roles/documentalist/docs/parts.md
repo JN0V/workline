@@ -38,8 +38,9 @@ sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
   request, at the push or the release, such a doc is left for the next
   gardening, which judges it in parts, and its finding says so.
 - **Why**: judged on each merge request touching its sources, one doc
-  cost 6 or 7 calls, 100k to 130k tokens in, a merge request; the
-  gardening judges it once.
+  cost 6 or 7 calls a merge
+  request ([tokens](../../../docs/research/token-costs-measured.md#documentalist));
+  the gardening judges it once.
 - **A doc judged on its change alone**
   ([#462](https://github.com/JN0V/workline/issues/462)): its sources do
   not fit a task, what changed in them does. A merge request judges it on

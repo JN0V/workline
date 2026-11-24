@@ -160,22 +160,20 @@ Under the same key:
 
 ## Cost
 
-- A doc judged whole cost 13k to 26k tokens on a real repository; one too
-  large, judged in parts, 130k to 250k
-  ([measured](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736)),
-  when gardening, never on a merge request
+- What a doc judged whole, in parts, or a sample read spent:
+  [measured](../../docs/research/token-costs-measured.md#documentalist).
+- A doc too large is judged in parts, when gardening, never on a merge
+  request
   ([#458](https://github.com/JN0V/workline/issues/458)); so is a doc a
   merge request judged on its change alone, a night spending what its
   caps allow
   ([measured](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-a-doc-judged-on-its-change-alone)).
 - Condensing and splitting ask a frontier model (`model.tasks`).
-- Reading pages for their reader: about 36k tokens a run on workline, 3
-  pages ([measured](docs/reader.md#cost)).
+- Reading pages for their reader: [what it cost](docs/reader.md#cost).
 - Caps: `ai-max-calls`, `ai-max-tokens`, `whole-chars`,
   `parts-max-per-run` (a night's parts), `max-open-merge-requests`;
   `judge-in-parts: false` spends nothing on docs too large.
-- The weekly sample reads one doc in ten vouched for, about 8k to 12k
-  tokens a doc
+- The weekly sample reads one doc in ten vouched for
   ([ADR-0046](../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#cost-a-week)),
   within its cap (`sample.ai-max-tokens`). A push costs
   nothing.

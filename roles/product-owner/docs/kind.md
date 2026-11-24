@@ -78,10 +78,9 @@ changes. A light read gives it a kind
   its own, `kind`, with a short instruction
   ([prompts/tasks/kind.md](../prompts/tasks/kind.md)). It answers `kind` or
   `note` only; anything else is dropped, said.
-- **Its cost**, by the engine's estimate on a real backlog: 400 to 600
-  tokens an issue beside a full read; alone, about 6.4k tokens for 10
-  issues, against 24.5k with the full instruction (measures in
-  [#885](https://github.com/JN0V/workline/pull/885#tokens-per-issue)).
+- **Its cost**, by the engine's estimate on a real backlog, is a small
+  part of a full read
+  ([measures](../../../docs/research/token-costs-measured.md#product-owner)).
 
 ## A person's kind holds
 
