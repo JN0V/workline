@@ -8,7 +8,7 @@ sources:
   - roles/documentalist/code/documentalist.go#rangeFiles
   - roles/documentalist/code/documentalist.go#preRun.checkHygiene
   - roles/documentalist/role.yaml#events
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — at the push

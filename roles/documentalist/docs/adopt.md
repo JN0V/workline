@@ -8,7 +8,7 @@ sources:
   - roles/documentalist/code/byname.go#codeByName
   - roles/documentalist/code/byname.go#byName
   - roles/documentalist/code/byname.go#isTest
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — adopting a repository

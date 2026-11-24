@@ -12,7 +12,7 @@ sources:
   - roles/documentalist/code/parts.go#docSources
   - roles/documentalist/code/parts.go#partsHeader
   - roles/documentalist/code/parts.go#partsSupportedWhole
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — the fix after parts
@@ -61,7 +61,12 @@ conflict or to be read together, and:
   passage it supports whole. Headings, fences, derived blocks, HTML
   comments and link definitions state nothing; a code example does.
 
-The header then sets `checked` and `judged-in-parts` to that commit, and
+On a merge request's branch the engine moves nothing: the commit it would
+name is one a squash merge drops, so `checked` stays, saying so, and a
+person moves it to a commit of the default branch once merged
+([#2029](https://github.com/JN0V/workline/issues/2029)).
+
+Elsewhere, the header then sets `checked` and `judged-in-parts` to that commit, and
 `verified: agent:documentalist`: the doc leaves the list for a person,
 and the weekly sample, which cannot read it whole, lists it for a person
 ([weekly sample](../../../docs/weekly-sample.md)). Otherwise the finding

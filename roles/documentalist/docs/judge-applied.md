@@ -6,7 +6,7 @@ sources:
   - roles/documentalist/code/documentalist.go#preRun.holdJudged
   - roles/documentalist/code/parts.go#holdJudgedInParts
   - roles/documentalist/code/parts.go#held
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — what holds is applied
