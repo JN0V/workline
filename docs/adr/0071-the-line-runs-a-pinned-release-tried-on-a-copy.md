@@ -207,7 +207,15 @@ It replaces §2 until 1.0, and §1's gate on a `try.yml` run.
   opens the canned issue and waits for the merge, and prints green or
   red with the links.
   - **One try at a time**: a lock tag on the copy; a second run
-    refuses.
+    refuses. The script releases the lock it took at any exit; a lock
+    it cannot create for another reason is refused as such.
+  - **Its own upgrade branch**: the script rebuilds `workline-<version>`
+    from the copy's main at each run, and force-pushes it, with lease,
+    only when its tree changed. A rerun with nothing changed pushes
+    nothing.
+  - **Exit codes**: 0 green, 1 red, 2 waiting on the person, 3
+    refused. A command that fails is refused before the lock, red
+    after it.
   - **`--dry-run`** prints the plan and calls no forge.
 - **The copy moves with each try**: its upgrade pull request merges,
   and the canned issue's fix merges. It no longer stays as it was until

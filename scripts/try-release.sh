@@ -3,7 +3,8 @@
 # own gh session: the release and doctor, the copy's upgrade pull request
 # (the person labels it), then one canned issue merged by policy.
 # Why and how: docs/adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md
-# Exit: 0 green, 1 red, 2 waiting on the person, 3 refused.
+# Exit: 0 green, 1 red, 2 waiting on the person, 3 refused. A command that
+# fails is refused before the lock is taken, red after it.
 set -euo pipefail
 
 REPO=${TRY_REPO:-JN0V/TraceGlass-trial}
@@ -143,23 +144,50 @@ fi
 
 links=()
 say_links() { for l in ${links[@]+"${links[@]}"}; do echo "  $l"; done; }
-red() { echo "red: $*"; say_links; exit 1; }
-waiting() { echo "waiting: $*"; say_links; exit 2; }
+# verdict: the code the script chose; any other is a command's own.
+verdict=
+red() { echo "red: $*"; say_links; verdict=1; exit 1; }
+waiting() { echo "waiting: $*"; say_links; verdict=2; exit 2; }
+
+# The trap is set before the lock: whatever stops the script, the lock it
+# took goes, and a command's own exit code (128 for git, 2 for tar) becomes
+# the documented one: refused before the lock, red after it.
+locked=false work=
+cleanup() {
+  local code=$?
+  trap - EXIT
+  if $locked; then
+    gh api -X DELETE "repos/$REPO/git/refs/tags/$LOCK" >/dev/null 2>&1 \
+      || echo "warning: the lock $LOCK stays on $REPO: delete it by hand" >&2
+  fi
+  [ -z "$work" ] || rm -rf "$work"
+  if [ "$code" != 0 ] && [ "$code" != "$verdict" ]; then
+    if $locked; then
+      echo "red: a command failed (exit $code)"; say_links; code=1
+    else
+      echo "refused: a command failed (exit $code) before the try started" >&2; code=3
+    fi
+  fi
+  exit "$code"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # 1. One try at a time on the copy: creating a ref fails when it exists.
 main_sha=$(gh api "repos/$REPO/commits/main" --jq .sha)
-if ! gh api -X POST "repos/$REPO/git/refs" -f ref="refs/tags/$LOCK" -f sha="$main_sha" >/dev/null 2>&1; then
-  echo "refused: another try is running on $REPO (its tag $LOCK exists)." >&2
-  echo "If none is, remove it: gh api -X DELETE repos/$REPO/git/refs/tags/$LOCK" >&2
+if ! lock_err=$(gh api -X POST "repos/$REPO/git/refs" -f ref="refs/tags/$LOCK" -f sha="$main_sha" 2>&1 >/dev/null); then
+  if [[ $lock_err == *"Reference already exists"* ]]; then
+    echo "refused: another try is running on $REPO (its tag $LOCK exists)." >&2
+    echo "If none is, remove it: gh api -X DELETE repos/$REPO/git/refs/tags/$LOCK" >&2
+  else
+    echo "refused: the lock $LOCK cannot be created on $REPO: ${lock_err:-no reason given}" >&2
+  fi
+  verdict=3
   exit 3
 fi
+locked=true
 work=$(mktemp -d)
-cleanup() {
-  gh api -X DELETE "repos/$REPO/git/refs/tags/$LOCK" >/dev/null 2>&1 \
-    || echo "warning: the lock $LOCK stays on $REPO: delete it by hand" >&2
-  rm -rf "$work"
-}
-trap cleanup EXIT
 echo "try of $version on $REPO, by $(gh api user --jq .login)"
 
 # 2. The release, as the pin downloads it.
