@@ -1,0 +1,13 @@
+case: reviewer/lens-overloaded-twice-not-reviewed
+about: "A lens whose provider is still overloaded when asked again is asked no more: two calls, the lens not reviewed, said (lens-failed), never read as no finding."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_RETRY_PAUSE: "0s", REVIEW_LENS_OVERLOADED_CALLS: "5", REVIEW_LENS_COUNT: "$XDG_CONFIG_HOME/review-lens-calls"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: blocked-external
+  calls: [{task: part, for: 1-correctness}, {task: part, for: 1-correctness}]
+  findings:
+    - {rule: agent-asked-again, where: 1-correctness, message: "529 Overloaded"}
+  no-findings: [{rule: correctness}]

@@ -1303,8 +1303,8 @@ func mendedTogether(said []string) []string {
 // done, its failure read as an answer of nothing.
 func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Result) error {
 	err := callAgentOnce(ag, req, task, runDir, res)
-	if !errors.Is(err, agent.ErrUnavailable) || !agent.Transient(err) {
-		return err
+	if !errors.Is(err, agent.ErrUnavailable) || !agent.Transient(err) || res.overBudget() {
+		return err // the run's tokens spent: no pause for a call it may not make
 	}
 	pause := retryPause()
 	where := ""
