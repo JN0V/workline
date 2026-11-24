@@ -3,11 +3,6 @@ sources:
   - internal/engine/merge.go#mergePolicy
   - internal/engine/merge.go#theYes
   - internal/engine/merge.go#accepted
-  - internal/engine/merge.go#heldByConversations
-  - internal/engine/merge.go#personsCommentOpen
-  - internal/engine/merge.go#stalled
-  - internal/engine/uptodate.go#upToDateAs
-  - internal/engine/uptodate.go#provenUpToDate
   - defaults/ci/github/workline-merge.yml#on
   - defaults/ci/github/workline-apply.yml#jobs.verdict
   - defaults/ci/github/workline-apply.yml#jobs.queue
@@ -194,4 +189,4 @@ the candidate's issue, ships the version:
   forge's queue: GitHub's merge queue in an organisation, GitLab's merge
   train ([a merge queue or train](merge-queue.md)).
 
-Where it is read, and the live try: [the code and the try](merge-policy-read.md).
+Where it is read (`merge.go`), and the live try: [the code and the try](merge-policy-read.md).
