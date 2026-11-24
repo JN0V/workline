@@ -765,9 +765,10 @@ func (g *github) CloseMergeRequest(branch, body, marker string) error {
 	}
 	if !others && OwnBranch(branch) {
 		// GitHub deletes a branch on merge only, never on a close.
-		_, err = g.api("-X", "DELETE", "repos/{owner}/{repo}/git/refs/heads/"+branch)
+		// Best effort: the pull request is closed already, a branch left is harmless.
+		_, _ = g.api("-X", "DELETE", "repos/{owner}/{repo}/git/refs/heads/"+branch)
 	}
-	return err
+	return nil
 }
 
 // OwnBranch tells a branch the line made: the only one it deletes.

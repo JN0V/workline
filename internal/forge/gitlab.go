@@ -1319,9 +1319,10 @@ func (g *gitlab) CloseMergeRequest(branch, body, marker string) error {
 		return err
 	}
 	if !others && OwnBranch(branch) {
-		_, err = g.api("-X", "DELETE", "projects/:id/repository/branches/"+url.PathEscape(branch))
+		// Best effort: the merge request is closed already, a branch left is harmless.
+		_, _ = g.api("-X", "DELETE", "projects/:id/repository/branches/"+url.PathEscape(branch))
 	}
-	return err
+	return nil
 }
 
 func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
