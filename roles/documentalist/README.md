@@ -203,5 +203,5 @@ regenerates derived blocks.
   command.
 - [At the push and the adoption](docs/push.md).
 
-**Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), used on workline and DomoticsCore in CI;
+**Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), used on workline and on a C++ project in CI;
 [docs/status.md](docs/status.md); each try in its pull request ([before 2026-10-13](docs/tried.md)).

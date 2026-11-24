@@ -160,7 +160,7 @@ step 2): a count of lines next to a file the doc names among its sources
 - **No agent counts**, and only lines are counted: tests, fields and other
   counts go through a project's `derive`, never guessed.
 
-Why (step 4): on DomoticsCore, a C++ project the role runs on in CI
+Why (step 4): on a C++ project the role runs on in CI
 ([tried for real](tried.md)), "`OTA.cpp` line count (607)" went unreported,
 and its right fix was refused for want of a claim; an OTA table's total,
 unreported, was withdrawn by the agent for want of a claim.

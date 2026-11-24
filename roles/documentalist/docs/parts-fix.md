@@ -30,7 +30,7 @@ Part of [judged in parts](parts.md).
   on it alone are withheld for a person (`citation-unchecked`), the rest
   applied ([the judge's claims](judge-claims.md#removed-words-need-a-claim)).
   The task says so.
-  - Why: on DomoticsCore, three parts called a line partial; the fix
+  - Why: on a C++ project, three parts called a line partial; the fix
     cited one of their quotes and made the line false.
   - Measured on every fix after parts kept, 2026-10-01 to 10-17: the two
     such removals both took out true words.
