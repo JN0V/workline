@@ -1,0 +1,47 @@
+case: reviewer/repository-finder-reads-past-the-change-and-holds
+about: "A merge request nothing else holds: the lens found nothing in the lines the change touches. The repository finder, blind to the lenses, reads the function the change calls outside its lines, finds the defect it causes and quotes the change's line; a judge apart from it verifies it, and it holds the merge as a lens set to block does. The record says the finder read this head (ADR-0073)."
+given:
+  repo: reviewed
+  setup:
+    - |
+      git checkout -q main
+      cat > calc/sum.go <<'GO'
+      package calc
+
+      // sum adds the values after the first: the first counts the others.
+      func sum(values []int) int {
+      	total := 0
+      	for _, v := range values[1:] {
+      		total += v
+      	}
+      	return total
+      }
+      GO
+      git add calc && git commit -qm 'feat: sum the values'
+      git checkout -q feature && git reset -q --hard main
+      cat >> calc/calc.go <<'GO'
+
+      // Mean is the average of every value.
+      func Mean(values []int) int {
+      	return sum(values) / len(values)
+      }
+      GO
+      git commit -qam 'feat: the mean of the values'
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/finder-reads-callee.sh"}
+  config: {roles: {reviewer: {settings: {ai-findings: {repository: block}}}}}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: block
+  # The lens; the finder twice, reading then answering; its finding's judge.
+  agent-calls: 4
+  findings: [{rule: repository, where: "calc/calc.go:22", message: "Mean calls sum, which skips the first value"}]
+  summary: "the repository finder read the repository and found one defect, having read `sum`"
+  run-files:
+    in/judge/finder/question.yaml: {contains: ["**The repository.**", "What you read, round 1", "for _, v := range values[1:] {", "The repository's files at"]}
+    out/review.json: {contains: ['"for": "judge/finder"']}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: ["| **blocks** | repository | `calc/calc.go:22` |", "<!-- workline:finder "]}

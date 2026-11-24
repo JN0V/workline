@@ -7,7 +7,7 @@ given:
     # The review of that commit blocked on its finding: recorded with it.
     - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
     - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
-  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  config: {roles: {reviewer: {settings: {repo-finder: false, ai-findings: block}}}}
   forge:
     issues: []
     merge-requests:

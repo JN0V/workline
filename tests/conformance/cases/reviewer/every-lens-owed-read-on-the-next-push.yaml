@@ -2,6 +2,7 @@ case: reviewer/every-lens-owed-read-on-the-next-push
 about: "The push after a run on ready a rule held, the template passing no `lenses`, reads every lens once on the whole change, commits reviewed before too (#129); then nothing is owed, and the record says every lens read the change (#359)."
 given:
   repo: reviewed
+  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     # A draft push reviewed it; then the run on ready, a rule holding it, owed every lens.

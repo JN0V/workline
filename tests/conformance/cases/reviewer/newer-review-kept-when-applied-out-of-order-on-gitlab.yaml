@@ -2,6 +2,7 @@ case: reviewer/newer-review-kept-when-applied-out-of-order-on-gitlab
 about: "On GitLab, two applies waiting for the resource group may start in any order (#598), as `workline:apply` runs plain `workline apply`: push B's run, a later pipeline, is applied before push A's. The summary comment names the head and the pipeline its run read; A's apply, the older, keeps B's comment as it is and merges only its record into it: B's text, both runs' commits, both runs counted, and the line of each finding judged."
 given:
   repo: reviewed
+  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml", CI_PIPELINE_ID: "101", GITHUB_RUN_ID: ""}

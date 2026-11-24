@@ -2,6 +2,7 @@ case: reviewer/merge-request-body-given-as-testimony
 about: "On a merge request, its title and body are given to the lenses as testimony beside the commit messages, and a `Closes #4` in its body brings #4 to the intent lens (#126)."
 given:
   repo: reviewed
+  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
   forge:
     issues:

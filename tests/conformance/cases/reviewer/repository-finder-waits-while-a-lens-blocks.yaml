@@ -1,0 +1,19 @@
+case: reviewer/repository-finder-waits-while-a-lens-blocks
+about: "A lens's verified finding holds the merge request: the repository finder is not asked, said in the summary; it waits for a run with nothing else holding the merge (ADR-0073)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: {correctness: block, repository: block}}}}}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: block
+  # The lens and its finding's judge; no finder.
+  agent-calls: 2
+  findings: [{rule: correctness, where: "calc/calc.go:11"}]
+  no-findings: [{rule: repository}]
+  summary: "the repository finder waits until nothing else holds the merge"

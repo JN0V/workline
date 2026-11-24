@@ -2,6 +2,7 @@ case: reviewer/every-lens-when-the-run-on-ready-was-cancelled
 about: "A push cancelled the run on ready before it wrote anything (#359): the next run, told the merge request is no draft (`draft=false`) and given no `lenses`, finds a record that does not say every lens read the change, and reads every lens once on the whole change; its record then says so (`read=all`)."
 given:
   repo: reviewed
+  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     # A push on the draft reviewed it, one lens; then marked ready, its run cancelled by the push below.

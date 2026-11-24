@@ -2,6 +2,7 @@ case: reviewer/record-read-without-the-members-on-gitlab
 about: "On GitLab, a token that may not list the project's members — 401, the job's own on a self-managed instance (#552) — still reads the merge request's notes: the reviewer reads its record in its summary comment, written by workline's own account (the token's user), which needs no author's access level, and reviews only the commit pushed since. No record-unread: the push costs no whole review."
 given:
   repo: reviewed
+  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/\" \"$FORGE_FILE\""

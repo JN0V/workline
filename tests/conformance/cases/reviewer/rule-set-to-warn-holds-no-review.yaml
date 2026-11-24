@@ -4,7 +4,7 @@ given:
   repo: reviewed
   setup:
     - "printf '\\n// Double returns twice n (PROJ-12).\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
-  config: {roles: {reviewer: {enforce: {internal-code: warn}}}}
+  config: {roles: {reviewer: {settings: {repo-finder: false}, enforce: {internal-code: warn}}}}
   forge:
     issues: []
     merge-requests: [{id: 5, labels: [], comments: []}]

@@ -2,6 +2,7 @@ case: reviewer/record-merged-when-two-runs-judged-before-either-applied-on-gitla
 about: "On GitLab, a push lands in the seconds between a run's end and its apply taking the resource group (#375): the push's run takes it first, reads the record before that apply wrote it, and reviews the first run's commit again. Each apply then merges the record the comment holds into its own: one summary comment, the newer run's, holding both runs' commits, both runs counted, and the line of each finding judged, the first run's at its head and the second's at its own (ADR-0046)."
 given:
   repo: reviewed
+  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}

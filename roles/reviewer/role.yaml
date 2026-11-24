@@ -157,6 +157,16 @@ settings:
   # says; its findings quoted and judged as a lens's. `--lenses
   # diff-alone` asks it alone, whatever this says.
   diff-alone: false
+  # The repository finder (ADR-0073, lenses/repository.md): on a merge
+  # request, once nothing else holds it, one question reads the whole
+  # repository at the head — callers, callees, the workflows that run the
+  # tests — blind to the lenses' findings and verdicts, through the
+  # judge's reads (judge-read-rounds, judge-read-lines-max). Its finding
+  # is judged as a lens's and holds the merge as one (ai-findings, by the
+  # name `repository`). Asked once a merge request, again only to read its
+  # own block at a newer head: about one call more a merge request, its
+  # reads apart. false: never asked.
+  repo-finder: true
   # What the author says, the lenses' testimony (#126): the messages of the
   # commits reviewed, whole, and the merge request's title and body.
   testimony-lines-max: 80

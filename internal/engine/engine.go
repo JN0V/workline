@@ -706,6 +706,7 @@ func run(o Options, res *Result) error {
 			return err
 		}
 		answered := judgeAnswered(runDir)
+		before, _ := filepath.Glob(filepath.Join(runDir, "in", "judge", "*", "question.yaml"))
 		code, err := script(r, "pre", o.Repo, append(env[:len(env):len(env)], "WORKLINE_PARTS=answered", "WORKLINE_JUDGED=answered"))
 		if err != nil {
 			return err
@@ -713,7 +714,9 @@ func run(o Options, res *Result) error {
 		if stop, err := prepared(code, r, cfg, runDir, res); stop || err != nil {
 			return err
 		}
-		questions = askedAgain(runDir, answered)
+		// Asked again, and asked first: a question an answer led to (the
+		// reviewer's repository finder, then its finding's judge, ADR-0073).
+		questions = append(askedAgain(runDir, answered), addedQuestions(runDir, before)...)
 	}
 	// A run again after a machine error carries what failed (ADR-0063,
 	// §6): the agent reads it, and its input is not the one that failed.
@@ -3915,6 +3918,13 @@ func judgeAnswered(runDir string) []string {
 		answers[i] = filepath.Join(filepath.Dir(a), "question.yaml")
 	}
 	return answers
+}
+
+// addedQuestions are the judge's questions pre wrote on its last pass,
+// none of them there before it ran.
+func addedQuestions(runDir string, before []string) []string {
+	now, _ := filepath.Glob(filepath.Join(runDir, "in", "judge", "*", "question.yaml"))
+	return slices.DeleteFunc(now, func(q string) bool { return slices.Contains(before, q) })
 }
 
 // askedAgain are the questions pre asks again (ADR-0045): answered before

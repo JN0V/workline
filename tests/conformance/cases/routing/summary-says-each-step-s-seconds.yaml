@@ -6,6 +6,7 @@ given:
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
   config:
     routing: {events: {merge-request: [committer, documentalist, reviewer]}}
+    roles: {reviewer: {settings: {repo-finder: false}}}
   forge: {merge-requests: [{id: 5, labels: [], comments: []}]}
 run: {route: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh", summary: true}
 expect:

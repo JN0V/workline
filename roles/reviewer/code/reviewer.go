@@ -78,6 +78,7 @@ type Settings struct {
 	TestimonyLines  int               `json:"testimony-lines-max"`    // lines of what the author says (commit messages, the merge request) the lenses are given
 	QuestionsMax    int               `json:"questions-max"`          // decisions put to a person a run; the rest counted
 	DiffAlone       bool              `json:"diff-alone"`             // ask the diff-alone facet too, apart, given the change only
+	RepoFinder      bool              `json:"repo-finder"`            // on a merge request otherwise mergeable: one finder reads the whole repository, once (ADR-0073)
 	SpecLenses      []string          `json:"spec-lenses"`            // the lenses a spec is read through (#128)
 	PipelinePaths   []string          `json:"pipeline-paths"`         // besides .github/, .gitlab-ci.yml and .workline/, what the pipeline runs: a change to them skips no commit (ADR-0051, cut 5)
 	SpecLinesMax    int               `json:"spec-lines-max"`         // lines of a spec the lenses are given; the rest cut, said
@@ -172,6 +173,11 @@ type candidates struct {
 	// its judge not asked again (ADR-0050, step 6).
 	Same   map[string]reviewmark.Answered `json:"same,omitempty"`
 	Reused map[string]reviewmark.Answered `json:"reused,omitempty"`
+	// What the repository finder came to this run, said in the summary,
+	// and whether it read the head: its last read recorded, its own block
+	// answered unless found again (ADR-0073).
+	Finder     string `json:"finder,omitempty"`
+	FinderRead bool   `json:"finder-read,omitempty"`
 }
 
 // Review is what the run found, as post reads it and out/review.json gives
@@ -1990,6 +1996,14 @@ func settle(runDir, repo string, s Settings) int {
 	if err := readJSON(filepath.Join(runDir, "in", "candidates.json"), &c); err != nil {
 		return fail(err)
 	}
+	// Otherwise mergeable, the repository finder is asked first, then
+	// the judge of what it found (ADR-0073).
+	if asked, err := finder(runDir, repo, s, &st, &c); err != nil || asked {
+		if err != nil {
+			return fail(err)
+		}
+		return 0
+	}
 	v, fallback, err := settled(runDir, repo, s, st, c)
 	if err != nil {
 		return fail(err)
@@ -2190,6 +2204,10 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	}
 	v.Record.Owed = false // the lenses were asked: a rule holds them no more
 	everyLens(st, &v, len(c.Failed) == 0)
+	if c.FinderRead {
+		v.Record.Finder = st.Head
+		readsDone = append(readsDone, finderReads(runDir)...)
+	}
 	v.Calls = spent(runDir, st, c)
 	v.Reads = readsDone
 	v.Reused = reused
@@ -2198,6 +2216,9 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged) + st.leftSaid() + st.still() + weighedSummary(len(weighs), settledN)
 	if len(st.Skipped) > 0 {
 		v.Summary += "; not asked: " + strings.Join(st.Skipped, ", ")
+	}
+	if c.Finder != "" {
+		v.Summary += "; the repository finder " + c.Finder
 	}
 	v.Summary += tokensLine(v.Calls, s.AIMaxTokens)
 	if onForge {
@@ -2208,6 +2229,9 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 				return Review{}, nil, err
 			}
 			r = lensesRead{lenses: facets(st), files: paths(files)}
+			if c.FinderRead {
+				r.lenses = append(r.lenses, finderLens)
+			}
 		}
 		fallback = append(fallback, summaryIntention(repo, s, st, &v, related, len(fallback), &r))
 	}
@@ -2819,12 +2843,15 @@ func settings(runDir string) (Settings, error) {
 	if s.CommitsPerPush < 0 {
 		return s, fmt.Errorf("settings: commits-per-push: %d is below 0 (0: every new commit)", s.CommitsPerPush)
 	}
+	if slices.Contains(s.Lenses, finderLens) {
+		return s, fmt.Errorf("settings: lenses names %q, the repository finder, asked apart by its own setting, repo-finder", finderLens)
+	}
 	if slices.Contains(s.Lenses, alone) {
 		return s, fmt.Errorf("settings: lenses names %q, a facet asked apart by its own setting, diff-alone", alone)
 	}
 	for lens := range s.AIFindings.ByLens {
-		if !slices.Contains(s.Lenses, lens) && !slices.Contains(s.SpecLenses, lens) && lens != alone {
-			return s, fmt.Errorf("settings: ai-findings names %q, not one of the lenses %v, the spec lenses %v, nor %s", lens, s.Lenses, s.SpecLenses, alone)
+		if !slices.Contains(s.Lenses, lens) && !slices.Contains(s.SpecLenses, lens) && lens != alone && lens != finderLens {
+			return s, fmt.Errorf("settings: ai-findings names %q, not one of the lenses %v, the spec lenses %v, %s, nor %s", lens, s.Lenses, s.SpecLenses, alone, finderLens)
 		}
 	}
 	return s, nil

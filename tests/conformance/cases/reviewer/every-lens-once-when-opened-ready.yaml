@@ -2,6 +2,7 @@ case: reviewer/every-lens-once-when-opened-ready
 about: "A merge request opened ready is read by every lens once (#129): the template passes `lenses=all` on that event, and the reviewer asks every lens with something to read, in one call, then records the commits, one run, and that every lens read the change (`read=all`, #359)."
 given:
   repo: reviewed
+  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
   forge:
     issues: []

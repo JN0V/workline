@@ -34,6 +34,8 @@ type reading struct {
 	Material string      `json:"material"` // as first asked, before any read
 	Cause    string      `json:"cause"`    // the cause's file: a name is looked for there first, then in its folder
 	Rounds   []readRound `json:"rounds,omitempty"`
+	Find     bool        `json:"find,omitempty"`   // the repository finder's: a yes names a defect and quotes its cause (ADR-0073)
+	Author   string      `json:"author,omitempty"` // the model whose finding it judges, when not a lens's: its judge stands apart from it
 }
 
 // readRound is one round of reads: what the judge asked, and what it was
@@ -110,7 +112,11 @@ func (r reading) write(dir string, s Settings, head string) error {
 	if err := writeJSON(filepath.Join(dir, "reads.json"), r); err != nil {
 		return err
 	}
-	data, _ := json.Marshal(map[string]any{"question": r.Question, "material": r.asked(s, head), "reads": true}) // JSON, which YAML reads
+	q := map[string]any{"question": r.Question, "material": r.asked(s, head), "reads": true}
+	if r.Author != "" {
+		q["author"] = r.Author
+	}
+	data, _ := json.Marshal(q) // JSON, which YAML reads
 	return os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644)
 }
 
@@ -130,6 +136,10 @@ func (r reading) asked(s Settings, head string) string {
 		fmt.Fprintf(&b, "\n## Reading more\n\nThis question lets you read before you answer, in place of the one note asked otherwise. You may ask to read the repository as it reads at %s: %d more %s of reads, %d more lines. To read, answer with reads instead of a note, each saying why: a file's lines (`path`, `lines`), where a name is defined (`name`), or the lines naming a word (`grep`, at most %d places). You are then asked again, with what you read.\n", short(head), rounds, plural(rounds, "round", "rounds"), lines, grepMax)
 	} else {
 		b.WriteString("\n## No read is left\n\nYou read what you could (judge-read-rounds, judge-read-lines-max): answer now.\n")
+	}
+	if r.Find {
+		b.WriteString(finderAnswer)
+		return b.String()
 	}
 	b.WriteString("\nYour answer: yes; no, with the lines that refute the finding quoted beside the note, as they read, with their path; or unsure, when you still cannot tell. A no whose quote is not found again in what you were shown or read leaves the finding not verified:\n\n" +
 		"- note: \"no: the loop adds every value before the division.\"\n- quote: {path: \"calc/calc.go\", text: \"for _, v := range values {\"}\n\n" +

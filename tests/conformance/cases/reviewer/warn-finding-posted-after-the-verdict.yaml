@@ -6,7 +6,7 @@ given:
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
   config:
     routing: {events: {merge-request: [reviewer]}}
-    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
+    roles: {reviewer: {settings: {repo-finder: false, ai-findings: {correctness: block}}}}
   forge:
     merge-requests:
       - id: 5

@@ -2,6 +2,7 @@ case: reviewer/decision-in-its-own-section-on-the-merge-request
 about: "On a merge request, a decision for a person (#126) is not a row of the findings' table: the summary comment asks it under its own heading, its cause quoted, a reply there being enough; no issue is opened for it, nor for one outside the change."
 given:
   repo: reviewed
+  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|^\\t\\ttotal += v|\\t\\tif v == 0 {\\n\\t\\t\\tcontinue\\n\\t\\t}\\n\\t\\ttotal += v|' calc/calc.go && git commit -qam 'feat: skip the zeros in the mean' -m 'Closes #4.'"
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}

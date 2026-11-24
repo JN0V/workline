@@ -2,6 +2,7 @@ case: reviewer/finding-cause-in-diff-is-fixed-by-author
 about: A finding whose cause lies on a line the change added belongs to the change, for its author to fix; it is reported on that line, verified, and no issue is opened for it.
 given:
   repo: reviewed
+  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
   forge:

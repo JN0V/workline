@@ -54,6 +54,9 @@ func spent(runDir string, st state, c candidates) []Spent {
 		}
 		if key, ok := strings.CutPrefix(call.For, "judge/"); ok {
 			f, asked := judged[key]
+			if key == finderKey {
+				f.Lens, asked = finderLens, true
+			}
 			if st.Part != "" && !asked {
 				continue // another spec's judge
 			}

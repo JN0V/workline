@@ -106,7 +106,7 @@ func answered(repo string, s Settings, st state, lines []forge.LineComment, r le
 // ofThisSide says whether a key's finder is this run's to settle: a lens
 // of its side, or a rule on the verdict's run.
 func ofThisSide(s Settings, st state, by string) bool {
-	if slices.Contains(s.Lenses, by) {
+	if slices.Contains(s.Lenses, by) || by == finderLens {
 		return s.ofSide(st.Warn, by)
 	}
 	return st.Warn != warnOnly
@@ -130,7 +130,7 @@ func readAgain(repo string, s Settings, st state, r lensesRead, lensOf func(stri
 	if !slices.Contains(r.lenses, by) {
 		return false
 	}
-	if slices.Contains(r.files, path) {
+	if by == finderLens || slices.Contains(r.files, path) { // the finder reads the whole repository (ADR-0073)
 		return true
 	}
 	l, err := lensOf(by)

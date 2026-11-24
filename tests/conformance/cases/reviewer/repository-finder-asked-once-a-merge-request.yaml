@@ -1,0 +1,31 @@
+case: reviewer/repository-finder-asked-once-a-merge-request
+about: "The record says the repository finder read the merge request at an earlier head, and none of its findings stands: a push nothing else holds asks the lens in turn, not the finder again, and the record keeps the head it read (ADR-0073)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD~1)/g\" \"$FORGE_FILE\""
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/finder-reads-callee.sh"}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — no finding on the change; lenses: correctness.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 read=all -->
+            <!-- workline:finder @reviewed@ -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  # The lens in turn; no finder.
+  agent-calls: 1
+  no-findings: [{rule: repository}]
+  forge:
+    merge-requests:
+      - {id: 5, comment-contains: ["<!-- workline:finder "]}

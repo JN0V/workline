@@ -47,6 +47,10 @@ type Record struct {
 	// Weighed are the tester's "none needed" answers the judge weighed,
 	// so that an answer is weighed once (#1303).
 	Weighed []Weighed `json:"weighed,omitempty"`
+	// Finder is the head the repository finder read last on this merge
+	// request (ADR-0073): it is asked once, and again only to read its
+	// own block anew at a newer head.
+	Finder string `json:"finder,omitempty"`
 	// comment is the side's own comment the record was read from on a
 	// merge request, whole: a draft's run keeps it as it is, its record
 	// alone written anew (ADR-0050). "" elsewhere, or with none yet.
@@ -88,6 +92,9 @@ var (
 	// weighedLine reads the tester's answers weighed, a line of their own
 	// after the blocks; an engine before them wrote none (#1303).
 	weighedLine = regexp.MustCompile(`<!-- workline:weighed (.*?) -->`)
+	// finderLine reads the head the repository finder read, a line of its
+	// own after the rest; an engine before it wrote none (ADR-0073).
+	finderLine = regexp.MustCompile(`<!-- workline:finder ([0-9a-f]+) -->`)
 )
 
 // The openings of the record and of its blocks: a text holding one that
@@ -127,6 +134,9 @@ func (r Record) String() string {
 	}
 	if len(r.Weighed) > 0 {
 		s += "\n<!-- workline:weighed " + hidden(r.Weighed) + " -->"
+	}
+	if r.Finder != "" {
+		s += "\n<!-- workline:finder " + r.Finder + " -->"
 	}
 	return s
 }
@@ -186,6 +196,9 @@ func parseRecord(text string) (Record, error) {
 	if w := weighedLine.FindStringSubmatch(text); w != nil && json.Unmarshal([]byte(w[1]), &r.Weighed) != nil {
 		r.Weighed = nil // weighed again, never a record lost for it
 	}
+	if f := finderLine.FindStringSubmatch(text); f != nil {
+		r.Finder = f[1]
+	}
 	return r, nil
 }
 
@@ -207,7 +220,7 @@ func ids(list string) []string {
 // none had to read (#588), and names who left the rest (recorded, #591).
 func (r Record) add(commits, patches []string) Record {
 	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll, Retried: r.Retried,
-		Judged: slices.Clone(r.Judged), Gone: r.Gone, Weighed: slices.Clone(r.Weighed)}
+		Judged: slices.Clone(r.Judged), Gone: r.Gone, Weighed: slices.Clone(r.Weighed), Finder: r.Finder}
 	for _, c := range commits {
 		if !slices.Contains(out.Reviewed, c) {
 			out.Reviewed = append(out.Reviewed, c)
@@ -270,7 +283,7 @@ func standing(repo string, s Settings, st state, blocks []Block) []Block {
 func answering(blocks []Block, files []File, skip map[string]string) []string {
 	var out []string
 	for _, b := range blocks {
-		if _, ok := skip[b.Lens]; ok || slices.Contains(out, b.Lens) {
+		if _, ok := skip[b.Lens]; ok || slices.Contains(out, b.Lens) || b.Lens == finderLens { // the finder takes no lens's turn (ADR-0073)
 			continue
 		}
 		if len(files) > 0 { // a fix may lie in any file, not only its cause's (#1598)
@@ -346,6 +359,9 @@ func reread(repo string, s Settings, st state, c candidates, related []Finding, 
 					return s.blocking(f)
 				}
 			}
+		}
+		if b.Lens == finderLens { // answered once the finder read the head again (ADR-0073)
+			return c.FinderRead
 		}
 		if !whole || !slices.Contains(answered, b.Lens) {
 			return false
