@@ -8,7 +8,7 @@ verified: agent:claude-code
 Part of [the check](judge.md): what backs a word taken out of a doc. The
 steps cited are those of
 [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md);
-A C++ project is one the role runs on in CI
+"That C++ project" below is the one the role ran on in CI
 ([tried for real](tried.md)).
 
 ## Removed words need a claim
