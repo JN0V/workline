@@ -1,0 +1,39 @@
+case: developer/partial-not-from-sources
+about: >
+  Only the issue's Scope section makes a pull request a part: a CI
+  workflow among the product owner's sources, not in the Scope, leaves
+  nothing for a person. The pull request says `Closes #3`; #3 is not
+  blocked.
+given:
+  repo: tested-draft
+  setup:
+    - "mkdir -p .github/workflows && printf 'on: push\\n' > .github/workflows/ci.yml && git add .github && git commit -qm 'ci: a workflow' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        comments:
+          - "What workline knows of this issue is kept in this comment, out of sight; edited by the engine, not by hand.\n\n<!-- What workline knows of this issue, edited by the engine, not by hand.\n```yaml\nsources: [lib.sh, .github/workflows/ci.yml]\nconfirmed: abc1234\n```\n-->\n\n<!-- workline:sticky=product-owner/state -->"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  agent-calls: 1
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:developing"]
+        comment-lacks: ["blocks this issue"]
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        body-contains: ["Closes #3\n"]
+        body-lacks: ["Part of #3", "## Left out"]

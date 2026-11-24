@@ -3,8 +3,8 @@ about: >
   A pull request that leaves part of its issue out never closes it. Its
   agent wrote the code and a gate's files, refused at apply as a
   person's to change: the pull request says `Part of #2`, not
-  `Closes #2`, and an issue for a person holds the rest, a sub-issue of
-  #2, opened with it.
+  `Closes #2`, and once it is open #2 is blocked for a person, what is
+  left said on it. No other issue is opened.
 given:
   repo: tested
   setup:
@@ -13,7 +13,6 @@ given:
   config:
     gates: {default: {checks: [{id: own, run: "sh check.sh", output: exit}]}}
   forge:
-    sub-issues: true
     issues:
       - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`, `check.sh`, `.workline/config.yaml`, `.github/workflows/ci.yml`.\n"}
 run: {develop: [], ai: "fake:developer-gate-file"}
@@ -32,7 +31,6 @@ expect:
     issues:
       - id: 2
         closed: false
-      - id: 3
-        title: "A person's part of #2: Multiply"
-        parent: 2
-        body-contains: ["Part of #2.", "## Need", "## Validation", "- **", "---", "## Scope", "`check.sh`", "`.workline/config.yaml`", "`.github/workflows/ci.yml`"]
+        labels: ["workline:blocked"]
+        comment-contains: ["its pull request is a part of it, `Part of #2`; left for a person:", "`.github/workflows/ci.yml`"]
+      - {id: 3, absent: true}
