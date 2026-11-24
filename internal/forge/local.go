@@ -529,7 +529,7 @@ func (l *Local) deleteBranch(branch string, closed int, items []*LocalItem) {
 			return
 		}
 	}
-	exec.Command("git", "-C", l.Repo, "branch", "-D", branch).Run()
+	_ = exec.Command("git", "-C", l.Repo, "branch", "-D", branch).Run()
 }
 
 func (l *Local) MergeRequest(id int) (MergeRequest, error) {
