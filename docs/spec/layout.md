@@ -75,11 +75,8 @@ roles/<name>/
 - **The auditor's criteria win**: `roles/auditor/criteria/<role>/<kind>.md`,
   guarded, is read before the role's own `criteria/<kind>.md`.
 - **The binary ships** `role.yaml`, `prompts/` and `criteria/` of each
-  role, named one by one in `workline.go`; never cases, `docs/`, `code/`
-  nor its README as files. A check in `tests/` fails if one is embedded.
-- **A shipped role has no `pre` nor `post` file**: the engine runs its
-  `code/` itself, else the shared step. A file put beside `code/` is
-  never run; a check in `tests/` fails if a shipped role holds one.
+  role, named one by one in `workline.go`; never cases, `docs/`, `code/`,
+  its README, nor a `pre` or `post` file: a check in `tests/` fails.
 
 ## Guarded paths
 
@@ -95,10 +92,8 @@ them, so a guarded file is never unguarded for a commit:
 
 - **Other roles' `criteria/`** stay unguarded: a soft one shows in
   the wake script; the auditor's copy, guarded, wins.
-- **A project's copy at the old path**,
-  `.workline/roles/auditor/kinds/<kind>.md`, is read no more: the act
-  is not judged, and the sample's report names where the file goes,
-  `.workline/roles/auditor/criteria/<role>/<kind>.md`.
+- **A project's old `.workline/roles/auditor/kinds/<kind>.md`** is read
+  no more: the act is not judged, the report says where it goes.
 
 ## Kinds of role
 

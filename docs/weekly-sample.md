@@ -7,7 +7,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:read
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:write
   - roles/auditor/role.yaml
-checked: 48df2536f
+checked: a2f65b253
 verified: agent:claude-code
 ---
 # The weekly sample
