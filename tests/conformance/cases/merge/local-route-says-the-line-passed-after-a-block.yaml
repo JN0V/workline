@@ -1,0 +1,38 @@
+case: merge/local-route-says-the-line-passed-after-a-block
+about: >
+  With `forge: local`, the merge-request line blocks `!1` (the committer
+  refuses its commit): the request says the line blocks its head. The
+  commit is amended to a good subject and the line runs again: the same
+  comment now says the line passed, the block text gone with no second
+  comment added (#1347).
+given:
+  repo: basic
+  setup:
+    - "git checkout -qb workline/developer/1 && echo one > one.txt && git add one.txt && git commit -qm 'fix: write the first file of the series, the one the rest of the work depends on'"
+    - |
+      mkdir -p .git/workline/merge-requests && cat > .git/workline/merge-requests/1.md <<'MR'
+      ---
+      title: "fix: write one"
+      state: open
+      labels: []
+      branch: workline/developer/1
+      base: main
+      ---
+
+      Closes #1
+      MR
+  config:
+    forge: local
+    merge: {autonomy: cautious}
+    routing: {events: {merge-request: [committer]}}
+run:
+  sh: >
+    workline route merge-request --target merge-request:1 --ai none;
+    git commit -q --amend -m 'fix: write one' &&
+    workline route merge-request --target merge-request:1 --ai none
+expect:
+  exit: 0
+  files:
+    .git/workline/merge-requests/1.md:
+      contains: ["**The line passed**", "<!-- workline:line-verdict -->"]
+      lacks: "**The line blocks this head**"
