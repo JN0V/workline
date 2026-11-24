@@ -16,14 +16,15 @@ Part of [the developer](../README.md), which says it in one line a step.
 
 - **Writes the code**, with an agent, in a worktree of the code: it
   reads, edits and runs the tests there ([the agent](agent.md)).
-  Its diff is held to its bounds: a frozen acceptance test, a file the
-  project's `CODEOWNERS` lists, an agent file or a gate's are reverted,
-  no agent judging; another role's prompt is not; on its
-  pull request, the same bounds are a check, whoever pushed
-  ([the bounds](bounds.md)). A test that does not fit, it objects
-  to on the tester's Draft. The Scope is a hint: a file beyond it is
-  applied, and listed on the pull request with why, for the reviewer
-  ([beyond the Scope](bounds.md#beyond-the-scope)).
+  - Its diff is held to its bounds: a frozen acceptance test, a file
+    the project's `CODEOWNERS` lists, an agent file or a gate's are
+    reverted, no agent judging; another role's prompt is not.
+  - On its pull request, the same bounds are a check, whoever pushed
+    ([the bounds](bounds.md)).
+  - A test that does not fit, it objects to on the tester's Draft.
+  - The Scope is a hint: a file beyond it is applied, and listed on
+    the pull request with why, for the reviewer
+    ([beyond the Scope](bounds.md#beyond-the-scope)).
 - **Proves it** on the project's tests, the tester's `test-command`,
   then opens its pull request: ready when green with no cap reached,
   else a Draft ([the proof and the caps](proof.md)).
