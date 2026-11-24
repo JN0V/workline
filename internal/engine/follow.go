@@ -118,7 +118,7 @@ func Follow(o FollowOptions) *Result {
 			continue
 		case "closed":
 			// The forge's own close, its comment saying why; the branch
-			// stays, for the next run of the task to propose again from.
+			// is deleted with it, when the line made it, and the next run of the task proposes again from main.
 			if err := f.CloseMergeRequest(branch, "Closed by workline's "+role+": "+finding.Message+".", forge.Marker("closed")); err != nil {
 				return fail(err)
 			}

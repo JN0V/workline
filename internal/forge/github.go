@@ -672,16 +672,34 @@ func (g *github) OpenIssue(title, body, marker string) (int, error) {
 
 // openPulls lists the open pull requests as number and head branch.
 func (g *github) openPulls() (map[string]int, error) {
-	out, err := g.api("--paginate", "repos/{owner}/{repo}/pulls?state=open&per_page=100", "--jq", ".[] | [.number, .head.ref] | @tsv")
+	list, err := g.openPullList()
 	if err != nil {
 		return nil, err
 	}
 	pulls := map[string]int{}
+	for _, p := range list {
+		pulls[p.branch] = p.id
+	}
+	return pulls, nil
+}
+
+// branchPull is an open pull request: its number and head branch.
+type branchPull struct {
+	id     int
+	branch string
+}
+
+func (g *github) openPullList() ([]branchPull, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/pulls?state=open&per_page=100", "--jq", ".[] | [.number, .head.ref] | @tsv")
+	if err != nil {
+		return nil, err
+	}
+	var pulls []branchPull
 	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		if num, branch, ok := strings.Cut(line, "\t"); ok {
 			var id int
 			fmt.Sscan(num, &id)
-			pulls[branch] = id
+			pulls = append(pulls, branchPull{id, branch})
 		}
 	}
 	return pulls, nil
@@ -721,20 +739,39 @@ func (g *github) OpenMergeRequests(prefix string) ([]string, error) {
 }
 
 func (g *github) CloseMergeRequest(branch, body, marker string) error {
-	pulls, err := g.openPulls()
+	pulls, err := g.openPullList()
 	if err != nil {
 		return err
 	}
-	id, ok := pulls[branch]
-	if !ok {
+	id, others := 0, false
+	for _, p := range pulls {
+		if p.branch != branch {
+			continue
+		}
+		if id == 0 {
+			id = p.id
+		} else {
+			others = true
+		}
+	}
+	if id == 0 {
 		return nil
 	}
 	if err := g.Comment(Target{Kind: "merge-request", ID: id}, body, marker); err != nil {
 		return err
 	}
-	_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id), "-f", "state=closed")
+	if _, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id), "-f", "state=closed"); err != nil {
+		return err
+	}
+	if !others && OwnBranch(branch) {
+		// GitHub deletes a branch on merge only, never on a close.
+		_, err = g.api("-X", "DELETE", "repos/{owner}/{repo}/git/refs/heads/"+branch)
+	}
 	return err
 }
+
+// OwnBranch tells a branch the line made: the only one it deletes.
+func OwnBranch(branch string) bool { return strings.HasPrefix(branch, "workline/") }
 
 func (g *github) MergeRequest(id int) (MergeRequest, error) {
 	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id))

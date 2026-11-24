@@ -508,10 +508,28 @@ func (l *Local) CloseMergeRequest(branch, body, marker string) error {
 				it.Comments = append(it.Comments, body+"\n\n"+marker)
 			}
 			it.State = "closed"
-			return l.save("merge-request", it)
+			if err := l.save("merge-request", it); err != nil {
+				return err
+			}
+			l.deleteBranch(branch, it.ID, items)
+			return nil
 		}
 	}
 	return nil
+}
+
+// deleteBranch deletes the line's branch of a merge request just closed,
+// unless another open merge request uses it; a failure leaves the branch.
+func (l *Local) deleteBranch(branch string, closed int, items []*LocalItem) {
+	if !OwnBranch(branch) {
+		return
+	}
+	for _, o := range items {
+		if o.ID != closed && o.Branch == branch && l.StateOf(o) == "open" {
+			return
+		}
+	}
+	exec.Command("git", "-C", l.Repo, "branch", "-D", branch).Run()
 }
 
 func (l *Local) MergeRequest(id int) (MergeRequest, error) {
