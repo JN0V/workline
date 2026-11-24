@@ -12,6 +12,7 @@ WORKLINE=${TRY_WORKLINE:-JN0V/workline}
 POLL=${TRY_POLL:-300}
 CHECKS_MINUTES=${TRY_CHECKS_MINUTES:-90}
 LABEL_MINUTES=${TRY_LABEL_MINUTES:-120}
+DISPATCH_MINUTES=${TRY_DISPATCH_MINUTES:-15}
 GIT_URL=${TRY_GIT_URL:-https://github.com}   # where the repositories are cloned from
 LOCK=workline-try-lock   # a tag on the copy: one try at a time, whoever runs it
 
@@ -23,7 +24,9 @@ usage: try-release.sh [--dry-run] [--minutes N] <vX.Y.Z>
 Run it again after a stop: it finds the pull request and the issue it made.
 Environment: TRY_REPO (JN0V/TraceGlass-trial), TRY_WORKLINE (JN0V/workline),
 TRY_POLL seconds between two reads (300), TRY_CHECKS_MINUTES (90),
-TRY_LABEL_MINUTES, the wait for the person's label and the merge (120).
+TRY_LABEL_MINUTES, the wait for the person's label and the merge (120),
+TRY_DISPATCH_MINUTES, how long a fix green and accepted waits for its merge
+before the script dispatches the copy's workline merge workflow once (15).
 EOF
   exit 3
 }
@@ -56,13 +59,16 @@ asset="workline_${os}_${arch}.tar.gz"
 branch="workline-$version"
 
 # The canned issues: small, real bugs of the copy, a reproduced bug being
-# what merges by policy at `normal` (the product owner sorts it, the
-# script puts no label). A try takes the first one never opened
-# on the copy; each one fixed is spent. Add one when the last is spent.
+# what merges by policy at `normal`. Each opens test-first
+# (workline:needs-tests) with its kind, so the copy's line starts on it
+# and its merge needs no person. A try takes the first one never opened
+# on the copy; each one fixed is spent. Add one when the last is spent,
+# with its kind.
 canned_titles=(
   "An outline of 65536 by 65536 pixels with no pixels crashes instead of being refused"
   "A matrix of 8 numbers crashes the composition with an index error"
 )
+canned_kinds=(bug bug)
 canned_body() {
   case $1 in
     0) cat <<'EOF'
@@ -127,8 +133,8 @@ try of $version on $REPO (dry run: no forge is called, nothing changes)
 4. upgrade: open or update the pull request $branch on $REPO: the templates of $WORKLINE's defaults/ci/github/, from the copy's pin to $version, merged into its .github/workflows/
 5. checks: wait up to $CHECKS_MINUTES min for its checks, every $POLL s; green and mergeable, or red
 6. label: print that the person labels it; wait up to $LABEL_MINUTES min for its merge (the script never labels)
-7. issue: open the first canned issue never opened on $REPO: "${canned_titles[0]}"
-8. merge: wait up to $minutes min for a pull request closing it, merged with no person's label
+7. issue: open the first canned issue never opened on $REPO, labelled workline:needs-tests and ${canned_kinds[0]}: "${canned_titles[0]}"
+8. merge: wait up to $minutes min for a pull request closing it, merged with no person's label; one green and accepted by policy but not merged after $DISPATCH_MINUTES min: dispatch $REPO's workline merge workflow once
 9. verdict: green or red, with the links
 EOF
   exit 0
@@ -307,7 +313,7 @@ for i in "${!canned_titles[@]}"; do
 
 <!-- workline-try: $version -->
 Opened by the try of workline $version (scripts/try-release.sh)."
-  issue=$(gh issue create -R "$REPO" --title "$title" --body "$body")
+  issue=$(gh issue create -R "$REPO" --title "$title" --label workline:needs-tests --label "${canned_kinds[$i]}" --body "$body")
   issue=${issue##*/}
   break
 done
@@ -316,7 +322,16 @@ links+=("issue: https://github.com/$REPO/issues/$issue")
 echo "3. canned issue: https://github.com/$REPO/issues/$issue"
 
 # 8. A pull request closing it, merged by policy: no person's label on it.
-# Of its closing pull requests, the merged one counts.
+# Of its closing pull requests, the merged one counts. A label on an issue
+# does not start the copy's merge workflow: one open, its checks green and
+# workline/accepted set with no person's label, waits $DISPATCH_MINUTES min,
+# then the workflow is dispatched once. The script never labels nor merges.
+ready_jq='.state == "OPEN" and (.isDraft | not)
+  and ([.labels[].name] | index("workline:accepted") == null)
+  and any(.statusCheckRollup[]; .__typename == "StatusContext" and .context == "workline/accepted" and .state == "SUCCESS")
+  and all(.statusCheckRollup[]; if .__typename == "StatusContext" then .state == "SUCCESS"
+    else .conclusion == "SUCCESS" or .conclusion == "SKIPPED" or .conclusion == "NEUTRAL" end)'
+ready_since= dispatched=false
 deadline=$(( $(date +%s) + minutes * 60 ))
 while :; do
   read -r state closers <<<"$(gh issue view -R "$REPO" --json state,closedByPullRequestsReferences \
@@ -332,6 +347,23 @@ while :; do
     links+=("merged: $found")
     [ "$labelled" = false ] || red "$found merged on a person's label, not by policy"
     break
+  fi
+  if ! $dispatched; then
+    ready=
+    for n in ${closers//,/ }; do
+      if [ "$(gh pr view -R "$REPO" --json state,isDraft,labels,statusCheckRollup --jq "$ready_jq" -- "$n" 2>/dev/null || true)" = true ]; then
+        ready=$n; break
+      fi
+    done
+    if [ -z "$ready" ]; then ready_since=
+    elif [ -z "$ready_since" ]; then ready_since=$(date +%s)
+    fi
+    if [ -n "$ready" ] && [ $(( $(date +%s) - ready_since )) -ge $(( DISPATCH_MINUTES * 60 )) ]; then
+      gh workflow run workline-merge.yml -R "$REPO" >/dev/null \
+        || red "the copy's workline merge workflow cannot be dispatched"
+      dispatched=true
+      echo "3. https://github.com/$REPO/pull/$ready is green and accepted by policy, not merged after $DISPATCH_MINUTES min: dispatched the copy's workline merge workflow once"
+    fi
   fi
   [ "$(date +%s)" -lt "$deadline" ] || red "no pull request merged for the canned issue within $minutes min"
   sleep "$POLL"

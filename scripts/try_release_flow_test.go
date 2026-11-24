@@ -44,6 +44,7 @@ case "$1 $2" in
   "issue list") answer issues.json ;;
   "issue create") echo "https://github.com/JN0V/TraceGlass-trial/issues/9" ;;
   "issue view") answer "issue-$pos.json" ;;
+  "workflow run") ;;
   *) echo "unexpected gh $*" >&2; exit 1 ;;
 esac
 `
@@ -236,8 +237,11 @@ func TestTryReleaseGreenWhenTheCannedIssueMergesByPolicy(t *testing.T) {
 		}
 	}
 	c := f.calls()
-	if !strings.Contains(c, "issue create -R JN0V/TraceGlass-trial --title A matrix of 8 numbers crashes the composition with an index error") {
-		t.Errorf("the second canned issue was not opened:\n%s", c)
+	if !strings.Contains(c, "issue create -R JN0V/TraceGlass-trial --title A matrix of 8 numbers crashes the composition with an index error --label workline:needs-tests --label bug") {
+		t.Errorf("the second canned issue was not opened test-first with its kind:\n%s", c)
+	}
+	if strings.Contains(c, "workflow run") {
+		t.Errorf("the merge workflow was dispatched for an issue closed by a merge:\n%s", c)
 	}
 }
 
@@ -319,4 +323,43 @@ func TestTryReleaseAFailingCommandIsRed(t *testing.T) {
 			t.Errorf("the lock was not released after a red:\n%s", c)
 		}
 	})
+}
+
+// The fix green and accepted by policy, not merged: the script dispatches
+// the copy's merge workflow once, and never labels. A fix not accepted
+// yet, or accepted on a person's label, is left as it is.
+func TestTryReleaseDispatchesTheMergeOnceForAFixAcceptedByPolicy(t *testing.T) {
+	green := `{"__typename":"CheckRun","name":"test","conclusion":"SUCCESS"}`
+	accepted := `{"__typename":"StatusContext","context":"workline/accepted","state":"SUCCESS"}`
+	for _, c := range []struct {
+		name, pr string
+		want     bool
+	}{
+		{"accepted by policy", `{"state":"OPEN","isDraft":false,"labels":[{"name":"bug"}],"statusCheckRollup":[` + green + `,` + accepted + `]}`, true},
+		{"not accepted yet", `{"state":"OPEN","isDraft":false,"labels":[],"statusCheckRollup":[` + green + `]}`, false},
+		{"a check pending", `{"state":"OPEN","isDraft":false,"labels":[],"statusCheckRollup":[{"__typename":"CheckRun","name":"test","conclusion":""},` + accepted + `]}`, false},
+		{"a person's label", `{"state":"OPEN","isDraft":false,"labels":[{"name":"workline:accepted"}],"statusCheckRollup":[` + green + `,` + accepted + `]}`, false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			f := newForge(t)
+			f.set("pr-merged.json", `[{"number":5,"url":"https://github.com/JN0V/TraceGlass-trial/pull/5"}]`)
+			f.set("issues.json", `[{"number":8,"title":"An outline of 65536 by 65536 pixels with no pixels crashes instead of being refused","state":"OPEN","stateReason":null,"body":"<!-- workline-try: v9.9.9 -->"}]`)
+			f.set("issue-8.json", `{"state":"OPEN","closedByPullRequestsReferences":[{"number":10}]}`)
+			f.set("pr-10.json", c.pr)
+			out, code := f.runEnv([]string{"TRY_DISPATCH_MINUTES=0"}, "v9.9.9")
+			if code != 1 || !strings.Contains(out, "no pull request merged for the canned issue") {
+				t.Fatalf("exit %d, want 1 when the time runs out:\n%s", code, out)
+			}
+			calls := f.calls()
+			if got := strings.Count(calls, "workflow run workline-merge.yml -R JN0V/TraceGlass-trial"); got != map[bool]int{true: 1, false: 0}[c.want] {
+				t.Errorf("dispatched %d times, want it %v:\n%s", got, c.want, calls)
+			}
+			if said := strings.Contains(out, "dispatched the copy's workline merge workflow once"); said != c.want {
+				t.Errorf("the output says the dispatch %v, want %v:\n%s", said, c.want, out)
+			}
+			if strings.Contains(calls, "edit") || strings.Contains(calls, "merge ") {
+				t.Errorf("the script labelled or merged:\n%s", calls)
+			}
+		})
+	}
 }
