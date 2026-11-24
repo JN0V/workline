@@ -18,7 +18,7 @@ sources:
   - internal/forge/at.go#At
   - roles/inspector/code/inspector.go#Post
   - internal/report/report.go#ForCodeScanning
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Inspector — a run, in short

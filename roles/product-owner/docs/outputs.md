@@ -1,7 +1,7 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/code, internal/backlog, internal/sample/acts.go]
-checked: cf8d4d9f
-verified: human:JN0V
+checked: e81df7b34
+verified: agent:claude-code
 ---
 # Product owner — what it writes
 
@@ -9,6 +9,10 @@ Part of [the product owner](../README.md). What a run does, step by step:
 [run.md](run.md).
 
 ## On each issue
+
+The comment and the labels, then what it writes in the issue's body.
+
+### The comment and the labels
 
 - **One comment**, edited in place; posted anew, the old one deleted,
   when a proposal starts waiting on you — a new comment mails you, an
@@ -44,6 +48,8 @@ Part of [the product owner](../README.md). What a run does, step by step:
   on GitLab, the Status on an organisation's GitHub project; a user's
   project is not written, the act says so
   ([boards](../../../docs/boards.md)).
+### What it writes in the issue
+
 - **Sections** written in the body, Need, Validation and a real example
   as drafts: a hidden mark only, the comment saying which are drafts;
   edit one and it is yours. To an outsider, a comment proposing them
