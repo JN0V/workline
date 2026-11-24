@@ -139,8 +139,8 @@ func newForge(t *testing.T) forge {
 
 	write(t, filepath.Join(base, "JN0V", ".keep"), "")
 	repo(t, filepath.Join(base, "JN0V"), "workline",
-		map[string]string{"defaults/ci/github/workline.yml": template("v9.9.8"), "tag": "v9.9.8"},
-		map[string]string{"defaults/ci/github/workline.yml": template("v9.9.9"), "tag": "v9.9.9"})
+		map[string]string{"defaults/ci/github/workline.yml": template("v9.9.8"), "defaults/ci/github/optional.yml": "name: optional\n", "tag": "v9.9.8"},
+		map[string]string{"defaults/ci/github/workline.yml": template("v9.9.9"), "defaults/ci/github/new.yml": "name: new\n", "tag": "v9.9.9"})
 	own := strings.Replace(template("v9.9.8"), "jobs: {}", "jobs: {}\n# the copy's own line", 1)
 	repo(t, filepath.Join(base, "JN0V"), "TraceGlass-trial",
 		map[string]string{".github/workflows/workline.yml": own})
@@ -195,6 +195,14 @@ func TestTryReleaseNoMergedUpgradeWaitsForThePersonsLabel(t *testing.T) {
 	}
 	if !strings.Contains(string(got), "WORKLINE_VERSION: v9.9.9") || !strings.Contains(string(got), "# the copy's own line") {
 		t.Errorf("the upgrade does not take the release's pin and keep the copy's line:\n%s", got)
+	}
+	ls, err := exec.Command("git", "--git-dir", strings.TrimPrefix(f.gitURL, "file://")+"/JN0V/TraceGlass-trial.git",
+		"ls-tree", "--name-only", "refs/heads/workline-v9.9.9", ".github/workflows/").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if files := string(ls); !strings.Contains(files, "new.yml") || strings.Contains(files, "optional.yml") {
+		t.Errorf("want the workflow new in the release, not the one the copy left out:\n%s", files)
 	}
 }
 

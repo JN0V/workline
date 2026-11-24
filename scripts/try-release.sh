@@ -201,9 +201,9 @@ if [ -z "$merged" ]; then
   git switch --quiet -c "$branch"
   for t in "$new"/*.yml; do
     name=$(basename "$t") f=.github/workflows/$(basename "$t")
-    if [ ! -e "$f" ]; then
-      cp "$t" "$f"                       # a workflow new in this release
-    elif [ -e "$old/$name" ]; then
+    if [ ! -e "$old/$name" ]; then
+      [ -e "$f" ] || cp "$t" "$f"        # a workflow new in this release
+    elif [ -e "$f" ]; then               # one the copy left out stays out
       # The copy's own lines (a setup step) kept, the release's change taken.
       git merge-file --quiet "$f" "$old/$name" "$t" \
         || red "the release's change to $name conflicts with the copy's own lines"
