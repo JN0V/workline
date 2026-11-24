@@ -36,6 +36,28 @@ func ClosesOn(kind string, texts ...string) []int {
 	return ids
 }
 
+// partOf is a change that is a part of an issue, not all of it: `Part of
+// #4` on a line of its own. No forge closes the issue on its merge.
+var partOf = regexp.MustCompile(`(?im)^[ \t]*Part of #(\d+)\b`)
+
+// Serves are the issues a change is for, once each, in order: those it
+// closes, then those it says it is a part of, which its merge leaves
+// open. A role reads its pull request's issue so, whole or a part.
+func Serves(texts ...string) []int { return ServesOn("", texts...) }
+
+// ServesOn is Serves as the named forge reads the closing words.
+func ServesOn(kind string, texts ...string) []int {
+	ids := ClosesOn(kind, texts...)
+	for _, t := range texts {
+		for _, m := range partOf.FindAllStringSubmatch(t, -1) {
+			if n, err := strconv.Atoi(m[1]); err == nil && !slices.Contains(ids, n) {
+				ids = append(ids, n)
+			}
+		}
+	}
+	return ids
+}
+
 // Closings is a forge that says how the last merge request from a branch
 // was closed: a role tells there a close of workline's own, its comment
 // carrying a marker — `workline follow`'s carries Marker("closed") —, from

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -127,5 +128,17 @@ func TestLocalAndFakeClosedWith(t *testing.T) {
 		if got, err := f.ClosedWith("workline/documentalist/reader-"+branch, Marker("closed")); err != nil || got != want {
 			t.Errorf("fake reader-%s: %v, %v; want %v", branch, got, err, want)
 		}
+	}
+}
+
+// A change is for the issues it closes and those it is a part of, on a
+// line of its own; only the first close on its merge.
+func TestServes(t *testing.T) {
+	body := "Part of #4\n\nCloses #7, and is part of #9 in passing.\n  Part of #4\nPart of #12"
+	if got := Serves(body); !slices.Equal(got, []int{7, 4, 12}) {
+		t.Errorf("Serves = %v, want [7 4 12]", got)
+	}
+	if got := Closes(body); !slices.Equal(got, []int{7}) {
+		t.Errorf("Closes = %v, want [7]: a part closes nothing", got)
 	}
 }

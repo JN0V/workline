@@ -430,7 +430,7 @@ func prepare(runDir, repo string, s Settings) int {
 	var ids []int
 	for _, name := range s.Lenses {
 		if l, err := readLens(repo, name); err == nil && l.Needs == "issue" { // one failing to read stops the run below
-			ids = forge.Closes(mr, msgs)
+			ids = forge.Serves(mr, msgs)
 			break
 		}
 	}

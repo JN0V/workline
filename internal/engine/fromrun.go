@@ -248,7 +248,7 @@ type roundMoves struct {
 // merge request does not close it.
 func roundMovesOf(repo, roleName string, mr *forge.MergeRequest) *roundMoves {
 	n, err := strconv.Atoi(strings.TrimPrefix(mr.Branch, branchPrefix(roleName)))
-	if err != nil || n <= 0 || !slices.Contains(forge.Closes(mr.Title, mr.Body), n) {
+	if err != nil || n <= 0 || !slices.Contains(forge.Serves(mr.Title, mr.Body), n) {
 		return nil
 	}
 	mv := &roundMoves{issue: n, to: []string{backlog.LabelBlocked, backlog.StateLabel("doing")}}

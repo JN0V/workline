@@ -187,7 +187,8 @@ did not foresee, a build file, a test fake, a helper
   plain text, naming no issue, is on its own issue. The engine
   posts it there as one comment, made inert (no heading, no tag, no
   mention), cut to 4,000 bytes; the same text goes in the pull
-  request's `## Left out` ([the pull request](pull-request.md)). A
+  request's `## Left out`, which makes it a part of its issue
+  ([the pull request](pull-request.md#a-part-of-its-issue)). A
   second note, or one on another issue, is refused and said
   (`not-the-developers`).
 

@@ -54,7 +54,7 @@ func claimed(cfg *routing.Config, is forge.Issue) bool {
 
 // closedByMR is the open merge request t read that closes issue id.
 func closedByMR(t *tally, id int) (forge.MergeRequest, bool) {
-	i := slices.IndexFunc(t.mrs, func(m forge.MergeRequest) bool { return slices.Contains(forge.Closes(m.Title, m.Body), id) })
+	i := slices.IndexFunc(t.mrs, func(m forge.MergeRequest) bool { return slices.Contains(forge.Serves(m.Title, m.Body), id) })
 	if i < 0 {
 		return forge.MergeRequest{}, false
 	}

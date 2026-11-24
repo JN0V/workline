@@ -134,6 +134,13 @@ hold:
   same text in the pull request's `## Left out`; a second note, or one
   elsewhere, refused ([the bounds](bounds.md#what-else-it-refuses)).
   Case `developer/note-on-its-own-issue`.
+- **A part of its issue, never `Closes`**: a file refused as a person's,
+  a Scope path only a person writes, or its agent's note: `Part of #n`,
+  and an issue for a person opened as its sub-issue
+  ([a part](pull-request.md#a-part-of-its-issue)). Cases
+  `developer/partial-refused-says-part-of`,
+  `partial-scope-guarded-says-part-of`,
+  `skips-issue-with-open-part-of-pr`; tried in its pull request.
 - **The triggers** (step 5): the `issue` line on an issue labelled
   ready, the `schedule` line on the first ready issue nobody took; the
   GitHub workflow and the GitLab jobs; a line with no pull request to

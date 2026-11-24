@@ -24,8 +24,10 @@ that is:
 - **Assigned to nobody**: a person's assignment is their claim; the
   developer never unassigns anyone.
 - **Not taken**: no claim label on it.
-- **No open merge request closing it**: `Closes #n`, `Fixes #n` in its
-  title or body. `Refs #n`, as the tester's Draft says, closes nothing.
+- **No open merge request for it**: `Closes #n`, `Fixes #n` in its
+  title or body, or `Part of #n` on a line of its own
+  ([a part](pull-request.md#a-part-of-its-issue)). `Refs #n`, as the
+  tester's Draft says, is for none.
 - **Clear of the issues the developer holds with code**: no path its
   Scope names ([read as the bounds read it](bounds.md): in backticks,
   or in plain words the repository holds) under or over one theirs
@@ -115,7 +117,7 @@ on any event, with or without an agent:
 
 - **When**: `claim-hours` (24 by default) since the forge says the label
   was put on (GitHub's issue timeline, GitLab's label events), and no
-  open pull request says `Closes #n`.
+  open pull request says `Closes #n` or `Part of #n`.
 - **Sooner, a new body**: a claim whose agent wrote no code is let go
   at once when the issue's body changed since the claim read it
   ([#1084](https://github.com/JN0V/workline/issues/1084)).

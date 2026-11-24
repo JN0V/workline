@@ -50,7 +50,9 @@ duties:
 # its record on the issue. The agent's: patches, and a comment that is an
 # objection to a frozen test; post refuses any other (docs/bounds.md).
 # note: in a review round, what it did a finding, and the five whys.
-intentions: [patch, comment, label, note]
+# issue: the engine's too: a person's part of the issue, when its pull
+# request leaves some out (docs/pull-request.md).
+intentions: [patch, comment, label, note, issue]
 # A bounds check that blocks still keeps its record on the pull request,
 # for the auditor (ADR-0046); a round's answer refused keeps nothing.
 on-block: [comment]

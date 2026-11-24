@@ -150,8 +150,43 @@ func (a *applier) openIssue(title, body string, m map[string]any) error {
 		a.findings = append(a.findings, verdict.Finding{Rule: "issue-closed", Level: "warn", Where: fmt.Sprintf("#%d", id),
 			Message: fmt.Sprintf("%q: #%d, closed, holds this subject; not opened again (%s)", title, id, map[string]string{
 				backlog.Settled: "closed as not planned or as a duplicate: nothing written", backlog.FoundAgain: "said once on it that it was found again"}[outcome])})
+	case backlog.Opened:
+		if parent := intOf(m["parent"]); parent > 0 {
+			return a.addPart(parent, id)
+		}
 	}
 	return nil
+}
+
+// addPart links a new issue to its parent: a sub-issue where the forge
+// has them, a task list in the parent's body elsewhere, as a split links
+// its children.
+func (a *applier) addPart(parent, child int) error {
+	b := a.forge.(forge.Backlog)
+	native, err := b.AddSubIssue(parent, child)
+	if err != nil || native {
+		return err
+	}
+	is, err := a.forge.Issue(parent)
+	if err != nil {
+		return err
+	}
+	if body := backlog.ListChildren(is.Body, append(backlog.Parts(*is), child)); body != is.Body {
+		return b.SetBody(parent, body)
+	}
+	return nil
+}
+
+// intOf is a number an intention gives, as YAML or JSON read it; 0 for
+// none.
+func intOf(v any) int {
+	switch n := v.(type) {
+	case int:
+		return n
+	case float64:
+		return int(n)
+	}
+	return 0
 }
 
 // where is where the project keeps each axis, detected once, at the first

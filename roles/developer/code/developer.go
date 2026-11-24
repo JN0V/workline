@@ -203,7 +203,7 @@ func overlap(a, b []string) string {
 func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string, changed contract.Diffs) map[int][]string {
 	closing := map[int][]forge.MergeRequest{}
 	for _, m := range mrs {
-		for _, n := range forge.ClosesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
+		for _, n := range forge.ServesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
 			closing[n] = append(closing[n], m)
 		}
 	}
@@ -343,7 +343,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 		if n := testerIssue(m.Branch); n != 0 {
 			tested[n] = true
 		}
-		for _, n := range forge.ClosesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
+		for _, n := range forge.ServesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
 			if _, ok := closer[n]; !ok {
 				closer[n] = m.ID
 			}
@@ -903,6 +903,7 @@ func Post(runDir, repo string) int {
 		v.Summary += "; blocked for a person"
 		return writeBlockedProtected(runDir, repo, a, s, told, refused, v)
 	}
+	var rest []intent.Intention // the issue for a person, when its pull request is a part of its issue
 	if len(patches) == 0 && draft == nil {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "no-code", Level: "warn", Where: where,
 			Message: fmt.Sprintf("its agent wrote no code: nothing to prove, no pull request; blocked for a person after %d hours on the same body, said on the issue", s.ClaimHours)})
@@ -948,10 +949,20 @@ func Post(runDir, repo string) int {
 		title := issueTitle(runDir, a.Issue)
 		cs, unread := committerSettings(repo, where)
 		v.Findings = append(v.Findings, unread...)
+		// Part of its issue only: a file refused as a person's, a Scope
+		// path only a person writes left, or its agent's note of what it
+		// left out.
+		note := noteOf(kept[len(claim):], a.Issue)
+		a.Left = leftToAPerson(repo, b, refused)
+		a.Partial = len(personsRefusals(refused)) > 0 || len(a.Left) > 0 || note != ""
 		mr := mergeRequest(a, title, subjects(a.Issue, title, b.Kind, b.Scope, cs))
 		mr["unopened"] = unopened(a, s, repo)
-		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
+		if note != "" {
 			mr["body"] = withNote(fmt.Sprint(mr["body"]), note)
+		}
+		if a.Partial {
+			rest = append(rest, personsPart(a, title, note))
+			v.Summary += fmt.Sprintf("; a part of #%d, the rest in an issue for a person", a.Issue)
 		}
 		if mr["draft"] == true {
 			v.Summary += "; a Draft: " + p.Result
@@ -970,7 +981,7 @@ func Post(runDir, repo string) int {
 	}
 	// The claim carries the record, the refusals in it (ADR-0046).
 	// What pre said on the other issues follows it.
-	if code := writeIntents(runDir, "", slices.Concat(claimOf(a, s), told, kept[len(claim):])); code != 0 {
+	if code := writeIntents(runDir, "", slices.Concat(claimOf(a, s), told, kept[len(claim):], rest)); code != 0 {
 		return code
 	}
 	return writeVerdict(runDir, v)

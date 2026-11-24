@@ -102,7 +102,14 @@ func mergeRequest(a devmark.Act, title string, sub Subjects) map[string]any {
 // left out, what ran, what was tried and not.
 func body(a devmark.Act, ready bool) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Closes #%d\n\n", a.Issue)
+	if a.Partial {
+		// Never `Closes` on part of the work: the issue stays open, the
+		// rest in an issue for a person.
+		fmt.Fprintf(&b, "Part of #%d\n\n", a.Issue)
+		fmt.Fprintf(&b, "**A part of #%d, not all of it**: what is left out below goes to an issue for a person, a sub-issue of #%[1]d, opened with this pull request. Its merge leaves #%[1]d open.\n\n", a.Issue)
+	} else {
+		fmt.Fprintf(&b, "Closes #%d\n\n", a.Issue)
+	}
 	if ready {
 		fmt.Fprintf(&b, "The developer's code for #%d, proven on the project's tests.\n\n", a.Issue)
 	} else {
@@ -139,10 +146,16 @@ func body(a devmark.Act, ready bool) string {
 		fmt.Fprintf(&b, "\n## %s\n\nFiles changed beyond the issue's %s, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.\n\n%s",
 			BeyondHeading, work.Name(work.Scope), devmark.BeyondLines(a.Beyond))
 	}
-	if len(a.Refused) > 0 {
-		b.WriteString("\n## Left out\n\nRefused at apply, out of its bounds: an issue for a person, not this change.\n\n")
+	if len(a.Refused) > 0 || len(a.Left) > 0 {
+		b.WriteString("\n## Left out\n\n")
+		if len(a.Refused) > 0 {
+			b.WriteString("Refused at apply, out of its bounds: an issue for a person, not this change.\n\n")
+		}
 		for _, r := range a.Refused {
 			fmt.Fprintf(&b, "- `%s`: %s\n", r.File, why(r))
+		}
+		for _, p := range a.Left {
+			fmt.Fprintf(&b, "- `%s`: %s\n", p, leftWhy)
 		}
 	}
 	if len(a.Unread) > 0 {
@@ -163,6 +176,9 @@ func body(a devmark.Act, ready bool) string {
 		"- Not tried: the commands the issue names to verify it, nor a person's use of it.\n")
 	return b.String()
 }
+
+// leftWhy is what a Scope path left for a person says.
+const leftWhy = "in the issue's Scope, a file only a person changes (a gate's, the CI's, or one that steers agents): its code wrote none of it"
 
 // recordBody is the comment holding the record on its pull request: what
 // a fresh run reads of the last, and the auditor of its code.

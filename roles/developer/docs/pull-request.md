@@ -7,6 +7,8 @@ sources:
   - internal/agent/claude.go
   - roles/reviewer/code/once.go
   - internal/kit/devmark
+  - roles/developer/code/partial.go
+  - internal/forge/closings.go
 checked: 8891b61fc
 verified: agent:claude-code
 ---
@@ -95,12 +97,36 @@ flowchart LR
 
 | Section | What it says |
 |---|---|
-| first line | `Closes #<n>` |
+| first line | `Closes #<n>`; `Part of #<n>` when it leaves some out ([below](#a-part-of-its-issue)) |
 | `## Changes` | its code, its tests, the tester's acceptance tests it starts from |
 | `## Beyond the Scope` | each file changed beyond the issue's Scope, its agent's reason; only when one was ([the bounds](bounds.md#beyond-the-scope)) |
-| `## Left out` | each file refused at apply, and why; only when one was |
+| `## Left out` | each file refused at apply, each Scope path left for a person, its agent's note; only when one was |
 | `## Verification` | with whose rights its agent ran; what ran and its result, each cap reached ([the proof](proof.md)) |
 | `## Tried` | its tests on a fresh checkout; not the issue's Verification commands, nor a person's use |
+
+## A part of its issue
+
+It never says `Closes #<n>` on part of the work: the issue would close
+with work still to do.
+
+- **A part when**:
+  - a file is refused as a person's to change (a gate's, the CI's, a
+    steering file, not text) ([the bounds](bounds.md));
+  - its issue's Scope names such a file, and its code wrote none;
+  - its agent's note says what it left out.
+- **Its body says `Part of #<n>`**: the merge leaves the issue open.
+  The pick still reads the pull request as the issue's.
+- **An issue for a person** is opened with it, `A person's part of
+  #<n>: <title>`, a sub-issue of the issue, or a task in its
+  `## Sub-issues` list on a forge with none.
+  - Written as [the product owner writes one](../../product-owner/docs/writing.md):
+    Need and Validation on top, the files left in its Scope.
+  - Opened once: a run again finds it by its title.
+- **The issue, with an open part, is offered to no run**: a person
+  finishes the part, then closes it.
+- Cases `developer/partial-refused-says-part-of`,
+  `partial-scope-guarded-says-part-of`,
+  `skips-issue-with-open-part-of-pr`.
 
 ## A Draft behind the default branch
 
