@@ -1,3 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 routing/ready-overlap-gone-wait-said
+developer/partial-refused-says-part-of
+developer/partial-scope-guarded-says-part-of
+developer/skips-issue-with-open-part-of-pr

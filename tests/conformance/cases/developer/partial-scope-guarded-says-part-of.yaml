@@ -1,0 +1,35 @@
+case: developer/partial-scope-guarded-says-part-of
+about: >
+  An issue whose Scope names a file the line cannot write, a CI
+  workflow, is never closed by the developer's pull request alone: its
+  agent wrote the code and left the workflow untouched. The pull
+  request says `Part of #2`, lists the workflow under Left out, and an
+  issue for a person holds it: on a forge with no sub-issues, a task in
+  #2's Sub-issues list.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - {id: 2, title: "Multiply in CI", labels: ["workline:ready"], body: "## Need\n\nI want to multiply, checked on each push.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n- `.github/workflows/ci.yml`: run the tests on push.\n"}
+run: {develop: [], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  agent-calls: 1
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        body-contains: ["Part of #2\n", "## Left out", "`.github/workflows/ci.yml`"]
+        body-lacks: ["Closes #2"]
+    issues:
+      - id: 2
+        closed: false
+        body-contains: ["## Sub-issues\n\n- [ ] #3"]
+      - id: 3
+        title: "A person's part of #2: Multiply in CI"
+        body-contains: ["Part of #2.", "`.github/workflows/ci.yml`"]

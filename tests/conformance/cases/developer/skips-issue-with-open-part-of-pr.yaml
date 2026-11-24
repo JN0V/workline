@@ -1,0 +1,21 @@
+case: developer/skips-issue-with-open-part-of-pr
+about: >
+  An open pull request that is a part of an issue, `Part of #2` on a line
+  of its own, holds that issue as one that closes it does: the pick
+  passes it over, and takes the next.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+      - {id: 3, title: "Divide", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - {id: 5, branch: workline/developer/2, base: main, title: "feat: multiply", body: "Part of #2\n\nThe developer's code for #2.", labels: [], comments: []}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #3"
+  agent-calls: 1
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comments: 0}
