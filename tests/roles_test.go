@@ -16,7 +16,7 @@ import (
 // moved role's prompts, code/ its compiled-in code (docs/spec/layout.md).
 var loaded = map[string]bool{
 	"role.yaml": true, "persona.md": true, "instruction.md": true, "policy.md": true,
-	"pre": true, "post": true, "knowledge": true, "lenses": true, "criteria": true, "skills": true, "tasks": true,
+	"knowledge": true, "lenses": true, "criteria": true, "skills": true, "tasks": true,
 	"prompts": true, "code": true,
 }
 
