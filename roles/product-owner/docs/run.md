@@ -1,5 +1,23 @@
 ---
-sources: [roles/product-owner/role.yaml, roles/product-owner/prompts/instruction.md, roles/product-owner/prompts/policy.md, roles/product-owner/code, internal/backlog]
+sources:
+  - roles/product-owner/role.yaml#events
+  - roles/product-owner/role.yaml#settings.issues-per-run
+  - roles/product-owner/role.yaml#settings.proposals-max
+  - roles/product-owner/role.yaml#settings.undone-max
+  - roles/product-owner/code/productowner.go#Settings
+  - roles/product-owner/code/productowner.go#needed
+  - roles/product-owner/code/productowner.go#unrefinedRead
+  - roles/product-owner/code/productowner.go#readyOpen
+  - roles/product-owner/code/productowner.go#acceptedBy
+  - roles/product-owner/code/productowner.go#issueEvent
+  - roles/product-owner/code/productowner.go#commented
+  - roles/product-owner/code/productowner.go#markedSaid
+  - roles/product-owner/code/productowner.go#writeIssue
+  - roles/product-owner/code/productowner.go#sections
+  - roles/product-owner/code/productowner.go#writeCode
+  - roles/product-owner/code/productowner.go#writeFolders
+  - roles/product-owner/code/productowner.go#askOf
+  - internal/backlog/undo.go#MovedBack
 checked: e81df7b34
 verified: agent:claude-code
 ---

@@ -1,5 +1,27 @@
 ---
-sources: [roles/product-owner/prompts/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go, internal/backlog/plain.go, internal/backlog/assume.go]
+sources:
+  - internal/work/scenarios.go#Scenarios
+  - internal/work/scenarios.go#ScenarioForm
+  - internal/work/scope.go#Guessed
+  - internal/work/scope.go#MarksNew
+  - internal/work/scope.go#NewPath
+  - internal/work/scope.go#Unfound
+  - internal/work/scope.go#InRepo
+  - internal/work/work.go#Break
+  - internal/work/work.go#Ready
+  - internal/work/work.go#check
+  - internal/backlog/plain.go#splitTop
+  - internal/backlog/plain.go#RolesTop
+  - internal/backlog/plain.go#NeedOnTop
+  - internal/backlog/repeat.go#Repeated
+  - internal/backlog/repeat.go#RepeatedPercentMax
+  - roles/product-owner/role.yaml#settings.repeated-percent-max
+  - internal/backlog/assume.go#AssumptionsName
+  - internal/backlog/assume.go#AssumedLead
+  - internal/backlog/assume.go#WithAssumption
+  - internal/backlog/assume.go#AssumptionLine
+  - internal/backlog/assume.go#WithAnswered
+  - internal/backlog/assume.go#Plan.checkAssume
 checked: cf8d4d9f
 verified: human:JN0V
 ---

@@ -1,5 +1,24 @@
 ---
-sources: [roles/product-owner/role.yaml, roles/product-owner/code, internal/backlog, internal/sample/acts.go]
+sources:
+  - roles/product-owner/role.yaml#settings.stuck-days
+  - roles/product-owner/role.yaml#settings.proposals-max
+  - roles/product-owner/role.yaml#settings.next-max
+  - roles/product-owner/role.yaml#settings.acts.close-obsolete
+  - roles/product-owner/role.yaml#settings.acts.milestone
+  - roles/product-owner/code/productowner.go#modes
+  - internal/report/summary.go#groups
+  - internal/report/summary.go#groupMax
+  - internal/report/summary.go#plain
+  - internal/report/summary.go#heldBack
+  - internal/backlog/say.go#Said
+  - internal/backlog/say.go#addSections
+  - internal/backlog/say.go#offer
+  - internal/backlog/ledger.go#ProposedLabel
+  - internal/backlog/ledger.go#AcceptedLabel
+  - internal/backlog/ledger.go#Plan.labelWithin
+  - internal/backlog/ledger.go#Inert
+  - internal/sample/acts.go#recordedActs
+  - internal/sample/acts.go#foldActs
 checked: e81df7b34
 verified: agent:claude-code
 ---
