@@ -117,13 +117,25 @@ func kindOf(a Act) string {
 // else the auditor's (criteria/<role>/<kind>.md), else the role's own
 // (criteria/<kind>.md). A kind with no criteria anywhere is judged on the
 // auditor's generic question, whose text ships with a later move: said
-// missing. The project's copy left at the old path, kinds/<kind>.md, is
-// read no more: the act is not judged, the report says where it goes.
+// missing. A copy left at the old path, kinds/<kind>.md, the project's or
+// the auditor's folder's, is read no more: the act is not judged, the
+// report says where it goes, or that it goes once its new copy is there.
 func (rd *reader) facet(roleName, kind string) (string, error) {
 	project := filepath.Join(rd.o.Repo, ".workline", "roles", "auditor")
 	roles := filepath.Dir(rd.auditor.Dir)
-	if _, err := os.Stat(filepath.Join(project, "kinds", kind+".md")); err == nil {
-		return "", fmt.Errorf("the project's .workline/roles/auditor/kinds/%s.md is read no more: move it to .workline/roles/auditor/criteria/%s/%s.md", kind, roleName, kind)
+	for _, dir := range []struct{ path, name string }{
+		{project, ".workline/roles/auditor"},
+		{rd.auditor.Dir, rd.auditor.Dir},
+	} {
+		old := filepath.Join(dir.path, "kinds", kind+".md")
+		if _, err := os.Stat(old); err != nil {
+			continue
+		}
+		moved := fmt.Sprintf("%s/criteria/%s/%s.md", dir.name, roleName, kind)
+		if _, err := os.Stat(filepath.Join(dir.path, "criteria", roleName, kind+".md")); err == nil {
+			return "", fmt.Errorf("%s/kinds/%s.md is read no more, and %s holds its criteria now: remove the old file", dir.name, kind, moved)
+		}
+		return "", fmt.Errorf("%s/kinds/%s.md is read no more: move it to %s", dir.name, kind, moved)
 	}
 	paths := []string{
 		filepath.Join(project, "criteria", roleName, kind+".md"),

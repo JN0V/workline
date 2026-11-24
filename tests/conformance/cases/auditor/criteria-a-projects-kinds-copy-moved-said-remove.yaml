@@ -1,0 +1,19 @@
+case: auditor/criteria-a-projects-kinds-copy-moved-said-remove
+about: "A project's copy at the old path, `.workline/roles/auditor/kinds/<kind>.md`, beside its new copy in `criteria/<role>/<kind>.md`: the act is not judged, and the report says to remove the old file, not to move it."
+given:
+  repo: vouched
+  env: {WORKLINE_ROLES: "$WORK/roles"}
+  setup:
+    - "mkdir ../roles && for r in \"$FIXTURES\"/../../../roles/*/; do ln -s \"$(cd \"$r\" && pwd)\" \"../roles/$(basename \"$r\")\"; done"
+    - "mkdir -p .workline/roles/auditor/kinds && printf 'OLD-PATH-CRITERIA: a ready issue is one this project can build.\\n' > .workline/roles/auditor/kinds/ready.md && mkdir -p .workline/roles/auditor/criteria/product-owner && cp .workline/roles/auditor/kinds/ready.md .workline/roles/auditor/criteria/product-owner/ready.md"
+  forge:
+    issues:
+      - {"id": 20, "title": "Issue 20", "body": "Issue 20.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Did ready on #20'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests: []
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-by-criteria.sh" NO-CRITERIA-GIVEN'], then: apply}
+expect:
+  status: pass
+  findings:
+    - {rule: sample-not-read, where: "#20", message: "remove the old file"}
+  no-findings:
+    - {rule: act-stands, where: "#20"}
