@@ -10,6 +10,8 @@ verified: agent:claude-code
 
 Part of [troubleshooting](troubleshooting.md).
 
+## Token caps and cuts
+
 - `ai-max-tokens` (documentalist, reviewer): the run spent its cap; the rest
   waits for the next run. The reviewer leaves the commits unrecorded
   (`review-not-whole`, `lens-failed`) and says what each call used. `ai-max-calls`, `parts-max-per-run`, the product owner's
@@ -17,6 +19,8 @@ Part of [troubleshooting](troubleshooting.md).
   `code-lines-max` and `tests-lines-max` size each run (each role's page).
 - `input-cut` (a warning): the agent read part of what the run gives it;
   the line says what, how much of it, and the setting that raises it.
+## An issue too big
+
 - `size-crossed`: a role's run on an issue was too big for it: its task
   over the context budget, or its token cap reached; a cut alone is not
   one. Never run again on the same input: the issue goes to
@@ -40,6 +44,8 @@ Part of [troubleshooting](troubleshooting.md).
   `size-once`, `split-depth`, `split-off`, `too-big-unasked`: a grant or
   a split on size dropped
   ([why](spec/backlog-acts/refine.md#granting-a-size)).
+## The agent and its limits
+
 - `ai-max-seconds` (committer): the rewrite took more than the 30 s it
   may; the message is refused with its reasons, as with no agent.
 - `personal-setting-ignored`: your own config sets what a role does not

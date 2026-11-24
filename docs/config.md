@@ -64,12 +64,18 @@ Everything workline reads besides its options: the project's
 `.workline/config.yaml`, your own config, the files it keeps, and the
 variables. The commands and options: [usage.md](usage.md).
 
+## Which agent, which forge
+
 **Which agent answers**, first found wins: `--ai` on the command line;
 `WORKLINE_AI` (the git hooks); the project's `ai`; yours; else `none`.
 **Which forge**: `--forge`, else the project's `forge`, else `none`.
 **A role's settings**: the role's defaults (its `role.yaml`, listed on its
 [page](roles.md)), the listed [packs](packs.md), its
 [autonomy](autonomy.md) level, then the project's `settings`.
+
+## Keys: agent, roles, gates, merge
+
+The keys of `.workline/config.yaml`, in two tables.
 
 | Key of `.workline/config.yaml` | Holds |
 |---|---|
@@ -86,6 +92,11 @@ variables. The commands and options: [usage.md](usage.md).
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
 | `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, a reproduced bug's fix among it, with no yes; `enterprising`: the developer's features and tasks too, a person's yes on the milestone's [release candidate](release-candidate.md); `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
+
+## Keys: routing, boards, packs
+
+| Key of `.workline/config.yaml` | Holds |
+|---|---|
 | `routing.states`, `routing.max-hops`, `routing.reconcile-max` | the line of states, its hop cap, the reconciler's steps a run ([routing](spec/routing.md#the-line-of-states)) |
 | `routing.wip` | `<state>: <issues>`, a state's WIP limit, laid over the shipped `ready: 5`; `0` lifts it ([room in the next state](spec/routing.md#room-in-the-next-state)) |
 | `routing.revisit` | the days a blocked issue waits, nothing new on it, before the product owner reads it again; `7` shipped, `0` never ([blocked, read again](spec/routing.md#blocked-read-again)) |
