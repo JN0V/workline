@@ -30,6 +30,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - quotes each finding; the engine finds the quote again, and a second AI
   call (the judge) checks each important one;
 - asks a person what only a person decides;
+- once nothing else holds a merge request, reads the whole repository
+  for what the change breaks past its own lines
+  ([the finder](docs/finder.md));
 - rules on the comments the change adds (an internal code), no agent; a
   lens judges one a word list flags as telling the code's history
   ([more](docs/run.md#12-the-range-the-rules));

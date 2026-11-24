@@ -26,7 +26,9 @@ Part of [the reviewer](../README.md): what a run writes, what it costs, and what
   finding, up to three when it reads the code it needs, none for one
   judged before on the same patch ([judged once](once.md)); one
   for each tester's answer that no test is needed
-  ([weighed](tester-answers.md)); a spec,
+  ([weighed](tester-answers.md)); on a merge request, the repository
+  finder once, up to three calls and its finding's judge
+  ([the finder](finder.md)); a spec,
   one call. A change too large for one call: a call a part
   ([in parts](parts.md)). Capped at 300000 tokens a run
   (`ai-max-tokens`) and by the `*-max` [settings](settings.md#caps). Measured:

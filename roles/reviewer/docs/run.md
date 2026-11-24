@@ -94,6 +94,12 @@ lenses that only warn read apart, in a comment of their own ([apart](apart.md)).
 - **The job still fails**: the proposing job by the verdict, while the
   applying one writes the comment (`if: always()`, `when: always`).
 
+### The repository finder
+
+Once nothing else holds the merge request, one call reads the whole
+repository at the head, blind to the lenses, once a merge request:
+[the finder](finder.md).
+
 ### Every lens once when it becomes ready
 
 A draft asks no lens; the run when a merge request becomes ready reads

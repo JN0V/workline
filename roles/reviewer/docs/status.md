@@ -193,6 +193,11 @@ its measure in
   `judge-no-quotes-the-code-finding-dropped`,
   `judge-no-quote-not-found-shown-not-verified`,
   `judge-unsure-shown-not-verified`.
+- **The repository finder**, once nothing else holds the merge request
+  ([ADR-0073](../../../docs/adr/0073-one-finder-reads-the-whole-repository-once.md)):
+  `repository-finder-reads-past-the-change-and-holds`,
+  `repository-finder-waits-while-a-lens-blocks`,
+  `repository-finder-asked-once-a-merge-request`.
 - **Warn until measured, `ai-findings` by lens, caps**:
   `new-ai-rules-warn`, `ai-findings-*`, `findings-capped-rest-counted`,
   `agent-unreachable-is-blocked-external`.
