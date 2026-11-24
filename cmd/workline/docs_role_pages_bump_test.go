@@ -4,12 +4,33 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
 
 // roleBumpTemplate is a CI template whose version line a release bumps.
 const roleBumpTemplate = "defaults/ci/github/workline-develop.yml"
+
+// roleBumpVersions returns the version line roleBumpTemplate holds now, and
+// the line a release would put in its place: the tests must not hang on the
+// version a release just bumped.
+func roleBumpVersions(t *testing.T) (now, next string) {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "..", filepath.FromSlash(roleBumpTemplate)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`WORKLINE_VERSION: (v[0-9][^\s]*)`).FindStringSubmatch(string(data))
+	if m == nil {
+		t.Fatalf("%s holds no WORKLINE_VERSION line", roleBumpTemplate)
+	}
+	next = "v99.0.0"
+	if m[1] == next {
+		next = "v99.0.1"
+	}
+	return m[0], "WORKLINE_VERSION: " + next
+}
 
 // roleBumpClone clones this repository's history, brings the working tree's
 // own changes into it, then gives each of pages a header whose `sources`
@@ -84,7 +105,8 @@ func roleBumpClone(t *testing.T, pages []string, pinned string) (clone string, c
 		}
 		_, body, _ := strings.Cut(text[4:], "\n---\n")
 		if page == pinned {
-			body += "\n```yaml\nWORKLINE_VERSION: v0.89.1\n```\n"
+			now, _ := roleBumpVersions(t)
+			body += "\n```yaml\n" + now + "\n```\n"
 		}
 		write(page, "---\nsources:\n  - "+roleBumpTemplate+"\nchecked: "+checked+"\nverified: human:Tester\n---\n"+body, 0o644)
 	}
@@ -134,7 +156,8 @@ func roleBumpRun(t *testing.T, clone string) string {
 func TestRolePagesCheckedMovedBumpThenRealChange(t *testing.T) {
 	const page = "roles/developer/README.md"
 	clone, commit := roleBumpClone(t, []string{page}, "")
-	commit(roleBumpTemplate, "WORKLINE_VERSION: v0.89.1", "WORKLINE_VERSION: v0.89.2")
+	now, next := roleBumpVersions(t)
+	commit(roleBumpTemplate, now, next)
 	if out := roleBumpRun(t, clone); strings.Contains(out, page) {
 		t.Errorf("%s counts as older than its sources after a release only bumped the template's version:\n%s", page, out)
 	}
@@ -155,7 +178,8 @@ func TestRolePagesCheckedMovedBumpThenRealChange(t *testing.T) {
 func TestRolePagesCheckedMovedPinnedVersion(t *testing.T) {
 	const pinned, other = "roles/developer/README.md", "roles/tester/README.md"
 	clone, commit := roleBumpClone(t, []string{pinned, other}, pinned)
-	commit(roleBumpTemplate, "WORKLINE_VERSION: v0.89.1", "WORKLINE_VERSION: v0.89.2")
+	now, next := roleBumpVersions(t)
+	commit(roleBumpTemplate, now, next)
 	out := roleBumpRun(t, clone)
 	if !strings.Contains(out, pinned) {
 		t.Errorf("%s says the replaced version as the version now, yet does not count as older than its sources:\n%s", pinned, out)
