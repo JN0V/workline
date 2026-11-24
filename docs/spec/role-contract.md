@@ -319,7 +319,9 @@ token), **apply** (trusted, no AI key).
    `unsure: true`, or `yes` and `quote`. `pre`, run again, may serve
    those reads and ask the judge again: it rewrites the question and takes
    its answer away (`answer-<n>.yaml` keeps it). The engine asks again,
-   apart, every question whose answer `pre` took away, then runs `pre`
+   apart, every question whose answer `pre` took away, and every
+   question `pre` wrote on that pass (the reviewer's repository finder,
+   then its finding's judge, ADR-0073), then runs `pre`
    again: 10 rounds at most, past which such a question is answered
    `{error: not asked}` for `pre` to settle; every judge answers once
    before any is asked again. The reviewer's code review is the one role that reads so

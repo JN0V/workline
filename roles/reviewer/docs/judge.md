@@ -108,3 +108,5 @@ else whether the quoted code fails:
 - **Said**: what it read, beside its answer; each round in
   `out/review.json` (`reads`), its calls in `calls`.
 - **The code's judges only**: a spec's judge reads nothing more.
+- **The repository finder reads so too**, once nothing else holds a
+  merge request, with the same caps ([the finder](finder.md)).
