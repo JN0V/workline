@@ -27,7 +27,7 @@ roles/<name>/
   pre               optional; deterministic: gathers input, decides whether a decision is needed
   post              optional; deterministic: validates, decides the verdict
   lenses/*.md       the reviewer's: one facet per lens
-  kinds/*.md        the auditor's: one facet per kind of act; criteria/<role>/*.md, its criteria for a role
+  criteria/*.md     optional: what a well-done act of each kind is; the auditor's criteria/<role>/*.md win
   tasks/*.md        optional: a kind of task's own instruction (model.tasks)
   skills/<n>/SKILL.md  optional: the role's own copy of a shared skill (see "Shared skills")
   docs/             about the role, never loaded: reference pages, status.md, tried.md (archived)
@@ -44,7 +44,9 @@ not care what they are written in.
 
 Each is optional, on its own (ADR-0070, §1). For each step the engine
 runs the role's built-in code if it has any (a file beside it is not run),
-else the role's file, else the shared one. With no `pre`, the shared one
+else the role's file, else the shared one. A shipped role has no `pre`
+nor `post` file: the engine runs its built-in code itself, with no call
+through `WORKLINE_BIN`; a check in `tests/` fails if one ships. With no `pre`, the shared one
 writes `in/task.md`, which only says "Do what your instruction says." (the
 instruction is the system prompt), `in/cuts` from the role's `cuts` key (listed
 for the agent: the shared `pre` cuts nothing, so no `input-cut` warning is
@@ -558,7 +560,8 @@ name or `none`), `WORKLINE_AI_WAITS` (`ready` on a draft: given the input
 `none`, and the result says so, `ai-waits`, ADR-0050; `night` so too, on
 a release tool's merge request run on `merge-request`, for a role that
 runs on `release`), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
-which the shipped roles call for their built-in steps), `WORKLINE_ROLES_DIR`
+for a role's own script to call; a shipped role's built-in code runs
+with no such call), `WORKLINE_ROLES_DIR`
 (the folder the role was taken from, where its siblings are),
 `WORKLINE_FORGE` (the
 configured forge, when one is set), `WORKLINE_TARGET`
