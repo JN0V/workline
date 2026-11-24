@@ -917,8 +917,11 @@ func docsCmd(args []string) int {
 	}
 	if *reviewOnly {
 		// What an agent left in the working tree, or gardening run by hand.
-		changed, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--name-only", "--", "*.md").Output()
-		docs := strings.Fields(string(changed))
+		docs, err := changedDocs(root)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return fail(1, "git-failed", err.Error())
+		}
 		tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 		switch {
 		case len(docs) == 0:
@@ -958,6 +961,10 @@ func docsCmd(args []string) int {
 	fmt.Fprintf(out, "workline: judging the docs made suspect by the commits since %s\n", from)
 	judged, err := judgeDocs(root, rng, *ai, in, out)
 	if err != nil {
+		var gf *gitFailedError
+		if errors.As(err, &gf) {
+			return fail(1, "git-failed", err.Error())
+		}
 		return fail(1, "config-invalid", err.Error())
 	}
 	if judged {
@@ -1146,8 +1153,11 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) (bool, err
 		// and those left for later rounds, were not judged.
 		fmt.Fprintf(out, "workline: %s — %s; the docs it was judging, and those after them, are not judged yet: run `workline docs` again\n", res.Status, res.Summary)
 	}
-	changed, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--name-only", "--", "*.md").Output()
-	docs := strings.Fields(string(changed))
+	docs, err := changedDocs(root)
+	if err != nil {
+		fmt.Fprintln(out, "workline:", err)
+		return false, &gitFailedError{err}
+	}
 	if len(docs) == 0 {
 		fmt.Fprintf(out, "workline: %s — no doc changed\n", res.Status)
 		return res.Status == verdict.Pass && waiting == 0, nil
@@ -1160,8 +1170,36 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) (bool, err
 		fmt.Fprintln(out, "workline:", err)
 		return false, nil
 	}
-	left, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--name-only", "--", "*.md").Output()
-	return res.Status == verdict.Pass && waiting == 0 && len(strings.TrimSpace(string(left))) == 0, nil
+	left, err := changedDocs(root)
+	if err != nil {
+		fmt.Fprintln(out, "workline:", err)
+		return false, &gitFailedError{err}
+	}
+	return res.Status == verdict.Pass && waiting == 0 && len(left) == 0, nil
+}
+
+// gitFailedError is a failed git listing: the docs were not checked.
+type gitFailedError struct{ err error }
+
+func (e *gitFailedError) Error() string { return e.err.Error() }
+func (e *gitFailedError) Unwrap() error { return e.err }
+
+// changedDocs lists the docs changed in the working tree. A failure of git
+// is an error holding git's stderr, or the error's own text when git said
+// nothing: never an empty list.
+func changedDocs(root string) ([]string, error) {
+	cmd := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--name-only", "--", "*.md")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		msg := strings.TrimSpace(stderr.String())
+		if msg == "" {
+			msg = err.Error()
+		}
+		return nil, fmt.Errorf("git diff failed: %s", msg)
+	}
+	return strings.Fields(string(out)), nil
 }
 
 func gitRoot(dir string) (string, error) {
