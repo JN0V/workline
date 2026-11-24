@@ -5,8 +5,9 @@
 # a single value — so a case tells which lenses a run asked (ADR-0050).
 # REVIEW_LENS_BROKEN names a lens whose task gets an answer that never
 # reads; with REVIEW_LENS_BROKEN_CALLS, only its first that many calls,
-# counted across runs in the file REVIEW_LENS_COUNT names. Anything else
-# answers nothing.
+# counted across runs in the file REVIEW_LENS_COUNT names.
+# REVIEW_LENS_OVERLOADED_CALLS: its first that many calls, counted the same,
+# fail as an overloaded provider does. Anything else answers nothing.
 task=$(cat)
 asks() {
 	case $task in
@@ -22,6 +23,17 @@ broken() {
 	echo $((n + 1)) >"$REVIEW_LENS_COUNT"
 	[ "$n" -lt "$REVIEW_LENS_BROKEN_CALLS" ]
 }
+overloaded() {
+	[ -n "${REVIEW_LENS_OVERLOADED_CALLS:-}" ] || return 1
+	mkdir -p "$(dirname "$REVIEW_LENS_COUNT")"
+	n=$(cat "$REVIEW_LENS_COUNT" 2>/dev/null || echo 0)
+	echo $((n + 1)) >"$REVIEW_LENS_COUNT"
+	[ "$n" -lt "$REVIEW_LENS_OVERLOADED_CALLS" ]
+}
+if overloaded; then
+	echo 'API Error: 529 Overloaded. This is a server-side issue, usually temporary.' >&2
+	exit 1
+fi
 if broken; then
 	echo 'finding: [this does not read'
 	exit 0

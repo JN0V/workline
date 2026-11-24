@@ -194,6 +194,7 @@ type Review struct {
 	Outside   []Finding         `json:"outside"`             // outside it: an issue each
 	Questions []Finding         `json:"questions,omitempty"` // decisions put to a person: not defects, not judged (#126)
 	Lenses    []string          `json:"lenses,omitempty"`
+	ReadApart string            `json:"read-apart,omitempty"` // no lens read the commits on this run: where they read them instead, said in place of "No finding"
 	Parts     int               `json:"parts,omitempty"` // the parts the change was read in, too large for one call (#446)
 	Complete  bool              `json:"complete"`        // every lens answered: the commits are recorded as reviewed
 	Record    Record            `json:"record"`
@@ -683,6 +684,10 @@ func otherSide(runDir, repo string, s Settings, st state, other []string, fresh 
 			plural(len(other), "blocks", "block"), plural(len(other), "reads", "read"))
 	}
 	v := review(st, nil, fmt.Sprintf("%s; the %d new %s recorded", why, fresh, plural(fresh, "commit", "commits")))
+	v.ReadApart = "the lenses that warn read them apart, in their own comment"
+	if st.Warn == warnOnly {
+		v.ReadApart = "the lenses that block read them on the verdict's run"
+	}
 	v.Complete = true
 	v.Record = st.Record.add(st.Commits, st.Patches)
 	v.Record.Blocks, v.Record.Owed = st.Standing, false
@@ -2598,7 +2603,10 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 	}
 	table, nits := apartNits(v)
 	empty := "No finding on the commits reviewed."
-	if len(nits) > 0 {
+	switch {
+	case v.ReadApart != "": // no lens asked here: no finding is no news (DomoticsCore #240)
+		empty = "No lens read the commits on this run: " + v.ReadApart + "."
+	case len(nits) > 0:
 		empty = "Nothing but nits on the commits reviewed."
 	}
 	b.WriteString(findingsTable(table, empty, short))

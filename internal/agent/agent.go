@@ -21,6 +21,26 @@ import (
 // blocked-external if the role cannot pass without it.
 var ErrUnavailable = errors.New("agent unavailable")
 
+// transientSigns are what an agent's provider says of a failure that passes
+// on its own: an overload, a server error. Quota, login and network are
+// not: asked again at once, they fail the same.
+var transientSigns = []string{"overloaded", "api error: 529", "api error: 500", "api error: 502", "api error: 503", "api error: 504"}
+
+// Transient says whether an agent unavailable failed for a reason that
+// passes on its own, worth asking again once after a pause.
+func Transient(err error) bool {
+	if !errors.Is(err, ErrUnavailable) {
+		return false
+	}
+	low := strings.ToLower(err.Error())
+	for _, sign := range transientSigns {
+		if strings.Contains(low, sign) {
+			return true
+		}
+	}
+	return false
+}
+
 // ErrInvalidOutput means the agent answered, but not with proposals the engine
 // can read. Its answer is dropped, as if it had proposed nothing.
 var ErrInvalidOutput = errors.New("agent answered without valid proposals")

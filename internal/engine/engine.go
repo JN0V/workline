@@ -1297,9 +1297,38 @@ func mendedTogether(said []string) []string {
 	return out
 }
 
-// callAgent asks the agent once and records the call: in the result, and
-// with the run (out/calls.jsonl), what it cost, to be read afterwards.
+// callAgent asks the agent and records each call. A call its provider
+// failed for a passing overload (agent.Transient: a 529, a 5xx) is asked
+// again once, after a pause: one burst never leaves a run, or a lens, not
+// done, its failure read as an answer of nothing.
 func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Result) error {
+	err := callAgentOnce(ag, req, task, runDir, res)
+	if !errors.Is(err, agent.ErrUnavailable) || !agent.Transient(err) {
+		return err
+	}
+	pause := retryPause()
+	where := ""
+	if task == "part" {
+		where = filepath.Base(req.RunDir)
+	}
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "agent-asked-again", Where: where, Level: "warn",
+		Message: fmt.Sprintf("the agent's provider failed for a passing reason (%s): asked again once, after %s", err.Error(), pause)})
+	time.Sleep(pause)
+	return callAgentOnce(ag, req, task, runDir, res)
+}
+
+// retryPause is how long a call failed for a passing overload waits
+// before it is asked again: WORKLINE_RETRY_PAUSE, a duration, else 60 s.
+func retryPause() time.Duration {
+	if d, err := time.ParseDuration(os.Getenv("WORKLINE_RETRY_PAUSE")); err == nil && d >= 0 {
+		return d
+	}
+	return 60 * time.Second
+}
+
+// callAgentOnce asks the agent once and records the call: in the result,
+// and with the run (out/calls.jsonl), what it cost, to be read afterwards.
+func callAgentOnce(ag agent.Agent, req agent.Request, task, runDir string, res *Result) error {
 	if res.overBudget() {
 		res.capped = true
 		return errTokensSpent
