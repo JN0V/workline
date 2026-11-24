@@ -100,6 +100,11 @@ settings:
   # The project's label per kind, the first that exists set by the kind
   # act (ADR-0039); unset, bug, enhancement, task. GitHub's issue types
   # are not read yet.
+  # A label for the issues the line cannot test (real hardware, say), unset
+  # by default: an issue carrying it is never moved to ready and never
+  # offered next, held like a parked one; a person removing it lets the
+  # issue go on as any other.
+  # untestable-label: needs-hardware
   # kinds: {bug: [bug, "type::bug"], feature: [enhancement, "type::feature"], task: [task, "type::maintenance"]}
   # Each kind of act: act (done, up to max a run), propose (on the issue,
   # for a person to accept), off (dropped). On by default: refine, ask,
