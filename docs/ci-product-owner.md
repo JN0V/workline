@@ -27,7 +27,7 @@ roles:
   product-owner:
     settings:
       issues-per-run: 8        # issues read a night
-      # autonomy: cautious     # a person is the Product Owner: what sets direction is proposed (ADR-0026)
+      # autonomy: cautious     # a person is the Product Owner: what sets direction is proposed
       acts:
         close-duplicate: {mode: propose}   # a person closes, until trust is earned
 ```

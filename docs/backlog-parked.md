@@ -13,10 +13,9 @@ sources: []
   behaviour and extend it; periodically merge redundant tests, using coverage
   overlap and mutation score. A tester or test-curator role.
 - **Context and memory management.** Long agent sessions fill their context and
-  degrade (compaction, context rot). Make My Dreams addressed it; decide whether
+  degrade (compaction, context rot). Decide whether
   the framework handles it, e.g. what a role writes down for the next run
   instead of keeping it in context.
-- **Rebuild Make My Dreams on this framework**, once it works.
 - **Style (vale).** Parked 2026-09-28: without AI, the risk for a doc is to
   be wrong or out of reach, which the checks already cover; a style linter
   adds a binary, rules to keep and findings people learn to ignore. Worth it
@@ -26,12 +25,11 @@ sources: []
   listed the documentalist as working, because its role *definition* was
   committed as `feat(documentalist): …`. A change that only specifies a role is
   `docs`, not `feat`; and the notes — the release tool's changelog since
-  ADR-0017 — should be checked against what the code can actually do (the
-  "capability lie" Make My Dreams detected).
+  [ADR-0017](adr/0017-the-release-manager.md) — should be checked against what the code can actually do.
 
 ## Documentalist beyond our repositories
 
-ADR-0014's checks run on six public repositories with no agent
+[ADR-0014](adr/0014-checked-is-earned-by-what-was-read.md)'s checks run on six public repositories with no agent
 (docs/research/documentalist-genericity.md): fitted to C-like code, English,
 `.md`, three-part versions. In order:
 
