@@ -816,6 +816,12 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			// again after the back-off, within the budget (revisit).
 			st.write.Record.SizeOf = role
 		}
+		if said := o.Inputs[engine.NeedsInput]; said != "" {
+			// Its run, given the code it named, failed: given it still at
+			// its retry, never run again on the input it lacked it on
+			// (#1875).
+			st.write.Record.Needs = &Needs{Said: said, At: now.Format(time.RFC3339), Times: 1}
+		}
 	case needsCode(out) && given:
 		// Said lacking again once given it (ADR-0063, §5): Waiting on a
 		// person, Blocked on the board, in this step, said at once.
