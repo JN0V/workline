@@ -78,7 +78,7 @@ type Settings struct {
 	TestimonyLines  int               `json:"testimony-lines-max"`    // lines of what the author says (commit messages, the merge request) the lenses are given
 	QuestionsMax    int               `json:"questions-max"`          // decisions put to a person a run; the rest counted
 	DiffAlone       bool              `json:"diff-alone"`             // ask the diff-alone facet too, apart, given the change only
-	RepoFinder      bool              `json:"repo-finder"`            // on a merge request otherwise mergeable: one finder reads the whole repository, once (ADR-0073)
+	RepoFinder      bool              `json:"repo-finder"`            // on a merge request otherwise mergeable: one finder reads the whole repository, once
 	SpecLenses      []string          `json:"spec-lenses"`            // the lenses a spec is read through (#128)
 	PipelinePaths   []string          `json:"pipeline-paths"`         // besides .github/, .gitlab-ci.yml and .workline/, what the pipeline runs: a change to them skips no commit (ADR-0051, cut 5)
 	SpecLinesMax    int               `json:"spec-lines-max"`         // lines of a spec the lenses are given; the rest cut, said
@@ -175,7 +175,7 @@ type candidates struct {
 	Reused map[string]reviewmark.Answered `json:"reused,omitempty"`
 	// What the repository finder came to this run, said in the summary,
 	// and whether it read the head: its last read recorded, its own block
-	// answered unless found again (ADR-0073).
+	// answered unless found again.
 	Finder     string `json:"finder,omitempty"`
 	FinderRead bool   `json:"finder-read,omitempty"`
 }
@@ -1997,7 +1997,7 @@ func settle(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	// Otherwise mergeable, the repository finder is asked first, then
-	// the judge of what it found (ADR-0073).
+	// the judge of what it found.
 	if asked, err := finder(runDir, repo, s, &st, &c); err != nil || asked {
 		if err != nil {
 			return fail(err)

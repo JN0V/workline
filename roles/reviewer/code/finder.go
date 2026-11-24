@@ -1,10 +1,10 @@
 package reviewer
 
-// The repository finder (ADR-0073): once a merge request is otherwise
+// The repository finder: once a merge request is otherwise
 // mergeable, one finder reads the repository at the head — callers,
 // callees, the workflows that run the tests — blind to what the lenses
 // found and what their judges said. It is a question that may read, as
-// a judge of the code is (ADR-0045): the engine serves its reads from
+// a judge of the code is: the engine serves its reads from
 // git. Its yes names a defect and quotes its cause; found again, the
 // finding is judged apart from it, then holds the merge as a lens's does
 // (ai-findings, by the name `repository`).
@@ -177,7 +177,7 @@ func judged(runDir string) int {
 }
 
 // authored names the finder's model in its finding's question: the
-// judge is picked apart from it (ADR-0005).
+// judge is picked apart from it.
 func authored(dir, finderDir string, s Settings, head string) error {
 	a, err := answerIn(finderDir)
 	if err != nil || a.Model == "" {

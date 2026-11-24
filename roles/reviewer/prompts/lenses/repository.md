@@ -1,7 +1,7 @@
 ---
-# The repository finder (ADR-0073): asked once, when nothing else holds
+# The repository finder: asked once, when nothing else holds
 # the merge request, with the whole change and the repository's files by
-# name, reading what it needs at the head as a judge reads (ADR-0045).
+# name, reading what it needs at the head as a judge reads.
 # Never in `lenses`: `repo-finder` turns it on or off. Its finding is
 # judged by the default question: whether the code quoted fails.
 ---

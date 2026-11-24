@@ -715,7 +715,7 @@ func run(o Options, res *Result) error {
 			return err
 		}
 		// Asked again, and asked first: a question an answer led to (the
-		// reviewer's repository finder, then its finding's judge, ADR-0073).
+		// reviewer's repository finder, then its finding's judge).
 		questions = append(askedAgain(runDir, answered), addedQuestions(runDir, before)...)
 	}
 	// A run again after a machine error carries what failed (ADR-0063,

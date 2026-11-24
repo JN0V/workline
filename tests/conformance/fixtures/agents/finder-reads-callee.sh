@@ -1,5 +1,5 @@
 #!/bin/sh
-# A cmd: judge that also answers as the repository finder (ADR-0073). As
+# A cmd: judge that also answers as the repository finder. As
 # the finder, not shown sum's body, it asks to read sum by its name;
 # shown it, it says yes, quoting the line of the change that calls it.
 # As the judge of that finding, it says yes.

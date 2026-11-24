@@ -48,7 +48,7 @@ type Record struct {
 	// so that an answer is weighed once (#1303).
 	Weighed []Weighed `json:"weighed,omitempty"`
 	// Finder is the head the repository finder read last on this merge
-	// request (ADR-0073): it is asked once, and again only to read its
+	// request: it is asked once, and again only to read its
 	// own block anew at a newer head.
 	Finder string `json:"finder,omitempty"`
 	// comment is the side's own comment the record was read from on a
@@ -93,7 +93,7 @@ var (
 	// after the blocks; an engine before them wrote none (#1303).
 	weighedLine = regexp.MustCompile(`<!-- workline:weighed (.*?) -->`)
 	// finderLine reads the head the repository finder read, a line of its
-	// own after the rest; an engine before it wrote none (ADR-0073).
+	// own after the rest; an engine before it wrote none.
 	finderLine = regexp.MustCompile(`<!-- workline:finder ([0-9a-f]+) -->`)
 )
 
@@ -283,7 +283,7 @@ func standing(repo string, s Settings, st state, blocks []Block) []Block {
 func answering(blocks []Block, files []File, skip map[string]string) []string {
 	var out []string
 	for _, b := range blocks {
-		if _, ok := skip[b.Lens]; ok || slices.Contains(out, b.Lens) || b.Lens == finderLens { // the finder takes no lens's turn (ADR-0073)
+		if _, ok := skip[b.Lens]; ok || slices.Contains(out, b.Lens) || b.Lens == finderLens { // the finder takes no lens's turn
 			continue
 		}
 		if len(files) > 0 { // a fix may lie in any file, not only its cause's (#1598)
@@ -360,7 +360,7 @@ func reread(repo string, s Settings, st state, c candidates, related []Finding, 
 				}
 			}
 		}
-		if b.Lens == finderLens { // answered once the finder read the head again (ADR-0073)
+		if b.Lens == finderLens { // answered once the finder read the head again
 			return c.FinderRead
 		}
 		if !whole || !slices.Contains(answered, b.Lens) {

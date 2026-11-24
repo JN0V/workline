@@ -34,7 +34,7 @@ type reading struct {
 	Material string      `json:"material"` // as first asked, before any read
 	Cause    string      `json:"cause"`    // the cause's file: a name is looked for there first, then in its folder
 	Rounds   []readRound `json:"rounds,omitempty"`
-	Find     bool        `json:"find,omitempty"`   // the repository finder's: a yes names a defect and quotes its cause (ADR-0073)
+	Find     bool        `json:"find,omitempty"`   // the repository finder's: a yes names a defect and quotes its cause
 	Author   string      `json:"author,omitempty"` // the model whose finding it judges, when not a lens's: its judge stands apart from it
 }
 
