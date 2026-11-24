@@ -51,6 +51,10 @@ type Record struct {
 	// request: it is asked once, and again only to read its
 	// own block anew at a newer head.
 	Finder string `json:"finder,omitempty"`
+	// FinderTries counts the finder's runs in a row that came to nothing
+	// it could stand on (unsure, or not run): one retry, then it stops,
+	// its own block put to a judge.
+	FinderTries int `json:"finder-tries,omitempty"`
 	// comment is the side's own comment the record was read from on a
 	// merge request, whole: a draft's run keeps it as it is, its record
 	// alone written anew (ADR-0050). "" elsewhere, or with none yet.
@@ -94,7 +98,7 @@ var (
 	weighedLine = regexp.MustCompile(`<!-- workline:weighed (.*?) -->`)
 	// finderLine reads the head the repository finder read, a line of its
 	// own after the rest; an engine before it wrote none.
-	finderLine = regexp.MustCompile(`<!-- workline:finder ([0-9a-f]+) -->`)
+	finderLine = regexp.MustCompile(`<!-- workline:finder ([0-9a-f]+|-)(?: tries=(\d+))? -->`)
 )
 
 // The openings of the record and of its blocks: a text holding one that
@@ -135,8 +139,12 @@ func (r Record) String() string {
 	if len(r.Weighed) > 0 {
 		s += "\n<!-- workline:weighed " + hidden(r.Weighed) + " -->"
 	}
-	if r.Finder != "" {
-		s += "\n<!-- workline:finder " + r.Finder + " -->"
+	if r.Finder != "" || r.FinderTries > 0 {
+		head := cmp.Or(r.Finder, "-")
+		if r.FinderTries > 0 {
+			head += fmt.Sprintf(" tries=%d", r.FinderTries)
+		}
+		s += "\n<!-- workline:finder " + head + " -->"
 	}
 	return s
 }
@@ -197,7 +205,10 @@ func parseRecord(text string) (Record, error) {
 		r.Weighed = nil // weighed again, never a record lost for it
 	}
 	if f := finderLine.FindStringSubmatch(text); f != nil {
-		r.Finder = f[1]
+		if f[1] != "-" {
+			r.Finder = f[1]
+		}
+		r.FinderTries, _ = strconv.Atoi(f[2])
 	}
 	return r, nil
 }
@@ -220,7 +231,7 @@ func ids(list string) []string {
 // none had to read (#588), and names who left the rest (recorded, #591).
 func (r Record) add(commits, patches []string) Record {
 	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll, Retried: r.Retried,
-		Judged: slices.Clone(r.Judged), Gone: r.Gone, Weighed: slices.Clone(r.Weighed), Finder: r.Finder}
+		Judged: slices.Clone(r.Judged), Gone: r.Gone, Weighed: slices.Clone(r.Weighed), Finder: r.Finder, FinderTries: r.FinderTries}
 	for _, c := range commits {
 		if !slices.Contains(out.Reviewed, c) {
 			out.Reviewed = append(out.Reviewed, c)
@@ -576,6 +587,7 @@ func MergeSummary(body, read, found string) string {
 	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)
 	merged.Judged, merged.Gone = slices.Clone(now.Judged), now.Gone
 	merged.Weighed = unionWeighed(now.Weighed, ours.Weighed)
+	merged.Finder, merged.FinderTries = finderOf(ours, now)
 	for _, j := range ours.Judged {
 		if !slices.Contains(was.Judged, j) && !slices.Contains(merged.Judged, j) {
 			merged.Judged = append(merged.Judged, j)
@@ -609,6 +621,7 @@ func MergeInto(found, body, read, marker string) string {
 	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)
 	merged.Judged = slices.Clone(now.Judged)
 	merged.Weighed = unionWeighed(now.Weighed, ours.Weighed)
+	merged.Finder, merged.FinderTries = finderOf(now, ours)
 	for _, j := range ours.Judged {
 		if !slices.Contains(was.Judged, j) && !slices.Contains(merged.Judged, j) {
 			merged.Judged = append(merged.Judged, j)
@@ -619,6 +632,16 @@ func MergeInto(found, body, read, marker string) string {
 		out += merged.judgedLines(reviewmark.SummaryMax - len(out))
 	}
 	return strings.TrimSpace(strings.Replace(out, marker, "", 1))
+}
+
+// finderOf is what two records merged say of the repository finder: the
+// first's when it read a head, else the other's; it is asked once a merge
+// request, whichever run applied last.
+func finderOf(first, other Record) (string, int) {
+	if first.Finder != "" || other.Finder == "" {
+		return first.Finder, first.FinderTries
+	}
+	return other.Finder, other.FinderTries
 }
 
 // union is a's ids, then b's not in a.
@@ -656,7 +679,7 @@ func keptReview(text, side string, rec Record) string {
 		return ""
 	}
 	end := loc[1]
-	for _, line := range []*regexp.Regexp{blocksLine, weighedLine} {
+	for _, line := range []*regexp.Regexp{blocksLine, weighedLine, finderLine} {
 		if m := line.FindStringIndex(text[end:]); m != nil && strings.TrimSpace(text[end:end+m[0]]) == "" {
 			end += m[1]
 		}

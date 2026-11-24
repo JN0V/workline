@@ -2,7 +2,6 @@ case: reviewer/bug-story-lens-takes-no-turn
 about: "The comments lens takes no turn of its own: on the run whose count would have named it, a push adding a comment a story word flags still gets a lens reading its code, the comments lens beside it (ADR-0065, Rule A)."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""

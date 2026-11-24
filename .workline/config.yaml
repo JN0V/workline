@@ -137,6 +137,9 @@ roles:
       # falsely. The role's default stays warn until real blocks here are
       # watched; the other lenses warn.
       ai-findings: {correctness: block}
+      # The repository finder, off by default, on here to measure it: its
+      # findings warn until its false alarms are counted.
+      repo-finder: true
       # The push of 2026-11-14: each backlog run reads up to ten specs,
       # not five, so a run can fill Ready to its limit (10); the run of
       # 18:12 UTC readied 5, Ready back to 2 within the hour. Ten at about

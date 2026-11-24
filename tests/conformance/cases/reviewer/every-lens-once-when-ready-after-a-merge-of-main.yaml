@@ -2,7 +2,6 @@ case: reviewer/every-lens-once-when-ready-after-a-merge-of-main
 about: "A branch that merged main in, every commit reviewed, then marked ready (#129): every lens reads the branch's whole change, not skipped as reviewed (#286, #134), and never main's code nor its commits."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     - "git checkout -q main && printf 'package calc\\n\\n// Sum adds the values.\\nfunc Sum(values []int) int { return 0 }\\n' > calc/sum.go && git add calc && git commit -qm 'feat: sum the values' && git checkout -q feature"

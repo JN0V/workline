@@ -2,7 +2,6 @@ case: reviewer/finding-on-a-removed-guards-name-is-fixed-by-author
 about: "A change removes the guard on p from Page; a lens finds the defect it opens on a later use of p, a kept line more than three lines below (#357). In the same function, the line uses a name the removed lines tested: the finding is the change's, for its author, its comment on the line where the guard was. No agent decides it."
 given:
   repo: shop
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - |
       cat > shop/page.go <<'GO'

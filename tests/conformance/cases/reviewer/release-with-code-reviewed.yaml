@@ -2,7 +2,6 @@ case: reviewer/release-with-code-reviewed
 about: "A release tool's pull request that also changes a line of code is reviewed as any (#384): the lens reads the code; the versions the tool bumps on the lines it marks are left out."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "git checkout -q main"
     - "printf 'package calc\\n\\n// Version is the release.\\nconst Version = \"v1.2.0\" // x-release-please-version\\n' > calc/version.go && git add calc/version.go && git commit -qm 'feat: say the version'"

@@ -2,7 +2,6 @@ case: reviewer/finding-judged-again-once-its-file-changes
 about: "A verdict is kept only for the same finding on the same patch (ADR-0050, step 6): every lens reads the whole change on ready and both findings are judged. A commit then changes calc.go again, away from the cause; marked ready again, every lens finds both again, but the merge request's change to calc.go is a new patch: each is judged again."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
   forge:

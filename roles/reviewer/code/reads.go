@@ -36,6 +36,7 @@ type reading struct {
 	Rounds   []readRound `json:"rounds,omitempty"`
 	Find     bool        `json:"find,omitempty"`   // the repository finder's: a yes names a defect and quotes its cause
 	Author   string      `json:"author,omitempty"` // the model whose finding it judges, when not a lens's: its judge stands apart from it
+	Cut      []string    `json:"cut,omitempty"`    // the finder's: what its material left out, past a cap, said in the run
 }
 
 // readRound is one round of reads: what the judge asked, and what it was

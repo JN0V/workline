@@ -10,7 +10,7 @@ given:
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml", REVIEW_LENS_BROKEN: edge-cases, REVIEW_LENS_BROKEN_CALLS: "2", REVIEW_LENS_COUNT: "$XDG_CONFIG_HOME/review-lens-calls"}
   config:
     routing: {events: {merge-request: [reviewer]}}
-    roles: {reviewer: {settings: {repo-finder: false, ai-findings: {correctness: block}}}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
   forge:
     merge-requests:
       - id: 5

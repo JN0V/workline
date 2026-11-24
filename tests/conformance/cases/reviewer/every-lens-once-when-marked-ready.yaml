@@ -2,7 +2,6 @@ case: reviewer/every-lens-once-when-marked-ready
 about: "A draft whose two pushes each got one lens, then marked ready, is read by every lens once on the whole change (#129): the commits the record holds as reviewed are read again, not skipped, or the run would read nothing."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"

@@ -48,6 +48,41 @@ func finderDue(s Settings, st state) bool {
 	return st.Record.Finder != st.Head && slices.ContainsFunc(st.Standing, func(b Block) bool { return b.Lens == finderLens })
 }
 
+// Why no lens was asked when the finder is asked alone: the turn of the
+// lenses is kept as that run would have kept it.
+const (
+	onlyHeld   = "held"   // nothing new to read
+	onlyRecord = "record" // the new commits change no code
+	onlyNone   = "none"   // no lens can read this change
+	onlyOther  = "other"  // no lens of this side takes this push
+)
+
+// finderAlone asks the finder in a run that asks no lens (why, one of
+// the only* reasons), when it is due and an agent can be asked: the run
+// then settles as one whose lenses found nothing. false: not asked, the
+// run settles as it would without it.
+func finderAlone(runDir, repo string, s Settings, st state, why string) (bool, int) {
+	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" || os.Getenv("WORKLINE_AI_WAITS") == "ready" || !finderDue(s, st) {
+		return false, 0
+	}
+	st.Lenses, st.Alone, st.Only = nil, false, why
+	var c candidates
+	asked, err := finder(runDir, repo, s, &st, &c)
+	if err != nil {
+		return true, fail(err)
+	}
+	if !asked {
+		return false, 0
+	}
+	if err := writeJSON(filepath.Join(runDir, "in", candidatesFile(st)), c); err != nil {
+		return true, fail(err)
+	}
+	if err := writeJSON(filepath.Join(runDir, "in", "review-state.json"), st); err != nil {
+		return true, fail(err)
+	}
+	return true, 0
+}
+
 // mergeable says whether a review holds nothing but the finder's own
 // block: every lens answered, no finding blocking.
 func mergeable(v Review) bool {
@@ -78,11 +113,11 @@ func finder(runDir, repo string, s Settings, st *state, c *candidates) (bool, er
 		if err != nil {
 			return false, err
 		}
-		m, cause := finderMaterial(repo, s, *st)
+		m, cause, cuts := finderMaterial(repo, s, *st)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return false, err
 		}
-		r := reading{Question: strings.Join(strings.Fields(l.Text), " "), Material: m, Cause: cause, Find: true}
+		r := reading{Question: strings.Join(strings.Fields(l.Text), " "), Material: m, Cause: cause, Find: true, Cut: cuts}
 		return true, r.write(dir, s, st.Head)
 	}
 	if c.Finder != "" { // read on a pass before: its finding's judge answered since
@@ -91,45 +126,81 @@ func finder(runDir, repo string, s Settings, st *state, c *candidates) (bool, er
 	a, err := answerIn(dir)
 	rd, _ := readingOf(dir)
 	read := rd.said()
+	for _, cut := range rd.Cut { // what it was not given, never read as a whole repository read
+		c.Logged = append(c.Logged, verdict.Finding{Rule: verdict.CutRule, Level: "warn", Message: "the repository finder was given " + cut})
+	}
+	cut := ""
+	if len(rd.Cut) > 0 {
+		cut = " (its material cut, said)"
+	}
+	// done: the finder read this head; its block before is answered by
+	// what it says now (reread).
+	done := func(said string) {
+		c.Finder, c.FinderRead, c.FinderSet, c.FinderHead, c.FinderTries = said, true, true, st.Head, 0
+	}
+	miss := ""
 	switch {
 	case err != nil || a.Error != "":
 		why := a.Error
 		if why == "" {
 			why = "the finder was not asked"
 		}
-		c.Finder = "did not run (" + why + "): it is asked again at the next run"
-		return false, nil
+		miss = "did not run (" + why + ")"
 	case len(a.Reads) > 0:
-		// Unsure: not a read, so its block stands and it is asked again.
-		c.Finder = "could not tell: it asked to read again, no read left (judge-read-rounds, judge-read-lines-max)" + read + "; it is asked again at the next run"
-		return false, nil
+		miss = "could not tell: it asked to read again, no read left (judge-read-rounds, judge-read-lines-max)" + read
 	case a.Unsure:
-		c.Finder = "could not tell: " + a.Why + read + "; it is asked again at the next run"
-		return false, nil
+		miss = "could not tell: " + strings.TrimRight(a.Why, ". ") + read
 	case a.Yes == nil:
-		c.Finder = "did not run (no answer): it is asked again at the next run"
-		return false, nil
+		miss = "did not run (no answer)"
 	case !*a.Yes:
-		c.FinderRead, c.Finder = true, "read the repository and found nothing"+read
+		done("read the repository" + cut + " and found nothing" + read)
 		return false, nil
 	}
-	c.FinderRead = true
+	var f Finding
+	if miss != "" {
+		// One retry: its block, if any, stands meanwhile, the head it
+		// read last kept.
+		if tries := st.Record.FinderTries + 1; tries < 2 {
+			c.Finder, c.FinderSet, c.FinderHead, c.FinderTries = miss+"; asked once more at the next run", true, st.Record.Finder, tries
+			return false, nil
+		}
+		i := slices.IndexFunc(st.Standing, func(b Block) bool { return b.Lens == finderLens })
+		if i < 0 {
+			done(miss + "; twice in a row: not asked again on this merge request")
+			return false, nil
+		}
+		// Twice: its own block goes to a judge, which keeps or drops it.
+		done(miss + "; twice in a row: its block put to a judge")
+		b := st.Standing[i]
+		var why string
+		if f, why = found(repo, *st, finderLens, false, map[string]any{"severity": "important", "title": strings.TrimPrefix(b.Title, "Important: "), "why": b.Title, "cause": b.Cause}, b.Side); why != "" {
+			c.Finder += ", its cause no longer found: " + why
+			return false, nil
+		}
+		return judgeFinding(runDir, repo, s, st, c, f, "")
+	}
 	cause := map[string]string{}
 	if a.Quote != nil {
 		cause = map[string]string{"path": a.Quote.Path, "quote": a.Quote.Text}
 	}
 	f, why := found(repo, *st, finderLens, false, map[string]any{"severity": "important", "title": oneLine(a.Why, 120), "why": a.Why, "cause": cause}, "")
 	if why != "" {
-		c.Finder = fmt.Sprintf("found %q, dropped: %s%s", oneLine(a.Why, 120), why, read)
+		done(fmt.Sprintf("found %q, dropped: %s%s", oneLine(a.Why, 120), why, read))
 		return false, nil
 	}
-	c.Finder = "read the repository and found one defect" + read
+	done("read the repository" + cut + " and found one defect" + read)
+	return judgeFinding(runDir, repo, s, st, c, f, dir)
+}
+
+// judgeFinding adds the finder's finding to the candidates and asks its
+// judge, apart from the finder (finderDir, "" when no finder answered it
+// this run); true when a question was written.
+func judgeFinding(runDir, repo string, s Settings, st *state, c *candidates, f Finding, finderDir string) (bool, error) {
 	if f.Related {
 		c.Related = append(c.Related, f)
 	} else {
 		c.Outside = append(c.Outside, f)
 	}
-	// Its judge, apart from the finder as from the lenses.
 	one := candidates{}
 	if f.Related {
 		one.Related = []Finding{f}
@@ -156,9 +227,11 @@ func finder(runDir, repo string, s Settings, st *state, c *candidates) (bool, er
 	if len(one.Asked) == 0 { // judged before on the same patch: settled now
 		return false, nil
 	}
-	for _, a := range one.Asked {
-		if err := authored(filepath.Join(runDir, "in", "judge", a[strings.LastIndex(a, "\x00")+1:]), dir, s, st.Head); err != nil {
-			return false, err
+	if finderDir != "" {
+		for _, a := range one.Asked {
+			if err := authored(filepath.Join(runDir, "in", "judge", a[strings.LastIndex(a, "\x00")+1:]), finderDir, s, st.Head); err != nil {
+				return false, err
+			}
 		}
 	}
 	return true, writeJSON(filepath.Join(runDir, "in", candidatesFile(*st)), *c)
@@ -199,23 +272,27 @@ func authored(dir, finderDir string, s Settings, head string) error {
 // finderMaterial is what the finder is given: the whole change, base to
 // head, and the repository's files by name; nothing a lens or a judge
 // said. cause is the first file the change touches: a name is looked
-// for there first.
-func finderMaterial(repo string, s Settings, st state) (string, string) {
+// for there first. cuts says what was left out, past a cap.
+func finderMaterial(repo string, s Settings, st state) (material, cause string, cuts []string) {
 	var b strings.Builder
 	diff, _ := git(repo, "diff", "-U3", "--no-color", "--no-ext-diff", "--find-renames", st.Base, st.Head, "--")
-	fmt.Fprintf(&b, "## The change\n\nEvery commit of the merge request, as git shows it, %s..%s:\n\n```diff\n%s```\n", short(st.Base), short(st.Head), capLines(diff, s.DiffLinesMax, "the change is cut here, past diff-lines-max"))
+	shownDiff, cutAt := cutLines(diff, s.DiffLinesMax, "the change is cut here, past diff-lines-max")
+	if cutAt > 0 {
+		cuts = append(cuts, fmt.Sprintf("the change's first %d lines of %d, past %s", s.DiffLinesMax, strings.Count(diff, "\n"), verdict.Setting("reviewer", "diff-lines-max")))
+	}
+	fmt.Fprintf(&b, "## The change\n\nEvery commit of the merge request, as git shows it, %s..%s:\n\n```diff\n%s```\n", short(st.Base), short(st.Head), shownDiff)
 	out, _ := git(repo, "ls-tree", "-r", "--name-only", st.Head)
 	names := strings.Fields(out)
 	shown := names[:min(len(names), finderFilesMax)]
 	fmt.Fprintf(&b, "\n## The repository's files at %s\n\n```\n%s\n```\n", short(st.Head), strings.Join(shown, "\n"))
 	if n := len(names) - len(shown); n > 0 {
 		fmt.Fprintf(&b, "\n%d more %s not listed: find them with a grep.\n", n, plural(n, "file", "files"))
+		cuts = append(cuts, fmt.Sprintf("the names of %d of the repository's %d files, the rest found only by a grep", len(shown), len(names)))
 	}
-	cause := ""
 	if files, err := changedFiles(repo, st.Base, st.Head); err == nil && len(files) > 0 {
 		cause = files[0].Path
 	}
-	return b.String(), cause
+	return b.String(), cause, cuts
 }
 
 // finderReads are the rounds of reads the finder asked, as a judge's are

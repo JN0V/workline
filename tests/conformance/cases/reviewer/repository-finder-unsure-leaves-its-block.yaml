@@ -1,5 +1,5 @@
 case: reviewer/repository-finder-unsure-leaves-its-block
-about: "The repository finder's block stands from an earlier head. Asked again at a newer one, it cannot tell: its block still stands, said, and the record does not say it read this head, so the next run asks it again."
+about: "The repository finder's block stands from an earlier head. Asked again at a newer one, it cannot tell: its block still stands, said, and the record counts the try without saying it read this head, so the next run asks it once more, and only once."
 given:
   repo: reviewed
   setup:
@@ -7,7 +7,7 @@ given:
     - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
     - "sed -i \"s/@reviewed@/$(git rev-parse HEAD~1)/g\" \"$FORGE_FILE\""
   env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/finder-unsure.sh"}
-  config: {roles: {reviewer: {settings: {ai-findings: {repository: block}}}}}
+  config: {roles: {reviewer: {settings: {repo-finder: true, ai-findings: {repository: block}}}}}
   forge:
     issues: []
     merge-requests:
@@ -26,4 +26,8 @@ run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "f
 expect:
   status: block
   findings: [{rule: repository, where: "calc/calc.go:21", message: "Mean divides by zero on an empty list"}]
-  summary: "the repository finder could not tell"
+  agent-calls: 2
+  summary: "the repository finder could not tell: whether a caller passes an empty list is in no code read; asked once more at the next run"
+  forge:
+    merge-requests:
+      - {id: 5, comment-contains: [" tries=1 -->"]}

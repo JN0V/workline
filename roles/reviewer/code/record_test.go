@@ -230,3 +230,33 @@ func TestRetestedReadsTheLastVerdict(t *testing.T) {
 		t.Errorf("retested = %v, want none: the finding's last verdict is a no", got)
 	}
 }
+
+// The head the repository finder read, and its tries, are kept by every
+// way a record is written again: read back, merged with a run applied
+// since or before, and a draft's comment kept with its record anew,
+// written once.
+func TestFinderLineKept(t *testing.T) {
+	r := Record{Reviewed: []string{"a1"}, Runs: 1, Finder: "abc1234"}
+	if m, err := parseRecord(r.String()); err != nil || m.Finder != "abc1234" || m.FinderTries != 0 {
+		t.Fatalf("read back: %+v %v", m, err)
+	}
+	tried := Record{Runs: 1, FinderTries: 1}
+	if m, err := parseRecord(tried.String()); err != nil || m.Finder != "" || m.FinderTries != 1 {
+		t.Fatalf("a try with no head read: %q → %+v %v", tried.String(), m, err)
+	}
+	was := Record{Reviewed: []string{"a1"}, Runs: 1}
+	ours := "ours\n" + Record{Reviewed: []string{"a1", "c3"}, Runs: 2}.String()
+	now := "now\n" + Record{Reviewed: []string{"a1", "b2"}, Runs: 2, Finder: "abc1234"}.String()
+	if m, _ := parseRecord(MergeSummary(ours, was.Read(), now)); m.Finder != "abc1234" {
+		t.Errorf("MergeSummary lost the finder the run applied since read: %+v", m)
+	}
+	marker := "<!-- workline:sticky=reviewer/summary -->"
+	newer := "newer\n" + Record{Reviewed: []string{"a1", "c3"}, Runs: 2}.String() + "\n\n" + marker
+	if m, _ := readRecord(MergeInto(newer, now, was.String(), marker)); m.Finder != "abc1234" {
+		t.Errorf("MergeInto lost the finder the older run read: %+v", m)
+	}
+	kept := keptReview("text\n"+r.String()+"\n\n"+marker, "", Record{Reviewed: []string{"a1"}, Runs: 1, Finder: "abc1234"})
+	if n := strings.Count(kept, "<!-- workline:finder "); n != 1 {
+		t.Errorf("a draft's comment kept holds the finder's line %d times:\n%s", n, kept)
+	}
+}

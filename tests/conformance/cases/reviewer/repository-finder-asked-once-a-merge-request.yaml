@@ -2,6 +2,7 @@ case: reviewer/repository-finder-asked-once-a-merge-request
 about: "The record says the repository finder read the merge request at an earlier head, and none of its findings stands: a push nothing else holds asks the lens in turn, not the finder again, and the record keeps the head it read (ADR-0073)."
 given:
   repo: reviewed
+  config: {roles: {reviewer: {settings: {repo-finder: true}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"

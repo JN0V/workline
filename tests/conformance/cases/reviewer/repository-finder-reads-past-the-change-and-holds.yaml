@@ -28,7 +28,7 @@ given:
       GO
       git commit -qam 'feat: the mean of the values'
   env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/finder-reads-callee.sh"}
-  config: {roles: {reviewer: {settings: {ai-findings: {repository: block}}}}}
+  config: {roles: {reviewer: {settings: {repo-finder: true, ai-findings: {repository: block}}}}}
   forge:
     issues: []
     merge-requests: [{id: 5, labels: [], comments: []}]

@@ -2,7 +2,6 @@ case: reviewer/moved-file-only-its-change-is-the-change
 about: "A file moved, one line of it changed: git finds the rename, so that line is the change and the rest of the file kept lines (#358). The lens reads it marked so, and its judge sees the hunk near the cause, not the whole file added; a finding on the changed line is the author's, a comment on its line at the new path; one on a kept line, from before the move, becomes an issue. The comment over Average, holding a code, is not read as added."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup: ["git mv calc/calc.go calc/mean.go && sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/mean.go && git commit -qam 'refactor: move the mean to its own file'"]
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
   forge:

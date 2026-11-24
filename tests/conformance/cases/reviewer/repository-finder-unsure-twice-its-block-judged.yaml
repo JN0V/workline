@@ -1,0 +1,34 @@
+case: reviewer/repository-finder-unsure-twice-its-block-judged
+about: "The repository finder could not tell once already (`tries=1`), its block standing. Unsure again: it is not asked a third time; its block is put to a judge, who says it still holds: it stands, verified, and the record says the finder read this head, no try left owed."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Mean is the average.\\nfunc Mean(values []int) int { return Average(values) }\\n' >> calc/calc.go && git commit -qam 'feat: the mean'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD~1)/g\" \"$FORGE_FILE\""
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/finder-unsure.sh"}
+  config: {roles: {reviewer: {settings: {repo-finder: true, ai-findings: {repository: block}}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 finding on the change; lenses: correctness.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 read=all -->
+            <!-- workline:blocks [{"lens":"repository","at":"@reviewed@","where":"calc/calc.go:21","title":"Important: Mean divides by zero on an empty list","cause":{"path":"calc/calc.go","quote":"func Mean(values []int) int { return Average(values) }"},"side":"head"}] -->
+            <!-- workline:finder @reviewed@ tries=1 -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: block
+  findings: [{rule: repository, where: "calc/calc.go:21", message: "verified"}]
+  # The lens, the finder, then the judge of its block.
+  agent-calls: 3
+  summary: "twice in a row: its block put to a judge"
+  forge:
+    merge-requests:
+      - {id: 5, comment-contains: ["<!-- workline:finder "], comment-lacks: "tries="}

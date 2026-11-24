@@ -8,7 +8,7 @@ given:
     - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
   config:
     routing: {events: {merge-request: [reviewer]}}
-    roles: {reviewer: {settings: {repo-finder: false, ai-findings: {correctness: block}}}}
+    roles: {reviewer: {settings: {ai-findings: {correctness: block}}}}
   forge:
     merge-requests:
       - id: 5

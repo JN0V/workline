@@ -2,7 +2,6 @@ case: reviewer/record-unread-reviews-every-commit-again
 about: "The record of what was reviewed, hidden in the reviewer's summary comment on a merge request, does not read (#302): it is never taken for none in silence. The summary names the merge request and the record, and says what the reviewer does: every commit of the range reviewed again, once — the review writes the record anew, which the next push reads."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/\" \"$FORGE_FILE\""

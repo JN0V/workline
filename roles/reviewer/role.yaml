@@ -162,8 +162,8 @@ settings:
   # head, blind to the lenses, through the judge's reads; its finding is
   # judged and holds the merge as a lens's (ai-findings: `repository`).
   # Asked once a merge request, again only for its own block at a newer
-  # head. false: never asked.
-  repo-finder: true
+  # head. Off until measured on workline's own line; true: asked.
+  repo-finder: false
   # What the author says, the lenses' testimony (#126): the messages of the
   # commits reviewed, whole, and the merge request's title and body.
   testimony-lines-max: 80

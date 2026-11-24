@@ -2,7 +2,6 @@ case: reviewer/record-unread-asks-one-lens-on-a-ready-merge-request
 about: "A record that does not read says nothing of whether every lens read the change (#359): on a merge request no draft (`draft=false`), the run reviews every commit again, as it does when the record does not read, but with one lens, never every lens on each push."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/\" \"$FORGE_FILE\""

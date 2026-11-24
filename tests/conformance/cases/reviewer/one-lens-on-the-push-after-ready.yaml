@@ -2,7 +2,6 @@ case: reviewer/one-lens-on-the-push-after-ready
 about: "After the run on ready read every lens, the next push gets one lens again, in turn, on its new commit only (#129): the template passes no `lenses` on a push."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"

@@ -159,6 +159,7 @@ type state struct {
 	Weigh      []weigh             `json:"weigh,omitempty"`     // the tester's answers that no test is needed a judge weighs this run (#1303)
 	Held       string              `json:"held,omitempty"`      // with Weigh and nothing new to read: the summary of the review held
 	Answers    []reviewmark.Answer `json:"answers,omitempty"`   // the tester's answers that no test is needed, on the merge request (#1303)
+	Only       string              `json:"only,omitempty"`      // no lens asked this run, the repository finder alone: why none was (finderAlone)
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -178,6 +179,10 @@ type candidates struct {
 	// answered unless found again.
 	Finder     string `json:"finder,omitempty"`
 	FinderRead bool   `json:"finder-read,omitempty"`
+	// What the record says of it after this run, when it was asked.
+	FinderSet   bool   `json:"finder-set,omitempty"`
+	FinderHead  string `json:"finder-head,omitempty"`
+	FinderTries int    `json:"finder-tries,omitempty"`
 }
 
 // Review is what the run found, as post reads it and out/review.json gives
@@ -389,6 +394,9 @@ func prepare(runDir, repo string, s Settings) int {
 			}
 			return 0
 		}
+		if alone, code := finderAlone(runDir, repo, s, st, onlyHeld); alone {
+			return code
+		}
 		return held(runDir, repo, s, st, review(st, nil, said))
 	}
 	// The rules first: what they block on is fixed before any agent is
@@ -410,6 +418,9 @@ func prepare(runDir, repo string, s Settings) int {
 			return fail(err)
 		}
 		if len(files) == 0 {
+			if alone, code := finderAlone(runDir, repo, s, st, onlyRecord); alone {
+				return code
+			}
 			return recordOnly(runDir, s, st, sp.New)
 		}
 	}
@@ -494,6 +505,9 @@ func prepare(runDir, repo string, s Settings) int {
 		}
 	}
 	if len(st.Lenses) == 0 && !st.Alone {
+		if alone, code := finderAlone(runDir, repo, s, st, onlyNone); alone {
+			return code
+		}
 		return final(runDir, review(st, nil, "no lens asked can review this change: not asked: "+strings.Join(st.Skipped, ", ")))
 	}
 	// Of the lenses this push takes, in turn or every one on ready, each
@@ -502,6 +516,9 @@ func prepare(runDir, repo string, s Settings) int {
 	// to read, on the other's turn too (#591).
 	if other := st.side(s); len(st.Lenses) == 0 && !st.Alone {
 		if st.Lenses, st.Alone = rec.leftTo(s, side, skip); len(st.Lenses) == 0 && !st.Alone {
+			if alone, code := finderAlone(runDir, repo, s, st, onlyOther); alone {
+				return code
+			}
 			return otherSide(runDir, repo, s, st, other, sp.New)
 		}
 	}
@@ -2204,9 +2221,15 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	}
 	v.Record.Owed = false // the lenses were asked: a rule holds them no more
 	everyLens(st, &v, len(c.Failed) == 0)
-	if c.FinderRead {
-		v.Record.Finder = st.Head
+	if c.FinderSet {
+		v.Record.Finder, v.Record.FinderTries = c.FinderHead, c.FinderTries
 		readsDone = append(readsDone, finderReads(runDir)...)
+	}
+	if st.Only != "" { // the finder alone: the lenses' turn as the run without it left it
+		v.Record.Runs = st.Record.Runs
+		if st.Only == onlyOther {
+			v.Record.Runs++
+		}
 	}
 	v.Calls = spent(runDir, st, c)
 	v.Reads = readsDone
@@ -2481,7 +2504,11 @@ func summary(v Review, issues, failed, unjudged int) string {
 	if issues > 0 {
 		parts = append(parts, fmt.Sprintf("%d issues proposed for what lies outside it", issues))
 	}
-	s := strings.Join(parts, ", ") + "; lenses: " + strings.Join(v.Lenses, ", ")
+	lenses := strings.Join(v.Lenses, ", ")
+	if lenses == "" {
+		lenses = "none this run"
+	}
+	s := strings.Join(parts, ", ") + "; lenses: " + lenses
 	if v.Parts > 1 {
 		s += fmt.Sprintf("; read in %d parts, the change too large for one call", v.Parts)
 	}

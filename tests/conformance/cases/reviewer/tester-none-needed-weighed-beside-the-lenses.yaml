@@ -7,7 +7,7 @@ given:
     - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
     - "printf 'package calc\\n\\n// Twice doubles n.\\nfunc Twice(n int) int { return 2 * n }\\n' > calc/twice.go && git add calc/twice.go && git commit -qm 'feat: twice'"
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-none-needed-holds.yaml"}
-  config: {roles: {reviewer: {settings: {repo-finder: false, ai-findings: block}}}}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
   forge:
     issues: []
     merge-requests:

@@ -2,7 +2,6 @@ case: reviewer/every-lens-on-the-push-after-a-failed-run-on-ready
 about: "The push after a run on ready whose lenses did not all answer (`retried=once`) asks every lens again on the whole change (#359); every one answering, the record says every lens read it, and no retry is left owed."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"

@@ -2,7 +2,6 @@ case: reviewer/finding-judged-once-not-judged-again
 about: "A finding judged once is not judged again (ADR-0050, step 6; ADR-0013): every lens reads the whole change on ready and both findings are judged. Marked ready again after a commit elsewhere, every lens reads the whole change once more and finds both again, on calc.go, whose change is the same patch: their earlier verdicts are kept and said, no judge asked."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
   forge:

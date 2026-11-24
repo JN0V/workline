@@ -2,7 +2,6 @@ case: reviewer/tester-test-added-resolves-as-a-commit
 about: "A warning of the tests lens went to the tester, who answered by adding a test (#1303): no reason to weigh. The reviewer reads the commit adding it as any commit: its tests lens reads a test file touching the finding's file, finds nothing, and the conversation is resolved, as before (#1039). No judge is asked."
 given:
   repo: reviewed
-  config: {roles: {reviewer: {settings: {repo-finder: false}}}}
   setup:
     - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
     - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
