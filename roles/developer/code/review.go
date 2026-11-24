@@ -829,7 +829,8 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	// Its agent could not be reached (its provider overloaded, its quota
 	// spent) and said nothing: unless it changed the worktree before, the
-	// round did not happen (unreached, below).
+	// round did not happen (unreached, below); if it did, its five whys
+	// are owed as any round's, asked once its change is known.
 	unreached := strings.HasPrefix(used(runDir).failed, agent.ErrUnavailable.Error()) && len(notes) == 0 && len(analyses) == 0
 	analysis := ""
 	if r.FiveWhys && !unreached {
@@ -895,6 +896,10 @@ func reviewPost(runDir, repo string, s Settings) int {
 			return code
 		}
 		return exitExternal
+	}
+	if r.FiveWhys && unreached { // it changed something before it failed: no round without its whys
+		return refuseAnswer(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the round's answer is refused",
+			Findings: []verdict.Finding{{Rule: "five-whys-missing", Where: where, Message: "a finding is still there at round three: the answer gives the five whys as one `note` opening with `Five whys`, as the skill says (0 given)"}}})
 	}
 	this := devmark.Round{N: n, Asked: texts(r.Asked), Heard: len(r.Heard), Nits: r.Nits, Whys: r.FiveWhys, Tester: testerLines(r.ToTester)}
 	if len(r.ToTester) > 0 {
