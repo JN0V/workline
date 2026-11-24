@@ -32,7 +32,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:objection:propose.script
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:review:propose.script
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:propose.script
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 reader: 735aaf4c142e
 ---

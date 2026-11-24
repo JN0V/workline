@@ -14,7 +14,7 @@ sources:
   - roles/documentalist/code/kept.go#stickyOn
   - roles/documentalist/code/kept.go#othersKept.findings
   - roles/documentalist/code/kept.go#readKept
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The records read back on GitLab

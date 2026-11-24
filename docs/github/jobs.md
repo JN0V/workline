@@ -8,7 +8,7 @@ sources:
   - defaults/ci/github/workline-sample.yml#jobs.read.permissions
   - internal/sample/verdict.go#noJudge
   - defaults/ci/github/workline-fork.yml#jobs.comment
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 judged: 220b6dc
 ---
@@ -38,6 +38,8 @@ Part of [workline on GitHub Actions](../ci-github.md): each job's rights, its lo
   requests, for every role's acts. For another week than the last whole
   one, run the workflow by hand (Actions → workline sample → Run workflow)
   with its `week` input (`2026-W40`).
+- **A job that fails says why**: its step ends with an error on the
+  run's page, the first 2000 characters of the result's own summary.
 - **The summary**: each job's summary page (`$GITHUB_STEP_SUMMARY`), the
   applying job's saying what it did and what failed; a fork's pull request
   gets the propose job's as a comment

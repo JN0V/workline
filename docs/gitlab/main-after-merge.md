@@ -5,7 +5,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:kept
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:gates
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Main after a merge, on GitLab

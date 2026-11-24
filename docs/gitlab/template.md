@@ -11,7 +11,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue
   - roles/documentalist/code/documentalist.go#preRun.sayShallow
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 judged: e8a46f7
 ---
