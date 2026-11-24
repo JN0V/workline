@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // The issues a change closes, as GitHub and GitLab read the keywords; a
@@ -76,5 +77,29 @@ func TestBeyondListed(t *testing.T) {
 	}
 	if s := whatFor([]ClosedIssue{{ID: 3, Text: "### Issue #3: grid\n"}}, got); !strings.Contains(s, "### Beyond the Scope, as the author lists them") || !strings.Contains(s, "`Fake.kt`") {
 		t.Errorf("whatFor does not give the intent lens the list:\n%s", s)
+	}
+}
+
+// An intent finding is on a scenario when it names it, or quotes words of
+// it no other scenario holds: words every scenario shares silence none.
+func TestFoundOnAScenario(t *testing.T) {
+	is := ClosedIssue{ID: 4, Scenarios: []work.Scenario{
+		{Name: "Empty list", Text: "Given no values, When the mean is asked, Then it is 0."},
+		{Name: "Zeros skipped", Text: "Given [0, 2, 4], When the mean is asked, Then it is 3."},
+	}}
+	on := func(quote string) bool {
+		c := candidates{Related: []Finding{{Lens: "intent", Where: "#4", Cause: Quote{Path: "#4", Quote: quote}}}}
+		return c.foundOn(is, is.Scenarios[1])
+	}
+	for quote, want := range map[string]bool{
+		"Zeros skipped:":         true,
+		"Given [0, 2, 4]":        true,
+		"When the mean is asked": false,
+		"Then it is 0.":          false,
+		"Empty list":             false,
+	} {
+		if got := on(quote); got != want {
+			t.Errorf("a finding quoting %q on Zeros skipped: %v, want %v", quote, got, want)
+		}
 	}
 }

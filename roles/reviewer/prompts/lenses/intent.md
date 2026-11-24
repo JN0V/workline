@@ -3,8 +3,8 @@
 # issue's Need, Example, Steps to reproduce, Validation, Verification and
 # Scope given to it, and the files the author lists beyond the Scope; its
 # judge is shown the issue and the change (#126). Each scenario of the
-# Validation is answered: the code doing it quoted, or a finding; one
-# answered by neither is judged as done by no code.
+# Validation is answered: the code doing it and its test quoted, or a
+# finding; one answered by neither is judged as shown by nothing.
 needs: issue
 judge:
   question: >-
@@ -41,8 +41,8 @@ Given / When / Then), one by one, its name as the issue writes it:
 - not done, or no test proves it: a finding, its cause the scenario's
   words quoted from the issue.
 
-A scenario you answer neither way is judged as done by no code: silence
-is never "no finding". The Example says what the issue means; read the
+A scenario you answer neither way, or with no test, is judged as shown
+by nothing: silence is never "no finding". The Example says what the issue means; read the
 code against it.
 
 **Beyond the Scope.** The Scope is the product owner's hint of the files,

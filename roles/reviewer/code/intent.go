@@ -245,13 +245,14 @@ func scenarioOf(st state, ref, name string) (*ClosedIssue, *work.Scenario) {
 }
 
 // shown reads the intent lens's answer that a scenario of the issue is
-// done: the code doing it quoted, found again at the head, and the test
-// proving it. One whose code is not found again shows nothing: the
-// scenario is then judged as no code doing it (unshown).
+// done and proven: the code doing it and the test proving it, each quoted
+// and found again at the head. One missing either, or whose quote is not
+// found again, shows nothing: the scenario is then judged as done or
+// proven by nothing shown (unshown).
 func (c *candidates) shown(repo string, st state, intentAsked bool, v any) {
 	var raw struct {
 		Scenario string `json:"scenario"`
-		Issue    string `json:"issue"`
+		Issue    any    `json:"issue"` // "#4", or 4
 		Code     *Quote `json:"code"`
 		Test     *Quote `json:"test"`
 	}
@@ -269,23 +270,32 @@ func (c *candidates) shown(repo string, st state, intentAsked bool, v any) {
 		said("answered by a lens other than intent, which alone answers scenarios: not read")
 		return
 	}
-	is, sc := scenarioOf(st, strings.TrimSpace(raw.Issue), raw.Scenario)
+	ref := ""
+	if raw.Issue != nil {
+		ref = "#" + strings.TrimPrefix(strings.TrimSpace(fmt.Sprint(raw.Issue)), "#")
+	}
+	is, sc := scenarioOf(st, ref, raw.Scenario)
 	if sc == nil {
 		said("no scenario of that name in the Validation of the issues the change closes")
 		return
 	}
-	if raw.Code == nil || strings.TrimSpace(raw.Code.Quote) == "" {
-		said("it quotes no code doing it: judged as shown done by no code")
-		return
-	}
-	path := clean(raw.Code.Path)
-	if to, ok := st.Change.Moved[path]; ok {
-		path = to
-	}
-	text, ok := fileAt(repo, st.Head, path)
-	if !ok || len(locate(strings.Split(text, "\n"), raw.Code.Quote)) == 0 {
-		said(fmt.Sprintf("its code is not found in %s at %s: judged as shown done by no code", path, short(st.Head)))
-		return
+	for _, q := range []struct {
+		what string
+		at   *Quote
+	}{{"code doing it", raw.Code}, {"test proving it", raw.Test}} {
+		if q.at == nil || strings.TrimSpace(q.at.Quote) == "" {
+			said(fmt.Sprintf("it quotes no %s: judged as shown by nothing", q.what))
+			return
+		}
+		path := clean(q.at.Path)
+		if to, ok := st.Change.Moved[path]; ok {
+			path = to
+		}
+		text, ok := fileAt(repo, st.Head, path)
+		if !ok || len(locate(strings.Split(text, "\n"), q.at.Quote)) == 0 {
+			said(fmt.Sprintf("its %s is not found in %s at %s: judged as shown by nothing", q.what, path, short(st.Head)))
+			return
+		}
 	}
 	if key := is.Ref() + " " + sc.Name; !slices.Contains(c.Shown, key) {
 		c.Shown = append(c.Shown, key)
@@ -294,10 +304,10 @@ func (c *candidates) shown(repo string, st state, intentAsked bool, v any) {
 
 // unshown makes a finding of each scenario of the issues the change
 // closes that the intent lens, asked and answering, neither showed done
-// by code found again nor found missing: an important one, its cause the
-// scenario's name in the issue, which its judge, shown the issue and the
-// change, keeps or drops. A "no finding" is never taken on the lens's
-// silence.
+// and proven, its code and test found again, nor found missing: an
+// important one, its cause the scenario's name in the issue, which its
+// judge, shown the issue and the change, keeps or drops. A "no finding"
+// is never taken on the lens's silence.
 func (c *candidates) unshown(repo string, s Settings, st state) {
 	if st.Spec != nil || !slices.Contains(st.Lenses, "intent") || slices.Contains(c.Failed, "intent") {
 		return
@@ -309,14 +319,14 @@ func (c *candidates) unshown(repo string, s Settings, st state) {
 			}
 			f, why := found(repo, st, "intent", false, map[string]any{
 				"severity": "important",
-				"title":    fmt.Sprintf("No code shown doing the scenario %q", sc.Name),
-				"why":      fmt.Sprintf("the intent lens quoted no code at the head that does this scenario of %s, nor found it missing: %s", is.Ref(), oneLine(sc.Text, 300)),
+				"title":    fmt.Sprintf("No code and test shown for the scenario %q", sc.Name),
+				"why":      fmt.Sprintf("the intent lens quoted no code at the head doing this scenario of %s and no test proving it, nor found either missing: %s", is.Ref(), oneLine(sc.Text, 300)),
 				"fix":      "do the scenario, and a test that proves it",
 				"cause":    map[string]any{"path": is.Ref(), "quote": sc.Name},
 			}, "")
 			if why != "" {
 				c.Logged = append(c.Logged, verdict.Finding{Rule: "scenario-unshown", Level: "warn",
-					Message: fmt.Sprintf("the scenario %q of %s, shown done by no code: %s", sc.Name, is.Ref(), why)})
+					Message: fmt.Sprintf("the scenario %q of %s, shown by nothing: %s", sc.Name, is.Ref(), why)})
 				continue
 			}
 			c.put(s, f)
@@ -325,12 +335,24 @@ func (c *candidates) unshown(repo string, s Settings, st state) {
 }
 
 // foundOn says whether a finding or a question of the intent lens is on
-// a scenario: its cause quoted from the scenario, or naming it.
+// a scenario: its cause quoted from the issue naming the scenario, or
+// quoting words of this scenario no other scenario of the issue holds.
 func (c *candidates) foundOn(is ClosedIssue, sc work.Scenario) bool {
-	whole, name := norm(sc.Name+" "+sc.Text), norm(sc.Name)
+	name := norm(sc.Name)
+	only := func(q string) bool {
+		if !strings.Contains(norm(sc.Name+" "+sc.Text), q) {
+			return false
+		}
+		for _, o := range is.Scenarios {
+			if o.Name != sc.Name && strings.Contains(norm(o.Name+" "+o.Text), q) {
+				return false
+			}
+		}
+		return true
+	}
 	on := func(f Finding) bool {
 		q := norm(f.Cause.Quote)
-		return f.Lens == "intent" && f.Cause.Path == is.Ref() && q != "" && (strings.Contains(whole, q) || strings.Contains(q, name))
+		return f.Lens == "intent" && f.Cause.Path == is.Ref() && q != "" && (strings.Contains(q, name) || only(q))
 	}
 	for _, f := range slices.Concat(c.Related, c.Questions) {
 		if on(f) || slices.ContainsFunc(f.Also, on) {
