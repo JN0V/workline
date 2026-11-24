@@ -100,10 +100,11 @@ func finder(runDir, repo string, s Settings, st *state, c *candidates) (bool, er
 		c.Finder = "did not run (" + why + "): it is asked again at the next run"
 		return false, nil
 	case len(a.Reads) > 0:
-		c.FinderRead, c.Finder = true, "could not tell: it asked to read again, no read left (judge-read-rounds, judge-read-lines-max)"+read
+		// Unsure: not a read, so its block stands and it is asked again.
+		c.Finder = "could not tell: it asked to read again, no read left (judge-read-rounds, judge-read-lines-max)" + read + "; it is asked again at the next run"
 		return false, nil
 	case a.Unsure:
-		c.FinderRead, c.Finder = true, "could not tell: "+a.Why+read
+		c.Finder = "could not tell: " + a.Why + read + "; it is asked again at the next run"
 		return false, nil
 	case a.Yes == nil:
 		c.Finder = "did not run (no answer): it is asked again at the next run"

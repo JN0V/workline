@@ -197,7 +197,8 @@ its measure in
   ([ADR-0073](../../../docs/adr/0073-one-finder-reads-the-whole-repository-once.md)):
   `repository-finder-reads-past-the-change-and-holds`,
   `repository-finder-waits-while-a-lens-blocks`,
-  `repository-finder-asked-once-a-merge-request`.
+  `repository-finder-asked-once-a-merge-request`,
+  `repository-finder-unsure-leaves-its-block`.
 - **Warn until measured, `ai-findings` by lens, caps**:
   `new-ai-rules-warn`, `ai-findings-*`, `findings-capped-rest-counted`,
   `agent-unreachable-is-blocked-external`.

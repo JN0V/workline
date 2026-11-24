@@ -1,0 +1,29 @@
+case: reviewer/repository-finder-unsure-leaves-its-block
+about: "The repository finder's block stands from an earlier head. Asked again at a newer one, it cannot tell: its block still stands, said, and the record does not say it read this head, so the next run asks it again."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Mean is the average.\\nfunc Mean(values []int) int { return Average(values) }\\n' >> calc/calc.go && git commit -qam 'feat: the mean'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD~1)/g\" \"$FORGE_FILE\""
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/finder-unsure.sh"}
+  config: {roles: {reviewer: {settings: {ai-findings: {repository: block}}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 finding on the change; lenses: correctness.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 read=all -->
+            <!-- workline:blocks [{"lens":"repository","at":"@reviewed@","where":"calc/calc.go:21","title":"Important: Mean divides by zero on an empty list","cause":{"path":"calc/calc.go","quote":"func Mean(values []int) int { return Average(values) }"},"side":"head"}] -->
+            <!-- workline:finder @reviewed@ -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: block
+  findings: [{rule: repository, where: "calc/calc.go:21", message: "Mean divides by zero on an empty list"}]
+  summary: "the repository finder could not tell"

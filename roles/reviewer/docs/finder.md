@@ -55,7 +55,8 @@ them, once, when nothing else holds the merge request.
   (`<!-- workline:finder … -->`). Asked again only while its own block
   stands at a newer head; found no more, the block goes.
 - **The summary says** what it came to, that it waits for nothing else
-  to hold the merge, or that it did not run: then the next run asks it.
+  to hold the merge, or that it did not run or could not tell: then the
+  next run asks it, and its block stands meanwhile.
 - **Cost**: one call, up to two more for its reads, one judge for a
   finding; within `ai-max-tokens`.
 - **Off**: `repo-finder: false`.
