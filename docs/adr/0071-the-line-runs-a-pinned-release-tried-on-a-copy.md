@@ -78,8 +78,10 @@ the person's own pull request.**
   commit ships" guarded an untagged pin; this one is published, tried.
 - **The pin moves only in its own pull request**, never a moved tag:
   accepted with the person's label, never by the merge policy alone
-  ([ADR-0042]); a gate checks it links a `try.yml` run of that very
-  release (§2), concluded `success`.
+  ([ADR-0042]); its `## Tried` links the copy's merged upgrade pull
+  request and the round's merged pull request
+  ([amendment 2026-11-24](#amendment-2026-11-24-a-try-is-a-script-on-the-permanent-copy)); the gate on a `try.yml` run
+  waits for 1.0.
 - **release-please never moves it**: `.github/workflows/` carries no
   `x-release-please-version` marker, and
   [release-please-config.json](../../release-please-config.json)'s
@@ -87,6 +89,9 @@ the person's own pull request.**
   [without-template.md](../gitlab/without-template.md). It stays so.
 
 ### 2. Two real tries, one command
+
+Until 1.0, a try is [the script on the permanent copy](#amendment-2026-11-24-a-try-is-a-script-on-the-permanent-copy);
+what follows comes after 1.0.
 
 - **`scripts/try-on-copy.sh <version|ref> [repo]`**, and a manual
   `try.yml` running it: the line runs one issue end to end on a scratch
@@ -182,6 +187,43 @@ the person's own pull request.**
 - **What stays**: the pinned release's verdict, `warn` and `test` on the
   head's engine, and the N-1 check that the pinned release reads the head.
 
+## Amendment 2026-11-24: a try is a script on the permanent copy
+
+The maintainer's decision of 2026-11-24, on an independent analysis.
+It replaces §2 until 1.0, and §1's gate on a `try.yml` run.
+
+- **A try of a release proves three facts**, on the permanent trial copy
+  [JN0V/TraceGlass-trial], never a scratch repository:
+  1. the release downloads, its checksum matches, and `workline doctor`
+     is clean;
+  2. the copy's upgrade pull request, the copy running the previous
+     version, is green and mergeable under its existing ruleset;
+  3. after its merge, one canned real issue goes through forge events to
+     a pull request merged by policy, with the copy's real agent.
+- **One local command**, under the person's own `gh` session:
+  [`scripts/try-release.sh <version>`](../../scripts/try-release.sh).
+  It opens or updates the copy's upgrade pull request, waits for its
+  checks, and says the person labels it: it never labels. It then
+  opens the canned issue and waits for the merge, and prints green or
+  red with the links.
+  - **One try at a time**: a lock tag on the copy; a second run
+    refuses.
+  - **`--dry-run`** prints the plan and calls no forge.
+- **The copy moves with each try**: its upgrade pull request merges,
+  and the canned issue's fix merges. It no longer stays as it was until
+  the next round ([ADR-0063]'s working agreement holds for a fix's local
+  run, not for a pin's try).
+- **The pin's pull request** links two merged pull requests under
+  `## Tried` ([ADR-0043]): the copy's upgrade pull request and the
+  canned issue's pull request, the round's. It needs no `try.yml` run.
+- **A fix to a role** still runs that role locally, once, on a clone
+  of the copy, with a fake forge or local pushes ([ADR-0063]).
+- **After 1.0**: scratch repositories, the manual `try.yml`, the try of
+  a ref (a pull request head) on a forge, and §2's rule that a fix to a
+  line path links a green ref try.
+- **Not chosen**: a CI workflow holding a token that may create
+  repositories, and scratch repositories to make and delete each try.
+
 ## Build order
 
 Before Thursday 2026-11-19:
@@ -191,6 +233,7 @@ Before Thursday 2026-11-19:
 2. Judge's and gates' non-blocking head pass on engine-changing pull
    requests; the gate on the pin's pull request.
 3. The manual try, of a ref and of a release: the script and `try.yml`.
+   Until 1.0: `scripts/try-release.sh` alone ([amendment 2026-11-24](#amendment-2026-11-24-a-try-is-a-script-on-the-permanent-copy)).
 4. This record.
 
 After V1: the try on each `-rc.N`; the fault-injection campaign.

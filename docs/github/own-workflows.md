@@ -52,8 +52,11 @@ engine and their triggers
     or the job fails;
   - one value, in each of those workflows' `env:`; no
     `x-release-please-version` marker: release-please never moves it;
-  - moved only in its own pull request, after its try on a copy, on the
-    person's label;
+  - moved only in its own pull request, on the person's label, after
+    its try: `scripts/try-release.sh <version>` on the permanent copy;
+    its `## Tried` links the copy's merged upgrade pull request and
+    the round's merged pull request
+    ([the try](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#amendment-2026-11-24-a-try-is-a-script-on-the-permanent-copy));
 - **the head's engine**: warn runs the engine built from the pull
   request's commit, once a commit, by the same action without a
   version; it must name the commit checked out, unmodified, or the job
@@ -61,7 +64,7 @@ engine and their triggers
 - **no head pass**: gates and propose run the pinned release alone. A
   second pass on the engine built from the head (the first design of
   [ADR-0071](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#amendment-2026-11-23-the-head-pass-is-dropped))
-  was dropped: the [try on a copy](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#2-two-real-tries-one-command)
+  was dropped: the [try on a copy](../adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#amendment-2026-11-24-a-try-is-a-script-on-the-permanent-copy)
   already runs a new engine on real repositories;
 - **the N-1 rule**: the check "workline: the pinned release reads the
   head" runs the pinned release on the head's `.workline/config.yaml`
