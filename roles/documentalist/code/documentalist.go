@@ -431,6 +431,14 @@ func dropBumps(dir, commits, path, doc string, marked bool) string {
 	return strings.Join(kept, "\n")
 }
 
+// DropReleaseBumps is dropBumps for a doc whose whole file is a source, as
+// the documentalist reads it outside a release branch: commits are "%h %s"
+// lines, and only a release tool's marked bumps are left out. It lets a test
+// of a doc's `checked` apply the suspect rule of `workline docs`.
+func DropReleaseBumps(dir, commits, path, doc string) string {
+	return dropBumps(dir, commits, path, doc, true)
+}
+
 // toolBump says whether a commit bumped versions in path only as a release
 // tool does, by its own marks (release.OnlyBumps).
 func toolBump(dir, commit, path string) bool {
