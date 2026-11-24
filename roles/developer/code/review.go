@@ -827,8 +827,12 @@ func reviewPost(runDir, repo string, s Settings) int {
 			notes = append(notes, text)
 		}
 	}
+	// Its agent could not be reached (its provider overloaded, its quota
+	// spent) and said nothing: unless it changed the worktree before, the
+	// round did not happen (unreached, below).
+	unreached := strings.HasPrefix(used(runDir).failed, agent.ErrUnavailable.Error()) && len(notes) == 0 && len(analyses) == 0
 	analysis := ""
-	if r.FiveWhys {
+	if r.FiveWhys && !unreached {
 		if len(analyses) != 1 {
 			return refuseAnswer(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the round's answer is refused",
 				Findings: []verdict.Finding{{Rule: "five-whys-missing", Where: where, Message: fmt.Sprintf("a finding is still there at round three: the answer gives the five whys as one `note` opening with `Five whys`, as the skill says (%d given)", len(analyses))}}})
@@ -876,6 +880,21 @@ func reviewPost(runDir, repo string, s Settings) int {
 		} else {
 			others = append(others, in) // an objection on the tester's Draft
 		}
+	}
+	// A round whose agent could not be reached, that changed nothing nor
+	// said anything, is no round: none counted, nothing posted, the run
+	// blocked-external; the next run asks the findings again, its rounds
+	// all left (DomoticsCore #239).
+	if unreached && len(patches) == 0 && len(takes) == 0 && len(others) == 0 && len(r.ToTester) == 0 && len(unread) == 0 && len(refused) == 0 {
+		if code := writeIntents(runDir, "", nil); code != 0 {
+			return code
+		}
+		if code := writeVerdict(runDir, verdict.Verdict{Status: verdict.BlockedExternal, Summary: fmt.Sprintf("round %d of %d on %s not run: its agent could not be reached", n, s.Rounds, where),
+			Findings: []verdict.Finding{{Rule: "round-not-run", Level: "warn", Where: where,
+				Message: fmt.Sprintf("its agent could not be reached (%s) and changed nothing: no round counted, nothing posted; the next run asks the findings again", used(runDir).failed)}}}); code != 0 {
+			return code
+		}
+		return exitExternal
 	}
 	this := devmark.Round{N: n, Asked: texts(r.Asked), Heard: len(r.Heard), Nits: r.Nits, Whys: r.FiveWhys, Tester: testerLines(r.ToTester)}
 	if len(r.ToTester) > 0 {
