@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/whys, skills]
 verified: agent:claude-code
-checked: 04d2af892
+checked: 48df2536f
 status: draft
 ---
 # Adapting a role
