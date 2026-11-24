@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	documentalist "github.com/JN0V/workline/roles/documentalist/code"
 )
 
 // rolePageList are the role pages the lot reads: the four READMEs, the pages
@@ -191,16 +193,22 @@ func TestRolePagesCheckedMoved(t *testing.T) {
 			continue
 		}
 		sources, _, _ := userPageRead(t, page)
-		args := []string{"log", "--format=%h", checked + "..HEAD", "--"}
+		_, text := roleFront(t, page)
+		var older []string
 		for _, src := range sources {
 			path, _, _ := strings.Cut(src, "#")
-			args = append(args, path)
+			out, _ := git("log", "--format=%h %s", checked+"..HEAD", "--", path)
+			// A release's marked version bump is no change of what a page says,
+			// unless the page states the replaced version as the version now.
+			out = documentalist.DropReleaseBumps(userRepo, out, path, text)
+			for _, l := range strings.Split(out, "\n") {
+				if h, _, _ := strings.Cut(l, " "); h != "" {
+					older = append(older, h)
+				}
+			}
 		}
-		if len(sources) == 0 {
-			continue
-		}
-		if out, _ := git(args...); out != "" {
-			t.Errorf("%s: `checked: %s` is older than a change to its sources (%s)", page, checked, strings.ReplaceAll(out, "\n", " "))
+		if len(older) > 0 {
+			t.Errorf("%s: `checked: %s` is older than a change to its sources (%s)", page, checked, strings.Join(older, " "))
 		}
 	}
 }
