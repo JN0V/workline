@@ -123,7 +123,7 @@ func (rd *reader) facet(roleName, kind string) (string, error) {
 	project := filepath.Join(rd.o.Repo, ".workline", "roles", "auditor")
 	roles := filepath.Dir(rd.auditor.Dir)
 	if _, err := os.Stat(filepath.Join(project, "kinds", kind+".md")); err == nil {
-		return "", fmt.Errorf("the project's .workline/roles/auditor/kinds/%s.md is read no more: move it to .workline/roles/auditor/criteria/%s/%s.md (ADR-0070, move a)", kind, roleName, kind)
+		return "", fmt.Errorf("the project's .workline/roles/auditor/kinds/%s.md is read no more: move it to .workline/roles/auditor/criteria/%s/%s.md", kind, roleName, kind)
 	}
 	paths := []string{
 		filepath.Join(project, "criteria", roleName, kind+".md"),

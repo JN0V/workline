@@ -6,9 +6,9 @@ import "embed"
 
 // Roles holds what each role ships, named one by one (docs/spec/layout.md,
 // "A role folder"): its role.yaml, prompts/ and criteria/. Never its code/,
-// docs/, README.md nor cases: the binary carries no file it does not read
-// (ADR-0070, move c). A shipped role has no pre nor post file: the engine
-// runs its built-in code, else the shared step (move a).
+// docs/, README.md nor cases, nor a pre or post file: the binary carries
+// no file it does not read. A shipped role's pre and post are its built-in
+// code, else the shared step (docs/spec/role-contract.md, "Layout").
 //
 //go:embed roles/*/role.yaml all:roles/*/prompts roles/*/criteria
 var Roles embed.FS

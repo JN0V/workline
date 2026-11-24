@@ -14,7 +14,7 @@ import (
 
 // Every shipped role with code/ finds its pre and post in the registry,
 // and ships no pre nor post file: the engine runs the built-in code
-// itself, a file beside it never runs (ADR-0070 §6, move a). The registry
+// itself, a file beside it never runs (docs/spec/layout.md). The registry
 // holds no role that has no code/ in roles/.
 func TestEveryBuiltinStepIsInTheRegistry(t *testing.T) {
 	coded := shippedRoles(t)
