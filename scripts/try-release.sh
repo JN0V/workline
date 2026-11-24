@@ -11,6 +11,7 @@ WORKLINE=${TRY_WORKLINE:-JN0V/workline}
 POLL=${TRY_POLL:-300}
 CHECKS_MINUTES=${TRY_CHECKS_MINUTES:-90}
 LABEL_MINUTES=${TRY_LABEL_MINUTES:-120}
+GIT_URL=${TRY_GIT_URL:-https://github.com}   # where the repositories are cloned from
 LOCK=workline-try-lock   # a tag on the copy: one try at a time, whoever runs it
 
 usage() {
@@ -173,25 +174,26 @@ got=$("$work/bin/workline" version)
 echo "1. release: $asset, checksum ok, says $version"
 
 # 3. doctor, on a clone of the copy.
-git clone --quiet -- "https://github.com/$REPO.git" "$work/copy"
+git clone --quiet -- "$GIT_URL/$REPO.git" "$work/copy"
 if ! "$work/bin/workline" doctor --repo "$work/copy" >"$work/doctor.txt" 2>&1 || grep -q '✗' "$work/doctor.txt"; then
   cat "$work/doctor.txt"
   red "workline doctor is not clean"
 fi
 echo "1. doctor: clean"
 
-# 4. The upgrade pull request: merged already, open, or to open.
+# 4. The upgrade pull request: merged already, or built afresh from the
+# copy's main, pushed when its branch differs, opened when none is open.
 pr_of() { gh pr list -R "$REPO" --head "$branch" --state "$1" --json number,url --jq '.[0] // empty | "\(.number) \(.url)"' 2>/dev/null || true; }
 merged=$(pr_of merged)
 pr=$(pr_of open)
 fresh=false
-if [ -z "$merged" ] && [ -z "$pr" ]; then
+if [ -z "$merged" ]; then
   from=$(grep -h 'WORKLINE_VERSION:' "$work/copy"/.github/workflows/workline*.yml 2>/dev/null | awk '{print $2}' | sort -u || true)
   [ -n "$from" ] && [ "$(printf '%s\n' "$from" | wc -l)" -eq 1 ] \
     || red "the copy's workflows do not pin one version: $(echo "$from" | tr '\n' ' ')"
-  [ "$from" != "$version" ] || red "the copy runs $version already, with no upgrade pull request $branch to show it"
+  [ "$from" != "$version" ] || red "the copy runs $version already, with no upgrade pull request $branch merged to show it"
   for v in "$from" "$version"; do
-    git clone --quiet --depth 1 --branch "$v" -- "https://github.com/$WORKLINE.git" "$work/wl-$v" 2>/dev/null \
+    git clone --quiet --depth 1 --branch "$v" -- "$GIT_URL/$WORKLINE.git" "$work/wl-$v" 2>/dev/null \
       || red "no tag $v on $WORKLINE"
   done
   old="$work/wl-$from/defaults/ci/github" new="$work/wl-$version/defaults/ci/github"
@@ -210,12 +212,21 @@ if [ -z "$merged" ] && [ -z "$pr" ]; then
   git add .github/workflows
   if git diff --cached --quiet; then red "the templates from $from to $version change nothing on the copy"; fi
   git commit --quiet -m "ci: workline workflows at $version"
-  git push --quiet -u origin "refs/heads/$branch"
-  gh pr create -R "$REPO" --base main --head "$branch" --title "ci: workline workflows at $version" --body \
+  remote=$(git ls-remote origin "refs/heads/$branch" | awk '{print $1}')
+  if [ -n "$remote" ] && git fetch --quiet origin "refs/heads/$branch" \
+    && [ "$(git rev-parse 'FETCH_HEAD^{tree}')" = "$(git rev-parse 'HEAD^{tree}')" ]; then
+    :                                    # the branch holds this change already
+  else
+    git push --quiet --force-with-lease="refs/heads/$branch:$remote" origin "HEAD:refs/heads/$branch"
+    fresh=true
+  fi
+  if [ -z "$pr" ]; then
+    gh pr create -R "$REPO" --base main --head "$branch" --title "ci: workline workflows at $version" --body \
 "Moves the copy's workline workflows from $from to $version: the templates' change between the two, the copy's own lines kept. A try of the release ([the try](https://github.com/$WORKLINE/blob/main/docs/adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#amendment-2026-11-24-a-try-is-a-script-on-the-permanent-copy)), opened by scripts/try-release.sh." >/dev/null
+    pr=$(pr_of open)
+    fresh=true
+  fi
   cd - >/dev/null
-  pr=$(pr_of open)
-  fresh=true
 fi
 
 if [ -z "$merged" ]; then
@@ -252,14 +263,14 @@ else
 fi
 echo "2. upgrade pull request merged"
 
-# 7. The canned issue: this version's, or the first whose bug is still
-# there: never opened, or only closed as not planned. One fixed is spent;
-# one open from another try is left to it.
+# 7. The canned issue: this version's (open, or closed by a merge), else
+# the first whose bug is still there: never opened, or only closed as not
+# planned. One fixed is spent; one open from another try is left to it.
 issue=
 for i in "${!canned_titles[@]}"; do
   title=${canned_titles[$i]}
   seen=$(gh issue list -R "$REPO" --state all --search "\"$title\" in:title" --json number,title,state,stateReason,body \
-    --jq "[.[] | select(.title == \"$title\")] | (map(select(.state == \"OPEN\" and (.body | contains(\"workline-try: $version \")))) | .[0].number // \"\"), any(.stateReason == \"COMPLETED\" or .state == \"OPEN\")" \
+    --jq "[.[] | select(.title == \"$title\")] | (map(select(.stateReason != \"NOT_PLANNED\" and (.body | contains(\"workline-try: $version \")))) | .[0].number // \"\"), any(.stateReason == \"COMPLETED\" or .state == \"OPEN\")" \
     2>/dev/null) || red "the copy's issues cannot be read"
   ours=$(sed -n 1p <<<"$seen") taken=$(sed -n 2p <<<"$seen")
   if [ -n "$ours" ]; then issue=$ours; break; fi
@@ -277,17 +288,21 @@ links+=("issue: https://github.com/$REPO/issues/$issue")
 echo "3. canned issue: https://github.com/$REPO/issues/$issue"
 
 # 8. A pull request closing it, merged by policy: no person's label on it.
+# Of its closing pull requests, the merged one counts.
 deadline=$(( $(date +%s) + minutes * 60 ))
 while :; do
-  read -r state closer <<<"$(gh issue view -R "$REPO" --json state,closedByPullRequestsReferences \
-    --jq '"\(.state) \(.closedByPullRequestsReferences[0].number // "")"' -- "$issue")"
+  read -r state closers <<<"$(gh issue view -R "$REPO" --json state,closedByPullRequestsReferences \
+    --jq '"\(.state) \([.closedByPullRequestsReferences[].number] | join(","))"' -- "$issue" 2>/dev/null || true)"
   if [ "$state" = CLOSED ]; then
-    [ -n "$closer" ] || red "the canned issue closed with no pull request"
-    read -r purl pstate labelled <<<"$(gh pr view -R "$REPO" --json url,state,labels \
-      --jq '"\(.url) \(.state) \([.labels[].name] | index("workline:accepted") != null)"' -- "$closer")"
-    links+=("merged: $purl")
-    [ "$pstate" = MERGED ] || red "the issue closed with $purl, not merged"
-    [ "$labelled" = false ] || red "$purl merged on a person's label, not by policy"
+    found=
+    for n in ${closers//,/ }; do
+      read -r purl pstate labelled <<<"$(gh pr view -R "$REPO" --json url,state,labels \
+        --jq '"\(.url) \(.state) \([.labels[].name] | index("workline:accepted") != null)"' -- "$n")"
+      if [ "$pstate" = MERGED ]; then found=$purl; break; fi
+    done
+    [ -n "$found" ] || red "the canned issue closed with no merged pull request"
+    links+=("merged: $found")
+    [ "$labelled" = false ] || red "$found merged on a person's label, not by policy"
     break
   fi
   [ "$(date +%s)" -lt "$deadline" ] || red "no pull request merged for the canned issue within $minutes min"
