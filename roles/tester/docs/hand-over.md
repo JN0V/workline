@@ -8,7 +8,6 @@ sources:
   - roles/tester/code/frozen.go#record
   - internal/kit/testmark/draft.go#DraftData
   - roles/tester/code/frozen.go#record.body
-  - roles/tester/code/kept.go#unprovenScenarios
   - roles/tester/code/frozen.go#readRecordKept
   - roles/tester/code/frozen.go#guard
   - roles/developer/code/bounds.go#checker.rule
