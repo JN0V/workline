@@ -9,7 +9,7 @@ sources:
   - roles/tester/code/build.go#namedIn
   - roles/tester/code/judged.go#doubt.waiting
   - roles/tester/code/junit.go#readJUnit
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # A broken build, red for the right reason

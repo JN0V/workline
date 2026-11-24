@@ -1,6 +1,6 @@
 ---
 sources: [roles/tester/code/green.go, roles/tester/code/runcache.go, roles/tester/code/symptom.go, roles/tester/code/frozen.go, roles/tester/code/renamed.go, roles/tester/code/tester.go]
-checked: b85f39148
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The green proof: each frozen test green on the head
@@ -43,103 +43,24 @@ flowchart LR
 
 ## What it runs
 
-- **The tests required**: the ids the tester's record keeps, found new
-  by its red proof, never "the head's tests the base lacks": a change
-  to a build file or a filter that stops one running blocks, named
-  ([ADR-0065, change 2](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#2-scope-as-paths-a-hint-not-a-fence)).
-  - **An id from a report** must be in each head run, green.
-  - **A test whose build broke on the base** is kept as `file:name`:
-    no report named it yet. A head id holding that name as a whole
-    part is it (`calc.Name`, `Name[1]`, `Name/case`), qualified by:
-    - the file's folders (a Go package), or
-    - the file, after its last folders or nothing (`tests.test_x`), or
-    - a class named after the file whose package leaves the folders
-      aside (Kotlin, C#).
-    - Not it: a nested folder's `Name` (`calc/sub.Name`), or one of a
-      same-named folder elsewhere (`app/cmd/calc.Name` for
-      `internal/calc`).
-  - **A test kept as its file alone** (its build broke, no
-    `test-name` to name it,
-    [#1293](https://github.com/JN0V/workline/issues/1293)): met by a
-    head id of that file, its name after its last folders or nothing
-    (`test_mul.main`, `tests.test_mul` for `tests/test_mul.c`); none,
-    `frozen-test-missing`, or the judge's beside other new tests.
-  - **A record with no class, failed, on the red run** is kept marked
-    `errored`: maybe the runner's record of a file it could not collect
-    (pytest's collection error), not a test case. Gone on the code, it
-    goes to the judge too. So is one red by an error, its name in none
-    of the tester's files, alone in its suite; beside the suite's
-    tests, it is not frozen at all
-    ([#1325](https://github.com/JN0V/workline/issues/1325)).
-  - **Not found by that name, while the head has other new tests**: the
-    match is a guess, so the judge decides
-    ([rule A](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#rule-a-a-guess-may-only-pass)).
-    - It reads the ids, the head's new tests, the frozen files, and the
-      change beside them (build and runner files among it).
-    - "Ran under another name" (a display name): passes, said.
-    - "Dropped": `frozen-test-missing` blocks.
-    - Unsure, failed, or no agent: `frozen-unproven`, a warning for a
-      person.
-    - Either way it is written on the pull request, in the tester's
-      comment there.
-  - **No new test the head could run it as**: it blocks, no judge.
-  - **A record written before the ids were kept**: the head's tests
-    the base lacks, as before, said by `frozen-ids-unknown`.
-  - **A rewrite on an objection** moves the ids: the file's old ones,
-    from one run of the base with the file as frozen, come off; the
-    rewrite's go on.
-- **The base once**: the merge base of the record's base and the head,
-  to tell the builder's own new tests (required green too) from the
-  base's.
-  - **Its test ids alone are read**, so a run of the same tree is
-    reused ([#1338](https://github.com/JN0V/workline/issues/1338)):
-    - the ids a run found are kept in the main clone's
-      `.git/workline/test-ids/`, keyed by the tree's hash, the command
-      and the report;
-    - kept only when the command exited 0, its report read: the whole
-      suite ran;
-    - written by each run of a clean tree: the tester's red proof on
-      the base, the head's first run here (merged up to date, its tree
-      is the next base);
-    - found, the base is not run again, said on the run's error output;
-      the head always runs.
-    - Scoped to the tests' folders, the key is the command as run on
-      the base, its folders those the base holds: the Draft's red
-      proof wrote it.
-    - A fresh clone keeps none: the base runs.
-  - **No report and exit 0 on the base** is an empty run, as Gradle's
-    `NO-SOURCE` for a module with no test yet; the head's runs still
-    need their report ([#2091](https://github.com/JN0V/workline/issues/2091)).
-  - **In CI**, the templates carry the folder from the tester's run to
-    each pull request's guard, and to its next push, where no other
-    branch writes ([#1407](https://github.com/JN0V/workline/issues/1407)):
-    GitHub's cache, GitLab's artifacts
-    ([GitHub](../../../docs/github/jobs.md),
-    [GitLab](../../../docs/gitlab/review-jobs.md)); never a run where the
-    developer ran. A file of another tree, command or report is not read.
-- **The head once**, in one fresh checkout. Each run is
-  `test-command`, its report read as JUnit XML, stopped at
-  `suite-max-seconds`, its last lines said
-  ([#1425](https://github.com/JN0V/workline/issues/1425)).
-- **Again only when a test is red**: one more run in the same
-  checkout tells flaky (green in the other run) from red (red in
-  both). Never a third: not "until it passes".
+- **The tests required**: the ids the tester's record keeps, never "the
+  head's tests the base lacks": a change that stops one running blocks,
+  named ([which ids](green-proof-tests.md)).
+- **The base once**, only to tell the builder's own new tests from the
+  base's; a run of the same tree is reused
+  ([how](green-proof-runs.md#the-base-once)).
+- **The head once**, in one fresh checkout, again only when a test is
+  red, to tell flaky from red ([how](green-proof-runs.md#the-head-and-again-when-red)).
 - **The tests' folders alone**, when `draft-command` names
   `{packages}`: the base and the head run it on the folders holding
-  the tester's test files, said by `proof-scope`. The pull request's
-  own test job runs the whole suite. Unset, `test-command` runs whole
-  ([ADR-0055, amended 2026-11-23](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#amendment-2026-11-23-the-green-proof-on-the-tests-folders-once)).
-- **Why one checkout**: a second run there reuses the runner's build
-  cache. On a copy of workline, a Go package: 4.5 s the first run,
-  1 s the next.
-- **A test that a run before it breaks** (a file it leaves, a port it
-  holds) fails on a person's second run too: it counts as flaky.
+  the tester's test files, said by `proof-scope`; else `test-command`
+  runs whole ([how](green-proof-runs.md#the-head-and-again-when-red)).
 
 ## What it says
 
 | Finding | Blocks | When |
 |---|---|---|
-| `test-flaky` | yes | a new test red in the first run, green in the second: the run it was red in is named |
+| `test-flaky` | yes | a new test red in one run, green in the other: the run it was red in is named |
 | `test-flaky` | no, warns | a test the base already had is flaky here: not the change's |
 | `frozen-test-missing` | yes | a test of the record is in none of the runs: its id is named; for a `file:name` beside other new tests, only on the judge's "dropped" |
 | `frozen-test-judged` | no, informs | the judge says a `file:name` test ran under another name |
@@ -152,7 +73,7 @@ flowchart LR
 
 - **A flaky test of the tester's**: find the cause in the code first;
   a test that cannot hold, object on its line
-  ([the form](../README.md#frozen-tests-and-objections)).
+  ([the form](objections.md)).
 - **A flaky test the base had**: the ecosystem's skip and an issue
   naming it, never deleted
   ([ADR-0055](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#job-2-the-corpus-curator)).
@@ -189,7 +110,8 @@ in QA does, rerunning the reproduction once the fixes merged.
 
 A test that passes only after another is flaky too. A random order
 finds it more often. Put the runner's option in
-`test-command`; it does no harm to the red-first check.
+`test-command`, and in `draft-command` when the proof runs it; it does
+no harm to the red-first check.
 
 | Runner | Random order |
 |---|---|

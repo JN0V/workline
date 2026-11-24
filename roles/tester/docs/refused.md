@@ -8,7 +8,7 @@ sources:
   - roles/tester/code/notrun.go#notRun
   - roles/tester/code/kept.go#guardedSaid
   - internal/kit/verdict/outcome.go#machineKinds
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # When the tester refuses an issue

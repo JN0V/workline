@@ -165,7 +165,7 @@ did not foresee, a build file, a test fake, a helper
   worktree's objections file, as [its question shows](agent.md); the
   file never reaches the branch. The engine
   posts it on that line of the tester's Draft, opened by
-  `workline:objection`, in [the tester's form](../../tester/README.md#frozen-tests-and-objections).
+  `workline:objection`, in [the tester's form](../../tester/docs/objections.md).
   The tester keeps or rewrites the test.
 - **The scenario is the issue's**
   ([#913](https://github.com/JN0V/workline/issues/913)): the question

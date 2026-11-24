@@ -41,7 +41,7 @@ it runs, and its locks.
   does not run the base again, in the Actions cache: its pull request's
   own, else the default branch's, which `workline-develop.yml` writes
   after the tester's run alone
-  ([the green proof](../../roles/tester/docs/green-proof.md#what-it-runs)).
+  ([the green proof](../../roles/tester/docs/green-proof-runs.md#the-base-once)).
 - **One `propose` per pull request at a time** (`concurrency`): a push
   cancels the run still on the head before; the newer run reviews its
   commits too, and `apply`, `verdict` and the fork's comment skip

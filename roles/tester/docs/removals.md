@@ -74,7 +74,7 @@ In one checkout of `HEAD`, the touched folders only, within
 | `red-before`, `red-after` | a test of the folders red in a run |
 | `nothing-removed`, `too-many-removed` | no test fewer, or over `curator-removals-max` |
 | `removal-unexplained` | a test removed no note names |
-| `test-frozen` | a test file the tester's open Draft records ([frozen](../README.md#frozen-tests-and-objections)) |
+| `test-frozen` | a test file the tester's open Draft records ([frozen](objections.md)) |
 | `test-kept` | a file or test a `curator-keep` file lists |
 | `curator-path` | a file outside `curator-paths` |
 | `proof-over-time` | the proof past `curator-proof-seconds`: stopped |
