@@ -73,10 +73,15 @@ Whatever the agent, a person's assistant works the way the line does
   pull request's description; status.md links to it. tried.md is an archive:
   never append to it ([ADR-0043](docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
   - **A fix runs the roles it touches for real**, once, on a clone of the
-    current trial copy, with a fake forge or local pushes: the copy stays
-    as it is until the next round
+    current trial copy, with a fake forge or local pushes: a fix's run
+    never changes the copy itself, only a pin's try does
     ([ADR-0063](docs/adr/0063-every-open-issue-is-due-waiting-or-done.md#working-agreements)).
     Told under `## Tried` in its own pull request, its fresh tokens said.
+  - **A pin's try is `scripts/try-release.sh <version>`**, run by the
+    person on the permanent copy itself: the pin's pull request links
+    the copy's merged upgrade pull request and the round's merged pull
+    request under `## Tried`
+    ([ADR-0071](docs/adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md#amendment-2026-11-24-a-try-is-a-script-on-the-permanent-copy)).
   - **Which roles**: those whose behaviour the change touches, through a
     shared engine package too. Their outputs are kept as the simulator's
     inputs once [#1079](https://github.com/JN0V/workline/issues/1079)
