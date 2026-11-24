@@ -64,9 +64,13 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - **Where**: the weekly sample's settings sit under `sample:` in the
   documentalist's `settings` in `.workline/config.yaml`
   ([config reference](../../docs/config.md)).
-- **Who reads**: `judge`, an `--ai` value; `panel`, the three judges of
-  a dispute; `after`, to leave out what was checked before a commit.
-- **Cap**: `ai-max-tokens`, the tokens a week may spend.
+- **Who reads**: `judge`, an `--ai` value, and `at-least`, the
+  independence it must have; `panel`, the three judges of a dispute
+  ([who reads](../../docs/weekly-sample.md#who-reads)).
+- **Which acts**: `after`, to leave out what was checked before a
+  commit ([settings](../../docs/weekly-sample.md#settings)).
+- **Cap**: `ai-max-tokens`, the tokens a week may spend
+  ([what it costs](../../docs/weekly-sample.md#what-it-costs)).
 - **Every key**, and the week and the judge:
   [the weekly sample](../../docs/weekly-sample.md#settings).
 

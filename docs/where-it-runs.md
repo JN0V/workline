@@ -57,7 +57,7 @@ on the issues. The overview and the diagram are in
 |---|---|---|
 | after each merge (`workline route main`) | the merge request's gates, every finding kept as the next base; documentalist, the whole repository, no agent | one issue, edited when what it lists changes ([how](main-after-merge.md)) |
 | gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, reviewer, tester, developer, opt-in | one merge request per task, kept on main or closed; the issues |
-| the weekly sample (`workline sample`) | [auditor](../roles/auditor/role.yaml): one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
+| the weekly sample (`workline sample`) | [auditor](../roles/auditor/README.md): one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
 | each push to main (`workline follow`) | the engine, no agent: with the [merge policy](merge-policy.md), turns auto-merge on for what a person accepted | the forge's auto-merge |
 | with the gardening (`workline route release --dry-run`) | what would hold the release if it were cut now, no agent | a part of main's issue ([how](release.md)) |
 | before your release tool tags (`workline route release`); on GitLab, at a tag | your release's gates, none by default | a non-zero exit holds the release |

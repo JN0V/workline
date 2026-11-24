@@ -124,10 +124,12 @@ pull request [status](status.md) links):
 
 - **Its own tests, three folders** (`internal/engine`, `internal/scale`,
   `internal/agent`): nothing redundant, each said with its reason;
-  14 to 25 thousand tokens in, under 900 out, 7 to 10 s a run.
+  7 to 10 s a run
+  ([tokens](../../../docs/research/token-costs-measured.md#tester)).
 - **A duplicate planted** in `internal/scale` (a test whose check
-  another already makes): found and removed; 15 thousand tokens in,
-  1,100 out. The proof: 32 s; 20 tests to 19, coverage 94.7 % of 339
+  another already makes): found and removed
+  ([tokens](../../../docs/research/token-costs-measured.md#tester)). The
+  proof: 32 s; 20 tests to 19, coverage 94.7 % of 339
   statements both times, 141 of 173 mutants killed both times.
 - **A folder over the context budget** (`internal/forge`, 2,669 lines,
   with `code-lines-max` raised): the agent is not asked, said.

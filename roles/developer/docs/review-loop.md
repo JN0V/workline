@@ -61,7 +61,7 @@ step 6).
   the round is counted still, its agent's notes said.
 - **Its record**: one comment on the pull request says each round, what
   was asked and how it ended; its hidden line, for the next run and
-  the [auditor](../../auditor/role.yaml), holds each round's turns,
+  the [auditor](../../auditor/README.md), holds each round's turns,
   tokens and tools.
 - **The reviewer decides a finding is fixed**
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)).
