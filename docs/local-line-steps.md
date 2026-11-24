@@ -9,7 +9,7 @@ sources:
   - cmd/workline/main.go#localRange
   - cmd/workline/main.go#roundTree
   - internal/engine/engine.go#applier.patch
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 judged: 06fe2e1
 ---
@@ -72,6 +72,9 @@ hand:
 - **A state that wakes nobody**: the run says why;
   `workline route reconcile --ai claude` runs what is due
   ([the reconciler](spec/routing.md#the-reconciler)).
+- **A product owner run that drafted nothing**, on the same text, code
+  and comments: the issue moves to `workline:blocked` and says why; a
+  person completes it, or names the files it is about in a comment.
 - **A run that changed nothing**: run again after the body or labels
   change, or after you answer with `workline issues comment`; the line
   does not ask twice on the same input

@@ -4,7 +4,7 @@ sources:
   - internal/engine/code.go#unreproduced
   - internal/kit/devmark/merge.go#Merge.WaitsForAYes
   - internal/backlog/assume.go#DefaultWait
-checked: a2f65b253
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The developer's code at `normal`
@@ -35,7 +35,12 @@ Part of [the merge policy at `normal`](merge-policy-normal.md).
 - **The comment that asks for the yes says what the label alone will
   not mend**: a red verdict on the head, or a conflict with main. The
   pull request merges once the line passes on a new head, or once it is
-  brought up to date with its base.
+  brought up to date with its base. The comment for open findings, an
+  unread head or an unreproduced bug says it too.
+- **A wait said at an earlier head is edited in place**, not left to
+  ask for a yes: on a head the line blocks, the comment says the pull
+  request merges once the line passes on a new head, a person's yes
+  neither.
 - **Told by the issue it closes**, never by the agent: the rules, the
   labels and the record on [the developer's merge](../roles/developer/docs/merge.md).
 

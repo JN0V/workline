@@ -9,7 +9,7 @@ sources:
   - internal/engine/merge.go#SayVerdict
   - internal/forge/local.go#Local.Notes
   - roles/tester/code/objection.go#kinds
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 judged: 99d82f5
 ---

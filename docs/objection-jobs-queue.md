@@ -6,7 +6,7 @@ sources:
   - internal/line/answerstate.go#answerState
   - internal/line/answerstate.go#MarkAnswerTried
   - cmd/workline/main.go#answerStateCmd
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # One objection a run

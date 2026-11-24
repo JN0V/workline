@@ -12,7 +12,7 @@ sources:
   - defaults/ci/github/workline.yml#on
   - defaults/ci/github/workline.yml#jobs.gates
   - defaults/ci/github/workline-apply.yml#jobs.main
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 judged: 9a88170
 judged-in-parts: 9a88170
@@ -42,7 +42,8 @@ Nobody waits for it; nothing in it holds a merge request.
   requests green alone, each against its own base, may break main
   together. Then the run is red, and the issue says so.
 - **The whole repository's checks**: the documentalist's budgets, links
-  inside the repository, passages written twice and line counts, on every
+  inside the repository, passages written twice, decisions cited after
+  another replaced them, and line counts, on every
   doc, no agent. No doc is judged there: one suspect from before, and the
   links to other sites, are gardening's. A merge request reads only the
   docs its commits touched.

@@ -13,7 +13,7 @@ sources:
   - internal/gate/gate.go#maskLog
   - internal/agent/claude.go#lastLine
   - roles/documentalist/code/examples.go#outputSaid
-checked: dd77bf922
+checked: e81df7b34
 verified: agent:claude-code
 judged: e343388
 ---
