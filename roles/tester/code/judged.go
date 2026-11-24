@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/contract"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/judgemark"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -228,16 +229,17 @@ func inputKey(d *doubt) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// runsFolder is the folder the runs of the project live in, each in its
-// own folder: the judge's answers are kept there too, beside them, so a
-// later run, in the step or the next tick, finds what an earlier one got.
-const runsFolder = ".workline-runs"
-
-// judgedFiles are the files an answer is kept in for the run at runDir: its
-// own out folder, and the runs' folder when runDir is one of its runs.
+// judgedFiles are the files an answer is kept in for the run at runDir:
+// its own out folder, and, when runDir is one of the project's runs, the
+// runs' folder, so a later run, in the step or the next tick, finds what
+// an earlier one got. The runs' folder is the engine's (engine.RunsDir):
+// WORKLINE_RUNS_DIR in CI, whatever its name, else a folder named runs
+// in the clone's git folder (#1875).
 func judgedFiles(runDir string) []string {
 	files := []string{filepath.Join(runDir, "out", judgedFile)}
-	if parent := filepath.Dir(runDir); filepath.Base(parent) == runsFolder {
+	parent := filepath.Dir(runDir)
+	env := os.Getenv(forge.RunsDirEnv)
+	if filepath.Base(parent) == "runs" || env != "" && filepath.Clean(env) == parent {
 		files = append(files, filepath.Join(parent, judgedFile))
 	}
 	return files

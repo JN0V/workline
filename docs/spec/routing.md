@@ -478,7 +478,8 @@ whose result moves the issue to the next. The table is the routing's
   keeps the count by kind (`errors`), and its comment says the error and
   when the role runs again. The step is due again on the same input
   after 10 minutes (`state-retry`; before, `state-waits` with the time),
-  given what failed at the end of its task; 2 tries per kind within
+  given what failed at the end of its task, and the code it named if
+  its failed run was given it; 2 tries per kind within
   24 h of that kind's first error (`line.ErrorBudget`). The next error
   of the kind, or its 24 h passed, moves the issue to
   `workline:blocked`, the error said (`machine-error-spent`). A new
