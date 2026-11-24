@@ -1,0 +1,28 @@
+case: product-owner/untestable-label-keeps-an-issue-out-of-ready
+about: >
+  Given a project sets the product owner's `untestable-label` to
+  `needs-hardware`, When the product owner reads an issue carrying that
+  label, whose four sections are written, and its agent proposes moving it
+  to ready, Then the issue is never moved to ready (it keeps its labels,
+  `workline:ready` is not added) and the run says why, naming the label; an
+  issue without the label, read in the same run, is moved as any other.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {untestable-label: needs-hardware}
+  forge:
+    issues:
+      - {id: 9, title: "Relay clicks twice", body: "Some rows are lost.\n\n## Need\n\nThe relay switches once per command.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [needs-hardware, workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost again", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
+expect:
+  findings:
+    - {rule: not-ready, where: "#9", message: "needs-hardware"}
+  no-findings:
+    - {rule: done, where: "#9", message: "Moved #9 to ready"}
+  forge:
+    issues:
+      - {id: 9, labels: [needs-hardware, workline:to-refine]}
+      - {id: 10, labels: [workline:ready]}

@@ -678,7 +678,9 @@ func Pre(runDir, repo string) int {
 	for _, is := range open {
 		isOpen[is.ID] = true
 	}
-	bl := backlog.ReadBacklog(open, report)
+	// An issue carrying the untestable label is held like a parked one.
+	held := backlog.Hold(open, cfg.Untestable)
+	bl := backlog.ReadBacklog(held, report)
 	for _, c := range bl.Cycles {
 		findings = append(findings, verdict.Finding{Rule: "dependency-cycle", Level: "warn", Where: fmt.Sprintf("#%d", c[0]),
 			Message: backlog.CycleText(c) + ": a cycle, reported and never followed; none of them is offered first until a person takes a link off"})
@@ -688,7 +690,7 @@ func Pre(runDir, repo string) int {
 			Message: fmt.Sprintf("waits on %s, open: ordered after it, never offered first", issueRefs(bl.Waiting[id]))})
 	}
 	first := map[int]bool{}
-	for _, is := range backlog.Next(open, report, cfg.NextMax) {
+	for _, is := range backlog.Next(held, report, cfg.NextMax) {
 		first[is.ID] = true
 		findings = append(findings, verdict.Finding{Rule: "next-ready", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
 			Message: is.Title + placed(is)})
@@ -696,7 +698,7 @@ func Pre(runDir, repo string) int {
 	if scale.Used.Detected {
 		// The ready issues missing a value, counted; the role's values
 		// stuck on one level, said (ADR-0040).
-		findings = append(findings, unestimated(open, report, isOpen)...)
+		findings = append(findings, unestimated(held, report, isOpen)...)
 		findings = append(findings, stuck(ledger.States, isOpen)...)
 		if scale.Used.Priority.Hidden() || scale.Used.Effort.Hidden() {
 			findings = append(findings, verdict.Finding{Rule: "values-hidden", Level: "info",
@@ -711,7 +713,7 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, verdict.Finding{Rule: "stuck-unknown", Level: "info", Where: fmt.Sprintf("#%d", id),
 			Message: "the forge does not say " + what + ": not said stuck, whatever it waits"})
 	}
-	for _, is := range open {
+	for idx, is := range open {
 		if is.ID == report || !inScope(is) {
 			continue // out of an event's scope: when it got ready, unread (#804)
 		}
@@ -723,7 +725,7 @@ func Pre(runDir, repo string) int {
 				waits = append(waits, *w)
 			}
 		}
-		if first[is.ID] || !backlog.Offered(is, isOpen) {
+		if first[is.ID] || !backlog.Offered(held[idx], isOpen) {
 			continue
 		}
 		t, err := b.Trail(is.ID, backlog.LabelReady)
@@ -745,7 +747,7 @@ func Pre(runDir, repo string) int {
 	}
 	// What is stuck, for the job's summary (ADR-0031, ADR-0038): each
 	// issue waiting on a person past stuck-days, an announcement due.
-	board := backlog.MakeBoard(open, report, waits, ledger.Record.Proposed, cfg, now)
+	board := backlog.MakeBoard(held, report, waits, ledger.Record.Proposed, cfg, now)
 	for _, w := range board.Stuck {
 		findings = append(findings, verdict.Finding{Rule: "stuck", Level: "info", Where: fmt.Sprintf("#%d", w.Issue), Message: board.StuckLine(w)})
 	}

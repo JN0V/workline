@@ -1,0 +1,26 @@
+case: product-owner/untestable-label-issue-not-offered-next
+about: >
+  Given an issue carries the project's `untestable-label`
+  (`needs-hardware`) and is already `workline:ready`, When the board is
+  read for what to build next, with no agent, Then it is not offered: the
+  summary's next-to-build list holds the other ready issue alone, and no
+  next-ready finding names the labelled one.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {untestable-label: needs-hardware}
+  forge:
+    issues:
+      - {id: 12, title: "Relay clicks twice", body: "The relay clicks twice.", labels: [workline:ready, needs-hardware, workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Plain export", body: "Add a plain export.", labels: [workline:ready, workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none, summary: true}
+expect:
+  agent-calls: 0
+  summary-file: ["- **next to build** (1)\n  - [#13](https://forge.example/issues/13): Plain export"]
+  summary-lacks: ["Relay clicks twice"]
+  findings:
+    - {rule: next-ready, where: "#13"}
+  no-findings:
+    - {rule: next-ready, where: "#12"}
