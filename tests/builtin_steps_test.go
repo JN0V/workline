@@ -1,11 +1,11 @@
 package tests
 
 import (
-	"io/fs"
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 
-	"github.com/JN0V/workline"
 	"github.com/JN0V/workline/internal/contract"
 
 	// The compiled-in roles, the list the binary imports.
@@ -23,8 +23,8 @@ func TestEveryBuiltinStepIsInTheRegistry(t *testing.T) {
 			if _, ok := contract.Builtins().Step(name, step); !ok {
 				t.Errorf("roles/%s/code: no built-in %s in the registry", name, step)
 			}
-			if _, err := fs.Stat(workline.Roles, "roles/"+name+"/"+step); err == nil {
-				t.Errorf("roles/%s/%s is shipped beside the role's built-in code, which the engine runs instead: remove it", name, step)
+			if _, err := os.Lstat(filepath.Join("..", "roles", name, step)); err == nil {
+				t.Errorf("roles/%s/%s sits beside the role's built-in code, which the engine runs instead: remove it", name, step)
 			}
 		}
 	}
