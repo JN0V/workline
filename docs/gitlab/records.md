@@ -28,7 +28,7 @@ and the documentalist read back what their comments keep.
     project's members, which a token may not list (401,
     [#552](https://github.com/JN0V/workline/issues/552)); the job's own
     token cannot ask who last edited it; a comment it cannot read is said
-    ([`record-unread`](../../roles/reviewer/docs/run.md#3-the-record)),
+    ([`record-unread`](../../roles/reviewer/docs/run-record.md#3-the-record)),
     and the push reviews the whole merge request again;
   - the applying job posts each finding as a discussion on its line, with
     `WORKLINE_GITLAB_TOKEN`

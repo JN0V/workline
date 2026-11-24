@@ -60,13 +60,13 @@ routing:
   line's `issue` event it reads the spec in refine's own run, and its
   review wakes the product owner again at once
   ([the line of states](../../../docs/spec/routing.md#the-line-of-states)). `forge-writes: false` writes no
-  comment ([settings](../README.md#settings)): ready then stays held, `spec-not-reviewed`.
+  comment ([settings](settings.md)): ready then stays held, `spec-not-reviewed`.
 - **Without AI**: nothing read, nothing written, each spec said
   (`not-reviewed`); ready held. The sixth round's question
   ([rounds](spec-rounds.md#rounds-and-a-spec-not-settled)) needs
   no agent: written all the same.
 - **An agent out of reach**: the run is blocked-external
-  ([as for code](judge.md#8-the-verdict-and-what-goes-wrong)) and writes
+  ([as for code](verdict.md#8-the-verdict-and-what-goes-wrong)) and writes
   nothing, that question included; said, it waits for the next run.
 - **Its cost**: a spec 7k to 37k tokens in, judges included; five a night
   stay within `ai-max-tokens`

@@ -1,7 +1,7 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/prompts/instruction.md, roles/reviewer/prompts/policy.md, roles/reviewer/prompts/lenses, roles/reviewer/code]
-checked: cf8d4d9f
-verified: human:JN0V
+checked: e81df7b34
+verified: agent:claude-code
 ---
 # Reviewer — a run on code
 
@@ -48,171 +48,15 @@ flowchart LR
    While a rule blocks, no agent is asked; one the project sets to `warn`
    (`enforce`) only warns ([#550](https://github.com/JN0V/workline/issues/550)).
 
-## 3. The record
+## 3–6. The record, the lenses, the quotes
 
-3. **The record.** Commits a review answered whole are not asked again.
-   - It is kept in the summary comment on a merge request, read only from the one workline's own account wrote and no one else edited last ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)),
-     `.git/workline/reviewer-record` on a machine. One that does not read, or only another's carrying its marker, or one another edited, is said (`record-unread`, [#302](https://github.com/JN0V/workline/issues/302)): every commit reviewed again, once, as a whole review writes it anew.
-   - **A change to what its own pipeline runs** (`.github/`,
-     `.gitlab-ci.yml`, `.workline/`, and `pipeline-paths`), by any of its
-     commits: no commit is skipped on the record, nor left past five a
-     push; every one is read again, at each push, said (`line-changed`).
-     Such a merge request runs its own workflow, which wrote what the
-     record says.
-   - **`pipeline-paths`** (default none): what else the pipeline runs
-     scripts from, `[ci/, scripts/ci/]` say. Set it in
-     `.workline/config.yaml`, under `roles: {reviewer: {settings: …}}`.
-   - Beside it on a merge request, a line per finding judged, every
-     run's, for the weekly sample; kept even when the record does not
-     read ([more](judge.md#every-finding-judged-kept-for-the-weekly-sample)).
-   - And a line of the tester's answers a judge weighed, so the same
-     reason is weighed once ([more](tester-answers.md)).
-   - **A rebase** ([#286](https://github.com/JN0V/workline/issues/286)): it
-     holds each change's patch id too, so a commit rebased with its change
-     intact is not asked again. One a conflict changed is, and those after
-     it.
-   - **A merge of the base**
-     ([#134](https://github.com/JN0V/workline/issues/134)): a lens is
-     given what the merge settled, both sides of a conflict and the
-     resolution; never the base's code. Nothing settled: nobody asked.
-   - New commits that change no code are recorded, nobody asked, the turn
-     of the lenses kept.
-   - **A lens that does not answer** owes the commits: the record names
-     it (`failed=`), holds none of them, and the next run asks it first,
-     whosever turn it is ([#588](https://github.com/JN0V/workline/issues/588)).
-   - **A push before the last review is written** waits for it, and reads it;
-     a review written after another keeps its commits and lines ([#375](https://github.com/JN0V/workline/issues/375)).
-     The comment names the head and the CI run it is at, hidden: an older
-     run applied last keeps the newer one's text, its record merged in
-     ([#598](https://github.com/JN0V/workline/issues/598)).
-   - **What blocked stands**, recorded too, until a commit answers it
-     ([#326](https://github.com/JN0V/workline/issues/326), [more](judge.md#a-block-stands-until-a-commit-answers-it)).
-   - The run on ready reads the whole change, commits reviewed before too ([below](#every-lens-once-when-it-becomes-ready));
-     after it, a lens that warns reads five new commits a push ([more](ready.md#after-ready-only-what-is-new)).
-   - Why, and what git it needs: [ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12).
-
-## 4. The lenses
-
-The lenses (`lenses/<lens>.md`, a project's own in
-`.workline/roles/reviewer/prompts/lenses/`): correctness, edge cases, tests,
-intent, claims ([#126](https://github.com/JN0V/workline/issues/126)),
-simplicity, and comments, asked only when `story-words` flags a comment, beside the lens
-in turn, never in its place.
-Every one on a machine; on a merge request one a push, in turn
-(`lenses-per-push`), with a block's lens when the push changes code
-([more](judge.md#a-block-stands-until-a-commit-answers-it)), and the
-tests lens when it changes the test of a file it found untested
-([more](lines.md)), every one
-with `--input lenses=all`, once when it becomes ready ([below](#every-lens-once-when-it-becomes-ready));
-none on a draft (`--input draft=true`, [ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
-
-- **Together** (`lenses-together`,
-  [#147](https://github.com/JN0V/workline/issues/147)): the lenses of a run
-  in one call, the change given once; each finding names its lens. One
-  naming none is read as the first lens's, said (`finding-lens-unnamed`);
-  one naming a lens not asked is dropped, said. `false`: a call each.
-- **What they read**:
-  - what the author says, as testimony: the messages of the commits not
-    reviewed yet, whole, their trailers left, and the merge request's
-    title and body (`testimony-lines-max`);
-  - each file they change once: whole, the change marked in it, while the
-    files fit `code-lines-max`; the others by the change's hunks, each
-    widened to the block around it, found by indentation, up to a quarter
-    of `code-lines-max` ([#1334](https://github.com/JN0V/workline/issues/1334)). A change
-    past one call (the budget, `diff-lines-max`): [in parts](parts.md).
-  - each cut past one of these settings is said in the run, with the
-    setting that raises it (`input-cut`).
-- **Intent** (`needs: issue`): a change saying `Closes #4` (or `fixes`,
-  `resolves`, `implements`), in a commit or the merge request, has `#4` read
-  from the forge, its Need, Verification and Scope given
-  (`issue-lines-max`), and the files the author lists under "Beyond the
-  Scope", with their reasons, from the merge request and its commits.
-  - The lens says what the issue asks and the change does not do or
-    prove, its cause quoted from the issue (`path: "#4"`), and what the
-    change does past the Scope that the Need does not need: the Scope is
-    a hint, not a fence.
-  - No issue closed: not asked, said in the summary; one that cannot be
-    read: not asked, said (`issue-unread`).
-- **Simplicity** (`needs: issue`, [ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)): read with
-  the same issue as intent; is the change more complicated than its Need
-  requires?
-  - A finding quotes what the change adds that the Need and the
-    Verification do not ask — a public function, an overload, an
-    option, a layer — and names the smaller change that closes the issue
-    as well; its judge is shown the issue.
-  - It judges how much, never whether: what the issue does not ask at
-    all, and a part of the Need left undone, stay intent's.
-  - Advisory: `severity: nit` in its front matter shows each finding as
-    a nit, never judged, never asked of the developer, until its false
-    alarms are counted on past pull requests
-    ([#1497](https://github.com/JN0V/workline/issues/1497)).
-- **Claims** (`cites: claim`): each finding quotes the author's claim ("no
-  change in behaviour"), found again in what they said, or is dropped
-  (`finding-unfounded`), and its cause the line contradicting it.
-- **What they answer**: `finding`s — lens, severity, title, why, its cause
-  quoted, its symptom when elsewhere, a fix; the claims lens's, the claim;
-  a finding holding `decision`, the question for a person (step 6),
-  never an item of its own.
-- **The diff alone** (`diff-alone`, off,
-  [#126](https://github.com/JN0V/workline/issues/126)): a call of its own,
-  given the change only (`git diff -U3`, up to `diff-lines-max`), not the
-  files, the messages nor the issue: what the change says by itself.
-  - Its findings are quoted, judged and routed as a lens's.
-  - `--lenses diff-alone` asks it alone, whatever the setting.
-  - Off by measure: it found what the lenses found, nothing more
-    ([tried](tried.md)).
-- **The floor** (`finder-floor`): each lens is asked to look for a number
-  of candidates first, from the change's size. A floor on candidates,
-  never on what is judged or shown: a lens answering nothing leaves the
-  review clean (`finder-floor-nothing-found-is-clean`).
-
-## 5–6. The quotes, and whose finding it is
-
-5. **The quotes.** The engine finds each cause again, spaces and line
-   breaks aside: in the file at the head of the range, among the lines the
-   change removed, or in the issue it names (`#4`, the change's); a
-   symptom, in its file; a claim, in what the author said.
-   - A file moved, quoted on its old path, is found on its new one.
-   - Not found: dropped, said (`finding-unfounded`).
-   - Two on one line are grouped, never one dropped
-     ([#229](https://github.com/JN0V/workline/issues/229)).
-6. **Related or not.**
-   - **The change's**: a cause on a line the change added or removed, or
-     on a kept line within three of a removal (a hunk taking away more
-     lines than it adds, [#224](https://github.com/JN0V/workline/issues/224)).
-     Its author's: an important one on that line, a nit in the summary.
-   - **A removal's reach**
-     ([#357](https://github.com/JN0V/workline/issues/357)): a kept line
-     further down is the change's too when, in the same function, it uses
-     a name a removed line tested or assigned (`if p < 1` removed, then
-     `from := (p - 1) * size`). Its comment goes where the removal shows.
-   - **A claim it does not hold**
-     ([#1415](https://github.com/JN0V/workline/issues/1415)): a finding
-     of the claims lens is the change's wherever its cause lies, a kept
-     line below the lines it added too; on a line the diff does not
-     show, it stays in the summary.
-   - **Elsewhere**: an issue, once, labelled `needs-triage`, with the
-     product owner's state; never on the merge request. Its key is the
-     file and the cause's line; an issue open or closed holds it, none
-     opened ([ADR-0018](../../../docs/adr/0018-the-product-owner.md)). A
-     nit there is left, counted.
-   - **Written for a person first**, as the product owner writes
-     ([writing an issue](../../product-owner/docs/writing.md)): what a
-     person sees (the lens's `seen`), then the cause, the line and the
-     fix folded, then one line, "Found by the reviewer role while
-     reviewing ccffcb2, outside that change." The lens and the judge's
-     verdict are hidden in the body.
-   - **A decision for a person**
-     ([#126](https://github.com/JN0V/workline/issues/126)): a finding
-     holding `decision` — a trade-off, a design choice, what the issue
-     leaves open — is a question, not a defect.
-     - Its cause found again, in the change or its issue, else dropped,
-       said; never an issue.
-     - Never important, never judged, never blocking; one a line (in an
-       issue, one a quote); `questions-max` a run, the rest counted.
-     - Asked in the summary comment under **Questions for a person**, one
-       line each, its cause quoted; locally, `decision` (`question`).
-     - A reply on the merge request is enough: the reviewer does not wait.
+- **3. The record**: commits a review answered whole are not asked
+  again, rebased or not ([the record](run-record.md#3-the-record)).
+- **4. The lenses**: what each one reads and answers
+  ([the lenses](run-lenses.md#4-the-lenses)).
+- **5–6. The quotes, and whose finding it is**: each cause found again;
+  the change's goes to its author, the rest to an issue or a question
+  ([the quotes](run-quotes.md#56-the-quotes-and-whose-finding-it-is)).
 
 ## On a machine
 
