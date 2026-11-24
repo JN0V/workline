@@ -132,6 +132,9 @@ func body(a devmark.Act, ready bool) string {
 	if len(a.Acceptance) > 0 {
 		fmt.Fprintf(&b, "- The tester's acceptance tests, read-only to the developer, from `%s%d`: %s.\n", testmark.TestsBranch, a.Issue, files(a.Acceptance))
 	}
+	if len(a.Unproven) > 0 {
+		fmt.Fprintf(&b, "- **Unproven**, no test proves it, as the tester said: %s. Each is an open Important finding: this merges on a person's yes only.\n", strings.Join(a.Unproven, ", "))
+	}
 	if a.RedUnproven != "" {
 		fmt.Fprintf(&b, "- **Red unproven**: their red proof on the base was not settled by the tester's judge: %s.\n", a.RedUnproven)
 	}

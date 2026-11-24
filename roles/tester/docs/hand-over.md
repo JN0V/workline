@@ -8,6 +8,7 @@ sources:
   - roles/tester/code/frozen.go#record
   - internal/kit/testmark/draft.go#DraftData
   - roles/tester/code/frozen.go#record.body
+  - roles/tester/code/kept.go#unprovenScenarios
   - roles/tester/code/frozen.go#readRecordKept
   - roles/tester/code/frozen.go#guard
   - roles/developer/code/bounds.go#checker.rule
@@ -44,6 +45,11 @@ flowchart LR
     request closing the issue.
   - `## Tests`: a table, each scenario and the test that checks it;
     a scenario no test can check is listed as not tested, with why.
+  - **Unproven**: each scenario no test proves, named — not tested,
+    or kept as today with no existing test found to guard it. Kept in
+    its record: on the developer's pull request, each is an open
+    Important finding, so it merges on a person's yes only
+    ([the merge](../../developer/docs/merge.md)).
   - What the proof said: each test red on the base, by an assertion,
     a missing name the issue names, or a broken build the judge read.
     A test whose package did not build is named `file:name`, or by

@@ -87,6 +87,9 @@ type Bounds struct {
 	// RedUnproven: why the judge did not settle the Draft's red proof
 	// (ADR-0065), as its record says; its pull request says it too.
 	RedUnproven string `json:"red-unproven,omitempty"`
+	// Unproven: the scenarios no test of the Draft proves, as its record
+	// says them: open Important findings for the merge.
+	Unproven []string `json:"unproven,omitempty"`
 	// Proof: the kind of proof the tester recorded in place of a Draft
 	// (ADR-0059, decision 4), when it did.
 	Proof *backlog.Proof `json:"proof,omitempty"`
@@ -158,7 +161,7 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 			b.Frozen[file], b.Blobs[file] = r.Issue, blob
 		}
 		if n == is.ID {
-			b.Draft, b.RedUnproven, b.Covers = mr.ID, r.RedUnproven, r.Covers
+			b.Draft, b.RedUnproven, b.Covers, b.Unproven = mr.ID, r.RedUnproven, r.Covers, r.Unproven
 			for _, ref := range []string{"refs/remotes/origin/" + mr.Branch, "refs/heads/" + mr.Branch} {
 				if h, err := gitOut(repo, "rev-parse", "-q", "--verify", ref+"^{commit}"); err == nil && h != "" {
 					b.Head = h

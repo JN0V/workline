@@ -588,7 +588,7 @@ func Post(runDir, repo string) int {
 		"body":  draftBody(t, tested, said, alone, assumed(notes), proof),
 		// The tests frozen to whoever builds (ADR-0055, guards): kept in
 		// workline's own comment on the Draft once it is opened.
-		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Tests: newTests, Errored: erroredOf(runDir, newTests), Scenarios: t.Scenarios, Covers: tested, RedUnproven: unprovenOf(*proof)}.intention()["comment"],
+		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Tests: newTests, Errored: erroredOf(runDir, newTests), Scenarios: t.Scenarios, Covers: tested, RedUnproven: unprovenOf(*proof), Unproven: unprovenScenarios(t, said)}.intention()["comment"],
 	}
 	if len(undo) > 0 {
 		mr["unopened"] = undo // its Draft not opened, the issue keeps its state (#1280)
@@ -1075,6 +1075,10 @@ func draftBody(t task, tested map[string][]string, said map[string]string, alone
 			if n, ok := said[sc.Name]; ok {
 				fmt.Fprintf(&b, "- %s: %s\n", sc.Name, strings.ReplaceAll(n, "\n", " "))
 			}
+		}
+		if u := unprovenScenarios(t, said); len(u) > 0 {
+			fmt.Fprintf(&b, "\n**Unproven**: %s. No test proves %s: on the pull request that builds it, each is an open Important finding, "+
+				"so it merges on a person's yes only.\n", strings.Join(u, ", "), map[bool]string{true: "it", false: "them"}[len(u) == 1])
 		}
 	}
 	if len(assumes) > 0 {

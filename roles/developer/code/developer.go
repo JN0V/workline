@@ -550,7 +550,7 @@ func Pre(runDir, repo string) int {
 	if len(conflicts) > 0 {
 		return draftBehind(runDir, repo, id, bounds.Head, at, conflicts, said)
 	}
-	act.From, act.Acceptance, act.RedUnproven = bounds.Head, bounds.acceptance(), bounds.RedUnproven
+	act.From, act.Acceptance, act.RedUnproven, act.Unproven = bounds.Head, bounds.acceptance(), bounds.RedUnproven, bounds.Unproven
 	if from != bounds.Head {
 		act.Merged = at
 	}

@@ -70,7 +70,11 @@ waits for a person's yes.
   - no finding of the reviewer's open that blocks or is Important: a
     nit holds nothing. Its findings are read from the comment's hidden
     findings record: a comment with a table and no record, or a record
-    that does not parse, holds the pull request for a person's yes.
+    that does not parse, holds the pull request for a person's yes;
+  - no scenario the tester said no test proves: each is an open
+    Important finding too, the tester's, named in the wait
+    ([the Draft](../../tester/docs/hand-over.md)). Case
+    `developer/merge-normal-holds-unproven-scenario`.
 ### A fix the reviewer read at its head
 
 - **A fix the reviewer read at its head**

@@ -147,3 +147,21 @@ func grepped(repo, base, word string, files []string) bool {
 	}
 	return false
 }
+
+// unprovenScenarios are the issue's scenarios, in its order, that no test
+// proves: said rather than tested, but for one kept as today that an
+// existing test of the base guards (guardedSaid kept its reason).
+func unprovenScenarios(t task, said map[string]string) []string {
+	var out []string
+	for _, sc := range t.Scenarios {
+		n, ok := said[sc.Name]
+		if !ok {
+			continue
+		}
+		if r := strings.ToLower(strings.TrimSpace(n)); strings.HasPrefix(r, keptPrefix) && !strings.HasPrefix(n, unguarded) {
+			continue // guarded by a test the base holds
+		}
+		out = append(out, sc.Name)
+	}
+	return out
+}
