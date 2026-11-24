@@ -8,7 +8,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:garden
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:summary
   - internal/forge/gitlab.go#gitlab.connect
-checked: e81df7b34
+checked: 614ef6cbe
 verified: agent:claude-code
 reader: 0f3e75c013d8
 ---
