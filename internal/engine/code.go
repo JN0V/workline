@@ -97,6 +97,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
 		body := fmt.Sprintf("**Waiting for a person's yes**: %s, but the reviewer's findings are open:\n\n- %s\n\n- To accept this one anyway, put the label `%s`.\n- Or fix the findings: the next push is read again.",
 			d.Says(), strings.Join(d.Open, "\n- "), backlog.AcceptedLabel(f))
+		body += headTrouble(o, m, hand, w)
 		if err := f.Sticky(t, body, forge.Marker("merge-waits=findings"), true); err != nil {
 			return nil, err
 		}
@@ -144,6 +145,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		}
 		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `%s`: the developer's code merges with no person's yes only once the reviewer's verdict is on its head, no finding open that blocks or is Important.\n\n- To accept this one, put the label `%s`.\n%s",
 			d.Says(), why, o.Merge, backlog.AcceptedLabel(f), how)
+		body += headTrouble(o, m, hand, w)
 		if err := f.Sticky(t, body, forge.Marker("merge-waits="+devmark.Unreviewed), true); err != nil {
 			return nil, err
 		}
@@ -173,6 +175,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 			t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
 			body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `%s`: a bug's fix merges once a test that failed on the base proves the bug and every gate passes.\n\n- To accept this one, put the label `%s`.\n- Not a bug? Change the label on #%d.",
 				d.Says(), why, o.Merge, backlog.AcceptedLabel(f), d.Issue)
+			body += headTrouble(o, m, hand, w)
 			if err := f.Comment(t, body, forge.Marker("merge-waits="+devmark.Unreproduced)); err != nil {
 				return nil, err
 			}
