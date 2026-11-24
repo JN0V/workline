@@ -1,0 +1,33 @@
+case: merge/local-route-drops-the-wait-for-a-yes-on-a-block
+about: >
+  With `forge: local` at `normal`, the developer's fix `!2` for bug #3
+  has no review on its head: `workline follow` says on it that it waits
+  for a person's yes, the label to put. A new commit is pushed that the
+  committer refuses (its subject is too long): the line blocks the new
+  head, and `follow` runs again. Then the request says the line blocks
+  its head, and no comment on it still asks for a yes as the way to
+  merge it.
+given:
+  repo: local-fix
+  setup:
+    - "sed -i '18,$d' .git/workline/merge-requests/2.md"
+  config:
+    forge: local
+    merge: {autonomy: normal}
+    routing: {events: {merge-request: [committer]}}
+run:
+  sh: >
+    workline follow --base main &&
+    git checkout -q workline/developer/3 &&
+    echo one > one.txt && git add one.txt &&
+    git commit -qm 'fix: write the first file of the series, the one the rest of the work depends on' -m 'Workline-Role: developer' &&
+    { workline route merge-request --target merge-request:2 --ai none; 
+    git checkout -q main && workline follow --base main; }
+expect:
+  exit: 0
+  stderr: ["verdict-red", "the line's verdict on its head is block (committer block)"]
+  files:
+    .git/workline/merge-requests/2.md:
+      contains: ["state: open", "**The line blocks this head**", "<!-- workline:line-verdict -->"]
+      lacks: "To accept this one, put the label"
+    lib.sh: {lacks: "mul()"}
