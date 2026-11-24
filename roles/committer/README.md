@@ -6,7 +6,7 @@ sources:
   - cmd/workline/main.go#prePush
   - roles/committer/code/committer.go#Pre
   - roles/committer/code/committer.go#checkRange
-checked: dd77bf922
+checked: e81df7b34
 verified: agent:claude-code
 judged-in-parts: eb16524
 ---
@@ -64,9 +64,10 @@ a list there adding to the project's:
 | `internal-codes-maybe` | `\b[A-Za-z]{1,3}[0-9]{2,}\b` | codes with no dash, judged |
 | `allowed-identities` | `[]` | author addresses allowed, as patterns; empty with no user list: not checked |
 | `forge-identities` | `[]` | addresses the forge commits with, written whole: allowed, never turning the check on alone |
+| `internal-codes-allow-patterns` | `RFC-[0-9]+`, `v[0-9]+`, `Go1[0-9]+`… | public names given as patterns, whole words; the project adds to them |
 | `rewrite` | `true` | an agent rewrites a refused message at a commit ([rewrite](docs/rewrite.md#rewrite-the-agent-30-s-at-most)) |
 | `ai-max-seconds` | `30` | the rewrite's time, every call together: past it, refused with the reasons |
-| `internal-codes-allow` | `UTF-8`, `SHA-256`, `RFC-…`, `v1`, the `ESP32` and `ESP8266` chips… | public names that look like codes |
+| `internal-codes-allow` | `UTF-8`, `SHA-256`, `x86`, the `ESP32` and `ESP8266` chips… | public names that look like codes, each literal text, case ignored |
 
 `enforce: {<rule>: warn}` (or `off`) beside `settings` softens one rule
 ([config reference](../../docs/config.md)).

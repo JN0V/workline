@@ -12,7 +12,7 @@ sources:
   - internal/engine/engine.go#openMergeRequest
   - roles/documentalist/code/title_test.go#TestMergeRequestTitlesPassTheSquashRule
   - internal/sample/title_test.go#TestEngineTitlesPassTheSquashRule
-checked: dd77bf922
+checked: e81df7b34
 verified: agent:claude-code
 judged-in-parts: eb16524
 ---

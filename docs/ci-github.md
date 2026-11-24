@@ -156,7 +156,7 @@ pushed to its branch.
   [workline-answer.yml](../defaults/ci/github/workline-answer.yml), with the
   tester: an objection to one of its tests, on its Draft's line, wakes
   its answer; the first notices it with no token, the second answers
-  from the default branch ([tester](../roles/tester/README.md#frozen-tests-and-objections),
+  from the default branch ([tester](../roles/tester/docs/objections.md),
   [what each job holds](objection-jobs.md)). With the developer, the
   first also notices a person's reply in a thread on its pull request,
   whose end wakes the review round.

@@ -26,8 +26,8 @@ Part of [the lenses that warn, apart from the verdict](apart.md).
   says so in that comment (`lens-failed`). Its record holds none of the
   commits and names the lens (`failed=`): the next push, or the run run
   again, asks it first, whosever turn it is
-  ([the record](run.md#3-the-record),
-  [what goes wrong](judge.md#8-the-verdict-and-what-goes-wrong)). The agent out of reach is said
+  ([the record](run-record.md#3-the-record),
+  [what goes wrong](verdict.md#8-the-verdict-and-what-goes-wrong)). The agent out of reach is said
   in the job's log. It never
   turns a pass into a fail, nor a fail into a pass; the job stays green,
   only the engine's own error fails it.

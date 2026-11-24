@@ -18,7 +18,7 @@ sources:
   - roles/tester/code/repro.go#unreproduced
   - roles/tester/code/repro.go#bugProof
   - roles/product-owner/role.yaml#settings.acts.ask
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Proof kinds and bugs not reproduced

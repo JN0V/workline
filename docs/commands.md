@@ -39,7 +39,7 @@ sources:
   - internal/line/size.go#Size
   - internal/line/size.go#doneRecords
   - internal/line/size.go#doneByMR
-checked: 3f432ab14
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The commands, in detail
@@ -169,7 +169,7 @@ then you keep or drop each change, doc by doc (`v` shows it).
 - Once the run passed with nothing left to review, the ref moves to HEAD.
 - **`--json`** prints the result as JSON on stdout; a refusal prints one
   too, its finding's rule naming the cause (`config-invalid`,
-  `not-in-repo`, `since-unknown`, `no-terminal`, `review-failed`), and the
+  `not-in-repo`, `since-unknown`, `no-terminal`, `git-failed`, `review-failed`), and the
   reason stays on stderr.
 
 ### workline sample

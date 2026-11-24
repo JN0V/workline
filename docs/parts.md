@@ -10,7 +10,7 @@ sources:
   - internal/forge/gitlab.go#gitlab.api
   - roles/committer/code/committer.go#Pre
   - roles/documentalist/role.yaml#events
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Take only a part
@@ -32,7 +32,7 @@ workline gate release --json   # a gate declared in .workline/config.yaml: your 
   stops running.
 - `--no-apply` and `workline apply` fit a pipeline that keeps tokens apart.
 - A role is a folder (`role.yaml`, facets, `pre` and `post` in any language):
-  a team can replace one facet (`.workline/roles/<role>/`), or run its own
+  a team can replace one facet (`.workline/roles/<role>/prompts/<facet>`; at the folder's top level for a role with no `prompts/` folder), or run its own
   roles with `--roles <dir>` ([role contract](spec/role-contract.md)).
 
 The command for each event, from any trigger: [triggers.md](triggers.md).

@@ -11,7 +11,7 @@ sources:
   - defaults/ci/github/workline-warn.yml#concurrency
   - defaults/ci/github/workline-warn.yml#jobs.warn.concurrency
   - tests/conformance/cases/reviewer/review-applied-when-a-push-lands-before-it.yaml
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 judged-in-parts: 06fe2e1
 ---
@@ -41,7 +41,7 @@ it runs, and its locks.
   does not run the base again, in the Actions cache: its pull request's
   own, else the default branch's, which `workline-develop.yml` writes
   after the tester's run alone
-  ([the green proof](../../roles/tester/docs/green-proof.md#what-it-runs)).
+  ([the green proof](../../roles/tester/docs/green-proof-runs.md#the-base-once)).
 - **One `propose` per pull request at a time** (`concurrency`): a push
   cancels the run still on the head before; the newer run reviews its
   commits too, and `apply`, `verdict` and the fork's comment skip
@@ -50,6 +50,8 @@ it runs, and its locks.
 - **One review at a time**: `propose` waits while `apply` writes the review
   before it, then reviews only what is new; `apply` writes it even once
   the branch moved on ([#375](https://github.com/JN0V/workline/issues/375)).
+- **A `propose` that fails says why**: the error on its run's page holds
+  the first 2000 characters of its result's summary, not only a status.
 - **The lenses that warn, apart**: `warn`, its own run and lock, never
   fails by what they find ([apart](../../roles/reviewer/docs/apart.md)); `verdict` and `follow` run after `propose` alone
   ([ADR-0050](../adr/0050-each-act-has-its-moment-and-a-wait-budget.md#2-an-act-over-its-budget)).

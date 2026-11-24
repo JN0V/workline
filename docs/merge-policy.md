@@ -3,23 +3,13 @@ sources:
   - internal/engine/merge.go#mergePolicy
   - internal/engine/merge.go#theYes
   - internal/engine/merge.go#accepted
-  - internal/engine/merge.go#heldByConversations
-  - internal/engine/merge.go#personsCommentOpen
-  - internal/engine/merge.go#stalled
-  - internal/engine/uptodate.go#upToDateAs
-  - internal/engine/uptodate.go#provenUpToDate
-  - internal/engine/merge.go#releaseRebuild
-  - internal/engine/merge.go#forkGuarded
-  - internal/engine/queue.go#queueGroup
-  - internal/forge/github_merge.go#github.AutoMerge
-  - internal/forge/gitlab_merge.go#gitlab.AutoMerge
   - defaults/ci/github/workline-merge.yml#on
   - defaults/ci/github/workline-apply.yml#jobs.verdict
   - defaults/ci/github/workline-apply.yml#jobs.queue
   - defaults/ci/github/workline-apply.yml#jobs.follow
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
-checked: 3f432ab14
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The merge policy
@@ -89,7 +79,7 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 
 - **A person's comment with no answer**: nothing merges, whatever the
   policy, until a role's reply names a test or the person's own yes
-  follows it.
+  follows it; a push that takes that yes off does not reopen it.
 - **Open conversations** the base requires resolved: listed, linked.
 - **A red verdict or check, a review short**: nothing turned on, said.
 - **Each case**: [what holds a pull request](merge-policy-holds.md).
@@ -106,19 +96,11 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 
 ## Never without a person's yes
 
-- **A release pull request** merges only labelled; it never waits for
-  the docs ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
-  An issue labelled to hold it, or main not green, turns its verdict red
-  until they are gone ([what holds a release](release-holds.md)).
-- **A fork's**: its run is the workflow its head holds, so the line
-  keeps no verdict of it and reads no review of it:
-  - labelled, it merges once every check on its head passed: the
-    person's yes carries it;
-  - one changing CI, workline's config, a gate's file or what steers
-    agents is never merged by the line (`fork-gate-files`): a person
-    merges it by hand;
-  - unlabelled, `follow` says it waits for a yes
-    ([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md#amendment-2026-11-04-1043-a-fork-goes-by-its-yes-and-its-checks)).
+- **A release pull request** merges only labelled, and **a fork's** only
+  labelled with its checks passed; one changing CI, workline's config, a
+  gate's file or what steers agents is never merged by the line, a
+  person merges it by hand
+  ([the rules](merge-policy-never.md)).
 - **One changing a guarded file**, one the project's `CODEOWNERS`
   lists, at every level
   ([what never merges alone](merge-policy-normal.md#what-never-merges-alone)).
@@ -163,10 +145,8 @@ the candidate's issue, ships the version:
 
 - **Written by the proposing job**, kept per forge: GitHub's status
   `workline/verdict` set by the App, GitLab's merge request pipeline,
-  the local forge's clone.
-- **No verdict on the head yet**, or a draft's: auto-merge waits.
-- **Where, a draft's, the App's key, the limits**:
-  [where the head's verdict lives](merge-policy-verdict.md).
+  the local forge's clone; none on the head yet, or a draft's:
+  auto-merge waits ([where it lives](merge-policy-verdict.md)).
 
 ## Nobody bypasses `main`
 
@@ -196,9 +176,8 @@ the candidate's issue, ships the version:
 
 - **Each run's summary** names, per pull request, what `follow` did, or
   why it turned nothing on, with a word such as `auto-merge-on`,
-  `verdict-red` or `accepted-reset`.
-- **Every word and when it is said**:
-  [what the merge summary says](merge-policy-summary.md).
+  `verdict-red` or `accepted-reset`
+  ([every word](merge-policy-summary.md)).
 
 ## A red main
 
@@ -210,15 +189,4 @@ the candidate's issue, ships the version:
   forge's queue: GitHub's merge queue in an organisation, GitLab's merge
   train ([a merge queue or train](merge-queue.md)).
 
-Tried live: [tried.md](../roles/documentalist/docs/tried.md#2026-10-12--the-merge-policy-cautious-live);
-left: [status.md](../roles/documentalist/docs/status.md).
-
-## Where it is read
-
-- **The policy, the level, the yes, the labels**: `merge.go` reads the
-  level and finds the person's yes on the label events, set aside the
-  labels not taken from a person.
-- **What holds it, a release tool's rebuild, a fork**: `merge.go`, which
-  also finds a pull request the forge has left stalled.
-- **The queue**: `queue.go`; **up to date**: `uptodate.go`; **auto-merge
-  on**: `github_merge.go`, `gitlab_merge.go`.
+Where it is read (`merge.go`), and the live try: [the code and the try](merge-policy-read.md).

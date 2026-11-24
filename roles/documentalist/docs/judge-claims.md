@@ -8,7 +8,7 @@ verified: agent:claude-code
 Part of [the check](judge.md): what backs a word taken out of a doc. The
 steps cited are those of
 [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md);
-DomoticsCore is a C++ project the role runs on in CI
+"That C++ project" below is the one the role ran on in CI
 ([tried for real](tried.md)).
 
 ## Removed words need a claim
@@ -28,13 +28,13 @@ not see backed (workline d43b3f2).
 - **In a doc judged in parts**, a quote standing only in source lines a
   part judged `partial` for those lines, no part finding them wrong, does
   not hold either: that part read it and found it does not settle them.
-  A fix citing such a quote made a true line false on DomoticsCore
+  A fix citing such a quote made a true line false on that C++ project
   ([#467](https://github.com/JN0V/workline/issues/467)).
 - ***Withheld***, each run of changed lines refused (as
   `citation-unchecked` and `comment-not-evidence`): asked again, the agent
   had withdrawn a right fix with the refused one beside it (16c660b), and
   rarely brought the refused place back right — 1 of 5 re-asks, on
-  DomoticsCore and the evaluation (steps 3 and 4).
+  that C++ project and the evaluation (steps 3 and 4).
 
 ### Several docs in one answer
 
@@ -43,7 +43,7 @@ not see backed (workline d43b3f2).
   it gives, with its quote found under that doc's sources or its name in
   the lines removed there. A right claim for HeapTracker's pitfall named
   no doc beside a second doc's patch, and the right fix was withheld
-  (DomoticsCore, step 4).
+  (a C++ project, step 4).
 - A claim that could stand for no doc, or for several, is read for none
   and reported (`claim-unattributed`); the place it was for is refused,
   saying a claim was given without `doc:`.
@@ -60,7 +60,7 @@ not see backed (workline d43b3f2).
 - Where the run replaces line for line, the words said around a count it
   brings to the engine's number: the count changed what the line says
   ("Watch the 800-line limit" became "Over the 800-line hard limit" beside
-  930 lines, DomoticsCore, step 4).
+  930 lines, a C++ project, step 4).
   - A fact of the line's own still needs one: another number, a version, a
     name (quoted as code, shaped as one, or capitalised past a sentence's
     start), a negation, a quantifier, a conjunction or a tense.

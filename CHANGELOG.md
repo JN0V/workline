@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.89.3](https://github.com/JN0V/workline/compare/v0.89.2...v0.89.3) (2026-11-24)
+
+
+### Bug Fixes
+
+* **scripts:** try-release labels, merge dispatch, exit codes ([#2139](https://github.com/JN0V/workline/issues/2139)) ([f4da197](https://github.com/JN0V/workline/commit/f4da197fdd45a4240bf18b198a38e92ccffa7955))
+* the nightly simulator fails on i1 and i2 ([#2134](https://github.com/JN0V/workline/issues/2134)) ([614ef6c](https://github.com/JN0V/workline/commit/614ef6cbe4e49df3dd118d96993c4b73ef13f48a))
+
+## [0.89.2](https://github.com/JN0V/workline/compare/v0.89.1...v0.89.2) (2026-11-24)
+
+
+### Bug Fixes
+
+* a blocked merge request still asks for a person's ([#2120](https://github.com/JN0V/workline/issues/2120)) ([ac4a9b3](https://github.com/JN0V/workline/commit/ac4a9b33cf9e9cf0568719855062f315de2a40dd))
+* **engine:** open-findings wait silent on a red or conflicting ([#2107](https://github.com/JN0V/workline/issues/2107)) ([b8a77c0](https://github.com/JN0V/workline/commit/b8a77c0ae9f313928adbd1b751d730c0652a19ba))
+* git failure reported as a pass ([#2110](https://github.com/JN0V/workline/issues/2110)) ([33daff2](https://github.com/JN0V/workline/commit/33daff28c430b286065f5397b9c3af3d9fb88b59))
+
 ## [0.89.1](https://github.com/JN0V/workline/compare/v0.89.0...v0.89.1) (2026-11-23)
 
 

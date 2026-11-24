@@ -14,7 +14,7 @@ sources:
   - roles/documentalist/code/condense.go#applyDoc
   - roles/documentalist/code/condense.go#pickSplit
   - roles/documentalist/code/condense.go#writeSplitTask
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — condensing and splitting a card

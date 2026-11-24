@@ -101,7 +101,7 @@ func notAskedAgain(t *testing.T, runDir, repo, base string, s Settings, patches 
 // is used.
 func TestJudgedSameBuildNewTesterRun(t *testing.T) {
 	repo, base, s, patches := brokenBuild(t)
-	runs := filepath.Join(repo, ".workline-runs")
+	runs := filepath.Join(repo, ".git", "workline", "runs")
 	first, second := filepath.Join(runs, "20260101T000000-tester"), filepath.Join(runs, "20260101T000100-tester")
 	judgedOnce(t, first, repo, base, s, patches)
 	notAskedAgain(t, second, repo, base, s, patches)
@@ -112,10 +112,26 @@ func TestJudgedSameBuildNewTesterRun(t *testing.T) {
 // again.
 func TestJudgedSameBuildNextTick(t *testing.T) {
 	repo, base, s, patches := brokenBuild(t)
-	runs := filepath.Join(repo, ".workline-runs")
+	// The engine's runs folder, the clone's git folder's (engine.RunsDir).
+	runs := filepath.Join(repo, ".git", "workline", "runs")
 	first, next := filepath.Join(runs, "20260101T000000-tester"), filepath.Join(runs, "20260102T000000-tester")
 	judgedOnce(t, first, repo, base, s, patches)
 	// The tick is over: its run folder is gone.
+	if err := os.RemoveAll(first); err != nil {
+		t.Fatal(err)
+	}
+	notAskedAgain(t, next, repo, base, s, patches)
+}
+
+// Same build, next tick, in CI: given the runs folder WORKLINE_RUNS_DIR
+// names, whatever its name, when the next tick runs the tester again on
+// the same judged broken build, then the judge is not asked again.
+func TestJudgedSameBuildNextTickRunsDir(t *testing.T) {
+	repo, base, s, patches := brokenBuild(t)
+	runs := filepath.Join(t.TempDir(), "artifact")
+	t.Setenv("WORKLINE_RUNS_DIR", runs)
+	first, next := filepath.Join(runs, "20260101T000000-tester"), filepath.Join(runs, "20260102T000000-tester")
+	judgedOnce(t, first, repo, base, s, patches)
 	if err := os.RemoveAll(first); err != nil {
 		t.Fatal(err)
 	}

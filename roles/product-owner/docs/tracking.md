@@ -1,7 +1,7 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/code, internal/backlog]
-checked: cf8d4d9f
-verified: human:JN0V
+checked: e81df7b34
+verified: agent:claude-code
 ---
 # Product owner — what each run tracks
 

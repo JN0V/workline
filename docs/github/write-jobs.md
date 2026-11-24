@@ -13,7 +13,7 @@ sources:
   - internal/forge/annotate.go#GatesCheck
   - internal/engine/annotate.go#Annotate
   - internal/forge/merge.go#github.mergeToken
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The GitHub jobs that write
@@ -31,6 +31,8 @@ the other jobs holding the write token.
   concluded: one the reviewer holds still gets its comment
   ([#226](https://github.com/JN0V/workline/issues/226)). Its job is in
   Actions, "workline apply"; the check is `propose`'s.
+- The tester's answer is applied to the Draft in this repository, never
+  to a fork's pull request that carries the same branch name.
 - `apply` posts the reviewer's findings on their lines, a pull request
   review (`pull-requests: write`); a token without it leaves them in the
   summary comment, said

@@ -12,7 +12,7 @@ sources:
   - roles/documentalist/code/documentalist.go#preRun.sayShallow
   - cmd/workline/main.go#prePushLine
   - defaults/ci/github/workline-gardening.yml#on
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist
@@ -96,21 +96,28 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `propagation` | code → `docs/tech/**` now; `docs/tech/**` → `docs/product/**` at gardening | which cascades wait |
 | `budgets` | doc 200 lines, section 400 words, card 80–400 words, folder 2000 lines, `AGENTS.md` 200 lines | sizes reported |
 | `freshness.stale-after-days` | `180` | a doc confirmed longer ago is read again |
-| `reader` | user pages `README.md`, `docs/**` but specs; from `README.md`; paragraph 80 words, cell 30; references `ADR-<n>`, `#<n>`; `agent-pages: 4` | which pages a reader uses, how much they read at once ([checks](docs/checks-docs.md#docs-for-their-reader)), what names a reference ([yours](docs/checks-docs.md#references-in-the-projects-naming)), and how many the agent reads a run ([more](docs/reader.md)) |
+| `reader` | user pages `README.md`, `docs/**` but specs; from `README.md`; paragraph 80 words, cell 30; references `ADR-<n>`, `#<n>`; `agent-pages: 4` | which pages a reader uses and how much they read at once ([checks](docs/checks-docs.md#docs-for-their-reader)), what names a reference ([yours](docs/checks-docs.md#references-in-the-projects-naming)), pages the agent reads a run ([more](docs/reader.md)) |
 | `duplicates` | `{min-words: 40, similarity: 0.85}` | repeated passages |
 | `derive` | `{}` | named commands filling `<!-- workline:derive name -->` blocks |
-| `examples` | `{check: ""}` | a command checking the code examples a fix writes; unset, they are said unverified ([code examples](docs/examples.md)) |
-| `documented` | `[]` | code globs every file of which a doc must describe |
+| `examples` | `{check: ""}` | a command checking the code examples a fix writes; unset: said unverified ([code examples](docs/examples.md)) |
+| `documented` | `[]` | code globs whose every file a doc must describe |
 | `history`, `decisions` | `[]` | records and decision records beyond those known by name |
 | `versions` | `{pattern: "", files: []}` | how the project writes a version, and where |
 | `language` | `""` (read from each doc) | `en` or `fr` |
+
+### Caps and parts
+
+Under the same key:
+
+| Key | Default | |
+|---|---|---|
 | `max-open-merge-requests` | `5` | gardening pauses while this many of its merge requests wait |
 | `ai-max-calls` | `10` | suspect docs per call |
-| `ai-max-tokens` | `400000` | tokens one run may spend, all calls together; `0`: no cap ([ADR-0064](../../docs/adr/0064-size-is-a-target-not-a-wall.md#5-the-hard-backstop)) |
+| `ai-max-tokens` | `400000` | tokens a run may spend, all calls together; `0`: no cap ([ADR-0064](../../docs/adr/0064-size-is-a-target-not-a-wall.md#5-the-hard-backstop)) |
 | `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
-| `judge-in-parts` | `true` | when gardening, judge a doc too large in parts ([ADR-0009](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)), and one a merge request judged on its change alone; a merge request leaves it for the next gardening; `false`: such docs go to a person |
-| `parts-max`, `parts-max-per-run` | `8`, `16` | parts a doc, parts a run: what bounds a night's tokens in parts |
-| `parts-move-checked` | `true` | a doc judged in parts, nothing found wrong, every line it states supported, gets its `checked` moved; `false`: it waits for a person ([more](docs/parts-fix.md#when-checked-moves-after-parts)) |
+| `judge-in-parts` | `true` | when gardening, judge in parts ([ADR-0009](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)) a doc too large, and one a merge request judged on its change alone (it leaves both for gardening); `false`: a person |
+| `parts-max`, `parts-max-per-run` | `8`, `16` | parts a doc, parts a run: bounds a night's tokens in parts |
+| `parts-move-checked` | `true` | a doc judged in parts, nothing wrong, every line it states supported, gets its `checked` moved, off a merge request's branch; `false`: it waits for a person ([more](docs/parts-fix.md#when-checked-moves-after-parts)) |
 | `sample` | unset | `{judge, at-least, after, ai-max-tokens, panel}` for `workline sample` ([ci.md](../../docs/ci.md#the-weekly-sample)) |
 
 ## Outputs
@@ -196,5 +203,5 @@ regenerates derived blocks.
   command.
 - [At the push and the adoption](docs/push.md).
 
-**Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), used on workline and DomoticsCore in CI;
+**Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), used on workline and on a C++ project in CI;
 [docs/status.md](docs/status.md); each try in its pull request ([before 2026-10-13](docs/tried.md)).

@@ -49,12 +49,12 @@ beside the verdict's, and posts once it answered.
   (`commits-per-push`), the rest at the next push; the verdict's run
   reads every one ([after ready](ready.md#after-ready-only-what-is-new)).
   A change to what its own pipeline runs leaves none
-  ([the record](run.md#3-the-record)).
+  ([the record](run-record.md#3-the-record)).
 - **A push whose turn is the other run's lens**: nobody asked in this
   run; the commits are recorded and the turn moves on, as in the other.
   A lens of this run whose block stands, the push changing code, is
   asked instead
-  ([a block stands](judge.md#a-block-stands-until-a-commit-answers-it)).
+  ([a block stands](verdict.md#a-block-stands-until-a-commit-answers-it)).
   A lens of this run that did not answer on them is asked instead: no
   run records what it owes
   ([#588](https://github.com/JN0V/workline/issues/588)). So is one that

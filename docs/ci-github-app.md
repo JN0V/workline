@@ -19,7 +19,7 @@ sources:
   - defaults/ci/github/workline-develop.yml#jobs.identity.environment
   - defaults/ci/github/workline-develop.yml#jobs.review-apply.environment
   - defaults/ci/github/workline-bounds.yml#jobs.bounds-apply.environment
-checked: 3f432ab14
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The GitHub App and its key
@@ -68,32 +68,7 @@ branch's workflow
    there. It reaches every branch's workflow
    ([`propose` warns](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#decision)).
 
-The same with `gh`, by an admin of the repository:
-
-```sh
-gh api -X PUT repos/OWNER/REPO/environments/workline-app \
-  -F 'deployment_branch_policy[protected_branches]=false' \
-  -F 'deployment_branch_policy[custom_branch_policies]=true'
-gh api -X POST repos/OWNER/REPO/environments/workline-app/deployment-branch-policies \
-  -f name=main -f type=branch
-gh secret set WORKLINE_APP_PRIVATE_KEY --env workline-app -R OWNER/REPO < app.pem
-gh secret delete WORKLINE_APP_PRIVATE_KEY -R OWNER/REPO    # the repository's own
-```
-
-- **Environments** need a public repository, or GitHub Pro, Team or
-  Enterprise for a private one. Without, the key stays a repository
-  secret, in reach of any branch's workflow, the merge policy's statuses
-  with it.
-- **The release tool's branch** (release-please's
-  `release-please--branches--main`), optional, to keep others off it:
-  Settings → Rules → New branch ruleset, target `release-please--*`,
-  "Restrict creations", "Restrict updates" and "Restrict deletions", the
-  App in the bypass list.
-- **Without an App**, the jobs use their own token: the checks of a fix
-  wait for someone to approve them, and gardening needs Settings →
-  Actions → General → "Allow GitHub Actions to create and approve pull
-  requests". The records are then read from `github-actions[bot]`'s
-  comments.
+The same with `gh`, and what to do without environments or without an App: [more ways](ci-github-app-more.md).
 
 ## Why an environment
 
@@ -108,7 +83,7 @@ gh secret delete WORKLINE_APP_PRIVATE_KEY -R OWNER/REPO    # the repository's ow
   is `refs/pull/<n>/merge`, never `main`.
 - **So only the default branch's workflow holds the key**:
   workline-apply.yml, after each pull request's run and on each push;
-  workline-merge.yml, on a label and hourly, a demotion or release
+  workline-merge.yml, on a label, hourly and by hand or by [the loop](tick.md), a demotion or release
   candidate's issue's too;
   gardening and the sample; the tester's answer, the developer's steps
   and rounds, its reconciler, its bounds. Each records a deployment to

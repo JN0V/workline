@@ -11,7 +11,7 @@ sources:
   - Dockerfile
   - docs/adr/0023-the-project-bot-keeps-a-gitlab-backlog.md#decision
   - docs/gitlab-trigger.md#what-premium-adds
-checked: 3bab32400
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Jobs' needs and outputs
@@ -53,5 +53,7 @@ requests from unprotected branches must apply.
 
 - **Exit codes**: what each command's code means, and what a CI job
   does with it ([exit codes](exit-codes.md)).
+- **A job that fails says why in its log**: the run's summary, as an
+  error annotation on GitHub, an `ERROR:` line on GitLab.
 - **Outputs**: stdout, reports, the job's summary, the runs, and what
   goes on the forge ([what a job gives back](job-outputs.md)).

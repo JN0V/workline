@@ -13,7 +13,7 @@ sources:
   - roles/documentalist/code/judge.go#gitApplied
   - internal/agent/prompt.go#Prompt
   - internal/engine/engine.go#leaveOut
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — hunks, and asking again
@@ -24,11 +24,11 @@ Part of [the check](judge.md).
 
 - **Not a diff git can apply**: the refusal says which line a hunk quotes
   wrong, a blank line skipped or one that is not there, where git says
-  only the hunk's line (DomoticsCore, step 4).
+  only the hunk's line (a C++ project, step 4).
 - **Mended first**, where its place is beyond doubt, the doc's own lines
   put back as its context. Sonnet skipped a blank line, and quoted a
   context line the doc has not, and the right fixes those hunks carried
-  were lost (DomoticsCore, step 4).
+  were lost (a C++ project, step 4).
   - A hunk whose context differs from the doc by blank lines alone is
     placed where its other lines are, when they fit the doc at one place
     only — a blank line let go in the context, never between two lines it
@@ -39,7 +39,7 @@ Part of [the check](judge.md).
 - ***Withheld*** when some hunks quote the doc right and the others cannot
   be mended: those are left out. With none quoting right, the agent is
   asked again — a misquote is a slip it mended at the second answer, 3 of
-  4 times on DomoticsCore.
+  4 times on a C++ project.
 - **Lines not at the numbers cited**: refused, since git apply alone would
   find them elsewhere and apply anyway. A hunk a few lines off (3 at most)
   whose quoted lines the doc holds only there is placed there: agents

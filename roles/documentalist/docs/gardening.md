@@ -12,7 +12,7 @@ sources:
   - roles/documentalist/code/mergecard.go#writeMergeCardTask
   - roles/documentalist/code/mergecard.go#judgeMergeCard
   - roles/documentalist/code/documentalist.go#preRun.askReader
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks

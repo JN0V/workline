@@ -9,13 +9,20 @@ import (
 // every open issue on the line has a status after each tick, and fails
 // the test for each script that leaves one with none.
 func statusUnder(t *testing.T, name string, scripts []string) {
+	holdsUnder(t, name, pI1, scripts)
+}
+
+// holdsUnder replays trace name under each script, checking only the
+// property prop after each tick, and fails the test for each script
+// that breaks it.
+func holdsUnder(t *testing.T, name, prop string, scripts []string) {
 	i := slices.IndexFunc(traces, func(tr trace) bool { return tr.name == name })
 	if i < 0 {
 		t.Fatalf("no trace named %s", name)
 	}
 	for _, s := range scripts {
 		t.Run(s, func(t *testing.T) {
-			f, log := runTrace(t, traces[i], parseScript(s), checks{only: []string{pI1}, until: 1 << 30})
+			f, log := runTrace(t, traces[i], parseScript(s), checks{only: []string{prop}, until: 1 << 30})
 			if f != nil {
 				t.Errorf("%s\nreplay: SIM_TRACE=%s SIM_SCRIPT=%q\n%s", f, name, s, log)
 			}
@@ -40,5 +47,16 @@ func TestRefineStatusAfterCodeNamedTwice(t *testing.T) {
 func TestRefineStatusAfterUnreadableTwice(t *testing.T) {
 	statusUnder(t, "trial-19", []string{
 		"progress,malformed,malformed",
+	})
+}
+
+// TestRefineStatusAfterCodeNamedTwiceFirstRead: Given an issue in refine
+// read for the first time, whose product owner answers needs-engine
+// twice, the second time naming only the code it was given, When the
+// next tick runs, Then the issue has a status, never none (#1875).
+func TestRefineStatusAfterCodeNamedTwiceFirstRead(t *testing.T) {
+	statusUnder(t, "workline-1002", []string{
+		"needs-engine,needs-engine",
+		"needs-engine,machine-error,needs-engine",
 	})
 }

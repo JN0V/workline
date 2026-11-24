@@ -142,6 +142,9 @@ type Config struct {
 	// Kinds: the project's labels per kind, the first that exists set by
 	// the kind act (`kinds`, ADR-0039 (c)); none for a kind, KindLabels'.
 	Kinds map[string][]string
+	// Untestable: the label of an issue the line cannot test, never moved
+	// to ready and never offered next; "" when unset.
+	Untestable string
 	// Sized: the issue the event names, 0 for none; SizeAsked, the line
 	// asked the role on its size (the input `size`). A split `too-big`
 	// holds on that issue alone, asked or in refine, its size predicted
@@ -263,6 +266,13 @@ func ReadConfig(settings map[string]any) (Config, error) {
 		return c, err
 	}
 	c.Kinds = KindNames(settings)
+	if v, ok := settings["untestable-label"]; ok && v != nil {
+		s, isText := v.(string)
+		if !isText {
+			return c, fmt.Errorf("untestable-label: %v is not a label name", v)
+		}
+		c.Untestable = strings.TrimSpace(s)
+	}
 	own, _ := settings[projectSet].(map[string]any)
 	ownActs, _ := own["acts"].(map[string]any)
 	for kind, v := range ownActs {

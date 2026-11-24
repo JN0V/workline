@@ -12,7 +12,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:propose
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # What a GitLab job shows
@@ -26,6 +26,9 @@ Part of [what the GitLab template does](template.md).
   job adds what it applied to the proposing job's. The HTML opens through
   GitLab Pages, on by default on gitlab.com; without Pages, the link
   downloads it.
+  - **A job that fails says why**: its log ends with a line
+    `ERROR: workline ended with status N: …` and the first 2000
+    characters of its summary.
   - **Kept as artifacts** a day, but:
     - a week: `workline:merge`, `workline:follow`, `workline:release`,
       `workline:release:dry-run:post`, `workline:main:issue`;

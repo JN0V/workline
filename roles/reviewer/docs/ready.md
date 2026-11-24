@@ -88,10 +88,10 @@ AI reads only what is new.
 - **The commits no review read yet**: the lens in turn reads those the
   record does not hold, by commit id or patch id. A rebase, or a merge of
   the base that settled nothing, reads nothing again
-  ([the record](run.md#3-the-record)).
+  ([the record](run-record.md#3-the-record)).
 - **A lens that did not answer reads them first**, whosever turn it is:
   no run records them before it does
-  ([the record](run.md#3-the-record)).
+  ([the record](run-record.md#3-the-record)).
 - **The lenses that warn: five new commits a push** (`commits-per-push`),
   those changing code counted, the oldest first.
   - The five read are recorded; the rest are left, said
@@ -107,13 +107,13 @@ AI reads only what is new.
   ready: what can hold the verdict is never left unread.
   - A push changing the file of a block that stands asks its lens,
     whosever turn it is
-    ([a block stands](judge.md#a-block-stands-until-a-commit-answers-it)).
+    ([a block stands](verdict.md#a-block-stands-until-a-commit-answers-it)).
 - **A finding judged once keeps its verdict**, the same finding on the
   same patch: its judge is not asked again, said
   ([judged once](once.md)).
 - **The head's verdict** still holds every block a review before found,
   while the head still has its cause
-  ([a block stands](judge.md#a-block-stands-until-a-commit-answers-it)).
+  ([a block stands](verdict.md#a-block-stands-until-a-commit-answers-it)).
 
 ## What tells it ready, on each forge
 

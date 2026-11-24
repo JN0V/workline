@@ -768,7 +768,13 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		if b, ok := f.(forge.Backlog); ok {
 			comments, _ = b.Comments(forge.Target{Kind: "issue", ID: st.write.Issue})
 		}
-		st.write.Record.Last = withLast(w.Last, st.role, &LastRun{State: w.State, Body: w.Body, Labels: w.Labels, Spec: w.Spec, Given: w.Given,
+		given := w.Given
+		if idle {
+			// Its sources, named in this run from the code it was given,
+			// are no news: read again, it gets that same code (#1875).
+			given = givenNow(comments)
+		}
+		st.write.Record.Last = withLast(w.Last, st.role, &LastRun{State: w.State, Body: w.Body, Labels: w.Labels, Spec: w.Spec, Given: given,
 			Talk: talkHash(comments), Said: said, Times: times, Idle: idle})
 	}
 	same := st.rec.State == w.State && st.rec.Body == w.Body && st.rec.Labeled == w.Labeled && sameLabels(st.rec, w) // the same input
@@ -810,6 +816,12 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 			// again after the back-off, within the budget (revisit).
 			st.write.Record.SizeOf = role
 		}
+		if said := o.Inputs[engine.NeedsInput]; said != "" {
+			// Its run, given the code it named, failed: given it still at
+			// its retry, never run again on the input it lacked it on
+			// (#1875).
+			st.write.Record.Needs = &Needs{Said: said, At: now.Format(time.RFC3339), Times: 1}
+		}
 	case needsCode(out) && given:
 		// Said lacking again once given it (ADR-0063, §5): Waiting on a
 		// person, Blocked on the board, in this step, said at once.
@@ -825,7 +837,10 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 	case st.role == backlog.Keeper && w.State == refineState:
 		// Its read of refine: read again on the same input after a block,
 		// it would get the same (#1157).
-		ranOn("", 0, status == verdict.Pass && w.State == refineState && leftAsFound(f, st.write.Issue, st.rec))
+		// Given the code it named in this step and drafting nothing, on a
+		// first read too: idle on the body it was woken on (#1875).
+		ranOn("", 0, status == verdict.Pass && w.State == refineState &&
+			(leftAsFound(f, st.write.Issue, st.rec) || given && leftAsFound(f, st.write.Issue, w)))
 	case w.Last[st.role].State == w.State:
 		// It had what it needed on its state's input: nothing lacked now.
 		st.write.Record.Last = withLast(w.Last, st.role, nil)

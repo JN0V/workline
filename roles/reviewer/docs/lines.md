@@ -56,7 +56,7 @@ flowchart LR
 ## What it asks
 
 - **What blocks** stands until a commit fixes it
-  ([more](judge.md#a-block-stands-until-a-commit-answers-it)).
+  ([more](verdict.md#a-block-stands-until-a-commit-answers-it)).
 - **What warns asks nothing**: no reply, no fix. The summary comment says
   so, and asks no answer of a comment on a line.
 - **A nit is on no line**: no conversation to resolve. The summary comment

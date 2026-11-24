@@ -7,7 +7,7 @@ sources:
   - defaults/ci/github/workline-apply.yml#on
   - defaults/ci/github/workline-apply.yml#jobs.apply.if
   - roles/inspector/code/inspector.go#prepare
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The inspector's triage in CI

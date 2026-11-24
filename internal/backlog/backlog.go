@@ -2523,6 +2523,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			// The line is building it: one state label, never a second.
 			return "developing", fmt.Sprintf("not moved to ready: #%d is developing", c.Issue)
 		}
+		if l := p.config.Untestable; l != "" && slices.Contains(is.Labels, l) {
+			return "not-ready", fmt.Sprintf("not moved to ready: #%d carries %s, the label of an issue the line cannot test; a person removes it to let it go on", c.Issue, l)
+		}
 		if missing := NotReady(is, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
 			// Drafts no person accepted, past the level's delay: taken as
 			// assumptions, the issue goes on (ADR-0060).
@@ -3129,6 +3132,22 @@ const (
 	// An open issue a person set aside: no role works on it (#1752).
 	LabelParked = "workline:parked"
 )
+
+// Hold gives each open issue carrying the label the parked label, on the
+// copy returned, so that the board leaves it out of what is built next
+// (`untestable-label`); the issues as they are when label is "".
+func Hold(open []forge.Issue, label string) []forge.Issue {
+	if label == "" {
+		return open
+	}
+	out := slices.Clone(open)
+	for i, is := range out {
+		if slices.Contains(is.Labels, label) && !Parked(is) {
+			out[i].Labels = append(slices.Clone(is.Labels), LabelParked)
+		}
+	}
+	return out
+}
 
 // Parked says whether a person set an open issue aside.
 func Parked(is forge.Issue) bool { return slices.Contains(is.Labels, LabelParked) }

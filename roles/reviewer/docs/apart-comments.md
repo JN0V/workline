@@ -19,7 +19,7 @@ Part of [the lenses that warn, apart from the verdict](apart.md).
 
 - **The summary comment** is the verdict's run's: what blocks, its
   record, the blocks standing
-  ([more](judge.md#a-block-stands-until-a-commit-answers-it)). It says the
+  ([more](verdict.md#a-block-stands-until-a-commit-answers-it)). It says the
   lenses that warn read apart.
 - **The comment of the lenses that warn**: their findings, questions and
   record, edited each run; their comments on lines in a review of their

@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/code/documentalist.go, roles/documentalist/code/identifiers.go, roles/documentalist/code/derive.go, roles/documentalist/code/freshness.go, roles/documentalist/code/counts.go, roles/documentalist/role.yaml]
-checked: 04d2af892
+checked: e81df7b34
 verified: agent:claude-code
 judged-in-parts: ca63666
 ---
@@ -38,6 +38,11 @@ rendering shows, or in a frontmatter the doc has.
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)).
   With none, the doc is suspect and read against its sources as they are
   now, never blocking.
+- **A `checked` set by a push or a merge request** must name a commit its
+  base holds: a squash merge drops the branch's commits, so any other
+  is refused (`checked-not-ancestor`, blocking) and the person names a
+  commit of the default branch
+  ([#2029](https://github.com/JN0V/workline/issues/2029)).
 - **A shallow clone**: the commit at its edge holds every file as if it
   brought them. When that is the only one bringing the name, the clone
   lacks the commit, and `shallow-clone` says so — the doc neither suspect
@@ -155,7 +160,7 @@ step 2): a count of lines next to a file the doc names among its sources
 - **No agent counts**, and only lines are counted: tests, fields and other
   counts go through a project's `derive`, never guessed.
 
-Why (step 4): on DomoticsCore, a C++ project the role runs on in CI
+Why (step 4): on a C++ project the role runs on in CI
 ([tried for real](tried.md)), "`OTA.cpp` line count (607)" went unreported,
 and its right fix was refused for want of a claim; an OTA table's total,
 unreported, was withdrawn by the agent for want of a claim.

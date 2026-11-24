@@ -185,7 +185,11 @@ func typedDue(res *Result, name string, s routing.State, is forge.Issue, rec Rec
 		now.Errors, now.Lost = errs, ""
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "state-retry", Level: "info", Where: where,
 			Message: fmt.Sprintf("the %s's last run on it failed (%s): run again, try %d of %d", name, errs.Kind, errs.By[errs.Kind], ErrorBudget)})
-		return true, now, map[string]string{engine.FailedInput: errs.Said}, nil, false
+		in := map[string]string{engine.FailedInput: errs.Said}
+		if rec.Needs != nil {
+			in[engine.NeedsInput] = rec.Needs.Said // the code its failed run was given (#1875)
+		}
+		return true, now, in, nil, false
 	}
 	if n := rec.Needs; n != nil {
 		if n.Times > 1 {

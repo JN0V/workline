@@ -15,7 +15,7 @@ sources:
   - roles/documentalist/code/values.go#versionLater
   - roles/documentalist/code/values.go#saidAsNowAt
   - roles/documentalist/code/values.go#tag
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — what the finding says

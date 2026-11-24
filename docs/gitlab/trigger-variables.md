@@ -32,7 +32,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:objection:propose.script
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:review:propose.script
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:propose.script
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 reader: 735aaf4c142e
 ---
@@ -66,7 +66,7 @@ none of them:
 | `WORKLINE_TASK` | `merge-request`, `garden`, `objection`, `develop`, `review`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the [merge policy](../merge-policy.md), when set), `main` (after a merge, `MAIN_BEFORE` its tip before: [main after a merge](../main-after-merge.md)), `import` |
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_TARGET_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch; the tool cancels the one still judging an older head first ([#359](https://github.com/JN0V/workline/issues/359)) |
 | `MR_READY`, `MR_DRAFT` | for `merge-request`: `MR_DRAFT`, `true` or `false`, each run, `true` asking no agent; `MR_READY` when it becomes ready (opened not a draft, or an `update` whose `changes.draft` went false), a pipeline the template never gets: every reviewer lens once ([how](../../roles/reviewer/docs/ready.md)) |
-| `MR_IID`, `MR_SOURCE_BRANCH` with `WORKLINE_TASK=objection` | the tester's Draft: a note opened by `workline:objection` on a merge request from `workline/tester/…` (the note webhook); the pipeline's `ref`, the default branch. The template's jobs `workline:objection:*` run it: `workline test answer --merge-request "$MR_IID"` ([tester](../../roles/tester/README.md#frozen-tests-and-objections)) |
+| `MR_IID`, `MR_SOURCE_BRANCH` with `WORKLINE_TASK=objection` | the tester's Draft: a note opened by `workline:objection` on a merge request from `workline/tester/…` (the note webhook); the pipeline's `ref`, the default branch. The template's jobs `workline:objection:*` run it: `workline test answer --merge-request "$MR_IID"` ([tester](../../roles/tester/docs/objections.md)) |
 | `WORKLINE_TASK=issue` | the issue webhook's pipeline: `workline:issue` reads `$TRIGGER_PAYLOAD` ([the line of states](line-of-states.md)) |
 | `WORKLINE_TASK=reconcile` | a pipeline schedule, hourly: `workline:reconcile` |
 | `ISSUE_IID` with `WORKLINE_TASK=develop` | the issue whose step is due, from `workline:issue` or `workline:reconcile`, or a tool; none: the first ready issue nobody took. The template's jobs `workline:develop:*` run `workline route issue --target issue:<n>`, the role its state wakes ([developer](../../roles/developer/docs/triggers.md)) |

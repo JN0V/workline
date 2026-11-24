@@ -11,7 +11,7 @@ sources:
   - defaults/ci/github/workline-develop.yml#jobs.reconcile
   - internal/engine/fromrun.go#onHead
   - internal/engine/fromrun.go#ResumeFrom
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 judged-in-parts: 786d304
 ---
@@ -19,7 +19,7 @@ judged-in-parts: 786d304
 
 What each job answering an objection holds, and why. An objection is a
 comment opened by `workline:objection` on the tester's Draft
-([tester](../roles/tester/README.md#frozen-tests-and-objections)).
+([tester](../roles/tester/docs/objections.md)).
 
 ```mermaid
 flowchart LR

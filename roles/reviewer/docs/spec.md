@@ -61,7 +61,7 @@ for code ([a run](run.md)), with lenses of its own.
   finding holding `decision`.
 - **No record** is kept: a spec is read whole each run. Nor a line per
   finding judged: the weekly sample draws a merge request's
-  ([the code's](judge.md#every-finding-judged-kept-for-the-weekly-sample)).
+  ([the code's](verdict.md#every-finding-judged-kept-for-the-weekly-sample)).
 
 ## On the forge
 

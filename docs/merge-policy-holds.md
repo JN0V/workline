@@ -3,7 +3,7 @@ sources:
   - internal/engine/merge.go#personsCommentOpen
   - internal/engine/merge.go#heldByConversations
   - internal/engine/merge.go#mergePolicy
-checked: 3f432ab14
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # What holds a pull request
@@ -17,12 +17,14 @@ request from merging, each found by `merge.go`.
   policy.
 - **Answered by a role's reply that names a test**.
 - **Answered by the yes of the person who wrote it**, put at or after
-  it. The trace written before a yes put in their name
+  it, each yes label counted on its own: swapping one for another keeps
+  the answer. The trace written before a yes put in their name
   ([ADR-0068 §7](adr/0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated))
   never holds that yes.
 - **A push does not reopen it**: the line takes the yes off on a push,
   and the new head waits for a new yes; the comment stays answered.
-  Taken off by the person themselves, the yes no longer answers it.
+  Taken off by the person themselves, or by an author the forge does
+  not say, the yes no longer answers it.
 - **A conversation on a line** is answered by that yes only when every
   person's comment in it is theirs, before it.
 

@@ -1,0 +1,33 @@
+case: product-owner/untestable-label-removed-then-ready
+about: >
+  Given the project sets `untestable-label` to `needs-hardware` and the
+  product owner held an issue carrying it out of ready (said in a finding),
+  When a person removes the label and the product owner next reads the
+  issue, Then it is moved to ready as any other: `workline:ready` is on it
+  afterwards. The person's edit also leaves the issue's state comment
+  without its last reading, so the issue is read again.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {untestable-label: needs-hardware}
+  forge:
+    issues:
+      - {id: 9, title: "Relay clicks twice", body: "Some rows are lost.\n\n## Need\n\nThe relay switches once per command.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [needs-hardware, workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run:
+  role: product-owner
+  event: schedule
+  ai: fake:ready-nine
+  then: again
+  between:
+    issues:
+      - id: 9
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+expect:
+  findings:
+    - {rule: not-ready, where: "#9", message: "needs-hardware"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready]}

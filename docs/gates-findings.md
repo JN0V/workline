@@ -13,7 +13,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:base
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main
   - tests/conformance/cases/gates/code-quality-fingerprint-kept-when-moved.yaml
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # What the gates' findings become

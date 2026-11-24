@@ -118,6 +118,19 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 				return nil, err
 			}
 		}
+		// A wait said at an earlier head asked for a person's yes: on a
+		// head the line blocks that is no way to merge, so it is edited
+		// in place, not left to say it (#1347).
+		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
+		stale := fmt.Sprintf("**Waiting**: this is %s, but the line blocks its head: it merges once the line passes on a new head, a person's yes neither.", d.Says())
+		for _, key := range []string{devmark.Unreviewed, devmark.Unreproduced, "findings", d.Kind} {
+			if key == "" {
+				continue
+			}
+			if err := f.Sticky(t, stale, forge.Marker("merge-waits="+key), false); err != nil {
+				return nil, err
+			}
+		}
 		w.say("verdict-red", "warn", fmt.Sprintf("%s, but %s: it merges once the line passes on a new head, a person's yes neither", d.Says(), v.why))
 		return nil, nil
 	}

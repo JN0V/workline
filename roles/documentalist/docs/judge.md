@@ -5,7 +5,7 @@ sources:
   - roles/documentalist/code/documentalist.go#suspectDoc
   - roles/documentalist/code/notes.go#doubtedDocs
   - roles/documentalist/code/notes.go#doubtSaid
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — the check
@@ -20,7 +20,7 @@ service it may consult. Words used here:
   without being vouched for; the doc stays suspect for a person;
 - **withheld**: one place of a fix refused while the rest is applied
   ([what holds is applied](judge-applied.md#what-holds-is-applied));
-- **DomoticsCore**: a C++ project the role runs on in CI, where many of
+- **the C++ project**: one the role ran on in CI, where many of
   these rules were found ([tried for real](tried.md));
 - **steps 2 to 4**: the steps of
   [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md),

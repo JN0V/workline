@@ -15,7 +15,7 @@ sources:
   - internal/engine/routine.go#underived
   - internal/forge/forge.go#Open
   - internal/agent/agent.go#Parse
-checked: 3bab32400
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Concepts

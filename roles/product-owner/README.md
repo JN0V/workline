@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/code, internal/backlog, internal/sample/acts.go, defaults/routing.yaml]
-checked: e4e4287bc
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Product owner
@@ -151,6 +151,7 @@ acts: [docs/settings.md](docs/settings.md).
 | `issues-per-run` | `8` | issues read a run |
 | `proposals-max` | `10` | issues waiting on you before the role slows down |
 | `undone-max` | `3` | acts of a kind undone before it is proposed everywhere |
+| `untestable-label` | unset | a label for issues the line cannot test (needing real hardware, say): one carrying it is never moved to ready, the run says why, and it is not offered next, though `workline:ready`; remove the label and it goes on as any other. Unset, nothing changes |
 
 ```yaml
 roles:

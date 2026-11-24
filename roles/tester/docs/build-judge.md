@@ -15,7 +15,7 @@ sources:
   - roles/tester/code/tester.go#runIn
   - roles/tester/role.yaml#settings.judge-read-rounds
   - roles/tester/role.yaml#settings.judge-read-lines-max
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The judge of a broken build
@@ -33,9 +33,10 @@ on the base is read by a judge
   change's test files; the compiler's lines and the output's end,
   clipped and masked, the checkout's folder taken off their paths; and,
   for each name the errors give, whether the base holds it.
-- **Asked once a run on the same facts**: the agent asked again writes
-  the same tests, broken the same way: the judge's first answer stands,
-  said on the finding. Other tests or other errors: it is asked again.
+- **Asked once on the same facts**: the agent asked again writes the
+  same tests, broken the same way, in the same run or a later one: the
+  judge's first answer stands, kept beside the project's runs, said on
+  the finding. Other tests or other errors: it is asked again.
 - **It may read the base first**: a file's lines, a definition, a word's
   places, served from git (`judge-read-rounds`, 2; `judge-read-lines-max`,
   400). Either at 0: it answers from the facts alone.

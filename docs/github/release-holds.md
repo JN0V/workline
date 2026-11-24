@@ -4,7 +4,7 @@ sources:
   - defaults/ci/github/workline.yml#jobs.propose.permissions
   - defaults/ci/github/workline.yml#jobs.propose.steps
   - defaults/ci/github/workline-gardening.yml#jobs.dry-run.permissions
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # What holds a release on GitHub
@@ -22,6 +22,9 @@ Part of [what holds a release](../release-holds.md#read-again).
     each one in its `workflow_run`, the tests' too. A run that started
     after main's push, waited for its checks and ended green is left as
     it is.
+- **A refused call stops it**: when GitHub does not answer for a run,
+  the job fails with the call and its status as an error; it does not
+  read the run as done.
 - **Its token**: `propose` reads with its own token: `issues`, `checks`,
   `statuses` and `actions` read, as
   [workline.yml](../../defaults/ci/github/workline.yml) gives; the

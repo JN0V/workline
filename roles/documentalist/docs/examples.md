@@ -7,7 +7,7 @@ verified: agent:claude-code
 
 Part of [the check](judge.md). The removal rule reads the words a fix
 takes out; no word says whether a code example compiles, or runs right.
-On DomoticsCore, a fix rewrote an example that compiled and was wrong at
+On a C++ project, a fix rewrote an example that compiled and was wrong at
 run time; its pull request said "fixed in 8 places", the example among
 them ([#121](https://github.com/JN0V/workline/issues/121)).
 
