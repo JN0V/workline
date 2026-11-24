@@ -123,7 +123,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		// in place, not left to say it (#1347).
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
 		stale := fmt.Sprintf("**Waiting**: this is %s, but the line blocks its head: it merges once the line passes on a new head, a person's yes neither.", d.Says())
-		for _, key := range []string{devmark.Unreviewed, devmark.Unreproduced, d.Kind} {
+		for _, key := range []string{devmark.Unreviewed, devmark.Unreproduced, "findings", d.Kind} {
 			if key == "" {
 				continue
 			}
