@@ -1,18 +1,16 @@
 ---
 sources:
-  - internal/doctor/doctor.go#Run
-  - internal/doctor/doctor.go#machine
-  - internal/doctor/doctor.go#repository
-  - internal/doctor/doctor.go#hooksPath
-  - internal/doctor/conversations.go#findingsOnMergeRequests
-  - internal/doctor/variables.go#tokensScoped
+  - internal/doctor/doctor.go
+  - internal/doctor/prompt_overrides.go#flatPrompts
+  - internal/doctor/languages.go#languages
   - internal/hooks/hooks.go#HandsOver
-  - internal/forge/local.go#InCI
-  - internal/forge/local.go#Local.writable
+  - internal/linters/files.go#notVendored
+  - roles/committer/code/secrets.go#Secrets
+  - internal/gate/gate.go#Load
   - cmd/workline/main.go#doctorCmd
   - cmd/workline/main.go#doctorPrint
   - cmd/workline/cli.go#misuse
-checked: e81df7b34
+checked: 542fc9cb6
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -83,31 +81,44 @@ tokens — and `--json` prints every finding.
 
 ## Docs suspect, gardening paused
 
-`docs suspect: N` at the push, `record-unread`,
-`shallow-clone`, `gardening-paused`, `merge-request-unread`: what each
-means and what to do, in [the docs' troubleshooting](troubleshooting-docs.md).
+`docs suspect: N` at the push, a record or a merge request not read, a
+shallow clone, gardening paused: what each means and what to do, in
+[the docs' troubleshooting](troubleshooting-docs.md).
 
 ## The product owner paused, or does nothing
 
-`proposals-waiting`, `issues-cut`, an issue that gets nothing or never
-goes ready, a hidden record that does not read: in
+Too many proposals waiting, a night's share cut, an issue that gets
+nothing or never goes ready, a hidden record that does not read: in
 [the product owner's troubleshooting](troubleshooting-product-owner.md).
 
 ## Token caps and the agent
 
-`ai-max-tokens`, `ai-max-calls`, `input-cut`, `size-crossed`,
-`backstop-crossed`, `blocked-external`, `agent-unavailable` and the other
-findings about caps and the agent: in
+A run that spent its tokens or calls, an input cut, a size or a
+backstop crossed, an agent that cannot be called, and the other findings
+about caps and the agent: in
 [token caps and the agent](troubleshooting-limits.md).
 
 ## Forge writes refused
 
 `forge: none`, `forge: cmd:`, `forge: local` in CI, GitLab tokens,
-`findings-not-annotated`, `gates-not-shown`: in
+findings or gates the forge does not show: in
 [forge writes refused](troubleshooting-forge.md).
 
 ## An issue does not move, a pull request blocked, nothing merges
 
-`state-wakes-none`, `state-waits`, `hops-capped`, conversations to resolve,
-`waits-for-a-yes`, `merge-app-unknown` and the rest: in
-[the line and the merge](troubleshooting-merge.md).
+A state that wakes no role or waits, a line that stops after its hops,
+conversations to resolve, a merge waiting for a yes or not knowing the
+App, and the rest: in [the line and the merge](troubleshooting-merge.md);
+the states themselves: [the line of states](spec/routing.md#the-line-of-states).
+
+## Where this page reads from
+
+- **What doctor checks and says**: `internal/doctor/doctor.go`, the
+  prompts moved in `prompt_overrides.go`, the languages in
+  `languages.go`.
+- **When a hook hands over**: `internal/hooks/hooks.go`.
+- **Vendored and generated code**: `internal/linters/files.go`.
+- **Secrets not checked**: `roles/committer/code/secrets.go`.
+- **A gate not declared**: `internal/gate/gate.go`.
+- **The commands and their exit codes**: `cmd/workline/main.go` and
+  `cmd/workline/cli.go`.
