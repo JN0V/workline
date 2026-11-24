@@ -47,14 +47,14 @@ func TestTheBinaryShipsNoRoleCodeNorDocs(t *testing.T) {
 }
 
 // shipped says whether a file of a role's folder is one a run reads:
-// its role.yaml, pre and post, and all under prompts/ and kinds/.
+// its role.yaml, and all under prompts/ and kinds/.
 func shipped(rel string) bool {
 	parts := strings.Split(rel, "/")
 	if len(parts) < 2 {
 		return false
 	}
 	switch parts[1] {
-	case "role.yaml", "pre", "post":
+	case "role.yaml":
 		return len(parts) == 2
 	case "prompts", "kinds":
 		return len(parts) > 2

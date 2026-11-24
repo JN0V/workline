@@ -1,3 +1,0 @@
-#!/bin/sh
-# Judge: always a pass, the gates' verdict the line's; the record kept.
-exec "${WORKLINE_BIN:-workline}" builtin inspector post

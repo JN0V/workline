@@ -1,9 +1,9 @@
 case: engine/builtin-code-runs-without-a-pre-or-post-file
-about: "The committer's folder with its pre and post files deleted still runs the committer's own checks: the engine finds the role's built-in code itself, so a message with an internal code is blocked, not passed by the shared pre and post."
+about: "The committer's shipped folder holds no pre nor post file (ADR-0070 §6, move a): the engine finds the role's built-in code itself, so a message with an internal code is blocked, not passed by the shared pre and post."
 given:
   repo: basic
   setup:
-    - mkdir -p ../roles-bare && cp -r "$FIXTURES/../../../roles/committer" ../roles-bare/committer && rm ../roles-bare/committer/pre ../roles-bare/committer/post
+    - mkdir -p ../roles-bare && cp -r "$FIXTURES/../../../roles/committer" ../roles-bare/committer && test ! -e ../roles-bare/committer/pre && test ! -e ../roles-bare/committer/post
 run: {cli: [run-role, committer, --event, commit-msg, --repo, ., --roles, ../roles-bare, --input, "message=fix: migrate from f207", --ai, none, --json]}
 expect:
   exit: 1

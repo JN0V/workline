@@ -1,0 +1,12 @@
+case: engine/builtin-code-a-file-beside-it-is-not-run
+about: "A pre and a post file put beside a shipped role's built-in code are not run (ADR-0070 §1): both would pass any message; the committer's own checks run instead, and block a message with an internal code."
+given:
+  repo: basic
+  setup:
+    - mkdir -p ../roles-stray && cp -r "$FIXTURES/../../../roles/committer" ../roles-stray/committer
+    - "printf '#!/bin/sh\\nmkdir -p \"$WORKLINE_RUN_DIR/out\" && printf \"status: pass\\\\n\" > \"$WORKLINE_RUN_DIR/out/verdict.yaml\"\\n' > ../roles-stray/committer/pre && cp ../roles-stray/committer/pre ../roles-stray/committer/post && chmod +x ../roles-stray/committer/pre ../roles-stray/committer/post"
+run: {cli: [run-role, committer, --event, commit-msg, --repo, ., --roles, ../roles-stray, --input, "message=fix: migrate from f207", --ai, none, --json]}
+expect:
+  exit: 1
+  stdout:
+    - "possible-internal-code"

@@ -1,5 +1,6 @@
-// Package rolefs extracts the built-in roles to a cache folder, because their
-// pre and post scripts must exist as executable files to be run.
+// Package rolefs extracts the built-in roles to a cache folder, so a run
+// reads their role.yaml, prompts and criteria as files, as it reads a
+// project's roles (--roles).
 package rolefs
 
 import (
@@ -7,7 +8,6 @@ import (
 	"encoding/hex"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/JN0V/workline"
@@ -63,11 +63,7 @@ func Dir() (string, error) {
 		if err != nil {
 			return err
 		}
-		mode := os.FileMode(0o644)
-		if name := path.Base(p); name == "pre" || name == "post" {
-			mode = 0o755
-		}
-		return os.WriteFile(target, data, mode)
+		return os.WriteFile(target, data, 0o644)
 	})
 	if err != nil {
 		os.RemoveAll(tmp)

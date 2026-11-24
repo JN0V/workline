@@ -1,3 +1,0 @@
-#!/bin/sh
-# Prepare: check the message; ask the agent only if it fails.
-exec "${WORKLINE_BIN:-workline}" builtin committer pre

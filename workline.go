@@ -5,11 +5,12 @@ package workline
 import "embed"
 
 // Roles holds what each role ships, named one by one (docs/spec/layout.md,
-// "A role folder"): its role.yaml, prompts/ and kinds/, and its pre and
-// post. Never its code/, docs/, README.md nor cases: the binary carries no
-// file it does not read (ADR-0070, move c).
+// "A role folder"): its role.yaml, prompts/ and kinds/. Never its code/,
+// docs/, README.md nor cases: the binary carries no file it does not read
+// (ADR-0070, move c). A shipped role has no pre nor post file: the engine
+// runs its built-in code, else the shared step (move a).
 //
-//go:embed roles/*/role.yaml all:roles/*/prompts roles/*/kinds roles/*/pre roles/*/post
+//go:embed roles/*/role.yaml all:roles/*/prompts roles/*/kinds
 var Roles embed.FS
 
 // Skills holds the shared skills, skills/<name>/SKILL.md in the Agent

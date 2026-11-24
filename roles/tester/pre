@@ -1,3 +1,0 @@
-#!/bin/sh
-# Prepare: the ready issue's named scenarios, its Scope's code, the tests beside it.
-exec "${WORKLINE_BIN:-workline}" builtin tester pre
