@@ -474,6 +474,9 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return external(err)
 	}
+	// An issue carrying the product owner's untestable label is held like a
+	// parked one, ready or not: the line builds nothing it cannot test.
+	issues = backlog.Hold(issues, untestableLabel(repo))
 	id, passed := pick(issues, mrs, s, only, line.Runs("tester"), letGo, proofs, repoFiles(repo), Changed(repo, forge.KeepsBranches(f)))
 	for _, p := range passed {
 		findings = append(findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
@@ -1242,4 +1245,15 @@ func writeBlockedProtected(runDir, repo string, a devmark.Act, s Settings, told 
 		return code
 	}
 	return writeVerdict(runDir, v)
+}
+
+// untestableLabel is the product owner's `untestable-label` in the project's
+// settings; "" when unset.
+func untestableLabel(repo string) string {
+	cfg, err := role.LoadProjectConfig(repo)
+	if err != nil {
+		return ""
+	}
+	l, _ := cfg.Roles["product-owner"].Settings["untestable-label"].(string)
+	return strings.TrimSpace(l)
 }
