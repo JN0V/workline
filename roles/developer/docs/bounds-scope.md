@@ -32,7 +32,7 @@ beyond it: applied and listed, never refused
 - the tests beside them, new or not: a test file in a Scope file's
   folder or under a Scope folder (`mul_test.go` beside `mul.go`). A
   test file is one the project's
-  [one definition](../../tester/README.md#settings) names: the tester's
+  [one definition](../../tester/docs/settings.md) names: the tester's
   `test-paths`, else the listed [packs'](../../../docs/packs.md) with
   the built-in generic patterns, else those alone
   ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#3-one-definition-of-a-test-file)).

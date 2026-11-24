@@ -21,7 +21,7 @@ stdout keeps the result alone.
 ## workline test
 
 `workline test check --base <ref>` is the tester's red-first check, with
-no agent ([tester](../roles/tester/README.md#check-a-change)); it returns 0 or 1, or 2 when a red is unproven and waits for a person:
+no agent ([tester](../roles/tester/docs/check.md)); it returns 0 or 1, or 2 when a red is unproven and waits for a person:
 
 - **The new tests**: those the head's JUnit report holds and the
   base's does not, the test command run in a checkout apart for each.
@@ -32,7 +32,7 @@ no agent ([tester](../roles/tester/README.md#check-a-change)); it returns 0 or 1
 
 `workline test write --issue <n>` has the tester write a ready issue's
 tests, one a scenario, through the agent
-([tester](../roles/tester/README.md#write-an-issues-tests)):
+([tester](../roles/tester/docs/write.md)):
 
 - **`--ai`**: none, `claude`, `cmd:<any command>`; with none, nothing is
   written, and it says so.
@@ -44,7 +44,7 @@ tests, one a scenario, through the agent
 
 `workline test answer --merge-request <n>` has the tester answer the
 first objection waiting on its Draft
-([tester](../roles/tester/README.md#frozen-tests-and-objections)):
+([tester](../roles/tester/docs/objections.md)):
 
 - **Kept** or **rewritten**, in the objection's thread; a rewrite is its
   own commit on the branch, red on the base, pushed without force.

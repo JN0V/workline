@@ -9,7 +9,7 @@ sources:
   - internal/engine/engine.go#unmoved
   - internal/backlog/backlog.go#Readied
   - internal/kit/verdict/outcome.go#machineKinds
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # When the tests are written

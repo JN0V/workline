@@ -15,7 +15,7 @@ sources:
   - roles/tester/code/tester.go#runIn
   - roles/tester/role.yaml#settings.judge-read-rounds
   - roles/tester/role.yaml#settings.judge-read-lines-max
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The judge of a broken build

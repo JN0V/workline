@@ -283,7 +283,7 @@ Cases in `tests/conformance/cases/tester/`:
   ([#1342](https://github.com/JN0V/workline/pull/1342)).
 - **Settings** `test-command`, `test-report`, `test-paths`,
   `code-lines-max`, `objection-exchanges`
-  ([README](../README.md#settings)).
+  ([README](settings.md)).
 
 ## Missing
 

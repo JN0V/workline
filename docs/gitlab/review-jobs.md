@@ -44,4 +44,4 @@ Part of [what the GitLab template does](template.md).
   base again: `workline:base` reads them from the artifacts of the
   default branch's `workline:develop:propose` and of the merge request's
   own `workline:propose`, never from GitLab's cache, which every branch
-  shares ([the green proof](../../roles/tester/docs/green-proof.md#what-it-runs)).
+  shares ([the green proof](../../roles/tester/docs/green-proof-runs.md#the-base-once)).

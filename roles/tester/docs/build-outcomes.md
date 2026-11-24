@@ -8,7 +8,7 @@ sources:
   - roles/tester/code/objection.go#record.rewritten
   - roles/tester/code/objection.go#unprovenSaid
   - roles/developer/code/pullrequest.go#body
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # What follows a broken build's proof

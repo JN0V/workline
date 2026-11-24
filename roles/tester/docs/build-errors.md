@@ -12,7 +12,7 @@ sources:
   - roles/tester/role.yaml#settings.build-errors
   - roles/tester/code/write.go#lintTests
   - roles/tester/code/write.go#missingNamed
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The build-errors setting

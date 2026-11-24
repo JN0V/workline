@@ -14,7 +14,7 @@ sources:
   - roles/tester/code/green.go#greenRuns
   - roles/tester/code/green.go#judge
   - internal/engine/done.go
-checked: c46a93d6c
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # The hand-over: what whoever builds finds
@@ -59,7 +59,7 @@ flowchart LR
   `workline:tester-record`. It holds the issue, the base, each test
   file with its git blob, the test ids the red proof found new, and
   the scenarios as read. Only the tester's runs write it. The green
-  proof requires each id on the code ([how](green-proof.md#what-it-runs)).
+  proof requires each id on the code ([how](green-proof-tests.md)).
 
 ## Before the builder
 
@@ -87,7 +87,7 @@ flowchart LR
   bounds keep a frozen file whole, even one the tester only added to.
 - **Objects** to a test that does not fit, on the test's line in the
   Draft, not in its own pull request
-  ([the form](../README.md#frozen-tests-and-objections)); the tester
+  ([the form](objections.md)); the tester
   keeps it or rewrites it, on top of the branch. The developer's next
   round takes the rewrite ([tests in a round](../../developer/docs/review-tests.md)).
 - **Closes**: once the tests are green, the description says
@@ -97,8 +97,9 @@ flowchart LR
   at `normal`, a reproduced bug's fix alone, a feature or a task once a
   person says yes ([the merge](../../developer/docs/merge.md)).
 - **Green on the head**: once marked ready, each new test passes on
-  the head, run again when red; red once is flaky and blocks
-  (`test-flaky`, [the proof](green-proof.md)).
+  the head, run again when red; red in one run only is flaky
+  (`test-flaky`), red in both is `test-red-on-head`, and both block
+  ([the proof](green-proof.md)).
 - **Once merged**: the next push to the base runs `workline follow`, no
   agent. It closes the Draft of the closed issue, its comment naming the
   pull request that closed it (`draft-closed`), and takes the states'

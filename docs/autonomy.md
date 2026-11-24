@@ -82,7 +82,7 @@ before a person:
 
 - **Tester**: its tests reach the default branch through a pull
   request, which the merge's level governs; an objection is settled
-  [as its page says](../roles/tester/README.md#frozen-tests-and-objections).
+  [as its page says](../roles/tester/docs/objections.md).
 - **Reviewer**: it judges, it decides nothing; whether its findings
   block is `ai-findings`, set by measures, not by trust.
 - **Committer, documentalist, inspector**: rules and budgets; nothing

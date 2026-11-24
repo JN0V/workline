@@ -69,7 +69,7 @@ roles:
 - **`issue`**: an issue's state label wakes its role
   ([the line of states](spec/routing.md#the-line-of-states)).
 - **`test-command`**: any runner that writes a JUnit XML report
-  ([the tester's settings](../roles/tester/README.md#settings)).
+  ([the tester's settings](../roles/tester/docs/settings.md)).
 - **`autonomy`**: how far the roles go alone ([autonomy](autonomy.md)).
 - **`merge`**: what merges with no yes of yours
   ([the merge policy](merge-policy.md)). Left out, you merge.

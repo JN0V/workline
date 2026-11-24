@@ -19,7 +19,7 @@ judged-in-parts: 786d304
 
 What each job answering an objection holds, and why. An objection is a
 comment opened by `workline:objection` on the tester's Draft
-([tester](../roles/tester/README.md#frozen-tests-and-objections)).
+([tester](../roles/tester/docs/objections.md)).
 
 ```mermaid
 flowchart LR
