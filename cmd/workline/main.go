@@ -965,6 +965,10 @@ func docsCmd(args []string) int {
 		if errors.As(err, &gf) {
 			return fail(1, "git-failed", err.Error())
 		}
+		var rf *reviewFailedError
+		if errors.As(err, &rf) {
+			return fail(1, "review-failed", err.Error())
+		}
 		return fail(1, "config-invalid", err.Error())
 	}
 	if judged {
@@ -1168,7 +1172,7 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) (bool, err
 	}
 	if _, err := review.Docs(root, docs, in, out, review.Open); err != nil {
 		_, _ = fmt.Fprintln(out, "workline:", err)
-		return false, nil
+		return false, &reviewFailedError{err}
 	}
 	left, err := changedDocs(root)
 	if err != nil {
@@ -1177,6 +1181,12 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) (bool, err
 	}
 	return res.Status == verdict.Pass && waiting == 0 && len(left) == 0, nil
 }
+
+// reviewFailedError is a failed review of the docs: they were not judged.
+type reviewFailedError struct{ err error }
+
+func (e *reviewFailedError) Error() string { return "review of the docs failed: " + e.err.Error() }
+func (e *reviewFailedError) Unwrap() error { return e.err }
 
 // gitFailedError is a failed git listing: the docs were not checked.
 type gitFailedError struct{ err error }
