@@ -36,20 +36,21 @@ Once the Draft is proven, the engine moves the issue on, no agent asked
   `merge-request`, only what they add counted, and
   [the reviewer's rules](../../reviewer/README.md) when it is routed
   there: a test once frozen is no longer the tester's to edit
-  ([#1040](https://github.com/JN0V/workline/issues/1040)). A finding there is the
-  agent's to mend: it is asked once more, each finding named by its file
-  and line
-  ([#964](https://github.com/JN0V/workline/issues/964)). Still there,
-  the run blocks (`tests-lint`): no Draft, the finding said on it, and
-  the line runs the tester again on the issue, told the findings, as
-  for any [machine error](../../../docs/spec/routing.md#once-a-state-the-record)
-  (a bounded number of tries), before the issue
-  is blocked for a person, the last finding named
-  ([#1738](https://github.com/JN0V/workline/issues/1738)). A gate that
-  cannot run at all (`tests-lint-gate-not-run`) blocks at once: no new
-  run mends it. A lint's error repeating the build's own
-  error the test is red by ([how](build-errors.md#the-lint)) is not
-  counted.
+  ([#1040](https://github.com/JN0V/workline/issues/1040)).
+  - A finding there is the agent's to mend: it is asked once more, each
+    finding named by its file and line
+    ([#964](https://github.com/JN0V/workline/issues/964)).
+  - Still there, the run blocks (`tests-lint`): no Draft, the finding
+    said on it.
+  - The line runs the tester again on the issue, told the findings, as
+    for any [machine error](../../../docs/spec/routing.md#once-a-state-the-record)
+    (a bounded number of tries), before the issue is blocked for a
+    person, the last finding named
+    ([#1738](https://github.com/JN0V/workline/issues/1738)).
+  - A gate that cannot run at all (`tests-lint-gate-not-run`) blocks at
+    once: no new run mends it.
+  - A lint's error repeating the build's own error the test is red by
+    ([how](build-errors.md#the-lint)) is not counted.
 - **Then ready**: `workline:ready` on, the other states' labels off,
   said in the tester's comment on the issue (`state-moved`). An issue
   already ready keeps its labels.

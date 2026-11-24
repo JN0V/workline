@@ -27,15 +27,18 @@ What the documentalist says when docs wait, and what to do. Part of
 ## Docs suspect
 
 `docs suspect: N` at the push counts the docs whose `sources` the pushed
-commits changed: a file the doc names, or a line holding a name it
-writes in backticks or a value it states; any line for a doc writing no
-name in backticks
-([ADR-0014, amended](adr/0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-21-suspect-only-when-a-line-it-names-changes));
-it never asks and never blocks. They are judged on the
-merge request, by gardening, or when you run `workline docs`. To clear one
-by hand: read it against its sources, fix it, and set its `checked` to the
-commit you read them at. A doc that names no `sources` is never suspect:
-`workline init` proposes them.
+commits changed; it never asks and never blocks
+([ADR-0014, amended](adr/0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-21-suspect-only-when-a-line-it-names-changes)).
+A doc counts when the change touches:
+
+- a file the doc names;
+- a line holding a name it writes in backticks or a value it states;
+- any line, for a doc writing no name in backticks.
+
+They are judged on the merge request, by gardening, or when you run
+`workline docs`. To clear one by hand: read it against its sources, fix
+it, and set its `checked` to the commit you read them at. A doc that
+names no `sources` is never suspect: `workline init` proposes them.
 
 `record-unread` (a warning): the documentalist's comment keeping the
 records of docs found with nothing to fix, or of the merge requests

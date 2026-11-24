@@ -43,11 +43,14 @@ build ([research](../../../docs/research/code-navigation.md)), up to
 
 **A code comment is not the spec**: where the judge is shown the issue's
 text, it is told that the issue and a person's answer in it outrank a
-comment in the code. A comment calling a behaviour intended does not drop
-a finding against the issue's spec; it drops one only when no spec
-contradicts it, the issue being silent on the behaviour. For a cause
-not quoted from the issue, the judge is shown the issue for this; never
-the tests judge, nor a spec's judge.
+comment in the code.
+
+- A comment calling a behaviour intended does not drop a finding against
+  the issue's spec.
+- It drops one only when no spec contradicts it, the issue being silent
+  on the behaviour.
+- For a cause not quoted from the issue, the judge is shown the issue
+  for this; never the tests judge, nor a spec's judge.
 
 ### Its question
 

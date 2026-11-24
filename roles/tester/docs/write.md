@@ -39,16 +39,18 @@ workline test write --issue 42 --ai claude
 ## What the agent reads
 
 - **What the agent reads**: the scenarios, the Need, a person's
-  Verification and the reviewer's findings on it, the Scope, the code the issue names, found by [the code
-  picker](../../../docs/spec/code-picker.md) (the Scope's files, a folder's
-  own, a pattern's matches; each definition of a name its title, Need or
-  Scope writes as code; a long file by those pieces), the tests beside
-  them, the test command. Long lines over the context budget: fewer
-  lines given; still over, the issue says so and names `context.budget`,
-  and goes to Blocked, where the product owner reads it at once to narrow
-  its Scope ([routing](../../../docs/spec/routing.md#the-line-of-states)).
-  What was cut is said in the run
-  (`input-cut`), with the setting that raises it.
+  Verification and the reviewer's findings on it, the Scope, the code
+  the issue names, the tests beside them, the test command.
+  - The code is found by [the code
+    picker](../../../docs/spec/code-picker.md): the Scope's files, a
+    folder's own, a pattern's matches; each definition of a name its
+    title, Need or Scope writes as code; a long file by those pieces.
+  - Long lines over the context budget: fewer lines given; still over,
+    the issue says so and names `context.budget`, and goes to Blocked,
+    where the product owner reads it at once to narrow its Scope
+    ([routing](../../../docs/spec/routing.md#the-line-of-states)).
+  - What was cut is said in the run (`input-cut`), with the setting that
+    raises it.
 - **With `claude`, it reads the project too**: a copy at the issue's
   base, read-only (Read, Glob, Grep; no shell), the picker's code its
   start; it finds the test helpers itself, and a helper it could not
@@ -61,15 +63,17 @@ workline test write --issue 42 --ai claude
 ## The tests it writes
 
 - **One test a scenario, declared**: the agent says which test covers
-  which scenario, a `covers` entry each, the test's id as the report
-  names it, a parametrised test by its name for all its rows; one test
-  may cover several. Each id must be one of the new
-  tests red on the base, or, the build broken with no report, a test a
-  new file declares, or that file alone where no `test-name` names its
-  tests ([#1293](https://github.com/JN0V/workline/issues/1293)); nothing is read from a test's name. A scenario no
-  test can check gets a reason instead, listed in the Draft as not
-  tested, for a builder to object to
-  ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#4-the-agent-says-which-test-covers-which-scenario)).
+  which scenario, a `covers` entry each; one test may cover several.
+  - The id is the test's as the report names it; a parametrised test by
+    its name for all its rows.
+  - Each id must be one of the new tests red on the base, or, the build
+    broken with no report, a test a new file declares, or that file
+    alone where no `test-name` names its tests
+    ([#1293](https://github.com/JN0V/workline/issues/1293)); nothing is
+    read from a test's name.
+  - A scenario no test can check gets a reason instead, listed in the
+    Draft as not tested, for a builder to object to
+    ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#4-the-agent-says-which-test-covers-which-scenario)).
 - **Where the project keeps its tests**: what `test-paths` names, never
   the code. A new file, or one already there, as the agent judges: to
   that one it only adds lines, none changed nor removed.

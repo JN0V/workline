@@ -52,14 +52,13 @@ beside the verdict's, and posts once it answered.
   ([the record](run-record.md#3-the-record)).
 - **A push whose turn is the other run's lens**: nobody asked in this
   run; the commits are recorded and the turn moves on, as in the other.
-  A lens of this run whose block stands, the push changing code, is
-  asked instead
-  ([a block stands](verdict.md#a-block-stands-until-a-commit-answers-it)).
-  A lens of this run that did not answer on them is asked instead: no
-  run records what it owes
-  ([#588](https://github.com/JN0V/workline/issues/588)). So is one that
-  left commits past five a push: no run records what it left
-  ([#591](https://github.com/JN0V/workline/issues/591)).
+  A lens of this run is asked instead when:
+  - its block stands, the push changing code
+    ([a block stands](verdict.md#a-block-stands-until-a-commit-answers-it));
+  - it did not answer on them: no run records what it owes
+    ([#588](https://github.com/JN0V/workline/issues/588));
+  - it left commits past five a push: no run records what it left
+    ([#591](https://github.com/JN0V/workline/issues/591)).
 - **The rules** (`internal-code`
   [and the others](run.md#12-the-range-the-rules)) block on the verdict's
   run. While they block, the run apart asks no lens either, and says
