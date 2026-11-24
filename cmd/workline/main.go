@@ -1167,12 +1167,12 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) (bool, err
 		return false, nil
 	}
 	if _, err := review.Docs(root, docs, in, out, review.Open); err != nil {
-		fmt.Fprintln(out, "workline:", err)
+		_, _ = fmt.Fprintln(out, "workline:", err)
 		return false, nil
 	}
 	left, err := changedDocs(root)
 	if err != nil {
-		fmt.Fprintln(out, "workline:", err)
+		_, _ = fmt.Fprintln(out, "workline:", err)
 		return false, &gitFailedError{err}
 	}
 	return res.Status == verdict.Pass && waiting == 0 && len(left) == 0, nil
