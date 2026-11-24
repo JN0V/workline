@@ -9,7 +9,7 @@ sources:
   - roles/reviewer/code/reviewer.go#summaryValue
   - roles/inspector/code/record.go#comment
   - internal/engine/review.go#applier.mergedRecord
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 judged: e8a46f7
 judged-in-parts: b3b9aad

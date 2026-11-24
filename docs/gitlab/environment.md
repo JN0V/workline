@@ -16,7 +16,7 @@ sources:
   - internal/doctor/variables.go#matchScope
   - internal/forge/gitlab_variables.go#VariableScopes
   - internal/forge/gitlab_variables.go#gitlab.VariableScopes
-checked: 1d45ec45d
+checked: e81df7b34
 verified: agent:claude-code
 judged-in-parts: eb16524
 -->
@@ -45,7 +45,7 @@ can read them, even after `unset`, from its parent's start environment.
   Premium.
   - `WORKLINE_GITLAB_TOKEN` and the agent's (`CLAUDE_CODE_OAUTH_TOKEN`);
   - when set: `GITLAB_TOKEN`, `WORKLINE_GITLAB_READ_TOKEN`,
-    `WORKLINE_SIGNING_KEY`.
+    `ANTHROPIC_API_KEY`, `WORKLINE_SIGNING_KEY`.
 - **This release's template**: its jobs that hold a token declare
   `environment: {name: workline, action: prepare}`. An older copy
   declares none: scoped, its jobs would get no token.
@@ -60,7 +60,8 @@ can read them, even after `unset`, from its parent's start environment.
   `workline:main`, `workline:release`, `workline:curator`. GitLab gives them no scoped
   variable. They still unset the agent's and the bot's tokens first,
   for one left to every environment. `workline:gates`, `workline:main`,
-  `workline:release:dry-run` and `workline:curator` unset all three:
+  `workline:release`, `workline:release:dry-run` and `workline:curator`
+  unset all three:
   `CLAUDE_CODE_OAUTH_TOKEN`, `WORKLINE_GITLAB_TOKEN` and `GITLAB_TOKEN`,
   so the release's dry run runs your gates with no token.
 - **The stored base** ([main after a merge](main-after-merge.md))

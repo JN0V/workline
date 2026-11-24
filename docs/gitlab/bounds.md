@@ -10,7 +10,7 @@ sources:
   - internal/steer/codeowners.go#ParseCodeowners
   - internal/steer/codeowners.go#Codeowners.owns
   - roles/developer/code/prbounds.go#BoundsKey
-checked: 3bab32400
+checked: e81df7b34
 judged: eb16524
 verified: agent:claude-code
 ---
@@ -96,7 +96,8 @@ Then Settings → Repository → Protected branches → `main`: *Code owner
 approval* on. A merge request that changes them waits for an owner. The
 doctor checks both, `.gitlab-ci.yml` and each `local:` file it includes:
 a section's default owners count, an optional section (`^[…]`) does
-not; an exclusion (`!`) it cannot read, so it warns.
+not; a `#` comment after a rule is no owner; an exclusion (`!`) it
+cannot read, so it warns.
 
 ### Free: the review
 

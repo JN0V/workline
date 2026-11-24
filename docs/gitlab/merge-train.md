@@ -7,7 +7,7 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn:child.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:merge
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # A merge train on GitLab

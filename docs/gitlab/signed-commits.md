@@ -17,7 +17,7 @@ sources:
   - internal/engine/candidate.go#releaseAs
   - internal/engine/candidate.go#cherryPick
   - Dockerfile
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 -->
 # Signed commits on GitLab

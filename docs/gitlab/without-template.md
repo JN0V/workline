@@ -23,7 +23,7 @@ sources:
   - cmd/workline/main.go#exitFor
   - cmd/workline/main.go#runRole
   - cmd/workline/main.go#importIssues
-checked: 3f432ab14
+checked: e81df7b34
 verified: agent:claude-code
 judged: bf016b7
 ---

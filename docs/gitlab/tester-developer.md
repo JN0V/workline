@@ -13,7 +13,7 @@ sources:
   - roles/tester/role.yaml#events
   - roles/developer/role.yaml#events
   - Dockerfile
-checked: e2e165c2d
+checked: e81df7b34
 verified: agent:claude-code
 judged: e8a46f7
 judged-in-parts: 9a88170
@@ -60,7 +60,7 @@ Routed `issue: [tester, developer]`
   gardening jobs run it. Install your test runner in their image.
 - **Its environment**: redefine `.workline:setup` in your
   `.gitlab-ci.yml`, its script your test job's setup commands; its
-  judges run it before the agent and the proof
+  propose jobs run it before the agent and the proof
   ([the project's environment](../../roles/developer/docs/triggers.md#the-projects-environment)).
 - **An issue ready**: [the line of states](#the-line-of-states) wakes it
   ([the triggers](../../roles/developer/docs/triggers.md)).
