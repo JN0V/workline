@@ -75,6 +75,11 @@ each finding that blocked, its cause quoted, beside the commits reviewed
 - **The tester answers that no test is needed**: a judge weighs the
   reason, even with no new commit; the block goes if it holds
   ([weighed](tester-answers.md)).
+- **The repository finder's block** (`repository`): it takes no lens's
+  turn. It stands while its cause is found; the finder reads again at
+  each newer head of its side, even with no lens asked, and the block
+  goes when it finds it no more. Unsure twice, a judge keeps or drops
+  it ([the finder](finder.md)).
 - **Its lens set back to `warn`** (`ai-findings`): it goes.
 - **Resolving its comment on the line does not lift it**: a person who
   disagrees merges where the forge lets them, or sets its lens to `warn`.

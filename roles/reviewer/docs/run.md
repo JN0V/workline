@@ -96,7 +96,8 @@ lenses that only warn read apart, in a comment of their own ([apart](apart.md)).
 
 ### The repository finder
 
-Once nothing else holds the merge request, one call reads the whole
+Set to (`repo-finder`, off by default), once nothing else holds the
+merge request, one finder reads the whole
 repository at the head, blind to the lenses, once a merge request:
 [the finder](finder.md).
 

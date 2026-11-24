@@ -18,7 +18,7 @@ Part of [the reviewer](../README.md). Under `roles: {reviewer: {settings: …}}`
 | `pipeline-paths` | none | what else the merge request's own pipeline runs, besides `.github/`, `.gitlab-ci.yml` and `.workline/`, as `[ci/, scripts/ci/]`: a change to it skips no commit on the record ([more](run-record.md#3-the-record)) |
 | `lenses-together` | `true` | the lenses of a run in one call; `false`: a call each |
 | `diff-alone` | `false` | `true`: one more call, given the change only |
-| `repo-finder` | `true` | on a merge request nothing else holds, one call reads the whole repository, once; `false`: never ([the finder](finder.md)) |
+| `repo-finder` | `false` | `true`: on a merge request nothing else holds, one finder reads the whole repository, once ([the finder](finder.md)) |
 
 ## Specs, and comments
 

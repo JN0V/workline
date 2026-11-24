@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml#settings, roles/reviewer/prompts/lenses/repository.md, roles/reviewer/code/finder.go, roles/reviewer/code/reads.go, internal/engine/engine.go]
-checked: 1221daba6
+checked: 42930dc81
 verified: agent:claude-code
 ---
 # Reviewer — the repository finder
@@ -47,16 +47,25 @@ them, once, when nothing else holds the merge request.
 
 ## When, and how often
 
+- **Off by default** (`repo-finder: false`): on in workline's own line,
+  warning, to measure it first. Replayed on three defects found past
+  the change on DomoticsCore, it caught none
+  ([ADR-0073](../../../docs/adr/0073-one-finder-reads-the-whole-repository-once.md#measure)).
 - **On a merge request**, once every lens of the run answered and no
   other finding blocks; never on a draft, nor on a machine.
+- **Alone** when the run asks no lens (nothing new to read, no code
+  changed, no lens of its side): due, it is asked all the same.
 - **A split review**: in the verdict's run when it blocks, in the run
   apart when it warns ([apart](apart.md)).
 - **Once a merge request**: the record keeps the head it read
   (`<!-- workline:finder … -->`). Asked again only while its own block
   stands at a newer head; found no more, the block goes.
+- **Unsure, or not run**: the try is recorded (`tries=1`), its block
+  stands, and the next run asks it once more. A second time, it is not
+  asked again; its own block, if any, goes to a judge, which keeps or
+  drops it.
 - **The summary says** what it came to, that it waits for nothing else
-  to hold the merge, or that it did not run or could not tell: then the
-  next run asks it, and its block stands meanwhile.
-- **Cost**: one call, up to two more for its reads, one judge for a
-  finding; within `ai-max-tokens`.
-- **Off**: `repo-finder: false`.
+  to hold the merge, and what its material left out past a cap
+  (`diff-lines-max`, the first 400 file names), as a warning.
+- **Cost**: measured 2 to 3 calls, 35k to 70k tokens in a run, one judge
+  more for a finding; within `ai-max-tokens`.

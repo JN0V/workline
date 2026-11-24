@@ -198,7 +198,9 @@ its measure in
   `repository-finder-reads-past-the-change-and-holds`,
   `repository-finder-waits-while-a-lens-blocks`,
   `repository-finder-asked-once-a-merge-request`,
-  `repository-finder-unsure-leaves-its-block`.
+  `repository-finder-unsure-leaves-its-block`,
+  `repository-finder-unsure-twice-its-block-judged`,
+  `repository-finder-asked-alone-on-the-verdicts-run`; off by default.
 - **Warn until measured, `ai-findings` by lens, caps**:
   `new-ai-rules-warn`, `ai-findings-*`, `findings-capped-rest-counted`,
   `agent-unreachable-is-blocked-external`.
