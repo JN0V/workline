@@ -290,6 +290,8 @@ be (below).
 tests/evaluation/
   cases/<role>/<case>.yaml   one real situation each
   judge-replay/<item>/       the judge's 40 measured questions, as asked then
+  replay/<role>/<case>.yaml  real misses on real repositories, replayed
+                             (conformance/replay.md)
   results.tsv                every run's score, appended: the history kept
   schedule/                  run.sh and systemd units: a run every week
   testdata/                  fake agents proving the cases grade as they should
@@ -355,6 +357,9 @@ turns; a case that lost a point logs its closing words
 
 Real shapes, both sides graded, the reviewer's measure and the judge's
 replay are told in full in [Evaluation — four measures](conformance/evaluation.md).
+The replay set, real misses on DomoticsCore and TraceGlass played again
+(`given.clone`, `TestReplay`), and how to run one role's set, is in
+[Replay set](conformance/replay.md).
 
 **Pass rates, not the best.** A measure is read over at least five runs per
 model, as the share of runs earning every point, never from the best run.
