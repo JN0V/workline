@@ -35,8 +35,7 @@ func closingWords(runDir, answer string, kinds []string) ([]byte, []string) {
 	for i, block := range append([]string{s}, yamlBlocks(s)...) { // whole first
 		p, m, err := proposalsFrom(block, kinds...)
 		var items []map[string]any
-		plain := i == 0 && yaml.Unmarshal([]byte(block), &items) == nil // the whole a list as it came
-		if err != nil || yaml.Unmarshal(p, &items) != nil || !plain && !known(p) {
+		if err != nil || yaml.Unmarshal(p, &items) != nil || !known(p) && (i > 0 || yaml.Unmarshal([]byte(block), &[]map[string]any{}) != nil) {
 			continue // prose or a fence left out, and nothing the role writes: a note, kept whole
 		} else if i == 0 {
 			return p, m
