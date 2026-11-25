@@ -101,18 +101,27 @@ func blockedEvent(r *Report, o Options) {
 		one.Dir = o.Repo
 		b, err := one.Output()
 		var full actionsPolicy
-		if err == nil && json.Unmarshal(b, &full) == nil && (full.Conditions != nil || len(full.Rules) > 0) {
-			if full.ID == 0 {
-				full.ID = p.ID
-			}
-			if full.Name == "" {
-				full.Name = p.Name
-			}
-			if full.Enforcement == "" {
-				full.Enforcement = p.Enforcement
-			}
-			policies[i] = full
+		if err == nil {
+			err = json.Unmarshal(b, &full)
 		}
+		if err != nil || (full.Conditions == nil && len(full.Rules) == 0) {
+			// An unread policy may allow the event: judging the bare
+			// listing would raise a false warning.
+			r.add(Check{Area: "repository", Rule: "event-policy-unread", Where: where, Level: Note,
+				Message: where + " runs on pull_request_target, which GitHub blocks by default in public repositories from December 2, 2026; the Actions policy " + fmt.Sprintf("%q", p.Name) + " could not be read",
+				Fix:     "allow pull_request_target for these workflow files in Settings → Actions → Policies (" + eventPolicyDoc + ")"})
+			return
+		}
+		if full.ID == 0 {
+			full.ID = p.ID
+		}
+		if full.Name == "" {
+			full.Name = p.Name
+		}
+		if full.Enforcement == "" {
+			full.Enforcement = p.Enforcement
+		}
+		policies[i] = full
 	}
 	judgeEventPolicies(r, policies, files, users)
 }
