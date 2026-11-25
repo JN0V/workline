@@ -3346,8 +3346,8 @@ func (a *applier) apply(in intent.Intention) error {
 		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests, "workline:developing"})
 	case "unblock":
 		// Out of Blocked, alone (ADR-0059, amended): to the state it came
-		// from or to refine, every other state's label off, its card
-		// moved; why, and how to undo it, the role's one comment says.
+		// from or to refine, every other state's label off; why, and how
+		// to undo it, the role's one comment says.
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
 			return nil
