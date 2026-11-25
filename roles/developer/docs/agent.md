@@ -116,7 +116,9 @@ It answers with its edits; its diff is its code
   no list: each part left, or that only a person may do, and why.
 - **Closing words that do not read never cost the code**: it is still
   bounded, proven and pushed, ready or a Draft by the proof alone.
-  - A YAML list among prose is read alone, said (`answer-mended`).
+  - A YAML list among prose is read alone, said (`answer-mended`),
+    when an item is of a kind the role writes: a `Not done:` note
+    written as a list is kept whole, below.
   - Nothing reads, or prose closed by `[]`: the words go as they came
     on the pull request, under "Its agent's words, unread", said
     (`agent-words-unread`), so a `Not done:` note or an objection

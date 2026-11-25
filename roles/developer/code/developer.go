@@ -644,8 +644,7 @@ func claimLabel(a devmark.Act, s Settings) intent.Intention {
 // worktree (ADR-0056).
 func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) string {
 	return question(is, b, test, testErr, s) +
-		"Its diff is your code. Done is the issue's " + work.Name(work.Validation) + " done, each scenario true of your code: tests green are not enough. When done, your last message is `[]` alone: no label, no comment, the claim is the engine's. " +
-		"A part left undone, or that only a person may do: your last message is instead one paragraph, no list, opening on `Not done:`: each part and why.\n"
+		"Its diff is your code. Done is the issue's " + work.Name(work.Validation) + " done, each scenario true of your code: tests green are not enough. When done, your last message is `[]` alone: no label, no comment, the claim is the engine's. A part left undone, or that only a person may do: your last message is instead one paragraph, no list, opening on `Not done:`: each part and why.\n"
 }
 
 // testsBeside tells the agent the tests that are beside the Scope, by
