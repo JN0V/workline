@@ -12,9 +12,10 @@ sources:
   - roles/documentalist/code/split.go#normal
   - roles/documentalist/code/split.go#editedInPlace
   - roles/documentalist/code/split.go#bornHeader
+  - roles/documentalist/code/hygiene.go#Budgets
   - roles/documentalist/code/split.go#relinked
   - roles/documentalist/code/split.go#applyDoc
-checked: d2f2a7183
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — splitting a doc over its budget
@@ -24,7 +25,7 @@ Part of [the gardening tasks](gardening.md).
 ## Splitting
 
 A doc over its budget (a doc too long first, then an agent's entry
-point, a section, a card): split it into linked pages, as a person would.
+point, a section): split it into linked pages, as a person would.
 
 - Whole parts — a section, a list, a table — move, as written, into new
   pages beside it, named after it (`run.md`, `run-people.md`); a sentence
@@ -34,7 +35,8 @@ point, a section, a card): split it into linked pages, as a person would.
 - A new page carries the doc's header: its `checked` as it is, the lines
   moved being the lines it vouched for, and those of its `sources` the
   page speaks of.
-- A card splits into cards, one concept each ([below](#splitting-a-card)).
+- A new page holds at least `page-words` words (80): a smaller part is a
+  fragment, and stays with its neighbour.
 - One doc a run: in the same round when it asks nothing else; else in a
   round of its own once the others are done, before the
   [reader's](reader.md) (`in/then`, `budget`). Suspect docs do not
@@ -70,6 +72,7 @@ The judge refuses a split patch when:
 - a new page's `checked` is not the doc's (`checked-unread`), or it names
   a source the doc does not, or none when the doc names some
   (`sources-not-carried`);
+- a new page holds fewer than `page-words` words (`page-too-small`);
 - a MUST or SHOULD is lost;
 - a new page is not linked from the doc (`not-linked`);
 - the budget problem it was for remains (`still-over-budget`);
@@ -82,19 +85,9 @@ The judge refuses a split patch when:
   grown by the new pages' headers and links, or links to other sites
   moved with their lines, are not new problems.
 
-A split, merge-card or dedupe hunk quoting a doc wrong is placed as for a
+A split or dedupe hunk quoting a doc wrong is placed as for a
 suspect doc ([hunks](judge-hunks.md#hunks-that-misquote-the-doc)); one
 whose place is in doubt is refused.
 
-A split, merge-card or dedupe patch moving an existing doc's `checked` is
+A split or dedupe patch moving an existing doc's `checked` is
 refused (`checked-unread`): moving text gives none of its sources.
-
-## Splitting a card
-
-A card too long holds more than one concept: it keeps its first, and each
-other one moves, as written, into a card of its own that it links to.
-
-- The judge checks what a split checks, and that each new doc is a card.
-- Then a judge model is asked whether each card holds one concept, the
-  one its title names. A no goes back to the agent with its reason
-  ([asked again](judge-hunks.md#asked-again)).

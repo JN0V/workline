@@ -60,7 +60,7 @@ A patch is refused, and the agent asked again with the reasons, when it:
 
 Places marked *withheld*, here and in [hunks](judge-hunks.md), are not
 refused with the whole answer: the rest of the fix is applied without
-them. Split, merge-card and dedupe tasks are judged by their own
+them. Split and dedupe tasks are judged by their own
 rules ([gardening](gardening-split.md#splitting)), the reader task by
 [its own](reader.md#what-the-engine-checks).
 

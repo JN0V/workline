@@ -8,9 +8,6 @@ sources:
   - roles/documentalist/code/documentalist.go#preRun.askRewrite
   - roles/documentalist/code/dedupe.go#pickDedupe
   - roles/documentalist/code/dedupe.go#judgeDedupe
-  - roles/documentalist/code/mergecard.go#pickMergeCard
-  - roles/documentalist/code/mergecard.go#writeMergeCardTask
-  - roles/documentalist/code/mergecard.go#judgeMergeCard
   - roles/documentalist/code/documentalist.go#preRun.askReader
 checked: e81df7b34
 verified: agent:claude-code
@@ -23,7 +20,7 @@ reach a person. Each task says when it comes. Part of
 [the documentalist](../README.md).
 
 - [Splitting](gardening-split.md): a doc over its budget, split into
-  linked pages; a card too long, into cards.
+  linked pages.
 - [Its merge requests](gardening-merge-requests.md): the records kept on
   merged merge requests, one merge request per task, and when the base
   moves.
@@ -56,18 +53,6 @@ It comes before splitting: two copies drift apart. The judge checks that:
 - no reader problem is added (`patch-introduces`).
 
 Then comes [splitting a doc over its budget](gardening-split.md).
-
-## Merging cards
-
-Last, with nothing else to do, a card too short to stand alone goes into
-the card it belongs with, chosen by the agent among the others, those of
-its folder first: its text added as it is, under a heading, the card
-deleted, and every link to it pointed there. The judge checks that:
-
-- the text is found in one card, which loses nothing;
-- the docs linking to it change those links only;
-- no link is left dangling;
-- no reader problem is added (`patch-introduces`).
 
 ## Pages read for their reader
 

@@ -1,6 +1,6 @@
 # ADR-0003: The documentalist's hygiene checks live in the engine
 
-- **Status:** accepted
+- **Status:** accepted; amended 2026-11-25 (no cards)
 - **Date:** 2026-09-24
 
 ## Context
@@ -42,3 +42,14 @@ the count and silently drops the rest — in one run, the fix itself.
   optional: when missing, the verdict says which check did not run.
 - A wrong hunk count no longer loses lines; a wrong line number is still
   refused, because it means the agent did not read the doc it quotes.
+
+## Amendment (2026-11-25): no cards
+
+The owner's decision: the `type: card` notion goes, which nothing
+created (none on the three repositories in production).
+
+- Card sizes are no longer checked, and no task merges a card too short.
+- Fragmentation is caught where it is made: a page a split creates holds
+  at least `budgets.page-words` words (80); a smaller part stays with its
+  neighbour, the split refused (`page-too-small`). A split on DomoticsCore
+  once made a 14-line page.
