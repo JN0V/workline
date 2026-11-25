@@ -143,8 +143,9 @@ Cases in `tests/conformance/cases/tester/`:
 - **Real answers replayed** from the DomoticsCore trial's round 5, with
   the covers entries they predate: one test declared for two scenarios
   counts for both
-  ([#1147](https://github.com/JN0V/workline/issues/1147)); prose before
-  the list, or a `file:` beside a patch, no longer refuses the answer
+  ([#1147](https://github.com/JN0V/workline/issues/1147)); a `file:`
+  beside a patch no longer refuses the answer; prose before the list is
+  refused, asked again, never cut off
   ([#1148](https://github.com/JN0V/workline/issues/1148)); a new test the
   project's runner skips is said, its filter named, to the next run too
   ([#1149](https://github.com/JN0V/workline/issues/1149)).

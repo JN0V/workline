@@ -2,10 +2,10 @@ case: tester/replay-trial-55-prose-before-list
 about: >
   Replay of a real answer, the DomoticsCore trial's #55 (round 5, the
   tester's second try, asked again): it opens on a line of prose, "I'm
-  writing the answer now…", then the list. It was refused whole, "yaml:
-  line 3: mapping values are not allowed" (#1148). Now the prose is left
-  out, said, and the list read: its tests are proven red on the first
-  call.
+  writing the answer now…", then the list. Text before the list may be
+  a proposal written with no `- ` (a patch, left out as prose on a
+  DomoticsCore issue), so it is never cut: the answer is refused, the
+  agent asked again with the reader's error, and its next answer read.
 given:
   repo: dc-trial
   setup:
@@ -75,13 +75,12 @@ given:
           ## Assumptions
 
           - Assumption taken on 2026-11-06, the Validation draft unanswered after 5 min: written as the role drafted it, for a person to correct.
-run: {test: [write, --issue, "55"], ai: "cmd:sh $FIXTURES/agents/replay.sh dc55-tester-try2-answer2.txt"}
+run: {test: [write, --issue, "55"], ai: "cmd:sh $FIXTURES/agents/replay.sh dc55-tester-try2-answer2.txt agent-invalid-output dc55-tester-try2-answer1.txt"}
 expect:
   status: pass
-  summary: "3 new tests, red on the base"
-  agent-calls: 1
-  findings: [{rule: answer-mended, level: warn, message: "prose before the list (I'm writing the answer now."}]
-  no-findings: [{rule: agent-invalid-output}, {rule: no-test-written}]
+  summary: "2 new tests, red on the base"
+  agent-calls: 2
+  no-findings: [{rule: answer-mended, message: "prose before the list"}, {rule: no-test-written}]
   forge:
     merge-requests:
       - {id: 1, branch: workline/tester/issue-55, draft: true}

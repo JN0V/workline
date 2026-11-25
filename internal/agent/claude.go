@@ -527,24 +527,18 @@ func proposalsFrom(answer string, kinds ...string) ([]byte, []string, error) {
 		if first >= 0 && last > first {
 			s, mended = Mend(strings.TrimSpace(strings.Join(lines[first+1:last], "\n")))
 			list = nil
+			outside := slices.ContainsFunc(append(slices.Clone(lines[:first]), lines[last+1:]...), func(l string) bool {
+				l = strings.TrimPrefix(strings.TrimSpace(l), "- ")
+				return slices.ContainsFunc(kinds, func(k string) bool { return strings.HasPrefix(l, k+":") })
+			})
 			if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
 				if err != nil {
 					why = err.Error()
 				}
+			} else if outside { // never dropped: every proposal goes in the one list
+				why = "a proposal outside the fenced list; give every proposal in the one list"
 			} else {
 				read = true
-			}
-		}
-		// Prose before the list, a line saying what comes (#1148): the
-		// list read from its first item, the prose left out and said.
-		if !read && first < 0 {
-			if prose, rest, ok := proseFirst(lines); ok {
-				s, mended = Mend(rest)
-				list = nil
-				if err := yaml.Unmarshal([]byte(s), &list); err == nil && len(list) > 0 {
-					read = true
-					mended = append([]string{fmt.Sprintf("prose before the list (%s): left out, the list read from its first item", Clip(prose, 120))}, mended...)
-				}
 			}
 		}
 		if !read {
@@ -579,19 +573,6 @@ func proposalsFrom(answer string, kinds ...string) ([]byte, []string, error) {
 		return out, mended, nil
 	}
 	return []byte(s + "\n"), mended, nil
-}
-
-// proseFirst cuts an answer at its first line opening a list item, `- `
-// at the start of the line: the prose before it, and the rest. false
-// when no prose comes first, or no item follows.
-func proseFirst(lines []string) (string, string, bool) {
-	for i, l := range lines {
-		if strings.HasPrefix(l, "- ") || l == "-" {
-			prose := strings.Join(strings.Fields(strings.Join(lines[:i], " ")), " ")
-			return prose, strings.Join(lines[i:], "\n"), prose != ""
-		}
-	}
-	return "", "", false
 }
 
 // Clip is a text cut to n runes, "…" said where it was cut.
