@@ -67,8 +67,13 @@ branch="workline-$version"
 canned_titles=(
   "An outline of 65536 by 65536 pixels with no pixels crashes instead of being refused"
   "A matrix of 8 numbers crashes the composition with an index error"
+  "A focal length of 0 gives a paper aspect ratio that is not a number"
+  "A snapshot saved with a negative number is counted but never listed"
+  "A scale factor of 0 makes the overlay vanish for good"
+  "A viewport zoom that is not a number sticks for good"
+  "A restored session keeps a pan its zoom does not allow"
 )
-canned_kinds=(bug bug)
+canned_kinds=(bug bug bug bug bug bug bug)
 canned_body() {
   case $1 in
     0) cat <<'EOF'
@@ -119,6 +124,142 @@ Example: `MatrixUtils.multiply(FloatArray(8), MatrixUtils.identity())` throws `A
 ## Scope
 
 `core/overlay/src/main/kotlin/io/github/jn0v/traceglass/core/overlay/MatrixUtils.kt`: a size check at the start of `multiply` only; `compose` goes through it.
+EOF
+    ;;
+    2) cat <<'EOF'
+A person whose focal length is estimated at 0 gets a paper aspect ratio that is not a number, where a focal length that is not positive is meant to be refused as degenerate (null), as the constrained homography already does.
+
+Example: with `rect` the 210 by 297 rectangle `(0,0) (210,0) (210,297) (0,297)` and `moved` the same rectangle moved by (100, 50), `HomographySolver.correctAspectRatio(rect, moved, 0f, 540f, 960f)` returns `NaN`. With a focal length of 800, the same call returns 0.7070707. `solveConstrainedHomography` returns null for a focal length of 0.
+
+## Validation
+
+- **Scenario: a focal length of 0 is refused**
+  - Given a 210 by 297 rectangle and the same rectangle moved by (100, 50)
+  - When the aspect ratio is corrected with a focal length of 0
+  - Then the result is null
+- **Scenario: a negative focal length is refused**
+  - Given the same two rectangles
+  - When the aspect ratio is corrected with a focal length of -800
+  - Then the result is null
+- **Scenario: a real focal length still corrects**
+  - Given the same two rectangles
+  - When the aspect ratio is corrected with a focal length of 800
+  - Then the result is 210 / 297, within 0.01
+
+---
+
+## Scope
+
+`core/overlay/src/main/kotlin/io/github/jn0v/traceglass/core/overlay/HomographySolver.kt`: a guard at the start of `correctAspectRatio` only, returning null for a focal length that is not positive and finite.
+EOF
+    ;;
+    3) cat <<'EOF'
+A time-lapse whose snapshot is saved with a negative number counts a frame its video never gets: the file is written and counted, but never listed.
+
+Example: on an empty storage, `FileSnapshotStorage.getSnapshotCount()` returns 0. `saveSnapshot(byteArrayOf(1), -1)` writes `snapshot_-001.jpg`; then `getSnapshotCount()` returns 1 while `getSnapshotFiles()` lists 0 files, as the name does not match the snapshot pattern.
+
+## Validation
+
+- **Scenario: a negative number is refused**
+  - Given an empty snapshot storage
+  - When a snapshot is saved with the number -1
+  - Then it is refused with an `IllegalArgumentException` naming -1
+  - And no file is written, and the count stays 0
+- **Scenario: a snapshot numbered 0 is still saved**
+  - Given an empty snapshot storage
+  - When a snapshot is saved with the number 0
+  - Then `snapshot_0000.jpg` is written, listed and counted once
+
+---
+
+## Scope
+
+`feature/timelapse/src/main/kotlin/io/github/jn0v/traceglass/feature/timelapse/FileSnapshotStorage.kt`: a check at the start of `saveSnapshot` only.
+EOF
+    ;;
+    4) cat <<'EOF'
+A person whose pinch reports a scale factor of 0 loses the overlay for the rest of the session: every later pinch multiplies 0, so its scale never comes back.
+
+Example: on a new `TracingViewModel`, `onOverlayScale(0f)` then `onOverlayScale(2f)` leaves `uiState.overlayScale` at 0.0. `onOverlayScale(2f)` alone gives 2.0. `onOverlayGesture` multiplies the same factor by its zoom, with no check either.
+
+## Validation
+
+- **Scenario: a scale factor of 0 is ignored**
+  - Given an overlay at scale 1
+  - When it is scaled by 0, then by 2
+  - Then its scale is 2
+- **Scenario: a negative or not-a-number factor is ignored**
+  - Given an overlay at scale 1
+  - When it is scaled by -1, then by NaN
+  - Then its scale is still 1
+- **Scenario: a pinch zoom of 0 is ignored**
+  - Given an overlay at scale 1
+  - When a gesture reports a zoom of 0
+  - Then its scale is still 1
+- **Scenario: real factors still accumulate**
+  - Given an overlay at scale 1
+  - When it is scaled by 2, then by 0.5
+  - Then its scale is 1, as today
+
+---
+
+## Scope
+
+`feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt`: `onOverlayScale` and the zoom of `onOverlayGesture` only; a factor that is not positive and finite is ignored.
+EOF
+    ;;
+    5) cat <<'EOF'
+A person whose zoom gesture reports a factor that is not a number gets a viewport zoom stuck at NaN: every later zoom multiplies NaN, and the clamp to 1 to 5 lets NaN through.
+
+Example: with the overlay locked, `onViewportZoom(Float.NaN)` then `onViewportZoom(2f)` leaves `uiState.viewportZoom` at NaN. `onViewportZoom(2f)` alone gives 2.0.
+
+## Validation
+
+- **Scenario: a zoom factor that is not a number is ignored**
+  - Given a locked overlay at viewport zoom 1
+  - When the viewport is zoomed by NaN
+  - Then its zoom is still 1, and its pan is still 0 by 0
+- **Scenario: a real zoom still applies after it**
+  - Given a locked overlay zoomed by NaN
+  - When the viewport is zoomed by 2
+  - Then its zoom is 2
+- **Scenario: the zoom is still clamped**
+  - Given a locked overlay at viewport zoom 1
+  - When the viewport is zoomed by 10
+  - Then its zoom is 5, as today
+
+---
+
+## Scope
+
+`feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt`: `onViewportZoom` only; a factor that is not finite is ignored.
+EOF
+    ;;
+    6) cat <<'EOF'
+A person resuming a locked session whose saved pan is beyond what its saved zoom allows sees the picture off-centre, until the first pan makes it jump back.
+
+Example: a session saved locked, at viewport zoom 1 with a pan of (500, -800). On the default 1080 by 1920 view, after `restoreSession()` and `onResumeSessionAccepted()`, `uiState` has a pan of (500.0, -800.0). At zoom 1 no pan is allowed: `onViewportPan` clamps each axis to (zoom - 1) × view size / 2.
+
+## Validation
+
+- **Scenario: a pan beyond zoom 1 is reset**
+  - Given a saved locked session at zoom 1 with a pan of (500, -800)
+  - When it is resumed on a 1080 by 1920 view
+  - Then its pan is (0, 0)
+- **Scenario: a pan beyond zoom 2 is clamped**
+  - Given a saved locked session at zoom 2 with a pan of (900, -1200)
+  - When it is resumed on a 1080 by 1920 view
+  - Then its pan is (540, -960)
+- **Scenario: a pan within its zoom is kept**
+  - Given a saved locked session at zoom 2 with a pan of (300, -400)
+  - When it is resumed on a 1080 by 1920 view
+  - Then its pan is (300, -400)
+
+---
+
+## Scope
+
+`feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt`: `onResumeSessionAccepted` only; the restored pan is clamped with the bounds `onViewportPan` uses.
 EOF
     ;;
   esac
