@@ -1172,7 +1172,7 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) (bool, err
 	}
 	docs, err := changedDocs(root)
 	if err != nil {
-		fmt.Fprintln(out, "workline:", err)
+		_, _ = fmt.Fprintln(out, "workline:", err)
 		return false, &gitFailedError{err}
 	}
 	if len(docs) == 0 {
