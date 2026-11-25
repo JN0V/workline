@@ -38,12 +38,11 @@ step 6).
   `workline/developer/<n>`, in its conversation or in a thread on a
   line ([#1438](https://github.com/JN0V/workline/issues/1438)):
   `workline develop --merge-request <n>`.
-  - **Once a person accepted it** (`workline:accepted`, or
-    `-whole`), a comment in its conversation asks nothing: the label's
-    trace is a record, not a request
-    ([#2206](https://github.com/JN0V/workline/issues/2206)). So for one
-    posted before workline took the label off after a push. A comment
-    on a line still asks. With no forge
+  - **A yes's trace asks nothing**: a comment by the account that put
+    `workline:accepted` (or `-whole`), within two minutes of the label,
+    is its record, not a request
+    ([#2206](https://github.com/JN0V/workline/issues/2206)). Any other
+    comment of a person still asks, the pull request accepted or not. With no forge
   ([`forge: local`](../../../docs/local-line-review.md)),
   the reconciler runs it, in a worktree of the head.
 - **No memory**: it reads its record on the pull request (the rounds

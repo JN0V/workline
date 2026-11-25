@@ -515,14 +515,10 @@ func readAsked(f forge.Forge, kept forge.Kept, repo string, a devmark.Act, mr fo
 	if _, err = forge.OwnAccount(f); err != nil {
 		return r, false, fmt.Errorf("%w: %w", errOwnAccount, err)
 	}
-	from := 0 // a person's yes, on it or taken off by a push since: its conversation meanwhile asks nothing, a line's comment still does
-	for i, n := range notes {
-		if slices.ContainsFunc(mr.Labels, func(l string) bool { return slices.Contains(forge.AcceptedLabels, strings.TrimSuffix(l, "-whole")) }) ||
-			kept.Wrote(n) && strings.Contains(n.Body, "<!-- workline:merge-reset=") {
-			from = i + 1
-		}
+	st := forge.MergeState{} // its labels' events: a person's yes and its trace, within two minutes by the same account, a record and no request
+	if m, ok := f.(forge.Merger); ok {
+		st, _ = m.MergeState(mr) // unread: a trace asks, as any comment
 	}
-	notes = notes[from:]
 	// A person's comment in a review thread is asked as one in its conversation.
 	if th, ok := f.(forge.Threaded); ok {
 		threads, err := th.Threads(mr.ID)
@@ -534,7 +530,11 @@ func readAsked(f forge.Forge, kept forge.Kept, repo string, a devmark.Act, mr fo
 		}
 	}
 	for _, n := range notes {
-		if !n.Insider || n.Bot || kept.Wrote(n) || slices.Contains(a.Heard, n.ID) || strings.Contains(n.Body, "<!-- workline:") {
+		at, timed := backlog.Moment(n.Created)
+		if !n.Insider || n.Bot || kept.Wrote(n) || slices.Contains(a.Heard, n.ID) || strings.Contains(n.Body, "<!-- workline:") || timed && slices.ContainsFunc(st.Labels, func(e forge.LabelEvent) bool {
+			t, ok := backlog.Moment(e.Created)
+			return ok && e.Added && e.Author == n.Author && slices.Contains(forge.AcceptedLabels, strings.TrimSuffix(e.Label, "-whole")) && t.Sub(at).Abs().Minutes() <= 2
+		}) {
 			continue
 		}
 		r.Heard = append(r.Heard, n.ID)
@@ -608,8 +608,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 // branch in its worktree (ADR-0056, step 6).
 func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testErr error) string {
 	var t strings.Builder
-	n := r.Record.Round + 1
-	fmt.Fprintf(&t, "# Review round %d (%d disputes at most) on your pull request %d, for issue #%d: %s\n\n", n, s.Rounds, r.MR, is.ID, is.Title)
+	fmt.Fprintf(&t, "# Review %s, on your pull request %d, for issue #%d: %s\n\n", roundOf(r, s), r.MR, is.ID, is.Title)
 	t.WriteString("You wrote this pull request's code; you remember none of it. What you did is below, from its record; your worktree holds its branch.\n\n")
 	if len(r.Record.Rounds) > 0 {
 		t.WriteString("## The rounds before, from its record\n\n")
@@ -870,7 +869,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	a := r.Record
 	n := a.Round + 1
-	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d (%d disputes at most) on %s", n, s.Rounds, where),
+	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("%s, on %s", roundOf(r, s), where),
 		Findings: append([]verdict.Finding{rightsFinding(where)}, refusalFindings(where, refused, said)...)}
 	if len(unread) > 0 {
 		v.Findings = append(v.Findings, unreadFinding(where, unread, true))
@@ -900,7 +899,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		if code := writeIntents(runDir, "", []intent.Intention{{Kind: "comment", Value: map[string]any{"sticky": roundNotRunKey, "body": said}}}); code != 0 {
 			return code
 		}
-		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d (%d disputes at most) on %s not run: its agent could not be reached", n, s.Rounds, where),
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("%s, on %s, not run: its agent could not be reached", roundOf(r, s), where),
 			Findings: []verdict.Finding{{Rule: "round-not-run", Level: "warn", Where: where,
 				Message: fmt.Sprintf("its agent could not be reached (%s), spent nothing and changed nothing: no round counted, said on the pull request; the next run asks the findings again", u.failed)}}})
 	}
@@ -1051,7 +1050,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		}
 	}
 	a.Rounds = append(a.Rounds, this)
-	out := append(slices.Concat(takes, patches), intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, s, notes, analysis, a.Widen, refused)}},
+	out := append(slices.Concat(takes, patches), intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, roundOf(r, s), notes, analysis, a.Widen, refused)}},
 		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}})
 	out = append(out, others...)
 	if len(this.Beside) > 0 {
@@ -1072,9 +1071,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 
 // roundBody is the round's comment on its pull request: what was asked,
 // what the developer did, its proof, the five whys.
-func roundBody(x devmark.Round, s Settings, notes []string, analysis string, w *devmark.Widen, refused []devmark.Refusal) string {
+func roundBody(x devmark.Round, of string, notes []string, analysis string, w *devmark.Widen, refused []devmark.Refusal) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "**The developer**, review round %d (%d disputes at most): ", x.N, s.Rounds)
+	fmt.Fprintf(&b, "**The developer**, review %s: ", of)
 	if x.Result == "not-pushed" {
 		b.WriteString("its fix turns the frozen tests red on a green head, not pushed: the green head kept. ")
 	}
@@ -1251,9 +1250,13 @@ func writeVerdict(runDir string, v verdict.Verdict) int {
 	return 0
 }
 
-// disputes counts the rounds that answered a blocking finding of the
-// reviewer: a red check, a tester's rewrite or a warning alone is no
-// dispute (#1598). A record with no round listed counts its round number.
+// roundOf names round r: its number, its disputes of s.Rounds, itself one when it answers a blocking finding.
+func roundOf(r round, s Settings) string {
+	return fmt.Sprintf("round %d, %d of %d on a blocking finding", r.Record.Round+1, disputes(devmark.Act{Rounds: append(slices.Clone(r.Record.Rounds), devmark.Round{Asked: texts(r.Asked)})}), s.Rounds)
+}
+
+// disputes counts the rounds that answered a reviewer's blocking finding, no red check, rewrite
+// or warning alone (#1598); a record with no round listed, its round number.
 func disputes(a devmark.Act) int {
 	if len(a.Rounds) == 0 {
 		return a.Round
