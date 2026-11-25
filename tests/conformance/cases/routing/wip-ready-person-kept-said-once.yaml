@@ -1,0 +1,33 @@
+case: routing/wip-ready-person-kept-said-once
+about: >
+  Said once: the same issue, refused by the tester, blocked, and put back
+  in ready by a person who says it is ready without a tester's test. The
+  line leaves it in ready and says so once on the issue, in its own
+  comment, naming the person's move: a second run writes nothing more,
+  the issue still holds its three comments.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-11-03T09:00:00Z"}
+        body: "## Need\n\nI want to add.\n\n## Validation\n\n- **Two and three:** Given the library, When I add 2 and 3, Then I get 5.\n"
+        comments:
+          - "**The tester** wrote no tests for this issue this run.\n\n- **Why**: passes on the base.\n\n<!-- workline:sticky=tester/issue -->"
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"from\":\"tests\",\"body\":\"0\",\"hops\":3,\"since\":\"2026-11-02T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+          - "This one is ready without a tester's test: the developer takes it."
+run: {route: issue, target: {issue: 1}, open-merge-request: true, ai: none, then: again}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: state-untested}]
+  forge:
+    issues:
+      - id: 1
+        labels: ["workline:ready"]
+        comments: 3
+        comment-contains: ["a person put workline:ready back"]
