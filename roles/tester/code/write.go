@@ -614,10 +614,11 @@ func Post(runDir, repo string) int {
 // today pass the red proof green on the base (#2164): their findings go,
 // and a proof refused for them alone passes.
 func allowGuards(proof *verdict.Verdict, guards []string) {
+	before := len(proof.Findings)
 	proof.Findings = slices.DeleteFunc(proof.Findings, func(f verdict.Finding) bool {
 		return f.Rule == "test-green-on-base" && f.Level == "" && slices.Contains(guards, f.Where)
 	})
-	if proof.Status == verdict.Pass || proof.Final {
+	if len(proof.Findings) == before || proof.Status == verdict.Pass || proof.Final {
 		return
 	}
 	if !slices.ContainsFunc(proof.Findings, func(f verdict.Finding) bool { return f.Level == "" }) {

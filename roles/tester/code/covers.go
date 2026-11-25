@@ -294,6 +294,18 @@ func (r *record) recovered(intents []intent.Intention, newTests []string, file s
 // scenario kept as today (`guard: true`): green on the base by design, so
 // the red proof lets them pass (#2164).
 func guardsOf(covers []declared, newTests, written []string) []string {
+	// A test also listed under a scenario that is not a guard stays
+	// refused when green on the base: it must be red for that one.
+	var shared []string
+	for _, c := range covers {
+		if c.Guard {
+			continue
+		}
+		for _, id := range c.Tests {
+			ids, _ := declaredIn(id, newTests, written)
+			shared = append(shared, ids...)
+		}
+	}
 	var out []string
 	for _, c := range covers {
 		if !c.Guard {
@@ -301,7 +313,11 @@ func guardsOf(covers []declared, newTests, written []string) []string {
 		}
 		for _, id := range c.Tests {
 			ids, _ := declaredIn(id, newTests, written)
-			out = append(out, ids...)
+			for _, i := range ids {
+				if !slices.Contains(shared, i) {
+					out = append(out, i)
+				}
+			}
 		}
 	}
 	return out
