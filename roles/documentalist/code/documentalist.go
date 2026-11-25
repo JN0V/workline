@@ -1174,8 +1174,9 @@ func (r *preRun) checkHygiene() error {
 			f.Level = "block" // a check that could not run is not a pass
 		}
 		if doc, _, _ := strings.Cut(p.Where, "#"); (p.Rule == "doc-too-long" || p.Rule == "section-too-long") && base != "" && os.Getenv("WORKLINE_EVENT") == "merge-request" && slices.Contains(pages, doc) {
-			was, _ := git(r.repo, "show", base+":"+doc) // a page it adds is within on its base
-			if !slices.ContainsFunc(budgets(Tree{Docs: map[string]string{doc: was}}, s.Budgets), func(q Problem) bool { return q.Key == p.Key }) {
+			was, err := git(r.repo, "show", base+":"+doc)
+			listed, lerr := git(r.repo, "ls-tree", "--name-only", base, "--", doc) // a page it adds is within on its base; a base unread blocks nothing
+			if lerr == nil && (err == nil || listed == "") && !slices.ContainsFunc(budgets(Tree{Docs: map[string]string{doc: was}}, s.Budgets), func(q Problem) bool { return q.Key == p.Key }) {
 				f.Level, f.Message = "block", f.Message+"; within it on the base, this merge request takes it over: condense or split it"
 			}
 		}
