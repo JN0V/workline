@@ -56,10 +56,13 @@ Part of [a run on code](run.md): step 4, what each lens reads and answers.
     change does past the Scope that the Need does not need: the Scope is
     a hint, not a fence.
   - Each Validation scenario is answered: the code doing it and its test
-    quoted (`scenario`), or a finding. One answered neither way, with no
-    test, or whose code or test is not found at the head, becomes an
-    important finding its judge keeps or drops: silence is never "no
-    finding".
+    quoted (`scenario`), or why no test can check it (`reason`, said
+    `scenario-no-test`), or a finding.
+  - On a run reading the whole change in one part, a scenario answered
+    neither way, or whose code or test is not found at the head,
+    becomes an important finding its judge keeps or drops: silence is
+    never "no finding". On a later push or a part, it is said
+    (`scenario-unasked`), not judged.
   - No issue closed: not asked, said in the summary; one that cannot be
     read: not asked, said (`issue-unread`).
 - **Simplicity** (`needs: issue`, [ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)): read with

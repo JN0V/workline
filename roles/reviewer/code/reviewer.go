@@ -2810,7 +2810,7 @@ func testsOf(repo string) testdef.Def {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, PartsMax: 2, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, CommitsPerPush: 5, IssueLinesMax: 80, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, PartsMax: 2, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, CommitsPerPush: 5, IssueLinesMax: 160, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err

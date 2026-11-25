@@ -9,7 +9,7 @@ given:
     issues:
       - id: 4
         title: The mean survives an empty list
-        body: "## Need\n\nAn empty list gives 0 instead of a crash.\n\n## Example\n\nAverage([]) gives 0.\n\n## Validation\n\n- **Empty list:** Given no values, When the mean is asked, Then it is 0.\n- **Zeros skipped:** Given [0, 2, 4], When the mean is asked, Then it is 3.\n- **Negatives kept:** Given [-2, 4], When the mean is asked, Then it is 1.\n- **Odd count:** Given [1, 2], When the mean is asked, Then it is 1.\n\n## Scope\n\ncalc/calc.go\n"
+        body: "## Need\n\nAn empty list gives 0 instead of a crash.\n\n## Example\n\nAverage([]) gives 0.\n\n## Validation\n\n- **Empty list:** Given no values, When the mean is asked, Then it is 0.\n- **Zeros skipped:** Given [0, 2, 4], When the mean is asked, Then it is 3.\n- **Negatives kept:** Given [-2, 4], When the mean is asked, Then it is 1.\n- **Odd count:** Given [1, 2], When the mean is asked, Then it is 1.\n- **Said in the comment:** Given the code, When a person reads Average, Then its comment says the mean.\n\n## Scope\n\ncalc/calc.go\n"
         labels: []
         comments: []
     merge-requests: []
@@ -21,6 +21,7 @@ expect:
     - {rule: intent, where: "#4", message: "No code and test shown for the scenario \"Zeros skipped\""}
     - {rule: scenario-unshown, message: "the scenario \"Zeros skipped\", shown done: its code doing it is not found in calc/calc.go"}
     - {rule: scenario-unshown, message: "the scenario \"Negatives kept\", shown done: it quotes no test proving it"}
-  no-findings: [{rule: intent, message: "Empty list"}]
+    - {rule: scenario-no-test, where: "#4", message: "the scenario \"Said in the comment\" is shown done by its code, no test proving it: a comment is read, never run"}
+  no-findings: [{rule: intent, message: "Empty list"}, {rule: intent, message: "Said in the comment"}]
   run-files:
     in/parts/1-intent/task.md: {contains: "#### Validation\n\n- **Empty list:** Given no values"}

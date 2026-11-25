@@ -3,8 +3,9 @@
 # issue's Need, Example, Steps to reproduce, Validation, Verification and
 # Scope given to it, and the files the author lists beyond the Scope; its
 # judge is shown the issue and the change (#126). Each scenario of the
-# Validation is answered: the code doing it and its test quoted, or a
-# finding; one answered by neither is judged as shown by nothing.
+# Validation is answered: the code doing it and its test quoted (or why
+# no test can check it), or a finding; one answered by neither, on a run
+# reading the whole change, is judged as shown by nothing.
 needs: issue
 judge:
   question: >-
@@ -12,7 +13,9 @@ judge:
     issue the change closes, shown here? Answer yes when the issue asks,
     in its Need, its Example, its Steps to reproduce, a scenario of its
     Validation or its Verification, what the change shown does not do or
-    prove, or when the change does what the issue does not ask: a file
+    prove — a scenario a test could check and none does, too; a scenario
+    of documentation or of the pipeline no test can check is proven by
+    the change itself — or when the change does what the issue does not ask: a file
     changed beyond the issue's Scope, listed by the author or not, whose
     change the issue's Need does not need. The Scope is a hint: a file
     beyond it that the Need needs, or that the author's reason ties to it
@@ -37,13 +40,15 @@ Given / When / Then), one by one, its name as the issue writes it:
 
 - done and proven: a `scenario`, quoting the code that does it, as it
   reads at the head (earlier commits included), and the test that proves
-  it;
+  it; for a scenario no test can check (a document, the pipeline), the
+  `reason` in place of the test;
 - not done, or no test proves it: a finding, its cause the scenario's
-  words quoted from the issue.
+  words quoted from the issue, one line as it reads there.
 
-A scenario you answer neither way, or with no test, is judged as shown
-by nothing: silence is never "no finding". The Example says what the issue means; read the
-code against it.
+Each quote is one run of lines as they read, never pieces joined. A
+scenario you answer neither way, or with no test nor reason, is judged
+as shown by nothing: silence is never "no finding". The Example says
+what the issue means; read the code against it.
 
 **Beyond the Scope.** The Scope is the product owner's hint of the files,
 not a fence: the developer may change a file beyond it, and lists it under

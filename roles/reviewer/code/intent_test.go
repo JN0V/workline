@@ -80,26 +80,39 @@ func TestBeyondListed(t *testing.T) {
 	}
 }
 
-// An intent finding is on a scenario when it names it, or quotes words of
-// it no other scenario holds: words every scenario shares silence none.
+// An intent finding is on a scenario when its quote lies within the
+// scenario's lines in the issue, a scenario written over several lines
+// too; words every scenario shares, or another's, are not on it.
 func TestFoundOnAScenario(t *testing.T) {
-	is := ClosedIssue{ID: 4, Scenarios: []work.Scenario{
-		{Name: "Empty list", Text: "Given no values, When the mean is asked, Then it is 0."},
-		{Name: "Zeros skipped", Text: "Given [0, 2, 4], When the mean is asked, Then it is 3."},
-	}}
+	body := "## Need\n\nA mean.\n\n## Validation\n\n- **Empty list:** Given no values,\n  When the mean is asked,\n  Then it is 0.\n- **Zeros skipped:** Given [0, 2, 4],\n  When the mean is asked,\n  Then it is 3.\n\n## Scope\n\ncalc/\n"
+	is := ClosedIssue{ID: 4, Text: issueText(&forge.Issue{ID: 4, Title: "Mean", Body: body}), Scenarios: work.Scenarios("- **Empty list:** Given no values,\n  When the mean is asked,\n  Then it is 0.\n- **Zeros skipped:** Given [0, 2, 4],\n  When the mean is asked,\n  Then it is 3.\n")}
 	on := func(quote string) bool {
 		c := candidates{Related: []Finding{{Lens: "intent", Where: "#4", Cause: Quote{Path: "#4", Quote: quote}}}}
-		return c.foundOn(is, is.Scenarios[1])
+		return c.foundOn(is, 1)
 	}
 	for quote, want := range map[string]bool{
-		"Zeros skipped:":         true,
-		"Given [0, 2, 4]":        true,
-		"When the mean is asked": false,
-		"Then it is 0.":          false,
-		"Empty list":             false,
+		"Zeros skipped:":   true,
+		"Given [0, 2, 4],": true,
+		"Then it is 3.":    true,
+		"Then it is 0.":    false,
+		"Empty list":       false,
+		"A mean.":          false,
 	} {
 		if got := on(quote); got != want {
 			t.Errorf("a finding quoting %q on Zeros skipped: %v, want %v", quote, got, want)
 		}
+	}
+}
+
+// Names compare without their marks, colons, full stops or Gherkin's
+// keyword.
+func TestSameName(t *testing.T) {
+	for _, n := range []string{"Empty list", "**Empty list:**", "Scenario: Empty list", "empty list.", "_Empty list_"} {
+		if !sameName(n, "Empty list") {
+			t.Errorf("%q is not Empty list", n)
+		}
+	}
+	if sameName("Empty lists", "Empty list") {
+		t.Error("another name matched")
 	}
 }

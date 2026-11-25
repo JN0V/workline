@@ -2,7 +2,8 @@
 # an empty list average 0, with its test: it shows the scenario "Empty
 # list" done and proven, its code and test quoted as they read; it shows
 # "Zeros skipped" done by a line the code does not hold; "Negatives kept"
-# done by code, with no test; it answers nothing of "Odd count".
+# done by code, with no test; "Said in the comment" done by code, no test
+# able to check it, its reason said; it answers nothing of "Odd count".
 calls:
   - - scenario:
         scenario: Empty list
@@ -16,3 +17,7 @@ calls:
     - scenario:
         scenario: Negatives kept
         code: {path: calc/calc.go, quote: "total += v"}
+    - scenario:
+        scenario: "Scenario: Said in the comment."
+        code: {path: calc/calc.go, quote: "// Average returns the mean of the values"}
+        reason: a comment is read, never run
