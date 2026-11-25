@@ -32,5 +32,5 @@ expect:
     merge-requests:
       - id: 1
         draft: true
-        body-contains: ["| Two by three | `tests.test_mul_two_by_three` |", "| Add unchanged | `tests.test_add_unchanged` |"]
+        body-contains: ["| Two by three | `tests.test_mul_two_by_three` |", "| Add unchanged | `tests.test_add_unchanged` |", "**Guards**, kept as today, their tests green on the base as they must be: Add unchanged."]
         body-lacks: ["Not tested", "test-green-on-base"]

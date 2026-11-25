@@ -507,7 +507,8 @@ func Post(runDir, repo string) int {
 	// (ADR-0065, change 4); nothing guessed from a test's name.
 	covers, unread := coversOf(intents)
 	tested, said, missing := held(covers, t.Scenarios)
-	s.guards = guardsOf(covers)
+	var guarded []string
+	s.guards, guarded = guardsOf(covers)
 	findings = append(append(findings, unread...), missing...)
 	if len(findings) > 0 {
 		// Entries missing or unread, and nothing else, are the answer's to
@@ -584,7 +585,7 @@ func Post(runDir, repo string) int {
 	mr := map[string]any{
 		"key": fmt.Sprintf("issue-%d", t.Issue), "draft": true,
 		"title": fmt.Sprintf("test: the acceptance tests of #%d", t.Issue),
-		"body":  draftBody(t, tested, said, alone, assumed(notes), proof),
+		"body":  draftBody(t, tested, said, alone, guarded, assumed(notes), proof),
 		// The tests frozen to whoever builds (ADR-0055, guards): kept in
 		// workline's own comment on the Draft once it is opened.
 		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Tests: newTests, Errored: erroredOf(runDir, newTests), Scenarios: t.Scenarios, Covers: tested, RedUnproven: unprovenOf(*proof), Unproven: unprovenScenarios(t, said)}.intention()["comment"],
@@ -1050,7 +1051,7 @@ func planSaid(t task, tested map[string][]string) string {
 // draftBody is the Draft's description: the issue it refers to, each
 // scenario and the tests declared for it, what the tests assume, what the
 // proof said; a test file alone, that the file is all it proves.
-func draftBody(t task, tested map[string][]string, said map[string]string, alone, assumes []string, proof *verdict.Verdict) string {
+func draftBody(t task, tested map[string][]string, said map[string]string, alone, guarded, assumes []string, proof *verdict.Verdict) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Refs #%d\n\nThe acceptance tests of #%d, written before the code: %s. "+
 		"Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n",
@@ -1063,6 +1064,9 @@ func draftBody(t task, tested map[string][]string, said map[string]string, alone
 		if ids, ok := tested[sc.Name]; ok {
 			fmt.Fprintf(&b, "| %s | %s%s |\n", sc.Name, codes(ids), aloneSaid(ids, alone))
 		}
+	}
+	if len(guarded) > 0 {
+		fmt.Fprintf(&b, "\n**Guards**, kept as today, their tests green on the base as they must be: %s.\n", devmark.InertText(strings.Join(guarded, ", ")))
 	}
 	if len(alone) > 0 {
 		fmt.Fprintf(&b, "\n**By its file alone**: %s. Its build broke on the base and its build-errors row names no test (no `test-name`), "+
@@ -1216,7 +1220,8 @@ func toMend(findings []verdict.Finding) ([]verdict.Finding, bool) {
 		switch f.Message {
 		case greenOnBase:
 			told[i].Message += "; if its scenario keeps what the base already does, the test is its guard: " +
-				"its covers entry gives the reason \"kept as today\" beside its tests; " +
+				"its covers entry gives the reason \"kept as today\" beside its tests; a guard counts only beside a test red on the base " +
+				"(else name the proof instead, `proof: existing-suite`); " +
 				"else make it check what the issue asks, so that it fails on the base"
 		case skippedOnBase:
 			told[i].Message += "; make it run on the base, and fail there: a test that skips itself when what the issue adds is missing checks nothing yet"

@@ -794,6 +794,8 @@ func judgeAnswer(runDir, repo string, a answer, s Settings) int {
 		return block("test-line-changed", "the rewrite changes or removes "+line+" of this file as the base holds it: a rewrite changes the tester's own lines alone")
 	}
 	s.issue = a.Text
+	entries, _ := coversOf(intents)
+	s.guards, _ = guardsOf(entries) // a guard rewritten, its entry saying so, is green on the base
 	proof, newTests, blobs, asked, err := proveJudged(runDir, repo, a.Record.Base, patches[len(patches)-1:], s)
 	if err != nil {
 		return fail(err)

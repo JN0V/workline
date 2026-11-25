@@ -81,3 +81,20 @@ func TestBugGreenBesideAGuardIsNotReproduced(t *testing.T) {
 		t.Error("a Draft opened for a bug not shown")
 	}
 }
+
+// A guard shared: given the one test green on the base declared both for
+// the scenario the change alters and as the guard of the kept one, when
+// the tests are proven beside a red one, then it is no guard: refused
+// green, no Draft.
+func TestGuardSharedWithAChangedScenarioIsRefused(t *testing.T) {
+	mul := intent.Intention{Kind: "patch", Value: map[string]any{"file": "app/test_mul.sh", "content": ". ./lib.sh\n[ \"$(mul 2 3)\" = 6 ]\n"}}
+	_, runDir := guardPost(t, []intent.Intention{mul, addGuard,
+		{Kind: "covers", Value: map[string]any{"scenario": "Multiply two numbers", "tests": []any{"app.test_mul", "app.test_add"}}}, kept})
+	said, _ := os.ReadFile(filepath.Join(runDir, "out", "verdict.yaml"))
+	if !strings.Contains(string(said), "test-green-on-base") {
+		t.Errorf("a green test declared for a changed scenario passed as a guard:\n%s", said)
+	}
+	if _, err := os.Stat(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
+		t.Error("a Draft opened, a changed scenario shown tested by a test green on the base")
+	}
+}
