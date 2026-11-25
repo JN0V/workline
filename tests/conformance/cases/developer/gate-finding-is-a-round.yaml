@@ -36,14 +36,14 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2, its fix pushed, the tests green"
+  summary: "round 1 (5 disputes at most) on merge request 2, its fix pushed, the tests green"
   agent-calls: 1
   pushed:
     workline/developer/3:
       lib.sh: "$1 * $2"
   run-files:
-    in/task.md: {contains: ["Review round 1 of 5", "`lib.sh:2`", "mul adds where it should multiply", "mul is meant to multiply: it adds, so mul 2 3 gives 5.", "Multiply its two operands."]}
+    in/task.md: {contains: ["Review round 1 (5 disputes at most)", "`lib.sh:2`", "mul adds where it should multiply", "mul is meant to multiply: it adds, so mul 2 3 gives 5.", "Multiply its two operands."]}
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 1 of 5: its fix pushed", "a gate's new finding `lib.sh:2`", "\"gates-at\":\"", "\"seen\":[\"gates|lib.sh|SC2003\"]"]
+        comment-contains: ["review round 1 (5 disputes at most): its fix pushed", "a gate's new finding `lib.sh:2`", "\"gates-at\":\"", "\"seen\":[\"gates|lib.sh|SC2003\"]"]

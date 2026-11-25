@@ -46,7 +46,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-objects-no-fix"}
 expect:
   status: pass
-  summary: "round 2 of 5 on merge request 2; objected again at this head after the tester's answer: #3 blocked for a person"
+  summary: "round 2 (5 disputes at most) on merge request 2; objected again at this head after the tester's answer: #3 blocked for a person"
   agent-calls: 1
   findings: [{rule: objection-held, level: warn, where: "merge request 2"}]
   no-findings: [{rule: objected}]

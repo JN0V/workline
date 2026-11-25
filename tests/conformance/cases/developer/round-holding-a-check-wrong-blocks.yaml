@@ -36,7 +36,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-holds-check-wrong"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2; no fix for the red check test: #3 blocked for a person"
+  summary: "round 1 (5 disputes at most) on merge request 2; no fix for the red check test: #3 blocked for a person"
   agent-calls: 1
   findings: [{rule: check-held, level: warn, where: "merge request 2"}]
   not-pushed: [workline/developer/3]

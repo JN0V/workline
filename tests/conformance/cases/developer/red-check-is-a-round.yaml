@@ -39,16 +39,16 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2, its fix pushed, the tests green"
+  summary: "round 1 (5 disputes at most) on merge request 2, its fix pushed, the tests green"
   agent-calls: 1
   pushed:
     workline/developer/3:
       lib.sh: "$1 * $2"
   run-files:
     in/task.md:
-      contains: ["Review round 1 of 5", "a project check `test`: red at `", "--- FAIL: test_mul_two_by_three (0.01s)", "mul 2 3: want 6, got 5", "##[error]Process completed with exit code 1."]
+      contains: ["Review round 1 (5 disputes at most)", "a project check `test`: red at `", "--- FAIL: test_mul_two_by_three (0.01s)", "mul 2 3: want 6, got 5", "##[error]Process completed with exit code 1."]
       not-contains: ["`propose`", "the reviewer's own run failed", "2026-11-02T22", "##[group]"]
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 1 of 5: its fix pushed", "a project check `test`: red at `", "\"checks-at\":\"", "\"seen\":[\"checks|test\"]"]
+        comment-contains: ["review round 1 (5 disputes at most): its fix pushed", "a project check `test`: red at `", "\"checks-at\":\"", "\"seen\":[\"checks|test\"]"]

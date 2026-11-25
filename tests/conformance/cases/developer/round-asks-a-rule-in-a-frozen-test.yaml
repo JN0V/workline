@@ -31,11 +31,11 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 1 of 5"
+  summary: "round 1 (5 disputes at most)"
   agent-calls: 1
   run-files:
     in/task.md:
-      contains: ["Review round 1 of 5", "`tests/test_mul_by_zero.sh:1`", "It lies in a frozen test, read-only to you: object to that test at that line in `.workline/objections.yaml`"]
+      contains: ["Review round 1 (5 disputes at most)", "`tests/test_mul_by_zero.sh:1`", "It lies in a frozen test, read-only to you: object to that test at that line in `.workline/objections.yaml`"]
   forge:
     merge-requests:
       - id: 2

@@ -36,11 +36,11 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2, its fix pushed, the tests green"
+  summary: "round 1 (5 disputes at most) on merge request 2, its fix pushed, the tests green"
   agent-calls: 1
   forge:
     merge-requests:
       - id: 2
         draft: true
-        comment-contains: ["review round 1 of 5: its fix pushed"]
+        comment-contains: ["review round 1 (5 disputes at most): its fix pushed"]
         comment-lacks: ["marked ready for review"]

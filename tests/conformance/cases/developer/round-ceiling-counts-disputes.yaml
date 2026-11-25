@@ -32,5 +32,5 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 6 of 5 on merge request 2, its fix pushed"
+  summary: "round 6 (5 disputes at most) on merge request 2, its fix pushed"
   agent-calls: 1

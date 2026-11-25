@@ -37,7 +37,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: 'cmd:cat >/dev/null; if grep -q "mul 3 2" tests/test_mul_two_by_three.sh; then echo "- note: the worktree holds the rewrite"; else echo "- note: the worktree holds the old test"; fi'}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2, its fix pushed, the tests green"
+  summary: "round 1 (5 disputes at most) on merge request 2, its fix pushed, the tests green"
   agent-calls: 1
   no-findings: [{rule: agent-failed}, {rule: acceptance-test-edit}]
   pushed:
@@ -46,8 +46,8 @@ expect:
   pushed-message:
     workline/developer/3: "fix: the review's findings on #3, round 1"
   run-files:
-    in/task.md: {contains: ["Review round 1 of 5", "the tester rewrote `tests/test_mul_two_by_three.sh`"]}
+    in/task.md: {contains: ["Review round 1 (5 disputes at most)", "the tester rewrote `tests/test_mul_two_by_three.sh`"]}
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 1 of 5: its fix pushed, the project's tests green", "the worktree holds the rewrite", "the tester rewrote `tests/test_mul_two_by_three.sh`", "\"round\":1", "\"from\":\""]
+        comment-contains: ["review round 1 (5 disputes at most): its fix pushed, the project's tests green", "the worktree holds the rewrite", "the tester rewrote `tests/test_mul_two_by_three.sh`", "\"round\":1", "\"from\":\""]

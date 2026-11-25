@@ -30,11 +30,11 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2"
+  summary: "round 1 (5 disputes at most) on merge request 2"
   agent-calls: 1
   findings: [{rule: no-code, where: "merge request 2", message: "the round is counted, nothing pushed"}]
   not-pushed: [workline/developer/3]
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 1 of 5: no fix", "\"round\":1", "\"result\":\"no-code\""]
+        comment-contains: ["review round 1 (5 disputes at most): no fix", "\"round\":1", "\"result\":\"no-code\""]

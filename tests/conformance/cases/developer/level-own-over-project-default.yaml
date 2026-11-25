@@ -30,4 +30,4 @@ expect:
   status: pass
   summary: "took #3; proven green, its pull request ready"
   run-files:
-    in/task.md: {contains: ["- Autonomy: cautious (role setting): 3 review rounds on your pull request, then its issue is blocked for a person."]}
+    in/task.md: {contains: ["- Autonomy: cautious (role setting): 3 review rounds disputing a blocking finding on your pull request, then its issue is blocked for a person."]}

@@ -36,7 +36,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: claude}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2, its fix pushed, the tests green"
+  summary: "round 1 (5 disputes at most) on merge request 2, its fix pushed, the tests green"
   agent-calls: 1
   findings: [{rule: proof-green, where: "merge request 2"}]
   no-findings: [{rule: agent-invalid-output}, {rule: no-code}, {rule: agent-unavailable}]
@@ -47,8 +47,8 @@ expect:
   pushed-message:
     workline/developer/3: "fix: the review's findings on #3, round 1"
   run-files:
-    in/task.md: {contains: ["Review round 1 of 5", "mul adds its operands", "Edit the files in your worktree"], not-contains: ["add() {", "The code in scope"]}
+    in/task.md: {contains: ["Review round 1 (5 disputes at most)", "mul adds its operands", "Edit the files in your worktree"], not-contains: ["add() {", "The code in scope"]}
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 1 of 5: its fix pushed, the project's tests green", "\"round\":1", '"turns":6', '"tokens":6500', '"cached":40000', '"tools":{"Bash":1,"Edit":1,"Read":2,"Write":1}']
+        comment-contains: ["review round 1 (5 disputes at most): its fix pushed, the project's tests green", "\"round\":1", '"turns":6', '"tokens":6500', '"cached":40000', '"tools":{"Bash":1,"Edit":1,"Read":2,"Write":1}']

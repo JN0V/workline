@@ -40,5 +40,5 @@ expect:
   stdout: ["0\nsecond 0"]
   files:
     first.json: {contains: "\"agent-calls\": 1", lacks: "its fix pushed"}
-    second.json: {contains: "round 2 of 5 on merge request 2, its fix pushed"}
+    second.json: {contains: "round 2 (5 disputes at most) on merge request 2, its fix pushed"}
     ../forge.json: {contains: "heard"}

@@ -32,7 +32,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul-wrong"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2; its fix turns the tests red on a green head: not pushed; no objection left for the tester at this head: #3 blocked for a person"
+  summary: "round 1 (5 disputes at most) on merge request 2; its fix turns the tests red on a green head: not pushed; no objection left for the tester at this head: #3 blocked for a person"
   agent-calls: 1
   findings:
     - {rule: green-kept, level: warn, where: "merge request 2", message: "test_mul_two_by_three"}

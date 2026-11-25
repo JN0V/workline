@@ -66,7 +66,7 @@ func TestRoundTaskNamesTheCodeNotPastes(t *testing.T) {
 	b := Bounds{Issue: 5, Scope: []string{"lib.sh"}, Frozen: map[string]int{"tests/test_sub.sh": 5}}
 	r := round{MR: 9, Asked: []devmark.Asked{{Lens: "correctness", Where: "lib.sh:1", Text: "Important: sub swaps its operands", Holds: "blocks"}}}
 	task := roundTask(r, forge.Issue{ID: 5, Title: "Sub"}, b, Settings{Rounds: 3, MaxTurns: 40}, "sh run-tests.sh {report}", nil)
-	for _, want := range []string{"# Review round 1 of 3 on your pull request 9", "sub swaps its operands", "# Issue #5: Sub", "- `lib.sh`",
+	for _, want := range []string{"# Review round 1 (3 disputes at most) on your pull request 9", "sub swaps its operands", "# Issue #5: Sub", "- `lib.sh`",
 		"- `tests/test_sub.sh`", "`sh run-tests.sh {report}`", "40 turns at most", "Edit the files in your worktree", "Its diff is your fix", "a `note` a finding"} {
 		if !strings.Contains(task, want) {
 			t.Errorf("the round's question lacks %q:\n%s", want, task)

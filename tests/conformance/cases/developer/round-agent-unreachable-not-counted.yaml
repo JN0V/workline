@@ -38,5 +38,5 @@ expect:
   forge:
     merge-requests:
       - id: 2
-        comment-lacks: ["review round 1 of 5", "\"round\":1"]
+        comment-lacks: ["review round 1 (5 disputes at most)", "\"round\":1"]
         comment-contains: ["review round 1 not run", "its agent could not be reached (agent unavailable: quota)", "workline:sticky=developer/round-not-run"]
