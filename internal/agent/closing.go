@@ -15,8 +15,8 @@ import (
 // posts them as they came, for a person (#746).
 const ClosingUnread = "closing-unread.txt"
 
-// closingWords reads what an agent that worked in a worktree ends on
-// (ADR-0056); its edits are its code, so these words never fail the call:
+// closingWords reads what an agent that worked in a worktree ends on;
+// its edits are its code, so these words never fail the call:
 // a YAML list read whole, or those among its prose when one holds a kind
 // the role writes; else the words kept whole in out/ClosingUnread for its
 // role to post, a note never lost. Empty or `[]`, nothing beside its edits.
