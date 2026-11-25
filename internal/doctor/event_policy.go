@@ -90,7 +90,31 @@ func blockedEvent(r *Report, o Options) {
 			Fix:     "allow pull_request_target for these workflow files in Settings → Actions → Policies (" + eventPolicyDoc + ")"})
 		return
 	}
-	judgeEventPolicies(r, doc.Policies, files, users)
+	policies := make([]actionsPolicy, len(doc.Policies))
+	for i, p := range doc.Policies {
+		policies[i] = p
+		if p.ID == 0 {
+			continue
+		}
+		// The list carries no conditions: read the policy by its id.
+		one := exec.Command("gh", "api", fmt.Sprintf("repos/{owner}/{repo}/actions/policies/%d", p.ID))
+		one.Dir = o.Repo
+		b, err := one.Output()
+		var full actionsPolicy
+		if err == nil && json.Unmarshal(b, &full) == nil && (full.Conditions != nil || len(full.Rules) > 0) {
+			if full.ID == 0 {
+				full.ID = p.ID
+			}
+			if full.Name == "" {
+				full.Name = p.Name
+			}
+			if full.Enforcement == "" {
+				full.Enforcement = p.Enforcement
+			}
+			policies[i] = full
+		}
+	}
+	judgeEventPolicies(r, policies, files, users)
 }
 
 // judgeEventPolicies adds the checks: each workflow file on
@@ -162,6 +186,7 @@ func judgeEventPolicies(r *Report, policies []actionsPolicy, files map[string][]
 // actionsPolicy is an Actions policy as GET /repos/{owner}/{repo}/actions/policies
 // lists it (REST API version 2026-03-10).
 type actionsPolicy struct {
+	ID          int64  `json:"id"`
 	Name        string `json:"name"`
 	Enforcement string `json:"enforcement"` // disabled, active, evaluate
 	Conditions  *struct {
