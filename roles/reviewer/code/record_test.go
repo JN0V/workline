@@ -230,3 +230,22 @@ func TestRetestedReadsTheLastVerdict(t *testing.T) {
 		t.Errorf("retested = %v, want none: the finding's last verdict is a no", got)
 	}
 }
+
+// The unproven scenarios given once stay given whichever run's record a
+// merge keeps: this run's, or one applied since.
+func TestMergeKeepsUnprovenGiven(t *testing.T) {
+	marker := "<!-- workline:sticky=reviewer/summary -->"
+	was := Record{Reviewed: []string{"a1"}, Runs: 1}
+	given := Record{Reviewed: []string{"a1", "b2"}, Runs: 2, Unproven: true}
+	plain := Record{Reviewed: []string{"a1", "c3"}, Runs: 2}
+	// This run did not give them; a run applied since did.
+	m, err := parseRecord(MergeSummary("ours\n"+plain.String(), was.Read(), "theirs\n"+given.String()+"\n\n"+marker))
+	if err != nil || !m.Unproven {
+		t.Errorf("MergeSummary lost the unproven given: %+v %v", m, err)
+	}
+	// An older run that gave them, applied after a newer one that did not.
+	m, err = readRecord(MergeInto("newer\n"+plain.String()+"\n\n"+marker, "older\n"+given.String(), was.String(), marker))
+	if err != nil || !m.Unproven {
+		t.Errorf("MergeInto lost the unproven given: %+v %v", m, err)
+	}
+}

@@ -195,3 +195,18 @@ func TestUnbuiltTestsFileAlone(t *testing.T) {
 		t.Errorf("unbuiltTests = %q, %v; want %q", got, err, want)
 	}
 }
+
+// A rewrite whose covers entry names a test for an unproven scenario
+// takes it off the unproven ones; the others stay.
+func TestRecoveredPrunesUnproven(t *testing.T) {
+	r := record{Tests: []string{"tests.test_b", "tests.test_c"}, Scenarios: []work.Scenario{{Name: "Two"}, {Name: "By zero"}, {Name: "Empty"}},
+		Covers:   map[string][]string{"Two": {"tests.test_b"}},
+		Unproven: []testmark.Unproven{{Scenario: "By zero", Why: "by eye"}, {Scenario: "Empty", Why: "by eye"}}}
+	entry := []intent.Intention{{Kind: "covers", Value: map[string]any{"scenario": "By zero", "tests": "test_c"}}}
+	if why := r.recovered(entry, []string{"tests.test_c"}, "tests/test_c.sh"); why != "" {
+		t.Fatal(why)
+	}
+	if len(r.Unproven) != 1 || r.Unproven[0].Scenario != "Empty" {
+		t.Errorf("unproven now %v, want Empty alone", r.Unproven)
+	}
+}

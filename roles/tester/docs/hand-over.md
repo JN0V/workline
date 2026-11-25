@@ -44,6 +44,14 @@ flowchart LR
     request closing the issue.
   - `## Tests`: a table, each scenario and the test that checks it;
     a scenario no test can check is listed as not tested, with why.
+  - **Unproven**: each scenario no test proves, named — not tested,
+    or kept as today with no existing test found to guard it. Kept in
+    its record with its reason; a rewrite that covers one takes it off.
+    The developer's pull request lists them for the reviewer's tests
+    lens, which asks for a test where one can prove the scenario
+    ([the lenses](../../reviewer/docs/run-lenses.md#4-the-lenses)).
+    One kept as today with no guard is said apart and not listed, until
+    [#2164](https://github.com/JN0V/workline/issues/2164).
   - What the proof said: each test red on the base, by an assertion,
     a missing name the issue names, or a broken build the judge read.
     A test whose package did not build is named `file:name`, or by

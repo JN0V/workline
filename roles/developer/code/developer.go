@@ -943,6 +943,7 @@ func Post(runDir, repo string) int {
 		}
 		a.Proof, a.Caps = &p, caps
 		a.NoTest = b.Proof != nil && b.Proof.Kind == backlog.KindNone
+		a.Unproven = unprovenLines(b.Unproven)
 		a.Turns, a.Tokens, a.Cached, a.Tools, a.AgentFailed = u.Turns, u.Tokens, u.Cached, u.Tools, u.failed
 		v.Findings = append(v.Findings, found...)
 		title := issueTitle(runDir, a.Issue)

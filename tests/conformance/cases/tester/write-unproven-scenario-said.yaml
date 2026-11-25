@@ -1,0 +1,29 @@
+case: tester/write-unproven-scenario-said
+about: >
+  A scenario no test proves is said unproven: its entry gives a reason
+  in place of a test. The Draft lists it under Unproven, and its record
+  keeps it with its reason, for the developer's pull request and the
+  reviewer's tests lens there.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-declared-reason"}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: scenario-without-test}]
+  forge:
+    merge-requests:
+      - id: 1
+        body-contains: ["**Unproven**: By zero. No test proves it: the pull request that builds it lists it, and the reviewer's tests lens weighs whether a test can."]
+        body-lacks: ["**Unproven**: Two by three"]
+        comment-contains: ['"unproven":[{"scenario":"By zero","why":"a person reads the printed table by eye"}]']

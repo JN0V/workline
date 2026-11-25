@@ -1,0 +1,28 @@
+case: reviewer/tests-lens-unproven-not-asked-again
+about: >
+  The unproven scenarios are given to the tests lens once on a pull
+  request: its record says they were, so a later push's run does not ask
+  again what the tester and the judge settled.
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge:
+    merge-requests:
+      - id: 5
+        branch: workline/developer/4
+        title: Average over the count
+        body: "Closes #4\n\n## Unproven\n\nScenarios of the issue no test proves, as the tester said, each with its reason.\n\n- **Empty list**: a person reads the error by eye\n"
+        labels: []
+        comments:
+          - "No finding on the commits reviewed.\n\n<!-- workline:record reviewed=@reviewed@ runs=1 -->\n<!-- workline:unproven=asked -->\n\n<!-- workline:sticky=reviewer/summary -->"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: tests}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  run-files:
+    in/parts/1-tests/task.md: {contains: "### calc/half.go", not-contains: "The tester said no test proves"}
+  forge:
+    merge-requests:
+      - {id: 5, comment-contains: ["<!-- workline:unproven=asked -->"]}

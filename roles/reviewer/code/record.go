@@ -38,6 +38,7 @@ type Record struct {
 	Retried  bool     `json:"retried,omitempty"`  // the run on ready failed once: every lens owed again, once (#359)
 	Failed   []string `json:"failed,omitempty"`   // the lenses that did not answer on the commits after the record: asked first, those commits theirs (#588)
 	LeftBy   []string `json:"left-by,omitempty"`  // the lenses that left new commits past commits-per-push: asked on the other run's turn, never recorded unread (#591)
+	Unproven bool     `json:"unproven,omitempty"` // the tests lens was given the unproven scenarios once: never again
 	Blocks   []Block  `json:"blocks,omitempty"`   // the findings that block, carried to the next run (#326)
 	// Judged are the findings the judge answered, every run's, kept on a
 	// merge request for the weekly sample (ADR-0046); Gone, how many of
@@ -128,6 +129,9 @@ func (r Record) String() string {
 	if len(r.Weighed) > 0 {
 		s += "\n<!-- workline:weighed " + hidden(r.Weighed) + " -->"
 	}
+	if r.Unproven {
+		s += "\n" + unprovenAsked
+	}
 	return s
 }
 
@@ -186,6 +190,7 @@ func parseRecord(text string) (Record, error) {
 	if w := weighedLine.FindStringSubmatch(text); w != nil && json.Unmarshal([]byte(w[1]), &r.Weighed) != nil {
 		r.Weighed = nil // weighed again, never a record lost for it
 	}
+	r.Unproven = strings.Contains(text, unprovenAsked)
 	return r, nil
 }
 
@@ -207,7 +212,7 @@ func ids(list string) []string {
 // none had to read (#588), and names who left the rest (recorded, #591).
 func (r Record) add(commits, patches []string) Record {
 	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll, Retried: r.Retried,
-		Judged: slices.Clone(r.Judged), Gone: r.Gone, Weighed: slices.Clone(r.Weighed)}
+		Judged: slices.Clone(r.Judged), Gone: r.Gone, Weighed: slices.Clone(r.Weighed), Unproven: r.Unproven}
 	for _, c := range commits {
 		if !slices.Contains(out.Reviewed, c) {
 			out.Reviewed = append(out.Reviewed, c)
@@ -555,6 +560,7 @@ func MergeSummary(body, read, found string) string {
 		return body // none applied since this run read it
 	}
 	merged := ours
+	merged.Unproven = now.Unproven || ours.Unproven // given once, by either run
 	merged.Reviewed = union(now.Reviewed, ours.Reviewed)
 	merged.Patches = union(now.Patches, ours.Patches)
 	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)
@@ -588,6 +594,7 @@ func MergeInto(found, body, read, marker string) string {
 		return ""
 	}
 	merged := now
+	merged.Unproven = now.Unproven || ours.Unproven // given once, by either run
 	merged.Reviewed = union(now.Reviewed, ours.Reviewed)
 	merged.Patches = union(now.Patches, ours.Patches)
 	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)

@@ -3,6 +3,7 @@ package testmark
 import (
 	"encoding/json"
 	"regexp"
+	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/work"
@@ -28,6 +29,22 @@ type Draft struct {
 	Scenarios   []work.Scenario     `json:"scenarios,omitempty"`
 	Covers      map[string][]string `json:"covers,omitempty"`
 	RedUnproven string              `json:"red-unproven,omitempty"`
+	// Unproven: the scenarios no test proves, each with the tester's
+	// reason; none in a record written before.
+	Unproven []Unproven `json:"unproven,omitempty"`
+}
+
+// Unproven is a scenario no test proves, and why, as the tester said it:
+// the reviewer's tests lens weighs whether a test can prove it.
+type Unproven struct {
+	Scenario string `json:"scenario"`
+	Why      string `json:"why,omitempty"`
+}
+
+// KeptUnguarded says it is kept as today with no existing test found to
+// guard it: the tester's reason opens so (#1359).
+func (u Unproven) KeptUnguarded() bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(u.Why)), "kept as today")
 }
 
 // ReadDraft reads the tester's record on its Draft id from workline's own

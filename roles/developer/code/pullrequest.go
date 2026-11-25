@@ -148,6 +148,9 @@ func body(a devmark.Act, ready bool) string {
 		fmt.Fprintf(&b, "\n## %s\n\nFiles changed beyond the issue's %s, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.\n\n%s",
 			BeyondHeading, work.Name(work.Scope), devmark.BeyondLines(a.Beyond))
 	}
+	if len(a.Unproven) > 0 {
+		fmt.Fprintf(&b, "\n## %s\n\n%s\n\n%s\n", UnprovenHeading, unprovenLead, strings.Join(a.Unproven, "\n"))
+	}
 	if len(a.Refused) > 0 {
 		b.WriteString("\n## Left out\n\nRefused at apply, out of its bounds: an issue for a person, not this change.\n\n")
 		for _, r := range a.Refused {

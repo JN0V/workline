@@ -93,6 +93,15 @@ Cases in `tests/conformance/cases/tester/`:
   asked red only.
 - **Fail loud**: no test command blocks (`setting-missing`), no report
   blocks (`report-missing`); a change with no new test says so.
+- **A scenario no test proves, said unproven**: listed on the Draft
+  and kept in its record with its reason; the developer's pull request
+  lists it for the reviewer's tests lens
+  ([the Draft](hand-over.md#what-is-there)). Cases
+  `tester/write-unproven-scenario-said`,
+  `developer/pr-says-unproven-scenario`,
+  `reviewer/tests-lens-given-unproven-scenarios`,
+  `reviewer/tests-lens-unproven-not-asked-again`; tried in its pull
+  request.
 - **A build record told from a test**: with the tests alone, a red id
   in a suite that lost its base tests is the runner's record only when
   it is the suite's one case, with no classname or named `TestMain`.

@@ -159,6 +159,12 @@ type state struct {
 	Weigh      []weigh             `json:"weigh,omitempty"`     // the tester's answers that no test is needed a judge weighs this run (#1303)
 	Held       string              `json:"held,omitempty"`      // with Weigh and nothing new to read: the summary of the review held
 	Answers    []reviewmark.Answer `json:"answers,omitempty"`   // the tester's answers that no test is needed, on the merge request (#1303)
+
+	// Unproven: the scenarios the tester said no test proves, as the
+	// developer's pull request lists them, for the tests lens once;
+	// UnprovenGiven: given this run, recorded so never again.
+	Unproven      string `json:"unproven,omitempty"`
+	UnprovenGiven bool   `json:"unproven-given,omitempty"`
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -440,6 +446,9 @@ func prepare(runDir, repo string, s Settings) int {
 	st.Issues, unread = readIssues(repo, ids, s.IssueLinesMax)
 	if len(st.Issues) > 0 {
 		st.Beyond = beyondListed(mr, msgs)
+	}
+	if !st.Record.Unproven {
+		st.Unproven = unprovenOf(repo, s.TestimonyLines)
 	}
 	// An issue cut is said once the lenses are asked to read it, with
 	// the testimony's: a change no lens reads says why, not what they
@@ -1001,6 +1010,12 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 		}
 		if l.Hints != "" {
 			l.Text = strings.TrimSpace(l.Text) + hintsText(st.Hints)
+		}
+		if lens == testsLens && st.Unproven != "" {
+			// Once on its pull request: the tester's and the judge's
+			// answers settle what it finds, never asked again.
+			l.Text = strings.TrimSpace(l.Text) + unprovenText(st.Unproven)
+			st.UnprovenGiven = true
 		}
 		read[lens] = l
 	}

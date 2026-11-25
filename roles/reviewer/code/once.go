@@ -104,6 +104,7 @@ func capCommits(repo string, s Settings, st *state, sp span) error {
 // past commits-per-push, it names the lenses that left the rest (#591).
 func (st state) recorded() Record {
 	r := st.Record.add(st.Commits, st.Patches)
+	r.Unproven = r.Unproven || st.UnprovenGiven
 	if st.Upto != "" {
 		r.LeftBy = facets(st)
 	}

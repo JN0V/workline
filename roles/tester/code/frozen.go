@@ -58,6 +58,12 @@ type record struct {
 	// build broken on the base (ADR-0065); the developer's pull request
 	// says it too. None when proven.
 	RedUnproven string `json:"red-unproven,omitempty"`
+	// Unproven: the scenarios no test proves — no test can check them, or
+	// kept as today with no existing test found to guard them —, each
+	// with its reason: the developer's pull request lists them for the
+	// reviewer's tests lens. A rewrite covering one takes it off
+	// (recovered). None in a record written before.
+	Unproven []testmark.Unproven `json:"unproven,omitempty"`
 }
 
 // body is the comment a person reads: the tests, frozen, and how to
@@ -186,7 +192,7 @@ func merged(rs []record) record {
 	}
 	m := rs[0]
 	m.Files = map[string]string{}
-	m.Tests, m.Errored, m.Scenarios = nil, nil, nil
+	m.Tests, m.Errored, m.Scenarios, m.Unproven = nil, nil, nil, nil
 	for _, r := range rs {
 		for k, v := range r.Files {
 			m.Files[k] = v
@@ -194,6 +200,7 @@ func merged(rs []record) record {
 		m.Tests = append(m.Tests, r.Tests...)
 		m.Errored = append(m.Errored, r.Errored...)
 		m.Scenarios = append(m.Scenarios, r.Scenarios...)
+		m.Unproven = append(m.Unproven, r.Unproven...)
 	}
 	return m
 }

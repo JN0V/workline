@@ -43,6 +43,18 @@ Part of [a run on code](run.md): step 4, what each lens reads and answers.
     past one call (the budget, `diff-lines-max`): [in parts](parts.md).
   - each cut past one of these settings is said in the run, with the
     setting that raises it (`input-cut`).
+- **Tests, and the scenarios no test proves**: the `## Unproven` list
+  of the developer's pull request (its own branch, never a fork's; cut past
+  `testimony-lines-max`) is given to the tests lens with the tester's
+  reasons, once: its record says so, and no later run asks again. A
+  scenario the change makes testable with no test is its Important
+  finding, settled the usual way: the tester adds the test or says
+  none is needed, the judge weighs
+  ([the Draft](../../tester/docs/hand-over.md#what-is-there)). Cases
+  `reviewer/tests-lens-given-unproven-scenarios`,
+  `tests-lens-unproven-not-asked-again`,
+  `tests-lens-unproven-not-from-a-fork`.
+
 ### Intent and simplicity
 
 - **Intent** (`needs: issue`): a change saying `Closes #4` (or `fixes`,

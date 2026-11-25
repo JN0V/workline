@@ -32,6 +32,7 @@ import (
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/codepick"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/routing"
@@ -588,7 +589,7 @@ func Post(runDir, repo string) int {
 		"body":  draftBody(t, tested, said, alone, assumed(notes), proof),
 		// The tests frozen to whoever builds (ADR-0055, guards): kept in
 		// workline's own comment on the Draft once it is opened.
-		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Tests: newTests, Errored: erroredOf(runDir, newTests), Scenarios: t.Scenarios, Covers: tested, RedUnproven: unprovenOf(*proof)}.intention()["comment"],
+		"record": record{Issue: t.Issue, Base: t.Base, Files: blobs, Tests: newTests, Errored: erroredOf(runDir, newTests), Scenarios: t.Scenarios, Covers: tested, RedUnproven: unprovenOf(*proof), Unproven: unprovenScenarios(t, said)}.intention()["comment"],
 	}
 	if len(undo) > 0 {
 		mr["unopened"] = undo // its Draft not opened, the issue keeps its state (#1280)
@@ -1075,6 +1076,22 @@ func draftBody(t task, tested map[string][]string, said map[string]string, alone
 			if n, ok := said[sc.Name]; ok {
 				fmt.Fprintf(&b, "- %s: %s\n", sc.Name, strings.ReplaceAll(n, "\n", " "))
 			}
+		}
+		var asked, waiting []string // each name inert: its @ pings no one
+		for _, x := range unprovenScenarios(t, said) {
+			if x.KeptUnguarded() {
+				waiting = append(waiting, devmark.InertText(x.Scenario))
+			} else {
+				asked = append(asked, devmark.InertText(x.Scenario))
+			}
+		}
+		if len(asked) > 0 {
+			fmt.Fprintf(&b, "\n**Unproven**: %s. No test proves %s: the pull request that builds it lists %[2]s, "+
+				"and the reviewer's tests lens weighs whether a test can.\n", strings.Join(asked, ", "), map[bool]string{true: "it", false: "them"}[len(asked) == 1])
+		}
+		if len(waiting) > 0 {
+			fmt.Fprintf(&b, "\n**Unproven, kept as today**: %s. Nothing guards %s; a guard test waits for "+
+				"[#2164](https://github.com/JN0V/workline/issues/2164), so the tests lens is not asked.\n", strings.Join(waiting, ", "), map[bool]string{true: "it", false: "them"}[len(waiting) == 1])
 		}
 	}
 	if len(assumes) > 0 {
