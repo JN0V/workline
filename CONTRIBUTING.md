@@ -68,3 +68,13 @@ real cases, and costs tokens, so it runs only when asked:
   ([ADR-0043](docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
 - Never commit a secret nor a forbidden term: the committer scans each
   commit with gitleaks.
+
+## Releases
+
+- **release-please cuts them**, from the pull request it keeps open; the
+  maintainer accepts it with a label
+  ([ADR-0017](docs/adr/0017-the-release-manager.md)).
+- **The line takes a release once tried** on a copy, then pinned in its
+  own pull request
+  ([ADR-0071](docs/adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md)).
+- **1.0, step by step**: [releasing workline 1.0](docs/release-1-0.md).
