@@ -84,8 +84,8 @@ More on other pages:
 
 Left to a person, saying why:
 
-- a doc leaving less than a quarter of a task for its sources: condense or
-  split it first;
+- a doc leaving less than a quarter of a task for its sources: split it
+  first;
 - one with sources in another repository;
 - one needing more than `parts-max` parts (8), reported `sources-too-wide`
   with how many it would take: narrow its sources or split the doc;

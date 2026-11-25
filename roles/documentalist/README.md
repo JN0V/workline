@@ -54,8 +54,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   ([checks](docs/checks.md)).
 - With an agent: reads each suspect doc against its sources, and fixes it
   or vouches for it by moving `checked`; when gardening, it also reads
-  stale docs again, merges repeated passages, condenses a doc over
-  budget, and reads the pages the reader checks flag
+  stale docs again, merges repeated passages, splits a doc over budget
+  into linked pages, and reads the pages the reader checks flag
   ([gardening](docs/gardening.md)).
 
 **Does not**: write code (its patches touch only `docs`), rewrite a doc the
@@ -168,7 +168,7 @@ Under the same key:
   merge request judged on its change alone, a night spending what its
   caps allow
   ([measured](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-a-doc-judged-on-its-change-alone)).
-- Condensing and splitting ask a frontier model (`model.tasks`).
+- Splitting asks a frontier model (`model.tasks`).
 - Reading pages for their reader: [what it cost](docs/reader.md#cost).
 - Caps: `ai-max-calls`, `ai-max-tokens`, `whole-chars`,
   `parts-max-per-run` (a night's parts), `max-open-merge-requests`;

@@ -22,8 +22,8 @@ agent is asked then, beside [the suspect docs](tasks.md), and how its fixes
 reach a person. Each task says when it comes. Part of
 [the documentalist](../README.md).
 
-- [Condensing and splitting a card](gardening-condense.md): a doc over
-  its budget, a card too long.
+- [Splitting](gardening-split.md): a doc over its budget, split into
+  linked pages; a card too long, into cards.
 - [Its merge requests](gardening-merge-requests.md): the records kept on
   merged merge requests, one merge request per task, and when the base
   moves.
@@ -47,7 +47,7 @@ sources as they are now, in full.
 
 With no suspect or stale doc, the first passage written in two docs: keep
 it in the doc it belongs to, and in the other a sentence and a link to it.
-It comes before condensing: two copies drift apart. The judge checks that:
+It comes before splitting: two copies drift apart. The judge checks that:
 
 - what leaves a doc is found in the other;
 - it links to the one keeping it;
@@ -55,7 +55,7 @@ It comes before condensing: two copies drift apart. The judge checks that:
 - the passage is no longer repeated;
 - no reader problem is added (`patch-introduces`).
 
-Then come [condensing, and splitting a card](gardening-condense.md).
+Then comes [splitting a doc over its budget](gardening-split.md).
 
 ## Merging cards
 
