@@ -332,6 +332,10 @@ type Merge struct {
 	// Alone are the kinds of workline's own pull requests that wait for a
 	// person's yes at `normal` the project lets merge with none (MergeAlone).
 	Alone []string `yaml:"alone"`
+	// Shadow are the kinds whose proof the line asks and says on each
+	// pull request, at any level, while nothing merges for it: `task`,
+	// measured before `alone` lists it (MergeShadow).
+	Shadow []string `yaml:"shadow"`
 }
 
 // MergeLevels are the merge policy's levels, as the product owner's are
@@ -347,6 +351,11 @@ var MergeLevels = []string{"cautious", "normal", "enterprising"}
 // rewording of pages for their reader; `task`, the developer's task that
 // changes no behaviour (docs/adr/0073-a-task-that-changes-no-behaviour-may-merge-alone.md).
 var MergeAlone = []string{"reader", "task"}
+
+// MergeShadow are the kinds `merge.shadow` may list: `task`, the judge's
+// answer on its behaviour said with no merge made on it
+// (docs/adr/0073-a-task-that-changes-no-behaviour-may-merge-alone.md).
+var MergeShadow = []string{"task"}
 
 // LoadProjectConfig reads <repo>/.workline/config.yaml. A missing file is an
 // empty config; an unreadable or invalid one is an error.
@@ -383,6 +392,14 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 			if !slices.Contains(MergeAlone, kind) {
 				return nil, &ConfigError{fmt.Sprintf("merge.alone lists %q: the kinds it may let merge alone are %s", kind, strings.Join(MergeAlone, ", "))}
 			}
+		}
+		for _, kind := range c.Merge.Shadow {
+			if !slices.Contains(MergeShadow, kind) {
+				return nil, &ConfigError{fmt.Sprintf("merge.shadow lists %q: the kinds it may list are %s", kind, strings.Join(MergeShadow, ", "))}
+			}
+		}
+		if slices.Contains(c.Merge.Alone, "task") && c.Merge.Autonomy == "enterprising" {
+			return nil, &ConfigError{"merge.alone lists task, which only autonomy normal reads: at enterprising a task merges by its milestone's release candidate"}
 		}
 		if len(c.Merge.Alone) > 0 && c.Merge.Autonomy == "cautious" {
 			return nil, &ConfigError{fmt.Sprintf("merge.alone lets kinds merge with no person's yes, which only autonomy normal or enterprising does: autonomy is %q", c.Merge.Autonomy)}

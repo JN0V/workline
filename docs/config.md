@@ -91,7 +91,7 @@ The keys of `.workline/config.yaml`, in two tables.
 | `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`, `fix`; on a merge request `new`, `base-timeout`, `config`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
-| `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, a reproduced bug's fix among it, with no yes; `enterprising`: the developer's features and tasks too, a person's yes on the milestone's [release candidate](release-candidate.md); `alone: [reader]`: the reader's rewordings too; `alone: [task]`, at `normal`: a task that changes no behaviour too ([ADR-0073](adr/0073-a-task-that-changes-no-behaviour-may-merge-alone.md)) ([merge policy](merge-policy.md)); off unless set |
+| `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, a reproduced bug's fix among it, with no yes; `enterprising`: the developer's features and tasks too, a person's yes on the milestone's [release candidate](release-candidate.md); `alone: [reader]`: the reader's rewordings too; `alone: [task]`, at `normal`: a task that changes no behaviour too; `shadow: [task]`, at any level: its judge asked and said, nothing merged on it ([ADR-0073](adr/0073-a-task-that-changes-no-behaviour-may-merge-alone.md)) ([merge policy](merge-policy.md)); off unless set |
 
 ## Keys: routing, boards, packs
 
@@ -119,7 +119,7 @@ A commented example of every key, and what its comments point to: [a config exam
   one someone believes in and nothing applies.
 - **A level the top-level `autonomy` does not know**, the levels named.
 - **A level `merge:` does not know**, the levels named; in `alone`, a
-  kind other than `reader` or `task`, or `alone` at `cautious`.
+  kind other than `reader` or `task`, or `alone` at `cautious`; `task` in `alone` at `enterprising`; in `shadow`, a kind other than `task`.
 - **A role retired**, named in `roles:` or `routing:`: the release manager
   is gone, and the message names the release tool to use instead
   ([ADR-0017](adr/0017-the-release-manager.md)).

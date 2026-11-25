@@ -231,8 +231,11 @@ func taskAlone(o FollowOptions, n *normal, d devmark.Merge) bool {
 // public interface, toolchain, build platform, nor chosen limit or value.
 func behaviourChanged(o FollowOptions, w weighed, d devmark.Merge) (string, error) {
 	tests, err := role.TestDef(o.RolesDir, o.Repo)
-	if err != nil {
+	switch {
+	case err != nil:
 		return "the project's test files cannot be told: " + err.Error(), nil
+	case !tests.PathsSet:
+		return "the project's test files are the generic guess: the tester's `test-paths`, or a listed pack, say which they are", nil
 	}
 	from, err := git(o.Repo, nil, "merge-base", w.baseTip, w.tip)
 	if err != nil {
@@ -248,7 +251,9 @@ func behaviourChanged(o FollowOptions, w weighed, d devmark.Merge) (string, erro
 			return fmt.Sprintf("it changes `%s`, a test that was there: a change of no behaviour leaves the tests as they were", f[i+1]), nil
 		}
 	}
-	if d.Kept == "" || d.Kept != d.ReviewedAt {
+	// Bound to the head itself, past the engine's own merges of the
+	// base: a head cut back since keeps the review, never the yes.
+	if d.Kept == "" || d.Kept != d.ReviewedAt || d.Kept != reviewedTip(o.Repo, w.tip, w.baseTip) {
 		return "no judge said on its head that it keeps the behaviour (no public interface, toolchain, build platform, nor chosen limit or value changed)", nil
 	}
 	return "", nil

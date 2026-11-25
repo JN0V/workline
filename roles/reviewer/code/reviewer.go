@@ -2265,7 +2265,11 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	v.Reused = reused
 	v.Status = status(v.Findings)
 	v.Weighed = weighs
-	v.Kept, v.KeptAt = st.keptAnswer(runDir)
+	var kept *reviewmark.Answered
+	v.Kept, v.KeptAt, kept = st.keptAnswer(runDir)
+	if kept != nil && st.Spec == nil && !slices.Contains(v.Record.Judged, *kept) {
+		v.Record.Judged = append(v.Record.Judged, *kept) // sampled by the auditor, as a finding judged
+	}
 	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged) + st.leftSaid() + st.still() + weighedSummary(len(weighs), settledN)
 	if len(st.Skipped) > 0 {
 		v.Summary += "; not asked: " + strings.Join(st.Skipped, ", ")

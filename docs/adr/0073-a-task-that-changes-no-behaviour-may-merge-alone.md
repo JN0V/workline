@@ -38,20 +38,33 @@ no finding open that blocks or is Important. Then:
   no file the project's test definition calls a test (the tester's
   `test-paths`). A test added is allowed. The checks green on the head
   then say the tests that passed before still pass.
+- **Test paths the project set**: the tester's `test-paths`, or a
+  listed pack. The generic guess misses a project's fixtures and
+  folders of its own: with it, the task waits.
 - **The judge's yes on the head**: the reviewer asks the judge
   ([roles/judge](../../roles/judge/role.yaml)) one question on the whole
-  change and the issue: does it keep the behaviour? A yes is written on
-  the reviewer's summary, by head; `workline follow` reads it there.
+  change and the issue: can a user or caller observe anything it adds,
+  removes or changes? The label may be wrong. A yes is written on the
+  reviewer's summary, by head; `workline follow` reads it there.
+- **Bound to the head**: the yes counts only on the head it was given
+  on, past the engine's own merges of the base. A head cut back or
+  rebased since keeps its review, never the yes: the next push asks
+  again.
 
 ### Excluded, always a person's yes
 
-- **Person-only paths**: a file `CODEOWNERS` lists (CI files,
-  `.workline/`): never alone, any kind
+- **Person-only paths**: only where the project's `CODEOWNERS` lists
+  them (workline's lists CI files and `.workline/`); with no
+  `CODEOWNERS`, only the files that steer agents. Never alone, any kind
   ([ADR-0068 §4](0068-the-line-steps-back-on-its-own-drift.md#4-the-guard-is-guarded)).
-- **A public interface changed**, **the toolchain or build platform
-  changed**, **a limit or value a person chose changed**: what the
-  judge is asked. These need judgement; no path list or language rule
-  tells them everywhere (principle 4).
+  A project with no list holds no CI file this way.
+- **A public interface changed** (an exported name, a declaration in a
+  public header, a protocol message or topic, a stored key or data
+  layout), **the toolchain or build platform changed**, **a limit or
+  value a person chose changed**, **a test fixture, golden file or
+  snapshot changed, or a new file changing which tests run or how**:
+  the judge's examples. These need judgement; no path list or language
+  rule tells them everywhere (principle 4).
 - **Unsure is no**: a judge's no, unsure, no answer, a diff past the
   reviewer's `diff-lines-max`, or a head the judge did not answer on,
   waits (principle 15: a guess may only pass).
@@ -59,22 +72,28 @@ no finding open that blocks or is Important. Then:
 ### Off by default, measured before it is turned on
 
 - **A setting, not a level**: `task` joins `reader` in `merge.alone`;
-  `cautious` refuses it.
-- **No project turns it on before a measure**: DomoticsCore only after
-  20 pull requests counted in
-  [#2190](https://github.com/JN0V/workline/issues/2190), the tasks
-  counted apart.
+  `cautious` refuses it, and `enterprising`, where a task merges by its
+  release candidate already.
+- **Asking apart from acting**: `merge: {shadow: [task]}`, at any
+  level, has the reviewer ask the judge and say its answer on each
+  task's pull request, while nothing merges on it. A project measures
+  the judge this way before it lists `task` in `alone`.
+- **No project turns it on before a measure**: DomoticsCore runs it in
+  shadow, and lists it in `alone` only after 20 pull requests counted in
+  [#2190](https://github.com/JN0V/workline/issues/2190), the tasks and
+  the judge's answers counted apart.
 - **A revert demotes it**, as any kind merged alone
   ([reverts](../merge-policy-reverts.md)).
 
 ## Consequences
 
-- **One judge call a push** on a task's pull request, only where the
-  setting is on.
+- **One judge call a push** on a task's pull request, only where
+  `alone` or `shadow` lists `task`.
 - **No new role, no new check**: the reviewer asks, the judge answers,
   the engine reads.
-- **The auditor reads it** as any `code` merged alone: its record says
-  the kind, `task`.
+- **The auditor reads it**: the judge's answer is kept with the
+  reviewer's findings judged, which its weekly sample draws; a merge
+  alone is recorded as any `code`, its kind `task`.
 
 ## Not chosen
 

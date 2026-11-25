@@ -10,7 +10,7 @@ about: >
   follow` sets `workline/accepted` on its head and turns auto-merge on.
 given:
   repo: tested-draft
-  config: {merge: {autonomy: normal, alone: [task]}}
+  config: {merge: {autonomy: normal, alone: [task]}, roles: {tester: {settings: {test-paths: ["tests/**"]}}}}
   setup:
     - "git checkout -q main && git checkout -q -b workline/developer/3 && printf 'add() {\\n  echo $(($1 + $2))\\n}\\n' > lib.sh && GIT_COMMITTER_NAME=workline-bot git commit -qam 'refactor: add on three lines for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/developer/3 && sed -i \"s/@head@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\" && git checkout -q main"
   forge:

@@ -26,7 +26,7 @@ run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: 
 expect:
   status: pass
   run-files:
-    in/judge/kept/question.yaml: {contains: "Does it keep the behaviour?"}
+    in/judge/kept/question.yaml: {contains: "can no user or caller observe anything it adds, removes or changes?"}
   forge:
     merge-requests:
       - id: 5

@@ -132,11 +132,15 @@ a task merges alone. Off by default.
 - **A fix's gates**, all of them, but a reproduced bug.
 - **No test that was there changed**: no file the tester's
   `test-paths` call a test modified, deleted or renamed; one added is
-  allowed.
+  allowed. The `test-paths` must be the project's (or a listed
+  pack's), never the generic guess.
 - **The judge's yes on its head**: the reviewer asks it whether the
   whole change keeps the behaviour, no public interface, toolchain,
   build platform, nor chosen limit or value changed; a yes is a hidden
-  line on its summary, by head.
+  line on its summary, bound to that head: a head cut back since
+  waits.
+- **In shadow first**: `merge: {shadow: [task]}` has the judge asked
+  and its answer said, nothing merged on it.
 - **Else it waits** for a person's yes, said once on it
   (`merge-waits=task`), with why.
 
