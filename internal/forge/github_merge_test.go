@@ -26,8 +26,11 @@ func TestSumChecks(t *testing.T) {
 			{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "success"},
 		{"cancelled beside a newer run", []checkContext{{Type: "CheckRun", Name: "judge", Status: "COMPLETED", Conclusion: "CANCELLED"},
 			{Type: "CheckRun", Name: "judge", Status: "IN_PROGRESS"}}, "pending"},
-		{"only cancelled", []checkContext{{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "CANCELLED"},
+		{"only cancelled", []checkContext{{Type: "CheckRun", Name: "judge", Status: "COMPLETED", Conclusion: "CANCELLED"},
 			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "pending"},
+		// #2122: the line's own run, cancelled, is no check of the change.
+		{"own follow only cancelled", []checkContext{{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "CANCELLED"},
+			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "success"},
 		{"cancelled beside a failure", []checkContext{{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "CANCELLED"},
 			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "FAILURE"}}, "failure"},
 		// #1031: each check by its latest run, GitHub's ids telling which,
@@ -50,8 +53,8 @@ func TestSumChecks(t *testing.T) {
 
 // A cancelled run is no result (#377), read on GitHub's own answers of
 // 2026-10-14: #366's head 67195fb, its `follow` only cancelled — the
-// forge cancelled the runs a newer label's replaced —, reads as pending,
-// no longer red; #349's head, `follow` cancelled beside two that passed,
+// forge cancelled the runs a newer label's replaced —, reads as green (#2122;
+// pending before), never red; #349's head, `follow` cancelled beside two that passed,
 // reads as green.
 func TestSumChecksLive(t *testing.T) {
 	for _, c := range []struct{ head, nodes, want string }{
@@ -60,7 +63,7 @@ func TestSumChecksLive(t *testing.T) {
 			{"__typename":"CheckRun","name":"judge","status":"COMPLETED","conclusion":"SUCCESS"},
 			{"__typename":"CheckRun","name":"findings","status":"COMPLETED","conclusion":"SKIPPED"},
 			{"__typename":"CheckRun","name":"workline","status":"COMPLETED","conclusion":"SUCCESS"},
-			{"__typename":"StatusContext","context":"workline/verdict","state":"SUCCESS"}]`, "pending"},
+			{"__typename":"StatusContext","context":"workline/verdict","state":"SUCCESS"}]`, "success"}, // #2122: was pending
 		{"5261d7f", `[{"__typename":"CheckRun","name":"follow","status":"COMPLETED","conclusion":"CANCELLED"},
 			{"__typename":"CheckRun","name":"test","status":"COMPLETED","conclusion":"SUCCESS"},
 			{"__typename":"CheckRun","name":"judge","status":"COMPLETED","conclusion":"SUCCESS"},
