@@ -342,7 +342,8 @@ Parked, none seen in the V1 rounds:
   is never weighed; on workline, 2026-11-25, the ten largest, 28,513
   of the 38,460 test lines `curator-paths` names. A folder weighed
   waits `curator-window` measures, so a weekly run cycles through the
-  twelve largest that fit.
+  twelve largest that fit; none of the roles' folders is among the
+  twelve.
 - **The curator's removals**: a tester's test merged while its issue is
   still open is not told apart (only open Drafts' records are read); a
   mutation report other than Gremlins' or the schema's is not read
