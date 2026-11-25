@@ -22,6 +22,9 @@ main's run after a merge and gardening read every doc
   (`AGENTS.md`, `CLAUDE.md`).
 - Words per section (its own text, up to the next heading).
 - Card size, min and max: too small is fragmentation.
+- On a merge request, a user page it takes over a lines or words budget
+  blocks, no agent asked; one already over on the base only warns
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#amendment-2026-11-25-a-budget-a-pull-request-adds-blocks)).
 - An archived doc (`archived: <date>` or `true` in its header) is left
   out of budgets and duplicates; its links are still checked.
 

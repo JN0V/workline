@@ -1161,6 +1161,10 @@ func (r *preRun) checkHygiene() error {
 		counted = slices.DeleteFunc(slices.Clone(docs), func(d *docmark.Doc) bool { return !r.ofPush[d.Path] })
 	}
 	counts := CountsOff(r.repo, tree, counted)
+	// The budgets of the user pages a merge request takes over, within them
+	// on its base, block with no agent, as a new lint finding does; a page
+	// over on its base only warns: that debt is gardening's.
+	base, pages := gitrange.Base(rangeOf(r.runDir)), userPages(tree, s.Reader)
 	for _, p := range append(append(r.problems, gone...), counts...) {
 		if r.onMain && p.Rule == "links-not-checked" {
 			continue // links to other sites are the night's: main's issue lists problems, not checks left to it
@@ -1168,6 +1172,12 @@ func (r *preRun) checkHygiene() error {
 		f := verdict.Finding{Rule: p.Rule, Where: p.Where, Message: p.Message}
 		if p.Rule == "setting-missing" {
 			f.Level = "block" // a check that could not run is not a pass
+		}
+		if doc, _, _ := strings.Cut(p.Where, "#"); (p.Rule == "doc-too-long" || p.Rule == "section-too-long") && base != "" && os.Getenv("WORKLINE_EVENT") == "merge-request" && slices.Contains(pages, doc) {
+			was, _ := git(r.repo, "show", base+":"+doc) // a page it adds is within on its base
+			if !slices.ContainsFunc(budgets(Tree{Docs: map[string]string{doc: was}}, s.Budgets), func(q Problem) bool { return q.Key == p.Key }) {
+				f.Level, f.Message = "block", f.Message+"; within it on the base, this merge request takes it over: condense or split it"
+			}
 		}
 		r.findings = append(r.findings, f)
 	}
@@ -2195,11 +2205,11 @@ func Post(runDir, repo string) int {
 	}
 	v := verdict.Verdict{Status: verdict.Pass, Findings: kept}
 	// Nothing of the answer was refused: what blocks — a check that could
-	// not run — is not the answer's, and asking the
-	// agent again would change none of it.
+	// not run, a page taken over its budget — is not the answer's, and
+	// asking the agent again would change none of it.
 	switch {
 	case blocking > 0:
-		v.Status, v.Summary, v.Final = verdict.Block, "some sources could not be judged, or some checks could not run", true
+		v.Status, v.Summary, v.Final = verdict.Block, "some sources could not be judged, some checks could not run, or a page went over its budget", true
 	case len(intents) > 0:
 		v.Summary = "docs updated"
 	case slices.ContainsFunc(kept, func(f verdict.Finding) bool { return f.Rule == verdict.WaitsForReady }):

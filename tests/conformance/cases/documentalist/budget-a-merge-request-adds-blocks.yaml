@@ -1,0 +1,13 @@
+case: documentalist/budget-a-merge-request-adds-blocks
+about: "A merge request that pushes a user page over its budget, within it on the base, blocks with no agent, as a new lint finding does: its author condenses or splits the page."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {budgets: {doc-lines: 6, section-words: 12}}}}}
+  setup:
+    - "printf '\\nRefresh tokens last thirty days, and a refresh gives a new access token with the same rights.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): say how long refresh tokens last'"
+run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: block
+  findings:
+    - {rule: doc-too-long, where: docs/tech/auth.md, message: "within it on the base"}
+    - {rule: section-too-long, where: "docs/tech/auth.md#token-refresh", message: "within it on the base"}

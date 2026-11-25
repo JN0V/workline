@@ -10,6 +10,8 @@
   ([the build order](#build-order)); one point open, one decided
   ([open](#open)); amended 2026-11-23
   ([squash only](#amendment-2026-11-23-squash-only-the-title-blocks))
+  and 2026-11-25
+  ([a budget a pull request adds blocks](#amendment-2026-11-25-a-budget-a-pull-request-adds-blocks))
 - **Date:** 2026-10-21
 - **Decided by:** the maintainer, on 2026-10-21: the principle and five
   cuts, as a panel of three lenses (latency, reliability, cost) refined
@@ -279,6 +281,26 @@ merges assumed to stay for real conflicts.
   closed.
 - **Unchanged**: secrets, forbidden terms and identities in a commit
   still block; the hooks still check each commit on the machine.
+
+## Amendment (2026-11-25): a budget a pull request adds blocks
+
+- **Decided by** the maintainer on 2026-11-25; amends cut 3's "no docs
+  obligation per PR" on one point.
+- **What blocks**: a user page within its budget on the base and over it
+  on the head — more than `doc-lines` lines, or a section over
+  `section-words` words. The documentalist says it as a blocking finding
+  on the merge request; the author condenses or splits the page, as for
+  a lint finding the change adds.
+- **No agent, no token**: the engine counts the page on the base and on
+  the head.
+- **Debt only warns**: a page already over its budget on the base stays
+  a warning, for gardening to condense, however much the change adds.
+- **User pages**: those the reader checks read (`reader.pages` but
+  `skip`); decisions, research and history never block.
+- **Why**: over-budget pages piled up faster than gardening condensed
+  them, and a split costs its author least while the change is fresh.
+- **Unchanged**: no zero-suspect rule, no `checked` stamps asked of a
+  pull request.
 
 [#464]: https://github.com/JN0V/workline/issues/464
 [#580]: https://github.com/JN0V/workline/issues/580
