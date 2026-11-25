@@ -232,7 +232,7 @@ func (p *Plan) unaccept(c Proposal, why, then string) {
 	}
 	p.Unaccepted[c.Issue] = why
 	now := clock.Now().UTC()
-	line := fmt.Sprintf("Took `%s` off #%d, put by %s: %s; %s.", LabelAccepted, c.Issue, c.Ticked, strings.TrimSuffix(why, "."), then)
+	line := fmt.Sprintf("Took `%s` off #%d, put by %s: %s; %s.", LabelAccepted, c.Issue, bare(c.Ticked), strings.TrimSuffix(why, "."), then)
 	p.Record.Did = append(p.Record.Did, Did{Issue: c.Issue, Act: "unaccept", Level: p.config.Level, Day: now.Format(dateLayout), Line: line,
 		At: p.config.Read.At, Body: p.config.Read.Bodies[c.Issue]})
 }
