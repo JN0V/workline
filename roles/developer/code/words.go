@@ -30,6 +30,9 @@ const ObjectionsFile = ".workline/objections.yaml"
 // to its one-line reason.
 const BeyondFile = ".workline/beyond.yaml"
 
+// SubjectFile is where, in its worktree, its agent writes its summary.
+const SubjectFile = ".workline/subject"
+
 // unreadMax bounds the words posted as they came.
 const unreadMax = 3000
 
@@ -51,6 +54,12 @@ func agentWords(runDir string) (objections []intent.Intention, beyond map[string
 			}
 			beyond = read
 		}
+		data, said, err = wordsFile(tree, SubjectFile, "subject")
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		unread = append(unread, said...)
+		_ = os.WriteFile(filepath.Join(runDir, "out", "subject"), data, 0o644)
 		// A link is never followed: what it leads to is not its agent's
 		// to post. Removed, a folder whole, it reaches no branch either.
 		data, said, err = wordsFile(tree, ObjectionsFile, "objections file")

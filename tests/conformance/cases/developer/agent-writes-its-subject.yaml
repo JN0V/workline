@@ -1,0 +1,30 @@
+case: developer/agent-writes-its-subject
+about: >
+  The developer's agent writes its pull request's subject, the words
+  after `type(scope): `, in `.workline/subject` of its worktree; the
+  engine checks it against the project's commit rules, never cuts it.
+  It passes: its commits and its pull request carry it, the file in no
+  commit.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {SUBJECT: "multiply two whole numbers"}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply two numbers for every caller that needs the product of two whole numbers", labels: ["workline:ready", "bug"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: subject-refused}]
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
+  pushed-message:
+    workline/developer/2: "fix: multiply two whole numbers\n\nWorkline-Role: developer"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        title: "fix: multiply two whole numbers"

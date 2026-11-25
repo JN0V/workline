@@ -12,7 +12,8 @@
 # tokens (tokens), or 5000 fresh beside 100000 read from cache
 # (cached), or it works on past its time, a child of its own
 # set to write "late" in lib.sh (slow); or it fails once it edited
-# (fail). It answers $SAY, if set, on its output. It fails out of its
+# (fail). It writes $SUBJECT, if set, as its pull request's subject in
+# .workline/subject. It answers $SAY, if set, on its output. It fails out of its
 # worktree, and where its own run is red.
 set -eu
 cat >/dev/null
@@ -102,4 +103,5 @@ slow)
 	sleep 30
 	;;
 esac
+[ -z "${SUBJECT:-}" ] || { mkdir -p .workline && printf '%s\n' "$SUBJECT" > .workline/subject; }
 [ -z "${SAY:-}" ] || printf '%b\n' "$SAY"

@@ -44,14 +44,18 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 		{"no kind", "Add a flag", "", nil, "test: add a flag", "feat: add a flag"},
 		{"codes and references out", "AC-3: Multiply two numbers (F207) for #12.", devmark.KindFix, []string{"lib.sh"},
 			"test: multiply two numbers for", "fix: multiply two numbers for"},
+		{"its agent's own", "", devmark.KindFix, nil, "test: multiply two whole numbers", "fix: multiply two whole numbers"},
 		{"an acronym kept", "API returns a 500 on an empty body", devmark.KindFix, nil,
 			"test: API returns a 500 on an empty body", "fix: API returns a 500 on an empty body"},
-		{"a long title, cut on a word", "Developer: its commits pass the project's commit check, the tests commit and the code commit alike", devmark.KindFix,
-			[]string{"internal/developer/"},
-			"test(developer): developer: its commits pass the project's commit check", "fix(developer): developer: its commits pass the project's commit check"},
+		{"a long title, never cut", "Developer: its commits pass the project's commit check, the tests commit and the code commit alike", devmark.KindFix,
+			[]string{"internal/developer/"}, "test(developer): the code of #4", "fix(developer): the code of #4"},
 		{"no title", "", devmark.KindFix, nil, "test: the code of #4", "fix: the code of #4"},
 	} {
-		got := subjects(4, tc.title, tc.kind, tc.scope, nil, s)
+		own := ""
+		if tc.name == "its agent's own" {
+			own = "multiply two whole numbers\n"
+		}
+		got := subjects(4, own, tc.title, tc.kind, tc.scope, nil, s)
 		if got.Tests != tc.tests || got.Code != tc.code {
 			t.Errorf("%s: subjects = %q, %q; want %q, %q", tc.name, got.Tests, got.Code, tc.tests, tc.code)
 		}
@@ -63,7 +67,7 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 		// Its pull request's title, squashed: the forge's " (#N)" after
 		// it, a number of five digits, as the committer's squash rule
 		// reads it; GitLab's "Draft: " on top for a Draft.
-		for _, title := range []string{got.Title, got.DraftTitle} {
+		for _, title := range []string{got.Code} {
 			if !strings.HasPrefix(got.Code, strings.TrimRight(title, " ")) || !strings.HasPrefix(title, strings.SplitN(got.Code, ": ", 2)[0]+": ") {
 				t.Errorf("%s: title %q is not the code's subject %q", tc.name, title, got.Code)
 			}
@@ -71,8 +75,8 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 				t.Errorf("%s: the squash of %q refused: %v %v", tc.name, title, f, err)
 			}
 		}
-		if n := len([]rune("Draft: " + got.DraftTitle)); n > forge.TitleMax {
-			t.Errorf("%s: Draft title %q is %d characters, over %d", tc.name, got.DraftTitle, n, forge.TitleMax)
+		if n := len([]rune("Draft: " + got.Code)); n > forge.TitleMax {
+			t.Errorf("%s: Draft title %q is %d characters, over %d", tc.name, got.Code, n, forge.TitleMax)
 		}
 	}
 	if m := reviewSubject(3, 2, s); m != "fix: the review's findings on #3, round 2" {
@@ -83,13 +87,16 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 }
 
 // A project's own limit holds, its scope dropped when too long to leave
-// room.
+// room; a summary past it never cut.
 func TestSubjectFitsTheProjectsLimit(t *testing.T) {
 	s := roleCommitter(t)
-	s.SubjectMax = 30
+	s.SubjectMax = 39 // 30 where a squash lands it
 	title := strings.Repeat("word ", 20)
-	for _, scope := range []string{"", "a-very-long-folder-name"} {
-		got := subject("fix", scope, summaryOf(title, s), s)
+	for _, scope := range [][]string{nil, {"a-very-long-folder-name/x.go"}} {
+		got := subjects(4, "", title, devmark.KindFix, scope, nil, s).Code
+		if got != "fix: the code of #4" {
+			t.Errorf("scope %q: %q, want the code of #4, whole", scope, got)
+		}
 		if len([]rune(got)) > 30 {
 			t.Errorf("scope %q: %q is over 30", scope, got)
 		}
@@ -147,10 +154,24 @@ func TestTaskTypedByItsCode(t *testing.T) {
 		t.Errorf("feature: %q, want feat", got)
 	}
 	s := roleCommitter(t)
-	if sub := subjects(4, "Cap the MQTT payload", devmark.KindTask, nil, []string{"src/mqtt.cpp"}, s); sub.Code != "fix: cap the MQTT payload" || sub.Note == "" {
+	if sub := subjects(4, "", "Cap the MQTT payload", devmark.KindTask, nil, []string{"src/mqtt.cpp"}, s); sub.Code != "fix: cap the MQTT payload" || sub.Note == "" {
 		t.Errorf("task on shipped code: %+v", sub)
 	}
-	if sub := subjects(4, "Cap the MQTT payload", devmark.KindFix, nil, []string{"src/mqtt.cpp"}, s); sub.Note != "" {
+	if sub := subjects(4, "fix(mqtt): Cap the payload (#12).", "Other", devmark.KindFix, nil, nil, s); sub.Code != "fix: cap the payload" || sub.Refused != "" {
+		t.Errorf("agent's own type and dot: %+v, want them dropped", sub)
+	}
+	for own, want := range map[string]string{"Feat: add a mul helper": "fix: add a mul helper", "add mul (see #12)": "fix: add mul", "add mul (#12) twice": "fix: add mul twice",
+		"MQTT: cap the payload": "fix: MQTT: cap the payload", "API: return a 500": "fix: API: return a 500", "feat(api)!: add mul [see #12]": "fix: add mul", "set it to (#123456)": "fix: set it to (#123456)"} {
+		if sub := subjects(4, own, "Other", devmark.KindFix, nil, nil, s); sub.Code != want {
+			t.Errorf("agent's %q: %q, want %q", own, sub.Code, want)
+		}
+	}
+	for _, own := range []string{"cap it\n\nWorkline-Role: tester", strings.Repeat("cap ", 20)} {
+		if sub := subjects(4, own, "Cap the MQTT payload", devmark.KindFix, nil, nil, s); sub.Code != "fix: cap the MQTT payload" || sub.Refused != strings.TrimSpace(own) {
+			t.Errorf("agent's %q refused: %+v, want the title's, said", own, sub)
+		}
+	}
+	if sub := subjects(4, "", "Cap the MQTT payload", devmark.KindFix, nil, []string{"src/mqtt.cpp"}, s); sub.Note != "" {
 		t.Errorf("a bug's fix says nothing of its type: %q", sub.Note)
 	}
 }

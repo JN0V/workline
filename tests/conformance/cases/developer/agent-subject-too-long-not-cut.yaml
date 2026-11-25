@@ -1,0 +1,25 @@
+case: developer/agent-subject-too-long-not-cut
+about: >
+  A subject the developer's agent writes past the commit rules' limit is
+  never cut: the issue's title in its place, and, too long as well,
+  "the code of #n", whole.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env: {SUBJECT: "multiply two whole numbers for every caller that needs the product of them"}
+  forge:
+    issues:
+      - {id: 2, title: "Multiply two numbers for every caller that needs the product of two whole numbers", labels: ["workline:ready", "bug"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: subject-refused, where: "#2"}]
+  pushed-message:
+    workline/developer/2: "fix: the code of #2\n\nWorkline-Role: developer"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/developer/2
+        title: "fix: the code of #2"
