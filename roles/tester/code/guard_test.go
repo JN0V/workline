@@ -3,6 +3,8 @@ package tester
 import (
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // Guard written: Given a scenario kept as today that no existing test
@@ -46,5 +48,26 @@ func TestSharedTestOfGuardAndNonGuardScenarioIsNotAGuard(t *testing.T) {
 	got := guardsOf(covers, newTests, []string{"fee_test.go"})
 	if joined := strings.Join(got, ","); joined != "TestOnlyGuard" {
 		t.Errorf("guards = %q, want only %q: a test also declared for a scenario that is not a guard must stay refused when green on the base", joined, "TestOnlyGuard")
+	}
+}
+
+// Guard written, a proof refused for another reason: Given guards
+// declared that match no finding of the proof, and a proof refused for a
+// reason other than a guard's green run (no blocking finding left, only a
+// warning), When the guards are allowed for the red proof, Then the proof
+// stays refused, its findings untouched.
+func TestGuardsMatchingNoFindingLeaveRefusedProofRefused(t *testing.T) {
+	proof := &verdict.Verdict{
+		Status: verdict.Block,
+		Findings: []verdict.Finding{
+			{Rule: "no-new-test", Level: "warn", Where: "fee_test.go", Message: "no test of the files ran"},
+		},
+	}
+	allowGuards(proof, []string{"TestOnlyGuard"})
+	if proof.Status != verdict.Block {
+		t.Errorf("status = %q, want %q: guards that match no finding must not let a proof refused for another reason pass", proof.Status, verdict.Block)
+	}
+	if len(proof.Findings) != 1 || proof.Findings[0].Rule != "no-new-test" {
+		t.Errorf("findings = %+v, want the one finding left as it was", proof.Findings)
 	}
 }
