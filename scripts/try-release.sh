@@ -469,10 +469,18 @@ echo "3. canned issue: https://github.com/$REPO/issues/$issue"
 # then the workflow is dispatched once. The script never labels nor merges.
 ready_jq='.state == "OPEN" and (.isDraft | not)
   and ([.labels[].name] | index("workline:accepted") == null)
+  and ([.labels[].name] | index("workline:accepted-whole") == null)
   and any(.statusCheckRollup[]; .__typename == "StatusContext" and .context == "workline/accepted" and .state == "SUCCESS")
   and all(.statusCheckRollup[]; if .__typename == "StatusContext" then .state == "SUCCESS"
     else .conclusion == "SUCCESS" or .conclusion == "SKIPPED" or .conclusion == "NEUTRAL" end)'
 ready_since= dispatched=false
+# The dispatch is marked by a tag on the copy, kept across tries: a rerun
+# after a stop sees it and dispatches nothing more for this issue.
+mark="workline-try-dispatched-$issue"
+if [ -n "$(gh api "repos/$REPO/git/matching-refs/tags/$mark" --jq '.[].ref' 2>/dev/null || true)" ]; then
+  dispatched=true
+  echo "3. the merge workflow was dispatched by an earlier try of this issue: not again"
+fi
 deadline=$(( $(date +%s) + minutes * 60 ))
 while :; do
   read -r state closers <<<"$(gh issue view -R "$REPO" --json state,closedByPullRequestsReferences \
@@ -500,8 +508,12 @@ while :; do
     elif [ -z "$ready_since" ]; then ready_since=$(date +%s)
     fi
     if [ -n "$ready" ] && [ $(( $(date +%s) - ready_since )) -ge $(( DISPATCH_MINUTES * 60 )) ]; then
-      gh workflow run workline-merge.yml -R "$REPO" >/dev/null \
-        || red "the copy's workline merge workflow cannot be dispatched"
+      gh api -X POST "repos/$REPO/git/refs" -f ref="refs/tags/$mark" -f sha="$main_sha" >/dev/null 2>&1 \
+        || red "the dispatch marker $mark cannot be created on $REPO"
+      if ! gh workflow run workline-merge.yml -R "$REPO" >/dev/null; then
+        gh api -X DELETE "repos/$REPO/git/refs/tags/$mark" >/dev/null 2>&1 || true
+        red "the copy's workline merge workflow cannot be dispatched"
+      fi
       dispatched=true
       echo "3. https://github.com/$REPO/pull/$ready is green and accepted by policy, not merged after $DISPATCH_MINUTES min: dispatched the copy's workline merge workflow once"
     fi
