@@ -1,0 +1,43 @@
+case: developer/dc-264-closes-only-with-the-ci-step
+about: >
+  DomoticsCore issue #154 (ready, kind `task`): CI should fail an
+  esp8266dev FullStack build whose boot-path stack frame exceeds a stated
+  limit. Validation: "When the esp8266dev FullStack build runs in CI, Then
+  the check fails and names the function"; Scope: `.github/workflows`, a new
+  check script. The tester found no acceptance test applies (its comment
+  kept on the issue). On 2026-11-23 the developer, on main at 04d2cb3,
+  opened #264 (https://github.com/JN0V/DomoticsCore/pull/264) "Closes #154"
+  with tools/check_stack_usage.py and its test, its "Left out" saying it did
+  not edit .github/workflows/ci.yml. The owner sent it back twice
+  (https://github.com/JN0V/DomoticsCore/pull/264#issuecomment-7112635021,
+  https://github.com/JN0V/DomoticsCore/pull/264#issuecomment-7129514187):
+  the script is wired into no CI, so "Closes #154" closes it early (if the
+  line cannot write .github/, say so and drop "Closes"); and `rsplit(':', 3)`
+  cuts C++ names holding `::`, to parse with a test on such a name. The body
+  is the issue's as the developer read it (edit history, 2026-11-15). The
+  proof needs `pio` on PATH; the grade reads only branches and the forge.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 04d2cb3b12f789c8ee2d8c2c9bc1528c1ff64671}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change && git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 154
+        title: "CI-18 — no build-time check reads the ESP8266 boot path's stack frames"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "task"]
+        body: "### CI-18 — no build-time check reads the ESP8266 boot path's stack frames [LOW] — **NEW (2026-09-20, by the deferred-work purge)**\n\n- **Parked by**: BUG-42's lot, 2026-09-18.\n- **Problem**: `Core::begin()` was one deep frame among several on the 4 KB\n  cont stack, and BUG-42 measured only the one overflowing it. With that\n  kilobyte gone the Storage suite's deepest point leaves 896 B — margin, not\n  comfort: `-fstack-usage` puts `logPromotedRecord` at 1 168 B and\n  `app_entry_redefinable` at 4 160, and nothing in CI reads either number. A\n  board found BUG-42; a build could have.\n- **Fix**: `PLATFORMIO_BUILD_FLAGS=\"-fstack-usage\"` on the `esp8266dev`\n  FullStack build, and a script that fails on any frame over a stated figure\n  in the paths an application runs at boot.\n- **Refs**: BUG-42, CI-14 (the same build).\n\nOpened from `docs/CODE-ROADMAP.md`, lines 5904 to 5916 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:8f8b8110b55e -->\n\n## Need\n\nA maintainer shipping ESP8266 builds wants CI to flag large stack frames on the boot path, so a stack overflow is found by a build and not by a board.\n\n## Example\n\n`-fstack-usage` puts `logPromotedRecord` at 1 168 B and `app_entry_redefinable` at 4 160 B on a 4 KB stack. The Storage suite's deepest point leaves only 896 B, and no CI check reads these numbers.\n\n## Validation\n\n- **Frame too big:** Given a boot-path function whose frame exceeds the stated limit, When the `esp8266dev` FullStack build runs in CI, Then the check fails and names the function.\n- **Within limits:** Given all boot-path frames under the limit, When CI runs, Then the check passes.\n\n---\n\n## Verification\n\nThe `esp8266dev` FullStack build runs with `PLATFORMIO_BUILD_FLAGS=\"-fstack-usage\"`. A script fails on any frame over the stated figure in the boot paths. A test feeds the script one oversized frame and expects failure.\n\n## Scope\n\n`.github/workflows` (the `esp8266dev` FullStack build), a new check script, `DomoticsCore-Core/src/Core.cpp`.\n\n## Assumptions\n\n- Assumption taken on 2026-11-15, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+        comments: ["**The tester** finds that no acceptance test applies to this issue.\n\n- **Why**: the two scenarios (a boot-path frame over the limit fails the esp8266dev FullStack CI check and names the function, and a build with all frames under the limit passes) are behaviours of a check script and a CI step that do not exist yet. The Scope names neither the script's path, its language, its arguments, the limit, nor its output format. The project's runner, `tools/workline-tests.sh`, only runs native PlatformIO/Unity suites of the components. None of those suites runs a script or reads a workflow file, and the esp8266 cross-build is not part of that runner. Any test I wrote would have to invent the script's name and interface, which is forbidden. It would also assert nothing about the real frame sizes of `Core::begin`. The issue goes on to the developer with no frozen test. The developer must pick the script's interface, and the reviewer must check that a build with an over-limit frame fails naming the function and that a build under the limit passes.\n- **Next**: it goes on to the developer, who builds it with no frozen test; its pull request says no acceptance test applied.\n\n<!-- workline:tester-proof {\"kind\":\"none\",\"reason\":\"the two scenarios (a boot-path frame over the limit fails the esp8266dev FullStack CI check and names the function, and a build with all frames under the limit passes) are behaviours of a check script and a CI step that do not exist yet. The Scope names neither the script's path, its language, its arguments, the limit, nor its output format. The project's runner, `tools/workline-tests.sh`, only runs native PlatformIO/Unity suites of the components. None of those suites runs a script or reads a workflow file, and the esp8266 cross-build is not part of that runner. Any test I wrote would have to invent the script's name and interface, which is forbidden. It would also assert nothing about the real frame sizes of `Core::begin`. The issue goes on to the developer with no frozen test. The developer must pick the script's interface, and the reviewer must check that a build with an over-limit frame fails naming the function and that a build under the limit passes.\"} -->\n\n<!-- workline:act {\"role\":\"tester\",\"kind\":\"comment\",\"run\":\"20261123T151717.001968351-tester\",\"day\":\"2026-11-23\",\"commit\":\"04d2cb3b12f789c8ee2d8c2c9bc1528c1ff64671\",\"models\":[],\"items\":[{\"kind\":\"issue\",\"id\":\"154\",\"state\":\"open\"},{\"kind\":\"comment\",\"id\":\"6464411142\",\"state\":\"posted\"},{\"kind\":\"comment\",\"id\":\"7105298201\",\"state\":\"posted\"}]} -->\n\n<!-- workline:sticky=tester/issue -->\n"]
+run: {role: developer, develop: []}
+grade:
+  - {status: pass}
+  # The script's own test, as the Verification asks.
+  - {sh: "git --git-dir=../origin.git diff --name-only --diff-filter=A main workline/developer/154 | grep -q -i test"}
+  # A C++ name holding :: is in a test of the script (the owner's second point).
+  - {sh: "t=$(git --git-dir=../origin.git diff --name-only --diff-filter=A main workline/developer/154 | grep -i test) && [ -n \"$t\" ] && git --git-dir=../origin.git diff main workline/developer/154 -- $t | grep -q '^+.*[A-Za-z_]::[A-Za-z_~]'"}
+  # Closes #154 only with the CI step that runs the check on esp8266dev.
+  - {sh: "git --git-dir=../origin.git diff main workline/developer/154 -- .github/workflows | grep -q '^+.*fstack-usage' || python3 -c 'import json; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"branch\"] == \"workline/developer/154\"]; assert len(m) == 1 and \"Closes #154\" not in m[0][\"body\"], \"Closes #154 with no CI step\"'"}
+  # Closes #154 only when nothing is left out.
+  - {sh: "python3 -c 'import json, re; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"branch\"] == \"workline/developer/154\"]; assert len(m) == 1, \"no pull request\"; b = m[0][\"body\"]; left = re.search(r\"(?ms)^## Left out\\s*$(.*?)(?=^## |\\Z)\", b); assert not (\"Closes #154\" in b and left and left.group(1).strip()), \"Closes #154 while its Left out lists work\"'"}

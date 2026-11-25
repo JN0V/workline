@@ -351,22 +351,7 @@ func TestReviewerCasesPointRight(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, p := range places {
-				if p.issue() { // an issue the change closes: its body holds the text
-					if body := issueBody(c, p.File); !strings.Contains(body, p.Text) || p.Text == "" {
-						t.Errorf("%s: %q is not in %s's body, in given.forge", f, p.Text, p.File)
-					}
-					continue
-				}
-				data, err := os.ReadFile(filepath.Join(repo, p.File))
-				lines := strings.Split(string(data), "\n")
-				if err != nil || len(p.Lines) != 2 || p.Lines[0] < 1 || p.Lines[1] < p.Lines[0] || p.Lines[1] > len(lines) {
-					t.Fatalf("%s: %v is not a range of %s (%v)", f, p.Lines, p.File, err)
-				}
-				if !strings.Contains(strings.Join(lines[p.Lines[0]-1:p.Lines[1]], "\n"), p.Text) {
-					t.Errorf("%s: %q is not within %s", f, p.Text, p)
-				}
-			}
+			placesHold(t, f, c, repo, places)
 			for _, cmd := range []string{"go vet ./...", "go test -count=1 ./..."} {
 				if err := sh(repo, append(env, "GOFLAGS=-mod=mod", "GOTOOLCHAIN=local"), cmd); err != nil {
 					t.Errorf("%s: %v", f, err)
@@ -381,6 +366,28 @@ func TestReviewerCasesPointRight(t *testing.T) {
 	}
 	if clean < 2 || outside < 1 {
 		t.Errorf("%d clean changes, %d with code outside the change", clean, outside)
+	}
+}
+
+// placesHold: each place holds its text within its lines, at the case's
+// head; an issue the change closes holds it in its body.
+func placesHold(t *testing.T, f string, c *caseFile, repo string, places []place) {
+	for _, p := range places {
+		if p.issue() {
+			if body := issueBody(c, p.File); !strings.Contains(body, p.Text) || p.Text == "" {
+				t.Errorf("%s: %q is not in %s's body, in given.forge", f, p.Text, p.File)
+			}
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(repo, p.File))
+		lines := strings.Split(string(data), "\n")
+		if err != nil || len(p.Lines) != 2 || p.Lines[0] < 1 || p.Lines[1] < p.Lines[0] || p.Lines[1] > len(lines) {
+			t.Errorf("%s: %v is not a range of %s (%v)", f, p.Lines, p.File, err)
+			continue
+		}
+		if !strings.Contains(strings.Join(lines[p.Lines[0]-1:p.Lines[1]], "\n"), p.Text) {
+			t.Errorf("%s: %q is not within %s", f, p.Text, p)
+		}
 	}
 }
 
@@ -445,6 +452,39 @@ func issueBody(c *caseFile, ref string) string {
 		}
 	}
 	return ""
+}
+
+// TestScoreReplay scores a replay stricter: an Important only, one
+// finding a defect, outside the change at a planted place, an issue
+// place for intent alone; an unplanted Important is extra on a miss and
+// fails a clean change.
+func TestScoreReplay(t *testing.T) {
+	rc := &reviewCase{Replay: true, Defects: []plant{
+		{Lens: "tests", Kind: "a", At: []place{{File: "a.cpp", Lines: []int{1, 9}}, {File: "#4"}}},
+		{Lens: "edge-cases", Kind: "b", At: []place{{File: "a.cpp", Lines: []int{1, 9}}}},
+		{Lens: "edge-cases", Kind: "c", At: []place{{File: "b.h", Lines: []int{250, 255}}}},
+		{Lens: "intent", Kind: "d", At: []place{{File: "#4"}}},
+		{Lens: "correctness", Kind: "e", At: []place{{File: "c.cpp", Lines: []int{1, 3}}}},
+	}}
+	rr := &reviewRun{Findings: []lensFinding{
+		{"tests", "a.cpp:5", "important", "one finding", true, "yes"},  // a or b, not both
+		{"edge-cases", "b.h:253", "important", "outside", false, ""},   // c, off the change
+		{"intent", "#4", "important", "scenario unmet", true, "yes"},   // d only: a's issue place is not a tests place
+		{"correctness", "c.cpp:2", "nit", "a nit", true, ""},           // e is not found by a nit
+		{"correctness", "z.cpp:9", "important", "elsewhere", true, ""}, // extra
+	}}
+	passed, failed, measure, _ := scoreReview(rc, rr)
+	if passed != 3 || len(failed) != 2 || !strings.Contains(measure, "extra=1") {
+		t.Errorf("passed %d, failed %v\n%s", passed, failed, measure)
+	}
+	own := &reviewCase{Replay: true, Defects: []plant{{Lens: "edge-cases", Kind: "f", At: []place{{File: "x.cpp", Lines: []int{1, 9}}}}}}
+	if m := matchDefects(own, []lensFinding{{"correctness", "x.cpp:2", "important", "first", true, "yes"}, {"edge-cases", "x.cpp:3", "important", "own", true, "yes"}}); m[0] != 1 {
+		t.Errorf("paired %v, want its own lens's finding (1)", m)
+	}
+	rc = &reviewCase{Replay: true, Clean: true}
+	if _, failed, _, _ := scoreReview(rc, rr); !slices.ContainsFunc(failed, func(f string) bool { return strings.HasPrefix(f, "clean:") }) {
+		t.Errorf("a clean change with Importants shown passed: %v", failed)
+	}
 }
 
 // TestScoreReview scores canned reviews: a defect found, by another lens; a

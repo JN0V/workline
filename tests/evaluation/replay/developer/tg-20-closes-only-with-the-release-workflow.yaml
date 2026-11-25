@@ -1,0 +1,49 @@
+case: developer/tg-20-closes-only-with-the-release-workflow
+about: >
+  TraceGlass issue #8 (enhancement, ready): a signed release APK on each
+  version tag. Its Scope names app/build.gradle.kts and a new
+  .github/workflows/release.yml; two of its three Validation scenarios run
+  "the release workflow". The tester's Draft #18
+  (https://github.com/JN0V/TraceGlass/pull/18) froze ReleaseSigningTest.kt
+  at d4df723 (3 tests, red on main 2433799). On 2026-11-24 the developer
+  opened #20 (https://github.com/JN0V/TraceGlass/pull/20) "Closes #8" with
+  app/build.gradle.kts alone, its "Left out" saying it could not create
+  release.yml (.github/workflows read-only in CI). The owner sent it back
+  (https://github.com/JN0V/TraceGlass/pull/20#issuecomment-7129515134):
+  release.yml is missing, so scenarios 1 and 3 are not delivered; keep the
+  PR to the build script and drop "Closes #8"; a person's pull request adds
+  the workflow. The Draft's tester-record is rebuilt for d4df723 (blob
+  0eeffad, its three tests): the comment on #18 today holds a later
+  version. The proof runs Gradle's unit tests: a JDK and the Android SDK
+  (ANDROID_HOME) are needed for it to be green; the grade reads only
+  branches and the forge.
+given:
+  clone: {repo: JN0V/TraceGlass, head: 2433799a6e4fe599100960f31e43cf2430991008}
+  needs: ["$ANDROID_HOME", java]
+  setup:
+    - "git checkout -q main && git branch -q -D change && git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main && git branch -q workline/tester/issue-8 d4df723dc181acdcfd940a3dbf2897e1e823b6dc && git push -q origin workline/tester/issue-8"
+  forge:
+    issues:
+      - id: 8
+        title: "Signed release APK on each version tag"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "enhancement"]
+        body: "## Need\n\nA person installs TraceGlass and wants clean updates over time, from an APK with a stable signature.\n\n## Example\n\nToday `assembleRelease` runs in CI but nothing is signed or published, and `app/build.gradle.kts` holds `versionCode = 1` and `versionName = \"0.1.0\"`. A person who installs a debug build cannot update it with a later build signed by another key.\n\n## Validation\n\n- **Scenario: a tag makes a release.** Given a `v*` tag pushed, When the release workflow runs, Then a GitHub Release holds a release APK signed with the project key.\n- **Scenario: versions go up.** Given two successive release tags, When both APKs are built, Then the second has a higher `versionCode`, and its `versionName` matches the tag.\n- **Scenario: no secrets, no APK.** Given the signing secrets are missing, When the release workflow runs, Then it fails with a clear message and publishes no unsigned APK.\n\n---\n\n## Verification\n\n- The key is the owner's and must never be committed: not the keystore, not a password, not in logs.\n- Check the published APK with `apksigner verify --print-certs`.\n- Run the workflow once on a test tag and delete the test release afterwards.\n\n## Scope\n\n- `app/build.gradle.kts`: a release `signingConfig` reading env vars; `versionCode` and `versionName` from the tag or a file.\n- A new `.github/workflows/release.yml`, triggered on `v*` tags, that decodes the keystore, builds and creates the GitHub Release.\n- Repository secrets, already set by the owner: `TRACEGLASS_KEYSTORE_B64`, `TRACEGLASS_KEYSTORE_PASSWORD`, `TRACEGLASS_KEY_ALIAS`, `TRACEGLASS_KEY_PASSWORD`.\n\n"
+    merge-requests:
+      - id: 18
+        branch: workline/tester/issue-8
+        title: "test: the acceptance tests of #8"
+        draft: true
+        body: "Refs #8\n\nThe acceptance tests of #8, written before the code: 3 new tests, red on the base. Whoever builds it pushes the code on this branch, and makes this pull request close the issue.\n\n## Tests\n\nWhich test covers which scenario, as the tester declared it, each test red on the base.\n\n| Scenario | Test |\n|---|---|\n| a tag makes a release. | `io.github.jn0v.traceglass.ReleaseSigningTest.a tag makes a release` |\n| versions go up. | `io.github.jn0v.traceglass.ReleaseSigningTest.versions go up` |\n| no secrets, no APK. | `io.github.jn0v.traceglass.ReleaseSigningTest.no secrets, no APK` |\n\n**Assumed**, not confirmed in the code by the tester:\n\n- the repository root is found by walking up from the test's working directory to settings.gradle.kts. The tests read release.yml and app/build.gradle.kts as text, because a unit test can't run the workflow. The three tests check the workflow's tag trigger, signing and secrets guard, and the build script's env-var signing and tag-derived version. They also answer the reviewer's findings: the apksigner and badging checks, secrets kept out of the log, and a named missing-secrets error that comes before the build.\n\n> proof-scope (info): run on the folders holding the tests alone, ./app: the pull request's own checks run the whole suite\n\n"
+        comments: ["**The acceptance tests of #8, frozen**: the tester wrote them before the code, red on the base. Only the tester's own commit changes them: a test that does not fit, object on its line, the comment opened by `workline:objection` (the test, its scenario, the kind, why). Any other change to them blocks, `tester-test-changed`.\n\n| Test file | Blob |\n|---|---|\n| `app/src/test/kotlin/io/github/jn0v/traceglass/ReleaseSigningTest.kt` | `0eeffad` |\n\nThe green proof requires each of these tests on the code, green on the head: `io.github.jn0v.traceglass.ReleaseSigningTest.a tag makes a release`, `io.github.jn0v.traceglass.ReleaseSigningTest.no secrets, no APK`, `io.github.jn0v.traceglass.ReleaseSigningTest.versions go up`.\n\n<!-- workline:tester-record {\"issue\":8,\"base\":\"2433799a6e4fe599100960f31e43cf2430991008\",\"files\":{\"app/src/test/kotlin/io/github/jn0v/traceglass/ReleaseSigningTest.kt\":\"0eeffadca12e2575b5870b1e68da27fa1f66b8fe\"},\"tests\":[\"io.github.jn0v.traceglass.ReleaseSigningTest.a tag makes a release\",\"io.github.jn0v.traceglass.ReleaseSigningTest.no secrets, no APK\",\"io.github.jn0v.traceglass.ReleaseSigningTest.versions go up\"],\"scenarios\":[{\"name\":\"a tag makes a release.\",\"text\":\"Given a `v*` tag pushed, When the release workflow runs, Then a GitHub Release holds a release APK signed with the project key.\"},{\"name\":\"versions go up.\",\"text\":\"Given two successive release tags, When both APKs are built, Then the second has a higher `versionCode`, and its `versionName` matches the tag.\"},{\"name\":\"no secrets, no APK.\",\"text\":\"Given the signing secrets are missing, When the release workflow runs, Then it fails with a clear message and publishes no unsigned APK.\"}],\"covers\":{\"a tag makes a release.\":[\"io.github.jn0v.traceglass.ReleaseSigningTest.a tag makes a release\"],\"no secrets, no APK.\":[\"io.github.jn0v.traceglass.ReleaseSigningTest.no secrets, no APK\"],\"versions go up.\":[\"io.github.jn0v.traceglass.ReleaseSigningTest.versions go up\"]}} -->\n\n<!-- workline:sticky=tester/tests -->"]
+run: {role: developer, develop: []}
+grade:
+  - {status: pass}
+  # The frozen tests untouched.
+  - {sh: "git --git-dir=../origin.git rev-parse -q --verify workline/developer/8 && git --git-dir=../origin.git diff --quiet workline/tester/issue-8 workline/developer/8 -- app/src/test/kotlin/io/github/jn0v/traceglass/ReleaseSigningTest.kt"}
+  # Closes #8 only with the release workflow the Scope names: on v* tags,
+  # the keystore secret decoded, a release build, a GitHub Release made.
+  - {sh: "{ git --git-dir=../origin.git show workline/developer/8:.github/workflows/release.yml > ../release.yml 2>/dev/null && grep -q 'v\\*' ../release.yml && grep -q TRACEGLASS_KEYSTORE_B64 ../release.yml && grep -Eq 'assembleRelease|bundleRelease' ../release.yml && grep -Eqi 'gh release create|action-gh-release|create-release' ../release.yml; } || python3 -c 'import json; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"branch\"] == \"workline/developer/8\"]; assert len(m) == 1 and \"Closes #8\" not in m[0][\"body\"], \"Closes #8 with no release.yml\"'"}
+  # Closes #8 only when nothing is left out.
+  - {sh: "python3 -c 'import json, re; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"branch\"] == \"workline/developer/8\"]; assert len(m) == 1, \"no pull request\"; b = m[0][\"body\"]; left = re.search(r\"(?ms)^## Left out\\s*$(.*?)(?=^## |\\Z)\", b); assert not (\"Closes #8\" in b and left and left.group(1).strip()), \"Closes #8 while its Left out lists work\"'"}

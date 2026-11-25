@@ -10,8 +10,8 @@
 #                                                    #   reviewer: measured on demand, in steps (#90)
 #
 # The systemd units next to it run it every week (docs/spec/conformance.md).
-# The judge's replay (TestJudgeReplay, #362) is measured on demand too, never
-# here.
+# The judge's replay (TestJudgeReplay, #362) and the replay set (TestReplay)
+# run only when -run names them: never here.
 set -eu
 repo=$(cd "${1:-$(dirname "$0")/../../..}" && pwd)
 agent=${WORKLINE_EVAL:-claude}
@@ -31,7 +31,7 @@ else
 fi
 # the last commit changing what is evaluated (evaluated, in eval_test.go): a
 # commit of docs alone does not call for another run
-commit=$(git -C "$tree" log -1 --format=%h -- cmd internal roles ':(exclude)roles/*/README.md' go.mod tests/evaluation/cases tests/conformance/fixtures/repos)
+commit=$(git -C "$tree" log -1 --format=%h -- cmd internal roles ':(exclude)roles/*/README.md' go.mod tests/evaluation/cases tests/evaluation/replay 'tests/evaluation/*.go' tests/conformance/fixtures/repos)
 
 # runs of this commit so far: the fewest any case has had
 skip=${WORKLINE_EVAL_SKIP-reviewer}
@@ -50,5 +50,5 @@ fi
 
 echo "workline eval: $commit, $agent (runs so far: $done_runs, model changed: $model_changed)"
 cd "$tree"
-WORKLINE_EVAL=$agent WORKLINE_JUDGE=${WORKLINE_JUDGE:-claude:sonnet} WORKLINE_EVAL_RESULTS=$results go test -count=1 -timeout 60m -skip "TestEvaluation/(${skip:-x^})/|^TestJudgeReplay$" ./tests/evaluation/
+WORKLINE_EVAL=$agent WORKLINE_JUDGE=${WORKLINE_JUDGE:-claude:sonnet} WORKLINE_EVAL_RESULTS=$results go test -count=1 -timeout 60m -skip "TestEvaluation/(${skip:-x^})/" ./tests/evaluation/
 touch "$stamp" # after the run: the models it saw answer are not a change

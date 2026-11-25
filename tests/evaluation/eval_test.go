@@ -21,6 +21,7 @@ package evaluation
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -51,6 +52,18 @@ type caseFile struct {
 		WorklineCommit string         `yaml:"workline-commit"` // this repository: that commit's diff, staged on its parent
 		WorklineAt     string         `yaml:"workline-at"`     // this repository, at that commit
 		Forge          map[string]any `yaml:"forge"`           // a simulated forge, as conformance's: the issues a change closes
+		// A real repository a replay case starts from (replay/): main at
+		// base, the branch `change` at head checked out; base empty, head
+		// alone. Cloned from a mirror kept in the user's cache.
+		Clone struct {
+			Repo string `yaml:"repo"` // owner/name on github.com
+			Base string `yaml:"base"`
+			Head string `yaml:"head"`
+		} `yaml:"clone"`
+		// What the run needs on the machine: a command (pio), or an
+		// environment variable ($ANDROID_HOME). Missing, the case is
+		// skipped, never scored low.
+		Needs []string `yaml:"needs"`
 	} `yaml:"given"`
 	Run struct {
 		Role    string            `yaml:"role"`
@@ -165,11 +178,29 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestEvaluation(t *testing.T) {
+func TestEvaluation(t *testing.T) { evaluate(t, "cases/*/*.yaml") }
+
+// TestReplay plays the replay set: real misses on real repositories, a
+// role's set at a time (docs/spec/conformance/replay.md).
+func TestReplay(t *testing.T) {
+	onDemand(t)
+	evaluate(t, "replay/*/*.yaml")
+}
+
+// onDemand skips a measure unless -run names it: a pattern given to
+// -skip cannot leave out a whole top-level test and a subtest of another,
+// so the weekly run could not keep it out.
+func onDemand(t *testing.T) {
+	if f := flag.Lookup("test.run"); f == nil || !strings.Contains(f.Value.String(), t.Name()) {
+		t.Skip("run only when -run names it: " + t.Name())
+	}
+}
+
+func evaluate(t *testing.T, pattern string) {
 	if os.Getenv("WORKLINE_EVAL") == "" {
 		t.Skip("set WORKLINE_EVAL=claude to run it: it calls a real agent and costs tokens")
 	}
-	files, _ := filepath.Glob("cases/*/*.yaml")
+	files, _ := filepath.Glob(pattern)
 	sort.Strings(files)
 	version := worklineVersion()
 	for _, f := range files {
@@ -179,6 +210,11 @@ func TestEvaluation(t *testing.T) {
 		}
 		t.Run(c.Case, func(t *testing.T) {
 			t.Parallel()
+			for _, n := range c.Given.Needs {
+				if v, env := strings.CutPrefix(n, "$"); env && os.Getenv(v) == "" || !env && !onPath(n) {
+					t.Skip("skipped: no toolchain: " + n)
+				}
+			}
 			start := time.Now()
 			r, err := play(t, &c, os.Getenv("WORKLINE_EVAL"))
 			if err != nil {
@@ -347,6 +383,15 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 	env = append(hermetic(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
 	self, _ := filepath.Abs("../..")
 	switch {
+	case c.Given.Clone.Repo != "":
+		if err := cloneAt(work, env, c); err != nil {
+			return "", "", nil, err
+		}
+		for _, l := range c.Given.Setup {
+			if err := sh(repo, env, l); err != nil {
+				return "", "", nil, err
+			}
+		}
 	case c.Given.WorklineCommit != "":
 		sha := c.Given.WorklineCommit
 		if err := sh(work, env, "git clone -q "+self+" repo && cd repo && git checkout -q "+sha+"^ && git -C "+self+" diff "+sha+"^ "+sha+" | git apply --index"); err != nil {
@@ -407,6 +452,36 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 	return work, repo, env, nil
 }
 
+func onPath(cmd string) bool { _, err := exec.LookPath(cmd); return err == nil }
+
+var mirrors sync.Mutex
+
+// cloneAt clones a replay case's repository into work/repo from a mirror
+// in the user's cache, fetched when it lacks the head.
+func cloneAt(work string, env []string, c *caseFile) error {
+	cl := c.Given.Clone
+	cache, err := os.UserCacheDir()
+	if err != nil {
+		return err
+	}
+	mirror := filepath.Join(cache, "workline", "eval-mirrors", strings.ReplaceAll(cl.Repo, "/", "_")+".git")
+	mirrors.Lock()
+	if _, statErr := os.Stat(mirror); statErr != nil {
+		err = sh(work, env, "git clone -q --mirror 'https://github.com/"+cl.Repo+".git' '"+mirror+"'")
+	} else if sh(mirror, env, "git cat-file -e "+cl.Head+"^{commit}") != nil {
+		err = sh(mirror, env, "git fetch -q --prune origin")
+	}
+	mirrors.Unlock()
+	if err != nil {
+		return err
+	}
+	base := cl.Base
+	if base == "" {
+		base = cl.Head
+	}
+	return sh(work, env, "git clone -q --shared --no-checkout '"+mirror+"' repo && cd repo && git checkout -q -B main "+base+" && git checkout -q -B change "+cl.Head)
+}
+
 // withSetting is a project config with a role's setting set, unless the
 // config sets it already.
 func withSetting(cfg map[string]any, role, key string, value any) map[string]any {
@@ -457,6 +532,7 @@ func grade(c *caseFile, r *run) (passed int, failed, skipped []string) {
 		if err != nil {
 			return passed, append(failed, "review: "+err.Error()), skipped
 		}
+		c.Review.Replay, c.Review.Clean = c.Given.Clone.Repo != "", strings.Contains(c.Case, "/clean-")
 		p, f, measure, notes := scoreReview(c.Review, rr)
 		passed, failed, r.measure, r.reviewNotes = passed+p, append(failed, f...), measure, notes
 		if r.judgedBy == "" {
@@ -660,10 +736,10 @@ func hermetic() []string {
 }
 
 // evaluated are the paths a score depends on: the engine, the roles (not
-// their READMEs, which no agent reads), the cases and the repositories they
-// are built from. A commit touching nothing else does not change what is
+// their READMEs, which no agent reads), the cases, the replays, the code
+// scoring them and the repositories they are built from. A commit touching nothing else does not change what is
 // evaluated.
-var evaluated = []string{"cmd", "internal", "roles", ":(exclude)roles/*/README.md", "go.mod", "tests/evaluation/cases", "tests/conformance/fixtures/repos"}
+var evaluated = []string{"cmd", "internal", "roles", ":(exclude)roles/*/README.md", "go.mod", "tests/evaluation/cases", "tests/evaluation/replay", "tests/evaluation/*.go", "tests/conformance/fixtures/repos"}
 
 // worklineVersion is the last commit changing what is evaluated, marked when
 // the tree has changes there. tests/evaluation/schedule/run.sh counts runs by it.

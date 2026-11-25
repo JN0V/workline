@@ -1,0 +1,97 @@
+case: reviewer/clean-wl-2167-squash-only-known-values
+about: >
+  Clean. JN0V/workline #2167 (closes #2101): GitHub's squash-only detection holds only for a squash message of
+  PR_BODY or BLANK, so a missing or empty setting keeps every commit checked; two tests. Merged with no review
+  round and no reviewer finding; nothing touched internal/forge/github.go after its merge (checked to af68b1b); no
+  owner comment. No independent review read it either: "clean" rests on nothing coming back after
+  the merge. Any Important here is taken as false. Bodies
+  unchanged since the pull request opened.
+given:
+  clone:
+    repo: JN0V/workline
+    base: 95dda79b220dda7e7f855777769b767f15b73a60
+    head: 2bc9cdffb033f46da14be28d19179f6bd40232cc
+  forge:
+    issues:
+    - id: 2101
+      title: Squash-only detection takes a missing GitHub squash message setting as safe
+      labels:
+      - bug
+      body: |
+        **Need:** a maintainer whose forge settings can't be fully read keeps every commit checked, so nothing slips onto main unchecked.
+
+        **Example:** on GitHub, squash-only is detected as `allow_squash_merge && !merge && !rebase && squashMergeCommitMessage != COMMIT_MESSAGES`. A missing or empty `squashMergeCommitMessage` counts as squash only.
+
+        **Validation:**
+        - **Missing setting:** Given GitHub returns no `squashMergeCommitMessage`, When the committer runs on a merge request, Then branch commit subjects still block.
+        - **Known safe values:** Given it returns `PR_BODY` or `BLANK`, When the committer runs, Then branch commit subjects only warn.
+
+        ---
+
+        **Scope:**
+        - `internal/forge/github.go` (the Squash read): require `PR_BODY` or `BLANK` instead of "not COMMIT_MESSAGES".
+        - A case in `internal/forge/squash_test.go`.
+        - Found by an independent review of the squash-only committer change.
+
+        ## Validation
+
+        - **Missing setting:** Given GitHub returns no `squashMergeCommitMessage`, When the committer runs on a merge request, Then branch commit subjects still block.
+        - **Empty setting:** Given GitHub returns an empty `squashMergeCommitMessage`, When the committer runs, Then branch commit subjects still block.
+        - **Known safe values:** Given it returns `PR_BODY` or `BLANK`, When the committer runs, Then branch commit subjects only warn.
+        - **Commit messages:** Given it returns `COMMIT_MESSAGES`, When the committer runs, Then branch commit subjects still block.
+
+        ---
+
+        ## Verification
+
+        <!-- workline:verification=tester -->
+
+        - **Missing setting:** `github.com/JN0V/workline/internal/forge.TestGitHubSquashOnlyMissingMessage`.
+        - **Empty setting:** `github.com/JN0V/workline/internal/forge.TestGitHubSquashOnlyEmptyMessage`.
+        - **Known safe values:** no test can check it: kept as today: no existing test was found that checks it, so nothing guards it; a test of it would pass on the base, and is not written
+        - **Commit messages:** no test can check it: kept as today: no existing test was found that checks it, so nothing guards it; a test of it would pass on the base, and is not written
+
+        Each test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-2101`. Written by the tester from its tests.
+
+        ## Scope
+
+        - `internal/forge/github.go`: in `Squash`, `Only` should hold only when `squashMergeCommitMessage` is `PR_BODY` or `BLANK`. A missing or empty value is not safe.
+        - `internal/forge/squash_test.go`: add cases for a missing and an empty `squashMergeCommitMessage`, both giving `only` false.
+
+        ## Assumptions
+
+        - Assumption taken on 2026-11-25, the Validation draft unanswered after 24 h: written as the role drafted it, for a person to correct.
+      author: JN0V
+    merge-requests:
+    - id: 2167
+      branch: change
+      title: 'fix(forge): squash-only detection takes a missing GitHub squash'
+      body: |
+        Closes #2101
+
+        The developer's code for #2101, proven on the project's tests.
+
+        ## Changes
+
+        - Code: `internal/forge/github.go`.
+        - The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-2101`: `internal/forge/squash_test.go`.
+
+        ## Verification
+
+        - Its agent ran with the rights of the CI job; the forge's guards decide what merges.
+        - `go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m {packages}`: 125 tests passed, none red.
+        - On the folders its code and the acceptance tests touch: `./internal/forge`. This pull request's own CI runs the whole suite.
+        - Run on a fresh checkout of 1d29cb8, its code laid on it: not its agent's worktree.
+
+        ## Tried
+
+        - Its code on the project's tests, on a fresh checkout, before this opened: above.
+        - Not tried: the commands the issue names to verify it, nor a person's use of it.
+run:
+  role: reviewer
+  event: review
+  target: merge-request:2167
+  input:
+    range: main..HEAD
+review:
+  defects: []

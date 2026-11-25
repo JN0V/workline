@@ -1,0 +1,30 @@
+case: reviewer/dc-239-no-ascii-test
+about: >
+  DomoticsCore #239 (closes #167) replaces the warning-sign emoji and an em dash in SystemInfo's boot-diagnostics
+  strings with ASCII. Head 988ddcb2 is the one the line declared ready and the owner reviewed. The owner sent it back
+  (https://github.com/JN0V/DomoticsCore/pull/239#issuecomment-7101359636): the issue asks for a native test or CI
+  check that every byte is ASCII; add a test that fails if a non-ASCII byte comes back. The line then
+  (https://github.com/JN0V/DomoticsCore/pull/239#issuecomment-7096994739, 09:42Z): the same point as a verified tests
+  Important, three hours before the owner, that only warned; the developer's next round was "no fix". Issue body: its
+  10-18 version (edited again at 10:51Z, after the review); PR body: current, never edited.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: c42c667e603286ad0653c75ba5a60deacfecd78d, head: 988ddcb2b61ce979adce0ce1071774f7474e32c2}
+  forge:
+    issues:
+      - id: 167
+        title: "LO-13: Unicode emoji in SystemInfo log message"
+        labels: ["task"]
+        body: "| LO-13 | SI | Unicode emoji in log message (non-ASCII) |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6333 to 6333 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:3747d47645ae -->\n\n## Need\n\nDraft: whoever reads logs on the serial console or the RemoteConsole telnet client should get plain ASCII, because a terminal without UTF-8 shows garbage for the emoji.\n\n## Verification\n\nA check, native test or CI grep, that the DLOG strings in SystemInfo.h contain only ASCII bytes. A boot-diagnostics test could also capture the log line and assert it is ASCII.\n\n## Validation\n\nDraft: the reporter (JN0V) reads the boot-diagnostics log lines and confirms they are ASCII-only.\n\n## Scope\n\nNon-ASCII characters in SystemInfo log messages in initBootDiagnostics(): the warning sign in the 'Previous boot ended unexpectedly' and 'core dump waiting' DLOG_W strings"
+        comments: []
+    merge-requests:
+      - id: 239
+        branch: change
+        title: "chore(domoticscore): unicode emoji in SystemInfo log message"
+        body: "Closes #167\n\nThe developer's code for #167, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfo.h`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1368 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of c42c667, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:239", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: tests
+      kind: no-ascii-test
+      at:
+        - {file: DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfo.h, lines: [305, 335], text: "DLOG_W(LOG_SYSTEM, \"WARNING: Previous boot ended unexpectedly: %s\",", why: "the strings changed with nothing guarding them"}

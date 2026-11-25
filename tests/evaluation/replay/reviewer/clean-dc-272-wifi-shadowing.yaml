@@ -1,0 +1,90 @@
+case: reviewer/clean-dc-272-wifi-shadowing
+about: >
+  Clean. JN0V/DomoticsCore #272 (closes #164): WifiComponent's constructor parameters renamed so they no longer
+  shadow the ssid and password members, a missing <functional> include added, with a native test. Merged with no
+  review round; the owner's label on an independent review; only the release bumped Wifi.h's version line after
+  it. Any Important here is false. #164's body was last edited before the pull request opened.
+given:
+  clone:
+    repo: JN0V/DomoticsCore
+    base: 04d2cb3b12f789c8ee2d8c2c9bc1528c1ff64671
+    head: 149f2d1eb6db795b573b5e452da2827346a4a7fa
+  forge:
+    issues:
+    - id: 164
+      title: 'LO-9: WiFi member shadowing of ssid/password'
+      labels:
+      - task
+      body: |
+        Opened from `docs/CODE-ROADMAP.md`, lines 6329 to 6329 by the product-owner role.
+
+        <!-- workline:import=docs/CODE-ROADMAP.md:dba875a5a2b2 -->
+
+        ## Need
+
+        Maintainers of the WiFi component want constructor parameters that do not shadow members, so shadow warnings stay clean and the code is clearer.
+
+        ## Validation
+
+        - **No shadow warning:** Given `Wifi.h`, When it is compiled with `-Wshadow`, Then no warning is reported for `ssid` or `password`.
+        - **Same behaviour:** Given `WifiComponent("net", "pw")`, When it starts, Then it connects with those credentials as before.
+
+        ---
+
+        ## Verification
+
+        <!-- workline:verification=tester -->
+
+        - **No shadow warning:** `DomoticsCore-Wifi/test_wifi_shadow.test_wifi_header_reports_no_shadow_warning_for_ssid_or_password`.
+        - **Same behaviour:** no test can check it: kept as today: guarded by `test_reconnect_success_emits_events` (DomoticsCore-Wifi/test/test_wifi_behaviour/test_wifi_behaviour.cpp), which builds WifiComponent("Net", "pw"), starts it and checks the connect call it made and the SSID it used
+
+        Each test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-164`. Written by the tester from its tests.
+
+        ## Scope
+
+        The `WifiComponent` constructor and its `ssid` and `password` members in `DomoticsCore-Wifi/include/DomoticsCore/Wifi.h`.
+
+        ## Assumptions
+
+        - Assumption taken on 2026-11-16, the question of 2026-10-20 unanswered after 24 h: The shadowing is in the `WifiComponent` constructor, where `ssid` and `password` parameters hide the members of the same name; it causes only a warning, not a wrong value.
+        - Assumption taken on 2026-11-17, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct.
+      author: JN0V
+    merge-requests:
+    - id: 272
+      branch: change
+      title: 'chore(domoticscore): wiFi member shadowing of ssid/password'
+      body: |
+        Closes #164
+
+        The developer's code for #164, proven on the project's tests.
+
+        ## Changes
+
+        - Code: `DomoticsCore-Wifi/include/DomoticsCore/INetworkProvider.h`, `DomoticsCore-Wifi/include/DomoticsCore/Wifi.h`.
+        - The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-164`: `DomoticsCore-Wifi/test/test_wifi_shadow/test_wifi_shadow.cpp`.
+
+        ## Beyond the Scope
+
+        Files changed beyond the issue's Scope, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.
+
+        - `DomoticsCore-Wifi/include/DomoticsCore/INetworkProvider.h`: uses std::function without including \<functional>, so Wifi.h did not compile on its own for the -Wshadow test
+
+        ## Verification
+
+        - Its agent ran with the rights of the CI job; the forge's guards decide what merges.
+        - `tools/workline-tests.sh {report}`: 1370 tests passed, none red.
+        - The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).
+        - Run on a fresh checkout of 5c9abbd, its code laid on it: not its agent's worktree.
+
+        ## Tried
+
+        - Its code on the project's tests, on a fresh checkout, before this opened: above.
+        - Not tried: the commands the issue names to verify it, nor a person's use of it.
+run:
+  role: reviewer
+  event: review
+  target: merge-request:272
+  input:
+    range: main..HEAD
+review:
+  defects: []

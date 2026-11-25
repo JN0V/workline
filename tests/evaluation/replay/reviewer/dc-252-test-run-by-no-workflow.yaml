@@ -1,0 +1,33 @@
+case: reviewer/dc-252-test-run-by-no-workflow
+about: >
+  DomoticsCore #252 (closes #185) names the Constitution XV rule in each check_versions.py error and adds
+  tools/test_check_versions.py, fixture-tree tests. Head e29a3a9f is the one the owner reviewed. The owner sent
+  it back (https://github.com/JN0V/DomoticsCore/pull/252#issuecomment-7112637438): the new test is run by no
+  workflow (version-check.yml runs check_versions.py only), while the issue says the tools are run in CI through
+  GitHub Actions; the cause is outside the diff (CI wiring). The fix ran it through tools/workline-tests.sh
+  (https://github.com/JN0V/DomoticsCore/pull/252#issuecomment-7129499569). The line then: one question and nits;
+  one verified edge-cases Important on a malformed library.json, which the owner did not raise and is not
+  planted here. Issue and PR bodies are the current ones, unedited since before the review.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: c42c667e603286ad0653c75ba5a60deacfecd78d, head: e29a3a9ffcdabe6e46eef76f0ba110f530f259fb}
+  forge:
+    issues:
+      - id: 185
+        title: "LO-31: check_versions.py does not enforce Constitution XV"
+        labels: ["task"]
+        body: "| LO-31 | Root | `check_versions.py` doesn't enforce Constitution XV propagation rules |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6351 to 6351 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:c0b9786b878b -->\n\n## Need\n\nA maintainer needs check_versions.py to enforce the Constitution XV propagation rules, so that a release which breaks them is stopped by CI instead of by a person noticing.\n\n## Verification\n\nAdd cases to the checker, run against fixture trees. A tree that breaks a Constitution XV propagation rule must exit 1 with a named error, and a conforming tree must still print 'All version checks passed.' The tools are run in CI through GitHub Actions.\n\n## Validation\n\nThe maintainer (JN0V) runs the checker on a tree that breaks a propagation rule and sees it fail with a message that names the rule.\n\n## Scope\n\ntools/check_versions.py: the checks run from main() (component metadata.version against library.json, root against tag, root against components, library.properties against root)."
+        comments: []
+    merge-requests:
+      - id: 252
+        branch: change
+        title: "chore: check_versions.py does not enforce Constitution XV"
+        body: "Closes #185\n\nThe developer's code for #185, proven on the project's tests.\n\n## Changes\n\n- Code: `tools/check_versions.py`, `tools/test_check_versions.py`.\n\n## Beyond the Scope\n\nFiles changed beyond the issue's Scope, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.\n\n- `tools/test_check_versions.py`: no reason given by its agent\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1368 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of c42c667, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:252", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: tests
+      kind: test-run-by-no-workflow
+      at:
+        - {file: tools/test_check_versions.py, lines: [1, 3], text: "Fixture-tree tests for check_versions.py", why: "a new test file no workflow nor test script runs"}
+        - {file: tools/test_check_versions.py, lines: [54, 56], text: "unittest.main()", why: "runs only when someone calls it by hand"}
+        - {file: .github/workflows/version-check.yml, lines: [24, 26], text: "python tools/check_versions.py --verbose", why: "the workflow runs the checker, not its tests"}

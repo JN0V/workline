@@ -1,0 +1,111 @@
+case: reviewer/kept-wl-2179-unread-policy-kept-empty
+about: >
+  Kept catch. JN0V/workline #2179 (closes #2077) makes `workline doctor` read each Actions event policy by its id,
+  since the list carries no file targets. At head 3a439f9 the reviewer's correctness lens blocked with an
+  Important (https://github.com/JN0V/workline/pull/2179#discussion_r4690347686): when the read by id fails,
+  returns bad JSON or no conditions and no rules, the bare list entry is kept, judged as allowing nothing, and the
+  false event-blocked warning the issue is about comes back, with no unread note. The developer fixed it in round
+  1 (79c0029: the event-policy-unread note, then return). Bodies are the ones at review time (no edits since).
+given:
+  clone:
+    repo: JN0V/workline
+    base: dccd37b89ed989cbfc1beef71996dc10c29c0f6e
+    head: 3a439f98d86ecca20c98ecc160a7109b2569d552
+  forge:
+    issues:
+    - id: 2077
+      title: 'bug(doctor): warns pull_request_target is blocked when an event policy allows it'
+      labels:
+      - bug
+      body: |
+        ## Who it hurts
+
+        A person who runs `workline doctor` on a public repository whose Actions event policy already allows `pull_request_target`. The warning sends them to fix what is fixed, and they cannot make it go away.
+
+        ## Need
+
+        A person who runs `workline doctor` on a public repository whose Actions event policy already allows `pull_request_target` needs no false warning, so they are not sent to fix what is already fixed.
+
+        ## Steps to reproduce
+
+        1. Use a public repository with an active Actions event policy allowing `pull_request_target` for `workline-bounds.yml` and `workline-merge.yml`: JN0V/DomoticsCore (policy 17081) or JN0V/TraceGlass (policy 17077).
+        2. Run `workline doctor` (v0.88.1).
+
+        ## Validation
+
+        - **Policy allows it:** Given a public repository with an active event policy allowing `pull_request_target` for `workline-bounds.yml` and `workline-merge.yml`, When I run `workline doctor`, Then it prints no `pull_request_target` warning.
+        - **No policy:** Given a public repository with no policy covering those files, When I run `workline doctor`, Then it still warns that `pull_request_target` is blocked.
+
+        ## Expected
+
+        No `pull_request_target` warning: an active policy covers both files.
+
+        ## Actual
+
+        doctor warns that `pull_request_target` is blocked for these files.
+
+        ## Version
+
+        workline v0.88.1.
+
+        ---
+
+        ## Verification
+
+        - A test where the list endpoint returns a policy with no `conditions` and the policy's own read returns its file targets: no warning.
+        - Run on a clone of DomoticsCore and TraceGlass: no warning.
+
+        ## Scope
+
+        - `internal/doctor/event_policy.go`: it reads `repos/{owner}/{repo}/actions/policies?per_page=100`; that list carries no file targets (`conditions.workflow_path`), so `coveringEventPolicies` finds no policy covering the files.
+        - Read each listed policy by its id for its conditions and rules, then judge as now.
+        - Update `internal/doctor/event_policy_api_test.go`.
+
+        ## Assumptions
+
+        - Assumption taken on 2026-11-25, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct.
+        - Assumption taken on 2026-11-25, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct.
+      author: JN0V
+    merge-requests:
+    - id: 2179
+      branch: change
+      title: 'fix: bug(doctor): warns pull_request_target is blocked when an'
+      body: |
+        BODY:
+        Closes #2077
+
+        The developer's code for #2077, proven on the project's tests.
+
+        ## Changes
+
+        - Code: `internal/doctor/event_policy.go`.
+        - The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-2077`: `internal/doctor/event_policy_read_test.go`.
+
+        ## Verification
+
+        - Its agent ran with the rights of the CI job; the forge's guards decide what merges.
+        - `go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m {packages}`: 41 tests passed, none red.
+        - On the folders its code and the acceptance tests touch: `./internal/doctor`. This pull request's own CI runs the whole suite.
+        - Run on a fresh checkout of 37b1d45, its code laid on it: not its agent's worktree.
+
+        ## Tried
+
+        - Its code on the project's tests, on a fresh checkout, before this opened: above.
+        - Not tried: the commands the issue names to verify it, nor a person's use of it.
+run:
+  role: reviewer
+  event: review
+  target: merge-request:2179
+  input:
+    range: main..HEAD
+review:
+  defects:
+  - lens: correctness
+    kind: failed-read-kept-as-empty-policy
+    at:
+    - file: internal/doctor/event_policy.go
+      lines:
+      - 93
+      - 117
+      text: if err == nil && json.Unmarshal(b, &full) == nil && (full.Conditions != nil || len(full.Rules) > 0) {
+      why: a failed or empty read keeps the bare list entry, so the false blocked warning returns

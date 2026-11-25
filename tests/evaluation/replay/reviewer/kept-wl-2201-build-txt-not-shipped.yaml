@@ -1,0 +1,94 @@
+case: reviewer/kept-wl-2201-build-txt-not-shipped
+about: >
+  Kept catch. JN0V/workline #2201 (closes #2198) types a task's commit fix when it changes shipped code, chore
+  otherwise. At head 36af8a5 the reviewer's correctness lens blocked with an Important
+  (https://github.com/JN0V/workline/pull/2201#discussion_r4695583096): any .txt file is taken for a page of text,
+  so a task changing only CMakeLists.txt or requirements.txt is typed chore and hidden from the release, the bug
+  the change set out to fix. Fixed in 3d76a59 (build files count as shipped). The pull request body is the first
+  version (13:25), before its Follow-ups section was added.
+given:
+  clone:
+    repo: JN0V/workline
+    base: 4320cc49fc3dfc5b99763b9e0f5cbda7e9a0a825
+    head: 36af8a59eb309039c420f75bbc840bd1ddfd44e6
+  forge:
+    issues:
+    - id: 2198
+      title: A code change typed chore is hidden from the release notes and bumps no version
+      labels: []
+      body: |
+        ## Need
+
+        A person who upgrades a library needs each change to its shipped code in the release notes, with a version bump: a `chore` title gives neither.
+
+        ## Example
+
+        - DomoticsCore, 2026-11-25: the line merged "chore: MQTTPublishEvent is 830 bytes, reduce field sizes".
+          - It cut the MQTT event payload cap from 700 to 640 bytes.
+          - Home Assistant documents of 640 to 699 bytes are now refused.
+          - The release pull request said nothing of it, until a `fix(mqtt):` override was added to the merged pull request by hand.
+        - DomoticsCore, 2026-11-24: three merged `chore` pull requests changed `WebUI.h`.
+          - The release pull request bumps eleven components. DomoticsCore-WebUI is not one of them: it stays at 1.13.0.
+        - Wanted: such a title is typed `fix` or `feat`, or `refactor` with a section the release notes show.
+
+        ## Validation
+
+        - **Task that changes shipped code:** Given an issue of kind task whose change edits shipped code, When the developer opens its pull request, Then the title's type shows in the release notes and bumps a version.
+        - **Task that changes none:** Given an issue of kind task whose change edits only tests, CI or docs, When the developer opens its pull request, Then the title's type bumps no version.
+
+        ---
+
+        ## Scope
+
+        - `roles/developer/code/subject.go`: `commitType` gives `chore` to every issue of kind task, whatever its change touches.
+        - Guessed: the type comes from what the change touches, not from the kind alone.
+        - Guessed: what counts as shipped code is the project's to say.
+        - Examples: JN0V/DomoticsCore#274 (the payload cap); JN0V/DomoticsCore#246, JN0V/DomoticsCore#247 and JN0V/DomoticsCore#250 (WebUI code, no WebUI bump); the release pull request is JN0V/DomoticsCore#229.
+      author: JN0V
+    merge-requests:
+    - id: 2201
+      branch: change
+      title: 'fix(developer): a task on shipped code is typed fix, not chore'
+      body: |
+        Closes #2198
+
+        ## Changes
+
+        - The developer types a task's commit and pull request by what its code changes, not by the kind alone:
+          - shipped code changed: `fix`, so that release tools list it in the notes and bump its package;
+          - only docs (`docs/`, `*.md`, …), CI (`.github/`, `.gitlab/`, …), tests or a tool's dotfile: `chore`, as before.
+        - A task typed `fix` says so in its body, and asks a person to mark a breaking change when it removes or renames a public name: that call stays a person's.
+        - The merge policy is unchanged: it reads the issue's kind from its labels (`devmark.IssueKind`), never the title's type. A task still waits for a person's yes at `normal`.
+        - The weekly sample reads the closed issue's kind first; the title's type only when no issue says it.
+        - Conformance: `developer/task-on-shipped-code-typed-fix` (red before the change), `developer/task-on-docs-only-stays-chore`.
+        - Docs: [the developer's pull request page](roles/developer/docs/pull-request.md#its-commits).
+
+        ## Tried
+
+        - On a clone of the DomoticsCore trial copy (7da20c9), a fake forge, `workline develop --issue 900` with a shell agent, no tokens:
+          - task "Say the WebSocket frame cap in WebUI.h", the agent editing `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`: title `fix(domoticscore): say the WebSocket frame cap in`, the body's "Typed `fix`" line present;
+          - the same task editing `DomoticsCore-WebUI/README.md` only: title `chore(domoticscore-webui): …`, no such line.
+        - The trial's test command was replaced by a stub: the PlatformIO suites did not run.
+        - Not tried: a real agent, nor a release-please run on the merged result.
+        - Tests: `go test ./roles/developer/...`, every `developer/` conformance case, `golangci-lint` on the change: green.
+
+        🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+        https://claude.ai/code/session_015WdCcUGi6rdEcYQ8GZs7Vt
+run:
+  role: reviewer
+  event: review
+  target: merge-request:2201
+  input:
+    range: main..HEAD
+review:
+  defects:
+  - lens: correctness
+    kind: build-txt-files-not-shipped
+    at:
+    - file: roles/developer/code/subject.go
+      lines:
+      - 48
+      - 62
+      text: 'case ".md", ".rst", ".adoc", ".txt":'
+      why: CMakeLists.txt or requirements.txt decide the build, yet count as not shipped

@@ -354,6 +354,7 @@ func envInt(t *testing.T, name string, def int) int {
 // flight finish, -parallel at most; the test fails, said
 // (docs/spec/conformance/evaluation.md).
 func TestJudgeReplay(t *testing.T) {
+	onDemand(t)
 	spec := os.Getenv("WORKLINE_EVAL")
 	if spec == "" {
 		t.Skip("set WORKLINE_EVAL=claude:opus to replay the judge's 40 measured questions: it calls a real agent and costs tokens")

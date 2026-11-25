@@ -1,0 +1,76 @@
+case: reviewer/kept-dc-262-sticky-connected-stale
+about: >
+  Kept catch. JN0V/DomoticsCore #262 (closes #146) makes MQTT's link events sticky, counts losses and stops uptime
+  during an outage. At head 125387e (before round 1) the reviewer's correctness lens raised an Important (warn
+  only then, https://github.com/JN0V/DomoticsCore/pull/262#discussion_r4667322328): both mqtt/connected and
+  mqtt/disconnected are now sticky and nothing clears the connected one when the link drops, so a late subscriber
+  with replay is handed connected while the link is down. The developer fixed it in round 1 (ffa86db:
+  EventBus::clearSticky, emitLinkState clears the opposite event). #146's body is the one edited 2026-11-23 14:31,
+  before this head.
+given:
+  clone:
+    repo: JN0V/DomoticsCore
+    base: de3ac3864ff15b87a598b9401a97a1ca5175f3c8
+    head: 125387e62f0d0c32b72e824a69efee98ad8b23a7
+  forge:
+    issues:
+    - id: 146
+      title: 'BUG-49 — MQTT: what a dropped link still gets wrong after BUG-44'
+      labels:
+      - bug
+      body: "### BUG-49 — MQTT: what a dropped link still gets wrong after BUG-44 [LOW] — **NEW (2026-09-20, by the deferred-work purge)**\n\n- **Parked by**: BUG-44's code review, 2026-09-20.\n- **Files**: `MQTT_impl.h` (`resetReconnect()` `:223`, `updateStatistics()`\n  `:608`, `announceConnectionLost()` `:115`); `MQTT.h` (`MQTTStatistics`).\n- **Three leftovers, one file**:\n  1. `resetReconnect()` is the last silent exit from Connected — it sets\n     `Disconnected` without touching the client or emitting, so a caller\n     using it after changing the broker leaves every subscriber believing the\n     link is up, and the next `connect()` sends a second `mqtt/connected` with\n     no `mqtt/disconnected` between. Public API; nothing in the tree calls it.\n  2. `MQTTStatistics` counts connections and never losses, so neither the\n     WebUI nor the telemetry can see a link flap; and `uptime` is refreshed\n     only while connected, so it freezes at its last value and reads as live\n     for the whole outage.\n  3. the loss is announced once per drop, and a `mqtt/disconnected` the\n     EventBus drops on a full queue is never re-sent — HomeAssistant's\n     `mqttConnected` then stays true for the life of the process. Sticky\n     publication would fix it and changes replay for every subscriber.\n- **Fix**: (1) announce, or close the session first — a design question;\n  (2) a loss counter and an uptime that stops; (3) decide sticky or not.\n- **Refs**: BUG-44, BUG-46, ADR 0001.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 4506 to 4527 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:87ac34765c9f -->\n\n## Need\n\nAnyone who relies on the MQTT link state, such as Home Assistant, the WebUI or telemetry, needs it to be correct and visible after a link drop.\n\n## Steps to reproduce\n\n1. Connect the MQTT component to a broker.\n2. Call `resetReconnect()` while connected, or drop the link while the EventBus queue is full.\n3. Read `getStatistics()` and watch the `mqtt/connected` and `mqtt/disconnected` events.\n- **Expected:** subscribers see a `mqtt/disconnected` for every loss, losses are counted, and `uptime` stops while the link is down.\n- **Actual:** `resetReconnect()` sets `Disconnected` silently, so the next `connect()` sends a second `mqtt/connected` with no disconnect between. No loss is counted, and `uptime` keeps its last value during the outage. A dropped `mqtt/disconnected` is never resent, so Home Assistant's `mqttConnected` stays true.\n- **Version:** 2.13.0.\n\n## Validation\n\n- **Silent reset:** Given a connected client, When `resetReconnect()` is called, Then subscribers receive `mqtt/disconnected` before any later `mqtt/connected`.\n- **Loss counter:** Given a link that drops twice, When statistics are read, Then they show two losses.\n- **Uptime:** Given a dropped link, When statistics are read during the outage, Then `uptime` is 0 or no longer grows.\n- **Lost event:** Given a full EventBus queue at the moment of a drop, When the queue frees up, Then subscribers still learn that the link is down.\n\n---\n\n## Verification\n\n<!-- workline:verification=tester -->\n\n- **Silent reset:** `DomoticsCore-MQTT/test/test_mqtt_link_loss/test_mqtt_link_loss.cpp:test_reset_reconnect_announces_the_loss_before_the_next_connection`.\n- **Loss counter:** `DomoticsCore-MQTT/test/test_mqtt_link_loss/test_mqtt_link_loss.cpp:test_statistics_count_each_lost_link`.\n- **Uptime:** `DomoticsCore-MQTT/test/test_mqtt_link_loss/test_mqtt_link_loss.cpp:test_uptime_is_zero_during_an_outage`.\n- **Lost event:** `DomoticsCore-MQTT/test/test_mqtt_link_loss/test_mqtt_link_loss.cpp:test_a_loss_the_full_queue_dropped_is_not_forgotten`.\n\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-146`. Written by the tester from its tests.\n\n## Scope\n\n`DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()`, `updateStatistics()`, `announceConnectionLost()`.\n`DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: `MQTTStatistics` gains a loss counter.\n\n## Assumptions\n\n- Assumption taken on 2026-11-15, the question of 2026-10-21 unanswered after 24 h: The three leftovers stay together in this one issue for now, since each is a small change in the same MQTT component.\n- Assumption taken on 2026-11-16, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct.\n"
+      author: JN0V
+    merge-requests:
+    - id: 262
+      branch: change
+      title: 'fix(domoticscore): MQTT: what a dropped link still gets wrong'
+      body: |
+        Closes #146
+
+        The developer's code for #146, proven on the project's tests.
+
+        ## Changes
+
+        - Code: `DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`, `DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`.
+        - The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-146`: `DomoticsCore-MQTT/test/test_mqtt_link_loss/test_mqtt_link_loss.cpp`.
+
+        ## Verification
+
+        - Its agent ran with the rights of the CI job; the forge's guards decide what merges.
+        - `tools/workline-tests.sh {report}`: 1373 tests passed, none red.
+        - The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).
+        - Run on a fresh checkout of c873e1d, its code laid on it: not its agent's worktree.
+
+        ## Tried
+
+        - Its code on the project's tests, on a fresh checkout, before this opened: above.
+        - Not tried: the commands the issue names to verify it, nor a person's use of it.
+run:
+  role: reviewer
+  event: review
+  target: merge-request:262
+  input:
+    range: main..HEAD
+review:
+  defects:
+  - lens: correctness
+    kind: stale-sticky-connected-replayed
+    at:
+    - file: DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      lines:
+      - 205
+      - 212
+      text: emit(MQTTEvents::EVENT_CONNECTED, true, true);
+      why: connected is sticky and never cleared when the link drops
+    - file: DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      lines:
+      - 108
+      - 116
+      text: emit(MQTTEvents::EVENT_DISCONNECTED, true, true);
+      why: the loss is emitted sticky but the old sticky connected stays replayable
+    - file: DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h
+      lines:
+      - 232
+      - 239
+      text: emit(MQTTEvents::EVENT_DISCONNECTED, true, true);
+      why: 'same on disconnect(): the sticky connected is not cleared'

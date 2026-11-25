@@ -1,0 +1,41 @@
+case: developer/dc-240-replaces-cpu-load-and-tests-it
+about: >
+  DomoticsCore issue #168 (ready since 2026-10-18, kind `bug`):
+  calculateCpuLoad() derives a CPU load from free-heap churn. Its
+  Verification asks a native test with a fake HAL heap and clock, then one
+  covering whatever replaces the heuristic (an idle-time measure, or the
+  metric removed). No tester Draft. On 2026-11-23 the developer, on main at
+  c42c667, opened #240 (https://github.com/JN0V/DomoticsCore/pull/240)
+  "Closes #168" with the heuristic removed from SystemInfo.h and its own
+  "Left out" saying it added no native test and left `cpuLoad` always 0.
+  The owner sent it back
+  (https://github.com/JN0V/DomoticsCore/pull/240#issuecomment-7101360267):
+  `cpuLoad` is 0 but SystemInfoWebUI.h still charts it and the example still
+  logs it; keep a real measure or remove the field everywhere; add a native
+  test for the choice. The body is the issue's as the developer read it
+  (edit history, 2026-10-18). The proof needs `pio` on PATH (PlatformIO's
+  native suites); the grade reads only branches and the forge.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: c42c667e603286ad0653c75ba5a60deacfecd78d}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change && git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 168
+        title: "LO-14: calculateCpuLoad() uses unreliable heap-churn heuristic"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "| LO-14 | SI | `calculateCpuLoad()` uses unreliable heap-churn heuristic |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6334 to 6334 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:38caa0f8cc12 -->\n\n## Need\n\nDraft: dashboard and telemetry users need a CPU load figure that reflects real CPU use. Today it is derived from free-heap changes, so it reads high when memory churns and low when the CPU is busy without allocating.\n\n## Verification\n\nA native test with a fake HAL heap and clock. It shows that the reported load follows the heap delta, not CPU work. It then covers whatever replaces the heuristic, e.g. a HAL-provided idle-time measure or removal of the metric.\n\n## Validation\n\nDraft: the reporter (JN0V) compares the displayed load with a known workload in the WebUI and accepts the new method, or accepts removal of the figure.\n\n## Scope\n\nSystemInfoComponent::calculateCpuLoad() and its state (lastHeapCheck, lastHeapValue, cpuLoadEma), called from updateMetrics()"
+run: {role: developer, develop: []}
+grade:
+  - {status: pass}
+  # The heuristic and its state are gone.
+  - {sh: "git --git-dir=../origin.git show workline/developer/168:DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfo.h > ../si.h && ! grep -q -e lastHeapValue -e lastHeapCheck -e cpuLoadEma ../si.h"}
+  # A figure the code no longer computes is shown nowhere: cpuLoad still assigned, or gone from the WebUI and the example.
+  - {sh: "git --git-dir=../origin.git show workline/developer/168:DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfo.h | grep -q 'cpuLoad *= *[A-Za-z(]' || { ! git --git-dir=../origin.git show workline/developer/168:DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfoWebUI.h | grep -q -i 'cpu_\\{0,1\\}load' && ! git --git-dir=../origin.git show workline/developer/168:DomoticsCore-SystemInfo/examples/BasicSystemInfo/src/main.cpp | grep -q cpuLoad; }"}
+  # The native test the Verification asks, the owner's send-back: a new test function.
+  - {sh: "git --git-dir=../origin.git diff main workline/developer/168 -- DomoticsCore-SystemInfo/test | grep -q -e '^+void test_' -e '^+ *RUN_TEST('"}
+  # Closes #168 only when nothing is left out.
+  - {sh: "python3 -c 'import json, re; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"branch\"] == \"workline/developer/168\"]; assert len(m) == 1, \"no pull request\"; b = m[0][\"body\"]; left = re.search(r\"(?ms)^## Left out\\s*$(.*?)(?=^## |\\Z)\", b); assert not (\"Closes #168\" in b and left and left.group(1).strip()), \"Closes #168 while its Left out lists work\"'"}

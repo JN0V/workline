@@ -46,8 +46,8 @@ and 3 ran them (`-v` for the notes):
 
 ```sh
 for i in 1 2 3 4 5; do WORKLINE_EVAL=claude:sonnet go test -count=1 -timeout 60m -run 'TestEvaluation/documentalist/drifted' ./tests/evaluation/; done
-# the summary pools every run of a case: keep one engine's rows apart (the workline column)
-awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv" | grep drifted
+# a fixture's runs pooled across commits; a replay's kept apart, a commit each
+go run ./tests/evaluation/summary | grep drifted
 ```
 
 Measured again on 2026-10-17, every documentalist case planned at five

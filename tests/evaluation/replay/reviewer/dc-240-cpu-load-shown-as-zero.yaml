@@ -1,0 +1,45 @@
+case: reviewer/dc-240-cpu-load-shown-as-zero
+about: >
+  DomoticsCore #240 (closes #168) removes the heap-churn calculateCpuLoad() from SystemInfo.h and leaves
+  metrics.cpuLoad at a constant 0. Head ad80036c is the one the owner reviewed. The owner sent it back
+  (https://github.com/JN0V/DomoticsCore/pull/240#issuecomment-7101360267): (1) cpuLoad is always 0 but
+  SystemInfoWebUI.h still charts it (a flat 0% reads as an idle CPU), the BasicSystemInfo example still logs it,
+  the docs still describe an estimate: consumers outside the diff; (2) the Need is left undecided: keep a real
+  measure or remove the field everywhere, with a changelog note; (3) no native test, which the Verification asks
+  for. The developer's own Left out said (2) and (3), yet the PR says "Closes #168". The line then: the lens run
+  failed (API 529, 0 tokens) and the summary still said "No finding on the commits reviewed". PR body as at
+  2026-11-23 (edit history); issue body current, unedited since October.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: c42c667e603286ad0653c75ba5a60deacfecd78d, head: ad80036c37e0dd4b31179ed4f3c68c28f1de1713}
+  forge:
+    issues:
+      - id: 168
+        title: "LO-14: calculateCpuLoad() uses unreliable heap-churn heuristic"
+        labels: ["bug"]
+        body: "| LO-14 | SI | `calculateCpuLoad()` uses unreliable heap-churn heuristic |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6334 to 6334 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:38caa0f8cc12 -->\n\n## Need\n\nDraft: dashboard and telemetry users need a CPU load figure that reflects real CPU use. Today it is derived from free-heap changes, so it reads high when memory churns and low when the CPU is busy without allocating.\n\n## Verification\n\nA native test with a fake HAL heap and clock. It shows that the reported load follows the heap delta, not CPU work. It then covers whatever replaces the heuristic, e.g. a HAL-provided idle-time measure or removal of the metric.\n\n## Validation\n\nDraft: the reporter (JN0V) compares the displayed load with a known workload in the WebUI and accepts the new method, or accepts removal of the figure.\n\n## Scope\n\nSystemInfoComponent::calculateCpuLoad() and its state (lastHeapCheck, lastHeapValue, cpuLoadEma), called from updateMetrics()"
+        comments: []
+    merge-requests:
+      - id: 240
+        branch: change
+        title: "fix(domoticscore): calculateCpuLoad uses unreliable heap-churn"
+        body: "Closes #168\n\nThe developer's code for #168, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfo.h`.\n\n## Left out\n\nLO-14: I removed the heap-churn heuristic from SystemInfo.h (calculateCpuLoad(), lastHeapCheck, lastHeapValue, cpuLoadEma). I did not add the native test the Verification asks for, so that part is still open. The existing SystemInfo suites pass (74/74).\nThe HAL has no idle-time measure, so metrics.cpuLoad is now always 0. I kept the field so the WebUI \"cpu_load\" output and the existing tests that read it still compile. A real figure needs a HAL idle-time API, or the metric needs removing, which means changing SystemInfoWebUI.h, the example and the docs. That is a decision for the product owner, and I did not make it here.\nThere was no tester acceptance test to run.\n\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1368 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of c42c667, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:240", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: correctness
+      kind: dead-metric-still-shown
+      at:
+        - {file: DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfo.h, lines: [99, 99], text: "Always 0: the HAL offers no idle-time measure", why: "the field is kept at a constant 0 while its readers still show it as a measure"}
+        - {file: DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfoWebUI.h, lines: [65, 65], text: "WebUIField(\"cpu_load\", \"CPU Load\"", why: "the WebUI still charts it: a flat 0% reads as an idle CPU"}
+        - {file: DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfoWebUI.h, lines: [112, 112], text: "doc[\"cpu_load\"] = metrics.cpuLoad;", why: "the WebUI still sends it"}
+        - {file: DomoticsCore-SystemInfo/examples/BasicSystemInfo/src/main.cpp, lines: [30, 30], text: "CPU Load (est.)", why: "the example still logs an estimate"}
+        - {file: docs/components/system-info/technical-reference.md, lines: [250, 264], text: "Estimated CPU load percentage", why: "the docs still describe the heuristic"}
+    - lens: intent
+      kind: need-left-undecided
+      at:
+        - {file: "#168", text: "a CPU load figure that reflects real CPU use", why: "neither a real measure nor the figure's removal: the Need is unmet while the PR says Closes"}
+    - lens: tests
+      kind: native-test-missing
+      at:
+        - {file: DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfo.h, lines: [305, 319], text: "void updateMetrics() {", why: "the change to what updateMetrics() reports has no test"}
+        - {file: DomoticsCore-SystemInfo/test/test_systeminfo_metrics/test_systeminfo_metrics.cpp, lines: [82, 97], text: "test_systeminfo_metrics_cpu_load_range", why: "the existing test now passes on a constant 0"}

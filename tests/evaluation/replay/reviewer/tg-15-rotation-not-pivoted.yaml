@@ -1,0 +1,36 @@
+case: reviewer/tg-15-rotation-not-pivoted
+about: >
+  TraceGlass #15 (closes #5) makes a pinch-zoom pivot on the image's current centre rather than the view's, so a zoom
+  after a drag keeps the point under the fingers. Head 82f16a50 is the one the line declared ready and the owner
+  reviewed. The owner sent it back (https://github.com/JN0V/TraceGlass/pull/15#issuecomment-7112638120): Validation
+  scenario 3 (rotate 90 degrees around (840, 960), the point under the fingers stays) is not addressed: manualRotation
+  is still just added, with no pivot, and no test covers it. The line then
+  (https://github.com/JN0V/TraceGlass/pull/15#issuecomment-7104305252): an intent Important on the earlier head for
+  the missing "zoom with no drag" guard test named by the Verification (fixed in round 1); at this head, no finding;
+  the intent lens was not given the Validation. Issue and PR bodies: current, never edited.
+given:
+  clone: {repo: JN0V/TraceGlass, base: 8d3965c825d4145df335cec4fd738f3445ef9180, head: 82f16a500300b1deefb3d4c53ef943ef91d795e7}
+  forge:
+    issues:
+      - id: 5
+        title: "Pinch-zoom after a drag makes the overlay jump"
+        labels: ["bug"]
+        body: "**Need**: a person placing the overlay needs a pinch to zoom around their fingers, so they do not drag the picture back after each zoom.\n\n**Example**:\n\n1. On a 1080×1920 screen, drag the overlay 300 px to the right: the image centre is at x = 840.\n2. Pinch to zoom 2× with the fingers centred on that point, (840, 960).\n\n- **Expected**: the point under the fingers stays there: the offset stays (300, 0).\n- **Actual**: the offset becomes (0, 0); the image centre jumps to x = 540.\n- **Version**: main, 8d3965c.\n\n## Validation\n\n- **Scenario: zoom after a drag**\n  - Given an overlay offset of (300, 0)\n  - When I zoom 2× at (840, 960)\n  - Then the offset is still (300, 0)\n- **Scenario: zoom with no drag**\n  - Given an overlay offset of (0, 0)\n  - When I zoom 2× at (340, 460)\n  - Then the offset is (200, 500)\n- **Scenario: rotate under the fingers**\n  - Given an overlay offset of (300, 0)\n  - When I rotate 90° around (840, 960)\n  - Then the image point under the fingers does not move\n\n---\n\n## Verification\n\n- A unit test on `TracingViewModel.onOverlayGesture` with a 1080×1920 view: \"zoom after a drag\" fails on main and passes once built; \"zoom with no drag\" passes on both (a guard).\n- `./gradlew :feature:tracing:testDebugUnitTest`.\n\n## Scope\n\n- `feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt`, `onOverlayGesture` (line 171): the zoom pivot is `centroid - viewCenter`; it should be taken from the image's current centre (`viewCenter + manualOffset`). The paper-tracking branch composes differently: out of scope unless the same fault shows there.\n- `feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModelTest.kt`: a test expecting today's offsets after several calls may change.\n- Reference: trial issue JN0V/TraceGlass-trial#42.\n"
+        comments: []
+    merge-requests:
+      - id: 15
+        branch: change
+        title: "fix(src): pinch-zoom after a drag makes the overlay jump"
+        body: "Closes #5\n\nThe developer's code for #5, proven on the project's tests.\n\n## Changes\n\n- Code: `feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt`.\n- Tests, in a commit apart: `feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModelTest.kt`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-5`: `feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModelZoomPivotTest.kt`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `./gradlew --console=plain $(echo {packages} | sed -E 's#\\./##g; s#/#:#g; s#([^ ]+)#:\\1:testDebugUnitTest#g')`: 200 tests passed, none red.\n- On the folders its code and the acceptance tests touch: `./feature/tracing`. This pull request's own CI runs the whole suite.\n- Run on a fresh checkout of f6ff918, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:15", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: intent
+      kind: scenario-left-out
+      at:
+        - {file: "#5", text: "When I rotate 90° around (840, 960)", why: "the rotation scenario is not built"}
+        - {file: feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt, lines: [171, 186], text: "manualRotation += rotation", why: "rotation still turns about the image centre, not the fingers"}
+    - lens: tests
+      kind: scenario-without-test
+      at:
+        - {file: feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModelZoomPivotTest.kt, lines: [52, 67], text: "fun `zoom after a drag keeps the offset`()", why: "the acceptance tests cover zoom only: no test of the rotation scenario"}

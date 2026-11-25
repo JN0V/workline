@@ -1,0 +1,51 @@
+case: reviewer/dc-273-rename-breaks-main
+about: >
+  DomoticsCore #273 (closes #159) renames IComponent's protected __dc_* members to dc_*, with their callers, a
+  CHANGELOG breaking note and test_reserved_names (Core headers only). Head 66ffe1a5 is the one the line declared
+  ready and the owner reviewed; its merge base is 77e4b918. Meanwhile #262, merged at 11:02Z (main e44dfc5e), added
+  four uses of the old names in MQTT_impl.h. The break shows only once both meet, so base is that main (e44dfc5e) and
+  setup merges it into the change, as the forge's merge would: the uses are then in the tree, outside the diff. The
+  owner sent it back (https://github.com/JN0V/DomoticsCore/pull/273#issuecomment-7162344379): (1) merging breaks main,
+  MQTT_impl.h:113-125 no longer compiles; (2) no major bump wanted, the CHANGELOG note kept; (3) CODE-ROADMAP.md still
+  names the old names. Workline issue #2190 row 2 also counts no breaking marker: #159's Validation at the time asked
+  for a `!` or a BREAKING CHANGE footer, and the title is a plain chore (the owner later waived the major bump; the
+  release #229 then missed it). The line then: no finding at any head
+  (https://github.com/JN0V/DomoticsCore/pull/273#issuecomment-7106135504). Issue body: its 09:16Z version (the head
+  was pushed 09:26Z); PR body: current, never edited.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: e44dfc5e94e6df01be39539dd7d7da5cfd569f34, head: 66ffe1a55476e0c8a1cbac35ebe36c7a4ec836f5}
+  setup:
+    - |
+      git merge -q --no-edit main
+  forge:
+    issues:
+      - id: 159
+        title: "LO-3: __dc_* field names use reserved double-underscore prefix"
+        labels: ["task"]
+        body: "Opened from `docs/CODE-ROADMAP.md`, lines 6323 to 6323 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:da91b5f4aff7 -->\n\n## Assumptions\n\n- Assumption taken on 2026-11-16, the question of 2026-10-20 unanswered after 24 h: The `__dc_` names are in Core headers and cause no failure today, only a risk with the C++ reserved-name rule.\n- Assumption taken on 2026-11-19, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct.\n\n## Need\n\nA maintainer wants the library's field names to avoid the reserved double-underscore prefix, so no compiler or standard library can clash with them.\n\n## Validation\n\n- **No reserved names:** Given the Core headers, When I search them for names starting with `__dc_`, Then none is found.\n- **Still builds:** Given the renamed fields, When the native tests and the three board builds run, Then they pass.\n- **Breaking change told in the CHANGELOG:** Given the next release after the rename, When I read CHANGELOG.md, Then it lists the rename under the breaking-changes heading, with each old name and its new name, and a one-line migration for user code.\n- **Breaking change marked on the pull request:** Given the pull request that renames the fields, When I read its title, Then it marks the API change as release-please reads it: a conventional `!` after the type (for example `refactor(core)!:`) or a `BREAKING CHANGE:` footer in the merged commit.\n\n---\n\n## Verification\n\n<!-- workline:verification=tester -->\n\n- **No reserved names:** `DomoticsCore-Core/test_reserved_names.test_core_headers_hold_no_reserved_dc_names`.\n- **Still builds:** no test can check it: It is the project's whole native suite plus the three board builds, run in CI, not one test of its own. The existing native suites call the renamed members, so they fail to build if a use was missed.\n\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-159`. Written by the tester from its tests.\n\n## Scope\n\nGuessed: the issue does not say which files hold the names, and the code given shows none of them.\n`DomoticsCore-Core/include/DomoticsCore/**`: every header that declares a `__dc_*` field, and each place that uses it.\n"
+        comments: []
+    merge-requests:
+      - id: 273
+        branch: change
+        title: "chore(domoticscore): __dc_* field names use reserved"
+        body: "Closes #159\n\nThe developer's code for #159, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-Core/include/DomoticsCore/ComponentRegistry.h`, `DomoticsCore-Core/include/DomoticsCore/IComponent.h`, `DomoticsCore-Core/src/IComponent.cpp`, `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`, `DomoticsCore-Storage/include/DomoticsCore/Storage.h`, `DomoticsCore-System/include/DomoticsCore/System.h`, `docs/architecture/eventbus-patterns.md`, `docs/components/core/technical-reference.md`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-159`: `DomoticsCore-Core/test/test_reserved_names/test_reserved_names.cpp`.\n\n## Beyond the Scope\n\nFiles changed beyond the issue's Scope, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.\n\n- `DomoticsCore-Core/src/IComponent.cpp`: uses the renamed injection fields\n- `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`: uses the renamed injection fields\n- `DomoticsCore-Storage/include/DomoticsCore/Storage.h`: uses the renamed injection fields\n- `DomoticsCore-System/include/DomoticsCore/System.h`: comment names the renamed setters\n- `docs/architecture/eventbus-patterns.md`: docs name the renamed members\n- `docs/components/core/technical-reference.md`: docs name the renamed members\n\n## Its agent's words, unread\n\nA person reads them: an objection to a frozen test may be among them.\n\nIts agent's closing words could not be read as YAML: nothing of them was applied. As they came:\n\n~~~\nThe test run finished. The report has no failures, and the last suite shown reports 96 of 96 test cases passing. The report is at `/tmp/claude-1001/r.xml`.\n\nI only read the tail of the output and a count of `<failure` entries in the report. I did not check that `test_reserved_names` itself ran and passed. I also did not run the three board builds.\n\n```yaml\n[]\n```\n~~~\n\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1370 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of dfdb93e, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:273", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: correctness
+      kind: rename-breaks-new-callers
+      at:
+        - {file: DomoticsCore-Core/include/DomoticsCore/IComponent.h, lines: [47, 49], text: "dc_eventBus = nullptr;", why: "the old name is gone, and main now uses it"}
+        - {file: DomoticsCore-Core/include/DomoticsCore/IComponent.h, lines: [198, 200], text: "void dc_setEventBus(", why: "the renamed members"}
+        - {file: DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h, lines: [113, 125], text: "__dc_eventBus->clearSticky", why: "four uses of the old name merged from #262: the build breaks"}
+    - lens: intent
+      kind: no-breaking-marker
+      at:
+        - {file: "#159", text: "Then it marks the API change as release-please reads it", why: "the title is a plain chore, with no ! and no BREAKING CHANGE footer"}
+        - {file: CHANGELOG.md, lines: [35, 37], text: "### Breaking changes", why: "the change says it breaks, the title does not"}
+  outside:
+    - lens: claims
+      kind: roadmap-names-old-names
+      at:
+        - {file: docs/CODE-ROADMAP.md, lines: [1890, 1890], text: "`__dc_setEventBus()` and `__dc_setCore()`", why: "old names"}
+        - {file: docs/CODE-ROADMAP.md, lines: [6330, 6330], text: "`__dc_*` field names use reserved double-underscore prefix", why: "the item is done"}

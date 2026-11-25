@@ -290,15 +290,19 @@ be (below).
 tests/evaluation/
   cases/<role>/<case>.yaml   one real situation each
   judge-replay/<item>/       the judge's 40 measured questions, as asked then
+  replay/<role>/<case>.yaml  real misses on real repositories, replayed
+                             (conformance/replay.md)
   results.tsv                every run's score, appended: the history kept
   schedule/                  run.sh and systemd units: a run every week
   testdata/                  fake agents proving the cases grade as they should
-  summary/                   go run ./tests/evaluation/summary: per case and models,
+  summary/                   go run ./tests/evaluation/summary: per case, workline
+                             commit and models,
                              the runs, the pass rate (runs earning every point),
                              mean score, range, tokens and seconds; fewer than
                              five runs are marked `few runs`, a model that no
                              longer answers `replaced`; the reviewer's tallies
-                             by lens, agent and how the lenses were asked
+                             by lens, agent and how the lenses were asked; the
+                             replay set by set
 ```
 
 ```sh
@@ -355,6 +359,9 @@ turns; a case that lost a point logs its closing words
 
 Real shapes, both sides graded, the reviewer's measure and the judge's
 replay are told in full in [Evaluation — four measures](conformance/evaluation.md).
+The replay set, real misses on DomoticsCore and TraceGlass played again
+(`given.clone`, `TestReplay`), and how to run one role's set, is in
+[Replay set](conformance/replay.md).
 
 **Pass rates, not the best.** A measure is read over at least five runs per
 model, as the share of runs earning every point, never from the best run.
@@ -383,7 +390,8 @@ below the floor, the check is skipped: no point earned or lost, said in the
 in a worktree of its own, and appends to this repository's `results.tsv`
 (`WORKLINE_EVAL_RESULTS`); the systemd user units next to it run it every
 week, or at the next session when the machine was off. It skips the week when
-the last commit changing the engine, the roles or the cases already has three
+the last commit changing what is evaluated (`evaluated` in eval_test.go: the
+engine, the roles, the cases, the replays, the scoring code) already has three
 runs (`WORKLINE_EVAL_RUNS`) and no model changed since: the same code on the
 same models adds little, and a subscription counts the tokens. The `workline`
 column of `results.tsv` names that commit. The reviewer's cases are left

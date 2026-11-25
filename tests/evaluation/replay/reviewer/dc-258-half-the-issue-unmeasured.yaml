@@ -1,0 +1,44 @@
+case: reviewer/dc-258-half-the-issue-unmeasured
+about: >
+  DomoticsCore #258 (closes #136) adds a HAL macro DOMOTICS_FLASH_STR and moves RemoteConsole's HELP_TEXT to
+  PROGMEM. Head 886cb22c is the one the owner reviewed. The owner sent it back
+  (https://github.com/JN0V/DomoticsCore/pull/258#issuecomment-7112636735): (1) the issue asks first to trace why
+  a literal lands in DRAM: not done; (2) the System entity table and its two JSON formats are not moved; (3) the
+  RAM was not measured, which the Verification asks. The developer's own Left out said all three, yet the PR
+  says "Closes #136". The line then: "No RAM measurement and no ESP32 build checked" was an intent Important,
+  verified, and the developer answered it "no fix"; "Cause of the literal landing in DRAM not found" was dropped
+  by the judge. The three points are all at the issue, so one intent finding at #136 counts for each: the code
+  places tell them apart where they can. The owner's later point on FPSTR readers of entityDefs()
+  (https://github.com/JN0V/DomoticsCore/pull/258#issuecomment-7129514684) is on a later head, not planted. Issue
+  and PR bodies are the current ones, unedited since before the review.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: de3ac3864ff15b87a598b9401a97a1ca5175f3c8, head: 886cb22c77e5d8486fb74a7c1a7c644d85c82b37}
+  forge:
+    issues:
+      - id: 136
+        title: "MEM-7 — ESP8266: string literals link into DRAM, and nothing moves them"
+        labels: ["task"]
+        body: "### MEM-7 — ESP8266: string literals link into DRAM, and nothing moves them [LOW] — **NEW (2026-09-20, by the deferred-work purge)**\n\n- **Parked by**: MEM-2's lot (2026-08-29) and OBS Lot D (2026-09-14).\n- **Files**: `RemoteConsole.h` (`HELP_TEXT`, 427 bytes); the entity table and\n  the two JSON formats Lot D added to System (~1 KB); every non-`PROGMEM`\n  literal like them.\n- **Problem**: the ESP8266 core places `.rodata` in DRAM, so a `static const\n  char[]` costs RAM for the life of the process — Lot D measured **+1 216 B**\n  on `esp8266dev` against +8 B on either ESP32. `PSTR`/`FPSTR`/`F()` are the\n  lever; their portability across the ESP32 core, where they are no-ops, is\n  the question that decides the shape: a HAL macro, not an `#ifdef` in the\n  caller (Constitution IX).\n- **Not universal, measured 2026-09-20**: BUG-51's lot added ~700 B of refusal\n  strings across seven headers and moved DRAM by **160 B** against +1 568 B of\n  flash. In that ELF the same literal sits once in `.rodata` (0x3ffe86d0, DRAM)\n  and eight times in `.irom0.text` (0x40201010, flash), so where a literal lands\n  is per translation unit. Whatever puts one in DRAM is the thing to find first;\n  a sweep of every literal would mostly move bytes that are already in flash.\n- **Fix**: one HAL macro, then the sites, RAM measured on the nodemcuv2.\n- **Refs**: MEM-2, OBS-5, BUG-51 (the measurement above).\n\nOpened from `docs/CODE-ROADMAP.md`, lines 1513 to 1532 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:a8ebda5b6ff5 -->\n\n## Need\n\nAs a builder for an ESP8266 board, I want string literals to stay in flash, so that RAM is not spent on text that never changes.\n\n## Example\n\nOn `esp8266dev`, the System entity table and its two JSON formats cost +1 216 B of RAM. An ESP32 pays +8 B for the same code. `HELP_TEXT` in the remote console is a 427-byte `static const char[]` that sits in RAM for the life of the process on ESP8266.\n\n## Validation\n\n- **Literal moved:** Given the ESP8266 build, When I build for `nodemcuv2` after the change, Then the RAM used by the literals found in DRAM is lower than before.\n- **ESP32 unchanged:** Given the ESP32 build, When the same macro is used, Then it behaves as before and RAM does not grow.\n\n---\n\n## Verification\n\n- RAM measured on `nodemcuv2` before and after the change, in the build size report.\n- Both ESP32 boards still build, and the macro is a no-op there.\n- The cause of a literal landing in DRAM is found first. A sweep of every literal would mostly move bytes that are already in flash.\n\n## Scope\n\n`DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h` (`HELP_TEXT`); the System entity table and JSON formats; a new macro in the platform HAL, not an `#ifdef` in the callers.\n\n## Assumptions\n\n- Assumption taken on 2026-11-15, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+        comments: []
+    merge-requests:
+      - id: 258
+        branch: change
+        title: "chore(domoticscore): ESP8266: string literals link into DRAM"
+        body: "Closes #136\n\nThe developer's code for #136, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-Core/include/DomoticsCore/Platform_HAL.h`, `DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h`.\n- The tester found that no acceptance test applied to this issue: no test is frozen for it.\n\n## Beyond the Scope\n\nFiles changed beyond the issue's Scope, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.\n\n- `DomoticsCore-Core/include/DomoticsCore/Platform_HAL.h`: the HAL macro DOMOTICS_FLASH_STR the issue asks for, so callers carry no\n\n## Left out\n\nMEM-7 is only partly done, and none of it was measured on a board. Native tests pass (`tools/workline-tests.sh`, 96 of 96 in the last suite shown). I did not build `nodemcuv2` or the ESP32 boards, so no RAM figures exist before or after.\n\nWhat changed:\n- `Platform_HAL.h` has a new HAL macro, `DOMOTICS_FLASH_STR(p)`. On ESP8266 it expands to `FPSTR(p)`. Everywhere else it is the plain pointer, so it does nothing on ESP32. `Platform_HAL.h` is outside the Scope, and `.workline/beyond.yaml` says why.\n- In `RemoteConsole.h`, `HELP_TEXT` is now `PROGMEM` and is read through `DOMOTICS_FLASH_STR`.\n\nNot done:\n- The System entity table and its two JSON formats are not moved.\n- The issue says to find first why a literal lands in DRAM. I did not trace that, for example by comparing the `.rodata` and `.irom0.text` symbols in the ELF. A person with the toolchain should do that before moving the System literals.\n\nPlease run `pio run -e nodemcuv2` and the two ESP32 environments, then compare the size reports.\n\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1369 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of de3ac38, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:258", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: intent
+      kind: cause-not-traced
+      at:
+        - {file: "#136", text: "The cause of a literal landing in DRAM is found first.", why: "the cause was not traced before moving literals"}
+        - {file: DomoticsCore-Core/include/DomoticsCore/Platform_HAL.h, lines: [196, 205], text: "#define DOMOTICS_FLASH_STR(p) FPSTR(p)", why: "the macro is added without the trace the issue asks first"}
+    - lens: intent
+      kind: system-table-not-moved
+      at:
+        - {file: "#136", text: "the System entity table and JSON formats", why: "the System table and its two JSON formats stay in DRAM"}
+    - lens: intent
+      kind: ram-not-measured
+      at:
+        - {file: "#136", text: "RAM measured on `nodemcuv2` before and after the change", why: "no RAM figure before nor after"}
+        - {file: DomoticsCore-RemoteConsole/include/DomoticsCore/RemoteConsole.h, lines: [548, 561], text: "static const char HELP_TEXT[] PROGMEM =", why: "the one literal moved, with no measure of what it saved"}

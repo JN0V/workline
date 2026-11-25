@@ -28,6 +28,11 @@ type reviewCase struct {
 	Defects []plant `yaml:"defects"` // on the change: each a point when found
 	Outside []plant `yaml:"outside"` // before the change: measured, not scored
 	Not     []place `yaml:"not"`     // nothing may be found there: a point each
+	// A replay (given.clone) is scored stricter: a defect is found by an
+	// Important only, outside the change too when at a planted place, one
+	// finding a defect at most; an unplanted Important fails only a clean
+	// change (clean-), and is counted as extra on the others.
+	Replay, Clean bool `yaml:"-"`
 }
 
 // plant is one defect planted: the lens it is for, its kind, and where its
@@ -323,19 +328,24 @@ func scoreReview(rc *reviewCase, rr *reviewRun) (passed int, failed []string, me
 		}
 		return -1
 	}
+	match := matchDefects(rc, rr.Findings)
 	for i, d := range rc.Defects {
 		t := tally(d.Lens)
 		t.Planted++
 		found, own, refused, blocks := false, false, false, false
 		for _, f := range rr.Findings {
-			if !f.Related || at(rc.Defects[i:i+1], f) < 0 {
+			if (!f.Related && !rc.Replay) || at(rc.Defects[i:i+1], f) < 0 {
 				continue
 			}
-			if f.shown() {
+			if f.shown() && !rc.Replay {
 				found, own = true, own || f.Lens == d.Lens
 				blocks = blocks || (f.Lens == d.Lens && f.Severity == "important" && f.Judged == "yes")
 			}
 			refused = refused || f.Judged == "no"
+		}
+		if j, ok := match[i]; ok {
+			f := rr.Findings[j]
+			found, own, blocks = true, f.Lens == d.Lens, f.Lens == d.Lens && f.Judged == "yes"
 		}
 		if blocks {
 			t.OwnVerified++
@@ -402,9 +412,13 @@ func scoreReview(rc *reviewCase, rr *reviewRun) (passed int, failed []string, me
 			passed++
 		}
 	}
-	if unplanted == 0 {
+	extra := ""
+	switch {
+	case rc.Replay && !rc.Clean:
+		extra = fmt.Sprintf("extra=%d (important, unplanted, unverified)", unplanted)
+	case unplanted == 0:
 		passed++
-	} else {
+	default:
 		failed = append(failed, fmt.Sprintf("clean: %d important findings shown that nothing planted", unplanted))
 	}
 	var outside []string
@@ -438,7 +452,51 @@ func scoreReview(rc *reviewCase, rr *reviewRun) (passed int, failed []string, me
 	if len(outside) > 0 {
 		parts = append(parts, "outside-planted "+strings.Join(outside, ", "))
 	}
+	if extra != "" {
+		parts = append(parts, extra)
+	}
 	return passed, failed, strings.Join(parts, "; "), notes
+}
+
+// matchDefects pairs, on a replay, each defect with at most one finding
+// and each finding with at most one defect, as many as can be: an
+// Important shown on the change, or raised outside it and not refused,
+// at one of the defect's places. nil on a fixture.
+func matchDefects(rc *reviewCase, findings []lensFinding) map[int]int {
+	if !rc.Replay {
+		return nil
+	}
+	can := func(d plant, f lensFinding) bool {
+		if f.Severity != "important" || (f.Related && !f.shown()) || (!f.Related && f.Judged == "no") {
+			return false
+		}
+		return slices.ContainsFunc(d.At, func(p place) bool { return (!p.issue() || d.Lens == "intent") && p.holds(f.Where) })
+	}
+	byFinding := map[int]int{}
+	var try func(i int, seen map[int]bool) bool
+	try = func(i int, seen map[int]bool) bool { // an augmenting path from defect i, its own lens's findings first
+		for _, own := range []bool{true, false} {
+			for j, f := range findings {
+				if seen[j] || (f.Lens == rc.Defects[i].Lens) != own || !can(rc.Defects[i], f) {
+					continue
+				}
+				seen[j] = true
+				if k, taken := byFinding[j]; !taken || try(k, seen) {
+					byFinding[j] = i
+					return true
+				}
+			}
+		}
+		return false
+	}
+	for i := range rc.Defects {
+		try(i, map[int]bool{})
+	}
+	match := map[int]int{}
+	for j, i := range byFinding {
+		match[i] = j
+	}
+	return match
 }
 
 // lensRank keeps the role's order of the lenses in a measure; `lenses`, the

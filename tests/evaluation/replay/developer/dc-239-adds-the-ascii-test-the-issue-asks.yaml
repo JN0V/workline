@@ -1,0 +1,40 @@
+case: developer/dc-239-adds-the-ascii-test-the-issue-asks
+about: >
+  DomoticsCore issue #167 (ready since 2026-10-18, kind `task`): the
+  SystemInfo boot log prints a warning sign, non-ASCII, in two DLOG_W
+  strings; its Verification asks "a check, native test or CI grep, that the
+  DLOG strings in SystemInfo.h contain only ASCII bytes". No tester Draft:
+  the issue was ready before the tester ran on DomoticsCore. On 2026-11-23
+  the developer, on main at c42c667, opened #239
+  (https://github.com/JN0V/DomoticsCore/pull/239) "Closes #167" with the
+  code alone, SystemInfo.h, no test; the reviewer's edge-cases lens warned
+  only. The owner sent it back
+  (https://github.com/JN0V/DomoticsCore/pull/239#issuecomment-7101359636):
+  "Please add a test that fails if a non-ASCII byte comes back in
+  SystemInfo's log strings." The body is the issue's as the developer read
+  it (edit history, 2026-10-18). The proof runs DomoticsCore's
+  tools/workline-tests.sh, PlatformIO's native suites: `pio` must be on PATH
+  for the run to be proven green; the grade itself reads only branches and
+  the forge.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: c42c667e603286ad0653c75ba5a60deacfecd78d}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change && git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 167
+        title: "LO-13: Unicode emoji in SystemInfo log message"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "task"]
+        body: "| LO-13 | SI | Unicode emoji in log message (non-ASCII) |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6333 to 6333 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:3747d47645ae -->\n\n## Need\n\nDraft: whoever reads logs on the serial console or the RemoteConsole telnet client should get plain ASCII, because a terminal without UTF-8 shows garbage for the emoji.\n\n## Verification\n\nA check, native test or CI grep, that the DLOG strings in SystemInfo.h contain only ASCII bytes. A boot-diagnostics test could also capture the log line and assert it is ASCII.\n\n## Validation\n\nDraft: the reporter (JN0V) reads the boot-diagnostics log lines and confirms they are ASCII-only.\n\n## Scope\n\nNon-ASCII characters in SystemInfo log messages in initBootDiagnostics(): the warning sign in the 'Previous boot ended unexpectedly' and 'core dump waiting' DLOG_W strings"
+run: {role: developer, develop: []}
+grade:
+  - {status: pass}
+  # The fix: no byte above 0x7F left in a DLOG line of SystemInfo.h.
+  - {sh: "git --git-dir=../origin.git show workline/developer/167:DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfo.h | grep 'DLOG_' > ../dlog.txt && ! LC_ALL=C grep -q -P '[^\\x00-\\x7F]' ../dlog.txt"}
+  # The check the Verification asks, the owner's send-back: a test or CI step added.
+  - {sh: "git --git-dir=../origin.git diff main workline/developer/167 -- DomoticsCore-SystemInfo/test .github/workflows tools | grep -q '^+[^+]'"}
+  # Closes #167 only when nothing is left out.
+  - {sh: "python3 -c 'import json, re; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"branch\"] == \"workline/developer/167\"]; assert len(m) == 1, \"no pull request\"; b = m[0][\"body\"]; left = re.search(r\"(?ms)^## Left out\\s*$(.*?)(?=^## |\\Z)\", b); assert not (\"Closes #167\" in b and left and left.group(1).strip()), \"Closes #167 while its Left out lists work\"'"}
