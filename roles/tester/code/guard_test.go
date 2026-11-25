@@ -43,7 +43,7 @@ func guardBase(t *testing.T) (repo, base string) {
 
 // guardPost runs the tester's post on the scenarios of an issue adding
 // mul beside add, kept as today, with the agent's intentions.
-func guardPost(t *testing.T, intents []intent.Intention) (code int, runDir string) {
+func guardPost(t *testing.T, intents []intent.Intention, labels ...string) (code int, runDir string) {
 	t.Helper()
 	repo, base := guardBase(t)
 	runDir = t.TempDir()
@@ -59,7 +59,7 @@ func guardPost(t *testing.T, intents []intent.Intention) (code int, runDir strin
 	if err := os.WriteFile(filepath.Join(runDir, "in", "settings.json"), settings, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	issue := task{Issue: 7, Title: "Multiply", Base: base, Text: "Add a multiplication; addition stays as it is.", Scenarios: []work.Scenario{
+	issue := task{Issue: 7, Title: "Multiply", Base: base, Labels: labels, Text: "Add a multiplication; addition stays as it is.", Scenarios: []work.Scenario{
 		{Name: "Multiply two numbers", Text: "Given 2 and 3, When mul is called, Then it gives 6."},
 		{Name: "Addition kept", Text: "Given 2 and 3, When add is called, Then it gives 5, as today."},
 	}}
@@ -126,5 +126,21 @@ func TestGuardsAloneAreGreenOnTheBase(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
 		t.Error("a Draft opened with a guard alone")
+	}
+}
+
+// A bug not shown: given a bug whose test of its scenario passes on the
+// base, beside a guard, when the tests are proven, then it is not
+// reproduced, as with no guard: marked needs-repro, no Draft.
+func TestBugGreenBesideAGuardIsNotReproduced(t *testing.T) {
+	greenMul := intent.Intention{Kind: "patch", Value: map[string]any{"file": "app/test_mul.sh", "content": ". ./lib.sh\n[ \"$(add 3 3)\" = 6 ]\n"}}
+	_, runDir := guardPost(t, []intent.Intention{greenMul, addGuard,
+		{Kind: "covers", Value: map[string]any{"scenario": "Multiply two numbers", "tests": []any{"app.test_mul"}}}, kept}, "bug")
+	out, _ := os.ReadFile(filepath.Join(runDir, "out", "intentions.yaml"))
+	if !strings.Contains(string(out), "workline:needs-repro") {
+		t.Errorf("a bug with no red test beside its guard is not marked not reproduced:\n%s", out)
+	}
+	if _, err := os.Stat(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
+		t.Error("a Draft opened for a bug not shown")
 	}
 }

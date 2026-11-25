@@ -21,7 +21,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-kept-as-today-guard"}
 expect:
   status: pass
-  summary: "2 new tests, red on the base but 1, a guard of a scenario kept as today, green there"
+  summary: "2 new tests, red on the base but `tests.test_add_unchanged`, a guard of a scenario kept as today, green there"
   agent-calls: 1
   pushed:
     workline/tester/issue-3:
