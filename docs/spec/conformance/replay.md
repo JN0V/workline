@@ -56,7 +56,8 @@ go run ./tests/evaluation/summary     # per case: runs, mean, range
 - A finding that quotes the issue (`#139`) counts for every point placed
   on that issue: read an intent point's `finding:` lines, not only the
   score.
-- The weekly run skips the set (`schedule/run.sh`): it is run on demand.
+- `TestReplay` runs only when `-run` names it: never in the weekly run
+  nor in a plain `go test ./...`.
 - With no agent, `TestReplayCasesLoad` reads every case strictly, and
   `TestReplayCasesPointRight` checks each reviewer place's text at its
   head when the mirror is in the cache.
