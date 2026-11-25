@@ -11,4 +11,4 @@ expect:
   findings:
     - {rule: doc-too-long, where: docs/tech/auth.md}
   no-findings:
-    - {rule: doc-too-long, message: "within it on the base"}
+    - {rule: doc-too-long, where: docs/tech/auth.md, message: "within it on the base"}

@@ -1,0 +1,15 @@
+case: documentalist/budget-trailing-blank-lines-count-on-neither-side
+about: "Blank lines at the end of a user page count on neither side: a merge request that fixes a word in a page within its budget once they are left out blocks nothing."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {budgets: {doc-lines: 6}}}}}
+  setup:
+    - "printf '\\n\\n\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): leave room'"
+    - "sed -i 's/last one hour/last 1 hour/' docs/tech/auth.md && git commit -qam 'docs(auth): write the number'"
+run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: doc-too-long, where: docs/tech/auth.md}
+  no-findings:
+    - {rule: doc-too-long, where: docs/tech/auth.md, message: "within it on the base"}

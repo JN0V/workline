@@ -288,7 +288,9 @@ merges assumed to stay for real conflicts.
   obligation per PR" on one point.
 - **What blocks**: a user page within its budget on the base and over it
   on the head — more than `doc-lines` lines, or a section over
-  `section-words` words. The documentalist says it as a blocking finding
+  `section-words` words. The base is the merge base, where the branch
+  left its target; a page the change moves is read there under its old
+  name; blank lines at a page's end count on neither side. The documentalist says it as a blocking finding
   on the merge request; the author condenses or splits the page, as for
   a lint finding the change adds.
 - **No agent, no token**: the engine counts the page on the base and on

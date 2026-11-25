@@ -1,0 +1,15 @@
+case: documentalist/budget-debt-at-the-merge-base-warns
+about: "A user page over its budget where the merge request branched off only warns, even when its target condensed it since: the range is read from the merge base, not from the target's tip."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {budgets: {doc-lines: 4}}}}}
+  setup:
+    - "git checkout -qb topic && printf '\\nRefresh tokens last thirty days.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): say how long refresh tokens last'"
+    - "git checkout -q main && sed -i '/^# Authentication$/{n;d}' docs/tech/auth.md && git commit -qam 'docs(auth): condense' && git checkout -q topic"
+run: {role: documentalist, event: merge-request, input: {range: "main..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: doc-too-long, where: docs/tech/auth.md}
+  no-findings:
+    - {rule: doc-too-long, where: docs/tech/auth.md, message: "within it on the base"}

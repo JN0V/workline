@@ -49,8 +49,9 @@ moves to the commit the task gave.
   the others' `checked`: only for a doc whose sources fit a task whole
   (`whole-chars`); the others wait for [parts](parts.md), a few a run,
   or for a person.
-- **A user page it takes over its budget blocks**: within it on the
-  base, over it on the head; the author condenses or splits it. One
+- **A user page it takes over its budget blocks**: within it at the
+  merge base (under its old name if moved), over it on the head; the
+  author condenses or splits it. One
   already over on the base only warns
   ([amended](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#amendment-2026-11-25-a-budget-a-pull-request-adds-blocks)).
 - **A doc writing names in backticks is suspect only when a line it
