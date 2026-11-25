@@ -27,7 +27,7 @@ expect:
   findings:
     - {rule: merge-record-lost, message: "which reverts were read is not known, so every kind of its own merge requests wait for a person's yes, until a person who may push and merge closes #1"}
     - {rule: waits-for-a-yes, where: "#10", message: "since a revert (#1)"}
-    - {rule: merge-restored, where: "#1", message: "closed by @dana"}
+    - {rule: merge-restored, where: "#1", message: "closed by dana"}
     - {rule: auto-merge-on, where: "#10", message: "with no person's yes, workline's own records"}
   forge:
     issues:

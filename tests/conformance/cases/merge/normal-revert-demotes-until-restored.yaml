@@ -28,7 +28,7 @@ expect:
   findings:
     - {rule: merge-demoted, where: "#9", message: "its records merge requests wait for a person's yes again, until a person who may push and merge closes #1"}
     - {rule: waits-for-a-yes, where: "#10", message: "its records merge requests wait for a person's yes since a revert (#1)"}
-    - {rule: merge-restored, where: "#1", message: "closed by @dana: its records merge requests merge with no person's yes again"}
+    - {rule: merge-restored, where: "#1", message: "closed by dana: its records merge requests merge with no person's yes again"}
     - {rule: auto-merge-on, where: "#10", message: "with no person's yes, workline's own records"}
   forge:
     issues:

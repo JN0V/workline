@@ -20,7 +20,7 @@ given:
 run: {follow: [--base, main, --verdict, ../verdict.json], forge: gitlab}
 expect:
   status: pass
-  findings: [{rule: label-ignored, where: "!7", level: warn, message: "by @rita, who may not push nor merge here"}]
+  findings: [{rule: label-ignored, where: "!7", level: warn, message: "by rita, who may not push nor merge here"}]
   no-findings: [{rule: auto-merge-on}]
   forge:
     merge-requests:

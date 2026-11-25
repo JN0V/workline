@@ -22,7 +22,7 @@ given:
 run: {follow: [--base, main]}
 expect:
   status: pass
-  findings: [{rule: auto-merge-on, where: "#7", message: "accepted by @dana, its head's verdict passed: auto-merge turned on"}]
+  findings: [{rule: auto-merge-on, where: "#7", message: "accepted by dana, its head's verdict passed: auto-merge turned on"}]
   no-findings: [{rule: checks-red}]
   forge:
     merge-requests:

@@ -33,11 +33,11 @@ run: {follow: [--base, main], summary: true}
 expect:
   status: pass
   findings:
-    - {rule: candidate-shipped, where: "#8", message: "@dana's yes to v1.1.0-rc.1: the release tool asked for v1.1.0 on release/v1.1"}
+    - {rule: candidate-shipped, where: "#8", message: "dana's yes to v1.1.0-rc.1: the release tool asked for v1.1.0 on release/v1.1"}
   pushed-message: {release/v1.1: "Release-As: 1.1.0\n"}
-  summary-file: ["v1.1.0 shipped on @dana's yes"]
+  summary-file: ["v1.1.0 shipped on dana's yes"]
   forge:
     issues:
-      - {id: 8, closed: true, comment-contains: ["**Shipping v1.1.0**: @dana's yes to `v1.1.0-rc.1`"]}
+      - {id: 8, closed: true, comment-contains: ["**Shipping v1.1.0**: dana's yes to `v1.1.0-rc.1`"]}
     milestones: []
     closed-milestones: ["v1.1"]

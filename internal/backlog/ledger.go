@@ -203,7 +203,7 @@ func (p *Plan) answerUnwritten(is forge.Issue, c *Proposal) (rule, why string) {
 	p.Held[c.Issue] = [2]int{counted - len(fresh), counted}
 	who := "a person"
 	if a := fresh[len(fresh)-1].Author; a != "" {
-		who = "@" + a
+		who = a
 	}
 	return AnswerUnwrittenRule, fmt.Sprintf("not moved to ready: %s wrote on it, read in this run, and nothing was written into its spec; "+
 		"what their comment settles goes into the %s with a `refine` first; it is read once more, and the next `ready` is taken", who, work.Name(work.Scope))

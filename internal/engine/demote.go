@@ -454,12 +454,12 @@ func holds(f forge.Forge, id int, app string, local bool, res *Result) (string, 
 	}
 	if ok && who.Writer && !who.Bot && who.Author != "" && who.Author != app {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-restored", Where: where,
-			Message: fmt.Sprintf("closed by @%s: %s merge with no person's yes again", who.Author, which)})
+			Message: fmt.Sprintf("closed by %s: %s merge with no person's yes again", who.Author, which)})
 		return kind, false, nil
 	}
 	by := "a hand the forge does not name"
 	if ok && who.Author != "" {
-		by = "@" + who.Author
+		by = "" + who.Author
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "restore-ignored", Level: "warn", Where: where,
 		Message: fmt.Sprintf("closed by %s, who may not lift it — a bot, or no write access —: %s still wait for a person's yes; reopen it, and a person who may push and merge closes it", by, which)})
@@ -493,7 +493,7 @@ func demote(f forge.Forge, d *demotion, app string, local bool, res *Result) err
 		var is *forge.Issue
 		if is, err = f.Issue(id); err == nil && !byApp(is.Author, app, local) {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "demotion-unrecorded", Level: "warn", Where: where,
-				Message: fmt.Sprintf("%s: %s wait for a person's yes, but #%d, of that title, is @%s's, not workline's: it is not taken for it, and this is read again next run", short(d.revert), which, id, is.Author)})
+				Message: fmt.Sprintf("%s: %s wait for a person's yes, but #%d, of that title, is %s's, not workline's: it is not taken for it, and this is read again next run", short(d.revert), which, id, is.Author)})
 			return nil
 		}
 	}

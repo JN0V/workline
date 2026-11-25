@@ -22,7 +22,7 @@ expect:
   status: pass
   findings: [{rule: review-short, where: "#7", level: warn, message: "its review falls short (not-reviewed): no agent"}]
   no-findings: [{rule: auto-merge-on}]
-  summary-file: ["#7, warn: accepted by @dana, but its review falls short (not-reviewed): no agent", "auto-merge stays off"]
+  summary-file: ["#7, warn: accepted by dana, but its review falls short (not-reviewed): no agent", "auto-merge stays off"]
   forge:
     merge-requests:
       - {id: 7, auto-merge: false, labels: [workline:accepted]}

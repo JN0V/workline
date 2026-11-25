@@ -27,7 +27,7 @@ run: {follow: [--base, main]}
 expect:
   status: pass
   findings:
-    - {rule: waits-for-a-yes, where: "#9", message: "opened by workline, but @dana pushed to its branch"}
+    - {rule: waits-for-a-yes, where: "#9", message: "opened by workline, but dana pushed to its branch"}
     - {rule: waits-for-a-yes, where: "#14", message: "opened by workline, but a hand the forge does not name pushed to its branch"}
     - {rule: waits-for-a-yes, where: "#15", message: "opened by workline, but who pushed to its branch the forge does not say"}
   no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}, {where: "#13"}]

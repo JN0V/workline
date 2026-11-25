@@ -544,10 +544,10 @@ func (c *candidateRun) yes(title string, v minor, is forge.Issue, btip string) (
 		c.say("candidate-waits", "warn", where, "labelled `"+c.accepted+"` by a hand the forge does not name: no yes")
 		return "", nil
 	case yes.Bot || yes.Author == c.app || !yes.Writer || yes.Author == "":
-		c.say("candidate-waits", "warn", where, fmt.Sprintf("labelled `%s` by @%s, who may not push nor merge here: no yes", c.accepted, yes.Author))
+		c.say("candidate-waits", "warn", where, fmt.Sprintf("labelled `%s` by %s, who may not push nor merge here: no yes", c.accepted, yes.Author))
 		return "", nil
 	}
-	by := "@" + yes.Author
+	by := "" + yes.Author
 	n, tag := c.r.lastRC(v)
 	if n == 0 {
 		c.say("candidate-waits", "", where, fmt.Sprintf("%s's yes, but the release tool has tagged no v%s-rc yet: it waits for the tag", by, v.version()))
@@ -654,22 +654,22 @@ func (c *candidateRun) refused(v minor, is forge.Issue) (string, error) {
 	if !ok || !who.Writer || who.Bot || who.Author == "" || who.Author == c.app {
 		by := "a hand the forge does not name"
 		if ok && who.Author != "" {
-			by = "@" + who.Author
+			by = "" + who.Author
 		}
 		c.say("candidate-refusal-ignored", "warn", where, fmt.Sprintf("closed by %s, who may not push nor merge here: not taken for a refusal; reopen it, and a person who may push and merge closes it", by))
 		return "", nil
 	}
 	rc := v.rc(rcOf(is))
 	title := "workline: its " + kindFeature + " merge requests wait for a person's yes again (candidate v" + rc + " refused)"
-	body := fmt.Sprintf("**@%s refused the release candidate `v%s`** (#%d). The merge policy is `enterprising`: features merged with no person's yes, the candidate their check. Until this issue is closed, each feature's pull request waits for a person's yes again, the label `%s`, as at `normal`.\n\n"+
+	body := fmt.Sprintf("**%s refused the release candidate `v%s`** (#%d). The merge policy is `enterprising`: features merged with no person's yes, the candidate their check. Until this issue is closed, each feature's pull request waits for a person's yes again, the label `%s`, as at `normal`.\n\n"+
 		"**To let features merge alone again, close this issue** — a person who may push and merge; a bot's close never lifts it.", who.Author, rc, is.ID, c.accepted)
 	if _, err := c.f.OpenIssue(title, body, forge.Marker("merge-demoted=candidate-v"+rc)); err != nil {
 		return "", err
 	}
-	note := fmt.Sprintf("**Refused by @%s**: features wait for a person's yes on each pull request again, said in an issue of its own. Put what is wrong in issues of milestone %s: once merged, workline copies them onto `%s` and asks for the next candidate.", who.Author, v.title(), v.branch())
+	note := fmt.Sprintf("**Refused by %s**: features wait for a person's yes on each pull request again, said in an issue of its own. Put what is wrong in issues of milestone %s: once merged, workline copies them onto `%s` and asks for the next candidate.", who.Author, v.title(), v.branch())
 	if err := c.f.Comment(forge.Target{Kind: "issue", ID: is.ID}, note, forge.Marker("candidate-refused=v"+rc)); err != nil {
 		return "", err
 	}
-	c.say("candidate-refused", "warn", where, fmt.Sprintf("closed by @%s: v%s refused, features wait for a person's yes again", who.Author, rc))
-	return fmt.Sprintf("v%s refused by @%s", rc, who.Author), nil
+	c.say("candidate-refused", "warn", where, fmt.Sprintf("closed by %s: v%s refused, features wait for a person's yes again", who.Author, rc))
+	return fmt.Sprintf("v%s refused by %s", rc, who.Author), nil
 }

@@ -26,7 +26,7 @@ expect:
   status: pass
   findings:
     - {rule: verdict-kept, message: "short, its review falls short (review-not-whole)"}
-    - {rule: auto-merge-on, where: "!7", message: "accepted by @dana, read whole by @dana (review-not-whole): auto-merge turned on"}
+    - {rule: auto-merge-on, where: "!7", message: "accepted by dana, read whole by dana (review-not-whole): auto-merge turned on"}
   forge:
     merge-requests:
       - {id: 7, auto-merge: true, labels: ["workline::accepted-whole"], comments: 0}

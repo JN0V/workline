@@ -11,7 +11,7 @@ given:
     - "sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && sed -i '/^judged:/a verified: agent:documentalist' docs/tech/auth.md && sed -i '/^checked:/a judged-in-parts: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin feat/sessions && git checkout -q main"
   forge:
     statuses:
-      - {commit: before, name: workline/accepted, state: success, description: "accepted by @dana, its head's verdict passed", by: workline-bot}
+      - {commit: before, name: workline/accepted, state: success, description: "accepted by dana, its head's verdict passed", by: workline-bot}
       - {commit: feat/sessions, name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
       - id: 7
@@ -35,4 +35,4 @@ expect:
     merge-requests:
       - {id: 7, auto-merge: true, labels: [workline:accepted], comments: 0}
     statuses:
-      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by @dana, its head's verdict passed"}
+      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by dana, its head's verdict passed"}

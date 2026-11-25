@@ -29,7 +29,7 @@ run: {follow: [--base, main], summary: true}
 expect:
   status: pass
   findings:
-    - {rule: candidate-yes-reset, where: "#8", message: "v1.1.0-rc.2 was tagged after @dana's yes"}
+    - {rule: candidate-yes-reset, where: "#8", message: "v1.1.0-rc.2 was tagged after dana's yes"}
   no-findings: [{rule: candidate-shipped}]
   not-pushed: [release/v1.1]
   forge:

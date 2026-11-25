@@ -24,8 +24,8 @@ run: {follow: [--base, main], summary: true}
 expect:
   status: pass
   findings:
-    - {rule: accepted-reset, where: "#7", level: warn, message: "was pushed after @dana put `workline:accepted-whole`: that label taken off"}
-    - {rule: review-short, where: "#7", level: warn, message: "accepted by @dana, but its review falls short (review-not-whole)"}
+    - {rule: accepted-reset, where: "#7", level: warn, message: "was pushed after dana put `workline:accepted-whole`: that label taken off"}
+    - {rule: review-short, where: "#7", level: warn, message: "accepted by dana, but its review falls short (review-not-whole)"}
   no-findings: [{rule: auto-merge-on}]
   summary-file: ["a person who read it whole puts `workline:accepted-whole`"]
   forge:

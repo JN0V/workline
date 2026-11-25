@@ -23,7 +23,7 @@ expect:
   agent-calls: 0
   findings:
     - {rule: done-as-accepted, where: "#12", message: "Accepted by a person of the project."}
-    - {rule: done-as-accepted, where: "#9", message: "Moved #9 to ready: its drafts accepted (workline:accepted) Accepted by @bob."}
+    - {rule: done-as-accepted, where: "#9", message: "Moved #9 to ready: its drafts accepted (workline:accepted) Accepted by bob."}
   forge:
     issues:
       - {id: 9, labels: [workline:ready], body-contains: "## Need\n\nThe monthly report counts every sale.", body-lacks: "workline:draft"}

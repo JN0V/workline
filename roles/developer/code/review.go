@@ -739,7 +739,7 @@ func texts(l []devmark.Asked) []string {
 	for i, a := range l {
 		switch a.Holds {
 		case "a person":
-			out[i] = "a person, " + a.Where
+			out[i] = "a person, " + strings.ReplaceAll(a.Where, "@", "")
 		case issueHolds:
 			out[i] = fmt.Sprintf("the issue, %s: %s", a.Where, a.Text)
 		case gateHolds:

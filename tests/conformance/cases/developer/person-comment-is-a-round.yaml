@@ -41,4 +41,4 @@ expect:
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["\"heard\":[\"3\"]", "a person, @alice"]
+        comment-contains: ["\"heard\":[\"3\"]", "a person, alice"]
