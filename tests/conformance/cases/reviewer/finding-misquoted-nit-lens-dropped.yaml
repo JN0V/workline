@@ -1,0 +1,15 @@
+case: reviewer/finding-misquoted-nit-lens-dropped
+about: "A finding a lens says important, but whose lens shows only nits (simplicity), is a nit: misquoted, it is dropped and said (finding-unfounded), never kept for a judge it does not get."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count' -m 'Closes #4.'"]
+  forge:
+    issues:
+      - {id: 4, title: The mean, body: "## Need\n\nThe mean.\n\n## Scope\n\ncalc/calc.go\n", labels: [], comments: []}
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: simplicity}, ai: "fake:review-unfounded-simplicity"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: finding-unfounded, message: "its cause is not found in calc/calc.go"}]
+  no-findings: [{rule: simplicity}, {rule: finding-misquoted}]

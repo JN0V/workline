@@ -1461,6 +1461,9 @@ func lensFindings(repo string, s Settings, st state, ls []string, answers []inte
 		if l.Severity == "nit" && f.Severity == "important" {
 			f.Severity = "nit"
 		}
+		if why == "" && f.Side == onUnfound && f.Severity != "important" { // kept for a judge only an important one gets
+			why = f.Unfound
+		}
 		if why != "" {
 			c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-unfounded", Level: "warn",
 				Message: fmt.Sprintf("dropped, from the %s lens: %q — %s", lens, f.Title, why)})
@@ -1785,16 +1788,20 @@ func found(repo string, st state, lens string, cites bool, v any, on string) (Fi
 func material(repo string, st state, s Settings, f Finding) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## The finding\n\n%s: %s\n\nWhy: %s\n", f.Severity, f.Title, f.Why)
+	claim := func() {
+		if f.Claim != "" {
+			fmt.Fprintf(&b, "\nThe author's claim it contradicts, quoted from what they said:\n\n> %s\n", strings.ReplaceAll(f.Claim, "\n", "\n> "))
+		}
+	}
 	if f.Side == onUnfound {
+		claim()
 		return misquoted(repo, st, s, f, &b)
 	}
 	_, line, _ := strings.Cut(f.Where, ":")
 	at := 1
 	fmt.Sscan(line, &at)
 	fmt.Fprintf(&b, "\nIts cause, quoted:\n\n```\n%s\n```\n", strings.TrimSpace(f.Cause.Quote))
-	if f.Claim != "" {
-		fmt.Fprintf(&b, "\nThe author's claim it contradicts, quoted from what they said:\n\n> %s\n", strings.ReplaceAll(f.Claim, "\n", "\n> "))
-	}
+	claim()
 	// A cause quoted from an issue: the issue, and the change it is
 	// compared with: the whole range, base..head, commits reviewed before
 	// included, so a part one of them did is not missing; up to code-lines-max.
@@ -2997,7 +3004,7 @@ func misquoted(repo string, st state, s Settings, f Finding, b *strings.Builder)
 		}
 	}
 	if diff, err := git(repo, append([]string{"diff", "-U3", "--no-color", "--no-ext-diff", "--find-renames", st.Base, st.Head, "--"}, pathspec([]File{st.Change.file(f.Cause.Path)})...)...); err == nil && diff != "" {
-		fmt.Fprintf(b, "\n## What the change did to %s\n\n```diff\n%s```\n", f.Cause.Path, capLines(diff, s.CodeLinesMax, "the change is cut here, past code-lines-max"))
+		fmt.Fprintf(b, "\n## What the change did to %s\n\n```diff\n%s```\n", f.Cause.Path, capLines(diff, 200, "the change is cut here, past 200 lines"))
 	}
 	return b.String()
 }

@@ -175,12 +175,12 @@ func count(s string) int {
 	return n
 }
 
-// exposedAt says whether line n of path lies beside a removal, within the
 // touches says whether the change added or removed a line of a file.
 func (c Change) touches(path string) bool {
 	return len(c.Added[path]) > 0 || len(c.Removed[path]) > 0 || len(c.Removals[path]) > 0
 }
 
+// exposedAt says whether line n of path lies beside a removal, within the
 // context a unified diff shows around it.
 func (c Change) exposedAt(path string, n int) bool {
 	for _, p := range c.Removals[path] {
