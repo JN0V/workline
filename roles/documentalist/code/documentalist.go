@@ -1235,7 +1235,7 @@ func (r *preRun) writeRecords() error {
 	// reviewed what this one proposes.
 	r.adopting = os.Getenv("WORKLINE_EVENT") == "init"
 	// A round the engine runs once the others are done, for one task alone
-	// (in/then, ADR-0048), condense or reader: nothing else is asked nor
+	// (in/then), condense or reader: nothing else is asked nor
 	// proposed again, and what the earlier rounds said stands.
 	r.then = os.Getenv("WORKLINE_THEN")
 	var err error
