@@ -736,10 +736,10 @@ func hermetic() []string {
 }
 
 // evaluated are the paths a score depends on: the engine, the roles (not
-// their READMEs, which no agent reads), the cases and the repositories they
-// are built from. A commit touching nothing else does not change what is
+// their READMEs, which no agent reads), the cases, the replays, the code
+// scoring them and the repositories they are built from. A commit touching nothing else does not change what is
 // evaluated.
-var evaluated = []string{"cmd", "internal", "roles", ":(exclude)roles/*/README.md", "go.mod", "tests/evaluation/cases", "tests/conformance/fixtures/repos"}
+var evaluated = []string{"cmd", "internal", "roles", ":(exclude)roles/*/README.md", "go.mod", "tests/evaluation/cases", "tests/evaluation/replay", "tests/evaluation/*.go", "tests/conformance/fixtures/repos"}
 
 // worklineVersion is the last commit changing what is evaluated, marked when
 // the tree has changes there. tests/evaluation/schedule/run.sh counts runs by it.

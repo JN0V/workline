@@ -35,7 +35,7 @@ A reviewer replay is scored stricter than a fixture:
 
 - **An Important only**: a nit at a planted place finds nothing.
 - **One finding, one point**: findings and points are paired, each at
-  most once.
+  most once, a finding of the point's own lens first.
 - **Outside the change too**: an Important at a planted place off the
   changed lines counts, unless the judge refused it.
 - **An issue place is the intent lens's**: a finding quoting `#139`
@@ -60,7 +60,9 @@ go run ./tests/evaluation/summary     # per case and per set, a workline commit 
 - `-count=3`: each case three times. The summary says, per case,
   how many runs earned every point (`2/3`) and the worst; per set, the
   cases full in every run. A commit's runs are never pooled with
-  another's: a before and an after stay apart.
+  another's: a before and an after stay apart. The commit is the last
+  to change the engine, the roles, the cases, the replays or the code
+  scoring them; a fixture's runs stay pooled.
 - Each run appends a line to `results.tsv`, with its tokens.
 - `WORKLINE_JUDGE` is needed for the documentalist's judge check.
 - `given.needs` names what a case needs on the machine: PlatformIO

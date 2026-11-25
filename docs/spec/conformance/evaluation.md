@@ -46,7 +46,7 @@ and 3 ran them (`-v` for the notes):
 
 ```sh
 for i in 1 2 3 4 5; do WORKLINE_EVAL=claude:sonnet go test -count=1 -timeout 60m -run 'TestEvaluation/documentalist/drifted' ./tests/evaluation/; done
-# the summary keeps each workline commit's runs apart (the workline column)
+# a fixture's runs pooled across commits; a replay's kept apart, a commit each
 go run ./tests/evaluation/summary | grep drifted
 ```
 

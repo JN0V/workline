@@ -4,7 +4,7 @@
 // little, since a model answers differently from one run to the next, and a
 // best run hides the others (ADR-0014). Fewer than five runs are marked
 // `few runs`; scores earned by a model that no longer answers on this machine
-// (the models-seen file) are marked `replaced`. Runs of
+// (the models-seen file) are marked `replaced`. A replay case's runs of
 // different workline commits are never pooled: a before and an after stay
 // apart. The replay set's cases (docs/spec/conformance/replay.md) are
 // also summed by set: how many cases earned every point in each of their
@@ -83,6 +83,9 @@ func main() {
 			return ""
 		}
 		k := key{get("case"), get("workline"), get("agent"), get("models"), get("effort"), get("judge")}
+		if !replayCase.MatchString(k.kase) {
+			k.version, k.agent = "", "" // a fixture's runs pooled across commits, as ever
+		}
 		if k.models == "" {
 			k.models = "(not recorded)"
 		}
@@ -155,7 +158,7 @@ func main() {
 
 // replayCase names a replay case's set: its role, then kept (a catch to
 // keep), clean (a change nobody sent back) or miss; "" for a fixture.
-var replayCase = regexp.MustCompile(`^([a-z-]+)/(kept-|clean-)?(dc|tg|wl)-[0-9]+-`)
+var replayCase = regexp.MustCompile(`^([a-z-]+)/(kept-|clean-)?[a-z]+-[0-9]+-`)
 
 // printSets sums the replay cases by set, workline commit and agent: the
 // cases that earned every point in each of their runs (k of n runs, the
@@ -241,7 +244,7 @@ func addMeasure(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int,
 			continue
 		}
 		fields := strings.Fields(part)
-		if len(fields) == 0 {
+		if len(fields) == 0 || strings.Contains(fields[0], "=") { // a replay's extra=N: no lens
 			continue
 		}
 		lk := lensKey{fields[0], agent, asked}

@@ -474,15 +474,17 @@ func matchDefects(rc *reviewCase, findings []lensFinding) map[int]int {
 	}
 	byFinding := map[int]int{}
 	var try func(i int, seen map[int]bool) bool
-	try = func(i int, seen map[int]bool) bool { // an augmenting path from defect i
-		for j, f := range findings {
-			if seen[j] || !can(rc.Defects[i], f) {
-				continue
-			}
-			seen[j] = true
-			if k, taken := byFinding[j]; !taken || try(k, seen) {
-				byFinding[j] = i
-				return true
+	try = func(i int, seen map[int]bool) bool { // an augmenting path from defect i, its own lens's findings first
+		for _, own := range []bool{true, false} {
+			for j, f := range findings {
+				if seen[j] || (f.Lens == rc.Defects[i].Lens) != own || !can(rc.Defects[i], f) {
+					continue
+				}
+				seen[j] = true
+				if k, taken := byFinding[j]; !taken || try(k, seen) {
+					byFinding[j] = i
+					return true
+				}
 			}
 		}
 		return false

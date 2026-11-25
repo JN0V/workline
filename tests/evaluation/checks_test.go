@@ -477,6 +477,10 @@ func TestScoreReplay(t *testing.T) {
 	if passed != 3 || len(failed) != 2 || !strings.Contains(measure, "extra=1") {
 		t.Errorf("passed %d, failed %v\n%s", passed, failed, measure)
 	}
+	own := &reviewCase{Replay: true, Defects: []plant{{Lens: "edge-cases", Kind: "f", At: []place{{File: "x.cpp", Lines: []int{1, 9}}}}}}
+	if m := matchDefects(own, []lensFinding{{"correctness", "x.cpp:2", "important", "first", true, "yes"}, {"edge-cases", "x.cpp:3", "important", "own", true, "yes"}}); m[0] != 1 {
+		t.Errorf("paired %v, want its own lens's finding (1)", m)
+	}
 	rc = &reviewCase{Replay: true, Clean: true}
 	if _, failed, _, _ := scoreReview(rc, rr); !slices.ContainsFunc(failed, func(f string) bool { return strings.HasPrefix(f, "clean:") }) {
 		t.Errorf("a clean change with Importants shown passed: %v", failed)
