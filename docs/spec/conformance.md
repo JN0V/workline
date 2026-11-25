@@ -295,12 +295,14 @@ tests/evaluation/
   results.tsv                every run's score, appended: the history kept
   schedule/                  run.sh and systemd units: a run every week
   testdata/                  fake agents proving the cases grade as they should
-  summary/                   go run ./tests/evaluation/summary: per case and models,
+  summary/                   go run ./tests/evaluation/summary: per case, workline
+                             commit and models,
                              the runs, the pass rate (runs earning every point),
                              mean score, range, tokens and seconds; fewer than
                              five runs are marked `few runs`, a model that no
                              longer answers `replaced`; the reviewer's tallies
-                             by lens, agent and how the lenses were asked
+                             by lens, agent and how the lenses were asked; the
+                             replay set by set
 ```
 
 ```sh
