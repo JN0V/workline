@@ -1195,7 +1195,7 @@ func judgedOf(content string) string {
 
 // budgetRule are the size rules a fix may make a little worse, within what
 // patch-grows allows a doc.
-var budgetRule = map[string]bool{"doc-too-long": true, "section-too-long": true, "folder-too-long": true, "card-too-long": true}
+var budgetRule = map[string]bool{"doc-too-long": true, "section-too-long": true, "folder-too-long": true}
 
 // gitApplied returns what git apply makes of one file of a diff, so the judge
 // judges exactly what the engine will apply. A new file is created by the diff.

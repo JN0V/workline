@@ -15,6 +15,6 @@ expect:
   calls: [{task: split, tier: frontier}]
   applied: [patch]
   files:
-    docs/sessions-length.md: {contains: "checked: 4387b6c"}
+    docs/sessions-length.md: {contains: "checked: 776e6be"}
     docs/sessions.md: {contains: "(sessions-length.md)", lacks: "A session lasts"}
     docs/auth.md: {contains: "(sessions-length.md#how-long-a-session-lasts)"}

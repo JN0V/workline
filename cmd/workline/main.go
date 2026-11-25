@@ -731,7 +731,7 @@ func hookCmd(args []string) int {
 // are counted, and `workline route pre-push` shows them. Passages written
 // twice are not looked for at a push (ADR-0050).
 var prePushQuiet = map[string]bool{
-	"doc-too-long": true, "section-too-long": true, "card-too-short": true, "card-too-long": true,
+	"doc-too-long": true, "section-too-long": true,
 	"folder-too-long": true, "agent-file-too-long": true, "links-not-checked": true, "nothing-tracked": true,
 	"pending":        true, // due at a later moment, the release, which says so
 	"derived-behind": true, // regenerated on the default branch after the merge (ADR-0027)

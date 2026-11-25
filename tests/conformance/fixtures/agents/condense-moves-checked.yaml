@@ -12,7 +12,7 @@
     +++ b/docs/sessions.md
     @@ -2,3 +2,3 @@
      sources: [src/token.go]
-    -checked: 7b5ebbe
+    -checked: 8a24724
     +checked: 6e21f90
      ---
     @@ -6,2 +6,4 @@

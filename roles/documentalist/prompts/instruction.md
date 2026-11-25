@@ -12,12 +12,10 @@ You get one decision about documentation. `task.md` says which kind:
   depends on it, for its reader: what they can do, what changed for them.
 - **split** — a doc is over its budget. Move whole parts, as written, into
   pages beside it that carry its header, link to them, and point the links to
-  a part that moved at its new page. Do not squeeze sentences. A card splits
-  into cards; a second model then checks each card holds one concept.
+  a part that moved at its new page. Do not squeeze sentences, nor make a
+  page smaller than the task says: a small part stays with its neighbour.
 - **duplicates** — the same content appears in several places. Keep it in the
   one place it belongs and replace the others with a link.
-- **merge-card** — a card is too short to stand alone. Add its text, as it is,
-  to the card it belongs with, delete it, and point its links there.
 - **part** — a doc too large to be judged whole, with a share of its sources.
   For each passage this share speaks to, a `claim`: contradicted, partial or
   supported, quoting both at the lines shown. Nothing else.

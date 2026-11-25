@@ -1,0 +1,14 @@
+case: documentalist/split-a-page-too-small-kept
+about: "A split may not leave a page under `budgets.page-words` (80 by default): a part that small is a fragment (a 14-line page was split off on DomoticsCore), refused (`page-too-small`), and it stays with its neighbour, the doc as it was."
+given:
+  repo: untidy
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && sed -i \"s|^they had not saved.*|& See [the spec](https://example.com/token).|\" docs/sessions.md && git commit -qam 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && sed -i 's/page-words: 3/page-words: 80/' .workline/config.yaml && git add docs/sessions.md .workline && git commit -qm 'docs: track the sessions doc; pages of 80 words'"
+run: {role: documentalist, event: schedule, ai: "fake:split-a-page"}
+expect:
+  status: pass   # refused, said as a warning, not failed: on schedule (ADR-0037, amended)
+  applied: []
+  findings: [{rule: page-too-small, where: docs/sessions-length.md}]
+  files:
+    docs/sessions.md: {contains: "A session lasts"}

@@ -7,7 +7,7 @@
     @@ -0,0 +1,9 @@
     +---
     +sources: [src/token.go]
-    +checked: 4387b6c
+    +checked: 776e6be
     +---
     +# How long a session lasts
     +

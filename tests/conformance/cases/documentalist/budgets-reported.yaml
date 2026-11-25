@@ -1,5 +1,5 @@
 case: documentalist/budgets-reported
-about: Docs over their budgets — and cards under theirs — are reported, without blocking and without an agent.
+about: Docs over their budgets are reported, without blocking and without an agent.
 given: {repo: untidy}
 run: {role: documentalist, event: schedule, ai: none}
 expect:
@@ -8,6 +8,5 @@ expect:
   findings:
     - {rule: doc-too-long, where: docs/sessions.md}
     - {rule: section-too-long, where: "docs/history.md#the-first-year"}
-    - {rule: card-too-short, where: docs/cards/token.md}
     - {rule: folder-too-long, where: docs}
     - {rule: agent-file-too-long, where: AGENTS.md}

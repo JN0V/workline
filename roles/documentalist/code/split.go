@@ -19,9 +19,8 @@ import (
 )
 
 // splittable are the budget problems a split answers, strongest first. A
-// folder over budget needs another kind of move; a card too short is merged
-// into another.
-var splittable = []string{"doc-too-long", "agent-file-too-long", "section-too-long", "card-too-long"}
+// folder over budget needs another kind of move.
+var splittable = []string{"doc-too-long", "agent-file-too-long", "section-too-long"}
 
 // splitTask is what the judge needs to know about a split run.
 type splitTask struct {
@@ -83,7 +82,7 @@ func inbound(t Tree, doc string) map[string][]string {
 // writeSplitTask writes the question for the agent: the doc with its line
 // numbers, what is over budget, the docs around it, and the lines linking
 // to its parts.
-func writeSplitTask(c *splitTask, problems []Problem, t Tree) string {
+func writeSplitTask(c *splitTask, problems []Problem, t Tree, s Budgets) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Kind: split\n\n%s is over its budget. Resolve this:\n\n", c.Doc)
 	var others []string
@@ -113,9 +112,7 @@ A new page among the user pages answers to the reader rules (paragraphs and
 cells within their word budget, every decision, doc or issue it names linked,
 reachable from the docs), and the patch is refused for each problem it adds.
 `)
-	if docType(t.Docs[c.Doc]) == "card" {
-		b.WriteString("\nThe doc is a card: it keeps its first concept, and each other concept moves into a new card, `type: card` in its header, one concept each. A second model reads the cards afterwards and refuses a card that holds more than one.\n")
-	}
+	fmt.Fprintf(&b, "\nA new page holds at least %d words: a smaller part stays in the doc, or goes with its neighbour.\n", s.PageWords)
 	in := inbound(t, c.Doc)
 	if len(in) > 0 {
 		b.WriteString("\nThese lines of other docs link to its parts. A link to a part you move points at its new page: change where it points, and nothing else in those docs:\n\n")
@@ -148,9 +145,9 @@ var rule = regexp.MustCompile(`\b(MUST|SHOULD)\b`)
 // (headings may change level, links where they point), no MUST or SHOULD
 // lost, each new page linked from the doc, the budget problems resolved,
 // and no new problem anywhere.
-func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []intent.Intention) ([]verdict.Finding, string, error) {
+func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []intent.Intention) ([]verdict.Finding, error) {
 	if !proposedPatch(intents, fallback) {
-		return nil, "", nil // no agent, or a note instead: the findings are reported as they are
+		return nil, nil // no agent, or a note instead: the findings are reported as they are
 	}
 	var refused []verdict.Finding
 	refuse := func(rule, where, msg string) {
@@ -158,7 +155,7 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 	}
 	tree, err := loadTree(repo, s.Docs)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	after := map[string]string{}
 	for p, content := range tree.Docs {
@@ -170,7 +167,6 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 	}
 	var created []string
 	linking := inbound(tree, c.Doc)
-	card := docType(tree.Docs[c.Doc]) == "card"
 	for _, in := range intents {
 		if in.Kind != "patch" || isFallback(in, fallback) {
 			continue
@@ -234,16 +230,15 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 		}
 	}
 	if len(refused) > 0 {
-		return refused, "", nil
+		return refused, nil
 	}
 	if len(created) == 0 {
-		return []verdict.Finding{{Rule: "nothing-moved", Where: c.Doc, Message: "a split moves parts into new pages; none was created"}}, "", nil
+		return []verdict.Finding{{Rule: "nothing-moved", Where: c.Doc, Message: "a split moves parts into new pages; none was created"}}, nil
 	}
-	if card {
-		for _, p := range created {
-			if docType(after[p]) != "card" {
-				refuse("not-a-card", p, "splitting a card makes cards: give "+p+" a frontmatter with `type: card`")
-			}
+	for _, p := range created { // a page this small is a fragment: it stays with its neighbour
+		_, n := docmark.Header(after[p])
+		if w := words(strings.Join(strings.Split(after[p], "\n")[n:], "\n")); w < s.Budgets.PageWords {
+			refuse("page-too-small", p, fmt.Sprintf("%d words, under the %d a page holds (`budgets.page-words`): a part this small stays in the doc, or goes with its neighbour", w, s.Budgets.PageWords))
 		}
 	}
 	// Moved, not rewritten.
@@ -300,7 +295,7 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 		}
 	}
 	if len(refused) > 0 {
-		return refused, "", nil
+		return refused, nil
 	}
 	// The budget problems resolved, and nothing new.
 	old := map[string]Problem{}
@@ -349,15 +344,7 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 	for _, p := range readerIntroduced(tree, Tree{Docs: after, Files: files}, s.Reader) {
 		refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 	}
-	if len(refused) > 0 || !card {
-		return refused, "", nil
-	}
-	// What no check can tell: one concept a card. The judge reads them all.
-	var m strings.Builder
-	for _, p := range append([]string{c.Doc}, created...) {
-		fmt.Fprintf(&m, "## %s\n\n```markdown\n%s\n```\n\n", p, strings.TrimRight(after[p], "\n"))
-	}
-	return nil, m.String(), nil
+	return refused, nil
 }
 
 // applyDoc applies one file of a patch to an existing doc, as git will: the

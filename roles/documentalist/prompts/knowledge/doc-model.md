@@ -15,7 +15,7 @@ others:
 
 ```yaml
 ---
-type: concept | task | reference | decision | card
+type: concept | task | reference | decision
 sources: [src/auth/token.go]
 owner: team-or-person
 verified: human:alice | agent:documentalist # who last confirmed it is true
@@ -34,9 +34,6 @@ left as is: not split, over budget or duplicate; its links are checked.
 
 **A doc is suspect** when a commit after `checked` touched one of its `sources`.
 Suspicion follows the chain: code → technical doc → product doc.
-
-**Cards** are short docs on one concept each. Each folder has a generated
-`index.md` listing its cards; nobody edits one by hand.
 
 **Derived facts** — counts, versions, lists taken from the code — live between
 markers, regenerated on the default branch, never typed, not even on a branch

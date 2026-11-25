@@ -15,7 +15,7 @@ roles:
       budgets:
         doc-lines: 10
         section-words: 30
-        card-words: {min: 8, max: 40}
+        page-words: 3
         folder-lines: 30
         root-agent-file-lines: 5
 CFG

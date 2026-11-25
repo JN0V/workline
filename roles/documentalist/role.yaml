@@ -21,7 +21,7 @@ requires: [git]
 # Coming: vale (style).
 uses: [lychee]
 
-# Rewriting docs for a reader is real writing; condensing well needs judgement.
+# Rewriting docs for a reader is real writing; splitting well needs judgement.
 model:
   capability: writing
   tier: standard
@@ -31,7 +31,7 @@ model:
   tasks:
     # Measured (tests/evaluation, 2026-09-25 and 28): Sonnet moved a doc's
     # parts out 4 times in 6, writing 13 to 19k tokens; Opus 10 in 10, writing
-    # 9 to 11k; a card split 3 in 3 on Opus.
+    # 9 to 11k.
     split: {tier: frontier}
     # A part of a doc judged in parts (judge-in-parts, below): light, once the
     # evaluation says it checks as well as standard (ADR-0009); until then, standard.
@@ -74,9 +74,9 @@ settings:
     - {from: code, to: "docs/tech/**", when: now}
     - {from: "docs/tech/**", to: "docs/product/**", when: schedule}
   budgets:
-    doc-lines: 200                   # above it: extract into cards, don't compress
+    doc-lines: 200                   # above it: split into linked pages, don't compress
     section-words: 400
-    card-words: {min: 80, max: 400}  # too small is fragmentation, a smell too
+    page-words: 80                   # the fewest a page a split creates holds: smaller is fragmentation
     folder-lines: 2000
     root-agent-file-lines: 200       # AGENTS.md / CLAUDE.md: a routing file, not a dump
   freshness:                         # on schedule: a doc confirmed longer ago is stale

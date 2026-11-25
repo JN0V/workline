@@ -54,7 +54,7 @@ func TestNewPageAmongUserPages(t *testing.T) {
 	}
 	c := &splitTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
 	intents := []intent.Intention{{Kind: "patch", Value: diff}}
-	found, _, err := judgeSplit(repo, s, c, intents, nil)
+	found, err := judgeSplit(repo, s, c, intents, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

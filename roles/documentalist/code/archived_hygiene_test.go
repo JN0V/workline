@@ -12,7 +12,7 @@ func archivedProblems(docs map[string]string) []string {
 		files[p] = true
 	}
 	b := Budgets{DocLines: 5, SectionWords: 1000, FolderLines: 1000, RootAgentFileLines: 100}
-	b.CardWords.Min, b.CardWords.Max = 1, 1000
+	b.PageWords = 1
 	var got []string
 	for _, p := range Hygiene(Tree{Docs: docs, Files: files}, b, Duplicates{MinWords: 10, Similarity: 0.7}) {
 		got = append(got, p.Rule+" "+p.Where)
@@ -47,7 +47,7 @@ func TestArchivedDocIsNeverCondensed(t *testing.T) {
 	}
 	files := map[string]bool{"docs/old.md": true}
 	b := Budgets{DocLines: 5, SectionWords: 1000, FolderLines: 1000, RootAgentFileLines: 100}
-	b.CardWords.Min, b.CardWords.Max = 1, 1000
+	b.PageWords = 1
 	d := Duplicates{MinWords: 10, Similarity: 0.7}
 	cands := func() []*splitTask {
 		return splitCandidates(Hygiene(Tree{Docs: docs, Files: files}, b, d))

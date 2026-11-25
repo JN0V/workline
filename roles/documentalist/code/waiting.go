@@ -174,9 +174,3 @@ func (d *dedupeTask) key() string { return "duplicates " + strings.Join(d.Docs, 
 func (d *dedupeTask) resolves(f verdict.Finding) bool {
 	return f.Rule == "duplicate" && f.Where == d.Docs[0] && strings.Contains(f.Message, " "+d.Docs[1]+" ")
 }
-
-func (m *mergeCardTask) key() string { return "merge-card " + m.Card }
-
-func (m *mergeCardTask) resolves(f verdict.Finding) bool {
-	return f.Rule == "card-too-short" && f.Where == m.Card
-}

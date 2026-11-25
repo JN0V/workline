@@ -15,12 +15,9 @@ import (
 
 // Budgets are the size limits of the docs (roles/documentalist/role.yaml).
 type Budgets struct {
-	DocLines     int `json:"doc-lines"`
-	SectionWords int `json:"section-words"`
-	CardWords    struct {
-		Min int `json:"min"`
-		Max int `json:"max"`
-	} `json:"card-words"`
+	DocLines           int `json:"doc-lines"`
+	SectionWords       int `json:"section-words"`
+	PageWords          int `json:"page-words"` // the fewest a page a split creates holds
 	FolderLines        int `json:"folder-lines"`
 	RootAgentFileLines int `json:"root-agent-file-lines"`
 }
@@ -163,20 +160,8 @@ func lineCount(content string) int {
 	return strings.Count(strings.TrimSuffix(content, "\n"), "\n") + 1
 }
 
-func docType(content string) string {
-	block, n := docmark.Header(content)
-	if n == 0 {
-		return ""
-	}
-	var fm struct {
-		Type string `yaml:"type"`
-	}
-	_ = yaml.Unmarshal([]byte(block), &fm) // a broken header is reported by ParseDoc
-	return fm.Type
-}
-
 // archived says whether a doc's header declares it archived (`archived:
-// 2026-10-04`): its history is left as it is, out of condensing, budgets and
+// 2026-10-04`): its history is left as it is, out of splitting, budgets and
 // duplicate checks. Its links are still checked and still resolve.
 func archived(content string) bool {
 	block, n := docmark.Header(content)
@@ -216,7 +201,7 @@ func budgets(t Tree, b Budgets) []Problem {
 			Message: fmt.Sprintf("budgets.%s is not set, so this size was not checked; set it, or turn the rule off with `enforce`", name)})
 	}
 	for name, v := range map[string]int{"doc-lines": b.DocLines, "section-words": b.SectionWords,
-		"card-words.min": b.CardWords.Min, "card-words.max": b.CardWords.Max,
+		"page-words":   b.PageWords,
 		"folder-lines": b.FolderLines, "root-agent-file-lines": b.RootAgentFileLines} {
 		if v <= 0 {
 			missing(name)
@@ -231,11 +216,10 @@ func budgets(t Tree, b Budgets) []Problem {
 		folders[path.Dir(p)] += n
 		if b.DocLines > 0 && n > b.DocLines {
 			out = append(out, Problem{Rule: "doc-too-long", Where: p, Key: "doc-too-long " + p, Size: n,
-				Message: fmt.Sprintf("%d lines; the budget is %d: move whole parts into cards or a companion doc, and link to them", n, b.DocLines)})
+				Message: fmt.Sprintf("%d lines; the budget is %d: split whole parts into linked pages", n, b.DocLines)})
 		}
-		lines := scan(content)
 		if b.SectionWords > 0 {
-			for _, s := range sections(lines) {
+			for _, s := range sections(scan(content)) {
 				if w := words(s.text); w > b.SectionWords {
 					where := p
 					if s.slug != "" {
@@ -244,23 +228,6 @@ func budgets(t Tree, b Budgets) []Problem {
 					out = append(out, Problem{Rule: "section-too-long", Where: where, Key: "section-too-long " + where, Size: w,
 						Message: fmt.Sprintf("%d words; the budget is %d per section", w, b.SectionWords)})
 				}
-			}
-		}
-		if docType(content) == "card" {
-			var all strings.Builder
-			for _, l := range lines {
-				if !l.code {
-					all.WriteString(l.text + "\n")
-				}
-			}
-			w := words(all.String())
-			if b.CardWords.Min > 0 && w < b.CardWords.Min {
-				out = append(out, Problem{Rule: "card-too-short", Where: p, Key: "card-too-short " + p, Size: b.CardWords.Min - w,
-					Message: fmt.Sprintf("%d words; a card holds at least %d — merge it into the card it belongs with", w, b.CardWords.Min)})
-			}
-			if b.CardWords.Max > 0 && w > b.CardWords.Max {
-				out = append(out, Problem{Rule: "card-too-long", Where: p, Key: "card-too-long " + p, Size: w,
-					Message: fmt.Sprintf("%d words; a card holds at most %d — it covers more than one concept", w, b.CardWords.Max)})
 			}
 		}
 	}

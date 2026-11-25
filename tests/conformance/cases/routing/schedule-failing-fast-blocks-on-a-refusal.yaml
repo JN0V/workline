@@ -7,7 +7,7 @@ given:
     roles:
       documentalist:
         settings:
-          budgets: {doc-lines: 10, section-words: 30, card-words: {min: 8, max: 40}, folder-lines: 30, root-agent-file-lines: 5}
+          budgets: {doc-lines: 10, section-words: 30, page-words: 3, folder-lines: 30, root-agent-file-lines: 5}
     routing: {fail-fast: {schedule: true}}
 run: {role: documentalist, event: schedule, ai: "fake:condense-rewrites"}
 expect:
