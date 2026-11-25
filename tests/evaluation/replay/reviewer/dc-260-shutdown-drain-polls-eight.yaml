@@ -35,4 +35,3 @@ review:
       kind: drain-untested
       at:
         - {file: DomoticsCore-Core/include/DomoticsCore/ComponentRegistry.h, lines: [205, 208], text: "Deliver what this component published while shutting down", why: "no test shows the shutdown drain delivers the withdrawals, nor with more than 8 entities"}
-        - {file: "#139", text: "**Link down:** Given the MQTT link is down", why: "the Validation's link-down scenario has no test"}

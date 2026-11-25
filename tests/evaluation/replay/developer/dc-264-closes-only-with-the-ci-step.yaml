@@ -18,6 +18,7 @@ about: >
   proof needs `pio` on PATH; the grade reads only branches and the forge.
 given:
   clone: {repo: JN0V/DomoticsCore, head: 04d2cb3b12f789c8ee2d8c2c9bc1528c1ff64671}
+  needs: [pio]
   setup:
     - "git checkout -q main && git branch -q -D change && git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   forge:

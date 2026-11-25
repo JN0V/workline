@@ -17,6 +17,7 @@ about: >
   native suites); the grade reads only branches and the forge.
 given:
   clone: {repo: JN0V/DomoticsCore, head: c42c667e603286ad0653c75ba5a60deacfecd78d}
+  needs: [pio]
   setup:
     - "git checkout -q main && git branch -q -D change && git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
   forge:

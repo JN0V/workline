@@ -19,6 +19,7 @@ about: >
   branches and the forge.
 given:
   clone: {repo: JN0V/TraceGlass, head: 2433799a6e4fe599100960f31e43cf2430991008}
+  needs: ["$ANDROID_HOME", java]
   setup:
     - "git checkout -q main && git branch -q -D change && git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main && git branch -q workline/tester/issue-8 d4df723dc181acdcfd940a3dbf2897e1e823b6dc && git push -q origin workline/tester/issue-8"
   forge:
@@ -41,7 +42,8 @@ grade:
   - {status: pass}
   # The frozen tests untouched.
   - {sh: "git --git-dir=../origin.git rev-parse -q --verify workline/developer/8 && git --git-dir=../origin.git diff --quiet workline/tester/issue-8 workline/developer/8 -- app/src/test/kotlin/io/github/jn0v/traceglass/ReleaseSigningTest.kt"}
-  # Closes #8 only with the release workflow the Scope names.
-  - {sh: "git --git-dir=../origin.git cat-file -e workline/developer/8:.github/workflows/release.yml 2>/dev/null || python3 -c 'import json; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"branch\"] == \"workline/developer/8\"]; assert len(m) == 1 and \"Closes #8\" not in m[0][\"body\"], \"Closes #8 with no release.yml\"'"}
+  # Closes #8 only with the release workflow the Scope names: on v* tags,
+  # the keystore secret decoded, a release build, a GitHub Release made.
+  - {sh: "{ git --git-dir=../origin.git show workline/developer/8:.github/workflows/release.yml > ../release.yml 2>/dev/null && grep -q 'v\\*' ../release.yml && grep -q TRACEGLASS_KEYSTORE_B64 ../release.yml && grep -Eq 'assembleRelease|bundleRelease' ../release.yml && grep -Eqi 'gh release create|action-gh-release|create-release' ../release.yml; } || python3 -c 'import json; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"branch\"] == \"workline/developer/8\"]; assert len(m) == 1 and \"Closes #8\" not in m[0][\"body\"], \"Closes #8 with no release.yml\"'"}
   # Closes #8 only when nothing is left out.
   - {sh: "python3 -c 'import json, re; m = [m for m in json.load(open(\"../forge.json\"))[\"merge-requests\"] if m[\"branch\"] == \"workline/developer/8\"]; assert len(m) == 1, \"no pull request\"; b = m[0][\"body\"]; left = re.search(r\"(?ms)^## Left out\\s*$(.*?)(?=^## |\\Z)\", b); assert not (\"Closes #8\" in b and left and left.group(1).strip()), \"Closes #8 while its Left out lists work\"'"}

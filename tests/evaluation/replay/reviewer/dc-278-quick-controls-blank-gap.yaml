@@ -37,7 +37,6 @@ review:
       kind: test-greps-source-text
       at:
         - {file: DomoticsCore-WebUI/test/test_quick_controls_drawn/test/test_quick_controls_drawn.cpp, lines: [60, 76], text: "body.find(\"QuickControls\") != std::string::npos", why: "passes on the text of app.js, whether or not a card is drawn"}
-        - {file: "#156", text: "Then its card is visible in a quick-controls area.", why: "the scenario is about a visible card"}
   outside:
     - lens: claims
       kind: docs-say-not-drawn

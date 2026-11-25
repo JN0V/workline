@@ -34,4 +34,3 @@ review:
       kind: scenario-without-test
       at:
         - {file: feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModelZoomPivotTest.kt, lines: [52, 67], text: "fun `zoom after a drag keeps the offset`()", why: "the acceptance tests cover zoom only: no test of the rotation scenario"}
-        - {file: "#5", text: "Then the image point under the fingers does not move", why: "a Validation scenario no test proves"}

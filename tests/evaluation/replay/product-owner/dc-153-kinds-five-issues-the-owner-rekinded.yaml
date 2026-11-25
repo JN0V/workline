@@ -14,7 +14,8 @@ about: >
   #182, the CHANGELOG points to a folder that does not exist
   (https://github.com/JN0V/DomoticsCore/issues/182#issuecomment-7156933389);
   #150, the owner decided to support the Arduino IDE, a new capability
-  (https://github.com/JN0V/DomoticsCore/issues/150#issuecomment-7158100503). Each
+  (https://github.com/JN0V/DomoticsCore/issues/150#issuecomment-7158100503),
+  a decision the body the role read did not hold: #150 stays, ungraded. Each
   body is the one the role read that day, from the issue's edit history
   (#155 and #182 after the role's refinement, the others as the owner
   opened them), no kind label, #155 and #182 ready as they were. Each holds
@@ -70,4 +71,5 @@ grade:
   - {finding: {where: "#155", message: "Labelled #155 `bug`"}}
   - {finding: {where: "#165", message: "Labelled #165 `bug`"}}
   - {finding: {where: "#182", message: "Labelled #182 `bug`"}}
-  - {finding: {where: "#150", message: "Labelled #150 `enhancement`"}}
+  # #150 is not graded: the owner chose `enhancement` after the body the
+  # role read, which leaves task or enhancement both standing.

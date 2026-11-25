@@ -27,5 +27,4 @@ review:
     - lens: tests
       kind: no-ascii-test
       at:
-        - {file: "#167", text: "A check, native test or CI grep, that the DLOG strings in SystemInfo.h contain only ASCII bytes.", why: "the Verification asks for a check the change does not add"}
         - {file: DomoticsCore-SystemInfo/include/DomoticsCore/SystemInfo.h, lines: [305, 335], text: "DLOG_W(LOG_SYSTEM, \"WARNING: Previous boot ended unexpectedly: %s\",", why: "the strings changed with nothing guarding them"}

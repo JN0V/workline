@@ -1,6 +1,6 @@
 package evaluation
 
-// The replay set (replay/README.md): real misses, each a case on the
+// The replay set (docs/spec/conformance/replay.md): real misses, each a case on the
 // repository where it happened, at the commits it happened on. Read and
 // pointed right here with no agent; played by TestReplay.
 
@@ -52,6 +52,14 @@ func TestReplayCasesLoad(t *testing.T) {
 		if c.Review != nil && (len(c.Review.Defects) == 0) != clean {
 			t.Errorf("%s: %d defects; only a clean- case plants none", f, len(c.Review.Defects))
 		}
+		for _, d := range reviewPlants(c) {
+			if d.Lens != "intent" && slices.ContainsFunc(d.At, place.issue) {
+				t.Errorf("%s: the %s %s defect names an issue: only an intent defect may", f, d.Lens, d.Kind)
+			}
+		}
+		if c.Run.Role == "developer" && len(c.Given.Needs) == 0 {
+			t.Errorf("%s: a developer replay names no toolchain its project's tests need (given.needs)", f)
+		}
 	}
 }
 
@@ -80,4 +88,13 @@ func TestReplayCasesPointRight(t *testing.T) {
 			placesHold(t, f, c, repo, append(places, c.Review.Not...))
 		})
 	}
+}
+
+// reviewPlants are a reviewer case's defects and outside plants; none
+// for another role.
+func reviewPlants(c *caseFile) []plant {
+	if c.Review == nil {
+		return nil
+	}
+	return append(slices.Clone(c.Review.Defects), c.Review.Outside...)
 }

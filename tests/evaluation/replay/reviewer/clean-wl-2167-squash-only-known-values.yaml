@@ -3,7 +3,9 @@ about: >
   Clean. JN0V/workline #2167 (closes #2101): GitHub's squash-only detection holds only for a squash message of
   PR_BODY or BLANK, so a missing or empty setting keeps every commit checked; two tests. Merged with no review
   round and no reviewer finding; nothing touched internal/forge/github.go after its merge (checked to af68b1b); no
-  owner comment. Any Important here is false. Bodies unchanged since the pull request opened.
+  owner comment. No independent review read it either: "clean" rests on nothing coming back after
+  the merge. Any Important here is taken as false. Bodies
+  unchanged since the pull request opened.
 given:
   clone:
     repo: JN0V/workline

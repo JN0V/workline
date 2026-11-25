@@ -8,7 +8,8 @@ about: >
   (2) the frozen test passes on the late-subscriber replay alone; (3) sticky connected/disconnected replay
   changes every subscriber, and the PR does not say so. Later
   (https://github.com/JN0V/DomoticsCore/pull/273#issuecomment-7162344379) the owner found that #262 added uses
-  of the __dc_eventBus name that open issue #159 renames (#273), which broke main once both merged. The line
+  of the __dc_eventBus name that open issue #159 renames (#273), which broke main once both merged: not planted here, since the
+  reviewer reads only the issues a change closes, and #262 does not close #159. The line
   then: an unrelated Important (sticky connected replayable after a drop), fixed; the weak test came as a nit
   only after the owner said it; the Validation was not given to the intent lens. Issue #146's body is the one
   edited 2026-11-23 14:31, before this head; #159's is the current body (answers of 2026-11-25 included).
@@ -38,7 +39,6 @@ review:
       kind: listening-subscriber-never-told
       at:
         - {file: DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h, lines: [116, 124], text: "Sticky: a loss the full EventBus queue evicted is replayed to late subscribers.", why: "only a late subscriber replays the loss; one already subscribed that lost the event is never told again"}
-        - {file: "#146", text: "**Lost event:** Given a full EventBus queue at the moment of a drop", why: "the Validation's subscribers include those already listening (Home Assistant)"}
     - lens: tests
       kind: test-passes-on-either-path
       at:
@@ -48,7 +48,3 @@ review:
       at:
         - {file: DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h, lines: [113, 113], text: "emit(up ? MQTTEvents::EVENT_CONNECTED : MQTTEvents::EVENT_DISCONNECTED, true, true);", why: "connected/disconnected become sticky for every subscriber; the PR says nothing of it"}
         - {file: DomoticsCore-Core/include/DomoticsCore/EventBus.h, lines: [249, 253], text: "void clearSticky(const String& topic) {", why: "a new EventBus API to support the sticky link state"}
-    - lens: correctness
-      kind: adds-use-of-name-being-renamed
-      at:
-        - {file: DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h, lines: [110, 111], text: "__dc_eventBus->clearSticky", why: "new uses of a reserved __dc_ name that open issue #159 renames"}
