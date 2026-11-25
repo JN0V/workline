@@ -1,0 +1,34 @@
+case: routing/wip-ready-person-kept-after-refusal
+about: >
+  Person's ready kept: the tester refused an issue and the line blocked
+  it; a person puts workline:ready back, with a comment that it is ready
+  without a tester's test. The line has no record of having moved it out
+  of ready itself, yet it does not move it to its tests again: the issue
+  stays in ready, the developer is woken on it, and the tester is not run.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}}
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready"]
+        labeled: {"workline:ready": "2026-11-03T09:00:00Z"}
+        body: "## Need\n\nI want to add.\n\n## Validation\n\n- **Two and three:** Given the library, When I add 2 and 3, Then I get 5.\n"
+        comments:
+          - "**The tester** wrote no tests for this issue this run.\n\n- **Why**: passes on the base.\n\n<!-- workline:sticky=tester/issue -->"
+          - "**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"from\":\"tests\",\"body\":\"0\",\"hops\":3,\"since\":\"2026-11-02T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"
+          - "This one is ready without a tester's test: the developer takes it."
+run: {route: issue, target: {issue: 1}, open-merge-request: true, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-wakes, level: info, where: "#1", message: "its state, ready, wakes the developer"}
+  no-findings: [{rule: state-untested}]
+  forge:
+    issues:
+      - id: 1
+        labels: ["workline:ready"]
+        comment-lacks: ["moves this issue to tests", "\"retest\":\"ready\""]
