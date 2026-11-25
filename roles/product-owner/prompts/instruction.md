@@ -83,6 +83,17 @@ a `verification` you give is left out. What each holds:
   scenarios, one a bullet, as Given / When / Then. A bug's is its steps
   again, the expected result as the Then. Never "someone runs it and
   accepts the result".
+  - **Every Then is seen by running** something — a command, a test,
+    the program —, never by reading the code: "the field is not an
+    `int`" is no Then; what goes wrong with it, run, is.
+  - **A threshold is a number with its unit and its reason** — the
+    budget it fits, the figure it must stay under —, never "below
+    today's value", which one byte less meets. No reason in the issue
+    or its comments: `ask` for the number.
+  - **Who else the change reaches**: a public API, a setting, a file
+    format, a message others read — say so in a scenario for them:
+    what they run after, and what tells them (a breaking change in the
+    changelog, its migration).
 - `scope`: the part of the code it touches, by its paths — files or
   folders —, every file the change edits, each copy of a function it
   fixes included; up to 5 of the same paths in `sources`; from the code
