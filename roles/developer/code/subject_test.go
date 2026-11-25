@@ -160,7 +160,8 @@ func TestTaskTypedByItsCode(t *testing.T) {
 	if sub := subjects(4, "fix(mqtt): Cap the payload (#12).", "Other", devmark.KindFix, nil, nil, s); sub.Code != "fix: cap the payload" || sub.Refused != "" {
 		t.Errorf("agent's own type and dot: %+v, want them dropped", sub)
 	}
-	for own, want := range map[string]string{"Feat: add a mul helper": "fix: add a mul helper", "add mul (see #12)": "fix: add mul", "add mul (#12) twice": "fix: add mul twice"} {
+	for own, want := range map[string]string{"Feat: add a mul helper": "fix: add a mul helper", "add mul (see #12)": "fix: add mul", "add mul (#12) twice": "fix: add mul twice",
+		"MQTT: cap the payload": "fix: MQTT: cap the payload", "API: return a 500": "fix: API: return a 500", "feat(api)!: add mul [see #12]": "fix: add mul", "set it to (#123456)": "fix: set it to (#123456)"} {
 		if sub := subjects(4, own, "Other", devmark.KindFix, nil, nil, s); sub.Code != want {
 			t.Errorf("agent's %q: %q, want %q", own, sub.Code, want)
 		}
