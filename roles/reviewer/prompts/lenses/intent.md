@@ -21,10 +21,15 @@ judge:
     changed beyond the issue's Scope, listed by the author or not, whose
     change the issue's Need does not need. The Scope is a hint: a file
     beyond it that the Need needs, or that the author's reason ties to it
-    truly, is no finding. The change shown is the whole merge request,
+    truly, is no finding. Answer yes too when the change removes or
+    renames a name other code or a user calls (a public function, type,
+    field, setting, format) that the issue does not ask to, or that
+    nothing marks as breaking, as the finding says of the commits you
+    are not shown. The change shown is the whole merge request,
     its commits reviewed before included, and its last commits that are
     workline's own when shown apart: answer no if any of it does it,
-    if the issue does not ask it, or if the finding only guesses.
+    if the issue does not ask what the finding says lacks, or if the
+    finding only guesses.
   reads: issue
 ---
 **Intent.** The change says it closes the issue under "What the change
@@ -37,6 +42,15 @@ ask more than the issue does; what commits reviewed before may have done
 is not missing. How much the change builds for what the issue asks — a
 type, an option, a layer more than it needs — is the simplicity lens's,
 not yours: you judge whether it does what is asked, not its size.
+
+**A public name.** Does the change remove or change a name other code or
+a user calls — a public function, type, field, setting, command, a format
+read elsewhere — and is it announced? Announced is both: the issue asks
+it, and the change marks it as breaking the way the project does (a `!`
+or a `BREAKING CHANGE` footer in a conventional commit, its changelog).
+One removed or changed unannounced is an Important finding, its cause the
+line removed or changed, quoted; its `why` says what lacks: the issue's
+ask, the mark, or both.
 
 **Each scenario.** Answer every scenario of the issue's Validation (its
 Given / When / Then), one by one, its name as the issue writes it:

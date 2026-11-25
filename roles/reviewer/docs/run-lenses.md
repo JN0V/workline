@@ -67,6 +67,10 @@ Part of [a run on code](run.md): step 4, what each lens reads and answers.
     prove, its cause quoted from the issue (`path: "#4"`), and what the
     change does past the Scope that the Need does not need: the Scope is
     a hint, not a fence.
+  - A public name the change removes or renames (a function, type,
+    field, setting, format others call) is an important finding unless
+    the issue asks it and the change marks it as breaking (`!`, a
+    `BREAKING CHANGE` footer).
   - Each Validation scenario is answered: the code doing it and its test
     quoted (`scenario`), or why no test can check it (`reason`, said
     `scenario-no-test`), or a finding.
