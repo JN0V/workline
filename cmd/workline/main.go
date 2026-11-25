@@ -1110,7 +1110,20 @@ func revParse(root, rev string) string {
 // A non-nil error means the run could not start, as a config that is not
 // valid: it is said, and the command exits 1.
 func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) (bool, error) {
-	if dirty, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "status", "--porcelain", "--", "*.md").Output(); len(dirty) > 0 {
+	statusCmd := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "status", "--porcelain", "--", "*.md")
+	var statusErr bytes.Buffer
+	statusCmd.Stderr = &statusErr
+	dirty, err := statusCmd.Output()
+	if err != nil {
+		msg := strings.TrimSpace(statusErr.String())
+		if msg == "" {
+			msg = err.Error()
+		}
+		err = fmt.Errorf("git status failed: %s", msg)
+		fmt.Fprintln(out, "workline:", err)
+		return false, &gitFailedError{err}
+	}
+	if len(dirty) > 0 {
 		fmt.Fprintf(out, "workline: docs have changes not committed:\n%scommit or stash them first, so what the documentalist proposes is reviewed alone\n", dirty)
 		return false, nil
 	}
