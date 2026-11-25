@@ -40,4 +40,4 @@ expect:
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["\"round\":1", "review round 1 of 5"]
+        comment-contains: ["\"round\":1", "review round 1, 1 of 5 on a blocking finding"]

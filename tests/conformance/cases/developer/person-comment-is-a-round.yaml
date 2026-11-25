@@ -32,7 +32,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 2 of 5 on merge request 2, its fix pushed"
+  summary: "round 2, 0 of 5 on a blocking finding, on merge request 2, its fix pushed"
   agent-calls: 1
   run-files:
     in/task.md:

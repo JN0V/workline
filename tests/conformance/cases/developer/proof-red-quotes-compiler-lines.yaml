@@ -49,7 +49,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2, its fix pushed, the tests red"
+  summary: "round 1, 1 of 5 on a blocking finding, on merge request 2, its fix pushed, the tests red"
   findings:
     - {rule: proof-red, where: "merge request 2", message: "the test command failed, no test red: exit status 1: its errors: e: file://"}
     - {rule: proof-red, where: "merge request 2", message: "SettingsScreen.kt:180:62 Unresolved reference 'settings_grid'.; its output ends: "}

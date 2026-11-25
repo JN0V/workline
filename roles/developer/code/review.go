@@ -206,7 +206,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	// The gates read at its branch's head, checked out; a head git
 	// cannot read fails the round below.
 	head, _ := gitOut(repo, "rev-parse", "HEAD")
-	r, newReview, err := readAsked(f, b, kept, repo, a, id, head)
+	r, newReview, err := readAsked(f, kept, repo, a, mr, head)
 	if errors.Is(err, errOwnAccount) {
 		return fail(err)
 	}
@@ -303,7 +303,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		}
 		return writeIntents(runDir, "fallback.yaml", toTesterOnly(r, bounds, repo))
 	}
-	if rounds(a) >= s.Rounds {
+	if disputes(a) >= s.Rounds || max(a.Round, len(a.Rounds)) >= 2*s.Rounds { // its disputes, or its rounds of any kind at twice that
 		r.Person = true
 		if err := writeIn(runDir, roundFile, r); err != nil {
 			return fail(err)
@@ -415,13 +415,12 @@ func issueRewritten(f forge.Forge, a devmark.Act) (string, error) {
 	return "", nil
 }
 
-// readAsked reads what a round on merge request id asks, no agent: the
+// readAsked reads what a round on merge request mr asks, no agent: the
 // reviewer's findings when it reviewed since the last round, the gates'
-// new findings when they reported on head since it (head "": not
-// known), a person's comments not heard yet. fresh: the reviewer or the
-// gates said something new.
-func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a devmark.Act, id int, head string) (r round, fresh bool, err error) {
-	r = round{MR: id, Record: a}
+// new findings reported on head since it (head "": not known), a
+// person's comments not heard yet. fresh: either said something new.
+func readAsked(f forge.Forge, kept forge.Kept, repo string, a devmark.Act, mr forge.MergeRequest, head string) (r round, fresh bool, err error) {
+	r = round{MR: mr.ID, Record: a}
 	back, err := backFromAsk(f, a)
 	if err != nil {
 		return r, false, err
@@ -490,7 +489,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a d
 		r.Asked = waited(a, r.Asked)
 	}
 	if th, ok := f.(forge.Threaded); ok && len(r.Asked) > 0 {
-		threads, err := th.Threads(id)
+		threads, err := th.Threads(mr.ID)
 		if err != nil {
 			return r, false, err
 		}
@@ -509,19 +508,20 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a d
 		return r, false, err
 	}
 	r.Asked = append(r.Asked, rewrites...)
-	target := forge.Target{Kind: "merge-request", ID: id}
-	notes, err := b.Notes(target)
+	notes, err := f.(forge.Backlog).Notes(forge.Target{Kind: "merge-request", ID: mr.ID})
 	if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
 		return r, false, err
 	}
-	_, err = forge.OwnAccount(f)
-	if err != nil {
+	if _, err = forge.OwnAccount(f); err != nil {
 		return r, false, fmt.Errorf("%w: %w", errOwnAccount, err)
 	}
-	// The comments of the review threads count as notes: a person's
-	// reply there is asked as one in the main conversation.
+	st := forge.MergeState{} // its labels' events: a person's yes and its trace, within two minutes by the same account, a record and no request
+	if m, ok := f.(forge.Merger); ok {
+		st, _ = m.MergeState(mr) // unread: a trace asks, as any comment
+	}
+	// A person's comment in a review thread is asked as one in its conversation.
 	if th, ok := f.(forge.Threaded); ok {
-		threads, err := th.Threads(id)
+		threads, err := th.Threads(mr.ID)
 		if err != nil {
 			return r, false, err
 		}
@@ -530,7 +530,11 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a d
 		}
 	}
 	for _, n := range notes {
-		if !n.Insider || n.Bot || kept.Wrote(n) || slices.Contains(a.Heard, n.ID) || strings.Contains(n.Body, "<!-- workline:") {
+		at, timed := backlog.Moment(n.Created)
+		if !n.Insider || n.Bot || kept.Wrote(n) || slices.Contains(a.Heard, n.ID) || strings.Contains(n.Body, "<!-- workline:") || timed && slices.ContainsFunc(st.Labels, func(e forge.LabelEvent) bool {
+			t, ok := backlog.Moment(e.Created)
+			return ok && e.Added && e.Author == n.Author && slices.Contains(forge.AcceptedLabels, strings.TrimSuffix(e.Label, "-whole")) && t.Sub(at).Abs().Minutes() <= 2
+		}) {
 			continue
 		}
 		r.Heard = append(r.Heard, n.ID)
@@ -560,8 +564,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	if devmark.BranchIssue(mr.Branch) == 0 {
 		return false, nil
 	}
-	b, ok := f.(forge.Backlog)
-	if !ok {
+	if _, ok := f.(forge.Backlog); !ok {
 		return false, nil
 	}
 	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: mr.ID})
@@ -585,7 +588,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 		return true, nil // its merge refused for a conflict: a merge round (ADR-0067)
 	}
 	head, _ := gitOut(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/"+mr.Branch)
-	r, _, err := readAsked(f, b, kept, repo, a, mr.ID, head)
+	r, _, err := readAsked(f, kept, repo, a, mr, head)
 	if err == nil && len(r.Asked) == 0 && r.ChecksUnread != "" {
 		err = fmt.Errorf("its project's checks: %s", r.ChecksUnread)
 	}
@@ -605,8 +608,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 // branch in its worktree (ADR-0056, step 6).
 func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testErr error) string {
 	var t strings.Builder
-	n := r.Record.Round + 1
-	fmt.Fprintf(&t, "# Review round %d of %d on your pull request %d, for issue #%d: %s\n\n", n, s.Rounds, r.MR, is.ID, is.Title)
+	fmt.Fprintf(&t, "# Review %s, on your pull request %d, for issue #%d: %s\n\n", roundOf(r, s), r.MR, is.ID, is.Title)
 	t.WriteString("You wrote this pull request's code; you remember none of it. What you did is below, from its record; your worktree holds its branch.\n\n")
 	if len(r.Record.Rounds) > 0 {
 		t.WriteString("## The rounds before, from its record\n\n")
@@ -721,7 +723,7 @@ func handOff(r round, b Bounds, repo string) []intent.Intention {
 		a.ChecksAt = r.ChecksAt
 	}
 	add, remove := blockedMove(repo)
-	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree, a dispute over a blocking finding",
+	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree, a dispute over a blocking finding, or its rounds of any kind at their ceiling",
 		a.Round, r.MR, len(r.Asked), devmark.Plural(len(r.Asked)))
 	return append(tests,
 		intent.Intention{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
@@ -867,7 +869,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	a := r.Record
 	n := a.Round + 1
-	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d of %d on %s", n, s.Rounds, where),
+	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("%s, on %s", roundOf(r, s), where),
 		Findings: append([]verdict.Finding{rightsFinding(where)}, refusalFindings(where, refused, said)...)}
 	if len(unread) > 0 {
 		v.Findings = append(v.Findings, unreadFinding(where, unread, true))
@@ -897,7 +899,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		if code := writeIntents(runDir, "", []intent.Intention{{Kind: "comment", Value: map[string]any{"sticky": roundNotRunKey, "body": said}}}); code != 0 {
 			return code
 		}
-		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d of %d on %s not run: its agent could not be reached", n, s.Rounds, where),
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("%s, on %s, not run: its agent could not be reached", roundOf(r, s), where),
 			Findings: []verdict.Finding{{Rule: "round-not-run", Level: "warn", Where: where,
 				Message: fmt.Sprintf("its agent could not be reached (%s), spent nothing and changed nothing: no round counted, said on the pull request; the next run asks the findings again", u.failed)}}})
 	}
@@ -1048,7 +1050,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		}
 	}
 	a.Rounds = append(a.Rounds, this)
-	out := append(slices.Concat(takes, patches), intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, s, notes, analysis, a.Widen, refused)}},
+	out := append(slices.Concat(takes, patches), intent.Intention{Kind: "comment", Value: map[string]any{"sticky": "round", "body": roundBody(this, roundOf(r, s), notes, analysis, a.Widen, refused)}},
 		intent.Intention{Kind: "comment", Value: map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}})
 	out = append(out, others...)
 	if len(this.Beside) > 0 {
@@ -1069,9 +1071,9 @@ func reviewPost(runDir, repo string, s Settings) int {
 
 // roundBody is the round's comment on its pull request: what was asked,
 // what the developer did, its proof, the five whys.
-func roundBody(x devmark.Round, s Settings, notes []string, analysis string, w *devmark.Widen, refused []devmark.Refusal) string {
+func roundBody(x devmark.Round, of string, notes []string, analysis string, w *devmark.Widen, refused []devmark.Refusal) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "**The developer**, review round %d of %d: ", x.N, s.Rounds)
+	fmt.Fprintf(&b, "**The developer**, review %s: ", of)
 	if x.Result == "not-pushed" {
 		b.WriteString("its fix turns the frozen tests red on a green head, not pushed: the green head kept. ")
 	}
@@ -1248,9 +1250,13 @@ func writeVerdict(runDir string, v verdict.Verdict) int {
 	return 0
 }
 
-// disputes counts the rounds that answered a blocking finding of the
-// reviewer: a red check, a tester's rewrite or a warning alone is no
-// dispute (#1598). A record with no round listed counts its round number.
+// roundOf names round r: its number, its disputes of s.Rounds, itself one when it answers a blocking finding.
+func roundOf(r round, s Settings) string {
+	return fmt.Sprintf("round %d, %d of %d on a blocking finding", r.Record.Round+1, disputes(devmark.Act{Rounds: append(slices.Clone(r.Record.Rounds), devmark.Round{Asked: texts(r.Asked)})}), s.Rounds)
+}
+
+// disputes counts the rounds that answered a reviewer's blocking finding, no red check, rewrite
+// or warning alone (#1598); a record with no round listed, its round number.
 func disputes(a devmark.Act) int {
 	if len(a.Rounds) == 0 {
 		return a.Round
@@ -1262,12 +1268,6 @@ func disputes(a devmark.Act) int {
 		}
 	}
 	return n
-}
-
-// rounds counts every round the pull request had, of any kind: the
-// ceiling that hands it to a person (#1687).
-func rounds(a devmark.Act) int {
-	return max(a.Round, len(a.Rounds), disputes(a))
 }
 
 // stall is a round's stop (#1769): the failure it came twice, at a head

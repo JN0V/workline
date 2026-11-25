@@ -115,7 +115,7 @@ In `.workline/config.yaml`, under `roles: {developer: {settings: …}}`:
 | `ai-max-seconds` | 3600 | what a run waits on its agent, then kills it; reached, a Draft |
 | `proof-seconds` | 900 | how long the project's tests may run on its code; past it, a Draft |
 | `proof-command` | none | the tests on the folders its change touches, `{packages}` in it; none, the whole suite ([the proof](docs/proof.md#what-runs)) |
-| `review-rounds` | 5 | the review rounds it runs on its pull request |
+| `review-rounds` | 5 | the review rounds disputing a blocking finding on its pull request (twice it of any kind), then a person ([rounds](docs/review-loop.md#rounds-five-disputes-the-five-whys-at-three)) |
 | the tester's `test-paths`, `test-homes` | the generic ones | the one definition of a test file: a new test file whose code lives beside the Scope is not listed beyond it ([the bounds](docs/bounds.md#what-it-checks)) |
 | `autonomy` | `normal` | its level, else the project's `autonomy`: `cautious` runs 3 review rounds, `enterprising` 8; `review-rounds` set wins ([autonomy](../../docs/autonomy.md)) |
 

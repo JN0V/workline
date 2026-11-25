@@ -30,7 +30,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "cmd:sh $FIXTURES/agents/developer-fixes-mul-five-whys.sh"}
 expect:
   status: pass
-  summary: "round 3 of 5 on merge request 2, its fix pushed, the tests green, the five whys with it"
+  summary: "round 3, 1 of 5 on a blocking finding, on merge request 2, its fix pushed, the tests green, the five whys with it"
   pushed:
     workline/developer/3:
       lib.sh: "$1 * $2"
@@ -39,4 +39,4 @@ expect:
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 3 of 5", "**Five whys**", "**Root cause:**", "**Action** (code)", "mul multiplies now", "\"whys\":true"]
+        comment-contains: ["review round 3, 1 of 5 on a blocking finding", "**Five whys**", "**Root cause:**", "**Action** (code)", "mul multiplies now", "\"whys\":true"]

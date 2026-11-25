@@ -27,4 +27,4 @@ run: {develop: [], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
   run-files:
-    in/task.md: {contains: ["- Autonomy: enterprising (project default): 8 review rounds on your pull request, then its issue is blocked for a person."]}
+    in/task.md: {contains: ["- Autonomy: enterprising (project default): 8 review rounds disputing a blocking finding on your pull request, then its issue is blocked for a person."]}

@@ -34,7 +34,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: 'cmd:sh "$FIXTURES/agents/developer-writes-mul-costly.sh"'}
 expect:
   status: pass
-  summary: "round 1 of 5 on merge request 2, its fix pushed, the tests green"
+  summary: "round 1, 1 of 5 on a blocking finding, on merge request 2, its fix pushed, the tests green"
   agent-calls: 1
   findings:
     - {rule: proof-green, where: "merge request 2"}

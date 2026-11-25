@@ -1,0 +1,46 @@
+case: developer/round-ceiling-ten-of-any-kind
+about: >
+  Ten rounds went on red checks, a tester's rewrite and findings that
+  only warn, none on a blocking finding: no dispute, but the ceiling of
+  rounds of any kind, twice review-rounds (5), is reached. A new verdict
+  that blocks arrives: no round starts, no agent is called, and the pull
+  request goes to a person, said on it and on its issue, which is
+  blocked.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 + $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 workline/developer/3"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready", "workline:developing"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"acceptance\":[\"tests/test_mul_by_zero.sh\",\"tests/test_mul_two_by_three.sh\"],\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"red\",\"passed\":1,\"red\":[\"test_mul_two_by_three\"]},\"round\":10,\"review-runs\":10,\"rounds\":[{\"n\":1,\"asked\":[\"a project check `test`: red at `abc1234`\"],\"result\":\"green\"},{\"n\":2,\"asked\":[\"the tester rewrote `tests/test_mul_by_zero.sh` on an objection, on its Draft: taken into this branch\"],\"result\":\"green\"},{\"n\":3,\"asked\":[\"warns design `lib.sh:1`: Important: name the operands\"],\"result\":\"green\"},{\"n\":4,\"asked\":[\"a project check `test`: red at `abc1234`\"],\"result\":\"green\"},{\"n\":5,\"asked\":[\"the tester rewrote `tests/test_mul_by_zero.sh` on an objection, on its Draft: taken into this branch\"],\"result\":\"green\"},{\"n\":6,\"asked\":[\"warns design `lib.sh:1`: Important: name the operands\"],\"result\":\"green\"},{\"n\":7,\"asked\":[\"a project check `test`: red at `abc1234`\"],\"result\":\"green\"},{\"n\":8,\"asked\":[\"the tester rewrote `tests/test_mul_by_zero.sh` on an objection, on its Draft: taken into this branch\"],\"result\":\"green\"},{\"n\":9,\"asked\":[\"warns design `lib.sh:1`: Important: name the operands\"],\"result\":\"green\"},{\"n\":10,\"asked\":[\"a project check `test`: red at `abc1234`\"],\"result\":\"green\"}]} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| **blocks** | correctness | `lib.sh:2` | Important: mul adds its operands — mul 2 3 gives 5, not 6. Fix: multiply. |\n\n<!-- workline:findings [{\"lens\":\"correctness\",\"holds\":\"blocks\",\"where\":\"lib.sh:2\",\"severity\":\"Important\",\"text\":\"mul adds its operands — mul 2 3 gives 5, not 6. Fix: multiply.\"}] -->\n<!-- workline:record reviewed=1111111 runs=11 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: review-blocked, level: warn, where: "merge request 2"}]
+  not-pushed: [workline/developer/3]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:blocked"]
+        comment-contains: ["**The developer** blocks this issue."]
+    merge-requests:
+      - id: 2
+        comment-contains: ["**Blocked**", "\"handed\":true"]

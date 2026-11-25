@@ -32,11 +32,11 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 2 of 5"
+  summary: "round 2, 2 of 5 on a blocking finding"
   agent-calls: 1
   run-files:
     in/task.md:
-      contains: ["Review round 2 of 5", "you remember none of it", "Round 1: 1 asked, the tests red", "I want to multiply.", "**still there** after a round", "1 nit too: not asked"]
+      contains: ["Review round 2, 2 of 5 on a blocking finding", "you remember none of it", "Round 1: 1 asked, the tests red", "I want to multiply.", "**still there** after a round", "1 nit too: not asked"]
       not-contains: ["name the operands", "# Skill: five-whys"]
   forge:
     merge-requests:

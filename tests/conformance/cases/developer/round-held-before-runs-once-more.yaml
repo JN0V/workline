@@ -36,7 +36,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-holds-check-wrong"}
 expect:
   status: pass
-  summary: "round 2 of 5 on merge request 2; no fix for the red check test: #3 blocked for a person"
+  summary: "round 2, 0 of 5 on a blocking finding, on merge request 2; no fix for the red check test: #3 blocked for a person"
   agent-calls: 1
   forge:
     issues:
