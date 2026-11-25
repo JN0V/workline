@@ -26,7 +26,7 @@ run: {follow: [--base, main], summary: true}
 expect:
   status: pass
   findings:
-    - {rule: auto-merge-on, where: "#7", message: "accepted by @dana, its head's verdict passed: auto-merge turned on"}
+    - {rule: auto-merge-on, where: "#7", message: "accepted by dana, its head's verdict passed: auto-merge turned on"}
     - {rule: held-by-conversations, where: "#7", message: "auto-merge on, its checks green, but the forge does not merge it: 1 conversation on its lines not resolved holds it, main requires every conversation resolved: [src/auth/token.go:3](https://forge.example/merge-requests/7#thread-1)"}
   not-pushed: [feat/sessions]
   forge:

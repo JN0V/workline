@@ -24,14 +24,14 @@ run: {follow: [--base, main], summary: true}
 expect:
   status: pass
   findings:
-    - {rule: accepted-reset, where: "#7", level: warn, message: "was pushed after @dana put `workline:accepted`: that label taken off"}
-    - {rule: auto-merge-on, where: "#7", message: "accepted by @dana, read whole by @dana (review-not-whole): auto-merge turned on"}
+    - {rule: accepted-reset, where: "#7", level: warn, message: "was pushed after dana put `workline:accepted`: that label taken off"}
+    - {rule: auto-merge-on, where: "#7", message: "accepted by dana, read whole by dana (review-not-whole): auto-merge turned on"}
   forge:
     merge-requests:
       - id: 7
         auto-merge: true
         labels: [workline:accepted-whole]
         comments: 1
-        comment-contains: ["workline took `workline:accepted` off", "`workline:accepted-whole`, put by @dana since, covers the head as it is now"]
+        comment-contains: ["workline took `workline:accepted` off", "`workline:accepted-whole`, put by dana since, covers the head as it is now"]
     statuses:
-      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by @dana, read whole by @dana (review-not-whole)"}
+      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by dana, read whole by dana (review-not-whole)"}

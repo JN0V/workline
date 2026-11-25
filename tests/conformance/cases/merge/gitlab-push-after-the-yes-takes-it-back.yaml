@@ -24,7 +24,7 @@ given:
 run: {follow: [--base, main, --verdict, ../verdict.json], forge: gitlab}
 expect:
   status: pass
-  findings: [{rule: accepted-reset, where: "!7", level: warn, message: "was pushed after @dana accepted it: the yes and auto-merge taken off"}]
+  findings: [{rule: accepted-reset, where: "!7", level: warn, message: "was pushed after dana accepted it: the yes and auto-merge taken off"}]
   forge:
     merge-requests:
       - id: 7

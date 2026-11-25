@@ -249,7 +249,13 @@ func AssumptionLine(day, how, text string) string {
 }
 
 // answeredMark ends an assumption's line a person answered after.
-const answeredMark = " Answered by @"
+const answeredMark = " Answered by "
+
+// bare is a login as a record writes it: its name, never a mention that
+// would notify the person.
+func bare(who string) string {
+	return strings.ReplaceAll(who, "@", "")
+}
 
 // WithAnswered is a body whose assumptions not answered yet say who
 // answered after them, and when: their word stands over them.
@@ -258,7 +264,7 @@ func WithAnswered(body, who, day string) string {
 	changed := false
 	for i, l := range lines {
 		if strings.HasPrefix(l, "- "+AssumedLead) && !strings.Contains(l, answeredMark) {
-			lines[i] = l + fmt.Sprintf("%s%s on %s: their answer stands over it.", answeredMark, who, day)
+			lines[i] = l + fmt.Sprintf("%s%s on %s: their answer stands over it.", answeredMark, bare(who), day)
 			changed = true
 		}
 	}

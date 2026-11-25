@@ -9,7 +9,7 @@ given:
     - "sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && git commit -qam 'docs: record the auth doc as judged' && git push -q origin feat/sessions && git checkout -q main"
   forge:
     statuses:
-      - {commit: before, name: workline/accepted, state: success, description: "accepted by @dana, its head's verdict passed", by: workline-bot}
+      - {commit: before, name: workline/accepted, state: success, description: "accepted by dana, its head's verdict passed", by: workline-bot}
       - {commit: feat/sessions, name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
       - id: 7
@@ -26,7 +26,7 @@ given:
 run: {follow: [--base, main]}
 expect:
   status: pass
-  findings: [{rule: accepted-reset, where: "#7", level: warn, message: "(\"docs: record the auth doc as judged\") was pushed after @dana accepted it: the yes and auto-merge taken off"}]
+  findings: [{rule: accepted-reset, where: "#7", level: warn, message: "(\"docs: record the auth doc as judged\") was pushed after dana accepted it: the yes and auto-merge taken off"}]
   no-findings: [{rule: auto-merge-on}]
   forge:
     merge-requests:

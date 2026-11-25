@@ -9,7 +9,7 @@ given:
     - "sed -i 's/^checked: .*/checked: 9f8e7d6/' docs/tech/auth.md && sed -i 's/last one hour/last two hours/' docs/tech/auth.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin feat/sessions && git checkout -q main"
   forge:
     statuses:
-      - {commit: before, name: workline/accepted, state: success, description: "accepted by @dana, its head's verdict passed", by: workline-bot}
+      - {commit: before, name: workline/accepted, state: success, description: "accepted by dana, its head's verdict passed", by: workline-bot}
       - {commit: feat/sessions, name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
       - id: 7
@@ -26,7 +26,7 @@ given:
 run: {follow: [--base, main]}
 expect:
   status: pass
-  findings: [{rule: accepted-reset, where: "#7", level: warn, message: "(\"docs: bring the docs in line with the code\") was pushed after @dana accepted it: the yes and auto-merge taken off"}]
+  findings: [{rule: accepted-reset, where: "#7", level: warn, message: "(\"docs: bring the docs in line with the code\") was pushed after dana accepted it: the yes and auto-merge taken off"}]
   no-findings: [{rule: auto-merge-on}]
   forge:
     merge-requests:

@@ -346,7 +346,7 @@ func (s State) say() string {
 		for _, d := range s.Did {
 			if d.Day == day && d.Line != "" {
 				if d.Yes != "" {
-					d.Line += " Accepted by " + d.Yes + "."
+					d.Line += " Accepted by " + bare(d.Yes) + "."
 				}
 				did = append(did, "- "+d.Line)
 			}
@@ -1362,7 +1362,7 @@ func (p *Plan) summary(role string) {
 		switch {
 		case d.Mode == Act && d.Act.Ticked != "":
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "done-as-accepted", Level: "info", Where: d.Act.where(),
-				Message: strings.TrimSpace(describe(d.Act, "Closed")) + " Accepted by " + d.Act.Ticked + "."})
+				Message: strings.TrimSpace(describe(d.Act, "Closed")) + " Accepted by " + bare(d.Act.Ticked) + "."})
 		case d.Mode == Act:
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "done", Level: "info", Where: d.Act.where(),
 				Message: strings.TrimSpace(describe(d.Act, "Closed"))})

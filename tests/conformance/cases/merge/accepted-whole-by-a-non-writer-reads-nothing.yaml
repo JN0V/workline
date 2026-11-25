@@ -24,10 +24,10 @@ run: {follow: [--base, main], summary: true}
 expect:
   status: pass
   findings:
-    - {rule: label-ignored, where: "#7", level: warn, message: "labelled `workline:accepted-whole` by @zed, who may not push nor merge here: no reading"}
-    - {rule: review-short, where: "#7", level: warn, message: "accepted by @dana, but its review falls short (review-not-whole)"}
+    - {rule: label-ignored, where: "#7", level: warn, message: "labelled `workline:accepted-whole` by zed, who may not push nor merge here: no reading"}
+    - {rule: review-short, where: "#7", level: warn, message: "accepted by dana, but its review falls short (review-not-whole)"}
   no-findings: [{rule: auto-merge-on}, {rule: review-read-whole}]
-  summary-file: ["`workline:accepted-whole` by @zed"]
+  summary-file: ["`workline:accepted-whole` by zed"]
   forge:
     merge-requests:
       - {id: 7, auto-merge: false, labels: [workline:accepted, workline:accepted-whole]}

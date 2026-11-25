@@ -30,6 +30,6 @@ expect:
         labels: [workline:to-refine]
         body-contains:
           - "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go\n\n## Assumptions"
-          - "as other flags do. Answered by @ann on "
+          - "as other flags do. Answered by ann on "
           - ": their answer stands over it."
         comment-contains: "Moved #9 back to refine"

@@ -28,7 +28,7 @@ run:
 expect:
   status: pass
   findings:
-    - {rule: demotion-unrecorded, where: "#9", message: "but #1, of that title, is @mallory's, not workline's: it is not taken for it"}
+    - {rule: demotion-unrecorded, where: "#9", message: "but #1, of that title, is mallory's, not workline's: it is not taken for it"}
     - {rule: waits-for-a-yes, where: "#10", message: "its records merge requests wait for a person's yes since a revert (its issue not opened yet)"}
     - {rule: merge-demoted, where: "#9", message: "until a person who may push and merge closes #2"}
     - {rule: waits-for-a-yes, where: "#10", message: "since a revert (#2)"}

@@ -16,4 +16,4 @@ expect:
   findings: [{rule: done-as-accepted, where: "#11", message: "Moved #11 back to refine"}]
   forge:
     issues:
-      - {id: 11, labels: [workline:accepted, workline:to-refine], comments: 1, comment-contains: "Moved #11 back to refine (workline:ready off, workline:to-refine on; put workline:ready back to undo): #9 now asks for JSON. Accepted by @dev."}
+      - {id: 11, labels: [workline:accepted, workline:to-refine], comments: 1, comment-contains: "Moved #11 back to refine (workline:ready off, workline:to-refine on; put workline:ready back to undo): #9 now asks for JSON. Accepted by dev."}

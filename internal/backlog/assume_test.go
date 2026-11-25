@@ -68,7 +68,7 @@ func TestWithAssumptionLeavesThePersonsSections(t *testing.T) {
 		t.Fatalf("second assumption: %q", got)
 	}
 	answered := WithAnswered(two, "ann", "2026-11-04")
-	if got := Assumptions(answered); !strings.HasSuffix(got[0], "Answered by @ann on 2026-11-04: their answer stands over it.") ||
+	if got := Assumptions(answered); !strings.HasSuffix(got[0], "Answered by ann on 2026-11-04: their answer stands over it.") ||
 		!strings.Contains(answered, "## Need\n\nThe plain line.") {
 		t.Fatalf("answered:\n%s", answered)
 	}

@@ -20,7 +20,7 @@ given:
 run: {follow: [--base, main]}
 expect:
   status: pass
-  findings: [{rule: label-ignored, where: "#7", level: warn, message: "labelled `workline:accepted` by @zed, who may not push nor merge here: no yes"}]
+  findings: [{rule: label-ignored, where: "#7", level: warn, message: "labelled `workline:accepted` by zed, who may not push nor merge here: no yes"}]
   no-findings: [{rule: auto-merge-on}]
   forge:
     merge-requests:
