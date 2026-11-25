@@ -477,7 +477,7 @@ ready_since= dispatched=false
 # The dispatch is marked by a tag on the copy, kept across tries: a rerun
 # after a stop sees it and dispatches nothing more for this issue.
 mark="workline-try-dispatched-$issue"
-if [ -n "$(gh api "repos/$REPO/git/matching-refs/tags/$mark" --jq '.[].ref' 2>/dev/null || true)" ]; then
+if [ -n "$(gh api "repos/$REPO/git/matching-refs/tags/$mark" --jq ".[] | select(.ref == \"refs/tags/$mark\") | .ref" 2>/dev/null || true)" ]; then
   dispatched=true
   echo "3. the merge workflow was dispatched by an earlier try of this issue: not again"
 fi
