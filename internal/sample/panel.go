@@ -157,7 +157,7 @@ func (rd *reader) settleByPanel(key, kind string, actSaysSo bool, proofs []Proof
 	}
 	said := statements[kind]
 	if kind == "ready" {
-		said = fmt.Sprintf("the issue was ready: one need, a %s a person wrote whose scenarios prove it, a %s, nothing left open in its comments", work.Name(work.Validation), work.Name(work.Scope))
+		said = fmt.Sprintf("the issue was ready: one need, a %s whose scenarios prove it, a %s, nothing left open in its comments", work.Name(work.Validation), work.Name(work.Scope))
 	}
 	so := "Yes: " + said + "."
 	not := "No: it is not so that " + said
