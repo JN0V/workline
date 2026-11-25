@@ -117,7 +117,7 @@ func sayRefused(f forge.Forge, mr forge.MergeRequest, tip, due string, err error
 	}
 	data, _ := json.Marshal(r)
 	issue += "\n\n<!-- workline:" + refusedMark + string(data) + " -->"
-	for _, id := range forge.Serves(mr.Title, mr.Body) {
+	for _, id := range forge.Closes(mr.Title, mr.Body) {
 		if err := f.Sticky(forge.Target{Kind: "issue", ID: id}, backlog.Inert(issue), refusedSticky(mr.ID), true); err != nil {
 			unsaid(err)
 			return
@@ -155,7 +155,7 @@ func sayUnrefused(f forge.Forge, mr forge.MergeRequest, tip string, merged bool,
 		unsaid(err)
 		return
 	}
-	for _, id := range forge.Serves(mr.Title, mr.Body) {
+	for _, id := range forge.Closes(mr.Title, mr.Body) {
 		if err := f.Sticky(forge.Target{Kind: "issue", ID: id}, issue, refusedSticky(mr.ID), false); err != nil {
 			unsaid(err)
 			return

@@ -257,23 +257,6 @@ func readForge(g git, o Options, r *Result, before, after string, at time.Time, 
 			closes, closesRead = map[int][]forge.Issue{}, false
 		}
 	}
-	// A merge that is a part of an issue (`Part of #n`, the developer's
-	// when it leaves work for a person) is for it too, though the forge's
-	// closing references leave it out.
-	if closesRead {
-		for _, mr := range merged {
-			for _, n := range forge.Serves(mr.Title, mr.Body) {
-				if slices.ContainsFunc(closes[mr.ID], func(is forge.Issue) bool { return is.ID == n }) {
-					continue
-				}
-				is, err := f.Issue(n)
-				if err != nil {
-					continue // one unread: that merge is left as the forge said it
-				}
-				closes[mr.ID] = append(closes[mr.ID], *is)
-			}
-		}
-	}
 	ref := func(id int) string { return forge.MergeRef(f, id) }
 
 	// Symptoms without cause: an area fixed again and again; an issue

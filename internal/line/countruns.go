@@ -162,7 +162,7 @@ func runFresh(dir string) int {
 // or description closes, else the one its branch of a role names
 // (workline/developer/<n>, workline/tester/issue-<n>); 0 for none.
 func ClosedIssue(mr forge.MergeRequest) int {
-	if ids := forge.Serves(mr.Title, mr.Body); len(ids) > 0 {
+	if ids := forge.Closes(mr.Title, mr.Body); len(ids) > 0 {
 		return ids[0]
 	}
 	for _, prefix := range []string{"workline/developer/", "workline/tester/issue-"} {

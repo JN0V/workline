@@ -148,16 +148,18 @@ did not foresee, a build file, a test fake, a helper
 
 - **Left out**: the refused patch is not applied; the others are.
 - **Said**: a `warn` finding for each file, named by its rule.
-- **Recorded**: the claim's comment lists each file and why; its record
-  keeps `refused: [{file, rule}]`, for the [auditor](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md).
-- **A person's file**, a gate's or one that steers agents: its pull
-  request is [a part of its issue](pull-request.md#a-part-of-its-issue).
+- **Recorded**: the claim's comment on the issue lists each file and
+  why. "A person must do it" when the file is a gate's or steers
+  agents. Its hidden record keeps `refused: [{file, rule}]`, for the
+  [auditor](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md).
 
 ## What else it refuses
 
 - **Labels and comments of the agent's** (`not-the-developers`): the
-  claim is the engine's; it never accepts, merges, closes or moves an
-  issue. Two comments are allowed: an objection, one note.
+  claim is the engine's. The developer never accepts, merges, closes
+  or moves an issue. The catalogue holds no merge to propose.
+- **Two comments are allowed.** An objection to a frozen test, and one
+  note on its own issue.
 - **An objection** to a frozen test. The agent
   writes the test, its line, the scenario, the kind and why in its
   worktree's objections file, as [its question shows](agent.md); the
@@ -181,11 +183,13 @@ did not foresee, a build file, a test fake, a helper
 - **An objection to a test that is not frozen** for the issue, or
   missing a field, or when the Draft's commit cannot be read: refused,
   said.
-- **One note on its own issue**: what the agent left out, plain text
-  naming no issue included. Posted there once, made inert (no heading,
-  tag or mention), cut to 4,000 bytes; the same text in the pull
+- **One note on its own issue**: what the agent left out. A note in
+  plain text, naming no issue, is on its own issue. The engine
+  posts it there as one comment, made inert (no heading, no tag, no
+  mention), cut to 4,000 bytes; the same text goes in the pull
   request's `## Left out` ([the pull request](pull-request.md)). A
-  second note, or one elsewhere, is refused (`not-the-developers`).
+  second note, or one on another issue, is refused and said
+  (`not-the-developers`).
 
 ## Not yet
 

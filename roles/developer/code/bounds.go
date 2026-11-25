@@ -63,10 +63,6 @@ type Bounds struct {
 	// Scope: the paths the issue's Scope names and the product owner's
 	// sources for it.
 	Scope []string `json:"scope"`
-	// Named: the paths the issue's Scope section names itself, the
-	// product owner's sources left out: a file only a person writes among
-	// them, untouched, makes its pull request a part of the issue.
-	Named []string `json:"named,omitempty"`
 	// Kind: the issue's kind, as its labels say it; its commits' type.
 	Kind string `json:"kind,omitempty"`
 	// Scenarios: the names of the issue's Validation scenarios, the one
@@ -116,7 +112,6 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 	// The Scope's paths and globs, nothing guessed from a name (ADR-0065,
 	// change 2): a hint, a file beyond it listed on the pull request.
 	b := Bounds{Issue: is.ID, Scope: inRepo(scopePaths(is.Body, files), files), Frozen: map[string]int{}, Blobs: map[string]string{}}
-	b.Named = slices.Clone(b.Scope)
 	for _, sc := range work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text) {
 		b.Scenarios = append(b.Scenarios, sc.Name)
 	}

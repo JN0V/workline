@@ -158,7 +158,7 @@ func issueOf(branch string) int {
 // request that closes an issue carries its frozen tests. ok is false
 // when the forge lists no merge request: none could be looked for.
 func closingDrafts(f forge.Forge, mr forge.MergeRequest) (drafts []int, ok bool, err error) {
-	closes := forge.Serves(mr.Title, mr.Body)
+	closes := forge.Closes(mr.Title, mr.Body)
 	if len(closes) == 0 {
 		return nil, true, nil
 	}

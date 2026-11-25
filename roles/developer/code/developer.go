@@ -203,7 +203,7 @@ func overlap(a, b []string) string {
 func Held(issues []forge.Issue, mrs []forge.MergeRequest, claimLabel string, letGo map[int]bool, files []string, changed contract.Diffs) map[int][]string {
 	closing := map[int][]forge.MergeRequest{}
 	for _, m := range mrs {
-		for _, n := range forge.ServesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
+		for _, n := range forge.ClosesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
 			closing[n] = append(closing[n], m)
 		}
 	}
@@ -343,7 +343,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 		if n := testerIssue(m.Branch); n != 0 {
 			tested[n] = true
 		}
-		for _, n := range forge.ServesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
+		for _, n := range forge.ClosesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
 			if _, ok := closer[n]; !ok {
 				closer[n] = m.ID
 			}
@@ -948,20 +948,10 @@ func Post(runDir, repo string) int {
 		title := issueTitle(runDir, a.Issue)
 		cs, unread := committerSettings(repo, where)
 		v.Findings = append(v.Findings, unread...)
-		// Part of its issue only, by facts: a file refused as a
-		// person's, or a path of its Scope only a person writes, left.
-		a.Left = leftToAPerson(repo, b, refused)
-		a.Partial = len(personsRefusals(refused)) > 0 || len(a.Left) > 0
 		mr := mergeRequest(a, title, subjects(a.Issue, title, b.Kind, b.Scope, cs))
 		mr["unopened"] = unopened(a, s, repo)
 		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
 			mr["body"] = withNote(fmt.Sprint(mr["body"]), note)
-		}
-		if a.Partial {
-			// Once its pull request is open: the issue waits for a person
-			// for the rest, said on it.
-			mr["opened"] = asMaps(personsPart(repo, a, s))
-			v.Summary += fmt.Sprintf("; a part of #%d: blocked for a person once its pull request opens", a.Issue)
 		}
 		if mr["draft"] == true {
 			v.Summary += "; a Draft: " + p.Result
@@ -1237,9 +1227,9 @@ func onlyProtected(refused []devmark.Refusal) bool {
 	return true
 }
 
-// blockedForAPerson blocks the issue for a person, its claim off, why
-// said on it and what the person does next.
-func blockedForAPerson(repo string, issue int, s Settings, why, next string) []intent.Intention {
+// writeBlockedProtected claims the issue and blocks it for a person in
+// the same run, the refused files and why said on it (#1418).
+func writeBlockedProtected(runDir, repo string, a devmark.Act, s Settings, told []intent.Intention, refused []devmark.Refusal, v verdict.Verdict) int {
 	add, remove := []string{backlog.LabelBlocked}, []string{backlog.LabelReady}
 	if line, err := routing.Load(repo); err == nil {
 		if ad, rm, err := line.Move("blocked"); err == nil {
@@ -1249,22 +1239,17 @@ func blockedForAPerson(repo string, issue int, s Settings, why, next string) []i
 	if !slices.Contains(remove, s.ClaimLabel) {
 		remove = append(remove, s.ClaimLabel)
 	}
-	return []intent.Intention{
-		{Kind: "label", Value: map[string]any{"issue": issue, "add": add, "remove": remove, "card": "blocked"}},
-		{Kind: "comment", Value: map[string]any{"issue": issue, "body": backlog.Said(who, "blocks this issue", why, next)}},
-	}
-}
-
-// writeBlockedProtected claims the issue and blocks it for a person in
-// the same run, the refused files and why said on it (#1418).
-func writeBlockedProtected(runDir, repo string, a devmark.Act, s Settings, told []intent.Intention, refused []devmark.Refusal, v verdict.Verdict) int {
 	var b strings.Builder
 	for _, r := range refused {
 		fmt.Fprintf(&b, "`%s`: %s; ", r.File, why(r))
 	}
-	out := slices.Concat(claimOf(a, s), told, blockedForAPerson(repo, a.Issue, s,
+	say := backlog.Said(who, "blocks this issue",
 		"its agent's only changes were refused at apply: "+strings.TrimSuffix(b.String(), "; "),
-		"a person makes the change, or decides it, then moves the issue back by its label"))
+		"a person makes the change, or decides it, then moves the issue back by its label")
+	out := slices.Concat(claimOf(a, s), told, []intent.Intention{
+		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
+		{Kind: "comment", Value: map[string]any{"issue": a.Issue, "body": say}},
+	})
 	if code := writeIntents(runDir, "", out); code != 0 {
 		return code
 	}

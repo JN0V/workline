@@ -118,15 +118,6 @@ type Act struct {
 	// Conflict: the head a merge round failed at (ADR-0067): no second
 	// one there.
 	Conflict string `json:"conflict,omitempty"`
-	// Left: the paths its issue's Scope names that only a person changes
-	// (a gate's, the CI's, a steering file), none of them written: left
-	// for a person.
-	Left []string `json:"left,omitempty"`
-	// Partial: its pull request is a part of its issue, not all of it —
-	// a file refused as a person's, a Scope path left, or its agent's
-	// note of what it left out: it says `Part of #n`, and an issue for a person, a
-	// sub-issue of it, holds the rest.
-	Partial bool `json:"partial,omitempty"`
 	// Board: the card its claim moved to Doing on the forge's board
 	// (ADR-0057); none, no board or no Doing column.
 	Board *board.Move `json:"board,omitempty"`
