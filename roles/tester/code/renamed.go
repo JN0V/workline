@@ -249,6 +249,9 @@ const matchedMarker = "<!-- workline:frozen-matched "
 
 var matchedData = regexp.MustCompile(`(?s)` + regexp.QuoteMeta(matchedMarker) + `(\{.*?\}) -->`)
 
+// codeNames are the names a text writes as code, `like_this`.
+var codeNames = regexp.MustCompile("`([^`\n]+)`")
+
 // matchedBefore reads the matches an earlier green comment kept.
 func matchedBefore(body string) map[string]string {
 	m := matchedData.FindStringSubmatch(body)

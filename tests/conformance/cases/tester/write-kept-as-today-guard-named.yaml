@@ -1,8 +1,8 @@
 case: tester/write-kept-as-today-guard-named
 about: >
   A scenario kept as it is today, its reason naming the existing test
-  that guards it, `tests.test_add`: the base holds it (tests/test_add.sh),
-  so the Draft keeps the reason as written (#1359).
+  that guards it, `tests.test_add`: no new test, the Draft keeps the
+  reason as written, the reviewer's tests lens to weigh it.
 given:
   repo: tested
   setup:

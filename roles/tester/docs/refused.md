@@ -6,7 +6,7 @@ sources:
   - roles/tester/code/said.go#sayBlock
   - roles/tester/code/write.go#toMend
   - roles/tester/code/notrun.go#notRun
-  - roles/tester/code/kept.go#guardedSaid
+  - roles/tester/code/kept.go#guardsOf
   - internal/kit/verdict/outcome.go#machineKinds
 checked: e81df7b34
 verified: agent:claude-code
@@ -37,12 +37,12 @@ An issue it does not take is refused before any agent is asked
   line retries, never "no test possible"
   ([#1194](https://github.com/JN0V/workline/issues/1194),
   [one run](../../../docs/spec/role-contract.md#one-run)).
-- **A scenario kept as today** ("as today", "unchanged"): the agent
-  says it not tested, naming the existing test that guards it; its test
-  would pass on the base and be refused. A name the base's tests do not
-  hold, or none, and the Draft says plainly that no existing test was
-  found to check it
-  ([#1359](https://github.com/JN0V/workline/issues/1359)).
+- **A scenario kept as today** ("as today", "unchanged"): never
+  refused for a test green on the base when its covers entry says
+  "kept as today": that test is its guard, green there as it must be
+  ([#2164](https://github.com/JN0V/workline/issues/2164)). One that
+  names an existing test instead is kept as written, listed unproven
+  for the reviewer's tests lens.
 - **An answer that does not read** (a list item indented one space
   too far): asked again once, with the reader's error; still
   unreadable, refused and said, no third call

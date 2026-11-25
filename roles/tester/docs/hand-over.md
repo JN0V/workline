@@ -37,22 +37,21 @@ flowchart LR
 ## What is there
 
 - **The branch**: `workline/tester/issue-<n>`, the base plus the
-  tester's commit of the tests. The tests are red there.
+  tester's commit of the tests. The tests are red there, a guard aside.
 - **The Draft**: a pull request from that branch, opened by workline's
   account, titled `test: the acceptance tests of #<n>`.
   - It says `Refs #<n>`, never `Closes`: it does not count as a pull
     request closing the issue.
   - `## Tests`: a table, each scenario and the test that checks it;
     a scenario no test can check is listed as not tested, with why.
-  - **Unproven**: each scenario no test proves, named — not tested,
-    or kept as today with no existing test found to guard it. Kept in
+  - **Unproven**: each scenario no test proves, named, with its
+    reason: one kept as today with no guard test too. Kept in
     its record with its reason; a rewrite that covers one takes it off.
     The developer's pull request lists them for the reviewer's tests
     lens, which asks for a test where one can prove the scenario
     ([the lenses](../../reviewer/docs/run-lenses.md#4-the-lenses)).
-    One kept as today with no guard is said apart and not listed, until
-    [#2164](https://github.com/JN0V/workline/issues/2164).
-  - What the proof said: each test red on the base, by an assertion,
+  - What the proof said: each test red on the base, but a guard of a
+    scenario kept as today, green there; red by an assertion,
     a missing name the issue names, or a broken build the judge read.
     A test whose package did not build is named `file:name`, or by
     its file alone where no `test-name` names its tests, marked so

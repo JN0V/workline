@@ -71,6 +71,9 @@ workline test write --issue 42 --ai claude
     alone where no `test-name` names its tests
     ([#1293](https://github.com/JN0V/workline/issues/1293)); nothing is
     read from a test's name.
+  - A scenario kept as today gets a guard: its test, its entry's reason
+    "kept as today", green on the base, not red
+    ([#2164](https://github.com/JN0V/workline/issues/2164)).
   - A scenario no test can check gets a reason instead, listed in the
     Draft as not tested, for a builder to object to
     ([ADR-0065](../../../docs/adr/0065-code-only-what-converges-language-knowledge-in-packs.md#4-the-agent-says-which-test-covers-which-scenario)).

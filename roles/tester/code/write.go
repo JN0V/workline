@@ -507,6 +507,7 @@ func Post(runDir, repo string) int {
 	// (ADR-0065, change 4); nothing guessed from a test's name.
 	covers, unread := coversOf(intents)
 	tested, said, missing := held(covers, t.Scenarios)
+	s.guards = guardsOf(covers)
 	findings = append(append(findings, unread...), missing...)
 	if len(findings) > 0 {
 		// Entries missing or unread, and nothing else, are the answer's to
@@ -572,9 +573,6 @@ func Post(runDir, repo string) int {
 	// A test named by its file alone proves only the file (#1293): said
 	// in the plan, the Draft and the record.
 	alone := slices.DeleteFunc(slices.Clone(newTests), func(id string) bool { return !slices.Contains(order, id) })
-	// A scenario kept as today is guarded only by a test the base holds,
-	// named: else said plainly that none guards it (#1359).
-	guardedSaid(repo, t.Base, s, said)
 	// Each scenario has its row, the tests red on the base and linted: the
 	// issue moves to the state its tests lead to, ready (ADR-0059,
 	// decision 3), said on it; no agent decides it.
@@ -1024,7 +1022,7 @@ func testPlan(t task, tested map[string][]string, said map[string]string, alone 
 			fmt.Fprintf(&b, "- **%s:** no test can check it: %s\n", sc.Name, strings.ReplaceAll(strings.TrimSpace(n), "\n", " "))
 		}
 	}
-	fmt.Fprintf(&b, "\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/%s`. Written by the tester from its tests.", taskKey(t.Issue))
+	fmt.Fprintf(&b, "\nEach test fails on the code before the change, but a guard of a scenario kept as today, and passes once it is built; they are on `workline/tester/%s`. Written by the tester from its tests.", taskKey(t.Issue))
 	return b.String()
 }
 
@@ -1060,7 +1058,7 @@ func draftBody(t task, tested map[string][]string, said map[string]string, alone
 	if why := unprovenOf(*proof); why != "" {
 		fmt.Fprintf(&b, "**Red unproven**: %s.\n\n", why)
 	}
-	b.WriteString("## Tests\n\nWhich test covers which scenario, as the tester declared it, each test red on the base.\n\n| Scenario | Test |\n|---|---|\n")
+	b.WriteString("## Tests\n\nWhich test covers which scenario, as the tester declared it, each test red on the base, a guard of a scenario kept as today green there.\n\n| Scenario | Test |\n|---|---|\n")
 	for _, sc := range t.Scenarios {
 		if ids, ok := tested[sc.Name]; ok {
 			fmt.Fprintf(&b, "| %s | %s%s |\n", sc.Name, codes(ids), aloneSaid(ids, alone))
@@ -1077,22 +1075,12 @@ func draftBody(t task, tested map[string][]string, said map[string]string, alone
 				fmt.Fprintf(&b, "- %s: %s\n", sc.Name, strings.ReplaceAll(n, "\n", " "))
 			}
 		}
-		var asked, waiting []string // each name inert: its @ pings no one
+		var asked []string // each name inert: its @ pings no one
 		for _, x := range unprovenScenarios(t, said) {
-			if x.KeptUnguarded() {
-				waiting = append(waiting, devmark.InertText(x.Scenario))
-			} else {
-				asked = append(asked, devmark.InertText(x.Scenario))
-			}
+			asked = append(asked, devmark.InertText(x.Scenario))
 		}
-		if len(asked) > 0 {
-			fmt.Fprintf(&b, "\n**Unproven**: %s. No test proves %s: the pull request that builds it lists %[2]s, "+
-				"and the reviewer's tests lens weighs whether a test can.\n", strings.Join(asked, ", "), map[bool]string{true: "it", false: "them"}[len(asked) == 1])
-		}
-		if len(waiting) > 0 {
-			fmt.Fprintf(&b, "\n**Unproven, kept as today**: %s. Nothing guards %s; a guard test waits for "+
-				"[#2164](https://github.com/JN0V/workline/issues/2164), so the tests lens is not asked.\n", strings.Join(waiting, ", "), map[bool]string{true: "it", false: "them"}[len(waiting) == 1])
-		}
+		fmt.Fprintf(&b, "\n**Unproven**: %s. No test proves %s: the pull request that builds it lists %[2]s, "+
+			"and the reviewer's tests lens weighs whether a test can.\n", strings.Join(asked, ", "), map[bool]string{true: "it", false: "them"}[len(asked) == 1])
 	}
 	if len(assumes) > 0 {
 		b.WriteString("\n**Assumed**, not confirmed in the code by the tester:\n\n")
@@ -1227,9 +1215,8 @@ func toMend(findings []verdict.Finding) ([]verdict.Finding, bool) {
 		found = true
 		switch f.Message {
 		case greenOnBase:
-			told[i].Message += "; if its scenario describes what the base already does, write no test for it: " +
-				"its covers entry gives the reason, \"kept as today: guarded by `<the existing test that checks it>`\", " +
-				"or, none found, \"kept as today: no existing test checks it\"; " +
+			told[i].Message += "; if its scenario keeps what the base already does, the test is its guard: " +
+				"its covers entry gives the reason \"kept as today\" beside its tests; " +
 				"else make it check what the issue asks, so that it fails on the base"
 		case skippedOnBase:
 			told[i].Message += "; make it run on the base, and fail there: a test that skips itself when what the issue adds is missing checks nothing yet"

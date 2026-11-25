@@ -98,7 +98,7 @@ flowchart LR
 | first line | `Closes #<n>` |
 | `## Left for a person` | on top: each file refused as only a person's to change (a gate's, the CI's, a steering file, not text); only when one was |
 | `## Changes` | its code, its tests, the tester's acceptance tests it starts from |
-| `## Unproven` | each scenario the tester said no test proves, with its reason, for [the reviewer's tests lens](../../reviewer/docs/run-lenses.md#4-the-lenses); one kept as today with no test guarding it left off until [#2164](https://github.com/JN0V/workline/issues/2164); only when one is |
+| `## Unproven` | each scenario the tester said no test proves, with its reason, for [the reviewer's tests lens](../../reviewer/docs/run-lenses.md#4-the-lenses); only when one is |
 | `## Beyond the Scope` | each file changed beyond the issue's Scope, its agent's reason; only when one was ([the bounds](bounds.md#beyond-the-scope)) |
 | `## Left out` | each file refused at apply, and why; only when one was |
 | `## Verification` | with whose rights its agent ran; what ran and its result, each cap reached ([the proof](proof.md)) |
