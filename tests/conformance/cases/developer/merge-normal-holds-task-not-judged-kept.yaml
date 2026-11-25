@@ -1,0 +1,48 @@
+case: developer/merge-normal-holds-task-not-judged-kept
+about: >
+  A task the judge did not say keeps the behaviour waits for a person's
+  yes, even where `merge.alone` lists `task` (ADR-0073): whether it
+  changes a public interface, the toolchain or a value a person chose is
+  judgement, and a judgement not given never passes. The developer's
+  pull request for #3 passes every gate and changes no test, but the
+  reviewer's summary on its head holds no judge's yes. `workline
+  follow` turns nothing on, and says why once in a comment on it.
+given:
+  repo: tested-draft
+  config: {merge: {autonomy: normal, alone: [task]}}
+  setup:
+    - "git checkout -q main && git checkout -q -b workline/developer/3 && printf 'add() {\\n  echo $(($1 + $2))\\n}\\n' > lib.sh && GIT_COMMITTER_NAME=workline-bot git commit -qam 'refactor: add on three lines for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/developer/3 && sed -i \"s/@head@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\" && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    issues:
+      - id: 3
+        title: "Write add on three lines"
+        labels: ["task", "workline:developing"]
+        body: "## Need\n\nadd reads on one line.\n\n## Scope\n\n- `lib.sh`: `add`.\n"
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        author: workline-bot
+        bot: true
+        title: "Write add on three lines"
+        body: "Closes #3"
+        labels: []
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":1}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — no finding on the change.\n\nNo finding on the commits reviewed.\n\n<!-- workline:at head=@head@ run=7 -->\n<!-- workline:record reviewed=@head@ runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: waits-for-a-yes, where: "#2", message: "the developer's code for #3, a task: its issue labelled `task`, but no judge said on its head that it keeps the behaviour (no public interface, toolchain, build platform, nor chosen limit or value changed)"}
+  no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}]
+  not-pushed: [workline/developer/3]
+  forge:
+    merge-requests:
+      - {id: 2, auto-merge: false, labels: [], comment-contains: ["**Waiting for a person's yes**", "no judge said on its head that it keeps the behaviour (no public interface, toolchain, build platform, nor chosen limit or value changed)", "workline:merge-waits=task"]}
+    statuses:
+      - {commit: "workline/developer/3", name: workline/accepted, absent: true}

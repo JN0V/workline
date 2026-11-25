@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/work"
@@ -18,6 +19,7 @@ type ClosedIssue struct {
 	ID        int             `json:"id"`
 	Text      string          `json:"text"`                // its title and the sections of intentSections, as given
 	Scenarios []work.Scenario `json:"scenarios,omitempty"` // its Validation's scenarios, each the intent lens answers
+	Kind      string          `json:"kind,omitempty"`      // its kind, by its labels (backlog.KindOf)
 }
 
 // Ref is how a finding names the issue as its cause's path: `#4`.
@@ -171,7 +173,8 @@ func readIssues(repo string, ids []int, limit int) ([]ClosedIssue, []verdict.Fin
 				kept = append(kept, sc)
 			}
 		}
-		out = append(out, ClosedIssue{ID: id, Text: text, Scenarios: kept})
+		kind, _ := backlog.KindOf(is.Labels)
+		out = append(out, ClosedIssue{ID: id, Text: text, Scenarios: kept, Kind: kind})
 	}
 	return out, said
 }

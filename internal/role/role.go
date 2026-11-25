@@ -344,8 +344,9 @@ var MergeLevels = []string{"cautious", "normal", "enterprising"}
 // MergeAlone are the kinds of workline's own pull requests that wait for a
 // person's yes at `normal` until the project lets them merge with none
 // (`merge: {alone: [...]}`, ADR-0042 amended): `reader`, an agent's
-// rewording of pages for their reader.
-var MergeAlone = []string{"reader"}
+// rewording of pages for their reader; `task`, the developer's task that
+// changes no behaviour (ADR-0073).
+var MergeAlone = []string{"reader", "task"}
 
 // LoadProjectConfig reads <repo>/.workline/config.yaml. A missing file is an
 // empty config; an unreadable or invalid one is an error.

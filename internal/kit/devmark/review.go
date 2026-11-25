@@ -20,6 +20,10 @@ var (
 	// reviewerFindings: the hidden record of its findings, a JSON list of
 	// lens, holds, where, severity and text (the reviewer's reviewer.go).
 	reviewerFindings = regexp.MustCompile(`<!-- workline:findings (\[.*\]) -->`)
+	// ReviewerKept: the head on which the judge the reviewer asked said
+	// a task keeps the behaviour (ADR-0073), written only on a yes, on the
+	// line above the head its summary read: never a quote in its table.
+	ReviewerKept = regexp.MustCompile(`<!-- workline:kept head=([0-9a-f]+) -->\n<!-- workline:at head=([0-9a-f]+)`)
 	// ReviewerOwed: its summary's record owes every lens, its rules alone
 	// ran (the reviewer's record.go writes it).
 	ReviewerOwed = regexp.MustCompile(`<!-- workline:record reviewed=\S*(?: patches=\S*)? runs=\d+ owed=all`)
