@@ -9,7 +9,7 @@ sources:
   - roles/documentalist/code/dedupe.go#pickDedupe
   - roles/documentalist/code/dedupe.go#judgeDedupe
   - roles/documentalist/code/documentalist.go#preRun.askReader
-checked: e81df7b34
+checked: fb0e0e203
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks

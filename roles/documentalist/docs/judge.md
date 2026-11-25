@@ -5,7 +5,7 @@ sources:
   - roles/documentalist/code/documentalist.go#suspectDoc
   - roles/documentalist/code/notes.go#doubtedDocs
   - roles/documentalist/code/notes.go#doubtSaid
-checked: e81df7b34
+checked: fb0e0e203
 verified: agent:claude-code
 ---
 # Documentalist — the check
