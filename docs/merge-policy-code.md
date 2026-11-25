@@ -5,7 +5,7 @@ sources:
   - internal/kit/devmark/merge.go#Merge.WaitsForAYes
   - internal/engine/code.go#behaviourChanged
   - internal/backlog/assume.go#DefaultWait
-checked: e81df7b34
+checked: d0e8a9abe
 verified: agent:claude-code
 ---
 # The developer's code at `normal`
