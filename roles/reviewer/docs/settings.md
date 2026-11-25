@@ -68,6 +68,6 @@ issue, the issue's size tier multiplies `diff-lines-max`,
 | `judge-read-lines-max` | `400` | lines read for one judge, all its rounds; the rest named; `0`: no read |
 | `tests-lines-max` | `300` | lines of tests a tests-lens judge is shown |
 | `testimony-lines-max` | `80` | lines of what the author says (commit messages, the merge request) |
-| `issue-lines-max` | `80` | lines of the issues the change closes (Need, Verification, Scope) |
+| `issue-lines-max` | `160` | lines of the issues the change closes (Need, Example, Steps, Validation, Verification, Scope) |
 | `ai-max-tokens` | `300000` | tokens a run may spend, all calls; the call crossing it is paid; `0`: no cap |
 | `spec-lines-max` | `300` | lines of a spec given; the rest cut, said |

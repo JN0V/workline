@@ -51,6 +51,7 @@ var Catalogue = map[string]bool{
 	"claim":          true, // a part's answer (in/parts), read by pre; or why a patch takes words out, read by post; never applied
 	"read":           true, // a judge's ask to read code before it answers, served at the commit judged; never applied (ADR-0045)
 	"quote":          true, // the code a judge's no rests on, found again before a finding is dropped; never applied (ADR-0045)
+	"scenario":       true, // the intent lens's answer (in/parts): a scenario of the issue done, its code and test quoted; read by pre, never applied
 	"covers":         true, // a scenario and the tests that check it, or why none can, the tester's agent's; read by post, never applied (ADR-0065)
 }
 

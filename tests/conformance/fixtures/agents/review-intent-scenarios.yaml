@@ -1,0 +1,23 @@
+# The intent lens on the `reviewed` fixture once a commit closing #4 makes
+# an empty list average 0, with its test: it shows the scenario "Empty
+# list" done and proven, its code and test quoted as they read; it shows
+# "Zeros skipped" done by a line the code does not hold; "Negatives kept"
+# done by code, with no test; "Said in the comment" done by code, no test
+# able to check it, its reason said; it answers nothing of "Odd count".
+calls:
+  - - scenario:
+        scenario: Empty list
+        issue: 4
+        code: {path: calc/calc.go, quote: "if len(values) == 0 {"}
+        test: {path: calc/calc_test.go, quote: "func TestAverageEmpty(t *testing.T) {"}
+    - scenario:
+        scenario: Zeros skipped
+        code: {path: calc/calc.go, quote: "if v == 0 {"}
+        test: {path: calc/calc_test.go, quote: "func TestAverageEmpty(t *testing.T) {"}
+    - scenario:
+        scenario: Negatives kept
+        code: {path: calc/calc.go, quote: "total += v"}
+    - scenario:
+        scenario: "Scenario: Said in the comment."
+        code: {path: calc/calc.go, quote: "// Average returns the mean of the values"}
+        reason: a comment is read, never run

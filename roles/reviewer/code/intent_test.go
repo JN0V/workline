@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // The issues a change closes, as GitHub and GitLab read the keywords; a
@@ -47,11 +48,12 @@ func TestLensesInTurnPassOver(t *testing.T) {
 	}
 }
 
-// An issue is given by its Need, Verification and Scope; one without them,
-// whole.
+// An issue is given by its Need, Example, Steps, Validation,
+// Verification and Scope, nothing else; one without them, whole.
 func TestIssueText(t *testing.T) {
-	text := issueText(&forge.Issue{ID: 4, Title: "Mean", Body: "## Need\n\nA mean.\n\n## Validation\n\nRead it.\n\n## Scope\n\ncalc/\n"})
-	if !strings.Contains(text, "#### Need\n\nA mean.") || !strings.Contains(text, "#### Scope\n\ncalc/") || strings.Contains(text, "Read it.") {
+	text := issueText(&forge.Issue{ID: 4, Title: "Mean", Body: "## Need\n\nA mean.\n\n## Example\n\n[2, 4] gives 3.\n\n## Validation\n\nRead it.\n\n## Notes\n\nAside.\n\n## Scope\n\ncalc/\n"})
+	if !strings.Contains(text, "#### Need\n\nA mean.") || !strings.Contains(text, "#### Scope\n\ncalc/") || !strings.Contains(text, "#### Validation\n\nRead it.") ||
+		!strings.Contains(text, "#### Example\n\n[2, 4] gives 3.") || strings.Contains(text, "Aside.") {
 		t.Errorf("sections:\n%s", text)
 	}
 	if text := issueText(&forge.Issue{ID: 5, Title: "Bug", Body: "It crashes on []."}); !strings.Contains(text, "It crashes on [].") {
@@ -75,5 +77,42 @@ func TestBeyondListed(t *testing.T) {
 	}
 	if s := whatFor([]ClosedIssue{{ID: 3, Text: "### Issue #3: grid\n"}}, got); !strings.Contains(s, "### Beyond the Scope, as the author lists them") || !strings.Contains(s, "`Fake.kt`") {
 		t.Errorf("whatFor does not give the intent lens the list:\n%s", s)
+	}
+}
+
+// An intent finding is on a scenario when its quote lies within the
+// scenario's lines in the issue, a scenario written over several lines
+// too; words every scenario shares, or another's, are not on it.
+func TestFoundOnAScenario(t *testing.T) {
+	body := "## Need\n\nA mean.\n\n## Validation\n\n- **Empty list:** Given no values,\n  When the mean is asked,\n  Then it is 0.\n- **Zeros skipped:** Given [0, 2, 4],\n  When the mean is asked,\n  Then it is 3.\n\n## Scope\n\ncalc/\n"
+	is := ClosedIssue{ID: 4, Text: issueText(&forge.Issue{ID: 4, Title: "Mean", Body: body}), Scenarios: work.Scenarios("- **Empty list:** Given no values,\n  When the mean is asked,\n  Then it is 0.\n- **Zeros skipped:** Given [0, 2, 4],\n  When the mean is asked,\n  Then it is 3.\n")}
+	on := func(quote string) bool {
+		c := candidates{Related: []Finding{{Lens: "intent", Where: "#4", Cause: Quote{Path: "#4", Quote: quote}}}}
+		return c.foundOn(is, 1)
+	}
+	for quote, want := range map[string]bool{
+		"Zeros skipped:":   true,
+		"Given [0, 2, 4],": true,
+		"Then it is 3.":    true,
+		"Then it is 0.":    false,
+		"Empty list":       false,
+		"A mean.":          false,
+	} {
+		if got := on(quote); got != want {
+			t.Errorf("a finding quoting %q on Zeros skipped: %v, want %v", quote, got, want)
+		}
+	}
+}
+
+// Names compare without their marks, colons, full stops or Gherkin's
+// keyword.
+func TestSameName(t *testing.T) {
+	for _, n := range []string{"Empty list", "**Empty list:**", "Scenario: Empty list", "empty list.", "_Empty list_"} {
+		if !sameName(n, "Empty list") {
+			t.Errorf("%q is not Empty list", n)
+		}
+	}
+	if sameName("Empty lists", "Empty list") {
+		t.Error("another name matched")
 	}
 }

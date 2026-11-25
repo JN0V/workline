@@ -166,6 +166,7 @@ type candidates struct {
 	Questions        []Finding         // decisions for a person: never judged, never an issue (#126)
 	Logged           []verdict.Finding // dropped, each said
 	Failed           []string          // lenses with no answer that reads
+	Shown            []string          // the issues' scenarios the intent lens showed done, the code quoted found again: `#4` and its name
 	Asked            []string          // the questions put to the judge, by finding
 	// By JudgeKey: what each important finding is judged on, its patch and
 	// its key (Answered); and, judged before on the same, the verdict kept,
@@ -1420,6 +1421,7 @@ func lensAnswers(runDir, repo string, s Settings, st state) (candidates, int, er
 			unavailable += len(ls)
 		}
 	}
+	c.unshown(repo, s, st)
 	important := func(l []Finding) {
 		sort.SliceStable(l, func(i, j int) bool { return l[i].Severity == "important" && l[j].Severity != "important" })
 	}
@@ -1433,6 +1435,10 @@ func lensAnswers(runDir, repo string, s Settings, st state) (candidates, int, er
 // findings on one line grouped.
 func lensFindings(repo string, s Settings, st state, ls []string, answers []intent.Intention, lensOf func(string) (Lens, error), c *candidates) error {
 	for _, a := range answers {
+		if a.Kind == "scenario" { // the intent lens's: a scenario shown done
+			c.shown(repo, st, slices.Contains(ls, "intent"), a.Value)
+			continue
+		}
 		lens := ls[0]
 		if len(ls) > 1 {
 			// Asked together, a finding names its lens. One naming none
@@ -1476,20 +1482,25 @@ func lensFindings(repo string, s Settings, st state, ls []string, answers []inte
 			}
 			continue
 		}
-		list := &c.Outside
-		if f.Related {
-			list = &c.Related
-		}
-		// Two findings on one line are grouped, never one dropped: each
-		// is judged by its own lens, the group only shows them together
-		// (#229); the one ahead leads, the others beside it.
-		if dup := slices.IndexFunc(*list, func(o Finding) bool { return o.Where == f.Where }); dup >= 0 {
-			(*list)[dup] = group(s, append(members((*list)[dup]), f))
-			continue
-		}
-		*list = append(*list, f)
+		c.put(s, f)
 	}
 	return nil
+}
+
+// put adds a finding to the change's or to the rest. Two findings on one
+// line are grouped, never one dropped: each is judged by its own lens,
+// the group only shows them together (#229); the one ahead leads, the
+// others beside it.
+func (c *candidates) put(s Settings, f Finding) {
+	list := &c.Outside
+	if f.Related {
+		list = &c.Related
+	}
+	if dup := slices.IndexFunc(*list, func(o Finding) bool { return o.Where == f.Where }); dup >= 0 {
+		(*list)[dup] = group(s, append(members((*list)[dup]), f))
+		return
+	}
+	*list = append(*list, f)
 }
 
 // capped keeps of the lenses' findings what a run shows: findings-max on
@@ -2799,7 +2810,7 @@ func testsOf(repo string) testdef.Def {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, PartsMax: 2, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, CommitsPerPush: 5, IssueLinesMax: 80, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, PartsMax: 2, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, CommitsPerPush: 5, IssueLinesMax: 160, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err

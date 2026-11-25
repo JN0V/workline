@@ -1,0 +1,23 @@
+case: reviewer/intent-scenarios-not-judged-on-a-later-push
+about: "On a push read after the last review, the intent lens sees a share of the change: a scenario it leaves unanswered may be done by the commits reviewed before, so it is not judged as shown by nothing; said (scenario-unasked), no finding, no judge asked."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\ttotal := 0|\\tif len(values) == 0 {\\n\\t\\treturn 0\\n\\t}\\n\\ttotal := 0|' calc/calc.go && git commit -qam 'fix: an empty list averages 0'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
+    - "printf '\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' >> calc/calc.go && git commit -qam 'feat: half a count' -m 'Closes #4.'"
+  forge:
+    issues:
+      - id: 4
+        title: The mean survives an empty list
+        body: "## Need\n\nAn empty list gives 0 instead of a crash.\n\n## Validation\n\n- **Empty list:** Given no values, When the mean is asked, Then it is 0.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: intent}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-intent}]
+  findings:
+    - {rule: scenario-unasked, where: "#4", message: "the intent lens read a share of the change"}
+  no-findings: [{rule: intent}]

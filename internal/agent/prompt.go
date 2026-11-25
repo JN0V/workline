@@ -52,6 +52,7 @@ var contracts = map[string]string{
 	"claim":          `- claim: {lines: "12-14", status: contradicted, quote: "the doc's words, as they read", source: {path: "src/file.go", lines: "40-41", quote: "the source's words, as they read"}, why: "why they disagree"}`,
 	"read":           `- read: {path: "src/file.go", lines: "40-80", why: "what you look for there"}  # or name: "Decide", where it is defined; or grep: "a_word", the lines that name it, always inside read:; instead of a note, when the task lets you read`,
 	"quote":          `- quote: {path: "src/file.go", text: "the lines that refute the finding, as they read"}  # beside a note saying no`,
+	"scenario":       `- scenario: {scenario: "Old debt", code: {path: "src/debt", quote: "the lines that do it, as they read"}, test: {path: "tests/debt", quote: "the test that proves it, as it reads"}}  # the intent lens alone: one for each scenario of the issue the change does, its name as the issue writes it; issue: "#4" when the change closes several; reason: "why no test can check it", in place of test, for a document or the pipeline; each quote one run of lines as they read; a scenario it does not do or prove is a finding instead`,
 	"covers":         `- covers: {scenario: "Two by three", tests: ["CalcTest.twoByThree"]}  # one for each scenario, its name as the issue writes it; each test as the project's test report names it, its class and name dot-joined, or its name alone; one test may cover several scenarios; or reason: "why no test can check it", in place of tests`,
 }
 
