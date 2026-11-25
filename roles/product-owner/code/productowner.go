@@ -1972,15 +1972,15 @@ func modes(cfg backlog.Config, demoted []string) string {
 
 // waitSays tells the agent how long a question waits for its answer
 // (ADR-0060): for ever, a delay after which it is woken to assume, or
-// none — an `assume` beside each `ask`.
+// none — an `assume` beside each `ask`; a feature's, for ever.
 func waitSays(w backlog.Delay) string {
 	switch {
 	case w.Never:
 		return "A question you ask waits for its answer (acts.ask.wait never): write no `assume`.\n\n"
 	case w.D == 0:
-		return fmt.Sprintf("A question you ask does not wait (acts.ask.wait 0): beside each `ask`, give an `assume` for the same issue — your best answer to it, one plain sentence, written on the issue under %s for the person to correct — and go on as if it were the answer: refine, `ready` when evident. Your drafts are taken as written at once.\n\n", backlog.AssumptionsName)
+		return fmt.Sprintf("A question you ask does not wait (acts.ask.wait 0): beside each `ask`, give an `assume` for the same issue — your best answer to it, one plain sentence, written on the issue under %s for the person to correct — and go on as if it were the answer: refine, `ready` when evident. Your drafts are taken as written at once. A feature's question is a product choice and waits for its answer, whatever the level (acts.ask.wait never): on a feature, write no `assume`, and no `ready` while it waits.\n\n", backlog.AssumptionsName)
 	}
-	return fmt.Sprintf("A question you ask waits %s for its answer (acts.ask.wait): the task says when one got none; then give an `assume`, your best answer, and go on. Drafts with no answer for as long are taken as written by the engine.\n\n", w.Say())
+	return fmt.Sprintf("A question you ask waits %s for its answer (acts.ask.wait): the task says when one got none; then give an `assume`, your best answer, and go on. Drafts with no answer for as long are taken as written by the engine. A feature's question is a product choice and waits for its answer, whatever the level (acts.ask.wait never): on a feature, write no `assume`, and no `ready` while it waits.\n\n", w.Say())
 }
 
 // timedOutSaid tells the agent its question got no answer for the delay:

@@ -332,7 +332,7 @@ assumption, written on the issue, and the issue goes on.
 - **A product choice waits for a person**
   ([amendment](../../adr/0060-the-person-is-on-the-loop.md#amendment-2026-11-25-a-product-choice-waits-for-a-person)):
   a feature's delay is `never`, today at every level (`Delay.For`), and
-  its question asked in a run holds its `ready` in that run; on any
+  its question unanswered holds its `ready`, whatever run asked it; on any
   issue, the agent told its question timed out takes no assumption and
   gives no `ready` on a choice the issue says is undecided or open, nor
   on a threshold it asked. Woken for it once, the

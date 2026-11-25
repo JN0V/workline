@@ -2527,8 +2527,8 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			// The line is building it: one state label, never a second.
 			return "developing", fmt.Sprintf("not moved to ready: #%d is developing", c.Issue)
 		}
-		if p.askedNow[c.Issue] > 0 && p.config.Wait.For(is).Never {
-			return "not-ready", fmt.Sprintf("not moved to ready: #%d's question, asked in this run, waits for a person's answer", c.Issue)
+		if _, open := Unanswered(p.ledger.Notes[c.Issue], role, is); (open || p.askedNow[c.Issue] > 0) && p.config.Wait.For(is).Never {
+			return "not-ready", fmt.Sprintf("not moved to ready: #%d's question waits for a person's answer", c.Issue)
 		}
 		if l := p.config.Untestable; l != "" && slices.Contains(is.Labels, l) {
 			return "not-ready", fmt.Sprintf("not moved to ready: #%d carries %s, the label of an issue the line cannot test; a person removes it to let it go on", c.Issue, l)

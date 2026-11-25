@@ -27,7 +27,7 @@ expect:
   status: pass
   findings:
     - {rule: assume-early, where: "#9"}
-    - {rule: not-ready, where: "#9", message: "not moved to ready: #9's question, asked in this run, waits for a person's answer"}
+    - {rule: not-ready, where: "#9", message: "not moved to ready: #9's question waits for a person's answer"}
   forge:
     issues:
       - id: 9
