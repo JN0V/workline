@@ -1,0 +1,17 @@
+case: documentalist/split-a-page-links-sent-elsewhere-refused
+about: "A link a split moves points where it did, at the doc, or at a new page: a moved link to another site sent to a third, and a linking doc's link sent to an unrelated doc, are refused, and the doc stays as it was."
+given:
+  repo: untidy
+  # as split-a-page-and-its-links
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && sed -i \"s|^they had not saved.*|& See [the spec](https://example.com/token).|\" docs/sessions.md && git commit -qam 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && git add .workline docs/sessions.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:split-a-page-sends-links-elsewhere"}
+expect:
+  status: pass   # refused, said as a warning, not failed: on schedule
+  applied: []
+  findings:
+    - {rule: link-retargeted, where: docs/sessions-length.md, message: "evil.example"}
+    - {rule: rewritten, where: docs/auth.md}
+  files:
+    docs/sessions.md: {contains: "A session lasts"}

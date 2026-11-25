@@ -1,0 +1,17 @@
+case: documentalist/split-a-page-writes-anew-refused
+about: "A split writes nothing anew, whatever its folder's size: in a folder within its budget, a new page gaining a heading that carries a rule and a line of prose is refused (`written-anew`), and the doc stays as it was."
+given:
+  repo: untidy
+  # as split-a-page-and-its-links: the docs folder within its budget
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && sed -i \"s|^they had not saved.*|& See [the spec](https://example.com/token).|\" docs/sessions.md && git commit -qam 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && git add .workline docs/sessions.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:split-a-page-writes-anew"}
+expect:
+  status: pass   # refused, said as a warning, not failed: on schedule
+  applied: []
+  findings:
+    - {rule: written-anew, where: docs/sessions-length.md, message: "The engine MUST delete"}
+    - {rule: written-anew, where: docs/sessions-length.md, message: "never refreshed twice"}
+  files:
+    docs/sessions.md: {contains: "A session lasts"}

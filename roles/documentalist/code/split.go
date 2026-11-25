@@ -10,6 +10,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"unicode"
 
 	"go.yaml.in/yaml/v3"
 
@@ -103,16 +104,21 @@ into new pages beside it, named after it (run.md, run-people.md), and leave a
 sentence and a link in their place. Move the lines as they are: they are
 checked to be found, unchanged but for where their links point, in the new
 pages. Do not squeeze sentences, or drop a rule written as MUST or SHOULD.
-Give each new page the doc's header: its ` + "`checked`" + ` as it is — the lines
-moved are the lines it vouched for — and those of its ` + "`sources`" + ` the page
-speaks of; none if the doc has none. One patch, a unified diff; a new page is
-created with --- /dev/null and +++ b/<path>.
+Write nothing new but pointers — a paragraph of at most 30 words linking to
+a new page, in the part's place, or back to the doc, in a new page ("Part of
+[the run](run.md).") — and headings made of the words of the doc's
+headings. A link moved points where it did, at the doc, or at a new page.
+Give each new page the doc's header, and nothing else in it: its
+` + "`checked`" + ` as it is — the lines moved are the lines it vouched for —
+and those of its ` + "`sources`" + ` the page speaks of; none if the doc has
+none. One patch, a unified diff; a new page is created with --- /dev/null
+and +++ b/<path>.
 
 A new page among the user pages answers to the reader rules (paragraphs and
 cells within their word budget, every decision, doc or issue it names linked,
 reachable from the docs), and the patch is refused for each problem it adds.
 `)
-	fmt.Fprintf(&b, "\nA new page holds at least %d words: a smaller part stays in the doc, or goes with its neighbour.\n", s.PageWords)
+	fmt.Fprintf(&b, "\nA new page, and the doc left behind, hold at least %d words: a smaller part stays in the doc, or goes with its neighbour.\n", s.PageWords)
 	in := inbound(t, c.Doc)
 	if len(in) > 0 {
 		b.WriteString("\nThese lines of other docs link to its parts. A link to a part you move points at its new page: change where it points, and nothing else in those docs:\n\n")
@@ -166,7 +172,8 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 		files[f] = true
 	}
 	var created []string
-	linking := inbound(tree, c.Doc)
+	ours := func(file string) bool { return file == c.Doc || contains(created, file) }
+	linking, relinks := inbound(tree, c.Doc), map[string]string{}
 	for _, in := range intents {
 		if in.Kind != "patch" || isFallback(in, fallback) {
 			continue
@@ -200,14 +207,11 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 				after[f.path] = now
 			case linking[f.path] != nil:
 				now, bad, why := applyDoc(after[f.path], f, diff)
-				if bad == "" && !relinked(after[f.path], now) {
-					bad, why = "rewritten", "a doc linking to a part that moves changes where those links point, nothing else"
-				}
 				if bad != "" {
 					refuse(bad, f.path, why)
 					continue
 				}
-				after[f.path] = now
+				relinks[f.path], after[f.path] = after[f.path], now
 			case isNew && strings.HasSuffix(f.path, ".md") && matchAny(s.Docs, f.path):
 				var lines []string
 				for _, h := range f.hunks {
@@ -235,47 +239,83 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 	if len(created) == 0 {
 		return []verdict.Finding{{Rule: "nothing-moved", Where: c.Doc, Message: "a split moves parts into new pages; none was created"}}, nil
 	}
-	for _, p := range created { // a page this small is a fragment: it stays with its neighbour
+	// A page this small is a fragment, the doc left behind included: what
+	// is left stays a page, or a section moved whole one night moves again
+	// the next, leaving a stub each time.
+	for _, p := range append([]string{c.Doc}, created...) {
 		_, n := docmark.Header(after[p])
 		if w := words(strings.Join(strings.Split(after[p], "\n")[n:], "\n")); w < s.Budgets.PageWords {
-			refuse("page-too-small", p, fmt.Sprintf("%d words, under the %d a page holds (`budgets.page-words`): a part this small stays in the doc, or goes with its neighbour", w, s.Budgets.PageWords))
+			refuse("page-too-small", p, fmt.Sprintf("%d words, under the %d a page holds (`budgets.page-words`): a part this small stays in the doc, or goes with its neighbour, and the doc keeps a page of its own", w, s.Budgets.PageWords))
 		}
 	}
-	// Moved, not rewritten.
-	moved := map[string]bool{}
-	for _, p := range created {
-		for _, l := range strings.Split(after[p], "\n") {
-			moved[normal(l)] = true
+	hb, _ := docmark.Header(tree.Docs[c.Doc])
+	if ha, _ := docmark.Header(after[c.Doc]); ha != hb {
+		refuse("rewritten", c.Doc, "a split leaves the doc's header as it is")
+	}
+	// Moved, not rewritten: each line of the doc is found once, in the doc
+	// or a new page, its links pointing where they did, at the doc, or at a
+	// new page. Nothing is written anew but headings made of the doc's
+	// headings' words, and pointers: short paragraphs linking to the doc or
+	// a new page.
+	pool, heads := map[string][]string{}, map[string]bool{} // a line as a split may move it -> the doc's lines so written
+	for _, l := range scan(tree.Docs[c.Doc]) {
+		pool[normal(l.text)] = append(pool[normal(l.text)], l.text)
+		for _, w := range headWords(l) {
+			heads[w] = true
 		}
 	}
-	kept := map[string]int{}
-	for _, l := range strings.Split(after[c.Doc], "\n") {
-		kept[normal(l)]++
-	}
-	was := map[string]int{}
-	for _, l := range strings.Split(tree.Docs[c.Doc], "\n") {
-		was[normal(l)]++
-	}
-	var gained []string // lines the doc did not have: the links, and references updated in place
-	for _, l := range strings.Split(after[c.Doc], "\n") {
-		if n := normal(l); was[n] > 0 {
-			was[n]--
-		} else {
-			gained = append(gained, n)
+	var gained []string
+	pointers := map[string]bool{} // a page and a pointer's line
+	for _, p := range append([]string{c.Doc}, created...) {
+		var para []string
+		pointer := func() {
+			text := strings.Join(para, " ")
+			targets := linkTargets(text)
+			ok := len(targets) > 0 && words(text) <= pointerWords && !rule.MatchString(text)
+			for _, t := range targets {
+				file, _ := resolve(p, t)
+				ok = ok && !scheme.MatchString(t) && ours(file) && file != p
+			}
+			for _, l := range para {
+				pointers[p+"\x00"+l] = ok
+			}
+			if len(para) > 0 && !ok {
+				refuse("written-anew", p, fmt.Sprintf("%q is written anew: a split adds only a pointer, at most %d words linking to the doc or a new page, and no MUST or SHOULD", strings.TrimSpace(text), pointerWords))
+			}
+			para = nil
 		}
+		for _, l := range scan(after[p]) {
+			n := normal(l.text)
+			switch raws := pool[n]; {
+			case n == "":
+				pointer()
+			case len(raws) > 0:
+				i := max(0, slices.Index(raws, l.text))
+				if !retargeted(c.Doc, raws[i], p, l.text, ours) {
+					refuse("link-retargeted", p, fmt.Sprintf("%q: a link moved points where it did, at the doc, or at a new page", strings.TrimSpace(l.text)))
+				}
+				pool[n] = slices.Delete(raws, i, i+1)
+				pointer()
+			case l.heading > 0 && !l.code:
+				pointer()
+				if slices.ContainsFunc(headWords(l), func(w string) bool { return !heads[w] }) {
+					refuse("written-anew", p, fmt.Sprintf("%q: a new heading is made of the words of the doc's headings", strings.TrimSpace(l.text)))
+				}
+			default:
+				para, gained = append(para, l.text), append(gained, n)
+			}
+		}
+		pointer()
 	}
-	for _, l := range strings.Split(tree.Docs[c.Doc], "\n") {
-		n := normal(l)
-		if n == "" {
-			continue
-		}
-		if kept[n] > 0 {
-			kept[n]--
-			continue
-		}
-		if !moved[n] && !editedInPlace(n, gained) {
-			refuse("rewritten", c.Doc, fmt.Sprintf("%q left the doc and is found in no new doc; move lines as they are", strings.TrimSpace(l)))
+	for _, l := range scan(tree.Docs[c.Doc]) {
+		if n := normal(l.text); n != "" && len(pool[n]) > 0 && !editedInPlace(n, gained) {
+			refuse("rewritten", c.Doc, fmt.Sprintf("%q left the doc and is found in no new doc; move lines as they are", strings.TrimSpace(l.text)))
 			break
+		}
+	}
+	for _, p := range slices.Sorted(maps.Keys(relinks)) {
+		if !relinked(p, relinks[p], after[p], ours) {
+			refuse("rewritten", p, "a doc linking to a part that moves changes where those links point, to the part's new page, nothing else")
 		}
 	}
 	// No rule lost.
@@ -323,47 +363,41 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 		if !part || !contains(created, doc) {
 			return false
 		}
-		key := p.Rule + "\x00" + partText(after[doc], p.Where)
+		var text []string // a pointer back to the doc does not make the part another
+		for _, l := range strings.Split(after[doc], "\n") {
+			if !pointers[doc+"\x00"+l] {
+				text = append(text, l)
+			}
+		}
+		key := p.Rule + "\x00" + partText(strings.Join(text, "\n"), p.Where)
 		if gone[key] == 0 {
 			return false
 		}
 		gone[key]--
 		return true
 	}
-	// A split may grow its folder by the lines linking to a new page,
-	// headings, blank lines and headers, never by prose written anew; and
-	// the doc and its pages hold no more links to other sites than the doc.
+	// The lines written anew checked above, the folder grows by headers,
+	// headings and pointers alone, and the links to other sites are those
+	// the doc held, moved unchanged.
 	pages := append([]string{c.Doc}, created...)
-	prose := func(docs map[string]string, in []string) (n int) {
-		for _, f := range in {
-			for _, l := range scan(docs[f]) {
-				if strings.TrimSpace(l.text) != "" && l.heading == 0 && !slices.ContainsFunc(created, func(p string) bool { return linksFrom(f, l.text)[p] }) {
-					n++
-				}
-			}
-		}
-		return n
-	}
-	external := 0
-	for _, p := range found {
-		if p.Rule == "links-not-checked" && contains(pages, p.Where) {
-			external += p.Size
-		}
-	}
-	grew := prose(after, pages) > prose(tree.Docs, pages[:1])
 	for _, p := range found {
 		switch prev, was := old[p.Key]; {
 		case contains(c.Keys, p.Key):
 			refuse("still-over-budget", p.Where, p.Rule+": "+p.Message)
 		case !was && movedWhole(p):
-		case p.Rule == "folder-too-long" && p.Where == path.Dir(c.Doc) && !grew:
-		case p.Rule == "links-not-checked" && contains(pages, p.Where) && external <= old["links-not-checked "+c.Doc].Size:
+		case p.Rule == "folder-too-long" && p.Where == path.Dir(c.Doc):
+		case p.Rule == "links-not-checked" && contains(pages, p.Where):
 		case !was || p.Size > prev.Size:
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
 	}
-	// The user pages too: a new page among them answers to the reader rules.
-	for _, p := range readerIntroduced(tree, Tree{Docs: after, Files: files}, s.Reader) {
+	// The user pages too: a new page among them answers to the reader rules,
+	// counted with the doc, a line moved taking its problem with it.
+	as := map[string]string{}
+	for _, p := range created {
+		as[p] = c.Doc
+	}
+	for _, p := range readerIntroduced(tree, Tree{Docs: after, Files: files}, s.Reader, as) {
 		refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 	}
 	return refused, nil
@@ -414,6 +448,13 @@ func bornHeader(doc, page string) (rule, why string) {
 		return "checked-unread", fmt.Sprintf("the new page's `checked` must be the doc's, as it is (%q): the lines moved are the lines it vouched for, and no other", checkedOf(doc))
 	}
 	_ = yaml.Unmarshal([]byte(dm), &d) // a broken header is reported by ParseDoc
+	var keys map[string]yaml.Node
+	_ = yaml.Unmarshal([]byte(pm), &keys)
+	for k := range keys {
+		if k != "checked" && k != "sources" {
+			return "header-not-carried", "the new page's header holds `" + k + "`: a page split off carries the doc's `checked` and `sources` alone, what the engine sets; who verified or judged the doc did not do it for this page"
+		}
+	}
 	for _, src := range p.Sources {
 		if !slices.Contains(d.Sources, src) {
 			return "sources-not-carried", "the new page names " + src + " in `sources`, which the doc does not: a page split off speaks of the doc's sources"
@@ -425,9 +466,46 @@ func bornHeader(doc, page string) (rule, why string) {
 	return "", ""
 }
 
-// relinked says whether a doc changed only where its links point.
-func relinked(old, now string) bool {
-	return slices.EqualFunc(strings.Split(old, "\n"), strings.Split(now, "\n"), func(a, b string) bool { return normal(a) == normal(b) })
+// relinked says whether doc changed only where its links point, and to
+// where ok allows.
+func relinked(doc, old, now string, ok func(file string) bool) bool {
+	return slices.EqualFunc(strings.Split(old, "\n"), strings.Split(now, "\n"), func(a, b string) bool {
+		return normal(a) == normal(b) && retargeted(doc, a, doc, b, ok)
+	})
+}
+
+// retargeted says whether the links of a line, moved from one doc to
+// another, point where they did — the same file and anchor, a link to
+// another site unchanged — or at a file ok allows.
+func retargeted(from, old, to, now string, ok func(file string) bool) bool {
+	was, is := linkTargets(old), linkTargets(now)
+	for i := range min(len(was), len(is)) {
+		fw, aw := resolve(from, was[i])
+		fi, ai := resolve(to, is[i])
+		switch {
+		case scheme.MatchString(was[i]) || scheme.MatchString(is[i]):
+			if was[i] != is[i] {
+				return false
+			}
+		case fw != fi || aw != ai:
+			if !ok(fi) {
+				return false
+			}
+		}
+	}
+	return len(was) == len(is)
+}
+
+// pointerWords bounds what a split writes: a paragraph linking to a page
+// (the task says 30).
+const pointerWords = 30
+
+// headWords are the words of a heading, lowercased, or none.
+func headWords(l line) []string {
+	if l.heading == 0 || l.code {
+		return nil
+	}
+	return strings.FieldsFunc(strings.ToLower(l.text), func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
 }
 
 // editedInPlace says whether a line left the doc only to come back changed a
@@ -466,9 +544,15 @@ func partText(content, where string) string {
 }
 
 // normal is a line as a split may move it: trimmed, a heading at any level,
-// and its links pointing anywhere.
+// and its links, inline or defined, pointing anywhere; their titles stay.
 func normal(l string) string {
-	return inlineLink.ReplaceAllString(strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(l), "#")), "]()")
+	l = strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(l), "#"))
+	if m := refLink.FindStringSubmatchIndex(l); m != nil {
+		l = l[:m[2]] + l[m[3]:]
+	}
+	return inlineLink.ReplaceAllStringFunc(l, func(m string) string {
+		return strings.Replace(m, inlineLink.FindStringSubmatch(m)[1], "", 1)
+	})
 }
 
 // linksFrom lists the files of the repository a doc links to.

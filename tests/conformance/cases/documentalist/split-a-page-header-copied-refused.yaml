@@ -1,0 +1,16 @@
+case: documentalist/split-a-page-header-copied-refused
+about: "A page split off carries the doc's `checked` and `sources` alone, what the engine sets for it: a new page copying who verified the doc is refused (`header-not-carried`), and the doc stays as it was."
+given:
+  repo: untidy
+  # as split-a-page-and-its-links
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && sed -i \"s|^they had not saved.*|& See [the spec](https://example.com/token).|\" docs/sessions.md && git commit -qam 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && git add .workline docs/sessions.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:split-a-page-copies-the-header"}
+expect:
+  status: pass   # refused, said as a warning, not failed: on schedule
+  applied: []
+  findings:
+    - {rule: header-not-carried, where: docs/sessions-length.md, message: verified}
+  files:
+    docs/sessions.md: {contains: "A session lasts"}

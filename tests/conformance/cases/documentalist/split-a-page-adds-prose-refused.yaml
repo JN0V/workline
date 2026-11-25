@@ -1,5 +1,5 @@
 case: documentalist/split-a-page-adds-prose-refused
-about: "A split may grow its folder only by the lines linking to a new page, headings, blank lines and headers, and its links to other sites only by those moved: a new page gaining a line of prose written anew, with a link to another site, is refused on both counts, and the doc stays as it was."
+about: "A split writes nothing anew but pointers to its pages and headings made of the doc's headings' words, whatever its folder's size: a new page gaining a line of prose, with a link to another site, is refused (`written-anew`), and the doc stays as it was."
 given:
   repo: untidy
   # as split-a-page-and-its-links, the docs folder over its budget already
@@ -11,7 +11,6 @@ expect:
   status: pass   # refused, said as a warning, not failed: on schedule
   applied: []
   findings:
-    - {rule: patch-introduces, where: docs, message: folder-too-long}
-    - {rule: patch-introduces, where: docs/sessions-length.md, message: links-not-checked}
+    - {rule: written-anew, where: docs/sessions-length.md, message: "Ask [the team]"}
   files:
     docs/sessions.md: {contains: "A session lasts"}

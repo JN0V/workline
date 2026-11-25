@@ -124,18 +124,34 @@ func ReaderChecks(t Tree, r Reader) []Problem {
 // readerIntroduced are the reader problems the tree after a patch holds that
 // the tree before did not, or holds larger: what a patch adds to the user
 // pages, so a judge that promises "no new problem" counts them too. A missing
-// setting is no patch's doing.
-func readerIntroduced(before, after Tree, r Reader) []Problem {
-	old := map[string]Problem{}
-	for _, p := range ReaderChecks(before, r) {
-		old[p.Key] = p
-	}
-	var out []Problem
-	for _, p := range ReaderChecks(after, r) {
-		if p.Rule == "setting-missing" {
-			continue
+// setting is no patch's doing. A page named in as is counted as the page it
+// names: a split's new pages as its doc, a line moved taking its problem with
+// it.
+func readerIntroduced(before, after Tree, r Reader, as map[string]string) []Problem {
+	count := func(t Tree) (map[string]Problem, []string) {
+		out, keys := map[string]Problem{}, []string{}
+		for _, p := range ReaderChecks(t, r) {
+			if p.Rule == "setting-missing" {
+				continue
+			}
+			p.Size = max(p.Size, 1)
+			if doc, ok := as[p.Where]; ok {
+				p.Key = p.Rule + " " + doc
+			}
+			if q, was := out[p.Key]; was {
+				p.Size += q.Size
+			} else {
+				keys = append(keys, p.Key)
+			}
+			out[p.Key] = p
 		}
-		if prev, was := old[p.Key]; !was || p.Size > prev.Size {
+		return out, keys
+	}
+	old, _ := count(before)
+	now, keys := count(after)
+	var out []Problem
+	for _, k := range keys {
+		if p, prev := now[k], old[k]; p.Size > prev.Size {
 			out = append(out, p)
 		}
 	}

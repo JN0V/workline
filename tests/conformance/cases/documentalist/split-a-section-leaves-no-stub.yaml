@@ -1,0 +1,14 @@
+case: documentalist/split-a-section-leaves-no-stub
+about: "A split leaves the doc a page of its own: a section moved whole out of a page that holds little else, leaving it under `budgets.page-words`, is refused (`page-too-small`), or the section would move again each night, a stub left behind each time."
+given:
+  repo: untidy
+  # no doc over its line budget: the section over its word budget is the one to split, and nearly all the page holds
+  setup:
+    - "git rm -q docs/faq.md && sed -i 's/sessions.md#how-long-a-session-lasts/sessions.md/' docs/auth.md && sed -i 's/doc-lines: 10/doc-lines: 100/; s/page-words: 3/page-words: 20/; s/root-agent-file-lines: 5/root-agent-file-lines: 10/' .workline/config.yaml && sed -i '/^## Signing out/,$d' docs/sessions.md && git commit -qam 'docs: drop the faq and signing out'"
+run: {role: documentalist, event: schedule, ai: "fake:condense-moves-a-long-section"}
+expect:
+  status: pass   # refused, said as a warning, not failed: on schedule
+  applied: []
+  findings: [{rule: page-too-small, where: docs/sessions.md}]
+  files:
+    docs/sessions.md: {contains: "A session lasts"}

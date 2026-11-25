@@ -1,0 +1,15 @@
+case: documentalist/split-a-page-reference-link-follows
+about: "A reference-style link to a part that moves follows it as an inline one does: its definition alone changes where it points, and the split is applied."
+given:
+  repo: untidy
+  # as split-a-page-and-its-links, docs/auth.md linking to the part by a reference
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && sed -i \"s|^they had not saved.*|& See [the spec](https://example.com/token).|\" docs/sessions.md && git commit -qam 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && sed -i 's|\\[sessions\\](sessions.md#how-long-a-session-lasts)|[sessions][s]|' docs/auth.md && printf '\\n[s]: sessions.md#how-long-a-session-lasts\\n' >> docs/auth.md && git add .workline docs/sessions.md docs/auth.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:split-a-page-reference-link"}
+expect:
+  status: pass
+  applied: [patch]
+  files:
+    docs/sessions.md: {lacks: "A session lasts"}
+    docs/auth.md: {contains: "[s]: sessions-length.md#how-long-a-session-lasts"}

@@ -1,0 +1,15 @@
+case: documentalist/split-a-page-pointer-on-two-lines
+about: "In a folder over its budget, a split may still leave a pointer wrapped on two lines in the part's place, and a link back to the doc in the new page: they are pointers, not prose written anew."
+given:
+  repo: untidy
+  # as split-a-page-adds-prose-refused: the docs folder over its budget already
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && sed -i \"s|^they had not saved.*|& See [the spec](https://example.com/token).|\" docs/sessions.md && git commit -qam 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && sed -i 's/folder-lines: 30/folder-lines: 24/' .workline/config.yaml && git add .workline docs/sessions.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:split-a-page-two-line-pointer"}
+expect:
+  status: pass
+  applied: [patch]
+  files:
+    docs/sessions.md: {lacks: "A session lasts"}
+    docs/sessions-length.md: {contains: "Part of [the sessions](sessions.md)."}
