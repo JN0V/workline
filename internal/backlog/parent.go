@@ -561,13 +561,3 @@ func closerName(c forge.Closer) string {
 func cell(s string) string {
 	return strings.ReplaceAll(squeeze(s), "|", `\|`)
 }
-
-// sortedIDs are the numbers of the issues given, lowest first.
-func sortedIDs(issues map[int]forge.Issue) []int {
-	ids := make([]int, 0, len(issues))
-	for id := range issues {
-		ids = append(ids, id)
-	}
-	slices.Sort(ids)
-	return ids
-}

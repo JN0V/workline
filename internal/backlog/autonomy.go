@@ -367,12 +367,3 @@ func (m KindMode) Say() string {
 	}
 	return what
 }
-
-// ModesLine says every kind's mode on one line, for the report.
-func ModesLine(modes []KindMode) string {
-	var parts []string
-	for _, m := range modes {
-		parts = append(parts, m.Kind+": "+m.Say())
-	}
-	return strings.Join(parts, "; ")
-}
