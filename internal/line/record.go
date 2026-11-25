@@ -328,7 +328,9 @@ func holdsSpecMark(c string) bool {
 // the developer takes it with no tester's Draft (wip.go, personReady).
 func PersonReady(comments []string) bool {
 	r, had := recordIn(comments)
-	return had && r.Person != ""
+	// Only on the labelling the record was written on: a ready that moved
+	// on since (a new labelling) is no longer that person's.
+	return had && r.Person != "" && r.Person == r.Labeled
 }
 
 // recordIn is the line's record among an issue's comments.
@@ -476,7 +478,9 @@ func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec str
 		now.Timeout = rec.Timeout                 // a delay passed wakes the role once in its state
 	}
 	now.Retest, now.RetestKept = rec.Retest, rec.RetestKept // a move to its tests stays known through the states after
-	now.Person = rec.Person                                 // a person's ready kept stays known, said once
+	if rec.State == now.State {
+		now.Person = rec.Person // a person's ready kept stays known, said once; gone when the issue leaves ready
+	}
 	if rec.State == BlockedState {
 		now.Hops = 0 // a person moved it out of Blocked: its count starts again
 	}
