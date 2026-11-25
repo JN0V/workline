@@ -23,6 +23,8 @@ keeps open ([ADR-0017](adr/0017-the-release-manager.md)). The line runs a
 release only once it was tried on a copy
 ([ADR-0071](adr/0071-the-line-runs-a-pinned-release-tried-on-a-copy.md)).
 1.0 follows the same path, with one more step: asking for the version.
+This page is for workline's maintainer: it names workline's own
+repositories.
 What 1.0 is: [ADR-0052](adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted).
 
 ## 1. Freeze
@@ -35,13 +37,16 @@ Each a check, before asking for the version:
   [tester](../roles/tester/docs/status.md),
   [developer](../roles/developer/docs/status.md) and
   [reviewer](../roles/reviewer/docs/status.md).
-- **The items marked "before"** in
-  [ADR-0052's list](adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted)
-  closed; the [v1.0 milestone](https://github.com/JN0V/workline/milestone/1)
-  holds no open issue marked "before".
+- **The "before" rows closed**: those of
+  [ADR-0052's table](adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-15-v10-is-the-v1-accepted),
+  and [#1556](https://github.com/JN0V/workline/issues/1556).
 - **The layout final**: [ADR-0070](adr/0070-a-new-role-runs-from-its-files-on-a-shared-pre-and-post.md)'s
   moves merged; nothing left to rename or move.
-- **User docs at 0 suspect** on `main`.
+- **User docs at 0 suspect** on `main`: no report gives this count.
+  The measure is `workline docs --ai none --since <first commit>` on a
+  clone of `main`, counting the docs it lists outside `docs/spec/`,
+  `docs/adr/` and `docs/research/`. A push's `docs suspect: N` counts
+  only what that push touched.
 - **Nothing holds the release**: no open issue labelled
   `workline:hold-release`, `main`'s checks green
   ([what holds a release](release-holds.md)).
@@ -50,30 +55,39 @@ Each a check, before asking for the version:
 
 ## 2. Ask for 1.0.0
 
-release-please would cut 0.91.0 next: before 1.0, a feature moves the
+release-please would cut the next 0.x: before 1.0, a feature moves the
 minor version. It takes 1.0.0 when asked.
 
-- **Not by a commit footer**: release-please reads `Release-As:` in a
-  commit's body, but `main` takes squash merges with a blank body. A
-  footer written in a branch's commit never reaches `main`.
-- **By its config**, one pull request, `chore: release 1.0.0 next`:
-  `"release-as": "1.0.0"` in the `"."` package of
-  [release-please-config.json](../release-please-config.json).
+- **Not by a branch's commit footer**: `main` takes squash merges with
+  a blank body, so a footer in a branch's commit never reaches it.
+- **By an override block in the pull request's body**: release-please
+  reads the merged pull request's body, and a
+  `BEGIN_COMMIT_OVERRIDE` block there replaces the commit's message.
+  One pull request, its body ending with:
+
+  ```text
+  BEGIN_COMMIT_OVERRIDE
+  chore: release 1.0.0
+
+  Release-As: 1.0.0
+  END_COMMIT_OVERRIDE
+  ```
+
+- **No config change**, nothing to take out after.
 - **Accepted with the maintainer's label**, as any pull request.
 - **On its merge**, release-please rewrites its open pull request as
   `chore(main): release 1.0.0`.
 
 ## 3. The release pull request
 
-- **Read it**: its title says 1.0.0; CHANGELOG.md and the templates'
-  `WORKLINE_VERSION` move to `v1.0.0`; nothing else.
+- **Read it**: its title says 1.0.0; it changes CHANGELOG.md,
+  `.release-please-manifest.json`, the templates' `WORKLINE_VERSION`
+  under `defaults/ci/` and
+  [without-template.md](gitlab/without-template.md); nothing else.
 - **Its checks green**, then the maintainer's label `workline:accepted`.
 - **On its merge**: release-please tags `v1.0.0` and writes the notes;
   [release.yml](../.github/workflows/release.yml) publishes the binaries
   and the image.
-- **At once after**, one pull request takes `release-as` out of the
-  config: left in, every later release pull request asks for 1.0.0
-  again.
 
 ## 4. The try on the trial copy
 
@@ -84,8 +98,13 @@ minor version. It takes 1.0.0 when asked.
   waits; the maintainer labels it there. The script never labels.
 - **Then a canned bug** goes through the copy's line to a merge by
   policy, no person's act.
-- **Green (exit 0)**: keep the two links it prints. Red: no pin; fix,
-  release 1.0.1, try again.
+- **Green (exit 0)**: of the links it prints, the pin needs two: the
+  copy's merged upgrade pull request and the canned bug's merged one.
+- **Red because of the release** (its download, `workline doctor`, the
+  upgrade's checks): no pin; fix, release 1.0.1, try again.
+- **Red of the try itself** (a command failed, a wait ran out), or
+  **waiting on the person (exit 2)**: run it again on the same version;
+  it finds the pull request and the issue it made.
 - **`--dry-run`** prints the plan and calls no forge.
 
 ## 5. The pin on workline
@@ -117,8 +136,10 @@ On [DomoticsCore](https://github.com/JN0V/DomoticsCore) and
   on any repository), what comes after, links to
   [ADR-0052](adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md) and
   [the roles](roles.md).
-- **The v1.0 milestone closed**; its issues marked "after" moved to the
-  next one.
+- **The [v1.0 milestone](https://github.com/JN0V/workline/milestone/1)
+  closed**, [#264](https://github.com/JN0V/workline/issues/264) moved
+  out of it first.
 - **Versions from now on**: a fix moves the patch, a feature the minor;
-  a breaking change (`feat!:` or a `BREAKING CHANGE:` footer) makes
-  2.0.0. Say it to whoever contributes.
+  a breaking change makes 2.0.0. On `main` that is a `!` in the pull
+  request's title (`feat!:`), or an override block in its body holding
+  a `BREAKING CHANGE:` footer; a footer in a branch's commit is lost. Say it to whoever contributes.
