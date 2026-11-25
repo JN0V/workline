@@ -45,6 +45,49 @@ func TestGitHubSquashOnly(t *testing.T) {
 	}
 }
 
+// squashAnswer runs github.Squash against a gh that answers the given
+// repository settings, and returns what it read.
+func squashAnswer(t *testing.T, repository map[string]any) Squash {
+	t.Helper()
+	bin := t.TempDir()
+	answer, _ := json.Marshal(map[string]any{"data": map[string]any{"repository": repository}})
+	script := "#!/bin/sh\ncat <<'EOF'\n" + string(answer) + "\nEOF\n"
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	got, err := (&github{repo: t.TempDir()}).Squash(7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return got
+}
+
+// Missing setting: given GitHub returns no squashMergeCommitMessage, when
+// Squash reads the repository, then squash is on but not the only way
+// that keeps the branch's commits out, so subjects still block.
+func TestGitHubSquashOnlyMissingMessage(t *testing.T) {
+	got := squashAnswer(t, map[string]any{
+		"squashMergeAllowed": true, "squashMergeCommitTitle": "PR_TITLE",
+		"mergeCommitAllowed": false, "rebaseMergeAllowed": false})
+	if !got.On || got.Only {
+		t.Errorf("no squashMergeCommitMessage: %+v, want on true only false", got)
+	}
+}
+
+// Empty setting: given GitHub returns an empty squashMergeCommitMessage,
+// when Squash reads the repository, then only is false, so subjects
+// still block.
+func TestGitHubSquashOnlyEmptyMessage(t *testing.T) {
+	got := squashAnswer(t, map[string]any{
+		"squashMergeAllowed": true, "squashMergeCommitTitle": "PR_TITLE",
+		"mergeCommitAllowed": false, "rebaseMergeAllowed": false,
+		"squashMergeCommitMessage": ""})
+	if !got.On || got.Only {
+		t.Errorf("empty squashMergeCommitMessage: %+v, want on true only false", got)
+	}
+}
+
 // GitLab squashes only when its squash option is "always", its template
 // quoting no commit.
 func TestGitLabSquashOnly(t *testing.T) {
