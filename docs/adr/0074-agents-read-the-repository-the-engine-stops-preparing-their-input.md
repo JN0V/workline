@@ -169,6 +169,8 @@ or fewer, with no new setting; step 1 may land with step 2.
 | 7 | The judges, the reviewer's and the tester's, read the tree. **Needs the maintainer's yes** | `roles/reviewer/code/reach.go`, `reads.go` (958), but `quoted` and `answerIn`; `ServeReads` (`internal/contract/review.go`, its check in `contract.go`); the reviewer's `judge-lines-max`, `judge-read-rounds`, `judge-read-lines-max`, `tests-lines-max`; the tester's `judge-read-rounds`, `judge-read-lines-max` | 32 of the judge's 40 replayed questions right, or more ([ADR-0045]) |
 | 8 | The tester's seed and the spec review's material go. **Needs the maintainer's yes** | `internal/kit/codepick`, `internal/codenav` (3,208); the tester's `code-lines-max` and `needs.go`; the packs' code-navigation rows; `TieredSettings` in `internal/role/tier.go` | The tester's cases, no worse, a `cmd:` agent's too |
 
+## What a step leaves
+
 - **The counts are ceilings**: lines of the whole files at
   `af68b1bb5`, 6,122 over steps 2, 3, 7 and 8, and 7,183 with step 6.
   What another caller uses stays, moved.
