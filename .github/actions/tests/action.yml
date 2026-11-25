@@ -1,6 +1,7 @@
 # The tools workline's own tests need beyond Go, from their releases,
 # checksums verified: one list for the test job and for each job where a
-# role runs the tests (the developer's proof, the tester's). A tool missing there turns a test red on the proof alone.
+# role runs the tests (the developer's proof, the tester's). A tool
+# missing there turns a test red on the proof alone.
 # workline's own workflows only.
 name: workline tests' tools
 description: The tools workline's own tests need beyond Go, pinned, checksums verified.

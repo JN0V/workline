@@ -94,7 +94,7 @@ completed:
 | Product owner | `did` in the issue's state | `at`, the commit read at; `model`; `body`, a digest of the text read |
 | Reviewer | its summary comment | a hidden line per finding judged — lens, place, commit, yes or no, both models — kept for the merge request's life, on every forge |
 | Committer | the commit and its diff | trailers `Workline-Role: committer` and `Workline-Model`; never the author's words |
-| Tester | its merge requests merged: its commits, the record on its Draft, its replies, the curator's pull request | the scenarios read, in the record; a hidden line per answer — the commit read at, the models, the scenario, a rewrite's blob |
+| Tester | its merge requests merged: its commits, the record on its Draft, its replies, the curator's pull request (removed on 2026-11-25) | the scenarios read, in the record; a hidden line per answer — the commit read at, the models, the scenario, a rewrite's blob |
 | Developer | its merge requests merged: its commits, the record on its pull request | trailers `Workline-Role: developer` and `Workline-Model`; the record's proof |
 
 - **A commit gone from `main`**, as in W41: fetched from the forge's ref
