@@ -31,6 +31,7 @@ type CheckRun struct {
 // still guarding the merge.
 func sumRuns(runs []CheckRun) string {
 	latest := map[string]string{} // each check's latest run not cancelled
+	live := map[string]bool{}     // each check with a run not cancelled
 	var names []string
 	for _, r := range runs {
 		if _, seen := latest[r.Name]; !seen {
@@ -39,10 +40,16 @@ func sumRuns(runs []CheckRun) string {
 		}
 		if r.State != "cancelled" {
 			latest[r.Name] = r.State
+			live[r.Name] = true
 		}
 	}
 	sum := ""
 	for _, n := range names {
+		// The line's own run, cancelled when a newer label replaces it, is
+		// no check of the change (#2122).
+		if !live[n] && (n == "follow" || n == "workline merge") {
+			continue
+		}
 		switch state := latest[n]; {
 		case state == "failure":
 			return "failure"

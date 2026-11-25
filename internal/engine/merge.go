@@ -1324,6 +1324,9 @@ func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, s
 		if acted, err := e.upToDate(st.Behind && st.Checks == "success", "its auto-merge on since "+st.AutoMergeAt); acted || err != nil {
 			return e, err
 		}
+		if st.Behind && st.Checks != "success" {
+			say("behind-not-updated", "", fmt.Sprintf("%s; behind %s and held by the forge, but not updated: its checks are not all green (%s)", who, mr.Base, st.Checks))
+		}
 		return e, heldByConversations(m, mr, tip, st, say, who)
 	}
 	merged, err := m.AutoMerge(mr, tip, true)
