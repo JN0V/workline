@@ -619,7 +619,7 @@ jobs:
         env: {STATUS: "${{ steps.round.outputs.status }}"}
         run: |
           if [ "$STATUS" = 3 ]; then
-            echo "::warning title=workline::the agent could not be reached; the review waits for the next verdict"
+            echo "::warning title=workline::the agent could not be reached: no round run nor counted; the next verdict, or a comment on the pull request, asks the findings again"
             exit 0
           fi
           exit "${STATUS:-0}"

@@ -1,8 +1,8 @@
 case: developer/round-three-agent-unreachable-not-counted
 about: >
   At round three, the five whys owed, a round whose agent could not be
-  reached and that changed nothing is no round either: blocked-external,
-  nothing counted nor posted, and its empty answer is not refused for
+  reached and that changed nothing is no round either: nothing counted,
+  one line said, and its empty answer is not refused for
   lacking the five whys.
 given:
   repo: tested-draft
@@ -30,7 +30,7 @@ given:
           - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| **blocks** | correctness | `lib.sh:2` | Important: mul adds its operands — mul 2 3 gives 5, not 6. Fix: multiply. |\n\n<!-- workline:findings [{\"lens\":\"correctness\",\"holds\":\"blocks\",\"where\":\"lib.sh:2\",\"severity\":\"Important\",\"text\":\"mul adds its operands — mul 2 3 gives 5, not 6. Fix: multiply.\"}] -->\n<!-- workline:record reviewed=1111111 runs=3 -->\n<!-- workline:sticky=reviewer/summary -->"
 run: {develop: [--merge-request, "2"], ai: "unavailable:quota"}
 expect:
-  status: blocked-external
+  status: pass
   findings: [{rule: round-not-run, where: "merge request 2", message: "no round counted"}]
   no-findings: [{rule: five-whys-missing}, {rule: no-code}]
   not-pushed: [workline/developer/3]
@@ -38,3 +38,4 @@ expect:
     merge-requests:
       - id: 2
         comment-lacks: ["review round 3 of 5"]
+        comment-contains: ["review round 3 not run"]

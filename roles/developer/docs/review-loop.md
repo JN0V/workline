@@ -59,9 +59,9 @@ step 6).
   Red, it is pushed still and said: the forge's checks and the
   reviewer read it next. A fix that changes nothing pushes nothing;
   the round is counted still, its agent's notes said.
-  - Unless its agent could not be reached and changed and said
-    nothing: no round counted, nothing posted, the run
-    `blocked-external`; the next run asks the findings again
+  - Unless its agent could not be reached, spent nothing, and changed
+    and said nothing: no round counted, one line said on the pull
+    request, edited each time; the next run asks the findings again
     (`round-not-run`).
 - **Its record**: one comment on the pull request says each round, what
   was asked and how it ended; its hidden line, for the next run and

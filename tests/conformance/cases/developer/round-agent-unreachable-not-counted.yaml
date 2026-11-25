@@ -2,8 +2,8 @@ case: developer/round-agent-unreachable-not-counted
 about: >
   A round whose agent could not be reached (its provider overloaded, its
   quota spent), and that changed nothing nor said anything, did not
-  happen: no round is counted, nothing posted, the run ends
-  blocked-external; the next run asks the findings again, its rounds all
+  happen: no round is counted, one line said on the pull request, edited
+  each time; the next run asks the findings again, its rounds all
   left (DomoticsCore #239).
 given:
   repo: tested-draft
@@ -31,7 +31,7 @@ given:
           - "**workline reviewer**\n\n| | | Where | Finding |\n|---|---|---|---|\n| **blocks** | correctness | `lib.sh:2` | Important: mul may overflow — Fix: check it. |\n\n<!-- workline:findings [{\"lens\":\"correctness\",\"holds\":\"blocks\",\"where\":\"lib.sh:2\",\"severity\":\"Important\",\"text\":\"mul may overflow — Fix: check it.\"}] -->\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
 run: {develop: [--merge-request, "2"], ai: "unavailable:quota"}
 expect:
-  status: blocked-external
+  status: pass
   findings: [{rule: round-not-run, where: "merge request 2", message: "no round counted"}]
   no-findings: [{rule: no-code}]
   not-pushed: [workline/developer/3]
@@ -39,3 +39,4 @@ expect:
     merge-requests:
       - id: 2
         comment-lacks: ["review round 1 of 5", "\"round\":1"]
+        comment-contains: ["review round 1 not run", "its agent could not be reached (agent unavailable: quota)", "workline:sticky=developer/round-not-run"]
