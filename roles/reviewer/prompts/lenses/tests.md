@@ -11,7 +11,8 @@ judge:
     asserts nothing of that behaviour, when it would pass without the
     change it is meant to prove, or when it reads the code's text (a
     search in the source) where its own name or scenario asks a
-    behaviour, not a text the change writes (a doc, a message).
+    behaviour, not a text the change writes (a doc, a message, a
+    manifest, a setting).
     Answer yes too when a test file the change adds takes the name of a
     file or type the main code already defines, so that the tests run
     against it in place of the real one. Answer no, naming the test, if a
@@ -28,8 +29,9 @@ a finding — its cause the changed code, quoted; a test that asserts nothing
 of what it names is one too, and so is one that would pass without the
 change it is meant to prove, or that reads the code's text (a search in
 the source) where its own name or scenario asks a behaviour, not a text
-the change writes (a doc, a message). Each is important, never a nit:
-the behaviour can break unseen. A change that needs no test (a rename, a
+the change writes (a doc, a message, a manifest, a setting). These
+three weak tests are important, never a nit: the behaviour can break
+unseen. A change that needs no test (a rename, a
 message) is not, nor a test guarding a behaviour kept as before, which
 passes on the base by design.
 
