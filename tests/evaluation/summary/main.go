@@ -4,7 +4,7 @@
 // little, since a model answers differently from one run to the next, and a
 // best run hides the others (ADR-0014). Fewer than five runs are marked
 // `few runs`; scores earned by a model that no longer answers on this machine
-// (the models-seen file, ADR-0004) are marked `replaced`. Runs of
+// (the models-seen file) are marked `replaced`. Runs of
 // different workline commits are never pooled: a before and an after stay
 // apart. The replay set's cases (docs/spec/conformance/replay.md) are
 // also summed by set: how many cases earned every point in each of their
