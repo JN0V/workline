@@ -304,6 +304,27 @@ func retest(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s routi
 	return &StateWrite{Issue: is.ID, Record: now, Retest: why}, true, nil
 }
 
+// personReady says whether the issue, in the developer's state s, was
+// put back in ready by a person after the tester refused it and the line
+// blocked it: its record says blocked from the tester's state, the
+// tester's last word is a refusal, and the labelling is later than the
+// block. The line keeps it there, no move to its tests: they were
+// refused, and the person decided. kept: it was already said, on this
+// labelling.
+func personReady(cfg *routing.Config, s routing.State, rec Record, had bool, refused, labeled string) (ok, kept bool) {
+	to, found := testsState(cfg, s)
+	if !found || !had || refused == "" {
+		return false, false
+	}
+	if rec.Person != "" && rec.Person == labeled {
+		return true, true
+	}
+	if rec.State == BlockedState && rec.From == to.Name && labeled != "" && later(labeled, rec.Since) {
+		return true, false
+	}
+	return false, false
+}
+
 // retestBody writes a ready issue's move to the tester's state — its
 // labels, its card to the board's tests column — and is the line's
 // comment saying why; or, for one a person put back, the comment alone.

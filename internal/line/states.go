@@ -185,8 +185,11 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	if err != nil {
 		return nil, nil, err
 	}
-	if w, held, err := retest(res, cfg, b, t, s, is, rec, had, trail.Labeled, comments); err != nil || held {
-		return nil, w, err
+	person, personKept := personReady(cfg, s, rec, had, refused, trail.Labeled)
+	if !person {
+		if w, held, err := retest(res, cfg, b, t, s, is, rec, had, trail.Labeled, comments); err != nil || held {
+			return nil, w, err
+		}
 	}
 	if s.Role == "tester" && slices.Contains(is.Labels, backlog.LabelNeedsRepro) {
 		// A bug its tests did not show: its reporter's answer, or the
@@ -250,6 +253,9 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 			return nil, block, nil
 		}
 		retried = ok
+	}
+	if person && (!personKept || ok) {
+		now.Person = trail.Labeled // a person's ready, kept: said once in the record
 	}
 	reviewed := s.Name == refineState && slices.Contains(cfg.Events[IssueEvent], backlog.SpecReviewer)
 	// Due on a new body or review, its own drafts and their review alone,
@@ -713,6 +719,15 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		fo.Inputs = in
 		if _, status := runRole(res, cfg, fo, 0); status == verdict.BlockedExternal {
 			res.Status = worst(res.Status, status)
+			return
+		}
+	}
+	if p := st.write.Record.Person; p != "" && p != st.rec.Person && !o.NoApply {
+		// A person's ready kept: said before the role runs, which reads it
+		// in the record and takes the issue with no tester's Draft.
+		if err := writeState(f, cfg, o.Repo, st.write, st.role); err != nil {
+			res.Status = worst(res.Status, verdict.Block)
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unwritten", Where: fmt.Sprintf("#%d", st.write.Issue), Message: err.Error()})
 			return
 		}
 	}
