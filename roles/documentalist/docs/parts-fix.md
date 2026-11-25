@@ -12,6 +12,10 @@ sources:
   - roles/documentalist/code/parts.go#docSources
   - roles/documentalist/code/parts.go#partsHeader
   - roles/documentalist/code/parts.go#partsSupportedWhole
+  - roles/documentalist/code/parts.go#openInParts
+  - roles/documentalist/code/parts.go#openSaid
+  - roles/documentalist/code/parts.go#sayOpenInIssue
+  - roles/documentalist/code/parts.go#recordsTitle
 checked: e81df7b34
 verified: agent:claude-code
 ---
@@ -40,6 +44,16 @@ Part of [judged in parts](parts.md).
 - It is not put before an agent again until one of its sources changes
   after that commit; a person clears it by reading it whole and moving
   `checked`.
+- **A fix that changed nothing** of what the parts found
+  ([#2197](https://github.com/JN0V/workline/issues/2197)): recorded as
+  judged all the same, held from the agent like any other.
+  - Each place found wrong, its words and the code saying otherwise, is
+    listed once in the doc's findings, under its line in the issue of
+    docs waiting for a person, and in the merge request's description.
+  - Why not judge it again: its parts and fix would cost as much each
+    night, most likely to the same end.
+  - A merge request left with records only says so in its title:
+    `docs: record when <doc> was judged in parts`.
 - When gardening, the fix, or only the record, goes on a merge request of
   its own, `workline/documentalist/fix-<first doc>`; the doc waits while
   it is open ([gardening](gardening-merge-requests.md#one-merge-request-per-task)).

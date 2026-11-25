@@ -183,7 +183,11 @@ its evaluation in
   `judged-in-parts-same-words-disputed`; a quote a part judged partial
   is no proof a passage is wrong, DomoticsCore's run replayed
   ([#467](https://github.com/JN0V/workline/issues/467)):
-  `judged-in-parts-partial-quote-is-no-proof`; a doc a merge request
+  `judged-in-parts-partial-quote-is-no-proof`; a fix changing nothing of
+  what the parts found lists each place for a person, the doc judged
+  once a run ([#2197](https://github.com/JN0V/workline/issues/2197)):
+  `judged-in-parts-fix-declined-findings-listed`,
+  `parts-fix-declined-judged-once-a-run`; a doc a merge request
   judged on its change alone, its sources too large, read in parts at
   night, the docs read longest ago first
   ([#462](https://github.com/JN0V/workline/issues/462)):

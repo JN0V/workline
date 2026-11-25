@@ -44,7 +44,8 @@ one place the engine had already named (step 4). Now:
   of the others (`in/read-not-whole.yaml`): only the first may have
   `checked` moved.
 - A doc judged in parts, once the fix is judged: the places it fixed, or
-  that it changed nothing of what the parts found.
+  that it changed nothing of what the parts found, each place listed
+  ([the fix after parts](parts-fix.md#the-fix)).
 - On a person's merge request, a doc whose patch only records `judged`:
   its record is kept in the documentalist's comment there, nothing
   committed for it, and the finding says so

@@ -2,6 +2,7 @@ package documentalist
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/docmark"
@@ -199,6 +201,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 	var fixes strings.Builder
 	judged, inParts, vouched = map[string]map[string]string{}, map[string]string{}, map[string]string{}
 	partial := map[string][]partialCite{}
+	found := map[string][]string{} // what the parts found, for a person if the fix changes none of it (#2197)
 	for i, sd := range cands {
 		plans, why, err := planParts(sd.doc, repo, s.PartChars)
 		if err != nil {
@@ -312,6 +315,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		default:
 			fixes.WriteString(entry)
 			judged[sd.doc.Path] = map[string]string{"": head}
+			found[sd.doc.Path] = verdictOf.foundSaid(string(content))
 			sd.note = "(" + summary + "; " + partsFixAsked + ", and `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
 		}
 		// A claim dropped may have been the one saying what is wrong: it is
@@ -319,7 +323,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		// each night, its parts cost as much to the same end (ADR-0014, step
 		// 4: 0.23M to 0.32M tokens a night); a source changing asks again.
 		if verdictOf.dropped > 0 && !dropSaid {
-			sd.note = strings.TrimSuffix(sd.note, ")") + "; but some claims were dropped: a person reads it whole)"
+			sd.note = strings.TrimSuffix(sd.note, ")") + claimsDroppedSaid + ")"
 		}
 		fallback = append(fallback, intent.Intention{Kind: "patch", Value: patch})
 		inParts[sd.doc.Path] = at
@@ -337,9 +341,17 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 				return "", nil, nil, nil, nil, err
 			}
 		}
+		if err := writeYAML(filepath.Join(runDir, "in", partsFoundFile), found); err != nil {
+			return "", nil, nil, nil, nil, err
+		}
 	}
 	return task, judged, fallback, inParts, vouched, nil
 }
+
+// partsFoundFile holds, for each doc whose fix after parts is asked, what
+// the parts found wrong, one line each (foundSaid): said for a person when
+// the fix changes none of it (#2197).
+const partsFoundFile = "parts-found.yaml"
 
 // partialFile holds, for each doc whose fix after parts is asked, where a
 // part judged a passage partial (#467).
@@ -837,18 +849,10 @@ func sameWords(content string, a, b claim) bool {
 	return false
 }
 
-// fixEntry puts the parts' claims together, without AI, by the doc's words:
-// contradicted and supported by no other part is wrong; contradicted in one
-// part and supported in another, quoting some of the same words (#440), is
-// a conflict; partial is to be read
-// together, unless another part supports the lines it speaks of: that part
-// held the source settling them, and the fix would act on a share that
-// cannot (workline #29). A support quoted from a comment only does neither
-// (#106): the fix is told of it. It returns the doc's part of the fix task,
-// with only the source lines the parts cited; nothing when there is nothing
-// to fix.
-func (v *partsVerdict) fixEntry(p, content, repo string) string {
-	var wrong, conflict, together []claim
+// sorted puts the parts' claims together, by the doc's words, as fixEntry
+// says: found wrong, found wrong by one part and supported by another, and
+// to be read together.
+func (v *partsVerdict) sorted(content string) (wrong, conflict, together []claim) {
 	for _, c := range v.kept {
 		switch c.Status {
 		case "contradicted":
@@ -871,6 +875,49 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 			}
 		}
 	}
+	for _, list := range [][]claim{wrong, conflict, together} {
+		sort.SliceStable(list, func(i, j int) bool { return list[i].Lines.from < list[j].Lines.from })
+	}
+	return wrong, conflict, together
+}
+
+// foundSaid lists, one line each, what the parts found wrong in a doc, in
+// conflict or to be read together: its place, its words, and the code
+// that says otherwise, for a person, when the fix changed none of it
+// (#2197).
+func (v *partsVerdict) foundSaid(content string) []string {
+	wrong, conflict, together := v.sorted(content)
+	var out []string
+	for _, l := range []struct {
+		list []claim
+		what string
+	}{{wrong, "found wrong"}, {conflict, "found wrong by one part, supported by another"}, {together, "to be read together"}} {
+		for _, c := range l.list {
+			s := fmt.Sprintf("%s: %q, %s", c.Lines, c.Quote, l.what)
+			if c.Source != nil {
+				s += fmt.Sprintf(" — %s, %s: %q", c.Source.Path, c.Source.Lines, c.Source.Quote)
+			}
+			if c.Why != "" {
+				s += "; " + strings.ReplaceAll(strings.TrimSpace(c.Why), "\n", " ")
+			}
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// fixEntry puts the parts' claims together, without AI, by the doc's words:
+// contradicted and supported by no other part is wrong; contradicted in one
+// part and supported in another, quoting some of the same words (#440), is
+// a conflict; partial is to be read
+// together, unless another part supports the lines it speaks of: that part
+// held the source settling them, and the fix would act on a share that
+// cannot (workline #29). A support quoted from a comment only does neither
+// (#106): the fix is told of it. It returns the doc's part of the fix task,
+// with only the source lines the parts cited; nothing when there is nothing
+// to fix.
+func (v *partsVerdict) fixEntry(p, content, repo string) string {
+	wrong, conflict, together := v.sorted(content)
 	var b strings.Builder
 	if len(wrong)+len(conflict)+len(together) == 0 {
 		return ""
@@ -882,7 +929,6 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 			return
 		}
 		fmt.Fprintf(&b, "### %s\n\n", title)
-		sort.SliceStable(list, func(i, j int) bool { return list[i].Lines.from < list[j].Lines.from })
 		for _, c := range list {
 			fmt.Fprintf(&b, "- The doc, %s: %q\n", c.Lines, c.Quote)
 			if c.Source != nil {
@@ -1373,4 +1419,101 @@ func orInt(n, d int) int {
 		return d
 	}
 	return n
+}
+
+// claimsDroppedSaid ends the finding of a doc some claims of whose parts
+// were dropped.
+const claimsDroppedSaid = "; but some claims were dropped: a person reads it whole"
+
+// partsLeftOpen is what the finding of a doc judged in parts says when the
+// fix changed nothing of what the parts found: the header records it as
+// judged all the same, which holds it from an agent until a source
+// changes (asked again each night, its parts would cost as much to the
+// same end), so what they found is listed for a person (#2197).
+const partsLeftOpen = "but the fix changed nothing of what they found wrong, listed below for a person, and `checked` stays: it is not put before an agent again until one of its sources changes; a person fixes these places against the code, then moves `checked`"
+
+// openInParts returns the docs judged in parts whose fix was asked and
+// changed nothing, each with what the parts found wrong (partsFoundFile).
+func openInParts(runDir string, inParts map[string]string, judged map[string]map[string]string, fix *judgedFixes) (map[string][]string, error) {
+	open := map[string][]string{}
+	var found map[string][]string
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", partsFoundFile)); err == nil {
+		if err := yaml.Unmarshal(data, &found); err != nil {
+			return nil, err
+		}
+	}
+	for p := range inParts {
+		if judged[p] != nil && fix.placesSaid(p) == "" {
+			open[p] = found[p]
+		}
+	}
+	return open, nil
+}
+
+// openSaid rewrites the finding of an open doc: what became of its fix,
+// then, in the first finding of the doc only (first), what the parts
+// found, one line each.
+func openSaid(message string, found []string, first bool) string {
+	head, rest, _ := strings.Cut(message, partsFixAsked)
+	end := ")"
+	if strings.Contains(rest, claimsDroppedSaid) {
+		end = claimsDroppedSaid + ")"
+	}
+	if !first {
+		return head + partsLeftOpen + end
+	}
+	return head + partsLeftOpen + end + foundList(found, "")
+}
+
+// foundList says what the parts found, a line each, as list items under
+// indent.
+func foundList(found []string, indent string) string {
+	var b strings.Builder
+	for _, f := range found {
+		b.WriteString("\n" + indent + "- " + f)
+	}
+	return b.String()
+}
+
+// sayOpenInIssue puts what the parts found in each open doc under its line
+// in the issue of docs waiting for a person, which pre wrote before the
+// fix was known, saying it went to the fix.
+func sayOpenInIssue(intents []intent.Intention, open map[string][]string) {
+	for _, in := range intents {
+		v, ok := in.Value.(map[string]any)
+		if in.Kind != "issue" || !ok || v["title"] != personIssueTitle {
+			continue
+		}
+		body, _ := v["body"].(string)
+		for _, p := range slices.Sorted(maps.Keys(open)) {
+			start := strings.Index(body, "- [ ] `"+p+"` — ")
+			if start < 0 {
+				continue
+			}
+			end := strings.IndexByte(body[start:], '\n')
+			if end < 0 {
+				end = len(body) - start
+			}
+			line := body[start : start+end]
+			if h, _, ok := strings.Cut(line, partsFixAsked); ok {
+				line = h + partsLeftOpen
+			}
+			body = body[:start] + line + foundList(open[p], "  ") + body[start+end:]
+		}
+		v["body"] = body
+	}
+}
+
+// recordsTitle is the title of a merge request fixing nothing: its docs
+// gain only what records when they were judged in parts, or `checked`
+// moved where their parts vouched for every line.
+func recordsTitle(docs []string) string {
+	title := "docs: record when " + docs[0] + " was judged in parts"
+	if len(docs) > 1 {
+		title = fmt.Sprintf("docs: record when %s and %d more were judged in parts", docs[0], len(docs)-1)
+	}
+	if len([]rune(title)) > forge.TitleMax {
+		title = fmt.Sprintf("docs: record when %d docs were judged in parts", len(docs))
+	}
+	return title
 }
