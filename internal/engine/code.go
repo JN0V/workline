@@ -439,8 +439,15 @@ func askYes(f forge.Forge, t forge.Target, issue int, body, marker string) error
 			return f.Sticky(t, body, marker, true)
 		}
 	}
-	if is, err := f.Issue(issue); err == nil && is != nil && is.Author != "" && is.Insider {
-		body = "@" + is.Author + " " + body
+	is, err := f.Issue(issue)
+	if err != nil {
+		// No new comment without the mention: a post carrying the marker
+		// without it would keep the person from ever being called.
+		return err
 	}
-	return r.Renew(t, body, marker)
+	if is == nil || is.Author == "" || !is.Insider {
+		// No one to mention: edit in place, silent.
+		return f.Sticky(t, body, marker, true)
+	}
+	return r.Renew(t, "@"+is.Author+" "+body, marker)
 }
