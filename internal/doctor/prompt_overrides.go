@@ -79,6 +79,6 @@ func oldAuditorKinds(r *Report, o Options) {
 		}
 		r.add(Check{Area: "repository", Rule: "auditor-kind-moved", Where: old, Level: Error,
 			Message: "this auditor question is no longer read: the questions are under criteria/<role>/",
-			Fix:     "mv " + old + " " + dest})
+			Fix:     "mkdir -p " + filepath.Dir(dest) + " && mv " + old + " " + dest})
 	}
 }
