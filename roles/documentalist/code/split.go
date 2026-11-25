@@ -104,14 +104,15 @@ into new pages beside it, named after it (run.md, run-people.md), and leave a
 sentence and a link in their place. Move the lines as they are: they are
 checked to be found, unchanged but for where their links point, in the new
 pages. Do not squeeze sentences, or drop a rule written as MUST or SHOULD.
-Write nothing new but pointers — a paragraph of at most 30 words linking to
-a new page, in the part's place, or back to the doc, in a new page ("Part of
-[the run](run.md).") — and headings made of the words of the doc's
-headings. A link moved points where it did, at the doc, or at a new page.
-Give each new page the doc's header, and nothing else in it: its
-` + "`checked`" + ` as it is — the lines moved are the lines it vouched for —
-and those of its ` + "`sources`" + ` the page speaks of; none if the doc has
-none. One patch, a unified diff; a new page is created with --- /dev/null
+Write nothing new but pointers — a paragraph, list item or table row of at
+most 30 words linking to a new page, in the part's place, or back to the doc,
+in a new page ("Part of [the run](run.md).") — and headings made of the words
+of the doc's headings. A link moved points where it did, at the doc, or at a
+new page. Give each new page a header holding only ` + "`checked`" + ` and
+` + "`sources`" + ` (the doc's values): its ` + "`checked`" + ` as it is —
+the lines moved are the lines it vouched for — and those of its
+` + "`sources`" + ` the page speaks of; none if the doc has none. One patch,
+a unified diff; a new page is created with --- /dev/null
 and +++ b/<path>.
 
 A new page among the user pages answers to the reader rules (paragraphs and
@@ -257,9 +258,10 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 	// new page. Nothing is written anew but headings made of the doc's
 	// headings' words, and pointers: short paragraphs linking to the doc or
 	// a new page.
-	pool, heads := map[string][]string{}, map[string]bool{} // a line as a split may move it -> the doc's lines so written
+	pool, heads, had := map[string][]string{}, map[string]bool{}, map[string]bool{} // a line as a split may move it -> the doc's lines so written
 	for _, l := range scan(tree.Docs[c.Doc]) {
 		pool[normal(l.text)] = append(pool[normal(l.text)], l.text)
+		had[normal(l.text)] = true
 		for _, w := range headWords(l) {
 			heads[w] = true
 		}
@@ -301,7 +303,14 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 				if slices.ContainsFunc(headWords(l), func(w string) bool { return !heads[w] }) {
 					refuse("written-anew", p, fmt.Sprintf("%q: a new heading is made of the words of the doc's headings", strings.TrimSpace(l.text)))
 				}
+			case had[n] && refLink.MatchString(l.text) && strings.Count(after[p], strings.TrimSpace(strings.SplitAfter(l.text, "]")[0])) > 1:
+				pointer() // a reference definition the doc holds, kept beside its uses on a new page
 			default:
+				// A list item or a table row is a pointer of its own: a list of
+				// six pointers is six pointers, not one paragraph of 54 words.
+				if (listItem.MatchString(l.text) || tableLine.MatchString(l.text)) && len(linkTargets(strings.Join(para, " "))) > 0 {
+					pointer()
+				}
 				para, gained = append(para, l.text), append(gained, n)
 			}
 		}

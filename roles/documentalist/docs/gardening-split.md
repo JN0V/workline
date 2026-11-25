@@ -38,9 +38,10 @@ point, a section): split it into linked pages, as a person would.
 - A new page carries the doc's header: its `checked` as it is, the lines
   moved being the lines it vouched for, and those of its `sources` the
   page speaks of; nothing else.
-- Nothing is written anew but pointers (a paragraph of at most 30 words
-  linking to a new page, or back to the doc) and headings made of the
-  doc's headings' words.
+- Nothing is written anew but pointers (a paragraph, list item or table
+  row of at most 30 words linking to a new page, or back to the doc) and
+  headings made of the doc's headings' words. A reference definition the
+  doc holds may be repeated on a new page that uses it.
 - A new page, and the doc left behind, hold at least `page-words` words
   (80): a smaller part is a fragment, and stays with its neighbour.
 - One doc a run: in the same round when it asks nothing else; else in a
