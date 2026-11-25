@@ -19,6 +19,12 @@ func TestScenariosUnnamedNamedByTheirThen(t *testing.T) {
 		"no then":       {"- Given a day of three sales, When Ann opens it.", nil},
 		"given prose":   {"Given the cache is warm, a test checks the total when it is opened.", nil},
 		"then in prose": {"The total is given to Ann when she opens it, then she leaves.", nil},
+		"prose after":   {"Given a day\nWhen Ann opens it\nThen she counts three\n\nThe report is shared with the team.", []string{"she counts three"}},
+		"note after":    {"- Given a day\n- When Ann opens it\n- Then she counts three\n\nNotes: then the team reads it.", []string{"she counts three"}},
+		"alike":         {"- Given three, When Ann opens it, Then the total shown on the report is 3.\n- Given none, When Ann opens it, Then the total shown on the report is 0.", []string{"the total shown on the report", "the total shown on the report (2)"}},
+		"after a named": {"- **A:** Given a, When b, Then c.\n- Given d, When e, Then f.", []string{"A", "f"}},
+		"then in when":  {"- Given a day, When Ann opens it then closes it, Then she counts three.", []string{"she counts three"}},
+		"numbered":      {"1. Given a day, When Ann opens it, Then she counts three.", []string{"she counts three"}},
 		"named":         {"- **Three sales:** Given a day of three sales, When Ann opens it, Then she counts three.", []string{"Three sales"}},
 		"prose":         {"Ann sees three sales.", nil},
 	} {

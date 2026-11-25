@@ -3,6 +3,7 @@ package work
 import (
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -78,6 +79,9 @@ func Scenarios(validation string) []Scenario {
 		l = strings.TrimRight(l, "\r")
 		t := strings.TrimSpace(l)
 		if t == "" {
+			if cur != nil && cur.unnamed {
+				cur = nil // a blank line ends a scenario named by its Then
+			}
 			continue
 		}
 		indent, isBullet := -1, false
@@ -123,12 +127,12 @@ func Scenarios(validation string) []Scenario {
 			continue
 		}
 		switch {
-		case given.MatchString(t) && (cur == nil || cur.unnamed):
+		case given.MatchString(t) && (cur == nil || cur.unnamed || isBullet && !cur.header && indent <= cur.indent):
 			out = append(out, read{indent: indent, unnamed: true})
 			cur = &out[len(out)-1]
 			add(t)
-		case !isBullet:
-			add(t) // a line going on, or a step under a name
+		case !isBullet && (cur == nil || !cur.unnamed || step.MatchString(t)):
+			add(t) // a line going on, or a step under a name; prose ends one named by its Then
 		case cur != nil && (cur.header || indent > cur.indent || cur.unnamed && step.MatchString(t)):
 			add(t) // a bullet under the line naming it, indented under its bullet, or its next step
 		default:
@@ -138,9 +142,12 @@ func Scenarios(validation string) []Scenario {
 	var scenarios []Scenario
 	for _, r := range out {
 		if r.unnamed {
-			if outcome := then.Split(r.Text, 2); len(outcome) == 2 { // no Then: prose, no scenario
-				words := strings.Fields(outcome[1])
+			if outcome := then.Split(r.Text, -1); len(outcome) > 1 { // no Then: prose, no scenario
+				words := strings.Fields(outcome[len(outcome)-1])
 				r.Name = strings.Trim(strings.Join(words[:min(6, len(words))], " "), " .,;:`*_")
+			}
+			if slices.ContainsFunc(scenarios, func(s Scenario) bool { return s.Name == r.Name }) {
+				r.Name += " (" + strconv.Itoa(len(scenarios)+1) + ")" // two Thens alike: told apart by place
 			}
 		}
 		if r.Name == "" || r.Text == "" || r.header && r.indent < 0 && !hasStep(r.Text) {

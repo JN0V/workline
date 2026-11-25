@@ -1,0 +1,38 @@
+case: tester/write-tests-cite-names-from-the-then
+about: >
+  A Validation of Given / When / Then bullets with no name is read, each
+  scenario named by the first words of its Then: the tester writes one
+  test each, citing "I get 6" and "I get 0", and they are red on the
+  base as any other; no person was asked to name them.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- Given the library, When I multiply 2 by 3, Then I get 6.\n- Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-unnamed"}
+expect:
+  status: pass
+  summary: "2 new tests, red on the base"
+  agent-calls: 1
+  no-findings: [{rule: input-cut}]
+  pushed:
+    workline/tester/issue-3:
+      tests/test_mul_two_by_three.sh: "Scenario: I get 6"
+      tests/test_mul_by_zero.sh: "Scenario: I get 0"
+  pushed-message:
+    workline/tester/issue-3: "Workline-Role: tester\nWorkline-Model: fake:tester-two-unnamed"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        body-contains: ["Refs #3", "## Tests", "I get 6", "tests.test_mul_two_by_three", "I get 0", "tests.test_mul_by_zero"]
+        body-lacks: ["Closes #3"]
+        comment-contains: "\"scenarios\":[{\"name\":\"I get 6\""

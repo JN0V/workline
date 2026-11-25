@@ -19,8 +19,9 @@ func TestScenariosForms(t *testing.T) {
 		form, validation string
 		want             []Scenario
 	}{
-		{"workline's bullet", "Intro.\n\n- **Old debt:** Given 140 findings,\n  When one is added, Then only it blocks\n- Given no name, When read, Then dropped.\n",
-			[]Scenario{{Name: "Old debt", Text: "Given 140 findings, When one is added, Then only it blocks"}}},
+		{"workline's bullet", "Intro.\n\n- **Old debt:** Given 140 findings,\n  When one is added, Then only it blocks\n- Given no name, When read, Then named by its Then.\n",
+			[]Scenario{{Name: "Old debt", Text: "Given 140 findings, When one is added, Then only it blocks"},
+				{Name: "named by its Then", Text: "Given no name, When read, Then named by its Then."}}},
 		{"colon after the bold", "- **Old debt**: Given 140 findings, When one is added, Then only it blocks\n", []Scenario{oldDebt}},
 		{"numbered", "1. **Old debt:** Given 140 findings, When one is added, Then only it blocks\n", []Scenario{oldDebt}},
 		{"bold scenario line, step bullets", "**Scenario: Old debt**\n- Given 140 findings\n- When one is added\n- Then only it blocks\n", []Scenario{oldDebt}},
