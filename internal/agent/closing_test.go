@@ -17,7 +17,7 @@ func TestClosingWords(t *testing.T) {
 		{"a list", "- note: done\n", "- note: done\n", "", false},
 		{"fenced amid prose", "I ran:\n\n```sh\ngo test ./...\n```\n\nThen:\n\n```yaml\n- note: done\n```\nBye.", "- note: done\n", "prose left out", false},
 		{"unfenced amid prose", "It is wrong: `x`.\n\n- note: done\n  \n\nThat is all.", "- note: done\n", "prose left out", false},
-		{"prose then []", "All green: `mul` added.\n\n[]", "[]\n", "before their `[]`", false},
+		{"prose then [], kept", "Not done: `mul` of negatives.\n\n[]", "[]\n", "", true},
 		{"prose", "Done: `mul` added.\nTests: green.", "[]\n", "", true},
 		{"a list of texts", "- I added mul\n- I ran the tests", "[]\n", "", true},
 	} {

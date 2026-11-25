@@ -110,15 +110,18 @@ It answers with its edits; its diff is its code
 - **Why a file beyond the Scope** goes in `.workline/beyond.yaml`,
   `path: why`, one line each: read, taken out of the diff, listed on
   the pull request ([beyond the Scope](bounds.md#beyond-the-scope)).
-- **Its last message is `[]`**: the question says the engine reads it,
-  YAML only.
+- **Done is the issue's Validation done**, each scenario true of the
+  code: tests green are not enough.
+- **Its last message is `[]`**, or a `Not done:` note: each part left,
+  or that only a person may do, one line and why.
 - **Closing words that do not read never cost the code**: it is still
   bounded, proven and pushed, ready or a Draft by the proof alone.
   - A YAML list among prose is read alone, said (`answer-mended`).
-  - Nothing reads: the words go as they came on the pull request,
-    under "Its agent's words, unread", said (`agent-words-unread`), so
-    an objection written there is not lost; with no pull request, in
-    its claim on the issue.
+  - Nothing reads, or prose closed by `[]`: the words go as they came
+    on the pull request, under "Its agent's words, unread", said
+    (`agent-words-unread`), so a `Not done:` note or an objection
+    written there is not lost; with no pull request, in its claim on
+    the issue.
   - An objections or reasons file that is a link, or a folder: never
     followed nor read, removed, said.
 - **The same for a `cmd:` agent**: its output is read so.

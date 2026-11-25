@@ -172,7 +172,7 @@ func body(a devmark.Act, ready bool) string {
 		}
 	}
 	if len(a.Unread) > 0 {
-		b.WriteString("\n## Its agent's words, unread\n\nA person reads them: an objection to a frozen test may be among them.\n\n")
+		b.WriteString("\n## Its agent's words, unread\n\nA person reads them: a part not done, or an objection to a frozen test, may be among them.\n\n")
 		for _, u := range a.Unread {
 			b.WriteString(u + "\n")
 		}

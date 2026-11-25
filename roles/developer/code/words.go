@@ -67,7 +67,7 @@ func agentWords(runDir string) (objections []intent.Intention, beyond map[string
 		}
 	}
 	if data, err := os.ReadFile(filepath.Join(runDir, "out", agent.ClosingUnread)); err == nil && strings.TrimSpace(string(data)) != "" {
-		unread = append(unread, "Its agent's closing words could not be read as YAML: nothing of them was applied. As they came:\n\n"+quoted(string(data)))
+		unread = append(unread, "Its agent's closing words as they came, read as no YAML: nothing of them applied.\n\n"+quoted(string(data)))
 	}
 	return objections, beyond, unread, nil
 }

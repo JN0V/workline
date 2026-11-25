@@ -18,7 +18,8 @@ const ClosingUnread = "closing-unread.txt"
 // nor ask it again (a whole run of turns): read whole when they are a
 // YAML list; else the YAML lists found among its prose, fenced or not,
 // read alone; else nothing read, the words kept in out/ClosingUnread for
-// its role to post. Empty or `[]`, it proposes nothing beside its edits.
+// its role to post, prose closed by `[]` too: a note it ends on is never
+// lost. Empty or `[]` alone, it proposes nothing beside its edits.
 func closingWords(runDir, answer string, kinds []string) ([]byte, []string) {
 	unread := filepath.Join(runDir, "out", ClosingUnread)
 	_ = os.Remove(unread) // an earlier attempt's
@@ -44,9 +45,6 @@ func closingWords(runDir, answer string, kinds []string) ([]byte, []string) {
 		if err == nil {
 			return out, append(mended, "its closing words held prose around their YAML: the YAML read alone, the prose left out (out/agent-answer.txt)")
 		}
-	}
-	if lines := strings.Split(s, "\n"); strings.TrimSpace(lines[len(lines)-1]) == "[]" {
-		return []byte("[]\n"), []string{"its closing words held prose before their `[]`: read as proposing nothing beyond its edits (out/agent-answer.txt)"}
 	}
 	_ = os.WriteFile(unread, []byte(answer), 0o644)
 	return []byte("[]\n"), nil
