@@ -1,0 +1,17 @@
+case: release/held-by-a-failed-follow-on-main
+about: "workline's own `follow` job failed on main's tip holds the release as any red check (ADR-0051): only a pull request's head leaves a failed `follow` out, its next pass trying again (#2195)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.0.1'"
+  forge:
+    issues: []
+    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
+    tips: {main: [{name: follow, workflow: workline apply, state: failure}, {name: test, state: success}]}
+run: {route: merge-request, input: {range: "main..HEAD"}, target: {merge-request: 1}, ai: none}
+expect:
+  status: block
+  summary: "the release held: main red"
+  findings:
+    - {rule: release-base-red, where: main, level: block, message: "is red: follow; the release waits for it green"}

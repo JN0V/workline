@@ -19,7 +19,7 @@ const mergeStateQuery = `query($owner: String!, $name: String!, $number: Int!) {
 
 // checksQuery asks the head's checks as GitHub shows them on the pull
 // request, each: check runs and commit statuses both, a hundred a page.
-const checksQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { __typename ... on CheckRun { name status conclusion databaseId } ... on StatusContext { context state } } } } } } } } } }`
+const checksQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { __typename ... on CheckRun { name status conclusion databaseId checkSuite { workflowRun { workflow { name } } } } ... on StatusContext { context state } } } } } } } } } }`
 
 // MergeState reads a pull request's state in one GraphQL call, its
 // checks in another — a token that may not read them leaves them unread,
@@ -129,17 +129,27 @@ type checkContext struct {
 	// ID: a check run's id, GitHub's numbers rising: a re-run's is
 	// higher than the run it replaces. 0 for a commit status.
 	ID int64 `json:"databaseId"`
+	// Suite: the check run's suite, the workflow that ran it named when
+	// GitHub Actions did.
+	Suite struct {
+		Run *struct {
+			Workflow struct {
+				Name string `json:"name"`
+			} `json:"workflow"`
+		} `json:"workflowRun"`
+	} `json:"checkSuite"`
 }
 
 // sumChecks sums up a head's checks as sumRuns does, check runs and
 // commit statuses both, workline's own statuses left out: a verdict kept,
-// a yes held, are no check of the change. The runs go oldest first, so
+// a yes held, are no check of the change, nor a failed run of its own
+// follow job (headRuns). The runs go oldest first, so
 // each check counts by its latest (#1031): GitHub's rollup lists every
 // run on the head, a failure re-run green since among them.
 func sumChecks(all []checkContext) string {
 	all = slices.Clone(all)
 	slices.SortStableFunc(all, func(a, b checkContext) int { return cmp.Compare(a.ID, b.ID) })
-	return sumRuns(runsOf(all))
+	return sumRuns(headRuns(runsOf(all)))
 }
 
 // runsOf reads check runs and commit statuses as runs, workline's own
@@ -148,6 +158,9 @@ func runsOf(all []checkContext) []CheckRun {
 	var runs []CheckRun
 	for _, c := range all {
 		r := CheckRun{Name: c.Name}
+		if c.Suite.Run != nil {
+			r.Workflow = c.Suite.Run.Workflow.Name
+		}
 		switch {
 		case c.Type == "StatusContext" && strings.HasPrefix(c.Context, "workline/"):
 			continue
@@ -409,11 +422,12 @@ var mergeableStates = map[string]bool{"CLEAN": true, "UNSTABLE": true, "HAS_HOOK
 // check while it runs), or hooks left ("has_hooks").
 var mergeableNow = regexp.MustCompile(`is in (clean|unstable|has_hooks) status`)
 
-// graphqlRefusal reads an error GitHub's GraphQL API answered — gh says
-// "GraphQL: …", the HTTP status a 200 — as the refusal it is: auto-merge
-// not allowed on the repository, a head moved meanwhile.
+// graphqlRefusal reads an error GitHub's GraphQL API answered — the HTTP
+// status a 200, gh saying "gh: …" or, before, "GraphQL: …" — as the
+// refusal it is: auto-merge not allowed on the repository, a head moved
+// meanwhile.
 func graphqlRefusal(err error) error {
-	if err != nil && strings.Contains(err.Error(), "GraphQL:") && !refusal(err) {
+	if err != nil && (strings.Contains(err.Error(), "GraphQL:") || errors.As(err, new(answered))) && !refusal(err) {
 		return fmt.Errorf("%w: %s", errRefused, err.Error())
 	}
 	return err

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -19,6 +20,30 @@ type Push struct {
 type CheckRun struct {
 	Name  string `json:"name"`
 	State string `json:"state"`
+	// Workflow: the GitHub Actions workflow that ran it, "" when another
+	// app did or the forge does not say.
+	Workflow string `json:"workflow,omitempty"`
+}
+
+// ownWorkflows are workline's own workflows whose `follow` job turns a
+// pull request's auto-merge on: no check of the change.
+var ownWorkflows = map[string]bool{"workline merge": true, "workline apply": true}
+
+// headRuns leaves out of a pull request's head the runs of workline's
+// own `follow` job whose latest run failed: on a cause the next pass may
+// find fixed, auto-merge not allowed on the repository (#2195), it tries
+// again. A failed `follow` still holds a release on the default branch's
+// tip (tipOf), which reads every run.
+func headRuns(runs []CheckRun) []CheckRun {
+	failed := map[string]bool{} // each own workflow's follow, by its latest run not cancelled
+	for _, r := range runs {
+		if r.Name == "follow" && ownWorkflows[r.Workflow] && r.State != "cancelled" {
+			failed[r.Workflow] = r.State == "failure"
+		}
+	}
+	return slices.DeleteFunc(slices.Clone(runs), func(r CheckRun) bool {
+		return r.Name == "follow" && ownWorkflows[r.Workflow] && failed[r.Workflow]
+	})
 }
 
 // sumRuns sums up a head's check runs, oldest first: failure when a
@@ -47,7 +72,7 @@ func sumRuns(runs []CheckRun) string {
 	for _, n := range names {
 		// The line's own run, cancelled when a newer label replaces it, is
 		// no check of the change (#2122).
-		if !live[n] && (n == "follow" || n == "workline merge") {
+		if !live[n] && n == "follow" {
 			continue
 		}
 		switch state := latest[n]; {

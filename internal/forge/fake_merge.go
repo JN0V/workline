@@ -76,7 +76,7 @@ func (f *Fake) MergeState(mr MergeRequest) (MergeState, error) {
 	st := MergeState{Head: strings.TrimSpace(head), Closed: it.Closed, Draft: it.Draft, AutoMerge: it.AutoMerge, AutoMergeAt: it.AutoMergeAt,
 		Checks: it.Checks, Labels: it.LabelEvents, Mergeable: it.Clean, Behind: it.Behind}
 	if it.CheckRuns != nil {
-		st.Checks = sumRuns(it.CheckRuns)
+		st.Checks = sumRuns(headRuns(it.CheckRuns))
 	}
 	if it.AutoMerge {
 		st.AutoMergeBy = it.AutoMergeBy // an app's is named <app>[bot], as on GitHub
