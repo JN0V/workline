@@ -46,4 +46,8 @@ request from merging, each found by `merge.go`.
 - **A run the forge cancelled is no result**: the latest other run of
   that check counts — on GitLab, the newest other pipeline of that head
   —, else it waits.
+- **The line's own job is no check of the change**: its `follow` or
+  `workline merge` run, cancelled or failed, holds nothing; the next
+  run tries again
+  ([#2195](https://github.com/JN0V/workline/issues/2195)).
 - **One not judged yet** waits, named.

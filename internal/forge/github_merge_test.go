@@ -31,6 +31,12 @@ func TestSumChecks(t *testing.T) {
 		// #2122: the line's own run, cancelled, is no check of the change.
 		{"own follow only cancelled", []checkContext{{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "CANCELLED"},
 			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "success"},
+		// #2195: the line's own run failed is no check of the change; the
+		// change's own failed check still is.
+		{"own follow failed", []checkContext{{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "FAILURE"},
+			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "success"},
+		{"own follow failed beside a red test", []checkContext{{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "FAILURE"},
+			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "FAILURE"}}, "failure"},
 		{"cancelled beside a failure", []checkContext{{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "CANCELLED"},
 			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "FAILURE"}}, "failure"},
 		// #1031: each check by its latest run, GitHub's ids telling which,

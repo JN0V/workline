@@ -45,9 +45,10 @@ func sumRuns(runs []CheckRun) string {
 	}
 	sum := ""
 	for _, n := range names {
-		// The line's own run, cancelled when a newer label replaces it, is
-		// no check of the change (#2122).
-		if !live[n] && (n == "follow" || n == "workline merge") {
+		// The line's own run, cancelled when a newer label replaces it
+		// (#2122) or failed on a cause the next run may find fixed, such
+		// as auto-merge not allowed (#2195), is no check of the change.
+		if (!live[n] || latest[n] == "failure") && (n == "follow" || n == "workline merge") {
 			continue
 		}
 		switch state := latest[n]; {
