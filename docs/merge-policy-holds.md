@@ -4,7 +4,7 @@ sources:
   - internal/engine/merge.go#heldByConversations
   - internal/engine/merge.go#resolveAccepted
   - internal/engine/merge.go#mergePolicy
-checked: e81df7b34
+checked: f31420d99
 verified: agent:claude-code
 ---
 # What holds a pull request
