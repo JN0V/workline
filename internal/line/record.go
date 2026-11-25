@@ -621,7 +621,7 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 		// Its run left what a person decides — a proposal, a question or
 		// drafts —: said, why and what comes next, never only who it last
 		// woke (#1195).
-		if said := personWaits(f, cfg, *after, w.Wait); said != "" {
+		if said := personWaits(f, cfg, *after, w.Wait, w.Record); said != "" {
 			body = said + "\n" + body
 		}
 	}
@@ -701,9 +701,9 @@ func WriteStates(f forge.Forge, repo string, res *Result) error {
 // its default): why, and what of a person ends it. In this order: what
 // its proposal offers, with its open question if any; its question or drafts, with the day they time
 // out — or none, at cautious; what else keeps a proposed issue from
-// ready, its drafts among them. "" when nothing waits on a person, or
-// its comments do not read.
-func personWaits(f forge.Forge, cfg *routing.Config, is forge.Issue, wait string) string {
+// ready, its drafts among them; rec, the step's, tells a question it woke
+// for already. "" when nothing waits on a person, or its comments do not read.
+func personWaits(f forge.Forge, cfg *routing.Config, is forge.Issue, wait string, rec Record) string {
 	b, ok := f.(forge.Backlog)
 	if !ok {
 		return ""
@@ -725,7 +725,7 @@ func personWaits(f forge.Forge, cfg *routing.Config, is forge.Issue, wait string
 		if w, err := backlog.ReadWait(setting); err == nil {
 			t := newTally()
 			t.wait = &w
-			if _, _, ws, nx, err := timedOut(b, t, is, notes, Record{}); err == nil {
+			if _, _, ws, nx, err := timedOut(b, t, is, notes, rec); err == nil {
 				waits, next = ws, nx
 			}
 		}
