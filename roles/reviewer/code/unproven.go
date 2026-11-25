@@ -7,8 +7,39 @@ package reviewer
 // judge weighs —, a person only for what the judge refuses.
 
 import (
+	"os"
 	"strings"
+
+	"github.com/JN0V/workline/internal/forge"
 )
+
+// developerBranch opens the branches of the developer's pull requests:
+// only there is the list the engine's own.
+const developerBranch = "workline/developer/"
+
+// unprovenAsked marks a record whose tests lens was given the list
+// once: never asked again, once the tester and the judge settled it.
+const unprovenAsked = "<!-- workline:unproven=asked -->"
+
+// unprovenOf is the list the developer's pull request the run reviews
+// holds, cut past limit lines as the author's testimony is; "" on another
+// branch, with no forge, or none listed.
+func unprovenOf(repo string, limit int) string {
+	t := mergeRequest()
+	if t == nil {
+		return ""
+	}
+	f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
+	if err != nil || f == nil {
+		return ""
+	}
+	mr, err := f.MergeRequest(t.ID)
+	if err != nil || !strings.HasPrefix(mr.Branch, developerBranch) {
+		return ""
+	}
+	list, _ := cutLines(unprovenListed(mr.Body), limit, "the unproven scenarios are cut here, past testimony-lines-max")
+	return list
+}
 
 // unprovenHeading is the developer's heading for them.
 const unprovenHeading = "Unproven"

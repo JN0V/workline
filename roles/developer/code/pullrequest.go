@@ -167,20 +167,6 @@ func body(a devmark.Act, ready bool) string {
 	return b.String()
 }
 
-// UnprovenHeading heads the scenarios the tester said no test proves, on
-// its pull request: the reviewer's tests lens reads them there.
-const UnprovenHeading = "Unproven"
-
-const unprovenLead = "Scenarios of the issue no test proves, as the tester said, each with its reason: the reviewer's tests lens weighs whether a test can prove it."
-
-// unprovenLine is a scenario no test proves, as its pull request lists it.
-func unprovenLine(scenario, why string) string {
-	if why == "" {
-		return "- **" + scenario + "**"
-	}
-	return "- **" + scenario + "**: " + devmark.InertText(why)
-}
-
 // recordBody is the comment holding the record on its pull request: what
 // a fresh run reads of the last, and the auditor of its code.
 func recordBody(a devmark.Act) string {

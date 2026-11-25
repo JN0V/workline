@@ -99,7 +99,8 @@ Cases in `tests/conformance/cases/tester/`:
   ([the Draft](hand-over.md#what-is-there)). Cases
   `tester/write-unproven-scenario-said`,
   `developer/pr-says-unproven-scenario`,
-  `reviewer/tests-lens-given-unproven-scenarios`; tried in its pull
+  `reviewer/tests-lens-given-unproven-scenarios`,
+  `reviewer/tests-lens-unproven-not-asked-again`; tried in its pull
   request.
 - **A build record told from a test**: with the tests alone, a red id
   in a suite that lost its base tests is the runner's record only when

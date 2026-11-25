@@ -32,6 +32,7 @@ import (
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/codepick"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/routing"
@@ -1079,7 +1080,7 @@ func draftBody(t task, tested map[string][]string, said map[string]string, alone
 		if u := unprovenScenarios(t, said); len(u) > 0 {
 			names := make([]string, len(u))
 			for i, x := range u {
-				names[i] = x.Scenario
+				names[i] = devmark.InertText(x.Scenario) // a name's @ pings no one
 			}
 			fmt.Fprintf(&b, "\n**Unproven**: %s. No test proves %s: the pull request that builds it lists %[2]s, "+
 				"and the reviewer's tests lens weighs whether a test can.\n", strings.Join(names, ", "), map[bool]string{true: "it", false: "them"}[len(u) == 1])

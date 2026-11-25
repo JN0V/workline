@@ -2,7 +2,8 @@ case: developer/pr-says-unproven-scenario
 about: >
   The tester's Draft says a scenario no test proves: the developer's pull
   request lists it under Unproven, with the tester's reason, for the
-  reviewer's tests lens to weigh.
+  reviewer's tests lens to weigh, its name inert. One kept as today with
+  no test guarding it is left off until the tester writes guards.
 given:
   repo: tested-draft
   setup:
@@ -19,7 +20,7 @@ given:
       - id: 1
         branch: workline/tester/issue-3
         draft: true
-        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"unproven\":[{\"scenario\":\"By zero\",\"why\":\"a person reads the printed table by eye\"}]} -->\n<!-- workline:sticky=tester/tests -->"]
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"},\"unproven\":[{\"scenario\":\"By zero, ask @ann\",\"why\":\"a person reads the printed table by eye\"},{\"scenario\":\"Add unchanged\",\"why\":\"kept as today: no existing test was found that checks it, so nothing guards it\"}]} -->\n<!-- workline:sticky=tester/tests -->"]
 run: {develop: [], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
@@ -31,4 +32,5 @@ expect:
     merge-requests:
       - id: 2
         branch: workline/developer/3
-        body-contains: ["## Unproven\n\nScenarios of the issue no test proves, as the tester said, each with its reason: the reviewer's tests lens weighs whether a test can prove it.\n\n- **By zero**: a person reads the printed table by eye\n"]
+        body-contains: ["## Unproven\n\nScenarios of the issue no test proves, as the tester said, each with its reason: the reviewer's tests lens weighs whether a test can prove it.\n\n- **By zero, ask @​ann**: a person reads the printed table by eye\n"]
+        body-lacks: ["Add unchanged", "@ann"]
