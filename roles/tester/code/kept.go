@@ -70,6 +70,16 @@ func guardedSaid(repo, base string, s Settings, said map[string]string) {
 	}
 }
 
+// testNamed reads a test's name: a segment starting or ending in test(s),
+// as `TestAdd`, `test_add`, `add_test.go`, `tests.test_add`.
+var testNamed = regexp.MustCompile(`(?i)(^|[._:#/\-])tests?([._:#/\-]|$|[A-Z0-9])|(^|[._:#/\-])[A-Za-z0-9]*(_|\.)(tests?|spec)(\.|$)`)
+
+// testLike says whether a name written as code names a test, not any
+// identifier: a test file of the base's kind, or a Test-style name.
+func testLike(name string, s Settings) bool {
+	return s.Tests().Test(name) || testNamed.MatchString(name)
+}
+
 // guardIn says whether name is a test of the base: one of its test files
 // (its path, its name, or its name without the extension), or a whole
 // word one of them holds. The word is the name's last part, its
