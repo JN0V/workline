@@ -32,6 +32,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/work"
@@ -1203,6 +1204,10 @@ func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, t
 		}
 		if p, ok := testmark.ReadProof(comments); ok {
 			out[is.ID] = p
+		} else if line.PersonReady(comments) {
+			// A person put it back in ready after the tester refused it:
+			// their decision, no test of the tester's to wait for.
+			out[is.ID] = backlog.Proof{Kind: backlog.KindNone, Reason: "a person decided it is ready without a tester's test"}
 		}
 	}
 	return out, nil

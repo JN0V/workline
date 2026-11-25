@@ -75,6 +75,11 @@ type Record struct {
 	// dates it, the line said it left that way.
 	Retest     string `json:"retest,omitempty"`
 	RetestKept string `json:"retest-kept,omitempty"`
+	// Person: the labelling of a ready a person put back, as the forge
+	// dates it, after the tester refused the issue and the line blocked
+	// it: the line leaves it in ready, its step due, and says so once
+	// (wip.go, personReady).
+	Person string `json:"person-ready,omitempty"`
 	// Timeout: in refine, what waited on a person past the product
 	// owner's delay that the line woke it for (ADR-0060) — `ask=N`, the
 	// question of round N; `drafts=<body>`, its drafts —: woken once.
@@ -318,6 +323,16 @@ func holdsSpecMark(c string) bool {
 	return false
 }
 
+// PersonReady says whether the line's record on an issue, among its
+// comments, holds a ready a person put back after the tester refused it:
+// the developer takes it with no tester's Draft (wip.go, personReady).
+func PersonReady(comments []string) bool {
+	r, had := recordIn(comments)
+	// Only on the labelling the record was written on: a ready that moved
+	// on since (a new labelling) is no longer that person's.
+	return had && r.Person != "" && r.Person == r.Labeled
+}
+
 // recordIn is the line's record among an issue's comments.
 func recordIn(comments []string) (Record, bool) {
 	sticky := forge.Marker("sticky=" + recordKey)
@@ -359,6 +374,9 @@ func recordBody(r Record, role string) string {
 	}
 	if n := r.Fresh(); n > 0 {
 		said += fmt.Sprintf(" %s fresh tokens spent on it so far.", Tokens(n))
+	}
+	if r.Person != "" {
+		said += " The line leaves it in ready: a person put workline:ready back after the tester refused this issue and the line blocked it, saying it is ready without a tester's test: the line leaves it in ready, the developer takes it, the tester is not run."
 	}
 	return said + " Edited by the engine, not by hand.\n\n<!-- workline:" + recordMark + string(data) + " -->"
 }
@@ -460,6 +478,9 @@ func due(cfg *routing.Config, s routing.State, is forge.Issue, labeled, spec str
 		now.Timeout = rec.Timeout                 // a delay passed wakes the role once in its state
 	}
 	now.Retest, now.RetestKept = rec.Retest, rec.RetestKept // a move to its tests stays known through the states after
+	if rec.State == now.State {
+		now.Person = rec.Person // a person's ready kept stays known, said once; gone when the issue leaves ready
+	}
 	if rec.State == BlockedState {
 		now.Hops = 0 // a person moved it out of Blocked: its count starts again
 	}
