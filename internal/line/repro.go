@@ -16,7 +16,6 @@ import (
 	"fmt"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
@@ -65,19 +64,16 @@ func repro(res *Result, b forge.Backlog, t *tally, s routing.State, is forge.Iss
 }
 
 // reproBody writes a bug's move back to refine, its reporter having
-// answered — its state's labels and the mark off, its card to the
-// board's refine column — and is the line's comment saying why.
-func reproBody(f forge.Forge, cfg *routing.Config, repo string, t forge.Target, w StateWrite) (string, error) {
+// answered — its state's labels and the mark off — and is the line's
+// comment saying why.
+func reproBody(f forge.Forge, cfg *routing.Config, t forge.Target, w StateWrite) (string, error) {
 	add, remove, err := cfg.Move(refineState)
 	if err != nil {
 		return "", err
 	}
-	card := board.Along(f, repo, refineState)
-	add, remove = card.Fold(add, append(remove, w.Off...))
-	if err := f.Label(t, add, remove); err != nil {
+	if err := f.Label(t, add, append(remove, w.Off...)); err != nil {
 		return "", err
 	}
-	card.Write(f, t.ID)
 	return backlog.Said("workline's line", "moves this bug back to refine", w.Repro,
 		"the product owner reads the answer; its tests are written again once it is ready") + "\n\n" + recordMarker(w.Record), nil
 }

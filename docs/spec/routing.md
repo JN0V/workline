@@ -427,9 +427,6 @@ whose result moves the issue to the next. The table is the routing's
   waits for, and what comes next; the next record drops it.
 - **Moves are exclusive**: the next state's label on, every other
   state's off, in one call.
-- **Its card follows**: on a board with a column for the state, named
-  as the state is (refine, tests, ready, doing, blocked), the card moves
-  with the label ([boards](../board-moves.md#what-each-state-moves)).
 - **Who moves it**: the product owner's ready sends an issue with named
   scenarios to `tests` where the tester is routed, else to `ready`
   ([refine](backlog-acts/refine.md)); the tester's proven, linted Draft
@@ -911,7 +908,7 @@ back to refine.
   from when the forge says the state's label was put on (GitHub's
   timeline, GitLab's label events), never the last update.
 - **Past the limit**: the issue goes back to refine, its other states'
-  labels off, its card to the refine column, the reason said in the
+  labels off, the reason said in the
   line's comment (`state-stale`), which wakes the product owner. No
   agent asked; outside `reconcile-max`.
 - **Undone by a person** (the label put back): the next time it is

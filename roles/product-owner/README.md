@@ -59,8 +59,6 @@ is on each issue; you answer there
 - **The label `workline:proposed`** (GitLab: `workline::proposed`) while
   the issue waits on you: its drafts, or a proposal.
 - **What waits on you** is a saved filter on that label.
-- **A board**: an issue set ready moves to its ready column
-  ([boards](../../docs/boards.md)).
 - **The night's summary** is in the CI job's summary: done, proposed,
   left to a person, read and left incomplete, next, stuck, one linked
   line an issue, in plain words

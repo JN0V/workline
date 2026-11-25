@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 )
 
@@ -122,9 +121,6 @@ type Act struct {
 	// Conflict: the head a merge round failed at (ADR-0067): no second
 	// one there.
 	Conflict string `json:"conflict,omitempty"`
-	// Board: the card its claim moved to Doing on the forge's board
-	// (ADR-0057); none, no board or no Doing column.
-	Board *board.Move `json:"board,omitempty"`
 }
 
 var actData = regexp.MustCompile(`<!-- ` + ActMark + ` (\{.*\}) -->`)

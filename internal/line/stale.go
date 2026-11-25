@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/board"
 	wlclock "github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -268,9 +267,9 @@ func said(words []string) string {
 }
 
 // staleBody writes a stale issue's move back to refine — its state's
-// labels, its card to the board's refine column — and is the line's
-// comment saying why; or, for one a person put back, the comment alone.
-func staleBody(f forge.Forge, cfg *routing.Config, repo string, t forge.Target, w StateWrite) (string, error) {
+// labels — and is the line's comment saying why; or, for one a person
+// put back, the comment alone.
+func staleBody(f forge.Forge, cfg *routing.Config, t forge.Target, w StateWrite) (string, error) {
 	left, _ := cfg.State(w.Record.Stale)
 	if w.Kept != "" {
 		return backlog.Said("workline's line", "finds this issue stale, and leaves it", w.Kept,
@@ -280,12 +279,9 @@ func staleBody(f forge.Forge, cfg *routing.Config, repo string, t forge.Target, 
 	if err != nil {
 		return "", err
 	}
-	card := board.Along(f, repo, refineState)
-	add, remove = card.Fold(add, remove)
 	if err := f.Label(t, add, remove); err != nil {
 		return "", err
 	}
-	card.Write(f, t.ID)
 	return backlog.Said("workline's line", "moves this issue back to refine, stale", w.Stale,
 		fmt.Sprintf("the product owner reads it again; to undo, put `%s` back", left.Label)) + "\n\n" + recordMarker(w.Record), nil
 }

@@ -403,7 +403,7 @@ hold:
   ([the review loop](review-loop.md);
   [#1312](https://github.com/JN0V/workline/pull/1312)). Case
   `developer/fixes-finding-with-the-table-reworded`.
-- **A claim let go puts ready back**: its card leaves Doing
+- **A claim let go puts ready back**
   ([#1115](https://github.com/JN0V/workline/pull/1115); the line's
   states, [#756](https://github.com/JN0V/workline/issues/756)).
 - **Real issues, with `claude` and its tools**: the V1 acceptance, three

@@ -44,9 +44,6 @@ branch's workflow
    - repository permissions **Contents**, **Pull requests**,
      **Issues** and **Checks**, read and write; with the merge policy,
      **Commit statuses** too;
-   - organization permission **Projects**, read and write, when the
-     work shows on an organisation's project: the roles move its cards
-     ([boards](board-github.md#who-may-write-a-github-project));
    - **Checks** writes the checks `workline findings` (the documentalist's) and `workline gates` (the
      gates' new findings): the findings beside their lines, none a conversation to resolve
      ([#412](https://github.com/JN0V/workline/issues/412)). An App made

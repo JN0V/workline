@@ -128,13 +128,7 @@ What else a case can give, run and expect, and how each is checked, is in
   `fields` (`{Priority: High}`), the repository `public: true`, and
   `fields-blind: <why>` a token that reads no value visible to members
   only; with `weights: true`, its issues carry a weight, as GitLab
-  Premium's, an issue's in its `weight`; `boards` (`{forge, number,
-  name, owner, url, columns, workflows, closed-list}`) are the boards
-  the work shows on, the GitLab mock answering them through GraphQL,
-  `boards-unread: <why>` a forge that does not answer them,
-  `boards-unwritable: <why>` one that refuses a project's Status write;
-  an issue's `status` is its card's Status in each GitHub project, by
-  the project's number. `head-checks` are the checks on a commit (a
+  Premium's, an issue's in its `weight`. `head-checks` are the checks on a commit (a
   revision), each with its failed steps' `log`, `head-checks-unread:
   <why>` a forge that does not answer them. A
   merge request's `threads` are its comments on lines, `{path, line,

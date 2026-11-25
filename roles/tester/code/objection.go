@@ -1080,7 +1080,7 @@ func (a answer) move(to string) []intent.Intention {
 	if ad, rm, err := (&routing.Config{States: a.Line}).Move(to); err == nil {
 		add, remove = ad, rm
 	}
-	return []intent.Intention{{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": to}}}
+	return []intent.Intention{{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove}}}
 }
 
 // lacked says whether a comment is the tester's answer that it lacks code.

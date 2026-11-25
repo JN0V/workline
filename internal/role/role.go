@@ -302,9 +302,6 @@ type ProjectConfig struct {
 	GitLab struct {
 		Bots []string `yaml:"bots"`
 	} `yaml:"gitlab"`
-	// Board overrides how the forge's board is matched (ADR-0057): a
-	// column's name for a slot, a GitHub project's number among several.
-	Board Board `yaml:"board"`
 	// Packs are the language packs the project uses (ADR-0065), written
 	// by `workline init` from their markers; none, the generic pack.
 	Packs []string `yaml:"packs"`
@@ -312,17 +309,6 @@ type ProjectConfig struct {
 	// role name, read by LoadProjectConfig: under the project's own, over
 	// the role's defaults. A pack never decides a verdict.
 	PackDefaults map[string]map[string]any `yaml:"-"`
-}
-
-// Board is the `board:` setting: empty, the columns are matched by their
-// names and the only board linked is taken.
-type Board struct {
-	Ready   string `yaml:"ready"`
-	Doing   string `yaml:"doing"`
-	Refine  string `yaml:"refine"`
-	Tests   string `yaml:"tests"`
-	Blocked string `yaml:"blocked"`
-	Project int    `yaml:"project"`
 }
 
 // Merge is the project's merge policy: which pull requests `workline

@@ -92,6 +92,8 @@ Built first, whatever else.
 - **Exclusive**: the engine puts the new label on and takes the old one
   off, in one call, every forge. On a GitLab board with scoped column
   labels, the forge drops the old column itself ([ADR-0057]).
+- **Board slots, retired 2026-11-25**: workline moves no card; the
+  column above is history ([ADR-0057], retired).
 - **Existing labels kept**: `workline:to-refine`, `workline:ready` and
   `workline:developing` keep their names; two are new.
 - **No tester routed**: the product owner goes straight to Ready, as
@@ -241,7 +243,7 @@ One pull request a step, its cases first in `tests/conformance/cases/`,
    ([#759](https://github.com/JN0V/workline/issues/759)).
 
 Docs to update with each step: [routing.md](../spec/routing.md) (its
-states, the chaining), [boards.md](../boards.md),
+states, the chaining), boards.md (removed 2026-11-25),
 [the developer's triggers](../../roles/developer/docs/triggers.md),
 [GitLab's triggers](../gitlab-trigger.md),
 [the tester's hand-over](../../roles/tester/docs/hand-over.md) and

@@ -36,7 +36,6 @@ sources:
   - internal/doctor/variables.go#tokensScoped
   - internal/doctor/variables.go#onGitLab
   - internal/doctor/hook.go#issueHook
-  - internal/doctor/board.go#boards
   - cmd/workline/cli.go#versionCmd
   - cmd/workline/main.go#engineVersion
   - cmd/workline/main.go#personal
@@ -177,10 +176,6 @@ changes nothing.
   starts it at once — the hook to the project's trigger URL, its issue
   events on (its note events too, the reviewer or the product owner routed on `issue`), not disabled, on the default branch, workline's trigger
   token; a token that may not read them (a Maintainer's may) is said.
-- With the product owner, the tester or the developer routed: the
-  forge's board, its columns matched to ready, doing and done, and to
-  refine, tests and blocked when it has them, read-only
-  ([boards](boards.md)).
 - With `forge: cmd:<command>`: the command run once, writing nothing; one
   not found, failing or silent is a warning
   ([what the doctor checks](spec/forge-command.md#what-the-doctor-checks)).

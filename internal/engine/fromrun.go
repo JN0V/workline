@@ -284,8 +284,8 @@ func (mv *roundMoves) allows(m map[string]any) bool {
 		}
 	}
 	for k := range m {
-		if k != "issue" && k != "add" && k != "remove" && k != "card" {
-			return false // a board's status or anything else: not a state's move
+		if k != "issue" && k != "add" && k != "remove" {
+			return false // anything else: not a state's move
 		}
 	}
 	return true

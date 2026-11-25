@@ -16,7 +16,8 @@
   a worktree, the engine bounds its diff after; no pasted code, no
   `patch` intention
 - **Amended by:** [ADR-0057]: at the claim, it moves the issue's
-  card to the board's Doing column, where the forge does not
+  card to the board's Doing column, where the forge does not (retired
+  2026-11-25: no card moved)
 - **Amended by:** [ADR-0058](0058-the-forge-guards-the-project-not-the-agents-environment.md):
   the bounds become a required check on the pull request
 - **Amended by:** [ADR-0059](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md): only Ready wakes it, by the issue's

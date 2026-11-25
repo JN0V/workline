@@ -34,13 +34,6 @@ type FakeState struct {
 	// why the token reads no value visible to members only, "" when it
 	// does.
 	IssueFields []Field `json:"issue-fields,omitempty"`
-	// Boards are the boards the work shows on (ADR-0057); BoardsUnread,
-	// why the forge does not answer the others, Boards being those read.
-	Boards       []Board `json:"boards,omitempty"`
-	BoardsUnread string  `json:"boards-unread,omitempty"`
-	// BoardsUnwritable: why the forge refuses a project's Status write,
-	// as GitHub to a token without the right (ADR-0057).
-	BoardsUnwritable string `json:"boards-unwritable,omitempty"`
 	Public      bool    `json:"public,omitempty"`
 	Blind       string  `json:"fields-blind,omitempty"`
 	// Weights: its issues carry a weight, as GitLab Premium's (ADR-0040).
@@ -212,9 +205,6 @@ type FakeItem struct {
 	// Fields: an issue's values in the forge's issue fields, by name
 	// (GitHub's, ADR-0040).
 	Fields map[string]string `json:"fields,omitempty"`
-	// Status: an issue's card in each GitHub project it sits in, by the
-	// project's number, its Status option; "" for none (ADR-0057).
-	Status map[string]string `json:"status,omitempty"`
 	// Weight: an issue's GitLab weight, with weights; none when absent.
 	Weight *int `json:"weight,omitempty"`
 	// Assignees: who an issue is assigned to, by login.

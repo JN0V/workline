@@ -25,7 +25,7 @@ An issue it does not take is refused before any agent is asked
   with no test: asked again once first, told which; still refused, said
   in the same comment, the run blocks. In
   `workline:needs-tests`, the line then blocks the issue, `workline:blocked`,
-  the reason on the board
+  the reason in its comment
   ([routing](../../../docs/spec/routing.md#once-a-state-the-record)).
 - **No test written**, the agent's answer read and no kind named: no
   test possible, its notes the reason, handed over to the developer as

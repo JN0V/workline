@@ -404,7 +404,7 @@ from.
 
 - **`unblock`** moves it to `to`: refine, or the state it came from
   (`revisit-from`; Ready for one a developer had claimed). Every other
-  state's label off, its card moved; the role's comment says why, and
+  state's label off; the role's comment says why, and
   that putting `workline:blocked` back undoes it. Another `to` is
   dropped (`unblock-to`).
 - **`blocked`** keeps it there, its reason said afresh in the role's

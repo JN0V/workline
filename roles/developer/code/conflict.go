@@ -242,7 +242,7 @@ func draftBehind(runDir, repo string, id int, head, base string, files []string,
 	v := verdict.Verdict{Status: verdict.Pass, Summary: where + ": the tester's Draft conflicts with the base; blocked for a person",
 		Findings: []verdict.Finding{{Rule: "draft-behind", Level: "warn", Where: where, Message: why}}}
 	return say(runDir, v, append(said,
-		intent.Intention{Kind: "label", Value: map[string]any{"issue": id, "add": add, "remove": remove, "card": "blocked"}},
+		intent.Intention{Kind: "label", Value: map[string]any{"issue": id, "add": add, "remove": remove}},
 		sayOn(id, body)))
 }
 

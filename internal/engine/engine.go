@@ -28,7 +28,6 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
@@ -3184,26 +3183,7 @@ func (a *applier) apply(in intent.Intention) error {
 		if target == nil {
 			return errors.New("a label needs a target issue or merge request (--target)")
 		}
-		add, remove := strs(m["add"]), strs(m["remove"])
-		var card *board.Move
-		if slot, _ := m["card"].(string); slot != "" && target.Kind == "issue" {
-			// The state's card on the board, read now (ADR-0059,
-			// decision 2): GitLab's column label in the same call.
-			card = board.Along(a.forge, a.repo, slot)
-			add, remove = card.Fold(add, remove)
-		}
-		if err := a.forge.Label(*target, add, remove); err != nil {
-			return err
-		}
-		if card.Writes() {
-			a.moveCard(target.ID, card.Project, card.Column)
-		}
-		if st, ok := m["status"].(map[string]any); ok && target.Kind == "issue" {
-			project, _ := st["project"].(int)
-			option, _ := st["option"].(string)
-			a.moveCard(target.ID, project, option)
-		}
-		return nil
+		return a.forge.Label(*target, strs(m["add"]), strs(m["remove"]))
 	case "issue":
 		m, _ := in.Value.(map[string]any)
 		title, _ := m["title"].(string)
@@ -3363,15 +3343,7 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		t := forge.Target{Kind: "issue", ID: d.Act.Issue}
-		card := board.Along(a.forge, a.repo, "refine") // its card back to Refine, when the board has it
-		add, remove := card.Fold([]string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests, "workline:developing"})
-		if err := a.forge.Label(t, add, remove); err != nil {
-			return err
-		}
-		if card.Writes() {
-			a.moveCard(t.ID, card.Project, card.Column)
-		}
-		return nil
+		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady, backlog.LabelNeedsTests, "workline:developing"})
 	case "unblock":
 		// Out of Blocked, alone (ADR-0059, amended): to the state it came
 		// from or to refine, every other state's label off, its card
@@ -3388,16 +3360,7 @@ func (a *applier) apply(in intent.Intention) error {
 		if err != nil {
 			return err
 		}
-		t := forge.Target{Kind: "issue", ID: d.Act.Issue}
-		card := board.Along(a.forge, a.repo, d.Act.To)
-		add, remove = card.Fold(add, remove)
-		if err := a.forge.Label(t, add, remove); err != nil {
-			return err
-		}
-		if card.Writes() {
-			a.moveCard(t.ID, card.Project, card.Column)
-		}
-		return nil
+		return a.forge.Label(forge.Target{Kind: "issue", ID: d.Act.Issue}, add, remove)
 	case "blocked":
 		return nil // kept blocked: said in the role's one comment, nothing moved
 	case "assume":

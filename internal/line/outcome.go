@@ -343,7 +343,7 @@ func CountApplyFailure(f forge.Forge, repo string, res *Result, said, run string
 		}
 		w.Record.Errors = prev.with(verdict.Outcome{Kind: verdict.MachineError, Of: kind, Said: said}, now)
 		w.Record.Lost, w.Record.Needs, w.Failed, w.After = "", nil, true, false
-		if err := writeState(f, cfg, repo, w, role); err != nil {
+		if err := writeState(f, cfg, w, role); err != nil {
 			errs = append(errs, fmt.Errorf("#%d: %w", w.Issue, err))
 		}
 	}

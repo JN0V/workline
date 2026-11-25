@@ -49,8 +49,6 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
   line of states needs ([ci-gitlab.md](ci-gitlab.md#gitlabcom); a [self-managed
   instance](ci-gitlab-self-managed.md)).
 - **Another forge** (Gitea, Forgejo…) or [none](no-forge.md): [ci-other-forges.md](ci-other-forges.md).
-- **A board**, GitHub's project or GitLab's: what to switch on so the
-  roles move its cards, [boards](boards.md#what-you-switch-on).
 
 What the templates need:
 
