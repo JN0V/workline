@@ -4,19 +4,27 @@ about: >
   (ADR-0039 (c), amended): the role labelled #9 `task` from a light
   read, its state says so, and the label is still its own; read in full,
   the agent proposes `bug`: `task` comes off, `bug` goes on, the state
-  says `bug`. #10's `chore` is a person's: kept.
+  says `bug, corrected`. #10's `chore` is a person's: kept. #11's same
+  kind again changes nothing; #12, corrected once already, is never
+  swapped again.
 given:
   repo: backlog
   forge:
     issues:
       - {id: 9, title: "Rows lost on export", body: "The export loses the last row.", author: ann, insider: true, labels: [task], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nkind: task\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 10, title: "Slow export", body: "The export is slow.", author: ann, insider: true, labels: [chore], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-run: {role: product-owner, event: schedule, ai: fake:kind-set-back}
+      - {id: 11, title: "Bump the CSV library", body: "A new version is out.", author: ann, insider: true, labels: [task], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nkind: task\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Export to JSON", body: "Add a JSON export.", author: ann, insider: true, labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nkind: bug, corrected\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-correct}
 expect:
   findings:
     - {rule: done, where: "#9", message: "Labelled #9 `bug`, a bug"}
-    - {rule: kind-kept, where: "#10", message: "its label `chore` says its kind already, a person's: never swapped"}
+    - {rule: kind-kept, where: "#10", message: "its label `chore` says its kind already, a person's or corrected once: never swapped"}
+    - {rule: kind-same, where: "#11", message: "its label `task` says that kind already"}
+    - {rule: kind-kept, where: "#12", message: "its label `bug` says its kind already, a person's or corrected once: never swapped"}
   forge:
     issues:
-      - {id: 9, labels: [bug], comment-contains: "kind: bug"}
+      - {id: 9, labels: [bug], comment-contains: "kind: bug, corrected"}
       - {id: 10, labels: [chore]}
+      - {id: 11, labels: [task]}
+      - {id: 12, labels: [bug]}

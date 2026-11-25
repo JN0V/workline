@@ -101,7 +101,7 @@ func kindAsked(is forge.Issue, st *backlog.State, mode string) string {
 var htmlComment = regexp.MustCompile(`(?s)<!--.*?-->`)
 
 // kindSection gives the issues read for their kind alone: each title and
-// its whole body, its HTML comments left out.
+// its whole body as a full read gives it, its HTML comments left out.
 func kindSection(list []forge.Issue) string {
 	if len(list) == 0 {
 		return ""
@@ -114,7 +114,7 @@ func kindSection(list []forge.Issue) string {
 		if body == "" {
 			body = "(no body)"
 		}
-		fmt.Fprintf(&b, "## #%d %s\n\n%s\n\n", is.ID, is.Title, body)
+		fmt.Fprintf(&b, "## #%d %s\n\n%s\n\n", is.ID, is.Title, clip(body, bodyWholeMax))
 	}
 	return b.String()
 }

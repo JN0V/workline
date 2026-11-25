@@ -18,4 +18,4 @@ reads as a chore may describe a defect below. A bug's fix merges once a
 test that fails shows the bug; a feature waits for a person: never call
 a bug a feature, whatever its size. When the text does not tell, say so
 in a `note` rather than guess. Nothing else is proposed on these issues.
-The engine sets a kind once: a person's change stands.
+A person's kind stands.

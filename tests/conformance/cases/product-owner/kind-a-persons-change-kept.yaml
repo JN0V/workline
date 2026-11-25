@@ -15,7 +15,7 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:kind-set-back}
 expect:
   findings:
-    - {rule: kind-kept, where: "#9", message: "its label `enhancement` says its kind already, a person's: never swapped"}
+    - {rule: kind-kept, where: "#9", message: "its label `enhancement` says its kind already, a person's or corrected once: never swapped"}
     - {rule: kind-once, where: "#10", message: "the role set its kind once already (`bug`): a person's removal stands"}
   no-findings: [{rule: done, where: "#9"}, {rule: done, where: "#10"}]
   forge:

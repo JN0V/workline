@@ -90,14 +90,15 @@ changes. A light read gives it a kind
 - **A person's label is never swapped**: an issue a kind label of a
   person's tells keeps it (`kind-kept`), checked again just before the
   label is put.
-- **The role's own guess may be corrected**: the label it set is kept
-  in the issue's state; while it is still on the issue, a later full
-  read told "the role's own guess" may propose another kind: its label
-  comes off, the new one goes on.
+- **The role's own guess may be corrected, once**: the label it set is
+  kept in the issue's state; while it is still on the issue, a later
+  full read told "the role's own guess" may propose another kind: its
+  label comes off, the new one goes on, and the state says
+  `kind: bug, corrected`: never swapped again.
 - **A person's change or removal is never undone** (`kind-kept`,
   `kind-once`).
-- **A bug is never turned into a feature**: not by the role, and not
-  when its bug is not reproduced ([the tester's
+- **A bug a person labelled is never turned into a feature**: not by
+  the role, and not when its bug is not reproduced ([the tester's
   hand-over](../../tester/docs/proof-kinds.md#a-bug-not-reproduced)).
 
 ## Not yet
