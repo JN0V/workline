@@ -38,4 +38,4 @@ expect:
     issues:
       - id: 9
         labels: [workline:to-refine, workline:draft]
-        comment-contains: "**workline's line** waits for a person on this issue.\n\n- **Why**: its drafts, since 2026-10-01 09:00 UTC, wait on a person's yes (acts.ask.wait: never).\n- **Next**: a person labels it `workline:accepted` to take them, or edits them, which wakes the product owner.\n\n**workline's line** last woke the product owner"
+        comment-contains: "**workline's line** waits for a person on this issue.\n\n- **Why**: its drafts, since 2026-10-01 09:00 UTC, wait on a person's yes: never taken as written by silence.\n- **Next**: a person labels it `workline:accepted` to take them, or edits them, which wakes the product owner.\n\n**workline's line** last woke the product owner"

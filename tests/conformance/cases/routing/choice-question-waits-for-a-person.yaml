@@ -1,0 +1,42 @@
+case: routing/choice-question-waits-for-a-person
+about: >
+  A product choice is never settled by silence (ADR-0060, amended): a
+  feature's question unanswered for weeks at normal wakes no role (#10);
+  a question the product owner was woken for once and took no
+  assumption on, a choice it left to a person, is not woken again
+  (#11). Both wait in refine, said with the question's day.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 10
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, enhancement]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"206c8bcea856\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+      - id: 11
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"206c8bcea856\",\"hops\":1,\"timeout\":\"ask=1\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "reconcile: 0 issues due:"
+  findings:
+    - {rule: state-waits, level: info, where: "#10", message: "its question of 2026-10-01 23:50 UTC waits on its reporter, until it is answered: no assumption is taken on it"}
+    - {rule: state-waits, level: info, where: "#11", message: "its question of 2026-10-01 23:50 UTC waits on its reporter, until it is answered: no assumption is taken on it"}
+  no-findings: [{rule: state-timeout}, {rule: state-acted}]

@@ -29,5 +29,5 @@ expect:
   agent-calls: 0
   summary: "reconcile: 0 issues due:"
   findings:
-    - {rule: state-waits, level: info, where: "#10", message: "its question of 2026-10-01 23:50 UTC waits on its reporter, until it is answered (acts.ask.wait: never)"}
+    - {rule: state-waits, level: info, where: "#10", message: "its question of 2026-10-01 23:50 UTC waits on its reporter, until it is answered: no assumption is taken on it"}
   no-findings: [{rule: state-timeout}, {rule: state-acted}]

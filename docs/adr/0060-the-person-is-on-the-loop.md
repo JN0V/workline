@@ -21,6 +21,8 @@
   built in [#1261](https://github.com/JN0V/workline/issues/1261): §2's
   Verification moves to the tester; the product owner keeps the Scope,
   as a hint
+- **Amended by:** [a product choice waits for a person](#amendment-2026-11-25-a-product-choice-waits-for-a-person)
+  (2026-11-25, built): never settled by the delay
 - **Amended by:** [ADR-0073](0073-a-task-that-changes-no-behaviour-may-merge-alone.md)
   (built): at `normal`, a task that shows no behaviour changed merges
   alone where `merge.alone` lists `task`; off by default
@@ -265,6 +267,29 @@ Docs to update with each step: [writing.md](../../roles/product-owner/docs/writi
   ([#937](https://github.com/JN0V/workline/issues/937)).
 - **At `enterprising`**, a task goes into a milestone as a feature
   does: the person's yes is on the candidate.
+
+## Amendment (2026-11-25): a product choice waits for a person
+
+- **Why**: three product choices were taken by the 24 h assumption and
+  built: [DomoticsCore #139](https://github.com/JN0V/DomoticsCore/issues/139)
+  (its text: "whether a shutdown should remove the entities is
+  undecided"), [DomoticsCore #154](https://github.com/JN0V/DomoticsCore/issues/154)
+  (its drafts, a limit left open, the owner set it later) and
+  [TraceGlass #9](https://github.com/JN0V/TraceGlass/issues/9) (a
+  feature).
+- **Decided by** the maintainer: a product choice is never settled by
+  timeout.
+- **A feature** never times out, at any level: its question and its
+  drafts wait for a person.
+- **Any issue whose text says a choice is undecided or open**: told
+  that its question timed out, the product owner takes no assumption
+  on such a choice. Drafts are not taken as written with no agent while
+  its question waits with no assumption: the agent reads it first.
+- **It waits in refine**, on its reporter: the line says so once on the
+  issue, and wakes the role again only on a person's answer, edit or
+  label.
+- **Amends** decision 1: the delay still holds for every other question
+  and draft.
 
 [ADR-0017]: 0017-the-release-manager.md
 [ADR-0018]: 0018-the-product-owner.md

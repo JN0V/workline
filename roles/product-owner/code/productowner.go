@@ -554,11 +554,11 @@ func Pre(runDir, repo string) int {
 		}
 		// Questions time out, as lazy consensus (ADR-0060): one unanswered
 		// past the level's delay, dated by the forge, read once for the
-		// role's assumption; drafts no person accepted past it, all the
-		// issue lacks, taken as written with no agent; an answer after an
-		// assumption marks it, and is read as asking to revise.
+		// role's assumption, or left to a person on a product choice; drafts
+		// past it, all the issue lacks and no question open, taken with no
+		// agent; a feature's never. An answer after an assumption marks it.
 		silence, silent := backlog.Unanswered(notes, role, is)
-		silent = silent && silence.Due(cfg.Wait, st, now) && (st.Told < silence.Round || is.ID == issueEvent()) && !aside
+		silent = silent && silence.Due(cfg.Wait.For(is), st, now) && (st.Told < silence.Round || is.ID == issueEvent()) && !aside
 		if silent {
 			timedOut[is.ID] = silence
 		}
@@ -571,8 +571,8 @@ func Pre(runDir, repo string) int {
 				"issue": is.ID, "answered": answeredBy, "own": true,
 				"why": fmt.Sprintf("@%s wrote after the role's assumptions: their word stands over them.", answeredBy)}})
 		}
-		if !aside && !backlog.Readied(is) && backlog.OnlyDrafts(is, st) {
-			taken, err := draftsDue(b, is, notes, cfg.Wait, now)
+		if !aside && !backlog.Readied(is) && backlog.OnlyDrafts(is, st) && backlog.LeftOpen(st, notes, is, role) == "" {
+			taken, err := draftsDue(b, is, notes, cfg.Wait.For(is), now)
 			if errors.Is(err, forge.ErrUnreachable) {
 				fmt.Fprintln(os.Stderr, err)
 				return exitExternal
@@ -1984,9 +1984,9 @@ func waitSays(w backlog.Delay) string {
 }
 
 // timedOutSaid tells the agent its question got no answer for the delay
-// (ADR-0060): take the best assumption, and go on.
+// (ADR-0060): take the best assumption and go on, never on a product choice.
 func timedOutSaid(s backlog.Silence, w backlog.Delay) string {
-	return fmt.Sprintf("Unanswered: your question of %s got no answer in %s (acts.ask.wait). Give an `assume` with your best answer to it — one plain sentence, from what the issue, its comments and the code show, written on the issue under %s for the person to correct — then go on as if it were the answer: `refine` what it lacks, `ready` when evident. Ask nothing more: the question stands. The person's %s and %s are never rewritten.\n",
+	return fmt.Sprintf("Unanswered: your question of %s got no answer in %s (acts.ask.wait). Give an `assume` with your best answer to it — one plain sentence, from what the issue, its comments and the code show, written on the issue under %s for the person to correct — then go on as if it were the answer: `refine` what it lacks, `ready` when evident. A product choice the issue says is undecided or open is never assumed: give nothing on it, it waits for the person. Ask nothing more: the question stands. The person's %s and %s are never rewritten.\n",
 		s.Since.UTC().Format("2006-01-02 15:04 UTC"), w.Say(), backlog.AssumptionsName, work.Name(work.Need), work.Name(work.Validation))
 }
 

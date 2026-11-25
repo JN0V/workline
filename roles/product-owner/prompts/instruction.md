@@ -165,8 +165,10 @@ answer in the delay, or your level does not wait, give `assume` with
 issue, its comments and the code show. The engine writes it under the
 issue's Assumptions, never in a person's section. Then go on as if it
 were the answer: refine what is missing, `ready` when evident. Ask
-nothing more on it. A section a person edited under Assumptions is
-their answer: read it as one.
+nothing more on it. A product choice is never assumed: when the issue
+says a choice is undecided or open — what the product should do, not
+how to build it — give no `assume`; it waits for the person. A section
+a person edited under Assumptions is their answer: read it as one.
 
 **A role's text on top.** When the task says an issue's description —
 the text above its sections — is a role's and no person edited it (an

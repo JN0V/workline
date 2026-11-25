@@ -107,6 +107,10 @@ Need or Validation draft no person accepted, waits for an answer
   no agent until then: one call writes the assumption
   ([on the issue](writing.md#assumptions)); a draft is taken as written
   ([the line](../../../docs/spec/routing.md#once-a-state-the-record)).
+- **A product choice is never settled by silence**: a feature's
+  question or drafts, or a question the role finds the issue leaves
+  open, wait for the person at every level; the line says so once
+  ([amendment](../../../docs/adr/0060-the-person-is-on-the-loop.md#amendment-2026-11-25-a-product-choice-waits-for-a-person)).
 - **Silence is still no yes** to close, merge or release.
 
 ```yaml

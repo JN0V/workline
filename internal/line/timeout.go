@@ -55,9 +55,12 @@ func (t *tally) askWait() backlog.Delay {
 // nothing waits on a person, or the delay passed. next: what of a
 // person ends that wait, said with it on the issue (#1195).
 func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec Record) (key, said, waits, next string, err error) {
-	w := t.askWait()
+	w := t.askWait().For(is)
 	now := clock().UTC()
 	s, open := backlog.Unanswered(notes, backlog.Keeper, is)
+	if rec.Timeout == fmt.Sprintf("ask=%d", s.Round) {
+		w = backlog.Delay{Never: true} // woken for it, no assumption taken: a product choice waits for a person
+	}
 	st, _, _ := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
 	if open && (st == nil || st.Assumed < s.Round) && !s.Due(w, st, now) {
 		waits = questionWaits(w, s, is.ID)
@@ -132,11 +135,11 @@ func draftsHeld(is forge.Issue, labeled string, comments []string, notes []forge
 func questionWaits(w backlog.Delay, s backlog.Silence, id int) string {
 	switch {
 	case w.Never && !s.Dated:
-		return fmt.Sprintf("its question waits on its reporter, until it is answered (acts.ask.wait: %s)", backlog.WaitNever)
+		return "its question waits on its reporter, until it is answered: no assumption is taken on it"
 	case !s.Dated:
 		return fmt.Sprintf("its question waits on #%d's reporter: the forge does not date it, so no assumption is taken until it is answered", id)
 	case w.Never:
-		return fmt.Sprintf("its question of %s waits on its reporter, until it is answered (acts.ask.wait: %s)", day(s.Since), backlog.WaitNever)
+		return fmt.Sprintf("its question of %s waits on its reporter, until it is answered: no assumption is taken on it", day(s.Since))
 	}
 	return fmt.Sprintf("its question of %s waits on its reporter: the %s takes its assumption on %s (acts.ask.wait: %s)",
 		day(s.Since), roleSaid(backlog.Keeper), day(s.Since.Add(w.D)), w.Say())
@@ -147,11 +150,11 @@ func questionWaits(w backlog.Delay, s backlog.Silence, id int) string {
 func draftsWait(w backlog.Delay, since time.Time, known bool, id int) string {
 	switch {
 	case w.Never && !known:
-		return fmt.Sprintf("its drafts wait on a person's yes (acts.ask.wait: %s)", backlog.WaitNever)
+		return "its drafts wait on a person's yes: never taken as written by silence"
 	case !known:
 		return fmt.Sprintf("its drafts wait on a person's yes on #%d: the forge does not say since when, so they are not taken as written until one is given", id)
 	case w.Never:
-		return fmt.Sprintf("its drafts, since %s, wait on a person's yes (acts.ask.wait: %s)", day(since), backlog.WaitNever)
+		return fmt.Sprintf("its drafts, since %s, wait on a person's yes: never taken as written by silence", day(since))
 	}
 	return fmt.Sprintf("its drafts wait on a person's yes: the %s takes them as written on %s (acts.ask.wait: %s)",
 		roleSaid(backlog.Keeper), day(since.Add(w.D)), w.Say())

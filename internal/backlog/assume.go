@@ -94,6 +94,15 @@ func (w Delay) Passed(since, now time.Time) bool {
 	return !w.Never && !now.Before(since.Add(w.D))
 }
 
+// For is the delay of an issue's questions and drafts: a feature's is a
+// product choice, never settled by silence; it waits for a person.
+func (w Delay) For(is forge.Issue) Delay {
+	if k, _ := KindOf(is.Labels); k == KindFeature {
+		return Delay{Never: true}
+	}
+	return w
+}
+
 // AskWait reads the delay of a role's settings, as merged by the engine:
 // its default when unset or unreadable — ReadConfig says the error.
 func AskWait(settings map[string]any) Delay {
@@ -145,17 +154,6 @@ func (s Silence) Due(w Delay, st *State, now time.Time) bool {
 		return false
 	}
 	return w.Passed(s.Since, now)
-}
-
-// SilenceDue is the question of an issue due for an assumption at now,
-// read from its comments; false when none is.
-func SilenceDue(notes []forge.Note, role string, is forge.Issue, w Delay, now time.Time) (Silence, bool) {
-	s, open := Unanswered(notes, role, is)
-	if !open {
-		return s, false
-	}
-	st, _, _ := ReadState(forge.Bodies(notes), role)
-	return s, s.Due(w, st, now)
 }
 
 // OnlyDrafts says whether all that keeps an issue from ready is a Need or
@@ -332,7 +330,7 @@ func (p *Plan) checkAssume(f forge.Backlog, role string, c *Proposal) (rule, why
 	if strings.TrimSpace(c.Assumption) == "" {
 		return "assume-empty", "nothing assumed: the assumption was empty"
 	}
-	w, now := p.config.Wait, clock.Now()
+	w, now := p.config.Wait.For(is), clock.Now()
 	s, open := Unanswered(notes, role, is)
 	switch round := p.askedNow[c.Issue]; {
 	case round > 0 && !w.Never && w.D == 0:
@@ -345,7 +343,7 @@ func (p *Plan) checkAssume(f forge.Backlog, role string, c *Proposal) (rule, why
 	case !open:
 		return "assume-nothing-asked", "no question to its reporter waits for an answer: nothing to assume"
 	case w.Never:
-		return "assume-waits", "the role waits for the answer (autonomy cautious, or acts.ask.wait never)"
+		return "assume-waits", "the role waits for the answer: a feature, or autonomy cautious (acts.ask.wait never)"
 	case !s.Dated:
 		return "assume-undated", "the forge does not say when the question was asked: its answer is waited for"
 	case st != nil && st.Assumed >= s.Round:
@@ -364,7 +362,7 @@ func (p *Plan) checkAssume(f forge.Backlog, role string, c *Proposal) (rule, why
 // —, and the line it writes; none, and when they will be, said after a
 // not-ready.
 func (p *Plan) assumable(f forge.Backlog, is forge.Issue, st *State) (names []string, written, later string) {
-	w := p.config.Wait
+	w := p.config.Wait.For(is)
 	if w.Never || !OnlyDrafts(is, st) {
 		return nil, "", ""
 	}
