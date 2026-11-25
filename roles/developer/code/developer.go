@@ -562,7 +562,7 @@ func Pre(runDir, repo string) int {
 		on = from // its code starts from the tester's Draft, the base in it
 	}
 	ts, tsErr := testerSettings(repo) // none set, or unread, is said in the question; the proof says it again
-	return ask(runDir, repo, on, bounds, taskText(is, bounds, ts.Command, tsErr, s))
+	return ask(runDir, repo, on, bounds, taskText(is, bounds, ts.Command, tsErr, s)+"Done is the issue's "+work.Name(work.Validation)+" done, each scenario true of your code: tests green are not enough. A part left undone, or that only a person may do: your last message is instead one paragraph, no list, opening on `Not done:`: each part and why.\n")
 }
 
 // ask leaves its agent the question, a worktree of the commit on where it
@@ -1033,7 +1033,7 @@ func unreadFinding(where string, unread []string, posted bool) verdict.Finding {
 		at = "posted as they came on its pull request"
 	}
 	return verdict.Finding{Rule: "agent-words-unread", Level: "warn", Where: where,
-		Message: fmt.Sprintf("%d of its agent's answers beside its code could not be read (its closing words, its objections file): nothing of them applied, %s, so that an objection written there is not lost; its code is held as any", len(unread), at)}
+		Message: fmt.Sprintf("%d of its agent's answers beside its code read as no YAML (its closing words, its objections file): nothing of them applied, %s, so that a part not done or an objection said there is not lost; its code is held as any", len(unread), at)}
 }
 
 // rights is with whose rights its agent ran, said to whoever runs it:

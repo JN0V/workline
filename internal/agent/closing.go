@@ -1,8 +1,10 @@
 package agent
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -13,12 +15,11 @@ import (
 // posts them as they came, for a person (#746).
 const ClosingUnread = "closing-unread.txt"
 
-// closingWords reads what an agent that worked in a worktree ends on
-// (ADR-0056). Its edits are its code, so these words never fail the call,
-// nor ask it again (a whole run of turns): read whole when they are a
-// YAML list; else the YAML lists found among its prose, fenced or not,
-// read alone; else nothing read, the words kept in out/ClosingUnread for
-// its role to post. Empty or `[]`, it proposes nothing beside its edits.
+// closingWords reads what an agent that worked in a worktree ends on;
+// its edits are its code, so these words never fail the call:
+// a YAML list read whole, or those among its prose when one holds a kind
+// the role writes; else the words kept whole in out/ClosingUnread for its
+// role to post, a note never lost. Empty or `[]`, nothing beside its edits.
 func closingWords(runDir, answer string, kinds []string) ([]byte, []string) {
 	unread := filepath.Join(runDir, "out", ClosingUnread)
 	_ = os.Remove(unread) // an earlier attempt's
@@ -26,27 +27,26 @@ func closingWords(runDir, answer string, kinds []string) ([]byte, []string) {
 	if s == "" {
 		return []byte("[]\n"), nil
 	}
-	if p, mended, err := proposalsFrom(s, kinds...); err == nil {
-		return p, mended
+	known := func(p []byte) bool { // an item of a kind the role writes
+		return slices.ContainsFunc(kinds, func(k string) bool { return bytes.Contains(p, []byte("- "+k+":")) })
 	}
 	var list []map[string]any
 	var mended []string
-	for _, block := range yamlBlocks(s) {
+	for i, block := range append([]string{s}, yamlBlocks(s)...) { // whole first
 		p, m, err := proposalsFrom(block, kinds...)
 		var items []map[string]any
-		if err != nil || yaml.Unmarshal(p, &items) != nil {
-			continue
+		if err != nil || yaml.Unmarshal(p, &items) != nil || !known(p) && (i > 0 || yaml.Unmarshal([]byte(block), &[]map[string]any{}) != nil) {
+			continue // prose or a fence left out, and nothing the role writes: a note, kept whole
+		} else if i == 0 {
+			return p, m
 		}
 		list, mended = append(list, items...), append(mended, m...)
 	}
 	if len(list) > 0 {
 		out, err := yaml.Marshal(list)
-		if err == nil {
+		if err == nil && known(out) {
 			return out, append(mended, "its closing words held prose around their YAML: the YAML read alone, the prose left out (out/agent-answer.txt)")
 		}
-	}
-	if lines := strings.Split(s, "\n"); strings.TrimSpace(lines[len(lines)-1]) == "[]" {
-		return []byte("[]\n"), []string{"its closing words held prose before their `[]`: read as proposing nothing beyond its edits (out/agent-answer.txt)"}
 	}
 	_ = os.WriteFile(unread, []byte(answer), 0o644)
 	return []byte("[]\n"), nil

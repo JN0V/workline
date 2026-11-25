@@ -42,4 +42,4 @@ expect:
       - id: 2
         branch: workline/developer/3
         draft: false
-        body-contains: ["## Its agent's words, unread", "closing words could not be read", "why: [zero times"]
+        body-contains: ["## Its agent's words, unread", "closing words as they came", "why: [zero times"]
