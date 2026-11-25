@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.90.0](https://github.com/JN0V/workline/compare/v0.89.3...v0.90.0) (2026-11-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* a project's auditor question in .workline/roles/auditor/kinds/<kind>.md is no longer read: move it to .workline/roles/auditor/criteria/<role>/<kind>.md. The embedded roles (workline.Roles) hold criteria/ in place of kinds/, and no pre nor post file.
+
+### Features
+
+* **developer:** name files left for a person atop its PR ([#2158](https://github.com/JN0V/workline/issues/2158)) ([fbac18e](https://github.com/JN0V/workline/commit/fbac18e056fc577459a1fb46ed8772a4117fe712))
+* **reviewer:** the intent lens answers each Validation scenario ([#2156](https://github.com/JN0V/workline/issues/2156)) ([f033170](https://github.com/JN0V/workline/commit/f03317072e6b286c09343d1a7479dfad0e00c1ec))
+* **tester:** give unproven scenarios to the tests lens ([#2160](https://github.com/JN0V/workline/issues/2160)) ([f44d5de](https://github.com/JN0V/workline/commit/f44d5de25fc41b4dc26f1ecea216039b631a42ee))
+
+
+### Bug Fixes
+
+* a lens answer that is not valid YAML fails the whole ([#2182](https://github.com/JN0V/workline/issues/2182)) ([f45f6b2](https://github.com/JN0V/workline/commit/f45f6b2940eb719a27e8db77990797466b413e6e))
+* an accepted pull request behind its base is never ([#2187](https://github.com/JN0V/workline/issues/2187)) ([9956443](https://github.com/JN0V/workline/commit/99564432ed1c895f2edca4eaf3c3864383d055cb))
+* bug(doctor): warns pull_request_target is blocked when an ([#2179](https://github.com/JN0V/workline/issues/2179)) ([62a3582](https://github.com/JN0V/workline/commit/62a3582647e6a57ee8316baf246ac688bf01699e))
+* **ci:** the answer steps skip a fork's pull request ([#1784](https://github.com/JN0V/workline/issues/1784)) ([#2146](https://github.com/JN0V/workline/issues/2146)) ([c1fb84b](https://github.com/JN0V/workline/commit/c1fb84bbdac95889850a2459dd1177e7c8e8c909))
+* **code:** a reason naming an existing test is not read as ([#2176](https://github.com/JN0V/workline/issues/2176)) ([90c4369](https://github.com/JN0V/workline/commit/90c436969a6875aef751befde23c1233c06e3432))
+* **developer:** a round its agent never ran is not counted ([#2163](https://github.com/JN0V/workline/issues/2163)) ([2445d29](https://github.com/JN0V/workline/commit/2445d2939dcb2cfbaceee929d7487791ab368a6f))
+* **forge:** squash-only detection takes a missing GitHub squash ([#2167](https://github.com/JN0V/workline/issues/2167)) ([dccd37b](https://github.com/JN0V/workline/commit/dccd37b89ed989cbfc1beef71996dc10c29c0f6e))
+* **line:** fix: the line undoes a person's ready after ([#2180](https://github.com/JN0V/workline/issues/2180)) ([8f43170](https://github.com/JN0V/workline/commit/8f431702ea8825139878be56a39df720cd570e7d))
+* **reviewer:** a lens that did not run never says "No finding" ([#2161](https://github.com/JN0V/workline/issues/2161)) ([862e4f3](https://github.com/JN0V/workline/commit/862e4f37219488b52bde3c9a32eb3191841a790d))
+* **reviewer:** an important finding misquoted goes to its judge ([#2159](https://github.com/JN0V/workline/issues/2159)) ([fc91bc5](https://github.com/JN0V/workline/commit/fc91bc5da21e2f677045aca174691d51bf6396ed))
+* the line mentions a person in its records, so a mention no ([#2170](https://github.com/JN0V/workline/issues/2170)) ([681ba0a](https://github.com/JN0V/workline/commit/681ba0a37f37c8e4420032615b5e119ba202ca96))
+* **workline:** failed git status read as a clean tree ([#2184](https://github.com/JN0V/workline/issues/2184)) ([b73f9e0](https://github.com/JN0V/workline/commit/b73f9e009778759afb7319e91f6d93447062f188))
+
+
+### Code Refactoring
+
+* drop the role shims, move auditor kinds to criteria ([b4cbb50](https://github.com/JN0V/workline/commit/b4cbb50f836d6fcde280f8415438cbfc61ad7ce3))
+
 ## [0.89.3](https://github.com/JN0V/workline/compare/v0.89.2...v0.89.3) (2026-11-24)
 
 
