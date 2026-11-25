@@ -589,7 +589,7 @@ func codeFiles(repo string, s Settings, from, head string) ([]File, error) {
 }
 
 // ownCommits reads workline's own last commits, which the line judges the
-// range without (own, `<head>..<their tip>`, ADR-0041): their tip, and the
+// range without (own, `<head>..<their tip>`): their tip, and the
 // files they change, their merges of the base aside. The lenses never see
 // them; the judge of an intent finding is shown them, as the change's.
 func ownCommits(repo, own string) (tip string, files []string, err error) {
