@@ -325,7 +325,15 @@ assumption, written on the issue, and the issue goes on.
   `workline:draft`, or a person's later comment. Past it, the engine
   moves the issue to ready with no agent, its draft marks out, a line
   under Assumptions saying the draft was taken as written; an agent's
-  `ready` passes so too. At `cautious`, `ready` still needs a person.
+  `ready` passes so too. At `cautious`, `ready` still needs a person;
+  so does a draft whose issue's question waits with no assumption (the
+  agent reads it first, `backlog.LeftOpen`).
+- **A product choice waits for a person**
+  ([amendment](../../adr/0060-the-person-is-on-the-loop.md#amendment-2026-11-25-a-product-choice-waits-for-a-person)):
+  a feature's delay is `never` at every level (`Delay.For`); on any
+  issue, the agent told its question timed out takes no assumption on
+  a choice the issue says is undecided or open. Woken for it once, the
+  line wakes it again only on a person's word.
 - **A late answer**: a counted comment after the assumption
   (`assumed-at`) marks each line "Answered by @x on <day>: their answer
   stands over it", with no agent, and is read as a person's comment on
