@@ -132,7 +132,7 @@ func (r reading) asked(s Settings, head string) string {
 	} else {
 		b.WriteString("\n## No read is left\n\nYou read what you could (judge-read-rounds, judge-read-lines-max): answer now.\n")
 	}
-	b.WriteString("\nYour answer: yes; no, with the lines that refute the finding quoted beside the note, as they read, with their path; or unsure, when you still cannot tell. A no whose quote is not found again in what you were shown or read leaves the finding not verified:\n\n" +
+	b.WriteString("\nYour answer: yes; no, with the lines that refute the finding quoted beside the note, as they read, with their path; or unsure, when you still cannot tell. A no whose quote is not found again in what you were shown or read leaves the finding not verified. A finding that something lacks (a check, a test, an explanation of why) is refuted by lines that do it, or that show it is not needed or not asked (a type, a caller, the issue): quote them. The line the finding names refutes it only if that line itself does what the finding says lacks, or shows it is not needed. A finding that only guesses is refuted by quoting what you read that shows the guess wrong. Answer yes only when what you were shown or read covers where it would be and holds none; else unsure: never a no without such lines:\n\n" +
 		"- note: \"no: the loop adds every value before the division.\"\n- quote: {path: \"calc/calc.go\", text: \"for _, v := range values {\"}\n\n" +
 		"- note: \"unsure: whether a caller passes an empty list is in no code read.\"\n")
 	return b.String()
