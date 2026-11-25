@@ -454,6 +454,35 @@ func issueBody(c *caseFile, ref string) string {
 	return ""
 }
 
+// TestScoreReplay scores a replay stricter: an Important only, one
+// finding a defect, outside the change at a planted place, an issue
+// place for intent alone; an unplanted Important is extra on a miss and
+// fails a clean change.
+func TestScoreReplay(t *testing.T) {
+	rc := &reviewCase{Replay: true, Defects: []plant{
+		{Lens: "tests", Kind: "a", At: []place{{File: "a.cpp", Lines: []int{1, 9}}, {File: "#4"}}},
+		{Lens: "edge-cases", Kind: "b", At: []place{{File: "a.cpp", Lines: []int{1, 9}}}},
+		{Lens: "edge-cases", Kind: "c", At: []place{{File: "b.h", Lines: []int{250, 255}}}},
+		{Lens: "intent", Kind: "d", At: []place{{File: "#4"}}},
+		{Lens: "correctness", Kind: "e", At: []place{{File: "c.cpp", Lines: []int{1, 3}}}},
+	}}
+	rr := &reviewRun{Findings: []lensFinding{
+		{"tests", "a.cpp:5", "important", "one finding", true, "yes"},  // a or b, not both
+		{"edge-cases", "b.h:253", "important", "outside", false, ""},   // c, off the change
+		{"intent", "#4", "important", "scenario unmet", true, "yes"},   // d only: a's issue place is not a tests place
+		{"correctness", "c.cpp:2", "nit", "a nit", true, ""},           // e is not found by a nit
+		{"correctness", "z.cpp:9", "important", "elsewhere", true, ""}, // extra
+	}}
+	passed, failed, measure, _ := scoreReview(rc, rr)
+	if passed != 3 || len(failed) != 2 || !strings.Contains(measure, "extra=1") {
+		t.Errorf("passed %d, failed %v\n%s", passed, failed, measure)
+	}
+	rc = &reviewCase{Replay: true, Clean: true}
+	if _, failed, _, _ := scoreReview(rc, rr); !slices.ContainsFunc(failed, func(f string) bool { return strings.HasPrefix(f, "clean:") }) {
+		t.Errorf("a clean change with Importants shown passed: %v", failed)
+	}
+}
+
 // TestScoreReview scores canned reviews: a defect found, by another lens; a
 // true finding the judge refused; findings nothing planted, shown or
 // refused; a place that must stay clean; code outside the change.

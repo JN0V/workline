@@ -60,6 +60,10 @@ type caseFile struct {
 			Base string `yaml:"base"`
 			Head string `yaml:"head"`
 		} `yaml:"clone"`
+		// What the run needs on the machine: a command (pio), or an
+		// environment variable ($ANDROID_HOME). Missing, the case is
+		// skipped, never scored low.
+		Needs []string `yaml:"needs"`
 	} `yaml:"given"`
 	Run struct {
 		Role    string            `yaml:"role"`
@@ -177,7 +181,7 @@ func TestMain(m *testing.M) {
 func TestEvaluation(t *testing.T) { evaluate(t, "cases/*/*.yaml") }
 
 // TestReplay plays the replay set: real misses on real repositories, a
-// role's set at a time (replay/README.md).
+// role's set at a time (docs/spec/conformance/replay.md).
 func TestReplay(t *testing.T) {
 	onDemand(t)
 	evaluate(t, "replay/*/*.yaml")
@@ -206,6 +210,11 @@ func evaluate(t *testing.T, pattern string) {
 		}
 		t.Run(c.Case, func(t *testing.T) {
 			t.Parallel()
+			for _, n := range c.Given.Needs {
+				if v, env := strings.CutPrefix(n, "$"); env && os.Getenv(v) == "" || !env && !onPath(n) {
+					t.Skip("skipped: no toolchain: " + n)
+				}
+			}
 			start := time.Now()
 			r, err := play(t, &c, os.Getenv("WORKLINE_EVAL"))
 			if err != nil {
@@ -443,6 +452,8 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 	return work, repo, env, nil
 }
 
+func onPath(cmd string) bool { _, err := exec.LookPath(cmd); return err == nil }
+
 var mirrors sync.Mutex
 
 // cloneAt clones a replay case's repository into work/repo from a mirror
@@ -521,6 +532,7 @@ func grade(c *caseFile, r *run) (passed int, failed, skipped []string) {
 		if err != nil {
 			return passed, append(failed, "review: "+err.Error()), skipped
 		}
+		c.Review.Replay, c.Review.Clean = c.Given.Clone.Repo != "", strings.Contains(c.Case, "/clean-")
 		p, f, measure, notes := scoreReview(c.Review, rr)
 		passed, failed, r.measure, r.reviewNotes = passed+p, append(failed, f...), measure, notes
 		if r.judgedBy == "" {
