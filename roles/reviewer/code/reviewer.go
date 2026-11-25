@@ -159,6 +159,8 @@ type state struct {
 	Weigh      []weigh             `json:"weigh,omitempty"`     // the tester's answers that no test is needed a judge weighs this run (#1303)
 	Held       string              `json:"held,omitempty"`      // with Weigh and nothing new to read: the summary of the review held
 	Answers    []reviewmark.Answer `json:"answers,omitempty"`   // the tester's answers that no test is needed, on the merge request (#1303)
+	Kept       bool                `json:"kept,omitempty"`      // the judge asked whether a task keeps the behaviour (kept.go)
+	KeptNot    string              `json:"kept-not,omitempty"`  // why it was not asked, where it would have been
 
 	// Unproven: the scenarios the tester said no test proves, as the
 	// developer's pull request lists them, for the tests lens once;
@@ -195,8 +197,8 @@ type Review struct {
 	Questions []Finding         `json:"questions,omitempty"` // decisions put to a person: not defects, not judged (#126)
 	Lenses    []string          `json:"lenses,omitempty"`
 	NotRead   string            `json:"not-read,omitempty"` // no lens read the commits on this run: why, said in place of "No finding"
-	Parts     int               `json:"parts,omitempty"` // the parts the change was read in, too large for one call (#446)
-	Complete  bool              `json:"complete"`        // every lens answered: the commits are recorded as reviewed
+	Parts     int               `json:"parts,omitempty"`    // the parts the change was read in, too large for one call (#446)
+	Complete  bool              `json:"complete"`           // every lens answered: the commits are recorded as reviewed
 	Record    Record            `json:"record"`
 	Local     bool              `json:"local"`              // the record is kept on this machine
 	Calls     []Spent           `json:"calls,omitempty"`    // what each call to an agent used
@@ -205,6 +207,8 @@ type Review struct {
 	Reused    int               `json:"reused,omitempty"`   // findings judged before on the same patch, their verdicts kept (ADR-0050, step 6)
 	Resolved  []string          `json:"resolved,omitempty"` // the conversations on lines of a review before the code answers now, by thread id (#1039)
 	Weighed   []string          `json:"weighed,omitempty"`  // what the run's judges said of the tester's answers that no test is needed (#1303)
+	Kept      string            `json:"kept,omitempty"`     // what the judge said of a task's behaviour (kept.go)
+	KeptAt    string            `json:"kept-at,omitempty"`  // the head it said yes on
 }
 
 // JudgeRead is one round of reads a judge asked (ADR-0045): what it asked,
@@ -541,6 +545,9 @@ func prepare(runDir, repo string, s Settings) int {
 		st.Advisories = append(st.Advisories, cutSaid("", "what the author says (the commit messages, the merge request)", cut, s.TestimonyLines, "testimony-lines-max"))
 	}
 	if err := st.askWeighs(runDir, repo, s); err != nil {
+		return fail(err)
+	}
+	if err := st.askKept(runDir, repo, s); err != nil {
 		return fail(err)
 	}
 	if err := writeJSON(filepath.Join(runDir, "in", "review-state.json"), st); err != nil {
@@ -2258,6 +2265,11 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 	v.Reused = reused
 	v.Status = status(v.Findings)
 	v.Weighed = weighs
+	var kept *reviewmark.Answered
+	v.Kept, v.KeptAt, kept = st.keptAnswer(runDir)
+	if kept != nil && st.Spec == nil && !slices.Contains(v.Record.Judged, *kept) {
+		v.Record.Judged = append(v.Record.Judged, *kept) // sampled by the auditor, as a finding judged
+	}
 	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged) + st.leftSaid() + st.still() + weighedSummary(len(weighs), settledN)
 	if len(st.Skipped) > 0 {
 		v.Summary += "; not asked: " + strings.Join(st.Skipped, ", ")
@@ -2620,6 +2632,7 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 		b.WriteString("\n")
 	}
 	b.WriteString(weighedSaid(v.Weighed))
+	b.WriteString(keptSaid(v.Kept))
 	if issues > 0 {
 		fmt.Fprintf(&b, "What lies outside this change goes to %d issues, labelled `needs-triage`: not the author's to fix here.\n\n", issues)
 	}
@@ -2634,6 +2647,9 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 		b.WriteString(resolvedLine(n) + "\n\n")
 	}
 	b.WriteString("The reviewer never approves and never changes the code: the author fixes what blocks, a person merges.\n\n")
+	if v.KeptAt != "" {
+		b.WriteString("<!-- workline:kept head=" + v.KeptAt + " -->\n") // above forge.At, which summaryValue puts here
+	}
 	b.WriteString(v.Record.String())
 	if v.Subject != "spec" { // what every run's judge answered, within the comment's size (ADR-0046)
 		b.WriteString(v.Record.judgedLines(reviewmark.SummaryMax - b.Len()))

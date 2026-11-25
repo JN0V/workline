@@ -1,0 +1,33 @@
+case: reviewer/task-behaviour-kept-said-by-head
+about: >
+  Where the project lets a task merge alone (`merge: {autonomy: normal,
+  alone: [task]}`, ADR-0073), the reviewer asks the judge whether a
+  task's whole change keeps the behaviour: no public interface,
+  toolchain, build platform, nor chosen limit or value changed. The
+  change closes #4, labelled `task`; the judge says yes. The summary
+  says so, and holds the hidden line `workline follow` reads, naming the
+  head, above the head the summary read.
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\ttotal := 0|\\tvar total int|' calc/calc.go && git commit -qam 'refactor: declare the total' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {merge: {autonomy: normal, alone: [task]}}
+  forge:
+    issues:
+      - id: 4
+        title: Declare the total
+        body: "## Need\n\nThe total reads as a declaration.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [task]
+        comments: []
+    merge-requests:
+      - {id: 5, labels: [], comments: []}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  run-files:
+    in/judge/kept/question.yaml: {contains: "can no user or caller observe anything it adds, removes or changes?"}
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: ["**Behaviour kept**, for a task that may merge alone: yes, the judge", "<!-- workline:kept head="]

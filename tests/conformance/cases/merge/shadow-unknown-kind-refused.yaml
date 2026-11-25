@@ -1,0 +1,9 @@
+case: merge/shadow-unknown-kind-refused
+about: "`merge.shadow` lists only `task` (docs/adr/0073): the judge's answer on a task's behaviour is the only one asked in shadow. Another kind would ask nothing, so `workline follow` stops before touching anything, the kinds named."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious, shadow: [reader]}}
+run: {cli: [follow, --base, main]}
+expect:
+  exit: 64
+  stderr: [".workline/config.yaml: merge.shadow lists \"reader\": the kinds it may list are task"]

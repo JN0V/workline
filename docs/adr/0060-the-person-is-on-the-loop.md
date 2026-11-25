@@ -21,6 +21,9 @@
   built in [#1261](https://github.com/JN0V/workline/issues/1261): §2's
   Verification moves to the tester; the product owner keeps the Scope,
   as a hint
+- **Amended by:** [ADR-0073](0073-a-task-that-changes-no-behaviour-may-merge-alone.md)
+  (built): at `normal`, a task that shows no behaviour changed merges
+  alone where `merge.alone` lists `task`; off by default
 - **Research:** [person-on-the-loop.md](../research/person-on-the-loop.md)
 - **Confirmed by:** [ADR-0068](0068-the-line-steps-back-on-its-own-drift.md#7-a-persons-yes-is-assisted-never-delegated):
   §1, silence is never a yes to merge, release or delete. §3's level
@@ -138,7 +141,9 @@ The kind is the forge's ([ADR-0039]): bug, feature, task.
   ([ADR-0059]). Never turned into a feature, never fixed blind.
 - **A bug fix is never a feature**, whatever its size.
 - **A task** waits for a person's yes, as a feature does
-  ([amended 2026-11-03](#amendment-2026-11-03-a-task-waits-as-a-feature)).
+  ([amended 2026-11-03](#amendment-2026-11-03-a-task-waits-as-a-feature)),
+  unless the project lets one that changes no behaviour merge alone
+  ([ADR-0073](0073-a-task-that-changes-no-behaviour-may-merge-alone.md)).
 - **A feature** (a function the person has not seen):
   - goes into a milestone;
   - when the milestone's issues are all merged, the line cuts a release

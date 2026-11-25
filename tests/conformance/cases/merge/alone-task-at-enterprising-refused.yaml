@@ -1,0 +1,9 @@
+case: merge/alone-task-at-enterprising-refused
+about: "`merge.alone` lists `task` only where `normal` reads it (docs/adr/0073): at `enterprising` a task merges by its milestone's release candidate already, so the list would say a rule that never runs. `workline follow` stops before touching anything, and says why."
+given:
+  repo: documented
+  config: {merge: {autonomy: enterprising, alone: [task]}}
+run: {cli: [follow, --base, main]}
+expect:
+  exit: 64
+  stderr: [".workline/config.yaml: merge.alone lists task, which only autonomy normal reads"]

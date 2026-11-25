@@ -1,0 +1,45 @@
+case: developer/merge-normal-holds-task-cut-back-since-its-yes
+about: >
+  A task's judge's yes binds the head it read (docs/adr/0073): the
+  reviewer read, and the judge said yes on, a head of two commits; the
+  branch was cut back since to its first. The review's record covers
+  that commit, so the review still counts, but the yes was on another
+  change: it waits for a person's yes.
+given:
+  repo: tested-draft
+  config: {merge: {autonomy: normal, alone: [task]}, roles: {tester: {settings: {test-paths: ["tests/**"]}}}}
+  setup:
+    - "git checkout -q main && git checkout -q -b workline/developer/3 && printf 'add() {\\n  echo $(($1 + $2))\\n}\\n' > lib.sh && GIT_COMMITTER_NAME=workline-bot git commit -qam 'refactor: add on three lines for #3' -m 'Workline-Role: developer' && a=$(git rev-parse HEAD) && printf 'add() {\\n  echo $(($1 + $2 + 0))\\n}\\n' > lib.sh && GIT_COMMITTER_NAME=workline-bot git commit -qam 'refactor: add zero for #3' -m 'Workline-Role: developer' && b=$(git rev-parse HEAD) && git reset -q --hard $a && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/developer/3 && sed -i \"s/@head@/$b/g; s/@a@/$a/g\" \"$FORGE_FILE\" && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    issues:
+      - id: 3
+        title: "Write add on three lines"
+        labels: ["task", "workline:developing"]
+        body: "## Need\n\nadd reads on one line.\n\n## Scope\n\n- `lib.sh`: `add`.\n"
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        base: main
+        author: workline-bot
+        bot: true
+        title: "Write add on three lines"
+        body: "Closes #3"
+        labels: []
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z", by: workline-bot}]
+        comments:
+          - "**The developer**'s record of this pull request, for its next runs and the auditor.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"proof\":{\"result\":\"green\",\"passed\":1}} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — no finding on the change.\n\nNo finding on the commits reviewed.\n\n<!-- workline:kept head=@head@ -->\n<!-- workline:at head=@head@ run=7 -->\n<!-- workline:record reviewed=@a@,@head@ runs=2 -->\n<!-- workline:sticky=reviewer/summary -->"
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: waits-for-a-yes, where: "#2", message: "but no judge said on its head that it keeps the behaviour (no public interface, toolchain, build platform, nor chosen limit or value changed)"}
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 2, auto-merge: false, comment-contains: ["no judge said on its head that it keeps the behaviour (no public interface, toolchain, build platform, nor chosen limit or value changed)", "workline:merge-waits=task"]}
+    statuses:
+      - {commit: "workline/developer/3", name: workline/accepted, absent: true}

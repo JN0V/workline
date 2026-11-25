@@ -3,6 +3,7 @@ sources:
   - internal/engine/code.go#weighCode
   - internal/engine/code.go#unreproduced
   - internal/kit/devmark/merge.go#Merge.WaitsForAYes
+  - internal/engine/code.go#behaviourChanged
   - internal/backlog/assume.go#DefaultWait
 checked: e81df7b34
 verified: agent:claude-code
@@ -32,6 +33,12 @@ Part of [the merge policy at `normal`](merge-policy-normal.md).
 - **A feature or a task waits for a person's yes**, said once on it: a
   `task` is a label an agent may put
   ([#937](https://github.com/JN0V/workline/issues/937)).
+- **A task that changes no behaviour, where the project lets it**
+  (`merge: {autonomy: normal, alone: [task]}`, off by default): it
+  merges alone past a fix's gates when it changes no test that was
+  there and the judge said yes on its head
+  ([ADR-0073](adr/0073-a-task-that-changes-no-behaviour-may-merge-alone.md),
+  [the detail](../roles/developer/docs/merge.md#a-task-that-changes-no-behaviour)).
 - **The comment that asks for the yes says what the label alone will
   not mend**: a red verdict on the head, or a conflict with main. The
   pull request merges once the line passes on a new head, or once it is

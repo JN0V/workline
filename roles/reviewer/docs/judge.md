@@ -82,6 +82,22 @@ else whether the quoted code fails:
   ([#229](https://github.com/JN0V/workline/issues/229)); a refused one is
   dropped alone, the rest still shown.
 
+### A task's behaviour
+
+- **Asked on a task**, where the project lets one merge alone
+  (`merge: {autonomy: normal, alone: [task]}`) or asks in shadow
+  (`merge: {shadow: [task]}`,
+  [ADR-0073](../../../docs/adr/0073-a-task-that-changes-no-behaviour-may-merge-alone.md)):
+  whether a user or caller can observe anything the change adds,
+  removes or changes; its examples: a public interface, the toolchain,
+  a chosen limit or value, a test fixture changed.
+- **Shown** the issues it closes and the whole diff; past
+  `diff-lines-max`, not asked.
+- **Said** on the summary (`Behaviour kept`); a yes adds a hidden line
+  by head, which `workline follow` reads. A no, unsure or no answer
+  adds none: the task waits for a person. A yes or a no joins the
+  findings judged, for the auditor's sample.
+
 ## When the judge reads
 
 [ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md),

@@ -1,0 +1,29 @@
+case: reviewer/task-behaviour-changed-no-line
+about: >
+  A task the judge says changes the behaviour gets no line `workline
+  follow` reads (ADR-0073): the change closes #4, labelled `task`, where
+  the project lets a task merge alone, but the judge says no. The
+  summary says the judge's no and that it waits for a person's yes.
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\ttotal := 0|\\tvar total int|' calc/calc.go && git commit -qam 'refactor: declare the total' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no.yaml"}
+  config: {merge: {autonomy: normal, alone: [task]}}
+  forge:
+    issues:
+      - id: 4
+        title: Declare the total
+        body: "## Need\n\nThe total reads as a declaration.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [task]
+        comments: []
+    merge-requests:
+      - {id: 5, labels: [], comments: []}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: ["**Behaviour kept**, for a task that may merge alone: no, the judge", "It waits for a person's yes."]
+        comment-lacks: ["<!-- workline:kept head="]

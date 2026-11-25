@@ -59,6 +59,9 @@ type Merge struct {
 	// Summary is that comment, its record in it: what the reviewer read,
 	// by commit and patch id, for a head rebased since (#1254).
 	Summary string
+	// Kept is the head on which the judge said a task keeps the
+	// behaviour, as that summary says it; "" when none did.
+	Kept string
 }
 
 // Unreviewed says why no reviewer's verdict reads head, the pull
@@ -81,6 +84,8 @@ func (m Merge) Unreviewed(head string) string {
 // WaitsForAYes says its kind waits for a person's yes: a feature or a
 // task, at `enterprising` a yes on its milestone's release candidate.
 // Only a fix merges alone (ADR-0060, #937).
+// A task merges alone too where the project lets it, once it shows no
+// behaviour changed (the engine's code.go).
 func (m Merge) WaitsForAYes() bool {
 	return m.Kind == KindFeature || m.Kind == KindTask
 }
@@ -146,6 +151,9 @@ func ReadMerge(f forge.Forge, mr forge.MergeRequest) (Merge, error) {
 		}
 		if at := ReviewerAt.FindStringSubmatch(c); at != nil {
 			m.ReviewedAt = at[1]
+		}
+		if k := ReviewerKept.FindStringSubmatch(c); k != nil && k[1] == k[2] {
+			m.Kept = k[1]
 		}
 		m.Owed, m.Summary = ReviewerOwed.MatchString(c), c
 	}

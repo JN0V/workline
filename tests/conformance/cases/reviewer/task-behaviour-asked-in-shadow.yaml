@@ -1,0 +1,31 @@
+case: reviewer/task-behaviour-asked-in-shadow
+about: >
+  A project measuring the rule asks it in shadow (`merge: {autonomy:
+  cautious, shadow: [task]}`, docs/adr/0073): the reviewer asks the
+  judge on a task's change and says its answer on the pull request, the
+  merge level unchanged, so nothing merges on it. The answer is kept
+  with the findings judged, for the auditor's sample.
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\ttotal := 0|\\tvar total int|' calc/calc.go && git commit -qam 'refactor: declare the total' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {merge: {autonomy: cautious, shadow: [task]}}
+  forge:
+    issues:
+      - id: 4
+        title: Declare the total
+        body: "## Need\n\nThe total reads as a declaration.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [task]
+        comments: []
+    merge-requests:
+      - {id: 5, labels: [], comments: []}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  run-files:
+    in/judge/kept/question.yaml: {contains: "can no user or caller observe anything it adds, removes or changes?"}
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: ["**Behaviour kept**, for a task that may merge alone: yes, the judge", "<!-- workline:kept head=", "<!-- workline:judged {\"lens\":\"kept\",\"where\":\"#4\""]

@@ -12,6 +12,7 @@ import (
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
+	"github.com/JN0V/workline/internal/role"
 )
 
 // The developer's code at `normal` and `enterprising` (ADR-0054, step 7;
@@ -70,7 +71,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 			return nil, err
 		}
 		return waits("", fmt.Sprintf("%s: whether it is a feature, a label on #%d says (`bug`, `enhancement`, `task`)", d.Says(), d.Issue))
-	case d.WaitsForAYes() && o.Merge != MergeEnterprising:
+	case d.WaitsForAYes() && o.Merge != MergeEnterprising && !taskAlone(o, n, d):
 		// Said once on it, where a person reviewing looks, the decision's
 		// record for the auditor (ADR-0046).
 		t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
@@ -164,7 +165,25 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		}
 		return waits("", d.Says()+", but "+why)
 	}
-	if d.WaitsForAYes() && d.Milestone == "" {
+	if d.Kind == devmark.KindTask && o.Merge != MergeEnterprising {
+		// A task merges alone only on its proof of no behaviour changed
+		// (behaviourChanged): else it waits, as any task does.
+		why, err := behaviourChanged(o, w, d)
+		if err != nil {
+			return nil, err
+		}
+		if why != "" {
+			t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
+			body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `%s`, `merge.alone` listing `task`: a task merges with no person's yes only when it changes no behaviour, its tests as they were and the judge's yes on its head.\n\n- To accept this one, put the label `%s`.",
+				d.Says(), why, o.Merge, backlog.AcceptedLabel(f))
+			body += headTrouble(o, m, hand, w)
+			if err := f.Sticky(t, body, forge.Marker("merge-waits="+d.Kind), true); err != nil {
+				return nil, err
+			}
+			return waits("", d.Says()+", but "+why)
+		}
+	}
+	if d.WaitsForAYes() && d.Milestone == "" && o.Merge == MergeEnterprising {
 		// At `enterprising`, a feature or a task goes into a milestone,
 		// whose release candidate a person tries (ADR-0060): the product
 		// owner puts a feature there at ready; one readied before, here.
@@ -196,6 +215,48 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		}
 	}
 	return admit(f, m, o, w, n, hand, waits, kindCode, d.Says())
+}
+
+// taskAlone says whether a task may merge with no person's yes: at
+// `normal`, `merge.alone` listing `task` (docs/adr/0073-a-task-that-changes-no-behaviour-may-merge-alone.md); its proof is weighed
+// after the review (behaviourChanged).
+func taskAlone(o FollowOptions, n *normal, d devmark.Merge) bool {
+	return d.Kind == devmark.KindTask && o.Merge == MergeNormal && !n.asked(devmark.KindTask)
+}
+
+// behaviourChanged says why a task does not show it keeps the behaviour,
+// "" when it does: it changes no test that was there, so the
+// tests passing are the ones that passed before; and the judge the
+// reviewer asked said on the head the reviewer read that it changes no
+// public interface, toolchain, build platform, nor chosen limit or value.
+func behaviourChanged(o FollowOptions, w weighed, d devmark.Merge) (string, error) {
+	tests, err := role.TestDef(o.RolesDir, o.Repo)
+	switch {
+	case err != nil:
+		return "the project's test files cannot be told: " + err.Error(), nil
+	case !tests.PathsSet:
+		return "the project's test files are the generic guess: the tester's `test-paths`, or a listed pack, say which they are", nil
+	}
+	from, err := git(o.Repo, nil, "merge-base", w.baseTip, w.tip)
+	if err != nil {
+		return "", err
+	}
+	out, err := git(o.Repo, nil, "diff", "--name-status", "--no-renames", "-z", from, w.tip)
+	if err != nil {
+		return "", err
+	}
+	f := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
+	for i := 0; i+1 < len(f); i += 2 {
+		if f[i] != "A" && tests.Test(f[i+1]) {
+			return fmt.Sprintf("it changes `%s`, a test that was there: a change of no behaviour leaves the tests as they were", f[i+1]), nil
+		}
+	}
+	// Bound to the head itself, past the engine's own merges of the
+	// base: a head cut back since keeps the review, never the yes.
+	if d.Kept == "" || d.Kept != d.ReviewedAt || d.Kept != reviewedTip(o.Repo, w.tip, w.baseTip) {
+		return "no judge said on its head that it keeps the behaviour (no public interface, toolchain, build platform, nor chosen limit or value changed)", nil
+	}
+	return "", nil
 }
 
 // headTrouble says, for the wait's comment, what a person's yes alone will
