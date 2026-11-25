@@ -15,7 +15,10 @@ sources:
   - roles/documentalist/code/hygiene.go#Budgets
   - roles/documentalist/code/split.go#relinked
   - roles/documentalist/code/split.go#applyDoc
-checked: e81df7b34
+  - roles/documentalist/code/split.go#retargeted
+  - roles/documentalist/code/split.go#headWords
+  - roles/documentalist/code/reader.go#readerIntroduced
+checked: 10f9edfe3
 verified: agent:claude-code
 ---
 # Documentalist — splitting a doc over its budget
@@ -34,9 +37,12 @@ point, a section): split it into linked pages, as a person would.
   task lists those lines, and the patch changes where they point.
 - A new page carries the doc's header: its `checked` as it is, the lines
   moved being the lines it vouched for, and those of its `sources` the
-  page speaks of.
-- A new page holds at least `page-words` words (80): a smaller part is a
-  fragment, and stays with its neighbour.
+  page speaks of; nothing else.
+- Nothing is written anew but pointers (a paragraph of at most 30 words
+  linking to a new page, or back to the doc) and headings made of the
+  doc's headings' words.
+- A new page, and the doc left behind, hold at least `page-words` words
+  (80): a smaller part is a fragment, and stays with its neighbour.
 - One doc a run: in the same round when it asks nothing else; else in a
   round of its own once the others are done, before the
   [reader's](reader.md) (`in/then`, `budget`). Suspect docs do not
@@ -63,28 +69,33 @@ The judge refuses a split patch when:
 
 - it touches an existing doc other than the doc and those linking to its
   parts (`patch-off-task`);
-- a doc linking to a part changes more than where its links point
-  (`rewritten`);
-- a line that leaves the doc is found in no new page, unchanged but for a
-  heading's level or where its links point — moved, not rewritten
+- a doc linking to a part changes more than where its links point, or
+  points them elsewhere than the part's new page (`rewritten`);
+- a line of the doc is found in no new page, or twice, unchanged but for
+  a heading's level or where its links point — moved, not rewritten
   (`rewritten`); a reference updated in place, keeping most of its words,
   is fine;
+- a link moved points elsewhere than where it did, the doc or a new page;
+  a link to another site moves unchanged (`link-retargeted`);
+- a line is written anew, whatever the folder's size: only pointers and
+  headings of the doc's headings' words are (`written-anew`);
 - a new page's `checked` is not the doc's (`checked-unread`), or it names
   a source the doc does not, or none when the doc names some
-  (`sources-not-carried`);
-- a new page holds fewer than `page-words` words (`page-too-small`);
+  (`sources-not-carried`), or its header holds another key, such as
+  `verified` (`header-not-carried`);
+- a new page, or the doc left behind, holds fewer than `page-words` words
+  (`page-too-small`): a section moved whole would otherwise move again
+  the next night, a stub left each time;
 - a MUST or SHOULD is lost;
 - a new page is not linked from the doc (`not-linked`);
 - the budget problem it was for remains (`still-over-budget`);
 - it brings a budget problem the docs did not have, or makes one bigger
   (`patch-introduces`) — a part over its budget already, moved whole into
   a new page, its text word for word, is the same problem moved, not a
-  new one; so does a reader problem a new page among the user pages
-  brings (`patch-introduces`, [reader checks](checks-docs.md#docs-for-their-reader)),
-  or a link left pointing at a part that moved (`dead-link`);
-- a folder over its budget may grow by headers, headings, blank lines
-  and the lines linking to a new page, never by prose written anew;
-  links to other sites may move with their lines, never be added.
+  new one; so does a reader problem the doc and its new pages bring
+  (`patch-introduces`, [reader checks](checks-docs.md#docs-for-their-reader)),
+  counted together: a line moved takes its problem with it; or a link
+  left pointing at a part that moved (`dead-link`).
 
 A split or dedupe hunk quoting a doc wrong is placed as for a
 suspect doc ([hunks](judge-hunks.md#hunks-that-misquote-the-doc)); one
