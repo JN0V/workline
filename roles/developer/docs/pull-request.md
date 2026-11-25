@@ -96,6 +96,7 @@ flowchart LR
 | Section | What it says |
 |---|---|
 | first line | `Closes #<n>` |
+| `## Left for a person` | on top: each file refused as only a person's to change (a gate's, the CI's, a steering file, not text); only when one was |
 | `## Changes` | its code, its tests, the tester's acceptance tests it starts from |
 | `## Beyond the Scope` | each file changed beyond the issue's Scope, its agent's reason; only when one was ([the bounds](bounds.md#beyond-the-scope)) |
 | `## Left out` | each file refused at apply, and why; only when one was |

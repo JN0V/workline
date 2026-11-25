@@ -237,6 +237,12 @@ what it can and asks for the rest:
   the role's own text, the agent is told once a body to rewrite it (a
   `refine`, the Validation among those it revises); a person's, a person
   rewrites it, the agent told to `ask` its reporter.
+  A Scope naming a file only a person changes — a CI's or workline's
+  own (`work.PersonOnly`, the developer's bounds refuse them) — is not
+  readied whole (`scope-a-persons`): the line would build the rest and
+  close it. The agent is told to `split` that part into an issue of its
+  own for a person, or `ask`. Case
+  `product-owner/ready-held-for-a-persons-scope`.
   An issue ready from before the line, kept by a `ready`, goes there
   too while it has no Draft of the tester's open nor a proof kind
   recorded; otherwise its labels stay

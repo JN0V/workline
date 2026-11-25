@@ -103,6 +103,15 @@ func mergeRequest(a devmark.Act, title string, sub Subjects) map[string]any {
 func body(a devmark.Act, ready bool) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Closes #%d\n\n", a.Issue)
+	if left := personsRefusals(a.Refused); len(left) > 0 {
+		// On top, where the reviewer's intent lens and a person read
+		// first: what only a person may change, left out of this change.
+		fmt.Fprintf(&b, "## %s\n\nRefused at apply: only a person changes these files. Merged as it is, #%d may close with them still to do.\n\n", LeftHeading, a.Issue)
+		for _, r := range left {
+			fmt.Fprintf(&b, "- `%s`: %s\n", r.File, why(r))
+		}
+		b.WriteString("\n")
+	}
 	if ready {
 		fmt.Fprintf(&b, "The developer's code for #%d, proven on the project's tests.\n\n", a.Issue)
 	} else {
@@ -162,6 +171,24 @@ func body(a devmark.Act, ready bool) string {
 	b.WriteString("\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n" +
 		"- Not tried: the commands the issue names to verify it, nor a person's use of it.\n")
 	return b.String()
+}
+
+// LeftHeading heads what its change left for a person, on top of its
+// pull request.
+const LeftHeading = "Left for a person"
+
+// personsRefusals are the refusals of a file only a person changes — a
+// gate's, the CI's, one that steers agents, one not text: work the issue
+// may need, left. A frozen test, a path out of the worktree, are not.
+func personsRefusals(refused []devmark.Refusal) []devmark.Refusal {
+	var out []devmark.Refusal
+	for _, r := range refused {
+		switch r.Rule {
+		case "gate-file", "steering-file", "not-text":
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // recordBody is the comment holding the record on its pull request: what

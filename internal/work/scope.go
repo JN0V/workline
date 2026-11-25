@@ -179,3 +179,25 @@ func Files(word string, files []string) []string {
 	}
 	return out
 }
+
+// PersonOnly are the files and folders a CI runs from — GitHub's
+// workflows and actions, GitLab's pipeline, workline's own settings and
+// gates —: only a person changes them; the developer's bounds refuse
+// them.
+var PersonOnly = []string{".workline", ".github/workflows", ".github/actions", ".gitlab-ci.yml", ".gitlab/ci"}
+
+// PersonOnlyIn are the paths a Scope's text names in backticks that lie
+// under PersonOnly, each once, in order.
+func PersonOnlyIn(scope string) []string {
+	var out []string
+	for _, w := range ScopeWords(scope) {
+		p := path.Clean(strings.TrimPrefix(strings.ReplaceAll(w, `\`, "/"), "./"))
+		if slices.Contains(out, p) {
+			continue
+		}
+		if slices.ContainsFunc(PersonOnly, func(r string) bool { return p == r || strings.HasPrefix(p, r+"/") }) {
+			out = append(out, p)
+		}
+	}
+	return out
+}

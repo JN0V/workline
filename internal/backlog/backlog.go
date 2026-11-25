@@ -2526,6 +2526,12 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		if l := p.config.Untestable; l != "" && slices.Contains(is.Labels, l) {
 			return "not-ready", fmt.Sprintf("not moved to ready: #%d carries %s, the label of an issue the line cannot test; a person removes it to let it go on", c.Issue, l)
 		}
+		if left := work.PersonOnlyIn(work.ByMeaning(is.Body)[work.Scope].Text); len(left) > 0 {
+			// The line would build the rest and close it: that part is a
+			// person's, an issue of its own.
+			return "scope-a-persons", fmt.Sprintf("not moved to ready: its %s names `%s`, which only a person changes (a CI's or workline's own files); "+
+				"split that part into an issue of its own for a person (`split`), or ask whether it belongs here (`ask`)", work.Name(work.Scope), strings.Join(left, "`, `"))
+		}
 		if missing := NotReady(is, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
 			// Drafts no person accepted, past the level's delay: taken as
 			// assumptions, the issue goes on (ADR-0060).
