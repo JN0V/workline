@@ -29,6 +29,16 @@ For each:
   names may not exist yet, and the test then fails on a missing name.
   A missing name the issue does not name is a broken build: never make
   up a helper.
+- **Never find words in a source as a stand-in for what it does**: a
+  test that greps code, a build script or a workflow for a name passes
+  on code that does not work. Read a file's text only when the Then is
+  that text (a message, a page's words, a file the code generates,
+  once the test ran the code). A value the code computes, test by
+  running it. What the project's runner cannot start (a forge's
+  workflow run, a signed release, a real board when no host test of
+  the project can run it): its `covers` entry gives the reason
+  "outside the runner: <the command, run or board that would prove it>".
+  Every scenario so: write no test, answer `proof: none` (below).
 - **Fail today, for the right reason**: each test must fail on the code
   as it is, by its own assertion or a name the code lacks, and pass once
   the code does what the scenario says. A test that passes today proves
