@@ -326,8 +326,8 @@ assumption, written on the issue, and the issue goes on.
   moves the issue to ready with no agent, its draft marks out, a line
   under Assumptions saying the draft was taken as written; an agent's
   `ready` passes so too. At `cautious`, `ready` still needs a person;
-  so does a draft whose issue's question waits with no assumption (the
-  agent reads it first, `backlog.LeftOpen`).
+  so does a draft whose issue's question waits with no answer nor
+  assumption: the question decides first.
 - **A product choice waits for a person**
   ([amendment](../../adr/0060-the-person-is-on-the-loop.md#amendment-2026-11-25-a-product-choice-waits-for-a-person)):
   a feature's delay is `never` at every level (`Delay.For`); on any

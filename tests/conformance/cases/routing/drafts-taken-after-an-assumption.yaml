@@ -1,0 +1,30 @@
+case: routing/drafts-taken-after-an-assumption
+about: >
+  An assumption taken lifts the hold on drafts (ADR-0060, amended): the
+  line woke the product owner once for #9's question, it took its
+  assumption; its drafts, unaccepted for weeks, then time out as
+  before: the line wakes it to take them as written.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:draft, bug]
+        labeled: {"workline:draft": "2026-10-01T09:00:00Z"}
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nassumed: 1\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"1cf7c41e922f\",\"hops\":1,\"timeout\":\"ask=1\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: none, input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-timeout, level: info, where: "#9", message: "its drafts got no answer in 24 h (acts.ask.wait): the product owner takes them as written"}
+  no-findings: [{rule: state-waits}]

@@ -555,10 +555,10 @@ func Pre(runDir, repo string) int {
 		// Questions time out, as lazy consensus (ADR-0060): one unanswered
 		// past the level's delay, dated by the forge, read once for the
 		// role's assumption, or left to a person on a product choice; drafts
-		// past it, all the issue lacks and no question open, taken with no
-		// agent; a feature's never. An answer after an assumption marks it.
-		silence, silent := backlog.Unanswered(notes, role, is)
-		silent = silent && silence.Due(cfg.Wait.For(is), st, now) && (st.Told < silence.Round || is.ID == issueEvent()) && !aside
+		// past it, all the issue lacks, its question answered or assumed,
+		// taken with no agent; a feature's never. An answer marks them.
+		silence, open := backlog.Unanswered(notes, role, is)
+		silent := open && silence.Due(cfg.Wait.For(is), st, now) && (st.Told < silence.Round || is.ID == issueEvent()) && !aside
 		if silent {
 			timedOut[is.ID] = silence
 		}
@@ -571,7 +571,7 @@ func Pre(runDir, repo string) int {
 				"issue": is.ID, "answered": answeredBy, "own": true,
 				"why": fmt.Sprintf("@%s wrote after the role's assumptions: their word stands over them.", answeredBy)}})
 		}
-		if !aside && !backlog.Readied(is) && backlog.OnlyDrafts(is, st) && backlog.LeftOpen(st, notes, is, role) == "" {
+		if !aside && !backlog.Readied(is) && backlog.OnlyDrafts(is, st) && !(open && st.Assumed < silence.Round) {
 			taken, err := draftsDue(b, is, notes, cfg.Wait.For(is), now)
 			if errors.Is(err, forge.ErrUnreachable) {
 				fmt.Fprintln(os.Stderr, err)

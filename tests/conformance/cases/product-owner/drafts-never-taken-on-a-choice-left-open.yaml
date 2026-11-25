@@ -3,7 +3,7 @@ about: >
   A product choice is never settled by silence (ADR-0060, amended):
   drafts no person accepted for weeks are not taken as written with no
   agent on a feature (#9), nor while the role's question waits on its
-  reporter with no assumption taken (#11): the agent reads it first.
+  reporter with no assumption taken (#11): the question decides first.
 given:
   repo: backlog
   forge:

@@ -58,11 +58,12 @@ func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec
 	w := t.askWait().For(is)
 	now := clock().UTC()
 	s, open := backlog.Unanswered(notes, backlog.Keeper, is)
-	if rec.Timeout == fmt.Sprintf("ask=%d", s.Round) {
+	st, _, _ := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
+	pending := open && (st == nil || st.Assumed < s.Round) // its drafts wait for its answer or assumption
+	if pending && rec.Timeout == fmt.Sprintf("ask=%d", s.Round) {
 		w = backlog.Delay{Never: true} // woken for it, no assumption taken: a product choice waits for a person
 	}
-	st, _, _ := backlog.ReadState(forge.Bodies(notes), backlog.Keeper)
-	if open && (st == nil || st.Assumed < s.Round) && !s.Due(w, st, now) {
+	if pending && !s.Due(w, st, now) {
 		waits = questionWaits(w, s, is.ID)
 		next = "its reporter's answer in a comment wakes the " + roleSaid(backlog.Keeper)
 	}
@@ -71,7 +72,7 @@ func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec
 		key = fmt.Sprintf("ask=%d", s.Round)
 		said = fmt.Sprintf("its question of %s got no answer in %s (acts.ask.wait): the %s takes its assumption",
 			day(s.Since), w.Say(), roleSaid(backlog.Keeper))
-	case !backlog.Readied(is) && backlog.OnlyDrafts(is, st):
+	case !backlog.Readied(is) && backlog.OnlyDrafts(is, st) && !pending:
 		at, since, known := w.D == 0 && !w.Never, time.Time{}, false
 		if !at {
 			trail, err := b.Trail(is.ID, backlog.LabelDraft)
