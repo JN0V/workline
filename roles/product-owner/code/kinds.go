@@ -4,8 +4,8 @@ package productowner
 // the run does not read in full, is read for its kind alone — its title
 // and its whole body, a few a run, many in one agent call. Without
 // it, an issue read before the kind act existed keeps no kind until it
-// changes, and a bug's fix waits for a person (ADR-0060, decision 4). A
-// later full read may correct the role's own guess, never a person's.
+// changes, and a bug's fix waits for a person. A later full read may
+// correct the role's own guess, never a person's.
 
 import (
 	"fmt"

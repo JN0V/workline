@@ -8,6 +8,7 @@ package backlog
 // feature waits for a person's yes at `normal`.
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -83,13 +84,17 @@ func KindLabel(kind string, names map[string][]string, have []string) string {
 func (p *Plan) checkKind(f forge.Backlog, c *Proposal, st *State) (rule, why string) {
 	is, ok := p.issues[c.Issue]
 	k, label := KindOf(is.Labels)
+	own := ""
+	if s := cmp.Or(st, p.ledger.States[c.Issue]); s != nil {
+		own = s.Kind // the label the role set: its ledger's, then fresh once read
+	}
 	switch {
 	case !ok || c.Issue == p.Report:
 		return "no-state", fmt.Sprintf("#%d is not an open issue", c.Issue)
-	case st != nil && label != "" && !strings.EqualFold(label, st.Kind):
+	case label != "" && !strings.EqualFold(label, own):
 		return "kind-kept", fmt.Sprintf("its label `%s` says its kind already, a person's or corrected once: never swapped", label)
-	case st != nil && label == "" && st.Kind != "":
-		return "kind-once", fmt.Sprintf("the role set its kind once already (`%s`): a person's removal stands", st.Kind)
+	case label == "" && own != "":
+		return "kind-once", fmt.Sprintf("the role set its kind once already (`%s`): a person's removal stands", own)
 	case st != nil && label != "" && k == c.IssueKind:
 		return "kind-same", fmt.Sprintf("its label `%s` says that kind already", label)
 	case st != nil:
