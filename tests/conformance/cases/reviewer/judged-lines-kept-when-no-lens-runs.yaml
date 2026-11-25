@@ -31,4 +31,5 @@ expect:
         comments: 1
         comment-contains:
           - "no code changed since the last review"
+          - "No lens read the commits on this run: they change no code the lenses read."
           - "<!-- workline:judged-lines gone=1 -->\n<!-- workline:judged {\"lens\":\"edge\\u002dcases\",\"where\":\"calc/half.go:4\",\"at\":\""

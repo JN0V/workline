@@ -13,9 +13,10 @@ func TestTransient(t *testing.T) {
 		"claude failed: API Error: 529 Overloaded. This is a server-side issue": true,
 		"the command failed: API Error: 503 Service Unavailable":                true,
 		"claude failed: overloaded_error":                                       true,
-		"quota":                                                                 false,
-		"claude is not installed":                                               false,
-		"claude did not answer within 3m0s (the role's model.timeout)":          false,
+		"the command failed: the build server is overloaded":                    false,
+		"quota":                   false,
+		"claude is not installed": false,
+		"claude did not answer within 3m0s (the role's model.timeout)": false,
 	} {
 		if got := Transient(fmt.Errorf("%w: %s", ErrUnavailable, msg)); got != want {
 			t.Errorf("Transient(%q) = %v, want %v", msg, got, want)
