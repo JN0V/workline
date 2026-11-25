@@ -69,7 +69,9 @@ else whether the quoted code fails:
 - intent ([#126](https://github.com/JN0V/workline/issues/126)): whether
   the issue asks what the change does not do, the change touches a
   file beyond the Scope, listed by the author or not, that the Need does
-  not need, or it removes or renames a public name unannounced. The judge is shown the issue, and for a cause in the
+  not need, or it removes or changes a public name unannounced: the
+  judge sees the removal and the issue, and takes the breaking mark
+  (commits, changelog) on the finding's word. The judge is shown the issue, and for a cause in the
   issue the whole merge request's change, commits reviewed before
   included, up to `code-lines-max` lines: a part an earlier push did is
   refused, not reported missing;
