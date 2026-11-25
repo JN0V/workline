@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/reviewmark"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
@@ -22,9 +24,11 @@ type lensesRead struct {
 // answered are the reviewer's own open threads on this run's side that
 // the code now answers, as a block goes (judge.md): its keyed line gone
 // from the head, or its lens read the file again (a test file touching it,
-// for the tests lens) and found it no more; or the tester's answer that
-// no test is needed for it, weighed, holds (#1303). A thread a person opened or
-// spoke in is left; one unread is said, never an error.
+// for the tests lens) and found it no more; or the test file the tester
+// answered it added, read by its lens this run, the finding not raised
+// again (#2194); or the tester's answer that no test is needed for it,
+// weighed, holds (#1303). A thread a person opened or spoke in is left;
+// one unread is said, never an error.
 func answered(repo string, s Settings, st state, lines []forge.LineComment, r lensesRead) ([]string, *verdict.Finding) {
 	t := mergeRequest()
 	if t == nil || !s.ForgeWrites {
@@ -73,6 +77,12 @@ func answered(repo string, s Settings, st state, lines []forge.LineComment, r le
 	}
 	lensOf := lensReader(repo)
 	fixed := fixedRows(kept)
+	var added []reviewmark.Answer
+	for _, c := range kept.Each("<!-- workline:sticky=tester/" + testmark.TesterAnswerKey) {
+		if a, ok := reviewmark.Added(c); ok {
+			added = append(added, a)
+		}
+	}
 	var out []string
 	for _, t := range threads {
 		if t.Resolved || len(t.Comments) == 0 || !kept.Wrote(t.Comments[0]) {
@@ -96,7 +106,11 @@ func answered(repo string, s Settings, st state, lines []forge.LineComment, r le
 		// A finding the tester's answer settled, its reason weighed (#1303).
 		title, _ := lineTitle(t.Comments[0].Body)
 		weighed := st.settles(by, fmt.Sprintf("%s:%d", t.Path, t.Line), title)
-		if gone(linesOf(t.Path), t.Path, by, keys[0]) || readAgain(repo, s, st, r, lensOf, by, t.Path) || warnFixed || weighed {
+		// The test the tester added for it, its lens reading it this
+		// run: the file need not touch the finding's by name (#2194).
+		file, ok := answerTo(added, fmt.Sprintf("%s:%d", t.Path, t.Line), title)
+		testRead := ok && slices.Contains(r.lenses, by) && slices.Contains(r.files, file)
+		if gone(linesOf(t.Path), t.Path, by, keys[0]) || readAgain(repo, s, st, r, lensOf, by, t.Path) || warnFixed || weighed || testRead {
 			out = append(out, t.ID)
 		}
 	}

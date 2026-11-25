@@ -42,13 +42,28 @@ func FindingTitle(s string) string {
 // the place the review found the finding on, its title, then the reason.
 var noneNeededWords = regexp.MustCompile("(?s)\\*\\*The tester\\*\\* answers a test finding of this review on `([^`]+)`(?:, “([^”]*)”)?, sent to its Draft \\(\\[the thread\\]\\([^)]*\\)\\): \\*\\*None needed\\*\\*: (.*)")
 
-// Answer is the tester's answer that no test is needed for a finding:
-// the place the review found it on, its title ("" from a tester before
-// titles), and the reason.
+// Answer is the tester's answer to a finding: the place the review found
+// it on, its title ("" from a tester before titles), and the reason no
+// test is needed (NoneNeeded), or the test file it added (Added).
 type Answer struct {
 	Where  string `json:"where"`
 	Title  string `json:"title,omitempty"`
 	Reason string `json:"reason"`
+}
+
+// addedWords read an "added" answer as TesterAnswer says it: the place
+// the review found the finding on, its title, then the test file.
+var addedWords = regexp.MustCompile("\\*\\*The tester\\*\\* answers a test finding of this review on `([^`]+)`(?:, “([^”]*)”)?, sent to its Draft \\(\\[the thread\\]\\([^)]*\\)\\): \\*\\*Added\\*\\* in `([^`]+)`")
+
+// Added reads a comment of the tester's on a reviewed pull request
+// (TesterAnswer) that answers a finding with a test added: the finding,
+// and the test file in Reason. ok is false for any other comment.
+func Added(body string) (Answer, bool) {
+	m := addedWords.FindStringSubmatch(body)
+	if m == nil {
+		return Answer{}, false
+	}
+	return Answer{Where: m[1], Title: m[2], Reason: m[3]}, true
 }
 
 // NoneNeeded reads a comment of the tester's on a reviewed pull request

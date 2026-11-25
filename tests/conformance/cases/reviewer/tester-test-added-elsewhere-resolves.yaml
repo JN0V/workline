@@ -1,0 +1,33 @@
+case: reviewer/tester-test-added-elsewhere-resolves
+about: "A warning of the tests lens went to the tester, who answered by adding a test in a file that does not name the finding's file (#2194): a C++ test including MQTT.h for a finding in MQTT_impl.h. The tests lens reads the commit adding that file and does not raise the finding again: the tester's answer names the file, so the conversation is resolved, as one a test touching it settles."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "mkdir -p acceptance && printf 'package acceptance\\n\\nimport \"testing\"\\n\\nfunc TestMeanOfTwo(t *testing.T) {}\\n' > acceptance/mean_test.go && git add acceptance/mean_test.go && git commit -qm 'test: add a test the review asks to acceptance/mean_test.go'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 finding on the change; lenses: tests.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+
+            <!-- workline:sticky=reviewer/summary -->
+          - "**The tester** answers a test finding of this review on `calc/calc.go:11`, “Average has no test for a count off by one”, sent to its Draft ([the thread](https://forge.example/pr/1#7)): **Added** in `acceptance/mean_test.go`: it averages 2 and 4.\n\n<!-- workline:sticky=tester/tester-answer-7 -->"
+        threads:
+          - {path: calc/calc.go, line: 11, body: "**workline reviewer** · warns · tests\n\n**Important: Average has no test for a count off by one**\n\n<!-- workline:line=tests/d861c7fa46d7 -->"}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: tests}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: ["**Resolved**: 1 conversation"]
+        threads:
+          - {path: calc/calc.go, line: 11, resolved: true}
