@@ -1,0 +1,45 @@
+case: merge/behind-cancelled-follow-merged-in
+about: >
+  An accepted pull request behind its base, whose forge holds it for it
+  (a ruleset requiring up-to-date branches), its only non-green check the
+  line's own `follow` run, CANCELLED (the forge cancels the runs a newer
+  label replaces): the cancelled `follow` is no check of the change, so
+  the engine alone brings the branch up to date. `workline follow`
+  commits the base merged in, the branch's head first, the base second,
+  and pushes it with no force; its checks run on the new head.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/developer/3 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' -m 'Workline-Role: developer' && git push -q origin workline/developer/3 && git checkout -q main"
+    - "echo 'More.' > MORE.md && git add MORE.md && git commit -qm 'docs: more' && git push -q origin main"
+  forge:
+    statuses:
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: workline/developer/3
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:05:00Z"
+        auto-merge-by: workline-bot
+        check-runs: [{name: follow, state: cancelled}, {name: test, state: success}]
+        behind: true
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: merged-from-base, where: "#7", message: "behind main and held by the forge, it merges clean: main merged into workline/developer/3, a merge commit pushed, nothing rewritten"}]
+  no-findings: [{rule: merged-at-once}, {rule: merge-conflict}, {rule: checks-red}]
+  pushed:
+    workline/developer/3: {MORE.md: "More.", src/auth/token.go: "7200"}
+  pushed-message:
+    workline/developer/3: "Merge branch 'main' into workline/developer/3"
+  forge:
+    merge-requests:
+      - {id: 7, merged: false, comments: 0}
