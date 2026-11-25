@@ -18,7 +18,7 @@ sources:
   - internal/gate/sarif.go#parse
   - internal/line/line.go#runGate
   - cmd/workline/main.go#gateCmd
-  - internal/work/scope.go#PersonOnly
+  - roles/developer/code/bounds.go#ciFiles
   - roles/developer/code/bounds.go#checker.rule
   - roles/committer/role.yaml#duties.writes
   - roles/developer/role.yaml#duties.writes

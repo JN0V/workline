@@ -179,6 +179,10 @@ func testerIssue(branch string) int {
 	return n
 }
 
+// ciFiles are the files and folders a CI runs from: GitHub's workflows and
+// actions, GitLab's pipeline, workline's own settings and gates.
+var ciFiles = []string{".workline", ".github/workflows", ".github/actions", ".gitlab-ci.yml", ".gitlab/ci"}
+
 // gateFiles are the files a gate's checks run or read their config from,
 // as .workline/config.yaml declares them: a word of a check's command
 // that is a file of the repository, and its `config`. A config that
@@ -343,7 +347,7 @@ func (c checker) rule(p string) string {
 	switch {
 	case p == ".." || strings.HasPrefix(p, "../") || path.IsAbs(p):
 		return "outside-repo"
-	case under(p, work.PersonOnly) || under(p, c.gates): // a CI's files, workline's own
+	case under(p, ciFiles) || under(p, c.gates):
 		return "gate-file"
 	case c.unread != nil:
 		return "bounds-unread"
