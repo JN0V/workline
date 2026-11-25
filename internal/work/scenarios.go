@@ -27,9 +27,10 @@ var (
 	step = regexp.MustCompile(`(?i)^(?:given|when|then|and|but)\b`)
 	// apart opens a Gherkin block that is no scenario: its steps are none's.
 	apart = regexp.MustCompile(`(?i)^(?:feature|background|rule)\s*:`)
-	// given opens an unnamed scenario; then, its Then step, never "a.then".
+	// given opens an unnamed scenario; then reads to its Then, the first after its When, never "a.then".
 	given  = regexp.MustCompile(`(?i)^given\b`)
-	then   = regexp.MustCompile(`(?:^(?i:then)|[,;.:]\s+(?i:then)|\bThen)\s+`)
+	then   = regexp.MustCompile(`^(?s:.*?(?:[,;.:]\s+(?i:when)|\bWhen)\s.*?|.*?)(?:^(?i:then)|[,;.:]\s+(?i:then)|\bThen)\s+`)
+	span   = regexp.MustCompile("`[^`]*`")                           // a code span: its words are no step
 	unmark = strings.NewReplacer("`", "", "*", "", "_", "", "|", "") // marks a derived name drops
 )
 
@@ -44,7 +45,7 @@ var (
 //     steps on the lines below, bullets or not, until the next one;
 //   - the same in fenced code (```gherkin), Feature and Background left out;
 //   - a line or a bullet opening on Given, with no name: named by the first
-//     words of its Then, as a person would, never asked of them.
+//     words of its Then, the first after its When, as a person would.
 //
 // Gherkin's keywords are Scenario, Scenario Outline, Scenario Template and
 // Example; the name is what follows the keyword. A name with no text
@@ -143,8 +144,8 @@ func Scenarios(validation string) []Scenario {
 	var scenarios []Scenario
 	for _, r := range out {
 		if r.unnamed {
-			if outcome := then.Split(r.Text, -1); len(outcome) > 1 { // no Then: prose, no scenario
-				words := strings.Fields(unmark.Replace(outcome[len(outcome)-1]))
+			if m := then.FindStringIndex(span.ReplaceAllStringFunc(r.Text, func(c string) string { return strings.Repeat("x", len(c)) })); m != nil { // no Then: prose
+				words := strings.Fields(unmark.Replace(r.Text[m[1]:]))
 				r.Name = strings.Trim(strings.Join(words[:min(6, len(words))], " "), " .,;:")
 			}
 			if slices.ContainsFunc(out, func(o read) bool { return o.Name == r.Name && !o.unnamed }) || slices.ContainsFunc(scenarios, func(s Scenario) bool { return s.Name == r.Name }) {

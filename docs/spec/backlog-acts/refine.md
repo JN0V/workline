@@ -228,8 +228,9 @@ what it can and asks for the rest:
   Given …`; a line naming it — `**Scenario: Name**`, `Scenario: Name`, a
   heading, a bold name alone — its steps below; the same in fenced
   code; a line or a bullet opening on Given with no name, named by the
-  first six words of its last Then step (opening a line or after a
-  comma, a semicolon or a stop; its Markdown marks dropped), until a
+  first six words of its first Then step after its When (opening a
+  line, after a comma, a semicolon or a stop, or a capital Then; none
+  inside a code span; its Markdown marks dropped), until a
   blank line or prose, never asked of a person: one alike another's
   name is told apart by its place, and a Then edited renames its
   scenario. A Validation

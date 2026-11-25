@@ -33,6 +33,11 @@ func TestScenariosUnnamedNamedByTheirThen(t *testing.T) {
 		"dot no space":   {"- Given a, When b, Then promise.then callback runs.", []string{"promise.then callback runs"}},
 		"no commas":      {"- Given a cart with 2 items When I remove one Then the cart shows 1 item", []string{"the cart shows 1 item"}},
 		"named later":    {"- Given a, When b, Then c.\n- **c:** Given d, When e, Then f.", []string{"c (1)", "c"}},
+		"then in then":   {"- Given a, When b, Then it is named by its Then step.", []string{"it is named by its Then"}},
+		"then in a name": {"- Given a, When b, Then the If Then Else block is kept.", []string{"the If Then Else block is"}},
+		"code span":      {"- Given a, When b, Then `Given x When y Then z` is printed.", []string{"Given x When y Then z"}},
+		"then in given":  {"- Given the If Then Else block, When I run it, Then it is kept.", []string{"it is kept"}},
+		"no when":        {"- Given a, Then it is named by its Then step.", []string{"it is named by its Then"}},
 	} {
 		var got []string
 		for _, s := range Scenarios(c.in) {
