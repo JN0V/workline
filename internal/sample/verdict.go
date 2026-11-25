@@ -96,7 +96,7 @@ func kindOf(a Act) string {
 		}
 	case testRole:
 		switch a.Kind {
-		case "tests", "kept", "rewritten", "whys", "removal":
+		case "tests", "kept", "rewritten", "whys":
 			return a.Kind
 		}
 	case productOwner:

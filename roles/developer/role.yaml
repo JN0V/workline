@@ -78,7 +78,7 @@ settings:
   # The proof on the folders the change touches (docs/proof.md): the
   # tester's test-command, with `{packages}` replaced by the folders of
   # its code and of the acceptance tests that hold tests, as the
-  # curator's proof command takes them. Unset, or no such folder: the
+  # tester's draft-command takes them. Unset, or no such folder: the
   # test-command runs whole, said. The pull request's own CI runs the
   # whole suite. E.g. `gotestsum --junitfile {report} -- {packages}`.
   # `{test}` in it: the test a flaky-n-of-n proof names, "" for another

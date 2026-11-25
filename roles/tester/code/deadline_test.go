@@ -49,7 +49,7 @@ func TestRunStopsAtSuiteMaxAndSaysWhere(t *testing.T) {
 	done := `<testsuite name="app.DoneTest"><testcase classname="app.DoneTest" name="ends"/></testsuite>`
 	s := Settings{Report: "out/*.xml", SuiteMaxSeconds: 1,
 		Command:  "echo '" + done + "' > out/TEST-done.xml; echo 'HangTest > waits STARTED'; sleep 30",
-		deadline: time.Now().Add(time.Hour), budget: "curator-proof-seconds",
+		deadline: time.Now().Add(time.Hour), budget: "proof-seconds",
 		tests: []string{"app/src/test/DoneTest.kt", "app/src/test/HangTest.kt"}}
 	start := time.Now()
 	_, f := runIn(tree, s, "on the head")

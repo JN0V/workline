@@ -12,7 +12,6 @@ sources:
   - defaults/ci/github/workline-gardening.yml#run-name
   - defaults/ci/github/workline-gardening.yml#jobs.apply.if
   - defaults/ci/github/workline-gardening.yml#jobs.dry-run.permissions
-  - defaults/ci/github/workline-gardening.yml#jobs.curator.if
   - defaults/ci/github/workline-gardening.yml#jobs.dry-run-post.needs
   - defaults/ci/github/workline-gardening.yml#jobs.dry-run-post.permissions
   - defaults/ci/github/workline-objection.yml#name
@@ -148,10 +147,6 @@ pushed to its branch.
   what would hold the release if it were cut now, said in main's
   issue ([how](release.md);
   [ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
-  With the variable `WORKLINE_CURATOR` set to `on`, its `curator`
-  measures the test corpus
-  ([how](../roles/tester/docs/curator.md),
-  [removals](../roles/tester/docs/removals.md)).
 - [workline-objection.yml](../defaults/ci/github/workline-objection.yml) and
   [workline-answer.yml](../defaults/ci/github/workline-answer.yml), with the
   tester: an objection to one of its tests, on its Draft's line, wakes

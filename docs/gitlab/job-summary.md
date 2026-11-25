@@ -10,8 +10,6 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:propose
 checked: e81df7b34
 verified: agent:claude-code
 ---
@@ -34,8 +32,7 @@ Part of [what the GitLab template does](template.md).
       `workline:release:dry-run:post`, `workline:main:issue`;
     - two weeks: each propose job and apply, whose agent's calls the weekly
       sample tallies;
-    - 30 days: `workline:main`, the next base `workline:gates` reads;
-    - 90 days: `workline:curator` and its propose job.
+    - 30 days: `workline:main`, the next base `workline:gates` reads.
   - Tried on gitlab.com (2026-10-06), the engine of the branch: a
     scheduled gardening job, the sample's read, and a gardening job
     started through the pipelines API each printed it, and the job's page

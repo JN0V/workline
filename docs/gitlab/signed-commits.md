@@ -9,7 +9,6 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:objection:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:develop:apply
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:review:apply
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:apply
   - internal/engine/follow.go#recommit
   - internal/engine/follow.go#signing
   - internal/engine/uptodate.go#ownMergeCommit
@@ -57,7 +56,7 @@ SSH key: the template signs its commits with it.
 
 - **Each job that pushes** (`workline:apply`, `workline:merge`,
   `workline:follow`, gardening's, the sample's, the tester's and the
-  developer's applying jobs, the curator's) sets
+  developer's applying jobs) sets
   git to sign with the key: `gpg.format ssh`, `user.signingkey`,
   `commit.gpgsign true`.
 - **The key file is fixed first**: readable by its owner alone (GitLab

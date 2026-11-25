@@ -55,7 +55,6 @@ Each in detail: [the commands](commands.md),
 | [`workline test check --base <ref>`](commands-work.md#workline-test) | the tester's check: each test the change adds fails on the base, read from the test runner's JUnit report |
 | [`workline test write --issue <n>`](commands-work.md#workline-test) | the tester writes a ready issue's tests, opened as a Draft |
 | [`workline test answer --merge-request <n>`](commands-work.md#workline-test) | the tester answers an objection to one of its tests: kept, or rewritten |
-| [`workline test measure`, `test curate`](commands-work.md#workline-test) | the tester's curator measures the test corpus; curate weighs it against its history |
 | [`workline develop`](commands-work.md#workline-develop) | the developer takes the first ready issue nobody took and claims it; `--merge-request <n>`: a review round on its pull request; `--bounds`: checks its files against its issue's bounds |
 
 ### The backlog, the docs and main

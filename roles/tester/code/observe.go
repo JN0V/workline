@@ -6,8 +6,7 @@ package tester
 // record on the Draft, which keeps the scenarios as the run read them and
 // the base it proved them red on. An answer kept or rewritten: a hidden
 // line in its reply — the commit the test was read at, the models asked,
-// the scenario, the test, a rewrite's blob. A removal: the curator's
-// commit and its pull request's proof.
+// the scenario, the test, a rewrite's blob.
 
 import (
 	"encoding/json"

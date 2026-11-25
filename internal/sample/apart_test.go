@@ -21,7 +21,7 @@ func (commentsDown) Comments(forge.Target) ([]string, error) {
 }
 
 // Each role's acts are read apart: the reviewer's findings failing to read
-// is said for the reviewer, and the tester's removal is still drawn.
+// is said for the reviewer, and the developer's code is still drawn.
 func TestActsReadApart(t *testing.T) {
 	repo := t.TempDir()
 	run := func(args ...string) {
@@ -35,28 +35,28 @@ func TestActsReadApart(t *testing.T) {
 	}
 	run("init", "-q", "-b", "main")
 	run("commit", "-q", "--allow-empty", "-m", "chore: start")
-	run("checkout", "-q", "-b", "workline/tester/curate-tests")
-	run("commit", "-q", "--allow-empty", "-m", "test: curate tests, 1 test fewer", "-m", "Workline-Role: tester")
-	state, _ := json.Marshal(forge.FakeState{MergeRequests: []forge.FakeItem{{ID: 2, Branch: "workline/tester/curate-tests", Base: "main"}}})
+	run("checkout", "-q", "-b", "workline/developer/issue-7")
+	run("commit", "-q", "--allow-empty", "-m", "feat: the code of #7", "-m", "Workline-Role: developer")
+	state, _ := json.Marshal(forge.FakeState{MergeRequests: []forge.FakeItem{{ID: 2, Branch: "workline/developer/issue-7", Base: "main"}}})
 	path := filepath.Join(t.TempDir(), "forge.json")
 	if err := os.WriteFile(path, state, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	h := newHeads()
-	h.merged = []forge.MergeRequest{{ID: 2, Branch: "workline/tester/curate-tests"}}
+	h.merged = []forge.MergeRequest{{ID: 2, Branch: "workline/developer/issue-7"}}
 	res := &Result{}
 	acts := actsOfTheWindow(Options{Repo: repo, Forge: commentsDown{&forge.Fake{Path: path, Repo: repo}}}, res, h, nil, "", "")
-	var tester int
+	var drawn int
 	for _, a := range acts {
-		if a.Role == testRole && a.Kind == "removal" {
-			tester++
+		if a.Role == devRole && a.Kind == "code" {
+			drawn++
 		}
 	}
-	if tester != 1 {
-		t.Errorf("the tester's removal drawn %d times, want 1: %+v", tester, acts)
+	if drawn != 1 {
+		t.Errorf("the developer's code drawn %d times, want 1: %+v", drawn, acts)
 	}
 	said := strings.Join(res.NotDrawn, "\n")
-	if !strings.Contains(said, "the reviewer's findings: the forge did not answer") || strings.Contains(said, "the tester's acts") {
+	if !strings.Contains(said, "the reviewer's findings: the forge did not answer") || strings.Contains(said, "the developer's code") {
 		t.Errorf("not drawn: %s", said)
 	}
 }

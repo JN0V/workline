@@ -49,7 +49,7 @@ jobs:
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |
           dir=$RUNNER_TEMP/workline-tallies; mkdir -p "$dir" "$WORKLINE_RUNS_DIR"
-          for job in propose review warn curator read; do
+          for job in propose review warn read; do
             gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?name=workline-tally-$job&per_page=100" \
               --jq '.artifacts[] | select((.expired | not) and .workflow_run.head_repository_id == .workflow_run.repository_id) | .id' ||
               echo "::warning title=workline::the tallies of the jobs named $job could not be listed: the week's tokens leave them out" >&2

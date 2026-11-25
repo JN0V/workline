@@ -56,9 +56,6 @@ misquote:*)
 	printf '%s\n' '- claim: {status: contradicted, source: {path: after, quote: "-ge 0 ]"}, why: "Any value not below zero passes."}' \
 		'- claim: {status: contradicted, source: {path: scenarios, quote: "Then I get 2."}, why: "The scenario wants 2."}' \
 		'- note: "false: the rewrite loosens the Then"' ;;
-*"The tester's curator removed"*)
-	printf '%s\n' '- claim: {status: contradicted, source: {path: diff, quote: "add 1 1"}, why: "1 + 1 is the only sum of equal numbers checked."}' \
-		'- note: "false: the removed test checks what none kept does"' ;;
 *"The developer's code for #3"*"### diff"*"### proof"*)
 	printf '%s\n' '- claim: {status: contradicted, source: {path: diff, quote: "$(($2 - $1))"}, why: "It subtracts the first from the second."}' \
 		'- note: "false: the code gives -2 for 5 minus 3"' ;;

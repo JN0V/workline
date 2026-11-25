@@ -132,6 +132,8 @@ the one held to the test explains, the one who wrote it decides.
 
 ### Job 2: the corpus curator
 
+> Removed on 2026-11-25, never enabled: see [the amendment](#amendment-2026-11-25-the-curator-removed-never-enabled).
+
 - **Weekly, off every path**, measures without AI ([ADR-0051]).
 - **Measures**: each test's time from the JUnit report against
   `suite-max-seconds`; tests whose covered lines are a subset of
@@ -331,6 +333,8 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
 
 ## Amendment 2026-10-28: step 6 as built
 
+> Removed on 2026-11-25, never enabled: see [the amendment](#amendment-2026-11-25-the-curator-removed-never-enabled).
+
 - **The command**: `workline test measure --history <file>`, no agent,
   on `HEAD` in a checkout apart; the suite `curator-runs` times (2), to
   tell a flaky test on one commit. Red or flaky warns, never blocks.
@@ -357,6 +361,8 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
   on the environment (`WORKLINE_AI` set), found.
 
 ## Amendment 2026-10-28: step 7 as built
+
+> Removed on 2026-11-25, never enabled: see [the amendment](#amendment-2026-11-25-the-curator-removed-never-enabled).
 
 - **The command**: `workline test curate --history <file>`, the
   tester's `curate` event; one folder of tests a run, the largest that
@@ -420,6 +426,8 @@ Each step: conformance cases first; a try told under `## Tried` ([ADR-0043]).
   likewise, when a defect is recorded.
 
 ## Amendment 2026-10-29: the curator removes, never merges
+
+> Removed on 2026-11-25, never enabled: see [the amendment](#amendment-2026-11-25-the-curator-removed-never-enabled).
 
 - **Decided by** the maintainer, on 2026-10-29, after the evaluation
   ([#672](https://github.com/JN0V/workline/pull/672)): on two tests that
@@ -551,3 +559,16 @@ The verdict's budget is about 3 min
 - **Where it applies**: every project. A project with no
   `draft-command` gets the single head run; one with it, the folders
   too.
+
+## Amendment 2026-11-25: the curator removed, never enabled
+
+- **Decided by** the maintainer, on 2026-11-25: code that has not run
+  goes first, before 1.0.
+- **Why**: `WORKLINE_CURATOR` was set on none of the three
+  repositories the line runs on; no run of `workline test measure` or
+  `workline test curate` since 2026-11-11.
+- **Removed**: job 2 (steps 6 and 7), its commands, its `curator-*`
+  and `coverage-report` settings, its CI jobs, the auditor's
+  `removal` act. `suite-max-seconds` stays: every run of the tests
+  stops at it.
+- **Back**: a measured need reopens job 2 as an issue.

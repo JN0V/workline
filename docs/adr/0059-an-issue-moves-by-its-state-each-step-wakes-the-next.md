@@ -64,7 +64,8 @@ flowchart LR
   next role at once.
 - A reconciler, hourly, does what an event missed: a safety net, not
   the driver.
-- The night only tidies: gardening, staleness, the curator.
+- The night only tidies: gardening, staleness, the curator (removed on
+  2026-11-25).
 
 ### 1. Every refusal, claim, wait or block is on the issue
 

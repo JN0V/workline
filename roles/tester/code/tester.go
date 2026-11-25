@@ -68,29 +68,8 @@ type Settings struct {
 	// its rounds of reads, and the lines read, all rounds together.
 	JudgeReadRounds int `json:"judge-read-rounds"`
 	JudgeReadMax    int `json:"judge-read-lines-max"`
-	// The curator's measures (`workline test measure`): the command run,
-	// when not the test command (one writing a coverage report too); the
-	// runs a measure; the slowest tests named; the window of measures a
-	// test never red is counted over; the corpus's time budget; the
-	// coverage report the command writes, Go's profile or LCOV.
-	CuratorCommand  string `json:"curator-command"`
-	CuratorRuns     int    `json:"curator-runs"`
-	CuratorSlowest  int    `json:"curator-slowest"`
-	CuratorWindow   int    `json:"curator-window"`
-	SuiteMaxSeconds int    `json:"suite-max-seconds"`
-	CoverageReport  string `json:"coverage-report"`
-	// The curator's removals (`workline test curate`, step 7): the test
-	// files it may change; files listing tests it never removes; the
-	// tests a run removes at most; the proof's command on the touched
-	// folders ({packages}), and the mutation tool's on each ({package}),
-	// writing MutationReport; the proof's time budget, in seconds.
-	CuratorPaths    []string `json:"curator-paths"`
-	CuratorKeep     []string `json:"curator-keep"`
-	RemovalsMax     int      `json:"curator-removals-max"`
-	ProofCommand    string   `json:"curator-proof-command"`
-	MutationCommand string   `json:"curator-mutation-command"`
-	MutationReport  string   `json:"curator-mutation-report"`
-	ProofSeconds    int      `json:"curator-proof-seconds"`
+	// SuiteMaxSeconds stops one run of the tests (#1425).
+	SuiteMaxSeconds int `json:"suite-max-seconds"`
 	// DraftCommand proves a Draft's tests red on the base on the folders
 	// that hold them alone ({packages}), base and tests, and green on its
 	// pull request's head; unset, or naming no {packages}: test-command,
@@ -98,12 +77,9 @@ type Settings struct {
 	DraftCommand string `json:"draft-command"`
 	// deadline, when set, stops a test command past it (the proof's
 	// budget); budget names the setting it comes of, when not
-	// curator-proof-seconds.
+	// proof-seconds.
 	deadline time.Time
 	budget   string
-	// whole, when set, runs the test command past suite-max-seconds: the
-	// curator's measure times the corpus, and warns over it.
-	whole bool
 	// tests, when set, are the change's test files: a run stopped at its
 	// time says which of them no report written by then holds (#1425).
 	tests []string
@@ -706,7 +682,7 @@ func runIn(tree string, s Settings, where string) (ran, *verdict.Finding) {
 	// proof's other budgets: a test that hangs costs one suite's time,
 	// not the whole proof's (#1425).
 	deadline, budget := s.deadline, s.budget
-	if s.SuiteMaxSeconds > 0 && !s.whole {
+	if s.SuiteMaxSeconds > 0 {
 		if stop := time.Now().Add(time.Duration(s.SuiteMaxSeconds) * time.Second); deadline.IsZero() || stop.Before(deadline) {
 			deadline, budget = stop, "suite-max-seconds"
 		}
@@ -806,7 +782,7 @@ func shell(dir, line string, deadline time.Time) (out bytes.Buffer, late bool, e
 // overTime is the finding of a command stopped past the proof's budget.
 func overTime(where, budget string) *verdict.Finding {
 	if budget == "" {
-		budget = "curator-proof-seconds"
+		budget = "proof-seconds"
 	}
 	return &verdict.Finding{Rule: "proof-over-time", Where: budget,
 		Message: "the proof ran past its time budget " + where + ": stopped; no proof, nothing proposed"}

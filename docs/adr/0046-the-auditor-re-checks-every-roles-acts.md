@@ -61,7 +61,7 @@ so a rare kind is still read ([research]).
 | Product owner | each act done alone: ready, refine, sources, order, ask; closing, split, milestone, rename where turned on | 45: 10, 12, 6, 14, 3 | 7 |
 | Reviewer | an important finding its judge let through, or dropped | about 160 a week: 39, 121 | 17 |
 | Committer | a message it rewrote | 7 in two weeks, at least | 1 |
-| Tester | its tests; an objection answered kept or rewritten; the five whys a third answer gives; a curator's removal ([amendment](#amendment-2026-10-28-the-testers-row)) | none merged yet | 1 a kind |
+| Tester | its tests; an objection answered kept or rewritten; the five whys a third answer gives; a curator's removal, until the curator was removed on 2026-11-25 ([amendment](#amendment-2026-10-28-the-testers-row)) | none merged yet | 1 a kind |
 | Developer | its code, on its merge requests merged; its pick: recorded, not drawn, mechanical ([amendment](#amendment-2026-10-29-the-developers-row)) | none yet | 1 |
 
 Not drawn, and why:

@@ -1,5 +1,5 @@
 #!/bin/sh
-# A small shell project for the curator (ADR-0055, step 7): run-tests.sh
+# A small shell project, the auditor's cases' (first the curator's): run-tests.sh
 # runs each tests/test_*.sh, writes a JUnit XML report to the path it is
 # given and an LCOV coverage report, cover.info, from each test's
 # `# covers: <line>` of lib.sh; mutate.sh writes a mutation report in

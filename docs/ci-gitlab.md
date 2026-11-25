@@ -12,8 +12,6 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
   - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:sample
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:sample:read
@@ -140,14 +138,9 @@ Monday's workday. The release never waits for the docs
   `workline:release:dry-run`, no agent, no token, then
   `workline:release:dry-run:post`, the bot's token: what would hold the
   release if it were cut now, in main's issue ([how](release.md)).
-- **The test corpus's measures**, opt-in (`WORKLINE_CURATOR=on`):
-  `workline:curator`, no agent, no token; its image needs your test
-  runner ([how](../roles/tester/docs/curator.md)). With Claude's token,
-  `workline:curator:propose` and `:apply` propose a few redundant tests
-  removed, proven ([how](../roles/tester/docs/removals.md)).
 - **Upgrading**: delete a schedule with `WORKLINE_TASK=release-docs`,
   left from an older template; it no longer gardens, but still runs the
-  release's dry run, and the curator when it is on.
+  release's dry run.
 - **When it runs**: gitlab.com runs a schedule at its own interval, not
   at the minute written: expect it within the hour after.
 

@@ -18,8 +18,7 @@ import (
 // each merge request of its merged in the window, read where it did them:
 // its tests, from its commit and the record on its Draft; an objection
 // answered kept or rewritten, from its reply's hidden line, and the five
-// whys a third answer posted with it, drawn apart; a removal of
-// its curator's, from its commit and its pull request's proof. Not drawn:
+// whys a third answer posted with it, drawn apart. Not drawn:
 // an objection to the need itself, sent to the product owner by the
 // builder's own word, and a flaky verdict, three runs counted: mechanical
 // acts, which conformance proves.
@@ -27,7 +26,7 @@ import (
 const testRole = "tester"
 
 // testerKinds are the tester's kinds of act drawn, in the order it does them.
-var testerKinds = []string{"tests", "kept", "rewritten", "whys", "removal"}
+var testerKinds = []string{"tests", "kept", "rewritten", "whys"}
 
 // testerAct is what a tester's act is re-checked against, read with it.
 type testerAct struct {
@@ -37,7 +36,6 @@ type testerAct struct {
 	answered testmark.Answered
 	thread   []forge.Note // an answer's thread, up to it
 	reply    string       // an answer's words
-	body     string       // a removal's pull request, its proof
 }
 
 // testerActs are the tester's acts on its merge requests merged in the
@@ -65,8 +63,7 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 				return nil, nil, err
 			}
 			p := strings.Split(info, "\x00")
-			if len(p) != 4 || !hasValue(p[0], testRole) ||
-				!strings.HasPrefix(p[3], testmark.TestsSubject) && !strings.HasPrefix(p[3], testmark.CurateSubject) {
+			if len(p) != 4 || !hasValue(p[0], testRole) || !strings.HasPrefix(p[3], testmark.TestsSubject) {
 				continue
 			}
 			commit, by, subject, day = c, p[1], p[3], ""
@@ -76,17 +73,6 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 			break
 		}
 		switch {
-		case strings.HasPrefix(m.Branch, testmark.CurateBranch):
-			if commit == "" {
-				unread = append(unread, fmt.Sprintf("the tester's removal on %s: no commit of its on the head", ref))
-				continue
-			}
-			full, err := f.MergeRequest(m.ID)
-			if err != nil {
-				return nil, nil, err
-			}
-			out = append(out, Act{Role: testRole, Kind: "removal", Ref: ref, Commit: commit, Day: day, By: by, Line: subject, key: commit,
-				tester: &testerAct{mr: m.ID, body: full.Body}})
 		case strings.HasPrefix(m.Branch, testmark.TestsBranch):
 			r, ok, err := testmark.ReadDraft(f, m.ID)
 			if err != nil {
@@ -244,17 +230,6 @@ func (rd *reader) testerMaterial(a *Act, m *material) string {
 		}
 		m.items = append(m.items, item{name: "answer", text: t.reply, full: t.reply})
 		m.about = "The scenario as the tester read it, the objection's thread up to the answer, the test, and the answer."
-	case "removal":
-		diff, err := git(repo, "show", "--format=", "--no-color", "--patch", a.Commit)
-		if err != nil {
-			return fmt.Sprintf("the diff of %.7s cannot be read", a.Commit)
-		}
-		diff = cutDiff(diff)
-		files, _ := git(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", a.Commit)
-		m.items = append(m.items, item{name: "pull request", text: t.body, full: t.body}, item{name: "diff", text: diff, full: diff})
-		m.items = append(m.items, codeAt(repo, a.Commit, strings.Fields(files), codeLines)...)
-		m.act = fmt.Sprintf("The tester's curator removed or merged tests in commit %.7s, opened as %s.", a.Commit, a.Ref)
-		m.about = "Its pull request (the proof's numbers and why each test goes), the diff, and the test files it touched as they read after it."
 	default:
 		return fmt.Sprintf("no question for the tester's `%s`", a.Kind)
 	}

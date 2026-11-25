@@ -206,27 +206,6 @@ func TestTrackedReportRewrittenRead(t *testing.T) {
 	}
 }
 
-// timedRun reads each test's time and the suites' total from this run's
-// reports alone: the stale one removed, a tracked file not read.
-func TestTimedRunReadsThisRunsReports(t *testing.T) {
-	tree := reportTree(t, []string{"pom.xml"}, []string{"core/build/test-results/old/TEST-stale.xml"})
-	s := Settings{Report: "**/*.xml",
-		Command: `mkdir -p core/build/test-results/test && printf '<testsuite name="c" time="2"><testcase classname="c" name="TestA" time="1.5"/><testcase classname="c" name="TestB" time="0.5"><failure/></testcase></testsuite>' > core/build/test-results/test/TEST-c.xml`}
-	tests, total, f := timedRun(tree, s, "here")
-	if f != nil {
-		t.Fatalf("timedRun: %+v", f)
-	}
-	if total != 2 || len(tests) != 2 || tests["c.TestA"].seconds != 1.5 || tests["c.TestB"].res != failed {
-		t.Errorf("timedRun = %+v, total %v; want c.TestA 1.5 s, c.TestB failed, 2 s", tests, total)
-	}
-	if _, err := os.Stat(filepath.Join(tree, "pom.xml")); err != nil {
-		t.Errorf("pom.xml removed: %v", err)
-	}
-	if _, _, f := timedRun(tree, Settings{Report: "**/*.xml", Command: "true"}, "here"); f == nil || f.Rule != "report-missing" {
-		t.Errorf("no report written: %+v, want report-missing", f)
-	}
-}
-
 // A results folder linked outside the tree, as Bazel's `bazel-testlogs`
 // (#1189), is read through the link: the reports the run wrote there are
 // this run's. Nothing out there is removed, and a past run's report the

@@ -29,7 +29,6 @@ type Summary struct {
 	Notes          [][2]string // the step, the agent's note
 	Reads          [][2]string // the sample: each doc read, and its verdict
 	Map            []string    // an import's map: each item to its issue or its reason
-	Lines          []string    // Markdown list lines, as written ("- a", "  - b"): the curator's measures
 	Applied        []string
 	Refused        []string
 	Pending        int // runs judged and not applied yet
@@ -156,9 +155,6 @@ func (s Summary) Markdown() string {
 	}
 	for _, m := range s.Map {
 		fmt.Fprintf(&b, "- map, %s\n", oneLine(m))
-	}
-	for _, l := range s.Lines {
-		b.WriteString(l + "\n")
 	}
 	for _, c := range s.Calls {
 		model := c.Model

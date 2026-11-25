@@ -56,8 +56,8 @@ flowchart LR
 
 - **`proof-command` set**, holding `{packages}`: it runs in place of
   `test-command`, `{packages}` replaced by the touched folders, as the
-  tester's curator takes them
-  ([its removals](../../tester/docs/removals.md)).
+  tester's `draft-command` takes them
+  ([its settings](../../tester/docs/settings.md)).
 - **The touched folders**: those of its code and of the acceptance
   tests. Each file counts its own folder, else the nearest above it
   holding a test file (`**/*_test.go`, not `tests/**`). A conformance

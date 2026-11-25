@@ -86,7 +86,7 @@ jobs:
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |
           dir=$RUNNER_TEMP/workline-tallies; mkdir -p "$dir" "$WORKLINE_RUNS_DIR"
-          for job in propose review warn curator read; do
+          for job in propose review warn read; do
             # one artifact an attempt: workline-tally-<job>-<attempt>; the name filter is exact
             gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
               --jq '.artifacts[] | select((.expired | not) and (.name | test("^workline-tally-'"$job"'(-[0-9]+)?$")) and .workflow_run.head_repository_id == .workflow_run.repository_id) | .id' ||

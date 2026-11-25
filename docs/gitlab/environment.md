@@ -6,7 +6,6 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:gates
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
   - internal/doctor/variables.go#Environment
@@ -57,10 +56,10 @@ can read them, even after `unset`, from its parent's start environment.
 ## What the template does
 
 - **No environment on the jobs that run your tools**: `workline:gates`,
-  `workline:main`, `workline:release`, `workline:curator`. GitLab gives them no scoped
+  `workline:main`, `workline:release`. GitLab gives them no scoped
   variable. They still unset the agent's and the bot's tokens first,
   for one left to every environment. `workline:gates`, `workline:main`,
-  `workline:release`, `workline:release:dry-run` and `workline:curator`
+  `workline:release` and `workline:release:dry-run`
   unset all three:
   `CLAUDE_CODE_OAUTH_TOKEN`, `WORKLINE_GITLAB_TOKEN` and `GITLAB_TOKEN`,
   so the release's dry run runs your gates with no token.

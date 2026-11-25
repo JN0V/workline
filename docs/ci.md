@@ -12,7 +12,6 @@ sources:
   - defaults/ci/github/workline-gardening.yml#on
   - defaults/ci/github/workline-gardening.yml#jobs.propose
   - defaults/ci/github/workline-gardening.yml#jobs.apply
-  - defaults/ci/github/workline-gardening.yml#jobs.curator
   - defaults/ci/github/workline-develop.yml#name
   - defaults/ci/github/workline-objection.yml#name
   - defaults/ci/github/workline-answer.yml#name
@@ -70,7 +69,6 @@ then one that applies, with the write token and no AI key
 | main after a merge | a push to the default branch | the gates, every finding kept as the next base; the whole repository's checks; no agent | one issue, edited when what it lists changes ([how](main-after-merge.md)) |
 | follow | a push to the default branch; with the merge policy, after each propose job and when a label changes | — | auto-merge on for what a person accepted ([merge policy](merge-policy.md)) |
 | gardening | weekly, Sunday evening; nightly to catch up a backlog | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
-| test corpus | with the gardening, opt-in | the tester's curator: each test's time, red and flaky ones over time, coverage; with an agent, a few redundant tests removed, proven | the job's summary, a history artifact ([how](../roles/tester/docs/curator.md)); a pull request ([how](../roles/tester/docs/removals.md)) |
 | an issue's state | a state's label on an issue, opt-in; hourly, a reconciler for what an event missed | the role its state wakes: the tester's tests, the developer's code, proven | the Draft or the pull request, the issue's next state; its next step started ([how](../roles/developer/docs/triggers.md)) |
 | a role's own merge request | an objection on the tester's Draft; a verdict, a gate or a test red, or a person's comment on the developer's | the tester's answer; the developer's review round | the reply or the rewritten test; the fix, pushed on its branch ([objections](objection-jobs.md), [review loop](../roles/developer/docs/review-loop.md)) |
 

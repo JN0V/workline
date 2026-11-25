@@ -21,15 +21,9 @@ mission: Each test a change adds is proven red on its base before the code makes
 # objection: `workline test answer --merge-request <n>` — the first
 #        objection waiting on the tester's Draft, kept or rewritten
 #        (step 3); in CI, woken by the comment (workline-objection.yml).
-# curate: `workline test curate --history <file>` — the curator's
-#        removals (step 7): one folder of tests a run, a few redundant
-#        tests removed by the agent, never rewritten, proven with no agent
-#        (coverage and killed mutants before and after), opened as a pull
-#        request merged by the project's merge policy.
 # The red-first check alone, `workline test check --base <ref>`, runs no
-# role and no agent (step 1); the curator's measures,
-# `workline test measure --history <file>`, neither (step 6).
-events: [issue, schedule, merge-request, objection, curate]
+# role and no agent (step 1).
+events: [issue, schedule, merge-request, objection]
 
 requires: [git]
 
@@ -180,36 +174,6 @@ settings:
   # it, the third gives the five whys with it, the shared skill
   # (skills/five-whys/SKILL.md).
   objection-exchanges: 3
-  # The curator's measures, no agent (`workline test measure`, ADR-0055
-  # step 6): the command run, when not test-command (one that also writes
-  # coverage-report, Go's profile or LCOV, e.g. `gotestsum --junitfile
-  # {report} -- -coverprofile=cover.out ./...`); the runs a measure, two to
-  # tell a flaky test on one commit; the slowest tests named; the window of
-  # measures a test never red is counted over (twelve: a quarter, weekly);
-  # the corpus's time over which it warns, in seconds (0: none), and where
-  # every run of the tests but the curator's stops (#1425).
-  curator-command: ""
-  curator-runs: 2
-  curator-slowest: 10
-  curator-window: 12
+  # One run of the tests stops at this time, in seconds (0: none): a
+  # test that hangs costs one suite's time, not the whole proof's (#1425).
   suite-max-seconds: 600
-  coverage-report: ""
-  # The curator's removals (`workline test curate`, ADR-0055 step 7): the
-  # test files it may change (none: test-paths; leave out a test whose
-  # coverage the report cannot see, one running a built binary); files
-  # listing tests never removed, a name a line (a conformance suite's
-  # pending list); the tests a run removes at most; the proof's command,
-  # on the touched folders ({packages}), writing test-report and
-  # coverage-report (none: curator-command, else test-command, the whole
-  # suite); the mutation tool's, on each touched folder ({package}),
-  # writing curator-mutation-report ({report}): Gremlins' JSON or the
-  # mutation testing report schema; unset where the language has a tool,
-  # the curator does not run; `none`, coverage alone, said. The proof's
-  # time budget, in seconds: past it, stopped, nothing proposed.
-  curator-paths: []
-  curator-keep: []
-  curator-removals-max: 5
-  curator-proof-command: ""
-  curator-mutation-command: ""
-  curator-mutation-report: mutation.json
-  curator-proof-seconds: 1800

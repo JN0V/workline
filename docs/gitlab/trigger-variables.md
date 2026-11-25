@@ -21,9 +21,6 @@ sources:
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:review:apply.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post.rules
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator.rules
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:propose.rules
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:curator:apply.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main.rules
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:main:issue.rules

@@ -41,12 +41,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   one a scheduled run, and an objection as it is posted ([below](#when-it-runs)); hands its Draft to whoever
   builds ([hand-over](docs/hand-over.md));
 - proves each test it froze green on the pull request that closes the
-  issue, run again when red: red in one run only is flaky, in both is red, and either blocks, as does one missing ([how](docs/green-proof.md));
-- `workline test measure`: the corpus's measures, no agent, weekly in
-  CI: count, time, slowest, red and flaky over time ([how](docs/curator.md));
-- `workline test curate`: the agent proposes a few redundant tests
-  removed; proven with no agent, coverage and killed mutants kept, a
-  pull request the merge policy merges ([how](docs/removals.md)).
+  issue, run again when red: red in one run only is flaky, in both is red, and either blocks, as does one missing ([how](docs/green-proof.md)).
 
 **Does not**, yet: adapt a test after a change ([status](docs/status.md#missing)).
 

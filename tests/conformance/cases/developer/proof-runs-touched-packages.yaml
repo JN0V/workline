@@ -1,8 +1,7 @@
 case: developer/proof-runs-touched-packages
 about: >
   The proof runs on the folders the change touches (#703): the
-  developer's proof-command names `{packages}`, as the curator's proof
-  command does, and gets the folders of its code and of the tester's
+  developer's proof-command names `{packages}` and gets the folders of its code and of the tester's
   acceptance tests that hold tests. lib.sh lies in a folder holding none;
   the acceptance tests lie in tests/: only `./tests` runs. The claim's
   record and the Verification say so, and that the pull request's own CI

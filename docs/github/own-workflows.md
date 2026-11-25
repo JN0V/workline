@@ -87,7 +87,7 @@ engine and their triggers
 - the tools the tests need beyond Go (gitleaks, golangci-lint) come
   from [one action](../../.github/actions/tests/action.yml), in test.yml
   and in each job where a role runs the tests: the developer's and the
-  tester's proofs, the curator's measures;
+  tester's proofs;
 - test.yml runs the tests alone, the line simulator in a job beside the
   rest; its `test` job, the check `main` requires, waits for both.
   main's whole-repository checks are

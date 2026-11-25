@@ -107,8 +107,6 @@ func Pre(runDir, repo string) int {
 		return guardPre(runDir, repo, s)
 	case "objection":
 		return answerPre(runDir, repo, s)
-	case "curate":
-		return curatePre(runDir, repo, s)
 	}
 	if parts, ok := symptomInput(runDir); ok {
 		// A bug's parent, its parts all closed (#1212): its reproduction
@@ -415,8 +413,6 @@ func Post(runDir, repo string) int {
 	switch os.Getenv("WORKLINE_EVENT") {
 	case "objection":
 		return answerPost(runDir, repo, s)
-	case "curate":
-		return curatePost(runDir, repo, s)
 	}
 	if code, ok := saidPost(runDir); ok {
 		return code

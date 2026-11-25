@@ -23,8 +23,8 @@ kind of act
   ([a line each in its summary comment](../roles/reviewer/docs/verdict.md#every-finding-judged-kept-for-the-weekly-sample),
   and in that of its lenses that warn, [read apart](../roles/reviewer/docs/apart.md)).
 - **The committer**: its rewrites.
-- **The tester**: its tests, its answers to objections, the five whys it
-  gave, and its curator's removals.
+- **The tester**: its tests, its answers to objections, and the five
+  whys it gave.
 - **The developer**: its code.
 
 How to schedule it: on

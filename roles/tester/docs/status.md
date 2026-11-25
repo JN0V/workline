@@ -6,10 +6,7 @@ base with the red-first check (`workline test check`, no agent), and
 opens them as a Draft; it keeps them from the builder, and answers an
 objection to one (`workline test answer`); a scheduled run takes one
 ready issue a night, an objection wakes its answer; on the closing pull
-request, each new test passes on the head; a weekly job
-measures the corpus, no agent (`workline test measure`), and proposes
-a few redundant tests removed, proven with no agent (`workline test
-curate`). Steps 1 to 8 of
+request, each new test passes on the head. Steps 1 to 5 and 8 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan);
 beta; in workline's own line since
 [#264](https://github.com/JN0V/workline/issues/264), woken by an issue's
@@ -26,11 +23,10 @@ tests for a real bug, on [#652](https://github.com/JN0V/workline/pull/652);
 the scheduled pick and the objection's chain on GitHub, stub agents, on
 [#656](https://github.com/JN0V/workline/pull/656); a real agent's Go
 tests of a name the base lacks, on a copy of workline, on
-[#659](https://github.com/JN0V/workline/pull/659); the curator's
-measures of workline's own corpus, on
-[#665](https://github.com/JN0V/workline/pull/665); a real agent's
-removal of a duplicate test, proven on a copy of workline, on
-[#668](https://github.com/JN0V/workline/pull/668); the issue's
+[#659](https://github.com/JN0V/workline/pull/659); the curator (steps 6 and 7) on
+[#665](https://github.com/JN0V/workline/pull/665) and
+[#668](https://github.com/JN0V/workline/pull/668), never turned on in
+a real line and removed since (2026-11-25); the issue's
 Verification written from a real agent's tests, a person's kept, on
 [#1277](https://github.com/JN0V/workline/pull/1277#tried).
 
@@ -69,16 +65,10 @@ hold:
    [round 3](https://github.com/JN0V/workline/issues/1266#issuecomment-6803875764)),
    recorded in
    [ADR-0052's amendment](../../../docs/adr/0052-v1-0-when-the-core-roles-are-out-of-beta.md#amendment-2026-11-11-1266-v1-accepted).
-   Seven evaluation cases with known
+   Five evaluation cases with known
    answers (`tests/evaluation/cases/tester/`): `test write` (a bug, a
    name the base lacks, a scenario no test can check), `test answer` (a
-   right objection, a wrong one), `test curate` (a true duplicate, a
-   near-duplicate of another branch). On Sonnet, 30 of 35 runs passed
-   every check; the miss, 5 of 5: the curator merged the near-duplicate
-   rather than keeping it
-   ([tried](https://github.com/JN0V/workline/pull/672)). The curator
-   now removes only, told and held by the engine: 3 of 3 kept both
-   ([tried](https://github.com/JN0V/workline/pull/674)). Left: another
+   right objection, a wrong one). Left: another
    model, more runs over time. Its acts
    are observable: the auditor's weekly sample draws them
    ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-28-the-testers-row)).
@@ -215,23 +205,9 @@ Cases in `tests/conformance/cases/tester/`:
   `frozen-test-missing` ([#1255](https://github.com/JN0V/workline/issues/1255));
   one named from its file, or kept as its file alone, beside other new
   tests, the judge's.
-- **The curator's measures** (step 6), no agent: `workline test
-  measure` runs the suite twice on `HEAD`; each test's time, red and
-  flaky ones, kept across measures in a history the CI passes as an
-  artifact; slowest tests, never-red ones, coverage, whether a mutation
-  tool exists; said in the job's summary. Opt-in in the gardening
-  templates ([the page](curator.md)).
-- **The curator's removals** (step 7): `workline test curate` gives
-  the agent one folder of tests and their measures; it proposes a few
-  removed, a reason each, never a test rewritten nor merged
-  (`removal-writes-code`); the engine proves it with no agent,
-  the folder's tests before and after: green, no covered line and no
-  killed mutant lost (Gremlins pinned on Go); frozen and kept tests
-  refused; a pull request, not a Draft, from the weekly curator job
-  ([the page](removals.md)).
 - **Observable** ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#amendment-2026-10-28-the-testers-row)): its acts drawn in the auditor's
   weekly sample, one in ten a kind — its tests, its answers kept or
-  rewritten, its curator's removals; the record keeps the scenarios
+  rewritten; the record keeps the scenarios
   read, each answer a hidden line (commit, model, scenario): tester's
   `write-one-test-a-scenario`, `objection-kept`, `objection-rewritten`;
   auditor's `sample-draws-the-testers-acts`,
@@ -329,11 +305,3 @@ Parked, none seen in the V1 rounds:
   (parked, [#1388](https://github.com/JN0V/workline/issues/1388)).
 - **Job 3**, a test adapted after a change, with the reason
   (parked, [#1388](https://github.com/JN0V/workline/issues/1388)).
-- **A test's flakiness over time on pull requests**: each push to the
-  ready pull request runs the three again; their runs are not fed to the
-  curator's history, which reads the weekly measure only
-  (parked, [#91](https://github.com/JN0V/workline/issues/91)).
-- **The curator's removals**: a tester's test merged while its issue is
-  still open is not told apart (only open Drafts' records are read); a
-  mutation report other than Gremlins' or the schema's is not read
-  (parked, [#91](https://github.com/JN0V/workline/issues/91)).

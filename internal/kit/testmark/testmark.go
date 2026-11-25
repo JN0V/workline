@@ -15,18 +15,12 @@ import (
 )
 
 // The tester's branches: an issue's tests, one an issue
-// (workline/tester/issue-<n>), a folder curated.
-const (
-	TestsBranch  = "workline/tester/issue-"
-	CurateBranch = "workline/tester/" + CurateKey
-)
+// (workline/tester/issue-<n>).
+const TestsBranch = "workline/tester/issue-"
 
-// TestsSubject and CurateSubject open the subjects of the tester's
-// commits of its tests and of a removal: its merge request's title.
-const (
-	TestsSubject  = "test: the acceptance tests of #"
-	CurateSubject = "test: curate "
-)
+// TestsSubject opens the subject of the tester's commit of its tests:
+// its merge request's title.
+const TestsSubject = "test: the acceptance tests of #"
 
 // IsAnswered says whether a comment is the tester's answer to an objection.
 func IsAnswered(body string) bool { return strings.Contains(body, AnswerMark) }
@@ -78,10 +72,6 @@ func PersonsThread(t forge.Thread) bool {
 	body := strings.TrimSpace(c.Body)
 	return c.Insider && !c.Bot && body != "" && !strings.HasPrefix(body, ObjectionWord) && !strings.Contains(body, "<!-- workline:")
 }
-
-// CurateKey opens the key of a curator's merge request, one a folder
-// (workline/tester/curate-<folder>).
-const CurateKey = "curate-"
 
 // What the tester says, in its one comment on an issue, when it writes
 // no tests for it: before asking the agent, or after.

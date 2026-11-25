@@ -53,25 +53,6 @@ first objection waiting on its Draft
   unreadable form and a person's turn need no agent.
 - **`--state`**, **`--tried <state>`**: no agent, for CI ([why](objection-jobs-queue.md)).
 
-`workline test measure --history <file>` is the curator's measures of
-the corpus on `HEAD`, no agent
-([curator](../roles/tester/docs/curator.md)); 0, or 1 when it did not
-run:
-
-- **What**: each test's time and result, the slowest, red and flaky
-  ones, coverage where the command writes it.
-- **`--history`**: read before, written after; missing, the first
-  measure. **`--summary <file>`**: the measures, for a CI job's page.
-
-`workline test curate --history <file>` has the curator remove a few
-redundant tests of one folder ([removals](../roles/tester/docs/removals.md)):
-
-- **The agent proposes**, a reason each; `--ai` none removes nothing.
-- **The proof, no agent**: the folder's tests before and after, green,
-  no covered line and no killed mutant lost; else nothing is opened.
-- **Proven**: a pull request on `workline/tester/curate-<folder>`, not
-  a Draft, on `--forge`.
-
 ## workline develop
 
 `workline develop` has the developer take a ready issue

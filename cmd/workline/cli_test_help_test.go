@@ -31,12 +31,12 @@ func testHelp(t *testing.T) string {
 	return string(out)
 }
 
-// Usage names five
+// Usage names three
 //
 // Given workline built from `main`,
 // When I run `workline test --help`,
-// Then its usage line names `check`, `write`, `answer`, `measure` and `curate`.
-func TestUsageNamesFive(t *testing.T) {
+// Then its usage line names `check`, `write` and `answer`.
+func TestUsageNamesThree(t *testing.T) {
 	out := testHelp(t)
 	usage := ""
 	for _, l := range strings.Split(out, "\n") {
@@ -48,7 +48,7 @@ func TestUsageNamesFive(t *testing.T) {
 	if usage == "" {
 		t.Fatalf("no usage line in:\n%s", out)
 	}
-	for _, name := range []string{"check", "write", "answer", "measure", "curate"} {
+	for _, name := range []string{"check", "write", "answer"} {
 		if !strings.Contains(usage, name) {
 			t.Errorf("usage line %q does not name %q", usage, name)
 		}
@@ -59,7 +59,7 @@ func TestUsageNamesFive(t *testing.T) {
 //
 // Given the same,
 // When I read the line under the usage,
-// Then it says in a few words what `measure` and `curate` do, as it does for the other three.
+// Then it says in a few words what each does.
 func TestAboutSaysWhatEachDoes(t *testing.T) {
 	out := testHelp(t)
 	_, rest, ok := strings.Cut(out, "usage:")
@@ -68,7 +68,7 @@ func TestAboutSaysWhatEachDoes(t *testing.T) {
 	}
 	_, rest, _ = strings.Cut(rest, "\n")
 	about, _, _ := strings.Cut(rest, "\nOptions:")
-	for _, name := range []string{"check", "write", "answer", "measure", "curate"} {
+	for _, name := range []string{"check", "write", "answer"} {
 		if !strings.Contains(about, name) {
 			t.Errorf("the about %q does not say what %q does", strings.TrimSpace(about), name)
 		}

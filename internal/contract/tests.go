@@ -7,7 +7,7 @@ import (
 
 // TestScope narrows a run to the folders a change touches (#703): Command,
 // holding `{packages}`, runs on the folders of Files that hold tests,
-// as the curator's proof command does. No Command naming `{packages}`,
+// as a Draft's proof does. No Command naming `{packages}`,
 // or no such folder: the test command runs whole.
 //
 // Test and Runs: a flaky-n-of-n proof (ADR-0059, decision 4), the

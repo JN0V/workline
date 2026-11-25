@@ -597,8 +597,6 @@ func actWords(a Act) string {
 		switch a.Kind {
 		case "tests":
 			fmt.Fprintf(&b, "the tests the tester wrote, on %s", a.Ref)
-		case "removal":
-			fmt.Fprintf(&b, "tests the tester's curator removed, on %s", a.Ref)
 		case "whys":
 			fmt.Fprintf(&b, "the five whys the tester gave on an objection, on %s, at `%s`", a.Ref, a.Where)
 		default:
@@ -629,8 +627,6 @@ func kindWords(c Count) string {
 		return "message rewritten"
 	case c.Role == testRole && c.Kind == "tests":
 		return "tests written"
-	case c.Role == testRole && c.Kind == "removal":
-		return "tests removed"
 	case c.Role == testRole && c.Kind == "whys":
 		return "five whys given"
 	case c.Role == testRole:

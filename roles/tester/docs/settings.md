@@ -47,11 +47,11 @@ defaults from [role.yaml](../role.yaml).
 | `ai-max-turns` | 40 | the turns of an agent that reads the project itself (`claude`), told in its task and enforced by the engine (`claude --max-turns`); reached before it answered: asked again once, then a machine error the line retries, never "no test possible" ([#1194](https://github.com/JN0V/workline/issues/1194)) |
 | `objection-exchanges` | 3 | the tester's answers in an objection's thread before the product owner settles it |
 
-## The curator and the time limit
+## The time limit
 
 | Key | Default | |
 |---|---|---|
-| `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](curator.md#settings)) and removals ([page](removals.md#settings)); each run of the tests (red-first, green, the developer's proof; not the curator's) stops at `suite-max-seconds`, the whole Draft's proof at three times it, the retry told the change's test files with no report by then and the last lines ([#1425](https://github.com/JN0V/workline/issues/1425)): its test command and the processes it started are killed on Linux and macOS, the command alone on Windows; a build daemon that detaches, as Gradle's, lives on ([#1197](https://github.com/JN0V/workline/issues/1197)) |
+| `suite-max-seconds` | 600 s | each run of the tests (red-first, green, the developer's proof) stops at `suite-max-seconds`, the whole Draft's proof at three times it, the retry told the change's test files with no report by then and the last lines ([#1425](https://github.com/JN0V/workline/issues/1425)): its test command and the processes it started are killed on Linux and macOS, the command alone on Windows; a build daemon that detaches, as Gradle's, lives on ([#1197](https://github.com/JN0V/workline/issues/1197)) |
 
 ## The command, by ecosystem
 
