@@ -1076,7 +1076,9 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 		// main question's is (#138): a lens's text starting with a backtick
 		// left a merge request not reviewed whole. The call counts as any
 		// other; the second answer not reading either, the part fails.
+		firstWhy := ""
 		if why := partUnread(err, dir, claims); why != "" && asked.Model.PromoteAfter > 0 {
+			firstWhy = why
 			if err := os.WriteFile(filepath.Join(dir, "out", "feedback.md"), []byte(unreadFeedback(why)), 0o644); err != nil {
 				return err
 			}
@@ -1085,6 +1087,12 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-asked-again", Where: name, Level: "warn",
 				Message: "the answer to this part did not read (" + why + "): asked for again once, with what the reader said"})
 			err = callAgent(ag, req, "part", runDir, res)
+		}
+		invalid := func() string { // an answer unread: both parse errors are said, when asked twice
+			if firstWhy != "" {
+				return err.Error() + " (first answer: " + firstWhy + ")"
+			}
+			return err.Error()
 		}
 		switch {
 		case errors.Is(err, agent.ErrOverBudget):
@@ -1105,7 +1113,7 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 			raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
 			read, broken, mended := claimsOneByOne(string(raw))
 			if read == 0 {
-				unanswered("invalid", err.Error())
+				unanswered("invalid", invalid())
 				continue
 			}
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-partly-read", Where: name, Level: "warn",
@@ -1117,7 +1125,7 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 				return err
 			}
 		case errors.Is(err, agent.ErrInvalidOutput):
-			unanswered("invalid", err.Error())
+			unanswered("invalid", invalid())
 			continue
 		case err != nil:
 			return err
