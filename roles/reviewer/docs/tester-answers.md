@@ -29,7 +29,9 @@ test or answers on the pull request that none is needed, and why.
   (`<!-- workline:weighed … -->`); the same reason is not weighed
   again, a new one is.
 - **A test added instead** is a commit like any other: it resolves the
-  finding as [a block goes](verdict.md#a-block-stands-until-a-commit-answers-it).
+  finding as [a block goes](verdict.md#a-block-stands-until-a-commit-answers-it),
+  the file the tester names counting as a test touching it
+  ([lines](lines-again.md#not-repeated-found-again)).
 - **No agent**: nothing is weighed; the run says so
   (`tester-answers-unweighed`), and the findings stand until a run
   with an agent.

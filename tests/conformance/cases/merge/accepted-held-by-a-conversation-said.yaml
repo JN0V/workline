@@ -1,5 +1,5 @@
 case: merge/accepted-held-by-a-conversation-said
-about: "A yes on a green pull request that a conversation holds says so the run it turns auto-merge on (#1417): its checks are green, main requires every conversation resolved, and one of the reviewer's is open. The run that arms it says what holds it, in its findings and on the pull request, not a later run that may never come (#1039)."
+about: "A yes on a green pull request that a conversation holds says so the run it turns auto-merge on (#1417): its checks are green, main requires every conversation resolved, and one of the reviewer's is open, another person having spoken in it: the yes does not take it (#2194). The run that arms it says what holds it, in its findings and on the pull request, not a later run that may never come (#1039)."
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}
@@ -21,7 +21,7 @@ given:
         checks: success
         comments: []
         threads:
-          - {path: src/auth/token.go, line: 3, body: "**workline reviewer** · warns · tests\n\n**Important: The longer session is untested**\n\n<!-- workline:line=tests/0123456789ab -->"}
+          - {path: src/auth/token.go, line: 3, body: "**workline reviewer** · warns · tests\n\n**Important: The longer session is untested**\n\n<!-- workline:line=tests/0123456789ab -->", replies: [{body: "I would like a test here.", author: erin, insider: true, created: "2026-01-04T09:30:00Z"}]}
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass

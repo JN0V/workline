@@ -1254,7 +1254,98 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say(rule, "warn", fmt.Sprintf("accepted by %s, but %s; %s", by, v.why, then))
 		return nil, nil
 	}
+	if err := resolveAccepted(f, mr, tip, st, yes, say); err != nil {
+		return nil, err
+	}
 	return armed(f, m, mr, tip, st, e, say, by, "its head's verdict passed")
+}
+
+// resolveAccepted resolves the reviewer's own warnings still open on a
+// head a person accepted, its verdict passed, where the base requires
+// every conversation resolved (#2194): their yes takes the findings left
+// in them, said in each before it is resolved. Only a warning posted
+// before the yes: a block is never taken by a yes, and one posted after
+// it was not seen. One another person spoke in, or the yes's author
+// after it, stays theirs.
+func resolveAccepted(f forge.Forge, mr forge.MergeRequest, tip string, st forge.MergeState, yes *forge.LabelEvent, say func(rule, level, msg string)) error {
+	th, ok := f.(forge.Threaded)
+	r, resolves := f.(forge.Resolver)
+	rules, read := f.(forge.ConversationRules)
+	if !ok || !resolves || !read || yes == nil || yes.Created == "" {
+		return nil
+	}
+	by := yes.Author
+	unread := func(err error) error {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+			return err
+		}
+		say("thread-not-resolved", "warn", fmt.Sprintf("accepted by %s, its head's verdict passed, but the reviewer's conversations on its lines could not be read, none resolved: %s", by, forge.Said(err)))
+		return nil
+	}
+	threads, err := th.Threads(mr.ID)
+	if err != nil {
+		return unread(err)
+	}
+	// A warning of the reviewer's, posted at or before the yes; a
+	// person's word in it the yes's author's, given at or before it.
+	var open []forge.Thread
+	for _, t := range threads {
+		if t.Resolved || len(t.Comments) == 0 {
+			continue
+		}
+		first := t.Comments[0]
+		if !strings.HasPrefix(strings.TrimSpace(first.Body), "**workline reviewer** · warns ·") || len(forge.LineKeys(first.Body)) == 0 ||
+			first.Created == "" || later(first.Created, yes.Created) {
+			continue
+		}
+		open = append(open, t)
+	}
+	if len(open) == 0 {
+		return nil
+	}
+	if c, err := rules.Conversations(mr.Base); err != nil || !c.Required {
+		return nil // they hold nothing, or that is unread: heldByConversations says it
+	}
+	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: mr.ID})
+	if err != nil {
+		return unread(err)
+	}
+	marker := forge.Marker("accepted-open=" + short(tip))
+	var ids []string
+	for _, t := range open {
+		if !kept.Wrote(t.Comments[0]) {
+			continue
+		}
+		if slices.ContainsFunc(t.Comments[1:], func(n forge.Note) bool {
+			return !kept.Wrote(n) && !n.Bot && strings.TrimSpace(n.Body) != "" &&
+				(n.Author != yes.Author || n.Created == "" || later(n.Created, yes.Created))
+		}) {
+			continue // a person's word in it the yes does not cover: theirs
+		}
+		if !slices.ContainsFunc(t.Comments, func(n forge.Note) bool { return strings.Contains(n.Body, marker) }) {
+			body := fmt.Sprintf("**Resolved on %s's yes**: %s accepted this pull request on its head %s, the line's verdict passed, with this warning open. Their yes takes it.", by, by, short(tip))
+			if err := th.Reply(mr.ID, t.ID, body+"\n\n"+marker); err != nil {
+				return unread(err)
+			}
+		}
+		ids = append(ids, t.ID)
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	if err := r.Resolve(mr.ID, ids); err != nil {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+			return err
+		}
+		say("thread-not-resolved", "warn", fmt.Sprintf("accepted by %s, its head's verdict passed, but the forge refused to resolve the reviewer's %d conversations on its lines: %s", by, len(ids), forge.Said(err)))
+		return nil
+	}
+	noun := "conversations"
+	if len(ids) == 1 {
+		noun = "conversation"
+	}
+	say("accepted-threads-resolved", "", fmt.Sprintf("accepted by %s, its head's verdict passed: the reviewer's %d open %s on its lines resolved, the yes taking their findings", by, len(ids), noun))
+	return nil
 }
 
 // forkGuarded names the files a fork's change touches, past base, that

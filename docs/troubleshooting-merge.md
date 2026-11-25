@@ -36,8 +36,10 @@ The line of states says why on the issue and in the run's summary
   become a check's annotations, which open none.
 - **The reviewer's comments** are conversations by design. The reviewer
   resolves its own once the code answers them
-  ([how](../roles/reviewer/docs/lines-again.md#not-repeated-found-again)); a
-  person resolves the rest. `workline follow` lists the open ones that
+  ([how](../roles/reviewer/docs/lines-again.md#not-repeated-found-again)),
+  and `follow` on a person's yes
+  ([holds](merge-policy-holds.md#open-conversations-said)); a person
+  resolves the rest. `workline follow` lists the open ones that
   hold an auto-merge.
 - **`gh pr merge --admin` refused**, "Repository rule violations": by
   design, nobody bypasses `main`. Put `workline:accepted` on it; in an
