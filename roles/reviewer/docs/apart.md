@@ -52,6 +52,7 @@ beside the verdict's, and posts once it answered.
   ([the record](run-record.md#3-the-record)).
 - **A push whose turn is the other run's lens**: nobody asked in this
   run; the commits are recorded and the turn moves on, as in the other.
+  Its comment says no lens read them here, never "No finding".
   A lens of this run is asked instead when:
   - its block stands, the push changing code
     ([a block stands](verdict.md#a-block-stands-until-a-commit-answers-it));

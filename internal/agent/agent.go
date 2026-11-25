@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -20,6 +21,18 @@ import (
 // role: quota, authentication, network, not installed. The run ends as
 // blocked-external if the role cannot pass without it.
 var ErrUnavailable = errors.New("agent unavailable")
+
+// transient is what an agent's provider says of a failure that passes on
+// its own: an overload (529, overloaded_error), a server error (API Error
+// 500, 502, 503, 504). Quota, login and network are not: asked again at
+// once, they fail the same. A bare "overloaded" in prose is not enough.
+var transient = regexp.MustCompile(`(?i)overloaded_error|\b529\b|api error: 50[0234]\b`)
+
+// Transient says whether an agent unavailable failed for a reason that
+// passes on its own, worth asking again once after a pause.
+func Transient(err error) bool {
+	return errors.Is(err, ErrUnavailable) && transient.MatchString(err.Error())
+}
 
 // ErrInvalidOutput means the agent answered, but not with proposals the engine
 // can read. Its answer is dropped, as if it had proposed nothing.

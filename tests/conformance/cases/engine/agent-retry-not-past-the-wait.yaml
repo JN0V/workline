@@ -1,0 +1,12 @@
+case: engine/agent-retry-not-past-the-wait
+about: "A call failed for a passing overload is not asked again when the run's wait (ai-max-seconds) ends before the pause would: no pause, no second call."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_RETRY_PAUSE: "120", REVIEW_LENS_OVERLOADED_CALLS: "5", REVIEW_LENS_COUNT: "$XDG_CONFIG_HOME/review-lens-calls"}
+  config: {roles: {reviewer: {settings: {ai-max-seconds: 30}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: blocked-external
+  calls: [{task: part, for: 1-correctness}]
+  no-findings: [{rule: agent-asked-again}]

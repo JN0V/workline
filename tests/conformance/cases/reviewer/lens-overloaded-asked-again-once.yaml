@@ -1,0 +1,14 @@
+case: reviewer/lens-overloaded-asked-again-once
+about: "A lens whose provider fails for a passing overload (API 529) is asked again once, after a pause, said (agent-asked-again): one burst never leaves the lens not read, nor its silence taken for no finding."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml", WORKLINE_RETRY_PAUSE: "0s", REVIEW_LENS_OVERLOADED_CALLS: "1", REVIEW_LENS_COUNT: "$XDG_CONFIG_HOME/review-lens-calls"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "cmd:sh $FIXTURES/agents/review-by-lens.sh"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-correctness}, {task: part, for: 1-correctness}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: agent-asked-again, where: 1-correctness, message: "529 Overloaded"}
+    - {rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}
+  no-findings: [{rule: lens-failed}, {rule: part-unanswered}]

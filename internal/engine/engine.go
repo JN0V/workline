@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1297,9 +1298,49 @@ func mendedTogether(said []string) []string {
 	return out
 }
 
-// callAgent asks the agent once and records the call: in the result, and
-// with the run (out/calls.jsonl), what it cost, to be read afterwards.
+// callAgent asks the agent and records each call. A call its provider
+// failed for a passing overload (agent.Transient: a 529, a 5xx) is asked
+// again once, after a pause: one burst never leaves a run, or a lens, not
+// done, its failure read as an answer of nothing.
 func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Result) error {
+	err := callAgentOnce(ag, req, task, runDir, res)
+	if !errors.Is(err, agent.ErrUnavailable) || !agent.Transient(err) || res.overBudget() {
+		return err // the run's tokens spent: no pause for a call it may not make
+	}
+	pause, how := retryPause()
+	if left, capped := res.timeLeft(); capped && left <= pause {
+		return err // the run's wait (ai-max-seconds) ends before the pause would
+	}
+	where := ""
+	if task == "part" {
+		where = filepath.Base(req.RunDir)
+	}
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "agent-asked-again", Where: where, Level: "warn",
+		Message: fmt.Sprintf("the agent's provider failed for a passing reason (%s): asked again once, after %s%s", err.Error(), pause, how)})
+	time.Sleep(pause)
+	return callAgentOnce(ag, req, task, runDir, res)
+}
+
+// retryPause is how long a call failed for a passing overload waits
+// before it is asked again: WORKLINE_RETRY_PAUSE, a duration (`30s`) or
+// a number of seconds, else 60 s; how says a value it could not read.
+func retryPause() (time.Duration, string) {
+	v := strings.TrimSpace(os.Getenv("WORKLINE_RETRY_PAUSE"))
+	if v == "" {
+		return 60 * time.Second, ""
+	}
+	if n, err := strconv.ParseFloat(v, 64); err == nil && n >= 0 {
+		return time.Duration(n * float64(time.Second)), ""
+	}
+	if d, err := time.ParseDuration(v); err == nil && d >= 0 {
+		return d, ""
+	}
+	return 60 * time.Second, fmt.Sprintf(" (WORKLINE_RETRY_PAUSE %q is no duration nor number of seconds: 60s taken)", v)
+}
+
+// callAgentOnce asks the agent once and records the call: in the result,
+// and with the run (out/calls.jsonl), what it cost, to be read afterwards.
+func callAgentOnce(ag agent.Agent, req agent.Request, task, runDir string, res *Result) error {
 	if res.overBudget() {
 		res.capped = true
 		return errTokensSpent

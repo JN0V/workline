@@ -1,5 +1,5 @@
 case: reviewer/warn-apart-verdict-waits-for-no-lens-that-warns
-about: "Split from the run apart (ADR-0050), the verdict's run asks only the lenses that block. On a push whose turn is edge-cases, a lens that only warns, it asks no agent: the verdict is given without waiting for that lens. The commits are recorded and the turn moves on, as the run apart moves its own; the summary comment says where that lens reads."
+about: "Split from the run apart (ADR-0050), the verdict's run asks only the lenses that block. On a push whose turn is edge-cases, a lens that only warns, it asks no agent: the verdict is given without waiting for that lens. The commits are recorded and the turn moves on, as the run apart moves its own; the summary comment says where that lens reads, never \"No finding\" on commits no lens read here."
 given:
   repo: reviewed
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
@@ -25,3 +25,5 @@ expect:
           - "The lenses that warn read apart, and post in their own comment: they never hold the verdict."
           - "<!-- workline:warn-apart -->"
           - " runs=2 -->"
+          - "No lens read the commits on this run: the lenses that warn read them apart, in their own comment."
+        comment-lacks: "No finding on the commits reviewed"

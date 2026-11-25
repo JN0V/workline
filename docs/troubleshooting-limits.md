@@ -57,7 +57,9 @@ Part of [troubleshooting](troubleshooting.md).
   by a person, `workline:accepted-whole` lets it merge
   ([merge policy](merge-policy.md#what-it-does)).
 - `blocked-external` (exit 3): the agent's quota, a timeout, the forge or a
-  repository failed. Never a verdict: run it again later. The CI templates
+  repository failed. Never a verdict: run it again later. An agent call
+  failed by a passing overload (a 529, a 5xx) is asked again once first,
+  after a pause (`agent-asked-again`, `WORKLINE_RETRY_PAUSE`). The CI templates
   turn it into a warning, the docs listed for a person. A GitHub or
   GitLab call is tried again first (which: [GitHub](github/calls.md),
   [GitLab](gitlab/calls.md)).
