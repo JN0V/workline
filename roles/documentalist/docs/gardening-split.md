@@ -18,7 +18,7 @@ sources:
   - roles/documentalist/code/split.go#retargeted
   - roles/documentalist/code/split.go#headWords
   - roles/documentalist/code/reader.go#readerIntroduced
-checked: 10f9edfe3
+checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — splitting a doc over its budget
