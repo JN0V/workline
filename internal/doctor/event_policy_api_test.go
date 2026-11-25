@@ -166,6 +166,10 @@ func TestGlobMatch(t *testing.T) {
 		{"**/workline-bounds.yml", ".github/workflows/workline-bounds.yml", true},
 		{"workline-bounds.yml", ".github/workflows/workline-bounds.yml", false},
 		{".github/workflows/workline.yml", ".github/workflows/workline-merge.yml", false},
+		{"**/workline-bounds.yml", "workline-bounds.yml", true},
+		{"./.github/workflows/workline-?.yml", ".github/workflows/workline-a.yml", true},
+		{".github/workflows/workline-?.yml", ".github/workflows/workline-ab.yml", false},
+		{".github/workflows/w+.yml", ".github/workflows/ww.yml", false},
 	} {
 		if got := globMatch(c.pat, c.file); got != c.want {
 			t.Errorf("globMatch(%q, %q) = %v, want %v", c.pat, c.file, got, c.want)
