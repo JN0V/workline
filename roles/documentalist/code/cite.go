@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,8 +27,7 @@ import (
 // of the doc's sources outside its comments, or a name the engine finds gone
 // from the code. A quote found only in a comment is not evidence: the fix is
 // refused, and the disagreement reported for a person. Words only added need
-// no claim. Condensing, deduplicating, merging and splitting are judged
-// elsewhere: they move text, and their judge checks where it went.
+// no claim.
 
 // citeTask is what a task judging docs tells the agent of it.
 const citeTask = `Every word a patch takes out of a doc's body — a line removed, a value
@@ -196,7 +196,7 @@ func (cc *citeContext) attribute(claims []citeClaim, docs map[string]string, fil
 		}
 		var can []string
 		for _, f := range files {
-			if old, ok := docs[f.path]; ok && !contains(can, f.path) && cc.standsFor(c, f.path, old, f) {
+			if old, ok := docs[f.path]; ok && !slices.Contains(can, f.path) && cc.standsFor(c, f.path, old, f) {
 				can = append(can, f.path)
 			}
 		}

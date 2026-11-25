@@ -1,5 +1,5 @@
 case: engine/patch-comment-holds-a-new-doc
-about: 'A patch on a merge request goes in a comment, never on its branch, to be applied whole with `git apply` (#145). A doc it creates, as a split or a condense does, is in the diff too, as a new file, beside the doc it changes.'
+about: 'A patch on a merge request goes in a comment, never on its branch, to be applied whole with `git apply` (#145). A doc it creates is in the diff too, as a new file, beside the doc it changes.'
 given:
   repo: basic
   setup:

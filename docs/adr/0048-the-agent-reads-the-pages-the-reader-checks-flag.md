@@ -31,6 +31,7 @@
   writes `in/then`, and the engine goes one round more for the reader
   task alone, once the run's other rounds are done, within what the run
   may still spend; when `ai-max-tokens` is spent, it is skipped, and said.
+  (Amended 2026-11-25: the condense, split, merge-card and duplicates tasks were removed, never run in two weeks on the three repositories in use; budgets and duplicates are reported for a person.)
   The project's `schedule` sets how often.
 - **What it holds**: only pages the reader checks flagged — a page only
   out of reach is fixed on another page, and is not read for that —, at

@@ -40,7 +40,7 @@ not settled for our case, nor whether a light model checks as well.
   The doc comes first, the same in every part.
 - **Not in parts**:
   - a doc leaving less than a quarter of the task for sources: it is over
-    its budget, condensed or split first (the existing tasks);
+    its budget, condensed or split first (by a person since 2026-11-25);
   - sources that are docs: a doc following another is propagation, judged
     along its edge, not as evidence;
   - a doc needing more than `parts-max` parts (8 by default): its sources

@@ -6,8 +6,8 @@ given:
     - "printf '      max-open-merge-requests: 1\\n      derive: {cases: \"echo 42\"}\\n' >> .workline/config.yaml && printf 'Cases: <!-- workline:derive cases -->1<!-- workline:end -->\\n' >> docs/history.md && git add -A && git commit -qm 'docs: count cases'"
   forge:
     merge-requests:
-      - {id: 3, branch: "workline/documentalist/condense-docs-sessions-md", base: main, labels: [], comments: []}
-run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
+      - {id: 3, branch: "workline/documentalist/suspect", base: main, labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: "fake:doc-fixed", open-merge-request: true}
 expect:
   status: pass
   agent-calls: 0

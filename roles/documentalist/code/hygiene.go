@@ -176,8 +176,8 @@ func docType(content string) string {
 }
 
 // archived says whether a doc's header declares it archived (`archived:
-// 2026-10-04`): its history is left as it is, out of condensing, budgets and
-// duplicate checks. Its links are still checked and still resolve.
+// 2026-10-04`): its history is left as it is, out of budgets and duplicate
+// checks. Its links are still checked and still resolve.
 func archived(content string) bool {
 	block, n := docmark.Header(content)
 	if n == 0 {

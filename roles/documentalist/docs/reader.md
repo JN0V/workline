@@ -14,8 +14,7 @@ Part of [the documentalist](../README.md).
 ## When
 
 - Last in each gardening run, after the other tasks — suspect or stale
-  docs, duplicates, condensing, splitting, merging cards: docs are made
-  true before they are made easy to read.
+  docs: docs are made true before they are made easy to read.
   - A night with another task asks it in a round of its own, once the
     others are done (`in/then`,
     [the role contract](../../../docs/spec/role-contract.md#one-run)).

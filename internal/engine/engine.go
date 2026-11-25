@@ -2058,7 +2058,7 @@ func pushToMergeRequest(f forge.Forge, st runState, runDir string) (verdict.Find
 // writtenDiff is the diff of the files the run wrote, as git prints it:
 // never trimmed, since a hunk's last line may be a blank line of context,
 // and without it the diff no longer applies. A file the run created — a
-// split's or a condense's new doc — is not tracked yet, so `git diff`
+// new doc a patch creates — is not tracked yet, so `git diff`
 // leaves it out: it is diffed against nothing, a new file, the index left
 // as it was.
 func writtenDiff(st runState) (string, error) {

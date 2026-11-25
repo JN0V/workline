@@ -208,6 +208,7 @@ no rewrite waited for its own merge request, and neither
   blocks', never one the next run's proposal would replace.
 - **A rewrite waits for its own merge request**: a doc to condense or
   split, a card to merge, a repeated passage; the next one goes, said.
+  (Amended 2026-11-25: the condense, split, merge-card and duplicates tasks were removed, never run in two weeks on the three repositories in use; budgets and duplicates are reported for a person.)
 - **Docs judged whole wait as before**, for `suspect` or `stale`: one
   merge request they share, which another doc's judgement would replace.
 

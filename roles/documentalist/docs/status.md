@@ -138,7 +138,7 @@ its evaluation in
   ([#356](https://github.com/JN0V/workline/issues/356)): `gardening-*`,
   `judged-not-asked-again`, `task-waits-for-its-merge-request`,
   `parts-go-while-suspect-waits`, `parts-record-waiting-not-judged-again`,
-  `parts-judged-once-a-run`, `condense-waits-for-its-merge-request`.
+  `parts-judged-once-a-run`.
 - **Its stale merge requests rebuilt or closed**: `gardening-branch-*`.
 - **Nothing merged into people's pull requests**
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order), step 10):
@@ -163,8 +163,8 @@ its evaluation in
 - **Never at the release**: the release does not wait for the docs; the
   release docs, their fix and its record removed
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
-- **Condense, split, merge a card, merge a repeated passage**:
-  `condense-*`, `split-*`, `merge-card-*`, `dedupe-*`.
+- **Condense, split, merge a card, merge a repeated passage**: removed
+  2026-11-25, never run in two weeks; budgets and duplicates are reported.
 - **Judging in parts**, a partial claim settled by another part:
   `judged-in-parts-*`, `parts-*`, `judge-in-parts-off`. On by default
   ([#82](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736),
@@ -211,8 +211,7 @@ its evaluation in
 - **A cap on a run's tokens**: `token-cap-between-parts`, engine's
   `token-cap-ends-the-run`.
 - **`checked` earned by what was read**: `checked-unread-refused`,
-  `checked-moves-when-read-whole`,
-  `condense-new-doc-born-checked-refused`. The `checked` moved unearned
+  `checked-moves-when-read-whole`. The `checked` moved unearned
   put back: workline's 10 (0669684), DomoticsCore's 16 (0d86737 on its
   main). Never over the answer's own note doubting the doc
   ([#449](https://github.com/JN0V/workline/issues/449)), the real run's

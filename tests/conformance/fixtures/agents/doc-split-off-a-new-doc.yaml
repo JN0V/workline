@@ -1,5 +1,5 @@
 # docs/usage.md of the case sends a part to a new doc, as a split or a
-# condense does: one file changed, one created.
+# condense did: one file changed, one created.
 - patch:
     file: docs/usage.md
     content: "# Usage\n\nRun the tool.\nIt prints a line.\nIt stops.\n\nSee [running quietly](quiet.md).\n"

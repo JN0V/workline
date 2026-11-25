@@ -30,10 +30,8 @@ model:
 - **effort** — how long the model may think. Each agent maps it to its own
   setting; Claude reads `none` as `low`.
 - **tasks** — a kind of task that needs other thinking than the rest of the
-  role, named by `pre` in `in/task-kind`: the documentalist judges a doc on
-  `standard`, and condenses one on `frontier` (`tasks: {condense: {tier:
-  frontier}}`), because the evaluation showed it cheaper than a `standard` try
-  stepped up. A kind of task may also name its own `instruction` facet and
+  role, named by `pre` in `in/task-kind`: the documentalist judges a part of
+  a doc too large on its own tier (`tasks: {part: {tier: standard}}`). A kind of task may also name its own `instruction` facet and
   the `intentions` it answers with, for a light read (role-contract.md).
 - **promote-after** — how often a refused answer is asked again before one
   last try a tier up ([stepping up after failures](model-step-up.md)).

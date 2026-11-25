@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -50,19 +51,19 @@ func doubtedDocs(intents []intent.Intention, judged map[string]map[string]string
 					continue
 				}
 			}
-			if !contains(named, p) {
+			if !slices.Contains(named, p) {
 				named = append(named, p)
 			}
 		}
 		if wrong {
 			for _, p := range namedIn(text, ends) {
-				if !contains(named, p) {
+				if !slices.Contains(named, p) {
 					named = append(named, p)
 				}
 			}
 		}
 		for _, d := range named {
-			if !contains(out[d], text) {
+			if !slices.Contains(out[d], text) {
 				out[d] = append(out[d], text)
 			}
 		}
@@ -127,7 +128,7 @@ func pathEnds(judged map[string]map[string]string) map[string][]string {
 func namedIn(text string, ends map[string][]string) []string {
 	var out []string
 	for end, docs := range ends {
-		if len(docs) != 1 || contains(out, docs[0]) {
+		if len(docs) != 1 || slices.Contains(out, docs[0]) {
 			continue
 		}
 		if regexp.MustCompile(`(?:^|[^\w./-])` + regexp.QuoteMeta(end) + `(?:$|[^\w./-]|\.(?:$|\W))`).MatchString(text) {

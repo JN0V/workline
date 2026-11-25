@@ -20,7 +20,7 @@ roles:
         roles/documentalist/docs/judge-applied.md, roles/documentalist/docs/judge-findings.md,
         roles/documentalist/docs/parts-claims.md, roles/documentalist/docs/parts-fix.md,
         roles/documentalist/docs/push-records.md, roles/documentalist/docs/push-local.md,
-        roles/documentalist/docs/adopt.md, roles/documentalist/docs/gardening-condense.md,
+        roles/documentalist/docs/adopt.md,
         roles/documentalist/docs/gardening-merge-requests.md,
         roles/product-owner/docs/run.md, roles/product-owner/docs/outputs.md, roles/product-owner/docs/tracking.md,
         roles/product-owner/docs/settings.md, roles/product-owner/docs/writing.md,

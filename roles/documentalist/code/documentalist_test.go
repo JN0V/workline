@@ -261,16 +261,6 @@ func TestDeriveUnclosedLeftAsItIs(t *testing.T) {
 	}
 }
 
-func TestEditedInPlace(t *testing.T) {
-	gained := []string{"intentions: [commit-message, note]   # subset of the catalogue in role-run.md"}
-	if !editedInPlace("intentions: [commit-message, note]   # subset of the catalogue below", gained) {
-		t.Error("a reference updated in place is not a rewrite")
-	}
-	if editedInPlace("Signing out ends the session.", []string{"A session is ended by signing out."}) {
-		t.Error("a sentence reworded is a rewrite")
-	}
-}
-
 func TestDeclaresSources(t *testing.T) {
 	for content, want := range map[string]string{
 		"# Title\n":                                  "false []",

@@ -98,7 +98,7 @@ type Model struct {
 	PromoteAfter int    `yaml:"promote-after"`
 	Timeout      string `yaml:"timeout"` // how long one answer may take, e.g. "10m"; default 3m
 	// Tasks gives a kind of task, named by pre in in/task-kind, other needs
-	// than the role's: condensing a doc needs more than judging one.
+	// than the role's: judging a part of a doc needs less than a whole one.
 	Tasks map[string]Model `yaml:"tasks"`
 	// Instruction and Intentions, on a kind of task only: the facet read
 	// in place of instruction.md, and the intentions it answers with, a

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/kit/verdict"
+
 	"go.yaml.in/yaml/v3"
 )
 
@@ -145,10 +145,6 @@ func holdWaitingTasks(w waiting, maps ...map[string]*suspectDoc) {
 	}
 }
 
-// The key of each gardening task's merge request (ADR-0006): the docs it
-// rewrites name it, so that the task waits for it while another goes; and
-// the findings a rewrite resolves, which say so.
-
 // partsKey is a run's judging in parts, by the first doc it judged. When
 // the branch that names already waits — another doc's, two paths making one
 // name, since the run's own docs wait with theirs —, a short hash of the
@@ -160,31 +156,4 @@ func partsKey(docs []string, w waiting) string {
 		key += " " + hex.EncodeToString(sum[:3])
 	}
 	return key
-}
-
-func (c *condenseTask) key() string {
-	if c.Split {
-		return "split " + c.Doc
-	}
-	return "condense " + c.Doc
-}
-
-func (c *condenseTask) resolves(f verdict.Finding) bool {
-	doc, _, _ := strings.Cut(f.Where, "#")
-	if c.Split {
-		return f.Rule == "card-too-long" && doc == c.Doc
-	}
-	return slices.Contains(condensable, f.Rule) && doc == c.Doc
-}
-
-func (d *dedupeTask) key() string { return "duplicates " + strings.Join(d.Docs, " ") }
-
-func (d *dedupeTask) resolves(f verdict.Finding) bool {
-	return f.Rule == "duplicate" && f.Where == d.Docs[0] && strings.Contains(f.Message, " "+d.Docs[1]+" ")
-}
-
-func (m *mergeCardTask) key() string { return "merge-card " + m.Card }
-
-func (m *mergeCardTask) resolves(f verdict.Finding) bool {
-	return f.Rule == "card-too-short" && f.Where == m.Card
 }

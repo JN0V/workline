@@ -2,7 +2,6 @@ package documentalist
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -61,44 +60,5 @@ func TestApplyDocPlaceInDoubt(t *testing.T) {
 	}
 	if now, rule, _ := applyDoc(doc, files[0], diff); rule != "misquoted" {
 		t.Errorf("rule %q, want misquoted; the doc became:\n%s", rule, now)
-	}
-}
-
-// A patch moving text, git cannot apply as written: its part changing a
-// doc is written anew from its hunks as placed, its part creating a doc
-// kept as written, and git applies the whole so. A part whose place is in
-// doubt leaves the patch refused, with git's own reason (#592).
-func TestPlacedPatch(t *testing.T) {
-	repo := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(repo, "docs"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	doc := "# Guide\n\n## Sessions\n\nA session lasts one hour.\nIt is renewed on each request.\n\n## Again\n\nRun it.\nRun it.\n"
-	if err := os.WriteFile(filepath.Join(repo, "docs", "guide.md"), []byte(doc), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	docs := map[string]string{"docs/guide.md": doc}
-	moved := "--- a/docs/guide.md\n+++ b/docs/guide.md\n@@ -3,5 +3,3 @@\n  ## Sessions\n \n-A session lasts one hour.\n-It is renewed on each request.\n+See [sessions](sessions.md).\n" +
-		"--- /dev/null\n+++ b/docs/sessions.md\n@@ -0,0 +1,3 @@\n+# Sessions\n+\n+A session lasts one hour.\n"
-	got, err := placedPatch(repo, moved, docs)
-	if err != nil {
-		t.Fatalf("refused: %v", err)
-	}
-	if !strings.Contains(got, "new file mode 100644\n--- /dev/null\n+++ b/docs/sessions.md\n@@ -0,0 +1,3 @@\n+# Sessions\n") {
-		t.Errorf("the new doc's part not kept as written:\n%s", got)
-	}
-	if !strings.Contains(got, " ## Sessions\n \n-A session lasts one hour.\n") {
-		t.Errorf("the doc's part not written anew, quoting the doc:\n%s", got)
-	}
-	if _, err := gitIn(repo, got, "apply", "--check", "-"); err != nil {
-		t.Errorf("git cannot apply it: %v", err)
-	}
-	asWritten := "--- a/docs/guide.md\n+++ b/docs/guide.md\n@@ -1,1 +1,1 @@\n-# Guide\n+# The guide\n"
-	if same, err := placedPatch(repo, asWritten, docs); err != nil || same != asWritten {
-		t.Errorf("a patch git applies as written: %q, %v; want it as written", same, err)
-	}
-	doubt := "--- a/docs/guide.md\n+++ b/docs/guide.md\n@@ -9,3 +9,2 @@\n  \n-Run it.\n+Run it once.\n"
-	if _, err := placedPatch(repo, doubt, docs); err == nil || !strings.Contains(err.Error(), "patch failed") {
-		t.Errorf("a hunk whose place is in doubt: %v, want git's refusal", err)
 	}
 }

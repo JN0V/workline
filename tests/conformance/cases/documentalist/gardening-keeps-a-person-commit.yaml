@@ -1,18 +1,19 @@
 case: documentalist/gardening-keeps-a-person-commit
 about: "Gardening proposing a task again never force-pushes over a commit a person added to that task's branch, its merge request closed, the branch kept: the change is not pushed, the run says so, and the branch stays the person's (#303). While the merge request is open, the task waits for it instead (#356)."
 given:
-  repo: untidy
+  repo: documented
   setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
-    - "git checkout -qb workline/documentalist/duplicates-docs-faq-md-docs-sessions-md && echo 'Notes.' > docs/notes.md && git add docs/notes.md && git commit -qm 'docs: a word more' && git push -q origin workline/documentalist/duplicates-docs-faq-md-docs-sessions-md && git checkout -q main"
+    - "git checkout -qb workline/documentalist/suspect && echo 'Notes.' > docs/notes.md && git add docs/notes.md && git commit -qm 'docs: a word more' && git push -q origin workline/documentalist/suspect && git checkout -q main"
   forge:
     merge-requests:
-      - {id: 7, branch: "workline/documentalist/duplicates-docs-faq-md-docs-sessions-md", base: main, title: "docs: keep a repeated passage in one place", closed: true, labels: [], comments: []}
-run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
+      - {id: 7, branch: "workline/documentalist/suspect", base: main, title: "docs: bring the docs in line with the code", closed: true, labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: "fake:doc-fixed", open-merge-request: true}
 expect:
   status: pass
-  findings: [{rule: not-proposed, where: "workline/documentalist/duplicates-docs-faq-md-docs-sessions-md", message: "a word more"}]
-  not-pushed: ["workline/documentalist/duplicates-docs-faq-md-docs-sessions-md"]
+  findings: [{rule: not-proposed, where: "workline/documentalist/suspect", message: "a word more"}]
+  not-pushed: ["workline/documentalist/suspect"]
   forge:
     merge-requests:
       - {id: 7, closed: true}

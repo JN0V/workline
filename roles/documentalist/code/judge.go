@@ -803,7 +803,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 	}
 	for _, p := range Hygiene(Tree{Docs: after, Files: tree.Files}, s.Budgets, s.Duplicates) {
 		// A budget already exceeded may grow by what a fix allows: it stays
-		// reported, for condensing. Any other problem, or a new one, refuses.
+		// reported, for a person. Any other problem, or a new one, refuses.
 		if old, ok := before[p.Key]; !ok || p.Size > old.Size && !budgetRule[p.Rule] {
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
@@ -980,84 +980,6 @@ func writtenAnew(old string, f fileDiff) (part string, misquotes []string, err e
 	}
 	part, err = unifiedDiff(f.path, old, applyHunks(old, fileDiff{path: f.path, hunks: keep}), 3)
 	return part, misquotes, err
-}
-
-// placedPatch is a patch as git applies it in repo: as written, or else
-// each part changing a doc written anew from its hunks as the engine
-// places them (writtenAnew) — when every hunk then quotes its doc right,
-// and git applies the patch so. That is what the engine then judges and
-// applies, as for a doc the code made suspect (#592). A part creating or
-// deleting a file, or changing a file that is no doc, stays as written.
-// err is git's refusal of the patch as written, for the agent.
-func placedPatch(repo, diff string, docs map[string]string) (string, error) {
-	_, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--unidiff-zero", "--check", "-")
-	if err == nil {
-		return diff, nil
-	}
-	var b strings.Builder
-	for _, part := range fileParts(diff) {
-		files, perr := parseDiff(part)
-		old, isDoc := "", false
-		if perr == nil && len(files) == 1 && !files[0].deleted {
-			old, isDoc = docs[files[0].path]
-		}
-		if !isDoc {
-			b.WriteString(part)
-			continue
-		}
-		d, misquotes, werr := writtenAnew(old, files[0])
-		if werr != nil || len(misquotes) > 0 {
-			return "", err
-		}
-		b.WriteString(d)
-	}
-	if _, again := gitIn(repo, b.String(), "apply", "--recount", "--unidiff-zero", "--check", "-"); again != nil {
-		return "", err
-	}
-	return b.String(), nil
-}
-
-// placedPatches are the agent's patches as git applies them in repo
-// (placedPatch): what a task moving text between docs judges, and the
-// engine applies (#592); changed says whether one was written anew. A
-// patch git refuses either way stays as written, for the task to refuse.
-func placedPatches(repo string, s Settings, intents, fallback []intent.Intention) (out []intent.Intention, changed bool, err error) {
-	if !proposedPatch(intents, fallback) {
-		return intents, false, nil
-	}
-	tree, err := loadTree(repo, s.Docs)
-	if err != nil {
-		return nil, false, err
-	}
-	out = slices.Clone(intents)
-	for i, in := range out {
-		diff, ok := in.Value.(string)
-		if in.Kind != "patch" || !ok || isFallback(in, fallback) {
-			continue
-		}
-		if d, err := placedPatch(repo, diff, tree.Docs); err == nil && d != diff {
-			out[i].Value, changed = d, true
-		}
-	}
-	return out, changed, nil
-}
-
-// fileParts splits a diff into its files' parts, each as git reads it
-// (intent.NormalizeDiff): from its `diff --git` line to the next one.
-func fileParts(diff string) []string {
-	var parts []string
-	var cur strings.Builder
-	for _, l := range strings.Split(strings.TrimSuffix(intent.NormalizeDiff(diff), "\n"), "\n") {
-		if strings.HasPrefix(l, "diff --git ") && cur.Len() > 0 {
-			parts = append(parts, cur.String())
-			cur.Reset()
-		}
-		cur.WriteString(l + "\n")
-	}
-	if cur.Len() > 0 {
-		parts = append(parts, cur.String())
-	}
-	return parts
 }
 
 func sortedKeys2(m map[string][]verdict.Finding) []string {

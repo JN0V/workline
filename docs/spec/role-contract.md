@@ -114,7 +114,7 @@ model:                          # what kind of thinking, never a model name
   effort: low
   timeout: 3m                   # how long one answer may take; 3m by default
   tasks:                        # a kind of task that needs other thinking, as pre
-    condense: {tier: frontier}  # names it in in/task-kind; unset fields keep the role's
+    part: {tier: standard}      # names it in in/task-kind; unset fields keep the role's
     # kind: {instruction: tasks/kind.md, intentions: [kind, note]}
     #   its own instruction facet, read in place of instruction.md, and the
     #   few intentions its agent answers with; any other it answers is

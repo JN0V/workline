@@ -96,7 +96,7 @@ DomoticsCore and workline for misses and false alarms.
   source contradicting it, or a name the engine finds gone from the code
   (as `identifier-gone` does). A removal without it is refused. Condense,
   dedupe, split and merge tasks are exempt: they move text, the judge checks
-  where it went.
+  where it went. (Amended 2026-11-25: the condense, split, merge-card and duplicates tasks were removed, never run in two weeks on the three repositories in use; budgets and duplicates are reported for a person.)
 - **A comment is not evidence**: a fix whose only source for a change is a
   comment line (by file type: `//`, `#`, `/* */`, `<!-- -->`) is refused,
   and the disagreement between comment and code is reported instead.

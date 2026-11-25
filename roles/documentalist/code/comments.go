@@ -2,6 +2,7 @@ package documentalist
 
 import (
 	"path"
+	"slices"
 	"strings"
 	"unicode"
 )
@@ -223,7 +224,7 @@ func maskWith(st commentStyle, content string) []bool {
 			if !strings.HasPrefix(content[i:], l) {
 				continue
 			}
-			if contains(st.afterSpace, l) && !lineStart && i > 0 && !unicode.IsSpace(rune(content[i-1])) {
+			if slices.Contains(st.afterSpace, l) && !lineStart && i > 0 && !unicode.IsSpace(rune(content[i-1])) {
 				continue
 			}
 			end := strings.IndexByte(content[i:], '\n')

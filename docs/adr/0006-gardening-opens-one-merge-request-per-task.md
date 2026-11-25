@@ -15,6 +15,8 @@ job's checkout is thrown away, and the work with it. The role's
 `max-open-merge-requests` setting, meant to stop proposing when too many wait
 for review, is not read.
 
+(Amended 2026-11-25: the condense, split, merge-card and duplicates tasks were removed, never run in two weeks on the three repositories in use; budgets and duplicates are reported for a person.)
+
 Dependency bots solved the same problem: Renovate and Dependabot open one
 branch and one pull request per update, update that pull request when they
 run again rather than open another, and stop at a limit of open ones

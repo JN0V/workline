@@ -25,8 +25,7 @@ verified: agent:claude-code
 What the agent is asked of the suspect docs, judged whole or in parts. A
 doc is *vouched for* when its `checked` moves to the commit the task gave.
 When gardening (the scheduled run, nightly or weekly), the agent also gets
-stale docs, duplicates, condensing, merging and splitting cards, and the
-pages the reader checks flag: [gardening](gardening.md). Part of [the documentalist](../README.md).
+stale docs and the pages the reader checks flag: [gardening](gardening.md). Part of [the documentalist](../README.md).
 
 ## Suspect docs
 

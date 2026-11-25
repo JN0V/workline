@@ -620,3 +620,54 @@ func claimPages(m map[string][]claim) []string {
 	sort.Strings(out)
 	return out
 }
+
+// tooLargeToRewrite says why a page was not given to the agent whole: its
+// task would not fit the role's context budget. A person reads it.
+func tooLargeToRewrite(kind, doc string, chars, max int) verdict.Finding {
+	return verdict.Finding{Rule: "too-large-to-" + kind, Where: doc, Level: "warn",
+		Message: fmt.Sprintf("not given to the agent to %s: its task would be %d characters, over the %d a task holds to fit the role's context budget; a person moves whole parts of it into docs of their own", kind, chars, max)}
+}
+
+// applyDoc applies one file of a patch to an existing doc, as git will: the
+// lines it cites, once the engine places its hunks (placed, mended), must be
+// quoted as they are, and it must leave derived blocks alone. rule and why
+// say what is wrong, if anything.
+func applyDoc(old string, f fileDiff, diff string) (now, rule, why string) {
+	f = placed(old, f)
+	if why := misquoted(old, f); why != "" {
+		return "", "misquoted", why
+	}
+	if touchesDerived(old, f) {
+		return "", "derived-block", "the patch changes lines between workline:derive markers; they are regenerated from the code, never written"
+	}
+	now = applyHunks(old, f)
+	byGit, err := gitApplied(f.path, old, diff, false)
+	if err != nil {
+		// Git cannot apply the hunks as written: what lands is the doc's
+		// part written anew from them as placed — the reader task's own
+		// patch —, which git is asked about
+		// (#592).
+		var part string
+		if part, _, err = writtenAnew(old, f); err == nil {
+			byGit, err = gitApplied(f.path, old, part, false)
+		}
+	}
+	if err != nil || byGit != now {
+		return "", "patch-ambiguous", "git would apply this diff differently from how it reads; send a plain unified diff"
+	}
+	// Moving text gives no source to read: `checked` stays (ADR-0014).
+	if checkedOf(now) != checkedOf(old) {
+		return "", "checked-unread", "the patch moves `checked`, but this task gives none of the doc's sources: moving text vouches for nothing, so leave the header as it is"
+	}
+	return now, "", ""
+}
+
+// proposedPatch says whether the agent proposed a patch of its own.
+func proposedPatch(intents, fallback []intent.Intention) bool {
+	for _, in := range intents {
+		if in.Kind == "patch" && !isFallback(in, fallback) {
+			return true
+		}
+	}
+	return false
+}

@@ -20,7 +20,7 @@
   show.
 - Only documentation paths. Never code, never generated blocks between
   `workline:derive` markers.
-- Keep every rule written as MUST or SHOULD; condensing never drops a rule.
+- Keep every rule written as MUST or SHOULD.
 - A patch is a unified diff with context lines, citing the doc's lines by the
   numbers the task shows: what it replaces is checked against them.
 - A patch must not make the docs longer, unless the code gained something the
