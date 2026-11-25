@@ -1,0 +1,23 @@
+case: reviewer/intent-judge-shown-ignored-files
+about: "A person's change fixes the CHANGELOG, a file the reviewer's `ignore` leaves, and adds the test proving it. The intent lens, shown the test alone, leaves the scenario unanswered: it becomes an important finding, never skipped. Its judge is shown the whole change, the CHANGELOG too; its no, quoting it, drops the finding."
+given:
+  repo: reviewed
+  setup:
+    - "git checkout -q main && printf '# Changelog\\n\\n## 1.2.0\\n\\n- See docs/migration/v1.2.0.md to upgrade.\\n' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'docs: a changelog' && git checkout -q feature && git rebase -q main"
+    - "printf 'package calc\\n\\nimport (\\n\\t\"os\"\\n\\t\"strings\"\\n\\t\"testing\"\\n)\\n\\n// Given the CHANGELOG, When I follow each path it names under docs/,\\n// Then every one exists.\\nfunc TestChangelogNamesNoMigrationFolder(t *testing.T) {\\n\\ttext, _ := os.ReadFile(\"../CHANGELOG.md\")\\n\\tif strings.Contains(string(text), \"docs/migration/\") {\\n\\t\\tt.Error(\"docs/migration/ does not exist\")\\n\\t}\\n}\\n' > calc/changelog_test.go && sed -i 's|See docs/migration/v1.2.0.md to upgrade.|See the notes above to upgrade.|' CHANGELOG.md && git add calc CHANGELOG.md && git commit -qm 'fix: the CHANGELOG names no missing docs path' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no-changelog.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: CHANGELOG references nonexistent docs/migration/
+        body: "## Need\n\nA user upgrading between versions wants the migration pointer in the CHANGELOG to lead somewhere real.\n\n## Validation\n\n- **Link target:** Given the CHANGELOG, When I follow each path it names under `docs/`, Then every one exists.\n\n## Scope\n\n`CHANGELOG.md`\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: intent}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-intent}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: finding-judged-no, message: "the judge: the CHANGELOG names no docs/migration/ path any more, and the test checks every docs/ path it names, quoting CHANGELOG.md:5"}
+  no-findings: [{rule: intent}, {rule: scenario-unasked}]

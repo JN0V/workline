@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -416,13 +417,17 @@ func (r reading) quoted(repo string, st state, q *judgemark.Quote) (where, why s
 		}
 		return p, ""
 	}
-	text, ok := fileAt(repo, st.Head, p)
+	at := st.Head
+	if st.OwnTip != "" && slices.Contains(st.OwnFiles, p) {
+		at = st.OwnTip // as workline's own last commits left it, shown to the judge
+	}
+	text, ok := fileAt(repo, at, p)
 	if !ok {
-		return "", fmt.Sprintf("its quote names %s, not a file at %s", p, short(st.Head))
+		return "", fmt.Sprintf("its quote names %s, not a file at %s", p, short(at))
 	}
 	places := locate(strings.Split(text, "\n"), q.Text)
 	if len(places) == 0 {
-		return "", fmt.Sprintf("its quote is not found in %s at %s", p, short(st.Head))
+		return "", fmt.Sprintf("its quote is not found in %s at %s", p, short(at))
 	}
 	spans := shownIn(r.Material)
 	for _, rd := range r.Rounds {

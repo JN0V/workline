@@ -1,0 +1,4 @@
+# A judge that may read the repository says no to an intent finding, quoting
+# the CHANGELOG line that does the scenario, as the change shown leaves it.
+- note: "no: the CHANGELOG names no docs/migration/ path any more, and the test checks every docs/ path it names."
+- quote: {path: CHANGELOG.md, text: "- See the notes above to upgrade."}

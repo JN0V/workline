@@ -374,7 +374,9 @@ func (c *candidates) shown(repo string, st state, intentAsked bool, v any) {
 // neither showed done and proven, nor found missing: an important one,
 // its cause the scenario's name in the issue, which its judge, shown the
 // issue and the change, keeps or drops. A "no finding" is never taken on
-// the lens's silence; on a share of the change, nothing is, said.
+// the lens's silence; on a share of the change, nothing is, said. Its
+// judge is shown the whole change, workline's own last commits too
+// (st.OwnFiles), which the lens never sees.
 func (c *candidates) unshown(repo string, s Settings, st state) {
 	if st.Spec != nil || !slices.Contains(st.Lenses, "intent") || slices.Contains(c.Failed, "intent") {
 		return

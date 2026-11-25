@@ -159,6 +159,13 @@ func sameAs(repo string, st state, s Settings, f Finding, l Lens) reviewmark.Ans
 	if is := issueOf(st, f.Cause.Path); is != nil {
 		patch = patchOf(repo, st.Base, st.Head, "")
 		put(is.Text)
+		if st.OwnTip != "" { // workline's own last commits, shown to its judge too
+			own := patchOf(repo, st.Head, st.OwnTip, "")
+			if own == "" {
+				return reviewmark.Answered{}
+			}
+			put(own)
+		}
 	} else {
 		patch = patchOf(repo, st.Base, st.Head, f.Cause.Path)
 	}

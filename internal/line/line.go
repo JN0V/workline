@@ -125,6 +125,10 @@ type Gates struct {
 // next merge requests' base, then the event's own steps, each one.
 const MainEvent = "main"
 
+// OwnInput is the range of workline's own last commits a merge request's
+// range is judged without (beforeOwn): `<the range's new head>..<its head>`.
+const OwnInput = "own"
+
 // SkipInput names, comma-separated, the event's steps a run leaves out:
 // workline's own schedule, its docs weekly and its backlog nightly.
 const SkipInput = "skip"
@@ -250,6 +254,12 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	if role, rng := beforeOwn(base.Repo, base.Inputs["range"]); role != "" && event != MainEvent {
 		inputs := maps.Clone(base.Inputs)
 		inputs["range"] = rng
+		if rng != "" {
+			// What the range now leaves, for a role to know that its
+			// lenses were not shown all of the change (the reviewer's
+			// scenarios).
+			inputs[OwnInput] = gitrange.Head(rng) + ".." + gitrange.Head(base.Inputs["range"])
+		}
 		base.Inputs = inputs
 		own = fmt.Sprintf(" (the last commit workline's own, %s: judged as %s)", role, rng)
 		if nothingElse = rng == ""; nothingElse {

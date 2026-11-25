@@ -1,0 +1,30 @@
+case: reviewer/intent-judge-shown-workline-s-own-last-commits
+about: "The developer's fix lies in workline's own last commit, changing the CHANGELOG alone: the line judges the range without it, and the intent lens, shown the tester's test alone, leaves the scenario unanswered. Silence is never \"no finding\": the scenario becomes an important finding, and its judge is shown that commit too, as part of the change. Its no, quoting the CHANGELOG as that commit leaves it, is found again there: the finding is dropped."
+given:
+  repo: reviewed
+  setup:
+    - "git checkout -q main && printf '# Changelog\\n\\n## 1.2.0\\n\\n- See docs/migration/v1.2.0.md to upgrade.\\n' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'docs: a changelog' && git checkout -q feature && git rebase -q main"
+    - "printf 'package calc\\n\\nimport (\\n\\t\"os\"\\n\\t\"regexp\"\\n\\t\"testing\"\\n)\\n\\n// Given the CHANGELOG, When I follow each path it names under docs/,\\n// Then every one exists.\\nfunc TestChangelogDocsPathsExist(t *testing.T) {\\n\\ttext, _ := os.ReadFile(\"../CHANGELOG.md\")\\n\\tfor _, p := range regexp.MustCompile(`docs/[A-Za-z0-9_./-]+`).FindAllString(string(text), -1) {\\n\\t\\tif _, err := os.Stat(\"../\" + p); err != nil {\\n\\t\\t\\tt.Errorf(\"%%s does not exist\", p)\\n\\t\\t}\\n\\t}\\n}\\n' > calc/changelog_test.go && git add calc && git commit -qm 'test: the acceptance tests of #4'"
+    - "sed -i 's|See docs/migration/v1.2.0.md to upgrade.|See the notes above to upgrade.|' CHANGELOG.md && git commit -qam 'fix: CHANGELOG references nonexistent docs/migration/' -m 'Workline-Role: developer'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no-changelog.yaml"}
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+    roles: {reviewer: {settings: {ai-findings: {intent: block}}}}
+  forge:
+    issues:
+      - id: 4
+        title: CHANGELOG references nonexistent docs/migration/
+        body: "## Need\n\nA user upgrading between versions wants the migration pointer in the CHANGELOG to lead somewhere real.\n\n## Example\n\nThe CHANGELOG mentions `docs/migration/`. A user who looks for it in the repository finds no such folder.\n\n## Validation\n\n- **Link target:** Given the CHANGELOG, When I follow each path it names under `docs/`, Then every one exists.\n\n---\n\n## Verification\n\n- **Link target:** `calc.TestChangelogDocsPathsExist`.\n\n## Scope\n\n`CHANGELOG.md` and `docs`.\n"
+        labels: []
+        comments: []
+    merge-requests:
+      - {id: 5, branch: workline/developer/4, title: "fix: CHANGELOG references nonexistent docs/migration/", body: "Closes #4\n\n## Changes\n\n- Code: `CHANGELOG.md`.\n- The tester's acceptance tests: `calc/changelog_test.go`.\n", labels: [], comments: []}
+run: {route: merge-request, input: {range: main..HEAD, lenses: intent}, target: {merge-request: 5}, ai: "fake:review-nothing", no-apply: true}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-intent}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: finding-judged-no, message: "the judge: the CHANGELOG names no docs/migration/ path any more, and the test checks every docs/ path it names, quoting CHANGELOG.md:5"}
+  no-findings: [{rule: intent}]
+  run-files:
+    in/judge/01/question.yaml: {contains: "workline's own, after the head"}
