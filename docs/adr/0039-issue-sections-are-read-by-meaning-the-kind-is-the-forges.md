@@ -11,6 +11,8 @@
   (headings a project names); principles 1, 4, 5, 7, 13
 - **Research:** [issue-formats.md](../research/issue-formats.md);
   worked examples: [the proposed headings](../../roles/product-owner/docs/proposed-headings.md)
+- **Amended by:** [a full read corrects the role's own kind](#amendment-2026-11-25-a-full-read-corrects-the-roles-own-kind)
+  (2026-11-25, built)
 - **Amended by:** [ADR-0060](0060-the-person-is-on-the-loop.md#4-a-person-validates-by-the-issues-kind), once built: a bug its reporter cannot help reproduce, past the delay, is Blocked as "not reproduced"; never another kind
 
 ## Context
@@ -205,3 +207,20 @@ case known ([worked case](../../roles/product-owner/docs/proposed-headings.md#ea
   piece 1 reads, not the names, and its effect is rated alone.
 - **Measured**: #103, #104 and #111 drafted again, rated blind with the
   maintainer; in the trial, drafts accepted unchanged.
+
+## Amendment (2026-11-25): a full read corrects the role's own kind
+
+- **Why**: five DomoticsCore kinds the light read set were wrong, and
+  the owner corrected them by hand:
+  [#153](https://github.com/JN0V/DomoticsCore/issues/153),
+  [#155](https://github.com/JN0V/DomoticsCore/issues/155),
+  [#165](https://github.com/JN0V/DomoticsCore/issues/165),
+  [#182](https://github.com/JN0V/DomoticsCore/issues/182) `task` to
+  `bug`, [#150](https://github.com/JN0V/DomoticsCore/issues/150) to
+  `enhancement`. The light read gave 600 characters of each body; a
+  wrong doc or output read as a chore.
+- **The light read gives the whole body**, and a bug is defined as
+  something that exists and is wrong: code, a doc, an output.
+- **A later full read may swap the role's own label**, still on the
+  issue, for another kind: (c)'s "never swaps" holds for a person's
+  label, change or removal only.

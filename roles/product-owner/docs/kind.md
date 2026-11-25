@@ -36,9 +36,11 @@ flowchart LR
 - **On each issue it reads with no kind label**, the agent proposes
   `kind`: `bug`, `feature` or `task`, and why. The task names each
   such issue: "Kind: none yet — propose `kind` on #888".
-- **A bug is told by the code's own contract**: code doing what it
-  should not is a `bug` even when no user sees it, if a test can show
-  it ([#1020](https://github.com/JN0V/workline/issues/1020)).
+- **A bug is something that exists and is wrong**, by its own
+  contract: code, a doc, an output, a message or a test; a wrong doc or
+  output is a bug, even when no user sees it
+  ([#1020](https://github.com/JN0V/workline/issues/1020)). A `task`
+  changes no behaviour and fixes nothing wrong.
 - **An answer that gives none** is said in the run, `kind-missing`,
   never silent; the light read below gives it its kind
   ([#895](https://github.com/JN0V/workline/issues/895)).
@@ -64,8 +66,8 @@ An issue read before the act existed is not read again until it
 changes. A light read gives it a kind
 ([#878](https://github.com/JN0V/workline/issues/878)):
 
-- **What the agent reads**: each title and the first 600 characters of
-  its body, never its code nor its comments.
+- **What the agent reads**: each title and its whole body, never its
+  code nor its comments: a chore's first lines may hide a defect.
 - **Which issues**: open, no kind label, no kind the role set before,
   not set aside. First those a merge waits on: a developer on it
   (`workline:developing`), then ready or at its tests
@@ -85,10 +87,15 @@ changes. A light read gives it a kind
 
 ## A person's kind holds
 
-- **Never a swap**: an issue a kind label tells already keeps it
-  (`kind-kept`), checked again just before the label is put.
-- **Set once**: the label is kept in the issue's state. A person who
-  changes it, or takes it off, is never undone (`kind-once`).
+- **A person's label is never swapped**: an issue a kind label of a
+  person's tells keeps it (`kind-kept`), checked again just before the
+  label is put.
+- **The role's own guess may be corrected**: the label it set is kept
+  in the issue's state; while it is still on the issue, a later full
+  read told "the role's own guess" may propose another kind: its label
+  comes off, the new one goes on.
+- **A person's change or removal is never undone** (`kind-kept`,
+  `kind-once`).
 - **A bug is never turned into a feature**: not by the role, and not
   when its bug is not reproduced ([the tester's
   hand-over](../../tester/docs/proof-kinds.md#a-bug-not-reproduced)).

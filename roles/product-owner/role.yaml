@@ -20,7 +20,7 @@ model:
   promote-after: 1   # an answer that does not read is asked for again once
   tasks:
     # The kind's light read (#878): open issues read before with no kind
-    # label, by title and the start of their body, many in one call; its
+    # label, by title and whole body, many in one call; its
     # own short instruction, its answers kind and note only.
     kind: {instruction: tasks/kind.md, intentions: [kind, note]}
 
@@ -125,7 +125,7 @@ settings:
     milestone: {mode: off, max: 10}   # an issue put in a release's milestone; one that slipped moved by the engine
     order: {mode: off, max: 10}       # an issue's priority, workline:priority/1 to /4; a person's kept
     effort: {mode: off, max: 10}      # an issue's effort, once, on code the run read; where `effort` says it is kept (ADR-0040)
-    kind: {mode: act, max: 10}        # bug, feature or task, on an issue no kind label tells; once, a person's change kept (ADR-0039)
+    kind: {mode: act, max: 10}        # bug, feature or task, on an issue no kind label tells, or the role's own guess; a person's change kept (ADR-0039)
     size: {mode: act, max: 3}         # the tier large, ×2 every size target of an issue's runs, when its need is one no part proves apart; x-large a person's (ADR-0064)
     close-obsolete: {mode: off, max: 3, days: 7, exempt: [pinned, security]}  # announcements and closings together
     split: {mode: off, max: 2}        # a need too big for one issue split into 2 to 6, linked to it (ADR-0022)

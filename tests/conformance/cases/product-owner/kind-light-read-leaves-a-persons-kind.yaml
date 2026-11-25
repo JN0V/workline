@@ -23,7 +23,7 @@ expect:
       contains: ["Open issues to label with their kind: 1.", "## #12 Document the export"]
       not-contains: ["## #9", "## #10", "## #11"]
   findings:
-    - {rule: kind-once, where: "#10", message: "the role set its kind once already (`bug`): never again; a person's change or removal stands"}
+    - {rule: kind-once, where: "#10", message: "the role set its kind once already (`bug`): a person's removal stands"}
     - {rule: done, where: "#12", message: "Labelled #12 `task`, a task"}
   no-findings: [{rule: done, where: "#10"}]
   forge:
