@@ -94,7 +94,8 @@ its tests must fail on the base. Its kind is its label
 - **Its tests red on the base**: the Draft, as any issue. The fix
   then merges by the policy once every gate passes
   ([the merge](../../developer/docs/merge.md)).
-- **Every test green on the base** (`bug-not-reproduced`): no Draft,
+- **Every test green on the base** (`bug-not-reproduced`), guards
+  of scenarios kept as today included: no Draft,
   never ready. The issue keeps its state and gets
   `workline:needs-repro`; the tester's comment asks its reporter how to
   reproduce it.

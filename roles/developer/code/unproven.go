@@ -15,15 +15,10 @@ const UnprovenHeading = "Unproven"
 const unprovenLead = "Scenarios of the issue no test proves, as the tester said, each with its reason: the reviewer's tests lens weighs whether a test can prove it."
 
 // unprovenLines are the scenarios its pull request lists, inert: a
-// name's @ pings no one. One kept as today with no test guarding it is
-// left off: a test of it would pass on the base, which the tester does
-// not write yet (#2164), so the lens has nothing to ask.
+// name's @ pings no one.
 func unprovenLines(us []testmark.Unproven) []string {
 	var out []string
 	for _, u := range us {
-		if u.KeptUnguarded() {
-			continue
-		}
 		l := "- **" + devmark.InertText(u.Scenario) + "**"
 		if u.Why != "" {
 			l += ": " + devmark.InertText(u.Why)

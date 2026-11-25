@@ -29,7 +29,7 @@ workline test check --base origin/main
 
 | Finding | Blocks | When |
 |---|---|---|
-| `test-green-on-base` | yes | a new test passes, or is skipped, on the base |
+| `test-green-on-base` | yes | a new test passes, or is skipped, on the base; `workline test check` says it of a Draft's guard too, which writing an issue's tests lets pass beside a red test ([write](write.md)) |
 | `test-red-on-head` | yes | the change holds code, and a new test fails, is skipped, or did not run on the head |
 | `setting-missing` | yes | `test-command` or `test-report` is not set |
 | `test-command-fails` | yes | writing an issue's tests: the test command, run on the base before the agent, failed with no report |

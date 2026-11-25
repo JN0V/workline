@@ -32,7 +32,7 @@ For each:
 - **Fail today, for the right reason**: each test must fail on the code
   as it is, by its own assertion or a name the code lacks, and pass once
   the code does what the scenario says. A test that passes today proves
-  nothing and is refused.
+  nothing and is refused, but a guard (below).
 - **Put each test where the project keeps it**, as a tester on the team
   would: in the test file of the code it checks when the project keeps
   one test file per class or module, else in a new test file beside
@@ -54,15 +54,15 @@ For each:
   `covers` entry gives `reason:`, why, in place of `tests:`. Never fake
   a test for it.
 - A scenario of behaviour kept as it is today ("as today", "unchanged",
-  "still"): its test would pass today, and is refused. Write none: its
-  `covers` entry's reason, "kept as today: guarded by `<the existing
-  test>`", naming the test of the project you read that checks it,
-  as the report names it or its file. None found: "kept as today: no
-  existing test checks it". Never say a test guards it unread: the
-  engine looks for the name in the project's tests, and says plainly
-  none guards it when it is not there. Test the other scenarios as above. Told a test of yours passes
-  on the base: keep its scenario so, if it describes what the base
-  already does; else make the test check what the issue asks.
+  "still"): write its guard, a test that passes today and must keep
+  passing, checking its Then as above. Its `covers` entry gives its
+  tests and the reason "kept as today": the engine then proves it green
+  on the base, not red. A test of the project you read that already
+  checks it exactly: write none, the reason "kept as today: guarded by
+  `<that test>`", as the report names it. Told a test of yours passes
+  on the base: if its scenario keeps what the base already does, add
+  that reason to its entry; else make the test check what the issue
+  asks.
 
 A file given as "its declarations" shows each signature, type and
 member, its bodies left out as `…`: enough to call it and to build

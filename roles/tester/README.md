@@ -32,7 +32,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
 
 - `workline test write --issue <n>`: has the agent write one test for
   each named scenario of an issue waiting for its tests, in the project's own framework;
-- proves them red on the base, with no agent, then commits them on a
+- proves them red on the base (a guard of a scenario kept as today
+  green), with no agent, then commits them on a
   work branch, opened as a Draft;
 - `workline test check --base <ref>`: the same red-first check on any change, with no agent;
 - keeps its tests from the builder, and answers an objection to one
