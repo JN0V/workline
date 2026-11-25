@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
 // A quote is evidence when some of it lies outside the file's comments,
@@ -252,4 +254,15 @@ func TestCountFixNeedsNoClaim(t *testing.T) {
 	if rule, msg, _ := cc.judgeCitations("d.md", old, placed(old, files[0]), nil, 0, true); rule != "" {
 		t.Errorf("table cell: rule %q (%s), want none", rule, msg)
 	}
+}
+
+// judgeCitations is the removal rule's refusal of one doc's fix, as the
+// judge words it.
+func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []citeClaim, unread int, alone bool) (rule, msg string, comments []verdict.Finding) {
+	refused, held, off, comments := cc.citationRefusals(docPath, old, f, claims, unread, alone)
+	if len(refused) == 0 {
+		return "", "", nil
+	}
+	rule, msg = citationMessage(docPath, refused, held, off)
+	return rule, msg, comments
 }

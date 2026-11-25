@@ -220,7 +220,7 @@ func TestFixEntryPutsClaimsTogether(t *testing.T) {
 func TestUncoveredNamesWhatNoPartSpokeOf(t *testing.T) {
 	doc := "---\nsources: [x.go]\n---\n# A\n\nCall `Refresh` first.\n\nThen `Revoke`.\n\n```\n`Inside` a block\n```\n"
 	kept := []claim{claimOf(t, 0, `{lines: "6", status: supported, quote: x, source: {path: x.go, lines: "1", quote: y}}`)}
-	got := uncovered(doc, kept)
+	got, _, _ := uncoveredSplit(doc, kept, "")
 	if got != "line 8 names `Revoke`" {
 		t.Fatalf("uncovered = %q, want only line 8: line 6 is spoken of, and code blocks name nothing", got)
 	}
