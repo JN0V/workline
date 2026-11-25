@@ -46,7 +46,7 @@ func waits(passed []devmark.Passed) []intent.Intention {
 }
 
 // stale lets go each claim older than claim-hours that no open merge
-// request closes: its label off, why written in its comment (ADR-0059).
+// request closes: its label off, why written in its comment.
 // A claim whose day the forge does not say is kept, and said in the
 // verdict.
 func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Settings, now time.Time) ([]intent.Intention, []verdict.Finding, error) {
@@ -224,7 +224,7 @@ func unopened(a devmark.Act, s Settings, repo string) []map[string]any {
 
 // released is the label a claim let go moves, back from Doing to Ready:
 // the claim's off, the ready label on, which the claim took off
-// (ADR-0059, §2; #1081).
+// (#1081).
 func released(is forge.Issue, s Settings) map[string]any {
 	return map[string]any{"issue": is.ID, "add": []string{backlog.LabelReady}, "remove": []string{s.ClaimLabel}}
 }

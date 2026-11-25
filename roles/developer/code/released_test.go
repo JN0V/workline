@@ -10,7 +10,7 @@ import (
 )
 
 // A claim let go puts the ready label back on, which the claim took off
-// (ADR-0059, §2; #1081).
+// (#1081).
 func TestReleasedPutsReadyBack(t *testing.T) {
 	s := SettingsFrom(nil)
 	v := released(forge.Issue{ID: 4, Labels: []string{s.ClaimLabel, "bug"}}, s)
@@ -20,7 +20,7 @@ func TestReleasedPutsReadyBack(t *testing.T) {
 }
 
 // The claim moves its issue from Ready to Doing, one state at a time
-// (ADR-0059, §2; #1081): the ready label off in the same call.
+// (#1081): the ready label off in the same call.
 func TestClaimTakesReadyOff(t *testing.T) {
 	s := SettingsFrom(nil)
 	v, _ := claimLabel(devmark.Act{Issue: 2}, s).Value.(map[string]any)
