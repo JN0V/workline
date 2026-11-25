@@ -46,8 +46,9 @@ An issue it does not take is refused before any agent is asked
 - **An answer that does not read** (a list item indented one space
   too far): asked again once, with the reader's error; still
   unreadable, refused and said, no third call
-  ([#761](https://github.com/JN0V/workline/issues/761)). Prose before
-  the list, or a `file:` beside a patch naming its own file, is read
+  ([#761](https://github.com/JN0V/workline/issues/761)); text before
+  the list too, never cut off: it may be a test. A `file:` beside a
+  patch naming its own file is read
   ([#1148](https://github.com/JN0V/workline/issues/1148),
   [one run](../../../docs/spec/role-contract.md#one-run)).
 - **A test the project's runner skips** (a suite its `test_filter`

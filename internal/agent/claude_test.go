@@ -126,13 +126,31 @@ func TestParseClaude(t *testing.T) {
 	}
 }
 
-// The tester's two answers on trial #55, as they came (#1148): the first
-// writes a `file:` and a `content:` beside each new file's patch, the
-// second opens on a line of prose. Each is read, its patches whole.
+// An answer whose text before the list does not read is refused, never
+// cut: what came first may be a proposal, as a tester's patch written
+// with no `- ` (a DomoticsCore issue's answer, its test file left out),
+// or a line of prose (trial #55). Asked again, told why.
+func TestProposalsFromTextBeforeTheListRefused(t *testing.T) {
+	prose, err := os.ReadFile("../../tests/conformance/fixtures/agents/dc55-tester-try2-answer2.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, answer := range []string{
+		"patch:\n  file: test/test_a.cpp\n  content: |\n    void test_a() {}\n- note: \"assumes: a\"\n",
+		string(prose),
+	} {
+		if out, mended, err := proposalsFrom(answer, "patch", "note", "covers"); err == nil {
+			t.Errorf("an answer opening on text before its list was read, %q mended, to %.200s", mended, out)
+		}
+	}
+}
+
+// The tester's answer on trial #55, as it came (#1148): it writes a
+// `file:` and a `content:` beside each new file's patch. It is read, its
+// patches whole.
 func TestProposalsFromRealTesterAnswers(t *testing.T) {
 	for _, c := range []struct{ file, said string }{
 		{"../../tests/conformance/fixtures/agents/dc55-tester-try2-answer1.txt", "a `content:` beside its patch"},
-		{"../../tests/conformance/fixtures/agents/dc55-tester-try2-answer2.txt", "prose before the list (I'm writing the answer now."},
 	} {
 		data, err := os.ReadFile(c.file)
 		if err != nil {
@@ -177,7 +195,7 @@ func TestProposalsFromBesideAPatch(t *testing.T) {
 		{"-" + diff[1:] + "  file: t/b_test.sh\n", "proposal 1: its `file:` (t/b_test.sh) beside its patch is not a file the patch changes (t/a_test.sh)"},
 		{"-" + diff[1:] + "  content: echo b\n", "proposal 1: its `content:` beside its patch is not the text the patch gives a new file"},
 		{"I could not write a test.\nThe code has none.\n", "expected a YAML list of proposals"},
-		{"Here it is:\n- note: x\n  colour: red\n", "colour is no kind"},
+		{"- note: x\n  colour: red\n", "colour is no kind"},
 	} {
 		if _, _, err := proposalsFrom(c.answer); err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%q: %v, want %q", c.answer, err, c.want)
