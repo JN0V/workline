@@ -1,0 +1,29 @@
+case: product-owner/feature-accepted-answers-its-question
+about: >
+  A person's yes answers a product choice (ADR-0060, amended): on a
+  feature with the role's drafts and its question still unanswered, a
+  person puts workline:accepted, no comment written. Their yes stands
+  for the answer: the drafts are theirs, the issue moved to ready.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:draft, enhancement, workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: bob, insider: true, created: "2026-10-08T07:00:00Z"}]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: done-as-accepted, where: "#9", message: "Moved #9 to ready: its drafts accepted (workline:accepted) Accepted by bob."}
+  forge:
+    issues:
+      - {id: 9, labels: [enhancement, workline:ready], body-lacks: "workline:draft"}
