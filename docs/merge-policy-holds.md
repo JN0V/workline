@@ -5,7 +5,7 @@ sources:
   - internal/engine/merge.go#mergePolicy
   - internal/forge/merge.go#sumRuns
   - internal/forge/merge.go#headRuns
-checked: e81df7b34
+checked: a5598e4ec
 verified: agent:claude-code
 ---
 # What holds a pull request
