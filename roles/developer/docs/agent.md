@@ -112,8 +112,8 @@ It answers with its edits; its diff is its code
   the pull request ([beyond the Scope](bounds.md#beyond-the-scope)).
 - **Done is the issue's Validation done**, each scenario true of the
   code: tests green are not enough.
-- **Its last message is `[]`**, or a `Not done:` note: each part left,
-  or that only a person may do, one line and why.
+- **Its last message is `[]`**, or a `Not done:` note, one paragraph,
+  no list: each part left, or that only a person may do, and why.
 - **Closing words that do not read never cost the code**: it is still
   bounded, proven and pushed, ready or a Draft by the proof alone.
   - A YAML list among prose is read alone, said (`answer-mended`).

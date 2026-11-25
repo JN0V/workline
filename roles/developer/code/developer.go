@@ -645,7 +645,7 @@ func claimLabel(a devmark.Act, s Settings) intent.Intention {
 func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) string {
 	return question(is, b, test, testErr, s) +
 		"Its diff is your code. Done is the issue's " + work.Name(work.Validation) + " done, each scenario true of your code: tests green are not enough. When done, your last message is `[]` alone: no label, no comment, the claim is the engine's. " +
-		"A part left undone, or that only a person may do: your last message is instead `Not done:`, then each part, one line, and why.\n"
+		"A part left undone, or that only a person may do: your last message is instead one paragraph, no list, opening on `Not done:`: each part and why.\n"
 }
 
 // testsBeside tells the agent the tests that are beside the Scope, by
@@ -1034,7 +1034,7 @@ func unreadFinding(where string, unread []string, posted bool) verdict.Finding {
 		at = "posted as they came on its pull request"
 	}
 	return verdict.Finding{Rule: "agent-words-unread", Level: "warn", Where: where,
-		Message: fmt.Sprintf("%d of its agent's answers beside its code could not be read (its closing words, its objections file): nothing of them applied, %s, so that an objection written there is not lost; its code is held as any", len(unread), at)}
+		Message: fmt.Sprintf("%d of its agent's answers beside its code read as no YAML (its closing words, its objections file): nothing of them applied, %s, so that a part not done or an objection said there is not lost; its code is held as any", len(unread), at)}
 }
 
 // rights is with whose rights its agent ran, said to whoever runs it:
