@@ -1,0 +1,73 @@
+case: product-owner/dc-153-kinds-five-issues-the-owner-rekinded
+about: >
+  Five DomoticsCore issues the product owner labelled `task` on its own
+  between 2026-11-15 and 2026-11-19 (#150 on 11-15, #155 on 11-17, #182 on
+  11-18, #153 and #165 on 11-19; main was 81774f5 all that time), and the
+  owner corrected on 2026-11-25: #153, #155, #165 and #182 to `bug`, #150 to
+  `enhancement`. The owner's reasons: #153, a native suite passes on a
+  machine that built the WebUI and fails on a clean checkout
+  (https://github.com/JN0V/DomoticsCore/issues/153#issuecomment-7156932405);
+  #155, the shipped note still describes a cap that was removed
+  (https://github.com/JN0V/DomoticsCore/issues/155#issuecomment-7156934464);
+  #165, on ESP8266 a wrong password reads "Disconnected"
+  (https://github.com/JN0V/DomoticsCore/issues/165#issuecomment-7156931322);
+  #182, the CHANGELOG points to a folder that does not exist
+  (https://github.com/JN0V/DomoticsCore/issues/182#issuecomment-7156933389);
+  #150, the owner decided to support the Arduino IDE, a new capability
+  (https://github.com/JN0V/DomoticsCore/issues/150#issuecomment-7158100503). Each
+  body is the one the role read that day, from the issue's edit history
+  (#155 and #182 after the role's refinement, the others as the owner
+  opened them), no kind label, #155 and #182 ready as they were. Each holds
+  a state the role confirmed at 81774f5, so the run reads them for their
+  kind alone, many in one call, as four of the five were read that week
+  (#150 was read in full during its refinement: a light read here). #165's
+  body is a one-line roadmap row; what makes it a bug (the ESP8266 status
+  read wrong) is in the code, not the body.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 81774f5ad6234f0d51589f7b971ec981a0a3fb68}
+  forge:
+    issues:
+      - id: 150
+        title: "CI-21: The Arduino IDE cannot build the library, the root has no src/"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "### CI-21 — The Arduino IDE cannot build the library: the root has no `src/` [LOW] — **NEW (2026-10-01, by CI-6's review)**\n\n- **Files**: `library.properties` (`includes=DomoticsCore/System.h`), the\n  repository layout — every header lives under `DomoticsCore-*/include/`.\n- **Problem**: an Arduino 1.5-format library compiles `src/`; the root has\n  none, and the header `includes=` names is not reachable from it. The\n  Arduino IDE can install the archive and build nothing.\n- **Consequence**: Constitution XII's secondary registry is unreachable;\n  CI-6's `depends=` takes effect only once this is solved. PlatformIO, the\n  primary registry, is unaffected.\n- **LOW, argued**: nobody installs it that way today — the library is not\n  listed in the Arduino Library Manager.\n- **Fix**: a decision — a `src/` layout the Arduino IDE can build (generated\n  at release, or the components' headers forwarded), or dropping the Arduino\n  registry from XII.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 5651 to 5665 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:c63998856802 -->"
+        comments: ["```yaml\nsources: [library.properties]\nconfirmed: 81774f5\njudged: 81774f5\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 153
+        title: "CI-17 — generated WebUIAssets.h is a gitignored input the host build can read"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "### CI-17 — the generated `WebUIAssets.h` is a gitignored input the host build can read [LOW] — **NEW (2026-09-20, by the deferred-work purge)**\n\n- **Parked by**: CI-15's lot, 2026-09-15; the trap fired on TEST-8's first CI\n  run, 2026-09-19.\n- **Files**: `DomoticsCore-WebUI/embed_webui.py:282-301`,\n  `DomoticsCore-WebUI/.gitignore:26`,\n  `tests/mocks/libraries/DomoticsCore/Generated/WebUIAssets.h`.\n- **Problem**: `embed_webui.py` writes the header into\n  `DomoticsCore-WebUI/include/DomoticsCore/Generated/` on every example\n  build; under `symlink://` it is the only copy the compiler reads, a stale\n  one from a previous build is what the next starts from, and a native suite\n  that includes it passes on a machine that has built the WebUI and fails on\n  a clean checkout — 1 107 local green against a red runner. TEST-8's mock\n  exists so the suites do not need it; nothing stops them from finding the\n  real one first.\n- **Fix**: a CI guard, or the mock directory ahead of the component's include\n  path in every native manifest. Until then the sweep that counts `[PASSED]`\n  moves the file out first.\n- **Refs**: CI-15, TEST-8, TEST-9.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 5884 to 5902 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:25269101a90b -->"
+        comments: ["```yaml\nsources: [DomoticsCore-WebUI/embed_webui.py]\nconfirmed: 81774f5\njudged: 81774f5\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 155
+        title: "DOC-2 — the 2.5.0 release note's \"13 entities\" is derived nowhere"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready"]
+        body: "### DOC-2 — the 2.5.0 release note's \"13 entities\" is derived nowhere [LOW] — **NEW (2026-09-20, by the deferred-work purge)**\n\n- **Parked by**: BUG-41's code review, 2026-09-18.\n- **File**: `CHANGELOG.md`, the 2.5.0 block (\"The EventBus's 32-entry cap\n  leaves **13 entities** to an application at connect\").\n- **Problem**: the sentence describes a cap BUG-41 removed, and the figure\n  replaced 21 in uncommitted work that predates the review; neither number is\n  derived in the repository, and the suites now compute the connect-burst\n  capacity from `QueueCost`. A shipped note is not edited; the next release's\n  entry can say what the figure is now and how it was obtained.\n- **Refs**: BUG-41, LO-2.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 5918 to 5928 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:6bef13737dea -->\n\n## Need\n\nA reader of the changelog wants the 2.5.0 note's \"13 entities\" figure explained or replaced, so they are not misled by an unsourced number.\n\n## Example\n\nThe 2.5.0 note says the EventBus's 32-entry cap leaves 13 entities at connect. That cap was removed, and neither 13 nor the earlier 21 is derived anywhere in the repository.\n\n## Validation\n\n- **Figure derived:** Given the next release's entry, When a reader looks for the connect-burst capacity, Then it states the figure and how it was obtained.\n\n---\n\n## Verification\n\nA check that the figure in the new entry matches the connect-burst capacity the suites compute from `QueueCost`.\n\n## Scope\n\n`CHANGELOG.md`: the next release's entry. The shipped 2.5.0 block is not edited.\n\n## Assumptions\n\n- Assumption taken on 2026-11-15, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+        comments: ["```yaml\nsources: [CHANGELOG.md]\nconfirmed: 81774f5\njudged: 81774f5\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 165
+        title: "LO-10: WiFi magic numbers for status codes"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "| LO-10 | WiFi | Magic numbers for WiFi status codes |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6330 to 6330 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:1b68e042f859 -->"
+        comments: ["```yaml\nsources: [DomoticsCore-Wifi/include/DomoticsCore/Wifi.h]\nconfirmed: 81774f5\njudged: 81774f5\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 182
+        title: "LO-28: CHANGELOG references nonexistent docs/migration/"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready"]
+        body: "The CHANGELOG points readers to `docs/migration/`, but that folder does not exist. A reader who follows the link finds nothing.\n<details><summary>For the builder</summary>Item LO-28 of `docs/CODE-ROADMAP.md`. Either add the folder or fix the CHANGELOG.</details>\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6348 to 6348 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:3c9ecee04f04 -->\n\n## Need\n\nA user upgrading between versions wants the migration pointer in the CHANGELOG to lead somewhere real.\n\n## Example\n\nThe CHANGELOG mentions `docs/migration/`. A user who looks for it in the repository finds no such folder.\n\n## Validation\n\n- **Link target:** Given the CHANGELOG, When I follow each path it names under `docs/`, Then every one exists.\n\n---\n\n## Verification\n\nA check that every `docs/` path named in the CHANGELOG exists in the repository.\n\n## Scope\n\n`CHANGELOG.md` and `docs`."
+        comments: ["```yaml\nsources: [CHANGELOG.md]\nconfirmed: 81774f5\njudged: 81774f5\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {finding: {where: "#153", message: "Labelled #153 `bug`"}}
+  - {finding: {where: "#155", message: "Labelled #155 `bug`"}}
+  - {finding: {where: "#165", message: "Labelled #165 `bug`"}}
+  - {finding: {where: "#182", message: "Labelled #182 `bug`"}}
+  - {finding: {where: "#150", message: "Labelled #150 `enhancement`"}}

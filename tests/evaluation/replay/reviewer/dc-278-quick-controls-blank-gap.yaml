@@ -1,0 +1,48 @@
+case: reviewer/dc-278-quick-controls-blank-gap
+about: >
+  DomoticsCore #278 (closes #156) draws the QuickControls location: a quickControlsGrid div above the dashboard grid,
+  filled by a new renderQuickControls(). Head b90dd913 is the one the line declared ready and the owner first
+  labelled, with a reservation (https://github.com/JN0V/DomoticsCore/pull/278#issuecomment-7112626223): the acceptance
+  test only greps app.js's text. Round 1 (2d6859e8) added a jsdom test and nothing else; the owner then sent it back
+  on an independent review (https://github.com/JN0V/DomoticsCore/pull/278#issuecomment-7160708786): (1) the empty
+  area, classed dashboard-grid, adds a 24 px blank gap above the dashboard on every device; (2) docs and the enum
+  comment still say QuickControls is not drawn or is a sidebar, and quick-controls-grid has no CSS rule. Both points
+  hold at this head. The line then (https://github.com/JN0V/DomoticsCore/pull/278#issuecomment-7106358801): the text-
+  only test as a tests nit; the gap and the docs never raised. The docs point lies wholly in untouched files: outside.
+  Issue and PR bodies: current, unedited since before the review.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: 04d2cb3b12f789c8ee2d8c2c9bc1528c1ff64671, head: b90dd913482bfefda22694adf67844c36a27d781}
+  forge:
+    issues:
+      - id: 156
+        title: "DC-20 — WebUI: QuickControls is a location the page never draws"
+        labels: ["bug"]
+        body: "### DC-20 — WebUI: `QuickControls` is a location the page never draws [LOW] — **NEW (2026-10-03, by DC-12's reading)**\n\n- **Files**: `IWebUIProvider.h` (`WebUILocation::QuickControls`,\n  `WebUIContext::quickControl()`), `webui_src/app.js` (`renderUI()`).\n- **Problem**: `app.js` names the location and renders no grid for it, so a\n  context created with `quickControl()` reaches the schema and is shown\n  nowhere. Nothing in the tree uses it, which is why it is LOW.\n- **The remedy is a choice**: draw a quick-controls area, or remove the\n  location and its factory. The front-end suite can pin either.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6386 to 6394 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:e21cdf2fc836 -->\n\n## Need\n\nA component author who places a control with `quickControl()` wants it to appear on the page, so the control is not silently lost.\n\n## Example\n\nA context built with `WebUIContext::quickControl(\"qc_id\", \"Quick\")` reaches the schema, but the page draws no quick-controls area, so nothing is shown. The 2.13.0 release notes list this as a known issue.\n\n## Validation\n\n- **Drawn:** Given a context made with `quickControl()`, When the page renders the schema, Then its card is visible in a quick-controls area.\n- **Removed (if the choice is removal):** Given the location and its factory are gone, When the library is built, Then no code refers to them and the front-end suite passes.\n\n---\n\n## Verification\n\n<!-- workline:verification=tester -->\n\n- **Drawn:** `DomoticsCore-WebUI/test/test_quick_controls_drawn/*.test_quick_control_context_is_drawn_by_render_ui`.\n- **Removed (if the choice is removal):** no test can check it: the alternative branch, mutually exclusive with Drawn: the scenario holds only if the location and its factory are removed, which would make the Drawn test impossible to pass. The Scope names renderUI() in app.js, so the issue's choice is to draw the location, and this scenario is not tested.\n\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-156`. Written by the tester from its tests.\n\n## Scope\n\n`DomoticsCore-WebUI/include/DomoticsCore/IWebUIProvider.h`, `DomoticsCore-WebUI/webui_src/app.js` (`renderUI()`), `DomoticsCore-WebUI/test/test_webui_component/test_webui_component.cpp`.\n\n## Assumptions\n\n- Assumption taken on 2026-11-16, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+        comments: []
+    merge-requests:
+      - id: 278
+        branch: change
+        title: "fix(domoticscore-webui): webUI: QuickControls is a location the"
+        body: "Closes #156\n\nThe developer's code for #156, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-WebUI/webui_src/app.js`, `DomoticsCore-WebUI/webui_src/index.html`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-156`: `DomoticsCore-WebUI/test/test_quick_controls_drawn/platformio.ini`, `DomoticsCore-WebUI/test/test_quick_controls_drawn/test/test_quick_controls_drawn.cpp`.\n\n## Beyond the Scope\n\nFiles changed beyond the issue's Scope, the product owner's hint, each with its agent's reason: the reviewer's intent lens judges each.\n\n- `DomoticsCore-WebUI/webui_src/index.html`: the page needs a quickControlsGrid element for renderUI() to draw the QuickControls location into.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1370 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of 2bdc2bf, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:278", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: edge-cases
+      kind: empty-area-leaves-a-gap
+      at:
+        - {file: DomoticsCore-WebUI/webui_src/index.html, lines: [144, 144], text: "class=\"dashboard-grid quick-controls-grid\"", why: "the area takes dashboard-grid margins even when no control is placed"}
+        - {file: DomoticsCore-WebUI/webui_src/app.js, lines: [141, 149], text: "renderQuickControls() {", why: "leaves the area in place, empty, when no context is QuickControls"}
+        - {file: DomoticsCore-WebUI/webui_src/style.css, lines: [177, 184], text: "margin-top: 1.5rem;", why: "the 24 px top margin every dashboard-grid gets"}
+    - lens: tests
+      kind: test-greps-source-text
+      at:
+        - {file: DomoticsCore-WebUI/test/test_quick_controls_drawn/test/test_quick_controls_drawn.cpp, lines: [60, 76], text: "body.find(\"QuickControls\") != std::string::npos", why: "passes on the text of app.js, whether or not a card is drawn"}
+        - {file: "#156", text: "Then its card is visible in a quick-controls area.", why: "the scenario is about a visible card"}
+  outside:
+    - lens: claims
+      kind: docs-say-not-drawn
+      at:
+        - {file: docs/components/webui/technical-reference.md, lines: [243, 243], text: "QuickControls is not drawn by the current page", why: "now false"}
+        - {file: docs/components/webui/technical-reference.md, lines: [312, 312], text: "Sidebar quick actions", why: "drawn on the dashboard, not a sidebar"}
+        - {file: docs/guides/webui-developer.md, lines: [359, 359], text: "Sidebar quick actions", why: "drawn on the dashboard, not a sidebar"}
+        - {file: DomoticsCore-WebUI/include/DomoticsCore/IWebUIProvider.h, lines: [143, 143], text: "Sidebar quick actions", why: "drawn on the dashboard, not a sidebar"}

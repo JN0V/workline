@@ -1,0 +1,109 @@
+case: reviewer/clean-dc-251-ha-command-path
+about: >
+  Clean. JN0V/DomoticsCore #251 (closes #189): Home Assistant refuses a command with an empty entity id and echoes
+  a command as state with the entity already found (no second lookup), with a native test. Merged after no
+  reviewer finding (the warn lenses said 0 findings); its one round was woken by the label trace comment, no fix
+  asked; the owner's label on an independent review; the only later commit on HomeAssistant.h (#274) edits an
+  unrelated comment. Any Important here is false. #189's body was last edited before the pull request opened.
+given:
+  clone:
+    repo: JN0V/DomoticsCore
+    base: c42c667e603286ad0653c75ba5a60deacfecd78d
+    head: ff956c82a244cff97347519cacb8be8b8a386cac
+  forge:
+    issues:
+    - id: 189
+      title: 'LO-34 — HA: three costs on the command path left by MEM-2'
+      labels:
+      - bug
+      body: |
+        Three costs sit on the Home Assistant command path. First, handleCommand() logs the topic and payload for every message on the shared MQTT client, including other components' messages. Second, the switch auto-publish looks up the entity a second time though it already holds it. Third, a topic with two adjacent slashes gives an empty id that matches any entity with an empty id instead of being refused. No entity has an empty id today, and no test covers it.
+
+        <details><summary>Where it is in the code</summary>DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h: handleCommand(), findEntity(), the switch auto-publish. Left by MEM-2.</details>
+
+        Opened from `docs/CODE-ROADMAP.md`, lines 6354 to 6354 by the product-owner role.
+
+        <!-- workline:import=docs/CODE-ROADMAP.md:390ee15096ce -->
+
+        ## Need
+
+        A maintainer needs the Home Assistant command path to skip wasted work and refuse empty ids, so it stays cheap on small boards and safe on odd topics.
+
+        ## Validation
+
+        - **Empty id refused:** Given an entity registered with an empty id, When a command arrives on a topic with two adjacent slashes (`homeassistant/switch/node//set`), Then no entity matches, nothing is emitted and a warning is logged.
+        - **Normal id still works:** Given a switch with id `relay1`, When a command arrives on `homeassistant/switch/node/relay1/set`, Then the switch handles it as before.
+        - **Foreign topic:** Given a message on a topic outside the discovery prefix, When it reaches the command handler, Then it is dropped with no log line.
+        - **Single lookup:** Given a switch that echoes its command as state, When a command is handled, Then the entity is looked up once for the whole command, including the state publish.
+
+        ---
+
+        ## Verification
+
+        <!-- workline:verification=tester -->
+
+        - **Empty id refused:** `DomoticsCore-HomeAssistant/test_ha_command_path.test_ha_command_with_an_empty_entity_id_is_refused`.
+        - **Normal id still works:** no test can check it: kept as today: no existing test was found that checks it, so nothing guards it; a test of it would pass on the base, and is not written
+        - **Foreign topic:** no test can check it: kept as today: no existing test was found that checks it, so nothing guards it; a test of it would pass on the base, and is not written
+        - **Single lookup:** no test can check it: findEntity() is private and the number of lookups changes no observable output. The same entity is found each time, so no state, event, log line or publish differs. On native the String is std::string, so there is no allocation to count. No test can check it.
+
+        Each test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-189`. Written by the tester from its tests.
+
+        ## Scope
+
+        handleCommand() and findEntity() in HomeAssistant.h.
+      author: JN0V
+    merge-requests:
+    - id: 251
+      branch: change
+      title: 'fix(domoticscore): HA: three costs on the command path left by'
+      body: |
+        Closes #189
+
+        The developer's code for #189, proven on the project's tests.
+
+        ## Changes
+
+        - Code: `DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`.
+        - The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-189`: `DomoticsCore-HomeAssistant/test/test_ha_command_path/test_ha_command_path.cpp`.
+
+        ## Its agent's words, unread
+
+        A person reads them: an objection to a frozen test may be among them.
+
+        Its agent's closing words could not be read as YAML: nothing of them was applied. As they came:
+
+        ~~~
+        Two of the three costs are fixed in `HomeAssistant.h`. The third, the command log, needed no change. The full native suite shows no failures (I read only the tail of its output), and the new empty-id test `test_ha_command_with_an_empty_entity_id_is_refused` passes when run on its own.
+
+        - **Empty id:** `handleCommand()` now logs a warning and returns when the id between the last two slashes is empty. A topic like `homeassistant/switch/node//set` can no longer match an entity registered with an empty id.
+        - **Single lookup:** the switch echo now calls `publishOrHold(entity, ...)` with the entity it already holds. Before, `publishState(entity->id, ...)` looked the entity up a second time.
+        - **Foreign topic:** `handleCommand()` already drops a message outside the discovery prefix before it logs anything, so I left it alone.
+
+        I made no edits to the acceptance test and no objections. The only changed file is `HomeAssistant.h`, which is inside the Scope, so there is no `.workline/beyond.yaml`.
+
+        ```yaml
+        []
+        ```
+        ~~~
+
+
+        ## Verification
+
+        - Its agent ran with the rights of the CI job; the forge's guards decide what merges.
+        - `tools/workline-tests.sh {report}`: 1369 tests passed, none red.
+        - The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).
+        - Run on a fresh checkout of dbeb0ad, its code laid on it: not its agent's worktree.
+
+        ## Tried
+
+        - Its code on the project's tests, on a fresh checkout, before this opened: above.
+        - Not tried: the commands the issue names to verify it, nor a person's use of it.
+run:
+  role: reviewer
+  event: review
+  target: merge-request:251
+  input:
+    range: main..HEAD
+review:
+  defects: []

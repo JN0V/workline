@@ -1,0 +1,46 @@
+case: reviewer/dc-247-context-body-whole-in-heap
+about: >
+  DomoticsCore #247 (closes #179) drops WebUI's duplicated serializeContext(): /api/ui/context now builds its
+  body with StreamingContextSerializer::serializeToString into one String and sends it with beginResponse(200,
+  ..., body). Head 9c5fc94c (round 1) is the one the owner reviewed. The owner asked
+  (https://github.com/JN0V/DomoticsCore/pull/247#issuecomment-7101360938): (1) the body is built whole in one
+  String, then copied into the response: on ESP8266 a large customHtml/Css/Js needs a contiguous heap block and
+  fragments the heap: stream it or bound it (domain knowledge); (2) a failed String += silently drops a chunk,
+  so a truncated body goes out with a 200; (3) a test for the stall and append-failure paths. The line then:
+  "Truncated JSON sent as success" was an Important at the previous head and is fixed for a stall here; the
+  String += failure came as a nit; the whole-body heap cost was not found. At acceptance the independent review
+  still noted the 500 branch untested (https://github.com/JN0V/DomoticsCore/pull/247#issuecomment-7129501126).
+  PR body as at 2026-11-23 (edit history); issue body current, unedited since October.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: c42c667e603286ad0653c75ba5a60deacfecd78d, head: 9c5fc94c8bd5726d23d8c60f71b85b9e3319ef97}
+  forge:
+    issues:
+      - id: 179
+        title: "LO-25: WebUI duplicated serializeContext() tech debt"
+        labels: ["task"]
+        body: "| LO-25 | WebUI | Admitted tech debt: duplicated `serializeContext()` with \"until I move it\" comment |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6345 to 6345 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:6d90cf147758 -->\n\n## Need\n\nA maintainer needs a single serializeContext() in the WebUI code, so that the schema is serialized in only one place.\n\n## Verification\n\nNative WebUI schema tests: the serialized context JSON is the same before and after the duplicate is removed.\n\n## Validation\n\nThe maintainer sees one definition left and the schema output unchanged.\n\n## Scope\n\nThe duplicated serializeContext() in the WebUI component and its 'until I move it' comment."
+        comments: []
+    merge-requests:
+      - id: 247
+        branch: change
+        title: "chore(domoticscore): webUI duplicated serializeContext tech"
+        body: "Closes #179\n\nThe developer's code for #179, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1368 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of c42c667, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:247", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: edge-cases
+      kind: whole-body-in-heap
+      at:
+        - {file: DomoticsCore-WebUI/include/DomoticsCore/WebUI.h, lines: [735, 736], text: "String body;", why: "the whole context JSON is held in one String on the heap"}
+        - {file: DomoticsCore-WebUI/include/DomoticsCore/WebUI.h, lines: [745, 745], text: "beginResponse(200, \"application/json\", body)", why: "then copied again into the response: two contiguous blocks, ESP8266 heap fragments"}
+        - {file: DomoticsCore-WebUI/include/DomoticsCore/WebUI/StreamingContextSerializer.h, lines: [138, 139], text: "static bool serializeToString(const WebUIContext& context, Str& out) {", why: "the helper accumulates the whole body in memory instead of streaming"}
+    - lens: correctness
+      kind: append-failure-ignored
+      at:
+        - {file: DomoticsCore-WebUI/include/DomoticsCore/WebUI/StreamingContextSerializer.h, lines: [146, 147], text: "out += reinterpret_cast<const char*>(chunk);", why: "a failed String += (out of memory) is not checked: a truncated body is sent with a 200"}
+    - lens: tests
+      kind: failure-paths-untested
+      at:
+        - {file: DomoticsCore-WebUI/include/DomoticsCore/WebUI/StreamingContextSerializer.h, lines: [144, 145], text: "if (n == 0) return false;", why: "the stall path has no test"}
+        - {file: DomoticsCore-WebUI/include/DomoticsCore/WebUI.h, lines: [737, 743], text: "Context serialization failed", why: "the route's 500 branch has no test"}
+        - {file: DomoticsCore-WebUI/test/test_streaming_serializer/test/test_streaming_serializer.cpp, lines: [567, 577], text: "void test_serialize_to_string_exact_json(void) {", why: "the only new test covers the happy path"}

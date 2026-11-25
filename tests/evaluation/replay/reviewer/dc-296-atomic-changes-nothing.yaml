@@ -1,0 +1,37 @@
+case: reviewer/dc-296-atomic-changes-nothing
+about: >
+  DomoticsCore #296 (closes #178) turns WebSocketHandler's `volatile int pollingClients` into std::atomic<int>, with a
+  frozen test that reads the declaration line and checks it does not hold "volatile int". Head ee363ae9 is the one the
+  line declared ready. The owner closed it on an independent review
+  (https://github.com/JN0V/DomoticsCore/pull/296#issuecomment-7160709283): no count is lost today (the counter is only
+  set to 0 or 1, never incremented), the change does not change behaviour, and its test proves no atomicity. The line
+  then (https://github.com/JN0V/DomoticsCore/pull/296#issuecomment-7132618245): the weak test as a verified tests
+  Important that only warned (the developer declined it twice); that the fix changes nothing was never raised. Issue
+  body: its 11-23 version (current); PR body: current, never edited.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: 77e4b918e13661552ba6ced3212171c2e340b457, head: ee363ae97d95ae517a41373f10f4deb95e89d3f9}
+  forge:
+    issues:
+      - id: 178
+        title: "LO-24: WebUI volatile int pollingClients"
+        labels: ["bug"]
+        body: "The WebUI declares `volatile int pollingClients`. `volatile` does not make a counter safe between tasks. The fix is `std::atomic<int>`, or removing `volatile`.\n<details><summary>For the builder</summary>Item LO-24 of `docs/CODE-ROADMAP.md`. Folder: `DomoticsCore-WebUI/include`.</details>\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6344 to 6344 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:189a488de097 -->\n\n## Need\n\nA maintainer wants the polling client counter to be safe to use from several tasks, so it cannot be miscounted.\n\n## Example\n\nToday the counter is a `volatile int`. Two tasks changing it can lose an update.\n\n## Validation\n\n- **Counter type:** Given the WebUI source, When I read the `pollingClients` declaration, Then it is not a plain `volatile int`.\n\n---\n\n## Verification\n\n<!-- workline:verification=tester -->\n\n- **Counter type:** `DomoticsCore-WebUI/test/test_webui_polling_counter/*.test_polling_clients_is_not_a_plain_volatile_int`.\n\nEach test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-178`. Written by the tester from its tests.\n\n## Scope\n\n`DomoticsCore-WebUI/include`: the `pollingClients` field."
+        comments: []
+    merge-requests:
+      - id: 296
+        branch: change
+        title: "fix(include): webUI volatile int pollingClients"
+        body: "Closes #178\n\nThe developer's code for #178, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-WebUI/include/DomoticsCore/WebUI/WebSocketHandler.h`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-178`: `DomoticsCore-WebUI/test/test_webui_polling_counter/platformio.ini`, `DomoticsCore-WebUI/test/test_webui_polling_counter/test/test_webui_polling_counter.cpp`.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1403 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of c97017d, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:296", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: tests
+      kind: test-proves-no-atomicity
+      at:
+        - {file: DomoticsCore-WebUI/test/test_webui_polling_counter/test/test_webui_polling_counter.cpp, lines: [59, 68], text: "line.find(\"volatile int\") == std::string::npos", why: "any type but the literal text passes, atomic or not"}
+        - {file: DomoticsCore-WebUI/include/DomoticsCore/WebUI/WebSocketHandler.h, lines: [48, 48], text: "std::atomic<int> pollingClients{0};", why: "the type the test never checks"}
+    - lens: claims
+      kind: fix-changes-nothing
+      at:
+        - {file: DomoticsCore-WebUI/include/DomoticsCore/WebUI/WebSocketHandler.h, lines: [46, 50], text: "std::atomic<int> pollingClients{0};", why: "a fix of a race that loses no count: plain stores of 0 or 1 only"}
+        - {file: DomoticsCore-WebUI/include/DomoticsCore/WebUI/WebSocketHandler.h, lines: [95, 108], text: "pollingClients = 1;", why: "every write is a plain store; nothing read-modify-writes the counter"}

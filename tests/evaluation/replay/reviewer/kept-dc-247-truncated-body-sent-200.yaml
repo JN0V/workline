@@ -1,0 +1,84 @@
+case: reviewer/kept-dc-247-truncated-body-sent-200
+about: >
+  Kept catch. JN0V/DomoticsCore #247 (closes #179) drops WebUI's duplicated serializeContext and builds
+  /api/ui/context's body with the StreamingContextSerializer. At head 5feb52d the reviewer's edge-cases lens
+  raised an Important (warn only then, https://github.com/JN0V/DomoticsCore/pull/247#discussion_r4664963534): if
+  the serializer writes 0 bytes before it is complete, the loop breaks and the partial body is sent with 200,
+  invalid JSON with no error. The developer fixed it in round 1 (9c5fc94: serializeToString returns false, the
+  route answers 500). The pull request body is its first version, before the owner's commit override of
+  2026-11-25; #179's body is unchanged since October; its label task is today's.
+given:
+  clone:
+    repo: JN0V/DomoticsCore
+    base: c42c667e603286ad0653c75ba5a60deacfecd78d
+    head: 5feb52d3689a5bd910cb961c3f2dc72e964abb45
+  forge:
+    issues:
+    - id: 179
+      title: 'LO-25: WebUI duplicated serializeContext() tech debt'
+      labels:
+      - task
+      body: |
+        | LO-25 | WebUI | Admitted tech debt: duplicated `serializeContext()` with "until I move it" comment |
+
+        Opened from `docs/CODE-ROADMAP.md`, lines 6345 to 6345 by the product-owner role.
+
+        <!-- workline:import=docs/CODE-ROADMAP.md:6d90cf147758 -->
+
+        ## Need
+
+        A maintainer needs a single serializeContext() in the WebUI code, so that the schema is serialized in only one place.
+
+        ## Verification
+
+        Native WebUI schema tests: the serialized context JSON is the same before and after the duplicate is removed.
+
+        ## Validation
+
+        The maintainer sees one definition left and the schema output unchanged.
+
+        ## Scope
+
+        The duplicated serializeContext() in the WebUI component and its 'until I move it' comment.
+      author: JN0V
+    merge-requests:
+    - id: 247
+      branch: change
+      title: 'chore(domoticscore): webUI duplicated serializeContext tech'
+      body: |
+        Closes #179
+
+        The developer's code for #179, proven on the project's tests.
+
+        ## Changes
+
+        - Code: `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`.
+
+        ## Verification
+
+        - Its agent ran with the rights of the CI job; the forge's guards decide what merges.
+        - `tools/workline-tests.sh {report}`: 1368 tests passed, none red.
+        - The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).
+        - Run on a fresh checkout of c42c667, its code laid on it: not its agent's worktree.
+
+        ## Tried
+
+        - Its code on the project's tests, on a fresh checkout, before this opened: above.
+        - Not tried: the commands the issue names to verify it, nor a person's use of it.
+run:
+  role: reviewer
+  event: review
+  target: merge-request:247
+  input:
+    range: main..HEAD
+review:
+  defects:
+  - lens: edge-cases
+    kind: truncated-json-sent-as-success
+    at:
+    - file: DomoticsCore-WebUI/include/DomoticsCore/WebUI.h
+      lines:
+      - 735
+      - 749
+      text: if (n == 0) break;
+      why: a stalled serializer leaves a partial body that is then sent with status 200

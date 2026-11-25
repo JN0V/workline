@@ -351,22 +351,7 @@ func TestReviewerCasesPointRight(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, p := range places {
-				if p.issue() { // an issue the change closes: its body holds the text
-					if body := issueBody(c, p.File); !strings.Contains(body, p.Text) || p.Text == "" {
-						t.Errorf("%s: %q is not in %s's body, in given.forge", f, p.Text, p.File)
-					}
-					continue
-				}
-				data, err := os.ReadFile(filepath.Join(repo, p.File))
-				lines := strings.Split(string(data), "\n")
-				if err != nil || len(p.Lines) != 2 || p.Lines[0] < 1 || p.Lines[1] < p.Lines[0] || p.Lines[1] > len(lines) {
-					t.Fatalf("%s: %v is not a range of %s (%v)", f, p.Lines, p.File, err)
-				}
-				if !strings.Contains(strings.Join(lines[p.Lines[0]-1:p.Lines[1]], "\n"), p.Text) {
-					t.Errorf("%s: %q is not within %s", f, p.Text, p)
-				}
-			}
+			placesHold(t, f, c, repo, places)
 			for _, cmd := range []string{"go vet ./...", "go test -count=1 ./..."} {
 				if err := sh(repo, append(env, "GOFLAGS=-mod=mod", "GOTOOLCHAIN=local"), cmd); err != nil {
 					t.Errorf("%s: %v", f, err)
@@ -381,6 +366,28 @@ func TestReviewerCasesPointRight(t *testing.T) {
 	}
 	if clean < 2 || outside < 1 {
 		t.Errorf("%d clean changes, %d with code outside the change", clean, outside)
+	}
+}
+
+// placesHold: each place holds its text within its lines, at the case's
+// head; an issue the change closes holds it in its body.
+func placesHold(t *testing.T, f string, c *caseFile, repo string, places []place) {
+	for _, p := range places {
+		if p.issue() {
+			if body := issueBody(c, p.File); !strings.Contains(body, p.Text) || p.Text == "" {
+				t.Errorf("%s: %q is not in %s's body, in given.forge", f, p.Text, p.File)
+			}
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(repo, p.File))
+		lines := strings.Split(string(data), "\n")
+		if err != nil || len(p.Lines) != 2 || p.Lines[0] < 1 || p.Lines[1] < p.Lines[0] || p.Lines[1] > len(lines) {
+			t.Errorf("%s: %v is not a range of %s (%v)", f, p.Lines, p.File, err)
+			continue
+		}
+		if !strings.Contains(strings.Join(lines[p.Lines[0]-1:p.Lines[1]], "\n"), p.Text) {
+			t.Errorf("%s: %q is not within %s", f, p.Text, p)
+		}
 	}
 }
 

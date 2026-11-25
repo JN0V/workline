@@ -1,0 +1,168 @@
+case: reviewer/kept-wl-2110-review-failure-passes
+about: >
+  Kept catch. JN0V/workline #2110 (closes #2063) makes `workline docs` report a failed git listing as git-failed
+  instead of a pass. At head ba48adb (round 1) the reviewer's correctness lens blocked with an Important
+  (https://github.com/JN0V/workline/pull/2110#discussion_r4675377885): when review.Docs returns an error,
+  judgeDocs prints it and returns false, nil, so docsCmd returns pass() and --json says pass, the same masked
+  failure the change set out to remove. The developer fixed it in round 2 (672aab8: a reviewFailedError, exit 1).
+  True and fixed: this case checks the reviewer still raises it. Bodies are the ones at review time (no edits
+  since); issue labels are today's.
+given:
+  clone:
+    repo: JN0V/workline
+    base: b8a77c0ae9f313928adbd1b751d730c0652a19ba
+    head: ba48adbae4f565cbb2c784ca1cf305b2b5d0903d
+  forge:
+    issues:
+    - id: 2063
+      title: git failure reported as a pass
+      labels:
+      - bug
+      - needs-triage
+      body: |
+        <!-- workline:found=the edge-cases lens; verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5) -->
+
+        Found by the reviewer role while reviewing 3db8db8, outside that change.
+
+        <!-- workline:opened-by=reviewer -->
+
+        <!-- workline:issue=cmd/workline/main.go#e80445e1 -->
+
+        ## Need
+
+        Anyone running `workline docs` from a script, with `--json`, needs a failure of git to be reported as a failure, so a pass always means the docs were really checked.
+
+        ## Validation
+
+        - **Listing fails, review-only:** Given a repository where the `git diff` that lists the changed docs fails, When `workline docs --review-only --json` runs, Then it exits 1 and reports a `git-failed` finding whose message holds git's error text, not "no doc changed".
+        - **Listing fails, before review:** Given the documentalist run ended and the `git diff` that lists the changed docs fails, When `workline docs --json` runs, Then it exits 1 and reports a failure with git's error, not a pass.
+        - **Listing fails, after review:** Given a person reviewed the changed docs and the `git diff` that lists the docs left fails, When `workline docs` runs, Then it exits 1 and does not say the docs are judged.
+        - **Git says nothing:** Given a failing `git diff` with an empty stderr, When `workline docs --json` runs, Then the message holds the error's own text, not an empty string.
+        - **No doc changed:** Given a working tree where git works and no doc changed, When `workline docs` runs, Then it says no doc changed and exits 0 as before.
+
+        ---
+
+        ## Verification
+
+        <!-- workline:verification=tester -->
+
+        - **Listing fails, review-only:** `github.com/JN0V/workline/cmd/workline.TestDocsReviewListingFails`.
+        - **Listing fails, before review:** `github.com/JN0V/workline/cmd/workline.TestDocsListingFailsBeforeReview`.
+        - **Listing fails, after review:** `github.com/JN0V/workline/cmd/workline.TestDocsListingFailsAfterReview`.
+        - **Git says nothing:** `github.com/JN0V/workline/cmd/workline.TestDocsListingFailsWithEmptyStderr`.
+        - **No doc changed:** no test can check it: kept as today: no existing test was found that checks it, so nothing guards it; a test of it would pass on the base, and is not written
+
+        Each test fails on the code before the change and passes once it is built; they are on `workline/tester/issue-2063`. Written by the tester from its tests.
+
+        ## Scope
+
+        `cmd/workline/main.go`: three lists of changed docs read with `git diff --name-only -- *.md` throw away git's error. When git fails, each must report the failure instead of treating the list as empty. Git's own error text (its stderr) goes in the message. The three places are:
+        - the review-only branch, at line 913: return `fail(1, "git-failed", ...)`, and also print the error on stderr;
+        - `judgeDocs`, the listing at line 1146 that finds the changed docs: return `false` with an error, so the command exits 1 and does not say "no doc changed";
+        - `judgeDocs`, the listing at line 1160 that finds the docs left after review: do the same, since a failed listing cannot show that no doc is left, so it must not count as "none left".
+
+        Exit code 1 in every case. A test must check the code is exactly 1 and that, with `--json`, the finding's message holds git's stderr.
+
+        Other git calls in the file that discard errors (lines 863 and 2970) only print information. They are out of scope.
+
+        New: `cmd/workline/docs_gitfail_test.go`: runs `workline docs` where `git diff` fails. It checks the exit code, the JSON finding, and that the "no doc changed" case still exits 0.
+
+        If `docs/usage.md` describes the exit codes of `workline docs`, add the git failure there too.
+
+        <details><summary>The cause in the code</summary>
+
+        The error from the `git diff` listing the changed docs is discarded. If git fails, the list is empty and the run takes the "no doc changed" path. A script then reads a pass, although nothing was judged.
+
+        At `cmd/workline/main.go:913`:
+
+        ```
+        changed, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--name-only", "--", "*.md").Output()
+        ```
+
+        What would fix it: check the error from `git diff` and return `fail(1, ...)` instead of treating the listing as empty.
+
+        </details>
+
+        ## Assumptions
+
+        - Assumption taken on 2026-11-24, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct.
+    merge-requests:
+    - id: 2110
+      branch: change
+      title: 'fix: git failure reported as a pass'
+      body: |
+        BODY:
+        Closes #2063
+
+        The developer's code for #2063, **a Draft**: not proven green, a cap reached, or its agent failed. A person takes it from here, or removes the claim on the issue.
+
+        ## Changes
+
+        - Code: `cmd/workline/main.go`.
+        - The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-2063`: `cmd/workline/docs_gitfail_lookpath_test.go`, `cmd/workline/docs_gitfail_test.go`.
+
+        ## Left out
+
+        Refused at apply, out of its bounds: an issue for a person, not this change.
+
+        - `workline`: not a text file (a link, a binary, a submodule): the developer writes text files, so refused and reverted; a person must do it
+
+        ## Its agent's words, unread
+
+        A person reads them: an objection to a frozen test may be among them.
+
+        Its agent's closing words could not be read as YAML: nothing of them was applied. As they came:
+
+        ~~~
+        The full run finished. The only failure is `TestWorktreesAreNotRead` in `internal/packs`, which fails with `open ../../.bash_profile: permission denied`. It looks like a sandbox permission limit on a file outside the worktree, not something this change touches. I didn't run it on the base to confirm. Every other package passes, including `cmd/workline` with the four acceptance tests.
+
+        ```yaml
+        []
+        ```
+        ~~~
+
+
+        ## Verification
+
+        - Its agent ran with the rights of the CI job; the forge's guards decide what merges.
+        - `go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m {packages}`: 44 passed, 10 red.
+          - red: `github.com/JN0V/workline/cmd/workline.TestRolePagesCheckedMoved`
+          - red: `github.com/JN0V/workline/cmd/workline.TestRolePagesNarrowSources`
+          - red: `github.com/JN0V/workline/cmd/workline.TestRolePagesNoEngineInternals`
+          - red: `github.com/JN0V/workline/cmd/workline.TestRolePagesNoneSuspect`
+          - red: `github.com/JN0V/workline/cmd/workline.TestRolePagesSourcesNotEmptied`
+          - red: `github.com/JN0V/workline/cmd/workline.TestRolePagesVerifiedRecorded`
+          - red: `github.com/JN0V/workline/cmd/workline.TestUserPagesNameOnlyWhatTheCodeHolds`
+          - red: `github.com/JN0V/workline/cmd/workline.TestUserPagesNoneSuspect`
+          - red: `github.com/JN0V/workline/cmd/workline.TestUserPagesNoneSuspectAfterAnOutsideCommit`
+          - red: `github.com/JN0V/workline/cmd/workline.TestUserPagesSourcesAreNarrow`
+        - On the folders its code and the acceptance tests touch: `./cmd/workline`. This pull request's own CI runs the whole suite.
+        - Run on a fresh checkout of 4e02069, its code laid on it: not its agent's worktree.
+
+        ## Tried
+
+        - Its code on the project's tests, on a fresh checkout, before this opened: above.
+        - Not tried: the commands the issue names to verify it, nor a person's use of it.
+run:
+  role: reviewer
+  event: review
+  target: merge-request:2110
+  input:
+    range: main..HEAD
+review:
+  defects:
+  - lens: correctness
+    kind: review-failure-reported-as-pass
+    at:
+    - file: cmd/workline/main.go
+      lines:
+      - 1165
+      - 1172
+      text: return false, nil
+      why: 'a failed review.Docs returns false, nil: not judged, but no error'
+    - file: cmd/workline/main.go
+      lines:
+      - 961
+      - 978
+      text: return pass()
+      why: docsCmd takes the nil error as nothing left and passes, exit 0

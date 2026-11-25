@@ -51,6 +51,14 @@ type caseFile struct {
 		WorklineCommit string         `yaml:"workline-commit"` // this repository: that commit's diff, staged on its parent
 		WorklineAt     string         `yaml:"workline-at"`     // this repository, at that commit
 		Forge          map[string]any `yaml:"forge"`           // a simulated forge, as conformance's: the issues a change closes
+		// A real repository a replay case starts from (replay/): main at
+		// base, the branch `change` at head checked out; base empty, head
+		// alone. Cloned from a mirror kept in the user's cache.
+		Clone struct {
+			Repo string `yaml:"repo"` // owner/name on github.com
+			Base string `yaml:"base"`
+			Head string `yaml:"head"`
+		} `yaml:"clone"`
 	} `yaml:"given"`
 	Run struct {
 		Role    string            `yaml:"role"`
@@ -165,11 +173,17 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestEvaluation(t *testing.T) {
+func TestEvaluation(t *testing.T) { evaluate(t, "cases/*/*.yaml") }
+
+// TestReplay plays the replay set: real misses on real repositories, a
+// role's set at a time (replay/README.md).
+func TestReplay(t *testing.T) { evaluate(t, "replay/*/*.yaml") }
+
+func evaluate(t *testing.T, pattern string) {
 	if os.Getenv("WORKLINE_EVAL") == "" {
 		t.Skip("set WORKLINE_EVAL=claude to run it: it calls a real agent and costs tokens")
 	}
-	files, _ := filepath.Glob("cases/*/*.yaml")
+	files, _ := filepath.Glob(pattern)
 	sort.Strings(files)
 	version := worklineVersion()
 	for _, f := range files {
@@ -347,6 +361,15 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 	env = append(hermetic(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
 	self, _ := filepath.Abs("../..")
 	switch {
+	case c.Given.Clone.Repo != "":
+		if err := cloneAt(work, env, c); err != nil {
+			return "", "", nil, err
+		}
+		for _, l := range c.Given.Setup {
+			if err := sh(repo, env, l); err != nil {
+				return "", "", nil, err
+			}
+		}
 	case c.Given.WorklineCommit != "":
 		sha := c.Given.WorklineCommit
 		if err := sh(work, env, "git clone -q "+self+" repo && cd repo && git checkout -q "+sha+"^ && git -C "+self+" diff "+sha+"^ "+sha+" | git apply --index"); err != nil {
@@ -405,6 +428,34 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 		os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), data, 0o644)
 	}
 	return work, repo, env, nil
+}
+
+var mirrors sync.Mutex
+
+// cloneAt clones a replay case's repository into work/repo from a mirror
+// in the user's cache, fetched when it lacks the head.
+func cloneAt(work string, env []string, c *caseFile) error {
+	cl := c.Given.Clone
+	cache, err := os.UserCacheDir()
+	if err != nil {
+		return err
+	}
+	mirror := filepath.Join(cache, "workline", "eval-mirrors", strings.ReplaceAll(cl.Repo, "/", "_")+".git")
+	mirrors.Lock()
+	if _, statErr := os.Stat(mirror); statErr != nil {
+		err = sh(work, env, "git clone -q --mirror https://github.com/"+cl.Repo+".git "+mirror)
+	} else if sh(mirror, env, "git cat-file -e "+cl.Head+"^{commit}") != nil {
+		err = sh(mirror, env, "git fetch -q --prune origin")
+	}
+	mirrors.Unlock()
+	if err != nil {
+		return err
+	}
+	base := cl.Base
+	if base == "" {
+		base = cl.Head
+	}
+	return sh(work, env, "git clone -q --shared --no-checkout "+mirror+" repo && cd repo && git checkout -q -B main "+base+" && git checkout -q -B change "+cl.Head)
 }
 
 // withSetting is a project config with a role's setting set, unless the

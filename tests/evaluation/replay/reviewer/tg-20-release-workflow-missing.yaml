@@ -1,0 +1,39 @@
+case: reviewer/tg-20-release-workflow-missing
+about: >
+  TraceGlass #20 ("Closes #8") makes app/build.gradle.kts read the release version from TRACEGLASS_VERSION_NAME, sign
+  with the project key only when all four TRACEGLASS_* variables are set, and refuse a tagged release build without
+  them; the release workflow #8 asks for is not there (the developer cannot write .github/, its Left out says so).
+  Head 034ff06f is the one the line declared ready and the owner reviewed. The owner sent it back
+  (https://github.com/JN0V/TraceGlass/pull/20#issuecomment-7129515134): (1) .github/workflows/release.yml is missing,
+  so Validation scenarios 1 and 3 are not delivered: drop "Closes #8"; (2) ReleaseSigningTest only greps the script
+  text. The line then (https://github.com/JN0V/TraceGlass/pull/20#issuecomment-7125007837, 07:27Z): the missing
+  workflow as a verified intent Important that only warned; the grep-only tests as a tests nit. Issue and PR bodies:
+  current, never edited.
+given:
+  clone: {repo: JN0V/TraceGlass, base: 2433799a6e4fe599100960f31e43cf2430991008, head: 034ff06f5148eff0559582986d5c3f365c09191e}
+  forge:
+    issues:
+      - id: 8
+        title: "Signed release APK on each version tag"
+        labels: ["enhancement"]
+        body: "## Need\n\nA person installs TraceGlass and wants clean updates over time, from an APK with a stable signature.\n\n## Example\n\nToday `assembleRelease` runs in CI but nothing is signed or published, and `app/build.gradle.kts` holds `versionCode = 1` and `versionName = \"0.1.0\"`. A person who installs a debug build cannot update it with a later build signed by another key.\n\n## Validation\n\n- **Scenario: a tag makes a release.** Given a `v*` tag pushed, When the release workflow runs, Then a GitHub Release holds a release APK signed with the project key.\n- **Scenario: versions go up.** Given two successive release tags, When both APKs are built, Then the second has a higher `versionCode`, and its `versionName` matches the tag.\n- **Scenario: no secrets, no APK.** Given the signing secrets are missing, When the release workflow runs, Then it fails with a clear message and publishes no unsigned APK.\n\n---\n\n## Verification\n\n- The key is the owner's and must never be committed: not the keystore, not a password, not in logs.\n- Check the published APK with `apksigner verify --print-certs`.\n- Run the workflow once on a test tag and delete the test release afterwards.\n\n## Scope\n\n- `app/build.gradle.kts`: a release `signingConfig` reading env vars; `versionCode` and `versionName` from the tag or a file.\n- A new `.github/workflows/release.yml`, triggered on `v*` tags, that decodes the keystore, builds and creates the GitHub Release.\n- Repository secrets, already set by the owner: `TRACEGLASS_KEYSTORE_B64`, `TRACEGLASS_KEYSTORE_PASSWORD`, `TRACEGLASS_KEY_ALIAS`, `TRACEGLASS_KEY_PASSWORD`.\n"
+        comments: []
+    merge-requests:
+      - id: 20
+        branch: change
+        title: "feat: signed release APK on each version tag"
+        body: "Closes #8\n\nThe developer's code for #8, **a Draft**: not proven green, a cap reached, or its agent failed. A person takes it from here, or removes the claim on the issue.\n\n## Changes\n\n- Code: `app/build.gradle.kts`.\n- The tester's acceptance tests, read-only to the developer, from `workline/tester/issue-8`: `app/src/test/kotlin/io/github/jn0v/traceglass/ReleaseSigningTest.kt`.\n\n## Left out\n\nI could not create `.github/workflows/release.yml`. `.github/workflows` is a read-only filesystem in my worktree, with and without the sandbox. The three ReleaseSigningTest tests therefore still fail, because the file is missing.\n\n`app/build.gradle.kts` is done:\n- `versionName` comes from the `TRACEGLASS_VERSION_NAME` env var, set from the tag.\n- `versionCode` is major*10000 + minor*100 + patch.\n- A `release` signingConfig reads `TRACEGLASS_KEYSTORE_FILE`, `TRACEGLASS_KEYSTORE_PASSWORD`, `TRACEGLASS_KEY_ALIAS` and `TRACEGLASS_KEY_PASSWORD`.\n- The signingConfig is attached to the release build type only when all four are set, and never falls back to the debug key.\n\nThe workflow still has to be added by a person or by a run that can write that folder. It must:\n1. Trigger on `v*` tags.\n2. Start with a step that checks the four TRACEGLASS secrets and prints `::error::… missing` then `exit 1`.\n3. Set `TRACEGLASS_VERSION_NAME` to the tag without its leading `v`.\n4. Decode `TRACEGLASS_KEYSTORE_B64` to a file and export it as `TRACEGLASS_KEYSTORE_FILE`.\n5. Run `./gradlew assembleRelease`.\n6. Run `apksigner verify --print-certs` and `aapt dump badging`, comparing the APK's version with the tag.\n7. Publish with `gh release create`.\n\nThe issue also asks for a run on a test tag, which a person has to do.\n\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `./gradlew --console=plain $(echo {packages} | sed -E 's#\\./##g; s#/#:#g; s#([^ ]+)#:\\1:testDebugUnitTest#g')`: 0 passed, 3 red.\n  - red: `io.github.jn0v.traceglass.ReleaseSigningTest.a tag makes a release`\n  - red: `io.github.jn0v.traceglass.ReleaseSigningTest.no secrets, no APK`\n  - red: `io.github.jn0v.traceglass.ReleaseSigningTest.versions go up`\n- On the folders its code and the acceptance tests touch: `./app`. This pull request's own CI runs the whole suite.\n- Run on a fresh checkout of d4df723, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:20", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: intent
+      kind: release-workflow-missing
+      at:
+        - {file: "#8", text: "A new `.github/workflows/release.yml`, triggered on `v*` tags", why: "no workflow: no tag makes a release, yet the PR closes #8"}
+        - {file: "#8", text: "When the release workflow runs, Then a GitHub Release holds a release APK signed with the project key.", why: "scenario 1 not delivered"}
+        - {file: app/build.gradle.kts, lines: [80, 97], text: "gradle.taskGraph.whenReady {", why: "only the build side of the release is here"}
+    - lens: tests
+      kind: tests-grep-the-script
+      at:
+        - {file: app/src/test/kotlin/io/github/jn0v/traceglass/ReleaseSigningTest.kt, lines: [96, 129], text: "val script = appBuildScript()", why: "reads the script as text: broken logic or names in a comment pass"}
+        - {file: app/src/test/kotlin/io/github/jn0v/traceglass/ReleaseSigningTest.kt, lines: [32, 48], text: "assertTrue(script.contains(\"System.getenv\"), \"the signing config must read env vars\")", why: "a string match, no build is run"}

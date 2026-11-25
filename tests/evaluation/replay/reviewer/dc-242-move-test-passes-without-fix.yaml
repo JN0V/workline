@@ -1,0 +1,98 @@
+case: reviewer/dc-242-move-test-passes-without-fix
+about: >
+  DomoticsCore #242 (closes #171) adds StorageComponent copy and move constructors that re-point metadata.name into
+  the copy's own nameStr_, deletes copy and move assignment, and adds test_storage_name_move. The head the line
+  declared ready and the owner reviewed, 16c9aa1e (on base 77e4b918), was force-pushed away and is not in the mirror:
+  setup rebuilds it exactly from the mirror (Storage.h is blob 22d1479e, also at 02368385; the test file is written as
+  it was, blob 48b52581; both checked) in its two commits. The owner sent it back on an independent review
+  (https://github.com/JN0V/DomoticsCore/pull/242#issuecomment-7160708336): (1) test_move_keeps_name passes without the
+  fix, because a 19-character name lives on the heap and the move steals the buffer; the copy test relies on freed
+  memory and should assert the pointers differ; (2) the deleted assignment operators are an API change no one
+  announced. The line then (https://github.com/JN0V/DomoticsCore/pull/242#issuecomment-7132791902, 2026-11-24T13:24Z):
+  a tests nit that the copy test may pass on freed memory; the move test and the API change never raised; it raised
+  the move test as an Important only after the send-back. Issue body: current, last edited 11-13; PR body: its 11-23
+  version. Replay only: the test's first line drops the roadmap code
+  (LO-17), which today's internal-code rule refuses before any lens runs.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: 77e4b918e13661552ba6ced3212171c2e340b457, head: 77e4b918e13661552ba6ced3212171c2e340b457}
+  setup:
+    - |
+      git checkout -q 02368385cb91fcd19c82e91d1e6fdbd823d87bb5 -- DomoticsCore-Storage/include/DomoticsCore/Storage.h
+      mkdir -p DomoticsCore-Storage/test/test_storage_name_move
+      cat > DomoticsCore-Storage/test/test_storage_name_move/test_storage_name_move.cpp <<'CPP'
+      // LO-17: metadata.name must not dangle after a StorageComponent copy/move
+      #include <unity.h>
+      #include <DomoticsCore/Core.h>
+      #include <DomoticsCore/Storage.h>
+
+      using namespace DomoticsCore;
+      using namespace DomoticsCore::Components;
+
+      void setUp(void) {}
+      void tearDown(void) {}
+
+      static StorageConfig named() {
+          StorageConfig c;
+          c.componentName = "storage-custom-name";
+          return c;
+      }
+
+      void test_copy_keeps_name() {
+          StorageComponent* a = new StorageComponent(named());
+          StorageComponent b(*a);
+          delete a;
+          TEST_ASSERT_EQUAL_STRING("storage-custom-name", b.metadata.name);
+      }
+
+      void test_move_keeps_name() {
+          StorageComponent* a = new StorageComponent(named());
+          StorageComponent b(std::move(*a));
+          delete a;
+          TEST_ASSERT_EQUAL_STRING("storage-custom-name", b.metadata.name);
+      }
+
+      int main(int, char**) {
+          UNITY_BEGIN();
+          RUN_TEST(test_copy_keeps_name);
+          RUN_TEST(test_move_keeps_name);
+          return UNITY_END();
+      }
+      CPP
+      git add DomoticsCore-Storage/test/test_storage_name_move/test_storage_name_move.cpp
+      git commit -q -m 'fix: storage nameStr_ backing String move-safety risk' -m 'Workline-Role: developer'
+    - |
+      sed -i '1s|.*|// Issue #171 (roadmap item LO-17 in docs/CODE-ROADMAP.md): metadata.name must not dangle after a StorageComponent copy/move|' DomoticsCore-Storage/test/test_storage_name_move/test_storage_name_move.cpp
+      git commit -q -am "fix: the review's findings on #171, round 2" -m 'Workline-Role: developer'
+      test "$(git rev-parse HEAD:DomoticsCore-Storage/include/DomoticsCore/Storage.h)" = 22d1479eb94f5560e00e2c4548b1165e95ac4f41
+      test "$(git rev-parse HEAD:DomoticsCore-Storage/test/test_storage_name_move/test_storage_name_move.cpp)" = 48b52581c0ec0d627abb9bf97cfafb7aec96cdb9
+      sed -i '1s|.*|// Issue #171: metadata.name must not dangle after a StorageComponent copy/move|' DomoticsCore-Storage/test/test_storage_name_move/test_storage_name_move.cpp
+      git commit -q -am "fix: the review's findings on #171, round 2"
+  forge:
+    issues:
+      - id: 171
+        title: "LO-17: Storage nameStr_ backing String move-safety risk"
+        labels: ["bug"]
+        body: "A Storage component built with a custom name may report a wrong name after it is copied or moved. The name is read through a pointer into a text buffer the component owns. A copy or move can leave that pointer aimed at the old object's buffer, which no longer exists.\n\nThis hurts an application that creates several named Storage instances and then moves or copies them. A component could then show a broken name.\n\n<details><summary>For the builder</summary>Item LO-17 of `docs/CODE-ROADMAP.md`. In the `StorageComponent` constructor, `nameStr_` holds the dynamic `componentName`, and `metadata.name` stores the pointer from `nameStr_.c_str()`. See `DomoticsCore-Storage/include/DomoticsCore/Storage.h`.</details>\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6337 to 6337 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:ad8aaf585409 -->\n\n## Need\n\nDraft: an application that creates several named Storage instances and moves or copies them should not end up with a dangling component name.\n\n## Verification\n\nA native test that copy- or move-constructs a StorageComponent with a componentName, then checks that metadata.name still reads the right name. This fails if the pointer points into the old object's String.\n\n## Validation\n\nDraft: the reporter (JN0V) reviews how metadata.name is held and accepts the fix, or a documented non-movable constraint.\n\n## Scope\n\nStorageComponent constructor: `nameStr_` holds the dynamic componentName and `metadata.name` stores the pointer from nameStr_.c_str()"
+        comments: []
+    merge-requests:
+      - id: 242
+        branch: change
+        title: "fix: storage nameStr_ backing String move-safety risk"
+        body: "Closes #171\n\nThe developer's code for #171, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-Storage/include/DomoticsCore/Storage.h`.\n- Tests, in a commit apart: `DomoticsCore-Storage/test/test_storage_name_move/test_storage_name_move.cpp`.\n- New test files beside the issue's Scope: `DomoticsCore-Storage/test/test_storage_name_move/test_storage_name_move.cpp`; the product owner adds them to the Scope at its next run.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1370 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of c42c667, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:242", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: tests
+      kind: move-test-passes-without-fix
+      at:
+        - {file: DomoticsCore-Storage/test/test_storage_name_move/test_storage_name_move.cpp, lines: [25, 30], text: "StorageComponent b(std::move(*a));", why: "a default move steals the heap buffer, so the name reads right without the fix"}
+        - {file: DomoticsCore-Storage/test/test_storage_name_move/test_storage_name_move.cpp, lines: [12, 16], text: "c.componentName = \"storage-custom-name\";", why: "19 characters: past the small-string buffer, the real device case is not hit"}
+        - {file: DomoticsCore-Storage/include/DomoticsCore/Storage.h, lines: [136, 142], text: "StorageComponent(StorageComponent&& other)", why: "the move constructor the test cannot tell from the default one"}
+    - lens: tests
+      kind: copy-test-reads-freed-memory
+      at:
+        - {file: DomoticsCore-Storage/test/test_storage_name_move/test_storage_name_move.cpp, lines: [18, 23], text: "StorageComponent b(*a);", why: "reads the name after delete: freed memory often still holds it, no pointer check"}
+    - lens: claims
+      kind: undeclared-api-change
+      at:
+        - {file: DomoticsCore-Storage/include/DomoticsCore/Storage.h, lines: [144, 145], text: "StorageComponent& operator=(const StorageComponent&) = delete;", why: "copy and move assignment removed from a public class, said nowhere"}

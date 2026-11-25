@@ -1,0 +1,38 @@
+case: reviewer/dc-260-shutdown-drain-polls-eight
+about: >
+  DomoticsCore #260 (closes #139) makes ComponentRegistry::shutdownAll() call eventBus.poll() after each
+  component's shutdown(), so HomeAssistant's offline message and discovery withdrawals reach MQTT before Core
+  stops. Head f42736bf is the one the owner reviewed. The owner sent it back
+  (https://github.com/JN0V/DomoticsCore/pull/260#issuecomment-7112636219): (1) EventBus::poll() takes maxPerPoll
+  = 8, so a device with more than 8 entities loses withdrawals; the cap sits in EventBus.h, a callee outside the
+  diff; (2) no test with more than 8 entities, and the Validation's link-down scenario is not covered: the
+  tester said no acceptance test applied. The line then: six lenses ran, 0 findings shown; a tests finding
+  "Added poll during shutdown has no test" was dropped by the quote check; only the internal-code rule (BUG-66
+  in a comment) blocked. Issue and PR bodies are the current ones, unedited since before the review.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: de3ac3864ff15b87a598b9401a97a1ca5175f3c8, head: f42736bf44980cb31d71f231d491403c7338d8df}
+  forge:
+    issues:
+      - id: 139
+        title: "BUG-66 — HomeAssistant: what shutdown() publishes never leaves the device"
+        labels: ["bug"]
+        body: "### BUG-66 — HomeAssistant: what `shutdown()` publishes never leaves the device [LOW] — **NEW (2026-09-23, filed by BUG-63's lot)**\n\n- **Files**: `HomeAssistant.h` (`shutdown()` → `setAvailable(false)` and\n  `removeDiscovery()`), against `Core.cpp:loop()`, which returns on\n  `!initialized`, and `Core.cpp:shutdown()`, which clears that flag.\n- **Problem**: both publish through the EventBus, which dispatches in\n  `Core::loop()`. `Core::shutdown()` clears `initialized` before anything drains\n  the queue, so the `offline` availability and one empty retained payload per\n  entity — the messages that withdraw the device from Home Assistant — are\n  queued and discarded. Found by a test written for BUG-13's lot, which counted\n  zero removals where the code plainly publishes two.\n- **Consequence**: a device shut down cleanly stays in Home Assistant with every\n  entity present, and stays `online` there: a graceful MQTT disconnect does not\n  fire the Last Will that BUG-43 put in place for a dropped link.\n- **LOW, argued**: nothing calls `Core::shutdown()` on a normal device path —\n  a reboot and an OTA restart do not — so this is reachable only from an\n  application that shuts the stack down deliberately. The test added in BUG-63's\n  lot calls the component's own `shutdown()` so it pins what the component does,\n  not what the Core swallows.\n- **It is also a question, not only a defect**: whether a shutdown *should*\n  remove the entities is undecided. Withdrawing them on every deliberate stop\n  would make an application that restarts the stack lose its entities in Home\n  Assistant, where the retained configs are precisely what brings them back.\n  Answer that before making the messages leave.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 2773 to 2796 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:2dc63a977511 -->\n\n## Need\n\nAn application that shuts the stack down on purpose needs Home Assistant to show the device as offline and to drop its entities, so users do not see a dead device as live.\n\n## Steps to reproduce\n\n1. Run a device with MQTT connected and Home Assistant discovery done.\n2. Call `Core::shutdown()`.\n3. Watch the broker for the availability topic and the discovery topics.\n- **Expected:** `offline` on the availability topic, and one empty retained payload per entity.\n- **Actual:** nothing is sent. The messages are queued on the EventBus, and `Core::loop()` returns early once `initialized` is cleared, so the queue is never drained. The device stays `online` in Home Assistant with all its entities.\n- **Version:** 2.13.0 and later.\n\n## Validation\n\n- **Offline on shutdown:** Given a connected device with two entities, When `Core::shutdown()` is called, Then `offline` is published, retained, on the availability topic.\n- **Entities withdrawn:** Given the same device, When `Core::shutdown()` is called, Then one empty retained payload is published on each entity's discovery topic.\n- **Link down:** Given the MQTT link is down, When `Core::shutdown()` is called, Then nothing is queued and nothing fails.\n\n---\n\n## Scope\n\n`DomoticsCore-Core/src/Core.cpp`: `Core::shutdown()` must let the EventBus deliver what components published while shutting down, before it clears `initialized`.\n`DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h`: `shutdown()`, `setAvailable()` and `removeDiscovery()` are the publishers.\nGuessed: the exact drain call is not in the code given; the EventBus dispatch may sit in `ComponentRegistry.h`.\n\n## Assumptions\n\n- Assumption taken on 2026-11-15, the question of 2026-10-29 unanswered after 24 h: A deliberate shutdown should mark the device offline and withdraw its entities, as the component's `shutdown()` already does, and a later start republishes them.\n- Assumption taken on 2026-11-16, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+        comments: []
+    merge-requests:
+      - id: 260
+        branch: change
+        title: "fix: homeAssistant: what shutdown publishes never leaves the"
+        body: "Closes #139\n\nThe developer's code for #139, proven on the project's tests.\n\n## Changes\n\n- Code: `DomoticsCore-Core/include/DomoticsCore/ComponentRegistry.h`.\n- The tester found that no acceptance test applied to this issue: no test is frozen for it.\n\n## Verification\n\n- Its agent ran with the rights of the CI job; the forge's guards decide what merges.\n- `tools/workline-tests.sh {report}`: 1369 tests passed, none red.\n- The whole suite: no file it touches lies in a folder holding tests (the developer's `proof-command`, with `{packages}`, runs the touched folders alone).\n- Run on a fresh checkout of de3ac38, its code laid on it: not its agent's worktree.\n\n## Tried\n\n- Its code on the project's tests, on a fresh checkout, before this opened: above.\n- Not tried: the commands the issue names to verify it, nor a person's use of it.\n"
+run: {role: reviewer, event: review, target: "merge-request:260", input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: edge-cases
+      kind: bounded-poll-drops-events
+      at:
+        - {file: DomoticsCore-Core/include/DomoticsCore/ComponentRegistry.h, lines: [209, 209], text: "eventBus.poll();", why: "the drain added after each shutdown() dispatches at most 8 events: withdrawals past the 8th entity are lost"}
+        - {file: DomoticsCore-Core/include/DomoticsCore/EventBus.h, lines: [253, 256], text: "void poll(size_t maxPerPoll = 8) {", why: "the callee caps one poll at 8 events"}
+    - lens: tests
+      kind: drain-untested
+      at:
+        - {file: DomoticsCore-Core/include/DomoticsCore/ComponentRegistry.h, lines: [205, 208], text: "Deliver what this component published while shutting down", why: "no test shows the shutdown drain delivers the withdrawals, nor with more than 8 entities"}
+        - {file: "#139", text: "**Link down:** Given the MQTT link is down", why: "the Validation's link-down scenario has no test"}
