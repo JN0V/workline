@@ -49,3 +49,20 @@ func TestReasonNamingMissingTestIsUnproven(t *testing.T) {
 		t.Errorf("a reason naming a test the base lacks = %q, want it unguarded, the name said not found", got)
 	}
 }
+
+// Existing test named: Given a reason naming in code a test the base
+// holds, When the tester writes the Draft, Then the scenario is not
+// listed as unproven. The reason does not open with "kept as today":
+// it is read as guarded by the test it names.
+func TestReasonNamingExistingTestIsGuarded(t *testing.T) {
+	dir := guardedBase(t)
+	said := map[string]string{"Adds": "already checked by the existing `TestAdd`"}
+	guardedSaid(dir, "HEAD", Settings{}, said)
+	got := said["Adds"]
+	if strings.Contains(got, "no existing test was found that checks it") {
+		t.Errorf("a reason naming a test the base holds = %q, want it not listed as unproven", got)
+	}
+	if want := "kept as today: guarded by `TestAdd`"; got != want {
+		t.Errorf("a reason naming a test the base holds = %q, want %q", got, want)
+	}
+}
