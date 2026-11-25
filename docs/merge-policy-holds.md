@@ -3,6 +3,8 @@ sources:
   - internal/engine/merge.go#personsCommentOpen
   - internal/engine/merge.go#heldByConversations
   - internal/engine/merge.go#mergePolicy
+  - internal/forge/merge.go#sumRuns
+  - internal/forge/merge.go#headRuns
 checked: e81df7b34
 verified: agent:claude-code
 ---
@@ -46,8 +48,10 @@ request from merging, each found by `merge.go`.
 - **A run the forge cancelled is no result**: the latest other run of
   that check counts — on GitLab, the newest other pipeline of that head
   —, else it waits.
-- **The line's own job is no check of the change**: its `follow` or
-  `workline merge` run, cancelled or failed, holds nothing; the next
-  run tries again
-  ([#2195](https://github.com/JN0V/workline/issues/2195)).
+- **The line's own job is no check of the change**: a `follow` run
+  cancelled holds nothing. On GitHub, a pull request's `follow` failed
+  in workline's own workflows holds nothing either: the next pass tries
+  again ([#2195](https://github.com/JN0V/workline/issues/2195)). On
+  GitLab, the pipeline's status still holds it; on main's tip, a failed
+  `follow` still holds a release.
 - **One not judged yet** waits, named.

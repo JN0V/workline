@@ -225,8 +225,19 @@ func (c ghCall) err(bin, sub, note string) error {
 		}
 		return fmt.Errorf("%w: %s %s: %s", errRefused, bin, sub, msg)
 	}
-	return fmt.Errorf("%w: %s %s: %s%s", ErrUnreachable, bin, sub, msg, aside(note))
+	err := fmt.Errorf("%w: %s %s: %s%s", ErrUnreachable, bin, sub, msg, aside(note))
+	if c.code == http.StatusOK && !c.failure.limited && !strings.Contains(strings.ToLower(msg), "rate limit") {
+		return answered{err} // a GraphQL error: the forge answered (graphqlRefusal)
+	}
+	return err
 }
+
+// answered is a call that failed with an HTTP 200: GitHub's GraphQL API
+// answered with errors — no transport failure, no 5xx, no rate limit.
+// It reads as the error it wraps.
+type answered struct{ error }
+
+func (a answered) Unwrap() error { return a.error }
 
 // ghRead says whether a `gh api` call only reads, so may be sent again
 // whatever happened to it: a GET, said or not, with no field nor input

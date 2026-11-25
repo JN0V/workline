@@ -31,12 +31,17 @@ func TestSumChecks(t *testing.T) {
 		// #2122: the line's own run, cancelled, is no check of the change.
 		{"own follow only cancelled", []checkContext{{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "CANCELLED"},
 			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "success"},
-		// #2195: the line's own run failed is no check of the change; the
-		// change's own failed check still is.
-		{"own follow failed", []checkContext{{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "FAILURE"},
+		// #2195: the line's own follow failed is no check of the change; the
+		// change's own failed check still is, and a job named follow of
+		// another workflow too.
+		{"own follow failed", []checkContext{wf(checkContext{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "FAILURE"}, "workline merge"),
 			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "success"},
-		{"own follow failed beside a red test", []checkContext{{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "FAILURE"},
+		{"own follow failed beside a red test", []checkContext{wf(checkContext{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "FAILURE"}, "workline apply"),
 			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "FAILURE"}}, "failure"},
+		{"another workflow's follow failed", []checkContext{wf(checkContext{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "FAILURE"}, "deploy"),
+			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "failure"},
+		{"own follow green, re-run failed", []checkContext{wf(checkContext{Type: "CheckRun", Name: "follow", ID: 7, Status: "COMPLETED", Conclusion: "SUCCESS"}, "workline merge"),
+			wf(checkContext{Type: "CheckRun", Name: "follow", ID: 9, Status: "COMPLETED", Conclusion: "FAILURE"}, "workline merge")}, ""},
 		{"cancelled beside a failure", []checkContext{{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "CANCELLED"},
 			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "FAILURE"}}, "failure"},
 		// #1031: each check by its latest run, GitHub's ids telling which,
@@ -53,6 +58,41 @@ func TestSumChecks(t *testing.T) {
 	} {
 		if got := sumChecks(c.all); got != c.want {
 			t.Errorf("%s: %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+// wf names the workflow that ran a check run.
+func wf(c checkContext, workflow string) checkContext {
+	c.Suite.Run = &struct {
+		Workflow struct {
+			Name string `json:"name"`
+		} `json:"workflow"`
+	}{}
+	c.Suite.Run.Workflow.Name = workflow
+	return c
+}
+
+// An error GitHub's GraphQL API answered, as gh prints it today, is the
+// forge's refusal (#2195); a failure of the call is not.
+func TestGraphQLRefusal(t *testing.T) {
+	for _, c := range []struct {
+		name    string
+		call    ghCall
+		refused bool
+	}{
+		{"auto-merge not allowed", ghCall{msg: "gh: Auto merge is not allowed for this repository", failed: true, code: 200}, true},
+		{"older gh", ghCall{msg: "GraphQL: Pull request is in clean status (enablePullRequestAutoMerge)", failed: true}, true},
+		{"rate limited", ghCall{msg: "gh: API rate limit exceeded for installation", failed: true, code: 200}, false},
+		{"server error", ghCall{msg: "gh: Something went wrong (HTTP 502)", failed: true, code: 502}, false},
+		{"transport", ghCall{msg: "Post \"https://api.github.com/graphql\": dial tcp: i/o timeout", failed: true}, false},
+	} {
+		err := graphqlRefusal(c.call.err("gh", "api", ""))
+		if refusal(err) != c.refused {
+			t.Errorf("%s: %v, refused %v, want %v", c.name, err, refusal(err), c.refused)
+		}
+		if !strings.Contains(err.Error(), strings.TrimPrefix(c.call.msg, "gh: ")) {
+			t.Errorf("%s: %q does not say what gh said", c.name, err)
 		}
 	}
 }
