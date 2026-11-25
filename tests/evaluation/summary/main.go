@@ -4,7 +4,11 @@
 // little, since a model answers differently from one run to the next, and a
 // best run hides the others (ADR-0014). Fewer than five runs are marked
 // `few runs`; scores earned by a model that no longer answers on this machine
-// (the models-seen file, ADR-0004) are marked `replaced`.
+// (the models-seen file, ADR-0004) are marked `replaced`. Runs of
+// different workline commits are never pooled: a before and an after stay
+// apart. The replay set's cases (docs/spec/conformance/replay.md) are
+// also summed by set: how many cases earned every point in each of their
+// runs, and how many runs did.
 //
 //	go run ./tests/evaluation/summary [results.tsv]
 package main
@@ -14,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -27,7 +32,7 @@ import (
 // minRuns is the fewest runs a measure is read from (ADR-0014).
 const minRuns = 5
 
-type key struct{ kase, models, effort, judge string }
+type key struct{ kase, version, agent, models, effort, judge string }
 
 type group struct {
 	scores              []float64 // share of the points earned
@@ -77,7 +82,7 @@ func main() {
 			}
 			return ""
 		}
-		k := key{get("case"), get("models"), get("effort"), get("judge")}
+		k := key{get("case"), get("workline"), get("agent"), get("models"), get("effort"), get("judge")}
 		if k.models == "" {
 			k.models = "(not recorded)"
 		}
@@ -111,6 +116,9 @@ func main() {
 		if a.kase != b.kase {
 			return a.kase < b.kase
 		}
+		if a.version != b.version {
+			return a.version < b.version
+		}
 		if a.models != b.models {
 			return a.models < b.models
 		}
@@ -121,7 +129,7 @@ func main() {
 	})
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	answering := currentModels(agent.Seen())
-	fmt.Fprintln(w, "case\tmodels\teffort\tjudge\truns\tpass\tscore\trange\tcalls\ttokens in\ttokens out\tseconds\t")
+	_, _ = fmt.Fprintln(w, "case\tworkline\tmodels\teffort\tjudge\truns\tpass\tscore\trange\tcalls\ttokens in\ttokens out\tseconds\t")
 	for _, k := range keys {
 		g := groups[k]
 		lo, hi := bounds(g.scores)
@@ -137,11 +145,63 @@ func main() {
 				}
 			}
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%d/%d\t%.0f%%\t%.0f–%.0f%%\t%s\t%s\t%s\t%s\t%s\n", k.kase, k.models, k.effort, k.judge, len(g.scores),
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\t%d/%d\t%.0f%%\t%.0f–%.0f%%\t%s\t%s\t%s\t%s\t%s\n", k.kase, k.version, k.models, k.effort, k.judge, len(g.scores),
 			g.passes, len(g.scores), 100*mean(g.scores), 100*lo, 100*hi, show(g.calls, "%.1f"), show(g.tokensIn, "%.0f"), show(g.tokensOut, "%.0f"), show(g.seconds, "%.0f"), strings.Join(notes, ", "))
 	}
 	w.Flush()
+	printSets(groups)
 	printLenses(lenses, outside)
+}
+
+// replayCase names a replay case's set: its role, then kept (a catch to
+// keep), clean (a change nobody sent back) or miss; "" for a fixture.
+var replayCase = regexp.MustCompile(`^([a-z-]+)/(kept-|clean-)?(dc|tg|wl)-[0-9]+-`)
+
+// printSets sums the replay cases by set, workline commit and agent: the
+// cases that earned every point in each of their runs (k of n runs, the
+// worst counted), the runs that did, and the mean of each case's worst
+// run.
+func printSets(groups map[key]*group) {
+	type setKey struct{ set, version, agent string }
+	type setSum struct {
+		cases, allPass, runs, passes int
+		worst                        []float64
+	}
+	sets := map[setKey]*setSum{}
+	for k, g := range groups {
+		m := replayCase.FindStringSubmatch(k.kase)
+		if m == nil || len(g.scores) == 0 {
+			continue
+		}
+		kind := map[string]string{"": "miss", "kept-": "kept", "clean-": "clean"}[m[2]]
+		sk := setKey{m[1] + "/" + kind, k.version, k.agent}
+		s := sets[sk]
+		if s == nil {
+			s = &setSum{}
+			sets[sk] = s
+		}
+		lo, _ := bounds(g.scores)
+		s.cases, s.runs, s.passes, s.worst = s.cases+1, s.runs+len(g.scores), s.passes+g.passes, append(s.worst, lo)
+		if g.passes == len(g.scores) {
+			s.allPass++
+		}
+	}
+	if len(sets) == 0 {
+		return
+	}
+	keys := make([]setKey, 0, len(sets))
+	for k := range sets {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool { return fmt.Sprint(keys[i]) < fmt.Sprint(keys[j]) })
+	fmt.Println()
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	_, _ = fmt.Fprintln(w, "replay set\tworkline\tagent\tcases\tevery run full\truns full\tworst run, mean\t")
+	for _, k := range keys {
+		s := sets[k]
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d/%d\t%d/%d\t%.0f%%\t\n", k.set, k.version, k.agent, s.cases, s.allPass, s.cases, s.passes, s.runs, 100*mean(s.worst))
+	}
+	_ = w.Flush()
 }
 
 // The reviewer's measure (#90): its cases write, a run, each lens's tallies
