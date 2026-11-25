@@ -522,6 +522,9 @@ func Post(runDir, repo string) int {
 	if asked { // the engine asks the judge, and runs post again with its answer
 		return write(runDir, *proof)
 	}
+	if guards := guardsOf(covers, newTests, order); len(guards) > 0 {
+		allowGuards(proof, guards)
+	}
 	if proof.Status == verdict.Pass && len(newTests) == 0 {
 		// The files were written, and no test of them ran: the project's
 		// runner skipped them. Said with the filter that may have: the
@@ -605,6 +608,21 @@ func Post(runDir, repo string) int {
 			Message: "each scenario has its test or its reason in the Draft: the issue moves to " + moved})
 	}
 	return write(runDir, *proof)
+}
+
+// allowGuards lets the tests declared as guards of a scenario kept as
+// today pass the red proof green on the base (#2164): their findings go,
+// and a proof refused for them alone passes.
+func allowGuards(proof *verdict.Verdict, guards []string) {
+	proof.Findings = slices.DeleteFunc(proof.Findings, func(f verdict.Finding) bool {
+		return f.Rule == "test-green-on-base" && f.Level == "" && slices.Contains(guards, f.Where)
+	})
+	if proof.Status == verdict.Pass || proof.Final {
+		return
+	}
+	if !slices.ContainsFunc(proof.Findings, func(f verdict.Finding) bool { return f.Level == "" }) {
+		proof.Status = verdict.Pass
+	}
 }
 
 // testsDone moves the issue whose tests are written to the state next
@@ -1210,9 +1228,9 @@ func toMend(findings []verdict.Finding) ([]verdict.Finding, bool) {
 		found = true
 		switch f.Message {
 		case greenOnBase:
-			told[i].Message += "; if its scenario describes what the base already does, write no test for it: " +
-				"its covers entry gives the reason, \"kept as today: guarded by `<the existing test that checks it>`\", " +
-				"or, none found, \"kept as today: no existing test checks it\"; " +
+			told[i].Message += "; if its scenario describes what the base already does, guard it: " +
+				"if an existing test checks it, its covers entry gives the reason \"kept as today: guarded by `<the existing test that checks it>`\", and no new test; " +
+				"if none does, its covers entry declares the test as a guard, `{scenario: <its name>, tests: [<test id>], guard: true}`, which may pass on the base; " +
 				"else make it check what the issue asks, so that it fails on the base"
 		case skippedOnBase:
 			told[i].Message += "; make it run on the base, and fail there: a test that skips itself when what the issue adds is missing checks nothing yet"

@@ -28,6 +28,9 @@ type declared struct {
 	Scenario string
 	Tests    []string
 	Reason   string
+	// Guard: its tests guard a scenario kept as today, the one tests meant
+	// to pass on the base (#2164).
+	Guard bool
 }
 
 // coversOf reads the agent's covers entries; an entry it cannot read is
@@ -59,6 +62,7 @@ func coversOf(intents []intent.Intention) ([]declared, []verdict.Finding) {
 		for k, s := range c.Tests {
 			c.Tests[k] = strings.Trim(strings.TrimSpace(s), "`")
 		}
+		c.Guard, _ = m["guard"].(bool)
 		c.Reason, _ = m["reason"].(string)
 		c.Reason = strings.TrimSpace(c.Reason)
 		out = append(out, c)
@@ -284,6 +288,23 @@ func (r *record) recovered(intents []intent.Intention, newTests []string, file s
 	}
 	r.Covers = covers
 	return ""
+}
+
+// guardsOf are the new tests the covers entries declare as guards of a
+// scenario kept as today (`guard: true`): green on the base by design, so
+// the red proof lets them pass (#2164).
+func guardsOf(covers []declared, newTests, written []string) []string {
+	var out []string
+	for _, c := range covers {
+		if !c.Guard {
+			continue
+		}
+		for _, id := range c.Tests {
+			ids, _ := declaredIn(id, newTests, written)
+			out = append(out, ids...)
+		}
+	}
+	return out
 }
 
 // reasons are the reasons the covers entries give, each its scenario's

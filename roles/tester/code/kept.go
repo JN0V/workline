@@ -14,7 +14,7 @@ const keptPrefix = "kept as today"
 // unguarded is what a person reads of a scenario kept as today that no
 // existing test was found to check (#1359): never a guard the tester
 // did not name, or that is not there.
-const unguarded = "kept as today: no existing test was found that checks it; a guard test of it, green on the base, is written for it"
+const unguarded = "kept as today: no existing test was found that checks it, and no guard test of it was declared"
 
 // codeNames are the names a reason writes as code, `like_this`.
 var codeNames = regexp.MustCompile("`([^`\n]+)`")
