@@ -132,8 +132,10 @@ failed — is marked ready for review once its rounds make it green
   it.
   - **Only disputes count**: a round that answered a blocking finding
     of the reviewer. A round on a red check, a gate, a tester's rewrite,
-    a person's comment or a warning alone is no dispute; the same
-    failure twice at a head stops its rounds, said once
+    a person's comment or a warning alone is no dispute.
+  - **A ceiling of any kind**: twice `review-rounds` (10), every round
+    counted ([#1687](https://github.com/JN0V/workline/issues/1687)); the
+    same failure twice at a head stops its rounds before, said once
     ([#1769](https://github.com/JN0V/workline/issues/1769)).
 - **At its issue's backstop**, no agent: the issue's runs, the rounds
   counted, reached 4× its normal

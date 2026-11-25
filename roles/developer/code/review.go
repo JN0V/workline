@@ -303,7 +303,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		}
 		return writeIntents(runDir, "fallback.yaml", toTesterOnly(r, bounds, repo))
 	}
-	if disputes(a) >= s.Rounds {
+	if disputes(a) >= s.Rounds || max(a.Round, len(a.Rounds)) >= 2*s.Rounds { // its disputes, or its rounds of any kind at twice that
 		r.Person = true
 		if err := writeIn(runDir, roundFile, r); err != nil {
 			return fail(err)
@@ -724,7 +724,7 @@ func handOff(r round, b Bounds, repo string) []intent.Intention {
 		a.ChecksAt = r.ChecksAt
 	}
 	add, remove := blockedMove(repo)
-	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree, a dispute over a blocking finding",
+	why := fmt.Sprintf("%d review rounds on merge request %d, and the review still asks %d finding%s: the reviewer and the developer do not agree, a dispute over a blocking finding, or its rounds of any kind at their ceiling",
 		a.Round, r.MR, len(r.Asked), devmark.Plural(len(r.Asked)))
 	return append(tests,
 		intent.Intention{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
