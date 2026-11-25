@@ -102,9 +102,10 @@ func commitScope(scope []string) string {
 }
 
 var (
-	issueRef    = regexp.MustCompile(`(^|\s)#[0-9]+\b`)
+	issueRef    = regexp.MustCompile(`(^|\s)\(?#[0-9]+\b\)?`)
 	emptyParens = regexp.MustCompile(`\(\s*\)|\[\s*\]`)
 	spaces      = regexp.MustCompile(`\s+`)
+	typeHead    = regexp.MustCompile(`^[a-z]+(\([^()\s]*\))?!?: `) // a summary's own `type(scope): `
 )
 
 // summaryOf is an issue's title as a subject's summary: its references

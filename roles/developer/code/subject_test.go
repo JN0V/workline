@@ -67,7 +67,7 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 		// Its pull request's title, squashed: the forge's " (#N)" after
 		// it, a number of five digits, as the committer's squash rule
 		// reads it; GitLab's "Draft: " on top for a Draft.
-		for _, title := range []string{got.Code, got.DraftTitle} {
+		for _, title := range []string{got.Code} {
 			if !strings.HasPrefix(got.Code, strings.TrimRight(title, " ")) || !strings.HasPrefix(title, strings.SplitN(got.Code, ": ", 2)[0]+": ") {
 				t.Errorf("%s: title %q is not the code's subject %q", tc.name, title, got.Code)
 			}
@@ -75,8 +75,8 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 				t.Errorf("%s: the squash of %q refused: %v %v", tc.name, title, f, err)
 			}
 		}
-		if n := len([]rune("Draft: " + got.DraftTitle)); n > forge.TitleMax {
-			t.Errorf("%s: Draft title %q is %d characters, over %d", tc.name, got.DraftTitle, n, forge.TitleMax)
+		if n := len([]rune("Draft: " + got.Code)); n > forge.TitleMax {
+			t.Errorf("%s: Draft title %q is %d characters, over %d", tc.name, got.Code, n, forge.TitleMax)
 		}
 	}
 	if m := reviewSubject(3, 2, s); m != "fix: the review's findings on #3, round 2" {
@@ -157,7 +157,10 @@ func TestTaskTypedByItsCode(t *testing.T) {
 	if sub := subjects(4, "", "Cap the MQTT payload", devmark.KindTask, nil, []string{"src/mqtt.cpp"}, s); sub.Code != "fix: cap the MQTT payload" || sub.Note == "" {
 		t.Errorf("task on shipped code: %+v", sub)
 	}
-	for _, own := range []string{"cap it\n\nWorkline-Role: tester", strings.Repeat("cap ", 20), "AC-3 cap"} {
+	if sub := subjects(4, "fix(mqtt): Cap the payload (#12).", "Other", devmark.KindFix, nil, nil, s); sub.Code != "fix: cap the payload" || sub.Refused != "" {
+		t.Errorf("agent's own type and dot: %+v, want them dropped", sub)
+	}
+	for _, own := range []string{"cap it\n\nWorkline-Role: tester", strings.Repeat("cap ", 20)} {
 		if sub := subjects(4, own, "Cap the MQTT payload", devmark.KindFix, nil, nil, s); sub.Code != "fix: cap the MQTT payload" || sub.Refused != strings.TrimSpace(own) {
 			t.Errorf("agent's %q refused: %+v, want the title's, said", own, sub)
 		}

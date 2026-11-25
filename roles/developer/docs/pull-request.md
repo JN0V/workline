@@ -87,18 +87,18 @@ flowchart LR
     - the merge policy reads the issue's kind, never this type;
   - scope: the folder every path of the issue's Scope sits in, none
     when they share none;
-  - summary: the one its agent writes in `.workline/subject`, the room
-    left said in its question; else the issue's title, lower-case
-    first, its references and the codes the committer refuses taken
-    out; else `the code of #<n>`: the first that passes the commit
-    check, never cut;
+  - summary: the one its agent writes in `.workline/subject`, one
+    line, the room left said in its question, its own `type: ` dropped;
+    else the issue's title; each lower-case first, its references, its
+    closing dot and the codes the committer refuses taken out; else
+    `the code of #<n>`: the first that passes the commit check, never
+    cut;
   - a review round's fix: `fix: the review's findings on #<n>, round <r>`.
-- **Its title is its code's subject**, checked where a squash lands it,
-  with the forge's ` (#N)`
+- **Its title is its code's subject**, a Draft's too: checked where a
+  squash lands it, with the forge's ` (#N)` and a `Draft: ` prefix (the
+  engine allows for it on every forge)
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
-  a Draft's is `the code of #<n>` when a `Draft: ` prefix would leave no
-  room (the engine allows for it on every forge); an agent's summary
-  refused is said (`subject-refused`).
+  an agent's summary refused is said (`subject-refused`).
 - **Each carries `Workline-Role: developer`** and the model that wrote
   it, as every commit workline makes.
 

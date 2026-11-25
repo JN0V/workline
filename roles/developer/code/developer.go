@@ -645,7 +645,7 @@ func claimLabel(a devmark.Act, s Settings) intent.Intention {
 func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) string {
 	return question(is, b, test, testErr, s) +
 		"Its diff is your code. Write its pull request's summary, the words after `" + head(b) + "`, in the file `" + SubjectFile + "`: one line, what the change does, " +
-		fmt.Sprint(forge.TitleMax-len(head(b))) + " characters at most, never cut; one the project's commit rules refuse gives the issue's title. When you are done, your last message is `[]` alone: no label, no comment, the claim is the engine's.\n"
+		fmt.Sprint(forge.TitleMax-len("Draft: ")-len(head(b))) + " characters at most, lower-case first, no closing dot, never cut; one the project's commit rules refuse gives the issue's title. When you are done, your last message is `[]` alone: no label, no comment, the claim is the engine's.\n"
 }
 
 // testsBeside tells the agent the tests that are beside the Scope, by
