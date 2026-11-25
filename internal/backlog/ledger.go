@@ -982,7 +982,7 @@ func (p *Plan) labelWithin(b forge.Backlog, f forge.Forge, writes []stateWrite, 
 		// the comment held before this run is posted anew, the role's own,
 		// last (ADR-0038, amended). One written in this run was mailed as
 		// it was created.
-		w.renew = slices.Contains(p.Visit, w.t.ID)
+		w.renew = slices.Contains(p.Visit, w.t.ID) && (asksAPerson(w.st) || HasDraft(w.is.Body, w.st))
 		if !slices.ContainsFunc(p.Findings, func(x verdict.Finding) bool {
 			return x.Where == where && (x.Rule == "proposed" || x.Rule == "done" || x.Rule == "done-as-accepted")
 		}) {
@@ -1182,4 +1182,23 @@ func recordLines(f forge.Forge, t forge.Target, role string) ([]string, error) {
 		}
 	}
 	return out, nil
+}
+
+// asksAPerson tells whether the state holds a call: a question to the
+// reporter or assumptions taken, the only acts that post anew on a
+// person's issue. A proposal with no question is edited in place, silent
+// (ADR-0038, amended).
+func asksAPerson(st *State) bool {
+	if st.Assumed > 0 {
+		return true
+	}
+	for _, q := range ForPerson(st.Proposed) {
+		if q.Act == "ask" {
+			return true
+		}
+		if q.Proposal != nil && (strings.TrimSpace(q.Proposal.Questions) != "" || strings.TrimSpace(q.Proposal.Assumption) != "" || len(q.Proposal.Assumed) > 0) {
+			return true
+		}
+	}
+	return false
 }

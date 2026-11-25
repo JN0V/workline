@@ -78,7 +78,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		body := fmt.Sprintf("**Waiting for a person's yes**: this is %s. The project's merge policy is `%s`: the developer's fix of a reproduced bug merges once every gate passes, a feature or a task waits for a person's yes.\n\n- To accept this one, put the label `%s`.\n- A bug? Change the label on #%d.",
 			d.Says(), o.Merge, backlog.AcceptedLabel(f), d.Issue)
 		body += headTrouble(o, m, hand, w)
-		if err := f.Sticky(t, body, forge.Marker("merge-waits="+d.Kind), true); err != nil {
+		if err := askYes(f, t, d.Issue, body, forge.Marker("merge-waits="+d.Kind)); err != nil {
 			return nil, err
 		}
 		return waits("", d.Says())
@@ -414,4 +414,32 @@ func baseFixable(v kept) bool {
 // comment kept in place, a wait said again replacing the one before (#1882).
 func sayWait(f forge.Forge, w weighed, key, body string) error {
 	return f.Sticky(forge.Target{Kind: "merge-request", ID: w.mr.ID}, body, forge.Marker("merge-waits="+key), true)
+}
+
+// askYes says on the pull request that it waits for a person's yes. The
+// first time it is a new comment mentioning the issue's reporter, so the
+// forge notifies them; the wait said again is edited in place, silent
+// (ADR-0038, amended: the yes awaited calls once).
+func askYes(f forge.Forge, t forge.Target, issue int, body, marker string) error {
+	r, ok := f.(forge.Renewer)
+	if !ok {
+		return f.Sticky(t, body, marker, true)
+	}
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return f.Sticky(t, body, marker, true)
+	}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	for _, c := range comments {
+		if strings.Contains(c, marker) {
+			return f.Sticky(t, body, marker, true)
+		}
+	}
+	if is, err := f.Issue(issue); err == nil && is != nil && is.Author != "" && is.Insider {
+		body = "@" + is.Author + " " + body
+	}
+	return r.Renew(t, body, marker)
 }
