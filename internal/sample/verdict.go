@@ -24,7 +24,7 @@ import (
 )
 
 // Each act drawn is re-checked by one auditor call, asked its kind's
-// question (kinds/<kind>.md) on what the act was done on, a finding blind,
+// question (criteria/<role>/<kind>.md) on what the act was done on, a finding blind,
 // never on a model that acted. An answer against the act is false only
 // with a quote the engine finds again; the calls stop at the sample's
 // ai-max-tokens (ADR-0046, docs/commands.md#workline-sample).
@@ -115,19 +115,32 @@ func kindOf(a Act) string {
 // facet is what a well-done act of a kind is, the auditor's question: the
 // project's own copy (.workline/roles/auditor/criteria/<role>/<kind>.md),
 // else the auditor's (criteria/<role>/<kind>.md), else the role's own
-// (criteria/<kind>.md). Until the questions move, kinds/<kind>.md is read
-// as a last fallback, the project's first. A kind with no criteria anywhere is
-// judged on the auditor's generic question, whose text ships with a later
-// move: said missing.
+// (criteria/<kind>.md). A kind with no criteria anywhere is judged on the
+// auditor's generic question, whose text ships with a later move: said
+// missing. A copy left at the old path, kinds/<kind>.md, the project's or
+// the auditor's folder's, is no longer read: the act is not judged, the
+// report says where it goes, or that it goes once its new copy is there.
 func (rd *reader) facet(roleName, kind string) (string, error) {
 	project := filepath.Join(rd.o.Repo, ".workline", "roles", "auditor")
 	roles := filepath.Dir(rd.auditor.Dir)
+	for _, dir := range []struct{ path, name string }{
+		{project, ".workline/roles/auditor"},
+		{rd.auditor.Dir, rd.auditor.Dir},
+	} {
+		old := filepath.Join(dir.path, "kinds", kind+".md")
+		if _, err := os.Stat(old); err != nil {
+			continue
+		}
+		moved := fmt.Sprintf("%s/criteria/%s/%s.md", dir.name, roleName, kind)
+		if _, err := os.Stat(filepath.Join(dir.path, "criteria", roleName, kind+".md")); err == nil {
+			return "", fmt.Errorf("%s/kinds/%s.md is no longer read, and %s holds its criteria now: remove the old file", dir.name, kind, moved)
+		}
+		return "", fmt.Errorf("%s/kinds/%s.md is no longer read: move it to %s", dir.name, kind, moved)
+	}
 	paths := []string{
 		filepath.Join(project, "criteria", roleName, kind+".md"),
 		filepath.Join(rd.auditor.Dir, "criteria", roleName, kind+".md"),
 		filepath.Join(roles, roleName, "criteria", kind+".md"),
-		filepath.Join(project, "kinds", kind+".md"),
-		filepath.Join(rd.auditor.Dir, "kinds", kind+".md"),
 	}
 	for _, p := range paths {
 		if data, err := os.ReadFile(p); err == nil {

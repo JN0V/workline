@@ -3,43 +3,28 @@ package tests
 import (
 	"go/parser"
 	"go/token"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/JN0V/workline"
 )
 
-// shippedRoles lists the roles whose steps call `workline builtin <role>
-// pre|post`, sorted, each once.
+// shippedRoles lists the roles whose folder holds code/, the built-in
+// code the engine runs for their pre and post, sorted.
 func shippedRoles(t *testing.T) []string {
 	t.Helper()
-	call := regexp.MustCompile(`builtin ([a-z-]+) (pre|post)\b`)
-	var called []string
-	err := fs.WalkDir(workline.Roles, "roles", func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() || (d.Name() != "pre" && d.Name() != "post") {
-			return err
-		}
-		data, err := fs.ReadFile(workline.Roles, path)
-		if err != nil {
-			return err
-		}
-		for _, m := range call.FindAllStringSubmatch(string(data), -1) {
-			if !slices.Contains(called, m[1]) {
-				called = append(called, m[1])
-			}
-		}
-		return nil
-	})
+	dirs, err := filepath.Glob(filepath.Join("..", "roles", "*", "code"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	slices.Sort(called)
-	return called
+	var coded []string
+	for _, d := range dirs {
+		coded = append(coded, filepath.Base(filepath.Dir(d)))
+	}
+	slices.Sort(coded)
+	return coded
 }
 
 // binaryRoles lists the roles the binary's own list (cmd/workline/builtins.go,
@@ -127,13 +112,13 @@ func binaryRoles(t *testing.T) []string {
 // When a contributor runs `go test ./...`,
 // Then a test fails and names that role.
 //
-// Every role a shipped step calls is one the binary's list compiles in;
+// Every shipped role with code/ is one the binary's list compiles in;
 // the failure names each one the list leaves out.
-func TestTheBinaryForgetsNoRoleAShippedStepCalls(t *testing.T) {
+func TestTheBinaryForgetsNoRoleWithCode(t *testing.T) {
 	in := binaryRoles(t)
 	for _, role := range shippedRoles(t) {
 		if !slices.Contains(in, role) {
-			t.Errorf("the role %q is called by a shipped step (`workline builtin %s pre|post`), but cmd/workline/builtins.go does not import it: the binary would answer \"no built-in step\"", role, role)
+			t.Errorf("the role %q ships code/ (roles/%s/code), but cmd/workline/builtins.go does not import it: its pre and post would run as the shared ones", role, role)
 		}
 	}
 }
@@ -144,9 +129,9 @@ func TestTheBinaryForgetsNoRoleAShippedStepCalls(t *testing.T) {
 // When a contributor runs `go test ./...`,
 // Then that test passes.
 //
-// The binary's list compiles in exactly the roles the shipped steps call.
-func TestTheBinaryListHoldsExactlyTheRolesTheShippedStepsCall(t *testing.T) {
+// The binary's list compiles in exactly the shipped roles with code/.
+func TestTheBinaryListHoldsExactlyTheRolesWithCode(t *testing.T) {
 	if got, want := binaryRoles(t), shippedRoles(t); !slices.Equal(got, want) {
-		t.Errorf("the binary's list compiles in %v; the shipped steps call %v", got, want)
+		t.Errorf("the binary's list compiles in %v; the shipped roles with code/ are %v", got, want)
 	}
 }

@@ -494,7 +494,7 @@ func docPage(path string) bool {
 // rolePage says whether a path in a role's folder, `roles/<name>/…`, is
 // one of its pages for people, never loaded for an agent (the role
 // contract's layout): its README.md, a page under its docs/. Its facets —
-// persona, knowledge, instruction, policy, lenses, kinds, skills — are not.
+// persona, knowledge, instruction, policy, lenses, criteria, skills — are not.
 func rolePage(rest []string) bool {
 	return len(rest) == 2 && rest[1] == "readme.md" || len(rest) > 2 && rest[1] == "docs"
 }

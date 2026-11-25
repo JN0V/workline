@@ -1,3 +1,0 @@
-#!/bin/sh
-# Judge: what the run took; the claim is the engine's to apply.
-exec "${WORKLINE_BIN:-workline}" builtin developer post

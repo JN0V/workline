@@ -75,9 +75,8 @@ roles/<name>/
 - **The auditor's criteria win**: `roles/auditor/criteria/<role>/<kind>.md`,
   guarded, is read before the role's own `criteria/<kind>.md`.
 - **The binary ships** `role.yaml`, `prompts/` and `criteria/` of each
-  role (`kinds/` until move a renames it), and its `pre` and `post`,
-  named one by one in `workline.go`; never cases, `docs/`, `code/`
-  nor its README as files. A check in `tests/` fails if one is embedded.
+  role, named one by one in `workline.go`; never cases, `docs/`, `code/`,
+  its README, nor a `pre` or `post` file: a check in `tests/` fails.
 
 ## Guarded paths
 
@@ -86,13 +85,15 @@ them, so a guarded file is never unguarded for a commit:
 
 | Today | After | Moved with |
 |---|---|---|
-| `/roles/auditor/kinds/` | `/roles/auditor/criteria/` | move a |
-| `/roles/reviewer/kinds/` (guarded, no folder yet) | `/roles/reviewer/criteria/` | move a |
+| `/roles/auditor/kinds/` | `/roles/auditor/criteria/` | move a, done |
+| `/roles/reviewer/kinds/` (guarded, no folder yet) | `/roles/reviewer/criteria/` | move a, done |
 | `/roles/{reviewer,auditor}/instruction.md`, `persona.md`, `policy.md`, `lenses/` | the same under `prompts/` | move b, that role's |
 | `/roles/{reviewer,auditor}/role.yaml` | unchanged | — |
 
 - **Other roles' `criteria/`** stay unguarded: a soft one shows in
   the wake script; the auditor's copy, guarded, wins.
+- **A project's old `.workline/roles/auditor/kinds/<kind>.md`** is no
+  longer read: the act is not judged, the report says where it goes.
 
 ## Kinds of role
 

@@ -1,3 +1,0 @@
-#!/bin/sh
-# Judge: test files only, a test a scenario, each new test red on the base.
-exec "${WORKLINE_BIN:-workline}" builtin tester post

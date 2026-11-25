@@ -1,46 +1,43 @@
 package tests
 
 import (
-	"io/fs"
-	"regexp"
+	"path/filepath"
 	"slices"
 	"testing"
 
-	"github.com/JN0V/workline"
 	"github.com/JN0V/workline/internal/contract"
 
 	// The compiled-in roles, the list the binary imports.
 	_ "github.com/JN0V/workline/roles"
 )
 
-// Every shipped step that calls `workline builtin <role> <step>` finds
-// that step in the registry, and the registry holds no role no step calls.
+// Every shipped role with code/ finds its pre and post in the registry;
+// the registry holds no role that has no code/ in roles/.
 func TestEveryBuiltinStepIsInTheRegistry(t *testing.T) {
-	call := regexp.MustCompile(`builtin ([a-z-]+) (pre|post)\b`)
-	var called []string
-	err := fs.WalkDir(workline.Roles, "roles", func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() || (d.Name() != "pre" && d.Name() != "post") {
-			return err
-		}
-		data, err := fs.ReadFile(workline.Roles, path)
-		if err != nil {
-			return err
-		}
-		for _, m := range call.FindAllStringSubmatch(string(data), -1) {
-			if _, ok := contract.Builtins().Step(m[1], m[2]); !ok {
-				t.Errorf("%s calls `builtin %s %s`: no such step in the registry", path, m[1], m[2])
-			}
-			if !slices.Contains(called, m[1]) {
-				called = append(called, m[1])
+	coded := shippedRoles(t)
+	for _, name := range coded {
+		for _, step := range []string{"pre", "post"} {
+			if _, ok := contract.Builtins().Step(name, step); !ok {
+				t.Errorf("roles/%s/code: no built-in %s in the registry", name, step)
 			}
 		}
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
 	}
-	slices.Sort(called)
-	if got := contract.Builtins().Names(); !slices.Equal(got, called) {
-		t.Errorf("the registry holds %v; the shipped steps call %v", got, called)
+	if got := contract.Builtins().Names(); !slices.Equal(got, coded) {
+		t.Errorf("the registry holds %v; the shipped roles with code/ are %v", got, coded)
+	}
+}
+
+// No shipped role holds a pre or post file, with code/ or without: its
+// steps are its built-in code, else the shared ones (docs/spec/layout.md).
+func TestNoShippedRoleHoldsAPreOrPostFile(t *testing.T) {
+	for _, step := range []string{"pre", "post"} {
+		found, err := filepath.Glob(filepath.Join("..", "roles", "*", step))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, f := range found {
+			rel, _ := filepath.Rel("..", f)
+			t.Errorf("%s: a shipped role holds no %s file; its built-in code or the shared step runs: remove it", filepath.ToSlash(rel), step)
+		}
 	}
 }

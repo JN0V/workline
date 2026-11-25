@@ -1,3 +1,0 @@
-#!/bin/sh
-# Prepare: the pick, no agent — the first ready issue nobody took, and its claim.
-exec "${WORKLINE_BIN:-workline}" builtin developer pre

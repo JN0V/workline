@@ -2,8 +2,8 @@
 // (roles/reviewer, ADR-0020): the rules no judgement is needed for, the
 // lenses put to the agent as parts of one question, each finding's quotes
 // found again, whether it lies in the change or outside it, the judge's
-// answers read, and the verdict. The role's scripts call them through
-// `workline builtin reviewer pre|post`.
+// answers read, and the verdict. The engine runs them as the role's pre
+// and post, `workline builtin reviewer pre|post`.
 package reviewer
 
 import (

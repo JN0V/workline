@@ -219,8 +219,8 @@ func TestMain(m *testing.M) {
 	if err := fixtureRepo(repoTemplate); err != nil {
 		panic(err)
 	}
-	// The role scripts run the engine's binary: one built from this tree,
-	// not this test's.
+	// The engine runs a role's built-in steps with its own binary: one
+	// built from this tree, not this test's.
 	bin := filepath.Join(dir, "workline")
 	if out, err := exec.Command("go", "build", "-o", bin, "../../cmd/workline").CombinedOutput(); err != nil {
 		panic(fmt.Sprintf("the engine: %v\n%s", err, out))

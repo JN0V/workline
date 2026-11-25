@@ -47,23 +47,23 @@ func TestTheBinaryShipsNoRoleCodeNorDocs(t *testing.T) {
 }
 
 // shipped says whether a file of a role's folder is one a run reads:
-// its role.yaml, pre and post, and all under prompts/ and kinds/.
+// its role.yaml, and all under prompts/ and criteria/.
 func shipped(rel string) bool {
 	parts := strings.Split(rel, "/")
 	if len(parts) < 2 {
 		return false
 	}
 	switch parts[1] {
-	case "role.yaml", "pre", "post":
+	case "role.yaml":
 		return len(parts) == 2
-	case "prompts", "kinds":
+	case "prompts", "criteria":
 		return len(parts) > 2
 	}
 	return false
 }
 
 // Every file a role's run reads is embedded as it stands in roles/: none
-// of its prompts/ nor kinds/ left behind by the embed's patterns, and the
+// of its prompts/ nor criteria/ left behind by the embed's patterns, and the
 // instruction facet each kind of task names in role.yaml is there. Each
 // role loads from the folder the binary extracts.
 func TestTheBinaryShipsEveryFileARunReads(t *testing.T) {
