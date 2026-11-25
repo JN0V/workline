@@ -80,7 +80,7 @@ pull requests and nightly gardening of workline and of another project;
 | [**Inspector**](roles/inspector/README.md) | explains the findings a merge request adds to your linters and scanners; never their verdict | [beta](roles/inspector/docs/status.md) |
 | [**Tester**](roles/tester/README.md) | writes a ready issue's tests from its scenarios, each proven red on its base before the code | [beta](roles/tester/docs/status.md) |
 | [**Developer**](roles/developer/README.md) | takes a ready issue nobody took, writes its code within bounds, opens its pull request, proven on the project's tests, and fixes its review | [beta](roles/developer/docs/status.md) |
-| [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts | [beta](roles/auditor/docs/status.md) |
+| [**Auditor**](roles/auditor/README.md) | re-checks a weekly sample of the roles' acts | [beta](roles/auditor/docs/status.md) |
 | [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
 | [Process engineer](https://github.com/JN0V/workline/issues/89) | will read the line's measures and propose fixes | planned |
 | [Architect](https://github.com/JN0V/workline/issues/207) | will read specs for structure and keep architecture rules | planned |

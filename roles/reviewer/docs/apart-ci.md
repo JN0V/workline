@@ -23,14 +23,15 @@ Part of [the lenses that warn, apart from the verdict](apart.md).
   and, important, on its line; it asks nothing and never changes a
   verdict given.
 - **A lens that fails** — an answer that never reads, the tokens spent —
-  says so in that comment (`lens-failed`). Its record holds none of the
-  commits and names the lens (`failed=`): the next push, or the run run
-  again, asks it first, whosever turn it is
-  ([the record](run-record.md#3-the-record),
-  [what goes wrong](verdict.md#8-the-verdict-and-what-goes-wrong)). The agent out of reach is said
-  in the job's log. It never
-  turns a pass into a fail, nor a fail into a pass; the job stays green,
-  only the engine's own error fails it.
+  says so in that comment (`lens-failed`):
+  - its record holds none of the commits and names the lens
+    (`failed=`): the next push, or the run run again, asks it first,
+    whosever turn it is
+    ([the record](run-record.md#3-the-record),
+    [what goes wrong](verdict.md#8-the-verdict-and-what-goes-wrong));
+  - the agent out of reach is said in the job's log;
+  - it never turns a pass into a fail, nor a fail into a pass; the job
+    stays green, only the engine's own error fails it.
 - **The merge policy merges on the head's verdict**
   ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)):
   warn findings, and a lens that warns failing, may come after it, and

@@ -47,7 +47,8 @@ A change that fits is asked in one call, as before.
 ## Past parts-max
 
 - **`parts-max`**, 2 (from 1 to 8): two parts spend at most two budgets,
-  about 200k tokens, leaving the judges a third of `ai-max-tokens`.
+  leaving the judges a third of `ai-max-tokens`
+  ([tokens](../../../docs/research/token-costs-measured.md#reviewer)).
 - **Past it**, no lens is asked and no token spent: `review-not-whole`
   says how many parts the change would take, and to split it. On a
   merge request, the summary comment says so too.

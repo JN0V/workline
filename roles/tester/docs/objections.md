@@ -69,14 +69,16 @@ them; a builder who disagrees objects, never edits.
   - Either keeps a hidden line for the [weekly sample](../../../docs/weekly-sample.md).
 - **The need itself** goes to the product owner, with no agent: the
   issue back to `workline:to-refine`, said there and in the thread.
-- **Bounded**: three answers a thread (`objection-exchanges`). The
-  third first runs the [five whys](../../../skills/five-whys/SKILL.md) on
-  the thread and posts them with its answer: the chain, the root cause,
-  one action. Missing or malformed, the answer is refused and asked
-  again. After it, the product owner settles it: the issue back to
-  refine, said there and in the thread; objected to again after that,
-  the issue goes `workline:blocked`, its reason on it
-  ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#6-disagreements-end-at-the-product-owner-then-blocked)).
-  No person is asked; a comment of one of the project's there is
-  followed. Meanwhile the other objections are answered.
+- **Bounded**: three answers a thread (`objection-exchanges`).
+  - The third first runs the
+    [five whys](../../../skills/five-whys/SKILL.md) on the thread and
+    posts them with its answer: the chain, the root cause, one action.
+    Missing or malformed, the answer is refused and asked again.
+  - After it, the product owner settles it: the issue back to refine,
+    said there and in the thread.
+  - Objected to again after that, the issue goes `workline:blocked`, its
+    reason on it
+    ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#6-disagreements-end-at-the-product-owner-then-blocked)).
+  - No person is asked; a comment of one of the project's there is
+    followed. Meanwhile the other objections are answered.
 - **The agent is a choice** here too: with none, `no-agent`, it waits.

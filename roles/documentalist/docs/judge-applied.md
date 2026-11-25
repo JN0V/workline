@@ -15,7 +15,8 @@ Part of [the check](judge.md).
 
 ## What holds is applied
 
-A refusal used to send the whole task again — two docs, 35k tokens — for
+A refusal used to send the whole task again — two docs, a costly
+call ([measured](../../../docs/research/token-costs-measured.md#documentalist)) — for
 one place the engine had already named (step 4). Now:
 
 - a place withheld is not asked for again: the doc's fix is applied

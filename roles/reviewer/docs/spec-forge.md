@@ -68,9 +68,9 @@ routing:
 - **An agent out of reach**: the run is blocked-external
   ([as for code](verdict.md#8-the-verdict-and-what-goes-wrong)) and writes
   nothing, that question included; said, it waits for the next run.
-- **Its cost**: a spec 7k to 37k tokens in, judges included; five a night
+- **Its cost**: judges included, five specs a night
   stay within `ai-max-tokens`
-  ([measured](../../../docs/research/code-review.md#the-reviewers-cost-measured)).
+  ([measured](../../../docs/research/token-costs-measured.md#reviewer)).
 
 ## A record that does not read
 

@@ -110,13 +110,14 @@ At `autonomy: normal`, the default:
   on, sent back to the state it came from or to refine; or kept
   blocked, its reason said afresh; put `workline:blocked` back to undo
   ([how](../../docs/spec/backlog-acts/refine.md#a-blocked-issue-read-again)).
-  The developer's ask for a file outside the Scope, from before the
-  Scope was a hint, wakes it at once: it widens the Scope, or says why
-  not. So does a run too big for its role:
-  it narrows the Scope, splits it, grants it `workline:size/large` when
-  its need cannot be cut (proposed at `cautious`), or leaves it to a
-  person. At ready, it predicts the size first
-  ([split on size](../../docs/spec/backlog-acts/split.md#split-on-size)).
+  - The developer's ask for a file outside the Scope, from before the
+    Scope was a hint, wakes it at once: it widens the Scope, or says why
+    not.
+  - So does a run too big for its role: it narrows the Scope, splits
+    it, grants it `workline:size/large` when its need cannot be cut
+    (proposed at `cautious`), or leaves it to a person. At ready, it
+    predicts the size first
+    ([split on size](../../docs/spec/backlog-acts/split.md#split-on-size)).
 - **Back to refine, at every level**: a ready issue that no longer fits,
   its reason in its comment; put `workline:ready` back to undo
   ([why](../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-01-back-to-refine-needs-no-yes)).
@@ -162,8 +163,8 @@ roles:
 ## Cost
 
 - **One call a run** (standard tier, context budget 120k tokens,
-  estimated): 45k to 62k tokens in for four issues on a real backlog, up
-  to 97.6k with their code; `issues-per-run`, `code-lines-max` and
+  estimated; [what it cost](../../docs/research/token-costs-measured.md#product-owner)):
+  `issues-per-run`, `code-lines-max` and
   `code-bytes-max` size it,
   and a run reads only the issues that fit the budget, the rest first at
   the next run.

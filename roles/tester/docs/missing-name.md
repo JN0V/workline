@@ -77,13 +77,14 @@ flowchart LR
   non-zero, it is `report-missing`
   ([#2091](https://github.com/JN0V/workline/issues/2091)).
 - **The tests' names**, when nothing built them: read from the test
-  files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`). A
-  test the base's report names, in a file the tests were added to, is
-  the base's, never a new one. A row with no `test-name` (C, the
-  generic pack): each test file the change adds that the build broke
-  on is one test, named by its file, which proves only that the file is
-  there (a helper with no error in it is no test;
-  [what the green proof wants](build-outcomes.md#a-test-named-by-its-file)).
+  files, as `file:name` (`calc/mul_test.go:TestMulTwoByThree`).
+  - A test the base's report names, in a file the tests were added to,
+    is the base's, never a new one.
+  - A row with no `test-name` (C, the generic pack): each test file the
+    change adds that the build broke on is one test, named by its file,
+    which proves only that the file is there (a helper with no error in
+    it is no test;
+    [what the green proof wants](build-outcomes.md#a-test-named-by-its-file)).
 - **JUnit 5 on Gradle** reports `two by three()`: the `()` is dropped,
   the name as its file writes it
   ([#1178](https://github.com/JN0V/workline/issues/1178)).
@@ -110,4 +111,4 @@ flowchart LR
   past the tenth are not read. `-gcflags=-e` in the test command shows
   them all.
 - **The judge's tokens**: asked only past the fast path; measured on a
-  real build on [#1252](https://github.com/JN0V/workline/pull/1252#tried): 2k to 7.5k tokens in a call.
+  real build ([what a call spent](../../../docs/research/token-costs-measured.md#tester)).
