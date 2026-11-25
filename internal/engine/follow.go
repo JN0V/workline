@@ -214,15 +214,10 @@ func oldestDraftsFirst(repo, base string, open []string, local bool) []string {
 	return sorted
 }
 
-// follow rebuilds one role's branch on base's tip, and says what it did;
+// followMay rebuilds one role's branch on base's tip, and says what it did;
 // nothing when the branch is on base's tip already. A branch with nothing
-// left to merge is said `closed`, for Follow to close.
-func follow(repo, base, branch, role string, local bool) (verdict.Finding, error) {
-	return followMay(repo, base, branch, role, local, true)
-}
-
-// followMay is follow, pushing the rebuilt branch only with mayPush: else it
-// says `due-later`, the branch left as it is.
+// left to merge is said `closed`, for Follow to close. It pushes the rebuilt
+// branch only with mayPush: else it says `due-later`, the branch left as it is.
 func followMay(repo, base, branch, role string, local, mayPush bool) (verdict.Finding, error) {
 	baseTip, tip, err := tips(repo, base, branch, local)
 	if err != nil || tip == "" {

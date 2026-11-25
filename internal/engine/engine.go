@@ -2278,34 +2278,21 @@ func mergeRequestKey(st runState, runDir string) string {
 // (ADR-0034, amended).
 var ErrLeftToAPerson = errors.New("left to a person")
 
-// ProposeBranch commits the files written in the working tree on the role's
-// branch for a task (workline/<role>/<key>), force-pushes it — unless the
-// forge keeps its branches in the clone — opens its merge request or
-// updates the one open, and puts the working tree back on the branch it was
-// on: a draft, when draft is true. trailers end the commit's message. A
-// branch a person committed to is never pushed over: ErrLeftToAPerson, the
-// working tree as it was.
-func ProposeBranch(f forge.Forge, repo, roleName, key, title, body string, draft bool, trailers string, written []string) (int, error) {
-	return ProposeBranchFrom(f, repo, roleName, key, title, body, draft, trailers, written, Proposal{})
-}
-
-// ProposeBranchFrom is ProposeBranch, the branch built as p says: from
-// p.From, the files written in p's commits.
-func ProposeBranchFrom(f forge.Forge, repo, roleName, key, title, body string, draft bool, trailers string, written []string, p Proposal) (int, error) {
-	id, _, err := proposeBranch(f, repo, "", roleName, key, title, body, draft, trailers, written, p, "")
-	return id, err
-}
-
-// ProposeBranchIn is ProposeBranch, the files written in tree, a worktree of
-// repo's HEAD, detached: the branch is built there, repo's checkout never
-// moved nor changed (#1405).
+// ProposeBranchIn commits the files written in tree, a worktree of repo's
+// HEAD, detached, on the role's branch for a task (workline/<role>/<key>),
+// and pushes it and opens its merge request as proposeBranch does; repo's
+// checkout never moved nor changed (#1405).
 func ProposeBranchIn(f forge.Forge, repo, tree, roleName, key, title, body string, draft bool, trailers string, written []string) (int, error) {
 	id, _, err := proposeBranch(f, repo, tree, roleName, key, title, body, draft, trailers, written, Proposal{}, "")
 	return id, err
 }
 
-// proposeBranch is ProposeBranchFrom, also returning the branch's tip once
-// committed. committed, when the branch's tip still, is a failed push's
+// proposeBranch commits the files written on the role's branch for a task
+// (workline/<role>/<key>), built as p says, force-pushes it — unless the
+// forge keeps its branches in the clone — opens its merge request or
+// updates the one open (a draft when draft is true), and puts the working
+// tree back; a branch a person committed to is never pushed over:
+// ErrLeftToAPerson. It returns the branch's tip once committed. committed, when the branch's tip still, is a failed push's
 // commits: pushed as they are, nothing committed again (#739). tree, when
 // not "", is a worktree of repo's HEAD, detached, holding the files
 // written: the branch is built there, repo's checkout never moved (#1372).
