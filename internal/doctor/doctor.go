@@ -281,6 +281,7 @@ func repository(r *Report, o Options) {
 	}
 	docs(r, o, cfg)
 	flatPrompts(r, o)
+	oldAuditorKinds(r, o)
 	languages(r, o)
 	languagePacks(r, o, cfg)
 	testFiles(r, o, cfg)

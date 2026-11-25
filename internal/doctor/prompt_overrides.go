@@ -3,6 +3,7 @@ package doctor
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/JN0V/workline/internal/role"
 )
@@ -34,5 +35,50 @@ func flatPrompts(r *Report, o Options) {
 					Fix:     "mv " + f.Old + " " + f.New})
 			}
 		}
+	}
+}
+
+// auditorKindRole is the role whose acts a kind of the auditor's questions
+// judges, as the weekly sample's kindOf draws them.
+var auditorKindRole = map[string]string{
+	"finding": "reviewer", "rewrite": "committer", "code": "developer",
+	"tests": "tester", "kept": "tester", "rewritten": "tester", "whys": "tester", "removal": "tester",
+	"ready": "product-owner", "refine": "product-owner", "sources": "product-owner", "ask": "product-owner",
+	"assume": "product-owner", "kind": "product-owner", "size": "product-owner", "split": "product-owner",
+	"order": "product-owner", "closing": "product-owner",
+}
+
+// oldAuditorKinds names each auditor question left under kinds/, which is no
+// longer read: it goes to criteria/<role>/.
+func oldAuditorKinds(r *Report, o Options) {
+	dir := filepath.Join(o.Repo, ".workline", "roles", "auditor", "kinds")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || filepath.Ext(name) != ".md" {
+			continue
+		}
+		old := filepath.Join(dir, name)
+		kind := strings.TrimSuffix(name, ".md")
+		owner, ok := auditorKindRole[kind]
+		if !ok {
+			r.add(Check{Area: "repository", Rule: "auditor-kind-moved", Where: old, Level: Error,
+				Message: "this auditor question is no longer read, and no role has a kind " + kind,
+				Fix:     "remove " + old})
+			continue
+		}
+		dest := filepath.Join(o.Repo, ".workline", "roles", "auditor", "criteria", owner, name)
+		if _, err := os.Stat(dest); err == nil {
+			r.add(Check{Area: "repository", Rule: "auditor-kind-moved", Where: old, Level: Error,
+				Message: "this auditor question is no longer read: its copy is already at " + dest,
+				Fix:     "remove " + old})
+			continue
+		}
+		r.add(Check{Area: "repository", Rule: "auditor-kind-moved", Where: old, Level: Error,
+			Message: "this auditor question is no longer read: the questions are under criteria/<role>/",
+			Fix:     "mv " + old + " " + dest})
 	}
 }
