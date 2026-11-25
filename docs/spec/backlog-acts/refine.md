@@ -228,9 +228,11 @@ what it can and asks for the rest:
   Given …`; a line naming it — `**Scenario: Name**`, `Scenario: Name`, a
   heading, a bold name alone — its steps below; the same in fenced
   code; a line or a bullet opening on Given with no name, named by the
-  first six words of its last Then, until a blank line or prose, never
-  asked of a person: two alike are told apart by their place, and a
-  Then edited renames its scenario. A Validation
+  first six words of its last Then step (opening a line or after a
+  comma, a semicolon or a stop; its Markdown marks dropped), until a
+  blank line or prose, never asked of a person: one alike another's
+  name is told apart by its place, and a Then edited renames its
+  scenario. A Validation
   with none of these — prose — is held in refine where the tester is routed
   (`scenarios-unread`): the Definition of Ready of Tests is named
   scenarios. It is said on the issue in the role's comment with the
