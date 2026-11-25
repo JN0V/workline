@@ -30,7 +30,7 @@ holds one commit per repository (`checked: {api: 3f2a91c}`).
 
 A doc describing no code — a decision record, a backlog, a changelog — says
 so with `sources: []`, and has no `checked`. An `archived: <date>` doc is
-left as is: not condensed, over budget or duplicate; its links are checked.
+left as is: not split, over budget or duplicate; its links are checked.
 
 **A doc is suspect** when a commit after `checked` touched one of its `sources`.
 Suspicion follows the chain: code → technical doc → product doc.

@@ -9,7 +9,7 @@ run: {role: documentalist, event: schedule, ai: "fake:condense-moves-a-long-sect
 expect:
   status: pass
   agent-calls: 1
-  calls: [{task: condense}]
+  calls: [{task: split}]
   applied: [patch]
   files:
     docs/more/session-length.md: {contains: "A session lasts as long as its token"}

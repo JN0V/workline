@@ -5,15 +5,15 @@ given:
   setup:
     - "git rm -q docs/faq.md && git commit -qm 'docs: drop the faq'"
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
-    - "git checkout -qb workline/documentalist/condense-docs-sessions-md && echo 'See also [signing out](cards/signing-out.md).' >> docs/sessions.md && git commit -qam 'docs: condense docs/sessions.md' && git push -q origin workline/documentalist/condense-docs-sessions-md && git checkout -q main"
+    - "git checkout -qb workline/documentalist/split-docs-sessions-md && echo 'See also [signing out](cards/signing-out.md).' >> docs/sessions.md && git commit -qam 'docs: split docs/sessions.md into linked pages' && git push -q origin workline/documentalist/split-docs-sessions-md && git checkout -q main"
   forge:
     merge-requests:
-      - {id: 4, branch: "workline/documentalist/condense-docs-sessions-md", base: main, labels: [], comments: []}
+      - {id: 4, branch: "workline/documentalist/split-docs-sessions-md", base: main, labels: [], comments: []}
 run: {role: documentalist, event: schedule, ai: none, open-merge-request: true, no-apply: true}
 expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: doc-too-long, where: docs/sessions.md, message: "workline/documentalist/condense-docs-sessions-md, waits for review"}
+    - {rule: doc-too-long, where: docs/sessions.md, message: "workline/documentalist/split-docs-sessions-md, waits for review"}
   run-files:
-    in/condense.yaml: {contains: "doc: AGENTS.md", not-contains: "doc: docs/sessions.md"}
+    in/split.yaml: {contains: "doc: AGENTS.md", not-contains: "doc: docs/sessions.md"}

@@ -162,19 +162,11 @@ func partsKey(docs []string, w waiting) string {
 	return key
 }
 
-func (c *condenseTask) key() string {
-	if c.Split {
-		return "split " + c.Doc
-	}
-	return "condense " + c.Doc
-}
+func (c *splitTask) key() string { return "split " + c.Doc }
 
-func (c *condenseTask) resolves(f verdict.Finding) bool {
+func (c *splitTask) resolves(f verdict.Finding) bool {
 	doc, _, _ := strings.Cut(f.Where, "#")
-	if c.Split {
-		return f.Rule == "card-too-long" && doc == c.Doc
-	}
-	return slices.Contains(condensable, f.Rule) && doc == c.Doc
+	return slices.Contains(splittable, f.Rule) && doc == c.Doc
 }
 
 func (d *dedupeTask) key() string { return "duplicates " + strings.Join(d.Docs, " ") }

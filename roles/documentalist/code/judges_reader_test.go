@@ -58,9 +58,9 @@ func TestCondenseNewPageWhereDocLives(t *testing.T) {
 		"+See [moved](a/moved.md).\n" +
 		"diff --git a/docs/dev/a/moved.md b/docs/dev/a/moved.md\nnew file mode 100644\n" +
 		"--- /dev/null\n+++ b/docs/dev/a/moved.md\n@@ -0,0 +1,3 @@\n+## Moved\n+\n+" + twentyWords + "\n"
-	c := &condenseTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
+	c := &splitTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
 	repo := readerRepo(t, map[string]string{"docs/dev/a.md": doc})
-	found, _, err := judgeCondense(repo, readerSettings(), c, patchOf(diff), nil)
+	found, _, err := judgeSplit(repo, readerSettings(), c, patchOf(diff), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,8 +81,8 @@ func TestCondenseLeavesUserPagesAlone(t *testing.T) {
 		"+See [moved](a/moved.md).\n" +
 		"diff --git a/docs/dev/a/moved.md b/docs/dev/a/moved.md\nnew file mode 100644\n" +
 		"--- /dev/null\n+++ b/docs/dev/a/moved.md\n@@ -0,0 +1,3 @@\n+## Moved\n+\n+Moved text here.\n"
-	c := &condenseTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
-	found, _, err := judgeCondense(repo, readerSettings(), c, patchOf(diff), nil)
+	c := &splitTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
+	found, _, err := judgeSplit(repo, readerSettings(), c, patchOf(diff), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

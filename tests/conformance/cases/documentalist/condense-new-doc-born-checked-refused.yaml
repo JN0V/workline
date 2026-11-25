@@ -1,5 +1,5 @@
 case: documentalist/condense-new-doc-born-checked-refused
-about: "A doc created by condensing or splitting is born without `checked`: the task gives none of the sources, so a new doc carrying one — even the commit the doc it came from names — is refused (`checked-unread`), as any `checked` the task did not earn (ADR-0014). Born without it, the doc is listed `unchecked`, for a person."
+about: "A page split off carries the doc's `checked` as it is, the lines moved being the lines it vouched for, and no other: a new page carrying another commit is refused (`checked-unread`), as any `checked` the task did not earn (ADR-0014)."
 given:
   repo: untidy
   setup:

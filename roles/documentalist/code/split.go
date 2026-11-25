@@ -2,6 +2,7 @@ package documentalist
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,74 +18,27 @@ import (
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
-// condensable are the budget problems condensing answers, strongest first.
-// A folder over budget needs another kind of move; a card too long is split
-// into cards, and one too short merged into another.
-var condensable = []string{"doc-too-long", "agent-file-too-long", "section-too-long"}
+// splittable are the budget problems a split answers, strongest first. A
+// folder over budget needs another kind of move; a card too short is merged
+// into another.
+var splittable = []string{"doc-too-long", "agent-file-too-long", "section-too-long", "card-too-long"}
 
-// condenseTask is what the judge needs to know about a condense run.
-type condenseTask struct {
-	Doc   string   `yaml:"doc"`
-	Keys  []string `yaml:"keys"`            // the budget problems the patch must resolve
-	Split bool     `yaml:"split,omitempty"` // a card split into cards, one concept each
+// splitTask is what the judge needs to know about a split run.
+type splitTask struct {
+	Doc  string   `yaml:"doc"`
+	Keys []string `yaml:"keys"` // the budget problems the patch must resolve
 }
 
-// pickSplit chooses the one card a gardening run splits: the first too long,
-// which covers more than one concept, whose merge request does not wait.
-func pickSplit(problems []Problem, waits func(key string, resolves func(verdict.Finding) bool) bool) *condenseTask {
-	for _, p := range problems {
-		if p.Rule == "card-too-long" {
-			c := &condenseTask{Doc: p.Where, Keys: []string{p.Key}, Split: true}
-			if !waits(c.key(), c.resolves) {
-				return c
-			}
-		}
-	}
-	return nil
-}
-
-// writeSplitTask writes the question for the agent: the card with its line
-// numbers, and why it is too long.
-func writeSplitTask(c *condenseTask, problems []Problem, t Tree) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "Kind: split\n\n%s is a card too long to hold one concept:\n\n", c.Doc)
-	for _, p := range problems {
-		if contains(c.Keys, p.Key) {
-			fmt.Fprintf(&b, "- %s %s: %s\n", p.Rule, p.Where, p.Message)
-		}
-	}
-	b.WriteString(`
-Split it into cards, one concept each: the card keeps its first concept, and
-each other concept moves, its lines as they are, into a new card beside it —
-a frontmatter with ` + "`type: card`" + ` (and the card's ` + "`sources`" + `, if it has any,
-never ` + "`checked`" + `: this task reads no source, so it vouches for none),
-a title naming that one concept — with a sentence and a link to it left in
-the card. Do not squeeze sentences, drop a rule written as MUST or SHOULD, or
-touch any other doc. One patch, a unified diff; a new card is created with
---- /dev/null and +++ b/<path>. A second model reads the cards afterwards and
-refuses a card that holds more than one concept.
-
-The card as it is now, with its line numbers:
-
-` + "```" + `
-`)
-	for i, l := range strings.Split(strings.TrimSuffix(t.Docs[c.Doc], "\n"), "\n") {
-		fmt.Fprintf(&b, "%4d | %s\n", i+1, l)
-	}
-	b.WriteString("```\n")
-	return b.String()
-}
-
-// condenseCandidates are the docs a gardening run may condense, the first
-// with the strongest budget problem first: the run takes the first whose
-// task fits. One doc a run keeps each change reviewable. A history doc is
-// never one: moving its parts away rewrites the record (WaterMeter's
-// CHANGELOG.md, chosen and refused two nights running, ADR-0014 step 4);
-// its budget is reported, for a person.
-func condenseCandidates(problems []Problem) []*condenseTask {
-	var out []*condenseTask
+// splitCandidates are the docs a gardening run may split, the first with the
+// strongest budget problem first: the run takes the first whose task fits.
+// One doc a run keeps each change reviewable. A history doc is never one:
+// moving its parts away rewrites the record (WaterMeter's CHANGELOG.md,
+// chosen and refused two nights running, ADR-0014 step 4); its budget is
+// reported, for a person.
+func splitCandidates(problems []Problem) []*splitTask {
+	var out []*splitTask
 	seen := map[string]bool{}
-	for _, rule := range condensable {
+	for _, rule := range splittable {
 		of := slices.DeleteFunc(slices.Clone(problems), func(p Problem) bool { return p.Rule != rule })
 		slices.SortStableFunc(of, func(a, b Problem) int { return b.Size - a.Size }) // the most over first
 		for _, p := range of {
@@ -93,14 +47,14 @@ func condenseCandidates(problems []Problem) []*condenseTask {
 				continue
 			}
 			seen[doc] = true
-			out = append(out, &condenseTask{Doc: doc, Keys: []string{p.Key}})
+			out = append(out, &splitTask{Doc: doc, Keys: []string{p.Key}})
 		}
 	}
 	return out
 }
 
 // tooLargeToRewrite says why a doc was not given to the agent whole, to be
-// condensed or split: its task would not fit the role's context budget
+// split or read: its task would not fit the role's context budget
 // (workline's docs/spec/backlog-acts.md, 58,000 characters, 2026-10-07).
 // The doc's budget problems stay, for a person, who moves whole parts of
 // it out by hand.
@@ -109,17 +63,35 @@ func tooLargeToRewrite(kind, doc string, chars, max int) verdict.Finding {
 		Message: fmt.Sprintf("not given to the agent to %s: its task would be %d characters, over the %d a task holds to fit the role's context budget; a person moves whole parts of it into docs of their own", kind, chars, max)}
 }
 
-// writeCondenseTask writes the question for the agent: the doc with its line
-// numbers, what is over budget, and the docs around it.
-func writeCondenseTask(c *condenseTask, problems []Problem, t Tree) string {
+// inbound lists, by doc, the lines of the other docs linking to a part of
+// doc: a part that moves takes these links with it.
+func inbound(t Tree, doc string) map[string][]string {
+	out := map[string][]string{}
+	for p, content := range t.Docs {
+		for _, l := range scan(content) {
+			for _, target := range linkTargets(codeSpan.ReplaceAllString(l.text, "")) {
+				if file, anchor := resolve(p, target); p != doc && !l.code && file == doc && anchor != "" && !scheme.MatchString(target) {
+					out[p] = append(out[p], fmt.Sprintf("%s:%d: %s", p, l.n, l.text))
+					break
+				}
+			}
+		}
+	}
+	return out
+}
+
+// writeSplitTask writes the question for the agent: the doc with its line
+// numbers, what is over budget, the docs around it, and the lines linking
+// to its parts.
+func writeSplitTask(c *splitTask, problems []Problem, t Tree) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Kind: condense\n\n%s is over its budget. Resolve this:\n\n", c.Doc)
+	fmt.Fprintf(&b, "Kind: split\n\n%s is over its budget. Resolve this:\n\n", c.Doc)
 	var others []string
 	for _, p := range problems {
 		switch w, _, _ := strings.Cut(p.Where, "#"); {
 		case contains(c.Keys, p.Key):
 			fmt.Fprintf(&b, "- %s %s: %s\n", p.Rule, p.Where, p.Message)
-		case w == c.Doc && contains(condensable, p.Rule):
+		case w == c.Doc && contains(splittable, p.Rule):
 			others = append(others, fmt.Sprintf("- %s %s: %s", p.Rule, p.Where, p.Message))
 		}
 	}
@@ -127,23 +99,31 @@ func writeCondenseTask(c *condenseTask, problems []Problem, t Tree) string {
 		b.WriteString("\nAlso over budget in this doc — do not make these worse:\n\n" + strings.Join(others, "\n") + "\n")
 	}
 	b.WriteString(`
-Bring it within budget by moving whole parts — a section, a list, a table —
-into a new doc, and leaving a sentence and a link in their place. Move the
-lines as they are: they are checked to be found, unchanged, in the new doc.
-Do not squeeze sentences, drop a rule written as MUST or SHOULD, or touch any
-other existing doc. A new doc has no ` + "`checked`" + `: nobody read it against its
-sources. One patch, a unified diff; a new doc is created with
---- /dev/null and +++ b/<path>.
+Split it into linked pages: move whole parts — a section, a list, a table —
+into new pages beside it, named after it (run.md, run-people.md), and leave a
+sentence and a link in their place. Move the lines as they are: they are
+checked to be found, unchanged but for where their links point, in the new
+pages. Do not squeeze sentences, or drop a rule written as MUST or SHOULD.
+Give each new page the doc's header: its ` + "`checked`" + ` as it is — the lines
+moved are the lines it vouched for — and those of its ` + "`sources`" + ` the page
+speaks of; none if the doc has none. One patch, a unified diff; a new page is
+created with --- /dev/null and +++ b/<path>.
 
-Where the new doc sits matters: a doc among the user pages answers to the
-reader rules (paragraphs and cells within their word budget, every decision,
-doc or issue it names linked, reachable from the docs), and the patch is
-refused for each problem it adds there. Put the new doc in a subfolder of the
-doc's own folder, where the doc lives, unless it is written for readers.
-
-The docs next to it, with their line counts:
-
+A new page among the user pages answers to the reader rules (paragraphs and
+cells within their word budget, every decision, doc or issue it names linked,
+reachable from the docs), and the patch is refused for each problem it adds.
 `)
+	if docType(t.Docs[c.Doc]) == "card" {
+		b.WriteString("\nThe doc is a card: it keeps its first concept, and each other concept moves into a new card, `type: card` in its header, one concept each. A second model reads the cards afterwards and refuses a card that holds more than one.\n")
+	}
+	in := inbound(t, c.Doc)
+	if len(in) > 0 {
+		b.WriteString("\nThese lines of other docs link to its parts. A link to a part you move points at its new page: change where it points, and nothing else in those docs:\n\n")
+		for _, p := range slices.Sorted(maps.Keys(in)) {
+			b.WriteString(strings.Join(in[p], "\n") + "\n")
+		}
+	}
+	b.WriteString("\nThe docs next to it, with their line counts:\n\n")
 	dir := path.Dir(c.Doc)
 	var near []string
 	for p, content := range t.Docs {
@@ -162,11 +142,13 @@ The docs next to it, with their line counts:
 
 var rule = regexp.MustCompile(`\b(MUST|SHOULD)\b`)
 
-// judgeCondense checks a condense patch: the doc and new docs only, quotes at
-// the lines cited, every removed line found unchanged in a new doc (headings
-// may change level), no MUST or SHOULD lost, each new doc linked from the
-// doc, the budget problems resolved, and no new problem anywhere.
-func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback []intent.Intention) ([]verdict.Finding, string, error) {
+// judgeSplit checks a split patch: the doc, new pages carrying its header,
+// and the docs linking to its parts on where those links point only; quotes
+// at the lines cited, every removed line found unchanged in a new page
+// (headings may change level, links where they point), no MUST or SHOULD
+// lost, each new page linked from the doc, the budget problems resolved,
+// and no new problem anywhere.
+func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []intent.Intention) ([]verdict.Finding, string, error) {
 	if !proposedPatch(intents, fallback) {
 		return nil, "", nil // no agent, or a note instead: the findings are reported as they are
 	}
@@ -187,6 +169,8 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 		files[f] = true
 	}
 	var created []string
+	linking := inbound(tree, c.Doc)
+	card := docType(tree.Docs[c.Doc]) == "card"
 	for _, in := range intents {
 		if in.Kind != "patch" || isFallback(in, fallback) {
 			continue
@@ -218,6 +202,16 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 					continue
 				}
 				after[f.path] = now
+			case linking[f.path] != nil:
+				now, bad, why := applyDoc(after[f.path], f, diff)
+				if bad == "" && !relinked(after[f.path], now) {
+					bad, why = "rewritten", "a doc linking to a part that moves changes where those links point, nothing else"
+				}
+				if bad != "" {
+					refuse(bad, f.path, why)
+					continue
+				}
+				after[f.path] = now
 			case isNew && strings.HasSuffix(f.path, ".md") && matchAny(s.Docs, f.path):
 				var lines []string
 				for _, h := range f.hunks {
@@ -228,16 +222,14 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 					}
 				}
 				after[f.path] = strings.Join(lines, "\n") + "\n"
-				// A doc born of moved text is vouched for by nobody: no source
-				// was read, so it starts without `checked` (ADR-0014).
-				if bornChecked(after[f.path]) {
-					refuse("checked-unread", f.path, "the new doc carries `checked`, but this task gives none of its sources: moving text vouches for nothing, so create it without `checked`; it is listed unchecked, for a person")
+				if bad, why := bornHeader(tree.Docs[c.Doc], after[f.path]); bad != "" {
+					refuse(bad, f.path, why)
 					continue
 				}
 				files[f.path] = true
 				created = append(created, f.path)
 			default:
-				refuse("patch-off-task", f.path, "condensing touches the doc and the new docs it creates, nothing else; new docs go under the docs folders, as .md")
+				refuse("patch-off-task", f.path, "a split touches the doc, the new pages it creates, and the links to its parts, nothing else; new pages go under the docs folders, as .md")
 			}
 		}
 	}
@@ -245,9 +237,9 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 		return refused, "", nil
 	}
 	if len(created) == 0 {
-		return []verdict.Finding{{Rule: "nothing-moved", Where: c.Doc, Message: "condensing moves parts into a new doc; none was created"}}, "", nil
+		return []verdict.Finding{{Rule: "nothing-moved", Where: c.Doc, Message: "a split moves parts into new pages; none was created"}}, "", nil
 	}
-	if c.Split {
+	if card {
 		for _, p := range created {
 			if docType(after[p]) != "card" {
 				refuse("not-a-card", p, "splitting a card makes cards: give "+p+" a frontmatter with `type: card`")
@@ -348,6 +340,7 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 		case contains(c.Keys, p.Key):
 			refuse("still-over-budget", p.Where, p.Rule+": "+p.Message)
 		case !was && movedWhole(p):
+		case p.Rule == "folder-too-long" || p.Rule == "links-not-checked": // the pages' headers and links, the links moved
 		case !was || p.Size > prev.Size:
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
@@ -356,7 +349,7 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 	for _, p := range readerIntroduced(tree, Tree{Docs: after, Files: files}, s.Reader) {
 		refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 	}
-	if len(refused) > 0 || !c.Split {
+	if len(refused) > 0 || !card {
 		return refused, "", nil
 	}
 	// What no check can tell: one concept a card. The judge reads them all.
@@ -401,15 +394,31 @@ func applyDoc(old string, f fileDiff, diff string) (now, rule, why string) {
 	return now, "", ""
 }
 
-// bornChecked says whether a new doc's header holds `checked`, whatever
-// else it holds: tracked or not, it would read as vouched for.
-func bornChecked(content string) bool {
-	meta, n := docmark.Header(content)
-	if n == 0 {
-		return false
+// bornHeader says what a new page's header lacks to carry the doc's, or
+// "": the doc's `checked`, as it is — the lines moved are the lines it
+// vouched for, and no other —, and `sources` among the doc's.
+func bornHeader(doc, page string) (rule, why string) {
+	var d, p docmark.Frontmatter
+	dm, _ := docmark.Header(doc)
+	pm, _ := docmark.Header(page)
+	if yaml.Unmarshal([]byte(pm), &p) != nil || checkedOf(page) != checkedOf(doc) {
+		return "checked-unread", fmt.Sprintf("the new page's `checked` must be the doc's, as it is (%q): the lines moved are the lines it vouched for, and no other", checkedOf(doc))
 	}
-	var fm docmark.Frontmatter
-	return yaml.Unmarshal([]byte(meta), &fm) != nil || !fm.Checked.IsZero()
+	_ = yaml.Unmarshal([]byte(dm), &d) // a broken header is reported by ParseDoc
+	for _, src := range p.Sources {
+		if !slices.Contains(d.Sources, src) {
+			return "sources-not-carried", "the new page names " + src + " in `sources`, which the doc does not: a page split off speaks of the doc's sources"
+		}
+	}
+	if len(d.Sources) > 0 && len(p.Sources) == 0 {
+		return "sources-not-carried", "the doc names its `sources`: give the new page those its lines speak of"
+	}
+	return "", ""
+}
+
+// relinked says whether a doc changed only where its links point.
+func relinked(old, now string) bool {
+	return slices.EqualFunc(strings.Split(old, "\n"), strings.Split(now, "\n"), func(a, b string) bool { return normal(a) == normal(b) })
 }
 
 // editedInPlace says whether a line left the doc only to come back changed a
@@ -447,9 +456,10 @@ func partText(content, where string) string {
 	return ""
 }
 
-// normal is a line as condensing may move it: trimmed, and a heading at any level.
+// normal is a line as a split may move it: trimmed, a heading at any level,
+// and its links pointing anywhere.
 func normal(l string) string {
-	return strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(l), "#"))
+	return inlineLink.ReplaceAllString(strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(l), "#")), "]()")
 }
 
 // linksFrom lists the files of the repository a doc links to.

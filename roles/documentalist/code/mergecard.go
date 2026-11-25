@@ -195,11 +195,13 @@ func judgeMergeCard(repo string, s Settings, m *mergeCardTask, intents, fallback
 			break
 		}
 	}
-	// The card it went into only gains; the docs linking to it change their links only.
-	for _, p := range append([]string{target}, m.Linking...) {
-		if after[p] == tree.Docs[p] {
-			continue
+	// The docs linking to it change their links only; the card it went into only gains.
+	for _, p := range m.Linking {
+		if !relinked(tree.Docs[p], after[p]) {
+			refuse("rewritten", p, "only the links to the card change in "+p)
 		}
+	}
+	if p := target; after[p] != tree.Docs[p] {
 		var gained []string
 		was := map[string]int{}
 		for _, l := range strings.Split(tree.Docs[p], "\n") {
@@ -225,11 +227,8 @@ func judgeMergeCard(repo string, s Settings, m *mergeCardTask, intents, fallback
 				kept[n]--
 				continue
 			}
-			if p != target && strings.Contains(l, path.Base(m.Card)) {
-				continue // a link to the card, pointed elsewhere
-			}
 			if !editedInPlace(n, gained) {
-				refuse("rewritten", p, fmt.Sprintf("%q left %s; only the card's text is added there, and links to it changed", strings.TrimSpace(l), p))
+				refuse("rewritten", p, fmt.Sprintf("%q left %s; only the card's text is added there", strings.TrimSpace(l), p))
 				break
 			}
 		}

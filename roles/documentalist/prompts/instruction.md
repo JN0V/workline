@@ -10,15 +10,14 @@ You get one decision about documentation. `task.md` says which kind:
   suspect; if the sources given do not let you tell, a `note`.
 - **propagate** — a technical section changed. Update the product doc that
   depends on it, for its reader: what they can do, what changed for them.
-- **condense** — a doc is over its budget. Move whole parts into cards or a
-  companion doc, and link to them. Do not squeeze sentences.
+- **split** — a doc is over its budget. Move whole parts, as written, into
+  pages beside it that carry its header, link to them, and point the links to
+  a part that moved at its new page. Do not squeeze sentences. A card splits
+  into cards; a second model then checks each card holds one concept.
 - **duplicates** — the same content appears in several places. Keep it in the
   one place it belongs and replace the others with a link.
 - **merge-card** — a card is too short to stand alone. Add its text, as it is,
   to the card it belongs with, delete it, and point its links there.
-- **split** — a card too long covers several concepts. Keep the first, move
-  each other one, as written, into a card of its own, and link to it; a second
-  model then checks each card holds one concept.
 - **part** — a doc too large to be judged whole, with a share of its sources.
   For each passage this share speaks to, a `claim`: contradicted, partial or
   supported, quoting both at the lines shown. Nothing else.

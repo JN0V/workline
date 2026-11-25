@@ -11,7 +11,7 @@ import (
 )
 
 // New page among user pages:
-// Given a condense patch whose new page sits among user pages and has a
+// Given a split patch whose new page sits among user pages and has a
 // paragraph over the budget,
 // When the judge checks it,
 // Then the patch is refused, naming `paragraph-too-long` and the page.
@@ -52,9 +52,9 @@ func TestNewPageAmongUserPages(t *testing.T) {
 			CellWords:      10,
 		},
 	}
-	c := &condenseTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
+	c := &splitTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
 	intents := []intent.Intention{{Kind: "patch", Value: diff}}
-	found, _, err := judgeCondense(repo, s, c, intents, nil)
+	found, _, err := judgeSplit(repo, s, c, intents, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
