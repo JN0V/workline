@@ -90,7 +90,7 @@ settings:
   flaky-runs: 10
   # The review rounds on its pull request that dispute a reviewer's
   # blocking finding; past them, its issue goes workline:blocked, the
-  # reason on it (ADR-0059; docs/review-loop.md). Other rounds run on.
+  # reason on it (docs/review-loop.md). Other rounds run on.
   review-rounds: 5
   # How far it goes alone before a person (ADR-0060, §3): cautious,
   # normal or enterprising; unset, the project's top-level `autonomy`,
