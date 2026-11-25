@@ -279,12 +279,16 @@ Docs to update with each step: [writing.md](../../roles/product-owner/docs/writi
   feature).
 - **Decided by** the maintainer: a product choice is never settled by
   timeout.
-- **A feature** never times out, at any level: its question and its
-  drafts wait for a person.
+- **A feature** never times out, today at every level: its question
+  and its drafts wait for a person; a role that owns product choices
+  may take them at `enterprising`, a later ADR's to open. A feature's
+  question asked in a run holds its `ready` in that run.
 - **Any issue whose text says a choice is undecided or open**: told
   that its question timed out, the product owner takes no assumption
-  on such a choice. Drafts are not taken as written while its question
-  waits with no answer nor assumption: the question decides first.
+  on such a choice, nor on a threshold it asked, and gives no `ready`.
+  Drafts are not taken as written while its question waits with no
+  answer nor assumption, by the line or an agent's `ready`, but one
+  the same run assumes: the question decides first.
 - **It waits in refine**, on its reporter: the line says so once on the
   issue, and wakes the role again only on a person's answer, edit or
   label.

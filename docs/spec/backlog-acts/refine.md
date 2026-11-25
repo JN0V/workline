@@ -327,12 +327,15 @@ assumption, written on the issue, and the issue goes on.
   under Assumptions saying the draft was taken as written; an agent's
   `ready` passes so too. At `cautious`, `ready` still needs a person;
   so does a draft whose issue's question waits with no answer nor
-  assumption: the question decides first.
+  assumption, but one the same run assumes: the question decides first
+  (`assumable`; a `ready` is decided after the run's asks and assumptions).
 - **A product choice waits for a person**
   ([amendment](../../adr/0060-the-person-is-on-the-loop.md#amendment-2026-11-25-a-product-choice-waits-for-a-person)):
-  a feature's delay is `never` at every level (`Delay.For`); on any
-  issue, the agent told its question timed out takes no assumption on
-  a choice the issue says is undecided or open. Woken for it once, the
+  a feature's delay is `never`, today at every level (`Delay.For`), and
+  its question asked in a run holds its `ready` in that run; on any
+  issue, the agent told its question timed out takes no assumption and
+  gives no `ready` on a choice the issue says is undecided or open, nor
+  on a threshold it asked. Woken for it once, the
   line wakes it again only on a person's word.
 - **A late answer**: a counted comment after the assumption
   (`assumed-at`) marks each line "Answered by @x on <day>: their answer
