@@ -45,7 +45,10 @@ func guardedSaid(repo, base string, s Settings, said map[string]string) {
 		kept := strings.HasPrefix(strings.ToLower(strings.TrimSpace(reason)), keptPrefix)
 		var names []string
 		for _, m := range codeNames.FindAllStringSubmatch(reason, -1) {
-			names = append(names, strings.TrimSpace(m[1]))
+			// in its own words, only a name that reads as a test's counts
+			if n := strings.TrimSpace(m[1]); kept || testLike(n, s) {
+				names = append(names, n)
+			}
 		}
 		if !kept && len(names) == 0 {
 			continue // in its own words, naming no test: nothing to check
