@@ -1186,9 +1186,9 @@ func recordLines(f forge.Forge, t forge.Target, role string) ([]string, error) {
 
 // asksAPerson tells whether the state holds a call: a question to the
 // reporter or assumptions taken, the only acts that post anew on a
-// person's issue. A proposal with no question is edited in place, silent
-// (ADR-0038, the product owner proposes on the issue and a person answers
-// there; amended for this rule).
+// person's issue. A proposal with no question is edited in place, silent:
+// the forge notifies on a new comment, not on an edit, so a person is
+// called only when the line needs them.
 func asksAPerson(st *State) bool {
 	if st.Assumed > 0 {
 		return true

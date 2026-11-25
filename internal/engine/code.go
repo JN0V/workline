@@ -418,9 +418,9 @@ func sayWait(f forge.Forge, w weighed, key, body string) error {
 
 // askYes says on the pull request that it waits for a person's yes. The
 // first time it is a new comment mentioning the issue's reporter, so the
-// forge notifies them; the wait said again is edited in place, silent
-// (ADR-0038, the product owner proposes on the issue and a person answers
-// there; amended: the yes awaited calls once).
+// forge notifies them; the wait said again is edited in place, silent:
+// the forge notifies on a new comment, not on an edit, so the yes awaited
+// calls the person once.
 func askYes(f forge.Forge, t forge.Target, issue int, body, marker string) error {
 	r, ok := f.(forge.Renewer)
 	if !ok {
