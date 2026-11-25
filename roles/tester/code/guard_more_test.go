@@ -47,7 +47,6 @@ func guardPost(t *testing.T, intents []intent.Intention, labels ...string) (code
 }
 
 var (
-	mulTest  = intent.Intention{Kind: "patch", Value: map[string]any{"file": "app/test_mul.sh", "content": ". ./lib.sh\n[ \"$(mul 2 3)\" = 6 ]\n"}}
 	addGuard = intent.Intention{Kind: "patch", Value: map[string]any{"file": "app/test_add.sh", "content": ". ./lib.sh\n[ \"$(add 2 3)\" = 5 ]\n"}}
 	kept     = intent.Intention{Kind: "covers", Value: map[string]any{"scenario": "Addition kept", "tests": []any{"app.test_add"}, "reason": "kept as today"}}
 )
