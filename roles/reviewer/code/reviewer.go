@@ -122,44 +122,48 @@ type Quote struct {
 // state is what pre found on its first pass, for the passes after the
 // lenses and the judge answered.
 type state struct {
-	Head          string              `json:"head"`
-	From          string              `json:"from"`             // where the commits not reviewed yet start
-	Before        string              `json:"before,omitempty"` // where the diff a lens reads starts, when not From: From with the base merged in (#134)
-	Base          string              `json:"base"`
-	Change        Change              `json:"change"` // the whole range's
-	Mechanical    []verdict.Finding   `json:"mechanical"`
-	Commits       []string            `json:"commits"`
-	Patches       []string            `json:"patches,omitempty"` // the patch ids of the commits' changes, recorded with them (#286)
-	Lenses        []string            `json:"lenses"`
-	Together      bool                `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
-	Parts         int                 `json:"parts,omitempty"`    // the parts the change is read in, too large for one call (#446); 0: whole
-	Alone         bool                `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
-	Record        Record              `json:"record"`
-	Every         bool                `json:"every,omitempty"` // every lens asked on the whole change, the run on ready (#129, #359)
-	Advisories    []verdict.Finding   `json:"advisories,omitempty"`
-	Issues        []ClosedIssue       `json:"issues,omitempty"`         // the issues the change says it closes, as read (#126)
-	Testimony     string              `json:"testimony,omitempty"`      // what the author says of it, as the lenses were given it
-	Beyond        string              `json:"beyond,omitempty"`         // the files the author lists beyond the issue's Scope, and why, for the intent lens (ADR-0065)
-	Unproven      string              `json:"unproven,omitempty"`       // the scenarios the tester said no test proves, as the developer's pull request lists them, for the tests lens once
-	UnprovenGiven bool                `json:"unproven-given,omitempty"` // the tests lens was given them this run: recorded, never again
-	Skipped       []string            `json:"skipped,omitempty"`        // lenses not asked, each with why
-	Hints         []Hint              `json:"hints,omitempty"`          // the comments the story guess flags, for the lens judging them (ADR-0065, Rule A)
-	Spec          *Spec               `json:"spec,omitempty"`           // the spec reviewed, when the subject is a spec (#128)
-	Part          string              `json:"part,omitempty"`           // one spec of several a run reads: what its parts' names start with (#433)
-	Specs         []state             `json:"specs,omitempty"`          // on the forge: the specs the run reads, each reviewed as if alone (#433)
-	Stops         []intent.Intention  `json:"stops,omitempty"`          // on the forge: the comments putting to a person the specs whose rounds are spent (#128)
-	Stopped       []string            `json:"stopped,omitempty"`        // what the run's summary says of each of those
-	Waits         []string            `json:"waits,omitempty"`          // on the forge: the specs left for the next run, past specs-per-run (#433)
-	Standing      []Block             `json:"standing,omitempty"`       // the last review's findings that block, still standing (#326)
-	Read          string              `json:"read,omitempty"`           // the record as read: the apply merges the comment it finds with it (#375)
-	Warn          string              `json:"warn,omitempty"`           // apart: the verdict's run, the lenses that block; only: the run apart, those that warn (ADR-0050)
-	Upto          string              `json:"upto,omitempty"`           // the newest commit the lenses read, past commits-per-push new commits: the rest left (ADR-0050, step 6); "": the head
-	Fresh         int                 `json:"fresh,omitempty"`          // with Upto: the new commits of the push
-	Left          []string            `json:"left,omitempty"`           // with Upto: the new commits left for the next run, oldest first
-	Line          []string            `json:"line,omitempty"`           // the line's own files the change touches: no commit skipped nor left (ADR-0051, cut 5)
-	Weigh         []weigh             `json:"weigh,omitempty"`          // the tester's answers that no test is needed a judge weighs this run (#1303)
-	Held          string              `json:"held,omitempty"`           // with Weigh and nothing new to read: the summary of the review held
-	Answers       []reviewmark.Answer `json:"answers,omitempty"`        // the tester's answers that no test is needed, on the merge request (#1303)
+	Head       string              `json:"head"`
+	From       string              `json:"from"`             // where the commits not reviewed yet start
+	Before     string              `json:"before,omitempty"` // where the diff a lens reads starts, when not From: From with the base merged in (#134)
+	Base       string              `json:"base"`
+	Change     Change              `json:"change"` // the whole range's
+	Mechanical []verdict.Finding   `json:"mechanical"`
+	Commits    []string            `json:"commits"`
+	Patches    []string            `json:"patches,omitempty"` // the patch ids of the commits' changes, recorded with them (#286)
+	Lenses     []string            `json:"lenses"`
+	Together   bool                `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
+	Parts      int                 `json:"parts,omitempty"`    // the parts the change is read in, too large for one call (#446); 0: whole
+	Alone      bool                `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
+	Record     Record              `json:"record"`
+	Every      bool                `json:"every,omitempty"` // every lens asked on the whole change, the run on ready (#129, #359)
+	Advisories []verdict.Finding   `json:"advisories,omitempty"`
+	Issues     []ClosedIssue       `json:"issues,omitempty"`    // the issues the change says it closes, as read (#126)
+	Testimony  string              `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
+	Beyond     string              `json:"beyond,omitempty"`    // the files the author lists beyond the issue's Scope, and why, for the intent lens (ADR-0065)
+	Skipped    []string            `json:"skipped,omitempty"`   // lenses not asked, each with why
+	Hints      []Hint              `json:"hints,omitempty"`     // the comments the story guess flags, for the lens judging them (ADR-0065, Rule A)
+	Spec       *Spec               `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
+	Part       string              `json:"part,omitempty"`      // one spec of several a run reads: what its parts' names start with (#433)
+	Specs      []state             `json:"specs,omitempty"`     // on the forge: the specs the run reads, each reviewed as if alone (#433)
+	Stops      []intent.Intention  `json:"stops,omitempty"`     // on the forge: the comments putting to a person the specs whose rounds are spent (#128)
+	Stopped    []string            `json:"stopped,omitempty"`   // what the run's summary says of each of those
+	Waits      []string            `json:"waits,omitempty"`     // on the forge: the specs left for the next run, past specs-per-run (#433)
+	Standing   []Block             `json:"standing,omitempty"`  // the last review's findings that block, still standing (#326)
+	Read       string              `json:"read,omitempty"`      // the record as read: the apply merges the comment it finds with it (#375)
+	Warn       string              `json:"warn,omitempty"`      // apart: the verdict's run, the lenses that block; only: the run apart, those that warn (ADR-0050)
+	Upto       string              `json:"upto,omitempty"`      // the newest commit the lenses read, past commits-per-push new commits: the rest left (ADR-0050, step 6); "": the head
+	Fresh      int                 `json:"fresh,omitempty"`     // with Upto: the new commits of the push
+	Left       []string            `json:"left,omitempty"`      // with Upto: the new commits left for the next run, oldest first
+	Line       []string            `json:"line,omitempty"`      // the line's own files the change touches: no commit skipped nor left (ADR-0051, cut 5)
+	Weigh      []weigh             `json:"weigh,omitempty"`     // the tester's answers that no test is needed a judge weighs this run (#1303)
+	Held       string              `json:"held,omitempty"`      // with Weigh and nothing new to read: the summary of the review held
+	Answers    []reviewmark.Answer `json:"answers,omitempty"`   // the tester's answers that no test is needed, on the merge request (#1303)
+
+	// Unproven: the scenarios the tester said no test proves, as the
+	// developer's pull request lists them, for the tests lens once;
+	// UnprovenGiven: given this run, recorded so never again.
+	Unproven      string `json:"unproven,omitempty"`
+	UnprovenGiven bool   `json:"unproven-given,omitempty"`
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
