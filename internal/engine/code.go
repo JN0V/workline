@@ -167,7 +167,7 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 	}
 	if d.Kind == devmark.KindTask && o.Merge != MergeEnterprising {
 		// A task merges alone only on its proof of no behaviour changed
-		// (ADR-0073): else it waits, as any task does.
+		// (behaviourChanged): else it waits, as any task does.
 		why, err := behaviourChanged(o, w, d)
 		if err != nil {
 			return nil, err
@@ -218,14 +218,14 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 }
 
 // taskAlone says whether a task may merge with no person's yes: at
-// `normal`, `merge.alone` listing `task` (ADR-0073); its proof is weighed
+// `normal`, `merge.alone` listing `task` (docs/adr/0073-a-task-that-changes-no-behaviour-may-merge-alone.md); its proof is weighed
 // after the review (behaviourChanged).
 func taskAlone(o FollowOptions, n *normal, d devmark.Merge) bool {
 	return d.Kind == devmark.KindTask && o.Merge == MergeNormal && !n.asked(devmark.KindTask)
 }
 
 // behaviourChanged says why a task does not show it keeps the behaviour,
-// "" when it does (ADR-0073): it changes no test that was there, so the
+// "" when it does: it changes no test that was there, so the
 // tests passing are the ones that passed before; and the judge the
 // reviewer asked said on the head the reviewer read that it changes no
 // public interface, toolchain, build platform, nor chosen limit or value.

@@ -60,7 +60,7 @@ type Merge struct {
 	// by commit and patch id, for a head rebased since (#1254).
 	Summary string
 	// Kept is the head on which the judge said a task keeps the
-	// behaviour, as that summary says it; "" when none did (ADR-0073).
+	// behaviour, as that summary says it; "" when none did.
 	Kept string
 }
 
@@ -83,9 +83,9 @@ func (m Merge) Unreviewed(head string) string {
 
 // WaitsForAYes says its kind waits for a person's yes: a feature or a
 // task, at `enterprising` a yes on its milestone's release candidate.
-// Only a fix merges alone (ADR-0060, #937); a task too where the project
-// lets it, once it shows no behaviour changed (ADR-0073, the engine's
-// code.go).
+// Only a fix merges alone (ADR-0060, #937).
+// A task merges alone too where the project lets it, once it shows no
+// behaviour changed (the engine's code.go).
 func (m Merge) WaitsForAYes() bool {
 	return m.Kind == KindFeature || m.Kind == KindTask
 }

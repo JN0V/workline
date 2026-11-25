@@ -1,6 +1,6 @@
 package reviewer
 
-// A task that keeps the behaviour (ADR-0073): where the project lets a
+// A task that keeps the behaviour (docs/adr/0073-a-task-that-changes-no-behaviour-may-merge-alone.md): where the project lets a
 // task merge alone (`merge: {autonomy: normal, alone: [task]}`), the
 // reviewer asks the judge, once a run its lenses read, whether the whole
 // change keeps the behaviour: no public interface, toolchain, build

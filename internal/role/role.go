@@ -345,7 +345,7 @@ var MergeLevels = []string{"cautious", "normal", "enterprising"}
 // person's yes at `normal` until the project lets them merge with none
 // (`merge: {alone: [...]}`, ADR-0042 amended): `reader`, an agent's
 // rewording of pages for their reader; `task`, the developer's task that
-// changes no behaviour (ADR-0073).
+// changes no behaviour (docs/adr/0073-a-task-that-changes-no-behaviour-may-merge-alone.md).
 var MergeAlone = []string{"reader", "task"}
 
 // LoadProjectConfig reads <repo>/.workline/config.yaml. A missing file is an

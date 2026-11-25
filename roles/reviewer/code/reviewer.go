@@ -159,7 +159,7 @@ type state struct {
 	Weigh      []weigh             `json:"weigh,omitempty"`     // the tester's answers that no test is needed a judge weighs this run (#1303)
 	Held       string              `json:"held,omitempty"`      // with Weigh and nothing new to read: the summary of the review held
 	Answers    []reviewmark.Answer `json:"answers,omitempty"`   // the tester's answers that no test is needed, on the merge request (#1303)
-	Kept       bool                `json:"kept,omitempty"`      // the judge asked whether a task keeps the behaviour (ADR-0073, kept.go)
+	Kept       bool                `json:"kept,omitempty"`      // the judge asked whether a task keeps the behaviour (kept.go)
 	KeptNot    string              `json:"kept-not,omitempty"`  // why it was not asked, where it would have been
 
 	// Unproven: the scenarios the tester said no test proves, as the
@@ -207,7 +207,7 @@ type Review struct {
 	Reused    int               `json:"reused,omitempty"`   // findings judged before on the same patch, their verdicts kept (ADR-0050, step 6)
 	Resolved  []string          `json:"resolved,omitempty"` // the conversations on lines of a review before the code answers now, by thread id (#1039)
 	Weighed   []string          `json:"weighed,omitempty"`  // what the run's judges said of the tester's answers that no test is needed (#1303)
-	Kept      string            `json:"kept,omitempty"`     // what the judge said of a task's behaviour (ADR-0073)
+	Kept      string            `json:"kept,omitempty"`     // what the judge said of a task's behaviour (kept.go)
 	KeptAt    string            `json:"kept-at,omitempty"`  // the head it said yes on
 }
 
