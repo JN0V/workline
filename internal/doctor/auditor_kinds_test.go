@@ -73,3 +73,17 @@ func TestDoctorSaysToRemoveTheOldAuditorQuestionWhenItsCopyIsThere(t *testing.T)
 		t.Errorf("doctor does not say to remove the old file:\n%s", text)
 	}
 }
+
+// Old question named, for a kind no role has: Given a project with
+// .workline/roles/auditor/kinds/foo.md, a kind no role has, When a person
+// runs `workline doctor`, Then it names that file and suggests no
+// criteria/ path to move it to.
+func TestDoctorNamesAnAuditorQuestionOfAKindNoRoleHasWithNoNewPath(t *testing.T) {
+	text := auditorKindsDoctor(t, ".workline/roles/auditor/kinds/foo.md")
+	if !strings.Contains(text, ".workline/roles/auditor/kinds/foo.md") {
+		t.Errorf("doctor does not name the old file:\n%s", text)
+	}
+	if strings.Contains(text, "criteria/") {
+		t.Errorf("doctor suggests a criteria/ path for a kind no role has:\n%s", text)
+	}
+}
