@@ -1,0 +1,7 @@
+# The simplicity lens, whose findings show as nits, says important and
+# quotes code the file does not hold.
+- finding:
+    severity: important
+    title: the count is built twice
+    why: it divides by the count
+    cause: {path: calc/calc.go, quote: "return total / count"}

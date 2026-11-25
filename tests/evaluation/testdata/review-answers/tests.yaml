@@ -1,4 +1,5 @@
-# The tests lens: a nit nothing planted, and a quote not found again.
+# The tests lens: a nit nothing planted, and a quote not found again, in
+# a file the change does not touch: dropped, not judged.
 - finding:
     severity: nit
     title: No test for a coupon that does not read
@@ -8,4 +9,4 @@
     severity: important
     title: A quote that is nowhere
     why: dropped.
-    cause: {path: shop/checkout.go, quote: "return nil, err"}
+    cause: {path: shop/nowhere.go, quote: "return nil, err"}

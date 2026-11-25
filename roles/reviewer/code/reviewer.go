@@ -111,6 +111,7 @@ type Finding struct {
 	Also     []Finding `json:"also,omitempty"` // other findings on the same line, grouped under this one, each judged by its own lens
 	Verified string    `json:"verified,omitempty"`
 	Level    string    `json:"independence,omitempty"`
+	Unfound  string    `json:"unfound,omitempty"` // an important one whose quote is not found again: why; judged on its file, not dropped
 }
 
 // Quote is a place a finding quotes.
@@ -1466,10 +1467,17 @@ func lensFindings(repo string, s Settings, st state, ls []string, answers []inte
 		if l.Severity == "nit" && f.Severity == "important" {
 			f.Severity = "nit"
 		}
+		if why == "" && f.Side == onUnfound && f.Severity != "important" { // kept for a judge only an important one gets
+			why = f.Unfound
+		}
 		if why != "" {
 			c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-unfounded", Level: "warn",
 				Message: fmt.Sprintf("dropped, from the %s lens: %q — %s", lens, f.Title, why)})
 			continue
+		}
+		if f.Unfound != "" {
+			c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-misquoted", Level: "warn",
+				Message: fmt.Sprintf("kept for its judge, from the %s lens: %q — %s", lens, f.Title, f.Unfound)})
 		}
 		// A decision is a question for a person, never a defect: not
 		// grouped with the findings, nor judged (#126). One a place: a
@@ -1624,6 +1632,10 @@ const (
 	// onClaim: at the head, the change's by a claim of its author's it
 	// does not hold, wherever its cause lies (#1415).
 	onClaim = "claim"
+	// onUnfound: an important finding whose cause is not found again in a
+	// file the change touches: judged on that file, never dropped on a
+	// misquote alone; it stands until its lens reads the change again.
+	onUnfound = "unfound"
 )
 
 // found reads one finding a lens answered, and finds its quotes again: its
@@ -1751,7 +1763,15 @@ func found(repo string, st state, lens string, cites bool, v any, on string) (Fi
 		f.Line = norm(strings.Split(text, "\n")[places[0].From-1])
 	}
 	if f.Where == "" {
-		return f, fmt.Sprintf("its cause is not found in %s, as it reads at %s nor among the lines the change removed", f.Cause.Path, short(st.Head))
+		why := fmt.Sprintf("its cause is not found in %s, as it reads at %s nor among the lines the change removed", f.Cause.Path, short(st.Head))
+		// An important one on a file the change touches goes to its judge,
+		// shown the file: a quote a lens got wrong is no proof the defect
+		// is not there.
+		if f.Severity != "important" || !ok || !st.Change.touches(f.Cause.Path) || on != "" { // a block looked for again: not found, answered
+			return f, why
+		}
+		f.Where, f.Related, f.Side, f.Unfound, f.Symptom = f.Cause.Path, true, onUnfound, why, nil
+		return f, ""
 	}
 	// A question is the change's to raise, or nobody's: never an issue.
 	if f.Decision != "" && !f.Related {
@@ -1764,7 +1784,11 @@ func found(repo string, st state, lens string, cites bool, v any, on string) (Fi
 		}
 		text, ok := fileAt(repo, st.Head, f.Symptom.Path)
 		if !ok || len(locate(strings.Split(text, "\n"), f.Symptom.Quote)) == 0 {
-			return f, fmt.Sprintf("its symptom is not found in %s as it reads", f.Symptom.Path)
+			why := fmt.Sprintf("its symptom is not found in %s as it reads", f.Symptom.Path)
+			if f.Severity != "important" {
+				return f, why
+			}
+			f.Symptom, f.Unfound = nil, why+": left out, the finding judged on its cause" // its cause stands
 		}
 	}
 	return f, ""
@@ -1775,13 +1799,20 @@ func found(repo string, st state, lens string, cites bool, v any, on string) (Fi
 func material(repo string, st state, s Settings, f Finding) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## The finding\n\n%s: %s\n\nWhy: %s\n", f.Severity, f.Title, f.Why)
+	claim := func() {
+		if f.Claim != "" {
+			fmt.Fprintf(&b, "\nThe author's claim it contradicts, quoted from what they said:\n\n> %s\n", strings.ReplaceAll(f.Claim, "\n", "\n> "))
+		}
+	}
+	if f.Side == onUnfound {
+		claim()
+		return misquoted(repo, st, s, f, &b)
+	}
 	_, line, _ := strings.Cut(f.Where, ":")
 	at := 1
 	fmt.Sscan(line, &at)
 	fmt.Fprintf(&b, "\nIts cause, quoted:\n\n```\n%s\n```\n", strings.TrimSpace(f.Cause.Quote))
-	if f.Claim != "" {
-		fmt.Fprintf(&b, "\nThe author's claim it contradicts, quoted from what they said:\n\n> %s\n", strings.ReplaceAll(f.Claim, "\n", "\n> "))
-	}
+	claim()
 	// A cause quoted from an issue: the issue, and the change it is
 	// compared with: the whole range, base..head, commits reviewed before
 	// included, so a part one of them did is not missing; up to code-lines-max.
@@ -2961,4 +2992,30 @@ func readJSON(path string, v any) error {
 func fail(err error) int {
 	fmt.Fprintln(os.Stderr, "reviewer:", err)
 	return 99
+}
+
+// misquoted is what the judge reads of an important finding whose cause
+// is not found again: its quote, said not found, the file at the head,
+// and what the change did to it. A no quotes the lines that refute it.
+func misquoted(repo string, st state, s Settings, f Finding, b *strings.Builder) string {
+	fmt.Fprintf(b, "\nIts cause, as the lens quoted it, is not found again in %s at the head: the quote may be wrong, the defect still there. Judge the finding on the file and the change below, not on the quote:\n\n```\n%s\n```\n", f.Cause.Path, strings.TrimSpace(f.Cause.Quote))
+	if text, ok := fileAt(repo, st.Head, f.Cause.Path); ok {
+		lines := strings.Split(strings.TrimSuffix(text, "\n"), "\n")
+		to := len(lines)
+		if s.JudgeLinesMax > 0 {
+			to = min(to, s.JudgeLinesMax)
+		}
+		fmt.Fprintf(b, "\n### %s, lines %d to %d: the file at the head\n\n```\n", f.Cause.Path, 1, to)
+		for n := 1; n <= to; n++ {
+			fmt.Fprintf(b, "%d  %s\n", n, lines[n-1])
+		}
+		b.WriteString("```\n")
+		if to < len(lines) {
+			fmt.Fprintf(b, "\n(%d lines more, past judge-lines-max, not shown.)\n", len(lines)-to)
+		}
+	}
+	if diff, err := git(repo, append([]string{"diff", "-U3", "--no-color", "--no-ext-diff", "--find-renames", st.Base, st.Head, "--"}, pathspec([]File{st.Change.file(f.Cause.Path)})...)...); err == nil && diff != "" {
+		fmt.Fprintf(b, "\n## What the change did to %s\n\n```diff\n%s```\n", f.Cause.Path, capLines(diff, 200, "the change is cut here, past 200 lines"))
+	}
+	return b.String()
 }

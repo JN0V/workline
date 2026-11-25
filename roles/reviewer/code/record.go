@@ -241,18 +241,18 @@ func (r Record) owing(asked, failed []string) []string {
 // on a line the change removes that holds its quote too; one found on a
 // removed line while the change still removes it. A cause no longer found
 // is a commit's answer; one whose file moved is found on its new path, and
-// kept there (#358). One quoted from an issue stands until its lens reads
-// the issue again. A block recorded before its side was is looked for on
-// both, as it was then.
+// kept there (#358). One quoted from an issue, or misquoted and judged
+// on its file (onUnfound), stands until its lens reads again. A block
+// recorded before its side was is looked for on both, as it was then.
 func standing(repo string, s Settings, st state, blocks []Block) []Block {
 	var out []Block
 	for _, b := range blocks {
 		if !s.AIFindings.Blocks(b.Lens) {
 			continue
 		}
-		if !strings.HasPrefix(b.Cause.Path, "#") {
+		if !strings.HasPrefix(b.Cause.Path, "#") && b.Side != onUnfound {
 			f, why := found(repo, st, b.Lens, false, map[string]any{"severity": "important", "title": b.Lens, "cause": b.Cause}, b.Side)
-			if why != "" || !f.Related {
+			if why != "" || !f.Related || f.Side == onUnfound { // not found again: answered
 				continue
 			}
 			b.Where, b.Cause.Path = f.Where, f.Cause.Path
