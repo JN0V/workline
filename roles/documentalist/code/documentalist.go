@@ -2092,6 +2092,19 @@ func Post(runDir, repo string) int {
 		}
 		return 1
 	}
+	// A doc judged in parts whose fix changed nothing of what they found is
+	// not recorded as judged: what they found is said for a person (#2197).
+	open, err := openInParts(runDir, inParts, judged, judgedFix)
+	if err != nil {
+		return fail(err)
+	}
+	if len(open) > 0 {
+		intents = unstamped(intents, fallback, inParts, open)
+		sayOpenInIssue(intents, open)
+		if err := writeIntents(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
+			return fail(err)
+		}
+	}
 	// On a person's merge request, a doc whose patch only records when it
 	// was judged gets no commit: its record goes to the documentalist's
 	// comment (ADR-0013, amended 2026-10-17).
@@ -2125,7 +2138,7 @@ func Post(runDir, repo string) int {
 			if n := judgedFix.placesSaid(f.Where); n != "" {
 				f.Message = strings.Replace(f.Message, partsFixAsked, "what they found wrong is fixed in this run, in "+n, 1)
 			} else {
-				f.Message = strings.Replace(f.Message, partsFixAsked, "but the fix changed nothing of what they found wrong: a person reads those places", 1)
+				f.Message = notStampedSaid(f.Message, open[f.Where])
 			}
 		}
 		if v, ok := patched[f.Where]; ok && !v && (f.Rule == "suspect" || f.Rule == "stale") {
@@ -2166,6 +2179,9 @@ func Post(runDir, repo string) int {
 	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
 		outcome := outcomes(judged, inParts, vouchedInParts, patched, partly, judgedFix, readOf)
+		for p, found := range open {
+			outcome[p] = "judged in parts; " + partsNotStamped + foundList(found, "  ")
+		}
 		if readerOutcome != nil {
 			outcome = readerOutcome
 		}
@@ -2864,6 +2880,9 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 		if len([]rune(title)) > forge.TitleMax {
 			title = fmt.Sprintf("docs: bring %d docs in line with the code", len(in))
 		}
+		if !byAgent { // nothing fixed: only what records when the parts judged (#2197)
+			title = recordsTitle(in, outcome)
+		}
 	case "condense", "split":
 		var c condenseTask
 		if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil && yaml.Unmarshal(data, &c) == nil {
@@ -2957,6 +2976,9 @@ func forAPerson(f verdict.Finding) bool {
 	return false
 }
 
+// personIssueTitle is the title of the issue personIssue keeps.
+const personIssueTitle = "Docs waiting for a person"
+
 // personIssue keeps, when gardening with a forge, one issue listing the
 // docs only a person can clear, each with why and what to do: what the
 // machine cannot do is said where the person looks, not left in a job's
@@ -2979,7 +3001,7 @@ func personIssue(findings []verdict.Finding, repo string) (intent.Intention, boo
 		why[doc] = strings.Trim(lines[len(lines)-1], "()")
 	}
 	sort.Strings(docs)
-	value := map[string]any{"title": "Docs waiting for a person", "sticky": true}
+	value := map[string]any{"title": personIssueTitle, "sticky": true}
 	if len(docs) == 0 {
 		value["body"], value["update-only"] = "No doc waits for a person: the documentalist judged every one it could.", true
 		return intent.Intention{Kind: "issue", Value: value}, true
