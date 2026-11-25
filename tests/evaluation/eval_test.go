@@ -21,6 +21,7 @@ package evaluation
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -177,7 +178,19 @@ func TestEvaluation(t *testing.T) { evaluate(t, "cases/*/*.yaml") }
 
 // TestReplay plays the replay set: real misses on real repositories, a
 // role's set at a time (replay/README.md).
-func TestReplay(t *testing.T) { evaluate(t, "replay/*/*.yaml") }
+func TestReplay(t *testing.T) {
+	onDemand(t)
+	evaluate(t, "replay/*/*.yaml")
+}
+
+// onDemand skips a measure unless -run names it: a pattern given to
+// -skip cannot leave out a whole top-level test and a subtest of another,
+// so the weekly run could not keep it out.
+func onDemand(t *testing.T) {
+	if f := flag.Lookup("test.run"); f == nil || !strings.Contains(f.Value.String(), t.Name()) {
+		t.Skip("run only when -run names it: " + t.Name())
+	}
+}
 
 func evaluate(t *testing.T, pattern string) {
 	if os.Getenv("WORKLINE_EVAL") == "" {
@@ -443,7 +456,7 @@ func cloneAt(work string, env []string, c *caseFile) error {
 	mirror := filepath.Join(cache, "workline", "eval-mirrors", strings.ReplaceAll(cl.Repo, "/", "_")+".git")
 	mirrors.Lock()
 	if _, statErr := os.Stat(mirror); statErr != nil {
-		err = sh(work, env, "git clone -q --mirror https://github.com/"+cl.Repo+".git "+mirror)
+		err = sh(work, env, "git clone -q --mirror 'https://github.com/"+cl.Repo+".git' '"+mirror+"'")
 	} else if sh(mirror, env, "git cat-file -e "+cl.Head+"^{commit}") != nil {
 		err = sh(mirror, env, "git fetch -q --prune origin")
 	}
@@ -455,7 +468,7 @@ func cloneAt(work string, env []string, c *caseFile) error {
 	if base == "" {
 		base = cl.Head
 	}
-	return sh(work, env, "git clone -q --shared --no-checkout "+mirror+" repo && cd repo && git checkout -q -B main "+base+" && git checkout -q -B change "+cl.Head)
+	return sh(work, env, "git clone -q --shared --no-checkout '"+mirror+"' repo && cd repo && git checkout -q -B main "+base+" && git checkout -q -B change "+cl.Head)
 }
 
 // withSetting is a project config with a role's setting set, unless the
