@@ -21,10 +21,17 @@ judge:
     changed beyond the issue's Scope, listed by the author or not, whose
     change the issue's Need does not need. The Scope is a hint: a file
     beyond it that the Need needs, or that the author's reason ties to it
-    truly, is no finding. The change shown is the whole merge request,
-    its commits reviewed before included, and its last commits that are
-    workline's own when shown apart: answer no if any of it does it,
-    if the issue does not ask it, or if the finding only guesses.
+    truly, is no finding. A finding that the change removes, renames,
+    or changes so that a use that worked breaks, a public name (one
+    code outside the project or its users reach: a function, type or
+    field exported by a library others import, a command or flag, a
+    setting key, a file or wire format) is true when the change shown
+    does so and the issue neither asks it nor has a Need that needs it.
+    For a cause quoted from the issue, the change shown is the whole
+    merge request, its commits reviewed before included, and its last
+    commits that are workline's own when shown apart: answer no if any
+    of it does it, or if the issue does not ask what the finding says
+    lacks. Answer no too if the finding only guesses.
   reads: issue
 ---
 **Intent.** The change says it closes the issue under "What the change
@@ -37,6 +44,19 @@ ask more than the issue does; what commits reviewed before may have done
 is not missing. How much the change builds for what the issue asks — a
 type, an option, a layer more than it needs — is the simplicity lens's,
 not yours: you judge whether it does what is asked, not its size.
+
+**A public name.** Does the change remove, rename, or change so that a
+use that worked breaks, a name code outside the project, or its users,
+can reach — a function, type or field exported by a library others
+import, a command or flag, a setting key, a file or wire format — and is
+it announced? A name only this project calls is not one. One the issue
+neither asks nor needs is an Important finding, its cause the line
+removed or changed, quoted. One the issue asks or needs but nothing
+marks as breaking the way the project does (a `!` or a `BREAKING
+CHANGE` footer in a conventional commit or in the merge request's title,
+which a squash merge commits; its changelog) is a `finding` holding
+`decision` — whether to mark it — naming what was read; a project with
+no such mark is announced by the issue alone.
 
 **Each scenario.** Answer every scenario of the issue's Validation (its
 Given / When / Then), one by one, its name as the issue writes it:
