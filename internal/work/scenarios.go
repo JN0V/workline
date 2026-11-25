@@ -27,9 +27,10 @@ var (
 	step = regexp.MustCompile(`(?i)^(?:given|when|then|and|but)\b`)
 	// apart opens a Gherkin block that is no scenario: its steps are none's.
 	apart = regexp.MustCompile(`(?i)^(?:feature|background|rule)\s*:`)
-	// given opens a scenario written with no name; then, its outcome.
-	given = regexp.MustCompile(`(?i)^given\b`)
-	then  = regexp.MustCompile(`(?i)\bthen\s+`)
+	// given opens a scenario written with no name; then, its Then step.
+	given  = regexp.MustCompile(`(?i)^given\b`)
+	then   = regexp.MustCompile(`(?i)(?:^|[,;.:]\s*)then\s+`)
+	unmark = strings.NewReplacer("`", "", "*", "", "_", "", "|", "") // marks a derived name drops
 )
 
 // Scenarios reads the named scenarios of a Validation section, in the forms
@@ -143,10 +144,10 @@ func Scenarios(validation string) []Scenario {
 	for _, r := range out {
 		if r.unnamed {
 			if outcome := then.Split(r.Text, -1); len(outcome) > 1 { // no Then: prose, no scenario
-				words := strings.Fields(outcome[len(outcome)-1])
-				r.Name = strings.Trim(strings.Join(words[:min(6, len(words))], " "), " .,;:`*_")
+				words := strings.Fields(unmark.Replace(outcome[len(outcome)-1]))
+				r.Name = strings.Trim(strings.Join(words[:min(6, len(words))], " "), " .,;:")
 			}
-			if slices.ContainsFunc(scenarios, func(s Scenario) bool { return s.Name == r.Name }) {
+			if slices.ContainsFunc(out, func(o read) bool { return o.Name == r.Name && !o.unnamed }) || slices.ContainsFunc(scenarios, func(s Scenario) bool { return s.Name == r.Name }) {
 				r.Name += " (" + strconv.Itoa(len(scenarios)+1) + ")" // two Thens alike: told apart by place
 			}
 		}
