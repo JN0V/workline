@@ -134,6 +134,10 @@ hold:
   same text in the pull request's `## Left out`; a second note, or one
   elsewhere, refused ([the bounds](bounds.md#what-else-it-refuses)).
   Case `developer/note-on-its-own-issue`.
+- **Left for a person, on top**: a file refused as only a person's to
+  change is named first in its pull request
+  ([its body](pull-request.md#its-body)). Case
+  `developer/left-for-a-person-said-on-top`; tried in its pull request.
 - **The triggers** (step 5): the `issue` line on an issue labelled
   ready, the `schedule` line on the first ready issue nobody took; the
   GitHub workflow and the GitLab jobs; a line with no pull request to
