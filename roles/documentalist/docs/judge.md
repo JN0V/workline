@@ -56,7 +56,7 @@ A patch is refused, and the agent asked again with the reasons, when it:
   [comments](judge-claims.md#a-comment-is-not-evidence));
 - brings a budget, link or duplicate problem the tree did not have, or
   makes one worse — but a size already over budget may grow by what a fix
-  allows, and stays reported, for condensing: truth before size.
+  allows, and stays reported, for a split: truth before size.
 
 Places marked *withheld*, here and in [hunks](judge-hunks.md), are not
 refused with the whole answer: the rest of the fix is applied without

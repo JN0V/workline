@@ -803,7 +803,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 	}
 	for _, p := range Hygiene(Tree{Docs: after, Files: tree.Files}, s.Budgets, s.Duplicates) {
 		// A budget already exceeded may grow by what a fix allows: it stays
-		// reported, for condensing. Any other problem, or a new one, refuses.
+		// reported, for a split. Any other problem, or a new one, refuses.
 		if old, ok := before[p.Key]; !ok || p.Size > old.Size && !budgetRule[p.Rule] {
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
