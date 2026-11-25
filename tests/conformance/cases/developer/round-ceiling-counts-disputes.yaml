@@ -1,10 +1,10 @@
 case: developer/round-ceiling-counts-disputes
 about: >
   Five rounds went on red checks, a tester's rewrite and findings that
-  only warn, none on a blocking finding: no dispute yet. The ceiling
-  that hands a pull request to a person counts disputes alone; a loop
-  of the same failure is the round's stop's to end. A new verdict that
-  blocks arrives: its round runs, the agent called once.
+  only warn, none on a blocking finding: no dispute yet. The cap of
+  review-rounds (5) counts disputes; rounds of any kind stop at twice
+  that. A new verdict that blocks arrives: its round runs, the agent
+  called once.
 given:
   repo: tested-draft
   setup:
