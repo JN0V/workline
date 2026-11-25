@@ -679,7 +679,7 @@ func releasePushers(st forge.MergeState, yes, app string) string {
 		if later(p.At, yes) && st.Pushers[i] != app {
 			who := "a hand the forge does not name"
 			if st.Pushers[i] != "" {
-				who = "@" + st.Pushers[i]
+				who = "" + st.Pushers[i]
 			}
 			return "it was pushed by " + who + ", not the release tool's App"
 		}
@@ -1065,7 +1065,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		if ignored != nil {
 			label = ignored.Label
 			if ignored.Author != "" {
-				who = "@" + ignored.Author
+				who = "" + ignored.Author
 			}
 		}
 		if routine {
@@ -1078,11 +1078,11 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	if whole == nil && wholeIgnored != nil {
 		who := "a hand the forge does not name"
 		if wholeIgnored.Author != "" {
-			who = "@" + wholeIgnored.Author
+			who = "" + wholeIgnored.Author
 		}
-		say("label-ignored", "warn", fmt.Sprintf("labelled `%s` by %s, who may not push nor merge here: no reading, only %s's yes counts", wholeIgnored.Label, who, "@"+yes.Author))
+		say("label-ignored", "warn", fmt.Sprintf("labelled `%s` by %s, who may not push nor merge here: no reading, only %s's yes counts", wholeIgnored.Label, who, yes.Author))
 	}
-	by := "@" + yes.Author
+	by := "" + yes.Author
 	if st.Draft {
 		// The veto by Draft: auto-merge on goes off, and stays off once
 		// it is ready until the label is put again.
@@ -1127,13 +1127,13 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		if err := f.Label(t, nil, labels); err != nil {
 			return nil, err
 		}
-		body := fmt.Sprintf("**workline took `%s` off**: %s after @%s put it, on %s. A yes covers the head it was given on. `%s`, put by @%s since, covers the head as it is now (%s).",
+		body := fmt.Sprintf("**workline took `%s` off**: %s after %s put it, on %s. A yes covers the head it was given on. `%s`, put by %s since, covers the head as it is now (%s).",
 			old.Label, pushed, old.Author, old.Created, fresh.Label, fresh.Author, short(tip))
 		if err := f.Comment(t, body, forge.Marker("merge-reset="+tip+"/"+old.Label)); err != nil {
 			return nil, err
 		}
-		say("accepted-reset", "warn", fmt.Sprintf("%s after @%s put `%s`: that label taken off, said in a comment; `%s`, put since, covers its head", pushed, old.Author, old.Label, fresh.Label))
-		yes, by = fresh, "@"+fresh.Author
+		say("accepted-reset", "warn", fmt.Sprintf("%s after %s put `%s`: that label taken off, said in a comment; `%s`, put since, covers its head", pushed, old.Author, old.Label, fresh.Label))
+		yes, by = fresh, fresh.Author
 	} else if len(stale) > 0 {
 		if err := takeBack(pushed + " after the yes: put the label again"); err != nil {
 			return nil, err
@@ -1227,7 +1227,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		if notRead && whole != nil {
 			// A person read it whole: their reading takes the review the
 			// reviewer could not make whole, never a check (#1107).
-			read := fmt.Sprintf("read whole by @%s (%s)", whole.Author, notWhole)
+			read := fmt.Sprintf("read whole by %s (%s)", whole.Author, notWhole)
 			say("review-read-whole", "warn", fmt.Sprintf("its review is not whole, the change too large for the reviewer's parts or its tokens; `%s`: %s, whose reading stands for the reviewer's", whole.Label, read))
 			return armed(f, m, mr, tip, st, e, say, by, read)
 		}

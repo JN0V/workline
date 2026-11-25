@@ -335,7 +335,7 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 		if p != n.app {
 			who := "a hand the forge does not name"
 			if p != "" {
-				who = "@" + p
+				who = "" + p
 			}
 			return waits("", fmt.Sprintf("opened by workline, but %s pushed to its branch", who))
 		}
