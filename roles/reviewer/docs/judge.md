@@ -119,9 +119,11 @@ else whether the quoted code fails:
 - **A no quotes** the lines that refute the finding. Found again at the
   head, in what the judge was shown or read, the finding is dropped, the
   place said. Otherwise it is shown not verified (`judge-no-unquoted`).
-  A finding that something lacks (a check, a test, a cause traced) is
-  refuted only by the lines that do it: its own cause refutes nothing,
-  and a judge that read none answers yes or unsure, never no.
+  A finding that something lacks (a check, a test, an explanation of
+  why) is refuted by lines that do it, or show it is not needed or not
+  asked; the line it names refutes it only if that line does it. A
+  judge that found none answers yes when it looked where it would be,
+  else unsure, never no.
 - **Unsure**: shown not verified, never dropped, never blocking
   (`judge-unsure`). So is a judge still asking to read past its caps, or
   one whose reads `ai-max-tokens` stopped.
