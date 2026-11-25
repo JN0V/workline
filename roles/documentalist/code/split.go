@@ -330,12 +330,34 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 		gone[key]--
 		return true
 	}
+	// A split may grow its folder by the lines linking to a new page,
+	// headings, blank lines and headers, never by prose written anew; and
+	// the doc and its pages hold no more links to other sites than the doc.
+	pages := append([]string{c.Doc}, created...)
+	prose := func(docs map[string]string, in []string) (n int) {
+		for _, f := range in {
+			for _, l := range scan(docs[f]) {
+				if strings.TrimSpace(l.text) != "" && l.heading == 0 && !slices.ContainsFunc(created, func(p string) bool { return linksFrom(f, l.text)[p] }) {
+					n++
+				}
+			}
+		}
+		return n
+	}
+	external := 0
+	for _, p := range found {
+		if p.Rule == "links-not-checked" && contains(pages, p.Where) {
+			external += p.Size
+		}
+	}
+	grew := prose(after, pages) > prose(tree.Docs, pages[:1])
 	for _, p := range found {
 		switch prev, was := old[p.Key]; {
 		case contains(c.Keys, p.Key):
 			refuse("still-over-budget", p.Where, p.Rule+": "+p.Message)
 		case !was && movedWhole(p):
-		case p.Rule == "folder-too-long" || p.Rule == "links-not-checked": // the pages' headers and links, the links moved
+		case p.Rule == "folder-too-long" && p.Where == path.Dir(c.Doc) && !grew:
+		case p.Rule == "links-not-checked" && contains(pages, p.Where) && external <= old["links-not-checked "+c.Doc].Size:
 		case !was || p.Size > prev.Size:
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}

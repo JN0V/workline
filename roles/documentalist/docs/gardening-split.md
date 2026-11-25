@@ -81,9 +81,10 @@ The judge refuses a split patch when:
   a new page, its text word for word, is the same problem moved, not a
   new one; so does a reader problem a new page among the user pages
   brings (`patch-introduces`, [reader checks](checks-docs.md#docs-for-their-reader)),
-  or a link left pointing at a part that moved (`dead-link`); a folder
-  grown by the new pages' headers and links, or links to other sites
-  moved with their lines, are not new problems.
+  or a link left pointing at a part that moved (`dead-link`);
+- a folder over its budget may grow by headers, headings, blank lines
+  and the lines linking to a new page, never by prose written anew;
+  links to other sites may move with their lines, never be added.
 
 A split or dedupe hunk quoting a doc wrong is placed as for a
 suspect doc ([hunks](judge-hunks.md#hunks-that-misquote-the-doc)); one

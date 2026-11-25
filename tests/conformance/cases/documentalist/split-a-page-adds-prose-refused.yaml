@@ -1,0 +1,17 @@
+case: documentalist/split-a-page-adds-prose-refused
+about: "A split may grow its folder only by the lines linking to a new page, headings, blank lines and headers, and its links to other sites only by those moved: a new page gaining a line of prose written anew, with a link to another site, is refused on both counts, and the doc stays as it was."
+given:
+  repo: untidy
+  # as split-a-page-and-its-links, the docs folder over its budget already
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && sed -i \"s|^they had not saved.*|& See [the spec](https://example.com/token).|\" docs/sessions.md && git commit -qam 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && sed -i 's/folder-lines: 30/folder-lines: 24/' .workline/config.yaml && git add .workline docs/sessions.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:split-a-page-adds-prose"}
+expect:
+  status: pass   # refused, said as a warning, not failed: on schedule
+  applied: []
+  findings:
+    - {rule: patch-introduces, where: docs, message: folder-too-long}
+    - {rule: patch-introduces, where: docs/sessions-length.md, message: links-not-checked}
+  files:
+    docs/sessions.md: {contains: "A session lasts"}
