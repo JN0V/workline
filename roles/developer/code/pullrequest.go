@@ -48,7 +48,7 @@ type Subjects struct{ Tests, Code, Title, DraftTitle, Note string }
 
 // shippedTaskNote is what a task typed fix says to a person (#2198).
 const shippedTaskNote = "- Typed `fix`: a task that changes shipped code, so that release tools list it and bump its package. " +
-	"If it removes or renames a public name, a person marks it a breaking change before the release."
+	"If it removes or renames a public name, a person marks it a breaking change: `fix!:` in its title, before the merge."
 
 // squashRoom is what a squash adds to the title it lands, GitHub's
 // " (#N)" for a number of five digits (ADR-0051), as forge.TitleMax.

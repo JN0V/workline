@@ -81,7 +81,8 @@ flowchart LR
     changes ([#2198](https://github.com/JN0V/workline/issues/2198)):
     - `fix` when it changes shipped code, so that release tools list it
       and bump its package; its body asks a person to mark a breaking
-      change when it removes or renames a public name;
+      change when it removes or renames a public name (`fix!:` in its
+      title, before the merge);
     - `chore` when it changes only docs, CI, tests or a tool's dotfile;
     - the merge policy reads the issue's kind, never this type;
   - scope: the folder every path of the issue's Scope sits in, none
