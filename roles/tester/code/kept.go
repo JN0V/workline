@@ -19,8 +19,8 @@ const unguarded = "kept as today: no existing test was found that checks it, so 
 // codeNames are the names a reason writes as code, `like_this`.
 var codeNames = regexp.MustCompile("`([^`\n]+)`")
 
-// guardedSaid holds each reason of a scenario kept as today to the
-// existing test it names (#1359): kept when one name it writes as code is
+// guardedSaid holds each reason of a scenario kept as today, or naming a
+// test as code in its own words (#2165), to the existing test it names (#1359): kept when one name it writes as code is
 // a test file of the base, or a name one of them holds, its file's name
 // included; else said plainly that nothing guards it, a name not found
 // quoted. A person reads a guard only where a test is there.
@@ -42,28 +42,46 @@ func guardedSaid(repo, base string, s Settings, said map[string]string) {
 		return files
 	}
 	for sc, reason := range said {
-		if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(reason)), keptPrefix) {
-			continue
-		}
+		kept := strings.HasPrefix(strings.ToLower(strings.TrimSpace(reason)), keptPrefix)
 		var names []string
 		for _, m := range codeNames.FindAllStringSubmatch(reason, -1) {
-			names = append(names, strings.TrimSpace(m[1]))
+			// in its own words, only a name that reads as a test's counts
+			if n := strings.TrimSpace(m[1]); kept || testLike(n, s) {
+				names = append(names, n)
+			}
 		}
-		found := false
+		if !kept && len(names) == 0 {
+			continue // in its own words, naming no test: nothing to check
+		}
+		found := ""
 		for _, n := range names {
 			if guardIn(repo, base, n, tests()) {
-				found = true
+				found = n
 				break
 			}
 		}
 		switch {
-		case found:
+		case found != "":
+			if !kept { // a test of the base named: read as kept as today (#2165)
+				said[sc] = keptPrefix + ": guarded by `" + found + "`"
+			}
 		case len(names) > 0:
 			said[sc] = unguarded + " (`" + strings.Join(names, "`, `") + "` named, in no test file of the base)"
 		default:
 			said[sc] = unguarded
 		}
 	}
+}
+
+// testNamed reads a test's name: a segment starting or ending in test(s),
+// (`Test` followed by a capital or digit, case-sensitive, so `testing` and
+// `testdata` are not) as `TestAdd`, `test_add`, `add_test.go`, `tests.test_add`.
+var testNamed = regexp.MustCompile(`(?i:(^|[._:#/\-])tests?([._:#/\-]|$))|(^|[._:#/\-])Tests?[A-Z0-9]|(?i:(^|[._:#/\-])[A-Za-z0-9]*(_|\.)(tests?|spec)(\.|$))`)
+
+// testLike says whether a name written as code names a test, not any
+// identifier: a test file of the base's kind, or a Test-style name.
+func testLike(name string, s Settings) bool {
+	return s.Tests().Test(name) || testNamed.MatchString(name)
 }
 
 // guardIn says whether name is a test of the base: one of its test files
