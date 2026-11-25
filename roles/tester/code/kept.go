@@ -19,8 +19,8 @@ const unguarded = "kept as today: no existing test was found that checks it, so 
 // codeNames are the names a reason writes as code, `like_this`.
 var codeNames = regexp.MustCompile("`([^`\n]+)`")
 
-// guardedSaid holds each reason of a scenario kept as today to the
-// existing test it names (#1359): kept when one name it writes as code is
+// guardedSaid holds each reason of a scenario kept as today, or naming a
+// test as code in its own words (#2165), to the existing test it names (#1359): kept when one name it writes as code is
 // a test file of the base, or a name one of them holds, its file's name
 // included; else said plainly that nothing guards it, a name not found
 // quoted. A person reads a guard only where a test is there.
@@ -42,22 +42,26 @@ func guardedSaid(repo, base string, s Settings, said map[string]string) {
 		return files
 	}
 	for sc, reason := range said {
-		if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(reason)), keptPrefix) {
-			continue
-		}
+		kept := strings.HasPrefix(strings.ToLower(strings.TrimSpace(reason)), keptPrefix)
 		var names []string
 		for _, m := range codeNames.FindAllStringSubmatch(reason, -1) {
 			names = append(names, strings.TrimSpace(m[1]))
 		}
-		found := false
+		if !kept && len(names) == 0 {
+			continue // in its own words, naming no test: nothing to check
+		}
+		found := ""
 		for _, n := range names {
 			if guardIn(repo, base, n, tests()) {
-				found = true
+				found = n
 				break
 			}
 		}
 		switch {
-		case found:
+		case found != "":
+			if !kept { // a test of the base named: read as kept as today (#2165)
+				said[sc] = keptPrefix + ": guarded by `" + found + "`"
+			}
 		case len(names) > 0:
 			said[sc] = unguarded + " (`" + strings.Join(names, "`, `") + "` named, in no test file of the base)"
 		default:
