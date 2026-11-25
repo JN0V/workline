@@ -206,7 +206,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 	// The gates read at its branch's head, checked out; a head git
 	// cannot read fails the round below.
 	head, _ := gitOut(repo, "rev-parse", "HEAD")
-	r, newReview, err := readAsked(f, b, kept, repo, a, id, head)
+	r, newReview, err := readAsked(f, kept, repo, a, mr, head)
 	if errors.Is(err, errOwnAccount) {
 		return fail(err)
 	}
@@ -303,7 +303,7 @@ func reviewPre(runDir, repo string, s Settings, id int) int {
 		}
 		return writeIntents(runDir, "fallback.yaml", toTesterOnly(r, bounds, repo))
 	}
-	if rounds(a) >= s.Rounds {
+	if disputes(a) >= s.Rounds {
 		r.Person = true
 		if err := writeIn(runDir, roundFile, r); err != nil {
 			return fail(err)
@@ -415,13 +415,13 @@ func issueRewritten(f forge.Forge, a devmark.Act) (string, error) {
 	return "", nil
 }
 
-// readAsked reads what a round on merge request id asks, no agent: the
+// readAsked reads what a round on merge request mr asks, no agent: the
 // reviewer's findings when it reviewed since the last round, the gates'
 // new findings when they reported on head since it (head "": not
 // known), a person's comments not heard yet. fresh: the reviewer or the
 // gates said something new.
-func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a devmark.Act, id int, head string) (r round, fresh bool, err error) {
-	r = round{MR: id, Record: a}
+func readAsked(f forge.Forge, kept forge.Kept, repo string, a devmark.Act, mr forge.MergeRequest, head string) (r round, fresh bool, err error) {
+	r = round{MR: mr.ID, Record: a}
 	back, err := backFromAsk(f, a)
 	if err != nil {
 		return r, false, err
@@ -490,7 +490,7 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a d
 		r.Asked = waited(a, r.Asked)
 	}
 	if th, ok := f.(forge.Threaded); ok && len(r.Asked) > 0 {
-		threads, err := th.Threads(id)
+		threads, err := th.Threads(mr.ID)
 		if err != nil {
 			return r, false, err
 		}
@@ -509,19 +509,20 @@ func readAsked(f forge.Forge, b forge.Backlog, kept forge.Kept, repo string, a d
 		return r, false, err
 	}
 	r.Asked = append(r.Asked, rewrites...)
-	target := forge.Target{Kind: "merge-request", ID: id}
-	notes, err := b.Notes(target)
+	notes, err := f.(forge.Backlog).Notes(forge.Target{Kind: "merge-request", ID: mr.ID})
 	if err != nil && !errors.Is(err, forge.ErrAuthorsUnknown) {
 		return r, false, err
 	}
-	_, err = forge.OwnAccount(f)
-	if err != nil {
+	if _, err = forge.OwnAccount(f); err != nil {
 		return r, false, fmt.Errorf("%w: %w", errOwnAccount, err)
+	}
+	if slices.ContainsFunc(mr.Labels, func(l string) bool { return slices.Contains(forge.AcceptedLabels, l) }) {
+		notes = nil // a person's yes on it: its conversation asks nothing, a label's trace; a line's comment still does
 	}
 	// The comments of the review threads count as notes: a person's
 	// reply there is asked as one in the main conversation.
 	if th, ok := f.(forge.Threaded); ok {
-		threads, err := th.Threads(id)
+		threads, err := th.Threads(mr.ID)
 		if err != nil {
 			return r, false, err
 		}
@@ -560,8 +561,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 	if devmark.BranchIssue(mr.Branch) == 0 {
 		return false, nil
 	}
-	b, ok := f.(forge.Backlog)
-	if !ok {
+	if _, ok := f.(forge.Backlog); !ok {
 		return false, nil
 	}
 	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: mr.ID})
@@ -585,7 +585,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 		return true, nil // its merge refused for a conflict: a merge round (ADR-0067)
 	}
 	head, _ := gitOut(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/"+mr.Branch)
-	r, _, err := readAsked(f, b, kept, repo, a, mr.ID, head)
+	r, _, err := readAsked(f, kept, repo, a, mr, head)
 	if err == nil && len(r.Asked) == 0 && r.ChecksUnread != "" {
 		err = fmt.Errorf("its project's checks: %s", r.ChecksUnread)
 	}
@@ -1262,12 +1262,6 @@ func disputes(a devmark.Act) int {
 		}
 	}
 	return n
-}
-
-// rounds counts every round the pull request had, of any kind: the
-// ceiling that hands it to a person (#1687).
-func rounds(a devmark.Act) int {
-	return max(a.Round, len(a.Rounds), disputes(a))
 }
 
 // stall is a round's stop (#1769): the failure it came twice, at a head

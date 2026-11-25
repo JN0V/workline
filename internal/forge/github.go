@@ -757,11 +757,16 @@ func (g *github) MergeRequest(id int) (MergeRequest, error) {
 				Name string `json:"full_name"`
 			} `json:"repo"`
 		} `json:"base"`
+		Labels []struct{ Name string } `json:"labels"`
 	}
 	if err := decode(out, &pr); err != nil {
 		return MergeRequest{}, fmt.Errorf("pull request %d: %w", id, err)
 	}
-	return MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body, Draft: pr.Draft}, nil
+	mr := MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body, Draft: pr.Draft}
+	for _, l := range pr.Labels {
+		mr.Labels = append(mr.Labels, l.Name)
+	}
+	return mr, nil
 }
 
 // MarkReady marks a draft pull request ready for review, GitHub's

@@ -16,7 +16,7 @@ import (
 // request 1 with its record, which has heard the ids in heard, and one
 // review thread: the reviewer's comment, workline's own account, and
 // the replies under it.
-func threadForge(t *testing.T, heard []string, replies []forge.FakeComment) (*forge.Fake, forge.Backlog) {
+func threadForge(t *testing.T, heard []string, replies []forge.FakeComment) *forge.Fake {
 	t.Helper()
 	for _, v := range []string{"CI", "GITHUB_ACTIONS", "GITLAB_CI", "WORKLINE_APP_ID"} {
 		t.Setenv(v, "")
@@ -43,12 +43,7 @@ func threadForge(t *testing.T, heard []string, replies []forge.FakeComment) (*fo
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	f := &forge.Fake{Path: path}
-	b, ok := forge.Forge(f).(forge.Backlog)
-	if !ok {
-		t.Fatal("the simulated forge lists no comments")
-	}
-	return f, b
+	return &forge.Fake{Path: path}
 }
 
 // askedPeople are the keys of what a round asks of a person.
@@ -67,7 +62,7 @@ func askedPeople(r round) []string {
 // developer's next round lists that reply among what it is asked, and
 // acts on it.
 func TestReadAskedListsAThreadReply(t *testing.T) {
-	f, b := threadForge(t, nil, []forge.FakeComment{
+	f := threadForge(t, nil, []forge.FakeComment{
 		{Body: "Please also handle the empty list.", Author: "dana", Insider: true, ID: "502"},
 	})
 	target := forge.Target{Kind: "merge-request", ID: 2}
@@ -75,7 +70,7 @@ func TestReadAskedListsAThreadReply(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, _, err := readAsked(f, b, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, 2, "")
+	r, _, err := readAsked(f, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, forge.MergeRequest{ID: 2}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,14 +95,14 @@ func TestReadAskedListsAThreadReply(t *testing.T) {
 // Read once: Given a reply the developer already acted on, When the next
 // round runs, Then that reply is not asked again.
 func TestReadAskedHearsAThreadReplyOnce(t *testing.T) {
-	f, b := threadForge(t, nil, []forge.FakeComment{
+	f := threadForge(t, nil, []forge.FakeComment{
 		{Body: "Please also handle the empty list.", Author: "dana", Insider: true, ID: "502"},
 	})
 	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: 2})
 	if err != nil {
 		t.Fatal(err)
 	}
-	first, _, err := readAsked(f, b, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, 2, "")
+	first, _, err := readAsked(f, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, forge.MergeRequest{ID: 2}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +111,7 @@ func TestReadAskedHearsAThreadReplyOnce(t *testing.T) {
 	}
 	// The round kept what it heard in its record, as its post does.
 	next := devmark.Act{Act: "code", Issue: 1, Heard: first.Heard}
-	second, _, err := readAsked(f, b, kept, t.TempDir(), next, 2, "")
+	second, _, err := readAsked(f, kept, t.TempDir(), next, forge.MergeRequest{ID: 2}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,12 +129,12 @@ func TestRoundDueNotFromTheAppsOwnThreadReply(t *testing.T) {
 		{Body: "Thanks, but keep the old name.", Author: "dana", Insider: true, ID: "505"},
 	}
 	// Of the three replies, a person's alone is asked.
-	f, b := threadForge(t, nil, replies)
+	f := threadForge(t, nil, replies)
 	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: 2})
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, _, err := readAsked(f, b, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, 2, "")
+	r, _, err := readAsked(f, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, forge.MergeRequest{ID: 2}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +142,7 @@ func TestRoundDueNotFromTheAppsOwnThreadReply(t *testing.T) {
 		t.Errorf("asked %v, heard %v: want only the person's reply, 505", keys, r.Heard)
 	}
 	// The person's reply acted on: what is left is the App's and the bot's.
-	f, _ = threadForge(t, []string{"505"}, replies)
+	f = threadForge(t, []string{"505"}, replies)
 	mr, err := f.MergeRequest(2)
 	if err != nil {
 		t.Fatal(err)
@@ -155,5 +150,41 @@ func TestRoundDueNotFromTheAppsOwnThreadReply(t *testing.T) {
 	due, err := RoundDue(f, t.TempDir(), mr)
 	if err != nil || due {
 		t.Errorf("RoundDue = %v, %v; want no round due from the App's reply or a bot's", due, err)
+	}
+}
+
+// A person's yes: Given the pull request a person accepted, When a
+// person writes on its conversation and replies on a line, Then the
+// round asks the line's reply alone.
+func TestReadAskedSkipsTheConversationOfAnAcceptedPullRequest(t *testing.T) {
+	f := threadForge(t, nil, []forge.FakeComment{{Body: "Keep the old name.", Author: "dana", Insider: true, ID: "502"}})
+	var state forge.FakeState
+	data, err := os.ReadFile(f.Path)
+	if err == nil {
+		err = json.Unmarshal(data, &state)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	trace := forge.FakeComment{Body: "Label put again in the owner's name.", Author: "alice", Insider: true, ID: "601"}
+	state.MergeRequests[0].Comments = append(state.MergeRequests[0].Comments, trace)
+	if data, err = json.Marshal(state); err != nil || os.WriteFile(f.Path, data, 0o644) != nil {
+		t.Fatal(err)
+	}
+	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		labels []string
+		want   int
+	}{{nil, 2}, {[]string{"workline:accepted"}, 1}} {
+		r, _, err := readAsked(f, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, forge.MergeRequest{ID: 2, Labels: c.labels}, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if keys := askedPeople(r); len(keys) != c.want || !slices.Contains(keys, "person|502") {
+			t.Errorf("labels %v: asked %v, want %d with the line's reply, 502", c.labels, keys, c.want)
+		}
 	}
 }

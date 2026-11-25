@@ -1303,18 +1303,19 @@ func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
 		return MergeRequest{}, err
 	}
 	var mr struct {
-		Source        string `json:"source_branch"`
-		Target        string `json:"target_branch"`
-		SourceProject int    `json:"source_project_id"`
-		TargetProject int    `json:"target_project_id"`
-		Title         string `json:"title"`
-		Description   string `json:"description"`
-		Draft         bool   `json:"draft"`
+		Source        string   `json:"source_branch"`
+		Target        string   `json:"target_branch"`
+		SourceProject int      `json:"source_project_id"`
+		TargetProject int      `json:"target_project_id"`
+		Title         string   `json:"title"`
+		Description   string   `json:"description"`
+		Draft         bool     `json:"draft"`
+		Labels        []string `json:"labels"`
 	}
 	if err := decode(out, &mr); err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{ID: id, Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description, Draft: mr.Draft}, nil
+	return MergeRequest{ID: id, Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description, Draft: mr.Draft, Labels: mr.Labels}, nil
 }
 
 // MarkReady marks a draft merge request ready: GitLab's draft is its

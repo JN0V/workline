@@ -37,7 +37,11 @@ step 6).
   a project check red or a person's comment on a pull request from
   `workline/developer/<n>`, in its conversation or in a thread on a
   line ([#1438](https://github.com/JN0V/workline/issues/1438)):
-  `workline develop --merge-request <n>`. With no forge
+  `workline develop --merge-request <n>`.
+  - **Once a person accepted it** (`workline:accepted`), a comment in
+    its conversation asks nothing: the label's trace is a record, not a
+    request ([#2206](https://github.com/JN0V/workline/issues/2206)). A
+    comment on a line still asks. With no forge
   ([`forge: local`](../../../docs/local-line-review.md)),
   the reconciler runs it, in a worktree of the head.
 - **No memory**: it reads its record on the pull request (the rounds
@@ -124,6 +128,11 @@ failed — is marked ready for review once its rounds make it green
   ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#6-disagreements-end-at-the-product-owner-then-blocked));
   no person is asked, no label on the pull request. No round runs after
   it.
+  - **Only disputes count**: a round that answered a blocking finding
+    of the reviewer. A round on a red check, a gate, a tester's rewrite,
+    a person's comment or a warning alone is no dispute; the same
+    failure twice at a head stops its rounds, said once
+    ([#1769](https://github.com/JN0V/workline/issues/1769)).
 - **At its issue's backstop**, no agent: the issue's runs, the rounds
   counted, reached 4× its normal
   ([routing](../../../docs/spec/routing.md#the-line-of-states)). No
