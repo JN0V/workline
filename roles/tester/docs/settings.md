@@ -51,7 +51,7 @@ defaults from [role.yaml](../role.yaml).
 
 | Key | Default | |
 |---|---|---|
-| `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | the curator's measures ([page](curator.md#settings)) and removals ([page](removals.md#settings)); each run of the tests (red-first, green, the developer's proof; not the curator's) stops at `suite-max-seconds`, the whole Draft's proof at three times it, the retry told the change's test files with no report by then and the last lines ([#1425](https://github.com/JN0V/workline/issues/1425)): its test command and the processes it started are killed on Linux and macOS, the command alone on Windows; a build daemon that detaches, as Gradle's, lives on ([#1197](https://github.com/JN0V/workline/issues/1197)) |
+| `curator-*`, `suite-max-seconds`, `coverage-report` | 2 runs, 600 s | experimental, may change after 1.0 ([#264](https://github.com/JN0V/workline/issues/264)): the curator's measures ([page](curator.md#settings)) and removals ([page](removals.md#settings)); each run of the tests (red-first, green, the developer's proof; not the curator's) stops at `suite-max-seconds`, the whole Draft's proof at three times it, the retry told the change's test files with no report by then and the last lines ([#1425](https://github.com/JN0V/workline/issues/1425)): its test command and the processes it started are killed on Linux and macOS, the command alone on Windows; a build daemon that detaches, as Gradle's, lives on ([#1197](https://github.com/JN0V/workline/issues/1197)) |
 
 ## The command, by ecosystem
 

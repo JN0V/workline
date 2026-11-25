@@ -149,8 +149,9 @@ pushed to its branch.
   issue ([how](release.md);
   [ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
   With the variable `WORKLINE_CURATOR` set to `on`, its `curator`
-  measures the test corpus
-  ([how](../roles/tester/docs/curator.md),
+  measures the test corpus, experimental: it may change after 1.0
+  ([#264](https://github.com/JN0V/workline/issues/264);
+  [how](../roles/tester/docs/curator.md),
   [removals](../roles/tester/docs/removals.md)).
 - [workline-objection.yml](../defaults/ci/github/workline-objection.yml) and
   [workline-answer.yml](../defaults/ci/github/workline-answer.yml), with the

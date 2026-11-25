@@ -11,6 +11,11 @@ a few redundant tests removed a week, each removal proven with no agent,
 opened as a pull request the project's merge policy merges. The measures
 it weighs: [the curator's measures](curator.md).
 
+- **Experimental** in 1.0: `workline test curate`, its `curator-*`
+  settings and `WORKLINE_CURATOR` may change after it. The curator is
+  to be folded into the tester, which gardens the corpus as
+  [#264](https://github.com/JN0V/workline/issues/264) designs.
+
 ```mermaid
 flowchart LR
   pick["<b>Picks</b><br/>one folder<br/>of tests"]
