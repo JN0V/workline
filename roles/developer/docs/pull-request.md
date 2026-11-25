@@ -77,7 +77,13 @@ flowchart LR
 - **Subjects the project's commit check passes**: `type(scope): summary`
   ([#736](https://github.com/JN0V/workline/issues/736)):
   - type: `test` for its tests; for its code, the issue's kind: `fix`
-    (bug), `feat` (feature, or no kind), `chore` (task);
+    (bug), `feat` (feature, or no kind); a task by what its code
+    changes ([#2198](https://github.com/JN0V/workline/issues/2198)):
+    - `fix` when it changes shipped code, so that release tools list it
+      and bump its package; its body asks a person to mark a breaking
+      change when it removes or renames a public name;
+    - `chore` when it changes only docs, CI, tests or a tool's dotfile;
+    - the merge policy reads the issue's kind, never this type;
   - scope: the folder every path of the issue's Scope sits in, none
     when they share none;
   - summary: the issue's title, lower-case first, its references and

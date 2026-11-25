@@ -51,7 +51,7 @@ func TestSubjectsPassTheCommitterCheck(t *testing.T) {
 			"test(developer): developer: its commits pass the project's commit check", "fix(developer): developer: its commits pass the project's commit check"},
 		{"no title", "", devmark.KindFix, nil, "test: the code of #4", "fix: the code of #4"},
 	} {
-		got := subjects(4, tc.title, tc.kind, tc.scope, s)
+		got := subjects(4, tc.title, tc.kind, tc.scope, nil, s)
 		if got.Tests != tc.tests || got.Code != tc.code {
 			t.Errorf("%s: subjects = %q, %q; want %q, %q", tc.name, got.Tests, got.Code, tc.tests, tc.code)
 		}
@@ -119,5 +119,35 @@ func TestCommitterSettingsUnreadSaid(t *testing.T) {
 	}
 	if _, found := committerSettings(t.TempDir(), "#4"); len(found) != 0 {
 		t.Errorf("no config: findings = %v, want none", found)
+	}
+}
+
+// A task is typed by what its code changes: shipped code a fix, so
+// that release tools list it and bump its package; docs, CI, a tool's
+// dotfile, a chore (#2198).
+func TestTaskTypedByItsCode(t *testing.T) {
+	for _, tc := range []struct {
+		code []string
+		want string
+	}{
+		{[]string{"lib/DomoticsCore-WebUI/include/WebUI.h"}, "fix"},
+		{[]string{"docs/mqtt.md", "src/mqtt.cpp"}, "fix"},
+		{[]string{"docs/mqtt.md", "README.md", "CHANGELOG.md"}, "chore"},
+		{[]string{".github/workflows/ci.yml", ".golangci.yml", "LICENSE"}, "chore"},
+		{nil, "chore"},
+	} {
+		if got := commitType(devmark.KindTask, tc.code); got != tc.want {
+			t.Errorf("task on %v: %q, want %q", tc.code, got, tc.want)
+		}
+	}
+	if got := commitType(devmark.KindFeature, []string{"README.md"}); got != "feat" {
+		t.Errorf("feature: %q, want feat", got)
+	}
+	s := roleCommitter(t)
+	if sub := subjects(4, "Cap the MQTT payload", devmark.KindTask, nil, []string{"src/mqtt.cpp"}, s); sub.Code != "fix: cap the MQTT payload" || sub.Note == "" {
+		t.Errorf("task on shipped code: %+v", sub)
+	}
+	if sub := subjects(4, "Cap the MQTT payload", devmark.KindFix, nil, []string{"src/mqtt.cpp"}, s); sub.Note != "" {
+		t.Errorf("a bug's fix says nothing of its type: %q", sub.Note)
 	}
 }
