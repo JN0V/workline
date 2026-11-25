@@ -6,21 +6,18 @@
   analysis of 2026-11-25 (seven independent analyses, about 15 replays
   with a real agent); code read at `af68b1bb5` on `main`
 - **Settles:** [#2188]; replaces the draft closed with [#2162]
-- **Builds on:** [ADR-0005], [ADR-0056], [ADR-0063 §8] (the read tree,
-  built for the tester); principles 3, 4, 5, 6, 10, 12
-  ([PRINCIPLES.md](../PRINCIPLES.md))
+- **Builds on:** [ADR-0005], [ADR-0056](0056-the-developers-agent-works-in-a-sandbox-with-tools.md), [ADR-0063 §8];
+  principles 3, 4, 5, 6, 10, 12 ([PRINCIPLES.md](../PRINCIPLES.md))
 - **Amends or supersedes, once built:** [the list below](#what-it-amends)
 - **Research:** [a fixed context, or the model reading](../research/judge-reads-code.md#a-fixed-context-or-the-model-reading)
 
 ## Context
 
-- **No role is at 8 of 10**, the maintainer's bar to leave beta. The
-  evaluation of 2026-11-25, on three repositories: reviewer 5, product
-  owner 5, documentalist 4.
+- **No role is at 8 of 10**, the maintainer's bar to leave beta: on
+  three repositories, reviewer 5, product owner 5, documentalist 4.
 - **Their first cause is one: they do not see the repository.** Each
   gets a task that Go code cut for it, and `claude` with no tools
-  ([claude.go](../../internal/agent/claude.go)). Only the developer
-  and the tester read files.
+  ([claude.go](../../internal/agent/claude.go)).
   - **Reviewer**: about 12 of the maintainer's 28 later points were
     never raised; 33 of 63 pull requests were read by hunks.
   - **Documentalist**: three pull requests stamped 5 docs and changed
@@ -31,8 +28,8 @@
 
   | Case | Today's input | Reading the repository |
   |---|---|---|
-  | Reviewer: 3 defects outside the lines changed ([DomoticsCore#260], [#252][DomoticsCore#252], [#247][DomoticsCore#247]) | 0 of 3 on Sonnet; Opus at high effort, no better | 3 of 3 on Sonnet at medium effort, about 20k tokens |
-  | Documentalist: 7 wrong claims in 3 docs ([DomoticsCore#306]) | 0 of 7 | 3 of 7 on Sonnet, 5 of 7 on Opus |
+  | Reviewer: 3 defects outside the lines changed ([DomoticsCore#260](https://github.com/JN0V/DomoticsCore/pull/260), [#252](https://github.com/JN0V/DomoticsCore/pull/252), [#247](https://github.com/JN0V/DomoticsCore/pull/247)) | 0 of 3 on Sonnet; Opus at high effort, no better | 3 of 3 on Sonnet at medium effort, about 20k tokens |
+  | Documentalist: 7 wrong claims in 3 docs ([DomoticsCore#306](https://github.com/JN0V/DomoticsCore/issues/306)) | 0 of 7 | 3 of 7 on Sonnet, 5 of 7 on Opus |
   | Product owner: an issue's Scope | not replayed | found |
 
 - **Reads served by the engine failed on the same three defects**
@@ -40,10 +37,8 @@
   within the judge's caps ([ADR-0045]). 0 of 3, at 35k to 63k tokens in
   each; on two it read the file holding the defect.
 - **Preparing input is much of the engine's growth**: non-test Go went
-  from 66.9k to 121k lines in a month.
-- **Review products made the same move** (the research above), and the
-  mode exists: the tester's `claude` reads a tree with `Read,Glob,Grep`
-  (case `tester/write-claude-reads-the-code-itself`).
+  from 66.9k to 121k lines in a month. Review products moved to the
+  model reading (the research above); the tester already reads so.
 
 ## Decision
 
@@ -57,8 +52,7 @@ the issue — and deletes the code that chose what else they read.**
 - **The tester's read tree** ([ADR-0063 §8]): a checkout at one commit,
   `Read,Glob,Grep`, no shell, no edit, no network, the role's prompt
   alone. Each file read is logged with the call, its path and blob.
-- **The task holds what the tree does not**, never code the engine
-  picked.
+  The task holds what the tree does not, never code the engine picked.
 - **Capped by what exists**: the run's `ai-max-tokens`, the answer's
   time, and turns, as the tester's (40 today). A call a cap cuts is a
   failed call, said; never "no finding" (principle 12).
@@ -73,16 +67,12 @@ the issue — and deletes the code that chose what else they read.**
   issue, and the tree at the head.
   - A finder's question ([#2188]): what does this change break, here
     or elsewhere? Not the judge's "yes without a doubt".
-  - No finder beside the lenses, no record, no setting: the call that
-    exists gets the tools.
   - No parts: a change is one call. A diff past the context budget is
     a file in the tree. A call its caps cut is `review-not-whole`.
-- **The documentalist** reads the doc whole and the sources it needs.
-  The task names the doc, its sources, the files changed since
-  `checked`.
-  - `checked` is still earned by what was read ([ADR-0014]), now from
-    the log: it moves only when the log holds every source file the
-    doc names.
+- **The documentalist** reads the doc whole and the sources it needs;
+  the task names them, and the files changed since `checked`.
+  - `checked` is still earned by what was read: it moves only when the
+    log holds every source file the doc names.
   - No doc is "left to a person" for its size.
 - **The product owner** reads the tree at the default branch and the
   issue whole. The kind is judged on the whole body; the Scope is
@@ -97,18 +87,16 @@ bench.**
 - **The checks with no AI stay**: the reviewer's rules, the detection
   of a suspect doc ([ADR-0053]), a patch that must apply.
 - **The quote stays as an address, no longer as a filter.** Found
-  again, the finding is on its line. Not found, it is shown on the
-  change, on no line, said; never dropped (`finding-unfounded`).
-  - Why: the evaluation counts 3 true findings dropped by the
-    reviewer's own filters. A wrong finding shown costs a reader one
-    line; a true one dropped costs a defect on `main`.
+  again, the finding is on its line. Not found, it is shown on no
+  line, said; never dropped (`finding-unfounded`). The reviewer's own
+  filters dropped 3 true findings; a wrong one shown costs one line.
 - **The judge stays where a block or a merge alone rests on it**
-  ([ADR-0073]): independence is what lets either stand with no person
-  ([ADR-0005]). A finder that reads is still one reading.
+  ([ADR-0073](0073-a-task-that-changes-no-behaviour-may-merge-alone.md)):
+  independence is what lets either stand with no person ([ADR-0005]).
+  A finder that reads is still one reading.
   - Its no still quotes the lines that refute, found again; else the
     finding is shown not verified ([ADR-0045]).
-  - It reads the tree too, last: its material and served reads are
-    input the engine prepares.
+  - It reads the tree too, last: its material is prepared input.
 - **The documentalist's citations and notes go to the bench.** Every
   word removed is cited because an agent removed a true claim "it
   could not see backed". They stay only if, with the tools on, the
@@ -119,76 +107,64 @@ bench.**
 ## Steps
 
 - **One small pull request a step**: a conformance case first, the
-  switch, the deletion of what it leaves dead.
-- **The maintainer's code budget until 1.0**: each is net 0 lines of
-  non-test Go or fewer, and adds no setting. Step 1 lands with step 2
-  if it cannot be alone.
+  switch, the deletion of what it leaves dead, its pages too. By the
+  maintainer's code budget until 1.0, each is net 0 lines of non-test
+  Go or fewer, with no new setting; step 1 may land with step 2.
 - **Measured on the replay bench**, told in its `## Tried`. A bar not
   met: not merged, the picker stays, this ADR is amended.
-- **A setting goes** when deleted code was its last reader; a role's
-  pages on parts and cuts go with the code.
 
 | Step | Switch | Deleted (non-test Go lines at `af68b1bb5`) | Bar on the bench |
 |---|---|---|---|
-| 0 | The bench: the reviewer's 28 points, the 7 claims, the 5 kinds the maintainer corrected, the readied issues that could not be built | | Today's input is the baseline |
-| 1 | The lenses on the run on ready read the tree; a finder's question | | 2 of [#2188]'s 3 defects; more points than the baseline, no more false findings |
-| 2 | Every lens call: the plain diff and the tree; the quote an address | `roles/reviewer/code/parts.go`, `funcctx.go` (580); `marked` in `diff.go`; the material in `reviewer.go`; `code-lines-max`, `parts-max` | Step 1's, on a change read in two parts today; [#1113] and [#1975] ask nothing more |
+| 0 | The bench: the 28 points, the 7 claims, the 5 kinds the maintainer corrected, the issues readied unbuildable | | Today's input is the baseline |
+| 1 | The lenses on the run on ready read the tree; a finder's question | | 2 of the 3 defects; more points than the baseline, no more false findings |
+| 2 | Every lens call: the plain diff and the tree; the quote an address | `roles/reviewer/code/parts.go`, `funcctx.go` (580); `marked` in `diff.go`; the material in `reviewer.go`; `code-lines-max`, `parts-max` | Step 1's, on a change read in two parts today; [#1113](https://github.com/JN0V/workline/issues/1113) and [#1975](https://github.com/JN0V/workline/issues/1975) are answered |
 | 3 | The documentalist reads; `checked` by the log | `roles/documentalist/code/parts.go` (1,376); the packed sources and the change-alone task in `documentalist.go`; `whole-chars` and four parts settings | 3 of the 7 claims on Sonnet; no `checked` moved past the log |
 | 4 | Its citations and notes, tools on | `cite.go`, `notes.go` (1,061), if the measure says so | No true sentence removed without them |
 | 5 | The product owner reads; the kind on the whole body | The picker's call (`askOf`, `writeCode`, `needed`), `kindBodyMax`; `code-lines-max`, `code-bytes-max` | More of the 5 kinds right; real paths in a Scope readied empty |
 | 6 | The judges, the reviewer's and the tester's, read the tree | `roles/reviewer/code/reach.go`, `reads.go` (958); `ServeReads`; four judge settings | 32 of the judge's 40 replayed questions right, or more ([ADR-0045]) |
 | 7 | The tester's seed and the spec review's material go | `internal/kit/codepick`, `internal/codenav` (3,208); the packs' code-navigation rows | The tester's cases, no worse |
 
-- **In whole files**: 6,122 lines, 7,183 with step 4. The analysis
-  counts more with what `reviewer.go` and `documentalist.go` hold:
-  about 3k to 4k for the reviewer, 5.9k for the documentalist.
-- **Why this order**: the reviewer has the clearest measure; the
-  documentalist the lowest score and the largest deletion; the judges
-  work today, and move for the code they free.
+- **In whole files**: 6,122 lines, 7,183 with step 4; more with what
+  `reviewer.go` and `documentalist.go` hold of them. The clearest
+  measure goes first; the judges last, for they work today.
 
 ## Cost
 
 - **Reviewer**: about 8k fresh tokens more a pull request, for the run
-  on ready (the analysis's estimate). At the evaluation's 63 pull
-  requests in two days: about 0.5M. Each push pays it from step 2.
-- **Documentalist**: cheaper than today, by the same analysis. A doc
-  in parts costs 130k to 250k tokens
-  ([measured](../research/token-costs-measured.md#documentalist)).
-- **Product owner, judges, and the time of a run on ready** against
-  its wait budget ([ADR-0050]): not measured. Each step says them.
+  on ready (the analysis's estimate): about 0.5M at the evaluation's
+  63 pull requests in two days. Each push pays it from step 2.
+- **Documentalist**: cheaper than today, by the same analysis; a doc
+  in parts costs [130k to 250k tokens](../research/token-costs-measured.md#documentalist).
+- **Product owner, judges, and a run on ready's time** against its
+  [wait budget](0050-each-act-has-its-moment-and-a-wait-budget.md): not measured. Each step says them.
 
 ## Risks
 
 - **An agent that wanders**: turns, tokens and time are capped; the
-  task says where to start; the log shows what it read, for the
-  auditor too.
+  log shows what it read, for the auditor too.
 - **Prompt injection from the repository.** A file is data from
   whoever wrote the change, as today's diff is; the tree widens it.
   - The tools only read: no shell, no network, no write, no MCP server.
   - The tree holds tracked files only; no forge token is in it, nor in
-    the agent's environment. The project's agent settings are not
-    loaded.
+    the agent's environment; the project's agent settings stay unread.
   - The answer is a proposal: the forge's guards decide (principle 6).
   - Left: a planted text may talk a finder out of a finding, and a fix
-    that merges alone counts on its silence. A comment in a diff can
-    today.
-- **A read is not a proof**: the log says a source was opened, not
-  understood. The weekly sample of docs vouched for stays.
+    that merges alone counts on its silence. A diff's comment can today.
+- **A read is no proof**: a source opened is not a source understood.
+  The weekly sample of docs vouched for stays.
 - **Conformance stays deterministic: it calls no real agent.**
-  - `fake:` returns its proposals without reading
-    ([the fakes](../spec/conformance.md#the-fakes)).
-  - Tools are faked as the tester's case does: a stand-in `claude`
-    (`fixtures/claude-reads`) refuses any flag but the read tools,
-    checks its tree and commit, reads, and answers a recorded stream.
-  - A case on what a picker put in a task goes with its picker.
-  - How well an agent reads is the bench's question: a real agent, a
-    rate over several runs.
-- **A `cmd:` agent with no file tools reads less than today.** The
-  role's page says so.
+  - `fake:` answers without reading ([the fakes](../spec/conformance.md#the-fakes)).
+  - Tools are faked as in `tester/write-claude-reads-the-code-itself`:
+    a stand-in `claude` refuses any flag but the read tools, checks
+    its tree and commit, reads, and answers a recorded stream.
+  - A case on what a picker put in a task goes with its picker. How
+    well an agent reads is the bench's: a real agent, a rate over runs.
+- **A `cmd:` agent with no file tools reads less**; its page says so.
 
 ## What it amends
 
-Each at its step; the ADR amended is edited then.
+Each at its step, the ADR amended edited then. Principle 3 stands:
+each role reads only what it needs, and now chooses it.
 
 | Decision | Becomes | Step |
 |---|---|---|
@@ -203,38 +179,22 @@ Each at its step; the ADR amended is edited then.
 | [ADR-0065](0065-code-only-what-converges-language-knowledge-in-packs.md#the-four-changes): the picker frozen, its tables in packs | deleted | 7 |
 | [ADR-0064](0064-size-is-a-target-not-a-wall.md#amendment-2026-11-08-a-cut-is-not-a-crossing): a cut of the code, a code map postponed | no cut left; the map dropped | 7 |
 
-Principle 3 stands: each role reads only what it needs. It now
-chooses; its context budget is its cap.
-
 ## Not chosen
 
-- **A larger fixed context**: what a change breaks elsewhere is not
-  known before reading, and every call pays for it.
-- **A stronger model on today's input**: replayed, no better.
-- **The engine serving the reads an answer asks** ([#2162]): 0 of 3,
-  and a protocol of workline's own to keep.
-- **A new finder beside the lenses** ([#2162]'s draft): one more call,
-  record and setting, every picker kept.
+- **A larger fixed context**: every call pays for it, and what a
+  change breaks elsewhere is not known before reading. **A stronger
+  model on today's input**: replayed, no better.
+- **The engine serving the reads an answer asks**, or **a new finder
+  beside the lenses** ([#2162]): 0 of 3; a protocol, a record and a
+  setting more, every picker kept.
 - **A shell**: the replays needed none; it widens what a planted text
-  can do. The tester's worktree is its own decision.
-- **The picker kept as a seed**: all its code stays. Step 7 measures
+  can do. **An index**: a store and a dependency (principle 11).
+- **The picker kept as a seed**: all its code stays; step 7 measures
   the tester without it.
-- **An index, or search by meaning**: a store and a dependency
-  (principle 11).
 
-[#1113]: https://github.com/JN0V/workline/issues/1113
-[#1975]: https://github.com/JN0V/workline/issues/1975
 [#2162]: https://github.com/JN0V/workline/pull/2162
 [#2188]: https://github.com/JN0V/workline/issues/2188
-[DomoticsCore#247]: https://github.com/JN0V/DomoticsCore/pull/247
-[DomoticsCore#252]: https://github.com/JN0V/DomoticsCore/pull/252
-[DomoticsCore#260]: https://github.com/JN0V/DomoticsCore/pull/260
-[DomoticsCore#306]: https://github.com/JN0V/DomoticsCore/issues/306
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
-[ADR-0014]: 0014-checked-is-earned-by-what-was-read.md
 [ADR-0045]: 0045-the-judge-asks-for-the-code-it-needs.md
-[ADR-0050]: 0050-each-act-has-its-moment-and-a-wait-budget.md
 [ADR-0053]: 0053-a-source-may-name-a-part-of-a-file.md
-[ADR-0056]: 0056-the-developers-agent-works-in-a-sandbox-with-tools.md
 [ADR-0063 §8]: 0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them
-[ADR-0073]: 0073-a-task-that-changes-no-behaviour-may-merge-alone.md
