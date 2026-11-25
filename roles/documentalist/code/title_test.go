@@ -75,10 +75,9 @@ func TestMergeRequestTitlesPassTheSquashRule(t *testing.T) {
 	}
 }
 
-// A merge request fixing nothing says so in its title, naming only the docs
-// it records as judged in parts; a doc whose fix changed nothing of what
-// its parts found is not one of them, and what they found is listed in the
-// description, where the person reviewing reads it (#2197).
+// A merge request fixing nothing says so in its title, and what the parts
+// found in a doc the fix changed nothing of is listed in its description,
+// where the person reviewing reads it (#2197).
 func TestMergeRequestOfRecordsListsWhatIsLeft(t *testing.T) {
 	runDir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(runDir, "in"), 0o755); err != nil {
@@ -90,11 +89,11 @@ func TestMergeRequestOfRecordsListsWhatIsLeft(t *testing.T) {
 	found := []string{`line 10: "Tokens last one hour.", found wrong — src/token.go, line 4: "TTL = 7200"`}
 	inParts := map[string]string{"docs/a.md": "abc1234", "docs/b.md": "abc1234"}
 	outcome := map[string]string{
-		"docs/a.md": "judged in parts; " + partsNotStamped + foundList(found, "  "),
+		"docs/a.md": "judged in parts; " + partsLeftOpen + foundList(found, "  "),
 		"docs/b.md": "judged in parts, nothing found wrong; `checked` not moved",
 	}
 	mr := mergeRequest(runDir, map[string]map[string]string{"docs/a.md": {}}, inParts, false, nil, outcome)
-	if want := "docs: record when docs/b.md was judged in parts"; mr["title"] != want {
+	if want := "docs: record when docs/a.md and 1 more were judged in parts"; mr["title"] != want {
 		t.Errorf("title %q, want %q", mr["title"], want)
 	}
 	if !strings.Contains(mr["body"], "\n  - "+found[0]+"\n") {

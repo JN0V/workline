@@ -32,8 +32,9 @@ Part of [judged in parts](parts.md).
   (`claims-dropped`, naming the part, the quote and where it was looked
   for), for a person, who reads the doc whole: the claim dropped may have
   been the one saying what is wrong. The doc is recorded as judged all
-  the same — asked again each night, its parts cost as much to the same
-  end
+  the same, as is one whose fix changed nothing of what was found
+  ([listed for a person](parts-fix.md#the-fix)) — asked again each
+  night, its parts cost as much to the same end
   ([ADR-0014, step 4](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)).
 - Contradicted and supported by no other part: wrong.
 - Contradicted, and another part supports some of the same words: a

@@ -2092,14 +2092,13 @@ func Post(runDir, repo string) int {
 		}
 		return 1
 	}
-	// A doc judged in parts whose fix changed nothing of what they found is
-	// not recorded as judged: what they found is said for a person (#2197).
+	// A doc judged in parts whose fix changed nothing of what they found:
+	// what they found is said for a person, where they read it (#2197).
 	open, err := openInParts(runDir, inParts, judged, judgedFix)
 	if err != nil {
 		return fail(err)
 	}
 	if len(open) > 0 {
-		intents = unstamped(intents, fallback, inParts, open)
 		sayOpenInIssue(intents, open)
 		if err := writeIntents(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 			return fail(err)
@@ -2138,7 +2137,8 @@ func Post(runDir, repo string) int {
 			if n := judgedFix.placesSaid(f.Where); n != "" {
 				f.Message = strings.Replace(f.Message, partsFixAsked, "what they found wrong is fixed in this run, in "+n, 1)
 			} else {
-				f.Message = notStampedSaid(f.Message, open[f.Where])
+				f.Message = openSaid(f.Message, open[f.Where], !said[f.Where+" open"])
+				said[f.Where+" open"] = true
 			}
 		}
 		if v, ok := patched[f.Where]; ok && !v && (f.Rule == "suspect" || f.Rule == "stale") {
@@ -2180,7 +2180,7 @@ func Post(runDir, repo string) int {
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
 		outcome := outcomes(judged, inParts, vouchedInParts, patched, partly, judgedFix, readOf)
 		for p, found := range open {
-			outcome[p] = "judged in parts; " + partsNotStamped + foundList(found, "  ")
+			outcome[p] = "judged in parts; " + partsLeftOpen + foundList(found, "  ")
 		}
 		if readerOutcome != nil {
 			outcome = readerOutcome
@@ -2881,7 +2881,7 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 			title = fmt.Sprintf("docs: bring %d docs in line with the code", len(in))
 		}
 		if !byAgent { // nothing fixed: only what records when the parts judged (#2197)
-			title = recordsTitle(in, outcome)
+			title = recordsTitle(in)
 		}
 	case "condense", "split":
 		var c condenseTask

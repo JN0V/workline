@@ -1,5 +1,5 @@
-case: documentalist/judged-in-parts-fix-declined-not-stamped
-about: "When gardening, a doc judged in parts whose fix changes nothing of what the parts found wrong is not recorded as judged: its header gains no `judged-in-parts`, it stays suspect, to be judged again, and each place found wrong, with the code that says otherwise, is listed in its finding and in the issue of docs waiting for a person (#2197)."
+case: documentalist/judged-in-parts-fix-declined-findings-listed
+about: "When gardening, a doc judged in parts whose fix changes nothing of what the parts found wrong is recorded as judged, so it is not put before an agent again until a source changes, and each place found wrong, with the code that says otherwise, is listed once in its findings and under its line in the issue of docs waiting for a person (#2197)."
 given:
   repo: documented
   setup:
@@ -16,10 +16,9 @@ expect:
   agent-calls: 3
   findings:
     - {rule: suspect, where: docs/tech/auth.md, message: "line 10: \"Access tokens last one hour.\""}
-  no-findings:
-    - {rule: suspect, where: docs/tech/auth.md, message: "not put before an agent again"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "not put before an agent again until one of its sources changes"}
   files:
-    "docs/tech/auth.md": {lacks: "judged-in-parts:"}
+    "docs/tech/auth.md": {contains: "judged-in-parts: 2d741e7"}
   forge:
     issues:
       - {id: 4, body-contains: ["- [ ] `docs/tech/auth.md`", "line 10: \"Access tokens last one hour.\"", "src/auth/token.go, line 4: \"const TokenTTL = 7200\""]}

@@ -1425,11 +1425,12 @@ func orInt(n, d int) int {
 // were dropped.
 const claimsDroppedSaid = "; but some claims were dropped: a person reads it whole"
 
-// partsNotStamped is what the finding of a doc judged in parts says when
-// the fix changed nothing of what the parts found: its header does not
-// record it as judged, which would keep it from an agent until a source
-// changes, while what they found is wrong still (#2197).
-const partsNotStamped = "but the fix changed nothing of what they found wrong, listed below: its header does not record it as judged, so it stays suspect and is judged again on a later run; a person can fix these places against the code, then move `checked`"
+// partsLeftOpen is what the finding of a doc judged in parts says when the
+// fix changed nothing of what the parts found: the header records it as
+// judged all the same, which holds it from an agent until a source
+// changes (asked again each night, its parts would cost as much to the
+// same end), so what they found is listed for a person (#2197).
+const partsLeftOpen = "but the fix changed nothing of what they found wrong, listed below for a person, and `checked` stays: it is not put before an agent again until one of its sources changes; a person fixes these places against the code, then moves `checked`"
 
 // openInParts returns the docs judged in parts whose fix was asked and
 // changed nothing, each with what the parts found wrong (partsFoundFile).
@@ -1449,28 +1450,19 @@ func openInParts(runDir string, inParts map[string]string, judged map[string]map
 	return open, nil
 }
 
-// unstamped takes out of intents the engine's patches recording that the
-// open docs were judged in parts.
-func unstamped(intents, fallback []intent.Intention, inParts map[string]string, open map[string][]string) []intent.Intention {
-	return slices.DeleteFunc(intents, func(in intent.Intention) bool {
-		files := intent.PatchFiles(in.Value)
-		if in.Kind != "patch" || len(files) != 1 || !isFallback(in, fallback) {
-			return false
-		}
-		_, isOpen := open[files[0]]
-		return isOpen && strings.Contains(fmt.Sprint(in.Value), "\n+judged-in-parts: "+inParts[files[0]]+"\n")
-	})
-}
-
-// notStampedSaid rewrites the finding of an open doc: what became of its
-// fix, then what the parts found, one line each.
-func notStampedSaid(message string, found []string) string {
+// openSaid rewrites the finding of an open doc: what became of its fix,
+// then, in the first finding of the doc only (first), what the parts
+// found, one line each.
+func openSaid(message string, found []string, first bool) string {
 	head, rest, _ := strings.Cut(message, partsFixAsked)
 	end := ")"
 	if strings.Contains(rest, claimsDroppedSaid) {
 		end = claimsDroppedSaid + ")"
 	}
-	return head + partsNotStamped + end + foundList(found, "")
+	if !first {
+		return head + partsLeftOpen + end
+	}
+	return head + partsLeftOpen + end + foundList(found, "")
 }
 
 // foundList says what the parts found, a line each, as list items under
@@ -1504,7 +1496,7 @@ func sayOpenInIssue(intents []intent.Intention, open map[string][]string) {
 			}
 			line := body[start : start+end]
 			if h, _, ok := strings.Cut(line, partsFixAsked); ok {
-				line = h + partsNotStamped
+				line = h + partsLeftOpen
 			}
 			body = body[:start] + line + foundList(open[p], "  ") + body[start+end:]
 		}
@@ -1515,16 +1507,7 @@ func sayOpenInIssue(intents []intent.Intention, open map[string][]string) {
 // recordsTitle is the title of a merge request fixing nothing: its docs
 // gain only what records when they were judged in parts, or `checked`
 // moved where their parts vouched for every line.
-func recordsTitle(inParts []string, outcome map[string]string) string {
-	var docs []string
-	for _, p := range inParts {
-		if !strings.Contains(outcome[p], partsNotStamped) {
-			docs = append(docs, p)
-		}
-	}
-	if len(docs) == 0 {
-		return "docs: regenerate the derived blocks"
-	}
+func recordsTitle(docs []string) string {
 	title := "docs: record when " + docs[0] + " was judged in parts"
 	if len(docs) > 1 {
 		title = fmt.Sprintf("docs: record when %s and %d more were judged in parts", docs[0], len(docs)-1)
