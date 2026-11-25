@@ -30,6 +30,8 @@ func TestScenariosUnnamedNamedByTheirThen(t *testing.T) {
 		"then a word":    {"- Given a day, When Ann opens it, Then she counts three and then leaves.", []string{"she counts three and then leaves"}},
 		"and then prose": {"Given the above, the fix is simple and then we can close.", nil},
 		"marks dropped":  {"- Given a, When b, Then it prints `a b` **Total:** 3 | piped", []string{"it prints a b Total: 3"}},
+		"dot no space":   {"- Given a, When b, Then promise.then callback runs.", []string{"promise.then callback runs"}},
+		"no commas":      {"- Given a cart with 2 items When I remove one Then the cart shows 1 item", []string{"the cart shows 1 item"}},
 		"named later":    {"- Given a, When b, Then c.\n- **c:** Given d, When e, Then f.", []string{"c (1)", "c"}},
 	} {
 		var got []string

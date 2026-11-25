@@ -27,9 +27,9 @@ var (
 	step = regexp.MustCompile(`(?i)^(?:given|when|then|and|but)\b`)
 	// apart opens a Gherkin block that is no scenario: its steps are none's.
 	apart = regexp.MustCompile(`(?i)^(?:feature|background|rule)\s*:`)
-	// given opens a scenario written with no name; then, its Then step.
+	// given opens an unnamed scenario; then, its Then step, never "a.then".
 	given  = regexp.MustCompile(`(?i)^given\b`)
-	then   = regexp.MustCompile(`(?i)(?:^|[,;.:]\s*)then\s+`)
+	then   = regexp.MustCompile(`(?:^(?i:then)|[,;.:]\s+(?i:then)|\bThen)\s+`)
 	unmark = strings.NewReplacer("`", "", "*", "", "_", "", "|", "") // marks a derived name drops
 )
 
