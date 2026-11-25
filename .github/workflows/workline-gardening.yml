@@ -37,7 +37,7 @@ concurrency:
 env:
   # The release this workflow runs (ADR-0071 §1): moved only in its own
   # pull request, after its try on a copy; release-please never moves it.
-  WORKLINE_VERSION: v0.89.3
+  WORKLINE_VERSION: v0.90.0
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
 jobs:
