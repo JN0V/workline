@@ -21,19 +21,17 @@ judge:
     changed beyond the issue's Scope, listed by the author or not, whose
     change the issue's Need does not need. The Scope is a hint: a file
     beyond it that the Need needs, or that the author's reason ties to it
-    truly, is no finding. A finding that the change removes or changes
-    a public name (one code outside the project or its users reach: an
-    exported function, type or field, a command or flag, a setting key,
-    a file or wire format) is true when the change shown removes or
-    changes it and the issue neither asks it nor has a Need that needs
-    it. Asked by the issue, it is true too when the finding names the
-    commits or changelog it read and says they carry no breaking mark:
-    you are not shown them, so take that on its word, and answer no
-    when it names none. For a cause quoted from the issue, the change
-    shown is the whole merge request, its commits reviewed before
-    included, and its last commits that are workline's own when shown
-    apart: answer no if any of it does it, if the issue does not ask
-    what the finding says lacks, or if the finding only guesses.
+    truly, is no finding. A finding that the change removes, renames,
+    or changes so that a use that worked breaks, a public name (one
+    code outside the project or its users reach: a function, type or
+    field exported by a library others import, a command or flag, a
+    setting key, a file or wire format) is true when the change shown
+    does so and the issue neither asks it nor has a Need that needs it.
+    For a cause quoted from the issue, the change shown is the whole
+    merge request, its commits reviewed before included, and its last
+    commits that are workline's own when shown apart: answer no if any
+    of it does it, or if the issue does not ask what the finding says
+    lacks. Answer no too if the finding only guesses.
   reads: issue
 ---
 **Intent.** The change says it closes the issue under "What the change
@@ -47,17 +45,18 @@ is not missing. How much the change builds for what the issue asks — a
 type, an option, a layer more than it needs — is the simplicity lens's,
 not yours: you judge whether it does what is asked, not its size.
 
-**A public name.** Does the change remove or change a name code outside
-the project, or its users, can reach — an exported function, type or
-field, a command or flag, a setting key, a file or wire format — and is
-it announced? A name only this project calls is not one. Announced is
-both: the issue asks it or its Need needs it, and the change marks it as
-breaking the way the project does (a `!` or a `BREAKING CHANGE` footer in
-a conventional commit, its changelog); a project with no such mark is
-announced by the issue alone. One removed or changed unannounced is an
-Important finding, its cause the line removed or changed, quoted; its
-`why` says what lacks — the issue's ask, the mark, or both — naming the
-commits or changelog read.
+**A public name.** Does the change remove, rename, or change so that a
+use that worked breaks, a name code outside the project, or its users,
+can reach — a function, type or field exported by a library others
+import, a command or flag, a setting key, a file or wire format — and is
+it announced? A name only this project calls is not one. One the issue
+neither asks nor needs is an Important finding, its cause the line
+removed or changed, quoted. One the issue asks or needs but nothing
+marks as breaking the way the project does (a `!` or a `BREAKING
+CHANGE` footer in a conventional commit or in the merge request's title,
+which a squash merge commits; its changelog) is a `finding` holding
+`decision` — whether to mark it — naming what was read; a project with
+no such mark is announced by the issue alone.
 
 **Each scenario.** Answer every scenario of the issue's Validation (its
 Given / When / Then), one by one, its name as the issue writes it:
