@@ -1506,7 +1506,7 @@ func (r *preRun) askRewrite() error {
 			}
 		}
 	}
-	if r.gardening && (r.then == "" || r.then == "condense") {
+	if r.gardening && (r.then == "" || r.then == "budget") {
 		for _, c := range condenseCandidates(problems) {
 			if r.rewriteWaits(c.key(), c.resolves) {
 				continue
@@ -1517,7 +1517,7 @@ func (r *preRun) askRewrite() error {
 				continue
 			}
 			if !r.asksNothing() && r.then == "" {
-				r.next = "condense"
+				r.next = "budget" // a doc over its budget, whatever task answers it
 				break
 			}
 			r.task = t
@@ -1595,7 +1595,7 @@ func (r *preRun) askReader() error {
 			r.readerAsked = true
 		}
 	}
-	if r.gardening && r.next == "" && r.then != "reader" && !r.readerAsked && readerWaits(r.findings, r.s, r.tree, r.wait) {
+	if r.gardening && r.next == "" && r.then != "reader" && !r.readerAsked && (r.task != "" || r.partsAsked > 0 || r.recording) && readerWaits(r.findings, r.s, r.tree, r.wait) {
 		r.next = "reader"
 	}
 	return os.WriteFile(filepath.Join(runDir, "in", "then"), []byte(r.next), 0o644) // empty: no round of its own

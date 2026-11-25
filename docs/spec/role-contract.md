@@ -508,7 +508,7 @@ token), **apply** (trusted, no AI key).
    the others are done: one round more, `WORKLINE_THEN` naming it, within
    what the run may still spend ([ADR-0048](../adr/0048-the-agent-reads-the-pages-the-reader-checks-flag.md)).
    That round may name the next; each task goes round once a run (the
-   documentalist's `condense`, then `reader`).
+   documentalist's `budget`, a doc over its budget, then `reader`).
 
    **A cap on tokens.** A role setting `ai-max-tokens` caps what one run may
    spend, every round, part and retry together: the fresh tokens, as the

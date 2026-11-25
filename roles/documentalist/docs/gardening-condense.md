@@ -29,7 +29,9 @@ doc, and linking to it.
 
 - One doc a run: in the same round when it asks nothing else; else in a
   round of its own once the others are done, before the
-  [reader's](reader.md) (`in/then`). Suspect docs never starve it.
+  [reader's](reader.md) (`in/then`, `budget`). Suspect docs do not
+  starve it, but the round is dropped once `ai-max-tokens` is spent, or
+  while `max-open-merge-requests` of its merge requests wait.
 - A doc whose task would not fit the role's context budget is not given
   to the agent (`too-large-to-condense`): a person moves its parts out,
   and the next doc over its budget is condensed. A card too large to split

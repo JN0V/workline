@@ -1,5 +1,5 @@
 case: documentalist/condense-in-a-round-of-its-own
-about: "When gardening, a doc over its budget is condensed even when the run asks something else first: once the others are done, in a round of its own, as the reader task is (ADR-0009: condensed or split first). Here a repeated passage is merged first, then the doc over its budget condensed."
+about: "When gardening, a doc over its budget is condensed even when the run asks something else first: once the others are done, in a round of its own, as the reader task is. Here a repeated passage is merged first, then the doc over its budget condensed."
 given: {repo: untidy}
 run: {role: documentalist, event: schedule, ai: 'cmd:if grep -q "Kind: condense"; then cat "$FIXTURES/agents/condense-moves-a-part.yaml"; else echo "[]"; fi'}
 expect:
