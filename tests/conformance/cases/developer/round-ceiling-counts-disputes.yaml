@@ -1,10 +1,10 @@
-case: developer/round-ceiling-counts-every-kind
+case: developer/round-ceiling-counts-disputes
 about: >
   Five rounds went on red checks, a tester's rewrite and findings that
-  only warn, none on a blocking finding: the pull request has had the
-  maximum number of rounds, of any kind. A new verdict that blocks
-  arrives: no round starts, no agent is called, and the pull request
-  goes to a person, said on it and on its issue, which is blocked.
+  only warn, none on a blocking finding: no dispute yet. The ceiling
+  that hands a pull request to a person counts disputes alone; a loop
+  of the same failure is the round's stop's to end. A new verdict that
+  blocks arrives: its round runs, the agent called once.
 given:
   repo: tested-draft
   setup:
@@ -32,14 +32,5 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  agent-calls: 0
-  findings: [{rule: review-blocked, level: warn, where: "merge request 2"}]
-  not-pushed: [workline/developer/3]
-  forge:
-    issues:
-      - id: 3
-        labels: ["workline:blocked"]
-        comment-contains: ["**The developer** blocks this issue."]
-    merge-requests:
-      - id: 2
-        comment-contains: ["**Blocked**", "\"handed\":true"]
+  summary: "round 6 of 5 on merge request 2, its fix pushed"
+  agent-calls: 1
