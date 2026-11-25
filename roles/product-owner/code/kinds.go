@@ -86,10 +86,10 @@ func nearMerge(is forge.Issue) int {
 
 // kindAsked is the line a full read gives an issue no kind label tells,
 // naming it: an answer may otherwise give it none (#895); or one whose
-// label is still the role's own guess, to correct. None while the kind
-// act is off.
+// label is still the role's own `task` guess, to correct. None while the
+// kind act is off.
 func kindAsked(is forge.Issue, st *backlog.State, mode string) string {
-	if k, l := backlog.KindOf(is.Labels); mode != backlog.Off && l != "" && st != nil && strings.EqualFold(l, st.Kind) {
+	if k, l := backlog.KindOf(is.Labels); mode != backlog.Off && l != "" && k == backlog.KindTask && st != nil && strings.EqualFold(l, st.Kind) {
 		return fmt.Sprintf("Kind: `%s`, the role's own guess — propose `kind` on #%d only if the whole issue shows another.\n", k, is.ID)
 	}
 	if mode == backlog.Off || !unkinded(is, st) {

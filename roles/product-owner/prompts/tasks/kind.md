@@ -11,7 +11,8 @@ Propose `kind` on each issue, and why, in a few words from its text:
 - `feature`: a function people have not had yet, or a new behaviour of
   one they have.
 - `task`: work that changes no behaviour and fixes nothing wrong — a
-  refactor, a dependency bump, a measure, a check or tool added.
+  refactor, a dependency bump, a measure, a check, a tool or a doc
+  added.
 
 Read the whole body before you choose: a title or a first line that
 reads as a chore may describe a defect below. A bug's fix merges once a

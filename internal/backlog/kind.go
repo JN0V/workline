@@ -79,8 +79,8 @@ func KindLabel(kind string, names map[string][]string, have []string) string {
 
 // checkKind checks a kind act: before the issue's state is read (st nil),
 // a kind it knows, and the label it sets; once read, that no kind label
-// tells it but the role's own guess, corrected once by another kind: a
-// person's label, change or removal stands.
+// tells it but the role's own `task` guess, corrected once by another
+// kind: a person's label, change or removal stands.
 func (p *Plan) checkKind(f forge.Backlog, c *Proposal, st *State) (rule, why string) {
 	is, ok := p.issues[c.Issue]
 	k, label := KindOf(is.Labels)
@@ -91,8 +91,8 @@ func (p *Plan) checkKind(f forge.Backlog, c *Proposal, st *State) (rule, why str
 	switch {
 	case !ok || c.Issue == p.Report:
 		return "no-state", fmt.Sprintf("#%d is not an open issue", c.Issue)
-	case label != "" && !strings.EqualFold(label, own):
-		return "kind-kept", fmt.Sprintf("its label `%s` says its kind already, a person's or corrected once: never swapped", label)
+	case label != "" && (!strings.EqualFold(label, own) || k != KindTask):
+		return "kind-kept", fmt.Sprintf("its label `%s` says its kind already, a person's, corrected once or no `task` guess: never swapped", label)
 	case label == "" && own != "":
 		return "kind-once", fmt.Sprintf("the role set its kind once already (`%s`): a person's removal stands", own)
 	case st != nil && label != "" && k == c.IssueKind:

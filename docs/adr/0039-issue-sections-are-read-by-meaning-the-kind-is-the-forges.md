@@ -221,7 +221,8 @@ case known ([worked case](../../roles/product-owner/docs/proposed-headings.md#ea
   wrong doc or output read as a chore.
 - **The light read gives the whole body**, and a bug is defined as
   something that exists and is wrong: code, a doc, an output.
-- **A later full read may swap the role's own label once**, still on
-  the issue, for another kind: (c)'s "never swaps" holds for a person's
+- **A later full read may swap the role's own `task` label once**,
+  still on the issue, for another kind; its own `bug` or `feature` is
+  kept, so a feature never becomes a bug that merges alone: (c)'s "never swaps" holds for a person's
   label, change or removal only. A swap to `bug` lets a fix merge alone
   only once a test red on the base proves the bug, as any bug.

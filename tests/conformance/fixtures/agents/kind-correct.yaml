@@ -2,3 +2,4 @@
 - kind: {issue: 10, kind: bug, why: "the export is slower than it was."}
 - kind: {issue: 11, kind: task, why: "a dependency bump, no behaviour changed."}
 - kind: {issue: 12, kind: feature, why: "a new export format."}
+- kind: {issue: 13, kind: bug, why: "the dark mode fails on one page."}

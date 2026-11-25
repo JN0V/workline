@@ -375,10 +375,10 @@ by its own contract (its guard, its docs, its other paths), even when
 no user sees it; a wrong doc or a wrong output is a bug. `feature` for
 a function people have not had, or a new behaviour of one; `task` for
 work that changes no behaviour and fixes nothing wrong (a refactor, a
-dependency, a measure). A bug's fix merges once a test that fails shows
+dependency bump, a measure, a check, a tool or a doc added). A bug's fix merges once a test that fails shows
 the bug; a feature waits for a person: never call a bug a feature,
 whatever its size. A person's kind stands. A kind the task says is the
-role's own guess is corrected with `kind` only when the whole issue
+role's own `task` guess is corrected with `kind` only when the whole issue
 shows another. The issues the task gives "for their kind alone" get a
 `kind` each, by their title and body, and nothing else.
 
