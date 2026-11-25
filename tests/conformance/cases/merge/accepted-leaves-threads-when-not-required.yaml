@@ -1,0 +1,31 @@
+case: merge/accepted-leaves-threads-when-not-required
+about: "A person's yes on a head whose verdict passed, on a base that does not require conversations resolved (#2194): the reviewer's open warning holds nothing, so the line leaves it as it is, unresolved, with no reply."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        checks: success
+        comments: []
+        threads:
+          - {path: src/auth/token.go, line: 3, created: "2026-01-04T09:00:00Z", body: "**workline reviewer** · warns · edge-cases\n\n**Important: Two hours keeps a stolen token alive longer**\n\n<!-- workline:line=edge-cases/0123456789ab -->", replies: [{body: "Two hours is my decision.", author: dana, insider: true, created: "2026-01-04T09:30:00Z"}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  forge:
+    merge-requests:
+      - id: 7
+        threads:
+          - {path: src/auth/token.go, line: 3, resolved: false, replies: 1}

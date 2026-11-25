@@ -58,5 +58,5 @@ Part of [each finding on its line](lines.md).
 - **Left open**: found again, a block still standing, a lens that read
   elsewhere, a warning nothing answered; one a person opened, or
   answered in, stays theirs.
-- **A person's yes** on a head whose verdict passed resolves the rest
-  of its own ([holds](../../../docs/merge-policy-holds.md#open-conversations-said)).
+- **A person's yes** on a head whose verdict passed resolves its
+  warnings posted before it, where the base requires that ([holds](../../../docs/merge-policy-holds.md#open-conversations-said)).

@@ -1,5 +1,5 @@
 case: merge/accepted-resolves-the-reviewers-open-threads
-about: "A person's yes on a head whose verdict passed takes the findings the reviewer left open on its lines (#2194): a warning on a value the person decided. The line says so in each of the reviewer's own conversations and resolves them, so a base requiring every conversation resolved does not wait for a person. One the person spoke in after their yes stays theirs."
+about: "A person's yes on a head whose verdict passed takes the findings the reviewer left open on its lines (#2194): a warning on a value the person decided. The line says so in each of the reviewer's own conversations and resolves them, so a base requiring every conversation resolved does not wait for a person. Left open: one the person spoke in after their yes, one posted after it, a block (never taken by a yes), and one another person spoke in."
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}
@@ -21,8 +21,11 @@ given:
         checks: success
         comments: []
         threads:
-          - {path: src/auth/token.go, line: 3, body: "**workline reviewer** · warns · edge-cases\n\n**Important: Two hours keeps a stolen token alive longer**\n\n<!-- workline:line=edge-cases/0123456789ab -->", replies: [{body: "Two hours is my decision.", author: dana, insider: true, created: "2026-01-04T09:30:00Z"}]}
-          - {path: src/auth/token.go, line: 4, body: "**workline reviewer** · warns · tests\n\n**Important: The longer session is untested**\n\n<!-- workline:line=tests/0123456789ac -->", replies: [{body: "Wait, add that test first.", author: dana, insider: true, created: "2026-01-04T11:00:00Z"}]}
+          - {path: src/auth/token.go, line: 3, created: "2026-01-04T09:00:00Z", body: "**workline reviewer** · warns · edge-cases\n\n**Important: Two hours keeps a stolen token alive longer**\n\n<!-- workline:line=edge-cases/0123456789ab -->", replies: [{body: "Two hours is my decision.", author: dana, insider: true, created: "2026-01-04T09:30:00Z"}]}
+          - {path: src/auth/token.go, line: 4, created: "2026-01-04T09:00:00Z", body: "**workline reviewer** · warns · tests\n\n**Important: The longer session is untested**\n\n<!-- workline:line=tests/0123456789ac -->", replies: [{body: "Wait, add that test first.", author: dana, insider: true, created: "2026-01-04T11:00:00Z"}]}
+          - {path: src/auth/token.go, line: 5, created: "2026-01-04T10:30:00Z", body: "**workline reviewer** · warns · simplicity\n\n**Important: Posted after the yes**\n\n<!-- workline:line=simplicity/0123456789ad -->"}
+          - {path: src/auth/token.go, line: 6, created: "2026-01-04T09:00:00Z", body: "**workline reviewer** · **blocks** · correctness\n\n**Important: A block stays a block**\n\n<!-- workline:line=correctness/0123456789ae -->"}
+          - {path: src/auth/token.go, line: 7, created: "2026-01-04T09:00:00Z", body: "**workline reviewer** · warns · tests\n\n**Important: Another person objected**\n\n<!-- workline:line=tests/0123456789af -->", replies: [{body: "I object.", author: erin, insider: true, created: "2026-01-04T09:40:00Z"}]}
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
@@ -34,3 +37,6 @@ expect:
         threads:
           - {path: src/auth/token.go, line: 3, resolved: true, replies: 2, replies-contain: ["**Resolved on dana's yes**", "Their yes takes it."]}
           - {path: src/auth/token.go, line: 4, resolved: false, replies: 1}
+          - {path: src/auth/token.go, line: 5, resolved: false, replies: 0}
+          - {path: src/auth/token.go, line: 6, resolved: false, replies: 0}
+          - {path: src/auth/token.go, line: 7, resolved: false, replies: 1}

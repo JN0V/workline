@@ -1254,23 +1254,27 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say(rule, "warn", fmt.Sprintf("accepted by %s, but %s; %s", by, v.why, then))
 		return nil, nil
 	}
-	if err := resolveAccepted(f, mr, tip, st, by, say); err != nil {
+	if err := resolveAccepted(f, mr, tip, st, yes, say); err != nil {
 		return nil, err
 	}
 	return armed(f, m, mr, tip, st, e, say, by, "its head's verdict passed")
 }
 
-// resolveAccepted resolves the reviewer's own conversations still open on
-// a head a person accepted, its verdict passed (#2194): their yes takes
-// the findings left in them, a warning's or one a person decided, said in
-// each before it is resolved. One the line did not open, or one another
-// person spoke in, or the yes's author spoke in after it, stays theirs.
-func resolveAccepted(f forge.Forge, mr forge.MergeRequest, tip string, st forge.MergeState, by string, say func(rule, level, msg string)) error {
+// resolveAccepted resolves the reviewer's own warnings still open on a
+// head a person accepted, its verdict passed, where the base requires
+// every conversation resolved (#2194): their yes takes the findings left
+// in them, said in each before it is resolved. Only a warning posted
+// before the yes: a block is never taken by a yes, and one posted after
+// it was not seen. One another person spoke in, or the yes's author
+// after it, stays theirs.
+func resolveAccepted(f forge.Forge, mr forge.MergeRequest, tip string, st forge.MergeState, yes *forge.LabelEvent, say func(rule, level, msg string)) error {
 	th, ok := f.(forge.Threaded)
 	r, resolves := f.(forge.Resolver)
-	if !ok || !resolves {
+	rules, read := f.(forge.ConversationRules)
+	if !ok || !resolves || !read || yes == nil || yes.Created == "" {
 		return nil
 	}
+	by := yes.Author
 	unread := func(err error) error {
 		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
 			return err
@@ -1282,23 +1286,44 @@ func resolveAccepted(f forge.Forge, mr forge.MergeRequest, tip string, st forge.
 	if err != nil {
 		return unread(err)
 	}
+	// A warning of the reviewer's, posted at or before the yes; a
+	// person's word in it the yes's author's, given at or before it.
+	var open []forge.Thread
+	for _, t := range threads {
+		if t.Resolved || len(t.Comments) == 0 {
+			continue
+		}
+		first := t.Comments[0]
+		if !strings.HasPrefix(strings.TrimSpace(first.Body), "**workline reviewer** · warns ·") || len(forge.LineKeys(first.Body)) == 0 ||
+			first.Created == "" || later(first.Created, yes.Created) {
+			continue
+		}
+		open = append(open, t)
+	}
+	if len(open) == 0 {
+		return nil
+	}
+	if c, err := rules.Conversations(mr.Base); err != nil || !c.Required {
+		return nil // they hold nothing, or that is unread: heldByConversations says it
+	}
 	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: mr.ID})
 	if err != nil {
 		return unread(err)
 	}
 	marker := forge.Marker("accepted-open=" + short(tip))
 	var ids []string
-	for _, t := range threads {
-		if t.Resolved || len(t.Comments) == 0 || !kept.Wrote(t.Comments[0]) || len(forge.LineKeys(t.Comments[0].Body)) == 0 {
+	for _, t := range open {
+		if !kept.Wrote(t.Comments[0]) {
 			continue
 		}
 		if slices.ContainsFunc(t.Comments[1:], func(n forge.Note) bool {
-			return !kept.Wrote(n) && !n.Bot && strings.TrimSpace(n.Body) != "" && !answeredByTheirYes(n, st.Labels)
+			return !kept.Wrote(n) && !n.Bot && strings.TrimSpace(n.Body) != "" &&
+				(n.Author != yes.Author || n.Created == "" || later(n.Created, yes.Created))
 		}) {
 			continue // a person's word in it the yes does not cover: theirs
 		}
 		if !slices.ContainsFunc(t.Comments, func(n forge.Note) bool { return strings.Contains(n.Body, marker) }) {
-			body := fmt.Sprintf("**Resolved on %s's yes**: %s accepted this pull request on its head %s, the line's verdict passed, with this finding open. Their yes takes it.", by, by, short(tip))
+			body := fmt.Sprintf("**Resolved on %s's yes**: %s accepted this pull request on its head %s, the line's verdict passed, with this warning open. Their yes takes it.", by, by, short(tip))
 			if err := th.Reply(mr.ID, t.ID, body+"\n\n"+marker); err != nil {
 				return unread(err)
 			}
