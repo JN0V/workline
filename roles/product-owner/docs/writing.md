@@ -41,12 +41,12 @@ first, the cause folded.
   only with a fact the Need lacks.
 - **Validation**: named scenarios a person runs, as Given / When / Then,
   each a bullet `- **Name:** Given …, When …, Then …`.
-  - **Every Then is seen by running** something, never by reading the
-    code.
+  - **A Then is what a person observes** (an output, a behaviour, a
+    published doc), never how the code is written.
   - **A threshold** is a number with its unit and its reason, or a
-    question to the reporter; never "below today's value".
-  - **Who else the change reaches** (a public API, a setting, a file
-    format) gets a scenario of its own: what tells them, its migration.
+    question to the reporter; never a bound any change meets.
+  - **A change that alters what others use** (a public API, a setting,
+    a file format) gets a scenario for them: what tells them.
   - **Also read**: a `**Scenario: Name**`, `Scenario: Name` or
     `### Scenario: Name` line, its steps below, bullets or not; the
     same in a fenced `gherkin` block.
