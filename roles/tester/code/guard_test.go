@@ -31,3 +31,20 @@ func TestKeptScenarioWithNoGuardIsGivenOne(t *testing.T) {
 		t.Errorf("a scenario guarded by an existing test keeps its reason, naming it: %q", got)
 	}
 }
+
+// Guard written, a test shared: Given one test declared both as the guard
+// of a scenario kept as today and as the test of a scenario that is not
+// a guard, green on the base, When the guards are read for the red proof,
+// Then that test is not one of them, so the proof still refuses it as
+// green on the base; a test declared only as a guard is one.
+func TestSharedTestOfGuardAndNonGuardScenarioIsNotAGuard(t *testing.T) {
+	covers := []declared{
+		{Scenario: "Late fee", Tests: []string{"TestShared", "TestOnlyGuard"}, Guard: true},
+		{Scenario: "Early fee", Tests: []string{"TestShared"}},
+	}
+	newTests := []string{"TestShared", "TestOnlyGuard"}
+	got := guardsOf(covers, newTests, []string{"fee_test.go"})
+	if joined := strings.Join(got, ","); joined != "TestOnlyGuard" {
+		t.Errorf("guards = %q, want only %q: a test also declared for a scenario that is not a guard must stay refused when green on the base", joined, "TestOnlyGuard")
+	}
+}
