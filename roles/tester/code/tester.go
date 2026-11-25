@@ -363,13 +363,13 @@ func prove(repo, base string, s Settings) proven {
 		}
 		return proven{v: v, doubt: dbt, errs: errs}
 	}
-	missing, guards := 0, 0
+	missing, guards := 0, []string{}
 	for _, id := range added {
 		switch r, ok := redRun.results[id]; {
 		case !ok:
 			missing++ // not built on the base: a missing name, red
 		case r == passed && slices.ContainsFunc(s.guards, func(g string) bool { ids, _ := declaredIn(g, added, ch.tests); return slices.Contains(ids, id) }):
-			guards++ // a guard of a scenario kept as today: green there, as it must be
+			guards = append(guards, id) // a guard of a scenario kept as today: green there, as it must be
 		case r == passed:
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "test-green-on-base", Where: id,
 				Message: greenOnBase})
@@ -389,12 +389,18 @@ func prove(repo, base string, s Settings) proven {
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "test-red-on-head", Where: id, Message: "is skipped on the head: a skipped test is not green"})
 		}
 	}
+	if len(guards) == len(added) { // guards alone show nothing the base lacks
+		for _, id := range guards {
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "test-green-on-base", Where: id, Message: greenOnBase})
+		}
+		guards = nil
+	}
 	v.Summary = fmt.Sprintf("%d new test%s, red on the base", len(added), plural(len(added)))
 	if onHead {
 		v.Summary += ", green on the head"
 	}
-	if guards > 0 {
-		v.Summary += fmt.Sprintf(" but %d, a guard of a scenario kept as today, green there", guards)
+	if len(guards) > 0 {
+		v.Summary += fmt.Sprintf(" but %d, a guard of a scenario kept as today, green there", len(guards))
 	}
 	if missing > 0 {
 		// Said: the fast path passed it, without the judge (ADR-0065).
