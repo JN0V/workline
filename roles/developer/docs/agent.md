@@ -110,6 +110,9 @@ It answers with its edits; its diff is its code
 - **Why a file beyond the Scope** goes in `.workline/beyond.yaml`,
   `path: why`, one line each: read, taken out of the diff, listed on
   the pull request ([beyond the Scope](bounds.md#beyond-the-scope)).
+- **Its pull request's summary goes in a file**, `.workline/subject`,
+  one line: read, taken out of the diff, checked, never cut
+  ([its commits](pull-request.md#its-commits)).
 - **Its last message is `[]`**: the question says the engine reads it,
   YAML only.
 - **Closing words that do not read never cost the code**: it is still

@@ -87,14 +87,16 @@ flowchart LR
     - the merge policy reads the issue's kind, never this type;
   - scope: the folder every path of the issue's Scope sits in, none
     when they share none;
-  - summary: the issue's title, lower-case first, its references and
-    the codes the committer refuses taken out, cut on a word to the
-    committer's `subject-max`;
+  - summary: the one its agent writes in `.workline/subject`, the room
+    left said in its question; else the issue's title, lower-case
+    first, its references and the codes the committer refuses taken
+    out; else `the code of #<n>`: the first that passes the commit
+    check, never cut;
   - a review round's fix: `fix: the review's findings on #<n>, round <r>`.
-- **Its title is its code's subject**, cut shorter: a squash lands it
-  with the forge's ` (#N)`, and GitLab marks a Draft with `Draft: `;
-  both still fit the committer's limit
-  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md)).
+- **Its title is its code's subject**, checked where a squash lands it,
+  with the forge's ` (#N)`
+  ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
+  a Draft's is `the code of #<n>` when GitLab's `Draft: ` leaves no room.
 - **Each carries `Workline-Role: developer`** and the model that wrote
   it, as every commit workline makes.
 

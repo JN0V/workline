@@ -130,44 +130,21 @@ func summaryOf(title string, s commitmsg.Settings) string {
 	return t
 }
 
-// subject is `typ(scope): summary`, cut on a word to the committer's
-// limit; the scope dropped when the head would take half of it, the
-// type the committer's first when it does not know typ.
+// subject is `typ(scope): summary`, never cut: the scope dropped when
+// the head would take half the committer's limit, the type the
+// committer's first when it does not know typ.
 func subject(typ, scope, summary string, s commitmsg.Settings) string {
 	if len(s.Types) > 0 && !slices.Contains(s.Types, typ) {
 		typ = s.Types[0]
-	}
-	if summary == "" {
-		summary = "the issue's change"
 	}
 	head := typ + ": "
 	if scope != "" {
 		head = typ + "(" + scope + "): "
 	}
-	limit := s.SubjectMax
-	if limit <= 0 {
-		return head + summary
-	}
-	if scope != "" && 2*utf8.RuneCountInString(head) > limit {
+	if scope != "" && 2*utf8.RuneCountInString(head) > s.SubjectMax && s.SubjectMax > 0 {
 		return subject(typ, "", summary, s)
 	}
-	room := limit - utf8.RuneCountInString(head)
-	if utf8.RuneCountInString(summary) <= room {
-		return head + summary
-	}
-	// Whole words while they fit; a first word too long, cut.
-	var cut string
-	for _, w := range strings.Fields(summary) {
-		next := strings.TrimSpace(cut + " " + w)
-		if utf8.RuneCountInString(next) > room {
-			break
-		}
-		cut = next
-	}
-	if cut == "" {
-		cut = string([]rune(summary)[:max(room, 1)])
-	}
-	return head + strings.TrimRight(cut, " :;,.-–—")
+	return head + summary
 }
 
 // committerSettings are the committer's settings for the project, its
@@ -201,4 +178,10 @@ func committerSettings(repo, where string) (commitmsg.Settings, []verdict.Findin
 // reviewSubject is the subject of a review round's fix commit.
 func reviewSubject(issue, round int, s commitmsg.Settings) string {
 	return subject("fix", "", fmt.Sprintf("the review's findings on #%d, round %d", issue, round), s)
+}
+
+// head is the subject's head its agent writes a summary after, typed
+// before its code is: a task's `chore`, the longer.
+func head(b Bounds) string {
+	return subject(commitType(b.Kind, nil), commitScope(b.Scope), "", commitmsg.Settings{})
 }

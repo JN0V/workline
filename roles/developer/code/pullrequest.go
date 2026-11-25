@@ -40,11 +40,10 @@ func written(patches []intent.Intention, def testdef.Def) (code, tests []string)
 	return slices.Compact(code), slices.Compact(tests)
 }
 
-// Subjects are its commits' subjects, its tests' and its code's, and its
-// pull request's title, ready and as a Draft: the code's subject, room
-// left for what a squash adds; Note, what its body says of a type a
-// person may change.
-type Subjects struct{ Tests, Code, Title, DraftTitle, Note string }
+// Subjects are its commits' subjects, its tests' and its code's, the
+// code's its pull request's title, and its title as a Draft; Note, what
+// its body says of a type a person may change.
+type Subjects struct{ Tests, Code, DraftTitle, Note string }
 
 // shippedTaskNote is what a task typed fix says to a person (#2198).
 const shippedTaskNote = "- Typed `fix`: a task that changes shipped code, so that release tools list it and bump its package. " +
@@ -56,26 +55,26 @@ var squashRoom = len(" (#12345)")
 
 // subjects are its commits' subjects for the issue, as the project's
 // committer checks them: `test` and the issue's kind, the folder its
-// Scope shares, its title; a task's type by the code it changes. Its
-// pull request's title is the code's subject, cut so that a squash
-// lands it within the limit, and the engine keeps it: within
-// forge.TitleMax, GitLab's "Draft: " too.
-func subjects(issue int, title, kind string, scope, code []string, s commitmsg.Settings) Subjects {
-	sum := summaryOf(title, s)
-	if sum == "" {
-		sum = fmt.Sprintf("the code of #%d", issue)
+// Scope shares, a task's type by the code it changes; the summary its
+// agent wrote (own), else its title, the first whose subject passes the
+// check where a squash lands it, never cut; else "the code of #n", as
+// its Draft's title when GitLab's "Draft: " leaves no room.
+func subjects(issue int, own, title, kind string, scope, code []string, s commitmsg.Settings) Subjects {
+	sc, typ, r, none := commitScope(scope), commitType(kind, code), s, fmt.Sprintf("the code of #%d", issue)
+	if r.SubjectMax = forge.TitleMax; s.SubjectMax > 0 {
+		r.SubjectMax = min(s.SubjectMax-squashRoom, forge.TitleMax)
 	}
-	sc, typ := commitScope(scope), commitType(kind, code)
-	room := func(less int) commitmsg.Settings {
-		r := s
-		r.SubjectMax = forge.TitleMax - less
-		if s.SubjectMax > 0 {
-			r.SubjectMax = min(s.SubjectMax-squashRoom, forge.TitleMax) - less
+	sum := none
+	for _, c := range []string{strings.TrimSpace(own), summaryOf(title, s)} {
+		if found, err := commitmsg.Check(subject(typ, sc, c, r), r); c != "" && err == nil && len(found) == 0 {
+			sum = c
+			break
 		}
-		return r
 	}
-	sub := Subjects{Tests: subject("test", sc, sum, s), Code: subject(typ, sc, sum, s),
-		Title: subject(typ, sc, sum, room(0)), DraftTitle: subject(typ, sc, sum, room(len("Draft: ")))}
+	sub := Subjects{Tests: subject("test", sc, sum, r), Code: subject(typ, sc, sum, r), DraftTitle: subject(typ, sc, none, r)}
+	if len([]rune(sub.Code)) <= r.SubjectMax-len("Draft: ") {
+		sub.DraftTitle = sub.Code
+	}
 	if kind == devmark.KindTask && typ == "fix" && strings.HasPrefix(sub.Code, typ) {
 		sub.Note = shippedTaskNote
 	}
@@ -95,8 +94,8 @@ func mergeRequest(a devmark.Act, title string, sub Subjects) map[string]any {
 	mr := map[string]any{"key": fmt.Sprint(a.Issue), "title": title, "body": b, "draft": !ready,
 		"record": map[string]any{"sticky": devmark.RecordKey, "body": recordBody(a)}, "message": sub.Code}
 	switch {
-	case ready && sub.Title != "":
-		mr["title"] = sub.Title
+	case ready && sub.Code != "":
+		mr["title"] = sub.Code
 	case !ready && sub.DraftTitle != "":
 		mr["title"] = sub.DraftTitle
 	}

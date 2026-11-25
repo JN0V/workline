@@ -3,7 +3,8 @@ about: >
   The developer's own commits pass the project's commit check (#736):
   its tests' and its code's subjects read `type(scope): summary`, `test`
   and the issue's kind (`fix` for a bug), the issue's title as the
-  summary, its code taken out, cut on a word to the committer's limit.
+  summary, its code taken out; past the committer's limit, never cut:
+  "the code of #n" whole.
   The committer, routed on the merge request, passes them, the
   Workline-Role trailer kept.
 given:
@@ -33,16 +34,16 @@ expect:
   findings: [{rule: proof-green, where: "#3"}]
   no-findings: [{rule: format}, {rule: subject-length}, {rule: internal-code}, {rule: possible-internal-code}]
   pushed-message:
-    workline/developer/3: "fix: multiply two numbers for every caller that needs the product of two\n\nWorkline-Role: developer"
+    workline/developer/3: "fix: the code of #3\n\nWorkline-Role: developer"
   pushed-log:
     workline/developer/3:
       - "test: the acceptance tests of #3"
-      - "test: multiply two numbers for every caller that needs the product of"
+      - "test: the code of #3"
       - "tests/test_mul_negative.sh"
-      - "fix: multiply two numbers for every caller that needs the product of two"
+      - "fix: the code of #3"
       - "lib.sh"
   forge:
     merge-requests:
       - id: 2
         branch: workline/developer/3
-        title: "fix: multiply two numbers for every caller that needs the"
+        title: "fix: the code of #3"
