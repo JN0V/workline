@@ -1,0 +1,36 @@
+case: merge/accepted-resolves-the-reviewers-open-threads
+about: "A person's yes on a head whose verdict passed takes the findings the reviewer left open on its lines (#2194): a warning on a value the person decided. The line says so in each of the reviewer's own conversations and resolves them, so a base requiring every conversation resolved does not wait for a person. One the person spoke in after their yes stays theirs."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    conversations-required: [main]
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        checks: success
+        comments: []
+        threads:
+          - {path: src/auth/token.go, line: 3, body: "**workline reviewer** · warns · edge-cases\n\n**Important: Two hours keeps a stolen token alive longer**\n\n<!-- workline:line=edge-cases/0123456789ab -->", replies: [{body: "Two hours is my decision.", author: dana, insider: true, created: "2026-01-04T09:30:00Z"}]}
+          - {path: src/auth/token.go, line: 4, body: "**workline reviewer** · warns · tests\n\n**Important: The longer session is untested**\n\n<!-- workline:line=tests/0123456789ac -->", replies: [{body: "Wait, add that test first.", author: dana, insider: true, created: "2026-01-04T11:00:00Z"}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: accepted-threads-resolved, where: "#7", message: "accepted by dana, its head's verdict passed: the reviewer's 1 open conversation on its lines resolved, the yes taking their findings"}
+  forge:
+    merge-requests:
+      - id: 7
+        threads:
+          - {path: src/auth/token.go, line: 3, resolved: true, replies: 2, replies-contain: ["**Resolved on dana's yes**", "Their yes takes it."]}
+          - {path: src/auth/token.go, line: 4, resolved: false, replies: 1}

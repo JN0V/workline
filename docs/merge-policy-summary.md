@@ -2,6 +2,7 @@
 sources:
   - internal/engine/merge.go#mergePolicy
   - internal/engine/merge.go#heldByConversations
+  - internal/engine/merge.go#resolveAccepted
   - internal/engine/merge.go#personsCommentOpen
 checked: e81df7b34
 verified: agent:claude-code
@@ -20,6 +21,7 @@ At `normal`, more words:
 | `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind; "merged now", an auto-merge the forge left |
 | `merge-refused` | the forge refused to merge now one whose auto-merge it left: auto-merge left on |
 | `persons-comment-open`, `comments-unread` | a person's comment no role answered, nor their own later yes: nothing merges; or its comments could not be read |
+| `accepted-threads-resolved`, `thread-not-resolved` | accepted, its head's verdict passed: the reviewer's open conversations resolved, the yes taking their findings; or why not |
 | `held-by-conversations`, `conversations-unread` | auto-merge on, checks green, not merged: the open conversations that hold it, or why they could not be read |
 | `verdict-kept`, `verdict-missing`, `review-to-come` | the verdict kept; one not judged yet; marked ready, the draft's verdict still on its head |
 | `verdict-red`, `review-short`, `checks-red` | nothing turned on, why; a person's yes does not lift a red verdict |

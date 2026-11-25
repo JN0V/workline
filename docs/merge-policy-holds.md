@@ -2,6 +2,7 @@
 sources:
   - internal/engine/merge.go#personsCommentOpen
   - internal/engine/merge.go#heldByConversations
+  - internal/engine/merge.go#resolveAccepted
   - internal/engine/merge.go#mergePolicy
 checked: e81df7b34
 verified: agent:claude-code
@@ -37,6 +38,11 @@ request from merging, each found by `merge.go`.
 - **Who resolves**: the reviewer its own, once the code answers them
   ([lines](../roles/reviewer/docs/lines-again.md#not-repeated-found-again));
   a person theirs.
+- **On a person's yes**, its head's verdict passed: `follow` resolves
+  the reviewer's own still open, their findings taken by the yes, and
+  says so in each
+  ([#2194](https://github.com/JN0V/workline/issues/2194)). One another
+  person spoke in, or the yes's author after it, stays open.
 
 ## Nothing turned on, said in the job's summary
 

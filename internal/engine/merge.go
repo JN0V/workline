@@ -1254,7 +1254,73 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say(rule, "warn", fmt.Sprintf("accepted by %s, but %s; %s", by, v.why, then))
 		return nil, nil
 	}
+	if err := resolveAccepted(f, mr, tip, st, by, say); err != nil {
+		return nil, err
+	}
 	return armed(f, m, mr, tip, st, e, say, by, "its head's verdict passed")
+}
+
+// resolveAccepted resolves the reviewer's own conversations still open on
+// a head a person accepted, its verdict passed (#2194): their yes takes
+// the findings left in them, a warning's or one a person decided, said in
+// each before it is resolved. One the line did not open, or one another
+// person spoke in, or the yes's author spoke in after it, stays theirs.
+func resolveAccepted(f forge.Forge, mr forge.MergeRequest, tip string, st forge.MergeState, by string, say func(rule, level, msg string)) error {
+	th, ok := f.(forge.Threaded)
+	r, resolves := f.(forge.Resolver)
+	if !ok || !resolves {
+		return nil
+	}
+	unread := func(err error) error {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+			return err
+		}
+		say("thread-not-resolved", "warn", fmt.Sprintf("accepted by %s, its head's verdict passed, but the reviewer's conversations on its lines could not be read, none resolved: %s", by, forge.Said(err)))
+		return nil
+	}
+	threads, err := th.Threads(mr.ID)
+	if err != nil {
+		return unread(err)
+	}
+	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: mr.ID})
+	if err != nil {
+		return unread(err)
+	}
+	marker := forge.Marker("accepted-open=" + short(tip))
+	var ids []string
+	for _, t := range threads {
+		if t.Resolved || len(t.Comments) == 0 || !kept.Wrote(t.Comments[0]) || len(forge.LineKeys(t.Comments[0].Body)) == 0 {
+			continue
+		}
+		if slices.ContainsFunc(t.Comments[1:], func(n forge.Note) bool {
+			return !kept.Wrote(n) && !n.Bot && strings.TrimSpace(n.Body) != "" && !answeredByTheirYes(n, st.Labels)
+		}) {
+			continue // a person's word in it the yes does not cover: theirs
+		}
+		if !slices.ContainsFunc(t.Comments, func(n forge.Note) bool { return strings.Contains(n.Body, marker) }) {
+			body := fmt.Sprintf("**Resolved on %s's yes**: %s accepted this pull request on its head %s, the line's verdict passed, with this finding open. Their yes takes it.", by, by, short(tip))
+			if err := th.Reply(mr.ID, t.ID, body+"\n\n"+marker); err != nil {
+				return unread(err)
+			}
+		}
+		ids = append(ids, t.ID)
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	if err := r.Resolve(mr.ID, ids); err != nil {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+			return err
+		}
+		say("thread-not-resolved", "warn", fmt.Sprintf("accepted by %s, its head's verdict passed, but the forge refused to resolve the reviewer's %d conversations on its lines: %s", by, len(ids), forge.Said(err)))
+		return nil
+	}
+	noun := "conversations"
+	if len(ids) == 1 {
+		noun = "conversation"
+	}
+	say("accepted-threads-resolved", "", fmt.Sprintf("accepted by %s, its head's verdict passed: the reviewer's %d open %s on its lines resolved, the yes taking their findings", by, len(ids), noun))
+	return nil
 }
 
 // forkGuarded names the files a fork's change touches, past base, that

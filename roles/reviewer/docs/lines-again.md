@@ -47,6 +47,10 @@ Part of [each finding on its line](lines.md).
     pushed, its tests green, and the next run does not raise it again
     ([#1050](https://github.com/JN0V/workline/issues/1050)): a warning
     asks nothing, its lens may never read the file again.
+  - or the tester answered that it added a test, in a file its lens
+    reads this run and does not raise it again: that file need not
+    name the finding's
+    ([#2194](https://github.com/JN0V/workline/issues/2194));
   - or the tester answered that no test is needed, and a judge found
     the reason holds
     ([judge](tester-answers.md)).
@@ -54,3 +58,5 @@ Part of [each finding on its line](lines.md).
 - **Left open**: found again, a block still standing, a lens that read
   elsewhere, a warning nothing answered; one a person opened, or
   answered in, stays theirs.
+- **A person's yes** on a head whose verdict passed resolves the rest
+  of its own ([holds](../../../docs/merge-policy-holds.md#open-conversations-said)).
