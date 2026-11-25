@@ -895,7 +895,7 @@ workline:review:propose:
     - jq -r '(.pending // [])[0] // empty | split("/") | last' round.json > round-run   # a run left to apply, by name
     - '[ "${status:-0}" = 0 ] || echo "ERROR: workline ended with status $status: $(cat gates-summary.md workline-summary.md 2>/dev/null | head -c 2000 | tr "\n" " ")"'
     - exit $status
-  allow_failure: {exit_codes: [3]}  # an agent out of reach warns: the review waits for the next verdict
+  allow_failure: {exit_codes: [3]}  # an agent out of reach warns: no round counted, the next verdict asks again
   after_script: *tally
   artifacts:
     when: always

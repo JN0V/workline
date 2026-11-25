@@ -827,8 +827,17 @@ func reviewPost(runDir, repo string, s Settings) int {
 			notes = append(notes, text)
 		}
 	}
+	// Its agent could not be reached (its provider overloaded, its quota
+	// spent), spent nothing and said nothing: unless it changed the
+	// worktree before, the round did not happen (unreached, below); if it
+	// did, its five whys are owed as any round's, asked once its change is
+	// known. A call that spent tokens, turns or tools is a round, counted:
+	// never a loop of rounds that cost and count nothing.
+	u := used(runDir)
+	unreached := strings.HasPrefix(u.failed, agent.ErrUnavailable.Error()) && u.Tokens == 0 && u.Cached == 0 && u.Turns == 0 && len(u.Tools) == 0 &&
+		len(notes) == 0 && len(analyses) == 0
 	analysis := ""
-	if r.FiveWhys {
+	if r.FiveWhys && !unreached {
 		if len(analyses) != 1 {
 			return refuseAnswer(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the round's answer is refused",
 				Findings: []verdict.Finding{{Rule: "five-whys-missing", Where: where, Message: fmt.Sprintf("a finding is still there at round three: the answer gives the five whys as one `note` opening with `Five whys`, as the skill says (%d given)", len(analyses))}}})
@@ -876,6 +885,25 @@ func reviewPost(runDir, repo string, s Settings) int {
 		} else {
 			others = append(others, in) // an objection on the tester's Draft
 		}
+	}
+	// A round whose agent could not be reached, that changed nothing nor
+	// said anything, is no round: none counted, nothing posted, the run
+	// blocked-external; the next run asks the findings again, its rounds
+	// all left (DomoticsCore #239).
+	// Said in one line on the pull request, edited each time, so a cause
+	// that stays (a login expired) is seen.
+	if unreached && len(patches) == 0 && len(takes) == 0 && len(others) == 0 && len(r.ToTester) == 0 && len(unread) == 0 && len(refused) == 0 {
+		said := fmt.Sprintf("**The developer**: review round %d not run at `%.9s`, its agent could not be reached (%s). No round counted; the next verdict, or a comment here, asks the findings again. Seen again and again, the agent's login or quota needs a person.", n, r.At, u.failed)
+		if code := writeIntents(runDir, "", []intent.Intention{{Kind: "comment", Value: map[string]any{"sticky": roundNotRunKey, "body": said}}}); code != 0 {
+			return code
+		}
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d of %d on %s not run: its agent could not be reached", n, s.Rounds, where),
+			Findings: []verdict.Finding{{Rule: "round-not-run", Level: "warn", Where: where,
+				Message: fmt.Sprintf("its agent could not be reached (%s), spent nothing and changed nothing: no round counted, said on the pull request; the next run asks the findings again", u.failed)}}})
+	}
+	if r.FiveWhys && unreached { // it changed something before it failed: no round without its whys
+		return refuseAnswer(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the round's answer is refused",
+			Findings: []verdict.Finding{{Rule: "five-whys-missing", Where: where, Message: "a finding is still there at round three: the answer gives the five whys as one `note` opening with `Five whys`, as the skill says (0 given)"}}})
 	}
 	this := devmark.Round{N: n, Asked: texts(r.Asked), Heard: len(r.Heard), Nits: r.Nits, Whys: r.FiveWhys, Tester: testerLines(r.ToTester)}
 	if len(r.ToTester) > 0 {
@@ -1255,6 +1283,10 @@ type stall struct {
 var failedRound = regexp.MustCompile(`<!-- workline:round-failed (\{.*\}) -->`)
 
 const stallMarkKey = "sticky=developer/round-stop"
+
+// roundNotRunKey is the comment saying a round's agent could not be
+// reached, edited each time.
+const roundNotRunKey = "round-not-run"
 
 // stalled reads the last two failed outcomes the engine left on the pull
 // request: the same head, base, rule and message as printed, at the
