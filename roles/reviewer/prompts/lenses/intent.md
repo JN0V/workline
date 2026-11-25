@@ -5,7 +5,9 @@
 # judge is shown the issue and the change (#126). Each scenario of the
 # Validation is answered: the code doing it and its test quoted (or why
 # no test can check it), or a finding; one answered by neither, on a run
-# reading the whole change, is judged as shown by nothing.
+# reading the whole change, is judged as shown by nothing, its judge shown
+# the whole change: the files `ignore` leaves, and workline's own last
+# commits, which the line reviews the range without, too.
 needs: issue
 judge:
   question: >-
@@ -20,7 +22,8 @@ judge:
     change the issue's Need does not need. The Scope is a hint: a file
     beyond it that the Need needs, or that the author's reason ties to it
     truly, is no finding. The change shown is the whole merge request,
-    its commits reviewed before included: answer no if any of it does it,
+    its commits reviewed before included, and its last commits that are
+    workline's own when shown apart: answer no if any of it does it,
     if the issue does not ask it, or if the finding only guesses.
   reads: issue
 ---
@@ -47,7 +50,8 @@ Given / When / Then), one by one, its name as the issue writes it:
 
 Each quote is one run of lines as they read, never pieces joined. A
 scenario you answer neither way, or with no test nor reason, is judged
-as shown by nothing: silence is never "no finding". The Example says
+as shown by nothing: silence is never "no finding". Its judge sees the
+whole change, files you were not given too. The Example says
 what the issue means; read the code against it.
 
 **Beyond the Scope.** The Scope is the product owner's hint of the files,

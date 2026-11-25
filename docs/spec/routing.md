@@ -178,7 +178,7 @@ release judging.
   judged as a person's
   ([ADR-0042](../adr/0042-the-engine-merges-by-the-projects-policy.md)).
   The steps get the commits left as `--input own=<new head>..<head>`: the
-  reviewer then knows its lenses were not shown them.
+  reviewer's judge of an intent finding is shown them, as part of the change.
   `Workline-Role: committer` marks a person's commit whose message the
   committer rewrote
   ([ADR-0046](../adr/0046-the-auditor-re-checks-every-roles-acts.md)): never
