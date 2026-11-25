@@ -1023,7 +1023,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	// narrowing or widening of its Scope is decided first, whatever the
 	// agent's order, so one dropped holds the unblock (#1193, #1061).
 	// An assumption after the rest: one taken at once follows an ask
-	// done in this run (ADR-0060); a ready last, after both.
+	// done in this run; a ready last, after both.
 	slices.SortStableFunc(indexes, func(a, b int) int {
 		first := func(i int) int {
 			switch closes[i].Do {
