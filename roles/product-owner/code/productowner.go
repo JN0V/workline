@@ -914,7 +914,7 @@ func Pre(runDir, repo string) int {
 				}
 			}
 			if unread, own := backlog.ScenariosUnread(d.is, d.st); unread && cfg.Tester && !backlog.Readied(d.is) {
-				review += backlog.ScenariosUnreadTask(d.is, own)
+				review += backlog.ScenariosUnreadTask(own)
 			}
 			review += markedSaid(d.is)
 			if d.is.ID == issueEvent() && slices.Contains(d.is.Labels, backlog.LabelToRefine) {

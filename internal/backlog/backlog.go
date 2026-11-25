@@ -1470,11 +1470,11 @@ func (p *Plan) summary(role string) {
 			// reads, and nothing rewritten nor asked (#1036): held, said
 			// on it, never left in refine with no word.
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "nothing-proposed", Level: "info", Where: fmt.Sprintf("#%d", id),
-				Message: "read, and nothing was rewritten or asked though " + scenariosWhat(is) + ": it stays in refine, said on it"})
+				Message: "read, and nothing was rewritten or asked though " + ScenariosNoneSilent + ": it stays in refine, said on it"})
 			if p.Silent == nil {
 				p.Silent = map[int]string{}
 			}
-			p.Silent[id] = scenariosUnreadWhy(is, own)
+			p.Silent[id] = scenariosUnreadWhy(own)
 		}
 	}
 	// An issue read in full that no kind tells, and the answer gave it
@@ -2544,8 +2544,8 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			if p.unread == nil {
 				p.unread = map[int]string{}
 			}
-			p.unread[c.Issue] = scenariosUnreadWhy(is, own)
-			return "scenarios-unread", fmt.Sprintf("not moved to ready: %s (%s)", scenariosWhat(is), work.ScenarioForm)
+			p.unread[c.Issue] = scenariosUnreadWhy(own)
+			return "scenarios-unread", fmt.Sprintf("not moved to ready: %s (%s)", ScenariosNoneSilent, work.ScenarioForm)
 		}
 		if c.Proof != nil && !c.Retest {
 			return p.checkProof(f, c)

@@ -26,11 +26,9 @@ var (
 	step = regexp.MustCompile(`(?i)^(?:given|when|then|and|but)\b`)
 	// apart opens a Gherkin block that is no scenario: its steps are none's.
 	apart = regexp.MustCompile(`(?i)^(?:feature|background|rule)\s*:`)
-	// givenStep and whenThenStep: a text written as Given / When / Then,
-	// each word opening a line or a bullet as a step does, When or Then
-	// after a comma too ("Given …, when …"); never a word in the prose.
-	givenStep    = regexp.MustCompile(`(?im)^\s*(?:(?:[-*+]|\d{1,3}[.)])\s+)?(?:\*\*|__)?\s*given\b`)
-	whenThenStep = regexp.MustCompile(`(?im)(?:^\s*(?:(?:[-*+]|\d{1,3}[.)])\s+)?(?:\*\*|__)?\s*|,\s*)(?:when|then)\b`)
+	// given opens a scenario written with no name; then, its outcome.
+	given = regexp.MustCompile(`(?i)^given\b`)
+	then  = regexp.MustCompile(`(?i)\bthen\s+`)
 )
 
 // Scenarios reads the named scenarios of a Validation section, in the forms
@@ -42,7 +40,9 @@ var (
 //   - a line naming a scenario, `**Scenario: Old debt**`, `Scenario: Old
 //     debt`, `#### Scenario: Old debt`, a bullet or a bold name alone, its
 //     steps on the lines below, bullets or not, until the next one;
-//   - the same in fenced code (```gherkin), Feature and Background left out.
+//   - the same in fenced code (```gherkin), Feature and Background left out;
+//   - a line or a bullet opening on Given, with no name: named by the first
+//     words of its Then, as a person would, never asked of them.
 //
 // Gherkin's keywords are Scenario, Scenario Outline, Scenario Template and
 // Example; the name is what follows the keyword. A name with no text
@@ -50,8 +50,9 @@ var (
 func Scenarios(validation string) []Scenario {
 	type read struct {
 		Scenario
-		header bool // named on its own line: the steps below are its own
-		indent int  // a bullet's indent: one deeper is its own
+		header  bool // named on its own line: the steps below are its own
+		indent  int  // a bullet's indent: one deeper is its own
+		unnamed bool // opened on Given: named by its Then once read
 	}
 	var out []read
 	var cur *read // the scenario its lines go to, nil once ended
@@ -122,16 +123,26 @@ func Scenarios(validation string) []Scenario {
 			continue
 		}
 		switch {
+		case given.MatchString(t) && (cur == nil || cur.unnamed):
+			out = append(out, read{indent: indent, unnamed: true})
+			cur = &out[len(out)-1]
+			add(t)
 		case !isBullet:
 			add(t) // a line going on, or a step under a name
-		case cur != nil && (cur.header || indent > cur.indent):
-			add(t) // a bullet under the line naming it, or indented under its bullet
+		case cur != nil && (cur.header || indent > cur.indent || cur.unnamed && step.MatchString(t)):
+			add(t) // a bullet under the line naming it, indented under its bullet, or its next step
 		default:
 			cur = nil // a bullet with no name: not a scenario a test can cite
 		}
 	}
 	var scenarios []Scenario
 	for _, r := range out {
+		if r.unnamed {
+			if outcome := then.Split(r.Text, 2); len(outcome) == 2 { // no Then: prose, no scenario
+				words := strings.Fields(outcome[1])
+				r.Name = strings.Trim(strings.Join(words[:min(6, len(words))], " "), " .,;:`*_")
+			}
+		}
 		if r.Name == "" || r.Text == "" || r.header && r.indent < 0 && !hasStep(r.Text) {
 			continue // a name with nothing under it, or alone on its line with no step: a title, not a scenario
 		}
@@ -167,12 +178,4 @@ func trimName(n string) string {
 // hasStep says whether a scenario's text opens on a Gherkin step.
 func hasStep(text string) bool {
 	return step.MatchString(text)
-}
-
-// ScenariosUnread says whether a Validation is written as Given / When /
-// Then — a Given, and a When or a Then, each opening a line or a bullet,
-// When or Then after a comma too — yet holds no scenario Scenarios reads:
-// no test can name one, so the tester writes none.
-func ScenariosUnread(validation string) bool {
-	return givenStep.MatchString(validation) && whenThenStep.MatchString(validation) && len(Scenarios(validation)) == 0
 }

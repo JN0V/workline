@@ -227,8 +227,9 @@ what it can and asks for the rest:
   and the developer): a bullet opening on its name in bold, `- **Name:**
   Given …`; a line naming it — `**Scenario: Name**`, `Scenario: Name`, a
   heading, a bold name alone — its steps below; the same in fenced
-  code. A Validation with none of these — Given / When / Then in another
-  form, or prose — is held in refine where the tester is routed
+  code; a line or a bullet opening on Given with no name, named by the
+  first six words of its Then, never asked of a person. A Validation
+  with none of these — prose — is held in refine where the tester is routed
   (`scenarios-unread`): the Definition of Ready of Tests is named
   scenarios. It is said on the issue in the role's comment with the
   form expected, and kept until it reads

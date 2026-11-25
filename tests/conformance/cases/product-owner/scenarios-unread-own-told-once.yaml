@@ -9,7 +9,7 @@ given:
     routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
   forge:
     issues:
-      - {id: 9, title: "Rows lost", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n- Given a day of three sales\n- When Ann opens it\n- Then she counts three\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 1773b47cf316\nwrote: {Validation: f5634c182810}\nrules: 99\nunread: 1773b47cf316\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Rows lost", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a day of three sales and counts three.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: cc0df91c6915\nwrote: {Validation: d2e23b45da54}\nrules: 99\nunread: cc0df91c6915\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 10, title: "Rows lost again", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: []}
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
