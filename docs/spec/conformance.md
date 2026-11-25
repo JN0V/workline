@@ -390,7 +390,8 @@ below the floor, the check is skipped: no point earned or lost, said in the
 in a worktree of its own, and appends to this repository's `results.tsv`
 (`WORKLINE_EVAL_RESULTS`); the systemd user units next to it run it every
 week, or at the next session when the machine was off. It skips the week when
-the last commit changing the engine, the roles or the cases already has three
+the last commit changing what is evaluated (`evaluated` in eval_test.go: the
+engine, the roles, the cases, the replays, the scoring code) already has three
 runs (`WORKLINE_EVAL_RUNS`) and no model changed since: the same code on the
 same models adds little, and a subscription counts the tokens. The `workline`
 column of `results.tsv` names that commit. The reviewer's cases are left
