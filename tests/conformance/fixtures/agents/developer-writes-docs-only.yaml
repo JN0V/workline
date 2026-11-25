@@ -1,0 +1,8 @@
+# The developer's agent writing only a page of docs for #3, no code: the
+# tester's acceptance tests on the branch stay red.
+- patch:
+    file: docs/mul.md
+    content: |
+      # mul
+
+      Multiplies two whole numbers.

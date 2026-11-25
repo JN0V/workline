@@ -949,7 +949,7 @@ func Post(runDir, repo string) int {
 		title := issueTitle(runDir, a.Issue)
 		cs, unread := committerSettings(repo, where)
 		v.Findings = append(v.Findings, unread...)
-		mr := mergeRequest(a, title, subjects(a.Issue, title, b.Kind, b.Scope, cs))
+		mr := mergeRequest(a, title, subjects(a.Issue, title, b.Kind, b.Scope, a.Code, cs))
 		mr["unopened"] = unopened(a, s, repo)
 		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
 			mr["body"] = withNote(fmt.Sprint(mr["body"]), note)

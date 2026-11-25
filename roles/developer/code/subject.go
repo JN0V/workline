@@ -23,15 +23,48 @@ import (
 // project.
 
 // commitType is a commit's type for an issue of this kind: a fix for a
-// bug, a chore for a task, a feature otherwise.
-func commitType(kind string) string {
+// bug, a feature for a feature or no kind; for a task, a fix when its
+// code changes a shipped file, else a chore (#2198). Release tools hide
+// a chore from the notes and bump no version for it: a change to what a
+// project ships needs both. The type says what the change does; the
+// merge policy reads the issue's kind, never the type.
+func commitType(kind string, code []string) string {
 	switch kind {
 	case devmark.KindFix:
 		return "fix"
 	case devmark.KindTask:
+		if slices.ContainsFunc(code, shipped) {
+			return "fix"
+		}
 		return "chore"
 	}
 	return "feat"
+}
+
+// notShipped are the top folders whose files no project ships: its
+// docs and its CI.
+var notShipped = []string{"docs", "doc", ".github", ".gitlab", ".circleci"}
+
+// shipped: a code file (tests are apart already) other than docs, the
+// CI, a page of prose or a tool's dotfile, all a release leaves out. A
+// build or dependency file (CMakeLists.txt, requirements.txt) is
+// shipped: it decides what the package builds.
+func shipped(f string) bool {
+	parts := strings.Split(path.Clean(f), "/")
+	if slices.Contains(notShipped, strings.ToLower(parts[0])) {
+		return false
+	}
+	for _, part := range parts {
+		if strings.HasPrefix(part, ".") {
+			return false
+		}
+	}
+	base := strings.ToLower(path.Base(f))
+	switch path.Ext(base) {
+	case ".md", ".rst", ".adoc":
+		return false
+	}
+	return !slices.Contains([]string{"license", "jenkinsfile", "azure-pipelines.yml"}, base)
 }
 
 // commitScope is the name of the folder every path of the Scope sits in,
