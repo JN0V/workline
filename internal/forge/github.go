@@ -811,7 +811,7 @@ func (g *github) Squash(id int) (Squash, error) {
 		return Squash{}, err
 	}
 	r := v.Data.Repository
-	return Squash{On: r.Allowed, Only: r.Allowed && !r.Merge && !r.Rebase && r.Body != "COMMIT_MESSAGES", LoneCommit: r.Title == "COMMIT_OR_PR_TITLE", Suffix: fmt.Sprintf(" (#%d)", id)}, nil
+	return Squash{On: r.Allowed, Only: r.Allowed && !r.Merge && !r.Rebase && (r.Body == "PR_BODY" || r.Body == "BLANK"), LoneCommit: r.Title == "COMMIT_OR_PR_TITLE", Suffix: fmt.Sprintf(" (#%d)", id)}, nil
 }
 
 // ListMergeRequests reads each open pull request: one from a fork, or
