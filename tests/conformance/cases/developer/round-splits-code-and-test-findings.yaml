@@ -31,7 +31,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 1 (5 disputes at most) on merge request 2, its fix pushed, the tests green"
+  summary: "round 1, 1 of 5 on a blocking finding, on merge request 2, its fix pushed, the tests green"
   agent-calls: 1
   findings: [{rule: tests-to-the-tester, level: info, where: "merge request 2"}]
   pushed:
@@ -46,4 +46,4 @@ expect:
         threads:
           - {path: tests/test_mul_by_zero.sh, line: 4, contains: ["- kind: missing", "mul of a negative factor has no test"]}
       - id: 2
-        comment-contains: ["review round 1 (5 disputes at most)", "Sent to the tester, its to add or to hold needless", "\"tester\":[\"tests|lib.sh|mul of a negative factor has no test\"]"]
+        comment-contains: ["review round 1, 1 of 5 on a blocking finding", "Sent to the tester, its to add or to hold needless", "\"tester\":[\"tests|lib.sh|mul of a negative factor has no test\"]"]

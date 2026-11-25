@@ -30,7 +30,7 @@ func TestRoundNoteNamesARefusedChange(t *testing.T) {
 	refused := []devmark.Refusal{{File: ".github/CODEOWNERS", Rule: "steering-file"}}
 	notes := []string{"Added the new owner to `.github/CODEOWNERS`."}
 	x := devmark.Round{N: 1, Result: "no-code", Asked: []string{"a finding"}}
-	got := roundBody(x, Settings{Rounds: 3}, notes, "", nil, refused)
+	got := roundBody(x, "round 1, 0 of 3 on a blocking finding", notes, "", nil, refused)
 	did := whatItDid(t, got)
 	if want := refusedLine(".github/CODEOWNERS", "steering-file"); !strings.Contains(did, want) {
 		t.Errorf("What it did part lacks %q:\n%s", want, did)
@@ -56,7 +56,7 @@ func TestRoundNoteDoesNotClaimARefusedChange(t *testing.T) {
 	}
 	refused = append(refused, devmark.Refusal{File: ".github/CODEOWNERS", Rule: "steering-file"})
 	x := devmark.Round{N: 1, Result: "no-code", Asked: []string{"a finding"}}
-	got := roundBody(x, Settings{Rounds: 3}, notes, "", nil, refused)
+	got := roundBody(x, "round 1, 0 of 3 on a blocking finding", notes, "", nil, refused)
 	did := whatItDid(t, got)
 	for _, claim := range []string{"is done", "internal/wake/render.go", "Added the flag", "now wakes the issue"} {
 		if strings.Contains(did, claim) {

@@ -33,7 +33,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-writes-mul"}
 expect:
   status: pass
-  summary: "round 1 (5 disputes at most) on merge request 2, its fix pushed, the tests green"
+  summary: "round 1, 1 of 5 on a blocking finding, on merge request 2, its fix pushed, the tests green"
   agent-calls: 1
   findings: [{rule: proof-green, where: "merge request 2"}]
   pushed:
@@ -42,8 +42,8 @@ expect:
   pushed-message:
     workline/developer/3: "fix: the review's findings on #3, round 1"
   run-files:
-    in/task.md: {contains: ["Review round 1 (5 disputes at most)", "mul adds its operands", "`tests/test_mul_two_by_three.sh`"]}
+    in/task.md: {contains: ["Review round 1, 1 of 5 on a blocking finding", "mul adds its operands", "`tests/test_mul_two_by_three.sh`"]}
   forge:
     merge-requests:
       - id: 2
-        comment-contains: ["review round 1 (5 disputes at most): its fix pushed, the project's tests green", "- blocks correctness `lib.sh:2`: Important: mul adds its operands", "\"round\":1", "\"review-runs\":1", "\"seen\":[\"correctness|lib.sh|mul adds its operands\"]", "workline:sticky=developer/code"]
+        comment-contains: ["review round 1, 1 of 5 on a blocking finding: its fix pushed, the project's tests green", "- blocks correctness `lib.sh:2`: Important: mul adds its operands", "\"round\":1", "\"review-runs\":1", "\"seen\":[\"correctness|lib.sh|mul adds its operands\"]", "workline:sticky=developer/code"]

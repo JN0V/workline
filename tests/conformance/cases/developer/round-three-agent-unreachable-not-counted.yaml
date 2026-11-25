@@ -37,5 +37,5 @@ expect:
   forge:
     merge-requests:
       - id: 2
-        comment-lacks: ["review round 3 (5 disputes at most)"]
+        comment-lacks: ["review round 3,"]
         comment-contains: ["review round 3 not run"]

@@ -24,7 +24,7 @@ func TestRoundNoteNamesTheWaitedPersonWithoutMention(t *testing.T) {
 		t.Fatal(err)
 	}
 	x := devmark.Round{N: 1, Result: "no-code", Asked: texts(r.Asked)}
-	body := roundBody(x, Settings{Rounds: 3}, nil, "", nil, nil)
+	body := roundBody(x, "round 1, 0 of 3 on a blocking finding", nil, "", nil, nil)
 	if !strings.Contains(body, "a person, ") || !strings.Contains(body, "dana") {
 		t.Errorf("the round note does not name the person it waits on:\n%s", body)
 	}

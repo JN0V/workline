@@ -35,7 +35,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-fixes-outside-its-scope"}
 expect:
   status: pass
-  summary: "round 2 (5 disputes at most) on merge request 2, its fix pushed, the tests green"
+  summary: "round 2, 0 of 5 on a blocking finding, on merge request 2, its fix pushed, the tests green"
   agent-calls: 1
   pushed:
     workline/developer/3:
@@ -46,4 +46,4 @@ expect:
         labels: ["workline:developing"]
     merge-requests:
       - id: 2
-        comment-contains: ["review round 2 (5 disputes at most): its fix pushed", "\"back\":true"]
+        comment-contains: ["review round 2, 0 of 5 on a blocking finding: its fix pushed", "\"back\":true"]

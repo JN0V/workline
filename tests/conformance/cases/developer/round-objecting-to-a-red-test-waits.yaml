@@ -37,7 +37,7 @@ given:
 run: {develop: [--merge-request, "2"], ai: "fake:developer-objects-no-fix"}
 expect:
   status: pass
-  summary: "round 1 (5 disputes at most) on merge request 2; its objection to the frozen tests is on the tester's Draft !1: #3 waits for its answer"
+  summary: "round 1, 0 of 5 on a blocking finding, on merge request 2; its objection to the frozen tests is on the tester's Draft !1: #3 waits for its answer"
   agent-calls: 1
   findings: [{rule: objected, level: info, where: "merge request 2"}]
   no-findings: [{rule: check-held}]

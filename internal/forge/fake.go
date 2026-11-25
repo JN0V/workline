@@ -765,7 +765,7 @@ func (f *Fake) MergeRequest(id int) (MergeRequest, error) {
 	if err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body, Draft: it.Draft, Labels: it.Labels}, nil
+	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body, Draft: it.Draft}, nil
 }
 
 // MarkReady marks a draft merge request ready; one ready already is left.

@@ -153,70 +153,45 @@ func TestRoundDueNotFromTheAppsOwnThreadReply(t *testing.T) {
 	}
 }
 
-// A person's yes: Given the pull request a person accepted, When a
-// person writes on its conversation and replies on a line, Then the
-// round asks the line's reply alone.
-func TestReadAskedSkipsTheConversationOfAnAcceptedPullRequest(t *testing.T) {
-	f := threadForge(t, nil, []forge.FakeComment{{Body: "Keep the old name.", Author: "dana", Insider: true, ID: "502"}})
-	var state forge.FakeState
-	data, err := os.ReadFile(f.Path)
-	if err == nil {
-		err = json.Unmarshal(data, &state)
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	trace := forge.FakeComment{Body: "Label put again in the owner's name.", Author: "alice", Insider: true, ID: "601"}
-	state.MergeRequests[0].Comments = append(state.MergeRequests[0].Comments, trace)
-	if data, err = json.Marshal(state); err != nil || os.WriteFile(f.Path, data, 0o644) != nil {
-		t.Fatal(err)
-	}
-	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: 2})
-	if err != nil {
-		t.Fatal(err)
-	}
+// A yes's trace: Given a person's comment seconds from their own
+// accepted label, another an hour later, When a round reads them, Then
+// only the later one asks; one beside another account's label asks too.
+func TestReadAskedSkipsTheTraceOfAPersonsYes(t *testing.T) {
 	for _, c := range []struct {
-		labels []string
-		want   int
-	}{{nil, 2}, {[]string{"workline:accepted"}, 1}, {[]string{"workline:accepted-whole"}, 1}} {
-		r, _, err := readAsked(f, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, forge.MergeRequest{ID: 2, Labels: c.labels}, "")
+		label, by string
+		want      []string
+	}{
+		{"workline:accepted", "alice", []string{"person|603"}},
+		{"workline:accepted-whole", "alice", []string{"person|603"}},
+		{"workline:accepted", "bob", []string{"person|601", "person|603"}},
+	} {
+		f := threadForge(t, nil, nil)
+		var state forge.FakeState
+		data, err := os.ReadFile(f.Path)
+		if err == nil {
+			err = json.Unmarshal(data, &state)
+		}
 		if err != nil {
 			t.Fatal(err)
 		}
-		if keys := askedPeople(r); len(keys) != c.want || !slices.Contains(keys, "person|502") {
-			t.Errorf("labels %v: asked %v, want %d with the line's reply, 502", c.labels, keys, c.want)
+		mr := &state.MergeRequests[0]
+		mr.Comments = append(mr.Comments,
+			forge.FakeComment{Body: "Label put again in the owner's name.", Author: "alice", Insider: true, ID: "601", Created: "2026-11-25T08:28:15Z"},
+			forge.FakeComment{Body: "Please also handle the empty list.", Author: "alice", Insider: true, ID: "603", Created: "2026-11-25T09:30:00Z"})
+		mr.LabelEvents = []forge.LabelEvent{{Label: c.label, Added: true, Note: forge.Note{Author: c.by, Insider: true, Created: "2026-11-25T08:28:18Z"}}}
+		if data, err = json.Marshal(state); err != nil || os.WriteFile(f.Path, data, 0o644) != nil {
+			t.Fatal(err)
 		}
-	}
-}
-
-// A yes a push took off: Given a person's trace on its conversation, then
-// workline's comment taking the label off, When a round reads it, Then
-// the trace asks nothing.
-func TestReadAskedSkipsTheConversationBeforeAReset(t *testing.T) {
-	f := threadForge(t, nil, nil)
-	var state forge.FakeState
-	data, err := os.ReadFile(f.Path)
-	if err == nil {
-		err = json.Unmarshal(data, &state)
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	state.MergeRequests[0].Comments = append(state.MergeRequests[0].Comments,
-		forge.FakeComment{Body: "Label put again in the owner's name.", Author: "alice", Insider: true, ID: "601"},
-		forge.FakeComment{Body: "**workline took `workline:accepted` off**\n\n<!-- workline:merge-reset=abc -->", Author: "workline-bot", Bot: true, ID: "602"})
-	if data, err = json.Marshal(state); err != nil || os.WriteFile(f.Path, data, 0o644) != nil {
-		t.Fatal(err)
-	}
-	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: 2})
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, _, err := readAsked(f, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, forge.MergeRequest{ID: 2}, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if keys := askedPeople(r); len(keys) != 0 {
-		t.Errorf("asked %v: the trace before the reset asks nothing", keys)
+		kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: 2})
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, _, err := readAsked(f, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, forge.MergeRequest{ID: 2, Branch: "workline/developer/1"}, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if keys := askedPeople(r); !slices.Equal(keys, c.want) {
+			t.Errorf("%s by %s: asked %v, want %v", c.label, c.by, keys, c.want)
+		}
 	}
 }

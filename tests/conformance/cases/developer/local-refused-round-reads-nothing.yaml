@@ -25,6 +25,6 @@ expect:
   stdout: ["refused 64"]
   stderr: ["its branch workline/developer/3 is checked out in"]
   files:
-    first.json: {contains: "round 1 (5 disputes at most) on merge request 2, its fix pushed", lacks: "nothing new since its last round"}
-    second.json: {contains: "round 2 (5 disputes at most) on merge request 2", lacks: "nothing new since its last round"}
+    first.json: {contains: "round 1, 0 of 5 on a blocking finding, on merge request 2, its fix pushed", lacks: "nothing new since its last round"}
+    second.json: {contains: "round 2, 0 of 5 on a blocking finding, on merge request 2", lacks: "nothing new since its last round"}
     .git/workline/merge-requests/2.md: {contains: "\"heard\":[\"3\",\""}
