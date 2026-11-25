@@ -12,8 +12,11 @@ Report each defect as a `finding`:
 - `symptom`, only when the defect shows somewhere else than its cause —
   a caller the change broke: that place, quoted the same way.
 - `severity`: `important` when it breaks something — wrong behaviour, lost
-  data, a crash, a hole — on a path that runs; `nit` for what only makes
-  the code harder to read or change. A judge checks each important one.
+  data, a crash, a hole — on a path that runs, or when a test meant to
+  guard a behaviour does not: it would pass without the change, or it
+  reads the code's text where a behaviour is asked; `nit` for what only
+  makes the code harder to read or change. A judge checks each important
+  one.
 - `title` in a few words, `why`: how it fails, and when. `fix`: what would
   fix it, in a sentence.
 - `seen`: what a person using the project sees when it fails — who,
