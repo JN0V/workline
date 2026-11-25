@@ -21,7 +21,7 @@ given:
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
-  findings: [{rule: review-short, where: "#7", level: warn, message: "accepted by @dana, but its review falls short (review-not-whole)"}]
+  findings: [{rule: review-short, where: "#7", level: warn, message: "accepted by dana, but its review falls short (review-not-whole)"}]
   no-findings: [{rule: auto-merge-on}, {rule: review-read-whole}]
   summary-file: ["kept by an earlier workline", "run the line again on its head"]
   forge:

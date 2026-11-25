@@ -21,7 +21,7 @@ given:
 run: {follow: [--base, main]}
 expect:
   status: pass
-  findings: [{rule: review-short, where: "#7", level: warn, message: "accepted by @dana, but its review falls short (not-reviewed): no agent"}]
+  findings: [{rule: review-short, where: "#7", level: warn, message: "accepted by dana, but its review falls short (not-reviewed): no agent"}]
   no-findings: [{rule: auto-merge-on}]
   forge:
     merge-requests:

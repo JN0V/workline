@@ -27,4 +27,4 @@ expect:
       - {id: 7, auto-merge: true}
     statuses:
       - {commit: feat/sessions, name: workline/verdict, state: success, by: workline-bot, description: "pass: "}
-      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by @dana"}
+      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by dana"}

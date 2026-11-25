@@ -23,11 +23,11 @@ given:
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
-  findings: [{rule: auto-merge-on, where: "#7", message: "accepted by @dana, read whole by @dana (review-not-whole): auto-merge turned on"}]
+  findings: [{rule: auto-merge-on, where: "#7", message: "accepted by dana, read whole by dana (review-not-whole): auto-merge turned on"}]
   no-findings: [{rule: review-short}]
-  summary-file: ["read whole by @dana (review-not-whole)"]
+  summary-file: ["read whole by dana (review-not-whole)"]
   forge:
     merge-requests:
       - {id: 7, auto-merge: true, labels: [workline:accepted, workline:accepted-whole], comments: 0}
     statuses:
-      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by @dana, read whole by @dana (review-not-whole)"}
+      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by dana, read whole by dana (review-not-whole)"}

@@ -20,7 +20,7 @@ given:
 run: {role: product-owner, event: schedule, ai: none}
 expect:
   agent-calls: 0
-  findings: [{rule: done-as-accepted, where: "#9", message: "Renamed #9 from \"bug\" to \"The CSV export drops the last row\": \"bug\" says nothing. Accepted by @dev."}]
+  findings: [{rule: done-as-accepted, where: "#9", message: "Renamed #9 from \"bug\" to \"The CSV export drops the last row\": \"bug\" says nothing. Accepted by dev."}]
   forge:
     issues:
       - {id: 9, title: "The CSV export drops the last row", labels: [workline:accepted], comment-lacks: "proposal:"}

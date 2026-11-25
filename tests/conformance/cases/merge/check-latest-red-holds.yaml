@@ -22,7 +22,7 @@ given:
 run: {follow: [--base, main]}
 expect:
   status: pass
-  findings: [{rule: checks-red, where: "#7", level: warn, message: "accepted by @dana, but a check failed on its head"}]
+  findings: [{rule: checks-red, where: "#7", level: warn, message: "accepted by dana, but a check failed on its head"}]
   no-findings: [{rule: auto-merge-on}]
   forge:
     merge-requests:

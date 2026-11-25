@@ -22,5 +22,5 @@ given:
 run: {follow: [--base, main]}
 expect:
   status: pass
-  findings: [{rule: accepted-reset, where: "#7", message: "was pushed after @dana accepted it"}]
+  findings: [{rule: accepted-reset, where: "#7", message: "was pushed after dana accepted it"}]
   no-findings: [{rule: auto-merge-on}]

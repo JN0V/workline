@@ -25,7 +25,7 @@ given:
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
-  findings: [{rule: merged-at-once, where: "#7", message: "accepted by @dana, its head's verdict passed; auto-merge on since 2026-01-04T10:05:00Z, but the forge had not merged it, its rules met: merged now"}]
+  findings: [{rule: merged-at-once, where: "#7", message: "accepted by dana, its head's verdict passed; auto-merge on since 2026-01-04T10:05:00Z, but the forge had not merged it, its rules met: merged now"}]
   no-findings: [{rule: auto-merge-on}]
   not-pushed: [feat/sessions]
   summary-file: ["1 merged at once"]

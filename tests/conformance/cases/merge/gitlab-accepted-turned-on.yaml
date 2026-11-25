@@ -23,7 +23,7 @@ run: {follow: [--base, main, --verdict, ../verdict.json], forge: gitlab}
 expect:
   status: pass
   findings:
-    - {rule: auto-merge-on, where: "!7", message: "accepted by @dana, its head's verdict passed: auto-merge turned on"}
+    - {rule: auto-merge-on, where: "!7", message: "accepted by dana, its head's verdict passed: auto-merge turned on"}
   no-findings: [{rule: updated}]
   not-pushed: [feat/sessions]
   forge:
