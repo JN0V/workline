@@ -1,5 +1,5 @@
 ---
-sources: [tests/evaluation/replay, tests/evaluation/replay_test.go, tests/evaluation/eval_test.go]
+sources: [tests/evaluation/replay_test.go, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt]
 checked: af68b1bb5
 ---
 # Replay set — real misses, played again
