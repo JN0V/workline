@@ -128,8 +128,9 @@ func TestParseClaude(t *testing.T) {
 
 // An answer whose text before the list does not read is refused, never
 // cut: what came first may be a proposal, as a tester's patch written
-// with no `- ` (a DomoticsCore issue's answer, its test file left out),
-// or a line of prose (trial #55). Asked again, told why.
+// with no `- ` (a DomoticsCore issue's answer, its test file left out,
+// shaped as its log quotes it), before or after a fenced list, or a line
+// of prose (trial #55). Asked again, told why.
 func TestProposalsFromTextBeforeTheListRefused(t *testing.T) {
 	prose, err := os.ReadFile("../../tests/conformance/fixtures/agents/dc55-tester-try2-answer2.txt")
 	if err != nil {
@@ -137,6 +138,8 @@ func TestProposalsFromTextBeforeTheListRefused(t *testing.T) {
 	}
 	for _, answer := range []string{
 		"patch:\n  file: test/test_a.cpp\n  content: |\n    void test_a() {}\n- note: \"assumes: a\"\n",
+		"patch:\n  file: test/test_a.cpp\n  content: x\n\n```yaml\n- note: \"assumes: a\"\n```\n",
+		"```yaml\n- note: \"assumes: a\"\n```\n\n- patch:\n    file: test/test_a.cpp\n    content: x\n",
 		string(prose),
 	} {
 		if out, mended, err := proposalsFrom(answer, "patch", "note", "covers"); err == nil {
