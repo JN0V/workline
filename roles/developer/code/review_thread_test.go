@@ -178,7 +178,7 @@ func TestReadAskedSkipsTheConversationOfAnAcceptedPullRequest(t *testing.T) {
 	for _, c := range []struct {
 		labels []string
 		want   int
-	}{{nil, 2}, {[]string{"workline:accepted"}, 1}} {
+	}{{nil, 2}, {[]string{"workline:accepted"}, 1}, {[]string{"workline:accepted-whole"}, 1}} {
 		r, _, err := readAsked(f, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, forge.MergeRequest{ID: 2, Labels: c.labels}, "")
 		if err != nil {
 			t.Fatal(err)
@@ -186,5 +186,37 @@ func TestReadAskedSkipsTheConversationOfAnAcceptedPullRequest(t *testing.T) {
 		if keys := askedPeople(r); len(keys) != c.want || !slices.Contains(keys, "person|502") {
 			t.Errorf("labels %v: asked %v, want %d with the line's reply, 502", c.labels, keys, c.want)
 		}
+	}
+}
+
+// A yes a push took off: Given a person's trace on its conversation, then
+// workline's comment taking the label off, When a round reads it, Then
+// the trace asks nothing.
+func TestReadAskedSkipsTheConversationBeforeAReset(t *testing.T) {
+	f := threadForge(t, nil, nil)
+	var state forge.FakeState
+	data, err := os.ReadFile(f.Path)
+	if err == nil {
+		err = json.Unmarshal(data, &state)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.MergeRequests[0].Comments = append(state.MergeRequests[0].Comments,
+		forge.FakeComment{Body: "Label put again in the owner's name.", Author: "alice", Insider: true, ID: "601"},
+		forge.FakeComment{Body: "**workline took `workline:accepted` off**\n\n<!-- workline:merge-reset=abc -->", Author: "workline-bot", Bot: true, ID: "602"})
+	if data, err = json.Marshal(state); err != nil || os.WriteFile(f.Path, data, 0o644) != nil {
+		t.Fatal(err)
+	}
+	kept, err := forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, _, err := readAsked(f, kept, t.TempDir(), devmark.Act{Act: "code", Issue: 1}, forge.MergeRequest{ID: 2}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if keys := askedPeople(r); len(keys) != 0 {
+		t.Errorf("asked %v: the trace before the reset asks nothing", keys)
 	}
 }

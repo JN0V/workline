@@ -338,15 +338,16 @@ func (c *command) CloseMergeRequest(branch, body, marker string) error {
 
 func (c *command) MergeRequest(id int) (MergeRequest, error) {
 	var a struct {
-		Branch string `json:"branch"`
-		Base   string `json:"base"`
-		Here   bool   `json:"here"`
-		Title  string `json:"title"`
-		Body   string `json:"body"`
-		Draft  bool   `json:"draft"`
+		Branch string   `json:"branch"`
+		Base   string   `json:"base"`
+		Here   bool     `json:"here"`
+		Title  string   `json:"title"`
+		Body   string   `json:"body"`
+		Draft  bool     `json:"draft"`
+		Labels []string `json:"labels"`
 	}
 	err := c.call("merge-request-branch", map[string]any{"id": id}, &a)
-	return MergeRequest{ID: id, Branch: a.Branch, Base: a.Base, Here: a.Here, Title: a.Title, Body: a.Body, Draft: a.Draft}, err
+	return MergeRequest{ID: id, Branch: a.Branch, Base: a.Base, Here: a.Here, Title: a.Title, Body: a.Body, Draft: a.Draft, Labels: a.Labels}, err
 }
 
 // ListMergeRequests asks its own operation, merge-requests: a command

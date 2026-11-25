@@ -417,9 +417,8 @@ func issueRewritten(f forge.Forge, a devmark.Act) (string, error) {
 
 // readAsked reads what a round on merge request mr asks, no agent: the
 // reviewer's findings when it reviewed since the last round, the gates'
-// new findings when they reported on head since it (head "": not
-// known), a person's comments not heard yet. fresh: the reviewer or the
-// gates said something new.
+// new findings reported on head since it (head "": not known), a
+// person's comments not heard yet. fresh: either said something new.
 func readAsked(f forge.Forge, kept forge.Kept, repo string, a devmark.Act, mr forge.MergeRequest, head string) (r round, fresh bool, err error) {
 	r = round{MR: mr.ID, Record: a}
 	back, err := backFromAsk(f, a)
@@ -516,11 +515,15 @@ func readAsked(f forge.Forge, kept forge.Kept, repo string, a devmark.Act, mr fo
 	if _, err = forge.OwnAccount(f); err != nil {
 		return r, false, fmt.Errorf("%w: %w", errOwnAccount, err)
 	}
-	if slices.ContainsFunc(mr.Labels, func(l string) bool { return slices.Contains(forge.AcceptedLabels, l) }) {
-		notes = nil // a person's yes on it: its conversation asks nothing, a label's trace; a line's comment still does
+	from := 0 // a person's yes, on it or taken off by a push since: its conversation meanwhile asks nothing, a line's comment still does
+	for i, n := range notes {
+		if slices.ContainsFunc(mr.Labels, func(l string) bool { return slices.Contains(forge.AcceptedLabels, strings.TrimSuffix(l, "-whole")) }) ||
+			kept.Wrote(n) && strings.Contains(n.Body, "<!-- workline:merge-reset=") {
+			from = i + 1
+		}
 	}
-	// The comments of the review threads count as notes: a person's
-	// reply there is asked as one in the main conversation.
+	notes = notes[from:]
+	// A person's comment in a review thread is asked as one in its conversation.
 	if th, ok := f.(forge.Threaded); ok {
 		threads, err := th.Threads(mr.ID)
 		if err != nil {
@@ -606,7 +609,7 @@ func RoundDue(f forge.Forge, repo string, mr forge.MergeRequest) (bool, error) {
 func roundTask(r round, is forge.Issue, b Bounds, s Settings, test string, testErr error) string {
 	var t strings.Builder
 	n := r.Record.Round + 1
-	fmt.Fprintf(&t, "# Review round %d of %d on your pull request %d, for issue #%d: %s\n\n", n, s.Rounds, r.MR, is.ID, is.Title)
+	fmt.Fprintf(&t, "# Review round %d (%d disputes at most) on your pull request %d, for issue #%d: %s\n\n", n, s.Rounds, r.MR, is.ID, is.Title)
 	t.WriteString("You wrote this pull request's code; you remember none of it. What you did is below, from its record; your worktree holds its branch.\n\n")
 	if len(r.Record.Rounds) > 0 {
 		t.WriteString("## The rounds before, from its record\n\n")
@@ -867,7 +870,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 	}
 	a := r.Record
 	n := a.Round + 1
-	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d of %d on %s", n, s.Rounds, where),
+	v := verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d (%d disputes at most) on %s", n, s.Rounds, where),
 		Findings: append([]verdict.Finding{rightsFinding(where)}, refusalFindings(where, refused, said)...)}
 	if len(unread) > 0 {
 		v.Findings = append(v.Findings, unreadFinding(where, unread, true))
@@ -897,7 +900,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		if code := writeIntents(runDir, "", []intent.Intention{{Kind: "comment", Value: map[string]any{"sticky": roundNotRunKey, "body": said}}}); code != 0 {
 			return code
 		}
-		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d of %d on %s not run: its agent could not be reached", n, s.Rounds, where),
+		return writeVerdict(runDir, verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("round %d (%d disputes at most) on %s not run: its agent could not be reached", n, s.Rounds, where),
 			Findings: []verdict.Finding{{Rule: "round-not-run", Level: "warn", Where: where,
 				Message: fmt.Sprintf("its agent could not be reached (%s), spent nothing and changed nothing: no round counted, said on the pull request; the next run asks the findings again", u.failed)}}})
 	}
@@ -1071,7 +1074,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 // what the developer did, its proof, the five whys.
 func roundBody(x devmark.Round, s Settings, notes []string, analysis string, w *devmark.Widen, refused []devmark.Refusal) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "**The developer**, review round %d of %d: ", x.N, s.Rounds)
+	fmt.Fprintf(&b, "**The developer**, review round %d (%d disputes at most): ", x.N, s.Rounds)
 	if x.Result == "not-pushed" {
 		b.WriteString("its fix turns the frozen tests red on a green head, not pushed: the green head kept. ")
 	}

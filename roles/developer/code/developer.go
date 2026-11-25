@@ -734,7 +734,7 @@ func question(is forge.Issue, b Bounds, test string, testErr error, s Settings) 
 	}
 	t.WriteString("- No commit, no push, no branch: the engine commits your edits and opens the pull request.\n")
 	if s.Level != "" {
-		fmt.Fprintf(&t, "- Autonomy: %s (%s): %d review rounds on your pull request, then its issue is blocked for a person.\n", s.Level, s.LevelFrom, s.Rounds)
+		fmt.Fprintf(&t, "- Autonomy: %s (%s): %d review rounds disputing a blocking finding on your pull request, then its issue is blocked for a person.\n", s.Level, s.LevelFrom, s.Rounds)
 	}
 	t.WriteString("\n## Your answer\n\nEdit the files in your worktree, your working directory (`WORKLINE_WORKTREE` for a command), and run the tests. ")
 	return t.String()

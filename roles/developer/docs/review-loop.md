@@ -38,10 +38,12 @@ step 6).
   `workline/developer/<n>`, in its conversation or in a thread on a
   line ([#1438](https://github.com/JN0V/workline/issues/1438)):
   `workline develop --merge-request <n>`.
-  - **Once a person accepted it** (`workline:accepted`), a comment in
-    its conversation asks nothing: the label's trace is a record, not a
-    request ([#2206](https://github.com/JN0V/workline/issues/2206)). A
-    comment on a line still asks. With no forge
+  - **Once a person accepted it** (`workline:accepted`, or
+    `-whole`), a comment in its conversation asks nothing: the label's
+    trace is a record, not a request
+    ([#2206](https://github.com/JN0V/workline/issues/2206)). So for one
+    posted before workline took the label off after a push. A comment
+    on a line still asks. With no forge
   ([`forge: local`](../../../docs/local-line-review.md)),
   the reconciler runs it, in a worktree of the head.
 - **No memory**: it reads its record on the pull request (the rounds
@@ -114,9 +116,9 @@ failed — is marked ready for review once its rounds make it green
 - **A project check still runs** at its head: the red ones wait for it.
 - **No agent**: the findings wait, no round counted.
 
-## Rounds: five, the five whys at three
+## Rounds: five disputes, the five whys at three
 
-- **`review-rounds`** (5): the rounds it runs; its autonomy level sets 3 at `cautious`, 8 at `enterprising`, unless set here ([autonomy](../../../docs/autonomy.md)).
+- **`review-rounds`** (5): the rounds that dispute a blocking finding; its autonomy level sets 3 at `cautious`, 8 at `enterprising`, unless set here ([autonomy](../../../docs/autonomy.md)).
 - **At round three**, a finding still there loads the shared
   [five whys skill](../../../skills/five-whys/SKILL.md): the analysis
   goes in the round's comment, the fix aims at its root cause. Without

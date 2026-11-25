@@ -737,7 +737,7 @@ func (g *github) CloseMergeRequest(branch, body, marker string) error {
 }
 
 func (g *github) MergeRequest(id int) (MergeRequest, error) {
-	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id))
+	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id), "--jq", ".labels |= map(.name)")
 	if err != nil {
 		return MergeRequest{}, err
 	}
@@ -757,16 +757,12 @@ func (g *github) MergeRequest(id int) (MergeRequest, error) {
 				Name string `json:"full_name"`
 			} `json:"repo"`
 		} `json:"base"`
-		Labels []struct{ Name string } `json:"labels"`
+		Labels []string `json:"labels"`
 	}
 	if err := decode(out, &pr); err != nil {
 		return MergeRequest{}, fmt.Errorf("pull request %d: %w", id, err)
 	}
-	mr := MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body, Draft: pr.Draft}
-	for _, l := range pr.Labels {
-		mr.Labels = append(mr.Labels, l.Name)
-	}
-	return mr, nil
+	return MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body, Draft: pr.Draft, Labels: pr.Labels}, nil
 }
 
 // MarkReady marks a draft pull request ready for review, GitHub's
