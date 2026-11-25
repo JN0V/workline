@@ -44,8 +44,9 @@ Each a check, before asking for the version:
   moves merged; nothing left to rename or move.
 - **User docs at 0 suspect** on `main`: no report gives this count.
   The measure is `workline docs --ai none --since <first commit>` on a
-  clone of `main`, counting the docs it lists outside `docs/spec/`,
-  `docs/adr/` and `docs/research/`. A push's `docs suspect: N` counts
+  clone of `main`, no agent: count the docs it lists, but those under
+  `docs/spec/`, `docs/adr/` and `docs/research/`, and the roles'
+  `status.md`. A push's `docs suspect: N` counts
   only what that push touched.
 - **Nothing holds the release**: no open issue labelled
   `workline:hold-release`, `main`'s checks green
