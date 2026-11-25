@@ -1,0 +1,33 @@
+case: routing/blocked-own-issue-never-read-again
+about: >
+  workline's own issue is never a step of the line: the wake script's
+  issue, its body rewritten by the engine after each merge, got the
+  blocked label; its body differs from the record and a week went by,
+  yet no role is woken on it and nothing is written. A person's issue
+  beside it, as old, is read again.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 3
+        title: "workline: where the line may be drifting"
+        labels: ["workline:blocked", "task"]
+        body: "**4 triggers met** in the 7 days.\n"
+        comments: ["**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a828a06be19\",\"hops\":9,\"from\":\"refine\",\"since\":\"2026-09-01T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"]
+      - id: 4
+        title: "Multiply"
+        labels: ["workline:blocked"]
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**workline's line** blocks this issue.\n\n<!-- workline:line-record {\"state\":\"blocked\",\"body\":\"8a828a06be19\",\"hops\":9,\"from\":\"ready\",\"since\":\"2026-09-01T09:00:00Z\"} -->\n<!-- workline:sticky=line/state -->"]
+run: {route: reconcile, open-merge-request: true, ai: "fake:unblock-three", input: {reconcile: list}}
+expect:
+  status: pass
+  summary: "reconcile: 1 issue due: #4"
+  agent-calls: 0
+  findings: [{rule: state-revisit, level: info, where: "#4", message: "nothing new since 2026-09-01, 7 days or more (routing.revisit)"}]
+  no-findings: [{where: "#3"}]
+  forge:
+    issues:
+      - {id: 3, labels: ["workline:blocked", "task"], comments: 1}

@@ -232,7 +232,8 @@ var trackingTitles = []string{
 	"workline: the weekly sample of every role's acts",
 	"workline: the weekly sample of the docs vouched for",
 	"workline: the weekly sample of the product owner's acts",
-	"workline: the normal size of an issue", // the line's normals (ADR-0064)
+	"workline: the normal size of an issue",    // the line's normals (ADR-0064)
+	"workline: where the line may be drifting", // the wake script's, edited after each merge
 }
 
 // keptBy is the line the engine ends an issue a role keeps in place with
