@@ -50,6 +50,8 @@ flowchart LR
     The developer's pull request lists them for the reviewer's tests
     lens, which asks for a test where one can prove the scenario
     ([the lenses](../../reviewer/docs/run-lenses.md#4-the-lenses)).
+    One kept as today with no guard is said apart and not listed, until
+    [#2164](https://github.com/JN0V/workline/issues/2164).
   - What the proof said: each test red on the base, by an assertion,
     a missing name the issue names, or a broken build the judge read.
     A test whose package did not build is named `file:name`, or by

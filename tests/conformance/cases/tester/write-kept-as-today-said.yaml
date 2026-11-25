@@ -28,4 +28,5 @@ expect:
     merge-requests:
       - id: 1
         draft: true
-        body-contains: ["Not tested", "kept as today: no existing test was found that checks it"]
+        body-contains: ["Not tested", "kept as today: no existing test was found that checks it", "**Unproven, kept as today**:", "so the tests lens is not asked"]
+        body-lacks: ["the reviewer's tests lens weighs whether a test can"]

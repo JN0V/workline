@@ -1077,13 +1077,21 @@ func draftBody(t task, tested map[string][]string, said map[string]string, alone
 				fmt.Fprintf(&b, "- %s: %s\n", sc.Name, strings.ReplaceAll(n, "\n", " "))
 			}
 		}
-		if u := unprovenScenarios(t, said); len(u) > 0 {
-			names := make([]string, len(u))
-			for i, x := range u {
-				names[i] = devmark.InertText(x.Scenario) // a name's @ pings no one
+		var asked, waiting []string // each name inert: its @ pings no one
+		for _, x := range unprovenScenarios(t, said) {
+			if x.KeptUnguarded() {
+				waiting = append(waiting, devmark.InertText(x.Scenario))
+			} else {
+				asked = append(asked, devmark.InertText(x.Scenario))
 			}
+		}
+		if len(asked) > 0 {
 			fmt.Fprintf(&b, "\n**Unproven**: %s. No test proves %s: the pull request that builds it lists %[2]s, "+
-				"and the reviewer's tests lens weighs whether a test can.\n", strings.Join(names, ", "), map[bool]string{true: "it", false: "them"}[len(u) == 1])
+				"and the reviewer's tests lens weighs whether a test can.\n", strings.Join(asked, ", "), map[bool]string{true: "it", false: "them"}[len(asked) == 1])
+		}
+		if len(waiting) > 0 {
+			fmt.Fprintf(&b, "\n**Unproven, kept as today**: %s. Nothing guards %s; a guard test waits for "+
+				"[#2164](https://github.com/JN0V/workline/issues/2164), so the tests lens is not asked.\n", strings.Join(waiting, ", "), map[bool]string{true: "it", false: "them"}[len(waiting) == 1])
 		}
 	}
 	if len(assumes) > 0 {

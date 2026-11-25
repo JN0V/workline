@@ -560,6 +560,7 @@ func MergeSummary(body, read, found string) string {
 		return body // none applied since this run read it
 	}
 	merged := ours
+	merged.Unproven = now.Unproven || ours.Unproven // given once, by either run
 	merged.Reviewed = union(now.Reviewed, ours.Reviewed)
 	merged.Patches = union(now.Patches, ours.Patches)
 	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)
@@ -593,6 +594,7 @@ func MergeInto(found, body, read, marker string) string {
 		return ""
 	}
 	merged := now
+	merged.Unproven = now.Unproven || ours.Unproven // given once, by either run
 	merged.Reviewed = union(now.Reviewed, ours.Reviewed)
 	merged.Patches = union(now.Patches, ours.Patches)
 	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)

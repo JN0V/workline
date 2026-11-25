@@ -23,7 +23,7 @@ const unprovenAsked = "<!-- workline:unproven=asked -->"
 
 // unprovenOf is the list the developer's pull request the run reviews
 // holds, cut past limit lines as the author's testimony is; "" on another
-// branch, with no forge, or none listed.
+// branch or one from a fork, with no forge, or none listed.
 func unprovenOf(repo string, limit int) string {
 	t := mergeRequest()
 	if t == nil {
@@ -34,7 +34,7 @@ func unprovenOf(repo string, limit int) string {
 		return ""
 	}
 	mr, err := f.MergeRequest(t.ID)
-	if err != nil || !strings.HasPrefix(mr.Branch, developerBranch) {
+	if err != nil || !mr.Here || !strings.HasPrefix(mr.Branch, developerBranch) { // a fork's branch may bear the name
 		return ""
 	}
 	list, _ := cutLines(unprovenListed(mr.Body), limit, "the unproven scenarios are cut here, past testimony-lines-max")

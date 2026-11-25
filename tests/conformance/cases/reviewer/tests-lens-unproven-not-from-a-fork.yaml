@@ -1,0 +1,15 @@
+case: reviewer/tests-lens-unproven-not-from-a-fork
+about: >
+  A pull request from a fork whose branch bears the developer's name is
+  not the developer's: its Unproven list is not given to the tests lens.
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  forge:
+    merge-requests:
+      - {id: 5, branch: workline/developer/4, fork: true, title: Average over the count, body: "Closes #4\n\n## Changes\n\n- Code: `calc/calc.go`.\n\n## Unproven\n\nScenarios of the issue no test proves, as the tester said, each with its reason.\n\n- **Empty list**: a person reads the error by eye\n\n## Verification\n\n- proven\n", labels: [], comments: []}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: tests}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  run-files:
+    in/parts/1-tests/task.md: {not-contains: "The tester said no test proves"}
