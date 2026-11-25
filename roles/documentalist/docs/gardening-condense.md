@@ -23,12 +23,13 @@ Part of [the gardening tasks](gardening.md).
 
 ## Condensing
 
-With no suspect or stale doc and no repeated passage, a doc over its
-budget (a doc too long first, then an agent's entry point, a section):
-bring it within budget by moving whole parts into a new doc, and linking
-to it.
+A doc over its budget (a doc too long first, then an agent's entry
+point, a section): bring it within budget by moving whole parts into a new
+doc, and linking to it.
 
-- One doc a run.
+- One doc a run: in the same round when it asks nothing else; else in a
+  round of its own once the others are done, before the
+  [reader's](reader.md) (`in/then`). Suspect docs never starve it.
 - A doc whose task would not fit the role's context budget is not given
   to the agent (`too-large-to-condense`): a person moves its parts out,
   and the next doc over its budget is condensed. A card too large to split

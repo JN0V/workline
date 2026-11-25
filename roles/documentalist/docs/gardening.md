@@ -72,5 +72,5 @@ deleted, and every link to it pointed there. The judge checks that:
 ## Pages read for their reader
 
 Last in each run, after the other tasks: in the same round when it asks
-nothing else, else in a round of its own. The pages the reader checks
+nothing else, else in a round of its own, after condensing's. The pages the reader checks
 flagged, read for their reader ([more](reader.md)).

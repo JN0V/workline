@@ -1,6 +1,9 @@
 case: documentalist/dedupe-fix-placed-by-the-lines-it-removes
 about: "A duplicates patch quoting a context line with a space too many is placed by the lines it removes, found once in the doc, and applied as placed, written anew so git applies it there, as for a doc the code made suspect (#592): the agent is not asked again for a fix whose place is beyond doubt."
-given: {repo: untidy}
+given:
+  repo: untidy
+  # budgets the docs fit, but a card's: a doc over its budget would be condensed in a round of its own
+  config: {roles: {documentalist: {settings: {budgets: {doc-lines: 100, section-words: 300, card-words: {min: 8, max: 40}, folder-lines: 30, root-agent-file-lines: 100}}}}}
 run: {role: documentalist, event: schedule, ai: "fake:dedupe-links-context-misquoted"}
 expect:
   status: pass
