@@ -40,10 +40,7 @@ func ScenariosUnread(is forge.Issue, st *State) (unread, own bool) {
 // scenariosUnreadWhy is the reason said on an issue held for its unread
 // scenarios.
 func scenariosUnreadWhy(own bool) string {
-	if own {
-		return ScenariosNoneSilent + rewritesOwn
-	}
-	return ScenariosNoneSilent
+	return ScenariosNoneSilent + map[bool]string{true: rewritesOwn}[own]
 }
 
 // scenariosUnreadSaid is what the issue's state tells a person of it: why
