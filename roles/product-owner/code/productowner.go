@@ -571,7 +571,7 @@ func Pre(runDir, repo string) int {
 				"issue": is.ID, "answered": answeredBy, "own": true,
 				"why": fmt.Sprintf("@%s wrote after the role's assumptions: their word stands over them.", answeredBy)}})
 		}
-		if !aside && !backlog.Readied(is) && backlog.OnlyDrafts(is, st) && !(open && st.Assumed < silence.Round) {
+		if !aside && !backlog.Readied(is) && backlog.OnlyDrafts(is, st) && (!open || st.Assumed >= silence.Round) {
 			taken, err := draftsDue(b, is, notes, cfg.Wait.For(is), now)
 			if errors.Is(err, forge.ErrUnreachable) {
 				fmt.Fprintln(os.Stderr, err)
