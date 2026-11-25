@@ -32,7 +32,7 @@ type splitTask struct {
 // strongest budget problem first: the run takes the first whose task fits.
 // One doc a run keeps each change reviewable. A history doc is never one:
 // moving its parts away rewrites the record (WaterMeter's CHANGELOG.md,
-// chosen and refused two nights running, ADR-0014 step 4); its budget is
+// chosen and refused two nights running); its budget is
 // reported, for a person.
 func splitCandidates(problems []Problem) []*splitTask {
 	var out []*splitTask
@@ -374,7 +374,7 @@ func applyDoc(old string, f fileDiff, diff string) (now, rule, why string) {
 	if err != nil || byGit != now {
 		return "", "patch-ambiguous", "git would apply this diff differently from how it reads; send a plain unified diff"
 	}
-	// Moving text gives no source to read: `checked` stays (ADR-0014).
+	// Moving text gives no source to read: `checked` stays.
 	if checkedOf(now) != checkedOf(old) {
 		return "", "checked-unread", "the patch moves `checked`, but this task gives none of the doc's sources: moving text vouches for nothing, so leave the header as it is"
 	}
