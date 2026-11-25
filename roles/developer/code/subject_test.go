@@ -134,6 +134,9 @@ func TestTaskTypedByItsCode(t *testing.T) {
 		{[]string{"docs/mqtt.md", "src/mqtt.cpp"}, "fix"},
 		{[]string{"docs/mqtt.md", "README.md", "CHANGELOG.md"}, "chore"},
 		{[]string{".github/workflows/ci.yml", ".golangci.yml", "LICENSE"}, "chore"},
+		{[]string{"CMakeLists.txt"}, "fix"},
+		{[]string{"requirements.txt"}, "fix"},
+		{[]string{"internal/doc/render.go"}, "fix"},
 		{nil, "chore"},
 	} {
 		if got := commitType(devmark.KindTask, tc.code); got != tc.want {

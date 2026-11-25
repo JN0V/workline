@@ -76,7 +76,7 @@ func subjects(issue int, title, kind string, scope, code []string, s commitmsg.S
 	}
 	sub := Subjects{Tests: subject("test", sc, sum, s), Code: subject(typ, sc, sum, s),
 		Title: subject(typ, sc, sum, room(0)), DraftTitle: subject(typ, sc, sum, room(len("Draft: ")))}
-	if kind == devmark.KindTask && strings.HasPrefix(sub.Code, "fix") {
+	if kind == devmark.KindTask && typ == "fix" && strings.HasPrefix(sub.Code, typ) {
 		sub.Note = shippedTaskNote
 	}
 	return sub

@@ -41,21 +41,27 @@ func commitType(kind string, code []string) string {
 	return "feat"
 }
 
-// notShipped are the folders whose files no project ships: its docs and
-// its CI.
+// notShipped are the top folders whose files no project ships: its
+// docs and its CI.
 var notShipped = []string{"docs", "doc", ".github", ".gitlab", ".circleci"}
 
 // shipped: a code file (tests are apart already) other than docs, the
-// CI, a page of text or a tool's dotfile, all a release leaves out.
+// CI, a page of prose or a tool's dotfile, all a release leaves out. A
+// build or dependency file (CMakeLists.txt, requirements.txt) is
+// shipped: it decides what the package builds.
 func shipped(f string) bool {
-	for _, part := range strings.Split(path.Clean(f), "/") {
-		if strings.HasPrefix(part, ".") || slices.Contains(notShipped, strings.ToLower(part)) {
+	parts := strings.Split(path.Clean(f), "/")
+	if slices.Contains(notShipped, strings.ToLower(parts[0])) {
+		return false
+	}
+	for _, part := range parts {
+		if strings.HasPrefix(part, ".") {
 			return false
 		}
 	}
 	base := strings.ToLower(path.Base(f))
 	switch path.Ext(base) {
-	case ".md", ".rst", ".adoc", ".txt":
+	case ".md", ".rst", ".adoc":
 		return false
 	}
 	return !slices.Contains([]string{"license", "jenkinsfile", "azure-pipelines.yml"}, base)
