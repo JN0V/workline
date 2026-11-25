@@ -1986,7 +1986,7 @@ func waitSays(w backlog.Delay) string {
 // timedOutSaid tells the agent its question got no answer for the delay:
 // take the best assumption and go on, never on a product choice.
 func timedOutSaid(s backlog.Silence, w backlog.Delay) string {
-	return fmt.Sprintf("Unanswered: your question of %s got no answer in %s (acts.ask.wait). Give an `assume` with your best answer to it — one plain sentence, from what the issue, its comments and the code show, written on the issue under %s for the person to correct — then go on as if it were the answer: `refine` what it lacks, `ready` when evident. A product choice the issue says is undecided or open is never assumed: give nothing on it, it waits for the person. Ask nothing more: the question stands. The person's %s and %s are never rewritten.\n",
+	return fmt.Sprintf("Unanswered: your question of %s got no answer in %s (acts.ask.wait). Give an `assume` with your best answer to it — one plain sentence, from what the issue, its comments and the code show, written on the issue under %s for the person to correct — then go on as if it were the answer: `refine` what it lacks, `ready` when evident. A product choice the issue says is undecided or open, or a threshold you asked, is never assumed: give no `assume` and no `ready` on it, it waits for the person. Ask nothing more: the question stands. The person's %s and %s are never rewritten.\n",
 		s.Since.UTC().Format("2006-01-02 15:04 UTC"), w.Say(), backlog.AssumptionsName, work.Name(work.Need), work.Name(work.Validation))
 }
 

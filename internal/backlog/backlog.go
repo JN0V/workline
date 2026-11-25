@@ -809,6 +809,7 @@ type Plan struct {
 	revisited     map[int]string   // the blocked issues this run decided on: unblock or blocked, one a run
 	labels        []string         // the project's labels, read once, at the first kind act
 	askedNow      map[int]int      // the issues this run asks a question on, each its round: an assumption at once follows it (ADR-0060)
+	assumedNow    map[int]bool     // the issues this run takes an assumption on: their drafts may follow it
 	hearsay       bool             // the last quote found was only in an outsider's comment
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).
@@ -986,7 +987,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	p.codeFirst = map[int]bool{}
 	p.firstNamed = map[int][]string{}
 	p.readAgain = map[int]bool{}
-	p.askedNow = map[int]int{}
+	p.askedNow, p.assumedNow = map[int]int{}, map[int]bool{}
 	p.drops = map[int][]string{}
 	p.refining = map[int]bool{}
 	for _, c := range closes {
@@ -1022,7 +1023,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	// narrowing or widening of its Scope is decided first, whatever the
 	// agent's order, so one dropped holds the unblock (#1193, #1061).
 	// An assumption after the rest: one taken at once follows an ask
-	// done in this run (ADR-0060).
+	// done in this run (ADR-0060); a ready last, after both.
 	slices.SortStableFunc(indexes, func(a, b int) int {
 		first := func(i int) int {
 			switch closes[i].Do {
@@ -1032,6 +1033,8 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				return 2
 			case "assume":
 				return 3
+			case "ready":
+				return 4
 			}
 			return 1
 		}
@@ -1331,6 +1334,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				if c.Do == "ask" {
 					p.askedNow[c.Issue] = c.Round
 				}
+				p.assumedNow[c.Issue] = p.assumedNow[c.Issue] || c.Do == "assume"
 				p.recordDone(c)
 				p.recordDid(c)
 			}
@@ -2522,6 +2526,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		if slices.Contains(is.Labels, StateLabel("doing")) {
 			// The line is building it: one state label, never a second.
 			return "developing", fmt.Sprintf("not moved to ready: #%d is developing", c.Issue)
+		}
+		if p.askedNow[c.Issue] > 0 && p.config.Wait.For(is).Never {
+			return "not-ready", fmt.Sprintf("not moved to ready: #%d's question, asked in this run, waits for a person's answer", c.Issue)
 		}
 		if l := p.config.Untestable; l != "" && slices.Contains(is.Labels, l) {
 			return "not-ready", fmt.Sprintf("not moved to ready: #%d carries %s, the label of an issue the line cannot test; a person removes it to let it go on", c.Issue, l)

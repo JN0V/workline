@@ -360,14 +360,25 @@ func (p *Plan) checkAssume(f forge.Backlog, role string, c *Proposal) (rule, why
 // assumable are the drafts of an issue a ready takes as assumptions —
 // all that keeps it from ready, no person's answer for the level's delay
 // —, and the line it writes; none, and when they will be, said after a
-// not-ready.
+// not-ready. None while its question waits with no answer nor
+// assumption, but one this run takes: the question decides first.
 func (p *Plan) assumable(f forge.Backlog, is forge.Issue, st *State) (names []string, written, later string) {
 	w := p.config.Wait.For(is)
 	if w.Never || !OnlyDrafts(is, st) {
 		return nil, "", ""
 	}
-	if names = DraftNames(is, st); len(names) == 0 {
+	if names = DraftNames(is, st); len(names) == 0 || f == nil && w.D > 0 {
 		return nil, "", ""
+	}
+	var notes []forge.Note
+	if f != nil {
+		var err error
+		if notes, err = f.Notes(forge.Target{Kind: "issue", ID: is.ID}); err != nil {
+			return nil, "", ""
+		}
+	}
+	if s, open := Unanswered(notes, Keeper, is); open && (st == nil || st.Assumed < s.Round) && !p.assumedNow[is.ID] {
+		return nil, "", "; its question waits for an answer or an assumption: its drafts are not taken before"
 	}
 	drafts := "draft"
 	if len(names) > 1 {
@@ -375,14 +386,7 @@ func (p *Plan) assumable(f forge.Backlog, is forge.Issue, st *State) (names []st
 	}
 	how := fmt.Sprintf("the %s %s, the role going on at once (acts.ask.wait 0)", and(names), drafts)
 	if w.D > 0 {
-		if f == nil {
-			return nil, "", ""
-		}
 		trail, err := f.Trail(is.ID, LabelDraft)
-		if err != nil {
-			return nil, "", ""
-		}
-		notes, err := f.Notes(forge.Target{Kind: "issue", ID: is.ID})
 		if err != nil {
 			return nil, "", ""
 		}
