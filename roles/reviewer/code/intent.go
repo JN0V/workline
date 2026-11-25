@@ -374,7 +374,9 @@ func (c *candidates) shown(repo string, st state, intentAsked bool, v any) {
 // neither showed done and proven, nor found missing: an important one,
 // its cause the scenario's name in the issue, which its judge, shown the
 // issue and the change, keeps or drops. A "no finding" is never taken on
-// the lens's silence; on a share of the change, nothing is, said.
+// the lens's silence; on a share of the change, nothing is, said; nor a
+// scenario left unanswered when the change touches files the lenses are
+// not shown (st.Hidden), which may do it.
 func (c *candidates) unshown(repo string, s Settings, st state) {
 	if st.Spec != nil || !slices.Contains(st.Lenses, "intent") || slices.Contains(c.Failed, "intent") {
 		return
@@ -391,6 +393,12 @@ func (c *candidates) unshown(repo string, s Settings, st state) {
 	for _, is := range st.Issues {
 		for i, sc := range is.Scenarios {
 			if slices.Contains(c.Shown, scenarioKey(is, i)) || c.foundOn(is, i) {
+				continue
+			}
+			if len(st.Hidden) > 0 {
+				// Its code may lie in what the lens was not shown.
+				c.Logged = append(c.Logged, verdict.Finding{Rule: "scenario-unasked", Where: is.Ref(), Level: "info",
+					Message: fmt.Sprintf("the scenario %q of %s, left unanswered, is not judged: the change touches files the lenses are not shown (%s), which may do it", sc.Name, is.Ref(), oneLine(strings.Join(st.Hidden, ", "), 200))})
 				continue
 			}
 			f, why := found(repo, st, "intent", false, map[string]any{

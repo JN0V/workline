@@ -152,6 +152,7 @@ type state struct {
 	Standing   []Block             `json:"standing,omitempty"`  // the last review's findings that block, still standing (#326)
 	Read       string              `json:"read,omitempty"`      // the record as read: the apply merges the comment it finds with it (#375)
 	Warn       string              `json:"warn,omitempty"`      // apart: the verdict's run, the lenses that block; only: the run apart, those that warn (ADR-0050)
+	Hidden     []string            `json:"hidden,omitempty"`    // the files the change touches the lenses are not shown: by `ignore`, or in workline's own last commits (input own)
 	Upto       string              `json:"upto,omitempty"`      // the newest commit the lenses read, past commits-per-push new commits: the rest left (ADR-0050, step 6); "": the head
 	Fresh      int                 `json:"fresh,omitempty"`     // with Upto: the new commits of the push
 	Left       []string            `json:"left,omitempty"`      // with Upto: the new commits left for the next run, oldest first
@@ -377,7 +378,11 @@ func prepare(runDir, repo string, s Settings) int {
 	if ready {
 		start = base
 	}
-	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Every: ready, Advisories: advisories, Read: read, Warn: side, Line: line}
+	hidden, err := hiddenFiles(repo, s, base, head, input(runDir, "own"))
+	if err != nil {
+		return fail(err)
+	}
+	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Every: ready, Advisories: advisories, Read: read, Warn: side, Line: line, Hidden: hidden}
 	// What blocked the last review stands until a commit answers it (#326):
 	// a run with nothing new to read never turns it green.
 	st.Standing = standing(repo, s, st, rec.Blocks)
@@ -580,6 +585,37 @@ func codeFiles(repo string, s Settings, from, head string) ([]File, error) {
 		}
 	}
 	return files, nil
+}
+
+// hiddenFiles are the files the change touches that its lenses are not
+// shown, each once: those base..head changes that `ignore` leaves, and
+// those workline's own last commits change, which the line judges the
+// range without (own, `<head>..<its tip>`), their merges of the base
+// aside. What the intent lens does not answer may lie in them.
+func hiddenFiles(repo string, s Settings, base, head, own string) ([]string, error) {
+	all, err := changedFiles(repo, base, head)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, f := range all {
+		if !f.Same && pathglob.Any(s.Ignore, f.Path) {
+			out = append(out, f.Path)
+		}
+	}
+	if own != "" {
+		log, err := git(repo, append([]string{"log", "--first-parent", "--no-merges", "--name-only", "--format="}, gitrange.Args(own)...)...)
+		if err != nil {
+			return nil, fmt.Errorf("the input own %s: %v", own, err)
+		}
+		for _, p := range strings.Split(log, "\n") {
+			if p = strings.TrimSpace(p); p != "" {
+				out = append(out, p)
+			}
+		}
+	}
+	slices.Sort(out)
+	return slices.Compact(out), nil
 }
 
 // releaseBump says whether, on a release tool's merge request (the

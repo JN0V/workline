@@ -75,6 +75,10 @@ Part of [a run on code](run.md): step 4, what each lens reads and answers.
     becomes an important finding its judge keeps or drops: silence is
     never "no finding". On a later push or a part, it is said
     (`scenario-unasked`), not judged.
+  - Nor when the change touches files the lenses are not shown: those
+    `ignore` leaves, or workline's own last commits, left out of the
+    range (a developer's fix to the CHANGELOG). Its code may lie there:
+    said (`scenario-unasked`), naming them, not judged.
   - No issue closed: not asked, said in the summary; one that cannot be
     read: not asked, said (`issue-unread`).
 - **Simplicity** (`needs: issue`, [ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)): read with
