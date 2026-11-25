@@ -14,7 +14,7 @@ const keptPrefix = "kept as today"
 // unguarded is what a person reads of a scenario kept as today that no
 // existing test was found to check (#1359): never a guard the tester
 // did not name, or that is not there.
-const unguarded = "kept as today: no existing test was found that checks it, so nothing guards it; a test of it would pass on the base, and is not written"
+const unguarded = "kept as today: no existing test was found that checks it; a guard test of it, green on the base, is written for it"
 
 // codeNames are the names a reason writes as code, `like_this`.
 var codeNames = regexp.MustCompile("`([^`\n]+)`")
@@ -22,7 +22,7 @@ var codeNames = regexp.MustCompile("`([^`\n]+)`")
 // guardedSaid holds each reason of a scenario kept as today to the
 // existing test it names (#1359): kept when one name it writes as code is
 // a test file of the base, or a name one of them holds, its file's name
-// included; else said plainly that nothing guards it, a name not found
+// included; else said plainly that no test checks it and a guard test is written, a name not found
 // quoted. A person reads a guard only where a test is there.
 func guardedSaid(repo, base string, s Settings, said map[string]string) {
 	var files []string // the base's test files, read once, when asked
