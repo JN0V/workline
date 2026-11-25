@@ -180,8 +180,7 @@ func reviewSubject(issue, round int, s commitmsg.Settings) string {
 	return subject("fix", "", fmt.Sprintf("the review's findings on #%d, round %d", issue, round), s)
 }
 
-// head is the subject's head its agent writes a summary after, typed
-// before its code is: a task's `chore`, the longer.
+// head is the subject's head before its agent's summary: a task's `chore`, the longer.
 func head(b Bounds) string {
 	return subject(commitType(b.Kind, nil), commitScope(b.Scope), "", commitmsg.Settings{})
 }

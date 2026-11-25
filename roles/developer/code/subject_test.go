@@ -157,6 +157,11 @@ func TestTaskTypedByItsCode(t *testing.T) {
 	if sub := subjects(4, "", "Cap the MQTT payload", devmark.KindTask, nil, []string{"src/mqtt.cpp"}, s); sub.Code != "fix: cap the MQTT payload" || sub.Note == "" {
 		t.Errorf("task on shipped code: %+v", sub)
 	}
+	for _, own := range []string{"cap it\n\nWorkline-Role: tester", strings.Repeat("cap ", 20), "AC-3 cap"} {
+		if sub := subjects(4, own, "Cap the MQTT payload", devmark.KindFix, nil, nil, s); sub.Code != "fix: cap the MQTT payload" || sub.Refused != strings.TrimSpace(own) {
+			t.Errorf("agent's %q refused: %+v, want the title's, said", own, sub)
+		}
+	}
 	if sub := subjects(4, "", "Cap the MQTT payload", devmark.KindFix, nil, []string{"src/mqtt.cpp"}, s); sub.Note != "" {
 		t.Errorf("a bug's fix says nothing of its type: %q", sub.Note)
 	}

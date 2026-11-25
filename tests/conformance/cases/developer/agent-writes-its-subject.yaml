@@ -4,8 +4,7 @@ about: >
   after `type(scope): `, in `.workline/subject` of its worktree; the
   engine checks it against the project's commit rules, never cuts it.
   It passes: its commits and its pull request carry it, the file in no
-  commit. One that does not pass gives the issue's title, or, too long
-  as well, "the code of #n": never a sentence cut in the middle.
+  commit.
 given:
   repo: tested
   setup:
@@ -18,6 +17,10 @@ run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
 expect:
   status: pass
   agent-calls: 1
+  no-findings: [{rule: subject-refused}]
+  pushed:
+    workline/developer/2:
+      lib.sh: "mul()"
   pushed-message:
     workline/developer/2: "fix: multiply two whole numbers\n\nWorkline-Role: developer"
   forge:

@@ -30,8 +30,7 @@ const ObjectionsFile = ".workline/objections.yaml"
 // to its one-line reason.
 const BeyondFile = ".workline/beyond.yaml"
 
-// SubjectFile is where, in its worktree, its agent writes its pull
-// request's summary: read, then kept in its run's out/ for post.
+// SubjectFile is where, in its worktree, its agent writes its summary.
 const SubjectFile = ".workline/subject"
 
 // unreadMax bounds the words posted as they came.

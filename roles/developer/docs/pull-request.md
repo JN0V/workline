@@ -96,7 +96,9 @@ flowchart LR
 - **Its title is its code's subject**, checked where a squash lands it,
   with the forge's ` (#N)`
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md));
-  a Draft's is `the code of #<n>` when GitLab's `Draft: ` leaves no room.
+  a Draft's is `the code of #<n>` when a `Draft: ` prefix would leave no
+  room (the engine allows for it on every forge); an agent's summary
+  refused is said (`subject-refused`).
 - **Each carries `Workline-Role: developer`** and the model that wrote
   it, as every commit workline makes.
 

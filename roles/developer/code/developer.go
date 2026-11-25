@@ -645,7 +645,7 @@ func claimLabel(a devmark.Act, s Settings) intent.Intention {
 func taskText(is forge.Issue, b Bounds, test string, testErr error, s Settings) string {
 	return question(is, b, test, testErr, s) +
 		"Its diff is your code. Write its pull request's summary, the words after `" + head(b) + "`, in the file `" + SubjectFile + "`: one line, what the change does, " +
-		fmt.Sprint(forge.TitleMax-len(head(b))) + " characters at most, never cut; one past the project's commit rules gives the issue's title. When you are done, your last message is `[]` alone: no label, no comment, the claim is the engine's.\n"
+		fmt.Sprint(forge.TitleMax-len(head(b))) + " characters at most, never cut; one the project's commit rules refuse gives the issue's title. When you are done, your last message is `[]` alone: no label, no comment, the claim is the engine's.\n"
 }
 
 // testsBeside tells the agent the tests that are beside the Scope, by
@@ -951,7 +951,11 @@ func Post(runDir, repo string) int {
 		cs, unread := committerSettings(repo, where)
 		v.Findings = append(v.Findings, unread...)
 		own, _ := os.ReadFile(filepath.Join(runDir, "out", "subject"))
-		mr := mergeRequest(a, title, subjects(a.Issue, string(own), title, b.Kind, b.Scope, a.Code, cs))
+		sub := subjects(a.Issue, string(own), title, b.Kind, b.Scope, a.Code, cs)
+		mr := mergeRequest(a, title, sub)
+		if sub.Refused != "" {
+			v.Findings = append(v.Findings, verdict.Finding{Rule: "subject-refused", Level: "warn", Where: where, Message: fmt.Sprintf("its agent's summary %.200q does not pass the commit rules where a squash lands it: %s in its place", sub.Refused, sub.Code)})
+		}
 		mr["unopened"] = unopened(a, s, repo)
 		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
 			mr["body"] = withNote(fmt.Sprint(mr["body"]), note)

@@ -15,6 +15,7 @@ run: {develop: [], ai: 'cmd:sh "$FIXTURES/agents/developer-edits-worktree.sh"'}
 expect:
   status: pass
   agent-calls: 1
+  findings: [{rule: subject-refused, where: "#2"}]
   pushed-message:
     workline/developer/2: "fix: the code of #2\n\nWorkline-Role: developer"
   forge:
