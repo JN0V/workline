@@ -245,53 +245,6 @@ func (a *simAgent) answerOf(kind outcome, role string, task []byte) (outcome, st
 		h := headerIn(task, "## What you may change")
 		old, _ := os.ReadFile(filepath.Join(a.work, "repo", h))
 		return kind, patch(h, string(old)+"\nnamespace DomoticsCore {\ninline bool fixed_ISSUE( { return true; }\n}  // namespace DomoticsCore\n")
-	case kind == needsEngine && role == "product-owner":
-		// The trial's product owner with no code given: the folder it
-		// names, its files given at the next run (trial-35's first answer).
-		// On a Go issue, its package's file, as the tester and the
-		// developer pick it (#1262): never the C++ fixture's header.
-		h := headerIn(task, "## Scope")
-		if _, ok := headerFound(task, "## Scope"); !ok {
-			if d, ok := a.goDir(task, "## Scope"); ok {
-				h, _ = a.goFile(d)
-			}
-		}
-		firstLine := func(file string) string {
-			code, _ := os.ReadFile(filepath.Join(a.work, "repo", file))
-			for _, l := range strings.Split(string(code), "\n") {
-				if l = strings.TrimSpace(l); len(l) > 12 && !strings.HasPrefix(l, "#") {
-					return l
-				}
-			}
-			return ""
-		}
-		line := firstLine(h)
-		named := []string{h}
-		if line != "" && strings.Contains(string(task), line) {
-			// The file the Scope names is given already: naming it alone
-			// is no need for code (#1440). A source file the task did not
-			// name is the one it lacks, named beside it.
-			root := filepath.Join(a.work, "repo")
-			exts := []string{".go", ".h", ".cpp"}
-			if _, ok := headerFound(task, "## Scope"); !ok {
-				exts = []string{".mod"} // a Go issue: never a header, which would make it C++'s
-			}
-			_ = filepath.WalkDir(root, func(g string, e os.DirEntry, _ error) error {
-				rel, err := filepath.Rel(root, g)
-				if err != nil || e.IsDir() || len(named) > 1 || !slices.Contains(exts, filepath.Ext(g)) || strings.HasSuffix(g, "_test.go") || strings.HasPrefix(rel, ".") || strings.Contains(string(task), filepath.ToSlash(rel)) {
-					return nil
-				}
-				named = append(named, filepath.ToSlash(rel))
-				return nil
-			})
-		}
-		return kind, fmt.Sprintf("- sources: {issue: ISSUE, sources: [%s], quote: {path: %q, text: %q}, why: \"no code was given: the file the title names\"}\n", strings.Join(slices.Collect(func(yield func(string) bool) {
-			for _, n := range named {
-				if !yield(fmt.Sprintf("%q", n)) {
-					return
-				}
-			}
-		}), ", "), h, line)
 	case kind == needsEngine && role == "tester":
 		// A tester short of code (#1047, #1059): the header the Scope
 		// names, said lacking, never "no test possible".

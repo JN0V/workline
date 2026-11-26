@@ -108,7 +108,6 @@ var traces = func() []trace {
 		// product owner's question, unanswered: the issue waits on its
 		// reporter). The developer's file beyond its Scope asks no one:
 		// applied, listed (ADR-0065, change 2).
-		trace{name: "trial-35-needs-engine", file: "trial-35", fresh: true, end: "done", by: one("product-owner", needsEngine)},
 		trace{name: "trial-35-needs-po-test", file: "trial-35", fresh: true, end: "done", by: one("tester", needsRole)},
 		// #1047, #1059: the tester short of code says what it lacks.
 		trace{name: "trial-35-tester-needs", file: "trial-35", fresh: true, end: "done", by: one("tester", needsEngine)},
@@ -129,9 +128,6 @@ var traces = func() []trace {
 		// its own mistake; an answer not read; then a new file's hunk
 		// miscounted, its retry at the next tick.
 		trace{name: "trial-18-hunk-retried", file: "trial-18", fresh: true, end: "done", by: map[string][]outcome{"tester": {broken, malformed, hunk}}},
-		// #1262, seed 39: the product owner's needs-input on a Go issue,
-		// the file of the package its Scope names given at once.
-		trace{name: "workline-1004-needs-engine", file: "workline-1004", fresh: true, end: "done", by: one("product-owner", needsEngine)},
 		// #1271: the developer's code that does not build on a Go issue:
 		// its pull request a Draft, the issue waits on it, said; a change
 		// to its body is the developer's review round's.

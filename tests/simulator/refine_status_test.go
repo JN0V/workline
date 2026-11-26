@@ -49,14 +49,3 @@ func TestRefineStatusAfterUnreadableTwice(t *testing.T) {
 		"progress,malformed,malformed",
 	})
 }
-
-// TestRefineStatusAfterCodeNamedTwiceFirstRead: Given an issue in refine
-// read for the first time, whose product owner answers needs-engine
-// twice, the second time naming only the code it was given, When the
-// next tick runs, Then the issue has a status, never none (#1875).
-func TestRefineStatusAfterCodeNamedTwiceFirstRead(t *testing.T) {
-	statusUnder(t, "workline-1002", []string{
-		"needs-engine,needs-engine",
-		"needs-engine,machine-error,needs-engine",
-	})
-}

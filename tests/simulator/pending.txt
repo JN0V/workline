@@ -31,11 +31,13 @@ trial-5-replay i1-status expected-end
 trial-16-replay i1-status expected-end
 trial-19-replay i1-status expected-end
 trial-20-replay i1-status expected-end
-trial-33-replay i1-status expected-end
+# #33: no read again for the code it named (ADR-0074): it waits on its
+# reporter at once, said, and never ends.
+trial-33-replay expected-end
 trial-34-replay expected-end
-# #35: given the folder it named, the product owner's next answer quotes
-# nothing and drafts nothing: blocked for a person, said (#1875).
-trial-35-replay expected-end
+# #35: the product owner names a folder and drafts nothing; no read
+# again for that code (ADR-0074): the silent park.
+trial-35-replay i1-status expected-end
 trial-36-replay i1-status expected-end
 # The product owner names WebUI.h, given at once in its step; its next
 # answer drafts nothing, and the same tick's second run wakes it again,

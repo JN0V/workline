@@ -193,18 +193,6 @@ type checks struct {
 	skip  []string
 	only  []string
 	until int // the last tick checked, when not all
-	// known: a needs-input an open issue says breaks its property is not
-	// held to it (knownNeeds), under seeds.
-	known bool
-}
-
-// knownNeeds: the needs-input answers an open issue says end with no
-// status: the product owner's from the engine. Its question, a person's,
-// is held: it waits on its reporter, said (#1082). The tester's is
-// held. The developer's file beyond the Scope asks no one: applied,
-// listed (ADR-0065, change 2).
-func knownNeeds(cl call) bool {
-	return cl.Role == "product-owner" && cl.Kind == needsEngine
 }
 
 func (c checks) on(p string) bool {
@@ -324,7 +312,7 @@ func (w *world) tickChecks(c checks, k int, before, after forge.FakeState, res, 
 	// Due on that role, or Waiting on it; a person's, Waiting.
 	for _, cl := range lastCalls(calls) {
 		a := issueOf(after, cl.Issue)
-		if !cl.Kind.needs() || !c.on(pNeeds) || c.known && knownNeeds(cl) || a == nil || a.Closed {
+		if !cl.Kind.needs() || !c.on(pNeeds) || a == nil || a.Closed {
 			continue
 		}
 		if cl.Kind == needsRole && (cl.Role == "developer" || cl.Role == "tester") {
@@ -886,8 +874,9 @@ func parseScript(v string) []outcome {
 // script (SIM_SEED, SIM_SCRIPT; SIM_TRACE takes one trace).
 // The seeds draw over the plain traces: a case's point is its own answer,
 // a replay's the trial's, both run by TestTraces. A needs-input on its
-// source is held under seeds but for the role and kind an open issue says
-// break it (knownNeeds); the named needs traces hold those too.
+// source is held under seeds; the named needs traces hold those too. The
+// product owner asks the engine for no code: it reads the repository
+// (ADR-0074).
 func TestSeeds(t *testing.T) {
 	want := pending(t)
 	base, n := seeds()
@@ -899,13 +888,13 @@ func TestSeeds(t *testing.T) {
 			continue
 		}
 		runs = append(runs, tr)
-		limits[tr.name] = checks{all: true, skip: []string{pEnd}, known: true}
+		limits[tr.name] = checks{all: true, skip: []string{pEnd}}
 		if len(want[tr.name]) > 0 {
 			f, _ := runTrace(t, tr, nil, checks{all: true})
 			if f == nil {
 				t.Fatalf("%s is pending, and breaks nothing", tr.name)
 			}
-			limits[tr.name] = checks{only: slices.DeleteFunc(slices.Clone(seeded), func(p string) bool { return slices.Contains(want[tr.name], p) }), until: f.Tick, known: true}
+			limits[tr.name] = checks{only: slices.DeleteFunc(slices.Clone(seeded), func(p string) bool { return slices.Contains(want[tr.name], p) }), until: f.Tick}
 		}
 	}
 	if len(runs) == 0 {
