@@ -648,7 +648,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				what = "the code examples the fix writes"
 			}
 			place := lineRange{from: b.from, to: max(b.from, b.to)}.String()
-			places = append(places, placeRefusal{block: b, place: place, rule: "example-failed",
+			places = append(places, placeRefusal{block: b, rule: "example-failed",
 				why: fmt.Sprintf("%s at %s (lines %s of the doc as fixed) fails `%s`: %s", what, place, linesOf(in, false), s.Examples.Check, r.out)})
 		}
 		if len(places) == 0 {

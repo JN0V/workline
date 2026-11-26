@@ -33,7 +33,6 @@ type fn struct {
 	file     string
 	from, to int
 	name     string
-	why      string
 	calls    []string // the names it calls, in order
 }
 
