@@ -180,6 +180,10 @@ person, as before. *(Built 2026-10-18, when gardening, in parts:
 
 ## Amendment (2026-10-14): a doc waits while a merge request holds it
 
+*Superseded for docs judged in parts by [ADR-0074](0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md), step 3: none is
+judged in parts; a `judged-in-parts` a doc still records is read, written
+no more, and holds nothing.*
+
 DomoticsCore, 2026-10-05 to 10-08
 ([#356](https://github.com/JN0V/workline/issues/356)): two docs judged in
 parts, the fix changing nothing; their `judged-in-parts` record went to the

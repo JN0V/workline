@@ -499,8 +499,7 @@ token), **apply** (trusted, no AI key).
    with `--open-merge-request`, the round proposed a merge request for a
    task no earlier round of the run proposed (the key of
    `out/merge-request.yaml`). The next round is told that task waits, as
-   one open on the forge, and takes up what was deferred — on a gardening
-   night, the docs judged in parts after those judged whole (ADR-0013,
+   one open on the forge, and takes up what was deferred (ADR-0013,
    amended). Each round is a run folder to apply, listed in the result's
    `pending`, a merge request each.
 

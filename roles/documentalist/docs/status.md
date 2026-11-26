@@ -3,10 +3,9 @@
 **In one line:** usable every day on a GitHub or GitLab repository that
 takes merge requests: docs judged on each one and gardened at night, by
 Claude in CI from a release of workline ([CI](../../../docs/ci.md)),
-fixes proposed in a comment, never pushed to the branch. Beta: judging
-docs too large in parts, on by default, ran six nights on DomoticsCore
-and workline; a fix in parts once followed a stale code comment, and
-once made a true line false, each now refused.
+fixes proposed in a comment, never pushed to the branch. Beta: with
+`claude`, the agent reads each doc's sources in the repository itself
+since [ADR-0074](../../../docs/adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)'s step 3 ([more](reads.md)); judging in parts is gone.
 
 Each try: up to 2026-10-13 in [tried.md](tried.md), an archive; since, in
 its pull request's `## Tried`
@@ -23,11 +22,8 @@ hold:
 
 1. **Nothing buildable in Missing**: **open**, one bug, after 1.0
    ([#1361](https://github.com/JN0V/workline/issues/1361)); met on
-   2026-10-18 before it. A doc judged
-   on its change alone is read in parts at night (Built:
-   [#462](https://github.com/JN0V/workline/issues/462)); moving its
-   `checked` is built, on since its bars held at the second measure
-   ([#482](https://github.com/JN0V/workline/issues/482)). No commit on a
+   2026-10-18 before it. A doc whose sources are too large is read by
+   the agent in the repository ([more](reads.md), TRIED). No commit on a
    person's pull request for a doc only read is built (Built:
    [#463](https://github.com/JN0V/workline/issues/463)). DomoticsCore's
    docs to split are done
@@ -133,12 +129,10 @@ its evaluation in
   task, at most 3 waiting; a doc another open merge request changes left
   to it ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order),
   step 7): `docs-pr-skips-a-doc-an-open-merge-request-changes`; not
-  asked again while it is open, a doc judged in parts while any merge
-  request changes it, the next doc going
+  asked again while it is open
   ([#356](https://github.com/JN0V/workline/issues/356)): `gardening-*`,
   `judged-not-asked-again`, `task-waits-for-its-merge-request`,
-  `parts-go-while-suspect-waits`, `parts-record-waiting-not-judged-again`,
-  `parts-judged-once-a-run`, `condense-waits-for-its-merge-request`.
+  `condense-waits-for-its-merge-request`.
 - **Its stale merge requests rebuilt or closed**: `gardening-branch-*`.
 - **Nothing merged into people's pull requests**
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#build-order), step 10):
@@ -165,51 +159,12 @@ its evaluation in
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
 - **Split a doc into linked pages, merge a repeated passage**:
   `condense-*`, `split-*`, `dedupe-*`.
-- **Judging in parts**, a partial claim settled by another part:
-  `judged-in-parts-*`, `parts-*`, `judge-in-parts-off`. On by default
-  ([#82](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736),
-  decided 2026-10-14 on six nights; a night capped by `parts-max-per-run`):
-  `judged-in-parts-by-default`; only when gardening, a merge request
-  leaving such a doc for the next gardening
-  ([#458](https://github.com/JN0V/workline/issues/458)):
-  `parts-left-for-gardening`; a doc too long itself says so at once:
-  `suspect-doc-too-large`; a part's support quoted from a comment only is
-  no support ([#106](https://github.com/JN0V/workline/issues/106)):
-  `judged-in-parts-comment-does-not-*`; a support disputes a
-  contradiction only on the same words, not the same lines
-  ([#440](https://github.com/JN0V/workline/issues/440)):
-  `judged-in-parts-other-words-on-the-line-do-not-dispute`,
-  `judged-in-parts-support-of-the-next-words-does-not-dispute`,
-  `judged-in-parts-same-words-disputed`; a quote a part judged partial
-  is no proof a passage is wrong, DomoticsCore's run replayed
-  ([#467](https://github.com/JN0V/workline/issues/467)):
-  `judged-in-parts-partial-quote-is-no-proof`; a fix changing nothing of
-  what the parts found lists each place for a person, the doc judged
-  once a run ([#2197](https://github.com/JN0V/workline/issues/2197)):
-  `judged-in-parts-fix-declined-findings-listed`,
-  `parts-fix-declined-judged-once-a-run`; a doc a merge request
-  judged on its change alone, its sources too large, read in parts at
-  night, the docs read longest ago first
-  ([#462](https://github.com/JN0V/workline/issues/462)):
-  `judged-on-its-diff-read-in-parts-*`,
-  `judged-on-its-diff-too-wide-for-parts-not-asked-again`,
-  `judged-kept-read-in-parts-not-recorded`,
-  `parts-read-longest-ago-first`; `checked` moved after parts when every
-  line stating something is supported, `parts-move-checked`, on: five
-  runs held no falsehood vouched for, the control made exact vouched for
-  in every one (the first five, 3)
-  ([#482](https://github.com/JN0V/workline/issues/482),
-  [tried](https://github.com/JN0V/workline/pull/490)):
-  `judged-in-parts-every-line-supported*`,
-  `judged-in-parts-a-line-unsupported`,
-  `judged-in-parts-partial-settled-by-another`,
-  `judged-in-parts-vouch-refused-with-the-set`,
-  `sample-vouched-in-parts-for-a-person`. On DomoticsCore, the six
-  docs needing more than 8 parts were split or narrowed to 8 or fewer
-  ([DomoticsCore #211](https://github.com/JN0V/DomoticsCore/pull/211),
-  2026-10-17).
-- **A cap on a run's tokens**: `token-cap-between-parts`, engine's
-  `token-cap-ends-the-run`.
+- **The agent reads the repository**
+  ([ADR-0074](../../../docs/adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md),
+  step 3, TRIED): `claude-reads-the-repository`,
+  `claude-unread-source-checked-stays`, `agent-not-reading-said`; a doc
+  too long itself says so at once: `suspect-doc-too-large`.
+- **A cap on a run's tokens**: engine's `token-cap-ends-the-run`.
 - **`checked` earned by what was read**: `checked-unread-refused`,
   `checked-moves-when-read-whole`,
   `condense-new-doc-born-checked-refused`. The `checked` moved unearned
@@ -267,13 +222,10 @@ its evaluation in
    - commits to people's pull requests changing only record lines, 0
      ([#463](https://github.com/JN0V/workline/issues/463)'s
      Verification);
-   - workline's own docs far behind, gardened in parts since
-     [#27](https://github.com/JN0V/workline/pull/27);
-   - how often a doc read in parts earns its `checked`
-     (`parts-move-checked`, on;
-     [ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-the-shipped-engine-measured));
-   - Sonnet citing lines a line off in long docs; a partial claim
-     settled by another part; the first nightly's two faults;
+   - how often a doc whose sources the agent reads earns its `checked`
+     ([more](reads.md));
+   - Sonnet citing lines a line off in long docs; the first nightly's
+     two faults;
    - Opus's notes that see more than the task asks (unused); Copilot
      CLI on a free plan, unmeasured
    (parked, [#1378](https://github.com/JN0V/workline/issues/1378)).

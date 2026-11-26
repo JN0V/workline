@@ -9,7 +9,6 @@ sources:
   - roles/documentalist/code/waiting.go#holdWaitingTasks
   - roles/documentalist/code/waiting.go#waiting.holds
   - roles/documentalist/code/waiting.go#waiting.changing
-  - roles/documentalist/code/waiting.go#partsKey
   - roles/documentalist/code/documentalist.go#preRun.rewriteWaits
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
@@ -33,16 +32,12 @@ there, not committed
   commit, or the last one rebased.
 - **The record holds** when the doc and each source are, in that commit and
   now, as judged: the doc is not put before an agent, and `judged: <that
-  commit>` (or `judged-in-parts`, as the record says) goes in
+  commit>` goes in
   `workline/documentalist/records`, which only records
   when docs were read: it merges alone at `normal`
   ([the merge policy](../../../docs/merge-policy-normal.md)).
 - **Otherwise the doc is judged again**, its finding naming the file no
   longer as judged.
-- **Not for a doc read in parts that night**: its sources too large to go
-  whole, its record says only what changed was read; it is
-  [read in parts](parts.md) instead
-  ([#462](https://github.com/JN0V/workline/issues/462)).
 - **The cost**: one listing of the merge requests merged since the oldest
   such commit, and one read of the comments of each one a doc points to
   ([ADR-0010, amended](../../../docs/adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md#amendment-2026-10-17-the-commit-a-merge-request-became-stands-for-its-record)).
@@ -69,19 +64,13 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
 - while a task's own merge request waits, the docs it would judge wait too
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)):
   the docs judged whole, while `suspect` or `stale` waits;
-- a doc judged in parts waits while any of these merge requests changes
-  it — its fix, or only the record of when it was judged —; the next doc
-  goes, each run's on a merge request of its own, `fix-<its first doc>`
-  (a short hash added when another doc's has that name)
-  ([ADR-0013, amended 2026-10-14](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-14-a-doc-waits-while-a-merge-request-holds-it));
 - a doc to split, a repeated passage wait
   while their own merge request does; the next one goes;
 - `records` is proposed again only for a doc it does not hold yet: then
   with every record that still holds;
 - a task proposed by an earlier round of the same run counts as waiting: a
   CI night judged with `--no-apply` that proposes the docs judged whole
-  goes round again, and the docs put off to parts are judged the same
-  night
+  goes round again, and the docs put off are judged the same night
   ([ADR-0013, amended](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-02)).
   Workline's first nightly had put thirteen off "to a later round" a CI
   run never had;

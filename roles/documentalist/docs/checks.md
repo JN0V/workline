@@ -34,7 +34,7 @@ rendering shows, or in a frontmatter the doc has.
   replaced ([version bumps](#version-bumps)).
 - **A `checked` the branch does not hold** — one of a merge request since
   squashed or rebased — stands for the commit that brought it there, as
-  does a `judged` or `judged-in-parts`
+  does a `judged`
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)).
   With none, the doc is suspect and read against its sources as they are
   now, never blocking.
@@ -179,9 +179,9 @@ turns one off with `enforce`.
   `source-gone`, `docs-not-read`, `gardening-paused`, the reader checks
   and `setting-invalid` (a `reader.references` pattern left out),
   `too-large-to-split`, `too-large-to-read`,
-  `reader-claim-dropped` and `reader-patch-withheld` (gardening); for a
-  doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`;
-  on a draft, `ai-waits-for-ready`.
+  `reader-claim-dropped` and `reader-patch-withheld` (gardening);
+  `input-cut`, an agent that does not read the repository
+  ([more](reads.md)); on a draft, `ai-waits-for-ready`.
 - **Reported, and the block regenerated**: `derived-stale` (gardening, `init`).
 - **Reported, left as it is**: `derive-unclosed`, a derive marker with no end before the next block's ([#302](https://github.com/JN0V/workline/issues/302)).
 - **Reported; the block left for gardening**: `derived-behind` (push,

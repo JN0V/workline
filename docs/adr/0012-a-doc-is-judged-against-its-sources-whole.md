@@ -5,6 +5,10 @@
 - **Amends:** ADR-0007 on what a suspect doc is judged against; the
   documentalist's policy on `checked`
 
+*Since [ADR-0074](0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md), step 3: the aim stands; an agent that reads the
+repository is given no source, it reads them; the packing within
+`whole-chars` is for any other agent ([more](../../roles/documentalist/docs/reads.md)).*
+
 ## Context
 
 A suspect doc was put before the agent with what changed in its sources

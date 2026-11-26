@@ -4,8 +4,9 @@ sources:
   - roles/documentalist/code/judge.go#asJudged
   - roles/documentalist/code/judge.go#judgedFixes.countFixed
   - roles/documentalist/code/documentalist.go#preRun.holdJudged
-  - roles/documentalist/code/parts.go#holdJudgedInParts
-  - roles/documentalist/code/parts.go#held
+  - roles/documentalist/code/documentalist.go#holdJudgedDocs
+  - roles/documentalist/code/documentalist.go#held
+  - roles/documentalist/code/documentalist.go#readByLog
 checked: e81df7b34
 verified: agent:claude-code
 ---
@@ -42,10 +43,9 @@ one place the engine had already named (step 4). Now:
 - `pre` records the docs whose sources it gave whole
   (`in/read-whole.yaml`; none, when the file is missing), and what it gave
   of the others (`in/read-not-whole.yaml`): only the first may have
-  `checked` moved.
-- A doc judged in parts, once the fix is judged: the places it fixed, or
-  that it changed nothing of what the parts found, each place listed
-  ([the fix after parts](parts-fix.md#the-fix)).
+  `checked` moved. With an agent that reads the repository, `post` keeps
+  of them only the docs whose every source file its calls' log holds
+  ([more](reads.md)).
 - On a person's merge request, a doc whose patch only records `judged`:
   its record is kept in the documentalist's comment there, nothing
   committed for it, and the finding says so

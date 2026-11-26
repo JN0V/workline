@@ -3,6 +3,10 @@
 - **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof), 2026-10-18 (a doc judged on its change alone; `checked` after parts, measured, off, then measured again, on; the shipped engine measured)
 - **Date:** 2026-09-29
 
+*Superseded whole by [ADR-0074](0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md), step 3: no doc is judged in parts;
+an agent that reads the repository reads its sources, any other leaves
+such a doc to a person ([the agent reads the repository](../../roles/documentalist/docs/reads.md)).*
+
 ## Context
 
 A doc whose sources changed more than a task can show is judged against them

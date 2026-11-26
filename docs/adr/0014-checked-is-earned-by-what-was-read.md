@@ -45,6 +45,10 @@ the next is built.
 
 ### 0. The engine refuses an unearned `checked` (now)
 
+*Since [ADR-0074](0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md), step 3: with an agent that reads the repository,
+`checked` is earned by its calls' log, every source file of the doc read;
+with any other, by what the task gave, as below ([more](../../roles/documentalist/docs/reads.md)).*
+
 - **`checked` moves only when every source was given whole in the task.**
   Otherwise the fix must set `judged` (ADR-0013); a move is refused
   (`checked-unread`). On every path: merge request, gardening, `workline
@@ -188,6 +192,8 @@ Decided on [#106](https://github.com/JN0V/workline/issues/106), for the gaps
   lines either way (stricter, it would withhold more right fixes).
 
 ## Amendment (2026-10-18): `checked` earned in parts
+
+*Superseded by [ADR-0074](0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md), step 3: no doc is judged in parts.*
 
 Decided by the maintainer on
 [#482](https://github.com/JN0V/workline/issues/482): step 0's "every

@@ -68,6 +68,5 @@ gardening proposes again when fewer wait.
 
 `merge-request-unread` (a warning): the branch of one of its merge
 requests could not be fetched from `origin`. The documentalist then knows
-that merge request by its task only: a doc it holds may be asked again;
-for one judging docs in parts (`fix-…`), every doc to judge in parts
-waits. Give the job read access to the repository's branches.
+that merge request by its task only: a doc it holds may be asked again.
+Give the job read access to the repository's branches.

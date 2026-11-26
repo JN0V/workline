@@ -30,9 +30,7 @@ sources:
   - defaults/routing.yaml#fail-fast
   - roles/documentalist/role.yaml#settings.max-open-merge-requests
   - roles/documentalist/role.yaml#settings.ai-max-tokens
-  - roles/documentalist/role.yaml#settings.judge-in-parts
-  - roles/documentalist/role.yaml#settings.parts-max
-  - roles/documentalist/role.yaml#settings.parts-max-per-run
+  - roles/documentalist/role.yaml#settings.ai-max-turns
   - internal/agent/agent.go#Parse
   - cmd/workline/main.go#initCmd
   - cmd/workline/main.go#issuesCmd
@@ -135,15 +133,14 @@ In the repository:
    them, you review and commit
    ([adopting a repository](../roles/documentalist/docs/adopt.md)).
 2. `.workline/config.yaml`, if the defaults do not suit — for a backlog of
-   docs far behind, the caps on judging in parts, on by default when
-   gardening ([ADR-0009](adr/0009-docs-far-behind-are-judged-in-parts.md)):
+   docs far behind, the caps on what the agent reads
+   ([ADR-0074](adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)):
 
    ```yaml
    roles:
      documentalist:
        settings:
-         # judge-in-parts: false    # docs too large for one call go to a person
-         parts-max-per-run: 8       # one such doc a night
+         ai-max-turns: 40           # turns of an agent reading the repository
          ai-max-tokens: 400000      # what a run may spend, all calls together
          max-open-merge-requests: 3 # gardening waits while this many wait
    ```

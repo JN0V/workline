@@ -32,9 +32,7 @@ took a commit on their branch, 41 of 42 in two weeks
 - **The next push does not judge it again** while the doc and its sources
   stay the same; a change to either has it judged again.
 - **Once merged, gardening writes `judged`** on the default branch
-  ([records](gardening-merge-requests.md#records-kept-on-merged-merge-requests)); for a
-  doc whose sources are too large to go whole, it reads it in parts
-  instead ([#462](https://github.com/JN0V/workline/issues/462)).
+  ([records](gardening-merge-requests.md#records-kept-on-merged-merge-requests)).
 - **A real fix goes in the comment's diff**, a move of `checked` too.
 - **A fork's merge request** keeps its record too.
 - **In the comment's diff too**, where the documentalist's comment

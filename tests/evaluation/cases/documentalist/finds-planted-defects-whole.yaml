@@ -1,5 +1,5 @@
 case: documentalist/finds-planted-defects-whole
-about: "ADR-0009's measure, judged whole: one commit makes four passages of a doc false — a default early, a count in the middle, a sentence two sources speak to, a name renamed late — and changes code the doc does not describe. Each defect found is a check; so is each true sentence kept. Compare with finds-planted-defects-in-parts, on the same doc."
+about: "ADR-0009's measure, judged whole: one commit makes four passages of a doc false — a default early, a count in the middle, a sentence two sources speak to, a name renamed late — and changes code the doc does not describe. Each defect found is a check; so is each true sentence kept."
 given:
   repo: service
   setup:

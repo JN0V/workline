@@ -28,6 +28,10 @@ gardening's two jobs — the agent reads, a job without its key writes
 
 ## Decision
 
+*Since [ADR-0074](0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md), step 3: a `checked` may be earned by an agent
+reading sources past `whole-chars`; the sample says such a doc not read
+(`whole-chars` caps its own read), no longer unearned.*
+
 ### Drawn without AI
 
 The docs whose `checked` the documentalist moved — its commits carry
