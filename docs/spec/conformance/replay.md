@@ -78,7 +78,7 @@ go run ./tests/evaluation/summary     # per case and per set, a workline commit 
 ## A free reviewer, to compare
 
 `TestFreeReviewer` plays the reviewer's set with no role: one
-`claude -p` call on the checkout, read tools and read-only git, the
+`claude -p` call on the checkout, read tools and read-only commands, the
 maintainer's question ("the defects you would block the merge on"),
 no lens, no judge, no quote check.
 
@@ -92,8 +92,9 @@ WORKLINE_FREE_REVIEWER=claude:sonnet@medium WORKLINE_EVAL_RESULTS=free.tsv \
   `scoreReview` scores it as a reviewer run.
 - Its rows go to `WORKLINE_EVAL_RESULTS`, with fresh and cache tokens;
   `WORKLINE_FREE_TRANSCRIPTS` keeps each call's messages and answer.
-- The branches and tags after the change are removed from the clone:
-  the agent cannot read the fix.
+- The clone is sealed before the call: the branches and tags after the
+  change, the reflogs and the mirror it borrowed objects from are gone,
+  so the agent cannot read the fix (`TestSealClone`).
 
 ## Cost
 

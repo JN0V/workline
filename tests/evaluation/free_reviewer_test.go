@@ -1,7 +1,7 @@
 package evaluation
 
 // A free reviewer on the reviewer's replay set: one agent call on the
-// checkout, read tools and read-only git, the maintainer's question, no
+// checkout, read tools and read-only commands, the maintainer's question, no
 // lens, no judge, no quote check. Its answer is scored as the reviewer's
 // (scoreReview), each defect it would block on an Important, so the two
 // compare on the same points (docs/spec/conformance/replay.md).
@@ -30,8 +30,9 @@ import (
 	"time"
 )
 
-// freeTools: read and search, and git to read the history and the
-// change; dontAsk denies any other command.
+// freeTools: git to read the history and the change. With dontAsk,
+// Claude Code also runs the read-only commands it allows on its own (grep,
+// sed, cat…) and denies the rest: the agent reads, it never writes.
 var freeTools = []string{"Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)"}
 
 func TestFreeReviewer(t *testing.T) {
@@ -57,9 +58,7 @@ func TestFreeReviewer(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			// What came after the change stays out of reach: the mirror's
-			// branches and the tags past its head.
-			if err := sh(repo, env, "git remote remove origin && git tag --no-merged change | xargs -r git tag -d >/dev/null"); err != nil {
+			if err := sealClone(repo, env); err != nil {
 				t.Fatal(err)
 			}
 			changed, err := changedFiles(repo)
@@ -97,6 +96,16 @@ func TestFreeReviewer(t *testing.T) {
 			}
 		})
 	}
+}
+
+// sealClone keeps what came after the change out of reach: the mirror's
+// branches, the tags past the change, the reflogs (main@{1} was the
+// mirror's main) and the mirror itself, borrowed as an alternate. The
+// objects main and change reach are copied in, then the rest is pruned.
+func sealClone(repo string, env []string) error {
+	return sh(repo, env, "git remote remove origin && git tag --no-merged change | xargs -r git tag -d >/dev/null"+
+		" && rm -rf .git/logs .git/ORIG_HEAD .git/FETCH_HEAD"+
+		" && git repack -a -d -q && rm -f .git/objects/info/alternates && git prune --expire=now")
 }
 
 // freePrompt is the maintainer's question: the issues, the pull request,
@@ -150,7 +159,7 @@ type freeCall struct {
 	cost                            float64
 }
 
-// askFree runs one claude call in repo, read tools and read-only git,
+// askFree runs one claude call in repo, read tools and read-only commands,
 // and returns its messages as they came.
 func askFree(repo, model, effort, prompt string) ([]byte, freeCall, error) {
 	var cl freeCall
@@ -275,6 +284,46 @@ func changedFiles(repo string) (map[string]bool, error) {
 		files[f] = true
 	}
 	return files, nil
+}
+
+// TestSealClone: a commit made on main after the change, reachable in the
+// mirror, is not in the sealed clone, by its reflog nor by its hash.
+func TestSealClone(t *testing.T) {
+	work := t.TempDir()
+	env := append(hermetic(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
+	run := func(dir, script string) string {
+		t.Helper()
+		cmd := exec.Command("sh", "-c", script)
+		cmd.Dir, cmd.Env = dir, env
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%q: %v\n%s", script, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	run(work, "git init -q -b main src && cd src && echo a >f && git add f && git commit -qm base && git tag v1"+
+		" && git checkout -qb change && echo b >f && git commit -qam change"+
+		" && git checkout -q main && git merge -q --no-ff -m fix change && echo c >f && git commit -qam later && git tag v2"+
+		" && git clone -q --mirror . ../mirror.git")
+	src := filepath.Join(work, "src")
+	base, head, later := run(src, "git rev-parse v1"), run(src, "git rev-parse change"), run(src, "git rev-parse main")
+	run(work, "git clone -q --shared --no-checkout mirror.git repo && cd repo && git checkout -q -B main "+base+" && git checkout -q -B change "+head)
+	repo := filepath.Join(work, "repo")
+	if err := sealClone(repo, env); err != nil {
+		t.Fatal(err)
+	}
+	if got := run(repo, "git rev-parse main change"); got != base+"\n"+head {
+		t.Errorf("main and change: %q", got)
+	}
+	run(repo, "git log --oneline main..change >/dev/null && git diff --stat main...change >/dev/null && git tag -l v1 | grep -q v1")
+	for _, probe := range []string{"git rev-parse -q --verify main@{1}", "git cat-file -e " + later, "git rev-parse -q --verify v2",
+		"git cat-file --batch-all-objects --batch-check | grep -q " + later} {
+		cmd := exec.Command("sh", "-c", probe)
+		cmd.Dir, cmd.Env = repo, env
+		if cmd.Run() == nil {
+			t.Errorf("%s: the later commit is reachable", probe)
+		}
+	}
 }
 
 // TestFreeFindingsRead: the BLOCK lines read as Importants, placed on the
