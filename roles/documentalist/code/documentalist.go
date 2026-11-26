@@ -585,10 +585,6 @@ type suspectDoc struct {
 	read   []sourceRead
 	shown  int  // lines of evidence shown so far, within docEvidenceLines
 	capped bool // more changed than docEvidenceLines shows
-	// overWhole: its sources do not fit whole-chars, so no task gave them
-	// whole: a `judged` earned before does not hold it from an agent that
-	// reads the repository, when gardening (#462, docs/adr/0074).
-	overWhole bool
 	// note says why a doc is not put in a task: a person judges it, or an
 	// earlier record holds it.
 	note     string
@@ -993,7 +989,6 @@ func (r *preRun) giveSourcesNow() error {
 				// Judged on the diffs: `checked` cannot move (#239).
 			case readsTree(sd.doc):
 				sd.evidence, sd.read, sd.whole = nil, nil, true
-				sd.overWhole = len(strings.Join(now, "")) > wholeChars(r.s)
 			case sd.capped:
 				sd.evidence = append([]string{"More changed in its sources since it was checked than a task can show. Here they are as they are now, in full: judge each sentence of the doc against them."}, now...)
 				sd.whole, sd.read = true, nil // what changed is no longer shown
@@ -1025,13 +1020,15 @@ func (r *preRun) holdJudged() error {
 }
 
 // holdJudgedDocs keeps from the agent the docs judged without being vouched
-// for whose sources did not change since, saying so; when gardening, not one
-// whose sources no task could give whole, which an agent reading the
-// repository reads whole (#462).
+// for whose sources did not change since, saying so, whatever their size:
+// judging the same sources again each night finds nothing new (#462). A
+// `judged-in-parts` a doc still records holds it the same way (docs/adr/0074).
 func holdJudgedDocs(docs map[string]*suspectDoc, repo string) {
 	for _, sd := range docs {
-		if sd.note == "" && (!sd.overWhole || os.Getenv("WORKLINE_EVENT") != "schedule") && held(sd.doc, sd.doc.Judged, repo) {
-			sd.note = fmt.Sprintf("(judged at %s, but the agent could not vouch for every sentence — its note said what; its sources unchanged since: not put before an agent again until one changes; a person reads it against them, then moves `checked`)", sd.doc.Judged)
+		for _, at := range []string{sd.doc.Judged, sd.doc.JudgedInParts} {
+			if sd.note == "" && held(sd.doc, at, repo) {
+				sd.note = fmt.Sprintf("(judged at %s, but the agent could not vouch for every sentence — its note said what; its sources unchanged since: not put before an agent again until one changes; a person reads it against them, then moves `checked`)", at)
+			}
 		}
 	}
 }

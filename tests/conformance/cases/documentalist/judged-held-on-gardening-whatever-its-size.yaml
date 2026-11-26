@@ -1,0 +1,14 @@
+case: documentalist/judged-held-on-gardening-whatever-its-size
+about: "When gardening, a doc judged without being vouched for, whose sources pass `whole-chars`, is still held by its `judged` until a source changes after it: an agent reading the repository is not asked to judge the same sources again each night (#462)."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged: $C/\" docs/tech/auth.md && git commit -qam 'docs: judge the auth doc, not vouched for'"
+  config: {roles: {documentalist: {settings: {whole-chars: 10}}}}
+  env: {PATH: "$FIXTURES/claude-documents:$PATH", READS: none}
+run: {role: documentalist, event: schedule, ai: claude}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "its sources unchanged since: not put before an agent again until one changes"}]

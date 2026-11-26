@@ -1,0 +1,14 @@
+case: documentalist/judged-in-parts-still-holds
+about: "A `judged-in-parts` a doc still records holds it like `judged` until a source changes after it: read where written, never written again (ADR-0074)."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged-in-parts: $C/\" docs/tech/auth.md && git commit -qam 'docs: judge the auth doc, not vouched for'"
+  config: {roles: {documentalist: {settings: {whole-chars: 10}}}}
+  env: {PATH: "$FIXTURES/claude-documents:$PATH", READS: none}
+run: {role: documentalist, event: schedule, ai: claude}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "its sources unchanged since: not put before an agent again until one changes"}]

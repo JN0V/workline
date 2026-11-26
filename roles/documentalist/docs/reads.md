@@ -49,6 +49,6 @@ A `cmd:` agent, or a fake, does not read the repository:
 ## A doc already judged
 
 - A doc whose `judged` names a commit after which no source changed is
-  not asked again: a person reads it.
-- A `judged-in-parts` a doc still records is read, never written again,
-  and holds nothing: such a doc is judged whole again.
+  not asked again, whatever its sources' size: a person reads it.
+- A `judged-in-parts` a doc still records holds it the same way: read
+  where written, never written again.
