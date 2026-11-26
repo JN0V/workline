@@ -1,0 +1,27 @@
+case: product-owner/held-wl-1599-workflow-copy-a-persons
+about: >
+  Held out. JN0V/workline #1599, a person's bug of 2026-11-15: the develop
+  workflow's header says a variable sets the heartbeat gap. Its Scope names
+  the template, two docs, and `.github/workflows/workline- develop.yml`, "its
+  copy follows the template": a CI workflow, a person's file on this line.
+  Same kind of point as TraceGlass #7 and #8, on an issue no tried prompt was
+  written on. The body is as the person wrote it; main was dc96051. Expected:
+  the issue says the workflow copy is a person's part (graded apart, person-
+  ci).
+given:
+  clone: {repo: JN0V/workline, head: dc96051ac3bb89cc4291ff5d23cf1bbb8e502909}
+  config: {roles: {product-owner: {settings: {autonomy: normal, issues-per-run: 15, acts: {refine: {max: 10}, ready: {max: 10}}, archived: [docs/BACKLOG.md]}}}}
+  forge:
+    issues:
+      - id: 1599
+        title: "The develop workflow's header says a variable sets the heartbeat gap"
+        author: JN0V
+        insider: true
+        labels: ["bug"]
+        body: "A maintainer who sets the heartbeat's gap by the documented variable gets no change, because the variable does not set it.\n\n## Example\n\n- `WORKLINE_RECONCILE_GAP_MINUTES` set to 15 on this repository.\n- Overnight, the heartbeat still started a reconcile every 5 minutes.\n- The 5 minutes came from the `workline-heartbeat` environment's wait timer.\n\n## Steps to reproduce\n\n1. Read the header of `workline-develop.yml`.\n2. Set `WORKLINE_RECONCILE_GAP_MINUTES` to 15, the environment's wait timer at 5.\n3. Watch the reconciles' start times.\n\n- **Expected**: what the header says: the gap is 15 minutes.\n- **Actual**: the heartbeat waits 5 minutes, the wait timer; the variable only gates the reconcile started by the schedule or an event.\n- **Version**: 0.77.1.\n\n## Validation\n\n- **Header true:** Given the header of the develop workflow, When a maintainer reads how to set the heartbeat's gap, Then it names the environment's wait timer, and says the variable only gates a reconcile started by the schedule or an event.\n\n---\n\n## Scope\n\n- `ci/github/workline-develop.yml`: lines 17-19 of the header; the heartbeat waits on the environment's timer (step \"The next reconcile, by the heartbeat\"); the variable only gates `reconcile-due` (\"Due, … minutes after the last\").\n- `.github/workflows/workline-develop.yml`: the same header, lines 15-17; its copy follows the template.\n- `roles/developer/docs/triggers.md`, `docs/github/heartbeat.md`: checked to say the same.\n"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: dc96051\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[person-ci] On this line a CI workflow file (`.github/workflows/**`) is changed by a person only: the developer role cannot write it. As this run left issue #1599, does it say so on the issue (in its Scope, a note, a question, a split into the line's part and the person's part, or by keeping it for a person) rather than moving the whole issue on as work the line builds?"}

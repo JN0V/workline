@@ -540,12 +540,13 @@ func grade(c *caseFile, r *run) (passed int, failed, skipped []string) {
 	for _, g := range c.Grade {
 		for kind, v := range g {
 			if kind == "judge" {
-				why, err := judge(fmt.Sprint(v), c, r)
+				name, question := judgeName(fmt.Sprint(v))
+				why, err := judge(question, c, r)
 				switch {
 				case err != nil:
-					skipped = append(skipped, "judge skipped: "+err.Error())
+					skipped = append(skipped, "judge"+name+" skipped: "+err.Error())
 				case why != "":
-					failed = append(failed, "judge: "+why)
+					failed = append(failed, "judge"+name+": "+why)
 				default:
 					passed++
 				}
@@ -574,6 +575,19 @@ func grade(c *caseFile, r *run) (passed int, failed, skipped []string) {
 		}
 	}
 	return passed, failed, skipped
+}
+
+// judgeName splits a judge check that starts with its name in brackets
+// (`[threshold] Is every bound …`): the name, said with a failure so a
+// case asking several questions tells which one was lost, and the
+// question alone, as the judge is asked it. No name: the question whole.
+func judgeName(check string) (name, question string) {
+	if rest, ok := strings.CutPrefix(check, "["); ok {
+		if n, q, found := strings.Cut(rest, "] "); found && !strings.ContainsAny(n, " \n") {
+			return " [" + n + "]", q
+		}
+	}
+	return "", check
 }
 
 // vague are the words a rewrite reaches for when it drops the author's.
@@ -786,6 +800,73 @@ func worklineVersion() string {
 	return v
 }
 
+// keepJudged keeps what a judge was asked and what it said, a file a
+// question, in the folder WORKLINE_EVAL_KEEP names: a judge's yes leaves
+// no trace in the results, and a person auditing a measure reads these.
+func keepJudged(c *caseFile, question, material string, yes bool, why string, err error) {
+	dir := os.Getenv("WORKLINE_EVAL_KEEP")
+	if dir == "" || os.MkdirAll(dir, 0o755) != nil {
+		return
+	}
+	said := fmt.Sprintf("yes: %s", why)
+	if err != nil {
+		said = "no answer: " + err.Error()
+	} else if !yes {
+		said = "no: " + why
+	}
+	name := fmt.Sprintf("%s-%d.md", strings.ReplaceAll(c.Case, "/", "_"), time.Now().UnixNano())
+	_ = os.WriteFile(filepath.Join(dir, name), []byte("## The judge said\n\n"+said+"\n\n## Question\n\n"+question+"\n\n"+material), 0o644)
+}
+
+// issuesAfter is what a product owner's run left on the simulated forge,
+// for the judge, in place of the working tree's diff: the role writes
+// issues, never files. What the run said it did, then each issue's
+// labels, body and comments. A replay's `about` tells what the role did
+// on the real issue then: the judge is told to judge this run alone.
+func issuesAfter(c *caseFile, r *run) string {
+	if c.Run.Role != "product-owner" || c.Given.Forge == nil {
+		return ""
+	}
+	var forge struct {
+		Issues []struct {
+			ID       int               `json:"id"`
+			Title    string            `json:"title"`
+			Closed   bool              `json:"closed"`
+			Labels   []string          `json:"labels"`
+			Body     string            `json:"body"`
+			Comments []json.RawMessage `json:"comments"` // a comment is its body alone, or a note
+		} `json:"issues"`
+	}
+	data, err := os.ReadFile(filepath.Join(r.repo, "..", "forge.json"))
+	if err != nil || json.Unmarshal(data, &forge) != nil {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("The case above tells what happened on the real issue, at the time. Judge this run alone: what it said it did, and the issues as it left them, below.\n")
+	b.WriteString("\n## What this run said it did\n\n")
+	for _, f := range r.res.Findings {
+		fmt.Fprintf(&b, "- %s %s: %s\n", f.Rule, f.Where, f.Message)
+	}
+	b.WriteString("\n## The issues, as this run left them\n")
+	for _, is := range forge.Issues {
+		state := "open"
+		if is.Closed {
+			state = "closed"
+		}
+		fmt.Fprintf(&b, "\n### #%d %s (%s; labels: %s)\n\n%s\n", is.ID, is.Title, state, strings.Join(is.Labels, ", "), is.Body)
+		for _, raw := range is.Comments {
+			var n struct {
+				Body string `json:"body"`
+			}
+			if json.Unmarshal(raw, &n.Body) != nil {
+				_ = json.Unmarshal(raw, &n)
+			}
+			fmt.Fprintf(&b, "\n#### A comment on #%d\n\n%.6000s\n", is.ID, n.Body)
+		}
+	}
+	return b.String()
+}
+
 // provider is the agent a spec names: claude for claude:haiku@low. A command
 // is whatever it runs; whoever names one vouches for its provider.
 // judge asks the agent WORKLINE_JUDGE names a yes-or-no question on what the
@@ -815,13 +896,18 @@ func judge(question string, c *caseFile, r *run) (string, error) {
 	if c.Run.Message != "" {
 		fmt.Fprintf(&material, "## What the author wrote\n\n```\n%s\n```\n\n## What the role made of it\n\n```\n%s\n```\n\n", c.Run.Message, r.message)
 	}
-	_ = exec.Command("git", "-C", r.repo, "add", "--intent-to-add", ".").Run() // new docs show in the diff
-	diff, _ := exec.Command("git", "-C", r.repo, "diff", "HEAD").Output()
-	if len(diff) > 60000 {
-		diff = append(diff[:60000], "\n[cut]\n"...)
+	if after := issuesAfter(c, r); after != "" {
+		material.WriteString(after) // the product owner writes issues, no file
+	} else {
+		_ = exec.Command("git", "-C", r.repo, "add", "--intent-to-add", ".").Run() // new docs show in the diff
+		diff, _ := exec.Command("git", "-C", r.repo, "diff", "HEAD").Output()
+		if len(diff) > 60000 {
+			diff = append(diff[:60000], "\n[cut]\n"...)
+		}
+		fmt.Fprintf(&material, "## The change, as the working tree holds it after the role\n\n```diff\n%s```\n", diff)
 	}
-	fmt.Fprintf(&material, "## The change, as the working tree holds it after the role\n\n```diff\n%s```\n", diff)
 	ans, err := wjudge.Ask(spec, judgeRole, question, material.String())
+	keepJudged(c, question, material.String(), ans.Yes, ans.Why, err)
 	var models []string
 	for _, call := range r.res.Calls {
 		models = append(models, call.Model)

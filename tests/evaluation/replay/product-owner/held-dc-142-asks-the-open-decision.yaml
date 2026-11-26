@@ -1,0 +1,28 @@
+case: product-owner/held-dc-142-asks-the-open-decision
+about: >
+  Held out. JN0V/DomoticsCore #142: a refusal message outlives its cause. Its
+  body says "The decision: a close control, a lifetime, or clearing on the
+  next edit of that field". Same kind of point as #139 (a choice the issue
+  leaves open), on an issue the instruction was not written on; first read by
+  the role on 2026-11-26, on v0.91.0, where it asked that choice. The body is
+  the item as imported; main was 5a2ea81. Expected: the choice asked, no
+  Validation answering it, not readied.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 5a2ea815117522243c014c8fb2570cf624d37e76}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 142
+        title: "WebUI: a refusal message outlives its cause"
+        author: JN0V
+        insider: true
+        labels: ["bug", "workline:to-refine"]
+        body: "### BUG-56 — WebUI: a refusal message outlives its cause [LOW] — **NEW (2026-09-20, by BUG-51's review)**\n\n- **Problem**: a message is cleared when the next attempt starts, on entering\n  edit mode and on cancel. It is deliberately not cleared by a redraw — the card\n  redraws every tick and would wipe it within a second — so after a refused save\n  the reason sits under a field the tick has already put back to a valid value,\n  with no way to dismiss it. A multi-field save can leave several at once.\n- **The decision**: a close control, a lifetime, or clearing on the next *edit*\n  of that field (an `input` event, which the buffering listener does not use\n  today). Each is a different answer to \"how long is a refusal true for\".\n- **Refs**: BUG-51 (which chose the rule), SEC-14.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 4264 to 4274 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:e0b855c40924 -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 5a2ea81\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {finding: {where: "#142", message: "Asked #142's reporter"}}
+  - {judge: "[choice-asked] Does the question the role asked in this run on issue #142 ask its reporter the choice the issue itself says is open (how long a refusal message stays: a close control, a lifetime, or cleared on the next edit), without answering it in a draft?"}
+  - {sh: ": not-readied; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 142][0]; assert \"workline:ready\" not in i[\"labels\"] and \"workline:needs-tests\" not in i[\"labels\"]'"}

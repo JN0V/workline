@@ -1,0 +1,27 @@
+case: product-owner/clean-tg-4-evident-bug-readied
+about: >
+  Clean. JN0V/TraceGlass #4, a person's bug with its steps, Validation and
+  Scope: an unreadable onboarding file crashes the app at launch. On
+  2026-11-23 the role named its code, labelled it `bug` and moved it to ready;
+  pull request 11 was merged with no review round and nothing sent back. The
+  body is as the person wrote it; main was 8d3965c. Expected: `bug`, ready, no
+  question.
+given:
+  clone: {repo: JN0V/TraceGlass, head: 8d3965c825d4145df335cec4fd738f3445ef9180}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 4
+        title: "An unreadable onboarding file crashes the app at launch"
+        author: JN0V
+        insider: true
+        labels: ["workline:to-refine"]
+        body: "**Need**: a person whose onboarding preferences file cannot be read needs the app to start anyway, as it does when the settings file cannot be read.\n\n**Example**:\n\n1. Make the `onboarding_prefs` DataStore throw an `IOException` on read.\n2. Launch the app.\n\n- **Expected**: onboarding comes back with its defaults: not completed, no tier chosen. The app starts on the onboarding.\n- **Actual**: the read error is not caught; the app crashes at launch, every time.\n- **Version**: main, 8d3965c.\n\n## Validation\n\n- **Scenario: unreadable gives defaults**\n  - Given the onboarding store throws an `IOException` on read\n  - When \"onboarding completed\" is read\n  - Then it is false\n- **Scenario: tier falls back**\n  - Given the same store\n  - When the chosen tier is read\n  - Then there is none\n- **Scenario: other errors surface**\n  - Given the store throws an `IllegalStateException` on read\n  - When it is read\n  - Then the error is not hidden, as today\n\n---\n\n## Verification\n\n- New unit tests in `feature/onboarding/src/test/kotlin/io/github/jn0v/traceglass/feature/onboarding/`, a DataStore fake whose `data` throws: the first two scenarios fail on main and pass once built.\n- `./gradlew :feature:onboarding:testDebugUnitTest`.\n\n## Scope\n\n- `feature/onboarding/src/main/kotlin/io/github/jn0v/traceglass/feature/onboarding/DataStoreOnboardingRepository.kt`: catch `IOException` on `dataStore.data` and emit empty preferences; rethrow anything else.\n- Model to follow: `core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/DataStoreSettingsRepository.kt` (`.catch { if (exception is IOException) emit(emptyPreferences()) else throw exception }`).\n- Reference: trial issue JN0V/TraceGlass-trial#75.\n"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 8d3965c\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {finding: {where: "#4", message: "Labelled #4 `bug`"}}
+  - {finding: {where: "#4", message: "Moved #4 to ready"}}
+  - {no-finding: {where: "#4", message: "Asked #4's reporter"}}

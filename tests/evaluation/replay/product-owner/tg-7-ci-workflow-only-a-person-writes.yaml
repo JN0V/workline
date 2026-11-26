@@ -1,0 +1,29 @@
+case: product-owner/tg-7-ci-workflow-only-a-person-writes
+about: >
+  JN0V/TraceGlass #7, a person's issue: publish a downloadable APK from CI.
+  Its Scope is a step in `.github/workflows/ci.yml` and a README section. On
+  2026-11-23 the role moved it to ready whole; the developer wrote the README,
+  could not write the workflow (read-only to it), and its pull request 19 said
+  "Closes" with the step left for a person. The owner counted it among the
+  readies the line could not build, and asked for such an issue to be split or
+  left to a person at refine (workline #2186, open). The body is as the person
+  wrote it; main was 8d3965c. Expected: the issue says the workflow is a
+  person's part. The role is not told the developer's bounds: a careful person
+  on this team knows them, the agent can only guess; graded apart (person-ci).
+given:
+  clone: {repo: JN0V/TraceGlass, head: 8d3965c825d4145df335cec4fd738f3445ef9180}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 7
+        title: "Publish a downloadable APK from CI"
+        author: JN0V
+        insider: true
+        labels: ["workline:to-refine"]
+        body: "## Need\n\nA person without Android tooling wants to install TraceGlass without forking the repository.\n\n## Example\n\n6 of the 8 forks (btryanz67-hub, X319300, zombie7mark-wq, MiladyVonWinter, Hunter-a11y, Rishu33852) only add an `actions/upload-artifact` step for `app/build/outputs/apk/debug/*.apk`. Today CI builds the debug APK but throws it away.\n\n## Validation\n\n- **Scenario: the APK is attached.** Given a push to `main`, When CI passes, Then the debug APK is attached to the run as an artifact named so a person finds it (for example `traceglass-debug-apk`).\n- **Scenario: the README says where.** Given a person reading the README, When they look for how to install, Then it says where to download the APK and how to install it.\n\n---\n\n## Verification\n\n- The next CI run on `main` shows the artifact; downloading it gives an installable `app-debug.apk`.\n- A pull request run behaves as before; the artifact need not be attached there.\n- No secret is read or needed.\n\n## Scope\n\n- `.github/workflows/ci.yml`: an `actions/upload-artifact@v4` step after \"Build debug\", on push to `main`, with a short retention.\n- `README.md`: an install section pointing to the artifact (the \"Build\" section mentions only `adb install`).\n- No secrets, no signing.\n"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 8d3965c\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[person-ci] On this line a CI workflow file (`.github/workflows/**`) is changed by a person only: the developer role cannot write it. As this run left issue #7, does it say so on the issue (in its Scope, a note, a question, a split into the line's part and the person's part, or by keeping it for a person) rather than moving the whole issue on as work the line builds?"}

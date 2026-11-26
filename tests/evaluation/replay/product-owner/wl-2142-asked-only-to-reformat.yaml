@@ -1,0 +1,25 @@
+case: product-owner/wl-2142-asked-only-to-reformat
+about: >
+  JN0V/workline #2142, a person's task: move the token measures out of the
+  user docs. On 2026-11-24, at its first read, the role asked only "write each
+  scenario of the Validation as a bullet in this form", and named no code. The
+  work was done by hand the same day (pull request 2153). One of three format
+  questions of the window. The body is as the person wrote it; main was
+  1d0004c. Expected: no question on the form.
+given:
+  clone: {repo: JN0V/workline, head: 1d0004cef46b2dedf6c6733e4e44211411fb0aea}
+  config: {roles: {product-owner: {settings: {autonomy: normal, issues-per-run: 15, acts: {refine: {max: 10}, ready: {max: 10}}, archived: [docs/BACKLOG.md]}}}}
+  forge:
+    issues:
+      - id: 2142
+        title: "Move the token measures out of the user docs"
+        author: JN0V
+        insider: true
+        labels: ["task"]
+        body: "## Need\n\nA reader of the user docs needs to read how a role works, not what it cost to measure it.\nToken figures held in a user doc are internals a newcomer cannot read.\nToday they sit in the pages of the documentalist and the product owner.\n\n## Example\n\n- The roles/documentalist and roles/product-owner docs state token figures for runs.\n- A reader of those pages meets numbers with no context.\n- The page should say what the role does and link to where the measure is told.\n\n## Validation\n\n- Given a user doc of a role, When I read it, Then it holds no token figure and links to the measure.\n- Given the moved measure, When I open docs/research/ or the ADR, Then the figure is there with its run and date.\n- Given the documentalist, When it checks the docs, Then no user doc is suspect from this move.\n\n---\n\n## Verification\n\n- Search the docs of roles/documentalist and roles/product-owner for token figures.\n- `go test -count=1 ./...` and the documentalist report show no new suspect doc.\n\n## Scope\n\n- Move each figure to docs/research/ or an ADR.\n- Replace it in the user doc by a link to it.\n- Rule: AGENTS.md \"No unexplained internals\".\n"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 1d0004c\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[no-reformat-ask] In this run, did the role refrain, on issue #2142, from asking its reporter only to rewrite the Validation's scenarios in another form (named bullets, a Given / When / Then layout)? Yes when it asked nothing, or asked about what the issue means. No when its question asks for a reformat and nothing about the content."}

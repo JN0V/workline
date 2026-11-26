@@ -1,6 +1,6 @@
 ---
-sources: [tests/evaluation/replay_test.go, tests/evaluation/free_reviewer_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt, tests/evaluation/meaning/main.go, tests/evaluation/findings_test.go, .github/workflows/eval-replay.yml]
-checked: 74faf6584
+sources: [tests/evaluation/replay_test.go, tests/evaluation/free_reviewer_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt, tests/evaluation/eval_test.go#issuesAfter, tests/evaluation/eval_test.go#judgeName, tests/evaluation/eval_test.go#keepJudged, tests/evaluation/eval_test.go#keepRun, tests/evaluation/meaning/main.go, tests/evaluation/findings_test.go, .github/workflows/eval-replay.yml]
+checked: ad1950a2e
 ---
 # Replay set — real misses, played again
 
@@ -28,7 +28,7 @@ so a change to a role is measured on it before and after.
 | Reviewer kept catches | `reviewer/kept-*` | a true finding caught then, then fixed: lost cases |
 | Reviewer clean | `reviewer/clean-*` | merged, nobody sent it back: false Importants fail |
 | Documentalist | `documentalist/*` | wrong claims fixed, a true page vouched for; one judge check on false edits |
-| Product owner | `product-owner/*` | the kind the owner corrected it to |
+| Product owner | `product-owner/*` | by meaning, a point a question: [below](#the-product-owners-set) |
 | Developer | `developer/*` | the missing work done; no "Closes" over work left out |
 
 A reviewer replay is scored stricter than a fixture:
@@ -46,6 +46,36 @@ A reviewer replay is scored stricter than a fixture:
 Misses alone would reward a role that says more: a change is kept only
 when it raises recall without losing a kept catch or adding a false
 Important on a clean change.
+
+## The product owner's set
+
+The role writes issues, never files: its judge reads the issues as the
+run left them (labels, body, comments) and what the run said it did,
+never a diff. It is told that `about` is what happened then, and to
+judge this run alone.
+
+- **A point is a question on the meaning**, or a check on the forge's
+  state (`sh` on `../forge.json`): "is every Then seen by running?",
+  "no `## Assumptions`". Never a place.
+- **A judge check may start with its name in brackets**
+  (`[threshold] Is every bound …`): a failure says the name, so a case
+  with several questions tells which point was lost.
+- **`<repo>-<n>-*`**: a real miss, the issue as it read before the role
+  acted. `about` says when the role's instruction was later written on
+  that very issue: a pass there shows the edit landed, nothing more.
+- **`held-*`**: the same kinds of point on issues no instruction was
+  written on. They say whether a rule holds beyond its examples.
+- **`kept-*`, `clean-*`**: a right question to keep, an issue refined
+  or readied with nothing sent back. A change that asks more, or
+  readies less, loses them.
+- **Reported apart**, in `about`: a point the role cannot reach from
+  what it is given (the developer's bounds: `[person-ci]`), and a
+  question only the owner can say was his to answer
+  (`owner-choice-waits`).
+- `status: pass` is a guard, not a point.
+- `WORKLINE_EVAL_KEEP=<folder>` also keeps each question asked, what
+  the judge read and what it said, one `.md` file a question beside the
+  run folders: a yes leaves no other trace.
 
 ## Scored by meaning
 
@@ -109,7 +139,8 @@ go run ./tests/evaluation/summary     # per case and per set, a workline commit 
   to change the engine, the roles, the cases, the replays or the code
   scoring them; a fixture's runs stay pooled.
 - Each run appends a line to `results.tsv`, with its tokens.
-- `WORKLINE_JUDGE` is needed for the documentalist's judge check.
+- `WORKLINE_JUDGE` is needed for the documentalist's judge check and the
+  product owner's questions.
 - `WORKLINE_EVAL_KEEP=<folder>` keeps what each run left, a folder a
   case and run: the run folders (tasks, answers, calls) and the change
   the role made (`change.diff`). The repository goes with the test; why

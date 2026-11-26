@@ -375,7 +375,9 @@ replayed only to accept them (its step 4).
 **The judge.** `judge: <question>` asks a yes-or-no question on what the role
 produced — "does the rewritten subject keep the author's meaning?" — of the
 agent `WORKLINE_JUDGE` names (an `--ai` value: `claude:sonnet`, a `cmd:`),
-with the case, the author's words, the role's and the change. Its facets are
+with the case, the author's words, the role's and the change — for the
+product owner, which writes no file, the issues as the run left them
+([replay.md](conformance/replay.md#the-product-owners-set)). Its facets are
 in `roles/judge/`. A yes is a point, a no is lost with its reason.
 The judge stands as far from the graded model as it can
 ([ADR-0005](../adr/0005-independence-takes-the-best-level-available.md)): the
