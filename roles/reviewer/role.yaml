@@ -119,7 +119,8 @@ settings:
   judge-at-least: context
   # A higher floor for a change a role made, by the Workline-Role trailer
   # of its commits: the developer's code is judged by another model than
-  # the finder's (ADR-0054).
+  # the finder's (ADR-0054). A finding outside the change, for an issue,
+  # keeps judge-at-least.
   judge-at-least-by-role: {developer: model}
   # On a merge request: each finding on its line, the summary comment, and
   # an issue for each verified finding outside the change. false: all of
