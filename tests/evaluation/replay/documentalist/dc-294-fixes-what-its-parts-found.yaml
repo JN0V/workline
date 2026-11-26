@@ -1,0 +1,34 @@
+case: documentalist/dc-294-fixes-what-its-parts-found
+about: >
+  DomoticsCore's nightly gardening of 2026-11-24 (event schedule, main at
+  77e4b91, Sonnet) judged
+  `docs/architecture/component-configuration-status.md` in parts and
+  proposed pull request #294
+  (https://github.com/JN0V/DomoticsCore/pull/294): a `judged-in-parts`
+  stamp, 0 prose lines changed, "the fix changed nothing of what they
+  found wrong, for a person". The facts, read in the code at 77e4b91 for
+  this case (2026-11-26): the page's table gives SystemInfo a warning in
+  its `setConfig()` column, where the five other components have a tick,
+  and calls its storage integration read-only. SystemInfo.h declares a
+  public `setConfig(const SystemInfoConfig&)` under "Standard config
+  accessors (matching other components)", and SystemPersistence.h and
+  SystemWebUISetup.h call it to set the device name: SystemInfo has
+  `setConfig()` like the others. The five other rows are true: each
+  header declares its config struct, `getConfig()` and `setConfig()`,
+  and SystemPersistence.h loads each from storage. The replay: the same
+  gardening on 77e4b91, narrowed to this page (`docs`), the forge kept
+  in the clone. Expected: the SystemInfo row no longer denies
+  `setConfig()`, and no edit stating something false.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 77e4b918e13661552ba6ced3212171c2e340b457}
+  setup:
+    - |
+      sed -i '/^  documentalist:$/{n;s|$|\n      # The page of #294 alone, as its gardening round judged it.\n      docs: [docs/architecture/component-configuration-status.md]|}' .workline/config.yaml
+      printf 'forge: local\n' >> .workline/config.yaml
+      git commit -qam 'chore: garden the page of #294 alone'
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  # SystemInfo has a public setConfig(), which SystemPersistence calls.
+  - {file-lacks: {docs/architecture/component-configuration-status.md: "| **SystemInfo** | `SystemInfoConfig` | ✅ | ⚠️ |"}}
+  - {judge: "Judged against the facts the case states, is every line the role added or changed in the page true, with no new false claim (for instance SystemInfo said to have no `setConfig()`, or one of the five other components said to lack its config struct, `getConfig()`, `setConfig()` or its storage integration)? A run that changed no line of the page's body answers yes."}

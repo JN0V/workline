@@ -223,6 +223,7 @@ func evaluate(t *testing.T, pattern string) {
 			passed, failed, skipped := grade(&c, r)
 			score := fmt.Sprintf("%d/%d", passed, passed+len(failed))
 			t.Logf("%s — %s, %d agent calls; failed: %s", c.Case, score, r.res.AgentCalls, strings.Join(failed, "; "))
+			keepRun(t, &c, r, score)
 			if c.Review != nil {
 				t.Logf("  measure: %s", r.measure)
 				for _, n := range r.reviewNotes {
@@ -268,6 +269,31 @@ func evaluate(t *testing.T, pattern string) {
 			}
 		})
 	}
+}
+
+// keepRun copies what a run left, under the folder WORKLINE_EVAL_KEEP
+// names: its run folders (tasks, answers, calls) and the change the role
+// made to the working tree. The repository goes with the test; a
+// diagnosis reads why a point was lost from these.
+func keepRun(t *testing.T, c *caseFile, r *run, score string) {
+	keep := os.Getenv("WORKLINE_EVAL_KEEP")
+	if keep == "" {
+		return
+	}
+	dir := filepath.Join(keep, strings.ReplaceAll(c.Case, "/", "_"), time.Now().UTC().Format("20060102T150405.000")+"-"+strings.ReplaceAll(score, "/", "of"))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Logf("  run not kept: %v", err)
+		return
+	}
+	_ = exec.Command("git", "-C", r.repo, "add", "--intent-to-add", ".").Run()
+	diff, _ := exec.Command("git", "-C", r.repo, "diff", "HEAD").Output()
+	_ = os.WriteFile(filepath.Join(dir, "change.diff"), diff, 0o644)
+	res, _ := json.MarshalIndent(r.res, "", "  ")
+	_ = os.WriteFile(filepath.Join(dir, "result.json"), res, 0o644)
+	if runs := filepath.Join(r.repo, ".git", "workline", "runs"); exec.Command("cp", "-r", runs, filepath.Join(dir, "runs")).Run() != nil {
+		t.Logf("  run folders not kept: %s", runs)
+	}
+	t.Logf("  kept: %s", dir)
 }
 
 // appendResult appends a run's line to results.tsv, one writer at a time.

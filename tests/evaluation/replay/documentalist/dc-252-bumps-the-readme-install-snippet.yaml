@@ -1,0 +1,26 @@
+case: documentalist/dc-252-bumps-the-readme-install-snippet
+about: >
+  DomoticsCore's README tells a reader to install
+  `https://github.com/JN0V/DomoticsCore.git#v2.5.0`; library.json, a
+  source of the README, says version 2.13.0. On pull request #252
+  (https://github.com/JN0V/DomoticsCore/pull/252, 2026-11-23, Sonnet),
+  which changes another source of the README, the documentalist proposed
+  the fix in a comment (`#v2.13.0`, and `jn0v/DomoticsCore@^2.13.0` for
+  the registry line), "not pushed: workline pushes nothing to a merge
+  request's branch". It proposed the same on #254, #273 and #285; nobody
+  applied any, and `main` still says v2.5.0 at 3ed7028 (2026-11-26,
+  version 2.14.0). The replay: the role on #252's commits, as a merge
+  request, narrowed to the README (`docs`). With no forge the fix is
+  written in the working tree, so this case says whether the role still
+  finds and writes the fix: a catch to keep. What becomes of a fix
+  proposed in a comment is not played here.
+given:
+  clone: {repo: JN0V/DomoticsCore, base: c42c667e603286ad0653c75ba5a60deacfecd78d, head: 99e238fb71c942dfd25b9a363b94acc8be820975}
+  setup:
+    - |
+      sed -i '/^  documentalist:$/{n;s|$|\n      # The README alone, the doc whose fix #252 proposed.\n      docs: [README.md]|}' .workline/config.yaml
+      git commit -qam 'chore: judge the README alone'
+run: {role: documentalist, event: merge-request}
+grade:
+  - {status: pass}
+  - {file-contains: {README.md: "DomoticsCore.git#v2.13.0"}}

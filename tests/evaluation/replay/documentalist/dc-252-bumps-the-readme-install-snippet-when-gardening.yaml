@@ -1,0 +1,24 @@
+case: documentalist/dc-252-bumps-the-readme-install-snippet-when-gardening
+about: >
+  The same README as `dc-252-bumps-the-readme-install-snippet`, on `main`
+  once #252 merged (77e4b91, 2026-11-24): it still tells a reader to
+  install `https://github.com/JN0V/DomoticsCore.git#v2.5.0`, library.json
+  says 2.13.0, and the fix proposed in a comment on four pull requests
+  was applied by nobody. Gardening is the run that may write it: its fix
+  goes on a pull request of its own. The nightly gardening of 2026-11-24
+  did not judge the README: it carries `judged-in-parts: c9271a1`, its
+  sources fit no whole task (20 files), and a round asking whole docs
+  asks no parts. The replay: gardening on 77e4b91, narrowed to the README
+  (`docs`), the forge kept in the clone. Expected: the snippet says the
+  version library.json says.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 77e4b918e13661552ba6ced3212171c2e340b457}
+  setup:
+    - |
+      sed -i '/^  documentalist:$/{n;s|$|\n      # The README alone.\n      docs: [README.md]|}' .workline/config.yaml
+      printf 'forge: local\n' >> .workline/config.yaml
+      git commit -qam 'chore: garden the README alone'
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  - {file-contains: {README.md: "DomoticsCore.git#v2.13.0"}}

@@ -1,0 +1,66 @@
+case: documentalist/dc-295-fixes-seven-wrong-claims-unheld
+about: >
+  DomoticsCore's nightly gardening of 2026-11-24 (event schedule, main at
+  77e4b91, Sonnet) judged three suspect docs in parts and proposed pull
+  request #295 (https://github.com/JN0V/DomoticsCore/pull/295): a
+  `judged-in-parts: 77e4b91` stamp on each, 0 prose lines changed, its
+  body "nothing found wrong" for the lifecycle page and "the fix changed
+  nothing of what they found wrong" for the two others. The owner closed it
+  and filed #306 (https://github.com/JN0V/DomoticsCore/issues/306): the
+  three pages hold seven claims the code contradicts. The facts, from the
+  code at 77e4b91 (the pages are the same at e44dfc5, where #306 counts its
+  lines): (1) nothing publishes `EVENT_COMPONENT_ERROR`; a failed `begin()`
+  is logged by ComponentRegistry and its status returned; (2) nothing
+  publishes `EVENT_SYSTEM_REBOOT`; Events.h only defines both; (3) in
+  `afterAllComponentsReady()` a missing optional dependency is skipped, not
+  guaranteed available, and the page's own example declares one; (4) the
+  platform namespace is `DomoticsCore::HAL::Platform`, not
+  `DomoticsCore::Platform`; (5) WebUI_HAL.h and MQTT_HAL.h route on
+  `ARDUINO_ARCH_ESP32`, not on `DOMOTICS_PLATFORM_ESP32`, so "the same
+  pattern is used by all component HAL files" is false; (6) the HAL table
+  omits CoreLog_HAL.h and Testing/HeapTracker_HAL.h (Core) and
+  WebUI/WebResponse_HAL.h (WebUI); (7) the Home Assistant component fetches
+  the MQTT component and calls it (config read and set, disconnect,
+  connect), so "no direct MQTT client reference" is false. The replay: the
+  same gardening on 77e4b91, its config as it was, narrowed to these three
+  docs (`docs`) and the forge kept in the clone. Expected: each claim
+  fixed in the doc, and no edit stating something false. Judged in parts,
+  `checked` stays by design, so `never-confirms` would prove nothing here:
+  each claim is graded by its false text gone, or the missing rows there.
+  This case is `dc-295-fixes-seven-wrong-claims` with one difference: the
+  three docs' `judged` stamps are taken out first. Each was stamped by an
+  earlier round that could not vouch for it and found none of the seven
+  claims (`judged: 6a979a6` twice, `judged: 1e9326b` on the HAL page). A
+  doc whose stamp names a commit after which no source changed is held
+  from the agent: an engine that judges a doc whole never asks the HAL
+  page, and five of the ten points are out of its reach whatever it
+  would answer. Unheld, the case measures the judging, not the hold.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 77e4b918e13661552ba6ced3212171c2e340b457}
+  setup:
+    - |
+      sed -i '/^  documentalist:$/{n;s|$|\n      # The three docs of #295 alone, as its gardening round judged them.\n      docs: [docs/architecture/component-lifecycle.md, docs/architecture/hal-architecture.md, docs/components/home-assistant/index.md]|}' .workline/config.yaml
+      printf 'forge: local\n' >> .workline/config.yaml
+      sed -i '/^judged: /d' docs/architecture/component-lifecycle.md docs/architecture/hal-architecture.md docs/components/home-assistant/index.md
+      git commit -qam 'chore: garden the three docs of #295 alone, no earlier stamp'
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  # (1) EVENT_COMPONENT_ERROR is published by nothing.
+  - {file-lacks: {docs/architecture/component-lifecycle.md: "On component initialization failure"}}
+  # (2) EVENT_SYSTEM_REBOOT is published by nothing.
+  - {file-lacks: {docs/architecture/component-lifecycle.md: "Before system reboot"}}
+  # (3) An optional dependency may be absent in afterAllComponentsReady() (lines 104 and 131).
+  - {file-lacks: {docs/architecture/component-lifecycle.md: "guaranteed available if declared in `getDependencies()`"}}
+  - {file-lacks: {docs/architecture/component-lifecycle.md: "All dependencies guaranteed available here"}}
+  # (4) The namespace is DomoticsCore::HAL::Platform.
+  - {file-lacks: {docs/architecture/hal-architecture.md: "Platform-level functions use `DomoticsCore::Platform`"}}
+  # (5) Two routing headers test ARDUINO_ARCH_ESP32.
+  - {file-lacks: {docs/architecture/hal-architecture.md: "The same pattern is used by all component HAL files"}}
+  # (6) The table names the three HAL files it omits.
+  - {file-contains: {docs/architecture/hal-architecture.md: "CoreLog_HAL.h"}}
+  - {file-contains: {docs/architecture/hal-architecture.md: "HeapTracker_HAL.h"}}
+  - {file-contains: {docs/architecture/hal-architecture.md: "WebResponse_HAL.h"}}
+  # (7) The component calls the MQTT component directly.
+  - {file-lacks: {docs/components/home-assistant/index.md: "no direct MQTT client reference"}}
+  - {judge: "Judged against the facts the case states, is every line the role added or changed in the three docs true, with no new false claim (for instance an event said to be published on some other path, an optional dependency still said to be guaranteed, a HAL file placed in the wrong component, or the namespace misnamed)?"}
