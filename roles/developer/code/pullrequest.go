@@ -60,8 +60,8 @@ var squashRoom = len(" (#12345)")
 // each as summaryOf reads it, the first whose subject passes the check
 // where a squash lands it, a Draft's prefix too, never cut; else "the
 // code of #n".
-func subjects(issue int, own, title, kind string, scope, code []string, s commitmsg.Settings) Subjects {
-	sc, typ, r, own := commitScope(scope), commitType(kind, code), s, strings.TrimSpace(own)
+func subjects(issue int, own, title, kind string, scope, code []string, s commitmsg.Settings, always ...string) Subjects {
+	sc, typ, r, own := commitScope(scope), commitType(kind, code, always...), s, strings.TrimSpace(own)
 	if r.SubjectMax = forge.TitleMax - len("Draft: "); s.SubjectMax > 0 {
 		r.SubjectMax = min(s.SubjectMax-squashRoom, forge.TitleMax) - len("Draft: ")
 	}

@@ -97,6 +97,10 @@ settings:
   # else normal. `levels`, below, what each changes; review-rounds set
   # here wins over the level.
   autonomy: normal
+  # Globs of the files the project ships though they read as docs, a
+  # Markdown prompt for one: a task changing one is typed `fix`, not
+  # `chore` (#2207). Empty: the built-in list alone.
+  shipped: []
 
 # What each autonomy level lays over the settings above, before the
 # project's own: the review rounds it runs alone before its issue is

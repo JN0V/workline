@@ -13,6 +13,7 @@ import (
 	"github.com/JN0V/workline/internal/kit/commitmsg"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/role"
 )
 
@@ -28,12 +29,12 @@ import (
 // a chore from the notes and bump no version for it: a change to what a
 // project ships needs both. The type says what the change does; the
 // merge policy reads the issue's kind, never the type.
-func commitType(kind string, code []string) string {
+func commitType(kind string, code []string, always ...string) string {
 	switch kind {
 	case devmark.KindFix:
 		return "fix"
 	case devmark.KindTask:
-		if slices.ContainsFunc(code, shipped) {
+		if slices.ContainsFunc(code, func(f string) bool { return shipped(f, always) }) {
 			return "fix"
 		}
 		return "chore"
@@ -45,11 +46,16 @@ func commitType(kind string, code []string) string {
 // docs and its CI.
 var notShipped = []string{"docs", "doc", ".github", ".gitlab", ".circleci"}
 
-// shipped: a code file (tests are apart already) other than docs, the
+// shipped: a file the project says it always ships (its `shipped` setting,
+// globs, first: a prompt in Markdown is what the program does, #2207); else
+// a code file (tests are apart already) other than docs, the
 // CI, a page of prose or a tool's dotfile, all a release leaves out. A
 // build or dependency file (CMakeLists.txt, requirements.txt) is
 // shipped: it decides what the package builds.
-func shipped(f string) bool {
+func shipped(f string, always []string) bool {
+	if pathglob.Any(always, path.Clean(f)) {
+		return true
+	}
 	parts := strings.Split(path.Clean(f), "/")
 	if slices.Contains(notShipped, strings.ToLower(parts[0])) {
 		return false
@@ -174,6 +180,32 @@ func committerSettings(repo, where string) (commitmsg.Settings, []verdict.Findin
 		return unread(err, own)
 	}
 	return s, nil
+}
+
+// shippedGlobs are the project's always-shipped globs, the developer's
+// `shipped` setting; none when it cannot be read (the type then follows
+// the built-in list).
+func shippedGlobs(repo string) []string {
+	r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), "developer")
+	if err != nil {
+		return nil
+	}
+	cfg, err := role.LoadProjectConfig(repo)
+	if err != nil {
+		return nil
+	}
+	var globs []string
+	switch v := r.MergedSettings(cfg)["shipped"].(type) {
+	case []string:
+		globs = v
+	case []any:
+		for _, g := range v {
+			if s, ok := g.(string); ok {
+				globs = append(globs, s)
+			}
+		}
+	}
+	return globs
 }
 
 // reviewSubject is the subject of a review round's fix commit.

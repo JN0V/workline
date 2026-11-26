@@ -79,7 +79,9 @@ flowchart LR
   - type: `test` for its tests; for its code, the issue's kind: `fix`
     (bug), `feat` (feature, or no kind); a task by what its code
     changes ([#2198](https://github.com/JN0V/workline/issues/2198)):
-    - `fix` when it changes shipped code, so that release tools list it
+    - `fix` when it changes shipped code (a file matching the `shipped`
+      setting's globs, empty by default, is shipped though it is
+      Markdown: [#2207](https://github.com/JN0V/workline/issues/2207)), so that release tools list it
       and bump its package; its body asks a person to mark a breaking
       change when it removes or renames a public name (`fix!:` in its
       title, before the merge);
