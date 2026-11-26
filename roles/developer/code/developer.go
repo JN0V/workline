@@ -951,7 +951,9 @@ func Post(runDir, repo string) int {
 		cs, unread := committerSettings(repo, where)
 		v.Findings = append(v.Findings, unread...)
 		own, _ := os.ReadFile(filepath.Join(runDir, "out", "subject"))
-		sub := subjects(a.Issue, string(own), title, b.Kind, b.Scope, a.Code, cs)
+		// Its type reads all the pull request changes: its agent's code and
+		// the Draft's files it starts from (#2208).
+		sub := subjects(a.Issue, string(own), title, b.Kind, b.Scope, union(a.Code, draftCode(repo, a.At, on, b)), cs)
 		mr := mergeRequest(a, title, sub)
 		if sub.Refused != "" {
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "subject-refused", Level: "warn", Where: where, Message: fmt.Sprintf("its agent's summary %.200q does not pass the commit rules where a squash lands it: %s in its place", sub.Refused, sub.Code)})

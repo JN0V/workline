@@ -1077,3 +1077,15 @@ func (f *Fake) Trail(id int, label string) (Trail, error) {
 	}
 	return t, nil
 }
+
+// RetitleMergeRequest renames a merge request.
+func (f *Fake) RetitleMergeRequest(id int, title string) error {
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "merge-request", ID: id})
+		if err != nil {
+			return err
+		}
+		it.Title = title
+		return nil
+	})
+}
