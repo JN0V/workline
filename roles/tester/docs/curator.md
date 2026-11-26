@@ -11,6 +11,11 @@ keep the test corpus concise, scoped and fast, measured first. No agent;
 nothing removed here: step 7 proposes removals, with their proof
 ([removals](removals.md)).
 
+- **Experimental** in 1.0: the command, its `curator-*` settings and
+  `WORKLINE_CURATOR` may change after it. The curator is to be folded
+  into the tester, which gardens the corpus as
+  [#264](https://github.com/JN0V/workline/issues/264) designs.
+
 ```mermaid
 flowchart LR
   run["<b>Weekly</b><br/>the suite, twice"]

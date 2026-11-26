@@ -105,10 +105,12 @@ roles:
       # curator job): the whole suite, its coverage profile too.
       curator-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m -coverprofile=cover.out ./...
       coverage-report: cover.out
-      # Its removals (`workline test curate`): the unit tests only, the
-      # conformance cases running a built engine the profile does not
-      # see; a folder's tests and its mutants, Gremlins pinned.
-      curator-paths: ["internal/**/*_test.go", "cmd/**/*_test.go"]
+      # Its removals (`workline test curate`, experimental): the tests of
+      # a package with code of its own, the engine's and the roles'; a
+      # folder's tests and its mutants, Gremlins pinned. Out: tests/,
+      # scripts/ and defaults/ci/, packages of tests alone whose profile
+      # is empty, the conformance cases running a built engine.
+      curator-paths: ["internal/**/*_test.go", "cmd/**/*_test.go", "roles/*/code/**/*_test.go"]
       curator-keep: [tests/conformance/pending.txt]
       curator-proof-command: go run gotest.tools/gotestsum@v1.12.3 --junitfile {report} -- -timeout 20m -coverprofile=cover.out {packages}
       curator-mutation-command: go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash -s -o {report} {package}

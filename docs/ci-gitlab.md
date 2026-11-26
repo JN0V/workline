@@ -140,7 +140,8 @@ Monday's workday. The release never waits for the docs
   `workline:release:dry-run`, no agent, no token, then
   `workline:release:dry-run:post`, the bot's token: what would hold the
   release if it were cut now, in main's issue ([how](release.md)).
-- **The test corpus's measures**, opt-in (`WORKLINE_CURATOR=on`):
+- **The test corpus's measures**, opt-in (`WORKLINE_CURATOR=on`),
+  experimental: it may change after 1.0 ([#264](https://github.com/JN0V/workline/issues/264)):
   `workline:curator`, no agent, no token; its image needs your test
   runner ([how](../roles/tester/docs/curator.md)). With Claude's token,
   `workline:curator:propose` and `:apply` propose a few redundant tests

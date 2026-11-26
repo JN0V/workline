@@ -53,6 +53,9 @@ first objection waiting on its Draft
   unreadable form and a person's turn need no agent.
 - **`--state`**, **`--tried <state>`**: no agent, for CI ([why](objection-jobs-queue.md)).
 
+The curator's two commands below are **experimental**: they may change
+after 1.0, the curator folded into the tester ([#264](https://github.com/JN0V/workline/issues/264)).
+
 `workline test measure --history <file>` is the curator's measures of
 the corpus on `HEAD`, no agent
 ([curator](../roles/tester/docs/curator.md)); 0, or 1 when it did not

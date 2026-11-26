@@ -9,7 +9,7 @@ ready issue a night, an objection wakes its answer; on the closing pull
 request, each new test passes on the head; a weekly job
 measures the corpus, no agent (`workline test measure`), and proposes
 a few redundant tests removed, proven with no agent (`workline test
-curate`). Steps 1 to 8 of
+curate`), experimental in 1.0. Steps 1 to 8 of
 [ADR-0055's plan](../../../docs/adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md#build-plan);
 beta; in workline's own line since
 [#264](https://github.com/JN0V/workline/issues/264), woken by an issue's
@@ -216,6 +216,11 @@ Cases in `tests/conformance/cases/tester/`:
   `frozen-test-missing` ([#1255](https://github.com/JN0V/workline/issues/1255));
   one named from its file, or kept as its file alone, beside other new
   tests, the judge's.
+- **The curator, experimental** in 1.0 (owner, 2026-11-25): its
+  commands, `curator-*` settings and `WORKLINE_CURATOR` may change
+  after it; to be folded into the tester, which gardens the corpus
+  ([#264](https://github.com/JN0V/workline/issues/264)). Turned on for
+  workline's own gardening after 2026-11-25.
 - **The curator's measures** (step 6), no agent: `workline test
   measure` runs the suite twice on `HEAD`; each test's time, red and
   flaky ones, kept across measures in a history the CI passes as an
@@ -334,6 +339,12 @@ Parked, none seen in the V1 rounds:
   ready pull request runs the three again; their runs are not fed to the
   curator's history, which reads the weekly measure only
   (parked, [#91](https://github.com/JN0V/workline/issues/91)).
+- **The curator's reach**: a folder whose tests pass `code-lines-max`
+  is never weighed; on workline, 2026-11-25, the ten largest, 28,513
+  of the 38,460 test lines `curator-paths` names. A folder weighed
+  waits `curator-window` measures, so a weekly run cycles through the
+  twelve largest that fit; none of the roles' folders is among the
+  twelve.
 - **The curator's removals**: a tester's test merged while its issue is
   still open is not told apart (only open Drafts' records are read); a
   mutation report other than Gremlins' or the schema's is not read

@@ -43,6 +43,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   builds ([hand-over](docs/hand-over.md));
 - proves each test it froze green on the pull request that closes the
   issue, run again when red: red in one run only is flaky, in both is red, and either blocks, as does one missing ([how](docs/green-proof.md));
+- **Experimental**, the curator below: it may change after 1.0, to be
+  folded into the tester's own care of the corpus ([#264](https://github.com/JN0V/workline/issues/264));
 - `workline test measure`: the corpus's measures, no agent, weekly in
   CI: count, time, slowest, red and flaky over time ([how](docs/curator.md));
 - `workline test curate`: the agent proposes a few redundant tests
