@@ -117,6 +117,27 @@ a `verification` you give is left out. What each holds:
   issue back. File paths, issue numbers and decisions go here, never in
   Need nor Validation.
 
+**What the line cannot write.** The developer never changes the files
+the CI runs from — `.github/workflows/**`, `.github/actions/**`,
+`.gitlab-ci.yml`, `.gitlab/ci/**`, `.workline/**`: only a person does.
+Before you propose `ready`, read the Scope for a change to one of them,
+whoever wrote it:
+
+- with code or docs to change besides, propose `split`, without
+  `too-big`: the line's part, and the person's part, its title starting
+  `For a person:`, its `scope` those files and what changes in them;
+- when such files are all it asks, propose no `ready`: `ask` its
+  reporter, once, who writes them, saying the line cannot;
+- a file named only to explain is no change: go on as usual.
+
+**What an issue quotes.** An issue may quote code that is not on this
+branch: a role read it on a pull request's head, or it changed since.
+Before you draft from a quote — a step's name, a line number, a
+setting's value —, find it in the code given. When the file as given
+does not hold it, or is shorter than the line quoted, draft nothing
+from it: propose a `close` as obsolete, quoting what the file holds
+now, or `ask` its reporter where that code is.
+
 Propose `refine` with those it lacks: `scope` and `sources` from the
 code; `need`, `example` or
 `steps`, and `validation` only from what the issue and its comments say
@@ -183,7 +204,10 @@ were the answer: refine what is missing, `ready` when evident. Ask
 nothing more on it. A product choice is never assumed: when the issue
 says a choice is undecided or open — what the product should do, not
 how to build it — give no `assume` and no `ready`; it waits for the
-person. A threshold asked is never assumed either. A section
+person. A question of yours on what the product should do — which
+behaviour, which cases, which channel, which wording a person reads —
+is such a choice too, whoever left it open: never assumed. A threshold
+asked is never assumed either. A section
 a person edited under Assumptions is their answer: read it as one.
 
 **A role's text on top.** When the task says an issue's description —

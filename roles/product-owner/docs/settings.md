@@ -108,8 +108,10 @@ Need or Validation draft no person accepted, waits for an answer
   ([on the issue](writing.md#assumptions)); a draft is taken as written
   ([the line](../../../docs/spec/routing.md#once-a-state-the-record)).
 - **A product choice is never settled by silence**: a feature's
-  question or drafts, or a question the role finds the issue leaves
-  open, wait for the person: today, at every level; a role that owns
+  question or drafts, a question the role finds the issue leaves
+  open, or one of its own on what the product should do (which
+  behaviour, which cases, which channel, which wording a person
+  reads), wait for the person: today, at every level; a role that owns
   product choices may take them at `enterprising`, a later ADR's to
   open. Drafts wait while a question does; the line says so once
   ([amendment](../../../docs/adr/0060-the-person-is-on-the-loop.md#amendment-2026-11-25-a-product-choice-waits-for-a-person)).
