@@ -685,7 +685,9 @@ func summary(runs []caseRun, js []judgement, judgeName string) string {
 	return b.String()
 }
 
-// claude asks `claude -p`, with no tool, or the read tools in dir.
+// claude asks `claude -p`, with no tool, or the read tools in dir; no
+// settings nor project instructions are loaded (--setting-sources ""), as
+// for the free reviewer: a clean case's tree holds the project's own.
 func claude(model, effort string) asker {
 	return func(system, user, dir string) (string, int, error) {
 		sys, err := os.CreateTemp("", "meaning-system-*.md")
@@ -697,7 +699,7 @@ func claude(model, effort string) asker {
 			return "", 0, err
 		}
 		_ = sys.Close()
-		args := []string{"-p", "--output-format", "json", "--strict-mcp-config", "--no-session-persistence", "--system-prompt-file", sys.Name(), "--model", model, "--effort", effort}
+		args := []string{"-p", "--output-format", "json", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence", "--system-prompt-file", sys.Name(), "--model", model, "--effort", effort}
 		if dir == "" {
 			args = append(args, "--tools", "")
 			dir = os.TempDir() // no project instructions of the caller's folder
