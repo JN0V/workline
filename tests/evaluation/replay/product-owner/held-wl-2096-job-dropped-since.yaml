@@ -1,0 +1,28 @@
+case: product-owner/held-wl-2096-job-dropped-since
+about: >
+  Held out. JN0V/workline #2096, a person's issue of 2026-11-23 16:54 UTC: two
+  edge cases left in the head-gates job of `.github/workflows/workline.yml`.
+  Pull request 2100 dropped the whole head pass at 18:05 and closed it. Here
+  the issue is read as if still open at that commit, 094f6c1, the one thing in
+  this case that did not happen. Same kind of point as #2094 (an issue about
+  code no longer there), on an issue neither the instruction nor a tried
+  prompt was written on. Expected: the role says the job is not in the file as
+  it reads, and does not ready it.
+given:
+  clone: {repo: JN0V/workline, head: 094f6c1df71aad5656f5c5520bfebb0f6b20865b}
+  config: {roles: {product-owner: {settings: {autonomy: normal, issues-per-run: 15, acts: {refine: {max: 10}, ready: {max: 10}}, archived: [docs/BACKLOG.md]}}}}
+  forge:
+    issues:
+      - id: 2096
+        title: "head-gates can still end green silently or cancelled"
+        author: JN0V
+        insider: true
+        labels: ["bug"]
+        body: "**Need:** a person reading workline's own CI sees a non-blocking check's real problem as a warning, and the check never cancels the run.\n\n**Example:** after the change that made the non-blocking checks warn, never turn red, two edge cases remain in head-gates.\n\n**Validation:**\n- **Checkout fails:** Given head-gates' checkout fails, When the job ends, Then it is green with a warning that names the checkout.\n- **Gates hang:** Given `workline route` in head-gates hangs, When 45 minutes pass, Then the step stops with a warning and the job ends green, not cancelled.\n\n---\n\n**Scope:**\n- `.github/workflows/workline.yml` head-gates: `continue-on-error` on the `engine` step; `timeout` on both `workline route` calls in the `gates` step, as head-propose does.\n- Found by an independent review of the change that made non-blocking checks warn."
+        comments:
+          - "```yaml\nsources: [.github/workflows/workline.yml]\nconfirmed: 094f6c1\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[absent] Issue #2096 asks two changes to the head-gates job of `.github/workflows/workline.yml`. At the commit the role ran on that job is gone: the head pass was dropped from the workflow, which has no head-gates job. As this run left issue #2096, does it say that what the issue reports is not in the file as it reads at this commit (a closing as obsolete said on the issue, a note, or a question to its reporter), rather than drafting or keeping a Need, Validation and Scope as if that code were there?"}
+  - {sh: ": not-readied; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 2096][0]; assert \"workline:ready\" not in i[\"labels\"] and \"workline:needs-tests\" not in i[\"labels\"]'"}

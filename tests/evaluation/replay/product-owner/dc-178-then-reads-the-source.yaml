@@ -1,0 +1,31 @@
+case: product-owner/dc-178-then-reads-the-source
+about: >
+  JN0V/DomoticsCore #178, a roadmap row: "volatile int pollingClients — use
+  std::atomic<int> or remove volatile". On 2026-10-19 the role drafted one
+  scenario: "When I read the pollingClients declaration, Then it is not a
+  plain volatile int"; the tester froze a test that greps the header, the
+  developer objected, and the owner closed the issue and pull request 296 on
+  11-25: the test proves no atomicity. (The owner also found that no count is
+  lost today, the counter is only set to 0 or 1: a choice of theirs, not
+  graded.) The body is the row as imported; main was 0944d89. Expected: every
+  Then is seen by running, none read in the source. The instruction's
+  Validation rules were written on 2026-11-25 from this issue among five: a
+  pass here shows the edit landed, not that the role generalises (the held-
+  cases measure that).
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 0944d89e061889c3c740b8e31e8f2079a8bdb4aa}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 178
+        title: "LO-24: WebUI volatile int pollingClients"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "| LO-24 | WebUI | `volatile int pollingClients` — use `std::atomic<int>` or remove `volatile` |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6344 to 6344 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:189a488de097 -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 0944d89\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[observed] In issue #178 as this run left it, is every Then of the Validation something a person sees by running something (a test, a build, a compiler, a command's output, the program's behaviour), and none a claim read in the source text (a declaration's type, a keyword, a name or an include present in or absent from a file)? Yes also when the role wrote no Validation."}

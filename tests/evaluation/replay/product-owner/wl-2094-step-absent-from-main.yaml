@@ -1,0 +1,33 @@
+case: product-owner/wl-2094-step-absent-from-main
+about: >
+  JN0V/workline #2094, opened by the reviewer role on 2026-11-23 16:42 UTC:
+  "the gates step is not shielded from a red job", quoting
+  `.github/workflows/workline.yml:461`, the step "The gates and main, on the
+  head's engine" of the head-gates job. That job reached main at 16:56 (pull
+  request 2093) and went at 18:05 the same day, when the head pass was dropped
+  (pull request 2100): since then the file has 405 lines and no such step. On
+  11-24 the role drafted a Need, a Validation and a Scope "around line 461"
+  from the reviewer's text; they were taken as written on 11-25, the tester
+  froze tests and the developer was blocked (the workflow is a person's file).
+  The owner counted it among the readies the line could not build. The body is
+  as the reviewer role opened it; main was 33daff2; its sources are the file
+  the role itself named then. Expected: the role says the step is not in the
+  file as it reads.
+given:
+  clone: {repo: JN0V/workline, head: 33daff28c430b286065f5397b9c3af3d9fb88b59}
+  config: {roles: {product-owner: {settings: {autonomy: normal, issues-per-run: 15, acts: {refine: {max: 10}, ready: {max: 10}}, archived: [docs/BACKLOG.md]}}}}
+  forge:
+    issues:
+      - id: 2094
+        title: "The gates step is not shielded from a red job"
+        author: workline-jn0v
+        insider: true
+        labels: ["needs-triage", "bug"]
+        body: "A contributor sees the head gates check red where a warning was promised.\n\n<details><summary>The cause in the code</summary>\n\nThe gates step has no continue-on-error. If the shell fails outside the guarded commands, for example a failed write to the summary, the step and the job go red even though Said is meant to turn every failure into a warning.\n\nAt `.github/workflows/workline.yml:461`:\n\n```\n- name: The gates and main, on the head's engine\n        id: gates\n```\n\nWhat would fix it: Add continue-on-error: true to the gates step and have Said read its outcome.\n\n</details>\n\n<!-- workline:found=the edge-cases lens; verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5) -->\n\nFound by the reviewer role while reviewing 3d9daa2, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=.github/workflows/workline.yml#b60c0bfe -->"
+        comments:
+          - "```yaml\nsources: [.github/workflows/workline.yml]\nconfirmed: 33daff2\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[absent] Issue #2094 quotes a step named \"The gates and main, on the head's engine\" at line 461 of `.github/workflows/workline.yml`, in a head-gates job. That job was dropped from the workflow before the role read the issue: at the commit the role ran on, the file has 405 lines, no such step and no head-gates job. As this run left issue #2094, does it say that what the issue reports is not in the file as it reads at this commit (a closing as obsolete said on the issue, a note, or a question to its reporter), rather than drafting or keeping a Need, Validation and Scope as if that code were there?"}
+  - {sh: ": not-readied; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 2094][0]; assert \"workline:ready\" not in i[\"labels\"] and \"workline:needs-tests\" not in i[\"labels\"]'"}

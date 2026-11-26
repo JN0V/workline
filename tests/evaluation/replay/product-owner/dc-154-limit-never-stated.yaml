@@ -1,0 +1,35 @@
+case: product-owner/dc-154-limit-never-stated
+about: >
+  JN0V/DomoticsCore #154, a roadmap item: a build-time check on the ESP8266
+  boot path's stack frames, "a script that fails on any frame over a stated
+  figure". On 2026-10-21 the role drafted "a frame exceeds the stated limit"
+  with no figure, and a Scope naming `.github/workflows`; the drafts were
+  taken as written on 11-15 after 24 h; the developer chose 1280 B itself,
+  could not write the workflow, and five review rounds ended in a dispute
+  (pull request 264). The owner settled it on 11-25: 1024 B, a warning, and
+  the workflow is a person's pull request. The body is the item as imported;
+  main was 0944d89. Expected: the limit asked of its reporter, not left as
+  "the stated limit"; the issue says the workflow part is a person's. That
+  second point needs the line's bounds, which the role is not told: graded
+  apart (person-ci). The instruction's Validation rules were written on
+  2026-11-25 from this issue among five: a pass here shows the edit landed,
+  not that the role generalises (the held- cases measure that).
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 0944d89e061889c3c740b8e31e8f2079a8bdb4aa}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 154
+        title: "CI-18 — no build-time check reads the ESP8266 boot path's stack frames"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "### CI-18 — no build-time check reads the ESP8266 boot path's stack frames [LOW] — **NEW (2026-09-20, by the deferred-work purge)**\n\n- **Parked by**: BUG-42's lot, 2026-09-18.\n- **Problem**: `Core::begin()` was one deep frame among several on the 4 KB\n  cont stack, and BUG-42 measured only the one overflowing it. With that\n  kilobyte gone the Storage suite's deepest point leaves 896 B — margin, not\n  comfort: `-fstack-usage` puts `logPromotedRecord` at 1 168 B and\n  `app_entry_redefinable` at 4 160, and nothing in CI reads either number. A\n  board found BUG-42; a build could have.\n- **Fix**: `PLATFORMIO_BUILD_FLAGS=\"-fstack-usage\"` on the `esp8266dev`\n  FullStack build, and a script that fails on any frame over a stated figure\n  in the paths an application runs at boot.\n- **Refs**: BUG-42, CI-14 (the same build).\n\nOpened from `docs/CODE-ROADMAP.md`, lines 5904 to 5916 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:8f8b8110b55e -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 0944d89\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[threshold] Look only at the size, count or time bounds in the Validation of issue #154, as this run left it. Is each one a number with its unit and a stated reason (a budget it fits, a document that must fit)? Yes also when the Validation states no such bound: the role asked its reporter for the target, or the change needs none. No when a bound is met by nearly any change (\"below today's value\", \"smaller than before\", one byte or one unit less), or when a scenario names a limit without its figure."}
+  - {judge: "[person-ci] On this line a CI workflow file (`.github/workflows/**`) is changed by a person only: the developer role cannot write it. As this run left issue #154, does it say so on the issue (in its Scope, a note, a question, a split into the line's part and the person's part, or by keeping it for a person) rather than moving the whole issue on as work the line builds?"}
+  - {sh: ": not-readied; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 154][0]; assert \"workline:ready\" not in i[\"labels\"] and \"workline:needs-tests\" not in i[\"labels\"]'"}

@@ -28,7 +28,7 @@ so a change to a role is measured on it before and after.
 | Reviewer kept catches | `reviewer/kept-*` | a true finding caught then, then fixed: lost cases |
 | Reviewer clean | `reviewer/clean-*` | merged, nobody sent it back: false Importants fail |
 | Documentalist | `documentalist/*` | wrong claims fixed; one judge check on false edits |
-| Product owner | `product-owner/*` | the kind the owner corrected it to |
+| Product owner | `product-owner/*` | by meaning, a point a question: [below](#the-product-owners-set) |
 | Developer | `developer/*` | the missing work done; no "Closes" over work left out |
 
 A reviewer replay is scored stricter than a fixture:
@@ -47,6 +47,35 @@ Misses alone would reward a role that says more: a change is kept only
 when it raises recall without losing a kept catch or adding a false
 Important on a clean change.
 
+## The product owner's set
+
+The role writes issues, never files: its judge reads the issues as the
+run left them (labels, body, comments) and what the run said it did,
+never a diff. It is told that `about` is what happened then, and to
+judge this run alone.
+
+- **A point is a question on the meaning**, or a check on the forge's
+  state (`sh` on `../forge.json`): "is every Then seen by running?",
+  "no `## Assumptions`". Never a place.
+- **A judge check may start with its name in brackets**
+  (`[threshold] Is every bound …`): a failure says the name, so a case
+  with several questions tells which point was lost.
+- **`<repo>-<n>-*`**: a real miss, the issue as it read before the role
+  acted. `about` says when the role's instruction was later written on
+  that very issue: a pass there shows the edit landed, nothing more.
+- **`held-*`**: the same kinds of point on issues no instruction was
+  written on. They say whether a rule holds beyond its examples.
+- **`kept-*`, `clean-*`**: a right question to keep, an issue refined
+  or readied with nothing sent back. A change that asks more, or
+  readies less, loses them.
+- **Reported apart**, in `about`: a point the role cannot reach from
+  what it is given (the developer's bounds: `[person-ci]`), and a
+  question only the owner can say was his to answer
+  (`owner-choice-waits`).
+- `status: pass` is a guard, not a point.
+- `WORKLINE_EVAL_KEEP=<folder>` keeps each question asked, what the
+  judge read and what it said: a yes leaves no other trace.
+
 ## Run one role's set
 
 ```sh
@@ -64,7 +93,8 @@ go run ./tests/evaluation/summary     # per case and per set, a workline commit 
   to change the engine, the roles, the cases, the replays or the code
   scoring them; a fixture's runs stay pooled.
 - Each run appends a line to `results.tsv`, with its tokens.
-- `WORKLINE_JUDGE` is needed for the documentalist's judge check.
+- `WORKLINE_JUDGE` is needed for the documentalist's judge check and the
+  product owner's questions.
 - `given.needs` names what a case needs on the machine: PlatformIO
   (`pio`) for DomoticsCore's developer cases, `$ANDROID_HOME` and
   `java` for TraceGlass's. Missing, the case is skipped ("no

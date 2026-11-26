@@ -1,0 +1,27 @@
+case: product-owner/held-dc-176-refactor-proved-by-running
+about: >
+  Held out. JN0V/DomoticsCore #176, a roadmap row:
+  "HAButton::buildDiscoveryPayload duplicates base class logic instead of
+  calling super". A refactor with no behaviour: same kind of point as #178, on
+  an issue the instruction was not written on. The body is the row as
+  imported; the commit is 81774f5. Expected: every Then seen by running (the
+  discovery document as before, the existing tests), none on how the code is
+  written; no question: the code answers.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 81774f5ad6234f0d51589f7b971ec981a0a3fb68}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 176
+        title: "LO-22: HAButton::buildDiscoveryPayload duplicates base class logic"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "| LO-22 | HA | `HAButton::buildDiscoveryPayload` duplicates base class logic instead of calling super |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6342 to 6342 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:aff30b3550ab -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 81774f5\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[observed] In issue #176 as this run left it, is every Then of the Validation something a person sees by running something (a test, a build, a compiler, a command's output, the program's behaviour), and none a claim read in the source text (a declaration's type, a keyword, a name or an include present in or absent from a file)? Yes also when the role wrote no Validation."}
+  - {no-finding: {where: "#176", message: "Asked #176's reporter"}}
