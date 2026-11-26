@@ -261,7 +261,7 @@ func TestRoutes(t *testing.T) {
 func TestBytesBound(t *testing.T) {
 	dir := repo(t, map[string]string{"a.go": "package a\n\n// Fetch is long.\nfunc Fetch() {\n" + filler(200, "\t_ = \"a line of some forty bytes, number %03d\"") + "}\n"})
 	pk, _ := pick(t, dir, Ask{Text: "`Fetch` fails", Budget: 1500, Bytes: 2000})
-	if n := pk.Bytes(); n > 2000 || n < 1500 {
+	if n := givenBytes(pk); n > 2000 || n < 1500 {
 		t.Fatalf("given %d bytes, want 1500 to 2000", n)
 	}
 	if pk.Files[0].Cut == 0 {
@@ -302,4 +302,15 @@ func TestNamedFunctionInALongFile(t *testing.T) {
 	if !strings.Contains(out, "def round_trip(rows):") {
 		t.Errorf("the function named is not given:\n%.2000s", out)
 	}
+}
+
+// givenBytes are the bytes of the code and the test given.
+func givenBytes(p Pick) int {
+	n := 0
+	for _, f := range p.Files {
+		if b := f.bytes(); b > 0 {
+			n += b + fileBytes
+		}
+	}
+	return n
 }

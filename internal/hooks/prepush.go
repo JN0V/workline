@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-const zero = "0000000000000000000000000000000000000000"
-
 // PushRanges turns what git gives a pre-push hook on its standard input —
 // "<local ref> <local sha> <remote ref> <remote sha>" per ref — into the
 // ranges of commits the push sends, as `git log` reads them. A deleted ref

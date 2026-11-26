@@ -31,9 +31,9 @@ type Def struct {
 	Paths  []string
 	Homes  []Home
 	Asides []string
-	// PathsSet, HomesSet: the project set them, or its listed packs;
-	// else the generic ones.
-	PathsSet, HomesSet bool
+	// PathsSet: the project set them, or its listed packs; else the
+	// generic ones.
+	PathsSet bool
 }
 
 // Generic is the built-in generic pack's definition.
@@ -50,7 +50,7 @@ func From(paths []string, homes []Home) Def {
 		d.Paths, d.PathsSet = paths, true
 	}
 	if len(homes) > 0 {
-		d.Homes, d.HomesSet = homes, true
+		d.Homes = homes
 	}
 	return d
 }

@@ -281,14 +281,12 @@ func Tokens(chars int) int { return 711 + chars*82/100 }
 // TokensRatio says the estimate, in the refusal.
 const TokensRatio = "711 + 0.82 a character"
 
-// refusedAnswer gives back the refused answer the engine kept
-// (out/refused-N.yaml, the latest): each patch's file with its lines, each
-// other proposal as written, so the retry starts from them and changes
-// lines instead of reading the code again to rewrite them.
-func refusedAnswer(runDir string) string { return refusedAnswerMax(runDir, maxRefusedChars) }
-
-// refusedAnswerMax is refusedAnswer within at most max characters of
-// bodies; "" when that is too little to give anything back.
+// refusedAnswerMax gives back the refused answer the engine kept
+// (out/refused-N.yaml, the latest), within at most max characters of
+// bodies: each patch's file with its lines, each other proposal as
+// written, so the retry starts from them and changes lines instead of
+// reading the code again to rewrite them; "" when max is too little to
+// give anything back.
 func refusedAnswerMax(runDir string, max int) string {
 	files, _ := filepath.Glob(filepath.Join(runDir, "out", "refused-*.yaml"))
 	if len(files) == 0 {

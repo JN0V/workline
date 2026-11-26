@@ -15,13 +15,6 @@ import (
 	"github.com/JN0V/workline/internal/routing"
 )
 
-// BacklogLastInput, with `--input room=true`, is the last backlog run
-// (the gardening workflow's latest run, running or done), as the CI job
-// read it from the forge: `<started>/<updated>`, RFC 3339; `none` when
-// the workflow has run none; `waiting` when its latest waits to start;
-// `unread` when the job could not list its runs. Absent, as `none`.
-const BacklogLastInput = "backlog-last"
-
 // backlogDue says whether the backlog run Ready's drop below its target
 // asks for is due, and why, in words for the summary: Ready dropped since
 // the last backlog run started, an issue's Ready label taken off since,

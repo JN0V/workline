@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+const zero = "0000000000000000000000000000000000000000"
+
 func TestPushRanges(t *testing.T) {
 	dir := t.TempDir()
 	run := func(args ...string) string {
