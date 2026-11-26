@@ -1,0 +1,8 @@
+# The developer's agent writing only a Markdown prompt for #3, under
+# a folder its project says it ships: no other code.
+- patch:
+    file: prompts/mul.md
+    content: |
+      # mul
+
+      Multiply the two numbers you are given.
