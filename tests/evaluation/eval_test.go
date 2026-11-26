@@ -16,6 +16,8 @@
 // false}`). TestJudgeReplay asks
 // the reviewer's judge its 40 measured questions again
 // (judge_replay_test.go), WORKLINE_EVAL naming the judge.
+// WORKLINE_EVAL_KEEP names a folder where each run's folders and the
+// change it made are kept (keepRun).
 package evaluation
 
 import (
