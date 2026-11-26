@@ -40,3 +40,29 @@ func TestBodySaysRedUnproven(t *testing.T) {
 		t.Errorf("proven, said unproven: %s", b)
 	}
 }
+
+// A part left, by its agent's words, a refusal or the Scope, makes the
+// pull request part of its issue, never closing it, never "proven"; an
+// unproven scenario is never "proven" either (after #2216).
+func TestBodyPartOfWhenAPartIsLeft(t *testing.T) {
+	green := &devmark.Proof{Result: devmark.Green}
+	notDone := "Its agent's closing words as they came, read as no YAML: nothing of them applied.\n\n~~~\nNot done: the CI step, only a person.\n~~~\n"
+	for name, a := range map[string]devmark.Act{
+		"not done": {Issue: 3, Proof: green, Unread: []string{notDone}},
+		"refused":  {Issue: 3, Proof: green, Refused: []devmark.Refusal{{File: ".github/workflows/ci.yml", Rule: "gate-file"}}},
+	} {
+		b := body(a, true)
+		if !strings.HasPrefix(b, "Part of #3\n\n## "+LeftHeading) || strings.Contains(b, "Closes #3") || strings.Contains(b, "proven on") {
+			t.Errorf("%s: %s", name, b)
+		}
+	}
+	if b := body(devmark.Act{Issue: 3, Proof: green}, true, "`.github/workflows`: in the Scope"); !strings.HasPrefix(b, "Part of #3") || !strings.Contains(b, "- `.github/workflows`: in the Scope\n") {
+		t.Errorf("scope left: %s", b)
+	}
+	if b := body(devmark.Act{Issue: 3, Proof: green, Unproven: []string{"- **x**: by eye"}}, true); !strings.HasPrefix(b, "Closes #3") || strings.Contains(b, "proven on") {
+		t.Errorf("unproven: %s", b)
+	}
+	if b := body(devmark.Act{Issue: 3, Proof: green, Unread: []string{"Its objections file, could not be read. As it came:\n\n~~~\nbad\n~~~\n"}}, true); !strings.HasPrefix(b, "Closes #3") || !strings.Contains(b, "## Its agent's words, unread") {
+		t.Errorf("other words: %s", b)
+	}
+}

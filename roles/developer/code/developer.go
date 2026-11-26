@@ -954,14 +954,15 @@ func Post(runDir, repo string) int {
 		// Its type reads all the pull request changes: its agent's code and
 		// the Draft's files it starts from (#2208).
 		sub := subjects(a.Issue, string(own), title, b.Kind, b.Scope, union(a.Code, draftCode(repo, a.At, on, b)), cs)
-		mr := mergeRequest(a, title, sub)
+		left := scopeLeft(repo, b, a.Refused)
+		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
+			left = append(left, "Its agent's note, as posted on the issue:\n\n"+devmark.InertText(note)+"\n")
+		}
+		mr := mergeRequest(a, title, sub, left...)
 		if sub.Refused != "" {
 			v.Findings = append(v.Findings, verdict.Finding{Rule: "subject-refused", Level: "warn", Where: where, Message: fmt.Sprintf("its agent's summary %.200q does not pass the commit rules where a squash lands it: %s in its place", sub.Refused, sub.Code)})
 		}
 		mr["unopened"] = unopened(a, s, repo)
-		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
-			mr["body"] = withNote(fmt.Sprint(mr["body"]), note)
-		}
 		if mr["draft"] == true {
 			v.Summary += "; a Draft: " + p.Result
 			if len(a.Caps) > 0 {
@@ -985,20 +986,16 @@ func Post(runDir, repo string) int {
 	return writeVerdict(runDir, v)
 }
 
-// withNote puts the agent's one note, the text posted on the issue, in the
-// pull request's `## Left out`, opening that section when it has none.
-func withNote(body, note string) string {
-	note = devmark.InertText(note)
-	const head = "\n## Left out\n\n"
-	if i := strings.Index(body, head); i >= 0 {
-		i += len(head)
-		return body[:i] + note + "\n\n" + body[i:]
+// scopeLeft are the paths its Scope names only a person changes, none of
+// its refusals under them: work the issue may need, left (after #2216).
+func scopeLeft(repo string, b Bounds, refused []devmark.Refusal) (left []string) {
+	c := newChecker(repo, b)
+	for _, p := range b.Scope {
+		if r := c.rule(p); (r == "gate-file" || r == "steering-file") && !slices.ContainsFunc(refused, func(x devmark.Refusal) bool { return under(x.File, []string{p}) }) {
+			left = append(left, fmt.Sprintf("`%s`: in the issue's %s, only a person changes it.", p, scopeName))
+		}
 	}
-	verif := "\n## " + work.Name(work.Verification) + "\n\n"
-	if i := strings.Index(body, verif); i >= 0 {
-		return body[:i] + head + note + "\n" + body[i:]
-	}
-	return body + head + note + "\n"
+	return left
 }
 
 // held is its agent's code held to the bounds: what it proposed, the

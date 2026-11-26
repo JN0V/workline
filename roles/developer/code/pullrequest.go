@@ -9,6 +9,7 @@ package developer
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -88,10 +89,10 @@ func subjects(issue int, own, title, kind string, scope, code []string, s commit
 // mergeRequest is out/merge-request.yaml: the branch's key, the issue's
 // title, its body; ready only when green with no cap reached; the branch
 // from the tester's Draft, the tests in a commit apart; the record kept
-// on it.
-func mergeRequest(a devmark.Act, title string, sub Subjects) map[string]any {
+// on it; left, what it leaves for a person beside its refusals.
+func mergeRequest(a devmark.Act, title string, sub Subjects, left ...string) map[string]any {
 	ready := a.Proof != nil && a.Proof.Result == devmark.Green && len(a.Caps) == 0 && a.AgentFailed == ""
-	b := body(a, ready)
+	b := body(a, ready, left...)
 	if sub.Note != "" {
 		b = strings.Replace(b, "## Changes\n\n", "## Changes\n\n"+sub.Note+"\n", 1)
 	}
@@ -112,23 +113,26 @@ func mergeRequest(a devmark.Act, title string, sub Subjects) map[string]any {
 	return mr
 }
 
-// body is its pull request's body: what closes, what changed, what was
-// left out, what ran, what was tried and not.
-func body(a devmark.Act, ready bool) string {
+// body is its pull request's body: the issue it closes, or is part of
+// when a part is left (after #2216); what changed, what was left out, what
+// ran, what was tried and not.
+func body(a devmark.Act, ready bool, left ...string) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Closes #%d\n\n", a.Issue)
-	if left := personsRefusals(a.Refused); len(left) > 0 {
-		// On top, where the reviewer's intent lens and a person read
-		// first: what only a person may change, left out of this change.
-		fmt.Fprintf(&b, "## %s\n\nRefused at apply: only a person changes these files. Merged as it is, #%d may close with them still to do.\n\n", LeftHeading, a.Issue)
-		for _, r := range left {
-			fmt.Fprintf(&b, "- `%s`: %s\n", r.File, why(r))
-		}
-		b.WriteString("\n")
+	unread := slices.DeleteFunc(slices.Clone(a.Unread), notDoneWords.MatchString)
+	left = slices.Concat(personsLeft(a.Refused), left, slices.DeleteFunc(slices.Clone(a.Unread), func(u string) bool { return !notDoneWords.MatchString(u) }))
+	if len(left) == 0 {
+		fmt.Fprintf(&b, "Closes #%d\n\n", a.Issue)
+	} else { // on top, where the reviewer's intent lens and a person read first
+		fmt.Fprintf(&b, "Part of #%d\n\n## %s\n\nLeft out of this change, so #%d stays open: a person does each, or says it is not needed.\n\n- %s\n\n", a.Issue, LeftHeading, a.Issue, strings.Join(left, "\n- "))
 	}
-	if ready {
+	switch {
+	case ready && len(left) > 0:
+		fmt.Fprintf(&b, "The developer's code for part of #%d: the project's tests green on it, not on what is left above.\n\n", a.Issue)
+	case ready && len(a.Unproven) > 0:
+		fmt.Fprintf(&b, "The developer's code for #%d: the project's tests green on it; the scenarios under %s no test proves.\n\n", a.Issue, UnprovenHeading)
+	case ready:
 		fmt.Fprintf(&b, "The developer's code for #%d, proven on the project's tests.\n\n", a.Issue)
-	} else {
+	default:
 		fmt.Fprintf(&b, "The developer's code for #%d, **a Draft**: not proven green, a cap reached, or its agent failed. "+
 			"A person takes it from here, or removes the claim on the issue.\n\n", a.Issue)
 	}
@@ -171,9 +175,9 @@ func body(a devmark.Act, ready bool) string {
 			fmt.Fprintf(&b, "- `%s`: %s\n", r.File, why(r))
 		}
 	}
-	if len(a.Unread) > 0 {
+	if len(unread) > 0 {
 		b.WriteString("\n## Its agent's words, unread\n\nA person reads them: a part not done, or an objection to a frozen test, may be among them.\n\n")
-		for _, u := range a.Unread {
+		for _, u := range unread {
 			b.WriteString(u + "\n")
 		}
 	}
@@ -194,18 +198,21 @@ func body(a devmark.Act, ready bool) string {
 // pull request.
 const LeftHeading = "Left for a person"
 
-// personsRefusals are the refusals of a file only a person changes — a
+// notDoneWords are its agent's closing words that say a part left: its
+// `Not done:` note, or a `Left out` (#2216).
+var notDoneWords = regexp.MustCompile(`(?im)^\s*>?\s*(?:not done|left out)\b`)
+
+// personsLeft says each refusal of a file only a person changes — a
 // gate's, the CI's, one that steers agents, one not text: work the issue
 // may need, left. A frozen test, a path out of the worktree, are not.
-func personsRefusals(refused []devmark.Refusal) []devmark.Refusal {
-	var out []devmark.Refusal
+func personsLeft(refused []devmark.Refusal) (left []string) {
 	for _, r := range refused {
 		switch r.Rule {
 		case "gate-file", "steering-file", "not-text":
-			out = append(out, r)
+			left = append(left, fmt.Sprintf("`%s`: refused at apply: %s", r.File, why(r)))
 		}
 	}
-	return out
+	return left
 }
 
 // recordBody is the comment holding the record on its pull request: what
