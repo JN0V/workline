@@ -208,8 +208,8 @@ func TestScore(t *testing.T) {
 	}
 	sum := summary(runs, js, "fake")
 	for _, want := range []string{
-		"| lens | 1 | 2 | 1 | 1.0 | 0.0 | 0.0 | 1.0 | 0.0 |",
-		"| free | 1 | 2 | 0 | 0.0 | 0.0 | 1.0 | 0.0 | 0.0 |",
+		"| lens | 1 | 2 | 1 | 1.0 | 0.0 | 0.0 | 1.0 | 2.0 | 0.0 |",
+		"| free | 1 | 2 | 0 | 0.0 | 0.0 | 1.0 | 0.0 | 0.0 | 0.0 |",
 		"| lens | 1/1 (100 %) | 0/1 (0 %) | 0/0 (0 %) | 0/0 (0 %) | 2.0 | 1.0 |",
 		"| free | 0 of 1 | 0 | 0 | 0 | 0 | 0k |",
 		"Judged twice: 6 items; the two agree on 5 (83 %); a third judgement settled 3.",

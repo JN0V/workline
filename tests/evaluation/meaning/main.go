@@ -638,7 +638,7 @@ func summary(runs []caseRun, js []judgement, judgeName string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# Reviewer replay, scored by meaning\n\nJudge: %s, blind to the arm, each judgement twice, a third on a difference.\n\n", judgeName)
 	b.WriteString("## Misses: scored points said by an Important shown\n\n")
-	b.WriteString("| Arm | Runs | Points | Said a run | Mean | SD | Partly | Refused by the engine's judge | Said as a nit |\n|---|---|---|---|---|---|---|---|---|\n")
+	b.WriteString("| Arm | Runs | Points | Said a run | Mean | SD | Partly | Refused by the engine's judge | Mean, the refused counted | Said as a nit |\n|---|---|---|---|---|---|---|---|---|---|\n")
 	col := func(arm string, get func(*tally) float64) []float64 {
 		var ns []int
 		for n := range per[arm] {
@@ -661,9 +661,10 @@ func summary(runs []caseRun, js []judgement, judgeName string) string {
 	for _, arm := range arms {
 		said := col(arm, func(t *tally) float64 { return t.said })
 		m, sd := meanSD(said)
-		fmt.Fprintf(&b, "| %s | %d | %.0f | %s | %.1f | %.1f | %.1f | %.1f | %.1f |\n", arm, len(said),
+		refused := mean(col(arm, func(t *tally) float64 { return t.refused }))
+		fmt.Fprintf(&b, "| %s | %d | %.0f | %s | %.1f | %.1f | %.1f | %.1f | %.1f | %.1f |\n", arm, len(said),
 			mean(col(arm, func(t *tally) float64 { return float64(t.points) })), list(said), m, sd,
-			mean(col(arm, func(t *tally) float64 { return t.half })), mean(col(arm, func(t *tally) float64 { return t.refused })),
+			mean(col(arm, func(t *tally) float64 { return t.half })), refused, m+refused,
 			mean(col(arm, func(t *tally) float64 { return t.nit })))
 	}
 	b.WriteString("\n## Misses by kind of point, and what else was said\n\n")
