@@ -1,6 +1,7 @@
 package documentalist
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -574,7 +575,9 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 		for _, ch := range c.changes {
 			m, ok := became[strings.Fields(ch)[0]]
 			if _, read := fixes[m.ID]; ok && !read {
-				fixes[m.ID], _ = stickyOn(f, forge.Target{Kind: "merge-request", ID: m.ID}, "patch", &u)
+				if fixes[m.ID], err = stickyOn(f, forge.Target{Kind: "merge-request", ID: m.ID}, "patch", &u); err != nil {
+					findings = append(findings, unread(fmt.Sprintf("the documentalist's comment on merge request %d", m.ID), err))
+				}
 			}
 			if !ok || !strings.Contains(fixes[m.ID], "diff --git a/"+c.sd.doc.Path+" ") {
 				continue
@@ -625,17 +628,17 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 	return found, append(findings, u.findings()...), nil
 }
 
-// unapplied says whether the fix a documentalist's comment proposed for doc
-// changes its body, and applies to it at HEAD, its header lines left out:
-// what it changes is still there to change.
+// unapplied says whether the fix a documentalist's comment proposed for doc,
+// its header lines left out, changes its body and still applies at HEAD.
 func unapplied(comment, doc, repo string) bool {
 	var b strings.Builder
 	in, changes := false, false
 	for _, l := range strings.Split(comment, "\n") {
+		l = cmp.Or(l, " ") // a blank context line a forge trimmed
 		if strings.HasPrefix(l, "diff --git ") || strings.HasPrefix(l, "```") {
 			in = l == "diff --git a/"+doc+" b/"+doc
 		}
-		header := len(l) > 0 && (recordLine.MatchString(l[1:]) || strings.HasPrefix(l[1:], "checked:"))
+		header := recordLine.MatchString(l[1:]) || strings.HasPrefix(l[1:], "checked:")
 		switch {
 		case !in || header && l[0] == '+':
 		case header && l[0] == '-':
