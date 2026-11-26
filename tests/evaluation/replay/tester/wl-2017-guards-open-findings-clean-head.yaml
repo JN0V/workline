@@ -1,0 +1,39 @@
+case: tester/wl-2017-guards-open-findings-clean-head
+about: >
+  workline issue #2017 ("Open-findings wait silent on a red or conflicting
+  head"), as the tester read it on 2026-11-24 (the body before the
+  Verification the engine wrote from its tests), on main at af579e5. Its
+  Draft then: https://github.com/JN0V/workline/pull/2106. Left with no
+  guard then ("kept as today … nothing guards it"): Open findings, a clean
+  head. Expected now: each has a guard test, green on the base, that
+  checks its Then by running the code. Scenario "Open findings, a clean
+  head" — a sound test: Same harness with no conflict and no red verdict
+  (the tester's own codeWaitComment(t, false, false, "findings",
+  "findings")): assert the merge-waits=findings comment EQUALS the base's
+  exact body (marker included) and the Result's waits-for-a-yes message
+  EQUALS the base's exact line. Passes on the base, must still pass after
+  the fix. To refuse: strings.Contains("the reviewer's findings are
+  open"): passes even if head-trouble text is appended on a clean head.
+  Checking the comment and not the summary line. The test command is
+  narrowed to the case's packages, so that the run before the agent stays
+  light.
+given:
+  clone: {repo: JN0V/workline, head: af579e5f9be5b03cc296f143242beff2f00003e6}
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|-- -timeout 20m \\./\\.\\.\\.$|-- -timeout 20m ./internal/engine/|' .workline/config.yaml && ! grep -q 'timeout 20m ./\\.\\.\\.' .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the test command on the packages of the case alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 2017
+        title: "Open-findings wait silent on a red or conflicting head"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "<!-- workline:found=the correctness lens; verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5) -->\n\nFound by the reviewer role while reviewing 66f51d5, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=internal/engine/code.go#7c73354d -->\n\n## Need\n\nA person who puts the accept label on a pull request with open reviewer findings sees it stay unmerged. Nothing tells them the head's verdict is red or that it conflicts with main, so the label alone will not merge it.\n\n## Validation\n\n- **Open findings and a red head:** Given a pull request with open reviewer findings and a red verdict on its head, When the line writes its waiting comment, Then the comment says the findings are open and also that the verdict is red and the label alone will not merge it.\n- **Open findings and a conflict:** Given a pull request with open reviewer findings that conflicts with main, When the line writes its waiting comment, Then the comment also says it conflicts with main.\n- **Open findings, a clean head:** Given open findings and a head that is neither red nor conflicting, When the line writes its waiting comment, Then the comment body and the waits summary line are byte-identical to what they are today.\n- **Unreviewed and unreproduced waits on a conflict:** Given a conflicting head on a wait for a review or a reproduction, When the line writes its waiting comment, Then it also says the head conflicts with main.\n\n---\n\n## Scope\n\n- `internal/engine/code.go`: the open-findings wait (around line 98), and the unreviewed and unreproduced waits beside it. Each should append `headTrouble(o, m, hand, w)` to its comment body, as the other waits do.\n\n<details><summary>The cause in the code</summary>\n\nThis is the same gap the change closes for the refused-candidate wait, left open in the neighbouring waits. When the reviewer's findings are open, the wait offers the label as the way to accept the pull request anyway. This case is checked before the red-verdict check. If the head's verdict is red or the head conflicts with main, the label alone will not merge it, and the comment never says so. The unreviewed and unreproduced waits likewise omit the head's trouble.\n\nAt `internal/engine/code.go:103`:\n\n```\nreturn waits(\"warn\", fmt.Sprintf(\"%s, but the reviewer's findings are open: %s\", d.Says(), strings.Join(d.Open, \"; \")))\n```\n\nWhat would fix it: Append headTrouble(o, m, hand, w) to the body of the open-findings, unreviewed and unreproduced wait comments too.\n\n</details>\n\n## Assumptions\n\n- Assumption taken on 2026-11-24, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+run: {role: tester, event: issue, target: "issue:2017", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2017']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Open findings, a clean head: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2017']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"open findings, a clean head\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

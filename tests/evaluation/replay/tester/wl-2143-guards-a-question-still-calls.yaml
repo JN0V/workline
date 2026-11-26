@@ -1,0 +1,37 @@
+case: tester/wl-2143-guards-a-question-still-calls
+about: >
+  workline issue #2143 ("The line mentions a person in its records, so a
+  mention no longer means 'you are needed'"), as the tester read it on
+  2026-11-25 (the body before the Verification the engine wrote from its
+  tests), on main at dccd37b. Its Draft then:
+  https://github.com/JN0V/workline/pull/2168. Left with no guard then
+  ("kept as today … nothing guards it"): A question still calls. Expected
+  now: each has a guard test, green on the base, that checks its Then by
+  running the code. Scenario "A question still calls" — a sound test: Name
+  those conformance cases as the guard; for 'starts with', a unit test:
+  backlog.Ask("ann", "Which?", 1) and round 2 both have the prefix "@ann,
+  ". Stronger: a product-owner run with a fake asking agent, the comment
+  posted on the issue starts with '@' + its author. To refuse: Declaring
+  'nothing guards it'. Contains("ann") still passes once the mention is
+  defused. The test command is narrowed to the case's packages, so that
+  the run before the agent stays light.
+given:
+  clone: {repo: JN0V/workline, head: dccd37b89ed989cbfc1beef71996dc10c29c0f6e}
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|-- -timeout 20m \\./\\.\\.\\.$|-- -timeout 20m ./internal/engine/ ./roles/developer/code/|' .workline/config.yaml && ! grep -q 'timeout 20m ./\\.\\.\\.' .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the test command on the packages of the case alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 2143
+        title: "The line mentions a person in its records, so a mention no longer means 'you are needed'"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "## Need\n\nA maintainer who filters notifications on \"mentioned\" gets the line's records as well as its questions, and cannot tell which of them need the maintainer.\n\n## Steps to reproduce\n\n1. On a repository the line runs on, accept a pull request with `workline:accepted` as JN0V.\n2. Push one more commit to its branch.\n3. Read workline's comment \"workline took `workline:accepted` off: … was pushed after @JN0V accepted this merge request\".\n\n## Expected\n\nThe comment names JN0V and notifies nobody. Only a question to JN0V mentions them.\n\n## Actual\n\nGitHub notifies JN0V as mentioned. On the last 50 issues and 50 pull requests of two repositories, 27 visible lines mention JN0V with no question:\n\n- 16 \"a person, @JN0V\"\n- 9 \"Accepted by @JN0V\"\n- 2 \"took `workline:accepted` off\"\n\n## Validation\n\n- **A record names, never calls:** Given a head pushed after JN0V's `workline:accepted`, When workline takes the label off and comments, Then the comment names JN0V and sends no mention notification.\n- **The developer's record names the person:** Given the developer's record of a round that waits on a person, When it is posted, Then it names the person with no mention.\n- **A question still calls:** Given the product owner asks the issue author a question, When it is posted, Then it starts with a mention of that author.\n\n---\n\n## Scope\n\n- `internal/engine/merge.go`, `internal/engine/candidate.go`, `internal/engine/demote.go`, `internal/engine/routine.go`: the \"by @…\" lines (merge.go \"took … off\" and \"read whole by\"; candidate.go \"labelled … by\", \"Refused by\"; demote.go \"closed by\"; routine.go).\n- `roles/developer/code/review.go`: \"a person, \" + where, and the author mention near line 539.\n- `internal/backlog/ledger.go`, `internal/backlog/backlog.go`, `internal/backlog/assume.go`: \"Accepted by\", \"Answered by\". `Ask` and the proposal keep their mention.\n- Reuse the mention-defusing helper `inert` in `internal/report/gates.go` (unexported today, so it may need to move to a shared package).\n- Guessed: hidden state with \"@…\" may notify too; check on a sandbox.\n"
+run: {role: tester, event: issue, target: "issue:2143", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2143']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # A question still calls: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2143']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"a question still calls\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

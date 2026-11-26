@@ -1,0 +1,44 @@
+case: tester/wl-2085-guards-bad-and-good-answer
+about: >
+  workline issue #2085 ("A lens answer that is not valid YAML fails the
+  whole verdict"), as the tester read it on 2026-11-25 (the body before
+  the Verification the engine wrote from its tests), on main at dccd37b.
+  Its Draft then: https://github.com/JN0V/workline/pull/2181. Left with no
+  guard then ("kept as today … nothing guards it"): Bad answer retried;
+  Good answer. Expected now: each has a guard test, green on the base,
+  that checks its Then by running the code. Scenario "Bad answer retried"
+  — a sound test: Name that case as the guard; or a unit test: askParts
+  with a fake agent failing once with agent.ErrInvalidOutput, then writing
+  a valid out/intentions.yaml. Assert 2 calls, the second's
+  out/feedback.md holding the first error, in/parts/<name>/answer.yaml
+  written, no `unanswered` file. To refuse: Declaring 'nothing guards it'
+  (or reading the scenario as new behaviour: it is at the base since
+  #138). A role with Model.PromoteAfter 0 is never asked again. Scenario
+  "Good answer" — a sound test: Name that case as the guard; or a unit
+  test: askParts with an agent writing a valid out/intentions.yaml at its
+  first call. Assert exactly 1 call, answer.yaml written, no
+  part-asked-again finding. To refuse: Declaring 'nothing guards it'. The
+  test command is narrowed to the case's packages, so that the run before
+  the agent stays light.
+given:
+  clone: {repo: JN0V/workline, head: dccd37b89ed989cbfc1beef71996dc10c29c0f6e}
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|-- -timeout 20m \\./\\.\\.\\.$|-- -timeout 20m ./internal/engine/|' .workline/config.yaml && ! grep -q 'timeout 20m ./\\.\\.\\.' .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the test command on the packages of the case alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 2085
+        title: "A lens answer that is not valid YAML fails the whole verdict"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "## Need\n\nA person who opens a pull request needs a review that does not fail on one malformed agent answer, so a correct change is not held by a reply's syntax.\n\n## Example\n\n- Pull request [#2084](https://github.com/JN0V/workline/pull/2084), a 9-line pin change, v0.88.0 to v0.89.0.\n- The reviewer's correctness lens got an answer that is not valid YAML: `agent answered without valid proposals: expected a YAML list of proposals (yaml: found character that cannot start any token)`.\n- The status `workline/verdict` went `fail` with `short: [lens-failed]`, while 0 findings were made on the change.\n- The comment says the next push asks every lens again. The person had to push an empty commit.\n\n## Validation\n\n- **Bad answer retried:** Given a lens answers with text that is not a YAML list, When the reviewer reads it, Then it asks that lens once more, with the parse error, before it counts it as failed.\n- **Still bad:** Given the second answer is also not valid, When the reviewer reads it, Then the lens is `lens-failed` as today, naming both parse errors.\n- **Good answer:** Given a lens answers a valid list, When the reviewer reads it, Then no second call is made.\n\n---\n\n## Verification\n\n- A test of the reviewer with a fake agent: first answer invalid YAML, second valid; the lens is not failed and the agent is called twice.\n- The same with two invalid answers: `lens-failed`.\n\n## Scope\n\n- The reviewer's reading of a lens answer (the code that raises `lens-failed` on `invalid: agent answered without valid proposals`).\n- Not the lenses' prompts.\n\n## Assumptions\n\n- Assumption taken on 2026-11-25, the question of 2026-11-24 unanswered after 24 h: The reviewer retries a lens once on any invalid-proposals error (a YAML syntax error, a valid YAML that is not a list, or an empty answer), and both parse errors are named in the lens-failed short, which the comment shows."
+run: {role: tester, event: issue, target: "issue:2085", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2085']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Bad answer retried: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2085']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"bad answer retried\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}
+  # Good answer: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2085']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"good answer\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

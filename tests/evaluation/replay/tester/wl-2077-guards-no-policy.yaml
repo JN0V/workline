@@ -1,0 +1,49 @@
+case: tester/wl-2077-guards-no-policy
+about: >
+  workline issue #2077 ("bug(doctor): warns pull_request_target is blocked
+  when an event policy allows it"), as the tester read it on 2026-11-25
+  (the body before the Verification the engine wrote from its tests), on
+  main at dccd37b. Its Draft then:
+  https://github.com/JN0V/workline/pull/2178. Left with no guard then
+  ("kept as today … nothing guards it"): No policy. Expected now: each has
+  a guard test, green on the base, that checks its Then by running the
+  code. Scenario "Policy allows it" — a sound test: eventPolicyRepo with
+  workline-bounds.yml and workline-merge.yml on pull_request_target;
+  fakeGh answering `actions/policies` with a listing lacking conditions
+  and rules, and `actions/policies/<id>` with them;
+  doctor.Run(Options{Repo, RolesDir, Engine}). Assert no check about
+  pull_request_target above OK (levelOf(r, "event-blocked") == ""). To
+  refuse: A fake listing that already carries `conditions`: passes on the
+  base, the bug being that GitHub's list has none. Only the successful
+  read: the fix sent back kept the false warning when the read by id
+  fails. Scenario "No policy" — a sound test: Name the existing guard:
+  internal/doctor.TestDoctorTellsAPublicRepositoryOfTheBlockedPullRequestTarget
+  (doctor.Run with a fake gh that gives a public repository and no policy:
+  a check must name pull_request_target with a fix). No new test is
+  needed; for the new read path, a listing of `policies: []` → levelOf(r,
+  "event-blocked") == Warn. To refuse: Declaring 'nothing guards it'
+  without reading event_policy_test.go. Its tests live in internal/doctor,
+  whose test binary reached 6.6 GB on 2026-11-25: played only where
+  WORKLINE_EVAL_HEAVY is set. The test command is narrowed to the case's
+  packages, so that the run before the agent stays light.
+given:
+  clone: {repo: JN0V/workline, head: dccd37b89ed989cbfc1beef71996dc10c29c0f6e}
+  needs: ["$WORKLINE_EVAL_HEAVY"]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|-- -timeout 20m \\./\\.\\.\\.$|-- -timeout 20m ./internal/doctor/|' .workline/config.yaml && ! grep -q 'timeout 20m ./\\.\\.\\.' .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the test command on the packages of the case alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 2077
+        title: "bug(doctor): warns pull_request_target is blocked when an event policy allows it"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "## Who it hurts\n\nA person who runs `workline doctor` on a public repository whose Actions event policy already allows `pull_request_target`. The warning sends them to fix what is fixed, and they cannot make it go away.\n\n## Need\n\nA person who runs `workline doctor` on a public repository whose Actions event policy already allows `pull_request_target` needs no false warning, so they are not sent to fix what is already fixed.\n\n## Steps to reproduce\n\n1. Use a public repository with an active Actions event policy allowing `pull_request_target` for `workline-bounds.yml` and `workline-merge.yml`: JN0V/DomoticsCore (policy 17081) or JN0V/TraceGlass (policy 17077).\n2. Run `workline doctor` (v0.88.1).\n\n## Validation\n\n- **Policy allows it:** Given a public repository with an active event policy allowing `pull_request_target` for `workline-bounds.yml` and `workline-merge.yml`, When I run `workline doctor`, Then it prints no `pull_request_target` warning.\n- **No policy:** Given a public repository with no policy covering those files, When I run `workline doctor`, Then it still warns that `pull_request_target` is blocked.\n\n## Expected\n\nNo `pull_request_target` warning: an active policy covers both files.\n\n## Actual\n\ndoctor warns that `pull_request_target` is blocked for these files.\n\n## Version\n\nworkline v0.88.1.\n\n---\n\n## Verification\n\n- A test where the list endpoint returns a policy with no `conditions` and the policy's own read returns its file targets: no warning.\n- Run on a clone of DomoticsCore and TraceGlass: no warning.\n\n## Scope\n\n- `internal/doctor/event_policy.go`: it reads `repos/{owner}/{repo}/actions/policies?per_page=100`; that list carries no file targets (`conditions.workflow_path`), so `coveringEventPolicies` finds no policy covering the files.\n- Read each listed policy by its id for its conditions and rules, then judge as now.\n- Update `internal/doctor/event_policy_api_test.go`.\n\n## Assumptions\n\n- Assumption taken on 2026-11-25, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct.\n- Assumption taken on 2026-11-25, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+run: {role: tester, event: issue, target: "issue:2077", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2077']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # No policy: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2077']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"no policy\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

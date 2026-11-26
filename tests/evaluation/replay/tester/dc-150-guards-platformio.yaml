@@ -1,0 +1,49 @@
+case: tester/dc-150-guards-platformio
+about: >
+  DomoticsCore issue #150 ("CI-21: The Arduino IDE cannot build the
+  library, the root has no src/"), as the tester read it on 2026-11-25
+  (the body before the Verification the engine wrote from its tests), on
+  main at 5a2ea81. Its Draft then:
+  https://github.com/JN0V/DomoticsCore/pull/303. Left with no guard then
+  ("kept as today … nothing guards it"): PlatformIO. Expected now: each
+  has a guard test, green on the base, that checks its Then by running the
+  code. Scenario "Arduino build" — a sound test: Run
+  tools/make_arduino_library.py into a temp folder, then compile a
+  one-line unit `#include <DomoticsCore/System.h>` with the copy's src/ as
+  the only DomoticsCore include path, beside the host mocks the native
+  suites use; assert the compiler exits 0. The literal Then (arduino-cli,
+  ESP32/ESP8266 cores) is outside: the release workflow's job. To refuse:
+  Listing header files in the copy and calling it 'builds': a broken
+  include inside any of them still passes. The generator's command line is
+  an assumption to declare. Not counted for or against (bench validity):
+  the literal Then needs the Arduino toolchain and a release archive; the
+  generator's interface is guessed in the Scope; no merged fix. Scenario
+  "PlatformIO" — a sound test: After running the generator into a folder
+  outside the repository, assert the repository gained no root `src/` and
+  its root library.json is unchanged; the native suites building is the
+  rest of the guard. Board builds stay CI's. To refuse: Claiming nothing
+  guards it while every native suite is a PlatformIO build; or a text
+  check of platformio.ini. The Draft's proof runs the component holding
+  the tests alone (a `draft-command` and `module-files` the case adds),
+  not DomoticsCore's whole native suite; `pio` must be on PATH.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 5a2ea815117522243c014c8fb2570cf624d37e76}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|^\\( *\\)test-command: tools/workline-tests.sh {report}$|&\\n\\1draft-command: tools/workline-tests.sh {report} {packages}\\n\\1module-files: [platformio.ini]|' .workline/config.yaml && grep -q draft-command .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the Draft is proven on its component alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 150
+        title: "CI-21: The Arduino IDE cannot build the library, the root has no src/"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "enhancement"]
+        body: "### CI-21 — The Arduino IDE cannot build the library: the root has no `src/` [LOW] — **NEW (2026-10-01, by CI-6's review)**\n\n- **Files**: `library.properties` (`includes=DomoticsCore/System.h`), the\n  repository layout — every header lives under `DomoticsCore-*/include/`.\n- **Problem**: an Arduino 1.5-format library compiles `src/`; the root has\n  none, and the header `includes=` names is not reachable from it. The\n  Arduino IDE can install the archive and build nothing.\n- **Consequence**: Constitution XII's secondary registry is unreachable;\n  CI-6's `depends=` takes effect only once this is solved. PlatformIO, the\n  primary registry, is unaffected.\n- **LOW, argued**: nobody installs it that way today — the library is not\n  listed in the Arduino Library Manager.\n- **Fix**: a decision — a `src/` layout the Arduino IDE can build (generated\n  at release, or the components' headers forwarded), or dropping the Arduino\n  registry from XII.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 5651 to 5665 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:c63998856802 -->\n\n## Need\n\nAn Arduino IDE user needs to install the library archive and build a sketch with it, as the Arduino registry promises.\n\n## Validation\n\n- **Arduino build:** Given the release archive installed in the Arduino IDE, When a sketch includes `DomoticsCore/System.h`, Then it compiles.\n- **PlatformIO:** Given the same change, When a PlatformIO project builds as before, Then it is unaffected.\n\n---\n\n## Scope\n\nGuessed: the generator's and the workflow's names and places are not in the code given. The route is the owner's decision in the last comment.\n`library.properties`: the `includes=` line must name a header that exists in the generated copy.\n`tools/check_versions.py`: `check_properties_vs_root` compares the version in `library.properties` with the root `library.json`; it must also accept the manifest of the copy.\n`DomoticsCore-System/include/DomoticsCore/System.h`: it finds each component with `__has_include(<DomoticsCore/X.h>)`. The umbrella header in the copy must keep those paths reachable.\n`tests/mocks/libraries/DomoticsCore/Generated/WebUIAssets.h`: a reference for the generated `WebUIAssets.h`, which is committed in the copy.\nNew: `tools/make_arduino_library.py` (builds the copy: one `src/`, the umbrella header `DomoticsCore.h`, the generated `WebUIAssets.h`, the `DocMainpage.h` collision solved)\nNew: `.github/workflows/arduino-library.yml` (at each release: build the copy, publish it to a branch or repository, run `arduino-cli` on the examples `CoreOnly` and `Minimal` and `arduino-lint`)\nNo `src/` is added to this repository: the modular PlatformIO layout stays as it is.\nAfter the copy builds for ESP8266 and ESP32, the Arduino Library Manager submission follows; it is not code.\n\n## Assumptions\n\n- Assumption taken on 2026-11-15, the question of 2026-10-21 unanswered after 24 h: The Arduino IDE stays a supported registry under Constitution XII, so the library must get a `src/` layout it can build. Answered by @JN0V on 2026-11-25: their answer stands over it.\n- Assumption taken on 2026-11-16, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct. Answered by @JN0V on 2026-11-25: their answer stands over it."
+run: {role: tester, event: issue, target: "issue:150", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-150']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # PlatformIO: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-150']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"platformio\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}
