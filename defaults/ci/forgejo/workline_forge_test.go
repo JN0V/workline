@@ -57,13 +57,9 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, `[]`)
 		}
 	case r.Method == "GET" && r.URL.Path == repo+"/issues/3/comments":
-		if r.URL.Query().Get("page") == "1" {
-			fmt.Fprint(w, `[{"body": "Rows lost.", "user": {"id": 7, "login": "zed"}, "created_at": "2026-10-01T09:00:00+02:00"}, {"body": "agreed", "user": {"id": 8, "login": "dev"}},
-				{"body": "agreed", "user": {"id": -2, "login": "forgejo-actions"}}, {"body": "agreed", "user": {"id": 9, "login": "renovate-bot"}},
-				{"body": "old", "user": {"id": 10, "login": "gone"}}, {"body": "built", "user": {"id": 11, "login": "ci[bot]"}}]`)
-		} else {
-			fmt.Fprint(w, `[]`)
-		}
+		fmt.Fprint(w, `[{"body": "Rows lost.", "user": {"id": 7, "login": "zed"}, "created_at": "2026-10-01T09:00:00+02:00"}, {"body": "agreed", "user": {"id": 8, "login": "dev"}},
+			{"body": "agreed", "user": {"id": -2, "login": "forgejo-actions"}}, {"body": "agreed", "user": {"id": 9, "login": "renovate-bot"}},
+			{"body": "old", "user": {"id": 10, "login": "gone"}}, {"body": "built", "user": {"id": 11, "login": "ci[bot]"}}]`)
 	case r.Method == "GET" && r.URL.Path == repo+"/pulls" && r.URL.Query().Get("state") == "open":
 		if r.URL.Query().Get("page") == "1" {
 			here, main := `"repo": {"full_name": "owner/name"}`, `"base": {"ref": "main", "repo": {"full_name": "owner/name"}}`

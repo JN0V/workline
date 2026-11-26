@@ -139,7 +139,10 @@ and says:
 - a command that answers `{}`, or an error saying it does not know `ping`:
   the forge command runs and is reachable as far as the doctor can tell.
   A command may answer `{"error": "…"}` to `ping` to say why its forge is
-  not reachable: that is a warning with those words.
+  not reachable: that is a warning with those words. The Forgejo sample
+  answers `ping` by reading `/api/v1/user` and the repository: `{}` when both
+  answer, else an error saying the forge cannot be reached, the token is
+  refused, or the repository is not found.
 
 A GitHub or GitLab repository is checked as before.
 
