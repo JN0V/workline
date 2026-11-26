@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation/replay_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt, .github/workflows/eval-replay.yml]
-checked: c9febba1e
+checked: c6853bf82
 ---
 # Replay set — real misses, played again
 
