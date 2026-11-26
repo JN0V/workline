@@ -1,5 +1,5 @@
 ---
-sources: [tests/evaluation/replay_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt, tests/evaluation/meaning/main.go, tests/evaluation/findings_test.go]
+sources: [tests/evaluation/replay_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt, tests/evaluation/meaning/main.go, tests/evaluation/findings_test.go, .github/workflows/eval-replay.yml]
 checked: 74faf6584
 ---
 # Replay set — real misses, played again
@@ -123,6 +123,27 @@ go run ./tests/evaluation/summary     # per case and per set, a workline commit 
 - With no agent, `TestReplayCasesLoad` reads every case strictly, and
   `TestReplayCasesPointRight` checks each reviewer place's text at its
   head when the mirror is in the cache.
+
+## On GitHub's runners
+
+[eval-replay.yml](../../../.github/workflows/eval-replay.yml), by hand,
+runs a set off a person's machine, each run its own job:
+
+```sh
+gh workflow run eval-replay.yml -f ref=<branch|refs/pull/<n>/head|sha> \
+  -f run='TestReplay/developer/' -f eval=claude -f judge=claude:opus -f runs=3
+```
+
+- The toolchains are there: PlatformIO, a JDK 21, the runner's Android SDK.
+- `env` takes more `WORKLINE_*` variables, `KEY=VALUE` separated by
+  spaces or `;`.
+- `cases` is `go test -parallel`: 2 cases at once in a job by default.
+- Each job's artifact holds its `results.tsv` lines and its log; the
+  runs kept too when the branch reads `WORKLINE_EVAL_KEEP`,
+  `WORKLINE_EVAL_FINDINGS` or `WORKLINE_FREE_TRANSCRIPTS`.
+  `eval-replay-rows` holds every job's lines, to append to `results.tsv`.
+- The ref's code runs with the agent's login: dispatch only a ref whose
+  code you trust, never a fork's pull request head.
 
 ## Cost
 
