@@ -185,7 +185,7 @@ did not foresee, a build file, a test fake, a helper
 - **One note on its own issue**: what the agent left out, plain text
   naming no issue included. Posted there once, made inert (no heading,
   tag or mention), cut to 4,000 bytes; the same text in the pull
-  request's `## Left out` ([the pull request](pull-request.md)). A
+  request's `## Left for a person` ([the pull request](pull-request.md)). A
   second note, or one elsewhere, is refused (`not-the-developers`).
 
 ## Not yet

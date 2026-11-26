@@ -2,8 +2,8 @@ case: developer/claude-not-done-note-posted
 about: >
   Done is the issue's Validation done, not the tests green: what its
   agent left undone it says in a "Not done:" note, in place of `[]`. A
-  note it closed with `[]` all the same is not lost: posted on the pull
-  request as it came.
+  note it closed with `[]` all the same is not lost: posted on top of the
+  pull request as it came, which is then part of #3, never closing it.
 given:
   repo: tested-draft
   setup:
@@ -39,4 +39,5 @@ expect:
     merge-requests:
       - id: 2
         draft: false
-        body-contains: ["## Its agent's words", "Not done: `mul` of negative numbers"]
+        body-contains: ["Part of #3\n\n## Left for a person", "The developer's code for part of #3", "Not done: `mul` of negative numbers"]
+        body-lacks: ["Closes #3", "proven on the project's tests", "## Its agent's words, unread"]

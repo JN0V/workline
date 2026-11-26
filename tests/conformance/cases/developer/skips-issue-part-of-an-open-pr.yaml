@@ -1,0 +1,25 @@
+case: developer/skips-issue-part-of-an-open-pr
+about: >
+  An open merge request part of an issue, `Part of #2` as the
+  developer's says when it leaves a part to a person, is building it:
+  the issue is passed over as one closed by it, the next ready one
+  taken. Never two pull requests for one issue.
+given:
+  repo: tested
+  forge:
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready"], body: "## Need\n\nI want to multiply.\n"}
+      - {id: 3, title: "Divide", labels: ["workline:ready"], body: "## Need\n\nI want to divide.\n"}
+    merge-requests:
+      - {id: 5, branch: workline/developer/2, base: main, title: "feat: multiply", body: "Part of #2\n\n## Left for a person\n\n- `.github/workflows/ci.yml`: in the issue's Scope, only a person changes it.", labels: [], comments: []}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #3"
+  agent-calls: 1
+  forge:
+    issues:
+      - {id: 2, labels: ["workline:ready"], comments: 0}
+      - id: 3
+        labels: ["workline:developing"]
+        comment-contains: ["#2: the open merge request 5 is for it"]

@@ -3,7 +3,8 @@ about: >
   The tester's Draft says a scenario no test proves: the developer's pull
   request lists it under Unproven, with the tester's reason, for the
   reviewer's tests lens to weigh, its name inert; one kept as today too,
-  a guard test it may ask.
+  a guard test it may ask. Never "proven": it says the tests green, and
+  what no test proves.
 given:
   repo: tested-draft
   setup:
@@ -33,4 +34,4 @@ expect:
       - id: 2
         branch: workline/developer/3
         body-contains: ["## Unproven\n\nScenarios of the issue no test proves, as the tester said, each with its reason: the reviewer's tests lens weighs whether a test can prove it.\n\n- **By zero, ask @​ann**: a person reads the printed table by eye\n- **Add unchanged**: kept as today: no existing test was found that checks it, so nothing guards it\n"]
-        body-lacks: ["@ann"]
+        body-lacks: ["@ann", "proven on the project's tests"]

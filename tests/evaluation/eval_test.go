@@ -17,7 +17,10 @@
 // the reviewer's judge its 40 measured questions again
 // (judge_replay_test.go), WORKLINE_EVAL naming the judge.
 // WORKLINE_EVAL_KEEP names a folder where each run's folders and the
-// change it made are kept (keepRun).
+// change it made are kept (keepRun). WORKLINE_EVAL_FINDINGS names a file
+// that keeps each reviewer run's findings whole, for the scorer by
+// meaning (tests/evaluation/meaning), under the arm WORKLINE_EVAL_ARM
+// names.
 package evaluation
 
 import (
@@ -564,6 +567,9 @@ func grade(c *caseFile, r *run) (passed int, failed, skipped []string) {
 		c.Review.Replay, c.Review.Clean = c.Given.Clone.Repo != "", strings.Contains(c.Case, "/clean-")
 		p, f, measure, notes := scoreReview(c.Review, rr)
 		passed, failed, r.measure, r.reviewNotes = passed+p, append(failed, f...), measure, notes
+		if err := keepFindings(c, r, rr); err != nil {
+			failed = append(failed, "findings: "+err.Error())
+		}
 		if r.judgedBy == "" {
 			r.judgedBy = rr.Judge
 		}

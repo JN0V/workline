@@ -603,6 +603,26 @@ func TestReviewerWithFakeAgent(t *testing.T) {
 	}
 	spec := "cmd:sh " + agent + " " + answers
 	t.Setenv("WORKLINE_JUDGE", spec)
+	kept := filepath.Join(t.TempDir(), "findings.jsonl")
+	t.Setenv("WORKLINE_EVAL_FINDINGS", kept)
+	t.Setenv("WORKLINE_EVAL_ARM", "lens, fake")
+	defer func() { // each run's findings are kept whole, for the scorer by meaning
+		data, _ := os.ReadFile(kept)
+		lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+		if len(lines) != 2 {
+			t.Fatalf("WORKLINE_EVAL_FINDINGS holds %d lines for 2 runs:\n%s", len(lines), data)
+		}
+		for i, line := range lines { // the second run names no arm: the agent asked is its arm
+			arm := []string{`{"arm":"lens, fake",`, `{"arm":"cmd:sh `}[i]
+			for _, want := range []string{arm, `"case":"correctness-checkout-drops-the-coupon-error","tokens_in":`,
+				`"severity":"important","refused":false,"title":"`, `"refused":true`,
+				`"body":"Checkout returns the full price and no error for \"SAVEx\", which its doc calls an error.\nFix: return the error ParseCoupon gives."`} {
+				if !strings.Contains(line, want) {
+					t.Errorf("run %d: the findings kept lack %s:\n%s", i+1, want, line)
+				}
+			}
+		}
+	}()
 	for _, run := range []struct {
 		settings string
 		want     []string
@@ -620,6 +640,10 @@ func TestReviewerWithFakeAgent(t *testing.T) {
 		}},
 	} {
 		t.Setenv("WORKLINE_EVAL_REVIEWER", run.settings)
+		if run.settings == "" {
+			t.Setenv("WORKLINE_EVAL_ARM", "")
+			t.Setenv("WORKLINE_EVAL", spec)
+		}
 		r, err := play(t, c, spec)
 		if err != nil {
 			t.Fatal(err)

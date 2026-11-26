@@ -6,61 +6,7 @@ import (
 
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
-	"github.com/JN0V/workline/internal/work"
 )
-
-func TestWithNoteFillsAnExistingLeftOut(t *testing.T) {
-	body := "## Need\n\nx\n\n## Left out\n\nolder\n\n## Other\n\ny\n"
-	got := withNote(body, "the gap")
-	if strings.Count(got, "## Left out") != 1 {
-		t.Fatalf("one Left out expected: %q", got)
-	}
-	if !strings.Contains(got, "## Left out\n\nthe gap\n\nolder") {
-		t.Errorf("note not put first in the section: %q", got)
-	}
-}
-
-func TestWithNoteOpensLeftOutBeforeVerification(t *testing.T) {
-	verif := "## " + work.Name(work.Verification) + "\n\nproof\n"
-	got := withNote("## Need\n\nx\n\n"+verif, "the gap")
-	i, j := strings.Index(got, "## Left out\n\nthe gap\n"), strings.Index(got, "## "+work.Name(work.Verification))
-	if i < 0 || j < 0 || i > j {
-		t.Errorf("Left out must open before Verification: %q", got)
-	}
-}
-
-func TestWithNoteWithNeitherSectionAppends(t *testing.T) {
-	got := withNote("just text\n", "the gap")
-	if !strings.HasSuffix(got, "\n## Left out\n\nthe gap\n") || !strings.HasPrefix(got, "just text\n") {
-		t.Errorf("section not appended: %q", got)
-	}
-}
-
-func TestWithNoteMakesTheNoteInert(t *testing.T) {
-	note := "intro\n## Verification\n  # Need\n```\n~~~\n---\n===\n<!-- x -->\nping @someone"
-	got := withNote("## Need\n\nx\n\n## "+work.Name(work.Verification)+"\n\nproof\n", note)
-	for _, l := range strings.Split(got, "\n") {
-		if l == "## Left out" || l == "## Need" || l == "## "+work.Name(work.Verification) {
-			continue // the body's own sections
-		}
-		tr := strings.TrimLeft(l, " \t")
-		for _, bad := range []string{"#", "```", "~~~", "---", "===", "<"} {
-			if strings.HasPrefix(tr, bad) {
-				t.Errorf("unescaped line: %q", l)
-			}
-		}
-	}
-	n := map[string]int{}
-	for _, l := range strings.Split(got, "\n") {
-		n[l]++
-	}
-	if n["## Left out"] != 1 || n["## "+work.Name(work.Verification)] != 1 {
-		t.Errorf("a section was forged: %q", got)
-	}
-	if strings.Contains(got, "@someone") {
-		t.Errorf("@ left live: %q", got)
-	}
-}
 
 func TestNoteOfPicksTheCommentOnTheIssue(t *testing.T) {
 	kept := []intent.Intention{
@@ -76,8 +22,8 @@ func TestNoteOfPicksTheCommentOnTheIssue(t *testing.T) {
 	}
 }
 
-// The note is inert on the issue too, and the pull request's Left out
-// holds the same text: made inert twice, a text does not change.
+// The note is inert on the issue too, and the pull request's Left for a
+// person holds the same text: made inert twice, a text does not change.
 func TestNoteInertOnTheIssueAndTheSameInLeftOut(t *testing.T) {
 	raw := "## Need\n<b>x</b> ping @someone"
 	kept, _, _ := bounded(t.TempDir(), Bounds{Issue: 7}, nil, []intent.Intention{{Kind: "note", Value: map[string]any{"issue": 7, "body": raw}}})
@@ -88,8 +34,8 @@ func TestNoteInertOnTheIssueAndTheSameInLeftOut(t *testing.T) {
 	if devmark.InertText(note) != note {
 		t.Errorf("inert twice changes the text: %q -> %q", note, devmark.InertText(note))
 	}
-	if got := withNote("x\n", note); !strings.Contains(got, "## Left out\n\n"+note+"\n") {
-		t.Errorf("Left out does not hold the issue's text: %q", got)
+	if got := body(devmark.Act{Issue: 7}, true, note); !strings.Contains(got, note+"\n") || !strings.HasPrefix(got, "Part of #7\n") {
+		t.Errorf("Left for a person does not hold the issue's text: %q", got)
 	}
 }
 

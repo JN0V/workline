@@ -179,8 +179,8 @@ func (w *works) mr(id int) workKind {
 		return w.mrs[id]
 	}
 	var k workKind
-	if n := line.ClosedIssue(mr); n > 0 {
-		if k = w.issue(n); k.kind != "" {
+	if ns := engine.ClosedIssues(mr); len(ns) > 0 {
+		if k = w.issue(ns[0]); k.kind != "" {
 			w.mrs[id] = k
 			return k
 		}

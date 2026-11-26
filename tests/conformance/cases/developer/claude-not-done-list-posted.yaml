@@ -2,7 +2,8 @@ case: developer/claude-not-done-list-posted
 about: >
   A "Not done:" note written as a list, its parts `- part: why`, holds
   no kind the developer writes: never read as proposals and refused,
-  its words posted whole on the pull request.
+  its words posted whole on top of the pull request, part of #3, never
+  closing it.
 given:
   repo: tested-draft
   setup:
@@ -38,4 +39,5 @@ expect:
     merge-requests:
       - id: 2
         draft: false
-        body-contains: ["## Its agent's words", "- negatives: the issue does not say their sign"]
+        body-contains: ["Part of #3\n\n## Left for a person", "The developer's code for part of #3", "- negatives: the issue does not say their sign"]
+        body-lacks: ["Closes #3", "proven on the project's tests", "## Its agent's words, unread"]

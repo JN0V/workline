@@ -19,6 +19,7 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
 
 // ObjectionsFile is where, in its worktree, its agent writes its
@@ -192,7 +193,7 @@ func quoted(text string) string {
 	if len(text) > unreadMax {
 		text = strings.ToValidUTF8(text[:unreadMax], "") + "\n… (cut: whole in the run's folder)"
 	}
-	text = strings.ReplaceAll(text, "<!--", "<!- -")
+	text = devmark.Unclosing(strings.ReplaceAll(text, "<!--", "<!- -"))
 	fence := "~~~"
 	for strings.Contains(text, fence) {
 		fence += "~"
