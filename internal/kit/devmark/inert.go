@@ -7,7 +7,7 @@ import (
 
 // closingWord is a word the forges read, in a pull request's body, as
 // closing the issue it names.
-var closingWord = regexp.MustCompile(`(?i)\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\b`)
+var closingWord = regexp.MustCompile(`(?i)\b(close[sd]?|closing|fix(e[sd]|ing)?|resolve[sd]?|resolving|implement(s|ed|ing)?)\b`)
 
 // InertText is the agent's text made safe in a pull request body or an
 // issue comment: a line that would open a heading, a fence or a rule is
@@ -23,8 +23,7 @@ func InertText(s string) string {
 			lines[i] = "\\" + t
 		}
 	}
-	joined := closingWord.ReplaceAllStringFunc(strings.Join(lines, "\n"), func(w string) string { return w[:1] + "\u200b" + w[1:] })
-	rs := []rune(joined)
+	rs := []rune(Unclosing(strings.Join(lines, "\n")))
 	var out strings.Builder
 	for i, r := range rs {
 		switch {
@@ -37,6 +36,11 @@ func InertText(s string) string {
 		}
 	}
 	return out.String()
+}
+
+// Unclosing is s, each closing keyword broken: a merge closes no issue.
+func Unclosing(s string) string {
+	return closingWord.ReplaceAllStringFunc(s, func(w string) string { return w[:1] + "\u200b" + w[1:] })
 }
 
 // escapedAt tells whether the rune at i is escaped in Markdown: preceded

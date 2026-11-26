@@ -131,6 +131,8 @@ It answers with its edits; its diff is its code
     request is then `Part of #n`, never closing it
     ([its body](pull-request.md#its-body)); other words go under "Its
     agent's words, unread".
+  - A closing word in them (`Closes #12`) is broken: a merge closes no
+    issue the agent's words name.
   - An objections or reasons file that is a link, or a folder: never
     followed nor read, removed, said.
 - **The same for a `cmd:` agent**: its output is read so.
