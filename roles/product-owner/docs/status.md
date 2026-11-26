@@ -223,7 +223,7 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   code given; a Scope naming a file it did not open is marked
   `Guessed:`; a `cmd:` agent reads none, said. Case
   `product-owner/claude-reads-the-repository`. Tried on
-  [#PR](https://github.com/JN0V/workline/pull/PR#tried): the replay set
+  [#2277](https://github.com/JN0V/workline/pull/2277#tried): the replay set
   no worse.
 - **A feature in the next milestone** at `merge: {autonomy:
   enterprising}`, when it makes it ready
