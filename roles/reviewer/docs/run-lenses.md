@@ -58,7 +58,7 @@ Part of [a run on code](run.md): step 4, what each lens reads and answers.
 ### Intent and simplicity
 
 - **Intent** (`needs: issue`): a change saying `Closes #4` (or `fixes`,
-  `resolves`, `implements`), in a commit or the merge request, has `#4` read
+  `resolves`, `implements`, `Part of`), in a commit or the merge request, has `#4` read
   from the forge, its Need, Example, Steps to reproduce, Validation,
   Verification and Scope given (`issue-lines-max`), and the files the
   author lists under "Beyond the Scope", with their reasons, from the

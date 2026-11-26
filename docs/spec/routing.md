@@ -867,7 +867,7 @@ a step starts only when the state it moves the issue to has room.
   Draft open, no proof kind recorded, where the project routes the
   tester), or on another open issue, or has parts, or whose Scope
   names a file a claim holding code changes (an open pull request
-  closes it,
+  closes it, or is part of it,
   [amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-claim-with-no-code-holds-no-scope);
   its files are that pull request's diff from the merge base, read
   with git,
