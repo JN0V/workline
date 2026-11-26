@@ -2,6 +2,7 @@ case: product-owner/field-blind-token-writes-nothing
 about: "A token not shown to read values visible to organization members only — the job's own, an App's, an outsider's — reads them as none, and never as empty: nothing is written in those fields, said where each axis is found and on each act (ADR-0040, step 4: never read as empty)."
 given:
   repo: backlog
+  env: {PATH: "$FIXTURES/claude-po-reads:$PATH", CLAUDE_ANSWER: "$FIXTURES/agents/order-effort.yaml", CLAUDE_READS: src/export/csv.go}
   config:
     roles:
       product-owner:
@@ -14,7 +15,7 @@ given:
       - {id: 47714579, name: Effort, options: [High, Medium, Low]}
     issues:
       - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-run: {role: product-owner, event: schedule, ai: fake:order-effort}
+run: {role: product-owner, event: schedule, ai: claude}
 expect:
   findings:
     - {rule: values-where, message: "the job's own token (GITHUB_TOKEN) is not shown yet to read values visible to organization members only: nothing written there"}

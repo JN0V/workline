@@ -2,6 +2,7 @@ case: product-owner/effort-a-persons-value-kept
 about: "Each value is written once, only where empty, axis by axis: an effort a person set is kept; one the role set, then a person changed or cleared, is never written again; a priority the role set is never estimated again; the other axis of each issue is still set (ADR-0040, step 3)."
 given:
   repo: backlog
+  env: {PATH: "$FIXTURES/claude-po-reads:$PATH", CLAUDE_ANSWER: "$FIXTURES/agents/order-effort.yaml", CLAUDE_READS: src/export/csv.go}
   config:
     roles:
       product-owner:
@@ -12,7 +13,7 @@ given:
       - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", labels: [effort/high], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\neffort: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 11, title: "Quote commas", body: "A comma splits a cell.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\neffort: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 12, title: "Export to JSON", body: "Add a JSON export.\n\n## Scope\n\nsrc/export/csv.go", labels: [priority/high], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\npriority: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-run: {role: product-owner, event: schedule, ai: fake:order-effort}
+run: {role: product-owner, event: schedule, ai: claude}
 expect:
   findings:
     - {rule: effort-kept, where: "#9", message: "its effort was set by a person"}

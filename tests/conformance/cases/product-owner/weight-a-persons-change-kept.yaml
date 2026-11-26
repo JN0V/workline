@@ -2,6 +2,7 @@ case: product-owner/weight-a-persons-change-kept
 about: "In GitLab's weight, each effort is written once, only where empty: a weight a person wrote, 0 included, is kept; one the role wrote, then a person changed or cleared, is never written again (ADR-0040, step 5)."
 given:
   repo: backlog
+  env: {PATH: "$FIXTURES/claude-po-reads:$PATH", CLAUDE_ANSWER: "$FIXTURES/agents/order-effort.yaml", CLAUDE_READS: src/export/csv.go}
   config:
     roles:
       product-owner:
@@ -15,7 +16,7 @@ given:
       - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], weight: 2, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\neffort: 1\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 11, title: "Quote commas", body: "A comma splits a cell.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\neffort: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 12, title: "Export to JSON", body: "Add a JSON export.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-run: {role: product-owner, event: schedule, ai: fake:order-effort, forge: gitlab}
+run: {role: product-owner, event: schedule, ai: claude, forge: gitlab}
 expect:
   status: pass
   findings:

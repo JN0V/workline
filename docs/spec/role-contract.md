@@ -399,8 +399,10 @@ token), **apply** (trusted, no AI key).
    *Claude Code runs without tools, save in a worktree a role's `pre`
    made (the developer's, [ADR-0056](../adr/0056-the-developers-agent-works-in-a-sandbox-with-tools.md)):
    there it reads, edits and runs commands, and `post` bounds its diff;
-   and save in a read tree (`readtree`, the tester's under `claude`,
-   [ADR-0063 §8](../adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them)):
+   and save in a read tree (`readtree`, the tester's and the product
+   owner's under `claude`,
+   [ADR-0063 §8](../adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them),
+   [ADR-0074](../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)):
    there it reads and searches only (Read, Glob, Grep), inside the tree alone, each file it read
    logged with its call. A `cmd:` agent never sees a read tree.
    On Linux its shell boxes each command with bubblewrap and socat: either

@@ -8,6 +8,7 @@ about: >
   in the state (`answer-held: 1`).
 given:
   repo: backlog
+  env: {PATH: "$FIXTURES/claude-po-reads:$PATH", CLAUDE_ANSWER: "$FIXTURES/agents/refine-same-then-ready.yaml", CLAUDE_READS: src/export/csv.go}
   forge:
     issues:
       - id: 9
@@ -20,7 +21,7 @@ given:
           - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b99f0b294f8c\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
           - "**workline reviewer**, its spec.\n\n**Questions for a person**\n\n- `#9:3` (ambiguous): Does a refunded sale count?\n\n<!-- workline:spec-review body=b99f0b294f8c round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
           - {body: "On the reviewer's question: a refunded sale does not count.", author: ann, insider: true}
-run: {role: product-owner, event: schedule, ai: fake:refine-same-then-ready}
+run: {role: product-owner, event: schedule, ai: claude}
 expect:
   findings: [{rule: answer-unwritten, where: "#9"}]
   run-files:

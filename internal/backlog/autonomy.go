@@ -35,6 +35,10 @@ var GoneSettings = map[string]string{
 	"ignored-runs-max": "the role keeps no report, and never pauses (ADR-0038)",
 	// Its own weekly issue, folded into every role's (ADR-0046).
 	"weekly-sample": "the weekly sample of every role's acts draws the product owner's, and says the level they suggest (ADR-0046)",
+	// The code the engine picked for it, gone: its agent reads the
+	// repository itself (ADR-0074).
+	"code-lines-max": "its agent reads the repository itself, no code given (ADR-0074)",
+	"code-bytes-max": "its agent reads the repository itself, no code given (ADR-0074)",
 }
 
 // byLevel is the setting the engine adds beside a role's own: its settings
@@ -108,20 +112,11 @@ type Config struct {
 	// settings say (ADR-0040); unset, workline's own priority labels, and
 	// no effort read.
 	Priority, Effort scale.Setting
-	// CodeRead are the issues whose code this run gave the agent: an
-	// effort is estimated on them only (ADR-0040); set by the caller,
-	// from what pre wrote (CodeReadFile).
-	CodeRead []int
-	// CodeGiven are the files whose code this run gave the agent, by
-	// issue (the code picker, ADR-0063 §8): sources naming only those
-	// leave nothing to read again (#1089). Set by the caller, from what
-	// pre wrote (CodeGivenFile).
-	CodeGiven map[int][]string
-	// RunAgain: the run is one the line started again at once for the
-	// code its agent said it lacked (the input `needs`, ADR-0063 §6),
-	// those files given to the issue the event is about (#1146). Set by
-	// the caller, from the run's input.
-	RunAgain bool
+	// CodeRead are the files the agent read in this run's read tree, as
+	// its calls logged them (ADR-0074): an effort is estimated on them
+	// only (ADR-0040), and a Scope naming a file it did not read is
+	// marked a guess. Set by the caller, from the run.
+	CodeRead []string
 	// Notes are the agent's notes of this run, as it wrote them: the
 	// reason said on an issue it left with nothing (ADR-0059, decision 1).
 	Notes []string
@@ -166,14 +161,6 @@ type Config struct {
 // ScopeFile is where, in the run's folder, pre lists the issues an event
 // woke the run for: none on a run over the whole backlog.
 const ScopeFile = "scope"
-
-// CodeReadFile is where, in the run's folder, pre lists the issues whose
-// code it gave the agent.
-const CodeReadFile = "code-read"
-
-// CodeGivenFile is where, in the run's folder, pre lists the files whose
-// code it gave the agent: a line an issue, its number then the paths.
-const CodeGivenFile = "code-given"
 
 // Detects says whether the settings ask where the project keeps an axis:
 // the forge's labels are then read to find it (Where).

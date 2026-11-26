@@ -330,9 +330,6 @@ func clean(a Ask) Ask {
 	return a
 }
 
-// Tracked says whether the commit holds a file.
-func (p *Picker) Tracked(f string) bool { return p.tracked[f] }
-
 // namedFiles are the files an ask names: outright, then in its text, a
 // file named alone (`csv.go`) when one file of the commit has that name.
 func (p *Picker) namedFiles(a Ask) []string {
@@ -404,28 +401,6 @@ func (p *Picker) defines(h hit, name string, pats map[*codenav.Language]*regexp.
 	g, ok := codenav.At(h.file, p.Lines(h.file), h.n, name)
 	g.From = max(g.From, h.n-commentMax) // its comment, not a page of them
 	return g, ok
-}
-
-// Where are the files an ask names, and those defining a name it writes
-// as code, tests, examples and tools aside: what an issue is about, with
-// no line planned.
-func (p *Picker) Where(a Ask) []string {
-	a = clean(a)
-	out := p.namedFiles(a)
-	names := p.codeNames(a.Text)
-	hits := p.grep(names)
-	for _, n := range names {
-		pats := map[*codenav.Language]*regexp.Regexp{}
-		for _, h := range hits[n] {
-			if slices.Contains(out, h.file) || slices.Contains(a.Skip, h.file) || a.Tests.Aside(h.file) {
-				continue
-			}
-			if _, ok := p.defines(h, n, pats); ok {
-				out = append(out, h.file)
-			}
-		}
-	}
-	return out
 }
 
 // Pick finds the code an ask names and plans what is given of it.

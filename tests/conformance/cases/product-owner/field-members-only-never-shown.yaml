@@ -2,6 +2,7 @@ case: product-owner/field-members-only-never-shown
 about: "On a public repository whose fields are visible to organization members only, a member's token writes the values but never shows them: not in the role's comment, its state (`-1`, set by the role), nor the job's summary — Next keeps the order, the values hidden, and no Urgent is listed apart (ADR-0040, step 4)."
 given:
   repo: backlog
+  env: {PATH: "$FIXTURES/claude-po-reads:$PATH", CLAUDE_ANSWER: "$FIXTURES/agents/order-effort.yaml", CLAUDE_READS: src/export/csv.go}
   config:
     roles:
       product-owner:
@@ -14,7 +15,7 @@ given:
     issues:
       - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 20, title: "Export to JSON", body: "Add a JSON export.", labels: [workline:ready], fields: {Priority: High, Effort: Low}, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-run: {role: product-owner, event: schedule, ai: fake:order-effort}
+run: {role: product-owner, event: schedule, ai: claude}
 expect:
   findings:
     - {rule: values-where, message: "Priority: the field Priority, its values visible to organization members only: never shown."}

@@ -752,15 +752,6 @@ type Plan struct {
 	// which Persist writes in the issue's state comment, with those it
 	// holds already: the one comment the role keeps there.
 	Records map[int][]string `yaml:"-"`
-	// codeFirst are the issues this run names the code of: no ask on them
-	// (#548).
-	codeFirst map[int]bool
-	// firstNamed are the sources each codeFirst issue was named this
-	// run: all given by the task, its Scope written now stands (#1089).
-	firstNamed map[int][]string
-	// readAgain are the issues whose Scope, written at a run again for
-	// the code they named, stands on the code given (scopeRead, #1433).
-	readAgain map[int]bool
 	// drops are the agent's acts this run dropped on each issue, each with
 	// why: said on an issue nothing else refined (#951).
 	drops map[int][]string
@@ -983,9 +974,6 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		return nil, err
 	}
 	p.readChanges(changes)
-	p.codeFirst = map[int]bool{}
-	p.firstNamed = map[int][]string{}
-	p.readAgain = map[int]bool{}
 	p.askedNow, p.assumedNow = map[int]int{}, map[int]bool{}
 	p.drops = map[int][]string{}
 	p.refining = map[int]bool{}
@@ -1326,10 +1314,6 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				if c.Do == "undepend" {
 					p.recordUndepend(c)
 				}
-				if c.Do == "sources" && c.Ticked == "" {
-					p.codeFirst[c.Issue] = true // its code read at the next run: no ask on it now
-					p.firstNamed[c.Issue] = append(p.firstNamed[c.Issue], c.Sources...)
-				}
 				if c.Do == "ask" {
 					p.askedNow[c.Issue] = c.Round
 				}
@@ -1345,7 +1329,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		}
 		if d.Mode != Off && len(c.Unquoted) > 0 {
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "sources-unquoted", Level: "info", Where: c.where(),
-				Message: fmt.Sprintf("Named without a quote, so left out of its sources: %s, whose code was given; the rest, not given, is read at the next run.", strings.Join(c.Unquoted, ", "))})
+				Message: fmt.Sprintf("Named without a quote, so left out of its sources: %s, a file the issue names.", strings.Join(c.Unquoted, ", "))})
 		}
 		p.Decisions = append(p.Decisions, d)
 		if extra != nil {
@@ -1378,33 +1362,6 @@ func (p *Plan) summary(role string) {
 		case d.Mode == Propose:
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "proposed", Level: "info", Where: d.Act.where(),
 				Message: strings.TrimSpace(offer(d.Act))})
-		}
-	}
-	// The code an issue is about named in this run, its Scope or question
-	// left for that code (codeFirst): the agent lacked it, a needs-input
-	// of the engine (ADR-0063, §6), which reads it at the run that
-	// follows. None for an issue this run readied, closed or split.
-	// A Scope written from code the task gave, the sources naming only
-	// that code, settles it too: nothing is left to read (#1089).
-	named, settled := map[int][]string{}, map[int]bool{}
-	for _, d := range p.Decisions {
-		switch {
-		case d.Mode != Act:
-		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue] && p.given(d.Act.Issue, d.Act.Sources):
-			// Only files the task gave: naming them records what the
-			// issue is about, nothing is left to read (#1440).
-		case d.Act.Do == "sources" && d.Act.Ticked == "" && p.codeFirst[d.Act.Issue]:
-			named[d.Act.Issue] = append(named[d.Act.Issue], d.Act.Sources...)
-		case d.Act.Do == "ready" || d.Act.Do == "close" || d.Act.Do == "split":
-			settled[d.Act.Issue] = true
-		case d.Act.Do == "refine" && strings.TrimSpace(d.Act.Scope) != "" && (p.given(d.Act.Issue, p.firstNamed[d.Act.Issue]) || p.readAgain[d.Act.Issue] && p.covered(d.Act.Issue, p.firstNamed[d.Act.Issue])):
-			settled[d.Act.Issue] = true
-		}
-	}
-	for _, id := range sortedKeys(named) {
-		if !settled[id] && len(named[id]) > 0 {
-			p.Findings = append(p.Findings, verdict.Finding{Rule: verdict.NeedsCode, Level: "info", Where: fmt.Sprintf("#%d", id),
-				Message: strings.Join(named[id], ", ")})
 		}
 	}
 	// An issue read that lacks a section and got nothing at all — no
@@ -1824,8 +1781,8 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 				return "effort-level", fmt.Sprintf("an effort is a level from 1, the lightest (hours), to %d (weeks)", scale.Effort.Count())
 			case !scale.Used.Detected || scale.Used.Effort.Said == "":
 				return "effort-nowhere", "the setting `effort` is unset: where the project keeps an effort is not known"
-			case c.Ticked == "" && !slices.Contains(p.config.CodeRead, c.Issue):
-				return "effort-unread", "its code was not read in this run: an effort is estimated only on the code it names"
+			case c.Ticked == "" && len(p.config.CodeRead) == 0:
+				return "effort-unread", "its agent read no code in this run: an effort is estimated only on code read"
 			}
 			if rule, why := Placeable(scale.Used.Effort, is, c.Effort); rule != "" {
 				return rule, why
@@ -1859,9 +1816,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 			return rule, why
 		}
 		if st := p.ledger.States[c.Issue]; st != nil && len(st.Sources) > 0 && slices.Equal(st.Sources, c.Sources) {
-			// The code it names already, given in this run: named again,
-			// it would only be read again, unrefined (#951).
-			return "sources-same", fmt.Sprintf("#%d names %s already, its code given in this run: refine it from that code, or ask", c.Issue, strings.Join(c.Sources, ", "))
+			// The code it names already: named again, it would only be
+			// read again, unrefined (#951).
+			return "sources-same", fmt.Sprintf("#%d names %s already: refine it from that code, or ask", c.Issue, strings.Join(c.Sources, ", "))
 		}
 	} else if c.Do == "close" && !slices.Contains(closeReasons, c.Reason) && (!c.Parent || c.Reason != "completed") {
 		return "close-reason", fmt.Sprintf("not closed: the role closes only a duplicate, or an issue the code made obsolete; closing one as %q is a person's call", c.Reason)
@@ -1965,11 +1922,10 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Do == "sources" && (c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "") {
-		// Named outside the code given, nothing of it to quote (#951,
-		// #980): the issue is read again with that code, at the next run.
-		// Each such file on its own (#1151): one its state names already
-		// stays; one shown, new to it, wants its quote, and is left out
-		// without one.
+		// Named outside the code the issue names, no quote asked (#951,
+		// #980). Each such file on its own (#1151): one its state names
+		// already stays; one the issue names, new to it, wants its quote,
+		// and is left out without one.
 		if unshown, shown := p.unshown(repo, c.Issue, c.Sources); len(unshown) > 0 {
 			var had []string
 			if st := p.ledger.States[c.Issue]; st != nil {
@@ -2071,13 +2027,10 @@ func (p *Plan) splitAfterTests(is forge.Issue, c Proposal) string {
 	return ""
 }
 
-// unshown splits sources into the code the run did not give for an
-// issue, each path neither in, nor holding, one its state or its title
-// and body name, and the code it gave. A quote is asked only of code the
-// agent was shown (#980): one given a file the issue is not about names
-// its code from the repository's folders, as one given no code does;
-// one shown a file that calls into another names that other unquoted
-// (#1151).
+// unshown splits sources into the code an issue does not name, each path
+// neither in, nor holding, one its state or its title and body name, and
+// the code it names. A quote is asked only of the code it names (#980,
+// #1151).
 func (p *Plan) unshown(repo string, id int, sources []string) (unshown, shown []string) {
 	var given []string
 	if st := p.ledger.States[id]; st != nil {
@@ -2099,94 +2052,25 @@ func (p *Plan) unshown(repo string, id int, sources []string) (unshown, shown []
 	return unshown, shown
 }
 
-// given says whether this run gave the agent the code of each source
-// named for an issue, a file each (CodeGiven): naming it is no reason
-// to read the issue again (#1089).
-func (p *Plan) given(id int, sources []string) bool {
-	files := p.config.CodeGiven[id]
-	return len(sources) > 0 && !slices.ContainsFunc(sources, func(s string) bool {
-		s, _, _ = strings.Cut(RepoPath(s), "#")
-		return !slices.Contains(files, s)
-	})
-}
-
-// scopeRead says whether a Scope written at a run again for the code its
-// issue named stands on the code given (#1433): each file it names given,
-// or its paths marked a guess (`Guessed:`), which holds nothing back
-// (#970). A module folder named is given by its files, cut or not: the
-// Scope's own files are what must have been read.
-func (p *Plan) scopeRead(repo string, c Proposal) bool {
-	files := p.config.CodeGiven[c.Issue]
-	if !p.config.RunAgain || !slices.Contains(p.config.Scope, c.Issue) || len(files) == 0 {
-		return false
-	}
-	if work.Guessed(c.Scope) {
-		return true
-	}
-	read := 0
-	for _, m := range PathLike.FindAllString(c.Scope, -1) { // every path, never PathsIn's first few
-		if n := RepoPath(m); strings.Contains(n, "/") && InCommit(repo, n) {
-			if !slices.Contains(files, n) {
-				return false
-			}
-			read++
-		}
-	}
-	return read > 0
-}
-
-// covered says whether each source named for an issue is a file this run
-// gave, or a folder a file given lies below: what a Scope standing on the
-// code given (scopeRead) settles, nothing left to read (#1433).
-func (p *Plan) covered(id int, sources []string) bool {
-	files := p.config.CodeGiven[id]
-	return !slices.ContainsFunc(sources, func(s string) bool {
-		s = RepoPath(s)
-		return !slices.ContainsFunc(files, func(f string) bool { return holds(s, f) })
-	})
-}
-
-// noCodeGiven says whether the run gave no code for an issue: its state
-// names no sources, nor its title and body a file of the commit — the
-// task listed the repository's folders, nothing to quote from.
-func (p *Plan) noCodeGiven(repo string, id int) bool {
-	if st := p.ledger.States[id]; st != nil && len(st.Sources) > 0 {
-		return false
-	}
-	is := p.issues[id]
-	return len(PathsIn(repo, is.Title+"\n"+is.Body)) == 0
-}
-
-// scopeUnread says why a refine's Scope is left out, "" when it is not:
-// no code of the issue was given in this run, or the run names other code
-// for it — a Scope written now would name paths not read (#970).
+// scopeUnread says why a refine's Scope is marked a guess, "" when it is
+// not: a path of the commit it names, a file or a folder, that holds no
+// file its agent read in this run (ADR-0074). A guess holds no other
+// issue back (#970).
 func (p *Plan) scopeUnread(repo string, c Proposal) string {
-	if c.Ticked != "" || strings.TrimSpace(c.Scope) == "" {
+	if c.Ticked != "" || strings.TrimSpace(c.Scope) == "" || work.Guessed(c.Scope) {
 		return ""
 	}
-	if p.config.RunAgain && slices.Contains(p.config.Scope, c.Issue) && p.codeFirst[c.Issue] && p.given(c.Issue, p.firstNamed[c.Issue]) {
-		// Run again for the code it said it lacked, each file it names
-		// given this time, whole or in part: its Scope is written from
-		// that code (#1146). A first run's stays left out (#970).
-		return ""
-	}
-	// The code pre gave whole (CodeRead) counts too: files a comment
-	// names, as the developer's ask for its Scope does (#921); so does a
-	// run again for the code it named whose Scope stands on the files
-	// given, module folders named, cut or not, its state keeping no
-	// source (#1433).
-	again := p.scopeRead(repo, c)
-	if again {
-		if p.readAgain == nil {
-			p.readAgain = map[int]bool{}
+	var unread []string
+	for _, m := range PathLike.FindAllString(c.Scope, -1) { // every path, never PathsIn's first few
+		n := RepoPath(m)
+		if strings.Contains(n, "/") && !slices.Contains(unread, n) && InCommit(repo, n) && !slices.ContainsFunc(p.config.CodeRead, func(f string) bool { return holds(n, f) }) {
+			unread = append(unread, n)
 		}
-		p.readAgain[c.Issue] = true
 	}
-	given := slices.Contains(p.config.CodeRead, c.Issue) || !p.noCodeGiven(repo, c.Issue) || again
-	if !given || p.codeFirst[c.Issue] && !p.given(c.Issue, p.firstNamed[c.Issue]) && !again {
-		return fmt.Sprintf("its %[1]s was left out: no code of #%[2]d was given in this run, so its paths would be a guess. The code they name is read at the next run, and its %[1]s is written from that code", work.Name(work.Scope), c.Issue)
+	if len(unread) == 0 {
+		return ""
 	}
-	return ""
+	return fmt.Sprintf("its %s names `%s`, code its agent did not read in this run: marked `Guessed:`, it holds no other issue back", work.Name(work.Scope), strings.Join(unread, "`, `"))
 }
 
 // obsoleteOn reads where an issue's announcement as obsolete stands, from
@@ -2404,9 +2288,8 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		unread := p.scopeUnread(repo, *c)
 		if unread != "" {
 			// A Scope from code not read is a guess, wide enough to hold
-			// the issue behind an unrelated claim (#970): its paths kept
-			// as the code to read, the rest of the refine written.
-			c.Scope = ""
+			// the issue behind an unrelated claim (#970): written, marked.
+			c.Scope = strings.TrimRight(c.Scope, "\n") + "\n\nGuessed: written from code its writer did not read.\n"
 		}
 		if err := p.readable(f, repo, c); err != nil {
 			return "no-state", err.Error()
@@ -2502,12 +2385,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		}
 		_, added, kept := Refine(is.Body, *c, role)
 		c.Added = added
-		if len(added) == 0 && unread != "" {
-			// Its Scope alone, left out: nothing keeps its paths. The
-			// agent names them with a sources, no line quoted.
-			return "scope-unread", fmt.Sprintf("nothing written: no code of #%d was given in this run, so its %s would be a guess. Name the code it is about with `sources`: its %[2]s is written from that code at the next run", c.Issue, work.Name(work.Scope))
-		}
-		if unread != "" {
+		if unread != "" && len(added) > 0 {
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-unread", Level: "info", Where: c.where(), Message: unread})
 		}
 		if len(added) == 0 {
@@ -2573,9 +2451,6 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 	case "ask":
 		if strings.TrimSpace(c.Questions) == "" {
 			return "ask-empty", "nothing asked: the question was empty"
-		}
-		if p.codeFirst[c.Issue] {
-			return "code-first", fmt.Sprintf("not asked: the code #%d is about, named in this run, is read first, at the next run; asked then only if it does not answer", c.Issue)
 		}
 	}
 	return "", ""

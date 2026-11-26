@@ -14,8 +14,13 @@ Propose `kind` on each issue, and why, in a few words from its text:
   refactor, a dependency bump, a measure, a check, a tool or a doc
   added.
 
+The kind is what is wrong today, never the size or shape of its fix: a
+wrong thing fixed by a doc, a test, a build file or a guard is a bug.
+
 Read the whole body before you choose: a title or a first line that
-reads as a chore may describe a defect below. A bug's fix merges once a
+reads as a chore may describe a defect below. When the task says you
+read the project yourself, read the code an issue names too: what makes
+it a bug may be there, not in its text. A bug's fix merges once a
 test that fails shows the bug; a feature waits for a person: never call
 a bug a feature, whatever its size. When the text does not tell, say so
 in a `note` rather than guess. Nothing else is proposed on these issues.

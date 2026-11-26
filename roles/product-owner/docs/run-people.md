@@ -37,9 +37,8 @@ On an issue waiting on you, it is "revise":
 
 ## 5. The reporter
 
-- **Never asked what the code answers**: an ask on an issue whose code
-  the same run names (`sources`) is not asked; the issue is read again
-  with that code at the next run
+- **Never asked what the code answers**: the agent reads the code
+  before it asks
   ([#548](https://github.com/JN0V/workline/issues/548)).
 - **Asked again** only after they answered, never the same question
   twice, `acts.ask.rounds` times at most

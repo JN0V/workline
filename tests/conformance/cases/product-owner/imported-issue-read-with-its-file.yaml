@@ -1,5 +1,5 @@
 case: product-owner/imported-issue-read-with-its-file
-about: "An issue imported from a file is read with the lines around its item in that file as it reads at the commit — its section, from its heading — and the lines elsewhere in it that name the item's id: facts to refine from, not to ask its author. A file the lines naming its id name is code it names, after the item's own; never one only the lines around it name, other items'; the file itself is never its code (#548)."
+about: "An issue imported from a file is read with the lines around its item in that file as it reads at the commit — its section, from its heading — and the lines elsewhere in it that name the item's id: facts to refine from, not to ask its author. The file itself is never its code (#548): its agent reads the code itself (ADR-0074)."
 given:
   repo: backlog
   setup:
@@ -35,5 +35,4 @@ expect:
         - "Imported from `ROADMAP.md`: its item is at lines 9 to 9 as the file reads at this commit."
         - "     5  ## Export\n     6\n     7  Every item here is about the export, as `README.md` says.\n     8\n     9  - LO-3: **Keep the last row.** WriteRows stops one row short.\n    10  - LO-4: **Sort the columns.** By name, then by type.\n"
         - "Its id elsewhere in the file:\n\n- LO-3\n    16  | LO-3 | started in 1.2 in `src/export/csv.go`, the header row only |\n"
-        - "Code it names, given below: src/export/csv.go.\n"
-      not-contains: ["    14  | Item | State |", "Code it names, given below: src/export/csv.go, README.md", "Code it names, given below: README.md"]
+      not-contains: ["    14  | Item | State |"]

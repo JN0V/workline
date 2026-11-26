@@ -84,11 +84,10 @@ Each issue comes with:
   sections;
 - its comments, with who wrote each;
 - the issues it cites, open or closed;
-- the code it names, found by [the code
-  picker](../../../docs/spec/code-picker.md) the tester and the reviewer
-  share — a file linked on the forge counts; each definition of a name it
-  writes as code, the lines it names, a file whole when it fits —, or
-  else the repository's folders, to name the code to read from;
+- no code: under `claude`, the agent reads the project itself, in a
+  read-only checkout at the run's commit (Read, Glob, Grep, 40 turns),
+  each file it read logged; a `cmd:` agent reads no code, said as
+  `input-cut` ([ADR-0074](../../../docs/adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md));
 - for an issue imported from a file: that file's lines around its item,
   and its other lines naming the item's id — facts to refine from, not
   to ask you.

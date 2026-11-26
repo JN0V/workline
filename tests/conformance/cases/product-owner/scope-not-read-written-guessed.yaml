@@ -1,11 +1,11 @@
-case: product-owner/scope-waits-for-its-code
+case: product-owner/scope-not-read-written-guessed
 about: >
-  Bugs read with no code given (#970): the product owner's refine
-  writes a Scope it has not read. The engine leaves that Scope out and
-  keeps its paths as the issue's code: the issue is read again with
-  that code, and its Scope is written from it. The rest of #9's refine
-  is written. #10's refine holds its Scope alone: nothing is written,
-  and why is said, the agent told to name the code with a sources.
+  Bugs read by an agent that read no code (a fake, as a cmd: agent):
+  its refine writes a Scope from code it did not read (#970). The
+  engine writes that Scope with a line `Guessed:`, which holds no other
+  issue back, and says so (ADR-0074); never left out for a read again.
+  The rest of #9's refine is written. #10's refine holds its Scope
+  alone: it is written too.
 given:
   repo: backlog
   forge:
@@ -27,10 +27,11 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:refine-scope-no-code}
 expect:
   findings:
-    - {rule: scope-unread, where: "#9", message: "its Scope is written from that code"}
-    - {rule: scope-unread, where: "#10", message: "Name the code it is about with `sources`"}
+    - {rule: input-cut, message: "the product owner's agent does not read the repository itself (claude does)"}
+    - {rule: scope-unread, where: "#9", message: "its Scope names `src/export`, code its agent did not read in this run: marked `Guessed:`"}
+    - {rule: scope-unread, where: "#10", message: "marked `Guessed:`"}
   no-findings: [{rule: nothing-to-refine, where: "#10"}]
   forge:
     issues:
-      - {id: 9, body-contains: "## Validation", body-lacks: ["## Scope", "## Verification"], comment-contains: "sources: [src/export]\n"}
-      - {id: 10, body-lacks: "## Scope"}
+      - {id: 9, body-contains: ["## Validation", "## Scope\n\n`src/export`: the CSV export, guessed from the folders.\n\nGuessed: written from code its writer did not read."], body-lacks: "## Verification"}
+      - {id: 10, body-contains: "## Scope\n\n`src/export`: the CSV export, guessed from the folders.\n\nGuessed: written from code its writer did not read."}

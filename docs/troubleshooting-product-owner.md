@@ -20,10 +20,12 @@ When the product owner pauses, or an issue gets nothing. Part of
   labelled once fewer wait.
 - `issues-cut`: the night's share stopped where the prompt would pass
   the role's context budget; those issues are read first the next night.
-  "The agent was not asked": one issue alone is over it; lower
-  `code-lines-max`.
-- `setting-gone`: `ignored-runs-max` or `weekly-sample` is no longer read;
-  take it off.
+  "The agent was not asked": one issue alone is over it.
+- `setting-gone`: `ignored-runs-max`, `weekly-sample`, `code-lines-max`
+  or `code-bytes-max` is no longer read; take it off.
+- `input-cut`, "does not read the repository itself": a `cmd:` agent
+  reads no code; its Scope is marked `Guessed:`
+  ([ADR-0074](adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)).
 - `values-where`, blocking: the `priority` or `effort` setting names a
   family of labels the project has none of, or GitLab's weight on GitLab
   Free; name one it has, or `auto`

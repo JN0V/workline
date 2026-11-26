@@ -1,0 +1,13 @@
+# The product owner, reading the project itself (ADR-0074), read the
+# CSV export alone: #9's Scope names that file; #10's names the JSON
+# export, which it did not open.
+- refine:
+    issue: 9
+    scope: "`src/export/csv.go`: `WriteRows` stops one row short."
+    validation: "- **Three rows:** Given three rows, When I export them as CSV, Then the file holds three."
+    why: "Read in src/export/csv.go."
+- refine:
+    issue: 10
+    scope: "`src/export/json.go`: the JSON export drops a field."
+    validation: "- **Every field:** Given a row of three fields, When I export it as JSON, Then the object holds three."
+    why: "The JSON export, by its name."

@@ -15,7 +15,7 @@ Part of [troubleshooting](troubleshooting.md).
 - `ai-max-tokens` (documentalist, reviewer): the run spent its cap; the rest
   waits for the next run. The reviewer leaves the commits unrecorded
   (`review-not-whole`, `lens-failed`) and says what each call used. `ai-max-calls`, `parts-max-per-run`, the product owner's
-  `issues-per-run` and `code-lines-max`, the reviewer's `diff-lines-max`,
+  `issues-per-run`, the reviewer's `diff-lines-max`,
   `code-lines-max` and `tests-lines-max` size each run (each role's page).
 - `input-cut` (a warning): the agent read part of what the run gives it;
   the line says what, how much of it, and the setting that raises it.

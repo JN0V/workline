@@ -1,0 +1,47 @@
+case: product-owner/claude-reads-the-repository
+about: >
+  claude reads the repository itself (ADR-0074): the product owner gives
+  it a checkout at the run's commit, and only Read, Glob and Grep there,
+  its turns capped (ai-max-turns) and said in its task; the task gives
+  each issue whole and no code. What it read is logged with the call. A
+  Scope naming only files it read stands; one naming a file it did not
+  open is written with a line `Guessed:`, said, and holds no other issue
+  back.
+given:
+  repo: backlog
+  setup:
+    - "printf 'package export\\n\\n// WriteJSON writes each row as an object.\\nfunc WriteJSON() {}\\n' > src/export/json.go && git add src && git commit -qm 'feat: export rows as JSON'"
+  env: {PATH: "$FIXTURES/claude-po-reads:$PATH", CLAUDE_ANSWER: "$FIXTURES/agents/reads-one-scopes-two.yaml", CLAUDE_READS: src/export/csv.go}
+  forge:
+    issues:
+      - id: 9
+        title: "CSV rows lost"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, bug]
+        body: "## Need\n\nA user exporting rows as CSV loses the last one.\n"
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 10
+        title: "JSON field lost"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, bug]
+        body: "## Need\n\nA user exporting rows as JSON loses a field.\n"
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: claude}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: scope-unread, where: "#10", message: "its Scope names `src/export/json.go`, code its agent did not read in this run: marked `Guessed:`"}
+  no-findings: [{rule: agent-unavailable}, {rule: agent-invalid-output}, {rule: input-cut}, {rule: scope-unread, where: "#9"}]
+  run-files:
+    in/task.md:
+      contains: ["# Reading the code yourself", "40 turns at most", "## #9 CSV rows lost"]
+      not-contains: "func WriteRows"
+    out/calls.jsonl:
+      contains: ['"tools":{"Read":1}', '"reads":["', ' src/export/csv.go"]']
+  forge:
+    issues:
+      - {id: 9, body-contains: "## Scope\n\n`src/export/csv.go`: `WriteRows` stops one row short.", body-lacks: "Guessed:"}
+      - {id: 10, body-contains: "## Scope\n\n`src/export/json.go`: the JSON export drops a field.\n\nGuessed: written from code its writer did not read."}

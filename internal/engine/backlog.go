@@ -6,6 +6,7 @@ package engine
 // run's plan of those acts, and what it leaves on each issue.
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/JN0V/workline/internal/kit/testmark"
@@ -16,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/clock"
@@ -1035,26 +1037,11 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		}
 	}
 	cfg.Read.Model = strings.Join(st.Models, ", ")
-	// The issues whose code pre gave the agent: an effort is estimated on
-	// them only (ADR-0040).
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", backlog.CodeReadFile)); err == nil && !st.Unasked {
-		for _, f := range strings.Fields(string(data)) {
-			if n, err := strconv.Atoi(f); err == nil {
-				cfg.CodeRead = append(cfg.CodeRead, n)
-			}
-		}
-	}
-	// The files whose code it gave, by issue: sources naming only those
-	// leave nothing to read again (#1089).
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", backlog.CodeGivenFile)); err == nil && !st.Unasked {
-		cfg.CodeGiven = map[int][]string{}
-		for _, line := range strings.Split(string(data), "\n") {
-			if f := strings.Fields(line); len(f) > 1 {
-				if n, err := strconv.Atoi(f[0]); err == nil {
-					cfg.CodeGiven[n] = append(cfg.CodeGiven[n], f[1:]...)
-				}
-			}
-		}
+	// The files its agent read in the run's read tree, as each call
+	// logged them (ADR-0074): an effort is estimated, and a Scope stands,
+	// on them only.
+	if !st.Unasked {
+		cfg.CodeRead = filesRead(runDir)
 	}
 	// The agent's notes: the reason said on an issue it left with nothing
 	// (ADR-0059, decision 1).
@@ -1084,11 +1071,6 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	}
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "input", SizeInput)); err == nil {
 		cfg.SizeAsked = strings.TrimSpace(string(data)) != ""
-	}
-	// A run again for the code its agent said it lacked (ADR-0063, §6):
-	// the files it named given this time (#1146).
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", "input", NeedsInput)); err == nil {
-		cfg.RunAgain = strings.TrimSpace(string(data)) != ""
 	}
 	// What open issues were built on that changed, and those read again
 	// for it (ADR-0032).
@@ -1204,4 +1186,23 @@ func links(f forge.Forge, res *Result) {
 // report issue whose record moved to the issues (ADR-0038).
 func report(f forge.Forge, role string, p *backlog.Plan) error {
 	return p.Persist(f, role)
+}
+
+// filesRead are the files a run's agent read in its read tree, as each
+// call logged them (out/calls.jsonl, `<blob> <path>`); a judge's not.
+func filesRead(runDir string) []string {
+	data, _ := os.ReadFile(filepath.Join(runDir, "out", "calls.jsonl"))
+	var out []string
+	for _, l := range strings.Split(string(data), "\n") {
+		var c agent.Call
+		if json.Unmarshal([]byte(l), &c) != nil || c.Task == "judge" {
+			continue
+		}
+		for _, r := range c.Reads {
+			if _, path, ok := strings.Cut(r, " "); ok && !slices.Contains(out, path) {
+				out = append(out, path)
+			}
+		}
+	}
+	return out
 }

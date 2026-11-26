@@ -10,10 +10,8 @@ judged-in-parts: 87b34bc
 
 Part of [Acts on the backlog](../backlog-acts.md): which issues a run reads, in what order, with what code.
 
-A run reads at most `issues-per-run` issues, with at most `code-lines-max`
-lines of the code they name, and `code-bytes-max` bytes each (ADR-0018,
-amended by ADR-0038; bytes:
-[#1152](https://github.com/JN0V/workline/issues/1152)), and no more
+A run reads at most `issues-per-run` issues (ADR-0018, amended by
+ADR-0038), and no more
 than its prompt holds within the role's context budget: pre measures the
 prompt as the engine does (`agent.Prompt`, `agent.Tokens`, room kept for
 an answer asked again) and leaves out the last issue to read while it is
@@ -72,27 +70,21 @@ events, heard since; read with those left with nothing). An issue with nothing n
 issue an act: a fix of what the engine dropped, of what the task tells
 the agent. An issue on the same code as one read is given with
 its body beside it, up to six, as the original a duplicate would be closed
-against; "the same code" is a file it names or one defining a name it
-writes as code. The code each issue read names is found by [the code
-picker](../code-picker.md) the tester and the reviewer share, with its
-sources, the paths and names of its title, body and people's comments —
-a link to a file on the forge, `…/blob/<ref>/<path>` or GitLab's
-`…/-/blob/…`, is that file —, `code-lines-max` shared among the issues
-read, a piece given once a task, numbered as in the file, with each
-file's last commits ([#1056](https://github.com/JN0V/workline/issues/1056),
-[#1057](https://github.com/JN0V/workline/issues/1057)). The file an
-issue was imported from is never code it names, even where its sections
-name it ([#1063](https://github.com/JN0V/workline/issues/1063)). An issue imported from a file (its
+against; "the same code" is a source of its state or a file of the
+commit its title or body names — a link to a file on the forge is that
+file —, the same file or a folder holding it (`about`). No code is
+given in the task ([ADR-0074](../../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)): under `claude`, the agent reads the
+project itself, in a read-only checkout at the run's commit (`readtree`:
+Read, Glob, Grep, `ai-max-turns` turns), each file it read logged with
+the call; a `cmd:` agent reads no code, said once a run (`input-cut`).
+The file an issue was imported from is never code it names, even where
+its sections name it
+([#1063](https://github.com/JN0V/workline/issues/1063)). An issue imported from a file (its
 import key) is read with that file's lines around its item, as the commit
 holds them and followed there from the commit it was confirmed at: its
 section, from its heading, 20 lines each side at most, 60 in all, and the
-file's other lines that name the item's id (`writtenAt`). The file itself
-is never code it names; a path the lines naming its id name is, after
-the item's own — never one only the lines around it name: in a list or a
-table, those are other items'. A file the commit does not hold, one `archived`, or an item's lines
+file's other lines that name the item's id (`writtenAt`). A file the commit does not hold, one `archived`, or an item's lines
 gone give nothing ([#548](https://github.com/JN0V/workline/issues/548)).
-When an issue read names no file the
-commit holds, the task lists the repository's folders, nearest the root
-first (150 at most), for the agent to name a Scope's files from. Each issue read gets `judged`
+Each issue read gets `judged`
 moved to the run's commit; without an agent, or when its answer does not
 read, none is.

@@ -164,8 +164,8 @@ roles:
 
 - **One call a run** (standard tier, context budget 120k tokens,
   estimated; [what it cost](../../docs/research/token-costs-measured.md#product-owner)):
-  `issues-per-run`, `code-lines-max` and
-  `code-bytes-max` size it,
+  `issues-per-run` sizes it, the code read by the agent itself within
+  `ai-max-turns`,
   and a run reads only the issues that fit the budget, the rest first at
   the next run.
 - A person's answer, an accepted proposal, an undo: read with no agent.

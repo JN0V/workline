@@ -2,6 +2,7 @@ case: product-owner/field-and-label-two-places
 about: "A field and a label are two places: with the field read, an issue holding a priority label gets nothing written; with the labels read (the settings naming P0 to P3), an issue holding a value in the field gets nothing written either — never two values, nor a copy (ADR-0040, step 4)."
 given:
   repo: backlog
+  env: {PATH: "$FIXTURES/claude-po-reads:$PATH", CLAUDE_ANSWER: "$FIXTURES/agents/order-effort.yaml", CLAUDE_READS: src/export/csv.go}
   config:
     roles:
       product-owner:
@@ -17,7 +18,7 @@ given:
     issues:
       - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], fields: {Priority: Low}, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 12, title: "Export to JSON", body: "Add a JSON export.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-run: {role: product-owner, event: schedule, ai: fake:order-effort}
+run: {role: product-owner, event: schedule, ai: claude}
 expect:
   findings:
     - {rule: priority-elsewhere, where: "#9", message: "its priority is in the field Priority, not in P0 to P3 where the project keeps it"}

@@ -1,15 +1,17 @@
 ---
 type: reference
-sources: [internal/kit/codepick, internal/codenav, roles/product-owner/code/productowner.go]
+sources: [internal/kit/codepick, internal/codenav]
 status: draft
 checked: dd77bf922
 verified: agent:claude-code
 ---
 # The code picker
 
-How the product owner, the tester and the reviewer get the code an issue
-names: one picker, any language, no build
+How the tester and the reviewer get the code an issue names: one
+picker, any language, no build
 ([ADR-0063 §8](../adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them)).
+The product owner no longer uses it: its agent reads the repository
+itself ([ADR-0074](../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)).
 Each role used to cut code its own way; round 3 of the C++ trial put 8 of
 its 11 defects there.
 
@@ -24,8 +26,7 @@ flowchart LR
 ## What it reads
 
 - **The text**: the title, the body (Need, Steps, Validation, Scope),
-  a person's comments; for the product owner, the lines of the file an
-  issue was imported from that name its item, never that file.
+  a person's comments.
 - **Paths named outright**: the Scope's words in backticks, the product
   owner's `sources`. A folder gives its own files, then the code files
   below it, the nearest first, 12 at most: a module's folder holds its build file,
@@ -34,7 +35,7 @@ flowchart LR
   gives the files it matches; the tests aside when code matches too.
   Several paths share the bound on files named, in turn.
 - **Paths in the text**: a file the commit holds, or the one file with
-  that name; for the product owner, a link to a file on the forge too.
+  that name.
 - **Names**: the words written as code, as the reviewer's judge reads
   them: in backticks, called (`f(`), or shaped as a name (`load_all`,
   `answerItems`). Not an acronym (`CSV`, `MQTT`): a format as often as
@@ -107,10 +108,8 @@ Under the role's budget, each piece once a task:
    code. The tester's only: the product owner and the reviewer write no
    test, and the room would be tokens spent for nothing.
 
-The files the tester's or the product owner's agent said it lacked at
-its last run (the line's `needs` input; the product owner's for the
-issue the run is about, the smallest in bytes first,
-[#1146](https://github.com/JN0V/workline/issues/1146)) come right after
+The files the tester's agent said it lacked at its last run (the
+line's `needs` input) come right after
 the definitions (between 2 and 3): whole, else their first lines. A
 folder said lacking gives its files as a folder named does.
 
@@ -161,35 +160,19 @@ A binary file gives nothing: no line, and `logo.png` names neither
   as imported ([#1109](https://github.com/JN0V/workline/issues/1109)).
 - **Given above**: a file given for an earlier issue of the same task.
 
-## Read again only for code not given
-
-- **The product owner's pre** lists the files it gave, by issue
-  (`code-given` in the run's folder).
-- **A `sources` naming only those, beside a Scope**: the Scope written
-  in the same run stands, no `needs-code`, nothing read again
-  ([refining](backlog-acts/refine.md)). Without a Scope, or beside an
-  `ask`, the issue is read again as before.
-- **Naming code not given** is still read again, with that code
-  (`needs-code`, the "name the code, be read again" protocol of agents
-  with no tools).
-- **Its Scope names every file the change edits**, each copy of a
-  function it fixes; `sources` holds up to 5 of them.
-
 ## Each role
 
 | Role | Budget | Shown |
 |---|---|---|
-| [Product owner](backlog-acts/reading.md) | `code-lines-max` (1500), shared among the issues read; `code-bytes-max` (16000) each issue | numbered lines, each file's last commits |
 | [Tester](../../roles/tester/README.md) | `code-lines-max` (1500) | lines as they are, the tests beside after |
 | [Reviewer, a spec](../../roles/reviewer/docs/spec.md) | `code-lines-max` (600); the judge's `judge-lines-max` (200) | numbered lines |
 
 - **Bytes**: a line of 120 bytes weighs three of 40 in a task, one in
-  lines; the product owner bounds both
-  ([#1152](https://github.com/JN0V/workline/issues/1152): a task of
-  87 KB on `begin()` and `shutdown()`), the bytes each issue's, the
-  context budget bounding the run. A file given weighs 400 bytes more,
-  its heading and last commits; a file none of whose lines fit is one
-  line of a list. The tester and the reviewer, by lines alone.
+  lines. The picker can bound both (`Ask.Bytes`,
+  [#1152](https://github.com/JN0V/workline/issues/1152)); no role sets
+  it since the product owner reads the repository itself
+  ([ADR-0074](../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)).
+  The tester and the reviewer, by lines alone.
 - **Same everywhere**: the same picker on a person's machine and in CI,
   with any agent or none.
 - **Not here**: the reviewer's judge on a change's finding reads from the
@@ -198,4 +181,5 @@ A binary file gives nothing: no line, and `logo.png` names neither
   also reads a copy of the project (Read, Glob, Grep), the pick its
   start, what it read logged
   ([ADR-0063 §8](../adr/0063-every-open-issue-is-due-waiting-or-done.md#8-one-code-picker-and-tools-where-the-agent-has-them));
-  the product owner and the reviewer at step 9.
+  the reviewer and the product owner with no pick
+  ([ADR-0074](../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)).

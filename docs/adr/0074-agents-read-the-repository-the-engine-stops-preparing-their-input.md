@@ -261,6 +261,25 @@ each role reads only what it needs, and now chooses it.
   can do. **An index**: a store and a dependency (principle 11).
 - **Filters dropped with the input**: their precision is not measured.
 
+## Amendment 2026-11-26: step 4 built
+
+- **Measured** on the replay set, Sonnet, 3 runs a case, before and
+  after on the same commit (`7a18dbca4`). Its one case read kinds
+  alone; a second reads the same five issues in full:
+  - kinds alone: 15 of 18 points before, 15 after;
+  - read in full: 11 of 18 before, 12 after. #165 is missed in every
+    run, before and after.
+- **A first prompt did worse** (12 and 8 of 18): one reading part for
+  both tasks, and nothing on the kind being what is wrong today.
+- **What went**: the picker's call (`askOf`, `writeCode`, `needed`),
+  the folders listed, pre's `code-read` and `code-given`, the "name the
+  code, be read again" loop (`codeFirst`, `RunAgain`, `scopeRead`),
+  `code-lines-max` and `code-bytes-max`. `kindBodyMax` went before, with
+  [#2226](https://github.com/JN0V/workline/pull/2226).
+- **A Scope not read** is written with a line `Guessed:`, never left
+  out: read means opened with Read, as the call logged it; a Grep match
+  is not.
+
 [#2162]: https://github.com/JN0V/workline/pull/2162
 [#2188]: https://github.com/JN0V/workline/issues/2188
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md

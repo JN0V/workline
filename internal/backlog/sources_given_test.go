@@ -11,8 +11,8 @@ import (
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
 
-// Sources already given: Given a product owner's answer naming in
-// `sources` only files its task gave, When the line applies it, Then
+// Sources already read: Given a product owner's answer naming in
+// `sources` only files its agent read, When the line applies it, Then
 // nothing is left to read again: no needs-code finding is left, so the
 // issue moves on to its tests instead of being blocked as lacking code.
 func TestSourcesAlreadyGivenLeaveNothingToRead(t *testing.T) {
@@ -43,7 +43,7 @@ func TestSourcesAlreadyGivenLeaveNothingToRead(t *testing.T) {
 		MovedPercent: 100,
 		Acts:         map[string]Setting{"sources": {Mode: Act}},
 		Scope:        []int{7},
-		CodeGiven:    map[int][]string{7: {"export.go"}},
+		CodeRead:     []string{"export.go"},
 	}
 	named := Proposal{Do: "sources", Issue: 7, Sources: []string{"export.go"}, Why: "the code the issue is about"}
 	plan, err := Decide(f, repo, role, cfg, map[int]Proposal{0: named}, []int{7}, nil, nil, nil)

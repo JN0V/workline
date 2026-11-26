@@ -2,6 +2,7 @@ case: product-owner/effort-not-kept-is-dropped
 about: "With the effort act on but the `effort` setting unset, where the project keeps an effort is not known: the effort is dropped, said; the priority beside it is set. Unset, the agent is not told of efforts, and the act's mode is not listed (ADR-0040, step 3)."
 given:
   repo: backlog
+  env: {PATH: "$FIXTURES/claude-po-reads:$PATH", CLAUDE_ANSWER: "$FIXTURES/agents/order-effort.yaml", CLAUDE_READS: src/export/csv.go}
   config:
     roles:
       product-owner:
@@ -9,7 +10,7 @@ given:
   forge:
     issues:
       - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-run: {role: product-owner, event: schedule, ai: fake:order-effort}
+run: {role: product-owner, event: schedule, ai: claude}
 expect:
   findings:
     - {rule: done, where: "#9", message: "Set #9's priority to 1"}

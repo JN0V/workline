@@ -1,0 +1,33 @@
+#!/bin/sh
+# A stand-in for `claude -p` as the product owner runs it with read-only
+# tools (ADR-0074). It fails, saying why, unless given Read, Glob and
+# Grep alone, none allowed by name, its prompt the role's, its turns
+# capped, run in a checkout of the repository, its question saying it
+# reads the code itself. Then it reads each file $CLAUDE_READS names
+# (relative to the checkout, space-separated) and answers, in
+# stream-json, the proposals the file $CLAUDE_ANSWER holds: a fake
+# agent's answer, read this time.
+set -eu
+want() { echo "claude stand-in: $*" >&2; exit 1; }
+args=" "
+for a in "$@"; do args="$args$a "; done
+for a in "--output-format stream-json" "--verbose" "--tools Read,Glob,Grep" \
+	"--permission-mode dontAsk" "--strict-mcp-config" \
+	"--setting-sources user" "--no-session-persistence" "--system-prompt-file" "--max-turns 40"; do
+	case "$args" in *" $a "*) ;; *) want "not given $a" ;; esac
+done
+case "$args" in *Bash* | *Edit* | *Write* | *" --allowedTools "* | *" --append-system-prompt"*) want "given more than reading in its folder: $*" ;; esac
+[ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || want "not run in a checkout of the repository: $(pwd)"
+question=$(cat)
+for w in '# Reading the code yourself' 'Read, Glob and Grep' '40 turns at most'; do
+	case "$question" in *"$w"*) ;; *) want "the question does not say $w" ;; esac
+done
+echo '{"type":"system","subtype":"init","tools":["Read","Glob","Grep"]}'
+n=0
+for f in ${CLAUDE_READS:-}; do
+	[ -f "$f" ] || want "no $f in its checkout"
+	n=$((n + 1))
+	printf '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t%s","name":"Read","input":{"file_path":"%s/%s"}}]}}\n' "$n" "$(pwd -P)" "$f"
+done
+result=$(awk 'BEGIN { ORS = "" } { gsub(/\\/, "\\\\"); gsub(/"/, "\\\""); gsub(/\t/, "\\t"); print $0 "\\n" }' "$CLAUDE_ANSWER")
+printf '{"type":"result","subtype":"success","is_error":false,"num_turns":%s,"result":"%s","total_cost_usd":0.01,"modelUsage":{"claude-sonnet-5":{"inputTokens":1000,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"outputTokens":200}}}\n' "$((n + 1))" "$result"

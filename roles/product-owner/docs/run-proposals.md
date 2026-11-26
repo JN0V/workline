@@ -62,14 +62,11 @@ engine checks before it does anything.
   Given the same code as its last read, it is not woken again: blocked
   at once, the code it got said
   ([amended again](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-a-read-again-is-given-new-code-or-none-is-made)).
-- Its sources named from the repository's folders, or only code the
-  run did not give, need no line quoted: the issue is read again with
-  that code.
-- A Scope written with no code given for the issue is left out, its
-  paths kept as the code to read: it is written from that code at the
-  next run, never guessed
-  ([#970](https://github.com/JN0V/workline/issues/970)). Beside sources
-  whose code it was given, it is written at once.
+- Its sources naming code the issue does not name need no line quoted.
+- A Scope naming a file its agent did not read in the run is written
+  with a line `Guessed:`, said (`scope-unread`): a guess holds no other
+  issue back ([#970](https://github.com/JN0V/workline/issues/970),
+  [ADR-0074](../../../docs/adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)). A `cmd:` agent reads no code: its Scope is a guess.
 - Then it does it, proposes it on its issue, or drops it, by the kind's
   mode and cap, and by the issue: one set aside gets nothing; one where a
   person undid that kind gets a proposal.

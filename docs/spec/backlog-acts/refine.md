@@ -91,31 +91,19 @@ what it can and asks for the rest:
   already `ready`, `needs-tests` or `developing`, keeps its label alone:
   an `unblock` beside the refine moves a blocked one, only `unready` moves
   a ready one back.
-- **A Scope waits for its code** (#970). A refine's Scope on an issue
-  whose code the run did not give — not in pre's `code-read`, its state
-  naming no sources, its title and body no file of the commit
-  (`noCodeGiven`) — or whose code this run names anew (a `sources`
-  done naming a file the task did not give: pre's `code-given` lists
-  those it gave; a Scope written beside sources it gave stands, no
-  `needs-code`, [#1089](https://github.com/JN0V/workline/issues/1089);
-  so does one in a run the line started again for the code the agent
-  said it lacked, on the issue it is about, each file of its `sources`
-  given this time, whole or in part
-  ([#1146](https://github.com/JN0V/workline/issues/1146)); so does one
-  there whose own files were all given, or whose guessed paths a line
-  `Guessed:` says, module folders named and cut or not
-  ([#1433](https://github.com/JN0V/workline/issues/1433)); a first
-  run's is left out as below),
-  is left out, said `scope-unread`: its paths would be a guess,
-  and a guessed folder can hold the issue behind an unrelated claim.
-  Its paths, checked as above, are kept as the issue's sources, the
-  rest of the refine written; the issue, still lacking its Scope, is
-  read again with that code. A refine with its Scope alone is dropped
-  (`scope-unread`), the agent told to name the code with `sources`. A
-  person's yes to a proposal is done as it reads. A Scope marked a
+- **A Scope stands on the code its agent read** (#970,
+  [ADR-0074](../../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)). A refine's Scope naming a path of the commit — a
+  file, or a folder — that holds no file the agent read in the run's
+  read tree, as its calls logged them (`CodeRead`; every path, past the
+  five a text's sources keep,
+  [#1433](https://github.com/JN0V/workline/issues/1433)), is written
+  with a line `Guessed:` added, said `scope-unread`: a guessed folder
+  could otherwise hold the issue behind an unrelated claim. A `cmd:`
+  agent reads none: its Scope is a guess. A person's yes to a proposal
+  is done as it reads. A Scope marked a
   guess — a line `Guessed:` (`work.Guessed`); its words saying no code
   was given are no longer read, English prose being no fact
-  ([#1228](https://github.com/JN0V/workline/issues/1228)) — is the role's to rewrite: once its code is given,
+  ([#1228](https://github.com/JN0V/workline/issues/1228)) — is the role's to rewrite: once its code is read,
   a refine's new Scope replaces it, never dropped as there already
   ([#1126](https://github.com/JN0V/workline/issues/1126)). So is a
   Scope on an issue holding a person's comment the role has not read —
@@ -196,15 +184,12 @@ what it can and asks for the rest:
   role acts on it. Its next read tells the agent so: refine it now, or
   ask. The line wakes it again in refine
   ([ADR-0059, amended](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-an-issue-left-unrefined-is-woken-again)).
-  The task lists the repository's
-  folders for an issue that names no file: the agent names its sources
-  from them, no line quoted. A `sources` naming only code the run did
-  not give — no path in or holding one its state, title or body names
-  (`unshown`) — needs no line quoted either
-  ([#980](https://github.com/JN0V/workline/issues/980)). One mixing code
-  given and not given, no line quoted, names the code not given and
-  keeps the sources its state names; code given new to it is left out,
-  said (`sources-unquoted`, info)
+  A `sources` naming only code the issue does not name — no path in or
+  holding one its state, title or body names (`unshown`) — needs no
+  line quoted ([#980](https://github.com/JN0V/workline/issues/980)).
+  One mixing both, no line quoted, names the code the issue does not
+  name and keeps the sources its state names; code the issue names, new
+  to it, is left out, said (`sources-unquoted`, info)
   ([#1151](https://github.com/JN0V/workline/issues/1151)).
 - **`ready`** is checked by the engine, not taken from the agent: the four
   sections there and not empty — a person's text on top standing for a
@@ -282,12 +267,11 @@ what it can and asks for the rest:
 - **`ask`** comments on the issue, naming its reporter, with the agent's
   questions. The answer is a person's comment: the issue is read again at
   the next run. Unanswered past `acts.ask.wait`, it times out
-  ([below](#a-question-nobody-answers)). An `ask` beside a `sources` the same run does alone for
-  the same issue is not asked (`code-first`, `codeFirst`): the issue is
-  read again with that code first, and its reporter never asked what the
-  code answers ([#548](https://github.com/JN0V/workline/issues/548)),
-  nor, for an imported issue, what the file it came from says around its
-  item: the task gives it ([Reading](reading.md)).
+  ([below](#a-question-nobody-answers)). Its reporter is never asked what the
+  code answers, the agent reading it first
+  ([#548](https://github.com/JN0V/workline/issues/548)), nor, for an
+  imported issue, what the file it came from says around its item: the
+  task gives it ([Reading](reading.md)).
 - An issue whose body a person changed since it was read — a draft
   accepted, a section written — is read again (its state's `body`, a
   digest of the body when it was last read or written by the engine).
@@ -566,12 +550,7 @@ the footer left last as it was.
 The files, or folders, must be in the commit the run is on (1 to 5;
 `sources-unknown` otherwise). A quote, when given, is found in one of the
 files named, an anchor after `#` aside, or in a file inside a folder named
-(`no-quote` otherwise). None is needed only when no code was given —
-the state names no sources, the title and body no file of the commit —:
-named from the repository's folders
-([#951](https://github.com/JN0V/workline/issues/951)). The sources its
-state names already, their code given in the run, are dropped
-(`sources-same`): named again, the issue would only be read again. A
-folder is given at the next run as the list of its files. Done, the issue's
-state gets them and loses `judged`: it is read again, with that code, at the
-next run.
+(`no-quote` otherwise). None is needed only for code the issue does not
+name ([#951](https://github.com/JN0V/workline/issues/951)). The sources
+its state names already are dropped (`sources-same`). Done, the issue's
+state gets them and loses `judged`: it is read again at the next run.

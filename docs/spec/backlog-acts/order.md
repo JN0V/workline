@@ -160,9 +160,10 @@ the issue's order, the priority left out when it has one.
   default, `max` 10 a run, 20 at `enterprising`, and counts toward
   `moved-percent-max`.
 - **Dropped, said**: a level outside 1 to 3 (`effort-level`); the setting
-  `effort` unset (`effort-nowhere`); an issue whose code the run did not
-  give the agent, all the files it names (`effort-unread`, `pre` lists
-  them in `in/code-read`); a value elsewhere or a level no label carries
+  `effort` unset (`effort-nowhere`); a run whose agent read no code in
+  its read tree (`effort-unread`: a `cmd:` agent reads none,
+  [ADR-0074](../../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md));
+  a value elsewhere or a level no label carries
   (`effort-elsewhere`, `effort-no-label`); a parent's GitLab weight
   (`effort-parent`).
 - **Never written over**: an effort the role did not set is a person's

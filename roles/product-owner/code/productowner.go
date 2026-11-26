@@ -13,7 +13,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
-	"path"
+
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -31,9 +31,9 @@ import (
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
-	"github.com/JN0V/workline/internal/kit/codepick"
 	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
@@ -56,8 +56,7 @@ const (
 // Settings are the role's settings pre reads, as merged by the engine.
 type Settings struct {
 	IssuesPerRun int `json:"issues-per-run"` // issues read in one run
-	CodeLinesMax int `json:"code-lines-max"` // lines of code given in one run, all files together
-	CodeBytesMax int `json:"code-bytes-max"` // bytes of code given each issue read; 0: no bound (#1152)
+	MaxTurns     int `json:"ai-max-turns"`   // the turns of an agent that reads the project itself
 	Acts         struct {
 		Ask struct {
 			Rounds int `json:"rounds"` // times an issue's reporter is written to, then a person
@@ -139,7 +138,7 @@ func Pre(runDir, repo string) int {
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", backlog.ReadFile), data, 0o644); err != nil {
 		return fail(err)
 	}
-	s := Settings{IssuesPerRun: 8, CodeLinesMax: 1500, CodeBytesMax: 16000}
+	s := Settings{IssuesPerRun: 8}
 	raw := map[string]any{}
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json")); err == nil {
 		if err := json.Unmarshal(data, &s); err != nil {
@@ -848,22 +847,20 @@ func Pre(runDir, repo string) int {
 	// title otherwise; the code they name; nothing is written yet. Each
 	// issue no kind tells is asked its kind by name (#895).
 	kindAct, kindMax := kindMode(cfg, ledger.Demoted(cfg.UndoneMax))
+	// An agent that reads files itself reads the project at the run's
+	// commit (ADR-0074); any other reads each issue whole, no code, said.
+	reads := agent.ReadsFiles(os.Getenv("WORKLINE_AI"))
+	reading, kindReading := "", ""
+	if reads {
+		reading = readingSaid(commit, s.MaxTurns, "1. find the code it is about: the files it names, and those its names lead to by Grep;\n"+
+			"2. open each of them with Read, whole: whether that code is wrong, missing or already done tells its kind, and whether it is obsolete;\n"+
+			"3. write its `sources`, quotes and `scope` from the files you opened: a `scope` naming a file you did not open with Read, a Grep match alone, is marked `Guessed:` by the engine.\n")
+		kindReading = readingSaid(commit, s.MaxTurns, "- read the code it names, and find what its names point to: what makes it a bug may be there, not in its text.\n")
+	}
 	build := func(n int) (taskBuilt, error) {
 		t := taskBuilt{wasRead: map[int]bool{}}
 		var task strings.Builder
-		// The code each issue read names, by the picker the tester and
-		// the reviewer share (ADR-0063 §8): code-lines-max shared among
-		// them, a piece given for one not given again for the next.
-		picker, err := codepick.New(repo, "")
-		if err != nil {
-			return t, err
-		}
-		tests := testsOf(repo)
-		var code []string          // the files the issues name
-		var picks []codepick.Pick  // each issue's, in order
-		var pickedFor []int        // the issue each pick is for
-		codeLeft := s.CodeLinesMax // lines of code still to share
-		noCode := false            // an issue read names no file: the repository's folders are listed
+		var code []string // the files the issues read are about
 		left := slices.Clone(rest)
 		for i, d := range toRead {
 			if i >= n {
@@ -872,38 +869,7 @@ func Pre(runDir, repo string) int {
 			}
 			t.wasRead[d.is.ID] = true
 			t.ids = append(t.ids, strconv.Itoa(d.is.ID))
-			written, aboutIt := writtenAt(repo, d.is, d.st, tracked, cfg.Archived)
-			share := codeLeft / max(min(n, len(toRead))-i, 1)
-			a := askOf(picker, tests, d.is, d.st, d.comments, aboutIt, share)
-			a.Bytes = s.CodeBytesMax // each issue's: the context budget bounds the run
-			if d.is.ID == issueEvent() {
-				// Run again for the code its agent said it lacked
-				// (ADR-0063, §6): those files, whole, or their first
-				// lines (#1146). The smallest in bytes first: a short
-				// file whole, not left out behind a long one's first
-				// lines.
-				a.Needs = needed(runDir)
-				slices.SortStableFunc(a.Needs, func(x, y string) int { return neededBytes(picker, x) - neededBytes(picker, y) })
-			}
-			pick := picker.Pick(a)
-			codeLeft -= share - pick.Left
-			picks, pickedFor = append(picks, pick), append(pickedFor, d.is.ID)
-			if c := pick.Cut(); c != "" {
-				var caps, raise []string // the caps that cut it, each by its setting
-				for _, by := range pick.CutBy() {
-					if by == codepick.BytesName {
-						caps = append(caps, fmt.Sprintf("%s (%d bytes)", by, s.CodeBytesMax))
-					} else {
-						caps = append(caps, fmt.Sprintf("%s (its share: %d of %d lines)", by, share, s.CodeLinesMax))
-					}
-					raise = append(raise, verdict.Setting("product-owner", by))
-				}
-				t.cuts = append(t.cuts, verdict.Finding{Rule: verdict.CutRule, Level: "warn", Where: fmt.Sprintf("#%d", d.is.ID),
-					Message: fmt.Sprintf("the code given to the product owner's agent for it is cut past %s: %s; raise %s",
-						strings.Join(caps, " and "), c, strings.Join(raise, ", or "))})
-			}
-			files := pick.Named()
-			noCode = noCode || len(files) == 0
+			written := writtenAt(repo, d.is, d.st, tracked, cfg.Archived)
 			review := written + kindAsked(d.is, d.st, kindAct)
 			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 				review += specFindings(d.is, d.st, d.comments, r)
@@ -982,12 +948,8 @@ func Pre(runDir, repo string) int {
 					review = "Cites: " + cites + " — a closed issue is done or dropped: never a part to wait for nor work to come.\n" + review
 				}
 			}
-			writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, ledger.OwnBlockers(d.is), front[d.is.ID]+review)
-			for _, f := range picker.Where(askOf(picker, tests, d.is, d.st, d.comments, aboutIt, 0)) {
-				if !slices.Contains(code, f) {
-					code = append(code, f)
-				}
-			}
+			writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, isOpen, ledger.OwnBlockers(d.is), front[d.is.ID]+review)
+			code = append(code, about(d.is, d.st, tracked)...)
 			read := *d.st
 			counted := len(backlog.Counted(d.notes, d.is))
 			read.Judged, read.Comments, read.Rules = commit, 0, backlog.Reading
@@ -1014,7 +976,7 @@ func Pre(runDir, repo string) int {
 		if said == "" {
 			said = releases(repo, b)
 		}
-		intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, len(t.ids), said, modes(cfg, ledger.Demoted(cfg.UndoneMax))+estimates(cfg))
+		intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, len(t.ids), said, modes(cfg, ledger.Demoted(cfg.UndoneMax))+estimates(cfg)) + reading
 		if pages := forge.FilePages(f); pages != "" {
 			// What it writes cites a decision or a doc as a link a reader
 			// follows (AGENTS.md, "Writing user docs").
@@ -1036,8 +998,9 @@ func Pre(runDir, repo string) int {
 		backlog.Order(ordered)
 		for _, is := range ordered {
 			d := byID[is.ID]
-			files := picker.Where(askOf(picker, tests, d.is, d.st, d.comments, "", 0))
-			if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
+			if shown < relatedMax && slices.ContainsFunc(about(d.is, d.st, tracked), func(f string) bool {
+				return slices.ContainsFunc(code, func(c string) bool { return sameCode(c, f) })
+			}) {
 				shown++
 				fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
 				continue
@@ -1049,20 +1012,6 @@ func Pre(runDir, repo string) int {
 		}
 		if len(others) > 0 {
 			fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
-		}
-		writeCode(&task, repo, picks, pickedFor)
-		for i, pk := range picks {
-			// Its code read: each file it names given, in part at least.
-			if fs := pk.Named(); len(fs) > 0 && len(pk.Paths()) == len(fs) {
-				t.codeRead = append(t.codeRead, strconv.Itoa(pickedFor[i]))
-			}
-			if given := pk.Paths(); len(given) > 0 {
-				t.codeGiven = append(t.codeGiven, strconv.Itoa(pickedFor[i])+" "+strings.Join(given, " "))
-			}
-		}
-		slices.SortFunc(t.codeRead, func(a, b string) int { x, _ := strconv.Atoi(a); y, _ := strconv.Atoi(b); return x - y })
-		if noCode {
-			writeFolders(&task, tracked)
 		}
 		t.text = intro + task.String()
 		return t, nil
@@ -1105,9 +1054,16 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, verdict.Finding{Rule: "issues-cut", Level: "info",
 			Message: fmt.Sprintf("%d of the issues to read left for the next run, read first then (%s): with them, the task would be over the role's context budget", len(cut), strings.Join(ids, ", "))})
 	}
-	findings = append(findings, t.cuts...)
 	fallback = append(fallback, t.reads...)
 	readIDs, judged = t.ids, len(t.ids)
+	if (judged > 0 || lightText != "") && reads {
+		if err := worktree.RunTree(repo, commit, runDir, agent.ReadTreeDir); err != nil {
+			return fail(err)
+		}
+	} else if judged > 0 || lightText != "" {
+		findings = append(findings, verdict.Finding{Rule: verdict.CutRule, Level: "warn",
+			Message: "the product owner's agent does not read the repository itself (claude does): it read each issue whole, no code; a Scope it wrote is marked `Guessed:`"})
+	}
 	wasRead := t.wasRead
 	if wasRead == nil {
 		wasRead = map[int]bool{}
@@ -1157,12 +1113,6 @@ func Pre(runDir, repo string) int {
 	if err := os.WriteFile(filepath.Join(runDir, "in", "issues-read"), []byte(strings.Join(readIDs, "\n")), 0o644); err != nil {
 		return fail(err)
 	}
-	if err := os.WriteFile(filepath.Join(runDir, "in", backlog.CodeReadFile), []byte(strings.Join(t.codeRead, "\n")), 0o644); err != nil {
-		return fail(err)
-	}
-	if err := os.WriteFile(filepath.Join(runDir, "in", backlog.CodeGivenFile), []byte(strings.Join(t.codeGiven, "\n")), 0o644); err != nil {
-		return fail(err)
-	}
 	if len(fallback) > 0 {
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 			return fail(err)
@@ -1171,7 +1121,7 @@ func Pre(runDir, repo string) int {
 	if judged == 0 && lightText != "" {
 		// Nothing to read in full: the kinds alone, a task of their own,
 		// read with its own short instruction (model.tasks.kind, #878).
-		if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(kindIntro(commit, len(light))+lightText), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(kindIntro(commit, len(light))+kindReading+lightText), 0o644); err != nil {
 			return fail(err)
 		}
 		if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte(kindTask+"\n"), 0o644); err != nil {
@@ -1205,15 +1155,6 @@ type taskBuilt struct {
 	reads   []intent.Intention
 	ids     []string
 	wasRead map[int]bool
-	// codeRead are the issues read whose files were all given: an effort
-	// is estimated on them only (ADR-0040).
-	codeRead []string
-	// codeGiven are the files given, a line an issue read: its number,
-	// then the paths (backlog.CodeGivenFile).
-	codeGiven []string
-	// cuts are what code-lines-max left out of the code each issue names,
-	// said to the person (#1159).
-	cuts []verdict.Finding
 }
 
 // askedAgainChars is the room kept in the prompt for an answer asked again:
@@ -1429,7 +1370,7 @@ func readJudged(runDir string, id int) (backlog.Judged, bool) {
 
 // writeIssue gives one issue to the agent: what the engine knows of it, its
 // body, its last comments, the engine's own left out.
-func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, notes []forge.Note, files []string, isOpen map[int]bool, own []int, change string) {
+func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, notes []forge.Note, isOpen map[int]bool, own []int, change string) {
 	comments := forge.Bodies(notes)
 	fmt.Fprintf(b, "## #%d %s\n\n", is.ID, is.Title)
 	if len(is.Labels) > 0 {
@@ -1528,9 +1469,6 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		fmt.Fprintf(b, "Left unrefined when last read: %s. Refine it now from its text and the code given — or the repository's folders —, or ask its reporter.\n", strings.TrimSuffix(st.Silent, "."))
 	}
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
-	if len(files) > 0 {
-		fmt.Fprintf(b, "Code it names, given below: %s.\n", strings.Join(files, ", "))
-	}
 	if e := backlog.ReadExchange(comments, role); e.Rounds > 0 {
 		// The conversation with its reporter so far: what was asked or
 		// proposed is shown below, among the comments (ADR-0021).
@@ -1860,95 +1798,45 @@ var provenance = regexp.MustCompile(`(?m)^Opened from .* by the [\w -]+ role\.\r
 // from, a key.
 var marker = regexp.MustCompile(`<!-- workline:[^>]*-->`)
 
-// folders are the folders of the commit's files, each above them.
-func folders(tracked map[string]bool) map[string]bool {
-	out := map[string]bool{}
-	for f := range tracked {
-		for d := path.Dir(f); d != "." && d != "/" && !out[d]; d = path.Dir(d) {
-			out[d] = true
+// about are the paths an issue is about: its sources, and the files of
+// the commit its title and body name, never the file it was imported
+// from, where it was written, not its code (#548).
+func about(is forge.Issue, st *backlog.State, tracked map[string]bool) []string {
+	var out []string
+	for _, src := range st.Sources {
+		out = append(out, backlog.RepoPath(src))
+	}
+	from, _, _, _ := backlog.Imported(is.Body)
+	body := marker.ReplaceAllString(provenance.ReplaceAllString(is.Body, ""), "")
+	for _, m := range backlog.PathLike.FindAllString(is.Title+"\n"+body, -1) {
+		if p := backlog.RepoPath(m); tracked[p] && p != from {
+			out = append(out, p)
 		}
 	}
 	return out
 }
 
-// foldersMax bounds the folders a task lists: those nearest the root.
-const foldersMax = 150
-
-// writeFolders lists the repository's folders, nearest the root first,
-// for an issue that names no file: the agent names its Scope's files
-// from them instead of leaving it out.
-func writeFolders(b *strings.Builder, tracked map[string]bool) {
-	var list []string
-	for d := range folders(tracked) {
-		list = append(list, d)
-	}
-	slices.SortFunc(list, func(a, b string) int {
-		if n := strings.Count(a, "/") - strings.Count(b, "/"); n != 0 {
-			return n
-		}
-		return strings.Compare(a, b)
-	})
-	more := ""
-	if len(list) > foldersMax {
-		more = fmt.Sprintf("- and %d deeper folders\n", len(list)-foldersMax)
-		list = list[:foldersMax]
-	}
-	slices.Sort(list)
-	fmt.Fprintf(b, "# The repository's folders\n\nAn issue above names no file: name the files or folders its %s touches from these, in `sources` (a folder named is given with its files at the next run); no line is quoted from a folder.\n\n- %s\n%s\n", work.Name(work.Scope), strings.Join(list, "\n- "), more)
+// sameCode says whether two paths an issue is about meet: the same
+// file, or a folder and a file under it.
+func sameCode(a, b string) bool {
+	a, _, _ = strings.Cut(a, "#")
+	b, _, _ = strings.Cut(b, "#")
+	a, b = strings.TrimSuffix(a, "/"), strings.TrimSuffix(b, "/")
+	return a != "" && b != "" && (a == b || strings.HasPrefix(a, b+"/") || strings.HasPrefix(b, a+"/"))
 }
 
-// askOf is what the picker is asked for an issue: its title, its body
-// and a person's comments, its sources, the lines of the file it was
-// imported from that name its item (writtenAt: aboutIt), never that file
-// itself, which is where it was written, not its code (#548, #1063).
-func askOf(picker *codepick.Picker, tests testdef.Def, is forge.Issue, st *backlog.State, comments []string, aboutIt string, budget int) codepick.Ask {
-	from, _, _, _ := backlog.Imported(is.Body)
-	body := marker.ReplaceAllString(provenance.ReplaceAllString(is.Body, ""), "")
-	for _, c := range comments {
-		if !strings.Contains(c, "<!-- workline:") { // a person's: an answer may name the code
-			body += "\n" + c
-		}
+// readingSaid tells an agent given a read tree what it is and what to
+// read there before it answers (ADR-0074); told less, the reviewer's
+// lenses read little and answered nothing, their last message not their
+// answer.
+func readingSaid(commit string, turns int, steps string) string {
+	said := "# Reading the code yourself\n\n" +
+		"Your working directory is the project as it reads at commit " + commit + ", to read: Read, Glob and Grep, no shell, nothing you write there kept. No code is given in this task. Before you propose on an issue:\n\n" +
+		steps + "\nThen answer: your last message is your whole answer, as the Answer says — every act on every issue. Nothing you read counts unless it is written there.\n"
+	if turns > 0 {
+		said += fmt.Sprintf("\n- %d turns at most: keep the last one for your answer.\n", turns)
 	}
-	text := is.Title + "\n" + body + "\n" + aboutIt
-	var paths []string
-	for _, src := range st.Sources {
-		paths = append(paths, backlog.RepoPath(src))
-	}
-	// A link to a file on the forge is that file.
-	for _, m := range backlog.PathLike.FindAllString(text, -1) {
-		if p := backlog.RepoPath(m); p != m && picker.Tracked(p) && !slices.Contains(paths, p) {
-			paths = append(paths, p)
-		}
-	}
-	a := codepick.Ask{Text: text, Paths: paths, Tests: tests, Budget: budget, BudgetName: "code-lines-max"}
-	if from != "" {
-		a.Skip = []string{from}
-	}
-	return a
-}
-
-// writeCode gives the code each issue read names, as the picker planned
-// it, each file with its last commits: what changed it, so an issue the
-// code solved can be told.
-func writeCode(b *strings.Builder, repo string, picks []codepick.Pick, ids []int) {
-	head := false
-	for i, pk := range picks {
-		if len(pk.Named()) == 0 {
-			continue
-		}
-		if !head {
-			b.WriteString("# Code the issues name, as it is at this commit\n\nFound for each issue by the names and paths it writes: each definition of a name whole, the lines naming it, a file named whole when it fits; the rest said.\n")
-			head = true
-		}
-		fmt.Fprintf(b, "\n## The code #%d names\n", ids[i])
-		pk.Write(b, codepick.Style{Numbered: true, About: func(f string) string {
-			log, _ := exec.Command("git", "-C", repo, "log", "-5", "--format=%h %as %s", "--", f).Output()
-			return fmt.Sprintf("\nLast commits:\n%s\n", strings.TrimSpace(string(log)))
-		}})
-	}
-	if head {
-		b.WriteString("\n")
-	}
+	return said + "\n"
 }
 
 // modes tells the agent how far the role goes in this run (ADR-0026): each
@@ -2026,36 +1914,6 @@ func issueEvent() int {
 	n, err := strconv.Atoi(num)
 	if kind != "issue" || err != nil || n <= 0 {
 		return -1
-	}
-	return n
-}
-
-// needed are the files the line gives a run again for the code its agent
-// said it lacked (the input `needs`, comma-separated): none on a first
-// run.
-func needed(runDir string) []string {
-	data, err := os.ReadFile(filepath.Join(runDir, "in", "input", engine.NeedsInput))
-	if err != nil {
-		return nil
-	}
-	var out []string
-	for _, p := range strings.Split(string(data), ",") {
-		if p = strings.TrimSpace(p); p != "" && !slices.Contains(out, p) {
-			out = append(out, p)
-		}
-	}
-	return out
-}
-
-// neededBytes is the size of a file the agent said it lacked, as the
-// picker finds it (a line suffix off, a short name resolved): the budget
-// is in bytes too (code-bytes-max). 0: none of the repository.
-func neededBytes(picker *codepick.Picker, w string) int {
-	n := 0
-	if f := work.InRepo(strings.TrimSpace(work.LineOff(w)), picker.Files()); f != "" {
-		for _, l := range picker.Lines(f) {
-			n += len(l) + 1
-		}
 	}
 	return n
 }
@@ -2441,26 +2299,25 @@ const (
 // written, facts to refine from rather than ask its author (#548). The
 // file is never code the issue names (named): a file the commit does not
 // hold, or the project archived, gives nothing; nor do lines gone since.
-// aboutIt is the lines elsewhere that name the item's id.
-func writtenAt(repo string, is forge.Issue, st *backlog.State, tracked map[string]bool, archived []string) (text, aboutIt string) {
+func writtenAt(repo string, is forge.Issue, st *backlog.State, tracked map[string]bool, archived []string) string {
 	path, from, to, ok := backlog.Imported(is.Body)
 	if !ok || !tracked[path] || pathglob.Any(archived, path) {
-		return "", ""
+		return ""
 	}
 	data, err := exec.Command("git", "-C", repo, "show", "HEAD:"+path).Output()
 	if err != nil {
-		return "", ""
+		return ""
 	}
 	if st.Confirmed != "" { // the lines it was opened from, followed to this commit
 		_, now, nfrom, nto, changed, err := backlog.LinesChange(repo, path, from, to, st.Confirmed, st.Confirmed, "HEAD")
 		if err != nil || changed && now == "" {
-			return "", ""
+			return ""
 		}
 		from, to = nfrom, nto
 	}
 	lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
 	if from < 1 || to < from || to > len(lines) {
-		return "", ""
+		return ""
 	}
 	heading := func(i int) bool { return strings.HasPrefix(strings.TrimSpace(lines[i-1]), "#") }
 	start := from
@@ -2481,11 +2338,10 @@ func writtenAt(repo string, is forge.Issue, st *backlog.State, tracked map[strin
 		fmt.Fprintf(&b, "(%d more lines of the item left out)\n", more)
 	}
 	b.WriteString("```\n")
-	aboutIt = mentions(lines, from, to, start, end)
-	if aboutIt != "" {
+	if aboutIt := mentions(lines, from, to, start, end); aboutIt != "" {
 		b.WriteString("\nIts id elsewhere in the file:\n\n" + aboutIt)
 	}
-	return b.String(), aboutIt
+	return b.String()
 }
 
 // specFindings tells the agent the reviewer's findings open on an issue's

@@ -30,7 +30,7 @@ func TestLongAnswerGivenWhole(t *testing.T) {
 	is := forge.Issue{ID: 1364, Title: "Bound", Author: "reporter", Body: "## Scope\n\nA bound.\n"}
 	notes := []forge.Note{{Body: long, Author: "maintainer", Insider: true}}
 	var b strings.Builder
-	writeIssue(&b, "product-owner", 3, is, &backlog.State{}, notes, nil, map[int]bool{}, nil, "")
+	writeIssue(&b, "product-owner", 3, is, &backlog.State{}, notes, map[int]bool{}, nil, "")
 	got := b.String()
 	if !strings.Contains(got, "Decision: the bound is 42.") {
 		t.Errorf("the end of a person's long answer is not given:\n%s", got)
@@ -54,7 +54,7 @@ func TestLongAnswerNeverCutInBothPlaces(t *testing.T) {
 		notes = append(notes, forge.Note{Body: "ok", Author: "ci[bot]", Bot: true})
 	}
 	var b strings.Builder
-	writeIssue(&b, "product-owner", 3, is, &backlog.State{}, notes, nil, map[int]bool{}, nil, "")
+	writeIssue(&b, "product-owner", 3, is, &backlog.State{}, notes, map[int]bool{}, nil, "")
 	among := b.String()
 	if !strings.Contains(among, "Decision: the bound is 42.") || strings.Contains(among, "[…]") {
 		t.Errorf("among the comments, a person's long answer is cut:\n%s", among)
@@ -85,7 +85,7 @@ func TestOtherLongCommentsCutAndSaid(t *testing.T) {
 	// A bot's comment among the issue's comments.
 	notes := []forge.Note{{Body: long, Author: "ci[bot]", Bot: true}}
 	var b strings.Builder
-	writeIssue(&b, "product-owner", 3, is, &backlog.State{}, notes, nil, map[int]bool{}, nil, "")
+	writeIssue(&b, "product-owner", 3, is, &backlog.State{}, notes, map[int]bool{}, nil, "")
 	got := b.String()
 	if strings.Contains(got, "TAILEND") || !strings.Contains(got, " […]") {
 		t.Errorf("a bot's long comment is not cut at %d characters:\n%s", bodyMax, got)

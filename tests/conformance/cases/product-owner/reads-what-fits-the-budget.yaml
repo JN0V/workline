@@ -1,30 +1,30 @@
 case: product-owner/reads-what-fits-the-budget
-about: "Three issues to read, each naming a file of about 52,000 characters, and a context budget of 120,000 tokens: the task holds the two that fit — a person's newest first —, and the agent reads them; the oldest is said left for the next run, which reads it first — never a task over the budget, refused whole every night, the role stuck (#427)."
+about: "Eight issues to read, each a body of about 19,000 characters, and a context budget of 120,000 tokens: the task holds those that fit — a person's newest first —, and the agent reads them; the oldest are said left for the next run, which reads them first — never a task over the budget, refused whole every night, the role stuck (#427). Its agent reads the code itself (ADR-0074): what weighs is the issues."
 given:
   repo: backlog
-  config:
-    roles:
-      product-owner:
-        settings: {code-bytes-max: 0} # the lines bound it alone: a task over the context budget (#1152)
   setup:
-    - "for n in 1 2 3; do awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// %0126d\\n\", i }' > src/big$n.go; done && git add src && git commit -qm 'feat: three big files'"
+    - "long=$(awk 'BEGIN { for (i = 1; i <= 190; i++) printf \"%099d \", i }') && sed -i \"s/@long@/$long/g\" \"$FORGE_FILE\""
   forge:
     issues:
-      - {id: 9, title: "First of three", body: "Rows lost in `src/big1.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-      - {id: 10, title: "Second of three", body: "Rows lost in `src/big2.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-      - {id: 11, title: "Third of three", body: "Rows lost in `src/big3.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Issue 1 of eight", body: "Rows lost. @long@", labels: [bug], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Issue 2 of eight", body: "Rows lost. @long@", labels: [bug], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Issue 3 of eight", body: "Rows lost. @long@", labels: [bug], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Issue 4 of eight", body: "Rows lost. @long@", labels: [bug], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Issue 5 of eight", body: "Rows lost. @long@", labels: [bug], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Issue 6 of eight", body: "Rows lost. @long@", labels: [bug], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Issue 7 of eight", body: "Rows lost. @long@", labels: [bug], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 16, title: "Issue 8 of eight", body: "Rows lost. @long@", labels: [bug], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'", then: again}
 expect:
   status: pass
   agent-calls: 2
   findings:
-    - {rule: issues-cut, message: "1 of the issues to read left for the next run, read first then (#9)"}
+    - {rule: issues-cut, message: "#9): with them, the task would be over the role's context budget"}
   no-findings: [{rule: prompt-over-budget}]
   run-files:
     in/issues-read: {contains: "9"}
-    in/task.md: {contains: "## #9 First of three"}
+    in/task.md: {contains: "## #9 Issue 1 of eight"}
   forge:
     issues:
       - {id: 9, comment-contains: "judged: "}
-      - {id: 10, comment-contains: "judged: "}
-      - {id: 11, comment-contains: "judged: "}
+      - {id: 16, comment-contains: "judged: "}

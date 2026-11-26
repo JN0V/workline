@@ -540,7 +540,7 @@ whose result moves the issue to the next. The table is the routing's
   `workline:size/x-large` (×4), a person's label only. Every step on the
   issue is given it (input `size-tier`, `size-tier` said), and every size
   target of its run multiplied: `context.budget`, `ai-max-tokens`,
-  `code-lines-max`, `code-bytes-max`, `diff-lines-max`; `workline size`
+  `code-lines-max`, `diff-lines-max`; `workline size`
   measures the issue against its normal times the tier.
 - **The per-issue backstop**
   ([ADR-0064, §5](../adr/0064-size-is-a-target-not-a-wall.md#5-the-hard-backstop);
@@ -568,13 +568,12 @@ whose result moves the issue to the next. The table is the routing's
     `ai-max-seconds`, the machine-error budget, the rounds' `rounds`.
   - **At `x-large`'s 16×, nothing lifts it** (the same panel): a
     person splits the issue or finishes it by hand.
-- **The code a role lacks is given**: the product owner naming the
-  code an issue is about (`sources`) that its task did not give
-  ([the code picker](code-picker.md)), its Scope left for that code, or
-  the tester answering `needs: <paths> — why` is a needs-input of the
-  engine (`needs-code`), never "no test possible". Due at once: the
-  role runs again in the same step, given it (`state-given`; its task
-  says so, the tester's and the product owner's get those files). Given
+- **The code a role lacks is given**: the tester answering
+  `needs: <paths> — why` is a needs-input of the engine (`needs-code`),
+  never "no test possible"; the product owner reads the code itself
+  ([ADR-0074](../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)).
+  Due at once: the role runs again in the same step, given it
+  (`state-given`; its task says so, and gets those files). Given
   them, it may name other files, none given yet (a folder's files led
   it to one): it runs once more, given those too
   ([#1410](https://github.com/JN0V/workline/issues/1410)). Said

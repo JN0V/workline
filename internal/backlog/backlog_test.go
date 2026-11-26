@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JN0V/workline/internal/forge"
 )
 
 // A quote is found at the lines that hold it, not from an earlier line that
@@ -214,38 +213,15 @@ func TestAskedBefore(t *testing.T) {
 	}
 }
 
-// A first run's Scope stays left out though every file its agent named was
-// given (#970): only a run again for that code, the input `needs`, keeps
-// it (#1146). The C++ trial's #54: NTP.h and NTP_HAL.h named, both given.
-func TestScopeKeptOnARunAgainOnly(t *testing.T) {
-	named := []string{"DomoticsCore-NTP/include/DomoticsCore/NTP.h", "DomoticsCore-NTP/include/DomoticsCore/NTP_HAL.h"}
-	plan := func(runAgain bool) *Plan {
-		return &Plan{
-			config:     Config{Scope: []int{54}, CodeGiven: map[int][]string{54: named}, RunAgain: runAgain},
-			codeFirst:  map[int]bool{54: true},
-			firstNamed: map[int][]string{54: named},
-			issues:     map[int]forge.Issue{54: {ID: 54, Title: "NTP: \"Sync now\" reports success when no server answers", Body: "Call `syncNow()`."}},
-			ledger:     &Ledger{States: map[int]*State{}},
-		}
-	}
-	c := Proposal{Do: "refine", Issue: 54, Scope: "- `DomoticsCore-NTP/include/DomoticsCore/NTP_HAL.h`"}
-	repo := t.TempDir()
-	if why := plan(false).scopeUnread(repo, c); why == "" {
-		t.Error("a first run, every named file given: its Scope was kept; want it left out (scope-unread)")
-	}
-	if why := plan(true).scopeUnread(repo, c); why != "" {
-		t.Errorf("a run again, every named file given: its Scope was left out: %s", why)
-	}
-}
-
-// A Scope written at a run again stands on the code given only when every
-// file it names was given (#1433): a sixth file, past the five a text's
-// sources keep, is read too.
-func TestScopeReadChecksEveryFile(t *testing.T) {
+// A Scope stands on the files its agent read in the run's read tree
+// (ADR-0074): every file it names, a sixth past the five a text's
+// sources keep too (#1433); one it did not read makes it a guess, unless
+// its writer said so on a line Guessed:.
+func TestScopeGuessedUnlessEveryFileRead(t *testing.T) {
 	repo := t.TempDir()
 	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
 	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
-	var given []string
+	var read []string
 	scope := ""
 	for i := 1; i <= 6; i++ {
 		f := fmt.Sprintf("core/m/F%d.kt", i)
@@ -255,9 +231,7 @@ func TestScopeReadChecksEveryFile(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(repo, f), []byte("class F\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if i <= 5 {
-			given = append(given, f)
-		}
+		read = append(read, f)
 		scope += "- `" + f + "`\n"
 	}
 	for _, c := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=T", "-c", "user.email=t@x.invalid", "commit", "-qm", "x"}} {
@@ -265,11 +239,17 @@ func TestScopeReadChecksEveryFile(t *testing.T) {
 			t.Fatalf("git %v: %v\n%s", c, err, out)
 		}
 	}
-	p := &Plan{config: Config{Scope: []int{7}, CodeGiven: map[int][]string{7: given}, RunAgain: true}}
-	if p.scopeRead(repo, Proposal{Do: "refine", Issue: 7, Scope: scope}) {
-		t.Error("a Scope naming a sixth file not given stands on the code given; want it not to")
+	c := Proposal{Do: "refine", Issue: 7, Scope: scope}
+	if why := (&Plan{config: Config{CodeRead: read}}).scopeUnread(repo, c); why != "" {
+		t.Errorf("every file read: %s; want it to stand", why)
 	}
-	if !p.scopeRead(repo, Proposal{Do: "refine", Issue: 7, Scope: "Guessed: `core/m/F6.kt` was not given.\n\n" + scope}) {
-		t.Error("the same Scope, its guess said on a line Guessed:, does not stand; want it to")
+	if why := (&Plan{config: Config{CodeRead: read[:5]}}).scopeUnread(repo, c); !strings.Contains(why, "core/m/F6.kt") {
+		t.Errorf("a sixth file not read: %q; want it said a guess", why)
+	}
+	if why := (&Plan{config: Config{CodeRead: []string{"core/m/F1.kt"}}}).scopeUnread(repo, Proposal{Do: "refine", Issue: 7, Scope: "- `core/m/**`"}); why != "" {
+		t.Errorf("a folder holding a file read: %s; want it to stand", why)
+	}
+	if why := (&Plan{}).scopeUnread(repo, Proposal{Do: "refine", Issue: 7, Scope: "Guessed: not read.\n\n" + scope}); why != "" {
+		t.Errorf("its guess said on a line Guessed:: %s; want it to stand", why)
 	}
 }

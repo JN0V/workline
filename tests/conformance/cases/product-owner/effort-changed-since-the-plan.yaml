@@ -2,6 +2,7 @@ case: product-owner/effort-changed-since-the-plan
 about: "The job that applies reads the issue again: a priority and an effort a person set between the judge and the apply are theirs, nothing written over them, each said (ADR-0040, step 3)."
 given:
   repo: backlog
+  env: {PATH: "$FIXTURES/claude-po-reads:$PATH", CLAUDE_ANSWER: "$FIXTURES/agents/order-effort.yaml", CLAUDE_READS: src/export/csv.go}
   config:
     roles:
       product-owner:
@@ -12,7 +13,7 @@ given:
 run:
   role: product-owner
   event: schedule
-  ai: fake:order-effort
+  ai: claude
   no-apply: true
   then: resume
   between:

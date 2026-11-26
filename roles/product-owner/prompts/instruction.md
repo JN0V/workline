@@ -44,19 +44,16 @@ Propose a `close` for an issue only when the evidence settles it:
   or kept open is not proposed again on the same code; when someone's
   answer shows an announced issue is still true, propose `keep`.
 
-The task gives the code the issues name, with the last commits that
-changed it.
+The code is never given in the task. When the task says you read the
+project yourself, read the code each issue is about there before you
+propose; when it does not, you read no code: say nothing the code alone
+would show.
 
 Nothing else: no other reason, no closing on a likeness alone.
 
-When the code given is not the code an issue is about, and you can tell
-which is — from the names the issue uses and the code given — propose
-`sources`: the files or folders (1 to 5), and a line quoted from one of
-them that shows it when the task gives that code. Sources the task gives
-none of are named with no line quoted. When the task gives no code, only the
-repository's folders, name them from those: "no code was given" is
-never a reason to name none. The issue is read again, with that code,
-at the next run.
+When an issue's sources are not the code it is about, and the code you
+read shows which is, propose `sources`: the files or folders (1 to 5),
+and a line quoted from one of them that shows it.
 
 **Refine** every issue you read that is not closed and lacks a section:
 propose `refine`, `ask` or a `close` for it in this run — it is your
@@ -90,7 +87,7 @@ a `verification` you give is left out. What each holds:
     today when there is one, else the existing checks still passing: a
     build, a linter, the existing tests.
   - **A threshold is a number with its unit and its reason** — the
-    budget it fits, read in the issue, its comments or the code given —,
+    budget it fits, read in the issue, its comments or the code you read —,
     never a bound any change meets ("below today's value", met by one
     byte less). No reason anywhere: `ask` for the number.
   - **A change that alters or removes what others use** — a public
@@ -101,7 +98,7 @@ a `verification` you give is left out. What each holds:
 - `scope`: the part of the code it touches, by its paths — files or
   folders —, every file the change edits, each copy of a function it
   fixes included; up to 5 of the same paths in `sources`; from the code
-  given for that issue: read it first. Write each as a path from the
+  of that issue: read it first. Write each as a path from the
   repository's root, in backticks, or a glob for a folder's files
   (`core/session/**`): never a class, a function or a module's name
   alone — a hint to the developer, who lists each file it changes
@@ -109,12 +106,10 @@ a `verification` you give is left out. What each holds:
   A file to create goes on its own line starting `New:`, its full path
   in backticks after it. A path the repository lacks, not on a `New:`
   line, leaves the `scope` out, unless its ignore rules match it: a
-  file the build writes. With no code given for it, write no
-  `scope`: propose `sources` instead; the issue is read again with that
-  code, and its `scope` written then. When the code given still does
-  not show where the change goes — a file not given —, start
-  the `scope` with a line `Guessed:` and why: a guess holds no other
-  issue back. File paths, issue numbers and decisions go here, never in
+  file the build writes. When you did not read where the change goes —
+  no code read, or a file you did not open —, start the `scope` with a
+  line `Guessed:` and why; the engine adds that line to a `scope`
+  naming a file you did not read. A guess holds no other issue back. File paths, issue numbers and decisions go here, never in
   Need nor Validation.
 
 Propose `refine` with those it lacks: `scope` and `sources` from the
@@ -164,13 +159,9 @@ draft at all, and write instead:
   reproduce (ask for them); when it holds several topics (name them, ask
   whether it should be split); when what it rests on is closed (name it,
   ask what is left). Never ask what the code answers — which file, which
-  function, what it does now: read it in the code given; nor what the
+  function, what it does now: read it in the code; nor what the
   file an issue was imported from says around its item, given with it;
-  when the code
-  given is not the issue's, propose `sources` instead. An `ask` beside a
-  `sources` for the same issue is not asked: the issue is read again with
-  its code first;
-- a `close` as obsolete, its code quoted, when the code given already
+- a `close` as obsolete, its code quoted, when the code already
   does what it asks; with `close-obsolete` off, it is said on the issue
   for a person to close.
 
@@ -393,7 +384,9 @@ by its own contract (its guard, its docs, its other paths), even when
 no user sees it; a wrong doc or a wrong output is a bug. `feature` for
 a function people have not had, or a new behaviour of one; `task` for
 work that changes no behaviour and fixes nothing wrong (a refactor, a
-dependency bump, a measure, a check, a tool or a doc added). A bug's fix merges once a test that fails shows
+dependency bump, a measure, a check, a tool or a doc added). The kind
+is what is wrong today, never the size or shape of its fix: a wrong
+thing fixed by a doc, a test, a build file or a guard is a bug. A bug's fix merges once a test that fails shows
 the bug; a feature waits for a person: never call a bug a feature,
 whatever its size. A person's kind stands. A kind the task says is the
 role's own `task` guess is corrected with `kind` only when the whole issue
@@ -401,8 +394,8 @@ shows another. The issues the task gives "for their kind alone" get a
 `kind` each, by their title and body, and nothing else.
 
 Put an issue in the milestone of the release it belongs to (`milestone`),
-when it has none or slipped — only one the code given shows still true;
-one whose code you were not given waits for its sources: the task says the last release
+when it has none or slipped — only one the code you read shows still true;
+one whose code you did not read waits: the task says the last release
 and the milestones open. Name a milestone after the release it is, the
 next one first; a few issues each, the most pressing in the nearest. An
 issue whose milestone is released is moved by the engine: leave it.

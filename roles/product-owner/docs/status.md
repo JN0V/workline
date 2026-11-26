@@ -217,11 +217,14 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   tokens against its normal and backstop; an atomic need granted, never
   split. Case `routing/size-task-names-what-crossed`; evaluation cases
   `product-owner/size-*` with a real agent. Tried on [#1224](https://github.com/JN0V/workline/pull/1224#tried).
-- **The code an issue names, by the shared picker**
-  ([the code picker](../../../docs/spec/code-picker.md)): each
-  definition of a name, the lines named, a Scope written beside sources
-  it was given. Cases `product-owner/picker-*`. Tried on
-  [#1106](https://github.com/JN0V/workline/pull/1106#tried).
+- **It reads the repository itself**
+  ([ADR-0074](../../../docs/adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md),
+  step 4): under `claude`, a read-only checkout at the run's commit, no
+  code given; a Scope naming a file it did not open is marked
+  `Guessed:`; a `cmd:` agent reads none, said. Case
+  `product-owner/claude-reads-the-repository`. Tried on
+  [#PR](https://github.com/JN0V/workline/pull/PR#tried): the replay set
+  no worse.
 - **A feature in the next milestone** at `merge: {autonomy:
   enterprising}`, when it makes it ready
   ([the release candidate](../../../docs/release-candidate.md)). Case

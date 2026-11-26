@@ -2,6 +2,7 @@ case: product-owner/weight-free-keeps-labels
 about: "On GitLab Free, its issues carrying no `weight` key, `effort: auto` keeps the effort in the forge's words, `effort::low` to `::high`, and writes no weight (ADR-0040, step 5)."
 given:
   repo: backlog
+  env: {PATH: "$FIXTURES/claude-po-reads:$PATH", CLAUDE_ANSWER: "$FIXTURES/agents/order-effort.yaml", CLAUDE_READS: src/export/csv.go}
   config:
     roles:
       product-owner:
@@ -12,7 +13,7 @@ given:
     issues:
       - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-run: {role: product-owner, event: schedule, ai: fake:order-effort, forge: gitlab}
+run: {role: product-owner, event: schedule, ai: claude, forge: gitlab}
 expect:
   status: pass
   findings:
