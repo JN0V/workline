@@ -40,10 +40,7 @@ roles:
         pages: ["README.md", "docs/**", "roles/*/README.md", "roles/*/docs/*.md"]
         skip: ["docs/spec/**", "roles/*/docs/status.md", docs/BACKLOG.md, docs/backlog-parked.md]
         flow: ["roles/*/README.md"]
-      # Catching up its own docs, far behind: those whose sources do not fit
-      # one call are judged in parts (ADR-0009, on by default), one doc a
-      # night (8 parts), and a night spends at most 400k tokens.
-      parts-max-per-run: 8
+      # A night spends at most 400k tokens.
       ai-max-tokens: 400000
       # The weekly sample of the docs vouched for (ADR-0014, step 4) is read
       # by Opus: the gardening vouches with Sonnet, and no other provider is
