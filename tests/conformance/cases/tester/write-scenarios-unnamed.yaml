@@ -1,8 +1,9 @@
 case: tester/write-scenarios-unnamed
 about: >
-  A test names the scenario it checks: a Validation whose scenarios carry
-  no name gives the test nothing to cite, and is asked of the product
-  owner, never invented (ADR-0055).
+  A test names the scenario it checks: a Validation in prose, no scenario
+  in it, gives the test nothing to cite, and is asked of the product
+  owner, never invented (ADR-0055). One opening on Given with no name is
+  named by its Then (work.Scenarios).
 given:
   repo: tested
   setup:
@@ -14,7 +15,7 @@ given:
       - id: 3
         title: "Multiply two numbers"
         labels: ["workline:ready"]
-        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- Given the library, When I multiply 2 by 3, Then I get 6.\n- Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\nMultiplying 2 by 3 gives 6, and 5 by 0 gives 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
 run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
 expect:
   status: block

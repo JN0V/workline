@@ -134,6 +134,7 @@ func TestScenarios(t *testing.T) {
 	want := []work.Scenario{
 		{Name: "Old debt", Text: "Given `main` with 140 findings, When a merge request adds one, Then only that one blocks."},
 		{Name: "Moved code", Text: "Given a move, When the gate runs, Then nothing new."},
+		{Name: "dropped", Text: "Given no name, When read, Then dropped."}, // named by its Then
 	}
 	if len(got) != len(want) {
 		t.Fatalf("got %+v, want %+v", got, want)

@@ -1,5 +1,5 @@
-# The product owner rewrites #9's own Validation, written as Given / When /
-# Then bullets with no name, into the form the tester reads.
+# The product owner rewrites #9's own Validation, written in prose with
+# no scenario, into the form the tester reads.
 - refine:
     issue: 9
     validation: "- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three."

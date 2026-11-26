@@ -52,8 +52,9 @@ first, the cause folded.
   - **Also read**: a `**Scenario: Name**`, `Scenario: Name` or
     `### Scenario: Name` line, its steps below, bullets or not; the
     same in a fenced `gherkin` block.
-  - **Given / When / Then with no name**: no test can cite it, so the
-    issue stays in refine, said on it, until the scenarios are named
+  - **Given / When / Then with no name**: read, each named by the first
+    words of its Then; prose with no Given / When / Then stays in
+    refine, said on it
     ([refining to ready](../../../docs/spec/backlog-acts/refine.md)).
 - **A bug**: the Need says who it hurts; Steps to reproduce, then
   Expected, Actual, the version; its Validation repeats the steps, the

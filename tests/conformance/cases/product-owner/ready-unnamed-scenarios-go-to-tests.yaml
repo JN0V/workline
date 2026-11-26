@@ -1,0 +1,19 @@
+case: product-owner/ready-unnamed-scenarios-go-to-tests
+about: >
+  A Validation written as Given / When / Then with no name is read, each
+  scenario named by the first words of its Then: no person is asked to
+  rename it. Where the project routes the tester, the product owner's
+  ready sends the issue to its tests, workline:needs-tests.
+given:
+  repo: backlog
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nGiven a day of three sales, when Ann opens it, then she counts three.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine}
+expect:
+  no-findings: [{rule: scenarios-unread}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:needs-tests], comment-lacks: "no scenario the tester reads"}

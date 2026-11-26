@@ -154,6 +154,9 @@ func stateOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, 
 
 // stepOf is stateOf, the backstop not checked.
 func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, open *[]forge.Issue, x *scopeIndex, t *tally) (*stateStep, *StateWrite, error) {
+	if backlog.Tracking(is, "") {
+		return nil, nil, nil // workline's own issue, its body the engine's: never a step of the line
+	}
 	where := fmt.Sprintf("#%d", is.ID)
 	s, name, why := cfg.Wakes(is.Labels, IssueEvent)
 	if w, err := stale(res, cfg, b, x, is, s); err != nil || w != nil {
