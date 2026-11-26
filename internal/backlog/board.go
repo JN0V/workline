@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/scale"
 )
 
 // What is next and what is stuck (ADR-0031), said in the job's summary
@@ -157,12 +156,10 @@ func Offered(is forge.Issue, open map[int]bool) bool {
 
 // Board is what is next and what is stuck, for the job's summary.
 type Board struct {
-	NextMax   int
-	StuckDays int
-	Next      []forge.Issue
-	Stuck     []Wait
-	titles    map[int]string
-	now       time.Time
+	Next   []forge.Issue
+	Stuck  []Wait
+	titles map[int]string
+	now    time.Time
 }
 
 // MakeBoard reads the board from the open issues, the report left out;
@@ -170,7 +167,7 @@ type Board struct {
 // issue appears once, in its first list; a wait not past stuck-days, an
 // announcement aside, is not stuck.
 func MakeBoard(open []forge.Issue, report int, waits []Wait, proposed []Pending, cfg Config, now time.Time) Board {
-	b := Board{NextMax: cfg.NextMax, StuckDays: cfg.StuckDays, titles: map[int]string{}, now: now}
+	b := Board{titles: map[int]string{}, now: now}
 	isOpen := map[int]bool{}
 	for _, is := range open {
 		b.titles[is.ID], isOpen[is.ID] = is.Title, is.ID != report
@@ -234,14 +231,4 @@ func plural(n int, thing string) string {
 		return "1 " + thing
 	}
 	return fmt.Sprintf("%d %ss", n, thing)
-}
-
-// Place says an issue's milestone and priority: "milestone v1.0,
-// priority 2", "no milestone, no priority".
-func Place(is forge.Issue) string {
-	m := "no milestone"
-	if is.Milestone != "" {
-		m = "milestone " + is.Milestone
-	}
-	return m + ", " + scale.Said(Priority(is))
 }

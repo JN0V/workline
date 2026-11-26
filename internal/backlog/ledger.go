@@ -751,7 +751,7 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		if err != nil {
 			continue // gone from the forge since: deleted, moved
 		}
-		w := stateWrite{t: forge.Target{Kind: "issue", ID: id}, is: is}
+		w := stateWrite{t: forge.Target{Kind: "issue", ID: id}}
 		comments, err := b.Comments(w.t)
 		if err != nil {
 			return err
@@ -927,7 +927,6 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 // posted anew.
 type stateWrite struct {
 	t            forge.Target
-	is           *forge.Issue
 	st           *State
 	before       string
 	acts         []string // the records of acts the state comment holds

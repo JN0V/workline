@@ -36,7 +36,7 @@ first ready issue offered** is the first in the order bearing
 (nor, where the product owner's `untestable-label` is set, carrying it: held like a parked one, and never moved to ready)
 ([ADR-0059](../../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md)),
 that waits on no open issue and has no parts
-(`backlog.Offered`, `backlog.NextReady`) — to whoever builds next, person
+(`backlog.Offered`, `backlog.Next`) — to whoever builds next, person
 or developer role (#117); the job's summary lists the first `next-max`
 of them ("What is next, what is stuck", below).
 
