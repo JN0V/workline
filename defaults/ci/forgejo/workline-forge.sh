@@ -141,7 +141,8 @@ comments)
 	# Forgejo's API has no bot field: its system users (a negative id: the
 	# ghost, the actions user) and a login ending in "-bot" or "[bot]" are
 	# bots, whose `agreed` never counts. `own`: the token's user wrote it.
-	got=$(all "/issues/$(arg .target.id)/comments")
+	# The endpoint has no pages (it takes `since` and `before` only): read once.
+	got=$(api GET "/issues/$(arg .target.id)/comments")
 	self=$(me)
 	perms='{}'
 	tmp=$(mktemp)
