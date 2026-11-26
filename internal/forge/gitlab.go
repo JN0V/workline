@@ -1713,3 +1713,16 @@ func (g *gitlab) SetMilestone(id int, title string) error {
 	_, err = g.api("-X", "PUT", path(Target{Kind: "issue", ID: id}), "-f", fmt.Sprintf("milestone_id=%d", n))
 	return err
 }
+
+// RetitleMergeRequest renames a merge request, its Draft prefix kept.
+func (g *gitlab) RetitleMergeRequest(id int, title string) error {
+	mr, err := g.MergeRequest(id)
+	if err != nil {
+		return err
+	}
+	if mr.Draft {
+		title = "Draft: " + draftPrefix.ReplaceAllString(title, "")
+	}
+	_, err = g.api("-X", "PUT", path(Target{Kind: "merge-request", ID: id}), "-f", "title="+title)
+	return err
+}

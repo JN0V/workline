@@ -185,3 +185,23 @@ func reviewSubject(issue, round int, s commitmsg.Settings) string {
 func head(b Bounds) string {
 	return subject(commitType(b.Kind, nil), commitScope(b.Scope), "", commitmsg.Settings{})
 }
+
+// draftCode are the code files, tests apart, that the commit `on` changes
+// since the base `at`: those a tester's Draft brings, which the type of a
+// pull request opened from it counts (#2208). None when git cannot say.
+func draftCode(repo, at, on string, b Bounds) []string {
+	if at == "" || on == "" || at == on {
+		return nil
+	}
+	out, err := gitOut(repo, "diff", "--name-only", at+"..."+on)
+	if err != nil {
+		return nil
+	}
+	var code []string
+	for _, f := range strings.Split(out, "\n") {
+		if f != "" && !b.tests().Test(f) {
+			code = append(code, f)
+		}
+	}
+	return code
+}

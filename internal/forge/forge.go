@@ -467,6 +467,14 @@ type Readied interface {
 // GitHub, GitLab, the local and the simulated forge mark a draft ready.
 var _ = []Readied{&github{}, &gitlab{}, &Local{}, &Fake{}}
 
+// Retitled is a forge that renames a merge request: the developer's, when
+// a round changes the type of what it ships (#2208). A draft stays one.
+type Retitled interface {
+	RetitleMergeRequest(id int, title string) error
+}
+
+var _ = []Retitled{&github{}, &gitlab{}, &Local{}, &Fake{}}
+
 // Reaction is a reaction a person put on a comment: its emoji, as GitHub
 // names it (+1, -1; GitLab's thumbsup and thumbsdown read so), and who.
 type Reaction struct {
