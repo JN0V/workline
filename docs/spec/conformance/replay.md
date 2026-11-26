@@ -86,10 +86,15 @@ gh workflow run eval-replay.yml -f ref=<branch|refs/pull/<n>/head|sha> \
 ```
 
 - The toolchains are there: PlatformIO, a JDK 21, the runner's Android SDK.
-- `env` takes more `WORKLINE_*` variables, `KEY=VALUE` separated by spaces.
-- Each job's artifact holds its `results.tsv` lines, its log, and the
-  runs a branch keeps (`WORKLINE_EVAL_KEEP`); `eval-replay-rows` holds
-  every job's lines, to append to `results.tsv`.
+- `env` takes more `WORKLINE_*` variables, `KEY=VALUE` separated by
+  spaces or `;`.
+- `cases` is `go test -parallel`: 2 cases at once in a job by default.
+- Each job's artifact holds its `results.tsv` lines and its log; the
+  runs kept too when the branch reads `WORKLINE_EVAL_KEEP`,
+  `WORKLINE_EVAL_FINDINGS` or `WORKLINE_FREE_TRANSCRIPTS`.
+  `eval-replay-rows` holds every job's lines, to append to `results.tsv`.
+- The ref's code runs with the agent's login: dispatch only a ref whose
+  code you trust, never a fork's pull request head.
 
 ## Cost
 

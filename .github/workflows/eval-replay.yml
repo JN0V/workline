@@ -1,11 +1,13 @@
 # The evaluation's heavy measures (docs/spec/conformance/replay.md) on
 # GitHub's runners rather than a person's machine: by hand only, each run
 # its own job, side by side. The code measured is the ref given (a branch,
-# a pull request's head, a SHA); this file is always main's. The agent's
-# login is the line's own secret, as in workline.yml. Each job uploads its
-# results.tsv lines, its log, and what the branch keeps of a run
-# (WORKLINE_EVAL_KEEP, WORKLINE_EVAL_FINDINGS, WORKLINE_FREE_TRANSCRIPTS
-# when it reads them); `rows` gathers every job's lines in one file.
+# a pull request's head, a SHA): this file is main's, but the ref's code
+# runs (the tests, ./.github/actions/tests) with the agent's login, the
+# line's own secret: dispatch only a ref whose code you trust, never a
+# fork's head. Each job uploads its results.tsv lines, its log, and what
+# a branch keeps of a run when it reads WORKLINE_EVAL_KEEP,
+# WORKLINE_EVAL_FINDINGS or WORKLINE_FREE_TRANSCRIPTS; `rows` gathers
+# every job's lines in one file.
 name: eval replay
 run-name: "eval replay: ${{ inputs.run }} on ${{ inputs.ref }}, ${{ inputs.eval }}, ${{ inputs.runs }} run(s)"
 on:
@@ -17,6 +19,7 @@ on:
       judge: {description: "WORKLINE_JUDGE (empty: none; a judge check is then skipped)", required: false, default: ""}
       env: {description: "more env, KEY=VALUE separated by spaces or ';' (WORKLINE_EVAL_REVIEWER=..., WORKLINE_EVAL_ARM=...)", required: false, default: ""}
       runs: {description: "how many runs, one job each (1-20)", required: true, default: "3"}
+      cases: {description: "go test -parallel: cases at once in a job (4 builds at once strain a 16 GB runner)", required: true, default: "2"}
       parallel: {description: "jobs at once at most", required: true, default: "6"}
 permissions: {contents: read}
 
@@ -26,8 +29,9 @@ jobs:
     outputs: {runs: "${{ steps.n.outputs.runs }}"}
     steps:
       - id: n
-        env: {RUNS: "${{ inputs.runs }}", PAR: "${{ inputs.parallel }}"}
+        env: {RUNS: "${{ inputs.runs }}", PAR: "${{ inputs.parallel }}", CASES: "${{ inputs.cases }}"}
         run: |
+          [[ "$CASES" =~ ^[0-9]+$ ]] && (( CASES >= 1 && CASES <= 8 )) || { echo "::error::cases must be 1 to 8, not $CASES"; exit 1; }
           [[ "$RUNS" =~ ^[0-9]+$ ]] && (( RUNS >= 1 && RUNS <= 20 )) || { echo "::error::runs must be 1 to 20, not $RUNS"; exit 1; }
           [[ "$PAR" =~ ^[0-9]+$ ]] && (( PAR >= 1 && PAR <= 20 )) || { echo "::error::parallel must be 1 to 20, not $PAR"; exit 1; }
           echo "runs=$(seq -s, 1 "$RUNS" | sed 's/.*/[&]/')" >> "$GITHUB_OUTPUT"
@@ -62,13 +66,16 @@ jobs:
         with: {distribution: temurin, java-version: "21"}
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
+      - id: month
+        run: echo "month=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      # Renewed each month: the cloned projects pin their own versions.
       - uses: actions/cache@v4
         with:
           path: |
             ~/.platformio
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: eval-toolchains-${{ runner.os }}-v1
+          key: eval-toolchains-${{ runner.os }}-${{ steps.month.outputs.month }}
       - name: PlatformIO
         run: pip install --quiet platformio && pio --version && echo "ANDROID_HOME=$ANDROID_HOME"
       - name: The arm's environment
@@ -86,7 +93,7 @@ jobs:
             for kv in ${MORE//;/ }; do
               k=${kv%%=*}
               if [[ "$kv" != *=* || ! "$k" =~ ^WORKLINE_[A-Z0-9_]+$ ]]; then
-                echo "::error::'$k': only WORKLINE_* variables, as KEY=VALUE"; exit 1
+                echo "::error::'$k': only WORKLINE_* variables, as KEY=VALUE" >&2; exit 1
               fi
               echo "$kv"
             done
@@ -99,16 +106,17 @@ jobs:
           WORKLINE_EVAL: ${{ inputs.eval }}
           WORKLINE_JUDGE: ${{ inputs.judge }}
           RUN: ${{ inputs.run }}
+          CASES: ${{ inputs.cases }}
         run: |
           set -o pipefail
-          go test -count=1 -timeout 240m ./tests/evaluation/ -run "$RUN" -v 2>&1 | tee "$OUT/go-test.log"
+          go test -count=1 -timeout 240m ./tests/evaluation/ -run "$RUN" -parallel "$CASES" -v 2>&1 | tee "$OUT/go-test.log"
       - name: Rows
-        if: always()
+        if: always() && env.OUT != ''
         run: |
           [ ! -s "$OUT/results.tsv" ] || { echo '```'; cut -f6,7,8,9,10,12,13 "$OUT/results.tsv"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           grep -h 'no toolchain' "$OUT/go-test.log" >> "$GITHUB_STEP_SUMMARY" || true
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && env.OUT != ''
         with:
           name: eval-replay-run-${{ matrix.n }}
           path: ${{ env.OUT }}
@@ -121,9 +129,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
+        continue-on-error: true   # no run uploaded anything: zero rows
         with: {pattern: eval-replay-run-*, path: runs}
       - run: |
-          cat runs/*/results.tsv > results.tsv 2>/dev/null || : > results.tsv
+          cat runs/*/results.tsv > results.tsv 2>/dev/null || true   # the rows read, even when one run has none
           echo "$(wc -l < results.tsv) row(s): append them to tests/evaluation/results.tsv to keep them" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with: {name: eval-replay-rows, path: results.tsv, retention-days: 30}
