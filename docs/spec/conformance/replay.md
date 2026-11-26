@@ -1,6 +1,6 @@
 ---
-sources: [tests/evaluation/replay_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt]
-checked: af68b1bb5
+sources: [tests/evaluation/replay_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt, tests/evaluation/eval_test.go#issuesAfter, tests/evaluation/eval_test.go#judgeName, tests/evaluation/eval_test.go#keepJudged]
+checked: e168222e8
 ---
 # Replay set — real misses, played again
 
@@ -74,7 +74,8 @@ judge this run alone.
   (`owner-choice-waits`).
 - `status: pass` is a guard, not a point.
 - `WORKLINE_EVAL_KEEP=<folder>` keeps each question asked, what the
-  judge read and what it said: a yes leaves no other trace.
+  judge read and what it said, one `.md` file a question: a yes leaves
+  no other trace.
 
 ## Run one role's set
 
