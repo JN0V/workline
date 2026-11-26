@@ -876,7 +876,7 @@ func parseScript(v string) []outcome {
 // a replay's the trial's, both run by TestTraces. A needs-input on its
 // source is held under seeds; the named needs traces hold those too. The
 // product owner asks the engine for no code: it reads the repository
-// (ADR-0074).
+// (docs/adr/0074).
 func TestSeeds(t *testing.T) {
 	want := pending(t)
 	base, n := seeds()

@@ -848,7 +848,7 @@ func Pre(runDir, repo string) int {
 	// issue no kind tells is asked its kind by name (#895).
 	kindAct, kindMax := kindMode(cfg, ledger.Demoted(cfg.UndoneMax))
 	// An agent that reads files itself reads the project at the run's
-	// commit (ADR-0074); any other reads each issue whole, no code, said.
+	// commit (docs/adr/0074); any other reads each issue whole, no code, said.
 	reads := agent.ReadsFiles(os.Getenv("WORKLINE_AI"))
 	reading, kindReading := "", ""
 	if reads {
@@ -1826,7 +1826,7 @@ func sameCode(a, b string) bool {
 }
 
 // readingSaid tells an agent given a read tree what it is and what to
-// read there before it answers (ADR-0074); told less, the reviewer's
+// read there before it answers (docs/adr/0074); told less, the reviewer's
 // lenses read little and answered nothing, their last message not their
 // answer.
 func readingSaid(commit string, turns int, steps string) string {

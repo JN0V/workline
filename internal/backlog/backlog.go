@@ -2054,7 +2054,7 @@ func (p *Plan) unshown(repo string, id int, sources []string) (unshown, shown []
 
 // scopeUnread says why a refine's Scope is marked a guess, "" when it is
 // not: a path of the commit it names, a file or a folder, that holds no
-// file its agent read in this run (ADR-0074). A guess holds no other
+// file its agent read in this run (docs/adr/0074). A guess holds no other
 // issue back (#970).
 func (p *Plan) scopeUnread(repo string, c Proposal) string {
 	if c.Ticked != "" || strings.TrimSpace(c.Scope) == "" || work.Guessed(c.Scope) {

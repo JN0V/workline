@@ -1038,7 +1038,7 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	}
 	cfg.Read.Model = strings.Join(st.Models, ", ")
 	// The files its agent read in the run's read tree, as each call
-	// logged them (ADR-0074): an effort is estimated, and a Scope stands,
+	// logged them (docs/adr/0074): an effort is estimated, and a Scope stands,
 	// on them only.
 	if !st.Unasked {
 		cfg.CodeRead = filesRead(runDir)

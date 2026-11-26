@@ -271,10 +271,9 @@ each role reads only what it needs, and now chooses it.
     run, before and after.
 - **A first prompt did worse** (12 and 8 of 18): one reading part for
   both tasks, and nothing on the kind being what is wrong today.
-- **What went**: the picker's call (`askOf`, `writeCode`, `needed`),
-  the folders listed, pre's `code-read` and `code-given`, the "name the
-  code, be read again" loop (`codeFirst`, `RunAgain`, `scopeRead`),
-  `code-lines-max` and `code-bytes-max`. `kindBodyMax` went before, with
+- **What went**: the picker's call, the folders listed, pre's
+  `code-read` and `code-given`, the "name the code, be read again"
+  loop, `code-lines-max` and `code-bytes-max`. `kindBodyMax` went before, with
   [#2226](https://github.com/JN0V/workline/pull/2226).
 - **A Scope not read** is written with a line `Guessed:`, never left
   out: read means opened with Read, as the call logged it; a Grep match

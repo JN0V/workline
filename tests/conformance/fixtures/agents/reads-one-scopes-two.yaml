@@ -1,4 +1,4 @@
-# The product owner, reading the project itself (ADR-0074), read the
+# The product owner, reading the project itself (docs/adr/0074), read the
 # CSV export alone: #9's Scope names that file; #10's names the JSON
 # export, which it did not open.
 - refine:

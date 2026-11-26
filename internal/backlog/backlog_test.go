@@ -214,7 +214,7 @@ func TestAskedBefore(t *testing.T) {
 }
 
 // A Scope stands on the files its agent read in the run's read tree
-// (ADR-0074): every file it names, a sixth past the five a text's
+// (docs/adr/0074): every file it names, a sixth past the five a text's
 // sources keep too (#1433); one it did not read makes it a guess, unless
 // its writer said so on a line Guessed:.
 func TestScopeGuessedUnlessEveryFileRead(t *testing.T) {

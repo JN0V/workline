@@ -1,12 +1,10 @@
 #!/bin/sh
 # A stand-in for `claude -p` as the product owner runs it with read-only
-# tools (ADR-0074). It fails, saying why, unless given Read, Glob and
-# Grep alone, none allowed by name, its prompt the role's, its turns
-# capped, run in a checkout of the repository, its question saying it
-# reads the code itself. Then it reads each file $CLAUDE_READS names
-# (relative to the checkout, space-separated) and answers, in
-# stream-json, the proposals the file $CLAUDE_ANSWER holds: a fake
-# agent's answer, read this time.
+# tools (docs/adr/0074). It fails, saying why, unless given Read, Glob and
+# Grep alone, none allowed by name, its turns capped, run in a checkout of
+# the repository, its question saying it reads the code itself. Then it
+# reads each file $CLAUDE_READS names (space-separated) and answers, in
+# stream-json, the proposals the file $CLAUDE_ANSWER holds.
 set -eu
 want() { echo "claude stand-in: $*" >&2; exit 1; }
 args=" "

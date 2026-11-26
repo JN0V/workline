@@ -27,7 +27,7 @@ model:
 context:
   # Estimated tokens, 711 + 0.82 a character (#235): eight issues and
   # refining's instruction; the code its agent reads itself, under claude
-  # (ADR-0074), is bounded by its turns, not by this budget.
+  # (docs/adr/0074), is bounded by its turns, not by this budget.
   budget: 120000
 
 duties:
@@ -53,7 +53,7 @@ settings:
   # not read again.
   issues-per-run: 8
   # The turns of an agent that reads the repository itself (claude, in a
-  # read tree at the run's commit, ADR-0074), as the tester's; a cmd: agent
+  # read tree at the run's commit, docs/adr/0074), as the tester's; a cmd: agent
   # reads none.
   ai-max-turns: 40
   # How far the role goes (ADR-0038): cautious notes and proposes; normal

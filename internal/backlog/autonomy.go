@@ -36,9 +36,9 @@ var GoneSettings = map[string]string{
 	// Its own weekly issue, folded into every role's (ADR-0046).
 	"weekly-sample": "the weekly sample of every role's acts draws the product owner's, and says the level they suggest (ADR-0046)",
 	// The code the engine picked for it, gone: its agent reads the
-	// repository itself (ADR-0074).
-	"code-lines-max": "its agent reads the repository itself, no code given (ADR-0074)",
-	"code-bytes-max": "its agent reads the repository itself, no code given (ADR-0074)",
+	// repository itself (docs/adr/0074).
+	"code-lines-max": "its agent reads the repository itself, no code given (docs/adr/0074)",
+	"code-bytes-max": "its agent reads the repository itself, no code given (docs/adr/0074)",
 }
 
 // byLevel is the setting the engine adds beside a role's own: its settings
@@ -113,8 +113,8 @@ type Config struct {
 	// no effort read.
 	Priority, Effort scale.Setting
 	// CodeRead are the files the agent read in this run's read tree, as
-	// its calls logged them (ADR-0074): an effort is estimated on them
-	// only (ADR-0040), and a Scope naming a file it did not read is
+	// its calls logged them (docs/adr/0074): an effort is estimated on them
+	// only (docs/adr/0040), and a Scope naming a file it did not read is
 	// marked a guess. Set by the caller, from the run.
 	CodeRead []string
 	// Notes are the agent's notes of this run, as it wrote them: the
