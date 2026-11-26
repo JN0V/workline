@@ -27,7 +27,7 @@ so a change to a role is measured on it before and after.
 | Reviewer misses | `reviewer/<repo>-<n>-*` | recall: points found; unplanted Importants as `extra`, not failed |
 | Reviewer kept catches | `reviewer/kept-*` | a true finding caught then, then fixed: lost cases |
 | Reviewer clean | `reviewer/clean-*` | merged, nobody sent it back: false Importants fail |
-| Documentalist | `documentalist/*` | wrong claims fixed; one judge check on false edits |
+| Documentalist | `documentalist/*` | wrong claims fixed, a true page vouched for; one judge check on false edits |
 | Product owner | `product-owner/*` | the kind the owner corrected it to |
 | Developer | `developer/*` | the missing work done; no "Closes" over work left out |
 
