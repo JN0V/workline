@@ -523,27 +523,20 @@ func proposalsFrom(answer string, kinds ...string) ([]byte, []string, error) {
 				last = i
 			}
 		}
-		read := false
+		// Between the fences, read as an answer of its own: a fenced `[]`
+		// is nothing to propose too (#2281).
 		if first >= 0 && last > first {
-			s, mended = Mend(strings.TrimSpace(strings.Join(lines[first+1:last], "\n")))
-			list = nil
+			out, m, err := proposalsFrom(strings.Join(lines[first+1:last], "\n"), kinds...)
 			outside := slices.ContainsFunc(append(slices.Clone(lines[:first]), lines[last+1:]...), func(l string) bool {
 				l = strings.TrimPrefix(strings.TrimSpace(l), "- ")
 				return slices.ContainsFunc(kinds, func(k string) bool { return strings.HasPrefix(l, k+":") })
 			})
-			if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
-				if err != nil {
-					why = err.Error()
-				}
-			} else if outside { // never dropped: every proposal goes in the one list
-				why = "a proposal outside the fenced list; give every proposal in the one list"
-			} else {
-				read = true
+			if err != nil || !outside {
+				return out, m, err
 			}
+			why = "a proposal outside the fenced list; give every proposal in the one list" // never dropped
 		}
-		if !read {
-			return nil, nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
-		}
+		return nil, nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
 	}
 	dropped := false
 	for i, m := range list {

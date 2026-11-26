@@ -27,7 +27,7 @@ so a change to a role is measured on it before and after.
 | Reviewer misses | `reviewer/<repo>-<n>-*` | recall: points found; unplanted Importants as `extra`, not failed |
 | Reviewer kept catches | `reviewer/kept-*` | a true finding caught then, then fixed: lost cases |
 | Reviewer clean | `reviewer/clean-*` | merged, nobody sent it back: false Importants fail |
-| Documentalist | `documentalist/*` | wrong claims fixed; one judge check on false edits |
+| Documentalist | `documentalist/*` | wrong claims fixed, a true page vouched for; one judge check on false edits |
 | Product owner | `product-owner/*` | by meaning, a point a question: [below](#the-product-owners-set) |
 | Developer | `developer/*` | the missing work done; no "Closes" over work left out |
 
@@ -73,9 +73,9 @@ judge this run alone.
   question only the owner can say was his to answer
   (`owner-choice-waits`).
 - `status: pass` is a guard, not a point.
-- `WORKLINE_EVAL_KEEP=<folder>` keeps each question asked, what the
-  judge read and what it said, one `.md` file a question: a yes leaves
-  no other trace.
+- `WORKLINE_EVAL_KEEP=<folder>` also keeps each question asked, what
+  the judge read and what it said, one `.md` file a question beside the
+  run folders: a yes leaves no other trace.
 
 ## Run one role's set
 
@@ -96,6 +96,10 @@ go run ./tests/evaluation/summary     # per case and per set, a workline commit 
 - Each run appends a line to `results.tsv`, with its tokens.
 - `WORKLINE_JUDGE` is needed for the documentalist's judge check and the
   product owner's questions.
+- `WORKLINE_EVAL_KEEP=<folder>` keeps what each run left, a folder a
+  case and run: the run folders (tasks, answers, calls) and the change
+  the role made (`change.diff`). The repository goes with the test; why
+  a point was lost is read there.
 - `given.needs` names what a case needs on the machine: PlatformIO
   (`pio`) for DomoticsCore's developer cases, `$ANDROID_HOME` and
   `java` for TraceGlass's. Missing, the case is skipped ("no
