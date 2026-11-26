@@ -1071,6 +1071,12 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 		if err := os.WriteFile(filepath.Join(dir, "in", "task.md"), data, 0o644); err != nil {
 			return err
 		}
+		// A part given the run's read tree reads there (docs/adr/0074).
+		if at, err := os.ReadFile(agent.TreeAt(filepath.Dir(task), agent.ReadTreeDir)); err == nil {
+			if err := os.WriteFile(agent.TreeAt(dir, agent.ReadTreeDir), at, 0o644); err != nil {
+				return err
+			}
+		}
 		req := agent.Request{RunDir: dir, Repo: o.Repo, Role: &asked, Tier: asked.Model.Tier}
 		err = callAgent(ag, req, "part", runDir, res)
 		// An answer that reads not at all is asked for again once, as the
