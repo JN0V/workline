@@ -60,7 +60,7 @@ Real teams add the roles below. "Here" is what workline does with each.
 | Legal, licences | licence compliance | gates (go-licenses, licensee, Trivy's licence scan) |
 | Platform, IaC | infrastructure code | gates (Checkov, Trivy config, hadolint) |
 | Quality auditor | re-checks that the work was done as claimed | **auditor**, widened to every role |
-| Industrial / process engineer | studies the line, proposes changes | **process engineer** (ADR-0019, #89) |
+| Industrial / process engineer | studies the line, proposes changes | **process engineer** (ADR-0019, #89); its method: [diagnosing-a-role.md](diagnosing-a-role.md) |
 
 ## Auditor and process engineer: two roles
 
@@ -81,9 +81,6 @@ the Darwin Gödel Machine erasing its markers).
 
 Today the auditor reads only docs (ADR-0015); the product owner's acts are
 drawn for a person, with no agent (ADR-0033).
-
-How the process engineer finds why a role misses, and the pitfalls
-already met doing it by hand: [diagnosing-a-role.md](diagnosing-a-role.md).
 
 ## Inspector: static analysis on a merge request
 
