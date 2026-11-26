@@ -171,11 +171,8 @@ func printSets(groups map[key]*group) {
 		worst                        []float64
 	}
 	sets := map[setKey]*setSum{}
-	for k, g := range groups {
+	for k, g := range poolCases(groups) {
 		m := replayCase.FindStringSubmatch(k.kase)
-		if m == nil || len(g.scores) == 0 {
-			continue
-		}
 		kind := map[string]string{"": "miss", "kept-": "kept", "clean-": "clean"}[m[2]]
 		sk := setKey{m[1] + "/" + kind, k.version, k.agent}
 		s := sets[sk]
@@ -205,6 +202,24 @@ func printSets(groups map[key]*group) {
 		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d/%d\t%d/%d\t%.0f%%\t\n", k.set, k.version, k.agent, s.cases, s.allPass, s.cases, s.passes, s.runs, 100*mean(s.worst))
 	}
 	_ = w.Flush()
+}
+
+// poolCases is each replay case's runs at one workline commit and agent,
+// whatever models and judge a run named: a reviewer run whose findings
+// needed no judge names neither, and is the same case, counted once.
+func poolCases(groups map[key]*group) map[key]*group {
+	cases := map[key]*group{}
+	for k, g := range groups {
+		if !replayCase.MatchString(k.kase) || len(g.scores) == 0 {
+			continue
+		}
+		ck := key{kase: k.kase, version: k.version, agent: k.agent}
+		if cases[ck] == nil {
+			cases[ck] = &group{}
+		}
+		cases[ck].scores, cases[ck].passes = append(cases[ck].scores, g.scores...), cases[ck].passes+g.passes
+	}
+	return cases
 }
 
 // The reviewer's measure (#90): its cases write, a run, each lens's tallies
