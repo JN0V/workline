@@ -36,11 +36,13 @@ Part of [a run on code](run.md): step 4, what each lens reads and answers.
   - what the author says, as testimony: the messages of the commits not
     reviewed yet, whole, their trailers left, and the merge request's
     title and body (`testimony-lines-max`);
-  - each file they change once: whole, the change marked in it, while the
-    files fit `code-lines-max`; the others by the change's hunks, each
-    widened to the block around it, found by indentation, up to a quarter
-    of `code-lines-max` ([#1334](https://github.com/JN0V/workline/issues/1334)). A change
-    past one call (the budget, `diff-lines-max`): [in parts](parts.md).
+  - the change, as a plain `git diff`; no file picked for them
+    ([ADR-0074](../../../docs/adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md));
+  - with `claude`, the repository at the change's head, read-only: Read,
+    Glob and Grep, no shell, `ai-max-turns` turns; asked what the change
+    breaks, here or elsewhere; each file it read logged with the call;
+  - with another agent, the diff alone, said each run (`input-cut`);
+  - a diff too long for the task: [too large](too-large.md).
   - each cut past one of these settings is said in the run, with the
     setting that raises it (`input-cut`).
 - **Tests, and the scenarios no test proves**: the `## Unproven` list

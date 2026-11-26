@@ -21,7 +21,7 @@ expect:
   # The fourth lens, intent, has no issue to read: the turn passes to claims.
   calls: [{task: part, for: 1-claims}]
   run-files:
-    in/parts/1-claims/task.md: {contains: "### calc/double.go", not-contains: "### calc/half.go"}
+    in/parts/1-claims/task.md: {contains: "+++ b/calc/double.go", not-contains: "+++ b/calc/half.go"}
   forge:
     merge-requests:
       - {id: 5, comments: 1, comment-contains: " runs=4 -->"}

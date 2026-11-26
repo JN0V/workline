@@ -21,7 +21,7 @@ expect:
   status: pass
   calls: [{task: part, for: 1-lenses}, {task: part, for: 1-lenses}, {task: part, for: 1-lenses}, {task: judge, for: judge/01}]
   run-files:
-    in/parts/1-lenses/task.md: {contains: ["## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go", "### calc/f1.go", "### calc/f3.go"], not-contains: ["## Lens: correctness"]}
+    in/parts/1-lenses/task.md: {contains: ["## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "+++ b/calc/calc.go", "+++ b/calc/f1.go", "+++ b/calc/f3.go"], not-contains: ["## Lens: correctness"]}
   findings:
     - {rule: lens-failed, level: warn, message: "the lenses edge-cases, tests, claims, asked together, got no answer that reads"}
     - {rule: every-lens-not-whole, level: warn, message: "the lenses that did not answer, edge-cases, tests, claims, are asked again on the whole change at the next push, or when the run runs again"}

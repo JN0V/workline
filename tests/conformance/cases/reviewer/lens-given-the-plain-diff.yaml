@@ -1,0 +1,14 @@
+case: reviewer/lens-given-the-plain-diff
+about: "A lens is given the change as a plain diff, never a file picked for it (ADR-0074). An agent that does not read the repository itself, a cmd: or this fake, gets that diff alone: each run says so (input-cut), and no read tree is made for it."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  findings: [{rule: input-cut, level: warn, message: "the reviewer's agent does not read the repository itself (claude does): the lenses read the change's diff alone"}]
+  run-files:
+    in/parts/1-correctness/task.md:
+      contains: ["## The change\n\n```diff\ndiff --git a/calc/calc.go b/calc/calc.go\n", "+\treturn total / (len(values) - 1)\n"]
+      not-contains: ["## Reading the repository yourself", "## The files it changes"]

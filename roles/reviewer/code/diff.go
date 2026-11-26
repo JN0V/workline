@@ -224,26 +224,6 @@ func fileAt(repo, commit, path string) (string, bool) {
 	return out, err == nil
 }
 
-// marked is a file as it reads at to, whole, the change from..to marked
-// in it: each line after its mark, `+` added, `-` removed, a space kept;
-// a file moved, against where it was. false: the file is gone at to, or
-// its change has no lines (binary).
-func marked(repo, from, to string, f File) (string, bool) {
-	if _, ok := fileAt(repo, to, f.Path); !ok {
-		return "", false
-	}
-	out, err := git(repo, append([]string{"diff", "--unified=1000000000", "--no-color", "--no-ext-diff", "--find-renames", from, to, "--"}, pathspec([]File{f})...)...)
-	if err != nil {
-		return "", false
-	}
-	_, body, ok := strings.Cut(out, "\n@@")
-	if !ok {
-		return "", false
-	}
-	_, body, ok = strings.Cut(body, "\n") // the hunk's own header
-	return body, ok && body != ""
-}
-
 // norm is a line as quotes are compared: spaces at its ends dropped, runs
 // of spaces inside made one.
 func norm(s string) string { return strings.Join(strings.Fields(s), " ") }

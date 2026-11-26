@@ -539,6 +539,11 @@ fork-gate-files-never-armed, fork-without-a-yes-waits; TestForkIsFollowedWithNoV
 
 ## Amendment (2026-11-05, #1107): a person who read it whole takes a review not whole
 
+*Since [ADR-0074](0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md),
+step 2, `review-not-whole` comes of a change too long for an agent that
+does not read the repository, or of findings left unjudged, no longer of
+`parts-max`.*
+
 "No lens 'not reviewed whole'" left a change past the reviewer's
 `parts-max` ([ADR-0020]) with no way in but an admin merge: the review
 falls short whoever reads it, and no yes lifted it.

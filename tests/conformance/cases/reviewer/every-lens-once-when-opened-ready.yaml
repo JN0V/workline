@@ -12,7 +12,7 @@ expect:
   applied: [comment]
   calls: [{task: part, for: 1-lenses}]
   run-files:
-    in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go"]}
+    in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "+++ b/calc/calc.go"]}
   forge:
     merge-requests:
       - {id: 5, comments: 1, comment-contains: " runs=1 read=all -->", comment-lacks: "reviewed= runs"}

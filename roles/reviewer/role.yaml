@@ -34,12 +34,14 @@ model:
   tier: standard
   effort: medium
   promote-after: 1   # a lens's answer that does not read is asked for again once
+  # A lens that reads the repository itself takes turns (docs/adr/0074): the
+  # tester's time, its turns capped by ai-max-turns.
+  timeout: 10m
 
 context:
-  # Estimated tokens, 711 + 0.82 a character (#235): the lenses' call, the
-  # change (diff-lines-max) and the files it changes (code-lines-max); real
-  # calls up to 97.0k tokens in (a lens of 117k characters, #147). A change
-  # past it is read in parts, each within it (parts-max, #446).
+  # Estimated tokens, 711 + 0.82 a character (#235): the lenses' call and
+  # the change's diff (diff-lines-max); what an agent that reads the
+  # repository reads there is its own, capped by its turns (docs/adr/0074).
   budget: 100000
 
 duties:
@@ -94,16 +96,14 @@ settings:
   pipeline-paths: []
   findings-max: 10      # findings on the change checked and shown a run; the rest counted
   issues-max: 3         # issues opened a run for what lies outside the change; the rest counted
-  diff-lines-max: 1500  # lines of the change's hunks one call is given; past them, the change is read in parts
-  code-lines-max: 600   # lines of the files changed a lens is given whole, all together; the others by their hunks
-  # A change past one call — the context budget or diff-lines-max — is read
-  # in parts, as a doc too large is judged (ADR-0009, #446): each part the
-  # lenses, what the author says, every file by name, then a share of the
-  # files; each part a call, its findings judged as one review's. Past
-  # parts-max, no lens is asked, said: the author splits the change. Two
-  # parts spend at most two budgets, 200k tokens, leaving the judges a third
-  # of ai-max-tokens. 1: never in parts. 1 to 8.
-  parts-max: 2
+  # The lenses are given the change as a plain diff, and an agent that
+  # reads files itself (claude) the repository at its head, read-only
+  # (docs/adr/0074). Past diff-lines-max lines of diff, the diff is a file there;
+  # an agent that does not read is not asked, said (review-not-whole).
+  diff-lines-max: 1500
+  # The turns of a lens that reads the repository, told in its task.
+  ai-max-turns: 40
+  code-lines-max: 600   # lines of the change a judge is shown, and of the code a spec names its lenses are
   comment-block-max: 8  # lines of one comment the change adds (long-comment, a warning)
   # Words that often tell a code's history in a comment, not what it does:
   # a guess (ADR-0065, Rule A), never a block. With an agent, the comments

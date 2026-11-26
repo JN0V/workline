@@ -9,4 +9,4 @@ expect:
   status: pass
   agent-calls: 1
   run-files:
-    in/parts/1-correctness/task.md: {contains: ["### calc/mean.go", "\n+package calc\n", "\n+func Parse(s string) int {\n", "-\treturn total / len(values)"]}
+    in/parts/1-correctness/task.md: {contains: ["+++ b/calc/mean.go", "\n+package calc\n", "\n+func Parse(s string) int {\n", "-\treturn total / len(values)"]}

@@ -51,9 +51,10 @@ Part of [troubleshooting](troubleshooting.md).
 - `personal-setting-ignored`: your own config sets what a role does not
   let a person set; the project's stands
   ([your own config](config.md#your-own-config)).
-- `review-not-whole`, "past parts-max" (reviewer): the change is too
-  large to read in the parts a run allows; split it, or raise
-  `parts-max` ([in parts](../roles/reviewer/docs/parts.md)). Read whole
+- `review-not-whole`, "past what one call is given" (reviewer): the
+  change's diff is too long for an agent that does not read the
+  repository; split it, or use one that reads
+  ([too large](../roles/reviewer/docs/too-large.md)). Read whole
   by a person, `workline:accepted-whole` lets it merge
   ([merge policy](merge-policy.md#what-it-does)).
 - `blocked-external` (exit 3): the agent's quota, a timeout, the forge or a

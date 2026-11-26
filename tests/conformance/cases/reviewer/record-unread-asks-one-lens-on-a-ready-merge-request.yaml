@@ -18,7 +18,7 @@ expect:
   findings: [{rule: record-unread, level: warn}]
   calls: [{task: part, for: 1-correctness}]
   run-files:
-    in/parts/1-correctness/task.md: {contains: ["### calc/calc.go", "### calc/half.go"]}
+    in/parts/1-correctness/task.md: {contains: ["+++ b/calc/calc.go", "+++ b/calc/half.go"]}
   forge:
     merge-requests:
       - {id: 5, comments: 1, comment-contains: " runs=1 -->\n", comment-lacks: "read=all"}

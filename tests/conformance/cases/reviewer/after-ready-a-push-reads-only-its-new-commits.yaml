@@ -21,7 +21,7 @@ expect:
   status: pass
   calls: [{task: part, for: 1-edge-cases}]
   run-files:
-    in/parts/1-edge-cases/task.md: {contains: "### calc/half.go", not-contains: "### calc/calc.go"}
+    in/parts/1-edge-cases/task.md: {contains: "+++ b/calc/half.go", not-contains: "+++ b/calc/calc.go"}
   forge:
     merge-requests:
       - {id: 5, comments: 2, comment-contains: [" runs=2 read=all -->"]}

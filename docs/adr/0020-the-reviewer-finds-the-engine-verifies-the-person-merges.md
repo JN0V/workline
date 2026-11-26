@@ -643,6 +643,11 @@ merge-request line; on in workline's own repository.
 
 ## Amendment (2026-10-17, #446: a change too large read in parts)
 
+*Superseded by [ADR-0074](0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md),
+step 2: no change is read in parts; a diff too long for one call is a
+file the agent reads, or, for an agent that does not read, no lens is
+asked ([too large](../../roles/reviewer/docs/too-large.md)).*
+
 - **What was wrong**: the caps are in lines (`diff-lines-max` 1500,
   `code-lines-max` 600), the call's budget in tokens
   ([#446](https://github.com/JN0V/workline/issues/446)). A change of

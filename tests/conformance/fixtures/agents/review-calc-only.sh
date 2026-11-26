@@ -1,9 +1,9 @@
 #!/bin/sh
 # A cmd: lens of the reviewer, on the `reviewed` fixture once Average divides
-# by one less than the count: it finds that defect only when its task gives
-# it calc/calc.go, nothing otherwise. A run that reviews again commits a run
+# by one less than the count: it finds that defect only when the change in its task
+# touches calc/calc.go, nothing otherwise. A run that reviews again commits a run
 # before it reviewed asks the judge again; one that does not, never (#375).
-if grep -q '^### calc/calc.go' ; then
+if grep -q '^+++ b/calc/calc.go' ; then
 	cat <<'YAML'
 - finding:
     severity: important

@@ -12,4 +12,4 @@ expect:
   status: pass
   calls: [{task: part, for: 1-correctness}]
   run-files:
-    in/parts/1-correctness/task.md: {contains: "### calc/calc.go", not-contains: "calc/version.go"}
+    in/parts/1-correctness/task.md: {contains: "+++ b/calc/calc.go", not-contains: "calc/version.go"}

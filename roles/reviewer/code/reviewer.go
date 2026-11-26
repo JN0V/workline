@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
@@ -29,6 +30,7 @@ import (
 	"github.com/JN0V/workline/internal/kit/reviewmark"
 	"github.com/JN0V/workline/internal/kit/testdef"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/role"
@@ -57,9 +59,9 @@ type Settings struct {
 	CommitsPerPush  int               `json:"commits-per-push"`       // on a merge request, after ready: new commits the lenses that warn read a push, the oldest first; 0: every one (ADR-0050)
 	FindingsMax     int               `json:"findings-max"`           // findings on the change reported a run; the rest counted
 	IssuesMax       int               `json:"issues-max"`             // issues opened a run for what lies outside the change
-	DiffLinesMax    int               `json:"diff-lines-max"`         // lines of the change's hunks one call is given; past them, the change is read in parts (#446)
-	PartsMax        int               `json:"parts-max"`              // parts a change too large for one call may be read in; past them, no lens asked (#446)
-	CodeLinesMax    int               `json:"code-lines-max"`         // lines of the files changed given to a lens, all together
+	DiffLinesMax    int               `json:"diff-lines-max"`         // lines of diff a lens's task gives; past them, a file of the read tree, or no lens asked (docs/adr/0074)
+	MaxTurns        int               `json:"ai-max-turns"`           // the turns of an agent that reads the repository itself, told in its task (docs/adr/0074)
+	CodeLinesMax    int               `json:"code-lines-max"`         // lines of code a judge, or a spec's lenses, are shown of the change or what a spec names
 	CommentBlockMax int               `json:"comment-block-max"`      // lines of one comment added
 	StoryWords      []string          `json:"story-words"`            // what tells a bug's story in a comment
 	AIFindings      Gate              `json:"ai-findings"`            // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
@@ -133,7 +135,6 @@ type state struct {
 	Patches    []string            `json:"patches,omitempty"` // the patch ids of the commits' changes, recorded with them (#286)
 	Lenses     []string            `json:"lenses"`
 	Together   bool                `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
-	Parts      int                 `json:"parts,omitempty"`    // the parts the change is read in, too large for one call (#446); 0: whole
 	Alone      bool                `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
 	Record     Record              `json:"record"`
 	Every      bool                `json:"every,omitempty"` // every lens asked on the whole change, the run on ready (#129, #359)
@@ -199,7 +200,6 @@ type Review struct {
 	Questions []Finding         `json:"questions,omitempty"` // decisions put to a person: not defects, not judged (#126)
 	Lenses    []string          `json:"lenses,omitempty"`
 	NotRead   string            `json:"not-read,omitempty"` // no lens read the commits on this run: why, said in place of "No finding"
-	Parts     int               `json:"parts,omitempty"`    // the parts the change was read in, too large for one call (#446)
 	Complete  bool              `json:"complete"`           // every lens answered: the commits are recorded as reviewed
 	Record    Record            `json:"record"`
 	Local     bool              `json:"local"`              // the record is kept on this machine
@@ -973,77 +973,62 @@ func unasked(repo string, names []string, issues []ClosedIssue, ids []int) (map[
 	return skip, nil
 }
 
-// ask writes the lenses' parts: the lens, the commits not reviewed yet,
-// and the files they change. A change past one call's context budget or
-// diff-lines-max is read in parts, a share of its files each, st.Parts
-// saying how many (#446); one that would take more than parts-max writes
-// none, and ask says why.
+// ask writes the lenses' calls: the lens, what the author says, the issue
+// it closes, and the change as a plain diff (docs/adr/0074). An agent that
+// reads files itself reads the repository at the change's head, in a read
+// tree, a diff too long for the task a file there; any other is given
+// the diff alone, said, and past what one call holds none is asked: ask
+// says why.
 func ask(runDir, repo string, s Settings, st *state, files []File) (string, error) {
-	// Each file once (#147): whole, the change marked in it, while the
-	// files fit in code-lines-max; the others by the change's hunks. A file
-	// given whole and again in the diff was a third of a lens's call.
-	var units []unit
-	var hunked []File
-	var past []string // files hunked past code-lines-max, said (#1159)
-	left := s.CodeLinesMax
-	for _, f := range files {
-		body, ok := marked(repo, st.lensFrom(), st.lensTo(), f)
-		n := strings.Count(body, "\n")
-		if !ok || n > left {
-			if ok {
-				past = append(past, fmt.Sprintf("`%s` (%d lines)", f.Path, n))
-			}
-			hunked = append(hunked, f)
-			continue
-		}
-		left -= n
-		units = append(units, unit{path: f.Path, whole: true, label: f.Path, text: body})
+	diff, err := git(repo, append([]string{"diff", "--no-color", "--no-ext-diff", "--find-renames", st.lensFrom(), st.lensTo(), "--"}, pathspec(files)...)...)
+	if err != nil {
+		return "", err
 	}
-	// sayHunked says those files once the lenses are asked: a change no
-	// lens reads says why, not what they would have read.
-	sayHunked := func() {
-		n := len(past)
-		if n == 0 {
-			return
-		}
-		if n > 5 {
-			past = append(past[:5], fmt.Sprintf("and %d more", n-5))
-		}
-		st.Advisories = append(st.Advisories, verdict.Finding{Rule: verdict.CutRule, Level: "warn",
-			Message: fmt.Sprintf("%d of the files changed given to the reviewer's agent by their hunks, not whole, past code-lines-max (%d lines in all): %s; the lenses %s did not run on the whole of them, only on what their hunks show; raise %s",
-				n, s.CodeLinesMax, strings.Join(past, ", "), strings.Join(st.Lenses, ", "), verdict.Setting("reviewer", "code-lines-max"))})
+	// Past diff-lines-max, or half the role's context budget, the rest
+	// of the task's (the lenses, what the author says, the issue).
+	n, reads := strings.Count(diff, "\n"), agent.ReadsFiles(os.Getenv("WORKLINE_AI"))
+	past := s.DiffLinesMax > 0 && n > s.DiffLinesMax
+	if r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), roleName()); err == nil && r.Context.Budget > 0 {
+		past = past || agent.Tokens(len(diff)) > r.Context.Budget*role.SizeFactor()/2
 	}
-	if len(hunked) > 0 {
-		// Each by whole functions where they fit (#1334), else 5 lines of context.
-		var plain []File
-		var wide strings.Builder
-		for _, f := range hunked {
-			if d, ok := withFunctions(repo, st.lensFrom(), st.lensTo(), f, s.CodeLinesMax/4); ok {
-				wide.WriteString(d)
-				continue
-			}
-			plain = append(plain, f)
+	if past && !reads {
+		return fmt.Sprintf("the change holds %d lines of diff, past what one call is given (diff-lines-max, %d, or half the role's context budget), and the agent does not read the repository itself: no lens asked; split it into smaller changes, each reviewed apart", n, s.DiffLinesMax), nil
+	}
+	change := "## The change\n\n```diff\n" + diff + "```\n"
+	tree := ""
+	if reads {
+		if err := worktree.RunTree(repo, st.lensTo(), runDir, agent.ReadTreeDir); err != nil {
+			return "", err
 		}
-		if wide.Len() > 0 {
-			units = append(units, fileDiffs(wide.String())...)
+		tree = agent.ReadTree(runDir)
+		// Told what to read before it answers, and that its last message
+		// is its whole answer: told less, it read little and answered `[]`
+		// on a clean change, its scenarios unanswered (the bench of docs/adr/0074).
+		reading := "\n" + readingHeading + "\n\nYour working directory is the project as it reads at the change's head, to read: Read, Glob and Grep, no shell, nothing you write there kept. Before you answer:\n\n" +
+			"1. read each file the change touches, whole;\n2. read the code the changed lines call, and the code calling them;\n3. read the tests that should guard them.\n\n" +
+			"Ask what this change breaks, here or elsewhere. A defect you find there is reported as any other, its cause quoted from the file as it reads.\n\n" +
+			"Then answer: your last message is your whole answer, as the Answer says — every finding of every lens, and each scenario the intent lens answers, one by one. Nothing you read counts unless it is written there.\n"
+		if s.MaxTurns > 0 {
+			reading += fmt.Sprintf("\n- %d turns at most: keep the last one for your answer.\n", s.MaxTurns)
 		}
-		if len(plain) > 0 {
-			diff, err := git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", "--find-renames", st.lensFrom(), st.lensTo(), "--"}, pathspec(plain)...)...)
-			if err != nil {
+		if past {
+			if err := os.WriteFile(filepath.Join(tree, changeFile), []byte(diff), 0o644); err != nil {
 				return "", err
 			}
-			units = append(units, fileDiffs(diff)...)
+			change = fmt.Sprintf("## The change\n\n%d lines of diff, too many to give here: read it whole in `%s`, in your working directory, the engine's file, not the project's. The files it changes: %s.\n", n, changeFile, strings.Join(paths(files), ", "))
 		}
+		change = reading + "\n" + change
+	} else {
+		st.Advisories = append(st.Advisories, verdict.Finding{Rule: verdict.CutRule, Level: "warn",
+			Message: "the reviewer's agent does not read the repository itself (claude does): the lenses read the change's diff alone, not the files it changes whole, the code around them nor their tests"})
 	}
-	floor := func(size int) string {
-		if !s.FinderFloor { // a floor on candidates, never on what is shown; from the size of what is read
-			return ""
-		}
+	floor := ""
+	if s.FinderFloor { // a floor on candidates, never on what is shown; from the size of the change
 		each := ""
 		if st.Together {
 			each = " for each lens"
 		}
-		return fmt.Sprintf("\nLook for at least %d candidates%s before you stop; then give only those whose cause you can quote, important or nit as each deserves.\n", candidatesFor(size), each)
+		floor = fmt.Sprintf("\nLook for at least %d candidates%s before you stop; then give only those whose cause you can quote, important or nit as each deserves.\n", candidatesFor(len(diff)), each)
 	}
 	read := map[string]Lens{}
 	for _, lens := range st.Lenses {
@@ -1068,30 +1053,21 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 	if slices.ContainsFunc(st.Lenses, func(l string) bool { return read[l].Needs == "issue" }) {
 		purpose = whatFor(st.Issues, st.Beyond)
 	}
-	write := func(name, task string) error {
+	material := st.Testimony + "\n" + purpose + change
+	write := func(name, task, tree string) error {
 		dir := filepath.Join(runDir, "in", "parts", name)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return err
 		}
+		if tree != "" { // the lenses read the tree, the diff-alone facet never
+			if err := os.WriteFile(agent.TreeAt(dir, agent.ReadTreeDir), []byte(tree+"\n"), 0o644); err != nil {
+				return err
+			}
+		}
 		return os.WriteFile(filepath.Join(dir, "task.md"), []byte(task), 0o644)
 	}
-	// The diff-alone facet: its own call, the change only, once the
-	// lenses' parts are known to be asked.
-	facet := func() error {
-		if !st.Alone {
-			return nil
-		}
-		task, err := aloneTask(repo, s, st, files)
-		if err != nil {
-			return err
-		}
-		return write(partName(*st, alone), task)
-	}
-	// What each call asks before the change: one for the lenses together,
-	// the change given once, their questions differing, what they read not
-	// (#147); else one a lens.
-	type call struct{ lens, head string }
-	var calls []call
+	// One call for the lenses together, the change given once, their
+	// questions differing, what they read not (#147); else one a lens.
 	if st.Together {
 		var b strings.Builder
 		fmt.Fprintf(&b, "# Lenses: %s\n\nEach lens below is a question of its own: ask each in turn, of the whole change, and name in each finding the lens that found it: `lens:` one of %s.\n",
@@ -1099,77 +1075,40 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 		for _, lens := range st.Lenses {
 			fmt.Fprintf(&b, "\n## Lens: %s\n\n%s\n", lens, strings.TrimSpace(read[lens].Text))
 		}
-		calls = []call{{st.Lenses[0], b.String()}}
+		if err := write(partName(*st, st.Lenses[0]), b.String()+floor+"\n"+material, tree); err != nil {
+			return "", err
+		}
 	} else {
 		for _, lens := range st.Lenses {
-			calls = append(calls, call{lens, fmt.Sprintf("# Lens: %s\n\n%s\n", lens, strings.TrimSpace(read[lens].Text))})
-		}
-	}
-	longest := 0
-	for _, c := range calls {
-		longest = max(longest, len(c.head))
-	}
-	put := func(share []unit, k, n int) error {
-		text, size := lensMaterial(st.Testimony, purpose, share)
-		note := ""
-		if n > 1 {
-			note = partNote(k, n, files)
-		}
-		for _, c := range calls {
-			if err := write(sharePart(*st, c.lens, k), c.head+floor(size)+"\n"+note+text); err != nil {
-				return err
+			if err := write(partName(*st, lens), fmt.Sprintf("# Lens: %s\n\n%s\n", lens, strings.TrimSpace(read[lens].Text))+floor+"\n"+material, tree); err != nil {
+				return "", err
 			}
 		}
-		return nil
 	}
-	// The whole change in one call, while it fits the role's context
-	// budget and diff-lines-max.
-	room, err := taskRoom(runDir, repo)
+	// The diff-alone facet: its own call, the change only.
+	if !st.Alone {
+		return "", nil
+	}
+	task, err := aloneTask(repo, s, st, files)
 	if err != nil {
 		return "", err
 	}
-	text, size := lensMaterial(st.Testimony, purpose, units)
-	diffLines := 0
-	for _, u := range units {
-		diffLines += u.lines()
-	}
-	if (room == 0 || longest+len(floor(size))+1+len(text) <= room) && (s.DiffLinesMax <= 0 || diffLines <= s.DiffLinesMax) {
-		if err := put(units, 1, 1); err != nil {
-			return "", err
-		}
-		sayHunked()
-		return "", facet()
-	}
-	// Else in parts (ADR-0009's way): what every part holds first, then a
-	// share of the files, in the order of their paths, a directory kept
-	// together where it fits.
-	sort.SliceStable(units, func(i, j int) bool { return units[i].path < units[j].path })
-	skeleton, _ := lensMaterial(st.Testimony, purpose, nil)
-	share := 0 // no limit but diff-lines-max: the role's budget is not known
-	if room > 0 {
-		share = room - longest - len(floor(math.MaxInt)) - 1 - len(partNote(99, 99, files)) - len(skeleton)
-		if share < unitsRoomMin {
-			return fmt.Sprintf("what every part holds before its share of the change — the lenses, what the author says, the issue it closes, every file it touches by name — leaves less than %d characters within the role's context budget: no lens asked; split the change into smaller ones, each reviewed apart", unitsRoomMin), nil
-		}
-	}
-	parts := pack(units, share, s.DiffLinesMax)
-	if len(parts) > s.PartsMax {
-		return fmt.Sprintf("the change would take %d parts, each within the role's context budget and diff-lines-max, past parts-max (%d): no lens asked; split it into smaller changes, each reviewed apart", len(parts), s.PartsMax), nil
-	}
-	st.Parts = len(parts)
-	for k, p := range parts {
-		if err := put(p, k+1, len(parts)); err != nil {
-			return "", err
-		}
-	}
-	sayHunked()
-	return "", facet()
+	return "", write(partName(*st, alone), task, "")
 }
 
-// tooLarge settles a run whose change would take more parts than
-// parts-max (#446): no lens asked, no token spent, the change not
-// reviewed whole, said; its commits not recorded, the summary comment
-// still written on a merge request, for its author.
+// readingHeading opens the part of a lens's task telling its agent it
+// reads the repository itself (docs/adr/0074).
+const readingHeading = "## Reading the repository yourself"
+
+// changeFile holds, in the read tree, a change too long to give in the
+// task (docs/adr/0074).
+const changeFile = "workline-change.diff"
+
+// tooLarge settles a run whose change is past diff-lines-max for an
+// agent that does not read the repository (docs/adr/0074): no lens asked, no
+// token spent, the change not reviewed whole, said; its commits not
+// recorded, the summary comment still written on a merge request, for
+// its author.
 func tooLarge(runDir, repo string, s Settings, st state, why string) int {
 	v := review(st, []verdict.Finding{{Rule: "review-not-whole", Level: "warn", Message: why}}, "")
 	v.Lenses = facets(st)
@@ -1427,57 +1366,38 @@ func lensAnswers(runDir, repo string, s Settings, st state) (candidates, int, er
 		asked = append(asked, []string{alone})
 	}
 	for _, ls := range asked {
-		// A change read in parts (#446): each part of the lenses read, the
-		// findings of every part put together; one part failing leaves
-		// the lenses not answered, the others' findings kept.
-		shares, gone := 1, 0
-		if ls[0] != alone && st.Parts > 1 {
-			shares = st.Parts
+		dir := filepath.Join(runDir, "in", "parts", partName(st, ls[0]))
+		which := fmt.Sprintf("the %s lens", ls[0])
+		if len(ls) > 1 {
+			which = fmt.Sprintf("the lenses %s, asked together,", strings.Join(ls, ", "))
 		}
-		for k := 1; k <= shares; k++ {
-			dir := filepath.Join(runDir, "in", "parts", sharePart(st, ls[0], k))
-			which := fmt.Sprintf("the %s lens", ls[0])
-			if len(ls) > 1 {
-				which = fmt.Sprintf("the lenses %s, asked together,", strings.Join(ls, ", "))
-			}
-			what := "what it looks for was not reviewed"
-			if shares > 1 {
-				if len(ls) == 1 {
-					which += ","
+		const what = "what it looks for was not reviewed"
+		failed := func(message string) {
+			for _, l := range ls {
+				if !slices.Contains(c.Failed, l) {
+					c.Failed = append(c.Failed, l)
 				}
-				which += fmt.Sprintf(" part %d of %d,", k, shares)
-				what += " in that part's files"
 			}
-			failed := func(message string) {
-				for _, l := range ls {
-					if !slices.Contains(c.Failed, l) {
-						c.Failed = append(c.Failed, l)
-					}
-				}
-				c.Logged = append(c.Logged, verdict.Finding{Rule: "lens-failed", Level: "warn", Message: message})
-			}
-			if why, err := os.ReadFile(filepath.Join(dir, "unanswered")); err == nil {
-				if strings.HasPrefix(string(why), "unavailable:") {
-					gone++
-				}
-				failed(fmt.Sprintf("%s got no answer that reads (%s): %s", which, strings.TrimSpace(string(why)), what))
-				continue
-			}
-			if !exists(filepath.Join(dir, "answer.yaml")) {
-				failed(fmt.Sprintf("%s was not asked: %s", which, what))
-				continue
-			}
-			answers, err := intent.Read(filepath.Join(dir, "answer.yaml"))
-			if err != nil {
-				failed(fmt.Sprintf("%s: its answer does not read (%v): %s", which, err, what))
-				continue
-			}
-			if err := lensFindings(repo, s, st, ls, answers, lensOf, &c); err != nil {
-				return c, 0, err
-			}
+			c.Logged = append(c.Logged, verdict.Finding{Rule: "lens-failed", Level: "warn", Message: message})
 		}
-		if gone == shares {
-			unavailable += len(ls)
+		if why, err := os.ReadFile(filepath.Join(dir, "unanswered")); err == nil {
+			if strings.HasPrefix(string(why), "unavailable:") {
+				unavailable += len(ls)
+			}
+			failed(fmt.Sprintf("%s got no answer that reads (%s): %s", which, strings.TrimSpace(string(why)), what))
+			continue
+		}
+		if !exists(filepath.Join(dir, "answer.yaml")) {
+			failed(fmt.Sprintf("%s was not asked: %s", which, what))
+			continue
+		}
+		answers, err := intent.Read(filepath.Join(dir, "answer.yaml"))
+		if err != nil {
+			failed(fmt.Sprintf("%s: its answer does not read (%v): %s", which, err, what))
+			continue
+		}
+		if err := lensFindings(repo, s, st, ls, answers, lensOf, &c); err != nil {
+			return c, 0, err
 		}
 	}
 	c.unshown(repo, s, st)
@@ -2239,7 +2159,7 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 		related = slices.DeleteFunc(related, func(f Finding) bool { return answeredInSpec(*sp, f) })
 	}
 	v := review(st, nil, "")
-	v.Lenses, v.Change, v.Complete, v.Parts = facets(st), related, len(c.Failed) == 0, st.Parts
+	v.Lenses, v.Change, v.Complete = facets(st), related, len(c.Failed) == 0
 	var fallback []intent.Intention
 	onForge := mergeRequest() != nil && s.ForgeWrites
 	blocks := slices.Clone(st.Standing)
@@ -2571,9 +2491,6 @@ func summary(v Review, issues, failed, unjudged int) string {
 		parts = append(parts, fmt.Sprintf("%d issues proposed for what lies outside it", issues))
 	}
 	s := strings.Join(parts, ", ") + "; lenses: " + strings.Join(v.Lenses, ", ")
-	if v.Parts > 1 {
-		s += fmt.Sprintf("; read in %d parts, the change too large for one call", v.Parts)
-	}
 	if n := v.Reused; n > 0 {
 		s += fmt.Sprintf("; %d %s judged before on the same patch: %s kept, not judged again", n, plural(n, "finding", "findings"), plural(n, "its verdict", "their verdicts"))
 	}
@@ -2854,19 +2771,6 @@ func partName(st state, lens string) string {
 	return name
 }
 
-// sharePart is the part a lens is asked in for the k-th share of a change
-// read in parts (#446): the first keeps the lens's own name, the others
-// the number of the lens's part and their own, `1.2-lenses`, asked after
-// it.
-func sharePart(st state, lens string, k int) string {
-	name := partName(st, lens)
-	i := strings.Index(name, "-")
-	if k <= 1 || i < 0 {
-		return name
-	}
-	return fmt.Sprintf("%s.%d%s", name[:i], k, name[i:])
-}
-
 // facets are what a run asked: its lenses, then the diff-alone facet.
 func facets(st state) []string {
 	if st.Alone {
@@ -2919,7 +2823,7 @@ func testsOf(repo string) testdef.Def {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, PartsMax: 2, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, CommitsPerPush: 5, IssueLinesMax: 160, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, CommitsPerPush: 5, IssueLinesMax: 160, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err
@@ -2932,9 +2836,6 @@ func settings(runDir string) (Settings, error) {
 	}
 	if s.SpecsPerRun < 1 || s.SpecsPerRun > 20 {
 		return s, fmt.Errorf("settings: specs-per-run: %d is not a number from 1 to 20", s.SpecsPerRun)
-	}
-	if s.PartsMax < 1 || s.PartsMax > 8 {
-		return s, fmt.Errorf("settings: parts-max: %d is not a number from 1 to 8", s.PartsMax)
 	}
 	if s.CommitsPerPush < 0 {
 		return s, fmt.Errorf("settings: commits-per-push: %d is below 0 (0: every new commit)", s.CommitsPerPush)

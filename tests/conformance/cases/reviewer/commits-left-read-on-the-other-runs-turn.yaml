@@ -25,7 +25,7 @@ expect:
   calls: [{task: part, for: 1-claims}, {task: part, for: 1-claims}]
   run-files:
     in/parts/1-claims/task.md:
-      contains: ["### calc/f6.go", "### calc/f7.go"]
+      contains: ["+++ b/calc/f6.go", "+++ b/calc/f7.go"]
   forge:
     merge-requests:
       - id: 5

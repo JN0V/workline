@@ -221,12 +221,13 @@ its measure in
   `simplicity-*`, two planted cases in the evaluation
   ([tried](https://github.com/JN0V/workline/pull/1496)).
 - **A full review within a token budget**:
-  `lenses-asked-together-in-one-call`, `lens-given-each-file-once`,
+  `lenses-asked-together-in-one-call`, `lens-given-the-plain-diff`,
   `judge-shown-the-change-near-the-cause`,
   `tests-judge-reads-tests-up-to-a-cap`,
   `review-says-the-tokens-of-each-call`, `budget-spent-*`.
-- **A change too large for one call, in parts**, past `parts-max` no
-  lens asked ([#446](https://github.com/JN0V/workline/issues/446)): `change-*`.
+- **The lenses read the repository**, the change a plain diff
+  ([ADR-0074](../../../docs/adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md)):
+  `lens-claude-reads-the-repository`, `change-past-one-call-*`.
 - **A spec, on a machine and on the forge**: `spec-*`.
 - **The code a spec names, read as Markdown**: the functions it writes
   as code, a fenced block's too, never a plain word; a function in a

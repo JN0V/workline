@@ -12,4 +12,4 @@ expect:
   status: pass
   agent-calls: 1
   run-files:
-    in/parts/1-edge-cases/task.md: {contains: ["### calc/calc.go", "-\tif len(values) == 0 {", " \treturn total / (len(values) - 1)"], not-contains: ["calc/sum.go", "feat: sum the values"]}
+    in/parts/1-edge-cases/task.md: {contains: ["+++ b/calc/calc.go", "-\tif len(values) == 0 {", " \treturn total / (len(values) - 1)"], not-contains: ["calc/sum.go", "feat: sum the values"]}

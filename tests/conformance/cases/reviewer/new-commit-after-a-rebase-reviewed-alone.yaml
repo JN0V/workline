@@ -13,4 +13,4 @@ expect:
   status: pass
   agent-calls: 1
   run-files:
-    in/parts/1-edge-cases/task.md: {contains: "### calc/double.go", not-contains: ["### calc/half.go", "### calc/calc.go"]}
+    in/parts/1-edge-cases/task.md: {contains: "+++ b/calc/double.go", not-contains: ["+++ b/calc/half.go", "+++ b/calc/calc.go"]}

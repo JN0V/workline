@@ -114,15 +114,15 @@ comment hides a line for each.
   ([ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#the-token-budget));
   a run spends what it uses.
 - **Not whole**: a lens not asked, a finding not judged, or a change
-  past `parts-max` (`review-not-whole`), leaves the commits unrecorded,
+  too large for an agent that does not read (`review-not-whole`), leaves the commits unrecorded,
   reviewed again next run. Several specs a run: those after the cap are not read, each said
   ([a spec on the forge](spec-forge.md)).
 - **Said**: the summary gives the tokens used against the cap; each
   call's, by lens and by judged finding, is in `out/review.json`.
 - **A call**: `context.budget`, 100000 tokens, estimated 711 + 0.82 a
   character before the call
-  ([#235](https://github.com/JN0V/workline/issues/235)). A change past it
-  is read in parts, each within it ([in parts](parts.md)); a prompt still
+  ([#235](https://github.com/JN0V/workline/issues/235)). A diff past half
+  of it is a file the lens reads ([too large](too-large.md)); a prompt still
   larger is not sent, the lens failing, said (`lens-failed`).
 
 What a run cost when measured: [research](../../../docs/research/code-review.md#the-reviewers-cost-measured).

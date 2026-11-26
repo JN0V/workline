@@ -28,4 +28,4 @@ expect:
   no-findings: [{rule: correctness}]
   forge:
     merge-requests:
-      - {id: 5, comments: 1, comment-contains: [" runs=2 -->", "No finding on the commits reviewed"]}
+      - {id: 5, comments: 1, comment-contains: [" runs=2 -->", "— 0 findings on the change;"]}

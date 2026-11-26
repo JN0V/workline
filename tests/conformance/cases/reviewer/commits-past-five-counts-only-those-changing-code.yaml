@@ -28,8 +28,8 @@ expect:
   findings: [{rule: commits-left, level: warn, message: "6 new commits change code, past the 5 the lenses that warn read a push (commits-per-push): the oldest 5 read; the 1 left"}]
   run-files:
     in/parts/1-edge-cases/task.md:
-      contains: ["### calc/f1.go", "### calc/f5.go", "feat: add f5"]
-      not-contains: ["### calc/f6.go", "feat: add f6", "### calc/sum.go"]
+      contains: ["+++ b/calc/f1.go", "+++ b/calc/f5.go", "feat: add f5"]
+      not-contains: ["+++ b/calc/f6.go", "feat: add f6", "+++ b/calc/sum.go"]
   forge:
     merge-requests:
       - id: 5

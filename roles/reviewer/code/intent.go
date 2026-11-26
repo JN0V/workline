@@ -290,11 +290,11 @@ func scenarioOf(st state, ref, name string) (*ClosedIssue, int) {
 }
 
 // wholeRead says whether the intent lens read the whole change, from the
-// base, in one part: only then is a scenario it leaves unanswered judged
-// (unshown). A push read after another, or a change read in parts, shows
-// it a share: what it does not answer may lie in the rest.
+// base: only then is a scenario it leaves unanswered judged (unshown). A
+// push read after another shows it a share: what it does not answer may
+// lie in the rest.
 func wholeRead(st state) bool {
-	return st.lensFrom() == st.Base && st.Upto == "" && st.Parts <= 1
+	return st.lensFrom() == st.Base && st.Upto == ""
 }
 
 // shown reads the intent lens's answer that a scenario of the issue is

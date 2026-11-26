@@ -1,0 +1,23 @@
+case: reviewer/lens-claude-reads-the-repository
+about: >
+  claude reads the repository itself (ADR-0074): the lenses get the
+  change as a plain diff, what the author says, and a copy of the
+  repository at the change's head, with Read, Glob and Grep only there,
+  no shell, no edit, their turns capped (ai-max-turns) and said in their
+  task; no file is picked for them. A defect found in a file the change
+  does not touch, its cause quoted as it reads there, is a finding
+  outside the change. What it read is logged with the call, each file's
+  path and blob. Nothing says the repository went unread.
+given:
+  repo: reviewed
+  setup: ["printf 'package calc\\n\\n// Half halves a count given as text.\\nfunc Half(s string) int {\\n\\treturn Parse(s) / 2\\n}\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"]
+  env: {PATH: "$FIXTURES/claude-reviews:$PATH", WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: claude}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-correctness}, {task: judge, for: judge/01}]
+  findings: [{rule: outside-the-change, message: "Half of a word that is no number is zero"}]
+  no-findings: [{rule: input-cut}, {rule: lens-failed}, {rule: part-unanswered}]
+  run-files:
+    out/calls.jsonl:
+      contains: ['"tools":{"Read":1}', '"reads":["', ' calc/calc.go"]']

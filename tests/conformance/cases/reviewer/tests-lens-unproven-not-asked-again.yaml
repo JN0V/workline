@@ -22,7 +22,7 @@ run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: t
 expect:
   status: pass
   run-files:
-    in/parts/1-tests/task.md: {contains: "### calc/half.go", not-contains: "The tester said no test proves"}
+    in/parts/1-tests/task.md: {contains: "+++ b/calc/half.go", not-contains: "The tester said no test proves"}
   forge:
     merge-requests:
       - {id: 5, comment-contains: ["<!-- workline:unproven=asked -->"]}

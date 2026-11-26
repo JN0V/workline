@@ -12,4 +12,4 @@ expect:
   agent-calls: 1
   no-findings: [{rule: record-unread}]
   run-files:
-    in/parts/1-edge-cases/task.md: {contains: "### calc/half.go", not-contains: "### calc/calc.go"}
+    in/parts/1-edge-cases/task.md: {contains: "+++ b/calc/half.go", not-contains: "+++ b/calc/calc.go"}

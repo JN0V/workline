@@ -19,7 +19,7 @@ expect:
   findings:
     - {rule: record-unread, level: warn, message: "(workline's comment, last edited by @dana, carries its marker: only workline's own account's is read"}
   run-files:
-    in/parts/1-correctness/task.md: {contains: ["### calc/calc.go", "### calc/half.go"]}
+    in/parts/1-correctness/task.md: {contains: ["+++ b/calc/calc.go", "+++ b/calc/half.go"]}
   forge:
     merge-requests:
       - {id: 5, comments: 1, comment-contains: ["| warns | record-unread |"]}

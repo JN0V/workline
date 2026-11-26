@@ -21,7 +21,7 @@ expect:
   findings:
     - {rule: record-unread, level: warn, message: "in its summary comment on merge request 5, could not be read (@mallory's comment carries its marker: only workline's own account's is read"}
   run-files:
-    in/parts/1-correctness/task.md: {contains: ["### calc/calc.go", "### calc/half.go"]}
+    in/parts/1-correctness/task.md: {contains: ["+++ b/calc/calc.go", "+++ b/calc/half.go"]}
   forge:
     merge-requests:
       - {id: 5, comments: 2, comment-contains: ["Reviewed.\n\n<!-- workline:record reviewed=", "| warns | record-unread |"]}

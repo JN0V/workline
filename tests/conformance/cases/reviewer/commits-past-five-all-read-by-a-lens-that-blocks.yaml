@@ -29,7 +29,7 @@ expect:
   calls: [{task: part, for: 1-correctness}]
   no-findings: [{rule: commits-left}, {rule: correctness}]
   run-files:
-    in/parts/1-correctness/task.md: {contains: ["### calc/f1.go", "### calc/f7.go", "feat: add f7"]}
+    in/parts/1-correctness/task.md: {contains: ["+++ b/calc/f1.go", "+++ b/calc/f7.go", "feat: add f7"]}
   forge:
     merge-requests:
-      - {id: 5, comments: 1, comment-contains: [" runs=6 read=all -->", "No finding on the commits reviewed"]}
+      - {id: 5, comments: 1, comment-contains: [" runs=6 read=all -->", "— 0 findings on the change;"]}

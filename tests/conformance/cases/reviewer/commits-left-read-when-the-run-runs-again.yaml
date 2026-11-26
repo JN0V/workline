@@ -23,8 +23,8 @@ expect:
   calls: [{task: part, for: 1-edge-cases}, {task: part, for: 1-tests}]
   run-files:
     in/parts/1-tests/task.md:
-      contains: ["### calc/f6.go", "### calc/f7.go"]
-      not-contains: ["### calc/f5.go", "### calc/f1.go"]
+      contains: ["+++ b/calc/f6.go", "+++ b/calc/f7.go"]
+      not-contains: ["+++ b/calc/f5.go", "+++ b/calc/f1.go"]
   forge:
     merge-requests:
       - id: 5

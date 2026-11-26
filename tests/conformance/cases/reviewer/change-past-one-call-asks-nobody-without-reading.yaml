@@ -1,0 +1,16 @@
+case: reviewer/change-past-one-call-asks-nobody-without-reading
+about: "A change whose diff is past what one call is given (diff-lines-max), for an agent that does not read the repository itself, asks no lens, spends no token, and says the author splits it; the commits are not recorded as reviewed (ADR-0074). Never read in parts."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && mkdir -p src && awk 'BEGIN { for (i = 1; i <= 40; i++) printf \"// line %d of the list\\n\", i }' > src/list.go && git add calc src && git commit -qm 'feat: a list, and the average over the count'"
+  config: {roles: {reviewer: {settings: {diff-lines-max: 40}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "cmd:sh $FIXTURES/agents/review-calc-only.sh"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: review-not-whole, message: "past what one call is given (diff-lines-max, 40, or half the role's context budget), and the agent does not read the repository itself: no lens asked"}
+  no-findings: [{rule: part-unanswered}, {rule: correctness}]
+  summary: "not reviewed whole"
+  run-files: {out/review.json: {contains: '"complete": false'}}

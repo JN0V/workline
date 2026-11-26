@@ -29,8 +29,8 @@ Part of [the reviewer](../README.md): what a run writes, what it costs, and what
     patch ([judged once](once.md));
   - one for each tester's answer that no test is needed
     ([weighed](tester-answers.md)); a spec, one call;
-  - a change too large for one call: a call a part
-    ([in parts](parts.md)).
+  - a lens that reads the repository pays for what it reads, its turns
+    capped ([what the lenses read](run-lenses.md#asking-them)).
 - **Capped** at 300000 tokens a run (`ai-max-tokens`) and by the `*-max`
   [settings](settings.md#caps). Measured:
   [research](../../../docs/research/code-review.md#the-reviewers-cost-measured).

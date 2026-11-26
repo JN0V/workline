@@ -60,9 +60,9 @@ issue, the issue's size tier multiplies `diff-lines-max`,
 | `findings-max` | `10` | findings on the change a run; the rest counted |
 | `issues-max` | `3` | issues opened a run for what lies outside it |
 | `questions-max` | `3` | questions put to a person a run; the rest counted |
-| `diff-lines-max` | `1500` | lines of the change's hunks one call is given; past them, in parts |
-| `parts-max` | `2` | parts a change too large for one call is read in, 1 to 8; past them, no lens asked ([in parts](parts.md)) |
-| `code-lines-max` | `600` | lines of changed files a lens is given whole; the others by their hunks |
+| `diff-lines-max` | `1500` | lines of diff a lens's task holds; past them, a file to read, or no lens asked ([too large](too-large.md)) |
+| `ai-max-turns` | `40` | turns of a lens that reads the repository itself |
+| `code-lines-max` | `600` | lines of the change a judge is shown, and of the code a spec names |
 | `judge-lines-max` | `200` | lines of code a judge is shown, the rest named; `0`: the 31 lines around the cause |
 | `judge-read-rounds` | `2` | rounds of reads a judge may ask before it answers, 8 at most ([when the judge reads](judge.md#when-the-judge-reads)); `0`: none, a no drops the finding |
 | `judge-read-lines-max` | `400` | lines read for one judge, all its rounds; the rest named; `0`: no read |

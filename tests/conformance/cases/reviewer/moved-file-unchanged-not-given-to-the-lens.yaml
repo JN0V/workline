@@ -11,4 +11,4 @@ expect:
   agent-calls: 1
   no-findings: [{rule: internal-code}]
   run-files:
-    in/parts/1-correctness/task.md: {contains: "### calc/half.go", not-contains: ["calc/mean.go", "calc/calc.go"]}
+    in/parts/1-correctness/task.md: {contains: "+++ b/calc/half.go", not-contains: ["calc/mean.go", "calc/calc.go"]}
