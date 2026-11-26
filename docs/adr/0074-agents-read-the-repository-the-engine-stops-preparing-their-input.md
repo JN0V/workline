@@ -165,7 +165,7 @@ or fewer, with no new setting; step 1 may land with step 2.
 | 3 | The documentalist reads; `checked` by the log | `roles/documentalist/code/parts.go` (1,376), but `quotedAt`; the packed sources and the change-alone task in `documentalist.go`; `judge-in-parts`, `parts-max`, `parts-max-per-run`, `parts-move-checked` | 4 of the 7 claims on Sonnet; the 3 spec pages left to a person on 19 pull requests are judged |
 | 4 | The product owner reads; the kind on the whole body | The picker's call (`askOf`, `writeCode`, `needed`), `kindBodyMax`; its `code-lines-max`, `code-bytes-max` | More of the 5 kinds right; real paths in a Scope readied empty |
 | 5 | Filter: a quote not found puts the finding on no line, said | `finding-unfounded`'s drop, `finding-misquoted`'s path | More than half of what it drops is true; none becomes a false Important |
-| 6 | Filter: the documentalist's citations and notes | `cite.go`, `notes.go` (1,061), but `quoteIn`, `bodyBlocks`, `wordSet` | No true sentence removed without them, in 3 of 3 |
+| 6 | Filter: the documentalist's citations and notes | `cite.go`, `notes.go` (1,061), but `quoteIn`, `bodyBlocks`, `wordSet` | No true sentence removed without them, in 3 of 3; 4 of the 7 claims, moved from step 3 ([amendment](#amendment-2026-11-26-step-3s-bench-the-claims-bar-moved-to-step-6)) |
 | 7 | The judges, the reviewer's and the tester's, read the tree. **Needs the maintainer's yes** | `roles/reviewer/code/reach.go`, `reads.go` (958), but `quoted` and `answerIn`; `ServeReads` (`internal/contract/review.go`, its check in `contract.go`); the reviewer's `judge-lines-max`, `judge-read-rounds`, `judge-read-lines-max`, `tests-lines-max`; the tester's `judge-read-rounds`, `judge-read-lines-max` | 32 of the judge's 40 replayed questions right, or more ([ADR-0045]) |
 | 8 | The tester's seed and the spec review's material go. **Needs the maintainer's yes** | `internal/kit/codepick`, `internal/codenav` (3,208); the tester's `code-lines-max` and `needs.go`; the packs' code-navigation rows; `TieredSettings` in `internal/role/tier.go` | The tester's cases, no worse, a `cmd:` agent's too |
 
@@ -260,6 +260,31 @@ each role reads only what it needs, and now chooses it.
 - **A shell**: the replays needed none; it widens what a planted text
   can do. **An index**: a store and a dependency (principle 11).
 - **Filters dropped with the input**: their precision is not measured.
+
+## Amendment (2026-11-26): step 3's bench, the claims bar moved to step 6
+
+- **Built**: step 3, in [#2276](https://github.com/JN0V/workline/pull/2276):
+  the documentalist's agent reads the tree, `checked` is earned by the
+  call's log, the parts deleted (non-test Go about −1,700 lines).
+- **Measured**: DomoticsCore #295's replay, 3 runs, Sonnet 5.5 medium,
+  its judge Sonnet, against the baseline of
+  [#2271](https://github.com/JN0V/workline/pull/2271):
+
+  | DomoticsCore #295 | Today's input | Reading the repository |
+  |---|---|---|
+  | Points | 6/36 | 8/36 |
+  | Wrong claims fixed, of 7 a run | 2/21 | 2/21 |
+  | Runs with a false edit | 2/3 | 0/3 |
+
+- **The step's own target is not met**: 4 of the 7 claims in 2 of 3
+  runs; one run fixed 2, the others none. The 3 spec pages' target is
+  not in this bench.
+- **Seen**: in every run the agent found the first two claims wrong,
+  then left them in a note, having no source line to cite for removing
+  them: the citation rule [step 6](#steps) changes.
+- **Decided**: the step ships as "not worse": no claim fewer, 2 points
+  more, no false edit. Its claims bar moves to step 6, which is
+  measured against it: 4 of the 7 claims in 2 of 3 runs.
 
 [#2162]: https://github.com/JN0V/workline/pull/2162
 [#2188]: https://github.com/JN0V/workline/issues/2188
