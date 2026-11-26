@@ -1030,7 +1030,7 @@ func (r *preRun) holdJudged() error {
 // repository reads whole (#462).
 func holdJudgedDocs(docs map[string]*suspectDoc, repo string) {
 	for _, sd := range docs {
-		if sd.note == "" && !(sd.overWhole && os.Getenv("WORKLINE_EVENT") == "schedule") && held(sd.doc, sd.doc.Judged, repo) {
+		if sd.note == "" && (!sd.overWhole || os.Getenv("WORKLINE_EVENT") != "schedule") && held(sd.doc, sd.doc.Judged, repo) {
 			sd.note = fmt.Sprintf("(judged at %s, but the agent could not vouch for every sentence — its note said what; its sources unchanged since: not put before an agent again until one changes; a person reads it against them, then moves `checked`)", sd.doc.Judged)
 		}
 	}
