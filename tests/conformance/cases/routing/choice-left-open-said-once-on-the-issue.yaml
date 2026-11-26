@@ -1,0 +1,32 @@
+case: routing/choice-left-open-said-once-on-the-issue
+about: >
+  A product choice is never settled by silence (ADR-0060, amended): the
+  line wakes the product owner once for #11's question past the delay,
+  and it takes no assumption, the choice left to a person. The line's
+  comment then says it waits for a person, with no day, never only who
+  it last woke.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner]}}
+  forge:
+    issues:
+      - id: 11
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"206c8bcea856\",\"hops\":1} -->\n<!-- workline:sticky=line/state -->"
+run: {route: reconcile, ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  forge:
+    issues:
+      - id: 11
+        labels: [workline:to-refine]
+        comment-contains: "**workline's line** waits for a person on this issue.\n\n- **Why**: its question of 2026-10-01 23:50 UTC waits on its reporter, until it is answered: no assumption is taken on it."

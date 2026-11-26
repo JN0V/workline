@@ -87,8 +87,8 @@ Need or Validation draft no person accepted, waits for an answer
 | Level | `wait` | A question unanswered |
 |---|---|---|
 | `cautious` | `never` | waits for the answer |
-| `normal` | `24h` | waits 24 h, then the role writes its assumption |
-| `enterprising` | `"0"` | the assumption is written in the run that asks |
+| `normal` | `24h` | waits 24 h, then the role writes its assumption; a feature's waits for the answer |
+| `enterprising` | `"0"` | the assumption is written in the run that asks; a feature's waits for the answer |
 
 - **Values**: a duration (`24h`, `90m`, `2d`), `"0"`, or `never`;
   anything else stops the run, said
@@ -107,6 +107,12 @@ Need or Validation draft no person accepted, waits for an answer
   no agent until then: one call writes the assumption
   ([on the issue](writing.md#assumptions)); a draft is taken as written
   ([the line](../../../docs/spec/routing.md#once-a-state-the-record)).
+- **A product choice is never settled by silence**: a feature's
+  question or drafts, or a question the role finds the issue leaves
+  open, wait for the person: today, at every level; a role that owns
+  product choices may take them at `enterprising`, a later ADR's to
+  open. Drafts wait while a question does; the line says so once
+  ([amendment](../../../docs/adr/0060-the-person-is-on-the-loop.md#amendment-2026-11-25-a-product-choice-waits-for-a-person)).
 - **Silence is still no yes** to close, merge or release.
 
 ```yaml

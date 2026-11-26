@@ -1,0 +1,5 @@
+# #11's question is open, no assumption taken: its `ready` would take its
+# drafts past the question. #12's is assumed in the same run, then ready.
+- ready: {issue: 11, why: "Its drafts are all it lacks."}
+- assume: {issue: 12, assumption: "`--verbose=false` prints the plain line, as other flags do.", why: "No answer to the question."}
+- ready: {issue: 12, why: "The assumption settles the open point; its drafts are all it lacks."}

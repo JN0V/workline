@@ -23,7 +23,7 @@ issue's comments are the record; the state does not copy them.
 
 A later ask thanks the reporter ("thank you; to refine this issue,
 still: …"). An ask unanswered past `acts.ask.wait` is taken as the
-role's assumption, written on the issue
+role's assumption, written on the issue, never a product choice
 ([a question nobody answers](refine.md#a-question-nobody-answers)); a
 proposal to an outsider never times out: their issue is theirs. The agent is given the conversation in order — the engine's
 rounds among the people's comments — and the rounds spent.

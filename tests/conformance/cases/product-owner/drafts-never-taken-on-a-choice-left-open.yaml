@@ -1,0 +1,41 @@
+case: product-owner/drafts-never-taken-on-a-choice-left-open
+about: >
+  A product choice is never settled by silence (ADR-0060, amended):
+  drafts no person accepted for weeks are not taken as written with no
+  agent on a feature (#9), nor while the role's question waits on its
+  reporter with no assumption taken (#11): the question decides first.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:draft, enhancement]
+        labeled: {"workline:draft": "2026-10-01T09:00:00Z"}
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+      - id: 11
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:draft]
+        labeled: {"workline:draft": "2026-10-01T09:00:00Z"}
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, or is that undecided?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine, workline:draft, enhancement]
+        body-lacks: "## Assumptions"
+      - id: 11
+        labels: [workline:to-refine, workline:draft]
+        body-lacks: "## Assumptions"

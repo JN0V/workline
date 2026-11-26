@@ -208,9 +208,6 @@ func MakeBoard(open []forge.Issue, report int, waits []Wait, proposed []Pending,
 	return b
 }
 
-// Empty says whether the board lists no issue.
-func (b Board) Empty() bool { return len(b.Next) == 0 && len(b.Stuck) == 0 }
-
 // StuckLine says what a stuck issue waits on, since when, and what to do,
 // as the job's summary says it (ADR-0031; ADR-0038).
 func (b Board) StuckLine(w Wait) string {

@@ -1,0 +1,26 @@
+case: product-owner/feature-body-edit-answers-its-question
+about: >
+  A person may answer a product choice in the issue itself (ADR-0060,
+  amended): on a feature whose body changed since the role last read it,
+  its question with no comment after it, the agent's `ready` is taken.
+  The forge does not say who edited the body: a change the role did not
+  write is read as a person's.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, enhancement]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?\n\n<!-- workline:product-owner/ask -->", created: "2026-10-01T23:50:00Z"}
+run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:ready-nine}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 9, labels: [enhancement, workline:ready]}

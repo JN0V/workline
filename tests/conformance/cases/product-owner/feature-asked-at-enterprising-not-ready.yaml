@@ -1,0 +1,36 @@
+case: product-owner/feature-asked-at-enterprising-not-ready
+about: >
+  A product choice is never settled by silence (ADR-0060, amended),
+  even at enterprising: on a feature, the role asks and gives an
+  assumption and a `ready` in the same run, as the level would do. The
+  question is posted; the assumption is dropped, and the `ready` too:
+  the feature waits in refine for the person's answer.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          autonomy: enterprising
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, enhancement]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule, ai: fake:ask-and-assume-plain-line}
+expect:
+  status: pass
+  findings:
+    - {rule: assume-early, where: "#9"}
+    - {rule: not-ready, where: "#9", message: "not moved to ready: #9's question waits for a person's answer"}
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:to-refine, enhancement]
+        body-lacks: "## Assumptions"
+        comment-contains: "@ann, to refine this issue: Should `--verbose=false` print the plain line, as `--short` does?"

@@ -24,7 +24,7 @@ given:
 run: {role: product-owner, event: issue, target: {issue: 9}, ai: fake:assume-only-plain-line}
 expect:
   status: pass
-  findings: [{rule: assume-waits, where: "#9", message: "the role waits for the answer (autonomy cautious, or acts.ask.wait never)"}]
+  findings: [{rule: assume-waits, where: "#9", message: "the role waits for the answer: a feature, or autonomy cautious (acts.ask.wait never)"}]
   run-files:
     in/task.md: {contains: "A question you ask waits for its answer (acts.ask.wait never): write no `assume`.", not-contains: "Unanswered:"}
   forge:

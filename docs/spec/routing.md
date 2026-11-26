@@ -634,7 +634,9 @@ whose result moves the issue to the next. The table is the routing's
   (`state-timeout`; `timeout` in the record, `ask=N` or
   `drafts=<body>`), no agent until then: the product owner writes its
   assumption, or takes the drafts as written. An answer before the
-  delay cancels it; `wait: never` (cautious) wakes none
+  delay cancels it; `wait: never` (cautious), a feature, or a question
+  the product owner was woken for and left to a person (no assumption
+  taken), wakes none
   ([settings](../../roles/product-owner/docs/settings.md#how-long-a-question-waits)).
   Until then the line says it waits (`state-waits`): on its reporter,
   or a person's yes on its drafts, and the day the product owner takes

@@ -554,11 +554,11 @@ func Pre(runDir, repo string) int {
 		}
 		// Questions time out, as lazy consensus (ADR-0060): one unanswered
 		// past the level's delay, dated by the forge, read once for the
-		// role's assumption; drafts no person accepted past it, all the
-		// issue lacks, taken as written with no agent; an answer after an
-		// assumption marks it, and is read as asking to revise.
-		silence, silent := backlog.Unanswered(notes, role, is)
-		silent = silent && silence.Due(cfg.Wait, st, now) && (st.Told < silence.Round || is.ID == issueEvent()) && !aside
+		// role's assumption, or left to a person on a product choice; drafts
+		// past it, all the issue lacks, its question answered or assumed,
+		// taken with no agent; a feature's never. An answer marks them.
+		silence, open := backlog.Unanswered(notes, role, is)
+		silent := open && silence.Due(cfg.Wait.For(is), st, now) && (st.Told < silence.Round || is.ID == issueEvent()) && !aside
 		if silent {
 			timedOut[is.ID] = silence
 		}
@@ -571,8 +571,8 @@ func Pre(runDir, repo string) int {
 				"issue": is.ID, "answered": answeredBy, "own": true,
 				"why": fmt.Sprintf("@%s wrote after the role's assumptions: their word stands over them.", answeredBy)}})
 		}
-		if !aside && !backlog.Readied(is) && backlog.OnlyDrafts(is, st) {
-			taken, err := draftsDue(b, is, notes, cfg.Wait, now)
+		if !aside && !backlog.Readied(is) && backlog.OnlyDrafts(is, st) && (!open || st.Assumed >= silence.Round) {
+			taken, err := draftsDue(b, is, notes, cfg.Wait.For(is), now)
 			if errors.Is(err, forge.ErrUnreachable) {
 				fmt.Fprintln(os.Stderr, err)
 				return exitExternal
@@ -1972,21 +1972,21 @@ func modes(cfg backlog.Config, demoted []string) string {
 
 // waitSays tells the agent how long a question waits for its answer
 // (ADR-0060): for ever, a delay after which it is woken to assume, or
-// none — an `assume` beside each `ask`.
+// none — an `assume` beside each `ask`; a feature's, for ever.
 func waitSays(w backlog.Delay) string {
 	switch {
 	case w.Never:
 		return "A question you ask waits for its answer (acts.ask.wait never): write no `assume`.\n\n"
 	case w.D == 0:
-		return fmt.Sprintf("A question you ask does not wait (acts.ask.wait 0): beside each `ask`, give an `assume` for the same issue — your best answer to it, one plain sentence, written on the issue under %s for the person to correct — and go on as if it were the answer: refine, `ready` when evident. Your drafts are taken as written at once.\n\n", backlog.AssumptionsName)
+		return fmt.Sprintf("A question you ask does not wait (acts.ask.wait 0): beside each `ask`, give an `assume` for the same issue — your best answer to it, one plain sentence, written on the issue under %s for the person to correct — and go on as if it were the answer: refine, `ready` when evident. Your drafts are taken as written at once. A feature's question is a product choice and waits for its answer, whatever the level (acts.ask.wait never): on a feature, write no `assume`, and no `ready` while it waits.\n\n", backlog.AssumptionsName)
 	}
-	return fmt.Sprintf("A question you ask waits %s for its answer (acts.ask.wait): the task says when one got none; then give an `assume`, your best answer, and go on. Drafts with no answer for as long are taken as written by the engine.\n\n", w.Say())
+	return fmt.Sprintf("A question you ask waits %s for its answer (acts.ask.wait): the task says when one got none; then give an `assume`, your best answer, and go on. Drafts with no answer for as long are taken as written by the engine. A feature's question is a product choice and waits for its answer, whatever the level (acts.ask.wait never): on a feature, write no `assume`, and no `ready` while it waits.\n\n", w.Say())
 }
 
-// timedOutSaid tells the agent its question got no answer for the delay
-// (ADR-0060): take the best assumption, and go on.
+// timedOutSaid tells the agent its question got no answer for the delay:
+// take the best assumption and go on, never on a product choice.
 func timedOutSaid(s backlog.Silence, w backlog.Delay) string {
-	return fmt.Sprintf("Unanswered: your question of %s got no answer in %s (acts.ask.wait). Give an `assume` with your best answer to it — one plain sentence, from what the issue, its comments and the code show, written on the issue under %s for the person to correct — then go on as if it were the answer: `refine` what it lacks, `ready` when evident. Ask nothing more: the question stands. The person's %s and %s are never rewritten.\n",
+	return fmt.Sprintf("Unanswered: your question of %s got no answer in %s (acts.ask.wait). Give an `assume` with your best answer to it — one plain sentence, from what the issue, its comments and the code show, written on the issue under %s for the person to correct — then go on as if it were the answer: `refine` what it lacks, `ready` when evident. A product choice the issue says is undecided or open, or a threshold you asked, is never assumed: give no `assume` and no `ready` on it, it waits for the person. Ask nothing more: the question stands. The person's %s and %s are never rewritten.\n",
 		s.Since.UTC().Format("2006-01-02 15:04 UTC"), w.Say(), backlog.AssumptionsName, work.Name(work.Need), work.Name(work.Validation))
 }
 
