@@ -50,9 +50,14 @@ doc's sources, or a name the code no longer has:
         name: RefreshToken
 
 A comment in the code is not evidence: a quote found only in a comment is
-refused, and the disagreement reported for a person. With nothing else to
-cite, leave the words as they are and say in a ` + "`note`" + ` what you could not
-confirm, naming its doc: ` + "`- note: {doc: docs/example.md, text: \"…\"}`" + `. A doc
+refused, and the disagreement reported for a person.
+When you read the project yourself: words saying the code does something
+that, searched for across the project, nothing does, are contradicted and
+go too. Cite, as their source, the code standing where it would happen —
+what the code does there instead — or, with no such place, the line that
+only declares the name; say in ` + "`why`" + ` what you searched for.
+Only what reading the project cannot settle stays as it is, said in a
+` + "`note`" + ` naming its doc: ` + "`- note: {doc: docs/example.md, text: \"…\"}`" + `. A doc
 a note names, in ` + "`doc`" + ` or by path or file name in its text, is not vouched
 for: its ` + "`checked`" + ` does not move. A line a diff shown here adds is in the
 file as it is now: quote it.
