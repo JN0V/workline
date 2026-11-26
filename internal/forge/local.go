@@ -661,3 +661,13 @@ func (l *Local) SettleMerges() ([]Settled, error) {
 	}
 	return out, nil
 }
+
+// RetitleMergeRequest renames a merge request.
+func (l *Local) RetitleMergeRequest(id int, title string) error {
+	it, err := l.Item("merge-request", id)
+	if err != nil {
+		return err
+	}
+	it.Title = title
+	return l.save("merge-request", it)
+}
