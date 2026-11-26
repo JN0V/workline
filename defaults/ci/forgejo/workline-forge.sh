@@ -241,12 +241,14 @@ keep-issue)
 	jq -nc --argjson n "$n" '{id: $n}'
 	;;
 open-merge-request)
+	# Forgejo and Gitea mark a draft by a `WIP:` title prefix, not a field.
+	wip='def wip: if .draft == true and (.title | ascii_upcase | test("^\\s*(WIP:|\\[WIP\\])") | not) then "WIP: " + .title else .title end; '
 	got=$(all "/pulls?state=open") || exit 1
 	n=$(printf '%s' "$got" | jq -r --arg b "$(arg .branch)" 'map(select(.head.ref == $b)) | .[0].number // empty')
 	if [ -n "$n" ]; then
-		api PATCH "/pulls/$n" "$(arg_json '{title, body}')" >/dev/null
+		api PATCH "/pulls/$n" "$(arg_json "$wip"'{title: wip, body}')" >/dev/null
 	else
-		made=$(api POST "/pulls" "$(arg_json '{head: .branch, base, title, body}')") || exit 1
+		made=$(api POST "/pulls" "$(arg_json "$wip"'{head: .branch, base, title: wip, body}')") || exit 1
 		n=$(printf '%s' "$made" | jq -r .number)
 	fi
 	jq -nc --argjson n "$n" '{id: $n}'
