@@ -45,9 +45,10 @@ all() {
 	while :; do
 		sep='?'
 		case "$1" in *\?*) sep='&' ;; esac
-		got=$(api GET "$1${sep}limit=50&page=$page")
-		[ "$(printf '%s' "$got" | jq length)" -eq 0 ] && break
-		out=$(printf '%s\n%s' "$out" "$got" | jq -sc add)
+		got=$(api GET "$1${sep}limit=50&page=$page") || exit 1
+		len=$(printf '%s' "$got" | jq length) || exit 1
+		[ "$len" -eq 0 ] && break
+		out=$(printf '%s\n%s' "$out" "$got" | jq -sc add) || exit 1
 		page=$((page + 1))
 	done
 	printf '%s' "$out"
@@ -57,7 +58,8 @@ all() {
 # share numbers and comments on Forgejo, as on GitHub); with a login, the
 # last that user wrote.
 comment_with() { # number marker [login]
-	api GET "/issues/$1/comments" | jq -r --arg m "$2" --arg u "${3:-}" \
+	cw=$(api GET "/issues/$1/comments") || exit 1
+	printf '%s' "$cw" | jq -r --arg m "$2" --arg u "${3:-}" \
 		'map(select((.body | contains($m)) and ($u == "" or .user.login == $u))) | if $u == "" then .[0] else .[-1] end | .id // empty'
 }
 
@@ -78,26 +80,34 @@ me() {
 }
 
 open_issue_titled() { # title
-	all "/issues?state=open&type=issues" | jq -r --arg t "$1" 'map(select(.title == $t)) | .[0].number // empty'
+	oi=$(all "/issues?state=open&type=issues") || exit 1
+	printf '%s' "$oi" | jq -r --arg t "$1" 'map(select(.title == $t)) | .[0].number // empty'
 }
 
 label_id() { # name; created when missing
-	id=$(all "/labels" | jq -r --arg n "$1" 'map(select(.name == $n)) | .[0].id // empty')
+	ls=$(all "/labels") || exit 1
+	id=$(printf '%s' "$ls" | jq -r --arg n "$1" 'map(select(.name == $n)) | .[0].id // empty') || exit 1
 	if [ -z "$id" ]; then
-		id=$(api POST "/labels" "$(jq -nc --arg n "$1" '{name: $n, color: "#ededed"}')" | jq -r .id)
+		made=$(api POST "/labels" "$(jq -nc --arg n "$1" '{name: $n, color: "#ededed"}')") || exit 1
+		id=$(printf '%s' "$made" | jq -r .id) || exit 1
 	fi
 	printf '%s' "$id"
 }
 
 case "$WORKLINE_FORGE_OPERATION" in
 issue)
-	api GET "/issues/$(arg .id)" | jq -c '{id: .number, title, body: (.body // ""), labels: [.labels[].name]}'
+	got=$(api GET "/issues/$(arg .id)") || {
+		echo "the issue could not be read" >&2
+		exit 1
+	}
+	printf '%s' "$got" | jq -c '{id: .number, title, body: (.body // ""), labels: [.labels[].name]}'
 	;;
 all-issues)
 	# Open and closed, pull requests left out. Forgejo and Gitea keep no
 	# close reason: `reason` is left out, and the engine reads a closed
 	# issue as done (docs/spec/forge-command.md).
-	all "/issues?state=all&type=issues" | jq -c '{issues: [.[] | select(.pull_request == null)
+	got=$(all "/issues?state=all&type=issues") || exit 1
+	printf '%s' "$got" | jq -c '{issues: [.[] | select(.pull_request == null)
 		| {id: .number, title, body: (.body // ""), labels: [(.labels // [])[].name], closed: (.state == "closed")}]}'
 	;;
 comments)
@@ -158,14 +168,28 @@ comment | sticky)
 label)
 	n=$(arg .target.id)
 	# One name a line, read whole: a label's name may hold spaces.
-	ids=$(arg '(.add // [])[]' | while IFS= read -r l; do label_id "$l" && echo; done)
+	names=$(arg '(.add // [])[]')
+	ids=
+	while IFS= read -r l; do
+		[ -n "$l" ] || continue
+		lid=$(label_id "$l") || exit 1
+		ids="$ids$lid
+"
+	done <<EOF
+$names
+EOF
 	if [ -n "$ids" ]; then
 		api POST "/issues/$n/labels" "$(printf '%s' "$ids" | jq -Rsc 'split("\n") | map(select(. != "") | tonumber) | {labels: .}')" >/dev/null
 	fi
-	arg '(.remove // [])[]' | while IFS= read -r l; do
-		id=$(api GET "/issues/$n/labels" | jq -r --arg n "$l" 'map(select(.name == $n)) | .[0].id // empty')
-		if [ -n "$id" ]; then api DELETE "/issues/$n/labels/$id" >/dev/null; fi
-	done
+	names=$(arg '(.remove // [])[]')
+	while IFS= read -r l; do
+		[ -n "$l" ] || continue
+		cur=$(api GET "/issues/$n/labels") || exit 1
+		id=$(printf '%s' "$cur" | jq -r --arg n "$l" 'map(select(.name == $n)) | .[0].id // empty') || exit 1
+		if [ -n "$id" ]; then api DELETE "/issues/$n/labels/$id" >/dev/null || exit 1; fi
+	done <<EOF
+$names
+EOF
 	echo '{}'
 	;;
 open-issue)
@@ -176,7 +200,8 @@ open-issue)
 			api POST "/issues/$n/comments" "$(printf '%s' "$req" | jq -c '{body: (.body + "\n\n" + .marker)}')" >/dev/null
 		fi
 	else
-		n=$(api POST "/issues" "$(printf '%s' "$req" | jq -c '{title, body: (.body + "\n\n" + .marker)}')" | jq -r .number)
+		made=$(api POST "/issues" "$(printf '%s' "$req" | jq -c '{title, body: (.body + "\n\n" + .marker)}')") || exit 1
+		n=$(printf '%s' "$made" | jq -r .number)
 	fi
 	jq -nc --argjson n "$n" '{id: $n}'
 	;;
@@ -185,27 +210,32 @@ keep-issue)
 	if [ -n "$n" ]; then
 		api PATCH "/issues/$n" "$(arg_json '{body}')" >/dev/null
 	elif [ "$(arg .create)" = true ]; then
-		n=$(api POST "/issues" "$(arg_json '{title, body}')" | jq -r .number)
+		made=$(api POST "/issues" "$(arg_json '{title, body}')") || exit 1
+		n=$(printf '%s' "$made" | jq -r .number)
 	else
 		n=0
 	fi
 	jq -nc --argjson n "$n" '{id: $n}'
 	;;
 open-merge-request)
-	n=$(all "/pulls?state=open" | jq -r --arg b "$(arg .branch)" 'map(select(.head.ref == $b)) | .[0].number // empty')
+	got=$(all "/pulls?state=open") || exit 1
+	n=$(printf '%s' "$got" | jq -r --arg b "$(arg .branch)" 'map(select(.head.ref == $b)) | .[0].number // empty')
 	if [ -n "$n" ]; then
 		api PATCH "/pulls/$n" "$(arg_json '{title, body}')" >/dev/null
 	else
-		n=$(api POST "/pulls" "$(arg_json '{head: .branch, base, title, body}')" | jq -r .number)
+		made=$(api POST "/pulls" "$(arg_json '{head: .branch, base, title, body}')") || exit 1
+		n=$(printf '%s' "$made" | jq -r .number)
 	fi
 	jq -nc --argjson n "$n" '{id: $n}'
 	;;
 open-merge-requests)
-	all "/pulls?state=open" | jq -c --arg p "$(arg .prefix)" '{branches: [.[].head.ref | select(startswith($p))] | sort}'
+	got=$(all "/pulls?state=open") || exit 1
+	printf '%s' "$got" | jq -c --arg p "$(arg .prefix)" '{branches: [.[].head.ref | select(startswith($p))] | sort}'
 	;;
 close-merge-request)
 	# Its comment once, by its marker, then closed; the branch stays.
-	n=$(all "/pulls?state=open" | jq -r --arg b "$(arg .branch)" 'map(select(.head.ref == $b)) | .[0].number // empty')
+	got=$(all "/pulls?state=open") || exit 1
+	n=$(printf '%s' "$got" | jq -r --arg b "$(arg .branch)" 'map(select(.head.ref == $b)) | .[0].number // empty')
 	if [ -n "$n" ]; then
 		if [ -z "$(comment_with "$n" "$(arg .marker)")" ]; then
 			api POST "/issues/$n/comments" "$(printf '%s' "$req" | jq -c '{body: (.body + "\n\n" + .marker)}')" >/dev/null
@@ -215,12 +245,14 @@ close-merge-request)
 	echo '{}'
 	;;
 merge-request-branch)
-	api GET "/pulls/$(arg .id)" | jq -c '{branch: .head.ref, here: (.head.repo.full_name == .base.repo.full_name), title: .title, body: (.body // "")}'
+	got=$(api GET "/pulls/$(arg .id)") || exit 1
+	printf '%s' "$got" | jq -c '{branch: .head.ref, here: (.head.repo.full_name == .base.repo.full_name), title: .title, body: (.body // "")}'
 	;;
 merge-requests)
 	# The open pull requests, each with where it goes and who opened it: a
 	# bot as for `comments`; a fork's head kept under refs/pull/<n>/head.
-	all "/pulls?state=open" | jq -c '{"merge-requests": [.[]
+	got=$(all "/pulls?state=open") || exit 1
+	printf '%s' "$got" | jq -c '{"merge-requests": [.[]
 		| {id: .number, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name),
 		title: (.title // ""), author: .user.login, bot: ((.user.id // 0) < 0 or (.user.login | test("(-bot|\\[bot\\])$"))),
 		head: "refs/pull/\(.number)/head"}]}'
