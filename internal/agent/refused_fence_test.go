@@ -23,7 +23,7 @@ func TestRefusedAnswerCapsAndFencesADiff(t *testing.T) {
 	if err := writeRefused(run, "--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b\n"+strings.Repeat("+x\n", 40000)); err != nil {
 		t.Fatal(err)
 	}
-	got := refusedAnswer(run)
+	got := refusedAnswerMax(run, maxRefusedChars)
 	if !strings.Contains(got, "```diff\n--- a/x\n+++ b/x") || len(got) > maxRefusedChars+200 {
 		t.Errorf("diff not fenced or not capped (%d chars): %.200s", len(got), got)
 	}

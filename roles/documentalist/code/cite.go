@@ -488,7 +488,6 @@ func citationMessage(docPath string, refused []placeRefusal, held []string, off 
 // rule, and why: the rest of the doc's fix may hold without it.
 type placeRefusal struct {
 	block     citedBlock
-	place     string // its lines, as "line 12" or "lines 12-14"
 	rule, why string
 }
 
@@ -550,7 +549,7 @@ func (cc *citeContext) citationRefusals(docPath, old string, f fileDiff, claims 
 			held = append(held, place)
 			continue
 		}
-		r := placeRefusal{block: b, place: place}
+		r := placeRefusal{block: b}
 		switch {
 		case len(commentAt) > 0:
 			r.rule = "comment-not-evidence"

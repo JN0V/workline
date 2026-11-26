@@ -312,11 +312,10 @@ func anchors(content string) map[string]bool {
 
 // paragraph is a run of prose lines between blank lines, headings or code.
 type paragraph struct {
-	doc        string
-	from, to   int
-	shingles   map[string]bool
-	wordsCount int
-	text       string // its words, normalized: what identifies it wherever it moves
+	doc      string
+	from, to int
+	shingles map[string]bool
+	text     string // its words, normalized: what identifies it wherever it moves
 }
 
 // duplicatesUnset says when the settings duplicates needs are missing.
@@ -354,7 +353,7 @@ func duplicates(t Tree, d Duplicates) []Problem {
 					text.WriteString(l.text + " ")
 				}
 				if ws := normalWords(text.String()); len(ws) >= d.MinWords {
-					paras = append(paras, paragraph{doc: p, from: cur[0].n, to: cur[len(cur)-1].n, shingles: shingles(ws), wordsCount: len(ws), text: strings.Join(ws, " ")})
+					paras = append(paras, paragraph{doc: p, from: cur[0].n, to: cur[len(cur)-1].n, shingles: shingles(ws), text: strings.Join(ws, " ")})
 				}
 			}
 			cur = nil

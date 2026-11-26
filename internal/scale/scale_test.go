@@ -117,7 +117,7 @@ func TestLabelFamilies(t *testing.T) {
 		{Effort, "effort/", []string{"effort/small", "effort/medium", "effort/large", "effort/x-large"}, []int{1, 2, 3, 3}},
 		{Effort, "effort::", []string{"effort::low", "effort::medium", "effort::high"}, []int{1, 2, 3}},
 	} {
-		f, err := Labels(c.s, c.prefix, c.labels)
+		f, err := named(c.s, c.prefix, c.labels, nil)
 		if err != nil {
 			t.Errorf("%s: %v", c.prefix, err)
 		}
@@ -135,7 +135,7 @@ func TestLabelFamilies(t *testing.T) {
 // numbers only; a word no table knows is said and carries none; the first
 // label of a level is the one written.
 func TestFamilyMembers(t *testing.T) {
-	f, err := Labels(Priority, "P", []string{"Performance", "P-critical", "P1a", "P3", "P4", "P5", "bug"})
+	f, err := named(Priority, "P", []string{"Performance", "P-critical", "P1a", "P3", "P4", "P5", "bug"}, nil)
 	if err != nil {
 		t.Errorf("only P3 to P5 belong: %v", err)
 	}
@@ -148,14 +148,14 @@ func TestFamilyMembers(t *testing.T) {
 	if l, _ := f.Label(4); l.Name != "P4" {
 		t.Errorf("Low is written %q; want P4, its lowest", l.Name)
 	}
-	g, err := Labels(Priority, "priority/", []string{"priority/awaiting-more-evidence", "priority/important-soon"})
+	g, err := named(Priority, "priority/", []string{"priority/awaiting-more-evidence", "priority/important-soon"}, nil)
 	if err == nil || !strings.Contains(err.Error(), "priority/awaiting-more-evidence") {
 		t.Errorf("err = %v; want it to name the label no table knows", err)
 	}
 	if g.Of("priority/awaiting-more-evidence") != 0 || g.Of("priority/important-soon") != 2 {
 		t.Errorf("family priority/ = %+v", g.Labels)
 	}
-	h, _ := Labels(Priority, "P", []string{"P10", "P2", "P9", "P1"})
+	h, _ := named(Priority, "P", []string{"P10", "P2", "P9", "P1"}, nil)
 	if l, _ := h.Label(4); l.Name != "P9" {
 		t.Errorf("Low = %+v", h.Labels)
 	}
@@ -191,8 +191,8 @@ func TestUsedIsWorklinesOwn(t *testing.T) {
 		t.Fatalf("used = %+v", Used)
 	}
 	issue := []string{"bug", "workline:priority/3", "workline:priority/0", "workline:priority/5", "workline:priority/2", "priority/high"}
-	if got := f.Levels(issue); !slices.Equal(got, []int{3, 2}) || f.First(issue) != 2 || f.First([]string{"bug"}) != 0 {
-		t.Errorf("levels = %v, first %d", got, f.First(issue))
+	if got := f.Levels(issue); !slices.Equal(got, []int{3, 2}) {
+		t.Errorf("levels = %v", got)
 	}
 	colors := []string{"b60205", "d93f0b", "fbca04", "c5def5"}
 	for l := 1; l <= 4; l++ {

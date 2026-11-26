@@ -139,7 +139,6 @@ func (f File) givenPieces() int {
 // Pick is what a role is given.
 type Pick struct {
 	Files   []File   // the code, then the test, in order
-	Names   []string // the names read as code
 	Many    []string // names with more definitions than given: "`f` (9 definitions, 2 given)"
 	Linked  []string // one step away, as paths: "`a.h` (included)"
 	Left    int      // the budget left
@@ -160,17 +159,6 @@ func (p Pick) Paths() []string {
 		}
 	}
 	return out
-}
-
-// Bytes are the bytes of the code and the test given.
-func (p Pick) Bytes() int {
-	n := 0
-	for _, f := range p.Files {
-		if b := f.bytes(); b > 0 {
-			n += b + fileBytes
-		}
-	}
-	return n
 }
 
 // Named are the files the pick holds, given or not, the test aside.
@@ -514,7 +502,6 @@ func (p *Picker) Pick(a Ask) Pick {
 	}
 	// 2. The names, by their hits.
 	names := p.codeNames(a.Text)
-	pk.Names = names
 	hits := p.grep(names)
 	type found struct {
 		defs, aside []want

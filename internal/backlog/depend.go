@@ -183,19 +183,6 @@ func CycleText(c []int) string {
 	return strings.Join(parts, ", ")
 }
 
-// NextReady is the first issue of an ordered list bearing workline:ready
-// that waits on no open issue: the one offered to whoever builds next
-// (ADR-0028); nil when there is none. A parent is never offered: its
-// parts are what is built, and a person accepts it (ADR-0029).
-func NextReady(ordered []forge.Issue, open map[int]bool) *forge.Issue {
-	for i, is := range ordered {
-		if Offered(is, open) {
-			return &ordered[i]
-		}
-	}
-	return nil
-}
-
 // checkDepend checks a depend act against the backlog as it is (ADR-0028):
 // the issue and each blocker open, not itself, 1 to 5; only those not
 // there already kept; none that would close a cycle.
@@ -239,11 +226,9 @@ func (p *Plan) checkDepend(c *Proposal) (rule, why string) {
 	return "", ""
 }
 
-// Backlog is what the order says of the open issues: the first ready one
-// offered, those waiting, the cycles (ADR-0028). The report issue is left
-// out.
+// Backlog is what the order says of the open issues: those waiting on
+// another open issue, the cycles. The report issue is left out.
 type Backlog struct {
-	Next    *forge.Issue
 	Waiting map[int][]int // each issue waiting on an open one, and on which
 	Blocked []int         // those issues, in the backlog's order
 	Cycles  [][]int
@@ -267,37 +252,7 @@ func ReadBacklog(open []forge.Issue, report int) Backlog {
 			bl.Blocked = append(bl.Blocked, is.ID)
 		}
 	}
-	bl.Next = NextReady(list, isOpen)
 	return bl
-}
-
-// waiting is the report's part on what the order holds back: the issues
-// waiting, the cycles; the first ready issues are under Next (ADR-0031).
-func (p *Plan) waiting() string {
-	closed := p.closedInRun()
-	var open []forge.Issue
-	for _, is := range p.issues {
-		if closed[is.ID] {
-			continue
-		}
-		open = append(open, p.asLeft(is))
-	}
-	bl := ReadBacklog(open, p.Report)
-	if len(bl.Blocked) == 0 && len(bl.Cycles) == 0 {
-		return ""
-	}
-	var lines []string
-	for _, id := range bl.Blocked {
-		lines = append(lines, fmt.Sprintf("- #%d %s waits on %s.", id, p.issues[id].Title, issueList(bl.Waiting[id])))
-	}
-	for _, c := range bl.Cycles {
-		lines = append(lines, fmt.Sprintf("- **Cycle**: %s. None of them is offered first until a person takes a link off.", CycleText(c)))
-	}
-	summary := plural(len(bl.Blocked), "issue") + " waiting on another open issue"
-	if len(bl.Cycles) > 0 {
-		summary += ", " + plural(len(bl.Cycles), "cycle") + " to break"
-	}
-	return fold(summary, "Ordered after what they wait on, never offered first to whoever builds next.\n\n"+strings.Join(lines, "\n"))
 }
 
 // closedInRun are the issues this run closes, as decided so far: no longer
@@ -465,18 +420,6 @@ func (p *Plan) recordUndepend(c Proposal) {
 		d.Set = strings.Join(keep, ",")
 	}
 	p.Record.Done = slices.DeleteFunc(p.Record.Done, func(d Done) bool { return d.Act == "depend" && d.Set == "" })
-	p.dropped[c.Issue] = append(p.dropped[c.Issue], c.BlockedBy...)
-}
-
-// asLeft is an issue as this run leaves what it waits on: the links its
-// depend acts add, those its undepend acts take off.
-func (p *Plan) asLeft(is forge.Issue) forge.Issue {
-	is.BlockedBy = append(slices.Clone(is.BlockedBy), p.added[is.ID]...)
-	if drop := p.dropped[is.ID]; len(drop) > 0 {
-		is.BlockedBy = slices.DeleteFunc(is.BlockedBy, func(n int) bool { return slices.Contains(drop, n) })
-		is.Body = WithoutBlockers(is.Body, drop)
-	}
-	return is
 }
 
 // reaches says whether from waits, through the relations given, on to.

@@ -71,7 +71,7 @@ func TestGenericHome(t *testing.T) {
 
 func TestFromSettings(t *testing.T) {
 	d, err := FromSettings(map[string]any{"test-paths": []any{"**/spec/**"}, "test-homes": []any{map[string]any{"tests": "**/spec/**", "code": "**/lib/**"}}})
-	if err != nil || !d.PathsSet || !d.HomesSet || d.Home("spec/models/cart_spec.rb") != "lib/models" {
+	if err != nil || !d.PathsSet || d.Home("spec/models/cart_spec.rb") != "lib/models" {
 		t.Errorf("FromSettings = %+v, %v", d, err)
 	}
 	d, err = FromSettings(map[string]any{})

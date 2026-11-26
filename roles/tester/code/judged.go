@@ -33,7 +33,6 @@ type doubt struct {
 	Lines []string `json:"lines"`
 	Where string   `json:"where"`
 	Base  string   `json:"base"` // the commit the judge's reads are served at
-	errs  []buildError
 }
 
 // RedUnproven is the rule of the finding a red proof the judge did not

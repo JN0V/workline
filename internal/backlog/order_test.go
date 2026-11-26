@@ -2,7 +2,6 @@ package backlog
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -99,20 +98,6 @@ func TestOrderCycle(t *testing.T) {
 	issues = []forge.Issue{{ID: 1, BlockedBy: []int{2}}, {ID: 2, BlockedBy: []int{3}}, {ID: 3, BlockedBy: []int{2}}}
 	if cycles := Order(issues); fmt.Sprint(cycles) != "[[2 3 2]]" || ids(issues) != "[2 1 3]" {
 		t.Fatalf("order = %s, cycles %v", ids(issues), cycles)
-	}
-}
-
-// The report's waiting part reads the backlog as the run leaves it: an
-// issue the run closed holds nothing back, a link the run set holds.
-func TestReportWaiting(t *testing.T) {
-	p := &Plan{issues: map[int]forge.Issue{
-		1: {ID: 1, Title: "a"}, 2: {ID: 2, Title: "b", BlockedBy: []int{1}},
-		3: {ID: 3, Title: "c", Labels: []string{LabelReady}},
-	}, added: map[int][]int{3: {2}},
-		Decisions: []Decision{{Mode: Act, Act: Proposal{Do: "close", Issue: 1}}}}
-	got := p.waiting()
-	if !strings.Contains(got, "- #3 c waits on #2.") || strings.Contains(got, "#2 b waits") || strings.Contains(got, "**Next**") {
-		t.Fatal(got)
 	}
 }
 

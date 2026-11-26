@@ -31,7 +31,6 @@ var testerKinds = []string{"tests", "kept", "rewritten", "whys", "removal"}
 
 // testerAct is what a tester's act is re-checked against, read with it.
 type testerAct struct {
-	mr       int
 	record   testmark.Draft
 	recorded bool
 	answered testmark.Answered
@@ -86,7 +85,7 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 				return nil, nil, err
 			}
 			out = append(out, Act{Role: testRole, Kind: "removal", Ref: ref, Commit: commit, Day: day, By: by, Line: subject, key: commit,
-				tester: &testerAct{mr: m.ID, body: full.Body}})
+				tester: &testerAct{body: full.Body}})
 		case strings.HasPrefix(m.Branch, testmark.TestsBranch):
 			r, ok, err := testmark.ReadDraft(f, m.ID)
 			if err != nil {
@@ -94,7 +93,7 @@ func testerActs(repo string, f forge.Forge, mrs []forge.MergeRequest) ([]Act, []
 			}
 			if commit != "" {
 				out = append(out, Act{Role: testRole, Kind: "tests", Ref: ref, Commit: commit, Day: day, By: by, Line: subject, key: commit,
-					tester: &testerAct{mr: m.ID, record: r, recorded: ok}})
+					tester: &testerAct{record: r, recorded: ok}})
 			}
 			answers, why, err := answeredOn(f, m.ID, ref, r, ok)
 			if err != nil {
@@ -165,7 +164,7 @@ func answeredOn(f forge.Forge, id int, ref string, r testmark.Draft, recorded bo
 			}
 			out = append(out, Act{Role: testRole, Kind: ans.Act, Ref: ref, Where: ans.Test, Commit: ans.At, Day: day, By: ans.Model,
 				Line: words, key: fmt.Sprintf("%s/%s/%d", ref, t.ID, i),
-				tester: &testerAct{mr: id, record: r, recorded: recorded, answered: ans, thread: t.Comments[:i], reply: words}})
+				tester: &testerAct{record: r, recorded: recorded, answered: ans, thread: t.Comments[:i], reply: words}})
 			if ans.Whys { // the analysis, its own act: its root cause read, not the answer's
 				w := out[len(out)-1]
 				w.Kind, w.key = "whys", w.key+"/whys"

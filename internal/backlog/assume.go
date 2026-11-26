@@ -116,13 +116,11 @@ func AskWait(settings map[string]any) Delay {
 }
 
 // Silence is a question to an issue's reporter no comment followed: its
-// round, when the forge dated it (Dated false when it does not say), its
-// questions.
+// round, when the forge dated it (Dated false when it does not say).
 type Silence struct {
-	Round     int
-	Since     time.Time
-	Dated     bool
-	Questions string
+	Round int
+	Since time.Time
+	Dated bool
 }
 
 // Unanswered is the role's last question to an issue's reporter when no
@@ -138,7 +136,7 @@ func Unanswered(notes []forge.Note, role string, is forge.Issue) (Silence, bool)
 		case Round(n.Body, role):
 			round++
 			open = strings.HasPrefix(last, "<!-- workline:"+role+"/ask")
-			s = Silence{Round: round, Questions: askedIn(n.Body)}
+			s = Silence{Round: round}
 			s.Since, s.Dated = readTime(n.Created)
 		case !engine && !strings.Contains(n.Body, "<!-- workline:") && countsAnswer(n, is):
 			open = false

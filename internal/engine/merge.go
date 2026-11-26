@@ -835,9 +835,7 @@ func commitSaid(repo, c string) string {
 // inLine is a merge request accepted into the base: it merges once its
 // own head is green, or waits for its verdict.
 type inLine struct {
-	mr     forge.MergeRequest
-	where  string
-	behind bool
+	where string
 	// up brings it up to date with the base when it conflicts, or, clean
 	// asked, when it merges clean (upToDate): acted, not merged now.
 	up func(clean bool, due string) (bool, error)
@@ -1020,7 +1018,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	case tip == "":
 		return nil, nil // its branch is gone
 	}
-	e := &inLine{mr: mr, where: where, behind: !isAncestor(o.Repo, baseTip, tip)}
+	e := &inLine{where: where}
 	e.up = func(clean bool, due string) (bool, error) {
 		return upToDate(f, o, local, mr, baseTip, tip, say, clean, due)
 	}

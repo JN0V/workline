@@ -805,7 +805,6 @@ type Plan struct {
 	ledger        *Ledger          // what the role holds, read from the issues
 	ticked        map[string]bool  // the proposals a person accepted this run decided, done or dropped: settled
 	added         map[int][]int    // the blockers this run's depend acts add, for the next act's cycle check
-	dropped       map[int][]int    // the blockers this run's undepend acts take off
 	revisited     map[int]string   // the blocked issues this run decided on: unblock or blocked, one a run
 	labels        []string         // the project's labels, read once, at the first kind act
 	askedNow      map[int]int      // the issues this run asks a question on, each its round: an assumption at once follows it (ADR-0060)
@@ -1672,7 +1671,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 	if err != nil {
 		return err
 	}
-	p.open, p.seen, p.issues, p.ticked, p.added, p.dropped = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}, map[string]bool{}, map[int][]int{}, map[int][]int{}
+	p.open, p.seen, p.issues, p.ticked, p.added = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}, map[string]bool{}, map[int][]int{}
 	for _, is := range open {
 		p.open[is.ID] = true
 		p.issues[is.ID] = is

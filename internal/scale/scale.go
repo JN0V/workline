@@ -143,16 +143,6 @@ func (f Family) Levels(names []string) []int {
 	return out
 }
 
-// First is the first level in the order's direction names carry — the
-// most pressing priority, the lightest effort —; 0 when they carry none.
-func (f Family) First(names []string) int {
-	set := f.Levels(names)
-	if len(set) == 0 {
-		return 0
-	}
-	return slices.Min(set)
-}
-
 // Label is the label written for level l: the family's first carrying
 // it; ok is false when none does.
 func (f Family) Label(l int) (Label, bool) {
@@ -177,20 +167,15 @@ func (f Family) Others(l int) []string {
 	return out
 }
 
-// Labels reads a project's family of labels by name: each label starting
+// named reads a project's family of labels by name: each label starting
 // with prefix, its rest a number or a word. Numbers count from the
 // family's own start, 0 when it has a 0, else 1 (Scale.Number): a family
 // created a label at a time, its first label never made, still reads its
 // second as the second level. A prefix ending in a letter or a digit
 // takes numbers only — P0, effort1: hours —, so P-critical belongs to
 // another family and Performance to none. A word no table knows carries
-// no level, and the error names it, to be said once.
-func Labels(s Scale, prefix string, labels []string) (Family, error) {
-	return named(s, prefix, labels, nil)
-}
-
-// named reads a family of labels as Labels does, a name the project's
-// settings map (Setting.Names) carrying the level they give it.
+// no level, and the error names it, to be said once. A name the project's
+// settings map (Setting.Names) carries the level they give it.
 func named(s Scale, prefix string, labels []string, names map[string]int) (Family, error) {
 	type read struct {
 		name   string
