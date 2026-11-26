@@ -17,10 +17,7 @@ judge:
     Validation or its Verification, what the change shown does not do or
     prove — a scenario a test could check and none does, too; a scenario
     of documentation or of the pipeline no test can check is proven by
-    the change itself; one of a behaviour kept as before, which the
-    issue's Verification asks no test of, owes none unless the change
-    rewrites, moves or removes the code that did it: answer no to a
-    finding that only says it has no test — or when the change does what the issue does not ask: a file
+    the change itself — or when the change does what the issue does not ask: a file
     changed beyond the issue's Scope, listed by the author or not, whose
     change the issue's Need does not need. The Scope is a hint: a file
     beyond it that the Need needs, or that the author's reason ties to it
@@ -34,7 +31,11 @@ judge:
     merge request, its commits reviewed before included, and its last
     commits that are workline's own when shown apart: answer no if any
     of it does it, or if the issue does not ask what the finding says
-    lacks. Answer no too if the finding only guesses.
+    lacks. Answer no too if the finding only guesses, or if it only
+    says a scenario has no test where the scenario is a behaviour kept
+    as before, which the issue's Verification asks no test of: such a
+    behaviour owes none unless the change rewrites, moves or removes
+    the code that did it.
   reads: issue
 ---
 **Intent.** The change says it closes the issue under "What the change
