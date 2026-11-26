@@ -51,10 +51,11 @@ there, not committed
   (`record-unread`), and the docs are judged again; so is a comment
   carrying its marker that workline's own account did not write
   ([why](push-records.md)).
-- **A fix proposed there, merged without it**: when the doc still needs
-  that comment's diff, its header lines left out, the fix is said
-  (`fix-not-applied`) in the issue of docs waiting for a person, the
-  merge request named: said once, not left in a comment nobody applies.
+- **A fix proposed there, merged without it**: when that comment's diff
+  still applies, its header lines and the hunks only they change left
+  out, the fix is said (`fix-not-applied`) in the issue of docs waiting
+  for a person, the merge request named, for a doc held from the agent
+  too: said once, not left in a comment nobody applies.
 
 ## One merge request per task
 

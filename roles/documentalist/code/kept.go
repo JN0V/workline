@@ -240,16 +240,21 @@ func stickyOn(f forge.Forge, t forge.Target, key string, u *othersKept) (string,
 	if err != nil {
 		return "", err
 	}
+	return stickyIn(kept, t.ID, key, u), nil
+}
+
+// stickyIn is stickyOn on merge request id's comments already read.
+func stickyIn(kept forge.Kept, id int, key string, u *othersKept) string {
 	marker := forge.Marker("sticky=documentalist/" + key)
 	if body, ok := kept.Last(marker); ok {
-		return body, nil
+		return body
 	}
 	if err := kept.Unread(marker); err != nil {
-		if s := fmt.Sprintf("on merge request %d (%v)", t.ID, err); !slices.Contains(u.unread, s) {
+		if s := fmt.Sprintf("on merge request %d (%v)", id, err); !slices.Contains(u.unread, s) {
 			u.unread = append(u.unread, s)
 		}
 	}
-	return "", nil
+	return ""
 }
 
 // othersKept is what a run's reads of the documentalist's comments left
@@ -493,9 +498,6 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 	oldest, oldestAt := "", int64(0)
 	for _, p := range sortedDocs(suspects) {
 		sd := suspects[p]
-		if sd.note != "" {
-			continue
-		}
 		paths, local := docPaths(sd.doc)
 		if !local {
 			continue
@@ -558,9 +560,19 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 	for i, c := range chain {
 		at[c] = i
 	}
-	comments, fixes := map[int]map[string]keptRecord{}, map[int]string{}
 	var found []fromMerged
 	var findings []verdict.Finding
+	read := map[int]forge.Kept{}
+	sticky := func(id int, key string) string { // each merge request's comments read once
+		kept, ok := read[id]
+		if !ok {
+			if kept, err = forge.ReadKept(f, forge.Target{Kind: "merge-request", ID: id}); err != nil {
+				findings = append(findings, unread(fmt.Sprintf("the documentalist's comment on merge request %d", id), err))
+			}
+			read[id] = kept
+		}
+		return stickyIn(kept, id, key, &u)
+	}
 	for _, c := range cands {
 		var mr forge.MergeRequest
 		as := ""
@@ -574,38 +586,21 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 		// said once, in the issue of docs waiting for a person.
 		for _, ch := range c.changes {
 			m, ok := became[strings.Fields(ch)[0]]
-			if _, read := fixes[m.ID]; ok && !read {
-				if fixes[m.ID], err = stickyOn(f, forge.Target{Kind: "merge-request", ID: m.ID}, "patch", &u); err != nil {
-					findings = append(findings, unread(fmt.Sprintf("the documentalist's comment on merge request %d", m.ID), err))
-				}
-			}
-			if !ok || !strings.Contains(fixes[m.ID], "diff --git a/"+c.sd.doc.Path+" ") {
+			if !ok || !strings.Contains(sticky(m.ID, "patch"), "diff --git a/"+c.sd.doc.Path+" ") {
 				continue
 			}
-			if unapplied(fixes[m.ID], c.sd.doc.Path, repo) {
+			if unapplied(sticky(m.ID, "patch"), c.sd.doc.Path, repo) {
 				findings = append(findings, verdict.Finding{Rule: "fix-not-applied", Level: "warn", Where: c.sd.doc.Path,
-					Message: fmt.Sprintf("merge request #%d merged without the fix the documentalist proposed in its comment there, and the doc still needs it: a person applies that diff (`git apply`), its `judged` line left out", m.ID)})
+					Message: fmt.Sprintf("merge request #%d merged without the fix the documentalist proposed in its comment there, and that fix still applies: a person applies that diff (`git apply`), its header lines left out", m.ID)})
 			}
 			break
 		}
-		if as == "" {
+		// A doc held already, or read in parts tonight: the record of a
+		// change read alone would hold it from them (#462).
+		if as == "" || c.sd.note != "" || c.sd.rest {
 			continue
 		}
-		// A doc read in parts tonight: the record of a change read alone
-		// would hold it from them (#462).
-		if c.sd.rest {
-			continue
-		}
-		records, read := comments[mr.ID]
-		if !read {
-			records, err = keptOn(f, forge.Target{Kind: "merge-request", ID: mr.ID}, &u)
-			if err != nil {
-				findings = append(findings, unread(fmt.Sprintf("the documentalist's comment on merge request %d", mr.ID), err))
-				records = map[string]keptRecord{}
-			}
-			comments[mr.ID] = records
-		}
-		r, ok := records[c.sd.doc.Path]
+		r, ok := parseKept(sticky(mr.ID, keptKey))[c.sd.doc.Path]
 		if !ok {
 			continue
 		}
@@ -629,26 +624,31 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 }
 
 // unapplied says whether the fix a documentalist's comment proposed for doc,
-// its header lines left out, changes its body and still applies at HEAD.
+// its header lines and the hunks only they changed left out, changes its
+// body and still applies at HEAD.
 func unapplied(comment, doc, repo string) bool {
-	var b strings.Builder
-	in, changes := false, false
-	for _, l := range strings.Split(comment, "\n") {
+	var kept []string
+	in, changes, changed, at := false, false, false, 0
+	for _, l := range append(strings.Split(comment, "\n"), "```") {
 		l = cmp.Or(l, " ") // a blank context line a forge trimmed
-		if strings.HasPrefix(l, "diff --git ") || strings.HasPrefix(l, "```") {
-			in = l == "diff --git a/"+doc+" b/"+doc
+		if strings.HasPrefix(l, "diff --git ") || strings.HasPrefix(l, "```") || strings.HasPrefix(l, "@@") {
+			if in && !changed && kept[at][0] == '@' { // a hunk left with no body change: the header moved on its own
+				kept = kept[:at]
+			}
+			changes, changed, at = changes || changed, false, len(kept)
+			in = in && l[0] == '@' || l == "diff --git a/"+doc+" b/"+doc
 		}
 		header := recordLine.MatchString(l[1:]) || strings.HasPrefix(l[1:], "checked:")
 		switch {
 		case !in || header && l[0] == '+':
-		case header && l[0] == '-':
-			b.WriteString(" " + l[1:] + "\n")
+		case header:
+			kept = append(kept, " "+l[1:])
 		default:
-			changes = changes || l[0] == '+' && !strings.HasPrefix(l, "+++") || l[0] == '-' && !strings.HasPrefix(l, "---")
-			b.WriteString(l + "\n")
+			changed = changed || l[0] == '+' && !strings.HasPrefix(l, "+++") || l[0] == '-' && !strings.HasPrefix(l, "---")
+			kept = append(kept, l)
 		}
 	}
-	_, err := gitIn(repo, b.String(), "apply", "--recount", "--check", "-")
+	_, err := gitIn(repo, strings.Join(kept, "\n")+"\n", "apply", "--recount", "--check", "-")
 	return changes && err == nil
 }
 
