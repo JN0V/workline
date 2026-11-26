@@ -1,17 +1,9 @@
 // Meaning scores reviewer replay runs by what their findings say, not by
-// where they are quoted (docs/spec/conformance/replay.md, "Scored by
-// meaning"). A judge, the same for every arm and blind to it, is given a
-// case's points (points.yaml) and every finding one run raised on it, and
-// says which findings state which point; on a clean case it reads the
-// repository and says whether each Important shown is a true defect, a
-// nit or a false alarm. Each judgement is asked twice, a third time when
-// the two differ.
+// where they are quoted: a judge blind to the arm says which findings
+// state which point of points.yaml, twice, and on a clean change whether
+// each Important shown is true (docs/spec/conformance/replay.md).
 //
 //	go run ./tests/evaluation/meaning -findings runs.jsonl -out scores/
-//
-// It writes scores.tsv (a row per point and run) and summary.md (per arm),
-// and keeps each judgement under <out>/judgments, so a second run asks
-// only what is new.
 package main
 
 import (
@@ -465,13 +457,13 @@ func readFindings(path string) ([]caseRun, error) {
 	seen := map[string]int{}
 	sc := bufio.NewScanner(f)
 	sc.Buffer(nil, 16<<20)
-	for sc.Scan() {
+	for line := 1; sc.Scan(); line++ {
 		if len(bytes.TrimSpace(sc.Bytes())) == 0 {
 			continue
 		}
 		var cr caseRun
 		if err := json.Unmarshal(sc.Bytes(), &cr); err != nil {
-			return nil, fmt.Errorf("%s, line %d: %v", path, len(out)+1, err)
+			return nil, fmt.Errorf("%s, line %d: %v", path, line, err)
 		}
 		cr.Case = strings.TrimPrefix(cr.Case, "reviewer/")
 		seen[cr.Arm+"\x00"+cr.Case]++
@@ -492,11 +484,13 @@ func score(j *judge, defs map[string]caseDef, runs []caseRun, parallel int, prog
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	done := 0
-	for i, cr := range runs {
-		def, ok := defs[cr.Case]
-		if !ok {
-			return nil, fmt.Errorf("points.yaml has no case %q", cr.Case)
+	for _, cr := range runs { // before anyone is asked
+		if _, ok := defs[cr.Case]; !ok {
+			return out, fmt.Errorf("points.yaml has no case %q (%s run %d)", cr.Case, cr.Arm, cr.Run)
 		}
+	}
+	for i, cr := range runs {
+		def := defs[cr.Case]
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -844,6 +838,10 @@ func main() {
 	}
 }
 
+// judgeDir makes a folder's name of a judge's: the judgements kept are
+// one judge's, never read back for another.
+var judgeDir = regexp.MustCompile(`[^A-Za-z0-9.]+`)
+
 // run scores the findings file into out. What was judged is written even
 // when a judgement failed: the error names what was not.
 func run(findings, out, spec, cases string, parallel int) error {
@@ -865,7 +863,7 @@ func run(findings, out, spec, cases string, parallel int) error {
 		return err
 	}
 	defer func() { _ = os.RemoveAll(work) }()
-	j := &judge{ask: ask, cache: filepath.Join(out, "judgments"), pause: 5 * time.Second, tree: trees(cases, filepath.Join(cache, "workline", "eval-mirrors"), work)}
+	j := &judge{ask: ask, cache: filepath.Join(out, "judgments", judgeDir.ReplaceAllString(spec, "-")), pause: 5 * time.Second, tree: trees(cases, filepath.Join(cache, "workline", "eval-mirrors"), work)}
 	js, err := score(j, defs, runs, parallel, func(done, total int) {
 		if done%20 == 0 || done == total {
 			fmt.Fprintf(os.Stderr, "%d/%d case runs judged\n", done, total)

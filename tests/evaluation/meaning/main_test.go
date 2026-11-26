@@ -225,8 +225,15 @@ func TestScore(t *testing.T) {
 	if s.asked["## F4"] != 2 || s.asked["(2)"] != 4 {
 		t.Errorf("a second scoring asked the judge again: %v", s.asked)
 	}
-	if _, err := score(j, defs, []caseRun{{Arm: "a", Case: "unknown"}}, 1, nil); err == nil {
-		t.Error("a case points.yaml does not hold is an error")
+	// A case points.yaml does not hold: nobody is asked, the rows are empty
+	// ones the summary and the table still read.
+	unknown := append(slices.Clone(runs), caseRun{Arm: "a", Case: "unknown"})
+	js, err = score(&judge{ask: s.ask, cache: t.TempDir()}, defs, unknown, 1, nil)
+	if err == nil || !strings.Contains(err.Error(), `no case "unknown"`) || len(js) != len(unknown) {
+		t.Errorf("an unknown case: %v, %d judgements", err, len(js))
+	}
+	if s.asked["## F4"] != 2 || tsv(js) != "arm\trun\tcase\tset\titem\tclass\tscored\tverdict\tjudgements\tfindings\tquote\twhy\n" || summary(unknown, js, "fake") == "" {
+		t.Errorf("an unknown case asked the judge, or left rows: %v\n%s", s.asked, tsv(js))
 	}
 }
 
@@ -286,6 +293,15 @@ func TestReadFindings(t *testing.T) {
 	got := fmt.Sprintf("%s %d %d %v %d %d %d", runs[0].Case, runs[0].Run, runs[0].TokensIn, runs[0].Findings[0].shown(), runs[1].Run, runs[2].Run, runs[3].Run)
 	if got != "dc-1 1 5 true 1 2 7" {
 		t.Errorf("read %s", got)
+	}
+	if err := os.WriteFile(file, []byte("{}\n\n{bad\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readFindings(file); err == nil || !strings.Contains(err.Error(), "line 3:") {
+		t.Errorf("a bad line is named by its number in the file: %v", err)
+	}
+	if judgeDir.ReplaceAllString("claude:opus@medium", "-") != "claude-opus-medium" {
+		t.Error("the judgements kept are filed under their judge")
 	}
 	if _, err := askerOf("opus"); err == nil {
 		t.Error("a judge that is neither claude:<model>@<effort> nor cmd: is refused")

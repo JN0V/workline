@@ -1,13 +1,9 @@
 # What each point of the reviewer's replay set means: the judge's question.
-#
-# A case, by its file's name under tests/evaluation/replay/reviewer/:
-#   change: what the change does, in a sentence, for the judge.
-#   points: one per defect the case plants, by its `kind`:
-#     says:  the defect, as the owner sent it back (the case's `about`).
-#     not:   near misses that do not state it.
-#     class: out-of-diff, weak-test, not-delivered or in-diff; kept for a kept catch.
-#     out:   why the point is left out of the score (ambiguous, duplicate); judged all the same.
-# A clean case has a change and no point.
+# A case, by its file's name in replay/reviewer, holds `change` and its
+# `points`, by the defect's `kind`: `says`, the defect as the owner sent it
+# back; `not`, the near misses; `class`, out-of-diff, weak-test,
+# not-delivered, in-diff or kept; `out`, why it is judged and not scored
+# (ambiguous, duplicate). A clean case has a change and no point.
 
 dc-239-no-ascii-test:
   change: Replaces a warning-sign emoji and an em dash with ASCII in SystemInfo's boot-diagnostics log strings. The issue it closes asks that every byte of those lines be ASCII, with a native test or a CI check.
