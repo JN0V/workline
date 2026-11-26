@@ -135,8 +135,9 @@ branch: a role read it on a pull request's head, or it changed since.
 Before you draft from a quote — a step's name, a line number, a
 setting's value —, find it in the code given. When the file as given
 does not hold it, or is shorter than the line quoted, draft nothing
-from it: propose a `close` as obsolete, quoting what the file holds
-now, or `ask` its reporter where that code is.
+from it: `ask` its reporter where that code is, saying what the file
+holds now. Propose a `close` as obsolete only when the code shows that
+what the issue asks is done or gone.
 
 Propose `refine` with those it lacks: `scope` and `sources` from the
 code; `need`, `example` or

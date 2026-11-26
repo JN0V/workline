@@ -44,8 +44,9 @@ engine checks before it does anything.
   asks, one question to its reporter on who writes them, and no
   `ready`. A file named only to explain changes nothing.
 - **Code an issue quotes that the file no longer holds**: nothing is
-  drafted from the quote; the issue is said obsolete for you to close,
-  or its reporter is asked where that code is.
+  drafted from the quote; its reporter is asked first where that code
+  is. It is said obsolete only when the code shows the need done or
+  gone.
 - **Off by default**: milestones, priorities, splits, renames, links,
   obsolete issues ([settings](settings.md#off-by-default)).
 
