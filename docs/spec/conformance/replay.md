@@ -1,5 +1,5 @@
 ---
-sources: [tests/evaluation/replay_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt]
+sources: [tests/evaluation/replay_test.go, tests/evaluation/free_reviewer_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt]
 checked: af68b1bb5
 ---
 # Replay set — real misses, played again
@@ -74,6 +74,26 @@ go run ./tests/evaluation/summary     # per case and per set, a workline commit 
 - With no agent, `TestReplayCasesLoad` reads every case strictly, and
   `TestReplayCasesPointRight` checks each reviewer place's text at its
   head when the mirror is in the cache.
+
+## A free reviewer, to compare
+
+`TestFreeReviewer` plays the reviewer's set with no role: one
+`claude -p` call on the checkout, read tools and read-only git, the
+maintainer's question ("the defects you would block the merge on"),
+no lens, no judge, no quote check.
+
+```sh
+WORKLINE_FREE_REVIEWER=claude:sonnet@medium WORKLINE_EVAL_RESULTS=free.tsv \
+  go test -count=1 -p 1 -parallel 3 -timeout 120m -run 'TestFreeReviewer/' ./tests/evaluation/
+```
+
+- Each `BLOCK <path>:<line>` (or `BLOCK #<n>`) it writes is an
+  Important, on the change when its file is one the change touches;
+  `scoreReview` scores it as a reviewer run.
+- Its rows go to `WORKLINE_EVAL_RESULTS`, with fresh and cache tokens;
+  `WORKLINE_FREE_TRANSCRIPTS` keeps each call's messages and answer.
+- The branches and tags after the change are removed from the clone:
+  the agent cannot read the fix.
 
 ## Cost
 
