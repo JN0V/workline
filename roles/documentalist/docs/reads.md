@@ -8,7 +8,7 @@ sources:
   - roles/documentalist/code/documentalist.go#readingTask
   - roles/documentalist/code/documentalist.go#readByLog
   - roles/documentalist/code/documentalist.go#holdJudgedDocs
-checked: dd48ff276
+checked: f4a56224b
 verified: agent:claude-code
 ---
 # Documentalist — the agent reads the repository
@@ -27,7 +27,8 @@ step 3: the agent reads each doc's sources itself, whatever their size.
 - **Turns**: `ai-max-turns` (40), told in the task; time,
   `model.timeout`.
 - **What it reads is logged** with the call, in `out/calls.jsonl`: each
-  file's path and blob.
+  file it read whole, its path and blob. A part of a file (an offset, a
+  limit) or a read that failed is not.
 - **`checked` is earned by that log**: it moves only for a doc whose
   every source file the log holds. A source under a folder: each file
   in it.
