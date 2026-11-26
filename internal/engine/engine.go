@@ -1657,6 +1657,13 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			return nil
 		}
 	}
+	if title := ownTitle(runDir); title != "" && ownBranch && st.Pushed {
+		if rt, ok := f.(forge.Retitled); ok {
+			if err := rt.RetitleMergeRequest(st.Target.ID, title); err != nil {
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "not-retitled", Level: "warn", Message: err.Error()})
+			}
+		}
+	}
 	for _, i := range after {
 		if stopped, err := applyOne(i); stopped || err != nil {
 			return err
@@ -1849,6 +1856,16 @@ func ownPush(runDir string) string {
 		return ""
 	}
 	return strings.TrimSpace(mr.Push)
+}
+
+// ownTitle is the title a role asks its pull request renamed to, out/
+// merge-request.yaml's `title:` beside a `push:` (#2208); "" for none.
+func ownTitle(runDir string) string {
+	var mr struct{ Title string }
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err != nil || yaml.Unmarshal(data, &mr) != nil {
+		return ""
+	}
+	return strings.TrimSpace(mr.Title)
 }
 
 // baseMerge is a merge of the base the role asks committed on its own

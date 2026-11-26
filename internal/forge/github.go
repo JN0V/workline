@@ -1114,3 +1114,8 @@ func (g *github) writer(login string) (bool, error) {
 	g.writers[login] = p == "admin" || p == "maintain" || p == "write"
 	return g.writers[login], nil
 }
+
+// RetitleMergeRequest renames a pull request: its issue's title, on GitHub.
+func (g *github) RetitleMergeRequest(id int, title string) error {
+	return g.SetTitle(id, title)
+}
