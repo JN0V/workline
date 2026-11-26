@@ -29,11 +29,12 @@ readers and judge:
 |---|---|---|
 | Model (Sonnet to Opus) | about +10 of 102, in every structure | saw but did not say falls from 22 to 8 (lenses), 33 to 24 (free agent) |
 | Severity and decision rules | 2 to 13 | a true defect filed as a decision becomes a question for a person; the free agent on Opus calls weak tests true but not blocking |
-| Repository reading | 8 to 11, only on the 4 out-of-diff points the lenses never had | did not look: 10 to 11 point-runs without reads, 0 to 3 with |
+| Repository reading | 8 to 11, only on the 4 out-of-diff points the lenses never had | did not look, lenses: 10 to 11 point-runs without reads, 0 to 3 with; the free agent reads too, yet 13 on Sonnet, 2 on Opus |
 | The reviewer's own judge | 0 to 7 | it is not shown the author's Left out nor the title; its word search misses a prefix |
 | Answer format | 0 to 4; 2 to 4 in read arms only | prose before the YAML; the re-ask is a new draw, not a repair |
 
-- **Only the model's lever stands out of the noise**: 3 runs see a gap of
+- **Only the model's lever comes close to the noise bound, and it
+  repeats in the three structures**: 3 runs see a gap of
   11 to 14 of 102 at best, so the other ranks are inside it. The model's
   +10 is itself at the edge, and comes with twice the clean false alarms
   (4 to 8 of 12) and a commit effect (19, 19 against 22, 21, 22).
@@ -109,7 +110,9 @@ a bad scenario, 2026-11-23 to 25:
   - full read of five issues the maintainer re-kinded, on `main`: Opus
     9, Sonnet 4; with repository reading
     ([#2277](https://github.com/JN0V/workline/pull/2277)): Sonnet 7,
-    Opus 6;
+    Opus 9, equal to Opus on `main`; Opus's lost point in each reading
+    run is a run check (a second agent call), not a kind: what reading
+    costs it is that call;
   - kinds alone: 8 to 10 in every arm, level.
 - One issue cannot be kinded from its body nor its repository: the bug
   needs a platform's status values not in the code. Unreachable.
@@ -144,7 +147,7 @@ a bad scenario, 2026-11-23 to 25:
 | Strategy | Role | Status |
 |---|---|---|
 | Agents read the repository, pickers deleted ([ADR-0074](../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md) step 2) | reviewer | closed ([#2273](https://github.com/JN0V/workline/pull/2273)): equal within noise, +55 % tokens |
-| Same | documentalist | held ([#2276](https://github.com/JN0V/workline/pull/2276)): 0 false edits, same claims, ×2.2 tokens |
+| Same | documentalist | held ([#2276](https://github.com/JN0V/workline/pull/2276)): **INTERIM**, 2 of 21 claims with 0 false-edit runs, against a same-day `main` on Sonnet at 6 of 21 with 3 of 3; ×2.2 tokens |
 | Same | product owner | held ([#2277](https://github.com/JN0V/workline/pull/2277)): equal |
 | ADR-0074's bar amended to not worse | all | open ([#2274](https://github.com/JN0V/workline/pull/2274)) |
 | One free agent with read tools, no lens, no judge | reviewer | **INTERIM**, 3 runs ([#2279](https://github.com/JN0V/workline/pull/2279)): level by meaning at the same model; no false alarm on clean; finds fewer weak tests |
