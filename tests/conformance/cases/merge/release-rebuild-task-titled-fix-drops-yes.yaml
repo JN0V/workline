@@ -1,0 +1,35 @@
+case: merge/release-rebuild-task-titled-fix-drops-yes
+about: "A task added, titled `fix:`: a release pull request a person accepted is rebuilt by the release tool on a main that merged a task by policy (its pull request carried no person's yes). Its title says `fix: tidy the tokens`, but the issue it closes (#5, by its developer branch) is labelled `task`. The yes is taken off, said in a comment that names the added commit and says a task was added, and the person is asked to put the label again."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && git commit -qm 'chore(main): release 1.1.0' && git tag before && git push -q origin release-please--branches--main && git checkout -q main"
+    - "echo 'tidy' > tidy.txt && git add tidy.txt && git commit -qm 'fix: tidy the tokens (#22)' && git push -q origin main"
+    - "git checkout -q release-please--branches--main && git reset -q --hard main && echo '1.1.0' > version.txt && git add version.txt && GIT_COMMITTER_DATE=2026-01-04T11:00:00Z git commit -qm 'chore(main): release 1.1.0' && git push -q -f origin release-please--branches--main && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "release-please--branches--main", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    issues:
+      - {id: 5, title: "Tidy the tokens", labels: ["task"], closed: true, comments: []}
+    merge-requests:
+      - {id: 22, branch: workline/developer/5, base: main, title: "fix: tidy the tokens", author: workline-bot, bot: true, closed: true, merged: true, merged-at: "2026-01-04T10:30:00Z", merged-as: "main", labels: [], comments: []}
+      - id: 10
+        branch: release-please--branches--main
+        base: main
+        author: workline-bot
+        bot: true
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: before, at: "2026-01-04T09:00:00Z", by: workline-bot}, {head: release-please--branches--main, at: "2026-01-04T11:00:00Z", by: workline-bot}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings:
+    - {rule: accepted-reset, where: "#10"}
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 10, auto-merge: false, labels: [], comments: 1, comment-contains: ["**workline took `workline:accepted` off**", "fix: tidy the tokens", "a task", "Put the label again"]}
