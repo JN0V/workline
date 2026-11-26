@@ -72,7 +72,7 @@ func testerFiles(f forge.Forge, issue int) (map[string]string, error) {
 		return nil, err
 	}
 	for _, mr := range mrs {
-		if testerIssue(mr.Branch) != issue {
+		if testmark.BranchIssue(mr.Branch) != issue {
 			continue
 		}
 		r, ok, err := testmark.ReadDraft(f, mr.ID)
@@ -102,7 +102,7 @@ func testerKept(f forge.Forge, issue int) ([]string, error) {
 	}
 	draft := 0
 	for _, mr := range mrs {
-		if testerIssue(mr.Branch) == issue {
+		if testmark.BranchIssue(mr.Branch) == issue {
 			draft = mr.ID
 			break
 		}

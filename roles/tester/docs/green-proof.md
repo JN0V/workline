@@ -22,7 +22,7 @@ flowchart LR
 
 - **Where the frozen guard runs**: the tester routed on
   `merge-request`, no agent, on the pull request that merges the tests:
-  - **the developer's**, or any saying `Closes #<n>`: the record is
+  - **the developer's**, or any saying `Closes #<n>` or `Part of #<n>`: the record is
     read from the tester's open Draft of `#<n>`
     ([#1281](https://github.com/JN0V/workline/issues/1281));
   - **its own Draft**, branch `workline/tester/issue-<n>`

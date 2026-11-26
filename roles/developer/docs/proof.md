@@ -169,8 +169,8 @@ How each agent is held ([ADR-0056](../../../docs/adr/0056-the-developers-agent-w
   agent ([ADR-0050](../../../docs/adr/0050-each-act-has-its-moment-and-a-wait-budget.md)).
   Marked ready later, no cap reached, once its rounds make every
   project check green ([a Draft made green](review-loop.md#a-draft-made-green)).
-- **Its body**: `Closes #<n>` — the pick skips the issue while it is
-  open — and a `## Verification` saying what ran, each test red, each
+- **Its body**: `Closes #<n>`, or `Part of #<n>` when a part is left —
+  the pick skips the issue while it is open — and a `## Verification` saying what ran, each test red, each
   cap. Its other sections: [the pull request](pull-request.md).
 - **A tool not found**: when red, the test output's "not found" or
   "not installed" names its `PATH` does not find either are listed, in

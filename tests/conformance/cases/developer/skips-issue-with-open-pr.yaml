@@ -22,4 +22,4 @@ expect:
       - {id: 2, labels: ["workline:ready"], comments: 0}
       - id: 3
         labels: ["workline:developing"]
-        comment-contains: ["#2: the open merge request 5 closes it"]
+        comment-contains: ["#2: the open merge request 5 is for it"]

@@ -7,6 +7,7 @@ package testmark
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -20,6 +21,16 @@ const (
 	TestsBranch  = "workline/tester/issue-"
 	CurateBranch = "workline/tester/" + CurateKey
 )
+
+// BranchIssue is the issue a tester's branch is for, 0 when the branch
+// is not one.
+func BranchIssue(branch string) int {
+	n, err := strconv.Atoi(strings.TrimPrefix(branch, TestsBranch))
+	if !strings.HasPrefix(branch, TestsBranch) || err != nil || n <= 0 {
+		return 0
+	}
+	return n
+}
 
 // TestsSubject and CurateSubject open the subjects of the tester's
 // commits of its tests and of a removal: its merge request's title.
