@@ -50,6 +50,7 @@ jobs:
         with: {ref: "${{ inputs.ref }}", fetch-depth: 0, persist-credentials: false}
       - uses: actions/setup-go@v5
         with: {go-version-file: go.mod}
+      - uses: ./.github/actions/tests   # the tools workline's tests need, as the test job
       - name: Claude
         run: |
           [ "$HAS_CLAUDE" = true ] || { echo "::error::no CLAUDE_CODE_OAUTH_TOKEN secret: the agent cannot log in"; exit 1; }
