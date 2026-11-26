@@ -999,7 +999,7 @@ func (r *preRun) giveSourcesNow() error {
 				sd.whole, sd.read = true, nil // what changed is no longer shown
 			default:
 				// Vouching for every sentence the doc keeps needs its sources,
-				// not only what changed in them (ADR-0012): beside the diffs.
+				// not only what changed in them (docs/adr/0012): beside the diffs.
 				sd.evidence = append(sd.evidence, append([]string{"Its sources as they are now, in full, beside what changed: judge each sentence of the doc against them, not only the lines that changed."}, now...)...)
 				sd.whole = true
 			}

@@ -146,7 +146,7 @@ settings:
   # Tokens one run may spend, all calls together (in, cache included, and
   # out); past it the agent is asked nothing more and the rest waits. 0: no
   # cap. A doc judged whole cost 13k to 26k on DomoticsCore; 400k holds 10
-  # docs whole, and stops a run looping (ADR-0064, §5).
+  # docs whole, and stops a run looping (docs/adr/0064, §5).
   ai-max-tokens: 400000
   # An agent that reads files itself (claude) reads each doc's sources in
   # the repository at HEAD, read-only, named in its task, never given

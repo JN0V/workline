@@ -474,7 +474,7 @@ func checkedMatches(content string, want map[string]string) bool {
 // judged against, and bringing no new budget, link or duplicate problem. It
 // returns the refusals, and the docs the patches handle.
 // A doc whose sources did not all go whole into the task, nor were read
-// (not in whole, ADR-0014, docs/adr/0074), is fixed with `checked` left where
+// (not in whole, docs/adr/0014 and 0074), is fixed with `checked` left where
 // it is: the agent cannot vouch for what it did not read. Nor may `checked` move while the doc
 // states a line count off (ADR-0014, step 2). What the patches accepted do
 // is returned too, for the checks on the docs as they will be. Every word a
