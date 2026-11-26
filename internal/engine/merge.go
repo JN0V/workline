@@ -692,30 +692,39 @@ func releasePushers(st forge.MergeState, yes, app string) string {
 // by the kind of the issue it closes when that says one, else by its title.
 // (line imports engine, so the closed issue is read here.)
 func taskAdded(f forge.Forge, m forge.MergeRequest) bool {
-	if n := closedIssueOf(m); n > 0 {
-		if is, err := f.Issue(n); err == nil && is != nil {
-			if kind, _ := backlog.KindOf(is.Labels); kind != "" {
-				return kind == backlog.KindFeature || kind == backlog.KindTask
-			}
+	known := false
+	for _, n := range closedIssuesOf(m) {
+		is, err := f.Issue(n)
+		if err != nil || is == nil {
+			continue
 		}
+		if kind, _ := backlog.KindOf(is.Labels); kind != "" {
+			if kind == backlog.KindFeature || kind == backlog.KindTask {
+				return true
+			}
+			known = true
+		}
+	}
+	if known {
+		return false
 	}
 	return featureOrTask(m.Title)
 }
 
-// closedIssueOf is the issue a merge request closes: the one its text says,
-// else the one its developer or tester branch names, 0 when none.
-func closedIssueOf(m forge.MergeRequest) int {
+// closedIssuesOf are the issues a merge request closes: those its text says,
+// else the one its developer or tester branch names, none when none.
+func closedIssuesOf(m forge.MergeRequest) []int {
 	if ids := forge.Closes(m.Title, m.Body); len(ids) > 0 {
-		return ids[0]
+		return ids
 	}
 	for _, prefix := range []string{"workline/developer/", "workline/tester/issue-"} {
 		if rest, ok := strings.CutPrefix(m.Branch, prefix); ok {
 			if n, err := strconv.Atoi(rest); err == nil && n > 0 {
-				return n
+				return []int{n}
 			}
 		}
 	}
-	return 0
+	return nil
 }
 
 // featureOrTask says whether a title, a conventional commit's, is of a
