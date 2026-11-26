@@ -1,0 +1,128 @@
+# The evaluation's heavy measures (docs/spec/conformance/replay.md) on
+# GitHub's runners rather than a person's machine: by hand only, each run
+# its own job, side by side. The code measured is the ref given (a branch,
+# a pull request's head, a SHA); this file is always main's. The agent's
+# login is the line's own secret, as in workline.yml. Each job uploads its
+# results.tsv lines, its log, and what the branch keeps of a run
+# (WORKLINE_EVAL_KEEP, WORKLINE_EVAL_FINDINGS, WORKLINE_FREE_TRANSCRIPTS
+# when it reads them); `rows` gathers every job's lines in one file.
+name: eval replay
+run-name: "eval replay: ${{ inputs.run }} on ${{ inputs.ref }}, ${{ inputs.eval }}, ${{ inputs.runs }} run(s)"
+on:
+  workflow_dispatch:
+    inputs:
+      ref: {description: "the code measured: a branch, refs/pull/<n>/head, or a SHA", required: true, default: main}
+      run: {description: "go test -run pattern: TestReplay/developer/, TestReplay/reviewer/kept-, TestEvaluation/tester/", required: true, default: "TestReplay/developer/"}
+      eval: {description: "WORKLINE_EVAL, the arm: claude, claude:sonnet@high", required: true, default: claude}
+      judge: {description: "WORKLINE_JUDGE (empty: none; a judge check is then skipped)", required: false, default: ""}
+      env: {description: "more env, KEY=VALUE separated by spaces or ';' (WORKLINE_EVAL_REVIEWER=..., WORKLINE_EVAL_ARM=...)", required: false, default: ""}
+      runs: {description: "how many runs, one job each (1-20)", required: true, default: "3"}
+      parallel: {description: "jobs at once at most", required: true, default: "6"}
+permissions: {contents: read}
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs: {runs: "${{ steps.n.outputs.runs }}"}
+    steps:
+      - id: n
+        env: {RUNS: "${{ inputs.runs }}", PAR: "${{ inputs.parallel }}"}
+        run: |
+          [[ "$RUNS" =~ ^[0-9]+$ ]] && (( RUNS >= 1 && RUNS <= 20 )) || { echo "::error::runs must be 1 to 20, not $RUNS"; exit 1; }
+          [[ "$PAR" =~ ^[0-9]+$ ]] && (( PAR >= 1 && PAR <= 20 )) || { echo "::error::parallel must be 1 to 20, not $PAR"; exit 1; }
+          echo "runs=$(seq -s, 1 "$RUNS" | sed 's/.*/[&]/')" >> "$GITHUB_OUTPUT"
+
+  run:
+    needs: plan
+    name: run ${{ matrix.n }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.parallel) }}
+      matrix: {n: "${{ fromJSON(needs.plan.outputs.runs) }}"}
+    env:
+      HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"
+    steps:
+      # The whole history: a row names the last commit changing what is
+      # evaluated (worklineVersion).
+      - uses: actions/checkout@v4
+        with: {ref: "${{ inputs.ref }}", fetch-depth: 0, persist-credentials: false}
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      - name: Claude
+        run: |
+          [ "$HAS_CLAUDE" = true ] || { echo "::error::no CLAUDE_CODE_OAUTH_TOKEN secret: the agent cannot log in"; exit 1; }
+          npm install -g @anthropic-ai/claude-code
+      # The cases' toolchains (given.needs): PlatformIO for DomoticsCore,
+      # a JDK 21 and the runner's Android SDK ($ANDROID_HOME) for
+      # TraceGlass. Each case skips itself when its toolchain is missing.
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: "21"}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: eval-toolchains-${{ runner.os }}-v1
+      - name: PlatformIO
+        run: pip install --quiet platformio && pio --version && echo "ANDROID_HOME=$ANDROID_HOME"
+      - name: The arm's environment
+        env: {MORE: "${{ inputs.env }}"}
+        run: |
+          OUT=$RUNNER_TEMP/eval-out; echo "OUT=$OUT" >> "$GITHUB_ENV"
+          mkdir -p "$OUT/kept" "$OUT/free"
+          : > "$OUT/results.tsv"
+          {
+            echo "WORKLINE_EVAL_RESULTS=$OUT/results.tsv"
+            echo "WORKLINE_EVAL_KEEP=$OUT/kept"
+            echo "WORKLINE_EVAL_FINDINGS=$OUT/findings.jsonl"
+            echo "WORKLINE_FREE_TRANSCRIPTS=$OUT/free"
+            set -f
+            for kv in ${MORE//;/ }; do
+              k=${kv%%=*}
+              if [[ "$kv" != *=* || ! "$k" =~ ^WORKLINE_[A-Z0-9_]+$ ]]; then
+                echo "::error::'$k': only WORKLINE_* variables, as KEY=VALUE"; exit 1
+              fi
+              echo "$kv"
+            done
+          } >> "$GITHUB_ENV"
+          git config --global user.name "eval replay"
+          git config --global user.email "eval-replay@users.noreply.github.com"
+      - name: go test
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          WORKLINE_EVAL: ${{ inputs.eval }}
+          WORKLINE_JUDGE: ${{ inputs.judge }}
+          RUN: ${{ inputs.run }}
+        run: |
+          set -o pipefail
+          go test -count=1 -timeout 240m ./tests/evaluation/ -run "$RUN" -v 2>&1 | tee "$OUT/go-test.log"
+      - name: Rows
+        if: always()
+        run: |
+          [ ! -s "$OUT/results.tsv" ] || { echo '```'; cut -f6,7,8,9,10,12,13 "$OUT/results.tsv"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          grep -h 'no toolchain' "$OUT/go-test.log" >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-replay-run-${{ matrix.n }}
+          path: ${{ env.OUT }}
+          if-no-files-found: warn
+          retention-days: 14
+
+  rows:
+    needs: run
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {pattern: eval-replay-run-*, path: runs}
+      - run: |
+          cat runs/*/results.tsv > results.tsv 2>/dev/null || : > results.tsv
+          echo "$(wc -l < results.tsv) row(s): append them to tests/evaluation/results.tsv to keep them" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with: {name: eval-replay-rows, path: results.tsv, retention-days: 30}
