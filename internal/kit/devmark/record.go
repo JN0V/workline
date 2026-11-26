@@ -235,12 +235,12 @@ func NoCodeOnOtherBody(a Act, body string) bool {
 	return a.NoCode && a.Body != "" && BodyChanged(a.Body, body)
 }
 
-// NoCodeOnSameBody says whether a claim's record a wrote no code on the
-// body it has now, or on one it did not keep (a record from before
-// Act.Body): run again, its agent would get the same input. Past
-// claim-hours, the line blocks such an issue for a person instead.
-func NoCodeOnSameBody(a Act, body string) bool {
-	return a.NoCode && !NoCodeOnOtherBody(a, body)
+// SpentOnSameBody says whether a claim's record a ran on the body it has
+// now, or one it did not keep: no code, or code whose pull request is
+// gone, merged part of it or closed (callers ask with none open). Past
+// claim-hours, the line blocks it for a person, not the same run again.
+func SpentOnSameBody(a Act, body string) bool {
+	return (a.NoCode || len(a.Code) > 0) && (a.Body == "" || !BodyChanged(a.Body, body))
 }
 
 // ActMark opens the hidden line of the developer's record on an issue

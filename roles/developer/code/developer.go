@@ -364,7 +364,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 		case slices.Contains(is.Labels, s.ClaimLabel):
 			why = "taken already, labelled " + s.ClaimLabel
 		case closer[is.ID] != 0:
-			why = fmt.Sprintf("the open merge request %d closes it", closer[is.ID])
+			why = fmt.Sprintf("the open merge request %d is for it", closer[is.ID])
 		case testsFirst && !tested[is.ID] && proofs[is.ID].Kind == "" && len(work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) > 0:
 			why = "its acceptance tests are not written yet: it waits for the tester's Draft"
 			next = "the tester writes them, as a Draft of its own; the developer takes this issue at a run after that Draft is open"

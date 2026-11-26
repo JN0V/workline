@@ -24,7 +24,7 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: no-code-spent, level: warn, where: "#3", message: "the developer's agent wrote no code on this issue, and its claim, workline:developing put on 2026-01-01, passed claim-hours (24) with its body unchanged"}
+    - {rule: no-code-spent, level: warn, where: "#3", message: "the developer's agent wrote no code on this issue, or its pull request merged part of it or closed, and its claim, workline:developing put on 2026-01-01, passed claim-hours (24) with its body unchanged"}
   no-findings: [{rule: state-wakes}, {rule: claim-released}]
   forge:
     issues:

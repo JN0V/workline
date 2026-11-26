@@ -89,8 +89,7 @@ func subjects(issue int, own, title, kind string, scope, code []string, s commit
 // mergeRequest is out/merge-request.yaml: the branch's key, the issue's
 // title, its body; ready only when green with no cap reached; the branch
 // from the tester's Draft, the tests in a commit apart; the record kept
-// on it; left, what it leaves for a person beside its refusals, each a
-// bullet or a paragraph.
+// on it; left, what it leaves for a person beside its refusals.
 func mergeRequest(a devmark.Act, title string, sub Subjects, left ...string) map[string]any {
 	ready := a.Proof != nil && a.Proof.Result == devmark.Green && len(a.Caps) == 0 && a.AgentFailed == ""
 	b := body(a, ready, left...)
@@ -197,8 +196,7 @@ func body(a devmark.Act, ready bool, left ...string) string {
 // pull request.
 const LeftHeading = "Left for a person"
 
-// notDoneWords are its agent's closing words that say a part left: its
-// `Not done:` note, or a `Left out` (#2216).
+// notDoneWords are its agent's words saying a part left (#2216).
 var notDoneWords = regexp.MustCompile(`(?im)^\s*>?\s*(?:not done|left out)\b`)
 
 // refusals says each refusal, a line each: persons, of a file only a

@@ -124,7 +124,8 @@ on any event, with or without an agent:
   the developer on such a claim, once, past `claim-hours` or on its new
   body. Until then it says the day the claim is let go.
 - **No code, the same body**: past `claim-hours`, the line does not wake
-  the developer. Its agent would get the same input again. The line
+  the developer. The same when its pull request is gone on that body:
+  merged `Part of #n`, a part left for a person, or closed. Its agent would get the same input again. The line
   takes the claim's label off and blocks the issue for a person, the
   reason written (`no-code-spent`,
   [#1120](https://github.com/JN0V/workline/issues/1120)).
