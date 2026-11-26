@@ -20,7 +20,8 @@ judge:
     needs no test (a rename, a message), if the test guards a behaviour
     kept as before (it passes on the base by design), if the finding asks
     a test of a behaviour kept as before whose code the change neither
-    rewrites, moves nor removes, or if the finding only guesses.
+    rewrites, moves nor removes (code added beside it, for another
+    case, leaves it as it was), or if the finding only guesses.
   reads: tests
 ---
 **Tests.** Does a test cover each behaviour the change adds or changes?

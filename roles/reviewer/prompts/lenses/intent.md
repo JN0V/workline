@@ -35,7 +35,9 @@ judge:
     says a scenario has no test where the scenario is a behaviour kept
     as before, which the issue's Verification asks no test of: such a
     behaviour owes none unless the change rewrites, moves or removes
-    the code that did it.
+    the code that did it; code added beside it (a branch, a catch or a
+    check for another case) through which it passes as before leaves
+    it as it was.
   reads: issue
 ---
 **Intent.** The change says it closes the issue under "What the change
@@ -76,7 +78,9 @@ Given / When / Then), one by one, its name as the issue writes it:
   change neither rewrites, moves nor removes: a `scenario`, its code
   quoted, its `reason` that it is kept as before. Its missing test is no
   finding; once the change rewrites, moves or removes that code, it is
-  answered as any other scenario.
+  answered as any other scenario. Code added beside it — a branch, a
+  catch or a check for another case — through which it passes as on
+  the base leaves it as it was.
 
 Each quote is one run of lines as they read, never pieces joined. A
 scenario you answer neither way, or with no test nor reason, is judged
