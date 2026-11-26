@@ -23,7 +23,7 @@ hold:
 1. **Nothing buildable in Missing**: **open**, one bug, after 1.0
    ([#1361](https://github.com/JN0V/workline/issues/1361)); met on
    2026-10-18 before it. A doc whose sources are too large is read by
-   the agent in the repository ([more](reads.md), TRIED). No commit on a
+   the agent in the repository ([more](reads.md), [tried](https://github.com/JN0V/workline/pull/2276)). No commit on a
    person's pull request for a doc only read is built (Built:
    [#463](https://github.com/JN0V/workline/issues/463)). DomoticsCore's
    docs to split are done
@@ -161,7 +161,7 @@ its evaluation in
   `condense-*`, `split-*`, `dedupe-*`.
 - **The agent reads the repository**
   ([ADR-0074](../../../docs/adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md),
-  step 3, TRIED): `claude-reads-the-repository`,
+  step 3, [tried](https://github.com/JN0V/workline/pull/2276)): `claude-reads-the-repository`,
   `claude-unread-source-checked-stays`, `agent-not-reading-said`; a doc
   too long itself says so at once: `suspect-doc-too-large`.
 - **A cap on a run's tokens**: engine's `token-cap-ends-the-run`.
