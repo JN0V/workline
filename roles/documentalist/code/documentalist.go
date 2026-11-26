@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,12 +21,14 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/tools"
@@ -1695,6 +1698,11 @@ func (r *preRun) writeTask() error {
 	if r.task == "" {
 		return nil
 	}
+	if strings.Contains(r.task, readHere) { // a doc read in a tree at HEAD
+		if err := worktree.RunTree(r.repo, "HEAD", runDir, agent.ReadTreeDir); err != nil {
+			return err
+		}
+	}
 	if err := writeYAML(filepath.Join(runDir, "in", "judged.yaml"), r.judged); err != nil {
 		return err
 	}
@@ -1728,6 +1736,9 @@ func (r *preRun) writeTask() error {
 	return os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(r.task), 0o644)
 }
 
+// readHere is where an agent that reads finds a doc too long to be shown.
+const readHere = "in your working directory, a checkout of the commit judged"
+
 // personJudges ends the note of a doc no agent can judge: a person does.
 const personJudges = "a person judges it: reads it against its sources, then moves `checked`"
 
@@ -1751,11 +1762,6 @@ fixes what is now wrong, and nothing else.
 func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *places, repo string) (string, map[string]map[string]string, error) {
 	header += citeTask
 	maxDocs := s.AIMaxCalls
-	paths := make([]string, 0, len(suspects))
-	for p := range suspects {
-		paths = append(paths, p)
-	}
-	sort.Strings(paths)
 	var b strings.Builder
 	b.WriteString(header)
 	judged := map[string]map[string]string{}
@@ -1763,21 +1769,27 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 	if err != nil {
 		return "", nil, err
 	}
-	for _, p := range paths {
+	for _, p := range sortedDocs(suspects) {
 		if maxDocs > 0 && len(judged) >= maxDocs {
 			break
 		}
 		sd := suspects[p]
-		if sd.tooLarge || sd.note != "" {
+		content, err := os.ReadFile(filepath.Join(repo, p))
+		if err != nil {
+			return "", nil, err
+		}
+		// A doc too long to share a task with its sources is read where it
+		// lies by an agent that reads, never left to a person for its length.
+		shown := len(numberedDoc(p, string(content)))
+		byName := agent.ReadsFiles(os.Getenv("WORKLINE_AI")) && shown > taskMaxChars*3/4 &&
+			(sd.tooLarge || len(header)+shown+len(strings.Join(sd.evidence, "\n")) > taskChars(s))
+		if sd.tooLarge && !byName || sd.note != "" {
 			continue // a person judges it, or it is judged in parts
 		}
+		sd.tooLarge, sd.whole = false, sd.whole && !byName
 		want := map[string]string{}
 		var short []string
-		names := make([]string, 0, len(sd.doc.Checked))
-		for n := range sd.doc.Checked {
-			names = append(names, n)
-		}
-		sort.Strings(names)
+		names := slices.Sorted(maps.Keys(sd.doc.Checked))
 		for _, n := range names {
 			where, err := pl.get(n)
 			if err != nil {
@@ -1797,10 +1809,6 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 		checked := "checked: " + strings.Join(short, "")
 		if len(names) > 1 || (len(names) == 1 && names[0] != "") {
 			checked = "checked: {" + strings.Join(short, ", ") + "}"
-		}
-		content, err := os.ReadFile(filepath.Join(repo, p))
-		if err != nil {
-			return "", nil, err
 		}
 		var entry strings.Builder
 		if sd.whole {
@@ -1837,11 +1845,15 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 		for _, e := range sd.evidence {
 			entry.WriteString("\n" + e + "\n")
 		}
-		entry.WriteString("\nThe doc as it is now, with its line numbers:\n\n```\n")
-		for i, l := range strings.Split(strings.TrimSuffix(string(content), "\n"), "\n") {
-			fmt.Fprintf(&entry, "%4d | %s\n", i+1, l)
+		if byName {
+			fmt.Fprintf(&entry, "\nThe doc is too long to be shown here: read `%s` whole %s, and its sources there; your hunks cite its lines by their numbers in that file.\n\n", p, readHere)
+		} else {
+			entry.WriteString("\nThe doc as it is now, with its line numbers:\n\n```\n")
+			for i, l := range strings.Split(strings.TrimSuffix(string(content), "\n"), "\n") {
+				fmt.Fprintf(&entry, "%4d | %s\n", i+1, l)
+			}
+			entry.WriteString("```\n\n")
 		}
-		entry.WriteString("```\n\n")
 		if len(header)+entry.Len() > taskChars(s) {
 			sd.tooLarge = true
 			continue
@@ -2200,23 +2212,9 @@ func Post(runDir, repo string) int {
 	return 0
 }
 
-func sortedDocs(m map[string]*suspectDoc) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		out = append(out, k)
-	}
-	sort.Strings(out)
-	return out
-}
+func sortedDocs(m map[string]*suspectDoc) []string { return slices.Sorted(maps.Keys(m)) }
 
-func sortedKeys(m map[string]string) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		out = append(out, k)
-	}
-	sort.Strings(out)
-	return out
-}
+func sortedKeys(m map[string]string) []string { return slices.Sorted(maps.Keys(m)) }
 
 func edge(s Settings, from, to string) string {
 	for _, e := range s.Propagation {
