@@ -313,23 +313,15 @@ func (a *applier) level(c backlog.Proposal) error {
 }
 
 // kind sets an issue's kind label and records it in its state (ADR-0039
-// (c)): read again first, a kind label put since is a person's, kept,
-// said; never a swap, never a label taken off.
+// (c)): read again first, a kind label put or taken off since is a
+// person's, kept, said; only the role's own label is swapped, once.
 func (a *applier) kind(c backlog.Proposal) error {
 	f := a.forge
 	is, err := f.Issue(c.Issue)
 	if err != nil {
 		return err
 	}
-	if _, l := backlog.KindOf(is.Labels); l != "" {
-		a.findings = append(a.findings, verdict.Finding{Rule: "kind-kept", Level: "warn", Where: fmt.Sprintf("#%d", c.Issue),
-			Message: fmt.Sprintf("its label `%s` says its kind since the run read it: a person's, kept (found when applying)", l)})
-		return nil
-	}
 	t := forge.Target{Kind: "issue", ID: c.Issue}
-	if err := f.Label(t, []string{c.KindLabel}, nil); err != nil {
-		return err
-	}
 	comments, err := f.(forge.Backlog).Comments(t)
 	if err != nil {
 		return err
@@ -338,7 +330,23 @@ func (a *applier) kind(c backlog.Proposal) error {
 	if err != nil {
 		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
 	}
+	var guess []string // the role's own label, corrected by a full read
+	if _, l := backlog.KindOf(is.Labels); strings.EqualFold(l, c.KindLabel) {
+		return nil // labelled so already: nothing to swap
+	} else if !strings.EqualFold(l, st.Kind) {
+		a.findings = append(a.findings, verdict.Finding{Rule: "kind-kept", Level: "warn", Where: fmt.Sprintf("#%d", c.Issue),
+			Message: fmt.Sprintf("its kind label (`%s`) changed since the run read it: a person's, kept (found when applying)", l)})
+		return nil
+	} else if l != "" {
+		guess = []string{l}
+	}
+	if err := f.Label(t, []string{c.KindLabel}, guess); err != nil {
+		return err
+	}
 	st.Kind = c.KindLabel
+	if guess != nil {
+		st.Kind += ", corrected" // once: never swapped again
+	}
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 

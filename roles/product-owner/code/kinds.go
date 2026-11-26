@@ -2,9 +2,10 @@ package productowner
 
 // The kind's light read (#878): an open issue no kind label tells, that
 // the run does not read in full, is read for its kind alone — its title
-// and the start of its body, a few a run, many in one agent call. Without
+// and its whole body, a few a run, many in one agent call. Without
 // it, an issue read before the kind act existed keeps no kind until it
-// changes, and a bug's fix waits for a person (ADR-0060, decision 4).
+// changes, and a bug's fix waits for a person. A later full read may
+// correct the role's own guess, never a person's.
 
 import (
 	"fmt"
@@ -20,8 +21,6 @@ const (
 	// kindTask names, in in/task-kind, a run that reads kinds alone: the
 	// agent reads its own short instruction (model.tasks.kind).
 	kindTask = "kind"
-	// kindBodyMax is the characters of a body a light read gives.
-	kindBodyMax = 600
 )
 
 // unkinded says whether an issue is one a light read may label: no kind
@@ -86,9 +85,13 @@ func nearMerge(is forge.Issue) int {
 }
 
 // kindAsked is the line a full read gives an issue no kind label tells,
-// naming it: an answer may otherwise give it none (#895). None while the
+// naming it: an answer may otherwise give it none (#895); or one whose
+// label is still the role's own `task` guess, to correct. None while the
 // kind act is off.
 func kindAsked(is forge.Issue, st *backlog.State, mode string) string {
+	if k, l := backlog.KindOf(is.Labels); mode != backlog.Off && l != "" && k == backlog.KindTask && st != nil && strings.EqualFold(l, st.Kind) {
+		return fmt.Sprintf("Kind: `%s`, the role's own guess — propose `kind` on #%d only if the whole issue shows another.\n", k, is.ID)
+	}
 	if mode == backlog.Off || !unkinded(is, st) {
 		return ""
 	}
@@ -98,20 +101,20 @@ func kindAsked(is forge.Issue, st *backlog.State, mode string) string {
 var htmlComment = regexp.MustCompile(`(?s)<!--.*?-->`)
 
 // kindSection gives the issues read for their kind alone: each title and
-// the start of its body, its HTML comments left out.
+// its whole body as a full read gives it, its HTML comments left out.
 func kindSection(list []forge.Issue) string {
 	if len(list) == 0 {
 		return ""
 	}
 	var b strings.Builder
 	b.WriteString("# Issues read for their kind alone\n\n")
-	b.WriteString("No kind label tells these, and they are not read in full in this run: by their title and the start of their body, propose `kind` on each — bug, feature or task — and nothing else on them.\n\n")
+	b.WriteString("No kind label tells these, and they are not read in full in this run: by their title and body, propose `kind` on each — bug, feature or task — and nothing else on them.\n\n")
 	for _, is := range list {
 		body := strings.TrimSpace(htmlComment.ReplaceAllString(is.Body, ""))
 		if body == "" {
 			body = "(no body)"
 		}
-		fmt.Fprintf(&b, "## #%d %s\n\n%s\n\n", is.ID, is.Title, clip(body, kindBodyMax))
+		fmt.Fprintf(&b, "## #%d %s\n\n%s\n\n", is.ID, is.Title, clip(body, bodyWholeMax))
 	}
 	return b.String()
 }

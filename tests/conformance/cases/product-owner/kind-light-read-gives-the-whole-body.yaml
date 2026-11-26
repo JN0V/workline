@@ -1,0 +1,16 @@
+case: product-owner/kind-light-read-gives-the-whole-body
+about: >
+  A light read gives each issue's whole body, not its start: the defect
+  #12 reports sits past its first 600 characters, and the task holds it.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 12, title: "Move the export to the new writer", body: "Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Moving the export to the new writer is a chore of the week. Since then the export loses the last row of every file.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:kind-light-persons}
+expect:
+  status: pass
+  calls: [{agent: fake, task: kind}]
+  run-files:
+    in/task.md:
+      contains: ["## #12 Move the export to the new writer", "Since then the export loses the last row of every file."]

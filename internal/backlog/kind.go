@@ -8,6 +8,7 @@ package backlog
 // feature waits for a person's yes at `normal`.
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -77,25 +78,31 @@ func KindLabel(kind string, names map[string][]string, have []string) string {
 }
 
 // checkKind checks a kind act: before the issue's state is read (st nil),
-// a kind it knows, on an open issue no kind label tells already — never
-// a swap —, and the label it sets; once read, that the role never set a
-// kind on it before: a person's change or removal since stands.
+// a kind it knows, and the label it sets; once read, that no kind label
+// tells it but the role's own `task` guess, corrected once by another
+// kind: a person's label, change or removal stands.
 func (p *Plan) checkKind(f forge.Backlog, c *Proposal, st *State) (rule, why string) {
 	is, ok := p.issues[c.Issue]
+	k, label := KindOf(is.Labels)
+	own := ""
+	if s := cmp.Or(st, p.ledger.States[c.Issue]); s != nil {
+		own = s.Kind // the label the role set: its ledger's, then fresh once read
+	}
 	switch {
 	case !ok || c.Issue == p.Report:
 		return "no-state", fmt.Sprintf("#%d is not an open issue", c.Issue)
-	case st != nil && st.Kind != "":
-		return "kind-once", fmt.Sprintf("the role set its kind once already (`%s`): never again; a person's change or removal stands", st.Kind)
+	case label != "" && (!strings.EqualFold(label, own) || k != KindTask):
+		return "kind-kept", fmt.Sprintf("its label `%s` says its kind already, a person's, corrected once or no `task` guess: never swapped", label)
+	case label == "" && own != "":
+		return "kind-once", fmt.Sprintf("the role set its kind once already (`%s`): a person's removal stands", own)
+	case st != nil && label != "" && k == c.IssueKind:
+		return "kind-same", fmt.Sprintf("its label `%s` says that kind already", label)
 	case st != nil:
 		return "", ""
 	}
 	c.IssueKind = strings.ToLower(strings.TrimSpace(c.IssueKind))
 	if !slices.Contains(IssueKinds, c.IssueKind) {
 		return "kind-unknown", fmt.Sprintf("`%s` is no kind: %s", c.IssueKind, strings.Join(IssueKinds, ", "))
-	}
-	if _, label := KindOf(is.Labels); label != "" {
-		return "kind-kept", fmt.Sprintf("its label `%s` says its kind already: a kind is never swapped", label)
 	}
 	if p.labels == nil {
 		var open []forge.Issue

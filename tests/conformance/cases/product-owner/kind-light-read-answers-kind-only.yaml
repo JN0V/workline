@@ -1,7 +1,7 @@
 case: product-owner/kind-light-read-answers-kind-only
 about: >
   A light read answers with a kind, or a note, only (#878): the agent
-  read the issue by its title and the start of its body, never its code.
+  read the issue by its title and its whole body, never its code.
   A closing it proposes all the same is dropped, said; its kind stands.
 given:
   repo: backlog
