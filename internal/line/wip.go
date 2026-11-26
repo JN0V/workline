@@ -14,7 +14,6 @@ package line
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/kit/devmark"
@@ -82,10 +81,7 @@ func (t *tally) drafted(b forge.Backlog, id int) (bool, error) {
 		}
 		t.drafts = map[int]bool{}
 		for _, br := range branches {
-			var n int // read as the developer reads it: the number the branch starts with
-			if _, err := fmt.Sscanf(strings.TrimPrefix(br, testmark.TestsBranch), "%d", &n); err == nil && strings.HasPrefix(br, testmark.TestsBranch) {
-				t.drafts[n] = true
-			}
+			t.drafts[testmark.BranchIssue(br)] = true // read as the developer reads it
 		}
 	}
 	return t.drafts[id], nil

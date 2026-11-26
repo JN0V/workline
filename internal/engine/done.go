@@ -11,16 +11,12 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
-
-// testerDraft is the branch prefix of the tester's Draft of an issue,
-// workline/tester/issue-<n> (roles/tester/docs/hand-over.md).
-const testerDraft = "workline/tester/issue-"
 
 // settleDone closes the tester's Drafts whose issue is closed, and takes
 // the states' labels off the closed issues bearing one; open, the
@@ -33,8 +29,8 @@ func settleDone(f forge.Forge, open, states []string, res *Result) string {
 			Message: "what a merge left open could not be tended here, the next run tries again: " + err.Error()})
 	}
 	for _, branch := range open {
-		n, err := strconv.Atoi(strings.TrimPrefix(branch, testerDraft))
-		if !strings.HasPrefix(branch, testerDraft) || err != nil || n <= 0 {
+		n := testmark.BranchIssue(branch) // its tester's Draft
+		if n == 0 {
 			continue
 		}
 		is, err := f.Issue(n)

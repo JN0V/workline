@@ -44,6 +44,9 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   alone on a merge request; when gardening, [in parts](parts.md)
   against them all.
 - The commits its `checked` must name.
+- A doc too long to be shown with all that: named, for an agent that
+  reads files itself (`claude`) to read in a copy of the repository;
+  `checked` cannot move. Another agent leaves it to a person.
 
 ### How many
 

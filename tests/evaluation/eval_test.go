@@ -16,6 +16,11 @@
 // false}`). TestJudgeReplay asks
 // the reviewer's judge its 40 measured questions again
 // (judge_replay_test.go), WORKLINE_EVAL naming the judge.
+// WORKLINE_EVAL_KEEP names a folder where each run's folders and the
+// change it made are kept (keepRun). WORKLINE_EVAL_FINDINGS names a file
+// that keeps each reviewer run's findings whole, for the scorer by
+// meaning (tests/evaluation/meaning), under the arm WORKLINE_EVAL_ARM
+// names.
 package evaluation
 
 import (
@@ -223,6 +228,7 @@ func evaluate(t *testing.T, pattern string) {
 			passed, failed, skipped := grade(&c, r)
 			score := fmt.Sprintf("%d/%d", passed, passed+len(failed))
 			t.Logf("%s — %s, %d agent calls; failed: %s", c.Case, score, r.res.AgentCalls, strings.Join(failed, "; "))
+			keepRun(t, &c, r, score)
 			if c.Review != nil {
 				t.Logf("  measure: %s", r.measure)
 				for _, n := range r.reviewNotes {
@@ -268,6 +274,31 @@ func evaluate(t *testing.T, pattern string) {
 			}
 		})
 	}
+}
+
+// keepRun copies what a run left, under the folder WORKLINE_EVAL_KEEP
+// names: its run folders (tasks, answers, calls) and the change the role
+// made to the working tree. The repository goes with the test; a
+// diagnosis reads why a point was lost from these.
+func keepRun(t *testing.T, c *caseFile, r *run, score string) {
+	keep := os.Getenv("WORKLINE_EVAL_KEEP")
+	if keep == "" {
+		return
+	}
+	dir := filepath.Join(keep, strings.ReplaceAll(c.Case, "/", "_"), time.Now().UTC().Format("20060102T150405.000")+"-"+strings.ReplaceAll(score, "/", "of"))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Logf("  run not kept: %v", err)
+		return
+	}
+	_ = exec.Command("git", "-C", r.repo, "add", "--intent-to-add", ".").Run()
+	diff, _ := exec.Command("git", "-C", r.repo, "diff", "HEAD").Output()
+	_ = os.WriteFile(filepath.Join(dir, "change.diff"), diff, 0o644)
+	res, _ := json.MarshalIndent(r.res, "", "  ")
+	_ = os.WriteFile(filepath.Join(dir, "result.json"), res, 0o644)
+	if runs := filepath.Join(r.repo, ".git", "workline", "runs"); exec.Command("cp", "-r", runs, filepath.Join(dir, "runs")).Run() != nil {
+		t.Logf("  run folders not kept: %s", runs)
+	}
+	t.Logf("  kept: %s", dir)
 }
 
 // appendResult appends a run's line to results.tsv, one writer at a time.
@@ -535,6 +566,9 @@ func grade(c *caseFile, r *run) (passed int, failed, skipped []string) {
 		c.Review.Replay, c.Review.Clean = c.Given.Clone.Repo != "", strings.Contains(c.Case, "/clean-")
 		p, f, measure, notes := scoreReview(c.Review, rr)
 		passed, failed, r.measure, r.reviewNotes = passed+p, append(failed, f...), measure, notes
+		if err := keepFindings(c, r, rr); err != nil {
+			failed = append(failed, "findings: "+err.Error())
+		}
 		if r.judgedBy == "" {
 			r.judgedBy = rr.Judge
 		}

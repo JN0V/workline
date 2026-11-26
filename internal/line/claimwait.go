@@ -54,7 +54,7 @@ func claimed(cfg *routing.Config, is forge.Issue) bool {
 
 // closedByMR is the open merge request t read that closes issue id.
 func closedByMR(t *tally, id int) (forge.MergeRequest, bool) {
-	i := slices.IndexFunc(t.mrs, func(m forge.MergeRequest) bool { return slices.Contains(forge.Closes(m.Title, m.Body), id) })
+	i := slices.IndexFunc(t.mrs, func(m forge.MergeRequest) bool { return slices.Contains(forge.For("", m.Title, m.Body), id) })
 	if i < 0 {
 		return forge.MergeRequest{}, false
 	}
@@ -169,14 +169,14 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 		now = Record{State: s.Name, Body: bodyHash(is.Body), V: recordV}
 	}
 	act := devmark.ClaimActIn(forge.Bodies(notes))
-	same := devmark.NoCodeOnSameBody(act, is.Body)
+	same := devmark.SpentOnSameBody(b, act, is.Body)
 	key, why := "", ""
 	switch {
 	case dated && !clock().Before(free) && same:
 		// Its agent wrote no code on this input: run again, it would get
 		// the same one (ADR-0063, I2). A person's, as code said lacking
 		// twice is (needs-spent).
-		why = fmt.Sprintf("the developer's agent wrote no code on this issue, and its claim, %s put on %s, passed claim-hours (%d) with its body unchanged: "+
+		why = fmt.Sprintf("the developer's agent wrote no code on this issue, or its pull request merged part of it or closed, and its claim, %s put on %s, passed claim-hours (%d) with its body unchanged: "+
 			"its claim let go, the developer not run on the same input again; a person rewrites its body, splits it, or takes it",
 			doing.Label, backlog.Day(trail.Labeled), h)
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "no-code-spent", Level: "warn", Where: where, Message: why + ": moved to " + BlockedState})
@@ -198,7 +198,7 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 		case key != "":
 			msg += ": the developer was woken to let it go already"
 		case dated && same:
-			msg += fmt.Sprintf(": its agent wrote no code; blocked for a person on %s (claim-hours: %d), or let go at once on a change to its body", free.UTC().Format("2006-01-02 15:04 UTC"), h)
+			msg += fmt.Sprintf(": its agent ran on this body; blocked for a person on %s (claim-hours: %d), or let go at once on a change to its body", free.UTC().Format("2006-01-02 15:04 UTC"), h)
 		case dated:
 			msg += fmt.Sprintf(": let go on %s (claim-hours: %d), or at once on a change to its body", free.UTC().Format("2006-01-02 15:04 UTC"), h)
 		default:
