@@ -82,6 +82,9 @@ the Darwin Gödel Machine erasing its markers).
 Today the auditor reads only docs (ADR-0015); the product owner's acts are
 drawn for a person, with no agent (ADR-0033).
 
+How the process engineer finds why a role misses, and the pitfalls
+already met doing it by hand: [diagnosing-a-role.md](diagnosing-a-role.md).
+
 ## Inspector: static analysis on a merge request
 
 Gates already run any tool and read `exit` or `sarif` against thresholds

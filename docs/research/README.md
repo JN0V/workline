@@ -70,6 +70,7 @@ stars and dates were checked against the GitHub API that day.
 | [nobody-bypasses.md](nobody-bypasses.md) | What `main`'s bypass list served (96% a missing label), what an empty one breaks, and the GitLab Premium equivalent |
 | [token-costs-measured.md](token-costs-measured.md) | What a call of each role spent in tokens on real repositories, so a cap can be sized |
 | [models-measured.md](models-measured.md) | Which Claude model and effort gets the developer, the tester, the judge and a review right, at what tokens; whether Sonnet is cheaper |
+| [diagnosing-a-role.md](diagnosing-a-role.md) | How to find why a role misses: replay every real miss, classify its cause, score by meaning, enough runs; the pitfalls met and the findings per role (interim) |
 
 ## Method
 
