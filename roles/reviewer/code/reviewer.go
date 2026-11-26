@@ -449,7 +449,7 @@ func prepare(runDir, repo string, s Settings) int {
 	var ids []int
 	for _, name := range s.Lenses {
 		if l, err := readLens(repo, name); err == nil && l.Needs == "issue" { // one failing to read stops the run below
-			ids = forge.For("", mr, msgs)
+			ids = forge.For("", append(strings.SplitN(mr, "\n\n", 2), msgs)...) // its title, its body: each opening a text
 			break
 		}
 	}
