@@ -1,0 +1,17 @@
+case: documentalist/split-a-page-reference-definition-elsewhere-refused
+about: "A new page may repeat a reference definition the doc keeps only word for word, once: the same label sent to another site, or defined twice, is refused, and the doc stays as it was."
+given:
+  repo: untidy
+  # as split-a-page-links-sent-elsewhere-refused, the spec linked by a reference the doc defines, sections of 80 words
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && sed -i \"s|^they had not saved.*|& See [the spec][m].|\" docs/sessions.md && printf '\\n[m]: https://good.example/token\\n' >> docs/sessions.md && git commit -qam 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && sed -i 's/section-words: 30/section-words: 80/' .workline/config.yaml && git add .workline docs/sessions.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:split-a-page-reference-definition-elsewhere"}
+expect:
+  status: pass   # refused, said as a warning, not failed: on schedule
+  applied: []
+  findings:
+    - {rule: written-anew, where: docs/sessions-length.md, message: "evil.example"}
+    - {rule: written-anew, where: docs/sessions-token.md, message: "good.example"}
+  files:
+    docs/sessions.md: {contains: "A session lasts"}

@@ -261,13 +261,13 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 	pool, heads, had := map[string][]string{}, map[string]bool{}, map[string]bool{} // a line as a split may move it -> the doc's lines so written
 	for _, l := range scan(tree.Docs[c.Doc]) {
 		pool[normal(l.text)] = append(pool[normal(l.text)], l.text)
-		had[normal(l.text)] = true
+		had[strings.TrimSpace(l.text)] = true
 		for _, w := range headWords(l) {
 			heads[w] = true
 		}
 	}
 	var gained []string
-	pointers := map[string]bool{} // a page and a pointer's line
+	pointers, kept := map[string]bool{}, map[string]bool{} // a page and a pointer's line; a page and a definition's label
 	for _, p := range append([]string{c.Doc}, created...) {
 		var para []string
 		pointer := func() {
@@ -303,8 +303,9 @@ func judgeSplit(repo string, s Settings, c *splitTask, intents, fallback []inten
 				if slices.ContainsFunc(headWords(l), func(w string) bool { return !heads[w] }) {
 					refuse("written-anew", p, fmt.Sprintf("%q: a new heading is made of the words of the doc's headings", strings.TrimSpace(l.text)))
 				}
-			case had[n] && refLink.MatchString(l.text) && strings.Count(after[p], strings.TrimSpace(strings.SplitAfter(l.text, "]")[0])) > 1:
-				pointer() // a reference definition the doc holds, kept beside its uses on a new page
+			case had[strings.TrimSpace(l.text)] && refLink.MatchString(l.text) && !kept[p+"\x00"+strings.TrimSpace(strings.SplitAfter(l.text, "]")[0])] && strings.Count(after[p], strings.TrimSpace(strings.SplitAfter(l.text, "]")[0])) > 1:
+				kept[p+"\x00"+strings.TrimSpace(strings.SplitAfter(l.text, "]")[0])] = true // a reference definition the doc holds, word for word, kept once beside its uses on a new page
+				pointer()
 			default:
 				// A list item or a table row is a pointer of its own: a list of
 				// six pointers is six pointers, not one paragraph of 54 words.
