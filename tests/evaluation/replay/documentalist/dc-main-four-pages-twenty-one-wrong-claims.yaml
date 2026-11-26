@@ -1,0 +1,49 @@
+case: documentalist/dc-main-four-pages-twenty-one-wrong-claims
+about: >
+  Four pages of DomoticsCore that the nightly gardening never fixed, and
+  that no change to the documentalist was tuned on when this case was
+  written (2026-11-26): a set to hold out of tuning, for a change measured
+  on the other cases. At 77e4b91 (2026-11-24) each was suspect, its
+  sources changed since `checked`. An independent reader, one a page,
+  read each against the code on 2026-11-26 and found 30 statements the
+  code contradicts; the 21 it was sure of are the targets, eight of them
+  checked again by hand. `docs/components/ota/README.md` (13): "bearer
+  token and HTTP basic-auth headers" (nothing in OTA.h or OTA.cpp builds
+  a header or holds a token); the line counts of OTA.h (181, not 154),
+  OTAEvents.h (33 lines and 6 constants, not 36 and 7), OTAWebUI.h (563,
+  not 393), Update_HAL.h (37, not 25), Update_ESP32.h (83, not 100),
+  Update_ESP8266.h (106, not 120), Update_Stub.h (84, not 48) and OTA.cpp
+  (761, not 607), and their total (1848, not 1483); test_ota_component
+  runs 56 tests, not 30, and `pio test -e native` 91; the version is
+  1.11.0, not 1.4.1. `docs/reference/eventbus-component-events.md` (7):
+  the MQTT event structs hold `char topic[128]` and `char payload[700]`
+  (MQTT_EVENT_TOPIC_SIZE, MQTT_EVENT_PAYLOAD_SIZE), not 160 and 2048, in
+  five places; `wifi/sta/connected` and `wifi/ap/enabled` are also
+  emitted with `false` (a connection timed out, the access point
+  stopped), not only `true`. `docs/components/wifi/README.md` (1):
+  library.json says 1.8.0, not v1.4.1.
+  `docs/components/system-info/README.md`: none the reader was sure of.
+  The replay: gardening on 77e4b91, narrowed to the four pages (`docs`),
+  their earlier stamps taken out so that none is held, the forge kept in
+  the clone. Expected: each target corrected, and no edit stating
+  something false. The checks here are the sturdy ones, seven of the 21;
+  a score by meaning reads the 21 one by one in the diff.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 77e4b918e13661552ba6ced3212171c2e340b457}
+  setup:
+    - |
+      sed -i '/^  documentalist:$/{n;s|$|\n      # Four pages held out of every tuning.\n      docs: [docs/components/ota/README.md, docs/components/wifi/README.md, docs/components/system-info/README.md, docs/reference/eventbus-component-events.md]|}' .workline/config.yaml
+      printf 'forge: local\n' >> .workline/config.yaml
+      sed -i '/^judged: /d;/^judged-in-parts: /d' docs/components/ota/README.md docs/components/wifi/README.md docs/components/system-info/README.md docs/reference/eventbus-component-events.md
+      git commit -qam 'chore: garden the four held-out pages alone, no earlier stamp'
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  - {file-lacks: {docs/components/ota/README.md: "bearer token"}}
+  - {file-lacks: {docs/components/ota/README.md: "**1.4.1**"}}
+  - {file-lacks: {docs/components/ota/README.md: "(154 lines)"}}
+  - {file-lacks: {docs/components/ota/README.md: "30 Unity tests"}}
+  - {file-lacks: {docs/reference/eventbus-component-events.md: "char topic[160]"}}
+  - {file-lacks: {docs/reference/eventbus-component-events.md: "char payload[2048]"}}
+  - {file-lacks: {docs/components/wifi/README.md: "(v1.4.1)"}}
+  - {judge: "Judged against the facts the case states, is every line the role added or changed in the four pages true, with no new false claim (for instance a line count, a test count, a buffer size or a version other than the one the case states)? A run that changed no line of the pages' bodies answers yes."}

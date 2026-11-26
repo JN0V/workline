@@ -1,0 +1,18 @@
+case: documentalist/doc-too-long-read-where-it-lies
+about: "A suspect doc too long to be shown in a task, even alone with what changed in its sources, is not left to a person when the agent reads files itself (claude): its task names the doc, to be read whole in a copy of the repository at HEAD, with what changed, and holds none of its lines. Its fix is applied, `checked` stays (nothing was given whole) and `judged` is set. A command agent, which reads nothing, still leaves it to a person (suspect-doc-too-large)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/- token number /' >> docs/tech/auth.md && git commit -qam 'docs: list the tokens'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  env: {PATH: "$FIXTURES/claude-reads-a-doc:$PATH"}
+run: {role: documentalist, event: merge-request, ai: claude}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {docs/tech/auth.md: {contains: ["Access tokens last two hours.", "judged: "]}}
+  no-findings: [{rule: agent-invalid-output}, {rule: agent-unavailable}]
+  run-files:
+    in/task.md:
+      contains: ["read `docs/tech/auth.md` whole in your working directory"]
