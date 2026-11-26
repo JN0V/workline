@@ -1,0 +1,14 @@
+case: documentalist/budget-debt-on-the-base-warns
+about: "A user page already over its budget on the base only warns on a merge request that makes it longer: the debt is gardening's, not the author's."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {budgets: {doc-lines: 4}}}}}
+  setup:
+    - "printf '\\nRefresh tokens last thirty days.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): say how long refresh tokens last'"
+run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: doc-too-long, where: docs/tech/auth.md}
+  no-findings:
+    - {rule: doc-too-long, where: docs/tech/auth.md, message: "within it on the base"}

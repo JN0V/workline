@@ -1096,7 +1096,7 @@ func (r *preRun) checkHygiene() error {
 	var added map[string]bool
 	if r.ranged {
 		var err error
-		if added, err = addedFiles(r.runDir, r.repo); err != nil {
+		if added, err = addedFiles(rangeOf(r.runDir), r.repo); err != nil {
 			return err
 		}
 	}
@@ -1161,6 +1161,10 @@ func (r *preRun) checkHygiene() error {
 		counted = slices.DeleteFunc(slices.Clone(docs), func(d *docmark.Doc) bool { return !r.ofPush[d.Path] })
 	}
 	counts := CountsOff(r.repo, tree, counted)
+	// The budgets of the user pages a merge request takes over, within them
+	// on its base, block with no agent, as a new lint finding does; a page
+	// over on its base only warns: that debt is gardening's.
+	pages := userPages(tree, s.Reader)
 	for _, p := range append(append(r.problems, gone...), counts...) {
 		if r.onMain && p.Rule == "links-not-checked" {
 			continue // links to other sites are the night's: main's issue lists problems, not checks left to it
@@ -1169,9 +1173,28 @@ func (r *preRun) checkHygiene() error {
 		if p.Rule == "setting-missing" {
 			f.Level = "block" // a check that could not run is not a pass
 		}
+		if doc, _, _ := strings.Cut(p.Where, "#"); (p.Rule == "doc-too-long" || p.Rule == "section-too-long") && os.Getenv("WORKLINE_EVENT") == "merge-request" && slices.Contains(pages, doc) && takenOver(r.repo, rangeOf(r.runDir), doc, tree.Docs[doc], p.Key, s.Budgets) {
+			f.Level, f.Message = "block", f.Message+"; within it on the base, this merge request takes it over: condense or split it"
+		}
 		r.findings = append(r.findings, f)
 	}
 	return nil
+}
+
+// takenOver says doc is over key's budget at head, within it at the merge base
+// under its name there (a page added is), both trimmed; a base unread is not.
+func takenOver(repo, rng, doc, now, key string, b Budgets) bool {
+	head, old := gitrange.Head(rng), doc
+	base, err := git(repo, "merge-base", gitrange.Base(rng), head)
+	moved, _ := git(repo, "diff", "-M", "--diff-filter=R", "--name-status", base, head)
+	if before, _, ok := strings.Cut(moved+"\n", "\t"+doc+"\n"); ok { // R<score>, old, new
+		old = before[strings.LastIndex(before, "\t")+1:]
+	}
+	was, _ := git(repo, "show", base+":"+old)
+	over := func(c string) bool {
+		return slices.ContainsFunc(budgets(Tree{Docs: map[string]string{doc: strings.TrimSpace(c)}}, b), func(q Problem) bool { return q.Key == key })
+	}
+	return err == nil && over(now) && !over(was)
 }
 
 // deriveBlocks regenerates the derived blocks, with no judgement needed —
@@ -2195,11 +2218,11 @@ func Post(runDir, repo string) int {
 	}
 	v := verdict.Verdict{Status: verdict.Pass, Findings: kept}
 	// Nothing of the answer was refused: what blocks — a check that could
-	// not run — is not the answer's, and asking the
-	// agent again would change none of it.
+	// not run, a page taken over its budget — is not the answer's, and
+	// asking the agent again would change none of it.
 	switch {
 	case blocking > 0:
-		v.Status, v.Summary, v.Final = verdict.Block, "some sources could not be judged, or some checks could not run", true
+		v.Status, v.Summary, v.Final = verdict.Block, "some sources could not be judged, some checks could not run, or a page went over its budget", true
 	case len(intents) > 0:
 		v.Summary = "docs updated"
 	case slices.ContainsFunc(kept, func(f verdict.Finding) bool { return f.Rule == verdict.WaitsForReady }):
@@ -2380,13 +2403,9 @@ func rangeOf(runDir string) string {
 	return strings.TrimSpace(string(data))
 }
 
-// addedFiles returns the files the commits of the run's range added.
-func addedFiles(runDir, repo string) (map[string]bool, error) {
-	data, err := os.ReadFile(filepath.Join(runDir, "in", "input", "range"))
-	if err != nil {
-		return nil, err
-	}
-	out, err := git(repo, append([]string{"log", "--diff-filter=A", "--name-only", "--format="}, gitrange.Args(string(data))...)...)
+// addedFiles returns the files the commits of the range rng added.
+func addedFiles(rng, repo string) (map[string]bool, error) {
+	out, err := git(repo, append([]string{"log", "--diff-filter=A", "--name-only", "--format="}, gitrange.Args(rng)...)...)
 	if err != nil {
 		return nil, err
 	}

@@ -457,18 +457,6 @@ func (cc *citeContext) source(d *docmark.Doc, p string) (string, bool) {
 	return content, true
 }
 
-// judgeCitations checks that each run of a doc's body a fix changes is
-// cited where it takes words out, and that no change rests on a comment
-// alone. It returns the refusal, if any, and the comment it rests on.
-func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []citeClaim, unread int, alone bool) (rule, msg string, comments []verdict.Finding) {
-	refused, held, off, comments := cc.citationRefusals(docPath, old, f, claims, unread, alone)
-	if len(refused) == 0 {
-		return "", "", nil
-	}
-	rule, msg = citationMessage(docPath, refused, held, off)
-	return rule, msg, comments
-}
-
 // citationMessage says why a doc's fix is refused by the removal rule, as
 // the agent is told: each place refused, the counts the engine fixes with
 // no claim, and the places that hold.

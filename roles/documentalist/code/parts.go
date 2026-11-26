@@ -1008,13 +1008,6 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 	return b.String()
 }
 
-// uncovered names the lines of the doc naming a name from the code that no
-// claim says anything of, with those names; empty when there are none.
-func uncovered(content string, kept []claim) string {
-	all, _, _ := uncoveredSplit(content, kept, "")
-	return all
-}
-
 // sourceText is the text of the files of code among a doc's sources.
 func sourceText(d *docmark.Doc, repo string) (string, error) {
 	var b strings.Builder
@@ -1072,9 +1065,9 @@ func holdsWhole(held, name string) bool {
 	}
 }
 
-// uncoveredSplit is uncovered, and the same lines apart: those whose names
-// are all held by held (the text of the sources), and those naming one that
-// none holds.
+// uncoveredSplit names the doc's lines naming a name from the code no claim
+// speaks of (all), and the same lines apart: those whose names held (the
+// text of the sources) all holds, and those naming one it does not.
 func uncoveredSplit(content string, kept []claim, held string) (all, inSource, gone string) {
 	var out, in, no []string
 	for _, l := range scan(content) {

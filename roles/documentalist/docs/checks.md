@@ -172,7 +172,7 @@ block, the [role contract](../../../docs/spec/role-contract.md)); a project
 turns one off with `enforce`.
 
 - **Reported; the run passes**: `suspect`, `pending`, `due`, `unchecked`,
-  budgets, `duplicate`, `dead-link`, `external-link-broken`,
+  budgets but below, `duplicate`, `dead-link`, `external-link-broken`,
   `identifier-gone`, `count-off`, `value-left` (after a fix, the judge),
   `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`,
   `no-sources` and `sources-by-name` (on `init`), `undocumented`,
@@ -182,8 +182,7 @@ turns one off with `enforce`.
   `reader-claim-dropped` and `reader-patch-withheld` (gardening); for a
   doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`;
   on a draft, `ai-waits-for-ready`.
-- **Reported, and the block regenerated**: `derived-stale` (gardening,
-  `init`).
+- **Reported, and the block regenerated**: `derived-stale` (gardening, `init`).
 - **Reported, left as it is**: `derive-unclosed`, a derive marker with no end before the next block's ([#302](https://github.com/JN0V/workline/issues/302)).
 - **Reported; the block left for gardening**: `derived-behind` (push,
   merge request).
@@ -191,8 +190,9 @@ turns one off with `enforce`.
   - `unknown`: a source that could not be read;
   - a check that cannot run (git failing): its reason, git's own text in
     it;
-  - `setting-missing`: a budget or threshold not set, so a check did not
-    run;
+  - `setting-missing`: a budget or threshold not set, a check not run;
+  - `doc-too-long`, `section-too-long` of a user page a merge request takes
+    over its budget, within it on the base ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#amendment-2026-11-25-a-budget-a-pull-request-adds-blocks));
   - `derive-unknown` and `derive-failed`: a derived block that could not
     be regenerated;
   - `shallow-clone`, unless only docs the commits in range did not touch

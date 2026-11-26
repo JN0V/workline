@@ -1,0 +1,14 @@
+case: documentalist/budget-debt-moved-warns
+about: "A user page already over its budget, moved by a merge request, only warns: its size on the base is read under its old name."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {budgets: {doc-lines: 4}}}}}
+  setup:
+    - "git mv docs/tech/auth.md docs/tech/authentication.md && sed -i 's#docs/tech/auth.md#docs/tech/authentication.md#' docs/product/sign-in.md && git commit -qam 'docs(auth): rename the page'"
+run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: doc-too-long, where: docs/tech/authentication.md}
+  no-findings:
+    - {rule: doc-too-long, where: docs/tech/authentication.md, message: "within it on the base"}
