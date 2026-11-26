@@ -225,15 +225,8 @@ func TestScore(t *testing.T) {
 	if s.asked["## F4"] != 2 || s.asked["(2)"] != 4 {
 		t.Errorf("a second scoring asked the judge again: %v", s.asked)
 	}
-	// A case points.yaml does not hold: nobody is asked, the rows are empty
-	// ones the summary and the table still read.
-	unknown := append(slices.Clone(runs), caseRun{Arm: "a", Case: "unknown"})
-	js, err = score(&judge{ask: s.ask, cache: t.TempDir()}, defs, unknown, 1, nil)
-	if err == nil || !strings.Contains(err.Error(), `no case "unknown"`) || len(js) != len(unknown) {
-		t.Errorf("an unknown case: %v, %d judgements", err, len(js))
-	}
-	if s.asked["## F4"] != 2 || tsv(js) != "arm\trun\tcase\tset\titem\tclass\tscored\tverdict\tjudgements\tfindings\tquote\twhy\n" || summary(unknown, js, "fake") == "" {
-		t.Errorf("an unknown case asked the judge, or left rows: %v\n%s", s.asked, tsv(js))
+	if js, err := score(j, defs, append(slices.Clone(runs), caseRun{Arm: "a", Case: "unknown"}), 1, nil); js != nil || err == nil || s.asked["## F4"] != 2 {
+		t.Errorf("a case points.yaml does not hold: an error, and nobody asked: %v, %v", err, s.asked)
 	}
 }
 
@@ -312,5 +305,36 @@ func TestReadFindings(t *testing.T) {
 	}
 	if out, _, err := ask("system", "user", ""); err != nil || out != "system\n\nuser" {
 		t.Errorf("a command is given the question on its stdin: %q, %v", out, err)
+	}
+}
+
+// TestRun: a scoring writes its table and keeps its judgements under
+// their judge's name; a findings file naming an unknown case is refused
+// and leaves what was written as it was.
+func TestRun(t *testing.T) {
+	dir := t.TempDir()
+	out, file := filepath.Join(dir, "scores"), filepath.Join(dir, "runs.jsonl")
+	line := `{"arm":"a","case":"kept-wl-2201-build-txt-not-shipped","findings":[{"place":"subject.go:50","severity":"important","title":"A .txt build file is typed chore"}]}` + "\n"
+	if err := os.WriteFile(file, []byte(line), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	spec := `cmd:echo '{"points":{"build-txt-files-not-shipped":{"said":["F1"],"partly":[]}}}'`
+	if err := run(file, out, spec, "", 2); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := os.ReadFile(filepath.Join(out, "scores.tsv"))
+	if !strings.Contains(string(rows), "a\t1\tkept-wl-2201-build-txt-not-shipped\tkept\tbuild-txt-files-not-shipped\tkept\tyes\tsaid\tsaid / said\tF1; ") {
+		t.Errorf("scores.tsv:\n%s", rows)
+	}
+	kept, _ := filepath.Glob(filepath.Join(out, "judgments", "cmd-echo-points-*", "*.json"))
+	if other, _ := filepath.Glob(filepath.Join(out, "judgments", "*.json")); len(kept) != 2 || len(other) != 0 {
+		t.Errorf("two judgements kept under their judge's name: %v, %v", kept, other)
+	}
+	if err := os.WriteFile(file, []byte(line+`{"arm":"a","case":"nope","findings":[]}`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := run(file, out, spec, "", 2)
+	if after, _ := os.ReadFile(filepath.Join(out, "scores.tsv")); err == nil || !strings.Contains(err.Error(), `no case "nope"`) || string(after) != string(rows) {
+		t.Errorf("an unknown case: %v; scores.tsv after:\n%s", err, after)
 	}
 }

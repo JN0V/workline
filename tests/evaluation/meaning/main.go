@@ -486,7 +486,7 @@ func score(j *judge, defs map[string]caseDef, runs []caseRun, parallel int, prog
 	done := 0
 	for _, cr := range runs { // before anyone is asked
 		if _, ok := defs[cr.Case]; !ok {
-			return out, fmt.Errorf("points.yaml has no case %q (%s run %d)", cr.Case, cr.Arm, cr.Run)
+			return nil, fmt.Errorf("points.yaml has no case %q (%s run %d)", cr.Case, cr.Arm, cr.Run)
 		}
 	}
 	for i, cr := range runs {
@@ -869,6 +869,9 @@ func run(findings, out, spec, cases string, parallel int) error {
 			fmt.Fprintf(os.Stderr, "%d/%d case runs judged\n", done, total)
 		}
 	})
+	if js == nil { // nothing judged: what an earlier scoring wrote stays
+		return err
+	}
 	return errors.Join(err, os.MkdirAll(out, 0o755),
 		os.WriteFile(filepath.Join(out, "scores.tsv"), []byte(tsv(js)), 0o644),
 		os.WriteFile(filepath.Join(out, "summary.md"), []byte(summary(runs, js, spec)), 0o644))
