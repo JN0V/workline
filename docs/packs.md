@@ -10,18 +10,12 @@ sources:
   - internal/packs/packs.go#TesterDefaults
   - internal/packs/packs.go#Detected
   - internal/packs/packs.go#Unknown
-  - internal/packs/packs.go#Knowing
   - internal/packs/builtin/generic.yaml#test-paths
-  - internal/packs/builtin/go.yaml#about
   - internal/packs/builtin/go.yaml#detect
-  - internal/packs/builtin/kotlin-gradle.yaml#about
-  - internal/packs/builtin/java-maven.yaml#about
-  - internal/packs/builtin/python-pytest.yaml#about
-  - internal/packs/builtin/js-jest.yaml#about
   - internal/codenav/codenav.go#Of
   - internal/routing/adopt.go#SetPacks
   - internal/doctor/packs.go#languagePacks
-checked: 3bab32400
+checked: 542fc9cb6
 verified: agent:claude-code
 ---
 # Language packs
@@ -47,6 +41,7 @@ One YAML file a language or ecosystem:
 | `detect` | `files`: marker names, at any depth (`go.mod`); `extensions`: the languages it knows, for `workline doctor` |
 | `test-paths` | the test files, as patterns, added to the generic ones: the tester's `test-paths` when it sets none |
 | `test-homes` | where a test's code lives, read before the generic homes: the tester's `test-homes` when it sets none |
+| `build-errors` | how a broken build's error lines read, and which are a missing name: the tester's `build-errors` when it sets none |
 | `test-command` | a suggested test command, given by `workline doctor` when the tester has none; never run unless you set it |
 | `builtin-names` | the language's own names (built-in exceptions, standard library), which no project code defines |
 | `aside` | folders beside the code, ranked after it: the generic pack's only, for now |
@@ -59,8 +54,10 @@ One YAML file a language or ecosystem:
 
 ## The packs built in
 
-`go`, `kotlin-gradle`, `java-maven`, `python-pytest`, `js-jest`, and
-`generic`: [internal/packs/builtin/](../internal/packs/builtin/).
+One file each in [internal/packs/builtin/](../internal/packs/builtin/),
+the pack's name being the file's less `.yaml`: `go.yaml`,
+`kotlin-gradle.yaml`, `java-maven.yaml`, `python-pytest.yaml`,
+`js-jest.yaml` and `generic.yaml`.
 
 - **`generic`** is always read: `test/`, `tests/`, `__tests__/`
   folders, `test_*`, `*_test.*`, `*.spec.*`…
@@ -73,6 +70,8 @@ One YAML file a language or ecosystem:
 
 How workline finds a language's functions with no build
 ([code navigation](research/code-navigation.md)): one row a language.
+What the code picker reads with them:
+[the code picker](spec/code-picker.md#what-it-reads).
 
 ```yaml
 code-navigation:
@@ -140,3 +139,13 @@ in the engine
 - **A language no listed pack knows**, with its file count: the pack
   built in to list, else the file to write.
 - No `test-command` set: the listed packs' suggested ones.
+
+## Where this page reads from
+
+- **The fields, how they merge and are refused**:
+  `internal/packs/packs.go`.
+- **The packs built in**: `generic.yaml` and `go.yaml` above, the
+  others beside them.
+- **Code navigation**: `internal/codenav/codenav.go`.
+- **What `workline init` lists**: `internal/routing/adopt.go`.
+- **What doctor says**: `internal/doctor/packs.go`.

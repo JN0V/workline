@@ -11,7 +11,7 @@ sources:
   - internal/doctor/tests.go#testCommandRuns
   - internal/doctor/tests.go#testsFix
   - internal/engine/engine.go#RunsDir
-checked: 3bab32400
+checked: 542fc9cb6
 verified: agent:claude-code
 ---
 # The whole line with no forge
@@ -108,3 +108,14 @@ The `merge-request` line routed above reads the developer's change:
 
 What the policy says yes to merges into `main` in this clone, the rest
 waits for your yes: [the merge](local-line-merge.md).
+
+## Where this page reads from
+
+- **The forge kept in the clone**: `internal/forge/local.go`.
+- **`workline issues` and `workline init`**: `cmd/workline/main.go`.
+- **The pack a Python repository gets**:
+  `internal/packs/builtin/python-pytest.yaml`.
+- **The project's settings**: `internal/role/role.go`.
+- **The line's states**: `defaults/routing.yaml`.
+- **What doctor says of a `test-command`**: `internal/doctor/tests.go`.
+- **The runs' folder**: `internal/engine/engine.go`.

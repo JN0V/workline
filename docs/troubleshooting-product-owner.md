@@ -1,6 +1,14 @@
 ---
-sources: [roles/product-owner/code/productowner.go]
-checked: 7506b1e2c
+sources:
+  - roles/product-owner/code/productowner.go
+  - roles/product-owner/code/changes.go
+  - roles/reviewer/code/specforge.go
+  - internal/report/summary.go
+  - internal/backlog/backlog.go
+  - internal/backlog/autonomy.go
+  - internal/backlog/ledger.go
+  - internal/backlog/spec.go
+checked: 542fc9cb6
 verified: agent:claude-code
 judged: 5c1573b
 judged-in-parts: 5c1573b
@@ -57,7 +65,8 @@ When the product owner pauses, or an issue gets nothing. Part of
   yourself), or nothing drafted (read again once it changes or someone
   comments).
 - An issue refined never goes ready, the reviewer after it in the line
-  ([#128](https://github.com/JN0V/workline/issues/128)): `spec-not-reviewed` — the reviewer reads `specs-per-run` issues a
+  ([a spec before it is built](../roles/reviewer/docs/spec.md)):
+  `spec-not-reviewed` — the reviewer reads `specs-per-run` issues a
   run (5), the rest the next (`spec-waits`), none without an agent or
   with `forge-writes: false`; `spec-findings-open` —
   read the reviewer's comment on the issue; `spec-rounds-spent` — a
@@ -69,7 +78,7 @@ When the product owner pauses, or an issue gets nothing. Part of
   ([writing an issue](../roles/product-owner/docs/writing.md#the-rules)).
 - An issue labelled `workline:parked`: a person set it aside; no role
   reads it until the label is taken off
-  ([#1752](https://github.com/JN0V/workline/issues/1752)).
+  ([reading](spec/backlog-acts/reading.md)).
 - `kind-missing`: a full read gave an issue no kind; the next light
   read gives it one
   ([the kind](../roles/product-owner/docs/kind.md)).
@@ -78,9 +87,8 @@ When the product owner pauses, or an issue gets nothing. Part of
 
 ## A record or a file it cannot read
 
-- A hidden record does not read
-  ([#302](https://github.com/JN0V/workline/issues/302)): the issue is
-  held, said each run, never read as none.
+- A hidden record does not read: the issue is held, said each run,
+  never read as none.
   - `state-broken`: mend the product owner's comment, or delete it.
   - `proposal-unread`: copy the proposed sections into the issue.
   - `spec-record-unread`: delete the reviewer's comment, or accept the
@@ -94,3 +102,13 @@ When the product owner pauses, or an issue gets nothing. Part of
 - `lines-unread`: an issue imported from a file, whose lines cannot be
   followed — the commit it was opened at gone after a force-push, or
   beyond a shallow clone: fetch the whole history (`fetch-depth: 0`).
+
+## Where this page reads from
+
+- **The role's run**: `roles/product-owner/code/productowner.go`; an
+  imported file's lines, `roles/product-owner/code/changes.go`.
+- **The reviewer's read of a spec**: `roles/reviewer/code/specforge.go`.
+- **The run's summary**: `internal/report/summary.go`.
+- **The backlog's rules**: `internal/backlog/backlog.go`,
+  `internal/backlog/autonomy.go`, `internal/backlog/ledger.go` and
+  `internal/backlog/spec.go`.

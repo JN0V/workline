@@ -1,6 +1,8 @@
 ---
 sources:
-  - defaults/routing.yaml
+  - defaults/routing.yaml#events
+  - defaults/routing.yaml#fail-fast
+  - defaults/routing.yaml#states
   - cmd/workline/cli.go#init
   - cmd/workline/main.go#exitFor
   - internal/routing/timed.go#TimedJobs
@@ -15,7 +17,7 @@ sources:
   - internal/engine/routine.go#underived
   - internal/forge/forge.go#Open
   - internal/agent/agent.go#Parse
-checked: e81df7b34
+checked: 542fc9cb6
 verified: agent:claude-code
 ---
 # Concepts

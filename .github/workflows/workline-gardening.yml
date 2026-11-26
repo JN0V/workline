@@ -222,9 +222,9 @@ jobs:
         env: {WORKLINE_DOCS_TESTS: "1"}
         run: |
           status=0
-          go test -count=1 -v -timeout 25m -run 'TestUserPages|TestRolePages|TestEveryCheckedIsAnAncestorOfMain|TestMergeReleasePagesNotSuspect|TestMergeReleaseSourcesNarrowAndNamed' ./cmd/workline/ ./tests/ > docs-tests-full.txt 2>&1 || status=$?
+          go test -count=1 -v -timeout 25m -run 'TestUserPages|TestRolePages|TestEveryCheckedIsAnAncestorOfMain|TestMergeReleasePagesNotSuspect|TestMergeReleaseSourcesNarrowAndNamed|TestLot' ./cmd/workline/ ./tests/ > docs-tests-full.txt 2>&1 || status=$?
           # A renamed test must not pass silently: each pattern must have run.
-          for t in TestUserPages TestRolePages TestEveryCheckedIsAnAncestorOfMain TestMergeReleasePagesNotSuspect TestMergeReleaseSourcesNarrowAndNamed; do
+          for t in TestUserPages TestRolePages TestEveryCheckedIsAnAncestorOfMain TestMergeReleasePagesNotSuspect TestMergeReleaseSourcesNarrowAndNamed TestLot; do
             grep -q -- "--- PASS: $t" docs-tests-full.txt || { echo "no passing test named $t* ran" >> docs-tests-full.txt; status=1; }
           done
           grep -E -- '^(--- |ok|FAIL|panic|no passing)' docs-tests-full.txt | tail -n 200 > docs-tests.txt

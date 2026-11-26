@@ -10,7 +10,7 @@ sources:
   - internal/line/tick.go#BacklogDue
   - defaults/ci/github/workline-loop.yml#on
   - defaults/ci/github/workline-loop.yml#jobs.loop
-checked: e81df7b34
+checked: 542fc9cb6
 verified: agent:claude-code
 ---
 # The tick
@@ -23,8 +23,7 @@ flowchart LR
 ```
 
 `workline tick` lists the line's jobs due now
-([ADR-0069](adr/0069-one-wake-every-five-minutes-starts-what-is-due.md),
-[#1665](https://github.com/JN0V/workline/issues/1665)).
+([ADR-0069](adr/0069-one-wake-every-five-minutes-starts-what-is-due.md)).
 
 - **It decides, it starts nothing**: no agent, nothing written. A
   workflow, a pipeline or a machine's timer starts what it lists.
@@ -41,7 +40,7 @@ flowchart LR
 | Job | Due when | Its run's name |
 |---|---|---|
 | `reconcile` | every tick; or its `at` or `gap`, when set | `workline develop reconcile` |
-| `backlog` | Ready below its target, and Ready moved since the last backlog run ([#1549](https://github.com/JN0V/workline/issues/1549)) | `workline gardening backlog` |
+| `backlog` | Ready below its target, and Ready moved since the last backlog run | `workline gardening backlog` |
 | `nightly` | its `at` passed, no run since; not timed unless set | `workline gardening nightly` |
 | `docs` | its `at` passed, no run since; `7 18 * * 0` shipped | `workline gardening docs` |
 | `merge` | its `gap` passed since its last run; `60` shipped | `workline merge` |
@@ -55,20 +54,19 @@ flowchart LR
   is not seen.
 - **Runs from before those names**: a gardening run named `workline
   gardening` counts as a backlog run, a `workline develop heartbeat` as
-  a reconcile
-  ([#1761](https://github.com/JN0V/workline/issues/1761)).
+  a reconcile.
 - **The nightly keeps the backlog**: a `workline gardening nightly` run
   or a `workline gardening docs and backlog` run (the template's full
   Sunday run, the product owner too) counts as a backlog run too, when
-  it succeeded; a docs run alone does not
-  ([#1765](https://github.com/JN0V/workline/issues/1765)). That full
-  run counts as a docs run too.
+  it succeeded; a docs run alone does not. That full run counts as a
+  docs run too.
 - **Going**: a run requested, queued, waiting, pending or in progress,
   started in the last day: one waiting longer on a person's approval
   is not read as going.
 - **`--issues`**: in the place of the reconcile, each issue's step,
-  review round and tester's answer the reconciler finds due, as its own
-  job.
+  review round and tester's answer
+  [the reconciler](spec/routing.md#the-reconciler) finds due, as its
+  own job.
 
 ## The times
 
@@ -191,7 +189,15 @@ beat on GitHub, whose own schedule runs late or not at all
   runs, every workflow, while fewer than 100), each timed job's
   workflow back to its time, and, for the backlog, the issues.
 - **Conditional reads**: each listing read again sends its last answer's
-  `ETag`; GitHub's `304 Not Modified` costs no quota
-  ([#1762](https://github.com/JN0V/workline/issues/1762)).
+  `ETag`; GitHub's `304 Not Modified` costs no quota.
   - Said on stderr: `workline: tick: 5 GitHub calls, 0 of them cost
     quota (5 answered 304 Not Modified)`.
+
+## Where this page reads from
+
+- **The command and its flags**: `cmd/workline/tick.go`.
+- **What is due, each run's name**: `internal/tick/tick.go`.
+- **The jobs and their shipped times**: `internal/routing/timed.go`.
+- **The backlog's rule**: `internal/line/tick.go`.
+- **The runs going, the forges that list none**: `internal/forge/runs.go`.
+- **The GitHub loop**: `workline-loop.yml`.

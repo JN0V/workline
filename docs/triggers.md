@@ -4,36 +4,18 @@ sources:
   - cmd/workline/main.go#prePushLine
   - roles/committer/role.yaml
   - internal/kit/commitmsg/commitmsg.go#Settings
-  - cmd/workline/main.go#docsCmd
-  - cmd/workline/main.go#reviewCmd
   - cmd/workline/main.go#routeCmd
-  - cmd/workline/main.go#runRole
+  - cmd/workline/main.go#applyCmd
+  - cmd/workline/main.go#reviewCmd
+  - cmd/workline/main.go#docsCmd
   - cmd/workline/main.go#testCmd
   - cmd/workline/main.go#developCmd
-  - cmd/workline/main.go#importIssues
-  - cmd/workline/main.go#applyCmd
-  - cmd/workline/main.go#sampleCmd
-  - cmd/workline/main.go#followCmd
-  - cmd/workline/main.go#sizeCmd
-  - cmd/workline/main.go#gateCmd
+  - cmd/workline/main.go#runRole
   - cmd/workline/tick.go#tickCmd
   - internal/tick/tick.go#Due
   - internal/forge/gitlab.go#gitlab.connect
-  - internal/engine/engine.go#Result
-  - internal/line/line.go#Result
-  - internal/report/report.go#FromLine
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:ready
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:reconcile
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
-checked: e81df7b34
+  - defaults/ci/gitlab/workline.gitlab-ci.yml
+checked: 542fc9cb6
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -197,3 +179,16 @@ workline apply <run-dir> --from-merge-request <iid> --head <sha> --forge gitlab
 
 The clone, variables and tools each job needs, GitLab's tokens, the exit
 codes and what a run writes: [jobs' needs and outputs](triggers-outputs.md).
+
+## Where this page reads from
+
+- **The commands and their flags**: `cmd/workline/main.go`, and the tick
+  in `cmd/workline/tick.go`.
+- **The committer's rewrite and its 30 s**: `roles/committer/role.yaml`
+  and `internal/kit/commitmsg/commitmsg.go`.
+- **What the tick lists**: `internal/tick/tick.go`.
+- **GitLab's token on a laptop**: `internal/forge/gitlab.go`.
+- **The jobs in CI**: the GitLab template,
+  `defaults/ci/gitlab/workline.gitlab-ci.yml`.
+- **The line's states these commands move**:
+  [routing](spec/routing.md#the-line-of-states).

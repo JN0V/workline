@@ -54,7 +54,7 @@ sources:
   - roles/reviewer/role.yaml#settings.diff-alone
   - roles/reviewer/role.yaml#settings.spec-rounds
   - roles/reviewer/role.yaml#settings.specs-per-run
-checked: e81df7b34
+checked: 542fc9cb6
 verified: agent:claude-code
 reader: ce73d8d5f995
 ---
@@ -129,7 +129,7 @@ A commented example of every key, and what its comments point to: [a config exam
   digits (`after: 7515148`): a setting naming a commit reads it as written.
 - **`whole-chars` above 25000** is refused: a doc's task would no longer
   fit the documentalist's context
-  ([#235](https://github.com/JN0V/workline/issues/235)).
+  ([when `checked` may move](../roles/documentalist/docs/tasks.md#when-checked-may-move)).
 
 ### How settings merge
 
