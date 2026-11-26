@@ -65,6 +65,10 @@ go run ./tests/evaluation/summary     # per case and per set, a workline commit 
   scoring them; a fixture's runs stay pooled.
 - Each run appends a line to `results.tsv`, with its tokens.
 - `WORKLINE_JUDGE` is needed for the documentalist's judge check.
+- `WORKLINE_EVAL_KEEP=<folder>` keeps what each run left, a folder a
+  case and run: the run folders (tasks, answers, calls) and the change
+  the role made (`change.diff`). The repository goes with the test; why
+  a point was lost is read there.
 - `given.needs` names what a case needs on the machine: PlatformIO
   (`pio`) for DomoticsCore's developer cases, `$ANDROID_HOME` and
   `java` for TraceGlass's. Missing, the case is skipped ("no
