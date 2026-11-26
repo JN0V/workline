@@ -1,6 +1,7 @@
 # ADR-0074: Agents read the repository; the engine stops preparing their input
 
-- **Status:** proposed, until the maintainer merges it; nothing built.
+- **Status:** step 2 built and measured, its bar not met
+  ([amendment](#amendment-2026-11-26-step-2s-bench-the-bar-not-met)); nothing merged.
   [Steps 7 and 8](#steps) go past the order he gave and wait for his
   own yes
 - **Date:** 2026-11-25
@@ -260,6 +261,34 @@ each role reads only what it needs, and now chooses it.
 - **A shell**: the replays needed none; it widens what a planted text
   can do. **An index**: a store and a dependency (principle 11).
 - **Filters dropped with the input**: their precision is not measured.
+
+## Amendment (2026-11-26): step 2's bench, the bar not met
+
+- **Built**: steps 1 and 2 for the reviewer's lenses, in
+  [#2273](https://github.com/JN0V/workline/pull/2273): the read tree,
+  the finder's question, the plain diff, the pickers deleted (non-test
+  Go −696 lines).
+- **Measured**: the reviewer's replay set, 3 runs, Sonnet 5.5 medium,
+  its judge Sonnet, against the baseline of
+  [#2271](https://github.com/JN0V/workline/pull/2271):
+
+  | Set | Today's input | Reading the repository |
+  |---|---|---|
+  | Misses, points | 53/102 | 51/102 |
+  | Misses, cases full every run | 2/15 | 3/15 |
+  | Kept catches, runs | 12/15 | 10/15 |
+  | Clean, runs with no false Important | 6/12 | 9/12 |
+  | Tokens a case run, cache included | about 48k | about 80k |
+
+- **The bar** ([the gate](#the-gate)) is not met: one kept catch lost
+  in 2 of 3 runs (DomoticsCore #262's stale replay), 2 miss points
+  fewer; clean better. By the gate, not merged: the code stays.
+- **Seen**: told only to read, a lens read one or two files and
+  answered `[]`, its scenarios unanswered; told what to read first and
+  that its last message is its whole answer, it answered them. Even so,
+  it read a changed header less closely than when it was given whole.
+- **Open, for the maintainer**: what step 2 tries next, if anything.
+  [#2273](https://github.com/JN0V/workline/pull/2273) waits on that choice.
 
 [#2162]: https://github.com/JN0V/workline/pull/2162
 [#2188]: https://github.com/JN0V/workline/issues/2188
