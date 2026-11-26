@@ -2,9 +2,11 @@ package documentalist
 
 import (
 	"fmt"
+	"maps"
 	"net/url"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -336,11 +338,7 @@ func duplicates(t Tree, d Duplicates) []Problem {
 		return unset
 	}
 	var paras []paragraph
-	docs := make([]string, 0, len(t.Docs))
-	for p := range t.Docs {
-		docs = append(docs, p)
-	}
-	sort.Strings(docs)
+	docs := slices.Sorted(maps.Keys(t.Docs))
 	for _, p := range docs {
 		if archived(t.Docs[p]) {
 			continue

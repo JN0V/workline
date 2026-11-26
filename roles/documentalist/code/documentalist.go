@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -2409,11 +2410,7 @@ func undocumented(t Tree, docs []*docmark.Doc, globs []string, added map[string]
 		}
 	}
 	var out []verdict.Finding
-	dirs := make([]string, 0, len(byDir))
-	for d := range byDir {
-		dirs = append(dirs, d)
-	}
-	sort.Strings(dirs)
+	dirs := slices.Sorted(maps.Keys(byDir))
 	for _, d := range dirs {
 		files := byDir[d]
 		sort.Strings(files)
@@ -2635,10 +2632,7 @@ func fail(err error) int {
 // withExternalLinks replaces the count of links to other sites with what
 // lychee finds of them; without lychee, the count says it is missing.
 func withExternalLinks(repo string, tree Tree, problems []Problem) ([]Problem, error) {
-	docs := make([]string, 0, len(tree.Docs))
-	for p := range tree.Docs {
-		docs = append(docs, p)
-	}
+	docs := slices.Collect(maps.Keys(tree.Docs))
 	found, ok, err := ExternalLinks(repo, docs)
 	if err != nil {
 		return nil, err
@@ -2934,6 +2928,8 @@ func forAPerson(f verdict.Finding) bool {
 	switch f.Rule {
 	case "suspect", "due", "stale":
 		return strings.Contains(f.Message, "a person ")
+	case "fix-not-applied":
+		return true
 	}
 	return false
 }

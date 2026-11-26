@@ -484,16 +484,15 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 		return nil, nil, nil
 	}
 	type cand struct {
-		sd   *suspectDoc
-		last string
+		sd      *suspectDoc
+		last    string
+		changes []string // its last three, "<commit> <time>", the newest first
 	}
 	var cands []cand
 	oldest, oldestAt := "", int64(0)
 	for _, p := range sortedDocs(suspects) {
 		sd := suspects[p]
-		// A doc read in parts tonight: the record of a change read alone
-		// would hold it from them (#462).
-		if sd.note != "" || sd.rest {
+		if sd.note != "" {
 			continue
 		}
 		paths, local := docPaths(sd.doc)
@@ -506,19 +505,21 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 				specs[i] = "."
 			}
 		}
-		out, err := git(repo, append([]string{"log", "--first-parent", "-1", "--format=%H %ct", "HEAD", "--"}, specs...)...)
+		out, err := git(repo, append([]string{"log", "--first-parent", "-3", "--format=%H %ct", "HEAD", "--"}, specs...)...)
 		if err != nil {
 			return nil, nil, err
 		}
-		c, at, ok := strings.Cut(out, " ")
+		changes := strings.Split(out, "\n")
+		c, _, ok := strings.Cut(changes[0], " ")
 		if !ok {
 			continue
 		}
+		first, at, _ := strings.Cut(changes[len(changes)-1], " ")
 		t, _ := strconv.ParseInt(at, 10, 64)
 		if oldest == "" || t < oldestAt {
-			oldest, oldestAt = c, t
+			oldest, oldestAt = first, t
 		}
-		cands = append(cands, cand{sd, c})
+		cands = append(cands, cand{sd, c, changes})
 	}
 	if len(cands) == 0 {
 		return nil, nil, nil
@@ -556,7 +557,7 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 	for i, c := range chain {
 		at[c] = i
 	}
-	comments := map[int]map[string]keptRecord{}
+	comments, fixes := map[int]map[string]keptRecord{}, map[int]string{}
 	var found []fromMerged
 	var findings []verdict.Finding
 	for _, c := range cands {
@@ -568,7 +569,28 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 				break
 			}
 		}
+		// The last fix proposed among its last three changes, merged without:
+		// said once, in the issue of docs waiting for a person.
+		for _, ch := range c.changes {
+			m, ok := became[strings.Fields(ch)[0]]
+			if _, read := fixes[m.ID]; ok && !read {
+				fixes[m.ID], _ = stickyOn(f, forge.Target{Kind: "merge-request", ID: m.ID}, "patch", &u)
+			}
+			if !ok || !strings.Contains(fixes[m.ID], "diff --git a/"+c.sd.doc.Path+" ") {
+				continue
+			}
+			if unapplied(fixes[m.ID], c.sd.doc.Path, repo) {
+				findings = append(findings, verdict.Finding{Rule: "fix-not-applied", Level: "warn", Where: c.sd.doc.Path,
+					Message: fmt.Sprintf("merge request #%d merged without the fix the documentalist proposed in its comment there, and the doc still needs it: a person applies that diff (`git apply`), its `judged` line left out", m.ID)})
+			}
+			break
+		}
 		if as == "" {
+			continue
+		}
+		// A doc read in parts tonight: the record of a change read alone
+		// would hold it from them (#462).
+		if c.sd.rest {
 			continue
 		}
 		records, read := comments[mr.ID]
@@ -601,6 +623,30 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 		found = append(found, fromMerged{keptRecord: r, MR: mr.ID, As: as})
 	}
 	return found, append(findings, u.findings()...), nil
+}
+
+// unapplied says whether the fix a documentalist's comment proposed for doc
+// changes its body, and applies to it at HEAD, its header lines left out:
+// what it changes is still there to change.
+func unapplied(comment, doc, repo string) bool {
+	var b strings.Builder
+	in, changes := false, false
+	for _, l := range strings.Split(comment, "\n") {
+		if strings.HasPrefix(l, "diff --git ") || strings.HasPrefix(l, "```") {
+			in = l == "diff --git a/"+doc+" b/"+doc
+		}
+		header := len(l) > 0 && (recordLine.MatchString(l[1:]) || strings.HasPrefix(l[1:], "checked:"))
+		switch {
+		case !in || header && l[0] == '+':
+		case header && l[0] == '-':
+			b.WriteString(" " + l[1:] + "\n")
+		default:
+			changes = changes || l[0] == '+' && !strings.HasPrefix(l, "+++") || l[0] == '-' && !strings.HasPrefix(l, "---")
+			b.WriteString(l + "\n")
+		}
+	}
+	_, err := gitIn(repo, b.String(), "apply", "--recount", "--check", "-")
+	return changes && err == nil
 }
 
 // recordPatches are the patches writing, on the default branch, each

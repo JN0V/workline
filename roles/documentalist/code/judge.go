@@ -2,6 +2,7 @@ package documentalist
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -1061,12 +1062,7 @@ func fileParts(diff string) []string {
 }
 
 func sortedKeys2(m map[string][]verdict.Finding) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		out = append(out, k)
-	}
-	sort.Strings(out)
-	return out
+	return slices.Sorted(maps.Keys(m))
 }
 
 // judgedFixes is what the accepted patches do: every doc before and after

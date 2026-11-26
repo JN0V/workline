@@ -977,11 +977,7 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 			}
 		}
 	}
-	files := make([]string, 0, len(cited))
-	for f := range cited {
-		files = append(files, f)
-	}
-	sort.Strings(files)
+	files := slices.Sorted(maps.Keys(cited))
 	if len(files) > 0 {
 		b.WriteString("The source lines the parts cited, with a few lines around them:\n\n")
 	}

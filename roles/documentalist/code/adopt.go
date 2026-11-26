@@ -2,8 +2,10 @@ package documentalist
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -98,11 +100,7 @@ lines by the numbers shown; the body stays as it is. A doc describing no code
 	b.WriteString("The repository's files:\n\n```\n" + listing(t) + "```\n\n")
 	judged := map[string]map[string]string{}
 	var left []string
-	paths := make([]string, 0, len(last))
-	for p := range last {
-		paths = append(paths, p)
-	}
-	sort.Strings(paths)
+	paths := slices.Sorted(maps.Keys(last))
 	for _, p := range paths {
 		if s.AIMaxCalls > 0 && len(judged) >= s.AIMaxCalls {
 			left = append(left, p)
@@ -147,11 +145,7 @@ lines by the numbers shown; the body stays as it is. A doc describing no code
 // listing lists the repository's files, a folder at a time once they are
 // too many to list one by one.
 func listing(t Tree) string {
-	files := make([]string, 0, len(t.Files))
-	for f := range t.Files {
-		files = append(files, f)
-	}
-	sort.Strings(files)
+	files := slices.Sorted(maps.Keys(t.Files))
 	if len(files) <= treeMaxLines {
 		return strings.Join(files, "\n") + "\n"
 	}
@@ -159,11 +153,7 @@ func listing(t Tree) string {
 	for _, f := range files {
 		count[filepath.Dir(f)]++
 	}
-	dirs := make([]string, 0, len(count))
-	for d := range count {
-		dirs = append(dirs, d)
-	}
-	sort.Strings(dirs)
+	dirs := slices.Sorted(maps.Keys(count))
 	var b strings.Builder
 	for i, d := range dirs {
 		if i == treeMaxLines {

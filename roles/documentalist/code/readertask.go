@@ -613,10 +613,5 @@ func readerList(claims map[string][]claim) string {
 }
 
 func claimPages(m map[string][]claim) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		out = append(out, k)
-	}
-	sort.Strings(out)
-	return out
+	return slices.Sorted(maps.Keys(m))
 }

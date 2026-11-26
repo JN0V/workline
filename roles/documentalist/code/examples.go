@@ -3,10 +3,11 @@ package documentalist
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -386,10 +387,5 @@ func (j *judgedFixes) inExample(path string, from, count int) bool {
 }
 
 func sortedKeysOf(m map[string][]fence) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		out = append(out, k)
-	}
-	sort.Strings(out)
-	return out
+	return slices.Sorted(maps.Keys(m))
 }

@@ -2,7 +2,9 @@ package documentalist
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -160,12 +162,7 @@ func replacedVersions(f fixedDoc) map[string]map[string]bool {
 }
 
 func sortedSet(m map[string]bool) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		out = append(out, k)
-	}
-	sort.Strings(out)
-	return out
+	return slices.Sorted(maps.Keys(m))
 }
 
 // versionRange ends the text before a version given as a range — `>=1.4.1`,
@@ -392,11 +389,7 @@ func valuesLeft(fixes []fixedDoc, docs map[string]string, files map[string]bool,
 			out = append(out, verdict.Finding{Rule: "value-left", Where: where, Message: msg})
 		}
 	}
-	others := make([]string, 0, len(docs))
-	for p := range docs {
-		others = append(others, p)
-	}
-	sort.Strings(others)
+	others := slices.Sorted(maps.Keys(docs))
 	saysOne := map[string]map[string]bool{} // source file -> the versions it says
 	for _, f := range fixes {
 		if isHistory(f.path) {

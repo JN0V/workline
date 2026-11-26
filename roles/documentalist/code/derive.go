@@ -3,10 +3,11 @@ package documentalist
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -57,11 +58,7 @@ func derivedBlocks(content string) (blocks [][]int, unclosed []string) {
 func Derive(repo string, docs map[string]string, commands map[string]string, behind bool) ([]verdict.Finding, map[string]string) {
 	d := deriver{repo: repo, commands: commands, outputs: map[string]string{}, failed: map[string]error{}}
 	fixed := map[string]string{}
-	paths := make([]string, 0, len(docs))
-	for p := range docs {
-		paths = append(paths, p)
-	}
-	sort.Strings(paths)
+	paths := slices.Sorted(maps.Keys(docs))
 	for _, p := range paths {
 		content := docs[p]
 		var now strings.Builder

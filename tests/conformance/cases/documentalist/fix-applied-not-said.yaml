@@ -1,0 +1,45 @@
+case: documentalist/fix-applied-not-said
+about: "A fix the documentalist proposed in its comment on a merge request, applied by hand since, is not said again when gardening: the doc no longer holds what it changes."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "sed -i 's/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs(auth): two hours'"
+    - "git checkout -q main && git merge -q --squash feature && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -qm 'feat(auth): keep users signed in for two hours (#1)' && git push -q origin main && git branch -q -D feature"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: feature
+        base: main
+        labels: []
+        closed: true
+        merged: true
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - body: |
+              **Proposed by workline's documentalist**, not pushed: workline pushes nothing to a merge request's branch. Apply it with `git apply`:
+
+              ````diff
+              diff --git a/docs/tech/auth.md b/docs/tech/auth.md
+              --- a/docs/tech/auth.md
+              +++ b/docs/tech/auth.md
+              @@ -3,3 +3,4 @@
+               sources: [src/auth/token.go]
+               checked: 9bf650b
+              +judged: 1a2b3c4
+               ---
+              @@ -9,2 +10,2 @@
+               
+              -Access tokens last one hour.
+              +Access tokens last two hours.
+              ````
+
+              <!-- workline:sticky=documentalist/patch -->
+            author: workline-bot
+            bot: true
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: fix-not-applied}]
