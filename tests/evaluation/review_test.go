@@ -96,6 +96,7 @@ type reviewRun struct {
 	Judges    map[string]int // judge calls on each lens's findings, a round of reads each
 	Questions map[string]int // decisions each lens put to a person (#126)
 	Judge     string         // the judge's model and the independence it reached
+	Bodies    []string       // each finding's words past its title, as its author reads them: why, fix, seen
 }
 
 var (
@@ -218,6 +219,7 @@ func readReview(runDir string, res result) (*reviewRun, error) {
 			said = "unsure"
 		}
 		rr.Findings = append(rr.Findings, lensFinding{f.Lens, f.Where, f.Severity, f.Title, f.Related, said})
+		rr.Bodies = append(rr.Bodies, findingBody(f))
 	}
 	// Each call by what it answered (`for`: its part, or its judge's
 	// question, asked again for each round of reads); in order when the
