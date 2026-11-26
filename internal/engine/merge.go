@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -660,7 +661,7 @@ func releaseRebuild(f forge.Forge, o FollowOptions, covered, tip, baseTip string
 			return "it added " + commitSaid(repo, c) + ", no merged pull request of it known: it needs a yes"
 		case slices.ContainsFunc(m.Labels, accepted):
 			return "it added " + commitSaid(repo, c) + ", merged with a person's yes: it needs one"
-		case featureOrTask(m.Title):
+		case taskAdded(f, m):
 			return "it added " + commitSaid(repo, c) + ", a feature or a task: it needs a yes, whatever its labels"
 		}
 	}
@@ -685,6 +686,45 @@ func releasePushers(st forge.MergeState, yes, app string) string {
 		}
 	}
 	return ""
+}
+
+// taskAdded says whether a merged pull request is of a feature or a task:
+// by the kind of the issue it closes when that says one, else by its title.
+// (line imports engine, so the closed issue is read here.)
+func taskAdded(f forge.Forge, m forge.MergeRequest) bool {
+	known := false
+	for _, n := range closedIssuesOf(m) {
+		is, err := f.Issue(n)
+		if err != nil || is == nil {
+			continue
+		}
+		if kind, _ := backlog.KindOf(is.Labels); kind != "" {
+			if kind == backlog.KindFeature || kind == backlog.KindTask {
+				return true
+			}
+			known = true
+		}
+	}
+	if known {
+		return false
+	}
+	return featureOrTask(m.Title)
+}
+
+// closedIssuesOf are the issues a merge request closes: those its text says,
+// else the one its developer or tester branch names, none when none.
+func closedIssuesOf(m forge.MergeRequest) []int {
+	if ids := forge.Closes(m.Title, m.Body); len(ids) > 0 {
+		return ids
+	}
+	for _, prefix := range []string{"workline/developer/", "workline/tester/issue-"} {
+		if rest, ok := strings.CutPrefix(m.Branch, prefix); ok {
+			if n, err := strconv.Atoi(rest); err == nil && n > 0 {
+				return []int{n}
+			}
+		}
+	}
+	return nil
 }
 
 // featureOrTask says whether a title, a conventional commit's, is of a
