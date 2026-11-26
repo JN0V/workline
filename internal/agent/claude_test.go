@@ -298,18 +298,24 @@ func TestReadsFiles(t *testing.T) {
 	}
 }
 
-// TestReadLog: the files claude's Read tool was given in its read tree
+// TestReadLog: the files claude's Read tool read whole in its read tree
 // are logged once each, in order, with the blob the tree's commit holds
 // (ADR-0063 §3); a folder, a file not there or one out of the tree with
-// none.
+// none. A Read given a part of a file, or answered with an error, is not
+// logged.
 func TestReadLog(t *testing.T) {
-	stream := `{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"file_path":"a.txt"}}]}}
-{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Grep","input":{"pattern":"x"}},{"type":"tool_use","name":"Read","input":{"file_path":"a.txt"}}]}}
-{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"file_path":"/etc/hostname"}},{"type":"tool_use","name":"Read","input":{"file_path":"gone.txt"}}]}}
+	stream := `{"type":"assistant","message":{"content":[{"type":"tool_use","id":"1","name":"Read","input":{"file_path":"a.txt"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"1","content":"a"}]}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"2","name":"Grep","input":{"pattern":"x"}},{"type":"tool_use","id":"3","name":"Read","input":{"file_path":"a.txt"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"3","content":"a"}]}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"4","name":"Read","input":{"file_path":"/etc/hostname"}},{"type":"tool_use","id":"5","name":"Read","input":{"file_path":"gone.txt"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"4","content":"h"},{"type":"tool_result","tool_use_id":"5","content":"x"}]}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"6","name":"Read","input":{"file_path":"part.txt","offset":40,"limit":10}},{"type":"tool_use","id":"7","name":"Read","input":{"file_path":"err.txt"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"6","content":"p"},{"type":"tool_result","tool_use_id":"7","content":"no such file","is_error":true}]}}
 {"type":"result","subtype":"success","result":"[]"}
 `
 	_, tools, read := claudeStream([]byte(stream))
-	if tools["Read"] != 4 || !slices.Equal(read, []string{"a.txt", "/etc/hostname", "gone.txt"}) {
+	if tools["Read"] != 6 || !slices.Equal(read, []string{"a.txt", "/etc/hostname", "gone.txt"}) {
 		t.Fatalf("reads %v (tools %v), want a.txt, /etc/hostname, gone.txt once each", read, tools)
 	}
 	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)

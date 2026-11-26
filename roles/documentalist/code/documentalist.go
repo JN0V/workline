@@ -2877,7 +2877,7 @@ func readByLog(runDir, repo string, whole map[string]bool, notWhole map[string]r
 				continue
 			}
 			for _, r := range c.Reads {
-				if _, p, ok := strings.Cut(r, " "); ok {
+				if blob, p, ok := strings.Cut(r, " "); ok && blob != "-" {
 					read[p] = true
 				}
 			}

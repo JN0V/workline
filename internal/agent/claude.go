@@ -305,22 +305,29 @@ func removeStubs(tree string, absent []string) {
 
 // claudeStream reads `claude -p --output-format stream-json --verbose`:
 // its result message, the shape claudeAnswer reads, how many times it
-// used each tool, and the files its Read tool was given, in order, each
-// once. No result message: stdout as it came, which claudeAnswer then
-// does not read.
+// used each tool, and the files its Read tool read whole, in order, each
+// once: given no offset nor limit, and answered without an error. No
+// result message: stdout as it came, which claudeAnswer then does not
+// read.
 func claudeStream(stdout []byte) ([]byte, map[string]int, []string) {
 	var result []byte
 	var tools map[string]int
 	var read []string
+	whole := map[string]string{} // a whole Read's id -> its file
 	for _, line := range bytes.Split(stdout, []byte("\n")) {
 		var m struct {
 			Type    string `json:"type"`
 			Message struct {
 				Content []struct {
-					Type  string `json:"type"`
-					Name  string `json:"name"`
-					Input struct {
+					Type    string `json:"type"`
+					ID      string `json:"id"`
+					Name    string `json:"name"`
+					UseID   string `json:"tool_use_id"`
+					IsError bool   `json:"is_error"`
+					Input   struct {
 						FilePath string `json:"file_path"`
+						Offset   int    `json:"offset"`
+						Limit    int    `json:"limit"`
 					} `json:"input"`
 				} `json:"content"`
 			} `json:"message"`
@@ -328,21 +335,24 @@ func claudeStream(stdout []byte) ([]byte, map[string]int, []string) {
 		if json.Unmarshal(line, &m) != nil {
 			continue
 		}
-		switch m.Type {
-		case "result":
-			result = line
-		case "assistant":
-			for _, c := range m.Message.Content {
-				if c.Type == "tool_use" && c.Name != "" {
-					if tools == nil {
-						tools = map[string]int{}
-					}
-					tools[c.Name]++
-					if p := c.Input.FilePath; c.Name == "Read" && p != "" && !slices.Contains(read, p) {
-						read = append(read, p)
-					}
+		for _, c := range m.Message.Content {
+			switch {
+			case m.Type == "assistant" && c.Type == "tool_use" && c.Name != "":
+				if tools == nil {
+					tools = map[string]int{}
+				}
+				tools[c.Name]++
+				if in := c.Input; c.Name == "Read" && in.FilePath != "" && in.Offset <= 1 && in.Limit == 0 {
+					whole[c.ID] = in.FilePath
+				}
+			case m.Type == "user" && c.Type == "tool_result" && !c.IsError:
+				if p := whole[c.UseID]; p != "" && !slices.Contains(read, p) {
+					read = append(read, p)
 				}
 			}
+		}
+		if m.Type == "result" {
+			result = line
 		}
 	}
 	if result == nil {

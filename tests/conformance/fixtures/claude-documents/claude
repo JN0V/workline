@@ -4,7 +4,8 @@
 # Grep alone, none allowed by name, its turns capped, and run in a copy of
 # the repository at HEAD; its question must say it reads the repository
 # itself and name the doc's source, never give it. Then it reads
-# src/auth/token.go — or nothing, with READS=none — and answers the fix
+# src/auth/token.go — or nothing, with READS=none, or its lines 1-2,
+# with READS=part — and answers the fix
 # doc-fixed answers, moving `checked`, in stream-json.
 set -eu
 want() { echo "claude stand-in: $*" >&2; exit 1; }
@@ -26,8 +27,14 @@ for w in '## Reading the repository yourself' 'Read, Glob and Grep' '40 turns at
 	case "$question" in *"$w"*) ;; *) want "the question does not say $w" ;; esac
 done
 case "$question" in *'const TokenTTL'*) want "the question gives the source it should read" ;; esac
+case "${READS:-}" in
+none) ;;
+part) part=',"offset":1,"limit":2' ;;
+*) part= ;;
+esac
 if [ "${READS:-}" != none ]; then
-	printf '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"%s/src/auth/token.go"}}]}}\n' "$(pwd -P)"
+	printf '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"%s/src/auth/token.go"%s}}]}}\n' "$(pwd -P)" "$part"
+	printf '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"const TokenTTL = 7200"}]}}\n'
 fi
 cat <<'R'
 {"type":"result","subtype":"success","is_error":false,"num_turns":2,"result":"- patch: |\n    --- a/docs/tech/auth.md\n    +++ b/docs/tech/auth.md\n    @@ -3,3 +3,4 @@ type: reference\n     sources: [src/auth/token.go]\n    -checked: 9bf650b\n    +checked: 1a8e5a4\n    +verified: agent:documentalist\n     ---\n    @@ -9,2 +10,2 @@ checked: 9bf650b\n     \n    -Access tokens last one hour.\n    +Access tokens last two hours.\n- claim:\n    doc: docs/tech/auth.md\n    lines: \"10\"\n    status: contradicted\n    source: {path: src/auth/token.go, quote: \"const TokenTTL = 7200\"}\n","total_cost_usd":0.02,"modelUsage":{"claude-sonnet-5":{"inputTokens":1500,"cacheReadInputTokens":9000,"cacheCreationInputTokens":500,"outputTokens":300}}}

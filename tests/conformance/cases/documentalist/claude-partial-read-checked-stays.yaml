@@ -1,0 +1,18 @@
+case: documentalist/claude-partial-read-checked-stays
+about: >
+  A source read in part is not read (ADR-0074): claude, given the
+  repository to read, reads two lines of the doc's source with an offset
+  and a limit, then answers a fix moving `checked`. The fix is kept;
+  `checked` stays, and the doc is said for a person (checked-unread).
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  env: {PATH: "$FIXTURES/claude-documents:$PATH", READS: part}
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: claude}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours.", lacks: "checked: 1a8e5a4"}}
+  findings: [{rule: checked-unread, where: docs/tech/auth.md, message: "nor read"}]
