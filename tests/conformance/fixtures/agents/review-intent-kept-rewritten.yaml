@@ -1,0 +1,16 @@
+# The intent lens on the `reviewed` fixture once a commit closing #4 makes
+# an empty list average 0 and rewrites the sum's loop: "Mean kept", a
+# behaviour kept as before whose code the change rewrote, has no test.
+calls:
+  - - scenario:
+        scenario: Empty list
+        issue: 4
+        code: {path: calc/calc.go, quote: "if len(values) == 0 {"}
+        test: {path: calc/calc_test.go, quote: "func TestAverageEmpty(t *testing.T) {"}
+    - finding:
+        lens: intent
+        severity: important
+        title: No test proves the mean kept after the loop's rewrite
+        why: "the change rewrites the loop that sums the values; nothing shows [2, 4] still averages 3"
+        cause: {path: "#4", quote: "Mean kept"}
+        fix: a test of Average on [2, 4]

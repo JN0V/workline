@@ -17,7 +17,10 @@ judge:
     Validation or its Verification, what the change shown does not do or
     prove — a scenario a test could check and none does, too; a scenario
     of documentation or of the pipeline no test can check is proven by
-    the change itself — or when the change does what the issue does not ask: a file
+    the change itself; one of a behaviour kept as before, which the
+    issue's Verification asks no test of, owes none unless the change
+    rewrites, moves or removes the code that did it: answer no to a
+    finding that only says it has no test — or when the change does what the issue does not ask: a file
     changed beyond the issue's Scope, listed by the author or not, whose
     change the issue's Need does not need. The Scope is a hint: a file
     beyond it that the Need needs, or that the author's reason ties to it
@@ -66,7 +69,13 @@ Given / When / Then), one by one, its name as the issue writes it:
   it; for a scenario no test can check (a document, the pipeline), the
   `reason` in place of the test;
 - not done, or no test proves it: a finding, its cause the scenario's
-  words quoted from the issue, one line as it reads there.
+  words quoted from the issue, one line as it reads there;
+- a behaviour kept as before ("as today", "still works"), which the
+  issue's Verification asks no test of, and whose code on the base the
+  change neither rewrites, moves nor removes: a `scenario`, its code
+  quoted, its `reason` that it is kept as before. Its missing test is no
+  finding; once the change rewrites, moves or removes that code, it is
+  answered as any other scenario.
 
 Each quote is one run of lines as they read, never pieces joined. A
 scenario you answer neither way, or with no test nor reason, is judged

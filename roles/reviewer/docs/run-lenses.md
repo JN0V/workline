@@ -77,6 +77,11 @@ Part of [a run on code](run.md): step 4, what each lens reads and answers.
   - Each Validation scenario is answered: the code doing it and its test
     quoted (`scenario`), or why no test can check it (`reason`, said
     `scenario-no-test`), or a finding.
+  - A behaviour kept as before ("as today"), which the Verification asks
+    no test of, owes no test while the change leaves its code as it
+    was: answered by its code and that reason, never a finding; its code
+    rewritten, moved or removed, it is answered as any other. The tests
+    lens's judge holds the same line.
   - On a run reading the whole change in one part, a scenario answered
     neither way, or whose code or test is not found at the head,
     becomes an important finding its judge keeps or drops: silence is
