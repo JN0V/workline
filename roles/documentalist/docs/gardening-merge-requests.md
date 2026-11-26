@@ -53,8 +53,8 @@ there, not committed
   carrying its marker that workline's own account did not write
   ([why](push-records.md)).
 - **A fix proposed there, merged without it**: when that comment's diff
-  still applies, its header lines and the hunks only they change left
-  out, the fix is said (`fix-not-applied`) in the issue of docs waiting
+  still changes the body and applies, the front matter left out of each
+  hunk, the fix is said (`fix-not-applied`) in the issue of docs waiting
   for a person, the merge request named, for a doc held from the agent
   too: said once, not left in a comment nobody applies.
 

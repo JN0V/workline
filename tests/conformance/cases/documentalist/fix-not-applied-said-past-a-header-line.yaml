@@ -1,5 +1,5 @@
 case: documentalist/fix-not-applied-said-past-a-header-line
-about: "A fix the documentalist proposed on a merged merge request is still said once the doc's header gained a line since (a `judged` naming an older commit): only the header's hunk no longer applies, and the body still holds what the fix changes."
+about: "A fix the documentalist proposed on a merged merge request is still said once the doc's header gained a line since (a `judged` naming an older commit): the diff's one hunk, as `diff -u` gives it, holds the header's lines and the body's change, and only its header part no longer applies."
 given:
   repo: documented
   setup:
@@ -25,12 +25,15 @@ given:
               diff --git a/docs/tech/auth.md b/docs/tech/auth.md
               --- a/docs/tech/auth.md
               +++ b/docs/tech/auth.md
-              @@ -3,3 +3,4 @@
+              @@ -2,9 +2,10 @@
+               type: reference
                sources: [src/auth/token.go]
                checked: 9bf650b
               +judged: 1a2b3c4
                ---
-              @@ -9,2 +10,2 @@
+               # Authentication
+
+               ## Token refresh
 
               -Access tokens last one hour.
               +Access tokens last two hours.

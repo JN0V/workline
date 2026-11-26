@@ -624,8 +624,8 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 }
 
 // unapplied says whether the fix a documentalist's comment proposed for doc,
-// its header lines and the hunks only they changed left out, changes its
-// body and still applies at HEAD.
+// its front matter left out of each hunk, changes its body and still
+// applies at HEAD.
 func unapplied(comment, doc, repo string) bool {
 	var kept []string
 	in, changes, changed, at := false, false, false, 0
@@ -640,9 +640,9 @@ func unapplied(comment, doc, repo string) bool {
 		}
 		header := recordLine.MatchString(l[1:]) || strings.HasPrefix(l[1:], "checked:")
 		switch {
-		case !in || header && l[0] == '+':
-		case header:
-			kept = append(kept, " "+l[1:])
+		case !in || header:
+		case l == " ---" && !changed: // the front matter's end: its lines go, git finds the rest by offset
+			kept = kept[:at+1]
 		default:
 			changed = changed || l[0] == '+' && !strings.HasPrefix(l, "+++") || l[0] == '-' && !strings.HasPrefix(l, "---")
 			kept = append(kept, l)
