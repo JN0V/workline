@@ -1,0 +1,34 @@
+case: documentalist/dc-293-vouches-for-a-page-still-true
+about: >
+  DomoticsCore's nightly gardening of 2026-11-24 (event schedule, main at
+  77e4b91, Sonnet) judged `docs/components/core/project-context.md` whole
+  and proposed pull request #293
+  (https://github.com/JN0V/DomoticsCore/pull/293): a `judged` stamp, 0
+  prose lines changed, "nothing found wrong, `judged` recorded, `checked`
+  not moved". The page stays suspect, for a person, and the pull request
+  asks a label for a stamp. The facts, read in the code at 77e4b91 for
+  this case (2026-11-26): the page is true. Core's library.json says
+  version 1.14.0, MIT, espressif32 and espressif8266, no dependency; each
+  component's library.json declares Core as the table says (MQTT, NTP and
+  System `>=1.0.0`; HomeAssistant, Storage, OTA and SystemInfo `>=1.4.0`;
+  RemoteConsole `>=1.13.0`; LED declares it; Wifi and WebUI do not); and
+  each component's headers use the Core classes its row names. The rows'
+  "Uses" notes are not in the page's sources (the library.json files and
+  three Core headers): they are in each component's own headers, which a
+  reader of the repository finds. The replay: the same gardening on
+  77e4b91, narrowed to this page (`docs`), the forge kept in the clone.
+  Expected: the page vouched for, `checked` at the commit judged, and no
+  word changed. Out of reach of an agent given the page's sources alone:
+  the "Uses" notes are settled only by reading past them.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 77e4b918e13661552ba6ced3212171c2e340b457}
+  setup:
+    - |
+      sed -i '/^  documentalist:$/{n;s|$|\n      # The page of #293 alone, as its gardening round judged it.\n      docs: [docs/components/core/project-context.md]|}' .workline/config.yaml
+      printf 'forge: local\n' >> .workline/config.yaml
+      git commit -qam 'chore: garden the page of #293 alone'
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  - {body-unchanged: docs/components/core/project-context.md}
+  - {checked-is-head: docs/components/core/project-context.md}

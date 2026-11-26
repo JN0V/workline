@@ -369,6 +369,9 @@ token), **apply** (trusted, no AI key).
    Text before the list, no fence around it, is never cut off: it may be
    a proposal written with no `- `; the answer is refused, asked again,
    as one holding a line that opens on a kind outside its fenced list.
+   What lies between the first and the last fence is read as an answer of
+   its own: a fenced `[]` says nothing to propose, as a bare one does
+   ([#2281](https://github.com/JN0V/workline/issues/2281)).
    The output contract asks for text holding code, quotes, a backtick, `: `
    or ` #` as a YAML block scalar (`|`), which takes code as it is; the
    request again repeats it (#138). YAML, not JSON: code wrapped in JSON
