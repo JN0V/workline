@@ -95,6 +95,28 @@ label_id() { # name; created when missing
 }
 
 case "$WORKLINE_FORGE_OPERATION" in
+ping)
+	# The forge answers, the token is accepted (the user) and the repository
+	# is readable: `{}`; else `{"error": "…"}`, which the doctor warns with.
+	fail() { jq -nc --arg e "$1" '{error: $e}'; exit 0; }
+	code=$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: token $FORGEJO_TOKEN" \
+		"$FORGEJO_URL/api/v1/user" 2>/dev/null) || code=000
+	case "$code" in
+	200) ;;
+	000) fail "the forge cannot be reached at $FORGEJO_URL" ;;
+	401 | 403) fail "the token is refused by $FORGEJO_URL (HTTP $code): check FORGEJO_TOKEN" ;;
+	*) fail "the forge answered HTTP $code on /api/v1/user at $FORGEJO_URL" ;;
+	esac
+	code=$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: token $FORGEJO_TOKEN" \
+		"$base" 2>/dev/null) || code=000
+	case "$code" in
+	200) echo '{}' ;;
+	000) fail "the forge cannot be reached at $FORGEJO_URL" ;;
+	401 | 403) fail "the token is refused on the repository $FORGEJO_REPO (HTTP $code): it needs its read scope" ;;
+	404) fail "the repository $FORGEJO_REPO is not found, or the token cannot see it: check FORGEJO_REPO and the token's scopes" ;;
+	*) fail "the forge answered HTTP $code on the repository $FORGEJO_REPO" ;;
+	esac
+	;;
 issue)
 	got=$(api GET "/issues/$(arg .id)") || {
 		echo "the issue could not be read" >&2
