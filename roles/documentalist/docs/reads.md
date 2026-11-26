@@ -8,7 +8,7 @@ sources:
   - roles/documentalist/code/documentalist.go#readingTask
   - roles/documentalist/code/documentalist.go#readByLog
   - roles/documentalist/code/documentalist.go#holdJudgedDocs
-checked: 7a18dbca4
+checked: dd48ff276
 verified: agent:claude-code
 ---
 # Documentalist — the agent reads the repository

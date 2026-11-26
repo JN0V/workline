@@ -48,10 +48,11 @@ roles:
   a person.
 - **False** only with the material's words, which the engine finds again;
   else the act is for a person.
-- **A doc whose `checked` moved after parts**
-  ([#482](https://github.com/JN0V/workline/issues/482)): its sources do
-  not fit to be read whole, so it is listed for a person, never called
-  unearned nor put back.
+- **A doc whose sources take more than `whole-chars`**: an agent that
+  reads the repository may have earned its `checked`
+  ([ADR-0074](adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md));
+  the sample does not read them whole, so it is listed for a person,
+  never called unearned nor put back.
 - **What a product owner's act was done on**:
   - the issue's text it read, found by the digest its record keeps: the
     body now, else the version GitHub's edit history keeps; for a refine,

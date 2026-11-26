@@ -28,7 +28,7 @@ roles:
     settings:
       derive: {cases: "ls tests/*.yaml | wc -l"}   # fills <!-- workline:derive cases -->…<!-- workline:end --> in a doc
       history: ["docs/journal/**"]                 # records, beside changelogs and release notes (role.yaml)
-      whole-chars: 25000                           # sources judged whole up to this (25000 at most); more docs judged whole, more tokens
+      whole-chars: 25000                           # sources given whole to an agent that does not read the repository (25000 at most)
       versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
       language: fr                                 # the docs' language, for the removal rule; unset, read from each doc
       sample: {judge: "claude:opus", at-least: model, after: v1.4.0, ai-max-tokens: 400000}   # who reads the weekly sample, the least independence, nothing vouched for before your tag, the week's tokens; `panel: [three --ai values]` settles a dispute
