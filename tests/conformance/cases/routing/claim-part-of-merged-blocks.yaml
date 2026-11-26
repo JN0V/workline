@@ -17,6 +17,8 @@ given:
         labeled: {"workline:ready": "2025-12-31T09:00:00Z", "workline:developing": "2026-01-01T09:00:00Z"}
         body: "## Need\n\nI want to multiply.\n"
         comments: ["**The developer** takes this issue.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"body\":\"8a828a06be19\"} -->\n<!-- workline:sticky=developer/claim -->"]
+    merge-requests:
+      - {id: 5, branch: workline/developer/3, base: main, closed: true, merged: true, title: "feat: multiply", body: "Part of #3\n\n## Left for a person\n\n- `.github/workflows/ci.yml`: in the issue's Scope, only a person changes it.", labels: [], comments: []}
 run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing"}
 expect:
   status: pass

@@ -236,11 +236,21 @@ func NoCodeOnOtherBody(a Act, body string) bool {
 }
 
 // SpentOnSameBody says whether a claim's record a ran on the body it has
-// now, or one it did not keep: no code, or code whose pull request is
-// gone, merged part of it or closed (callers ask with none open). Past
-// claim-hours, the line blocks it for a person, not the same run again.
-func SpentOnSameBody(a Act, body string) bool {
-	return (a.NoCode || len(a.Code) > 0) && (a.Body == "" || !BodyChanged(a.Body, body))
+// now (or one it did not keep): no code, or its pull request gone, merged
+// part of it or closed by a person, not by workline (callers ask with
+// none open). Past claim-hours, the line blocks it for a person.
+func SpentOnSameBody(b forge.Backlog, a Act, body string) bool {
+	switch c, ok := b.(forge.Closings); {
+	case a.Body != "" && BodyChanged(a.Body, body):
+		return false
+	case a.NoCode:
+		return true
+	case !ok || len(a.Code) == 0:
+		return false
+	default:
+		ours, err := c.ClosedWith(fmt.Sprint(Branch, a.Issue), forge.Marker("closed"))
+		return err == nil && !ours
+	}
 }
 
 // ActMark opens the hidden line of the developer's record on an issue

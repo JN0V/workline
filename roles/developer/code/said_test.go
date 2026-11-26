@@ -100,10 +100,10 @@ func TestNoCodeOnOtherBody(t *testing.T) {
 		{devmark.Act{NoCode: true}, true},
 		{devmark.Act{NoCode: true, Body: devmark.BodyMark("## Need\n\nI want to add.")}, false},
 		{devmark.Act{Body: devmark.BodyMark(body)}, false},
-		{devmark.Act{Code: []string{"lib.sh"}, Body: devmark.BodyMark(body)}, true},
+		{devmark.Act{Code: []string{"lib.sh"}, Body: devmark.BodyMark(body)}, false}, // a forge that cannot say who closed it
 		{devmark.Act{Code: []string{"lib.sh"}, Body: devmark.BodyMark("## Need\n\nI want to add.")}, false},
 	} {
-		if got := devmark.SpentOnSameBody(c.a, body); got != c.want {
+		if got := devmark.SpentOnSameBody(nil, c.a, body); got != c.want {
 			t.Errorf("same body %+v: %v, want %v", c.a, got, c.want)
 		}
 	}

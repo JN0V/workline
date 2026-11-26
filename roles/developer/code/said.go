@@ -107,7 +107,7 @@ func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Se
 					Message: "its claim's comment could not be read (" + forge.Said(err) + "): kept, read again at the next run"})
 				continue
 			}
-			if devmark.SpentOnSameBody(a, is.Body) {
+			if devmark.SpentOnSameBody(b, a, is.Body) {
 				found = append(found, verdict.Finding{Rule: "claim-left-to-line", Level: "info", Where: where,
 					Message: why + ", its agent ran on the body it still has: kept, left to the line, which blocks it for a person"})
 				continue

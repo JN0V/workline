@@ -169,7 +169,7 @@ func claimStep(res *Result, cfg *routing.Config, b forge.Backlog, t *tally, s ro
 		now = Record{State: s.Name, Body: bodyHash(is.Body), V: recordV}
 	}
 	act := devmark.ClaimActIn(forge.Bodies(notes))
-	same := devmark.SpentOnSameBody(act, is.Body)
+	same := devmark.SpentOnSameBody(b, act, is.Body)
 	key, why := "", ""
 	switch {
 	case dated && !clock().Before(free) && same:
