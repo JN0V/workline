@@ -42,7 +42,6 @@ dc-242-move-test-passes-without-fix:
       not: The move test passing without the fix.
     - name: undeclared-api-change
       class: in-diff
-      out: ambiguous
       says: Copy and move assignment are deleted from a public class. That is an API change, and nothing announces it (the pull request's body, the changelog).
       not: A finding that the deleted assignment has no test, or that deleting it is right, with no word that the API change is unannounced.
 
@@ -111,7 +110,6 @@ dc-262-listener-never-told:
       not: A finding that a scenario has no test at all, with no word that the existing test passes on the wrong path.
     - name: sticky-replay-unsaid
       class: in-diff
-      out: ambiguous
       says: Sticky connected and disconnected events change what every subscriber with replay receives, and the pull request does not say so.
       not: A defect of the sticky replay itself. A finding that never says the change of behaviour is unannounced.
 
@@ -136,7 +134,7 @@ dc-273-rename-breaks-main:
       not: Old names left in docs or the roadmap. A general "users outside may break" naming no caller in the repository. A finding that the test covers Core headers only, with no word that a real use of the old name remains.
     - name: no-breaking-marker
       class: not-delivered
-      out: ambiguous
+      out: ambiguous, waived by the owner
       says: The change breaks an API, yet its title or commit carries no `!` and no BREAKING CHANGE footer for the release tool, which the issue's Validation asks.
       not: A finding on the CHANGELOG note's wording, or on the version number, with no word on the missing marker.
 
@@ -149,7 +147,6 @@ dc-274-event-one-byte-smaller:
       not: A finding that the test checks sizeof only. A remark on the cost of bit-fields with no word that the saving is too small to meet the need.
     - name: qos-bitfield-truncates
       class: in-diff
-      out: ambiguous
       says: The 2-bit field `qos` silently truncates or wraps a value above 3.
       not: A finding on the retain bit, or on the missing read-back test alone.
     - name: no-readback-test
@@ -178,7 +175,6 @@ dc-296-atomic-changes-nothing:
       not: A finding that the change itself is useless, with no word on the test.
     - name: fix-changes-nothing
       class: in-diff
-      out: ambiguous
       says: The fix changes no behaviour. The counter is only ever stored 0 or 1, never incremented nor read-then-written, so no count was lost before it.
       not: A finding on the test alone. Other races the change leaves.
 
@@ -187,8 +183,8 @@ tg-15-rotation-not-pivoted:
   points:
     - name: scenario-left-out
       class: not-delivered
-      says: The Validation's rotation scenario is not delivered. A rotation is still just added to manualRotation, with no pivot on the point under the fingers.
-      not: A finding that only says no test covers the rotation, with no word that the rotation is not built (that is partly). Points on the zoom.
+      says: The Validation's rotation scenario is not delivered. A rotation is still just added to manualRotation, with no pivot on the point under the fingers. A finding that only says no test covers the rotation states a part of it.
+      not: Points on the zoom.
     - name: scenario-without-test
       class: weak-test
       out: duplicate of scenario-left-out
