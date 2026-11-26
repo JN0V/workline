@@ -944,7 +944,7 @@ func reviewPost(runDir, repo string, s Settings) int {
 		} else {
 			a.Proof, a.Caps = &p, caps
 			code, tests := written(patches, b.tests())
-			was := a.Code
+			was := union(a.Code, draftCode(repo, a.At, a.From, b))
 			a.Code, a.Tests = union(a.Code, code), union(a.Tests, tests)
 			if this.Beside = besideKept(repo, b, patches); len(this.Beside) > 0 {
 				a.Beside = union(a.Beside, this.Beside)
@@ -970,10 +970,11 @@ func reviewPost(runDir, repo string, s Settings) int {
 				push += "\n\n" + BeyondHeading + ":\n\n" + strings.TrimRight(devmark.BeyondLines(this.Beyond), "\n")
 			}
 			mr := map[string]any{"push": push}
-			if commitType(b.Kind, was) != commitType(b.Kind, a.Code) {
+			now := union(a.Code, draftCode(repo, a.At, a.From, b))
+			if commitType(b.Kind, was) != commitType(b.Kind, now) {
 				// A round that changes what the pull request ships retypes it
 				// (#2208): its title, as the opening writes it.
-				mr["title"] = subjects(a.Issue, "", issueTitle(runDir, a.Issue), b.Kind, b.Scope, a.Code, cs).Code
+				mr["title"] = subjects(a.Issue, "", issueTitle(runDir, a.Issue), b.Kind, b.Scope, now, cs).Code
 			}
 			if err := writeMergeRequest(runDir, mr); err != nil {
 				return fail(err)

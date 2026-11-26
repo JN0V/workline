@@ -193,7 +193,7 @@ func draftCode(repo, at, on string, b Bounds) []string {
 	if at == "" || on == "" || at == on {
 		return nil
 	}
-	out, err := gitOut(repo, "diff", "--name-only", at, on)
+	out, err := gitOut(repo, "diff", "--name-only", at+"..."+on)
 	if err != nil {
 		return nil
 	}
