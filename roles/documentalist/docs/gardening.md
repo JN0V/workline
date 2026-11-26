@@ -32,10 +32,9 @@ sources as they are now, in full.
 
 - The agent confirms it, fixes it, or says with a `note` that the sources
   do not tell.
-- A doc whose sources are too large to be given in full is
-  [judged in parts](parts.md), unless the project turns
-  it off ([`judge-in-parts`](../README.md#settings)); then it stays for a
-  person.
+- An agent that reads the repository reads its sources itself; with
+  another agent, a doc whose sources are too large to be given in full
+  stays for a person ([more](reads.md)).
 - One of whose sources cannot be read (a section whose heading is gone)
   stays for a person, the finding saying why: confirming it unread would
   only fake its freshness.

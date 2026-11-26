@@ -1,0 +1,15 @@
+case: documentalist/agent-not-reading-said
+about: >
+  An agent that does not read the repository itself (a command, a fake) is
+  given each doc's sources in its task, as before, and the run says so
+  (ADR-0074): `input-cut`, a warning, never a pass in silence.
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  findings: [{rule: input-cut, message: "does not read the repository itself (claude does)"}]

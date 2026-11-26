@@ -105,7 +105,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `versions` | `{pattern: "", files: []}` | how the project writes a version, and where |
 | `language` | `""` (read from each doc) | `en` or `fr` |
 
-### Caps and parts
+### Caps
 
 Under the same key:
 
@@ -114,10 +114,8 @@ Under the same key:
 | `max-open-merge-requests` | `5` | gardening pauses while this many of its merge requests wait |
 | `ai-max-calls` | `10` | suspect docs per call |
 | `ai-max-tokens` | `400000` | tokens a run may spend, all calls together; `0`: no cap ([ADR-0064](../../docs/adr/0064-size-is-a-target-not-a-wall.md#5-the-hard-backstop)) |
-| `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
-| `judge-in-parts` | `true` | when gardening, judge in parts ([ADR-0009](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)) a doc too large, and one a merge request judged on its change alone (it leaves both for gardening); `false`: a person |
-| `parts-max`, `parts-max-per-run` | `8`, `16` | parts a doc, parts a run: bounds a night's tokens in parts |
-| `parts-move-checked` | `true` | a doc judged in parts, nothing wrong, every line it states supported, gets its `checked` moved, off a merge request's branch; `false`: it waits for a person ([more](docs/parts-fix.md#when-checked-moves-after-parts)) |
+| `ai-max-turns` | `40` | turns of an agent that reads the repository itself ([more](docs/reads.md)) |
+| `whole-chars` | `20000` | characters of sources an agent that does not read the repository is given whole; 25000 at most, its task fitting the context budget; the weekly sample reads within it |
 | `sample` | unset | `{judge, at-least, after, ai-max-tokens, panel}` for `workline sample` ([ci.md](../../docs/ci.md#the-weekly-sample)) |
 
 ## Outputs
@@ -129,8 +127,8 @@ Under the same key:
   - the fix as a diff in one comment, to apply; nothing pushed to the
     branch, no `checked` moved there ([ADR-0051](../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr));
   - a pull request need not leave no doc suspect: once merged, the weekly
-    docs pull request moves `checked` of those whose sources fit a task
-    whole; the others wait for parts or a person;
+    docs pull request moves `checked` of those whose sources the agent
+    read whole; the others wait for a person;
   - a doc found with nothing to fix gets no commit: its record waits in a
     comment, and gardening writes it on main once merged
     ([more](docs/push-records.md));
@@ -160,19 +158,14 @@ Under the same key:
 
 ## Cost
 
-- What a doc judged whole, in parts, or a sample read spent:
+- What a doc judged whole, or a sample read spent:
   [measured](../../docs/research/token-costs-measured.md#documentalist).
-- A doc too large is judged in parts, when gardening, never on a merge
-  request
-  ([#458](https://github.com/JN0V/workline/issues/458)); so is a doc a
-  merge request judged on its change alone, a night spending what its
-  caps allow
-  ([measured](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-a-doc-judged-on-its-change-alone)).
+- An agent that reads the repository reads what it needs, within its
+  turns ([more](docs/reads.md)).
 - Splitting asks a frontier model (`model.tasks`).
 - Reading pages for their reader: [what it cost](docs/reader.md#cost).
-- Caps: `ai-max-calls`, `ai-max-tokens`, `whole-chars`,
-  `parts-max-per-run` (a night's parts), `max-open-merge-requests`;
-  `judge-in-parts: false` spends nothing on docs too large.
+- Caps: `ai-max-calls`, `ai-max-tokens`, `ai-max-turns`,
+  `whole-chars`, `max-open-merge-requests`.
 - The weekly sample reads one doc in ten vouched for
   ([ADR-0046](../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#cost-a-week)),
   within its cap (`sample.ai-max-tokens`). A push costs
@@ -191,8 +184,8 @@ regenerates derived blocks.
   levels; [those on the docs alone](docs/checks-docs.md);
   [cascades](docs/cascades.md): how they are cut,
   the docs the code never rewrites.
-- [The agent's tasks](docs/tasks.md): suspect docs judged whole, or
-  [in parts](docs/parts.md);
+- [The agent's tasks](docs/tasks.md): suspect docs judged whole,
+  [the repository read by the agent](docs/reads.md);
   [gardening](docs/gardening.md): its tasks, one merge request per task;
   [pages read for their reader](docs/reader.md).
 - [The check](docs/judge.md): what `post` refuses of the agent's patches;

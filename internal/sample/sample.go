@@ -543,14 +543,6 @@ func movedOnHead(repo string, heads []string, f string, checked map[string]strin
 	return false, nil, nil
 }
 
-// earnedInParts: the doc, as vouched for, records it was judged in parts at
-// the commit its `checked` names, as the documentalist writes it when its
-// parts supported every line stating something (#482).
-func earnedInParts(d *docmark.Doc) bool {
-	at, checked := d.JudgedInParts, d.Checked[""]
-	return len(d.Checked) == 1 && len(at) >= 7 && len(checked) >= 7 && (strings.HasPrefix(at, checked) || strings.HasPrefix(checked, at))
-}
-
 // verifiedByAgent: the doc's header says the documentalist vouched for it.
 func verifiedByAgent(content string) bool {
 	meta, _ := docmark.Header(content)
@@ -614,15 +606,11 @@ func (rd *reader) readOne(c candidate) Read {
 	case err != nil:
 		r.Verdict, r.Why = "not-read", err.Error()+missingWords(rd.o.Forge, err)+"; for a person"
 		return r
-	case !fits && earnedInParts(d):
-		// Its parts supported every line stating something (#482): earned,
-		// though no task could read its sources whole, nor can this one.
-		r.Verdict = "not-read"
-		r.Why = fmt.Sprintf("its `checked` was earned once judged in parts (`judged-in-parts` at the same commit): its sources take more than the %d characters the sample reads whole (whole-chars), so it is not read here; for a person to read against them", s.WholeCap)
-		return r
 	case !fits:
-		r.Verdict = "unearned"
-		r.Why = fmt.Sprintf("its sources at the commit `checked` names take more than the %d characters a doc's sources may take to be read whole (whole-chars): that `checked` could not have been earned (ADR-0014, step 0)", s.WholeCap)
+		// An agent that reads the repository earns it by what it read
+		// (docs/adr/0074); the sample reads within whole-chars.
+		r.Verdict = "not-read"
+		r.Why = fmt.Sprintf("its sources at the commit `checked` names take more than the %d characters the sample reads whole (whole-chars), so it is not read here; for a person to read against them", s.WholeCap)
 		return r
 	}
 	if spec == "" || spec == "none" {

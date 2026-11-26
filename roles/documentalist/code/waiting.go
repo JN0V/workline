@@ -1,13 +1,10 @@
 package documentalist
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/JN0V/workline/internal/intent"
@@ -74,45 +71,10 @@ func (w waiting) read(task string) bool {
 	return ok
 }
 
-// changing names a waiting task whose change touches the doc, those an
-// earlier round proposed first; failing one, a task judging docs in parts
-// (`fix`, `fix-…`) whose files are not known, which may hold it.
-func (w waiting) changing(doc string) (task string, waits, earlier bool) {
-	tasks := make([]string, 0, len(w.open)+len(w.proposed))
-	for t := range w.open {
-		tasks = append(tasks, t)
-	}
-	for t := range w.proposed {
-		if !w.open[t] {
-			tasks = append(tasks, t)
-		}
-	}
-	sort.Slice(tasks, func(i, j int) bool {
-		if w.proposed[tasks[i]] != w.proposed[tasks[j]] {
-			return w.proposed[tasks[i]]
-		}
-		return tasks[i] < tasks[j]
-	})
-	for _, t := range tasks {
-		if slices.Contains(w.files[t], doc) {
-			return t, true, w.proposed[t]
-		}
-	}
-	for _, t := range tasks {
-		if !w.read(t) && (t == "fix" || strings.HasPrefix(t, "fix-")) {
-			return t, true, w.proposed[t]
-		}
-	}
-	return "", false, false
-}
-
 // holdWaitingTasks keeps from the agent, when gardening, the docs whose
 // judgement waits for review. A doc judged whole waits while its kind's
 // task does (`suspect`, `stale`): one merge request for all such docs,
-// which judging another would replace. A doc judged in parts waits while a
-// merge request changes it, whatever its task — its fix, or only the
-// record of when it was judged —, and the docs no merge request holds get
-// their turn, each run's on a merge request of its own (#356).
+// which judging another would replace (#356).
 func holdWaitingTasks(w waiting, maps ...map[string]*suspectDoc) {
 	for i, docs := range maps {
 		kind := []string{"suspect", "stale"}[i]
@@ -127,17 +89,10 @@ func holdWaitingTasks(w waiting, maps ...map[string]*suspectDoc) {
 				continue
 			}
 			task, waits, earlier := kind, w.open[kind] || w.proposed[kind], w.proposed[kind]
-			if sd.tooLarge {
-				task, waits, earlier = w.changing(sd.doc.Path)
-			}
 			switch {
-			case !waits:
+			case !waits || sd.tooLarge: // too large: a person's
 			case earlier: // an earlier round of this run judged it
 				sd.note, sd.earlier = "(judged in an earlier round of this run)", true
-			case sd.tooLarge && !w.read(task): // a task in parts whose change could not be read
-				sd.note = "(workline/documentalist/" + task + ", judging docs in parts, waits for review, and what it changes could not be read: not put before an agent again until it is merged or closed)"
-			case sd.tooLarge:
-				sd.note = "(workline/documentalist/" + task + " changes it and waits for review: not put before an agent again until it is merged or closed)"
 			default:
 				sd.note = "(its task's merge request, workline/documentalist/" + task + ", waits for review: not put before an agent again until it is merged or closed)"
 			}
@@ -148,19 +103,6 @@ func holdWaitingTasks(w waiting, maps ...map[string]*suspectDoc) {
 // The key of each gardening task's merge request (ADR-0006): the docs it
 // rewrites name it, so that the task waits for it while another goes; and
 // the findings a rewrite resolves, which say so.
-
-// partsKey is a run's judging in parts, by the first doc it judged. When
-// the branch that names already waits — another doc's, two paths making one
-// name, since the run's own docs wait with theirs —, a short hash of the
-// doc's path tells them apart: never one proposal replacing the other.
-func partsKey(docs []string, w waiting) string {
-	key := "fix " + docs[0]
-	if _, waits, _ := w.holds(key); waits {
-		sum := sha256.Sum256([]byte(docs[0]))
-		key += " " + hex.EncodeToString(sum[:3])
-	}
-	return key
-}
 
 func (c *splitTask) key() string { return "split " + c.Doc }
 

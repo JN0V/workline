@@ -473,11 +473,9 @@ func checkedMatches(content string, want map[string]string) bool {
 // derived blocks alone, not growing the doc, recording the commits the doc was
 // judged against, and bringing no new budget, link or duplicate problem. It
 // returns the refusals, and the docs the patches handle.
-// A doc judged in parts (inParts) is fixed with `checked` left where it is:
-// nobody read it whole, so it stays suspect; a quote its parts judged
-// partial (partial) is no proof that its words are wrong (#467). So is a doc whose sources did
-// not all go whole into the task (not in whole, ADR-0014): the agent cannot
-// vouch for what it was not given. Nor may `checked` move while the doc
+// A doc whose sources did not all go whole into the task, nor were read
+// (not in whole, ADR-0014, docs/adr/0074), is fixed with `checked` left where
+// it is: the agent cannot vouch for what it did not read. Nor may `checked` move while the doc
 // states a line count off (ADR-0014, step 2). What the patches accepted do
 // is returned too, for the checks on the docs as they will be. Every word a
 // fix takes out of a body is cited, never by a comment alone (cite.go); a
@@ -491,7 +489,7 @@ func checkedMatches(content string, want map[string]string) bool {
 // one place, and rarely brought the right fix back (ADR-0014, step 4).
 // Only a patch of which no hunk quotes the doc right is asked for again: a
 // misquote is a slip the agent mends at the second answer.
-func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, partial map[string][]partialCite, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) (j patchJudgement, err error) {
+func judgePatches(repo string, s Settings, judged map[string]map[string]string, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) (j patchJudgement, err error) {
 	refuse := func(rule, where, msg string) {
 		j.refused = append(j.refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
 	}
@@ -548,20 +546,14 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			return fileVerdict{rule: "patch-grows", why: fmt.Sprintf("the patch makes the doc %d lines longer, past a tenth of it (%d); fix what is wrong, and say only what the code now does", n-o, o/10)}
 		}
 		moved := checkedOf(now) != checkedOf(old)
-		if _, ok := inParts[f.path]; ok {
-			if moved {
-				return fileVerdict{rule: "checked-moved-in-parts", why: "the patch moves `checked`, but the doc was judged in parts: nobody read it whole against its sources, so `checked` stays where it is; fix what the parts found wrong, and leave the header as it is"}
-			}
-			return fileVerdict{now: now, inParts: true}
-		}
 		full := want[""]
 		if moved && !whole[f.path] {
-			msg := "the patch moves `checked`, but not every source of the doc was given whole in the task: nobody can vouch for what was not read, so `checked` stays where it is"
+			msg := "the patch moves `checked`, but not every source of the doc was given whole in the task, nor read: nobody can vouch for what was not read, so `checked` stays where it is"
 			if full != "" {
 				msg += fmt.Sprintf("; fix what you found wrong, and set `judged: %s` instead", full[:7])
 			}
 			return fileVerdict{rule: "checked-unread", why: msg, header: true,
-				person: "`checked` not moved: not every source of the doc was given whole in the task, so nobody could vouch for it; `judged` set instead"}
+				person: "`checked` not moved: not every source of the doc was given whole in the task, nor read, so nobody could vouch for it; `judged` set instead"}
 		}
 		if moved {
 			d, _ := docmark.ParseDoc(f.path, []byte(now))
@@ -671,7 +663,6 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			if cc, err = newCiteContext(repo, tree.Files); err != nil {
 				return j, err
 			}
-			cc.partial = partial
 			if len(agentDocs) > 1 {
 				j.reported = append(j.reported, cc.attribute(claims, tree.Docs, agentFiles(intents, fallback, tree.Docs, judged))...)
 			}
@@ -728,7 +719,6 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 					accept(f)
 					fixed++
 					switch {
-					case v.inParts:
 					case v.vouched:
 						j.patched[f.path] = true
 					case !j.patched[f.path]:
@@ -873,7 +863,6 @@ type fileVerdict struct {
 	person    string         // why, for a person, when header
 	now       string         // the doc as fixed, when not refused
 	vouched   bool           // `checked` moves
-	inParts   bool           // judged in parts: neither vouched nor recorded here
 }
 
 // withoutBlocks is a doc's diff with the runs refused taken back: the lines

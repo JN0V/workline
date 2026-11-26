@@ -1,0 +1,11 @@
+case: documentalist/sample-too-wide-not-read
+about: A sampled doc whose sources at the commit `checked` names take more than whole-chars is not read by the sample, said for a person, with no agent call; an agent that reads the repository may have earned its `checked` by what it read (ADR-0074).
+given:
+  repo: vouched
+  config: {roles: {documentalist: {settings: {whole-chars: 10}}}}
+run: {sample: [--week, 2026-W01, --judge, "fake:sample-nothing-false"]}
+expect:
+  status: human
+  agent-calls: 0
+  findings:
+    - {rule: sample-not-read, where: docs/tech/auth.md, message: "take more than the 10 characters the sample reads whole"}

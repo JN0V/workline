@@ -11,18 +11,17 @@ sources:
   - roles/documentalist/code/freshness.go#wholeChars
   - roles/documentalist/code/freshness.go#wholeCharsMax
   - roles/documentalist/code/freshness.go#sourcesNow
-  - roles/documentalist/code/parts.go#vouchFor
+  - roles/documentalist/code/documentalist.go#readsTree
   - roles/documentalist/role.yaml#settings.ai-max-calls
   - roles/documentalist/role.yaml#settings.ai-max-tokens
   - roles/documentalist/role.yaml#settings.whole-chars
-  - roles/documentalist/role.yaml#settings.judge-in-parts
-  - roles/documentalist/role.yaml#settings.parts-move-checked
+  - roles/documentalist/role.yaml#settings.ai-max-turns
 checked: e81df7b34
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
 
-What the agent is asked of the suspect docs, judged whole or in parts. A
+What the agent is asked of the suspect docs. A
 doc is *vouched for* when its `checked` moves to the commit the task gave.
 When gardening (the scheduled run, nightly or weekly), the agent also gets
 stale docs, duplicates, splitting docs over budget, and the
@@ -32,6 +31,11 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
 
 ### What a task holds
 
+With `claude`, the agent reads the repository itself: the task holds each
+doc, its lines numbered, why it is suspect, its sources by name and the
+commits its `checked` must name; nothing more
+([the agent reads the repository](reads.md)). With another agent:
+
 - Each doc, its lines numbered.
 - What changed in its sources: 240 lines of diff a doc, whatever the
   number of sources.
@@ -39,10 +43,9 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   vouching for every sentence needs them
   ([ADR-0012](../../../docs/adr/0012-a-doc-is-judged-against-its-sources-whole.md)).
 - A doc far behind, whose changes do not fit: its sources as they are now
-  alone, or [in parts](parts.md) when they do not fit either.
+  alone; a person when they do not fit either.
 - Sources that do not fit, though what changed in them does: what changed
-  alone on a merge request; when gardening, [in parts](parts.md)
-  against them all.
+  alone.
 - The commits its `checked` must name.
 
 ### How many
@@ -58,10 +61,12 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
 
 ### When `checked` may move
 
-`checked` is earned by what the task gave
+`checked` is earned by what was read
 ([ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)):
 
-- **Every source whole**: a doc is told it may move `checked` only when
+- **Read by the agent**: with `claude`, every source file of the doc in
+  its call's log ([more](reads.md)).
+- **Every source whole**: with another agent, a doc is told it may move `checked` only when
   every one of its sources went whole into the task, as it is now — every
   text file under a source path, the section of a source doc, the part of
   a file a source names (`f.go#Name`) — up to the
@@ -84,15 +89,10 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   (`checked-over-count-off`), so the fix brings it to that count or leaves
   `checked`. That change needs no claim, the task says: the engine's count
   is the evidence, and a count is not words a file holds, to be quoted.
-- **In parts**: a fix never moves it; the engine does when the parts
-  support every line stating something, unless the project turns
-  `parts-move-checked` off
-  ([judged in parts](parts-fix.md#when-checked-moves-after-parts)).
 
 ### Every word removed is cited
 
-Every task judging docs — suspect, stale, due, the fix after
-the parts — says that every word a patch takes out of a body is cited
+Every task judging docs — suspect, stale, due — says that every word a patch takes out of a body is cited
 ([ADR-0014, step 2](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#2-the-mechanical-checks-no-agent);
 [how the judge reads claims](judge-claims.md)):
 
@@ -107,11 +107,3 @@ the parts — says that every word a patch takes out of a body is cited
   and a `note` says what could not be confirmed, naming its doc in `doc`:
   that doc's `checked` does not move (`checked-over-note`,
   [the check](judge.md#moving-checked)).
-
-## Judged in parts
-
-A suspect or stale doc whose sources, as they are now, do not fit a task
-is judged in parts when gardening
-([ADR-0009](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)):
-each part holds the doc whole and a share of its sources, and the engine
-puts their claims together. How: [judged in parts](parts.md).

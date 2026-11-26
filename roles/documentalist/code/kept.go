@@ -372,7 +372,7 @@ func recordOnly(was, now string) bool {
 // is proposed when what it keeps changed. A doc fixed, or vouched for, is
 // committed as before, and a record kept for it before is dropped. It
 // returns the proposals left, and the docs kept.
-func keepRecords(repo string, in keptInput, intents, fallback []intent.Intention, judged map[string]map[string]string, inParts map[string]string, fix *judgedFixes) ([]intent.Intention, map[string]bool, error) {
+func keepRecords(repo string, in keptInput, intents, fallback []intent.Intention, judged map[string]map[string]string, fix *judgedFixes) ([]intent.Intention, map[string]bool, error) {
 	if fix == nil {
 		return intents, nil, nil
 	}
@@ -392,9 +392,7 @@ func keepRecords(repo string, in keptInput, intents, fallback []intent.Intention
 		if want := judged[p]; want != nil {
 			at = want[""]
 		}
-		if v := headerValue(now, "judged-in-parts"); v != "" && v != headerValue(was, "judged-in-parts") {
-			key, at = "judged-in-parts", inParts[p]
-		} else if v := headerValue(now, "judged"); v == "" || v == headerValue(was, "judged") {
+		if v := headerValue(now, "judged"); v == "" || v == headerValue(was, "judged") {
 			dropped = true // nothing recorded: `verified` alone, which `checked` goes with
 			continue
 		}
@@ -491,9 +489,7 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 	oldest, oldestAt := "", int64(0)
 	for _, p := range sortedDocs(suspects) {
 		sd := suspects[p]
-		// A doc read in parts tonight: the record of a change read alone
-		// would hold it from them (#462).
-		if sd.note != "" || sd.rest {
+		if sd.note != "" {
 			continue
 		}
 		paths, local := docPaths(sd.doc)

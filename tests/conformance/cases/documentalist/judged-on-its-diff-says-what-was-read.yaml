@@ -7,7 +7,6 @@ given:
     - "seq 1 1200 | sed 's|^|// One line of a long comment on tokens, number |' >> src/auth/token.go && printf '// Tokens are signed with RS256.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): explain tokens at length'"
     - "printf '\\n## Signing\\n\\nTokens are signed with HS256.\\n' >> docs/tech/auth.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
     - "printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime' && git push -q origin main"
-  config: {roles: {documentalist: {settings: {judge-in-parts: false}}}}
   forge: {merge-requests: []}
 run: {role: documentalist, event: schedule, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', open-merge-request: true, summary: true}
 expect:

@@ -1,0 +1,23 @@
+case: documentalist/claude-reads-the-repository
+about: >
+  claude reads the repository itself (ADR-0074): the task gives the doc
+  whole and names its sources, never their text; claude reads them in a
+  copy of the repository at HEAD, with Read, Glob and Grep only there, its
+  turns capped (ai-max-turns) and said in its task. It read every source
+  file of the doc, as its call's log holds: `checked` moves. Nothing says
+  the repository went unread.
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  env: {PATH: "$FIXTURES/claude-documents:$PATH"}
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: claude}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "checked: 1a8e5a4"}}
+  no-findings: [{rule: input-cut}, {rule: checked-unread}]
+  run-files:
+    out/calls.jsonl:
+      contains: ['"tools":{"Read":1}', ' src/auth/token.go"]']

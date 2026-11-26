@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,12 +21,14 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/docmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/kit/worktree"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/tools"
@@ -64,21 +67,9 @@ type Settings struct {
 	// Documented: the code the project wants described; a file of it no
 	// doc names in its sources is reported.
 	Documented []string `json:"documented"`
-	// JudgeInParts judges a doc whose sources do not fit a task in parts,
-	// instead of leaving it to a person (ADR-0009); PartsMax caps the parts
-	// of one doc, PartsMaxPerRun those asked in one run.
-	JudgeInParts   bool `json:"judge-in-parts"`
-	PartsMax       int  `json:"parts-max"`
-	PartsMaxPerRun int  `json:"parts-max-per-run"`
-	// PartsMoveChecked moves the `checked` of a doc judged in parts when
-	// they found nothing wrong and every line stating something is
-	// supported (#482); off, such a doc waits for a person.
-	PartsMoveChecked bool `json:"parts-move-checked"`
-	// For measuring whole against parts on the same doc (tests/evaluation):
-	// PartsAlways judges in parts even a doc that fits whole, PartChars
-	// caps the sources' share of a part, so that small sources still split.
-	PartsAlways bool `json:"parts-always"`
-	PartChars   int  `json:"part-chars"`
+	// MaxTurns: the turns of an agent that reads the repository itself,
+	// told in its task (docs/adr/0074).
+	MaxTurns int `json:"ai-max-turns"`
 	// History and Decisions: the project's globs of history docs and of
 	// decision records, added to the names the usual tools give them
 	// (records.go).
@@ -94,7 +85,8 @@ type Settings struct {
 		Files   []string `json:"files"`
 	} `json:"versions"`
 	// WholeChars caps the characters a doc's sources may take to be judged
-	// whole; past it, a person judges the doc, or it is judged in parts.
+	// whole by an agent that does not read the repository itself; past it,
+	// a person judges the doc (docs/adr/0074).
 	WholeChars int `json:"whole-chars"`
 	// Sample: who reads the weekly sample of the docs vouched for
 	// (ADR-0014, step 4; workline sample).
@@ -219,15 +211,6 @@ func changed(dir, checked, rev, path, anchor string, names map[string]bool) (str
 		out = fmt.Sprintf("(section #%s of %s was not there at %s)", anchor, path, checked)
 	}
 	return out, err
-}
-
-// onMain returns the commit to compare a doc's sources with: the one its
-// `checked` names, when rev holds it; else the commit of rev that brought
-// that name into the doc — the squash or the rebased commit of the merge
-// request where the doc was judged. ok is false when rev has neither.
-func onMain(repo, rev, doc, checked string) (string, bool) {
-	a := anchorFor(repo, rev, doc, checked)
-	return a.commit, a.ok
 }
 
 // anchorFor is onMain's answer, saying also when the clone is too shallow to
@@ -602,12 +585,12 @@ type suspectDoc struct {
 	read   []sourceRead
 	shown  int  // lines of evidence shown so far, within docEvidenceLines
 	capped bool // more changed than docEvidenceLines shows
-	// overWhole: what changed in its sources fits a task, they do not, as
-	// they are now; rest: so read in parts when gardening, not judged on
-	// what changed alone, which leaves the rest unread (#462).
-	overWhole, rest bool
-	// note says what became of a doc judged in parts, or why it was not:
-	// such a doc is not put in a task of its own.
+	// overWhole: its sources do not fit whole-chars, so no task gave them
+	// whole: a `judged` earned before does not hold it from an agent that
+	// reads the repository, when gardening (#462, docs/adr/0074).
+	overWhole bool
+	// note says why a doc is not put in a task: a person judges it, or an
+	// earlier record holds it.
 	note     string
 	deferred bool // left for the run's next round
 	// earlier: judged by an earlier round of this run, whose merge request
@@ -717,7 +700,7 @@ func Pre(runDir, repo string) int {
 	for _, step := range []func() error{
 		r.findSuspects, r.sayShallow, r.giveSourcesNow, r.holdJudged, r.cutCascade,
 		r.checkHygiene, r.deriveBlocks, r.writeRecords,
-		r.askSuspects, r.askPropagate, r.pauseIfBackpressure, r.askStale, r.writeParts,
+		r.askSuspects, r.askPropagate, r.pauseIfBackpressure, r.askStale,
 		r.askRewrite, r.askReader, r.leaveForNextRound, r.writeTask,
 	} {
 		if err := step(); err != nil {
@@ -768,15 +751,11 @@ type preRun struct {
 	fixes    map[string]string
 	fallback []intent.Intention
 
-	adopting, recording, gardening, partsNow bool
-	wait                                     waiting
+	adopting, recording, gardening bool
+	wait                           waiting
 
 	task, then, next string // then: the task this round asks alone (in/then); next: the one it leaves for a round of its own
 	judged           map[string]map[string]string
-	inParts          map[string]string
-	vouchedInParts   map[string]string // of them, those whose `checked` moves (#482)
-	partsAsked       int
-	partsFallback    []intent.Intention
 	readerAsked      bool
 }
 
@@ -994,51 +973,46 @@ func (r *preRun) sayShallow() error {
 // giveSourcesNow gives each suspect doc its sources as they are now, when
 // they fit. A doc far behind its sources is judged against them as they are
 // now: what changed would not fit, and reading months of diffs cut short
-// lets nobody vouch for it. Sources too large for that go to a person.
+// lets nobody vouch for it. Sources too large for that go to a person. An
+// agent that reads the repository itself is given none: it reads them
+// (docs/adr/0074).
 func (r *preRun) giveSourcesNow() error {
 	for _, into := range []map[string]*suspectDoc{r.suspects, r.propagate} {
 		for _, sd := range into {
-			if !sd.capped {
-				// Vouching for every sentence the doc keeps needs its sources,
-				// not only what changed in them (ADR-0012): beside the diffs,
-				// when they fit. One that cannot be read leaves it judged on
-				// the diffs, so `checked` cannot move (#239).
-				now, err := sourcesNow(sd.doc, r.pl, wholeChars(r.s))
-				if err == nil && len(now) > 0 {
-					sd.evidence = append(sd.evidence, append([]string{"Its sources as they are now, in full, beside what changed: judge each sentence of the doc against them, not only the lines that changed."}, now...)...)
-					sd.whole = true
-				}
-				sd.overWhole = err == errTooLarge
-				continue
+			limit := wholeChars(r.s)
+			if readsTree(sd.doc) {
+				limit = math.MaxInt
 			}
-			now, err := sourcesNow(sd.doc, r.pl, wholeChars(r.s))
-			if err == errTooLarge {
+			now, err := sourcesNow(sd.doc, r.pl, limit)
+			switch {
+			case err == errTooLarge && sd.capped:
 				sd.tooLarge = true
-				continue
-			}
-			if err != nil { // nothing else to judge it on: a person
+			case err != nil && err != errTooLarge && sd.capped: // nothing else to judge it on: a person
 				sd.note = unreadNote(err)
-				continue
+			case err != nil || len(now) == 0:
+				// Judged on the diffs: `checked` cannot move (#239).
+			case readsTree(sd.doc):
+				sd.evidence, sd.read, sd.whole = nil, nil, true
+				sd.overWhole = len(strings.Join(now, "")) > wholeChars(r.s)
+			case sd.capped:
+				sd.evidence = append([]string{"More changed in its sources since it was checked than a task can show. Here they are as they are now, in full: judge each sentence of the doc against them."}, now...)
+				sd.whole, sd.read = true, nil // what changed is no longer shown
+			default:
+				// Vouching for every sentence the doc keeps needs its sources,
+				// not only what changed in them (ADR-0012): beside the diffs.
+				sd.evidence = append(sd.evidence, append([]string{"Its sources as they are now, in full, beside what changed: judge each sentence of the doc against them, not only the lines that changed."}, now...)...)
+				sd.whole = true
 			}
-			sd.evidence = append([]string{"More changed in its sources since it was checked than a task can show. Here they are as they are now, in full: judge each sentence of the doc against them."}, now...)
-			sd.whole, sd.read = len(now) > 0, nil // what changed is no longer shown
 		}
 	}
 	return nil
 }
 
-// holdJudged sends to parts the docs whose sources do not fit, when
-// gardening, and holds the docs already judged: in parts, or by a merge
-// request whose records the documentalist's comment keeps.
+// holdJudged holds the docs already judged without being vouched for, whose
+// sources did not change since, and those a merge request judged whose
+// records the documentalist's comment keeps.
 func (r *preRun) holdJudged() error {
-	// When gardening, a doc whose sources do not fit whole is read in parts
-	// against them, not judged on what changed alone (#462).
-	if os.Getenv("WORKLINE_EVENT") == "schedule" && r.s.JudgeInParts {
-		if err := restInParts(r.suspects, r.repo, r.s); err != nil {
-			return err
-		}
-	}
-	holdJudgedInParts(r.suspects, r.repo)
+	holdJudgedDocs(r.suspects, r.repo)
 	// On a person's merge request, the records the documentalist's comment
 	// keeps hold the docs they still stand for (ADR-0013, amended
 	// 2026-10-17).
@@ -1047,15 +1021,42 @@ func (r *preRun) holdJudged() error {
 		return err
 	}
 	r.findings = append(r.findings, keptFindings...)
+	return nil
+}
 
-	if r.s.JudgeInParts && r.s.PartsAlways { // measuring: every suspect doc in parts
-		for _, into := range []map[string]*suspectDoc{r.suspects, r.propagate} {
-			for _, sd := range into {
-				sd.tooLarge = true
-			}
+// holdJudgedDocs keeps from the agent the docs judged without being vouched
+// for whose sources did not change since, saying so; when gardening, not one
+// whose sources no task could give whole, which an agent reading the
+// repository reads whole (#462).
+func holdJudgedDocs(docs map[string]*suspectDoc, repo string) {
+	for _, sd := range docs {
+		if sd.note == "" && !(sd.overWhole && os.Getenv("WORKLINE_EVENT") == "schedule") && held(sd.doc, sd.doc.Judged, repo) {
+			sd.note = fmt.Sprintf("(judged at %s, but the agent could not vouch for every sentence — its note said what; its sources unchanged since: not put before an agent again until one changes; a person reads it against them, then moves `checked`)", sd.doc.Judged)
 		}
 	}
-	return nil
+}
+
+// held says whether a doc judged at a commit waits: none of its sources
+// changed since, so it is not put before an agent again. A commit a squash
+// or a rebase left out of HEAD stands for the one that brought it there.
+func held(d *docmark.Doc, at, repo string) bool {
+	if at == "" {
+		return false
+	}
+	a := anchorFor(repo, "HEAD", d.Path, at)
+	if !a.ok {
+		return false
+	}
+	for _, src := range d.Sources {
+		name, p, anchor := splitSource(src)
+		if name != "" {
+			return false
+		}
+		if commits, err := changed(repo, a.commit, "HEAD", p, anchor, nil); err != nil || commits != "" {
+			return false
+		}
+	}
+	return true
 }
 
 // cutCascade cuts the cascade: a doc depending on a suspect doc is pending,
@@ -1307,8 +1308,7 @@ func (r *preRun) writeRecords() error {
 	return os.WriteFile(filepath.Join(r.runDir, "in", "task-kind"), []byte(recordsTask+"\n"), 0o644)
 }
 
-// askSuspects writes the task: the docs adopted, or the suspect docs, then
-// those too large to be judged whole, in parts.
+// askSuspects writes the task: the docs adopted, or the suspect docs.
 func (r *preRun) askSuspects() error {
 	holdWaitingTasks(r.wait, r.suspects, r.stale)
 	var err error
@@ -1323,69 +1323,12 @@ func (r *preRun) askSuspects() error {
 			return err
 		}
 	}
-	// Docs too large to be judged whole are judged in parts, unless the
-	// project turns it off (ADR-0009): the parts first, then one call to fix. A
-	// run asking parts asks nothing else: the rest waits for the next.
-	// Only when gardening (#458): a merge request leaves such a doc for the
-	// next gardening, which judges it once, not once a merge request.
-	// `parts-always`, for measuring, judges in parts on any event.
-	r.partsNow = os.Getenv("WORKLINE_EVENT") == "schedule" || r.s.PartsAlways
-	r.inParts = map[string]string{}
-	r.vouchedInParts = map[string]string{}
-	return r.inPartsTask(r.suspects)
-}
-
-// inPartsTask asks, when gardening, the parts of the docs too large to be
-// judged whole, the one read longest ago first; on another event, it leaves
-// them for gardening.
-func (r *preRun) inPartsTask(docs map[string]*suspectDoc) error {
-	if r.adopting || !r.s.JudgeInParts || r.then != "" || r.recording {
-		return nil
-	}
-	// A doc no part could judge, whatever its sources hold, says so in
-	// this round too, rather than wait for a round that would not judge it.
-	for _, p := range sortedDocs(docs) {
-		if sd := docs[p]; sd.tooLarge && sd.note == "" {
-			_, why, err := partsRoom(sd.doc, r.repo)
-			if err != nil {
-				return err
-			}
-			sd.note = why
-		}
-	}
-	if !r.partsNow {
-		return leftForGardening(docs, r.repo, r.s, &r.findings)
-	}
-	if r.task != "" {
-		return nil
-	}
-	var cands []*suspectDoc
-	for _, p := range sortedDocs(docs) {
-		if sd := docs[p]; sd.tooLarge && sd.note == "" {
-			cands = append(cands, sd)
-		}
-	}
-	readLongestAgoFirst(cands, r.repo)
-	t, j, fb, ip, vp, err := partsFor(r.runDir, r.repo, cands, r.s, &r.partsAsked, &r.findings)
-	if err != nil {
-		return err
-	}
-	r.task, r.judged, r.partsFallback = t, j, append(r.partsFallback, fb...)
-	for p, at := range ip {
-		r.inParts[p] = at
-	}
-	for p, at := range vp {
-		r.vouchedInParts[p] = at
-	}
-	if r.task != "" {
-		return os.WriteFile(filepath.Join(r.runDir, "in", "task-kind"), []byte("fix\n"), 0o644)
-	}
 	return nil
 }
 
 // asksNothing tells whether nothing is asked yet, in a round that may ask.
 func (r *preRun) asksNothing() bool {
-	return r.task == "" && r.partsAsked == 0 && r.then == "" && !r.recording
+	return r.task == "" && r.then == "" && !r.recording
 }
 
 // askPropagate asks, when nothing else is, the docs due now (the moment
@@ -1418,9 +1361,7 @@ func (r *preRun) pauseIfBackpressure() error {
 	if err != nil || !r.gardening || r.s.MaxOpenMergeRequests <= 0 || n < r.s.MaxOpenMergeRequests {
 		return nil
 	}
-	r.task, r.judged, r.stale, r.gardening, r.inParts, r.partsFallback, r.partsAsked = "", nil, nil, false, map[string]string{}, nil, 0
-	r.vouchedInParts = map[string]string{}
-	_ = os.RemoveAll(filepath.Join(r.runDir, "in", "parts"))
+	r.task, r.judged, r.stale, r.gardening = "", nil, nil, false
 	var kept []intent.Intention // derived blocks too would open one more merge request
 	for _, f := range r.fallback {
 		if f.Kind != "patch" {
@@ -1438,37 +1379,15 @@ func (r *preRun) pauseIfBackpressure() error {
 }
 
 // askStale asks, when gardening with no suspect doc to judge, the stale docs
-// read again, whole or in parts.
+// read again.
 func (r *preRun) askStale() error {
-	holdJudgedInParts(r.stale, r.repo)
+	holdJudgedDocs(r.stale, r.repo)
 	if r.asksNothing() && len(r.stale) > 0 {
 		var err error
 		if r.task, r.judged, err = staleTask(r.stale, r.s, r.pl, r.repo); err != nil {
 			return err
 		}
 		if err := os.WriteFile(filepath.Join(r.runDir, "in", "task-kind"), []byte("stale\n"), 0o644); err != nil {
-			return err
-		}
-	}
-	return r.inPartsTask(r.stale)
-}
-
-// writeParts writes what the docs judged in parts need once judged: the
-// header recording when, which fixes stay unvouched, which `checked` moves.
-func (r *preRun) writeParts() error {
-	if len(r.partsFallback) > 0 { // the header of each doc judged in parts records when
-		_ = os.Remove(filepath.Join(r.runDir, "in", "fallback.yaml"))
-		if err := intent.Write(filepath.Join(r.runDir, "in", "fallback.yaml"), append(r.fallback, r.partsFallback...)); err != nil {
-			return err
-		}
-	}
-	if len(r.inParts) > 0 { // their fixes are judged as fixes in parts: `checked` stays
-		if err := writeYAML(filepath.Join(r.runDir, "in", "in-parts.yaml"), r.inParts); err != nil {
-			return err
-		}
-	}
-	if len(r.vouchedInParts) > 0 { // the engine's own patch moves their `checked` (#482)
-		if err := writeYAML(filepath.Join(r.runDir, "in", vouchedFile), r.vouchedInParts); err != nil {
 			return err
 		}
 	}
@@ -1541,7 +1460,7 @@ func (r *preRun) askReader() error {
 	if r.then != "" { // what the earlier rounds proposed is not proposed again
 		_ = os.Remove(filepath.Join(runDir, "in", "fallback.yaml"))
 	}
-	if r.task == "" && r.partsAsked == 0 && r.gardening && !r.recording {
+	if r.task == "" && r.gardening && !r.recording {
 		var rt *readerTask
 		var err error
 		if rt, r.task, r.findings, err = readerFor(r.findings, r.tree, r.s, r.wait, r.repo); err != nil {
@@ -1567,7 +1486,7 @@ func (r *preRun) askReader() error {
 			r.readerAsked = true
 		}
 	}
-	if r.gardening && r.next == "" && r.then != "reader" && !r.readerAsked && (r.task != "" || r.partsAsked > 0 || r.recording) && readerWaits(r.findings, r.s, r.tree, r.wait) {
+	if r.gardening && r.next == "" && r.then != "reader" && !r.readerAsked && (r.task != "" || r.recording) && readerWaits(r.findings, r.s, r.tree, r.wait) {
 		r.next = "reader"
 	}
 	return os.WriteFile(filepath.Join(runDir, "in", "then"), []byte(r.next), 0o644) // empty: no round of its own
@@ -1577,8 +1496,8 @@ func (r *preRun) askReader() error {
 // by a person, too large, or left for the engine's next round, which it
 // writes in in/more; then the issue for a person, and a draft's count.
 func (r *preRun) leaveForNextRound() error {
-	s, runDir := r.s, r.runDir
-	asked := r.task != "" || r.partsAsked > 0 || r.recording
+	runDir := r.runDir
+	asked := r.task != "" || r.recording
 	var left strings.Builder
 	saidOnce := map[string]bool{}
 	said := newPersonSaid(r.repo)
@@ -1619,12 +1538,6 @@ func (r *preRun) leaveForNextRound() error {
 			if sd.deferred {
 				fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 			}
-			continue
-		}
-		if sd.tooLarge && s.JudgeInParts && asked && f.Rule != "due" {
-			said.decide(f.Where)
-			f.Message += "\n(to be judged in parts in a later round: this round asks something else)"
-			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 			continue
 		}
 		if sd.tooLarge {
@@ -1688,12 +1601,26 @@ func (r *preRun) leaveForNextRound() error {
 // the docs whose sources went whole into it.
 func (r *preRun) writeTask() error {
 	runDir := r.runDir
+	if r.task != "" && len(r.judged) > 0 && !r.adopting && os.Getenv("WORKLINE_AI") != "none" && !agent.ReadsFiles(os.Getenv("WORKLINE_AI")) {
+		r.findings = append(r.findings, verdict.Finding{Rule: verdict.CutRule, Level: "warn",
+			Message: "the documentalist's agent does not read the repository itself (claude does): each doc is judged on its sources given in the task, whole when they fit whole-chars, else on what changed in them; a doc whose sources do not fit goes to a person"})
+	}
 	sort.SliceStable(r.findings, func(i, j int) bool { return r.findings[i].Where < r.findings[j].Where })
 	if err := writeYAML(filepath.Join(runDir, "in", "findings.yaml"), r.findings); err != nil {
 		return err
 	}
 	if r.task == "" {
 		return nil
+	}
+	// An agent that reads the repository itself reads it at HEAD, in a read
+	// tree; made again each round, the last one's fixes applied.
+	if agent.ReadsFiles(os.Getenv("WORKLINE_AI")) && strings.Contains(r.task, readingHeading) {
+		if tree := agent.ReadTree(runDir); tree != "" {
+			worktree.RemoveRunTree(r.repo, runDir, agent.ReadTreeDir, tree)
+		}
+		if err := worktree.RunTree(r.repo, "HEAD", runDir, agent.ReadTreeDir); err != nil {
+			return err
+		}
 	}
 	if err := writeYAML(filepath.Join(runDir, "in", "judged.yaml"), r.judged); err != nil {
 		return err
@@ -1710,7 +1637,7 @@ func (r *preRun) writeTask() error {
 				whole = append(whole, p)
 				given = nil
 				break
-			} else if sd != nil && !sd.tooLarge && given == nil { // too large: judged in parts, said apart
+			} else if sd != nil && !sd.tooLarge && given == nil {
 				given = sd
 			}
 		}
@@ -1759,6 +1686,7 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 	var b strings.Builder
 	b.WriteString(header)
 	judged := map[string]map[string]string{}
+	reads := false // a doc of the task is read in the repository
 	files, err := trackedFiles(repo)
 	if err != nil {
 		return "", nil, err
@@ -1829,6 +1757,13 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 				fmt.Fprintf(&entry, "- %s\n", c.message())
 			}
 		}
+		if readsTree(sd.doc) && sd.whole {
+			reads = true
+			entry.WriteString("\nIts sources, to read whole in your working directory before you judge it (a folder: each file in it):\n\n")
+			for _, src := range sd.doc.Sources {
+				fmt.Fprintf(&entry, "- `%s`\n", src)
+			}
+		}
 		if isAuthority(s, p) {
 			fmt.Fprintf(&entry, "\nThis doc is an authority (`truth: doc`): the code follows it, not the reverse. Do not change what it says. "+
 				"If the code now disagrees with it, return an `issue` titled %q, saying where they disagree and quoting both; "+
@@ -1855,7 +1790,41 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 	if len(judged) == 0 {
 		return "", nil, nil
 	}
+	if reads {
+		b.WriteString(readingTask(s))
+	}
 	return b.String(), judged, nil
+}
+
+// readsTree says the run's agent reads the repository itself, at HEAD, and
+// with it every source of d: none lies in another repository
+// (docs/adr/0074). Its sources are named in its task, never given.
+func readsTree(d *docmark.Doc) bool {
+	if !agent.ReadsFiles(os.Getenv("WORKLINE_AI")) {
+		return false
+	}
+	return !slices.ContainsFunc(d.Sources, func(src string) bool { name, _, _ := splitSource(src); return name != "" })
+}
+
+// readingHeading opens what a task tells an agent that reads the
+// repository itself (docs/adr/0074).
+const readingHeading = "## Reading the repository yourself"
+
+// readingTask tells an agent that reads the repository itself what to read
+// before it answers, and that its last message is its whole answer: told
+// less, a reader read little and answered nothing (the bench of
+// docs/adr/0074, on the reviewer).
+func readingTask(s Settings) string {
+	t := "\n" + readingHeading + "\n\nYour working directory is the project as it reads now: Read, Glob and Grep, no shell, nothing you write there kept. Before you answer, for each doc above:\n\n" +
+		"1. read each source it names, whole: `checked` moves only for a doc whose every source file you read;\n" +
+		"2. read what else its sentences speak of — a name, a file, a count it states — wherever it lies in the project;\n" +
+		"3. check each sentence against what you read, and fix each one the code contradicts.\n\n" +
+		"A sentence the code contradicts is fixed, not left in a note: a note is for what reading the project cannot settle. A sentence saying the code does what, searched for, nothing in the project does is contradicted too.\n\n" +
+		"Then answer: your last message is your whole answer, as the Answer says — every patch, claim and note. Nothing you read counts unless it is written there.\n"
+	if s.MaxTurns > 0 {
+		t += fmt.Sprintf("\n- %d turns at most: keep the last one for your answer.\n", s.MaxTurns)
+	}
+	return t
 }
 
 // Post judges the agent's patches, then turns the findings into a verdict.
@@ -1891,9 +1860,17 @@ func Post(runDir, repo string) int {
 			whole[p] = true
 		}
 	}
+	// An agent that reads the repository itself earned `checked` by what
+	// it read: every source file of the doc in its calls' log
+	// (docs/adr/0074); the others are said not read.
+	notWhole := map[string]readScope{}
+	if agent.ReadsFiles(os.Getenv("WORKLINE_AI")) {
+		if err := readByLog(runDir, repo, whole, notWhole); err != nil {
+			return fail(err)
+		}
+	}
 	// What the others were given, and not given: "nothing found wrong" is
 	// said of what was read, never of the rest (#120).
-	notWhole := map[string]readScope{}
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "read-not-whole.yaml")); err == nil {
 		if err := yaml.Unmarshal(data, &notWhole); err != nil {
 			return fail(err)
@@ -1926,24 +1903,8 @@ func Post(runDir, repo string) int {
 	}
 	var refused, reported, withheld []verdict.Finding
 	var judgedFix *judgedFixes
-	var readerOutcome map[string]string   // the pages read for their reader (#256), and what became of each
-	var readerClaims map[string][]claim   // what a reader would miss or skip, by page
-	inParts := map[string]string{}        // the docs judged in parts, by the commit they were judged at
-	vouchedInParts := map[string]string{} // of them, those whose `checked` the engine moves (#482)
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", vouchedFile)); err == nil {
-		if err := yaml.Unmarshal(data, &vouchedInParts); err != nil {
-			return fail(err)
-		}
-	}
-	// Only while the engine's own patch moving it is to be applied: a set
-	// of proposals refused whole takes it out, and the doc stays listed.
-	for p := range vouchedInParts {
-		if !slices.ContainsFunc(intents, func(in intent.Intention) bool {
-			return in.Kind == "patch" && isFallback(in, fallback) && slices.Contains(intent.PatchFiles(in.Value), p)
-		}) {
-			delete(vouchedInParts, p)
-		}
-	}
+	var readerOutcome map[string]string // the pages read for their reader (#256), and what became of each
+	var readerClaims map[string][]claim // what a reader would miss or skip, by page
 	patched, partly := map[string]bool{}, map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a split patch resolves
 	var mergedPair []string       // the two docs a duplicates patch merged
@@ -2010,19 +1971,8 @@ func Post(runDir, repo string) int {
 		if strings.TrimSpace(string(kind)) == "sources" {
 			refused, patched, err = judgeSources(repo, s, judged, intents, fallback)
 		} else {
-			if data, err := os.ReadFile(filepath.Join(runDir, "in", "in-parts.yaml")); err == nil {
-				if err := yaml.Unmarshal(data, &inParts); err != nil {
-					return fail(err)
-				}
-			}
-			var partial map[string][]partialCite // what the parts judged partial (#467)
-			if data, err := os.ReadFile(filepath.Join(runDir, "in", partialFile)); err == nil {
-				if err := yaml.Unmarshal(data, &partial); err != nil {
-					return fail(err)
-				}
-			}
 			var j patchJudgement
-			j, err = judgePatches(repo, s, judged, inParts, partial, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+			j, err = judgePatches(repo, s, judged, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
 			refused, patched, partly, judgedFix, reported, withheld = j.refused, j.patched, j.partly, j.fix, j.reported, j.withheld
 			// The patches narrowed to what holds are what the engine applies
 			// (ADR-0014, step 4).
@@ -2066,18 +2016,6 @@ func Post(runDir, repo string) int {
 		}
 		return 1
 	}
-	// A doc judged in parts whose fix changed nothing of what they found:
-	// what they found is said for a person, where they read it (#2197).
-	open, err := openInParts(runDir, inParts, judged, judgedFix)
-	if err != nil {
-		return fail(err)
-	}
-	if len(open) > 0 {
-		sayOpenInIssue(intents, open)
-		if err := writeIntents(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
-			return fail(err)
-		}
-	}
 	// On a person's merge request, a doc whose patch only records when it
 	// was judged gets no commit: its record goes to the documentalist's
 	// comment (ADR-0013, amended 2026-10-17).
@@ -2088,7 +2026,7 @@ func Post(runDir, repo string) int {
 	}
 	if taskKind, _ := os.ReadFile(filepath.Join(runDir, "in", "task-kind")); keptIn.Keep && onPersonsMergeRequest() &&
 		(strings.TrimSpace(string(taskKind)) == "" || strings.TrimSpace(string(taskKind)) == "suspect") {
-		if intents, keptDocs, err = keepRecords(repo, keptIn, intents, fallback, judged, inParts, judgedFix); err != nil {
+		if intents, keptDocs, err = keepRecords(repo, keptIn, intents, fallback, judged, judgedFix); err != nil {
 			return fail(err)
 		}
 		if keptDocs != nil {
@@ -2101,20 +2039,6 @@ func Post(runDir, repo string) int {
 	var kept []verdict.Finding
 	said := map[string]bool{}
 	for _, f := range findings {
-		if i := strings.Index(f.Message, checkedMovesTo); i >= 0 && vouchedInParts[f.Where] == "" {
-			// The engine's patch is not applied: a set of proposals refused
-			// whole takes it out.
-			f.Message = f.Message[:i] + "every line stating something supported by its sources, but the engine's patch moving `checked` is not among what this run applies (a set of proposals refused whole takes it out), so it stays: a person reads it whole, then moves `checked`)"
-		}
-		if _, ok := inParts[f.Where]; ok && strings.Contains(f.Message, partsFixAsked) {
-			// What the fix call made of what the parts found, now known.
-			if n := judgedFix.placesSaid(f.Where); n != "" {
-				f.Message = strings.Replace(f.Message, partsFixAsked, "what they found wrong is fixed in this run, in "+n, 1)
-			} else {
-				f.Message = openSaid(f.Message, open[f.Where], !said[f.Where+" open"])
-				said[f.Where+" open"] = true
-			}
-		}
 		if v, ok := patched[f.Where]; ok && !v && (f.Rule == "suspect" || f.Rule == "stale") {
 			f.Level = "" // judged, its header says when: a person's now, as one judged in parts
 			if !said[f.Where] {
@@ -2127,7 +2051,7 @@ func Post(runDir, repo string) int {
 				}
 			}
 		}
-		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && (patched[f.Where] || vouchedInParts[f.Where] != "") || resolved[f.Rule+" "+f.Where] ||
+		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
 			f.Rule == "duplicate" && len(mergedPair) == 2 && contains(mergedPair, f.Where) && strings.Contains(f.Message, " "+otherOf(mergedPair, f.Where)+" ") {
 			continue // judged and patched, or split, in this run
 		}
@@ -2152,14 +2076,11 @@ func Post(runDir, repo string) int {
 	kept = append(kept, withheld...)
 	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
-		outcome := outcomes(judged, inParts, vouchedInParts, patched, partly, judgedFix, readOf)
-		for p, found := range open {
-			outcome[p] = "judged in parts; " + partsLeftOpen + foundList(found, "  ")
-		}
+		outcome := outcomes(judged, patched, partly, judgedFix, readOf)
 		if readerOutcome != nil {
 			outcome = readerOutcome
 		}
-		mr := mergeRequest(runDir, judged, inParts, proposedPatch(intents, fallback), withheld, outcome)
+		mr := mergeRequest(runDir, judged, proposedPatch(intents, fallback), withheld, outcome)
 		if list := readerList(readerClaims); list != "" {
 			mr["body"] = strings.Replace(mr["body"], "\nRunning the same task", "\nWhat a reader would miss or skip, as the agent read the pages:\n\n"+list+"\nRunning the same task", 1)
 		}
@@ -2743,7 +2664,7 @@ func notVouched(fixed string, partly bool, read string) string {
 // unverified or checked. readOf says what the task gave of a doc whose
 // sources did not all go whole, and what it did not ("" when they did):
 // nothing is said found wrong of what was not read.
-func outcomes(judged map[string]map[string]string, inParts, vouched map[string]string, patched, partly map[string]bool, fix *judgedFixes, readOf func(string) string) map[string]string {
+func outcomes(judged map[string]map[string]string, patched, partly map[string]bool, fix *judgedFixes, readOf func(string) string) map[string]string {
 	out := map[string]string{}
 	fixed := func(p string) string {
 		if s := fix.placesSaid(p); s != "" {
@@ -2751,22 +2672,7 @@ func outcomes(judged map[string]map[string]string, inParts, vouched map[string]s
 		}
 		return ""
 	}
-	for p := range inParts {
-		switch f := fixed(p); {
-		case vouched[p] != "":
-			out[p] = "judged in parts, nothing found wrong, every line stating something supported by its sources; `checked` moved"
-		case f != "":
-			out[p] = "judged in parts, " + f + "; `checked` not moved" + fix.examplesOutcome(p)
-		case judged[p] != nil:
-			out[p] = "judged in parts; the fix changed nothing of what they found wrong, for a person; `checked` not moved"
-		default:
-			out[p] = "judged in parts, nothing found wrong; `checked` not moved"
-		}
-	}
 	for p := range judged {
-		if _, ok := inParts[p]; ok {
-			continue
-		}
 		v, ok := patched[p]
 		f := fixed(p)
 		read := readOf(p)
@@ -2809,7 +2715,7 @@ func otherOf(pair []string, p string) string {
 // request of its own either way, keyed by its first doc, never the derived
 // blocks' — the docs it holds wait for it, and the next run's docs judged
 // in parts go to another (#356).
-func mergeRequest(runDir string, judged map[string]map[string]string, inParts map[string]string, byAgent bool, withheld []verdict.Finding, outcome map[string]string) map[string]string {
+func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bool, withheld []verdict.Finding, outcome map[string]string) map[string]string {
 	kind := "suspect"
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "task-kind")); err == nil {
 		kind = strings.TrimSpace(string(data))
@@ -2817,21 +2723,13 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 	if kind == recordsTask { // what merged merge requests kept, written on the default branch
 		return recordsRequest(runDir)
 	}
-	if len(inParts) > 0 {
-		kind = "fix"
-	}
-	if !byAgent && len(inParts) == 0 { // only what the role regenerates itself
+	if !byAgent { // only what the role regenerates itself
 		return map[string]string{"key": "derived", "title": "docs: regenerate the derived blocks",
 			"body": "Regenerated by workline's documentalist from the commands the project names in `settings.derive`.\n"}
 	}
 	var docs []string
 	for p := range judged {
 		docs = append(docs, p)
-	}
-	for p := range outcome { // a doc judged in parts with nothing to fix: its header only
-		if _, ok := judged[p]; !ok {
-			docs = append(docs, p)
-		}
 	}
 	sort.Strings(docs)
 	key, title := kind, "docs: bring the docs in line with the code"
@@ -2840,19 +2738,6 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 		title = "docs: read again the docs not confirmed for too long"
 	case "propagate":
 		title = "docs: bring the product docs up to date"
-	case "fix":
-		in := sortedKeys(inParts)
-		wait, _ := readWaiting(runDir) // pre read it first, and failed on an error
-		key, title = partsKey(in, wait), "docs: bring "+in[0]+" in line with the code"
-		if len(in) > 1 {
-			title = fmt.Sprintf("docs: bring %s and %d more in line with the code", in[0], len(in)-1)
-		}
-		if len([]rune(title)) > forge.TitleMax {
-			title = fmt.Sprintf("docs: bring %d docs in line with the code", len(in))
-		}
-		if !byAgent { // nothing fixed: only what records when the parts judged (#2197)
-			title = recordsTitle(in)
-		}
 	case "split":
 		var c splitTask
 		if data, err := os.ReadFile(filepath.Join(runDir, "in", "split.yaml")); err == nil && yaml.Unmarshal(data, &c) == nil {
@@ -2979,4 +2864,54 @@ func personIssue(findings []verdict.Finding, repo string) (intent.Intention, boo
 	}
 	value["body"] = b.String()
 	return intent.Intention{Kind: "issue", Value: value}, true
+}
+
+// readByLog keeps in whole only the docs whose every source file the run's
+// agent read, as its calls log it (out/calls.jsonl, docs/adr/0074); the
+// others go to notWhole, with the sources not read.
+func readByLog(runDir, repo string, whole map[string]bool, notWhole map[string]readScope) error {
+	read := map[string]bool{}
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "calls.jsonl")); err == nil {
+		for _, l := range strings.Split(string(data), "\n") {
+			var c struct {
+				Reads []string `json:"reads"`
+			}
+			if json.Unmarshal([]byte(l), &c) != nil {
+				continue
+			}
+			for _, r := range c.Reads {
+				if _, p, ok := strings.Cut(r, " "); ok {
+					read[p] = true
+				}
+			}
+		}
+	}
+	for p := range whole {
+		content, err := os.ReadFile(filepath.Join(repo, p))
+		if err != nil {
+			return err
+		}
+		d, err := docmark.ParseDoc(p, content)
+		if err != nil || d == nil || !readsTree(d) {
+			continue // its sources given whole in the task
+		}
+		var scope readScope
+		for _, src := range d.Sources {
+			_, path, _ := splitSource(src)
+			files, err := git(repo, "ls-files", "-z", "--", path)
+			if err != nil {
+				return err
+			}
+			if fs := pathList(files); len(fs) == 0 || !slices.ContainsFunc(fs, func(f string) bool { return !read[f] }) {
+				scope.Read = append(scope.Read, src)
+			} else {
+				scope.NotRead = append(scope.NotRead, src)
+			}
+		}
+		if len(scope.NotRead) > 0 {
+			delete(whole, p)
+			notWhole[p] = scope
+		}
+	}
+	return nil
 }

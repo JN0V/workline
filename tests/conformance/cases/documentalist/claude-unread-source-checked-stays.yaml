@@ -1,0 +1,18 @@
+case: documentalist/claude-unread-source-checked-stays
+about: >
+  `checked` is earned by what was read (ADR-0074): claude, given the
+  repository to read, answers a fix moving `checked` without reading the
+  doc's source, as its call's log shows. The fix is kept; `checked` stays,
+  `judged` records when, and the doc is said for a person (checked-unread).
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  env: {PATH: "$FIXTURES/claude-documents:$PATH", READS: none}
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: claude}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours.", lacks: "checked: 1a8e5a4"}}
+  findings: [{rule: checked-unread, where: docs/tech/auth.md, message: "nor read"}]

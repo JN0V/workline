@@ -35,9 +35,9 @@ Part of [the check](judge.md).
   since `checked`, or [the doc it follows](tasks.md#when-checked-may-move))
   and `not read:` the rest. Never
   "nothing found wrong" of what was not read
-  ([#120](https://github.com/JN0V/workline/issues/120)). Gardening reads
-  such a doc [in parts](parts.md) instead, when parts
-  can ([#462](https://github.com/JN0V/workline/issues/462)).
+  ([#120](https://github.com/JN0V/workline/issues/120)). An agent
+  that reads the repository reads such a doc's sources itself
+  ([more](reads.md)).
 - The fix's own merge request, gardening's (the scheduled run, nightly
   or weekly), lists each doc judged with that outcome —
   fixed and in how many places, still true, nothing found wrong, or left

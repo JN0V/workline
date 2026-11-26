@@ -82,10 +82,6 @@ rules ([gardening](gardening-split.md#splitting)), the reader task by
 - **A line count still off** (`checked-over-count-off`, step 2): the task
   gave the real count; the fix brings it there, with no claim, or leaves
   `checked`. *Withheld*: the move of `checked`.
-- **A doc judged in parts** (`checked-moved-in-parts`): the fix saw only
-  the parts' excerpts; refused. Only the engine moves it, when the parts
-  support every line stating something
-  ([judged in parts](parts-fix.md#when-checked-moves-after-parts)).
 - **A doc the answer's own note doubts** (`checked-over-note`,
   [#449](https://github.com/JN0V/workline/issues/449)): a note names its
   doc in `doc`, else in its text, by path or by a file name no other doc

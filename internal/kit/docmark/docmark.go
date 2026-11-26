@@ -19,11 +19,10 @@ type Doc struct {
 	Path    string
 	Sources []string
 	Checked map[string]string // repository name ("" = this one) -> commit
-	// JudgedInParts is the commit the doc was last judged in parts at: it is
-	// not put before an agent again until a source changes after it.
-	JudgedInParts string
-	// Judged is the commit an agent judged the doc whole at without vouching
-	// for every sentence: held the same way.
+	// Judged is the commit an agent judged the doc at without vouching for
+	// every sentence: it is not put before an agent again until a source
+	// changes after it. A `judged-in-parts` a doc still records is read,
+	// never written again, and holds nothing (docs/adr/0074).
 	Judged string
 }
 
@@ -103,9 +102,8 @@ func (v SampleView) IsDoc(p string) bool {
 type Frontmatter struct {
 	Sources []string `yaml:"sources"`
 	// A node, not a string: read as YAML, a commit like 11180e1 is a number.
-	Checked       yaml.Node `yaml:"checked"`
-	JudgedInParts yaml.Node `yaml:"judged-in-parts"`
-	Judged        yaml.Node `yaml:"judged"`
+	Checked yaml.Node `yaml:"checked"`
+	Judged  yaml.Node `yaml:"judged"`
 }
 
 // Header returns a doc's header — YAML between `---` lines, or, where a
@@ -143,7 +141,7 @@ func ParseDoc(path string, content []byte) (*Doc, error) {
 	if len(fm.Sources) == 0 {
 		return nil, nil
 	}
-	d := &Doc{Path: path, Sources: fm.Sources, Checked: map[string]string{}, JudgedInParts: fm.JudgedInParts.Value, Judged: fm.Judged.Value}
+	d := &Doc{Path: path, Sources: fm.Sources, Checked: map[string]string{}, Judged: fm.Judged.Value}
 	switch c := fm.Checked; c.Kind {
 	case yaml.ScalarNode:
 		d.Checked[""] = c.Value

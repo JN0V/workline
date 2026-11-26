@@ -6,8 +6,6 @@ sources:
   - roles/documentalist/code/documentalist.go#touchesNames
   - roles/documentalist/code/documentalist.go#holdsName
   - roles/documentalist/code/part.go#partChanged
-  - roles/documentalist/code/parts.go#leftForGardening
-  - roles/documentalist/code/parts.go#partsLater
   - roles/documentalist/code/personsaid.go#personSaid.line
   - roles/documentalist/code/personsaid.go#personSaidBody
   - roles/documentalist/code/documentalist.go#checklist
@@ -46,9 +44,8 @@ moves to the commit the task gave.
   ([cut 3](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-3-no-docs-obligation-per-pr)):
   the author fixes the prose the change made wrong, and may move `checked` of
   those read against it. Once merged, the weekly docs pull request moves
-  the others' `checked`: only for a doc whose sources fit a task whole
-  (`whole-chars`); the others wait for [parts](parts.md), a few a run,
-  or for a person.
+  the others' `checked`: only for a doc whose every source the agent
+  read ([more](reads.md)); the others wait for a person.
 - **A user page it takes over its budget blocks**: within it at the
   merge base (under its old name if moved), over it on the head; the
   author condenses or splits it. One
@@ -62,9 +59,9 @@ moves to the commit the task gave.
   `ci.yml#jobs.test` — makes the doc suspect only when that part changes;
   a task reads that part, not the file
   ([ADR-0053](../../../docs/adr/0053-a-source-may-name-a-part-of-a-file.md)).
-- A doc too large to be judged whole is left for the next gardening,
-  which judges it [in parts](parts.md), there as with `workline docs`
-  ([#458](https://github.com/JN0V/workline/issues/458)).
+- A doc whose sources are too large to give whole is read by an agent
+  that reads the repository; with another agent it goes to a person
+  ([more](reads.md)).
 - **A doc left to a person is said once** on a merge request, kept in a
   comment of its own ("Docs left to a person"); a later push says it
   again only when the doc or its sources changed
