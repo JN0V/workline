@@ -1,0 +1,256 @@
+# What each point of the reviewer's replay set means: the judge's question.
+# A case, by its file's name in replay/reviewer, holds `change` and its
+# `points`, by the defect's `kind`: `says`, the defect as the owner sent it
+# back; `not`, the near misses; `class`, out-of-diff, weak-test,
+# not-delivered, in-diff or kept; `out`, why it is judged and not scored
+# (ambiguous, duplicate). A clean case has a change and no point.
+
+dc-239-no-ascii-test:
+  change: Replaces a warning-sign emoji and an em dash with ASCII in SystemInfo's boot-diagnostics log strings. The issue it closes asks that every byte of those lines be ASCII, with a native test or a CI check.
+  points:
+    - name: no-ascii-test
+      class: weak-test
+      says: Nothing proves the log strings are ASCII. The change adds no test and no CI check that fails when a non-ASCII byte comes back in SystemInfo's log strings, though the issue asks for one.
+      not: A finding that other non-ASCII characters remain somewhere, with no word on the missing test or check. A remark on the wording of the strings.
+
+dc-240-cpu-load-shown-as-zero:
+  change: Removes the heap-churning calculateCpuLoad() from SystemInfo and leaves metrics.cpuLoad at a constant 0. The pull request says it closes the issue, whose need is a CPU load figure that reflects real CPU use.
+  points:
+    - name: dead-metric-still-shown
+      class: out-of-diff
+      says: cpuLoad is now always 0, and what reads it still presents it as a real measure. The finding names at least one such reader, the WebUI that still charts or sends it (a flat 0 % reads as an idle CPU), the example that still logs it, or the docs that still describe an estimate.
+      not: A finding that only says the field is a constant 0, or that the need for a real figure is unmet, and names no reader that still shows it. A finding on the missing test alone.
+    - name: need-left-undecided
+      class: not-delivered
+      says: The issue's need is not met. The change neither gives a real CPU measure nor removes the figure, so the choice the issue asks for is left open while the pull request closes the issue.
+      not: A finding that only lists stale readers (chart, example, docs) with no word that the need or the issue's request is unmet. A finding on the missing test alone.
+    - name: native-test-missing
+      class: weak-test
+      says: What the change does to cpuLoad has no native test. No test is added, or the existing cpu-load range test now passes trivially on the constant 0.
+      not: A test gap on something other than cpuLoad or what updateMetrics() reports.
+
+dc-242-move-test-passes-without-fix:
+  change: Adds StorageComponent copy and move constructors that point metadata.name at the new object's own string, deletes copy and move assignment, and adds test_storage_name_move.
+  points:
+    - name: move-test-passes-without-fix
+      class: weak-test
+      says: The move test (test_move_keeps_name) passes without the fix. Its 19-character name lives on the heap, a default move steals that buffer, and the name still reads right. Only a short name, held in the string's own small buffer, would fail without the fix.
+      not: The copy test reading freed memory. A general "the tests are weak" with no word that the move test passes without the fix. Missing tests of other things (assignment, self-move).
+    - name: copy-test-reads-freed-memory
+      class: weak-test
+      says: The copy test reads the name after deleting the source. Without the fix that is a read of freed memory, which often still holds the old bytes, so the test can pass by luck; it should compare the pointers.
+      not: The move test passing without the fix.
+    - name: undeclared-api-change
+      class: in-diff
+      says: Copy and move assignment are deleted from a public class. That is an API change, and nothing announces it (the pull request's body, the changelog).
+      not: A finding that the deleted assignment has no test, or that deleting it is right, with no word that the API change is unannounced.
+
+dc-247-context-body-whole-in-heap:
+  change: Drops WebUI's duplicated serializeContext(). The /api/ui/context route now builds its body with StreamingContextSerializer::serializeToString into one String and sends it with beginResponse(200, ..., body); a stalled serializer answers 500.
+  points:
+    - name: whole-body-in-heap
+      class: in-diff
+      says: The whole response body is built in one String on the heap, then copied again into the response, instead of being streamed. On a small device (ESP8266) a large context needs a large contiguous block, fragments the heap, or fails to allocate.
+      not: A finding on a failed append or a truncated body alone. A remark on speed with no word on holding the whole body in memory.
+    - name: append-failure-ignored
+      class: in-diff
+      says: A failed String append (`out += chunk`, out of memory) is not checked. The chunk is dropped silently and a truncated body goes out with a 200.
+      not: The stall path (the serializer writing 0 bytes), which the change answers with a 500. The heap cost alone.
+    - name: failure-paths-untested
+      class: weak-test
+      says: The failure paths have no test. The stall (serializeToString returning false), the route's 500 branch or a failed append is never exercised; the new test covers the success path only.
+      not: Test gaps on something else (number formats, the exact JSON, other routes).
+
+dc-252-test-run-by-no-workflow:
+  change: Names the Constitution rule in each error of tools/check_versions.py and adds tools/test_check_versions.py, tests on fixture trees.
+  points:
+    - name: test-run-by-no-workflow
+      class: out-of-diff
+      says: Nothing runs the new test file tools/test_check_versions.py. No CI workflow does (version-check.yml runs the checker only), nor the project's test script, so it runs only when someone calls it by hand.
+      not: Gaps in what the test covers. A finding that the checker itself is not run, or on what the checker misses.
+
+dc-258-half-the-issue-unmeasured:
+  change: Adds the HAL macro DOMOTICS_FLASH_STR and moves RemoteConsole's HELP_TEXT to flash (PROGMEM). The pull request says it closes the issue, which asks to find first why literals land in RAM, to move the System entity table and JSON formats too, and to measure the RAM on nodemcuv2 before and after.
+  points:
+    - name: cause-not-traced
+      class: not-delivered
+      says: The issue asks first to find why a literal lands in DRAM. That cause was not traced; a literal was moved without it.
+      not: A finding that only names a scenario as unproven. The other two things left out (the System table, the RAM measure).
+    - name: system-table-not-moved
+      class: not-delivered
+      says: The System entity table and its two JSON formats, which the issue asks to move, are not moved. Only HELP_TEXT is.
+      not: A finding that only names a scenario as unproven. The other two things left out (the cause, the RAM measure).
+    - name: ram-not-measured
+      class: not-delivered
+      says: The RAM was not measured on the ESP8266 board (nodemcuv2) before and after, as the issue's Verification asks. No figure, and no build, shows the RAM is lower.
+      not: A finding that the macro or the help text has no unit test, with no word on the RAM measure. A finding that names a scenario and does not say the RAM was not measured or the board not built.
+
+dc-260-shutdown-drain-polls-eight:
+  change: Makes ComponentRegistry::shutdownAll() call eventBus.poll() after each component's shutdown(), so that what Home Assistant publishes while shutting down (offline, one withdrawal per entity) is delivered before the Core stops.
+  points:
+    - name: bounded-poll-drops-events
+      class: out-of-diff
+      says: The drain added calls eventBus.poll() once, and one poll dispatches at most 8 events (maxPerPoll = 8). On a device with more entities the remaining withdrawals are still lost.
+      not: A finding that the drain has no test. Other shutdown defects (MQTT's own message queue, components never shut down, the link down).
+    - name: drain-untested
+      class: weak-test
+      says: No test shows that the shutdown drain delivers what components publish while shutting down; none with more than 8 entities, and the issue's scenarios are unproven.
+      not: The 8-event cap itself, with no word on a missing test.
+
+dc-262-listener-never-told:
+  change: Makes MQTT's connected and disconnected events sticky (emitLinkState clears the opposite sticky event), counts link losses, stops uptime during an outage, and announces the loss in resetReconnect(). It closes an issue about subscribers, Home Assistant among them, that never learn of a disconnect lost to a full event queue.
+  points:
+    - name: listening-subscriber-never-told
+      class: not-delivered
+      says: A subscriber already listening when the disconnect event was lost to a full queue is still never told. The sticky replay reaches late subscribers only, so the issue's Home Assistant case stays broken.
+      not: A finding that the test passes on the late subscriber's path, with no word that the behaviour itself is missing. Other sticky defects (a stale connected event replayed, clearSticky).
+    - name: test-passes-on-either-path
+      class: weak-test
+      says: The test of the loss passes on the late subscriber's replay alone (`bus.disconnects + lateDisconnects >= 1`). It does not prove that a subscriber already listening is told.
+      not: A finding that a scenario has no test at all, with no word that the existing test passes on the wrong path.
+    - name: sticky-replay-unsaid
+      class: in-diff
+      says: Sticky connected and disconnected events change what every subscriber with replay receives, and the pull request does not say so.
+      not: A defect of the sticky replay itself. A finding that never says the change of behaviour is unannounced.
+
+dc-264-check-not-wired-into-ci:
+  change: Adds tools/check_stack_usage.py, which fails on a stack frame over a limit in the compiler's .su files, and its test. The pull request says it closes the issue, which asks that the esp8266dev build in CI fails on such a frame.
+  points:
+    - name: check-not-wired-into-ci
+      class: not-delivered
+      says: The check is not wired into CI. Nothing builds esp8266dev with -fstack-usage nor runs the script, so the need is unmet and "Closes" is early.
+      not: Defects of the script's parsing. A finding that the script's own test is thin.
+    - name: cpp-scope-names-misparsed
+      class: in-diff
+      says: The parser's rsplit(':', 3) splits a C++ name holding `::` (a qualified name such as Class::method) on its scope colons, so the file and the function come out wrong.
+      not: Other parsing gaps (malformed lines, Windows paths, missing fields) with no word on names holding `::`.
+
+dc-273-rename-breaks-main:
+  change: Renames IComponent's protected __dc_* members to dc_*, with their callers, a CHANGELOG breaking note and a test of reserved names on the Core headers. The base branch was merged into the change.
+  points:
+    - name: rename-breaks-new-callers
+      class: out-of-diff
+      says: The rename breaks code the change does not update. MQTT_impl.h still uses the old __dc_* names (__dc_eventBus), so the build no longer compiles.
+      not: Old names left in docs or the roadmap. A general "users outside may break" naming no caller in the repository. A finding that the test covers Core headers only, with no word that a real use of the old name remains.
+    - name: no-breaking-marker
+      class: not-delivered
+      out: ambiguous, waived by the owner
+      says: The change breaks an API, yet its title or commit carries no `!` and no BREAKING CHANGE footer for the release tool, which the issue's Validation asks.
+      not: A finding on the CHANGELOG note's wording, or on the version number, with no word on the missing marker.
+
+dc-274-event-one-byte-smaller:
+  change: Packs MQTTPublishEvent's qos and retain into one byte, so the event goes from 830 to 829 bytes, with a test that sizeof is below 830. The issue's need is an event queue that holds more events or uses less memory.
+  points:
+    - name: saving-too-small-to-matter
+      class: out-of-diff
+      says: One byte saved gains nothing. The queue's budget is built on a reference size that stays at 830 (kReference), or the allocator rounds the size up, so the queue holds no more events and uses no less memory. The need is unmet though the test's letter passes.
+      not: A finding that the test checks sizeof only. A remark on the cost of bit-fields with no word that the saving is too small to meet the need.
+    - name: qos-bitfield-truncates
+      class: in-diff
+      says: The 2-bit field `qos` silently truncates or wraps a value above 3.
+      not: A finding on the retain bit, or on the missing read-back test alone.
+    - name: no-readback-test
+      class: weak-test
+      says: No test checks that qos and retain read back right after packing. The only test checks sizeof.
+      not: A finding that the size saved is too small. The truncation of qos with no word on a missing test.
+
+dc-278-quick-controls-blank-gap:
+  change: Draws the WebUI's QuickControls location, a quickControlsGrid area above the dashboard grid, filled by a new renderQuickControls(), with a test.
+  points:
+    - name: empty-area-leaves-a-gap
+      class: out-of-diff
+      says: When no control is placed, the empty QuickControls area still takes room. Classed dashboard-grid, it adds a blank gap (that grid's top margin, 24 px) above the dashboard.
+      not: Docs or comments that still say QuickControls is not drawn. A finding that the class quick-controls-grid has no CSS rule, with no word on a visible gap or an empty area left in place. Points on the tests.
+    - name: test-greps-source-text
+      class: weak-test
+      says: The test only searches the text of app.js for the word QuickControls. It does not prove that a card is drawn.
+      not: Other gaps in tests with no word that the test reads the source's text.
+
+dc-296-atomic-changes-nothing:
+  change: Turns WebSocketHandler's `volatile int pollingClients` into std::atomic<int>, with a test that reads the declaration's line and checks it does not hold "volatile int". The issue is about a counter that could lose counts in a race.
+  points:
+    - name: test-proves-no-atomicity
+      class: weak-test
+      says: The test only checks that the declaration's text does not hold `volatile int`. Any other type passes, atomic or not; it proves no behaviour and no atomicity.
+      not: A finding that the change itself is useless, with no word on the test.
+    - name: fix-changes-nothing
+      class: in-diff
+      says: The fix changes no behaviour. The counter is only ever stored 0 or 1, never incremented nor read-then-written, so no count was lost before it.
+      not: A finding on the test alone. Other races the change leaves.
+
+tg-15-rotation-not-pivoted:
+  change: Makes a pinch-zoom pivot on the image's current centre rather than the view's, so a zoom after a drag keeps the point under the fingers. The issue's Validation has a third scenario, a rotation around the point under the fingers keeps that point in place.
+  points:
+    - name: scenario-left-out
+      class: not-delivered
+      says: The Validation's rotation scenario is not delivered. A rotation is still just added to manualRotation, with no pivot on the point under the fingers. A finding that only says no test covers the rotation states a part of it.
+      not: Points on the zoom.
+    - name: scenario-without-test
+      class: weak-test
+      out: duplicate of scenario-left-out
+      says: No test covers the rotation scenario.
+      not: Gaps in the zoom tests.
+
+tg-20-release-workflow-missing:
+  change: Makes app/build.gradle.kts read the release version from an environment variable, sign with the project key only when the four signing variables are set, and refuse a tagged release build without them, with ReleaseSigningTest. The pull request says it closes the issue, which asks for a release workflow on `v*` tags.
+  points:
+    - name: release-workflow-missing
+      class: not-delivered
+      says: The release workflow the issue asks for (.github/workflows/release.yml on `v*` tags) is not in the change, so its release scenarios are not delivered while the pull request closes the issue.
+      not: Defects of the Gradle script. A finding that a scenario has no test, with no word that the workflow is missing.
+    - name: tests-grep-the-script
+      class: weak-test
+      says: ReleaseSigningTest only reads the build script as text (string matches). It runs no build and proves no behaviour.
+      not: A finding that the workflow is missing. A missing test named with no word that the existing ones match text.
+
+kept-dc-247-truncated-body-sent-200:
+  change: Drops WebUI's duplicated serializeContext() and builds the /api/ui/context body with the StreamingContextSerializer in a loop, then sends it with a 200.
+  points:
+    - name: truncated-json-sent-as-success
+      class: kept
+      says: If the serializer stalls (writes 0 bytes) before it is complete, the loop breaks and the partial body is sent with status 200, truncated JSON and no error.
+      not: The heap cost of the whole body. A missing test with no word that a partial body is sent as a success.
+
+kept-dc-262-sticky-connected-stale:
+  change: Makes MQTT's connected and disconnected events sticky, counts link losses and stops uptime during an outage.
+  points:
+    - name: stale-sticky-connected-replayed
+      class: kept
+      says: The sticky connected event is never cleared when the link drops, so a late subscriber with replay is handed "connected" while the link is down.
+      not: A subscriber already listening that is never told of a loss. Points on the tests.
+
+kept-wl-2110-review-failure-passes:
+  change: Makes `workline docs` report a failed git listing as git-failed instead of a pass.
+  points:
+    - name: review-failure-reported-as-pass
+      class: kept
+      says: When review.Docs returns an error, judgeDocs prints it and returns false with a nil error, so docsCmd passes (exit 0, `--json` says pass). A failed review is reported as a pass.
+      not: Other failures of the command. A missing test with no word that the failure passes.
+
+kept-wl-2179-unread-policy-kept-empty:
+  change: Makes `workline doctor` read each Actions event policy by its id, since the list carries no file targets.
+  points:
+    - name: failed-read-kept-as-empty-policy
+      class: kept
+      says: When the read by id fails (an error, bad JSON, or no conditions and no rules), the bare list entry is kept and judged as allowing nothing, so the false event-blocked warning comes back, with no note that the policy was not read.
+      not: Other defects of the doctor's checks. A missing test with no word on a failed read.
+
+kept-wl-2201-build-txt-not-shipped:
+  change: Types a task's commit `fix` when it changes shipped code and `chore` otherwise.
+  points:
+    - name: build-txt-files-not-shipped
+      class: kept
+      says: Any .txt file is taken for a page of text, so a task that changes only a build file such as CMakeLists.txt or requirements.txt is typed chore and hidden from the release.
+      not: Other extensions wrongly classed, with no word on .txt build files.
+
+clean-dc-251-ha-command-path:
+  change: Home Assistant refuses a command with an empty entity id, and echoes a command as state with the entity already found, with a native test.
+
+clean-dc-272-wifi-shadowing:
+  change: Renames WifiComponent's constructor parameters so they no longer shadow the ssid and password members, and adds a missing include, with a native test.
+
+clean-tg-11-unreadable-onboarding:
+  change: The onboarding repository turns an IOException on reading its DataStore into empty preferences, so an unreadable file gives the defaults instead of a crash, with Kotlin tests.
+
+clean-wl-2167-squash-only-known-values:
+  change: GitHub's squash-only detection holds only for a squash message of PR_BODY or BLANK, so a missing or empty setting keeps every commit checked, with two tests.

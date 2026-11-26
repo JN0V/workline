@@ -60,7 +60,7 @@ Real teams add the roles below. "Here" is what workline does with each.
 | Legal, licences | licence compliance | gates (go-licenses, licensee, Trivy's licence scan) |
 | Platform, IaC | infrastructure code | gates (Checkov, Trivy config, hadolint) |
 | Quality auditor | re-checks that the work was done as claimed | **auditor**, widened to every role |
-| Industrial / process engineer | studies the line, proposes changes | **process engineer** (ADR-0019, #89) |
+| Industrial / process engineer | studies the line, proposes changes | **process engineer** (ADR-0019, #89); its method: [diagnosing-a-role.md](diagnosing-a-role.md) |
 
 ## Auditor and process engineer: two roles
 

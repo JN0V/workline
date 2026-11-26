@@ -1,0 +1,18 @@
+case: reviewer/intent-asked-on-a-part-of-body
+about: "A merge request part of an issue, its body opening on `Part of #4` as the developer's does when it leaves a part to a person, is for that issue: the intent lens is asked against #4, its title read apart from its body. Only a text opening on it is read so."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  config:
+    routing: {events: {merge-request: [reviewer]}}
+  forge:
+    issues:
+      - {id: 4, title: The mean over the count, body: "## Need\n\nThe mean divides by the count.\n\n## Scope\n\ncalc/calc.go\n", labels: [], comments: []}
+    merge-requests:
+      - {id: 5, branch: workline/developer/4, title: "fix: average over the count", body: "Part of #4\n\n## Left for a person\n\n- `.github/workflows/ci.yml`: in the issue's Scope, only a person changes it.\n", labels: [], comments: []}
+run: {route: merge-request, input: {range: main..HEAD, lenses: intent}, target: {merge-request: 5}, ai: "fake:review-nothing", no-apply: true}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-intent}]
+  run-files:
+    in/parts/1-intent/task.md: {contains: "The mean divides by the count."}

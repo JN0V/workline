@@ -278,7 +278,7 @@ func answerPre(runDir, repo string, s Settings) int {
 	} else if err != nil {
 		return fail(err)
 	}
-	issue := issueOf(mr.Branch)
+	issue := testmark.BranchIssue(mr.Branch)
 	if issue == 0 {
 		return final(runDir, verdict.Verdict{Status: verdict.Block, Summary: "not a tester's branch",
 			Findings: []verdict.Finding{{Rule: "not-a-testers-branch", Where: where,

@@ -1,6 +1,6 @@
 ---
-sources: [tests/evaluation/replay_test.go, tests/evaluation/free_reviewer_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt]
-checked: af68b1bb5
+sources: [tests/evaluation/replay_test.go, tests/evaluation/free_reviewer_test.go, tests/evaluation/review_test.go#matchDefects, tests/evaluation/summary/main.go#printSets, tests/evaluation/eval_test.go#TestReplay, tests/evaluation/eval_test.go#onDemand, tests/evaluation/eval_test.go#cloneAt, tests/evaluation/meaning/main.go, tests/evaluation/findings_test.go, .github/workflows/eval-replay.yml]
+checked: 74faf6584
 ---
 # Replay set — real misses, played again
 
@@ -27,7 +27,7 @@ so a change to a role is measured on it before and after.
 | Reviewer misses | `reviewer/<repo>-<n>-*` | recall: points found; unplanted Importants as `extra`, not failed |
 | Reviewer kept catches | `reviewer/kept-*` | a true finding caught then, then fixed: lost cases |
 | Reviewer clean | `reviewer/clean-*` | merged, nobody sent it back: false Importants fail |
-| Documentalist | `documentalist/*` | wrong claims fixed; one judge check on false edits |
+| Documentalist | `documentalist/*` | wrong claims fixed, a true page vouched for; one judge check on false edits |
 | Product owner | `product-owner/*` | the kind the owner corrected it to |
 | Developer | `developer/*` | the missing work done; no "Closes" over work left out |
 
@@ -47,6 +47,51 @@ Misses alone would reward a role that says more: a change is kept only
 when it raises recall without losing a kept catch or adding a false
 Important on a clean change.
 
+## Scored by meaning
+
+The score above is by place: any Important quoted on a planted line earns
+the point, and the same finding quoted elsewhere earns nothing. It rewards
+an arm that says more, and it cannot compare a reviewer that quotes the
+issue with one that quotes the code. The scorer in
+`tests/evaluation/meaning` asks what each finding says.
+
+- **The points**: `points.yaml` states each planted defect as the owner
+  sent it back, what does not count as saying it, and its kind: out of
+  the diff, weak or missing test, issue not delivered, in-diff code. A
+  point marked `out` (ambiguous, duplicate) is judged and left out of
+  the score.
+- **The judge is blind**: it gets a case's points and every finding of
+  one run, each with its place, title and body. Never the arm, its
+  model, the lens, the severity, nor what the engine's judge said.
+- **Per point**: which findings say it, which say a part of it, and the
+  words quoted. A run earns the point when an Important shown says it.
+  Said only by an Important the engine's judge refused, or only by a
+  nit, is counted apart.
+- **Clean changes**: the judge reads the repository at the change's head
+  and says of each Important shown: true defect, nit or false alarm.
+- **Twice**: each judgement is asked twice, and a third time when the
+  two differ; the middle verdict holds. Judgements are kept, so scoring
+  again asks only what is new.
+- **One judge for every arm**: `claude:opus@medium` unless `-judge`
+  names another, `claude:<model>@<effort>` or `cmd:<any command>`.
+
+```sh
+WORKLINE_EVAL_FINDINGS=runs.jsonl WORKLINE_EVAL_ARM=before WORKLINE_EVAL=claude \
+  go test -count=3 -timeout 120m -run 'TestReplay/reviewer/' ./tests/evaluation/
+go run ./tests/evaluation/meaning -findings runs.jsonl -out scores/
+```
+
+- `WORKLINE_EVAL_FINDINGS` keeps each run's findings whole, a JSON line
+  a case run, under the arm `WORKLINE_EVAL_ARM` names. Any reviewer can
+  write the same lines: `arm`, `case`, `tokens_in`, `tokens_out`, and
+  `findings` (`place`, `severity`, `refused`, `title`, `body`).
+- `scores/scores.tsv`: a row per point and run, with both judgements.
+- `scores/summary.md`: per arm, the points said a run with their mean
+  and spread, by kind of point, the Importants on no point, the false
+  alarms on clean changes, the tokens.
+- It costs about 4k tokens a judgement on a miss, about 50k on a clean
+  change with an Important shown.
+
 ## Run one role's set
 
 ```sh
@@ -65,6 +110,10 @@ go run ./tests/evaluation/summary     # per case and per set, a workline commit 
   scoring them; a fixture's runs stay pooled.
 - Each run appends a line to `results.tsv`, with its tokens.
 - `WORKLINE_JUDGE` is needed for the documentalist's judge check.
+- `WORKLINE_EVAL_KEEP=<folder>` keeps what each run left, a folder a
+  case and run: the run folders (tasks, answers, calls) and the change
+  the role made (`change.diff`). The repository goes with the test; why
+  a point was lost is read there.
 - `given.needs` names what a case needs on the machine: PlatformIO
   (`pio`) for DomoticsCore's developer cases, `$ANDROID_HOME` and
   `java` for TraceGlass's. Missing, the case is skipped ("no
@@ -95,6 +144,27 @@ WORKLINE_FREE_REVIEWER=claude:sonnet@medium WORKLINE_EVAL_RESULTS=free.tsv \
 - The clone is sealed before the call: the branches and tags after the
   change, the reflogs and the mirror it borrowed objects from are gone,
   so the agent cannot read the fix (`TestSealClone`).
+
+## On GitHub's runners
+
+[eval-replay.yml](../../../.github/workflows/eval-replay.yml), by hand,
+runs a set off a person's machine, each run its own job:
+
+```sh
+gh workflow run eval-replay.yml -f ref=<branch|refs/pull/<n>/head|sha> \
+  -f run='TestReplay/developer/' -f eval=claude -f judge=claude:opus -f runs=3
+```
+
+- The toolchains are there: PlatformIO, a JDK 21, the runner's Android SDK.
+- `env` takes more `WORKLINE_*` variables, `KEY=VALUE` separated by
+  spaces or `;`.
+- `cases` is `go test -parallel`: 2 cases at once in a job by default.
+- Each job's artifact holds its `results.tsv` lines and its log; the
+  runs kept too when the branch reads `WORKLINE_EVAL_KEEP`,
+  `WORKLINE_EVAL_FINDINGS` or `WORKLINE_FREE_TRANSCRIPTS`.
+  `eval-replay-rows` holds every job's lines, to append to `results.tsv`.
+- The ref's code runs with the agent's login: dispatch only a ref whose
+  code you trust, never a fork's pull request head.
 
 ## Cost
 

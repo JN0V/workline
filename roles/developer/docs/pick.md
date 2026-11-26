@@ -25,7 +25,8 @@ that is:
   developer never unassigns anyone.
 - **Not taken**: no claim label on it.
 - **No open merge request closing it**: `Closes #n`, `Fixes #n` in its
-  title or body. `Refs #n`, as the tester's Draft says, closes nothing.
+  title or body, or `Part of #n`, as the developer's says when it
+  leaves a part. `Refs #n`, as the tester's Draft says, closes nothing.
 - **Clear of the issues the developer holds with code**: no path its
   Scope names ([read as the bounds read it](bounds.md): in backticks,
   or in plain words the repository holds) under or over one theirs
@@ -115,7 +116,7 @@ on any event, with or without an agent:
 
 - **When**: `claim-hours` (24 by default) since the forge says the label
   was put on (GitHub's issue timeline, GitLab's label events), and no
-  open pull request says `Closes #n`.
+  open pull request says `Closes #n` or `Part of #n`.
 - **Sooner, a new body**: a claim whose agent wrote no code is let go
   at once when the issue's body changed since the claim read it
   ([#1084](https://github.com/JN0V/workline/issues/1084)).
@@ -123,7 +124,9 @@ on any event, with or without an agent:
   the developer on such a claim, once, past `claim-hours` or on its new
   body. Until then it says the day the claim is let go.
 - **No code, the same body**: past `claim-hours`, the line does not wake
-  the developer. Its agent would get the same input again. The line
+  the developer. The same when its pull request is gone on that body:
+  merged `Part of #n`, a part left for a person, or closed by a person.
+  One workline closed (main changed its lines) is built again. Its agent would get the same input again. The line
   takes the claim's label off and blocks the issue for a person, the
   reason written (`no-code-spent`,
   [#1120](https://github.com/JN0V/workline/issues/1120)).

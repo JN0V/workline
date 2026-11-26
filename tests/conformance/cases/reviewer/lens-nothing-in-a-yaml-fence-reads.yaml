@@ -1,0 +1,16 @@
+case: reviewer/lens-nothing-in-a-yaml-fence-reads
+about: "A lens answering nothing found inside a yaml code fence, as the real tests lens answered on a workflow-only pull request (#2281), reads as nothing found: never asked again, never failed, the change reviewed whole."
+given:
+  repo: reviewed
+  setup:
+    - |
+      mkdir -p .github/workflows
+      printf 'on: pull_request\njobs:\n  line:\n    runs-on: ubuntu-latest\n    env: {WORKLINE_VERSION: v0.91.0}\n    steps:\n      - run: echo "${{ github.event.pull_request.head.sha }}"\n' > .github/workflows/line.yml
+      git add .github && git commit -qm 'ci: pin the line to v0.91.0'
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: tests}, ai: "cmd:sh $FIXTURES/agents/replay.sh dc317-tests-lens-answer.txt"}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: part-asked-again}, {rule: lens-failed}, {rule: part-unanswered}]
+  run-files:
+    out/review.json: {contains: '"complete": true'}

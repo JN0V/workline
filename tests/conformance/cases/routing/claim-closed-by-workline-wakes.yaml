@@ -1,0 +1,34 @@
+case: routing/claim-closed-by-workline-wakes
+about: >
+  The developer's pull request was closed by workline itself (gardening:
+  main changed the same lines), its branch kept for the next run to
+  propose again: never a person's say. Past claim-hours, the claim is
+  not spent: the line wakes the developer, whose run lets it go, the
+  issue back in Ready to be built again. Merged part of it, or closed by
+  a person, it blocks (claim-part-of-merged-blocks).
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:developing"]
+        labeled: {"workline:ready": "2025-12-31T09:00:00Z", "workline:developing": "2026-01-01T09:00:00Z"}
+        body: "## Need\n\nI want to multiply.\n"
+        comments: ["**The developer** takes this issue.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"body\":\"8a828a06be19\"} -->\n<!-- workline:sticky=developer/claim -->"]
+    merge-requests:
+      - {id: 5, branch: workline/developer/3, base: main, closed: true, title: "feat: multiply", body: "Closes #3", labels: [], comments: ["Closed by workline: main changed the same lines since.\n\n<!-- workline:closed -->"]}
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: state-wakes, level: info, where: "#3", message: "has no pull request past claim-hours (24): wakes the developer to let it go"}
+  no-findings: [{rule: no-code-spent}]
+  forge:
+    issues:
+      - id: 3
+        labels: ["workline:ready"]
+        comment-contains: ["**The developer** lets this issue go."]
