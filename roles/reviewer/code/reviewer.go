@@ -1001,23 +1001,23 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 			return "", err
 		}
 		tree = agent.ReadTree(runDir)
-		// Told what to read before it answers, and that its last message
-		// is its whole answer: told less, it read little and answered `[]`
-		// on a clean change, its scenarios unanswered (the bench of docs/adr/0074).
-		reading := "\n" + readingHeading + "\n\nYour working directory is the project as it reads at the change's head, to read: Read, Glob and Grep, no shell, nothing you write there kept. Before you answer:\n\n" +
-			"1. read each file the change touches, whole;\n2. read the code the changed lines call, and the code calling them;\n3. read the tests that should guard them.\n\n" +
-			"Ask what this change breaks, here or elsewhere. A defect you find there is reported as any other, its cause quoted from the file as it reads.\n\n" +
-			"Then answer: your last message is your whole answer, as the Answer says — every finding of every lens, and each scenario the intent lens answers, one by one. Nothing you read counts unless it is written there.\n"
+		// After the change, to start from the diff: told to read each file
+		// whole, it read slices, a turn each, then answered one lens of six,
+		// a scenario left out or its YAML unread (the bench of docs/adr/0074).
+		reading := "\n" + readingHeading + "\n\nYour working directory is the project as it reads at the change's head: Read, Glob and Grep, no shell, nothing you write there kept. Start from the change above, and read in the project only what it does not show:\n\n" +
+			"- the function around a changed line, where the diff cuts it;\n- what the changed lines call, and what calls, reads or tests what they change: Grep each name the change adds, removes or gives a new meaning;\n- the tests that should guard the changed behaviour, when the diff does not hold them.\n\n" +
+			"Each message reads again all the messages before it: your first message holds every Grep and Read the change lets you name, all at once; a second one, only what the first showed missing. A defect you find there is reported as any other, its cause quoted from the file as it reads.\n"
 		if s.MaxTurns > 0 {
 			reading += fmt.Sprintf("\n- %d turns at most: keep the last one for your answer.\n", s.MaxTurns)
 		}
+		reading += "\nThen take the lenses one at a time, each against all you read, and ask what the change breaks, here or elsewhere: a lens not asked finds nothing. Your last message is your whole answer, as the Answer says, and nothing else: every finding of every lens, and for each scenario of the issue's Validation one `scenario` or one finding, none left out. Nothing you read counts unless it is written there. Write each `why`, `fix`, `seen` and `quote` as a block scalar, `|` then the text on the lines below: an answer whose YAML does not read is lost whole.\n"
 		if past {
 			if err := os.WriteFile(filepath.Join(tree, changeFile), []byte(diff), 0o644); err != nil {
 				return "", err
 			}
 			change = fmt.Sprintf("## The change\n\n%d lines of diff, too many to give here: read it whole in `%s`, in your working directory, the engine's file, not the project's. The files it changes: %s.\n", n, changeFile, strings.Join(paths(files), ", "))
 		}
-		change = reading + "\n" + change
+		change += reading
 	} else {
 		st.Advisories = append(st.Advisories, verdict.Finding{Rule: verdict.CutRule, Level: "warn",
 			Message: "the reviewer's agent does not read the repository itself (claude does): the lenses read the change's diff alone, not the files it changes whole, the code around them nor their tests"})

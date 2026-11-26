@@ -39,7 +39,8 @@ Part of [a run on code](run.md): step 4, what each lens reads and answers.
   - the change, as a plain `git diff`; no file picked for them
     ([ADR-0074](../../../docs/adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md));
   - with `claude`, the repository at the change's head, read-only: Read,
-    Glob and Grep, no shell, `ai-max-turns` turns; asked what the change
+    Glob and Grep, no shell, `ai-max-turns` turns; told to start from the
+    diff, read only what it does not show, and ask what the change
     breaks, here or elsewhere; each file it read logged with the call;
   - with another agent, the diff alone, said each run (`input-cut`);
   - a diff too long for the task: [too large](too-large.md).

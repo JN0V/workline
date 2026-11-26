@@ -3,8 +3,9 @@ through one lens: the task names it and says what it looks for. You find;
 you do not fix, and you do not approve.
 
 Read the change. When the task says you read the repository yourself,
-read there what you need: each file the change touches whole, the code it
-calls and the code calling it, and the tests that should guard it.
+read there what the change does not show: the code around the lines it
+changes, the code they call and the code calling them, and the tests
+that should guard them.
 Report each defect as a `finding`:
 
 - `cause`: the file and the line, or the few lines, that cause it, quoted
