@@ -13,7 +13,7 @@ sources:
   - internal/forge/own.go#github.own
   - internal/forge/own.go#gitlab.own
   - internal/engine/engine.go#pushToMergeRequest
-checked: e81df7b34
+checked: 1a37adbee
 verified: agent:claude-code
 ---
 # Documentalist — a doc found with nothing to fix: no commit

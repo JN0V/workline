@@ -14,7 +14,7 @@ sources:
   - roles/documentalist/code/documentalist.go#preRun.rewriteWaits
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
   - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
-checked: e81df7b34
+checked: 1a37adbee
 verified: agent:claude-code
 ---
 # Documentalist — gardening's merge requests
@@ -45,7 +45,8 @@ there, not committed
   [read in parts](parts.md) instead
   ([#462](https://github.com/JN0V/workline/issues/462)).
 - **The cost**: one listing of the merge requests merged since the oldest
-  such commit, and one read of the comments of each one a doc points to
+  of each doc's last three such commits, and one read of the comments of
+  each one a doc points to
   ([ADR-0010, amended](../../../docs/adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md#amendment-2026-10-17-the-commit-a-merge-request-became-stands-for-its-record)).
 - **Never a pass by guess**: a listing or a comment unread is said
   (`record-unread`), and the docs are judged again; so is a comment
