@@ -34,7 +34,7 @@ func TestNoteInertOnTheIssueAndTheSameInLeftOut(t *testing.T) {
 	if devmark.InertText(note) != note {
 		t.Errorf("inert twice changes the text: %q -> %q", note, devmark.InertText(note))
 	}
-	if got := body(devmark.Act{Issue: 7}, true, note); !strings.Contains(got, "- "+note+"\n") || !strings.HasPrefix(got, "Part of #7\n") {
+	if got := body(devmark.Act{Issue: 7}, true, note); !strings.Contains(got, note+"\n") || !strings.HasPrefix(got, "Part of #7\n") {
 		t.Errorf("Left for a person does not hold the issue's text: %q", got)
 	}
 }

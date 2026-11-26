@@ -56,7 +56,7 @@ func TestBodyPartOfWhenAPartIsLeft(t *testing.T) {
 			t.Errorf("%s: %s", name, b)
 		}
 	}
-	if b := body(devmark.Act{Issue: 3, Proof: green}, true, "`.github/workflows`: in the Scope"); !strings.HasPrefix(b, "Part of #3") || !strings.Contains(b, "- `.github/workflows`: in the Scope\n") {
+	if b := body(devmark.Act{Issue: 3, Proof: green}, true, "- `.github/workflows`: in the Scope"); !strings.HasPrefix(b, "Part of #3") || !strings.Contains(b, "- `.github/workflows`: in the Scope\n") {
 		t.Errorf("scope left: %s", b)
 	}
 	if b := body(devmark.Act{Issue: 3, Proof: green, Unproven: []string{"- **x**: by eye"}}, true); !strings.HasPrefix(b, "Closes #3") || strings.Contains(b, "proven on") {

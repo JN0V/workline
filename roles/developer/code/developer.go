@@ -340,7 +340,7 @@ func pick(issues []forge.Issue, mrs []forge.MergeRequest, s Settings, only int, 
 	}
 	closer, tested := map[int]int{}, map[int]bool{}
 	for _, m := range mrs {
-		if n := testerIssue(m.Branch); n != 0 {
+		if n := testmark.BranchIssue(m.Branch); n != 0 {
 			tested[n] = true
 		}
 		for _, n := range forge.For(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
@@ -956,7 +956,7 @@ func Post(runDir, repo string) int {
 		sub := subjects(a.Issue, string(own), title, b.Kind, b.Scope, union(a.Code, draftCode(repo, a.At, on, b)), cs)
 		left := scopeLeft(repo, b, a.Refused)
 		if note := noteOf(kept[len(claim):], a.Issue); note != "" {
-			left = append(left, "Its agent's note, as posted on the issue:\n\n"+devmark.InertText(note)+"\n")
+			left = append(left, "Its agent's note, as posted on the issue:\n\n"+devmark.InertText(note))
 		}
 		mr := mergeRequest(a, title, sub, left...)
 		if sub.Refused != "" {
@@ -992,7 +992,7 @@ func scopeLeft(repo string, b Bounds, refused []devmark.Refusal) (left []string)
 	c := newChecker(repo, b)
 	for _, p := range b.Scope {
 		if r := c.rule(p); (r == "gate-file" || r == "steering-file") && !slices.ContainsFunc(refused, func(x devmark.Refusal) bool { return under(x.File, []string{p}) }) {
-			left = append(left, fmt.Sprintf("`%s`: in the issue's %s, only a person changes it.", p, scopeName))
+			left = append(left, fmt.Sprintf("- `%s`: in the issue's %s, only a person changes it.", p, scopeName))
 		}
 	}
 	return left
@@ -1198,7 +1198,7 @@ func proofsOf(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, t
 	}
 	tested := map[int]bool{}
 	for _, m := range mrs {
-		tested[testerIssue(m.Branch)] = true
+		tested[testmark.BranchIssue(m.Branch)] = true
 	}
 	for _, is := range issues {
 		if only != 0 && is.ID != only || !slices.Contains(is.Labels, backlog.LabelReady) || tested[is.ID] || len(work.Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)) == 0 {

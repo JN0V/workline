@@ -141,7 +141,7 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 		return b, err
 	}
 	for _, mr := range mrs {
-		n := testerIssue(mr.Branch)
+		n := testmark.BranchIssue(mr.Branch)
 		if n == 0 {
 			continue
 		}
@@ -172,15 +172,6 @@ func readBounds(f forge.Forge, bl forge.Backlog, repo string, is forge.Issue) (B
 		}
 	}
 	return b, nil
-}
-
-// testerIssue is the issue a tester's branch is for, 0 when not one.
-func testerIssue(branch string) int {
-	var n int
-	if _, err := fmt.Sscanf(strings.TrimPrefix(branch, testmark.TestsBranch), "%d", &n); err != nil || !strings.HasPrefix(branch, testmark.TestsBranch) {
-		return 0
-	}
-	return n
 }
 
 // ciFiles are the files and folders a CI runs from: GitHub's workflows and

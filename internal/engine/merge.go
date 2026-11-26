@@ -8,13 +8,13 @@ import (
 	"os/exec"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/steer"
@@ -718,12 +718,8 @@ func ClosedIssues(m forge.MergeRequest) []int {
 	if ids := forge.For("", m.Title, m.Body); len(ids) > 0 {
 		return ids
 	}
-	for _, prefix := range []string{"workline/developer/", "workline/tester/issue-"} {
-		if rest, ok := strings.CutPrefix(m.Branch, prefix); ok {
-			if n, err := strconv.Atoi(rest); err == nil && n > 0 {
-				return []int{n}
-			}
-		}
+	if n := max(devmark.BranchIssue(m.Branch), testmark.BranchIssue(m.Branch)); n > 0 {
+		return []int{n}
 	}
 	return nil
 }

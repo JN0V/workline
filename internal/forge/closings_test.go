@@ -139,6 +139,9 @@ func TestForReadsPartOf(t *testing.T) {
 	if got := Closes("Part of #4"); len(got) != 0 {
 		t.Errorf("Part of read as closing: %v", got)
 	}
+	if got := For("", "Closes #5\n\n~~~\nPart of #4\n~~~", "the agent's words: part of #6"); len(got) != 1 || got[0] != 5 {
+		t.Errorf("Part of read below a text's start: %v", got)
+	}
 	if got := For("", "Refs #4"); len(got) != 0 {
 		t.Errorf("Refs read as for it: %v", got)
 	}

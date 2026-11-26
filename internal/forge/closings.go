@@ -15,8 +15,9 @@ var closing = regexp.MustCompile(`(?i)\b(?:clos(?:e|es|ed|ing)|fix(?:es|ed|ing)?
 // githubClosing is the closing words of GitHub: `implement` is GitLab's.
 var githubClosing = regexp.MustCompile(`(?i)\b(?:clos(?:e|es|ed|ing)|fix(?:es|ed|ing)?|resolv(?:e|es|ed|ing)):?\s+#(\d+)\b`)
 
-// partOf is a change toward an issue that closes it not: `Part of #4`.
-var partOf = regexp.MustCompile(`(?i)\bpart of:?\s+#(\d+)\b`)
+// partOf is a change toward an issue that closes it not: `Part of #4`
+// opening a text, never words quoted below it.
+var partOf = regexp.MustCompile(`(?i)\A\s*part of:?\s+#(\d+)\b`)
 
 // Closes are the issues the texts say the change closes, once each, in order.
 func Closes(texts ...string) []int { return ClosesOn("", texts...) }
@@ -42,7 +43,15 @@ func ClosesOn(kind string, texts ...string) []int {
 // For are the issues a change is for, as the named forge reads its texts:
 // those it closes, then those it is part of, which no merge closes.
 func For(kind string, texts ...string) []int {
-	return ClosesOn(kind, append(texts[:len(texts):len(texts)], partOf.ReplaceAllString(strings.Join(texts, "\n"), "closes #$1"))...)
+	ids := ClosesOn(kind, texts...)
+	for _, t := range texts {
+		if m := partOf.FindStringSubmatch(t); m != nil {
+			if n, err := strconv.Atoi(m[1]); err == nil && !slices.Contains(ids, n) {
+				ids = append(ids, n)
+			}
+		}
+	}
+	return ids
 }
 
 // Closings is a forge that says how the last merge request from a branch
