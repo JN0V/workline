@@ -57,5 +57,6 @@ Then comes [splitting a doc over its budget](gardening-split.md).
 ## Pages read for their reader
 
 Last in each run, after the other tasks: in the same round when it asks
-nothing else, else in a round of its own, after condensing's. The pages the reader checks
-flagged, read for their reader ([more](reader.md)).
+nothing else, else in a round of its own, after the
+[split's](gardening-split.md). The pages the reader checks flagged, read
+for their reader ([more](reader.md)).
