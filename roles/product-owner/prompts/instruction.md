@@ -83,6 +83,21 @@ a `verification` you give is left out. What each holds:
   scenarios, one a bullet, as Given / When / Then. A bug's is its steps
   again, the expected result as the Then. Never "someone runs it and
   accepts the result".
+  - **A Then is what a person observes**: a command's output, the
+    program's behaviour, a doc page the change ships; never a claim
+    about how the code is written (a type, a keyword). A change with no
+    behaviour (a rename, a refactor) is proved by a check that fails
+    today when there is one, else the existing checks still passing: a
+    build, a linter, the existing tests.
+  - **A threshold is a number with its unit and its reason** — the
+    budget it fits, read in the issue, its comments or the code given —,
+    never a bound any change meets ("below today's value", met by one
+    byte less). No reason anywhere: `ask` for the number.
+  - **A change that alters or removes what others use** — a public
+    API, a setting, a file format, a message others read — gets a
+    scenario for them: what they do after, and what the change itself
+    carries to tell them — a deprecation message, a doc page, the
+    breaking-change note —, never a changelog written at release.
 - `scope`: the part of the code it touches, by its paths — files or
   folders —, every file the change edits, each copy of a function it
   fixes included; up to 5 of the same paths in `sources`; from the code
