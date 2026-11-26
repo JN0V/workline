@@ -693,7 +693,7 @@ func releasePushers(st forge.MergeState, yes, app string) string {
 // (line imports engine, so the closed issue is read here.)
 func taskAdded(f forge.Forge, m forge.MergeRequest) bool {
 	known := false
-	for _, n := range closedIssuesOf(m) {
+	for _, n := range ClosedIssues(m) {
 		is, err := f.Issue(n)
 		if err != nil || is == nil {
 			continue
@@ -711,10 +711,11 @@ func taskAdded(f forge.Forge, m forge.MergeRequest) bool {
 	return featureOrTask(m.Title)
 }
 
-// closedIssuesOf are the issues a merge request closes: those its text says,
-// else the one its developer or tester branch names, none when none.
-func closedIssuesOf(m forge.MergeRequest) []int {
-	if ids := forge.Closes(m.Title, m.Body); len(ids) > 0 {
+// ClosedIssues are the issues a merge request is for: those its text
+// closes or is part of, else the one its developer or tester branch
+// names, none when none.
+func ClosedIssues(m forge.MergeRequest) []int {
+	if ids := forge.For("", m.Title, m.Body); len(ids) > 0 {
 		return ids
 	}
 	for _, prefix := range []string{"workline/developer/", "workline/tester/issue-"} {
