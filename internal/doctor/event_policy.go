@@ -270,32 +270,13 @@ func coveringEventPolicies(policies []actionsPolicy, file, enforcement string) [
 // within a directory, ** crosses them. A leading ./ or / is ignored.
 func globMatch(pat, file string) bool {
 	pat = strings.TrimPrefix(strings.TrimPrefix(pat, "./"), "/")
-	var b strings.Builder
-	b.WriteString("^")
-	for i := 0; i < len(pat); i++ {
-		switch c := pat[i]; c {
-		case '*':
-			if i+1 < len(pat) && pat[i+1] == '*' {
-				i++
-				if i+1 < len(pat) && pat[i+1] == '/' {
-					i++
-					b.WriteString("(?:.*/)?")
-				} else {
-					b.WriteString(".*")
-				}
-			} else {
-				b.WriteString("[^/]*")
-			}
-		case '?':
-			b.WriteString("[^/]")
-		default:
-			b.WriteString(regexp.QuoteMeta(string(c)))
-		}
-	}
-	b.WriteString("$")
-	re, err := regexp.Compile(b.String())
+	re, err := regexp.Compile("^" + globRegexp.Replace(regexp.QuoteMeta(pat)) + "$")
 	return err == nil && re.MatchString(file)
 }
+
+// globRegexp turns a quoted pattern's wildcards into a regexp, in one pass
+// without an index to move: `**/` may be no folder, `**` crosses folders.
+var globRegexp = strings.NewReplacer(`\*\*/`, "(?:.*/)?", `\*\*`, ".*", `\*`, "[^/]*", `\?`, "[^/]")
 
 // workflowEvents are the events a workflow's on: key names, as a scalar, a
 // list or a map; a mention in a comment or a string does not count.
