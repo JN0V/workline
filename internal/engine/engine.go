@@ -203,7 +203,7 @@ type Result struct {
 	timeCapped  bool     // an answer was not waited for, or a call not made, the run having waited maxSeconds
 	proposed    []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
 	then        string   // the task this round asks alone, once the others are done (in/then)
-	thenAsked   bool     // the run went round once for it: never twice
+	thenAsked   []string // the tasks the run went round once for: never twice
 	capped      bool     // a call was refused, the run having spent maxTokens
 	askedAgain  bool     // the attempt asks again, with what the first answer needs mended
 	partRefused []string // what the parts answered and may not: refused with them
@@ -359,10 +359,11 @@ func Run(o Options) *Result {
 		}
 		last := err != nil || res.Status != verdict.Pass || !goOn || round == maxRounds
 		// A task the role asks for once the others are done (in/then): one
-		// round more, that task alone, within what the run may still spend
-		// (the documentalist's pages read for their reader, ADR-0048).
-		if then, _ := os.ReadFile(filepath.Join(res.RunDir, "in", "then")); last && res.Status == verdict.Pass && !res.thenAsked && strings.TrimSpace(string(then)) != "" {
-			res.then, res.thenAsked, last = strings.TrimSpace(string(then)), true, false
+		// round more, that task alone, within what the run may still spend;
+		// it may name the next (the documentalist's condensing, then reader).
+		then, _ := os.ReadFile(filepath.Join(res.RunDir, "in", "then"))
+		if t := strings.TrimSpace(string(then)); last && res.Status == verdict.Pass && t != "" && !slices.Contains(res.thenAsked, t) {
+			res.then, res.thenAsked, last = t, append(res.thenAsked, t), false
 		}
 		tokens := res.capped || !last && res.overBudget()
 		seconds := res.timeCapped || !last && res.overTime()

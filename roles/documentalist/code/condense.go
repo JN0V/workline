@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -84,10 +85,9 @@ func condenseCandidates(problems []Problem) []*condenseTask {
 	var out []*condenseTask
 	seen := map[string]bool{}
 	for _, rule := range condensable {
-		for _, p := range problems {
-			if p.Rule != rule {
-				continue
-			}
+		of := slices.DeleteFunc(slices.Clone(problems), func(p Problem) bool { return p.Rule != rule })
+		slices.SortStableFunc(of, func(a, b Problem) int { return b.Size - a.Size }) // the most over first
+		for _, p := range of {
 			doc, _, _ := strings.Cut(p.Where, "#")
 			if isHistory(doc) || seen[doc] {
 				continue

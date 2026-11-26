@@ -1,6 +1,9 @@
 case: documentalist/dedupe-merges-a-passage
-about: When gardening, a passage written in two docs is kept in one, and the other links to it; this comes before condensing, since two copies drift apart.
-given: {repo: untidy}
+about: When gardening, a passage written in two docs is kept in one, and the other links to it; this comes before condensing, which then waits for a round of its own, since two copies drift apart.
+given:
+  repo: untidy
+  # budgets the docs fit, but a card's: a doc over its budget would be condensed in a round of its own
+  config: {roles: {documentalist: {settings: {budgets: {doc-lines: 100, section-words: 300, card-words: {min: 8, max: 40}, folder-lines: 30, root-agent-file-lines: 100}}}}}
 run: {role: documentalist, event: schedule, ai: "fake:dedupe-links"}
 expect:
   status: pass

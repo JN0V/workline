@@ -41,7 +41,7 @@ A role's `pre` and `post` receive:
   leaves the versions the tool bumps
   ([#384](https://github.com/JN0V/workline/issues/384));
 - run by a handoff: the inputs `handoff-from` and `handoff-reason`.
-- in the round a role asks last (`in/then`): `WORKLINE_THEN`, its task.
+- in a round a role asks once the others are done (`in/then`): `WORKLINE_THEN`, its task, each once a run.
 
 ## The line's own
 

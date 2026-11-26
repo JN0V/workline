@@ -768,16 +768,16 @@ type preRun struct {
 	fixes    map[string]string
 	fallback []intent.Intention
 
-	adopting, readerOnly, recording, gardening, partsNow bool
-	wait                                                 waiting
+	adopting, recording, gardening, partsNow bool
+	wait                                     waiting
 
-	task           string
-	judged         map[string]map[string]string
-	inParts        map[string]string
-	vouchedInParts map[string]string // of them, those whose `checked` moves (#482)
-	partsAsked     int
-	partsFallback  []intent.Intention
-	readerAsked    bool
+	task, then, next string // then: the task this round asks alone (in/then); next: the one it leaves for a round of its own
+	judged           map[string]map[string]string
+	inParts          map[string]string
+	vouchedInParts   map[string]string // of them, those whose `checked` moves (#482)
+	partsAsked       int
+	partsFallback    []intent.Intention
+	readerAsked      bool
 }
 
 // newPreRun reads the settings, the docs and where their sources are, and
@@ -1234,15 +1234,15 @@ func (r *preRun) writeRecords() error {
 	// task; the suspect ones wait for the next run, once the person has
 	// reviewed what this one proposes.
 	r.adopting = os.Getenv("WORKLINE_EVENT") == "init"
-	// The round the engine runs once the others are done, for the pages
-	// read for their reader alone (in/then, ADR-0048): nothing else is
-	// asked nor proposed again, and what the earlier rounds said stands.
-	r.readerOnly = os.Getenv("WORKLINE_THEN") == "reader"
+	// A round the engine runs once the others are done, for one task alone
+	// (in/then), condense or reader: nothing else is asked nor
+	// proposed again, and what the earlier rounds said stands.
+	r.then = os.Getenv("WORKLINE_THEN")
 	var err error
 	if r.wait, err = readWaiting(r.runDir); err != nil {
 		return err
 	}
-	if os.Getenv("WORKLINE_EVENT") != "schedule" || r.readerOnly {
+	if os.Getenv("WORKLINE_EVENT") != "schedule" || r.then != "" {
 		return nil
 	}
 	s, wait := r.s, r.wait
@@ -1318,7 +1318,7 @@ func (r *preRun) askSuspects() error {
 			return err
 		}
 		r.findings = append(r.findings, more...)
-	} else if !r.readerOnly && !r.recording {
+	} else if r.then == "" && !r.recording {
 		if r.task, r.judged, err = suspectTask(r.suspects, r.s, r.pl, r.repo); err != nil {
 			return err
 		}
@@ -1339,7 +1339,7 @@ func (r *preRun) askSuspects() error {
 // judged whole, the one read longest ago first; on another event, it leaves
 // them for gardening.
 func (r *preRun) inPartsTask(docs map[string]*suspectDoc) error {
-	if r.adopting || !r.s.JudgeInParts || r.readerOnly || r.recording {
+	if r.adopting || !r.s.JudgeInParts || r.then != "" || r.recording {
 		return nil
 	}
 	// A doc no part could judge, whatever its sources hold, says so in
@@ -1385,7 +1385,7 @@ func (r *preRun) inPartsTask(docs map[string]*suspectDoc) error {
 
 // asksNothing tells whether nothing is asked yet, in a round that may ask.
 func (r *preRun) asksNothing() bool {
-	return r.task == "" && r.partsAsked == 0 && !r.readerOnly && !r.recording
+	return r.task == "" && r.partsAsked == 0 && r.then == "" && !r.recording
 }
 
 // askPropagate asks, when nothing else is, the docs due now (the moment
@@ -1490,9 +1490,9 @@ func (r *preRun) rewriteWaits(key string, resolves func(verdict.Finding) bool) b
 }
 
 // askRewrite asks, when gardening with nothing else asked, one rewrite:
-// merge a repeated passage (two copies drift apart), else condense the doc
-// most over its budget, else split a card too long, else merge a card too
-// short. A merge request or a push never turns into a rewrite of the docs.
+// merge a repeated passage, else condense the doc most over its budget (in
+// a round of its own if another task comes first), else split a card too
+// long, else merge a card too short. Never on a merge request or a push.
 func (r *preRun) askRewrite() error {
 	problems, tree, s, runDir := r.problems, r.tree, r.s, r.runDir
 	if r.asksNothing() && r.gardening {
@@ -1506,7 +1506,7 @@ func (r *preRun) askRewrite() error {
 			}
 		}
 	}
-	if r.asksNothing() && r.gardening {
+	if r.gardening && (r.then == "" || r.then == "budget") {
 		for _, c := range condenseCandidates(problems) {
 			if r.rewriteWaits(c.key(), c.resolves) {
 				continue
@@ -1515,6 +1515,10 @@ func (r *preRun) askRewrite() error {
 			if len(t) > taskChars(s) {
 				r.findings = append(r.findings, tooLargeToRewrite("condense", c.Doc, len(t), taskChars(s)))
 				continue
+			}
+			if !r.asksNothing() && r.then == "" {
+				r.next = "budget" // a doc over its budget, whatever task answers it
+				break
 			}
 			r.task = t
 			if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
@@ -1562,7 +1566,7 @@ func (r *preRun) askRewrite() error {
 // asks nothing else, else in a round of their own once the others are done.
 func (r *preRun) askReader() error {
 	runDir := r.runDir
-	if r.readerOnly { // what the earlier rounds proposed is not proposed again
+	if r.then != "" { // what the earlier rounds proposed is not proposed again
 		_ = os.Remove(filepath.Join(runDir, "in", "fallback.yaml"))
 	}
 	if r.task == "" && r.partsAsked == 0 && r.gardening && !r.recording {
@@ -1591,12 +1595,10 @@ func (r *preRun) askReader() error {
 			r.readerAsked = true
 		}
 	}
-	if r.gardening && !r.readerOnly && !r.readerAsked && (r.task != "" || r.partsAsked > 0 || r.recording) && readerWaits(r.findings, r.s, r.tree, r.wait) {
-		if err := os.WriteFile(filepath.Join(runDir, "in", "then"), []byte("reader\n"), 0o644); err != nil {
-			return err
-		}
+	if r.gardening && r.next == "" && r.then != "reader" && !r.readerAsked && (r.task != "" || r.partsAsked > 0 || r.recording) && readerWaits(r.findings, r.s, r.tree, r.wait) {
+		r.next = "reader"
 	}
-	return nil
+	return os.WriteFile(filepath.Join(runDir, "in", "then"), []byte(r.next), 0o644) // empty: no round of its own
 }
 
 // leaveForNextRound says, in each finding, what became of its doc: judged
@@ -1609,7 +1611,7 @@ func (r *preRun) leaveForNextRound() error {
 	saidOnce := map[string]bool{}
 	said := newPersonSaid(r.repo)
 	for i := range r.findings {
-		if r.adopting || r.readerOnly {
+		if r.adopting || r.then != "" {
 			said.unreconsidered() // no doc's line was decided: what was kept stands
 			break                 // adoption said itself what it left for the next round; the reader's round leaves nothing
 		}
@@ -1664,14 +1666,14 @@ func (r *preRun) leaveForNextRound() error {
 		}
 	}
 	r.findings = slices.DeleteFunc(r.findings, func(f verdict.Finding) bool {
-		return f.Rule == "" || r.readerOnly && !slices.Contains(readerShown, f.Rule) && f.Rule != "too-large-to-read" && f.Rule != "reader-declined-unread"
+		return f.Rule == "" || r.then != "" && !slices.Contains(readerShown, f.Rule) && f.Rule != "too-large-to-read" && f.Rule != "reader-declined-unread"
 	})
 	said.keepUndecided()
 	if err := said.write(runDir); err != nil {
 		return err
 	}
 	// Once each finding says what became of its doc: those left to a person.
-	if i, ok := personIssue(r.findings, r.repo); ok && !r.readerOnly {
+	if i, ok := personIssue(r.findings, r.repo); ok && r.then == "" {
 		file := filepath.Join(runDir, "in", "fallback.yaml")
 		fallback, err := intent.Read(file)
 		if err != nil {
