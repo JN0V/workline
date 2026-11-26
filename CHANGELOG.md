@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.91.0](https://github.com/JN0V/workline/compare/v0.90.0...v0.91.0) (2026-11-26)
+
+
+### Features
+
+* **documentalist:** a page a PR takes over budget blocks ([#2242](https://github.com/JN0V/workline/issues/2242)) ([cec5f81](https://github.com/JN0V/workline/commit/cec5f81db4f6d01d0c9599f20faa8acfcf7ad6d0))
+* **documentalist:** condense in a round of its own ([#2245](https://github.com/JN0V/workline/issues/2245)) ([bfca03c](https://github.com/JN0V/workline/commit/bfca03cb52eb93623d071e9f2da906be16ed6398))
+* **documentalist:** split an ordinary page into linked pages ([#2244](https://github.com/JN0V/workline/issues/2244)) ([510c66b](https://github.com/JN0V/workline/commit/510c66bf2f0105cf65fe882c26e476cc1c896d7f))
+* **engine:** a task that changes no behaviour may merge alone ([#2191](https://github.com/JN0V/workline/issues/2191)) ([fde866a](https://github.com/JN0V/workline/commit/fde866ae420f89973e2c4cb822344e9b8b7c8b25))
+* **tester:** a scenario kept as today gets a guard test, green ([#2223](https://github.com/JN0V/workline/issues/2223)) ([0ffb77d](https://github.com/JN0V/workline/commit/0ffb77d6bcce4dcc64fa6aafaa7c8ce44fbec38a))
+
+
+### Bug Fixes
+
+* a failed follow run no longer holds an accepted PR ([#2195](https://github.com/JN0V/workline/issues/2195)) ([#2200](https://github.com/JN0V/workline/issues/2200)) ([a578ca5](https://github.com/JN0V/workline/commit/a578ca542f27293afdc95c27e7bdc327f3f43d28))
+* a pull request's type stays the first run's after a round ([#2250](https://github.com/JN0V/workline/issues/2250)) ([67eb84c](https://github.com/JN0V/workline/commit/67eb84c85c28119883bdac77c8f0a1560c4eeb0f))
+* a release rebuild keeps its yes when it adds a task ([#2254](https://github.com/JN0V/workline/issues/2254)) ([2d69e72](https://github.com/JN0V/workline/commit/2d69e72313f359f652b12a9868a2f3bd1ce008c0))
+* **agent:** never drop text before an answer's list as prose ([#2224](https://github.com/JN0V/workline/issues/2224)) ([7295d78](https://github.com/JN0V/workline/commit/7295d78afded7b451c965e6eeae9c08706fbeb5c))
+* an intent finding's judge sees the line's own last commits ([#2205](https://github.com/JN0V/workline/issues/2205)) ([56a104a](https://github.com/JN0V/workline/commit/56a104a8847b5042c847ca5899f494af655a5080))
+* **auditor:** a ready after an unanswered question is not false ([#2217](https://github.com/JN0V/workline/issues/2217)) ([29f6d9b](https://github.com/JN0V/workline/commit/29f6d9b46994d97575c9afbbfa555f9c703a5dce))
+* **developer:** a task on shipped code is typed fix, not chore ([#2201](https://github.com/JN0V/workline/issues/2201)) ([f650247](https://github.com/JN0V/workline/commit/f650247cd674cc773659d424adcee3a3d64b29b8))
+* **developer:** an accepted PR's comments ask no round ([#2220](https://github.com/JN0V/workline/issues/2220)) ([835b6b7](https://github.com/JN0V/workline/commit/835b6b708b5cececcb5533af169193a6245ec457))
+* **developer:** done is the Validation done, said when not ([#2216](https://github.com/JN0V/workline/issues/2216)) ([169e167](https://github.com/JN0V/workline/commit/169e1677ddcdd0b2e198d0a3eb68740119411d26))
+* **developer:** the agent writes its subject, never cut ([#2222](https://github.com/JN0V/workline/issues/2222)) ([c90ebca](https://github.com/JN0V/workline/commit/c90ebcada9cbe2b5ef4f1fc47120aecf438f89b5))
+* **doctor:** match workflow globs without an index loop ([#2246](https://github.com/JN0V/workline/issues/2246)) ([9cc037b](https://github.com/JN0V/workline/commit/9cc037b76badb35c6366ccc7cf0981e0600ec7a7))
+* **documentalist:** post what parts found when the fix left it ([#2202](https://github.com/JN0V/workline/issues/2202)) ([f8dd87c](https://github.com/JN0V/workline/commit/f8dd87c28222a5bc9959f8ee986171478d25d522))
+* fix(forge): doctor says a Forgejo down is reachable ([#2264](https://github.com/JN0V/workline/issues/2264)) ([34a9487](https://github.com/JN0V/workline/commit/34a9487eec11696097d9663ff8728859531d5b55))
+* fix(forge): the Forgejo sample reads a forge down as empty ([#2263](https://github.com/JN0V/workline/issues/2263)) ([7af9c17](https://github.com/JN0V/workline/commit/7af9c173a3d1a1320b4726510df205684d1e6e3e))
+* **forgejo:** fix(forge): the Forgejo sample never ends reading ([#2265](https://github.com/JN0V/workline/issues/2265)) ([3c17dcf](https://github.com/JN0V/workline/commit/3c17dcfae2d9584330fe9dc82c7cbabbcd52ac5d))
+* **forgejo:** fix(forge): the Forgejo sample opens a draft as ([#2269](https://github.com/JN0V/workline/issues/2269)) ([39a7139](https://github.com/JN0V/workline/commit/39a7139e353640f0293bb74ef7ef61e67df7530b))
+* **line:** skip workline's own issues, name unnamed scenarios ([#2230](https://github.com/JN0V/workline/issues/2230)) ([29f56e4](https://github.com/JN0V/workline/commit/29f56e4f660dc4a9d604aee2800d8c590c2b2519))
+* **product-owner:** a product choice is never settled by timeout ([#2218](https://github.com/JN0V/workline/issues/2218)) ([2c001c1](https://github.com/JN0V/workline/commit/2c001c1260bc22da22e0984bfe858ebdb01b1828))
+* **product-owner:** read the kind from the whole issue body ([#2226](https://github.com/JN0V/workline/issues/2226)) ([4c27ca7](https://github.com/JN0V/workline/commit/4c27ca7ddcbdbf3741dc3bcccc543546eabdb38f))
+* **product-owner:** seen-by-running Thens, reasoned thresholds ([#2228](https://github.com/JN0V/workline/issues/2228)) ([c09c649](https://github.com/JN0V/workline/commit/c09c649385067cf4d1f3896ac0dae78b592b43b6))
+* resolve the reviewer's threads once the finding is settled ([#2203](https://github.com/JN0V/workline/issues/2203)) ([af68b1b](https://github.com/JN0V/workline/commit/af68b1bb501257321c6cf7aa101691f181a45838))
+* **reviewer:** a no on a lack quotes the code doing it ([#2215](https://github.com/JN0V/workline/issues/2215)) ([362fe3f](https://github.com/JN0V/workline/commit/362fe3f3c6e51bbd6e9a5e91e131963f024ddf4b))
+* **reviewer:** a test proving nothing is important, not a nit ([#2213](https://github.com/JN0V/workline/issues/2213)) ([fb447c5](https://github.com/JN0V/workline/commit/fb447c5b41222877286d98681fe78ca14be1585e))
+* **reviewer:** intent asks if a public name breaks unannounced ([#2214](https://github.com/JN0V/workline/issues/2214)) ([540a149](https://github.com/JN0V/workline/commit/540a1499ce54ef5aa1acec5885c49f6ad1f2984d))
+* **scripts:** five new canned bugs for the release try ([#2192](https://github.com/JN0V/workline/issues/2192)) ([d94ece9](https://github.com/JN0V/workline/commit/d94ece9f86c9496fd6479a9a0c5d4884ecf52381))
+* **scripts:** try-release.sh dispatch: exclude accepted-whole ([#2211](https://github.com/JN0V/workline/issues/2211)) ([3c4fc50](https://github.com/JN0V/workline/commit/3c4fc5030218866a8b587f921d723a37353149c7))
+* **tester:** read a file's text only when the Then is that text ([#2227](https://github.com/JN0V/workline/issues/2227)) ([8e0fce0](https://github.com/JN0V/workline/commit/8e0fce02a8d0ddc27dabdfdfff662effab351776))
+
 ## [0.90.0](https://github.com/JN0V/workline/compare/v0.89.3...v0.90.0) (2026-11-25)
 
 
