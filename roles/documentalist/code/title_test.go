@@ -39,12 +39,10 @@ func TestMergeRequestTitlesPassTheSquashRule(t *testing.T) {
 			{kind: "propagate", byAgent: true},
 			{kind: "fix", parts: true, byAgent: true},
 			{kind: "fix", parts: true},
-			{kind: "condense", file: "condense.yaml", task: "doc: " + doc, byAgent: true},
-			{kind: "split", file: "condense.yaml", task: "doc: " + doc + "\nsplit: true", byAgent: true},
+			{kind: "split", file: "split.yaml", task: "doc: " + doc, byAgent: true},
 			{kind: "duplicates", file: "dedupe.yaml", task: "docs: [" + doc + ", " + other + "]", byAgent: true},
 			{kind: "reader", file: "reader.yaml", task: "pages: [" + doc + "]", byAgent: true},
 			{kind: "reader", file: "reader.yaml", task: "pages: [" + doc + ", " + other + "]", byAgent: true},
-			{kind: "merge-card", file: "merge-card.yaml", task: "card: " + doc, byAgent: true},
 			{kind: recordsTask, byAgent: true},
 		} {
 			runDir := t.TempDir()

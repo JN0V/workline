@@ -424,7 +424,7 @@ func partsRoom(d *docmark.Doc, repo string) (room int, why string, err error) {
 	}
 	room = taskMaxChars - len(partsTaskHeader) - (len(partsSupportedWhole) - len(partsSupported)) - len(numberedDoc(d.Path, string(content)))
 	if room < taskMaxChars/4 {
-		return 0, "(too large to be judged whole, and too long itself to be judged in parts: it leaves less than a quarter of a task for its sources; condense or split it first, or " + personJudges + ")", nil
+		return 0, "(too large to be judged whole, and too long itself to be judged in parts: it leaves less than a quarter of a task for its sources; split it first, or " + personJudges + ")", nil
 	}
 	for _, src := range d.Sources {
 		if name, _, _ := splitSource(src); name != "" {

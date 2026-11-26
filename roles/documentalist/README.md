@@ -54,8 +54,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   ([checks](docs/checks.md)).
 - With an agent: reads each suspect doc against its sources, and fixes it
   or vouches for it by moving `checked`; when gardening, it also reads
-  stale docs again, merges repeated passages, condenses a doc over
-  budget, and reads the pages the reader checks flag
+  stale docs again, merges repeated passages, splits a doc over budget
+  into linked pages, and reads the pages the reader checks flag
   ([gardening](docs/gardening.md)).
 
 **Does not**: write code (its patches touch only `docs`), rewrite a doc the
@@ -94,7 +94,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `docs` | `["docs/**", "*.md"]` | what is a doc; only these are ever patched |
 | `truth` | `{doc: ["docs/adr/**"]}` | docs the code follows: an issue, never a rewrite |
 | `propagation` | code → `docs/tech/**` now; `docs/tech/**` → `docs/product/**` at gardening | which cascades wait |
-| `budgets` | doc 200 lines, section 400 words, card 80–400 words, folder 2000 lines, `AGENTS.md` 200 lines | sizes reported |
+| `budgets` | doc 200 lines, section 400 words, a page a split creates 80 words or more, folder 2000 lines, `AGENTS.md` 200 lines | sizes reported |
 | `freshness.stale-after-days` | `180` | a doc confirmed longer ago is read again |
 | `reader` | user pages `README.md`, `docs/**` but specs; from `README.md`; paragraph 80 words, cell 30; references `ADR-<n>`, `#<n>`; `agent-pages: 4` | which pages a reader uses and how much they read at once ([checks](docs/checks-docs.md#docs-for-their-reader)), what names a reference ([yours](docs/checks-docs.md#references-in-the-projects-naming)), pages the agent reads a run ([more](docs/reader.md)) |
 | `duplicates` | `{min-words: 40, similarity: 0.85}` | repeated passages |
@@ -168,7 +168,7 @@ Under the same key:
   merge request judged on its change alone, a night spending what its
   caps allow
   ([measured](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-a-doc-judged-on-its-change-alone)).
-- Condensing and splitting ask a frontier model (`model.tasks`).
+- Splitting asks a frontier model (`model.tasks`).
 - Reading pages for their reader: [what it cost](docs/reader.md#cost).
 - Caps: `ai-max-calls`, `ai-max-tokens`, `whole-chars`,
   `parts-max-per-run` (a night's parts), `max-open-merge-requests`;

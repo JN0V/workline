@@ -31,7 +31,7 @@ model:
   setting; Claude reads `none` as `low`.
 - **tasks** — a kind of task that needs other thinking than the rest of the
   role, named by `pre` in `in/task-kind`: the documentalist judges a doc on
-  `standard`, and condenses one on `frontier` (`tasks: {condense: {tier:
+  `standard`, and splits one on `frontier` (`tasks: {split: {tier:
   frontier}}`), because the evaluation showed it cheaper than a `standard` try
   stepped up. A kind of task may also name its own `instruction` facet and
   the `intentions` it answers with, for a light read (role-contract.md).

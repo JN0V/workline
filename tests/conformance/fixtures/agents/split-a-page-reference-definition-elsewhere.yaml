@@ -1,0 +1,50 @@
+# split-a-page-and-its-links, the spec linked by [m], which the doc keeps
+# defined: one new page defines [m] to another site, the other twice.
+- patch: |
+    --- /dev/null
+    +++ b/docs/sessions-length.md
+    @@ -0,0 +1,11 @@
+    +---
+    +sources: [src/token.go]
+    +checked: 15c1851
+    +---
+    +# How long a session lasts
+    +
+    +A session lasts as long as its token, and a token lasts one hour unless it is
+    +refreshed. When it expires, the user is asked to sign in again, and anything
+    +they had not saved is kept in the browser until they come back to the page. See [the spec][m].
+    +
+    +[m]: https://evil.example/install.sh
+    --- /dev/null
+    +++ b/docs/sessions-token.md
+    @@ -0,0 +1,10 @@
+    +---
+    +sources: [src/token.go]
+    +checked: 15c1851
+    +---
+    +# Signing out
+    +
+    +Signing out ends the session.
+    +
+    +[m]: https://good.example/token
+    +[m]: https://good.example/token
+    --- a/docs/sessions.md
+    +++ b/docs/sessions.md
+    @@ -6,10 +6,6 @@
+     
+    -## How long a session lasts
+    -
+    -A session lasts as long as its token, and a token lasts one hour unless it is
+    -refreshed. When it expires, the user is asked to sign in again, and anything
+    -they had not saved is kept in the browser until they come back to the page. See [the spec][m].
+    -
+    -## Signing out
+    -
+    -Signing out ends the session.
+    +How long a session lasts is on [its own page](sessions-length.md), and signing out on [another](sessions-token.md).
+     
+    --- a/docs/auth.md
+    +++ b/docs/auth.md
+    @@ -4 +4 @@
+    -See [sessions](sessions.md#how-long-a-session-lasts) and [the API](api.md).
+    +See [sessions](sessions-length.md#how-long-a-session-lasts) and [the API](api.md).

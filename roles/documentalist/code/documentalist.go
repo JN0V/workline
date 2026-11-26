@@ -1235,7 +1235,7 @@ func (r *preRun) writeRecords() error {
 	// reviewed what this one proposes.
 	r.adopting = os.Getenv("WORKLINE_EVENT") == "init"
 	// A round the engine runs once the others are done, for one task alone
-	// (in/then), condense or reader: nothing else is asked nor
+	// (in/then), budget or reader: nothing else is asked nor
 	// proposed again, and what the earlier rounds said stands.
 	r.then = os.Getenv("WORKLINE_THEN")
 	var err error
@@ -1490,9 +1490,9 @@ func (r *preRun) rewriteWaits(key string, resolves func(verdict.Finding) bool) b
 }
 
 // askRewrite asks, when gardening with nothing else asked, one rewrite:
-// merge a repeated passage, else condense the doc most over its budget (in
-// a round of its own if another task comes first), else split a card too
-// long, else merge a card too short. Never on a merge request or a push.
+// merge a repeated passage (two copies drift apart), else split the doc
+// most over its budget into linked pages (in a round of its own if another
+// task comes first). Never on a merge request or a push.
 func (r *preRun) askRewrite() error {
 	problems, tree, s, runDir := r.problems, r.tree, r.s, r.runDir
 	if r.asksNothing() && r.gardening {
@@ -1507,13 +1507,13 @@ func (r *preRun) askRewrite() error {
 		}
 	}
 	if r.gardening && (r.then == "" || r.then == "budget") {
-		for _, c := range condenseCandidates(problems) {
+		for _, c := range splitCandidates(problems) {
 			if r.rewriteWaits(c.key(), c.resolves) {
 				continue
 			}
-			t := writeCondenseTask(c, problems, tree)
+			t := writeSplitTask(c, problems, tree, s.Budgets)
 			if len(t) > taskChars(s) {
-				r.findings = append(r.findings, tooLargeToRewrite("condense", c.Doc, len(t), taskChars(s)))
+				r.findings = append(r.findings, tooLargeToRewrite("split", c.Doc, len(t), taskChars(s)))
 				continue
 			}
 			if !r.asksNothing() && r.then == "" {
@@ -1521,41 +1521,13 @@ func (r *preRun) askRewrite() error {
 				break
 			}
 			r.task = t
-			if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
+			if err := writeYAML(filepath.Join(runDir, "in", "split.yaml"), c); err != nil {
 				return err
 			}
-			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("condense\n"), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("split\n"), 0o644); err != nil {
 				return err
 			}
 			break
-		}
-	}
-	// A card too long holds more than one concept: split into cards.
-	if r.asksNothing() && r.gardening {
-		if c := pickSplit(problems, r.rewriteWaits); c != nil {
-			if t := writeSplitTask(c, problems, tree); len(t) > taskChars(s) {
-				r.findings = append(r.findings, tooLargeToRewrite("split", c.Doc, len(t), taskChars(s)))
-			} else {
-				r.task = t
-				if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
-					return err
-				}
-				if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("split\n"), 0o644); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	// Last, a card too short to stand alone goes into the one it belongs with.
-	if r.asksNothing() && r.gardening {
-		if m := pickMergeCard(problems, tree, r.rewriteWaits); m != nil {
-			r.task = writeMergeCardTask(m, problems, tree)
-			if err := writeYAML(filepath.Join(runDir, "in", "merge-card.yaml"), m); err != nil {
-				return err
-			}
-			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("merge-card\n"), 0o644); err != nil {
-				return err
-			}
 		}
 	}
 	return nil
@@ -1973,7 +1945,7 @@ func Post(runDir, repo string) int {
 		}
 	}
 	patched, partly := map[string]bool{}, map[string]bool{}
-	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
+	resolved := map[string]bool{} // "rule where" of budget problems a split patch resolves
 	var mergedPair []string       // the two docs a duplicates patch merged
 	// A task moving text between docs judges the agent's patches as git
 	// applies them, their hunks placed by the engine (placedPatches), and
@@ -1986,8 +1958,8 @@ func Post(runDir, repo string) int {
 		}
 		return p, err
 	}
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil {
-		var c condenseTask
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "split.yaml")); err == nil {
+		var c splitTask
 		if err := yaml.Unmarshal(data, &c); err != nil {
 			return fail(err)
 		}
@@ -1995,35 +1967,12 @@ func Post(runDir, repo string) int {
 		if err != nil {
 			return fail(err)
 		}
-		var material string
-		refused, material, err = judgeCondense(repo, s, &c, placedIn, fallback)
-		if err != nil {
+		if refused, err = judgeSplit(repo, s, &c, placedIn, fallback); err != nil {
 			return fail(err)
-		}
-		if material != "" { // the engine asks a judge what no check can tell
-			q := map[string]string{"material": material,
-				"question": "Does each of these cards hold one concept, the one its title names? A sentence explaining that concept by what it depends on stays within it; " +
-					"a second concept is a part that could stand as a card of its own, under a title of its own."}
-			if err := writeYAML(filepath.Join(runDir, "out", "judge.yaml"), q); err != nil {
-				return fail(err)
-			}
 		}
 		for _, k := range c.Keys {
 			resolved[k] = len(refused) == 0 && proposedPatch(intents, fallback)
 		}
-	} else if data, err := os.ReadFile(filepath.Join(runDir, "in", "merge-card.yaml")); err == nil {
-		var m mergeCardTask
-		if err := yaml.Unmarshal(data, &m); err != nil {
-			return fail(err)
-		}
-		placedIn, err := placedFor()
-		if err != nil {
-			return fail(err)
-		}
-		if refused, err = judgeMergeCard(repo, s, &m, placedIn, fallback); err != nil {
-			return fail(err)
-		}
-		resolved["card-too-short "+m.Card] = len(refused) == 0 && proposedPatch(intents, fallback)
 	} else if data, err := os.ReadFile(filepath.Join(runDir, "in", "reader.yaml")); err == nil {
 		// The pages read for their reader: what the agent answers never
 		// blocks; what cannot be checked is withheld, said (#256).
@@ -2180,7 +2129,7 @@ func Post(runDir, repo string) int {
 		}
 		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && (patched[f.Where] || vouchedInParts[f.Where] != "") || resolved[f.Rule+" "+f.Where] ||
 			f.Rule == "duplicate" && len(mergedPair) == 2 && contains(mergedPair, f.Where) && strings.Contains(f.Message, " "+otherOf(mergedPair, f.Where)+" ") {
-			continue // judged and patched, or condensed, in this run
+			continue // judged and patched, or split, in this run
 		}
 		if judgedFix.countFixed(f) {
 			f.Message += " (fixed in this run)"
@@ -2904,13 +2853,10 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 		if !byAgent { // nothing fixed: only what records when the parts judged (#2197)
 			title = recordsTitle(in)
 		}
-	case "condense", "split":
-		var c condenseTask
-		if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil && yaml.Unmarshal(data, &c) == nil {
-			docs, key, title = []string{c.Doc}, c.key(), "docs: condense "+c.Doc
-			if c.Split {
-				title = "docs: split " + c.Doc + " into cards"
-			}
+	case "split":
+		var c splitTask
+		if data, err := os.ReadFile(filepath.Join(runDir, "in", "split.yaml")); err == nil && yaml.Unmarshal(data, &c) == nil {
+			docs, key, title = []string{c.Doc}, c.key(), "docs: split "+c.Doc+" into linked pages"
 		}
 	case "duplicates":
 		var d dedupeTask
@@ -2927,11 +2873,6 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 			if len([]rune(title)) > forge.TitleMax {
 				title = fmt.Sprintf("docs: read %d pages for their reader", len(r.Pages))
 			}
-		}
-	case "merge-card":
-		var m mergeCardTask
-		if data, err := os.ReadFile(filepath.Join(runDir, "in", "merge-card.yaml")); err == nil && yaml.Unmarshal(data, &m) == nil {
-			docs, key, title = []string{m.Card}, m.key(), "docs: merge "+m.Card+" into the card it belongs with"
 		}
 	}
 	if len([]rune(title)) > forge.TitleMax { // room for the squash's " (#N)" (ADR-0051)

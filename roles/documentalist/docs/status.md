@@ -163,8 +163,8 @@ its evaluation in
 - **Never at the release**: the release does not wait for the docs; the
   release docs, their fix and its record removed
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-1-the-release-weekly)).
-- **Condense, split, merge a card, merge a repeated passage**:
-  `condense-*`, `split-*`, `merge-card-*`, `dedupe-*`.
+- **Split a doc into linked pages, merge a repeated passage**:
+  `condense-*`, `split-*`, `dedupe-*`.
 - **Judging in parts**, a partial claim settled by another part:
   `judged-in-parts-*`, `parts-*`, `judge-in-parts-off`. On by default
   ([#82](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736),

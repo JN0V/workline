@@ -21,7 +21,8 @@ main's run after a merge and gardening read every doc
   nothing), per folder, and of the agents' entry points at the root
   (`AGENTS.md`, `CLAUDE.md`).
 - Words per section (its own text, up to the next heading).
-- Card size, min and max: too small is fragmentation.
+- Words of a page a split creates, at least `page-words`: smaller is
+  fragmentation, and the part stays with its neighbour.
 - On a merge request, a user page it takes over a lines or words budget
   blocks, no agent asked; one already over on the base only warns
   ([ADR-0051](../../../docs/adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#amendment-2026-11-25-a-budget-a-pull-request-adds-blocks)).

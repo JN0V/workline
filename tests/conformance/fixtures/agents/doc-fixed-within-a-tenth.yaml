@@ -6,7 +6,7 @@
     @@ -3,3 +3,4 @@ type: reference
      sources: [src/auth/token.go]
     -checked: 9bf650b
-    +checked: 3c47a0b
+    +checked: 68b2921
     +verified: agent:documentalist
      ---
     @@ -9,3 +10,4 @@ checked: 9bf650b

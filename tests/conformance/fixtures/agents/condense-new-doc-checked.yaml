@@ -1,14 +1,14 @@
 # condense-moves-a-part, on the `untidy` fixture whose docs/sessions.md
 # declares its sources: the part moves as it should, the doc's header is left,
-# but the new doc is born with a `checked` of its own, copied from the doc:
-# a vouch no source read in this task earned.
+# but the new doc is born with a `checked` of its own, not the doc's: a
+# vouch no source read in this task earned.
 - patch: |
     --- /dev/null
     +++ b/docs/cards/signing-out.md
     @@ -0,0 +1,7 @@
     +---
     +sources: [src/token.go]
-    +checked: 7b5ebbe
+    +checked: 1a2b3c4
     +---
     +# Signing out
     +

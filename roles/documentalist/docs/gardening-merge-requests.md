@@ -74,7 +74,7 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
   goes, each run's on a merge request of its own, `fix-<its first doc>`
   (a short hash added when another doc's has that name)
   ([ADR-0013, amended 2026-10-14](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-14-a-doc-waits-while-a-merge-request-holds-it));
-- a doc to condense or split, a card to merge, a repeated passage wait
+- a doc to split, a repeated passage wait
   while their own merge request does; the next one goes;
 - `records` is proposed again only for a doc it does not hold yet: then
   with every record that still holds;

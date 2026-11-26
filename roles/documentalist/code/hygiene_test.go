@@ -20,7 +20,7 @@ func TestHygieneOfKeepsThePushsDocs(t *testing.T) {
 		Files: map[string]bool{"docs/pushed.md": true, "docs/other.md": true, "notes/far.md": true},
 	}
 	b := Budgets{DocLines: 3, SectionWords: 400, FolderLines: 10, RootAgentFileLines: 200}
-	b.CardWords.Min, b.CardWords.Max = 80, 400
+	b.PageWords = 80
 	got := map[string]bool{}
 	for _, p := range HygieneOf(tree, b, Duplicates{}, map[string]bool{"docs/pushed.md": true}) {
 		got[p.Rule+" "+p.Where] = true

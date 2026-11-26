@@ -178,7 +178,7 @@ turns one off with `enforce`.
   `no-sources` and `sources-by-name` (on `init`), `undocumented`,
   `source-gone`, `docs-not-read`, `gardening-paused`, the reader checks
   and `setting-invalid` (a `reader.references` pattern left out),
-  `too-large-to-condense`, `too-large-to-split`, `too-large-to-read`,
+  `too-large-to-split`, `too-large-to-read`,
   `reader-claim-dropped` and `reader-patch-withheld` (gardening); for a
   doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`;
   on a draft, `ai-waits-for-ready`.

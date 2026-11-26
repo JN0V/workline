@@ -1,0 +1,16 @@
+case: documentalist/split-a-page-adds-prose-refused
+about: "A split writes nothing anew but pointers to its pages and headings made of the doc's headings' words, whatever its folder's size: a new page gaining a line of prose, with a link to another site, is refused (`written-anew`), and the doc stays as it was."
+given:
+  repo: untidy
+  # as split-a-page-and-its-links, the docs folder over its budget already
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && sed -i \"s|^they had not saved.*|& See [the spec](https://example.com/token).|\" docs/sessions.md && git commit -qam 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && sed -i 's/folder-lines: 30/folder-lines: 24/' .workline/config.yaml && git add .workline docs/sessions.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:split-a-page-adds-prose"}
+expect:
+  status: pass   # refused, said as a warning, not failed: on schedule
+  applied: []
+  findings:
+    - {rule: written-anew, where: docs/sessions-length.md, message: "Ask [the team]"}
+  files:
+    docs/sessions.md: {contains: "A session lasts"}

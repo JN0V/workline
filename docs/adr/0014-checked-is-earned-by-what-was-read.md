@@ -6,7 +6,8 @@
   amended 2026-10-01 (who confirms a verdict), 2026-10-02 (where the
   weekly sample is written: ADR-0015), 2026-10-15 (what step 3 left),
   2026-10-18 (`checked` earned in parts, measured, off, then on),
-  2026-10-21 (a doc suspect only when a line it names changes)
+  2026-10-21 (a doc suspect only when a line it names changes),
+  2026-11-25 (a page split off carries its doc's `checked`)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a doc judged against its sources whole), ADR-0013
   (`judged`)
@@ -265,6 +266,18 @@ request touching `cmd/workline` or the engine made 40 to 50 docs suspect.
 Go declaration or a YAML key after `#` makes its doc suspect only when
 that part changes, and a task reads that part whole, not the file. The
 rule above applies to the part's lines.
+
+## Amendment (2026-11-25): a page split off carries its doc's `checked`
+
+The owner's decision: a doc over its budget is split into linked pages,
+as a person split twelve on 2026-11-23, its new pages with a proper
+header ([gardening](../../roles/documentalist/docs/gardening-split.md)).
+
+- A new page carries the doc's `checked` as it is, never another commit:
+  its lines, moved unchanged, are the lines that `checked` vouched for.
+  Its `sources` are among the doc's.
+- The doc's own `checked` still never moves in a split: no source is
+  read.
 
 ## Not decided here
 

@@ -1,0 +1,32 @@
+# split-a-page-and-its-links, on the `untidy` fixture whose docs/sessions.md
+# declares its sources: the first section moves whole into a page beside it,
+# which carries the page's header; docs/auth.md's link to it follows.
+- patch: |
+    --- /dev/null
+    +++ b/docs/sessions-length.md
+    @@ -0,0 +1,9 @@
+    +---
+    +sources: [src/token.go]
+    +checked: 776e6be
+    +---
+    +# How long a session lasts
+    +
+    +A session lasts as long as its token, and a token lasts one hour unless it is
+    +refreshed. When it expires, the user is asked to sign in again, and anything
+    +they had not saved is kept in the browser until they come back to the page. See [the spec](https://example.com/token).
+    --- a/docs/sessions.md
+    +++ b/docs/sessions.md
+    @@ -6,7 +6,3 @@
+     
+    -## How long a session lasts
+    -
+    -A session lasts as long as its token, and a token lasts one hour unless it is
+    -refreshed. When it expires, the user is asked to sign in again, and anything
+    -they had not saved is kept in the browser until they come back to the page. See [the spec](https://example.com/token).
+    +How long a session lasts is on [its own page](sessions-length.md).
+     
+    --- a/docs/auth.md
+    +++ b/docs/auth.md
+    @@ -4 +4 @@
+    -See [sessions](sessions.md#how-long-a-session-lasts) and [the API](api.md).
+    +See [sessions](sessions-length.md#how-long-a-session-lasts) and [the API](api.md).

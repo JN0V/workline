@@ -151,10 +151,7 @@ func TestHygiene(t *testing.T) {
 	}
 	var got []string
 	for _, p := range Hygiene(tree, Budgets{DocLines: 100, SectionWords: 100, FolderLines: 100, RootAgentFileLines: 100,
-		CardWords: struct {
-			Min int `json:"min"`
-			Max int `json:"max"`
-		}{1, 100}}, Duplicates{MinWords: 10, Similarity: 0.7}) {
+		PageWords: 1}, Duplicates{MinWords: 10, Similarity: 0.7}) {
 		got = append(got, p.Rule+" "+p.Where)
 	}
 	sort.Strings(got)

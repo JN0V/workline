@@ -360,7 +360,7 @@ func Run(o Options) *Result {
 		last := err != nil || res.Status != verdict.Pass || !goOn || round == maxRounds
 		// A task the role asks for once the others are done (in/then): one
 		// round more, that task alone, within what the run may still spend;
-		// it may name the next (the documentalist's condensing, then reader).
+		// it may name the next (the documentalist's split, then reader).
 		then, _ := os.ReadFile(filepath.Join(res.RunDir, "in", "then"))
 		if t := strings.TrimSpace(string(then)); last && res.Status == verdict.Pass && t != "" && !slices.Contains(res.thenAsked, t) {
 			res.then, res.thenAsked, last = t, append(res.thenAsked, t), false

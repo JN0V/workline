@@ -58,9 +58,9 @@ func TestCondenseNewPageWhereDocLives(t *testing.T) {
 		"+See [moved](a/moved.md).\n" +
 		"diff --git a/docs/dev/a/moved.md b/docs/dev/a/moved.md\nnew file mode 100644\n" +
 		"--- /dev/null\n+++ b/docs/dev/a/moved.md\n@@ -0,0 +1,3 @@\n+## Moved\n+\n+" + twentyWords + "\n"
-	c := &condenseTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
+	c := &splitTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
 	repo := readerRepo(t, map[string]string{"docs/dev/a.md": doc})
-	found, _, err := judgeCondense(repo, readerSettings(), c, patchOf(diff), nil)
+	found, err := judgeSplit(repo, readerSettings(), c, patchOf(diff), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,8 +81,8 @@ func TestCondenseLeavesUserPagesAlone(t *testing.T) {
 		"+See [moved](a/moved.md).\n" +
 		"diff --git a/docs/dev/a/moved.md b/docs/dev/a/moved.md\nnew file mode 100644\n" +
 		"--- /dev/null\n+++ b/docs/dev/a/moved.md\n@@ -0,0 +1,3 @@\n+## Moved\n+\n+Moved text here.\n"
-	c := &condenseTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
-	found, _, err := judgeCondense(repo, readerSettings(), c, patchOf(diff), nil)
+	c := &splitTask{Doc: "docs/dev/a.md", Keys: []string{"doc-too-long docs/dev/a.md"}}
+	found, err := judgeSplit(repo, readerSettings(), c, patchOf(diff), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,44 +123,5 @@ func TestDedupeRefusesReaderProblemOnUserPage(t *testing.T) {
 	}
 	for _, f := range found {
 		t.Errorf("a short link must pass, got %s %s: %s", f.Rule, f.Where, f.Message)
-	}
-}
-
-// Merge into a card: the card goes into a user page and brings a paragraph
-// over the budget.
-func TestMergeCardRefusesReaderProblemOnUserPage(t *testing.T) {
-	m := &mergeCardTask{Card: "docs/cards/short.md", Cards: []string{"docs/user/target.md"}}
-	build := func(text string) (string, []intent.Intention) {
-		repo := readerRepo(t, map[string]string{
-			"docs/cards/short.md": text + "\n",
-			"docs/user/target.md": "# T\n\nOld line.\n",
-		})
-		diff := "diff --git a/docs/cards/short.md b/docs/cards/short.md\ndeleted file mode 100644\n" +
-			"--- a/docs/cards/short.md\n+++ /dev/null\n@@ -1,1 +0,0 @@\n-" + text + "\n" +
-			"diff --git a/docs/user/target.md b/docs/user/target.md\n" +
-			"--- a/docs/user/target.md\n+++ b/docs/user/target.md\n@@ -3,0 +4,2 @@\n+\n+" + text + "\n"
-		return repo, patchOf(diff)
-	}
-	repo, in := build(twentyWords)
-	found, err := judgeMergeCard(repo, readerSettings(), m, in, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	named := false
-	for _, f := range found {
-		if f.Rule == "patch-introduces" && f.Where == "docs/user/target.md" && strings.Contains(f.Message, "paragraph-too-long") {
-			named = true
-		}
-	}
-	if !named {
-		t.Fatalf("want patch-introduces naming paragraph-too-long on docs/user/target.md, got %+v", found)
-	}
-	repo, in = build("Short text.")
-	found, err = judgeMergeCard(repo, readerSettings(), m, in, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, f := range found {
-		t.Errorf("a short card must pass, got %s %s: %s", f.Rule, f.Where, f.Message)
 	}
 }

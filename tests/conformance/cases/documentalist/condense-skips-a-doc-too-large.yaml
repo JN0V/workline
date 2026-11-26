@@ -9,8 +9,8 @@ run: {role: documentalist, event: schedule, ai: "fake:condense-moves-a-part"}
 expect:
   status: pass
   agent-calls: 1
-  calls: [{task: condense}]
+  calls: [{task: split}]
   applied: [patch]
-  findings: [{rule: too-large-to-condense, where: docs/a-long.md}]
+  findings: [{rule: too-large-to-split, where: docs/a-long.md}]
   files:
     docs/sessions.md: {contains: "(cards/signing-out.md)"}

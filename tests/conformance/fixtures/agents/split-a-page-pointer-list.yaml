@@ -1,0 +1,44 @@
+# split-a-page-two-line-pointer, both sections moved, and a list of six
+# one-line pointers left in their place: 59 words in all, each item within
+# the 30 a pointer holds.
+- patch: |
+    --- /dev/null
+    +++ b/docs/sessions-length.md
+    @@ -0,0 +1,13 @@
+    +---
+    +sources: [src/token.go]
+    +checked: 776e6be
+    +---
+    +# How long a session lasts
+    +
+    +A session lasts as long as its token, and a token lasts one hour unless it is
+    +refreshed. When it expires, the user is asked to sign in again, and anything
+    +they had not saved is kept in the browser until they come back to the page. See [the spec](https://example.com/token).
+    +
+    +## Signing out
+    +
+    +Signing out ends the session.
+    --- a/docs/sessions.md
+    +++ b/docs/sessions.md
+    @@ -6,10 +6,7 @@
+     
+    -## How long a session lasts
+    -
+    -A session lasts as long as its token, and a token lasts one hour unless it is
+    -refreshed. When it expires, the user is asked to sign in again, and anything
+    -they had not saved is kept in the browser until they come back to the page. See [the spec](https://example.com/token).
+    -
+    -## Signing out
+    -
+    -Signing out ends the session.
+    +- How long a session lasts is on [its own page](sessions-length.md).
+    +- How long a token lasts is on [that page too](sessions-length.md).
+    +- When a token is refreshed is on [the same page](sessions-length.md).
+    +- When the user signs in again is on [that page](sessions-length.md).
+    +- What happens to unsaved work is on [the page](sessions-length.md).
+    +- How to sign out is on [the page as well](sessions-length.md).
+    --- a/docs/auth.md
+    +++ b/docs/auth.md
+    @@ -4 +4 @@
+    -See [sessions](sessions.md#how-long-a-session-lasts) and [the API](api.md).
+    +See [sessions](sessions-length.md#how-long-a-session-lasts) and [the API](api.md).

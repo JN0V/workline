@@ -1,0 +1,12 @@
+case: documentalist/split-a-page-link-rewritten-refused
+about: "A split may change another doc only where its links to the part moved point: a patch rewriting the line around such a link is refused (`rewritten`), as a line moved and rewritten is."
+given:
+  repo: untidy
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && git commit -qm 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && git add docs/sessions.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:split-a-page-rewrites-a-link"}
+expect:
+  status: pass   # refused, said as a warning, not failed: on schedule
+  applied: []
+  findings: [{rule: rewritten, where: docs/auth.md}]
