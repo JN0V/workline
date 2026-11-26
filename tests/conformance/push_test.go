@@ -124,8 +124,9 @@ func TestDocsSaysWhatStoppedIt(t *testing.T) {
 // A doc `workline docs` cannot put before the agent says why, on the line
 // naming it: tried on a solo repository, seven docs too large to be judged
 // were listed with the first line of their finding only, and nothing said a
-// person had to judge them. Too large to be judged whole, it is left for the
-// next gardening, which judges it in parts (#458), and says so.
+// person had to judge them. Too large for an agent that does not read the
+// repository, it goes to a person, and says what the person does
+// (docs/adr/0074).
 func TestDocsSaysWhatBecameOfEachDoc(t *testing.T) {
 	work := t.TempDir()
 	env := append(hermeticEnv(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
@@ -144,10 +145,10 @@ func TestDocsSaysWhatBecameOfEachDoc(t *testing.T) {
 	out, _ := cmd.CombinedOutput()
 	said := false
 	for _, l := range strings.Split(string(out), "\n") {
-		said = said || strings.Contains(l, "docs/tech/auth.md") && strings.Contains(l, "left for the next gardening")
+		said = said || strings.Contains(l, "docs/tech/auth.md") && strings.Contains(l, "a person judges it")
 	}
 	if !said {
-		t.Errorf("the line naming the doc does not say it is left for the next gardening:\n%s", out)
+		t.Errorf("the line naming the doc does not say a person judges it:\n%s", out)
 	}
 }
 
