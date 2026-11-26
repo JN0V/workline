@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
 )
 
 // A quote is found at the lines that hold it, not from an earlier line that
