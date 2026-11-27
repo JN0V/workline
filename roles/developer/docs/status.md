@@ -419,6 +419,13 @@ hold:
 
 ## Measured
 
+2026-11-27: on Opus at medium with a checklist in its instruction,
+16, 16, 15 of 19 points on 11 replayed send-backs, against 7, 12, 7 on
+Sonnet with it; 2.5 times production's fresh tokens; a guard on the
+first 10 pull requests
+([the model](agent.md#the-model),
+[the bench](../../../docs/research/diagnosing-a-role-findings.md#developer)).
+
 Step 8 (2026-10-29): four planted issues in
 `tests/evaluation/cases/developer/`, scored with a real agent
 (`WORKLINE_EVAL=claude`, Sonnet at medium) into

@@ -29,10 +29,15 @@ events: [issue, schedule, review, merge-request]
 requires: [git]
 
 # Writing the code an issue asks for is judgement on code; the pick and
-# the bounds are mechanical and ask no agent.
+# the bounds are mechanical and ask no agent. Frontier: the owner chose
+# reliability over tokens on 2026-11-27, about 2.5 times the fresh
+# tokens of Sonnet with the old prompt on the bench
+# (docs/agent.md#the-model). Another model for the developer alone:
+# `--ai claude:sonnet@medium` on `workline develop`; `ai:` in the
+# project's config changes every role, and forces their effort.
 model:
   capability: coding
-  tier: standard
+  tier: frontier
   effort: medium
   timeout: 60m   # one answer; ai-max-seconds holds the run's wait
 
