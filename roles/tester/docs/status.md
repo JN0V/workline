@@ -131,11 +131,11 @@ Cases in `tests/conformance/cases/tester/`:
   declared by its file, the file alone proven
   ([#1293](https://github.com/JN0V/workline/issues/1293));
   proven red before the Draft opens; no agent, nothing written.
-- **An answer that does not read**, asked again once with the reader's
+- **An answer that does not read**, asked again with the reader's
   error; each refusal written on the issue, at night too
   ([#761](https://github.com/JN0V/workline/issues/761)); a real agent's
   slip asked again, on [#776](https://github.com/JN0V/workline/pull/776).
-- **A test green on the base**, asked again once, told which test
+- **A test green on the base**, asked again, told which test
   passes there: the answer keeps its scenario as today, or the run
   blocks; a feature's every scenario kept so goes back to the product
   owner; trial #56's real answer replayed with its green test
@@ -149,7 +149,7 @@ Cases in `tests/conformance/cases/tester/`:
   ([#1148](https://github.com/JN0V/workline/issues/1148)); a new test the
   project's runner skips is said, its filter named, to the next run too
   ([#1149](https://github.com/JN0V/workline/issues/1149)).
-- **Tests that do not lint**, asked again once with each finding, its
+- **Tests that do not lint**, asked again with each finding, its
   file and line from the repository's root; still found, blocked, the
   finding said on the issue
   ([#964](https://github.com/JN0V/workline/issues/964)); tried with the

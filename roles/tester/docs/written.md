@@ -37,7 +37,8 @@ Once the Draft is proven, the engine moves the issue on, no agent asked
   [the reviewer's rules](../../reviewer/README.md) when it is routed
   there: a test once frozen is no longer the tester's to edit
   ([#1040](https://github.com/JN0V/workline/issues/1040)).
-  - A finding there is the agent's to mend: it is asked once more, each
+  - A finding there is the agent's to mend: it is asked again, three times at
+    most, each
     finding named by its file and line
     ([#964](https://github.com/JN0V/workline/issues/964)).
   - Still there, the run blocks (`tests-lint`): no Draft, the finding

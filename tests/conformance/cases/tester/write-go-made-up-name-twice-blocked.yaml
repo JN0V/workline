@@ -1,9 +1,9 @@
 case: tester/write-go-made-up-name-twice-blocked
 about: >
-  Asked once more with the judge's no, the agent's Go test still calls
+  Asked again, three times at most, with the judge's no, the agent's Go test still calls
   `stubTwo`, a name the code lacks and the issue never names (#1111);
   the same build, its judge's no stands, not asked again (#1274): the
-  tester asks no third time. The run blocks
+  tester asks no fifth time. The run blocks
   with the judge's line, said on the issue; no Draft opens.
 given:
   repo: go-tested
@@ -23,7 +23,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-go-stub-once.sh"}
 expect:
   status: block
-  agent-calls: 3
+  agent-calls: 5
   findings: [{rule: build-broken, where: calc/mul_test.go}]
   not-pushed: [workline/tester/issue-3]
   forge:

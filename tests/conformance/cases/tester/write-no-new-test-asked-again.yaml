@@ -1,0 +1,25 @@
+case: tester/write-no-new-test-asked-again
+about: >
+  A test the project's runner skips ends no run at once: the agent is
+  asked again in the same run with the reason, the runner that did not
+  run it; told, it writes a test the runner runs, and the Draft opens.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA shell test.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-mul-unrun-once.sh"}
+expect:
+  status: pass
+  agent-calls: 2
+  run-files:
+    out/feedback.md: {contains: ["no-new-test", "did not run them"]}
+  pushed:
+    workline/tester/issue-3: {tests/test_mul_two_by_three.sh: "mul 2 3"}

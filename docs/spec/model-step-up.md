@@ -21,4 +21,5 @@ An answer that could not be read at all is asked once more on the same tier,
 besides, even when `promote-after` is 0 — a part's too, a reviewer's lens,
 when `promote-after` is above 0 ([one run](role-contract.md#one-run)). So
 is a block `post` marks `again`, one the answer can mend, when
-`promote-after` is 0: one more call in all.
+`promote-after` is 0: one more call in all, three for the tester, each
+with its reason.

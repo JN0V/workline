@@ -224,9 +224,9 @@ func found(tested map[string][]string, scenarios []work.Scenario, newTests, writ
 	return matched, findings
 }
 
-// answerMends are the rules of the covers entries, the answer's to mend:
-// asked again once with them before any block.
-var answerMends = map[string]bool{"scenario-without-test": true, "covers-unreadable": true, "covers-unknown-scenario": true, "covers-empty": true}
+// answerMends are the rules of the covers entries, and a test's line
+// changed, the answer's to mend: asked again with them before any block.
+var answerMends = map[string]bool{"scenario-without-test": true, "covers-unreadable": true, "covers-unknown-scenario": true, "covers-empty": true, "test-line-changed": true}
 
 // recovered keeps the record's covers true once file is rewritten on an
 // objection: a covers entry of the answer for a scenario of the record

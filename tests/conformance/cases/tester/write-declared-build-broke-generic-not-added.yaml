@@ -3,7 +3,7 @@ about: >
   Build broke, no test-name, a file declared the change does not add
   (#1293): the C test file it adds is the one test found, by its file;
   the agent declares tests/test_div.c, none of them. It goes the
-  declared-test-missing way: asked again once, the same answer blocks;
+  declared-test-missing way: asked again, three times at most, the same answer blocks;
   no Draft opened.
 given:
   repo: c-tested
@@ -21,7 +21,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-c-declared-not-added"}
 expect:
   status: block
-  agent-calls: 2
+  agent-calls: 4
   findings: [{rule: declared-test-missing, where: "Multiply"}]
   run-files:
     out/feedback.md: {contains: ["tests/test_div.c"]}

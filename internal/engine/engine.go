@@ -760,13 +760,18 @@ func run(o Options, res *Result) error {
 	tier, failures := r.Model.Tier, 0
 	var intents, said []intent.Intention
 	var v *verdict.Verdict
-	askedOnce := false // asked again once already, an answer unread or one post said to mend
-	unasked := false   // a task the agent was not asked, nor answered: what pre gave it read by no one
+	// Asked again, an answer unread or one post said to mend: once, the
+	// tester thrice, each with its reason (no Draft: 7 of 45 runs → 1).
+	asks, maxAsks := 0, 1
+	if r.Name == "tester" {
+		maxAsks = 3
+	}
+	unasked := false // a task the agent was not asked, nor answered: what pre gave it read by no one
 	for {
 		// A size counts on the first call alone (#1160): one asked again
 		// carries what its first answer needs mended, an unread answer's
 		// or a refused one's (`promote-after`).
-		res.askedAgain = askedOnce || failures > 0
+		res.askedAgain = asks > 0 || failures > 0
 		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
 		if err != nil {
 			return err
@@ -786,32 +791,23 @@ func run(o Options, res *Result) error {
 		// A role that never asks a refused answer again (`promote-after`
 		// 0) still asks an unread one again, whatever post said: its block
 		// comes of nothing read, as the tester's no test written (#761).
-		if a.askedAgent && a.unread != "" && !askedOnce && !v.Final && (v.Status != verdict.Block || r.Model.PromoteAfter <= 0) {
-			askedOnce = true
-			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(unreadFeedback(a.unread)), 0o644); err != nil {
+		if a.askedAgent && a.unread != "" && asks < maxAsks && !v.Final && (v.Status != verdict.Block || r.Model.PromoteAfter <= 0) {
+			asks++
+			if err := readyNextAsk(runDir, unreadFeedback(a.unread), "unread"); err != nil {
 				return err
 			}
-			os.Rename(filepath.Join(runDir, "out", "agent-answer.txt"), filepath.Join(runDir, "out", "unread-answer.txt"))
-			os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
-			os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 			continue
 		}
 		// A block post says the answer can mend (`again`: the tester's
-		// tests that do not lint, #964) is asked again the same way, once,
-		// with its findings, by a role that asks no refused answer again:
-		// the one more call an unread answer gets, not a second one.
-		if a.askedAgent && v.Status == verdict.Block && v.Again && !askedOnce && !v.Final && r.Model.PromoteAfter <= 0 {
-			askedOnce = true
+		// tests that do not lint, #964) is asked again the same way, with
+		// its findings, by a role that asks no refused answer again: the
+		// asks an unread answer gets, shared, never more.
+		if a.askedAgent && v.Status == verdict.Block && v.Again && asks < maxAsks && !v.Final && r.Model.PromoteAfter <= 0 {
+			asks++
 			fb := feedback(v.Findings) + "\nYour answer was read, and refused for these findings alone: send it again whole, each of them fixed.\n"
-			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb), 0o644); err != nil {
+			if err := readyNextAsk(runDir, fb, fmt.Sprintf("refused-%d", asks)); err != nil {
 				return err
 			}
-			// Kept to be studied when it can be; what post and the judge
-			// said of it goes, written anew by the next answer's.
-			_ = os.Rename(filepath.Join(runDir, "out", "intentions.yaml"), filepath.Join(runDir, "out", "refused-1.yaml"))
-			_ = os.Rename(filepath.Join(runDir, "out", "agent-answer.txt"), filepath.Join(runDir, "out", "refused-1-answer.txt"))
-			_ = os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
-			_ = os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 			continue
 		}
 		if !a.askedAgent || v.Status != verdict.Block || v.Final {
@@ -822,15 +818,9 @@ func run(o Options, res *Result) error {
 		if retry, tier = askAgain(failures, r.Model.PromoteAfter, tier); !retry || warnsOnMergeRequest(r, o) {
 			break
 		}
-		if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(feedback(v.Findings)), 0o644); err != nil {
+		if err := readyNextAsk(runDir, feedback(v.Findings), fmt.Sprintf("refused-%d", failures)); err != nil {
 			return err
 		}
-		// The refused answer is kept beside its refusal, to be studied, as
-		// read and as it came.
-		os.Rename(filepath.Join(runDir, "out", "intentions.yaml"), filepath.Join(runDir, "out", fmt.Sprintf("refused-%d.yaml", failures)))
-		os.Rename(filepath.Join(runDir, "out", "agent-answer.txt"), filepath.Join(runDir, "out", fmt.Sprintf("refused-%d-answer.txt", failures)))
-		os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
-		os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 	}
 	// The agent is asked no more: the worktree its role gave it goes, its
 	// diff already read by post (ADR-0056).
@@ -1081,11 +1071,9 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 		firstWhy := ""
 		if why := partUnread(err, dir, claims); why != "" && asked.Model.PromoteAfter > 0 {
 			firstWhy = why
-			if err := os.WriteFile(filepath.Join(dir, "out", "feedback.md"), []byte(unreadFeedback(why)), 0o644); err != nil {
+			if err := readyNextAsk(dir, unreadFeedback(why), "unread"); err != nil {
 				return err
 			}
-			os.Rename(filepath.Join(dir, "out", "agent-answer.txt"), filepath.Join(dir, "out", "unread-answer.txt"))
-			os.Remove(filepath.Join(dir, "out", "intentions.yaml"))
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-asked-again", Where: name, Level: "warn",
 				Message: "the answer to this part did not read (" + why + "): asked for again once, with what the reader said"})
 			err = callAgent(ag, req, "part", runDir, res)
@@ -1199,6 +1187,20 @@ func feedback(fs []verdict.Finding) string {
 		}
 	}
 	return fb.String()
+}
+
+// readyNextAsk readies the run for its agent's next answer, told feedback:
+// its last one kept as name.yaml and name-answer.txt, post's verdict gone.
+func readyNextAsk(runDir, feedback, name string) error {
+	out := filepath.Join(runDir, "out")
+	if err := os.WriteFile(filepath.Join(out, "feedback.md"), []byte(feedback), 0o644); err != nil {
+		return err
+	}
+	_ = os.Rename(filepath.Join(out, "intentions.yaml"), filepath.Join(out, name+".yaml"))
+	_ = os.Rename(filepath.Join(out, "agent-answer.txt"), filepath.Join(out, name+"-answer.txt"))
+	_ = os.Remove(filepath.Join(out, "verdict.yaml"))
+	_ = os.Remove(filepath.Join(out, "judge.yaml"))
+	return nil
 }
 
 // unreadFeedback is what the agent is told when nothing of its answer read.
@@ -2574,22 +2576,13 @@ func askAgain(failures, promoteAfter int, tier string) (bool, string) {
 	if promoteAfter <= 0 || failures > promoteAfter {
 		return false, tier
 	}
-	if failures == promoteAfter {
-		return true, stepUp(tier)
+	if i := slices.Index(tiers, tier); failures == promoteAfter && i >= 0 && i+1 < len(tiers) {
+		return true, tiers[i+1]
 	}
 	return true, tier
 }
 
 var tiers = []string{"light", "standard", "frontier"}
-
-func stepUp(tier string) string {
-	for i, t := range tiers {
-		if t == tier && i+1 < len(tiers) {
-			return tiers[i+1]
-		}
-	}
-	return tier
-}
 
 type attemptResult struct {
 	intents       []intent.Intention

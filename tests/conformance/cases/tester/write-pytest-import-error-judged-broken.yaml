@@ -22,7 +22,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-py-money"}
 expect:
   status: block
-  agent-calls: 3
+  agent-calls: 5
   findings: [{rule: build-broken, where: tests/test_pricing.py, message: "No module named 'pkg'"}]
   not-pushed: [workline/tester/issue-3]
   forge:

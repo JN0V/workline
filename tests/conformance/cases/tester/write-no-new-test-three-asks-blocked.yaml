@@ -1,0 +1,31 @@
+case: tester/write-no-new-test-three-asks-blocked
+about: >
+  A refusal the answer can mend is asked again three times in the run,
+  each with its reason, never more: an agent that writes, every time, a
+  test the runner skips is refused on its fourth answer, and the run
+  blocks as before, said on the issue; no Draft opens.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  env:
+    ALWAYS: "1"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA shell test.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-mul-unrun-once.sh"}
+expect:
+  status: block
+  agent-calls: 4
+  findings: [{rule: no-new-test, where: tests/check_mul_two_by_three.sh}]
+  not-pushed: [workline/tester/issue-3]
+  forge:
+    merge-requests:
+      - {id: 1, absent: true}
+    issues:
+      - {id: 3, comment-contains: ["**The tester** wrote no tests for this issue this run"]}
