@@ -177,8 +177,8 @@ Each buildable alone, in this order:
 
 ## Not chosen
 
-- **React to `issues: opened`.** Against [ADR-0069]'s 2026-11-17
-  amendment: nothing moves from events.
+- **A person runs the step by hand**: the person becomes the fast lane ([principle 14](../PRINCIPLES.md)).
+- **React to `issues: opened`.** Against [ADR-0069]'s 2026-11-17 amendment.
 - **Urgent and High expedited.** The expedite lane would not be small.
 - **Strict off on DomoticsCore and TraceGlass.** Against 2026-11-25.
 - **Native queues only.** An organisation or Premium; first in, first out.
