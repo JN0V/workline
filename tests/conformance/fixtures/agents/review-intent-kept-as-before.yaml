@@ -1,0 +1,15 @@
+# The intent lens on the `reviewed` fixture once a commit closing #4 makes
+# an empty list average 0, with its test, the sum's loop left as it was:
+# "Empty list" shown by its code and test; "Mean kept", a behaviour kept
+# as before, shown by its code, its reason that it is kept as before.
+calls:
+  - - scenario:
+        scenario: Empty list
+        issue: 4
+        code: {path: calc/calc.go, quote: "if len(values) == 0 {"}
+        test: {path: calc/calc_test.go, quote: "func TestAverageEmpty(t *testing.T) {"}
+    - scenario:
+        scenario: Mean kept
+        issue: 4
+        code: {path: calc/calc.go, quote: "total += v"}
+        reason: kept as before, the change leaves the sum's loop as it was

@@ -2,7 +2,7 @@ case: tester/write-declared-test-missing
 about: >
   A declared test missing (ADR-0065, change 4): an id found neither in
   the report among the new tests nor in the test files written goes the
-  objection's way. The tester's agent is asked again once with it; the
+  objection's way. The tester's agent is asked again with it, three times at most; the
   same answer again blocks, said on the issue, which the line blocks and
   the product owner reads again; no Draft opened.
 given:
@@ -20,7 +20,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-declared-missing"}
 expect:
   status: block
-  agent-calls: 2
+  agent-calls: 4
   findings: [{rule: declared-test-missing, where: "By zero"}]
   run-files:
     out/feedback.md: {contains: ["tests.test_mul_nowhere"]}

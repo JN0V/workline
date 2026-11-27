@@ -336,8 +336,8 @@ token), **apply** (trusted, no AI key).
    line of context) is never replaced: it is applied after the agent's.
    With no agent, or none that answered, the fallback proposals are used alone.
    An answer that cannot be read as proposals (`agent-invalid-output`, with
-   what the YAML reader said) is asked for again once, on the same tier, with
-   that error, when `post` did not block, or blocked for a role that never
+   what the YAML reader said) is asked for again once, the tester's up to
+   three times, on the same tier, with that error, when `post` did not block, or blocked for a role that never
    asks a refused answer again (`promote-after: 0`); a final block, never:
    nothing of it was judged, and a quote left unescaped is a slip, not a
    refusal. The documentalist's `post` passed with no proposal, and such a
@@ -356,8 +356,9 @@ token), **apply** (trusted, no AI key).
    [#964](https://github.com/JN0V/workline/issues/964), or do not build,
    [#1048](https://github.com/JN0V/workline/issues/1048)), is asked again
    the same way, for a role with `promote-after: 0`, with its findings:
-   the one more call an unread answer gets, never a second one. The
-   answer refused is kept as `out/refused-1.yaml`.
+   the asks an unread answer gets, shared, never more: one, the
+   tester's three, each with its reason. The answer refused is kept as
+   `out/refused-N.yaml`, N the ask.
    An item holding several keys where one kind goes, or none, is refused
    so too, the keys named: several kinds, an item each; a key no kind is
    named by, the role's kind whose shape holds it, under which it goes (a

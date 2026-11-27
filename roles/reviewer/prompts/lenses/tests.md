@@ -18,8 +18,10 @@ judge:
     against it in place of the real one. Answer no, naming the test, if a
     test exercises it and would fail without it; no too if the change
     needs no test (a rename, a message), if the test guards a behaviour
-    kept as before (it passes on the base by design), or if the finding
-    only guesses.
+    kept as before (it passes on the base by design), if the finding asks
+    a test of a behaviour kept as before whose code the change neither
+    rewrites, moves nor removes (code added beside it, for another
+    case, leaves it as it was), or if the finding only guesses.
   reads: tests
 ---
 **Tests.** Does a test cover each behaviour the change adds or changes?
@@ -33,7 +35,8 @@ the change writes (a doc, a message, a manifest, a setting). These
 three weak tests are important, never a nit: the behaviour can break
 unseen. A change that needs no test (a rename, a
 message) is not, nor a test guarding a behaviour kept as before, which
-passes on the base by design.
+passes on the base by design, nor a missing test of a behaviour kept as
+before whose code the change neither rewrites, moves nor removes.
 
 A file the change adds among the tests (a fake, a helper) that has the
 name of a file or type the main code already defines is a finding too,

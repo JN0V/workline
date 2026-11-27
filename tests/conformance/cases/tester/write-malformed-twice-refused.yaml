@@ -1,7 +1,7 @@
 case: tester/write-malformed-twice-refused
 about: >
   Two answers in a row that do not read as YAML: the tester asks no
-  third time (#761). The run blocks with the reader's error, the
+  fifth time (#761). The run blocks with the reader's error, the
   refusal is said on the issue, and no Draft opens.
 given:
   repo: tested
@@ -20,7 +20,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "cmd:sh $FIXTURES/agents/tester-mul-malformed-once.sh"}
 expect:
   status: block
-  agent-calls: 2
+  agent-calls: 4
   findings: [{rule: agent-invalid-output}, {rule: no-test-written}]
   not-pushed: [workline/tester/issue-3]
   forge:

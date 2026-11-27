@@ -34,8 +34,8 @@ workline test check --base origin/main
 | `setting-missing` | yes | `test-command` or `test-report` is not set |
 | `test-command-fails` | yes | writing an issue's tests: the test command, run on the base before the agent, failed with no report |
 | `setting-invalid` | yes | `test-report` leaves the repository's root, a `module-files` name holds a `/`, or `build-errors` does not compile |
-| `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML; its error lines quoted. With the change's tests and no error a row reads, the agent is asked once more ([missing name](missing-name.md)) |
-| `build-broken` | yes | the build broke on the base with the change's tests, and the judge says it is not by what the issue adds, its line quoted ([broken build](missing-name.md)); writing an issue's tests, after the agent is asked once more with the error, then a machine error the line runs again ([the record](../../../docs/spec/routing.md#once-a-state-the-record)) |
+| `report-missing` | yes | a run wrote no report where `test-report` says, or not JUnit XML; its error lines quoted. With the change's tests and no error a row reads, the agent is asked again ([missing name](missing-name.md)) |
+| `build-broken` | yes | the build broke on the base with the change's tests, and the judge says it is not by what the issue adds, its line quoted ([broken build](missing-name.md)); writing an issue's tests, after the agent is asked again with the error, three times at most, then a machine error the line runs again ([the record](../../../docs/spec/routing.md#once-a-state-the-record)) |
 
 
 ### What warns or informs

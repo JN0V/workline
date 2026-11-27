@@ -22,7 +22,8 @@ An issue it does not take is refused before any agent is asked
 - **One comment of the tester's**, edited on each refusal: why, and
   what comes next.
 - **Its own tests refused too**: a test green on the base, a scenario
-  with no test: asked again once first, told which; still refused, said
+  with no test: asked again first, told which, three times at most
+  in the run; still refused, said
   in the same comment, the run blocks. In
   `workline:needs-tests`, the line then blocks the issue, `workline:blocked`,
   the reason on the board
@@ -33,7 +34,7 @@ An issue it does not take is refused before any agent is asked
   ([#794](https://github.com/JN0V/workline/issues/794)).
 - **No reason, no answer**: an agent that names no kind, writes no
   test and gives no reason, or stops at its turn cap first, did no
-  work: asked again once, then `no-test-written`, a machine error the
+  work: asked again, three times at most, then `no-test-written`, a machine error the
   line retries, never "no test possible"
   ([#1194](https://github.com/JN0V/workline/issues/1194),
   [one run](../../../docs/spec/role-contract.md#one-run)).
@@ -44,15 +45,17 @@ An issue it does not take is refused before any agent is asked
   names an existing test instead is kept as written, listed unproven
   for the reviewer's tests lens.
 - **An answer that does not read** (a list item indented one space
-  too far): asked again once, with the reader's error; still
-  unreadable, refused and said, no third call
+  too far): asked again with the reader's error, three times at most;
+  still unreadable, refused and said, no fifth call
   ([#761](https://github.com/JN0V/workline/issues/761)); text before
   the list too, never cut off: it may be a test. A `file:` beside a
   patch naming its own file is read
   ([#1148](https://github.com/JN0V/workline/issues/1148),
   [one run](../../../docs/spec/role-contract.md#one-run)).
 - **A test the project's runner skips** (a suite its `test_filter`
-  does not list): the block names the file and the filter, and the next
-  run tells the agent ([#1149](https://github.com/JN0V/workline/issues/1149)).
+  does not list), or a patch that does not apply: asked again in the
+  run with the reason, the file and the filter named, three times at
+  most; then the run blocks
+  ([#1149](https://github.com/JN0V/workline/issues/1149)).
 - **Not a job's log alone**: a person on the issue sees why no Draft
   came.

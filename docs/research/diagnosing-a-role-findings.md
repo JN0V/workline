@@ -83,9 +83,31 @@ rounds:
   send-backs, the agent's own text said what was missing.
 - **Reviewer Importants**: 0 of 14 declined findings were true and
   fixable but argued away; 1 got an empty round.
-- **INTERIM**: 4 arms queued at the same commit (a checklist before the
-  last message, effort high, a second pass by a fresh call, Opus),
-  scored by meaning per send-back point.
+- **INTERIM, a checklist and Opus** (2026-11-27): 11 send-backs
+  replayed, 19 points reachable, scored by meaning by an Opus judge
+  (25 of 26 known answers; stricter than Fable on 3 of 57).
+
+  | Arm | Points of 19, per run | Fresh tokens a case |
+  |---|---|---|
+  | Sonnet medium, production's prompt | 4 (one run) | 28.4k |
+  | Sonnet medium, checklist | 7 · 12 · 7 | 34.6k |
+  | Opus medium, production's prompt | 11 (one run) | 54.9k |
+  | Opus medium, checklist | 16 · 16 · 15 | 70.5k |
+
+  - Opus with the checklist is above Sonnet with it in every run. One
+    triple a side: p = 0.10, the floor; not shown by the criteria.
+  - It costs **2.5 times** the fresh tokens of production (2.0 times
+    Sonnet with the checklist), 4.3 times its cache reads.
+  - The checklist was written from these same send-backs: the gain is
+    an upper bound. The two baselines rest on one run each.
+  - The checklist makes Opus run the whole suite (3 → 11 of 11) and
+    open the docs (1 → 6–9 of 11); on Sonnet it barely moves either.
+  - Reached by no arm: wiring a new test into what CI runs, and a
+    test of the case the issue names when a neighbour's exists.
+  - The owner chose reliability over tokens: shipped with a guard,
+    the first 10 pull requests watched for send-backs, agent runs
+    stopped at `ai-max-seconds` and fresh tokens; rolled back with one line
+    ([the developer's model](../../roles/developer/docs/agent.md#the-model)).
 
 ### Tester
 
@@ -157,7 +179,8 @@ a bad scenario, 2026-11-23 to 25:
 | Judge model: same as lenses or the other | reviewer | **INTERIM**, running |
 | Effort high | reviewer, product owner, documentalist, developer | **INTERIM**, queued |
 | Only an explicit request wakes a round | developer | merged in v0.91.0 ([#2220](https://github.com/JN0V/workline/pull/2220)) |
-| Checklist, second pass, Opus | developer | **INTERIM**, queued |
+| Checklist on Opus medium | developer | shipped with a guard, 16 · 16 · 15 of 19 against 7 · 12 · 7 on Sonnet, ×2.5 tokens ([above](#developer)) |
+| Second pass by a fresh call | developer | not run |
 | Instructions on the line's bounds and product questions | product owner | **INTERIM**, queued |
 | Citation rule off for removals; prompt on what to cite | documentalist | **INTERIM**, queued |
 | Score by meaning | bench | open ([#2282](https://github.com/JN0V/workline/pull/2282)) |

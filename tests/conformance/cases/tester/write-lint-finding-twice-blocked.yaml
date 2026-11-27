@@ -1,7 +1,7 @@
 case: tester/write-lint-finding-twice-blocked
 about: >
-  Asked once more with the lint's finding, the agent answers with it
-  still there (#964): the tester asks no third time. The run blocks as
+  Asked again, three times at most, with the lint's finding, the agent answers with it
+  still there (#964): the tester asks no fifth time. The run blocks as
   before the second call, the refusal said on the issue with the
   finding where a person reads it, from the repository's root, never a
   folder of the machine that ran it. No Draft opens; the issue keeps its
@@ -25,7 +25,7 @@ given:
 run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "cmd:sh $FIXTURES/agents/tester-mul-unchecked-once.sh"}
 expect:
   status: block
-  agent-calls: 2
+  agent-calls: 4
   findings: [{rule: tests-lint, where: "tests/test_mul_by_zero.sh:4", message: "Exit status of `rm` is not checked (errcheck)"}]
   stdout-lacks: ["compared"]
   not-pushed: [workline/tester/issue-3]

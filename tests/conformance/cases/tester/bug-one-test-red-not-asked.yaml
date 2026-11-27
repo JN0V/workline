@@ -23,7 +23,7 @@ given:
 run: {test: [write, --issue, "3"], ai: "fake:tester-green-on-base"}
 expect:
   status: block
-  agent-calls: 2
+  agent-calls: 4
   findings: [{rule: test-green-on-base, where: tests.test_mul_by_zero}]
   no-findings: [{rule: bug-not-reproduced}]
   not-pushed: [workline/tester/issue-3]

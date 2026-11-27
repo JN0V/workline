@@ -1,0 +1,26 @@
+case: engine/act-record-models-filled-when-applied-apart
+about: "A role run that makes a model call, judged with no write token (--no-apply) and applied by a job apart (workline apply), posts its comment with an act record whose models lists the model used, not an empty list."
+given:
+  repo: basic
+  forge:
+    issues:
+      - {id: 1, title: "Export users", body: "Export the users as CSV.", labels: [], comments: []}
+run:
+  role: records-comment
+  event: schedule
+  target: {issue: 1}
+  no-apply: true
+  then: resume
+  ai: |-
+    cmd:printf 'model: sonnet\n' > "$WORKLINE_CALL"
+    printf '%s\n' '- comment: "The issue is clear."'
+expect:
+  status: pass
+  forge:
+    issues:
+      - id: 1
+        comment-contains:
+          - "workline:act"
+          - '"models":["sonnet"]'
+        comment-lacks:
+          - '"models":[]'
