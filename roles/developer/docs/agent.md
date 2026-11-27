@@ -89,6 +89,30 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
   turns, fresh tokens, cache reads and the tools it used, one count a
   tool, go in the claim's record.
 
+## The model
+
+- **Opus at medium effort** by default: the role asks the `frontier`
+  tier ([the model grid](../../../docs/spec/model-grid.md)), which
+  Claude reads as `opus`.
+- **About 2.5 times the fresh tokens** of Sonnet with the old prompt:
+  70.5k a case against 28.4k on the bench; cache reads 4.3 times.
+- **Why**: reliability over tokens, the owner's choice of 2026-11-27.
+  On 11 replayed send-backs, Opus with the checklist below scored
+  16, 16, 15 of 19; Sonnet with it 7, 12, 7
+  ([the bench](../../../docs/research/diagnosing-a-role-findings.md#developer)).
+- **Its instruction ends with a checklist**: each sentence of the
+  issue done and tested, a new test red without the change, callers
+  and callees opened, uses elsewhere brought in line, the whole suite
+  run last, what worked before kept, what is left in `Not done:`
+  ([the instruction](../prompts/instruction.md)).
+- **Another model**: `--ai claude:sonnet@medium` on the run, or `ai:`
+  in `.workline/config.yaml` for every role when no `--ai` is given
+  ([the agent](../../../docs/usage.md#the-agent)). In CI, the
+  workflow's `ai=claude` line.
+- **Watched**: the first 10 pull requests on Opus, for send-backs,
+  proofs that hit `proof-seconds`, and fresh tokens a run. Worse, the
+  role's tier goes back to `standard`: one line in its `role.yaml`.
+
 ## The question
 
 It names the code, never pastes it; the agent reads it in its worktree:
