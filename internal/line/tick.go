@@ -18,8 +18,9 @@ import (
 // run readied an issue (backlogDue). last is that run as backlogDue reads
 // it: `<started>/<updated>`, `none`, `waiting` or `unread`. Not below its
 // target, or no backlog run on this line: false and "". Before all, due for
-// an Urgent issue (ADR-0075 §3) not yet read: no state or `refine`, its
-// label put on since the last backlog run started.
+// an Urgent issue, priority 1, so that the product owner reads it at the next
+// tick, not the next night: one it has not read yet, with no state or in
+// `refine`, its priority label put on since the last backlog run started.
 func BacklogDue(cfg *routing.Config, b forge.Backlog, open []forge.Issue, last string) (bool, string) {
 	start, ok := labeledAt(strings.Split(last, "/")[0])
 	for _, is := range open {
