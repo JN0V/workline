@@ -83,6 +83,7 @@ type Settings struct {
 	SpecLinesMax    int               `json:"spec-lines-max"`         // lines of a spec the lenses are given; the rest cut, said
 	SpecRounds      int               `json:"spec-rounds"`            // on the forge: reviews in a row with a finding open, then a person (#128)
 	SpecsPerRun     int               `json:"specs-per-run"`          // on the forge: the specs a run reads; the rest wait for the next (#433)
+	Verifier        string            `json:"verifier"`               // off, or shadow: once the review is posted, an agent reading the repository keeps, drops and adds, recorded, changing nothing (verify.go)
 }
 
 // alone is the facet given the change only, apart from the lenses (#126):
@@ -211,6 +212,7 @@ type Review struct {
 	Weighed   []string          `json:"weighed,omitempty"`  // what the run's judges said of the tester's answers that no test is needed (#1303)
 	Kept      string            `json:"kept,omitempty"`     // what the judge said of a task's behaviour (kept.go)
 	KeptAt    string            `json:"kept-at,omitempty"`  // the head it said yes on
+	Verifier  *Verified         `json:"verifier,omitempty"` // what the verifier said, in shadow: it changes nothing (verify.go)
 }
 
 // JudgeRead is one round of reads a judge asked (ADR-0045): what it asked,
@@ -432,7 +434,7 @@ func prepare(runDir, repo string, s Settings) int {
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 		st.Advisories = append(st.Advisories, verdict.Finding{Rule: "not-reviewed", Level: "warn",
 			Message: "no agent: only the rules that need no judgement ran; the change waits for a person's review"})
-		return final(runDir, review(st, nil, "no agent: only the rules ran"))
+		return final(runDir, unverified(review(st, nil, "no agent: only the rules ran"), s, "no agent (ai: none)"))
 	}
 	// What the change is for, and what its author says of it (#126): the
 	// merge request's text and the commit messages name the issues it
@@ -2336,6 +2338,9 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 // Post writes the verdict from what pre settled, and keeps the record on
 // this machine once every lens answered.
 func Post(runDir, repo string) int {
+	if why := os.Getenv("WORKLINE_SHADOW"); why != "" {
+		return verified(runDir, why)
+	}
 	var v Review
 	if err := readJSON(filepath.Join(runDir, "in", "review.json"), &v); err != nil {
 		return fail(err)
@@ -2345,6 +2350,7 @@ func Post(runDir, repo string) int {
 			return fail(err)
 		}
 	}
+	askVerifier(runDir, repo, &v)
 	if err := writeJSON(filepath.Join(runDir, "out", "review.json"), v); err != nil {
 		return fail(err)
 	}
@@ -2919,7 +2925,7 @@ func testsOf(repo string) testdef.Def {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, PartsMax: 2, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, CommitsPerPush: 5, IssueLinesMax: 160, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, PartsMax: 2, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, CommitsPerPush: 5, IssueLinesMax: 160, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5, Verifier: "off"}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err

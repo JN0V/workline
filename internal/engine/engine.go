@@ -624,6 +624,7 @@ func run(o Options, res *Result) error {
 		}
 	}
 	env := scriptEnv(runDir, r.Name, o)
+	defer shadow(r, o, ag, runDir, env, res) // once the run's result is settled and applied
 	if branch := releaseRequest(o); branch != "" {
 		env = append(env, "WORKLINE_RELEASE_BRANCH="+branch)
 	}
@@ -3606,6 +3607,25 @@ func newRunDir(repo, roleName string) (string, error) {
 		}
 	}
 	return dir, nil
+}
+
+// shadow asks the task post left in out/shadow (the reviewer's verifier)
+// once the run is settled and applied, changing none of it, a cap its call
+// meets included; post, run again with WORKLINE_SHADOW, records the answer.
+func shadow(r *role.Role, o Options, ag agent.Agent, runDir string, env []string, res *Result) {
+	dir, why := filepath.Join(runDir, "out", "shadow"), "answered"
+	asked := r.ForTask(taskKind(dir)).Asked()
+	defer dropWorktree(o.Repo, dir)
+	if _, err := os.Stat(filepath.Join(dir, "in", "task.md")); err != nil || ag == nil || os.MkdirAll(filepath.Join(dir, "out"), 0o755) != nil {
+		return
+	}
+	defer func(tokens, seconds bool) { res.capped, res.timeCapped = tokens, seconds }(res.capped, res.timeCapped)
+	if err := callAgentOnce(ag, agent.Request{RunDir: dir, Repo: o.Repo, Role: asked, Tier: asked.Model.Tier}, taskKind(dir), runDir, res); err != nil {
+		why = err.Error()
+	}
+	_, _ = script(r, "post", o.Repo, append(env[:len(env):len(env)], "WORKLINE_SHADOW="+why))
+	said, _ := os.ReadFile(filepath.Join(dir, "said")) // none when post failed: nothing said
+	res.Summary = strings.TrimSuffix(res.Summary+"; "+strings.TrimSpace(string(said)), "; ")
 }
 
 // dropWorktree removes the worktree, or the read tree, a role's pre made
