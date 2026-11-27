@@ -24,7 +24,8 @@ type Verified struct {
 }
 
 // askVerifier leaves the engine, in shadow, the verifier's task in out/shadow,
-// on a review of the whole change but the run apart (ADR-0050).
+// on a review of the whole change; never in the run of only the warning lenses
+// (input `warn: only`, see warnOnly), which gives no verdict.
 func askVerifier(runDir, repo string, v *Review) {
 	st, c, ai, b, shown := state{}, candidates{}, os.Getenv("WORKLINE_AI"), strings.Builder{}, []string{}
 	s, err := settings(runDir)
