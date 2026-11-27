@@ -95,7 +95,8 @@ func TestWaitsTesterNotRouted(t *testing.T) {
 
 // TestWaitsUrgentPassesOnce: a priority-1 issue's step passes a full
 // Ready, said once however often counted; one started in the run keeps
-// its priority, so a second Urgent waits (ADR-0075 §4).
+// its priority, so a second Urgent waits (docs/spec/routing.md, Room
+// in the next state: One Urgent passes a full Ready).
 func TestWaitsUrgentPassesOnce(t *testing.T) {
 	cfg := lineConfig(t, "routing: {events: {issue: [product-owner, developer]}, wip: {ready: 1}}\n")
 	tests, _ := cfg.State("tests")

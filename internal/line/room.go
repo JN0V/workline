@@ -55,7 +55,7 @@ func (d dueStep) since() time.Time {
 // wait written when it is run here; in CI (list) left to the next event
 // or run, no run started only to say it.
 func startDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o engine.Options, b forge.Backlog, issues []forge.Issue, dues []dueStep, t *tally, started *int, list bool) {
-	later := func(d dueStep) int { // priority 1 first (ADR-0075 §5)
+	later := func(d dueStep) int { // priority 1 first (docs/spec/routing.md, The reconciler)
 		if backlog.Priority(issues[d.at]) == 1 {
 			return 0
 		}

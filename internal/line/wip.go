@@ -193,7 +193,8 @@ func apart(cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is f
 
 // waits says why the step of issue is, in state s, waits: its next state
 // is at its limit; "" when it has room or no limit, or when is, priority
-// 1, passes a full Ready holding no other (ADR-0075 §4), said in res.
+// 1, passes a full Ready holding no other (docs/spec/routing.md, Room
+// in the next state: One Urgent passes a full Ready), said in res.
 // open is the open issues, listed here at first need and kept for the
 // next call; t, what else the count reads, kept for the run.
 func waits(res *Result, cfg *routing.Config, b forge.Backlog, s routing.State, is forge.Issue, open *[]forge.Issue, t *tally) (string, error) {
