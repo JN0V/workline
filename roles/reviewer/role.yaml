@@ -34,6 +34,11 @@ model:
   tier: standard
   effort: medium
   promote-after: 1   # a lens's answer that does not read is asked for again once
+  tasks:
+    # The verifier, in shadow (settings.verifier, docs/verifier.md): one
+    # call after the review is posted, reading the repository; its own
+    # instruction, its answer one note, 10 minutes at most.
+    verify: {tier: frontier, timeout: 10m, instruction: tasks/verify.md, intentions: [note]}
 
 context:
   # Estimated tokens, 711 + 0.82 a character (#235): the lenses' call, the
@@ -190,3 +195,8 @@ settings:
   # three important findings judged) spend about 205k, within
   # ai-max-tokens; past it, the specs after are not read, said. 1 to 20.
   specs-per-run: 5
+  # The verifier (docs/verifier.md, #2308): shadow, once the review is
+  # posted, one agent reading the repository keeps, drops and adds the
+  # findings, recorded, changing nothing; the job waits for it, in CI too.
+  # off: never asked. off or shadow; anything else is refused.
+  verifier: off

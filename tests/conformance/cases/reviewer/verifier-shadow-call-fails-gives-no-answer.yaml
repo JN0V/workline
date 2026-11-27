@@ -1,0 +1,15 @@
+case: reviewer/verifier-shadow-call-fails-gives-no-answer
+about: "With `verifier: shadow`, a verifier whose call fails (here the run's tokens are spent: a timeout fails the same way) harms nothing: the review ends as it would without it, no ai-max-tokens warning of its own, and one summary line says the verifier gave no answer."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes-costly.yaml"}
+  config: {roles: {reviewer: {settings: {verifier: shadow, ai-findings: {correctness: block}, ai-max-tokens: 1000}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-then-verify"}
+expect:
+  status: block
+  agent-calls: 2
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}
+  no-findings: [{rule: ai-max-tokens}]
+  summary: "the verifier gave no answer: "

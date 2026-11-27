@@ -490,6 +490,13 @@ token), **apply** (trusted, no AI key).
    from the head judged (`--from-merge-request`), a run applies only the
    kinds its role names in `on-moved-on`, said (`moved-on`); none, nothing
    ([ADR-0044, amended](../adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#amendment-2026-10-15-the-review-of-a-head-the-branch-moved-on-from)).
+   **In shadow**, after it (or after the run judged with `--no-apply`):
+   a task `post` left in `out/shadow/in/task.md`, its kind in
+   `out/shadow/in/task-kind`, is asked once, never again, its result
+   changing nothing of the run's, a cap the call meets included; `post`
+   runs again with `WORKLINE_SHADOW` (`answered`, or why not) to record
+   it, and the line it leaves in `out/shadow/said` ends the summary (the
+   reviewer's verifier, [#2308](https://github.com/JN0V/workline/issues/2308)).
 6. **Again.** If `pre` took less than there was to do, it writes `in/more`:
    the findings it defers, one `<rule> <where>` a line. When the run passed
    and applied something other than a note, the engine then runs the role

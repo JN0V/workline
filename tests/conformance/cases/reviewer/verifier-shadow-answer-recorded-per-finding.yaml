@@ -1,0 +1,19 @@
+case: reviewer/verifier-shadow-answer-recorded-per-finding
+about: "With `verifier: shadow`, a verifier that answers in its format is recorded in out/review.json, each finding shown kept or dropped with its reason, and what it added; one summary line counts them. The finding it drops is still reported, the review blocks as without it, and its note is not applied."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {verifier: shadow, ai-findings: {correctness: block}}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-then-verify"}
+expect:
+  status: block
+  calls: [{task: part}, {task: judge}, {task: verify, tier: frontier}]
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}
+  summary: "verifier (shadow): 0 kept, 1 dropped, 1 added"
+  run-files:
+    out/review.json:
+      contains: ['"shown": [', 'C1 correctness, at calc/calc.go:11: Average divides by one less than the count', '"dropped": [', '"C1 — the issue asks this divisor"', '"added": [', '"calc/calc_test.go:1 — no test calls Average with one value"']
+    out/shadow/in/task.md:
+      contains: ['### C1 — correctness lens, at calc/calc.go:11', 'return total / (len(values) - 1)']

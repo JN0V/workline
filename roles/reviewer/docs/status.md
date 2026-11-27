@@ -220,6 +220,10 @@ its measure in
   ([ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)):
   `simplicity-*`, two planted cases in the evaluation
   ([tried](https://github.com/JN0V/workline/pull/1496)).
+- **The verifier, in shadow** (`verifier: shadow`, off by default):
+  asked once the review is posted, recorded, changing nothing; no
+  agent, a `cmd:` agent, a refusal or a failed call give no answer, said
+  ([the verifier](verifier.md)): `verifier-shadow-*`.
 - **A full review within a token budget**:
   `lenses-asked-together-in-one-call`, `lens-given-each-file-once`,
   `judge-shown-the-change-near-the-cause`,

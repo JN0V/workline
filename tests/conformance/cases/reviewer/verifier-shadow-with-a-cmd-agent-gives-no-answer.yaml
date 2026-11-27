@@ -1,0 +1,12 @@
+case: reviewer/verifier-shadow-with-a-cmd-agent-gives-no-answer
+about: "With `verifier: shadow` and a `cmd:` agent, which reads no files of its own, the verifier gives no answer: the review ends as it would without it, and one summary line says so."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// one\\n// two\\n// three\\n// four\\n// five\\n// six\\n// seven\\n// eight\\n// nine\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  config: {roles: {reviewer: {settings: {verifier: shadow}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "cmd:echo '[]'"}
+expect:
+  findings:
+    - {rule: long-comment, where: "calc/calc.go:20", message: "a comment of 9 lines"}
+  summary: "verifier gave no answer"
