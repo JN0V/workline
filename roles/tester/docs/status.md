@@ -149,6 +149,11 @@ Cases in `tests/conformance/cases/tester/`:
   ([#1148](https://github.com/JN0V/workline/issues/1148)); a new test the
   project's runner skips is said, its filter named, to the next run too
   ([#1149](https://github.com/JN0V/workline/issues/1149)).
+- **A refusal it can mend asked again in the run**, three times at
+  most, each with its reason: a test the runner skips, a patch that
+  does not apply, a changed line; replayed runs with no Draft fell from
+  7 of 45 to 1, at the same tokens
+  ([#2306](https://github.com/JN0V/workline/pull/2306#tried)).
 - **Tests that do not lint**, asked again with each finding, its
   file and line from the repository's root; still found, blocked, the
   finding said on the issue
