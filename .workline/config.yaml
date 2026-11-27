@@ -154,6 +154,8 @@ roles:
       # A cap, not a spend. workline:accepted-whole stays the backstop.
       parts-max: 4
       ai-max-tokens: 600000
+      # shadow: recorded only, changes no review; in CI the status may wait up to 10 min.
+      verifier: shadow
 routing:
   # Before a push, the committer checks the commits leaving the machine, and
   # the documentalist has the docs they made suspect judged. On a pull
