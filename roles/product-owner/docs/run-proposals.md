@@ -38,6 +38,21 @@ engine checks before it does anything.
 - **Never invented**: an issue too thin, holding several topics, or
   resting on a closed issue gets one plain question; one the code
   already does is said on it for you to close.
+- **A file only a person writes** — the CI's workflows, `.workline/`:
+  - with code or docs to change besides: a `split` into the line's part
+    and a part titled `For a person:`; where `split` is off, the
+    default, no split is made and the issue is not readied: it waits
+    for a person;
+  - when such files are all an issue asks: one question to its reporter
+    on who writes them, never assumed, and no `ready`; once a person
+    says they write them, the rest goes on;
+  - a file named only to explain changes nothing; an issue titled
+    `For a person:` is left to the person.
+- **Code an issue quotes that a file given whole no longer holds**:
+  nothing is drafted from the quote; its reporter is asked first where
+  that code is. It is said obsolete only when the code shows the need
+  done or gone. A file given in part: its code is asked for
+  (`sources`).
 - **Off by default**: milestones, priorities, splits, renames, links,
   obsolete issues ([settings](settings.md#off-by-default)).
 
