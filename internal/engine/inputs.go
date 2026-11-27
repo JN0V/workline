@@ -46,6 +46,7 @@ func readInputs(r *role.Role, env []string) (string, []string, error) {
 	var cuts []string
 	repo := envValue(env, "WORKLINE_REPO")
 	rng := envValue(env, "WORKLINE_RANGE")
+	diffOf := "" // the range whose diff is already in the input
 	if slices.Contains(r.Inputs, "target") {
 		text, base, branch, err := readTarget(env, &cuts)
 		if err != nil {
@@ -53,7 +54,7 @@ func readInputs(r *role.Role, env []string) (string, []string, error) {
 		}
 		out.WriteString(text)
 		if base != "" && rng == "" {
-			rng = base + ".." + branch
+			rng = base + "..." + mergeRequestBranch(repo, branch)
 		}
 		if base != "" {
 			d, err := rangeDiff(repo, rng, &cuts)
@@ -61,6 +62,7 @@ func readInputs(r *role.Role, env []string) (string, []string, error) {
 				return "", nil, fmt.Errorf("input target not read: %w", err)
 			}
 			out.WriteString("\n## Diff\n\n```diff\n" + d + "\n```\n")
+			diffOf = rng
 		}
 	}
 	if slices.Contains(r.Inputs, "commits") {
@@ -71,13 +73,28 @@ func readInputs(r *role.Role, env []string) (string, []string, error) {
 		if err != nil {
 			return "", nil, fmt.Errorf("input commits not read: %w", err)
 		}
-		d, err := rangeDiff(repo, rng, &cuts)
-		if err != nil {
-			return "", nil, fmt.Errorf("input commits not read: %w", err)
+		out.WriteString("\n## Commits\n\n" + capText("commit messages", msgs, logCap, &cuts) + "\n")
+		if diffOf != rng { // the target's diff, when it is this one, is not given twice
+			d, err := rangeDiff(repo, rng, &cuts)
+			if err != nil {
+				return "", nil, fmt.Errorf("input commits not read: %w", err)
+			}
+			out.WriteString("\n## Diff\n\n```diff\n" + d + "\n```\n")
 		}
-		out.WriteString("\n## Commits\n\n" + capText("commit messages", msgs, logCap, &cuts) + "\n\n## Diff\n\n```diff\n" + d + "\n```\n")
 	}
 	return out.String(), cuts, nil
+}
+
+// mergeRequestBranch is the ref of a merge request's branch in the checkout:
+// origin/<branch> when the checkout has it (a CI checkout holds no local
+// branch), else the local branch.
+func mergeRequestBranch(repo, branch string) string {
+	for _, ref := range []string{"origin/" + branch, branch} {
+		if _, err := git(repo, nil, "rev-parse", "--verify", "--quiet", ref+"^{commit}"); err == nil {
+			return ref
+		}
+	}
+	return branch
 }
 
 func rangeDiff(repo, rng string, cuts *[]string) (string, error) {
