@@ -1,0 +1,12 @@
+Reference only, never to merge: the tester's second reader ("vm" arm) as measured
+on 2026-11-26/27, replayed on 15 cases at v0.91.0 (74faf6584).
+
+- wrap.py: stands in for `claude` on the tester's writing call (the one with
+  --tools Read,Glob,Grep). The tester answers; a second reader (Opus, effort high,
+  Read/Glob/Grep only, 25 turns) reads each test with prompt.txt; when it objects,
+  the tester is asked once more with the objections and answers whole.
+  Set WL_REAL_CLAUDE to the real binary.
+- prompt.txt: the second reader's prompt.
+- wl-vm.diff: the arm's whole engine patch at 74faf6584. Its "mend" part is merged
+  (#2306); its "vm" part is the tester's longer timeouts (10m -> 25m,
+  ai-max-seconds 1200 -> 2400), applied on this branch to roles/tester/role.yaml.

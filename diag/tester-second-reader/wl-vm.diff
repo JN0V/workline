@@ -1,0 +1,99 @@
+diff --git a/internal/engine/engine.go b/internal/engine/engine.go
+index 77bb8c8f6..e59ad2890 100644
+--- a/internal/engine/engine.go
++++ b/internal/engine/engine.go
+@@ -760,13 +760,14 @@ func run(o Options, res *Result) error {
+ 	tier, failures := r.Model.Tier, 0
+ 	var intents, said []intent.Intention
+ 	var v *verdict.Verdict
+-	askedOnce := false // asked again once already, an answer unread or one post said to mend
++	asks := 0 // BENCH ARM retry3: asked again so far, an answer unread or one post said to mend, three times at most
++	const maxAsks = 3
+ 	unasked := false   // a task the agent was not asked, nor answered: what pre gave it read by no one
+ 	for {
+ 		// A size counts on the first call alone (#1160): one asked again
+ 		// carries what its first answer needs mended, an unread answer's
+ 		// or a refused one's (`promote-after`).
+-		res.askedAgain = askedOnce || failures > 0
++		res.askedAgain = asks > 0 || failures > 0
+ 		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
+ 		if err != nil {
+ 			return err
+@@ -786,8 +787,8 @@ func run(o Options, res *Result) error {
+ 		// A role that never asks a refused answer again (`promote-after`
+ 		// 0) still asks an unread one again, whatever post said: its block
+ 		// comes of nothing read, as the tester's no test written (#761).
+-		if a.askedAgent && a.unread != "" && !askedOnce && !v.Final && (v.Status != verdict.Block || r.Model.PromoteAfter <= 0) {
+-			askedOnce = true
++		if a.askedAgent && a.unread != "" && asks < maxAsks && !v.Final && (v.Status != verdict.Block || r.Model.PromoteAfter <= 0) {
++			asks++
+ 			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(unreadFeedback(a.unread)), 0o644); err != nil {
+ 				return err
+ 			}
+@@ -800,8 +801,8 @@ func run(o Options, res *Result) error {
+ 		// tests that do not lint, #964) is asked again the same way, once,
+ 		// with its findings, by a role that asks no refused answer again:
+ 		// the one more call an unread answer gets, not a second one.
+-		if a.askedAgent && v.Status == verdict.Block && v.Again && !askedOnce && !v.Final && r.Model.PromoteAfter <= 0 {
+-			askedOnce = true
++		if a.askedAgent && v.Status == verdict.Block && v.Again && asks < maxAsks && !v.Final && r.Model.PromoteAfter <= 0 {
++			asks++
+ 			fb := feedback(v.Findings) + "\nYour answer was read, and refused for these findings alone: send it again whole, each of them fixed.\n"
+ 			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb), 0o644); err != nil {
+ 				return err
+diff --git a/roles/tester/code/covers.go b/roles/tester/code/covers.go
+index 43b13dce6..5158dc17a 100644
+--- a/roles/tester/code/covers.go
++++ b/roles/tester/code/covers.go
+@@ -226,7 +226,7 @@ func found(tested map[string][]string, scenarios []work.Scenario, newTests, writ
+ 
+ // answerMends are the rules of the covers entries, the answer's to mend:
+ // asked again once with them before any block.
+-var answerMends = map[string]bool{"scenario-without-test": true, "covers-unreadable": true, "covers-unknown-scenario": true, "covers-empty": true}
++var answerMends = map[string]bool{"scenario-without-test": true, "covers-unreadable": true, "covers-unknown-scenario": true, "covers-empty": true, "test-line-changed": true} // BENCH ARM mend: a changed line is the answer's to mend too
+ 
+ // recovered keeps the record's covers true once file is rewritten on an
+ // objection: a covers entry of the answer for a scenario of the record
+diff --git a/roles/tester/code/write.go b/roles/tester/code/write.go
+index f801ad3c4..17fcbf916 100644
+--- a/roles/tester/code/write.go
++++ b/roles/tester/code/write.go
+@@ -532,6 +532,7 @@ func Post(runDir, repo string) int {
+ 		proof.Status = verdict.Block
+ 		proof.Findings = append(proof.Findings, verdict.Finding{Rule: "no-new-test", Where: strings.Join(order, ", "),
+ 			Message: notRun(repo, t.Base, order, s.Command)})
++		proof.Again = true // BENCH ARM mend: asked again at once with this reason, not at the line's next run
+ 	}
+ 	if proof.Status != verdict.Pass {
+ 		proof.Findings = slices.DeleteFunc(proof.Findings, func(f verdict.Finding) bool { return f.Rule == "no-new-test" && f.Level == "warn" })
+@@ -975,7 +976,7 @@ func layPatches(tree string, patches []intent.Intention) (*verdict.Verdict, erro
+ 		cmd.Env = freshEnv() // the tree's own git, not the machine's config
+ 		cmd.Stdin = strings.NewReader(intent.NormalizeDiff(diff))
+ 		if out, err := cmd.CombinedOutput(); err != nil {
+-			return &verdict.Verdict{Status: verdict.Block, Summary: "a test's patch does not apply",
++			return &verdict.Verdict{Status: verdict.Block, Summary: "a test's patch does not apply", Again: true, // BENCH ARM mend
+ 				Findings: []verdict.Finding{{Rule: "patch-unreadable", Where: strings.Join(intent.PatchFiles(diff), ", "), Message: strings.TrimSpace(string(out))}}}, nil
+ 		}
+ 	}
+diff --git a/roles/tester/role.yaml b/roles/tester/role.yaml
+index 3fb3f41c2..80e9d914d 100644
+--- a/roles/tester/role.yaml
++++ b/roles/tester/role.yaml
+@@ -40,7 +40,7 @@ model:
+   capability: coding
+   tier: standard
+   effort: high
+-  timeout: 10m
++  timeout: 25m
+ 
+ context:
+   # Estimated tokens, 711 + 0.82 a character: the issue's scenarios, the
+@@ -70,7 +70,7 @@ settings:
+   # A run's caps (ADR-0055, guards): the tokens it may spend, every call
+   # together, and how long it waits on its agent, in seconds.
+   ai-max-tokens: 300000
+-  ai-max-seconds: 1200
++  ai-max-seconds: 2400
+   # The turns of an agent that reads the project itself, with read-only
+   # tools (claude: Read, Glob, Grep, no shell, ADR-0063 §8), when it
+   # writes an issue's tests; told in its task, and enforced by the

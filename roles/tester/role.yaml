@@ -40,7 +40,7 @@ model:
   capability: coding
   tier: standard
   effort: high
-  timeout: 10m
+  timeout: 25m
 
 context:
   # Estimated tokens, 711 + 0.82 a character: the issue's scenarios, the
@@ -70,7 +70,7 @@ settings:
   # A run's caps (ADR-0055, guards): the tokens it may spend, every call
   # together, and how long it waits on its agent, in seconds.
   ai-max-tokens: 300000
-  ai-max-seconds: 1200
+  ai-max-seconds: 2400
   # The turns of an agent that reads the project itself, with read-only
   # tools (claude: Read, Glob, Grep, no shell, ADR-0063 §8), when it
   # writes an issue's tests; told in its task, and enforced by the
