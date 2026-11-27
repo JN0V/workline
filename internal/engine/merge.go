@@ -971,7 +971,6 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 			line = append(line, e)
 		}
 	}
-	ownQueue(f, o, res, queue, res.Findings[start:])
 	var names []string
 	for _, e := range line {
 		names = append(names, e.where)
@@ -987,9 +986,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 	if n := acts["merged-at-once"]; n > 0 {
 		sum += fmt.Sprintf("; %d merged at once", n)
 	}
-	// No one waits for another to merge; where the forge holds them behind,
-	// ownQueue brings the first in priority alone up to date, the rest wait.
-	return sum, nil
+	return sum, ownQueue(f, o, res, queue, res.Findings[start:])
 }
 
 // weigh reads one merge request into the base, accepted or its auto-merge
@@ -1480,7 +1477,7 @@ func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, s
 
 // ownQueue, a merge queue where the forge has none: of the accepted requests
 // held behind, by priority then auto-merge's time, the head alone is updated.
-func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []verdict.Finding) {
+func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []verdict.Finding) error {
 	key, budget, pos := map[*inLine]string{}, 180.0, 0
 	for _, e := range q {
 		r := scale.Priority.Rank(backlog.Priority(forge.Issue{Labels: e.mr.Labels}))
@@ -1511,14 +1508,17 @@ func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []ver
 		case e.st.Checks != "success":
 			msg = fmt.Sprintf("passed over, checks pending past %g s", budget)
 		default:
-			_, _ = e.upToDate(true, "its auto-merge on since "+e.st.AutoMergeAt) // no conflict: said in stalled
+			if _, err := e.upToDate(true, "its auto-merge on since "+e.st.AutoMergeAt); err != nil { // no conflict (said in stalled); the forge unreachable ends the run
+				return err
+			}
 			pos, msg = 1, "head of the queue, "+o.Base+" merged in"
 			if !slices.ContainsFunc(res.Findings[n:], func(x verdict.Finding) bool { return x.Rule == "merged-from-base" }) {
-				pos, msg = 0, "passed over, "+o.Base+" not merged in, said above"
+				pos, msg = 0, "passed over, "+o.Base+" not merged in"+strings.Repeat(", said above", min(1, len(res.Findings)-n))
 			}
 		}
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "behind-not-updated", Where: e.where, Message: msg})
 	}
+	return nil
 }
 
 // heldByConversations says what holds a merge request the forge does not
