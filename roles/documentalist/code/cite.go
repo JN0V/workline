@@ -50,9 +50,14 @@ doc's sources, or a name the code no longer has:
         name: RefreshToken
 
 A comment in the code is not evidence: a quote found only in a comment is
-refused, and the disagreement reported for a person. With nothing else to
-cite, leave the words as they are and say in a ` + "`note`" + ` what you could not
-confirm, naming its doc: ` + "`- note: {doc: docs/example.md, text: \"…\"}`" + `. A doc
+refused, and the disagreement reported for a person.
+When you read the project yourself: words saying the code does something
+that, searched for across the project, nothing does, are contradicted and
+go too. Cite, as their source, the code standing where it would happen —
+what the code does there instead — or, with no such place, the line that
+only declares the name; say in ` + "`why`" + ` what you searched for.
+Only what reading the project cannot settle stays as it is, said in a
+` + "`note`" + ` naming its doc: ` + "`- note: {doc: docs/example.md, text: \"…\"}`" + `. A doc
 a note names, in ` + "`doc`" + ` or by path or file name in its text, is not vouched
 for: its ` + "`checked`" + ` does not move. A line a diff shown here adds is in the
 file as it is now: quote it.
@@ -375,27 +380,7 @@ func quoteLines(p, content, quote string) []lineRange {
 	if q == "" {
 		return nil
 	}
-	mask := commentMask(p, content)
-	var norm []byte
-	var inComment []bool
-	var lineOf []int
-	ln, space := 1, true
-	for i := 0; i < len(content); i++ {
-		c := content[i]
-		if c == '\n' || c == ' ' || c == '\t' || c == '\r' {
-			if !space {
-				norm, inComment, lineOf = append(norm, ' '), append(inComment, true), append(lineOf, ln)
-				space = true
-			}
-			if c == '\n' {
-				ln++
-			}
-			continue
-		}
-		space = false
-		norm, inComment, lineOf = append(norm, c), append(inComment, mask[i]), append(lineOf, ln)
-	}
-	s := string(norm)
+	s, inComment, lineOf := normalized(content, commentMask(p, content), 1)
 	var out []lineRange
 	for from := 0; ; {
 		i := strings.Index(s[from:], q)
@@ -626,8 +611,28 @@ func quoteInMasked(content string, mask []bool, quote string, first int) (found,
 	if q == "" {
 		return false, false, 0
 	}
-	// The content with each run of white space made one space, each byte
-	// remembering whether it is in a comment, and its line.
+	s, inComment, lineOf := normalized(content, mask, first)
+	for from := 0; ; {
+		i := strings.Index(s[from:], q)
+		if i < 0 {
+			return found, code, line
+		}
+		i += from
+		if !found {
+			found, line = true, lineOf[i]
+		}
+		for j := i; j < i+len(q); j++ {
+			if !inComment[j] {
+				return true, true, line
+			}
+		}
+		from = i + 1
+	}
+}
+
+// normalized is content with each run of white space made one space, each
+// byte remembering whether it is in a comment (mask), and its line.
+func normalized(content string, mask []bool, first int) (string, []bool, []int) {
 	var norm []byte
 	var inComment []bool
 	var lineOf []int
@@ -647,23 +652,7 @@ func quoteInMasked(content string, mask []bool, quote string, first int) (found,
 		space = false
 		norm, inComment, lineOf = append(norm, c), append(inComment, mask[i]), append(lineOf, ln)
 	}
-	s := string(norm)
-	for from := 0; ; {
-		i := strings.Index(s[from:], q)
-		if i < 0 {
-			return found, code, line
-		}
-		i += from
-		if !found {
-			found, line = true, lineOf[i]
-		}
-		for j := i; j < i+len(q); j++ {
-			if !inComment[j] {
-				return true, true, line
-			}
-		}
-		from = i + 1
-	}
+	return string(norm), inComment, lineOf
 }
 
 // sortedFindings keeps the comment reports in one order, without repeats.

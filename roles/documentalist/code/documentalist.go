@@ -1698,7 +1698,7 @@ func (r *preRun) writeTask() error {
 	if r.task == "" {
 		return nil
 	}
-	if strings.Contains(r.task, readHere) { // a doc read in a tree at HEAD
+	if strings.Contains(r.task, readHere) { // the project read in a tree at HEAD
 		if err := worktree.RunTree(r.repo, "HEAD", runDir, agent.ReadTreeDir); err != nil {
 			return err
 		}
@@ -1736,7 +1736,7 @@ func (r *preRun) writeTask() error {
 	return os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(r.task), 0o644)
 }
 
-// readHere is where an agent that reads finds a doc too long to be shown.
+// readHere is where an agent that reads finds the project, a doc too long to be shown among it.
 const readHere = "in your working directory, a checkout of the commit judged"
 
 // personJudges ends the note of a doc no agent can judge: a person does.
@@ -1761,6 +1761,9 @@ fixes what is now wrong, and nothing else.
 // there and what it is judged against, under the header saying the kind.
 func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *places, repo string) (string, map[string]map[string]string, error) {
 	header += citeTask
+	if agent.ReadsFiles(os.Getenv("WORKLINE_AI")) { // it reads the project: a checkout of HEAD, beside the docs shown (#2307)
+		header += "You read the project yourself, " + readHere + ": search it before calling words unbacked.\n\n"
+	}
 	maxDocs := s.AIMaxCalls
 	var b strings.Builder
 	b.WriteString(header)
