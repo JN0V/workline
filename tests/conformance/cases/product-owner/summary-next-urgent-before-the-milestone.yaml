@@ -1,0 +1,13 @@
+case: product-owner/summary-next-urgent-before-the-milestone
+about: "The summary's next lists an Urgent issue (priority 1) before the routine issues of a milestone: #13, priority 1, in no milestone, comes before #12, priority 3, in milestone v1.0 — with no agent."
+given:
+  repo: backlog
+  forge:
+    milestones: [v1.0]
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", milestone: v1.0, labels: [workline:ready, workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", labels: [workline:ready, workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none, summary: true}
+expect:
+  agent-calls: 0
+  summary-file: ["- **next to build** (2)", "  - [#13](https://forge.example/issues/13)", "  - [#12](https://forge.example/issues/12)"]
