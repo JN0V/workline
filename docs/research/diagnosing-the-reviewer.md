@@ -194,8 +194,7 @@ by Sonnet (4 runs) 14 %, Sonnet lenses by Opus 1 of 8 (one run).
 - **The shadow is the check**: on real pull requests, the verifier should
   state the owner's send-back points production missed, and not block
   what the owner merges as it is.
-- **Kept catches**: `kept-wl-2110` is said in 1 run of 18 in round 1,
-  whatever the arm.
+- **Kept catches**: `kept-wl-2110` is said in 1 run of 18, round 1.
 - **The clean set is 4 cases**, one of them defective.
 - **The scorer's hand check**, 30 of 30, was one reader of the judge's
   model family.
