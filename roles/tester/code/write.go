@@ -512,7 +512,7 @@ func Post(runDir, repo string) int {
 	findings = append(append(findings, unread...), missing...)
 	if len(findings) > 0 {
 		// Entries missing or unread, and nothing else, are the answer's to
-		// mend: asked again once with the scenarios' names, before any
+		// mend: asked again with the scenarios' names, before any
 		// block (#1147).
 		again := !slices.ContainsFunc(findings, func(f verdict.Finding) bool { return !answerMends[f.Rule] })
 		return refusePost(runDir, t.Issue, verdict.Verdict{Status: verdict.Block, Summary: "the tests do not hold to the issue's scenarios", Findings: findings, Again: again})
@@ -528,10 +528,11 @@ func Post(runDir, repo string) int {
 	if proof.Status == verdict.Pass && len(newTests) == 0 {
 		// The files were written, and no test of them ran: the project's
 		// runner skipped them. Said with the filter that may have: the
-		// line's next run gives the agent this reason (#1149).
+		// agent is asked again in the run with this reason (#1149).
 		proof.Status = verdict.Block
 		proof.Findings = append(proof.Findings, verdict.Finding{Rule: "no-new-test", Where: strings.Join(order, ", "),
 			Message: notRun(repo, t.Base, order, s.Command)})
+		proof.Again = true
 	}
 	if proof.Status != verdict.Pass {
 		proof.Findings = slices.DeleteFunc(proof.Findings, func(f verdict.Finding) bool { return f.Rule == "no-new-test" && f.Level == "warn" })
@@ -975,7 +976,7 @@ func layPatches(tree string, patches []intent.Intention) (*verdict.Verdict, erro
 		cmd.Env = freshEnv() // the tree's own git, not the machine's config
 		cmd.Stdin = strings.NewReader(intent.NormalizeDiff(diff))
 		if out, err := cmd.CombinedOutput(); err != nil {
-			return &verdict.Verdict{Status: verdict.Block, Summary: "a test's patch does not apply",
+			return &verdict.Verdict{Status: verdict.Block, Summary: "a test's patch does not apply", Again: true,
 				Findings: []verdict.Finding{{Rule: "patch-unreadable", Where: strings.Join(intent.PatchFiles(diff), ", "), Message: strings.TrimSpace(string(out))}}}, nil
 		}
 	}

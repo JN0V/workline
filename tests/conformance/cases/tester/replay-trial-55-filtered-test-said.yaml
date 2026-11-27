@@ -6,7 +6,7 @@ about: >
   its test_filter, never runs. It was refused "the report names no new
   test", twice, never told why (#1149). Now the block names the file,
   says the project's runner did not run it and names the filter's line,
-  on the issue too; the line's next run gives the tester these words.
+  on the issue too; the tester is asked again with these words in the run.
 given:
   repo: dc-trial
   setup:
@@ -79,7 +79,7 @@ given:
 run: {test: [write, --issue, "55"], ai: "cmd:sh $FIXTURES/agents/replay.sh dc55-tester-try1-answer.txt"}
 expect:
   status: block
-  agent-calls: 1
+  agent-calls: 4
   findings:
     - rule: no-new-test
       where: DomoticsCore-WebUI/test/test_webui_component_toggle_state/test_webui_component_toggle_state.cpp

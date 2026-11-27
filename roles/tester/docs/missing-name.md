@@ -71,7 +71,7 @@ flowchart LR
   Past the fast path, the check ends `human`, `red-unproven`, its lines
   quoted: the only case a person is waited for.
 - **No report and no error a row reads**: `report-missing`
-  ([what it quotes](build-judge.md#no-report), [what follows](build-outcomes.md#asked-once-more)).
+  ([what it quotes](build-judge.md#no-report), [what follows](build-outcomes.md#asked-again)).
 - **A module with no test yet**: on the base, no report and exit 0, as
   Gradle's `NO-SOURCE`, is an empty run, no test green there. Exiting
   non-zero, it is `report-missing`

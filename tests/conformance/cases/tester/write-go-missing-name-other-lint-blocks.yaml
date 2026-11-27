@@ -2,7 +2,7 @@ case: tester/write-go-missing-name-other-lint-blocks
 about: >
   The same Go test, red by a missing name, is not formatted: beside the
   type-check's missing name, left out (#988), the project's format check
-  fails on it. That finding still counts: the agent is asked once more,
+  fails on it. That finding still counts: the agent is asked again, three times at most,
   writes the same test, and the run blocks (tests-lint), no Draft.
 given:
   repo: go-tested
@@ -25,7 +25,7 @@ given:
 run: {route: issue, target: {issue: 3}, open-merge-request: true, ai: "fake:tester-go-missing-name-unformatted"}
 expect:
   status: block
-  agent-calls: 2
+  agent-calls: 4
   findings: [{rule: tests-lint, where: gofmt, message: "the gate lint"}]
   no-findings: [{rule: tests-lint, where: calc/calc.go:1}]
   not-pushed: [workline/tester/issue-3]

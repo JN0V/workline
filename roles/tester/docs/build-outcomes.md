@@ -32,12 +32,16 @@ what the fast path or [the judge](build-judge.md) does to the run.
 - **A test rewritten on an objection** is proven again: red unproven,
   its reply and the record say why.
 
-## Asked once more
+## Asked again
 
-- **The judge's no** (`build-broken`): the agent is asked once more,
-  with the build's error.
+- **In the same run, three times at most**: each refusal the answer can
+  mend is asked again with its own reason; the fourth answer refused
+  blocks the run, said on the issue. Three asks left 1 of 45 replayed
+  runs with no Draft, one ask 7, at the same tokens.
+- **The judge's no** (`build-broken`): asked again with the build's
+  error.
 - **No report and no error a row reads** (`report-missing`): on the
-  tests' run, the agent is asked once more; on the base alone, final.
+  tests' run, asked again; on the base alone, final.
   None on the base with exit 0, a module with no test yet, is an empty
   run; none with the tests either is final, the base's finding
   ([#2091](https://github.com/JN0V/workline/issues/2091)).
