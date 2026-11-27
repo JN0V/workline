@@ -190,3 +190,8 @@ settings:
   # three important findings judged) spend about 205k, within
   # ai-max-tokens; past it, the specs after are not read, said. 1 to 20.
   specs-per-run: 5
+  # The verifier (docs/verifier.md, #2308): shadow, once the review is
+  # posted, one agent reading the repository keeps, drops and adds the
+  # findings, recorded, changing nothing; the job waits for it, in CI too.
+  # off: never asked. off or shadow; anything else is refused.
+  verifier: off

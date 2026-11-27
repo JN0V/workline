@@ -2942,6 +2942,9 @@ func settings(runDir string) (Settings, error) {
 	if s.PartsMax < 1 || s.PartsMax > 8 {
 		return s, fmt.Errorf("settings: parts-max: %d is not a number from 1 to 8", s.PartsMax)
 	}
+	if s.Verifier != "off" && s.Verifier != "shadow" {
+		return s, fmt.Errorf("settings: verifier: %q is neither off nor shadow", s.Verifier)
+	}
 	if s.CommitsPerPush < 0 {
 		return s, fmt.Errorf("settings: commits-per-push: %d is below 0 (0: every new commit)", s.CommitsPerPush)
 	}
