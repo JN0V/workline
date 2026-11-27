@@ -1,0 +1,15 @@
+case: reviewer/verifier-shadow-recorded-changes-nothing
+about: "In shadow, the verifier is asked after the lenses and their judge, on the frontier tier: what it keeps, drops and adds is recorded in out/review.json and said in the summary; the finding it drops is still reported, and its note is not applied."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {verifier: shadow}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-then-verify"}
+expect:
+  status: pass
+  calls: [{task: part}, {task: judge}, {task: verify, tier: frontier}]
+  findings: [{rule: correctness, where: "calc/calc.go:11"}]
+  summary: "the verifier, in shadow (it changes nothing): of 1 point shown, keeps 0, drops 1; adds 1"
+  applied: []
+  run-files: {out/review.json: {contains: ['"shown": [', 'C1 correctness, at calc/calc.go:11', 'DROP C1 — the issue asks this divisor', 'BLOCK calc/calc_test.go:1 — no test calls Average']}}

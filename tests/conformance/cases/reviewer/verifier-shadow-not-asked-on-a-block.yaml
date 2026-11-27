@@ -1,0 +1,12 @@
+case: reviewer/verifier-shadow-not-asked-on-a-block
+about: "In shadow, the verifier is not asked of a review that blocks: an agent it could not reach would turn the block into an agent unreachable."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {verifier: shadow, ai-findings: block}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-then-verify"}
+expect:
+  status: block
+  calls: [{task: part}, {task: judge}]
+  findings: [{rule: correctness, where: "calc/calc.go:11"}]

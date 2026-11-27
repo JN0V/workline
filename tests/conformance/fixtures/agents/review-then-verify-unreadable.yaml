@@ -1,0 +1,11 @@
+# The lenses (first call), as review-then-verify; then a verifier whose
+# answer is no list of proposals: it reads as nothing.
+calls:
+  - - finding:
+        lens: correctness
+        severity: important
+        title: Average divides by one less than the count
+        why: the mean of [2, 4] comes out 6, and one value divides by zero
+        cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+        fix: divide by len(values)
+  - "KEEP C1 because it is wrong"

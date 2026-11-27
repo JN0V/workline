@@ -1,0 +1,13 @@
+case: reviewer/verifier-shadow-unread-changes-nothing
+about: "In shadow, a verifier whose answer does not read leaves the review as it was: it passes, and the summary says the verifier gave no answer that reads."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {verifier: shadow}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-then-verify-unreadable"}
+expect:
+  status: pass
+  calls: [{task: part}, {task: judge}, {task: verify}]
+  findings: [{rule: correctness, where: "calc/calc.go:11"}]
+  summary: "the verifier, in shadow, gave no answer that reads"

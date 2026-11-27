@@ -34,6 +34,12 @@ model:
   tier: standard
   effort: medium
   promote-after: 1   # a lens's answer that does not read is asked for again once
+  tasks:
+    # The verifier (`verifier: shadow`): after the lenses and their judges,
+    # one agent keeps or drops each finding and adds what they missed,
+    # reading the repository at the head (a read tree). Benched before the
+    # shadow (2026-11-26): Opus, at medium; up to 80 s a case, 10 m kept.
+    verify: {tier: frontier, timeout: 10m, instruction: tasks/verify.md, intentions: [note]}
 
 context:
   # Estimated tokens, 711 + 0.82 a character (#235): the lenses' call, the
@@ -189,3 +195,9 @@ settings:
   # three important findings judged) spend about 205k, within
   # ai-max-tokens; past it, the specs after are not read, said. 1 to 20.
   specs-per-run: 5
+  # The verifier, after the lenses and their judges (tasks/verify.md): off,
+  # or shadow, its answer recorded beside the review (out/review.json and a
+  # line of the summary), changing nothing, no comment posted. Asked once a
+  # review read the whole change and passes, never on the verdict's run of
+  # a review split (ADR-0050): an agent it cannot reach changes no verdict.
+  verifier: "off"

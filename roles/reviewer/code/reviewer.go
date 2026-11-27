@@ -83,6 +83,7 @@ type Settings struct {
 	SpecLinesMax    int               `json:"spec-lines-max"`         // lines of a spec the lenses are given; the rest cut, said
 	SpecRounds      int               `json:"spec-rounds"`            // on the forge: reviews in a row with a finding open, then a person (#128)
 	SpecsPerRun     int               `json:"specs-per-run"`          // on the forge: the specs a run reads; the rest wait for the next (#433)
+	Verifier        string            `json:"verifier"`               // off, or shadow: after the judges, an agent reading the repository keeps, drops and adds, recorded beside the review (verify.go)
 }
 
 // alone is the facet given the change only, apart from the lenses (#126):
@@ -211,6 +212,7 @@ type Review struct {
 	Weighed   []string          `json:"weighed,omitempty"`  // what the run's judges said of the tester's answers that no test is needed (#1303)
 	Kept      string            `json:"kept,omitempty"`     // what the judge said of a task's behaviour (kept.go)
 	KeptAt    string            `json:"kept-at,omitempty"`  // the head it said yes on
+	Verifier  *Verified         `json:"verifier,omitempty"` // what the verifier said, in shadow: it changes nothing (verify.go)
 }
 
 // JudgeRead is one round of reads a judge asked (ADR-0045): what it asked,
@@ -1124,7 +1126,7 @@ func ask(runDir, repo string, s Settings, st *state, files []File) (string, erro
 	}
 	// The whole change in one call, while it fits the role's context
 	// budget and diff-lines-max.
-	room, err := taskRoom(runDir, repo)
+	room, err := taskRoom(runDir, repo, "")
 	if err != nil {
 		return "", err
 	}
@@ -2102,6 +2104,9 @@ func settle(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
+	if err := askVerifier(runDir, repo, s, st, c, v); err != nil {
+		return fail(err)
+	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
 	}
@@ -2344,6 +2349,9 @@ func Post(runDir, repo string) int {
 		if err := saveLocal(repo, v.Warn, v.Record); err != nil {
 			return fail(err)
 		}
+	}
+	if err := verified(runDir, &v); err != nil {
+		return fail(err)
 	}
 	if err := writeJSON(filepath.Join(runDir, "out", "review.json"), v); err != nil {
 		return fail(err)
@@ -2919,13 +2927,16 @@ func testsOf(repo string) testdef.Def {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, PartsMax: 2, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, CommitsPerPush: 5, IssueLinesMax: 160, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, PartsMax: 2, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, CommitsPerPush: 5, IssueLinesMax: 160, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5, Verifier: "off"}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err
 	}
 	if err := json.Unmarshal(data, &s); err != nil {
 		return s, fmt.Errorf("settings: %w", err)
+	}
+	if s.Verifier != "off" && s.Verifier != "shadow" {
+		return s, fmt.Errorf("settings: verifier: %q is not off nor shadow", s.Verifier)
 	}
 	if s.SpecRounds < 1 || s.SpecRounds > 20 {
 		return s, fmt.Errorf("settings: spec-rounds: %d is not a number from 1 to 20", s.SpecRounds)

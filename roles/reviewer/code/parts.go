@@ -364,16 +364,19 @@ func (u unit) cutDiff(chars, lines int, force bool) (head, rest unit, ok bool) {
 // within the role's context budget, measured as the engine measures it —
 // the same facets, agent.Prompt, agent.Tokens —, room kept for an answer
 // asked again; 0 when the role or its budget is not known: no limit but
-// diff-lines-max, the engine refusing a prompt too large, said.
-func taskRoom(runDir, repo string) (int, error) {
+// diff-lines-max, the engine refusing a prompt too large, said. A kind of
+// task, named, is measured as model.tasks asks it (the verifier's).
+func taskRoom(runDir, repo, kind string) (int, error) {
 	r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), roleName())
 	if err != nil || r.Context.Budget <= 0 {
 		return 0, nil
 	}
 	// its issue's size tier multiplies it (ADR-0064)
 	budget := r.Context.Budget * role.SizeFactor()
-	asked := *r // a part, as the engine asks it
-	asked.Intentions = r.PartAnswers()
+	asked := *r.ForTask(kind).Asked() // a part, as the engine asks it, or that kind of task
+	if kind == "" {
+		asked.Intentions = r.PartAnswers()
+	}
 	asked.Context.Budget = 0
 	dir, err := os.MkdirTemp(filepath.Join(runDir, "in"), "measure-")
 	if err != nil {
