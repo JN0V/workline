@@ -1,0 +1,14 @@
+case: documentalist/command-agent-given-no-repository
+about: "A cmd: agent cannot read files (as with `ai: none`, which asks no agent at all): the documentalist behaves as it does today, and its task gives it no repository to read, only what a task shows."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/says-if-a-repository-was-given.sh"}
+expect:
+  status: pass
+  agent-calls: 1
+  notes: ["no repository to read was given"]
+  trees-left: 0
+  run-files:
+    in/task.md:
+      not-contains: ["a checkout of the commit judged"]

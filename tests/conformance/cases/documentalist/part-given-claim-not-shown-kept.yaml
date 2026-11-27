@@ -1,0 +1,13 @@
+case: documentalist/part-given-claim-not-shown-kept
+about: "A doc whose sources were cut to a part (one declaration of a Go file too large for a task) says something that part does not show (sessions last a week). A fix that takes it out with no claim citing the code is not applied: the claim is kept, not removed."
+given:
+  repo: documented
+  setup:
+    - "for i in $(seq 1 800); do echo \"// Filler $i of the token package, far from the constant.\"; done >> src/auth/token.go && sed -i 's|sources: \\[src/auth/token.go\\]|sources: [src/auth/token.go#TokenTTL]|' docs/tech/auth.md && printf '\\nSessions last a week.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): say the rules'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/remove-unshown-sentence.sh"}
+expect:
+  status: pass
+  agent-calls: 1
+  files: {docs/tech/auth.md: {contains: ["Sessions last a week.", "Access tokens last one hour."]}}
