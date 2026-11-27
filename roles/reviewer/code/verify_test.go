@@ -2,6 +2,7 @@ package reviewer
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,10 +13,12 @@ import (
 // leaves the review as it was, and says it gave no answer (#2308).
 func TestVerifierNotPreparedGivesNoAnswer(t *testing.T) {
 	runDir := t.TempDir()
-	os.MkdirAll(filepath.Join(runDir, "in"), 0o755)
-	os.WriteFile(filepath.Join(runDir, "in", "settings.json"), []byte(`{"verifier": "shadow"}`), 0o644)
-	writeJSON(filepath.Join(runDir, "in", "review-state.json"), state{Base: "nope", From: "nope", Head: "nope"})
-	writeJSON(filepath.Join(runDir, "in", "candidates.json"), candidates{})
+	if err := errors.Join(os.MkdirAll(filepath.Join(runDir, "in"), 0o755),
+		os.WriteFile(filepath.Join(runDir, "in", "settings.json"), []byte(`{"verifier": "shadow"}`), 0o644),
+		writeJSON(filepath.Join(runDir, "in", "review-state.json"), state{Base: "nope", From: "nope", Head: "nope"}),
+		writeJSON(filepath.Join(runDir, "in", "candidates.json"), candidates{})); err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("WORKLINE_AI", "fake:x")
 	v := Review{Status: "block", Summary: "1 finding"}
 	askVerifier(runDir, t.TempDir(), &v)
@@ -44,17 +47,23 @@ func TestVerifierAnswerRecorded(t *testing.T) {
 	for _, c := range cases {
 		runDir := t.TempDir()
 		dir := filepath.Join(runDir, "out", "shadow")
-		os.MkdirAll(filepath.Join(dir, "out"), 0o755)
-		writeJSON(filepath.Join(runDir, "out", "review.json"), Review{Status: "block", Summary: "1 finding", Verifier: &Verified{Shown: []string{"C1 correctness, at a.go:1: x", "C2 tests, at a.go:2: y"}}})
+		if err := errors.Join(os.MkdirAll(filepath.Join(dir, "out"), 0o755),
+			writeJSON(filepath.Join(runDir, "out", "review.json"), Review{Status: "block", Summary: "1 finding", Verifier: &Verified{Shown: []string{"C1 correctness, at a.go:1: x", "C2 tests, at a.go:2: y"}}})); err != nil {
+			t.Fatal(err)
+		}
 		if c.answer != "" {
-			os.WriteFile(filepath.Join(dir, "out", "intentions.yaml"), []byte(c.answer), 0o644)
+			if err := os.WriteFile(filepath.Join(dir, "out", "intentions.yaml"), []byte(c.answer), 0o644); err != nil {
+				t.Fatal(err)
+			}
 		}
 		if code := verified(runDir, c.why); code != 0 {
 			t.Fatalf("%q: exit %d", c.answer, code)
 		}
 		said, _ := os.ReadFile(filepath.Join(dir, "said"))
 		var v Review
-		readJSON(filepath.Join(runDir, "out", "review.json"), &v)
+		if err := readJSON(filepath.Join(runDir, "out", "review.json"), &v); err != nil {
+			t.Fatal(err)
+		}
 		record, _ := json.Marshal(v.Verifier)
 		if !strings.HasPrefix(string(said), c.said) || !strings.Contains(string(record), c.record) || v.Status != "block" || v.Summary != "1 finding" {
 			t.Errorf("%q: said %q, recorded %s, review %+v", c.answer, said, record, v)
