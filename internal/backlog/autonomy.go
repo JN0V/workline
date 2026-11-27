@@ -6,8 +6,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/JN0V/workline/internal/board"
-	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -88,15 +86,6 @@ type Config struct {
 	// ready is held while the reviewer's important findings on the spec are
 	// open (#128); set by the caller, from the routing.
 	SpecReview bool
-	// Ready: the move a ready makes on the forge's board (ADR-0057): to
-	// its ready column, a label on GitLab, a Status option on GitHub; nil
-	// none. Set by the caller, from the board.
-	Ready *board.Move
-	// Tests: the move of a ready that sends the issue to its tests, to
-	// the board's tests column (ADR-0059, decision 2), for the issues
-	// ToTests says go there; nil, the ready column's. Set by the caller.
-	Tests   *board.Move
-	ToTests func(forge.Issue) bool
 	// Tester: the project's line routes the tester, so a ready holds an
 	// issue whose Validation no test can name (#855); set by the caller,
 	// from the routing.

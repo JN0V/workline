@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
@@ -717,23 +716,7 @@ func (a *applier) refining(c backlog.Proposal) error {
 			add = []string{backlog.LabelNeedsTests}
 			remove = append(remove, backlog.LabelReady)
 		}
-		if c.Card.Labels() {
-			// Its card to the board's column the plan chose, ready or
-			// tests, out of the others (ADR-0057), in the same call.
-			add = append(add, c.Card.Column)
-			for _, l := range c.Card.Off {
-				if slices.Contains(is.Labels, l) {
-					remove = append(remove, l)
-				}
-			}
-		}
-		if err := f.Label(t, add, remove); err != nil {
-			return err
-		}
-		if c.Card.Writes() {
-			a.moveCard(c.Issue, c.Card.Project, c.Card.Column)
-		}
-		return nil
+		return f.Label(t, add, remove)
 	}
 	body, added, _ := backlog.Refine(is.Body, c, role)
 	if len(added) > 0 {
@@ -834,31 +817,6 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources, 
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
 }
 
-// moveCard sets the Status of issue's card in a GitHub project to option
-// (ADR-0057). A card not moved — the issue in no item of the project, a
-// write refused — is said, and changes no verdict: workline's labels
-// stay the roles' marks. A write the token has no right to is a
-// finding, `board-unwritable`, once a run and project, naming the right.
-func (a *applier) moveCard(issue, project int, option string) {
-	if project == 0 || option == "" {
-		return
-	}
-	why, err := forge.SetStatus(a.forge, issue, project, option)
-	if err != nil {
-		why = forge.Said(err)
-	}
-	if errors.Is(err, forge.ErrProjectUnwritable) {
-		where := fmt.Sprintf("the GitHub project #%d", project)
-		if !slices.ContainsFunc(a.findings, func(f verdict.Finding) bool { return f.Rule == "board-unwritable" && f.Where == where }) {
-			a.findings = append(a.findings, verdict.Finding{Rule: "board-unwritable", Level: "info", Where: where,
-				Message: "its Status is not written: give workline's GitHub App *Organization projects: read and write* (a person's token: the `project` scope); workline's labels stand"})
-		}
-	}
-	if why != "" {
-		fmt.Fprintf(os.Stderr, "workline: #%d's card not moved to %q on the project #%d: %s\n", issue, option, project, why)
-	}
-}
-
 // testsFirst says whether the product owner's ready sends an issue to
 // its tests (ADR-0059): the project routes the tester, and its
 // Validation names scenarios, each one a test.
@@ -889,24 +847,6 @@ func (a *applier) featureMilestone(is forge.Issue) {
 	}
 	a.findings = append(a.findings, verdict.Finding{Rule: "milestone-set", Where: where,
 		Message: fmt.Sprintf("a feature, put in milestone %s: its release candidate is tried before the version ships", title)})
-}
-
-// readyMove is the move a ready makes on the forge's board: its ready
-// column's label on, the other columns' off (ADR-0057); nil with none. A
-// board out of reach is said, and moves nothing.
-func readyMove(f forge.Forge, repo string) *board.Move {
-	if f == nil {
-		return nil
-	}
-	pc, err := role.LoadProjectConfig(repo)
-	if err != nil {
-		return nil
-	}
-	mv, err := board.To(f, "ready", pc.Board)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "workline: the forge's board could not be read, no card moved: %s\n", forge.Said(err))
-	}
-	return mv
 }
 
 // planActs decides what becomes of the run's acts on the backlog, once: a
@@ -1013,20 +953,6 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			return s.Since(strings.TrimSpace(string(after))), found, err
 		}
 	}
-	// The board's ready column a ready moves the card to (ADR-0057); a
-	// board out of reach is said and moves nothing.
-	for _, c := range closes {
-		if c.Do == "ready" {
-			cfg.Ready = readyMove(f, st.Repo) // read once, when a ready is proposed
-			if line.Runs("tester") {
-				// Its tests column, for the issues a ready sends there
-				// (ADR-0059, decision 2).
-				cfg.Tests = board.Along(f, st.Repo, "tests")
-				cfg.ToTests = func(is forge.Issue) bool { return testsFirst(st.Repo, is) }
-			}
-			break
-		}
-	}
 	// What the run read — the commit, each issue's body — and the agents
 	// and models it asked, kept with each act (ADR-0046).
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", backlog.ReadFile)); err == nil {
@@ -1109,12 +1035,6 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	p, err := backlog.Decide(b, st.Repo, role, cfg, closes, read, judged, changes, revise)
 	if err != nil {
 		return nil, err
-	}
-	if slices.ContainsFunc(p.Decisions, func(d backlog.Decision) bool {
-		return d.Mode == backlog.Act && d.Act.Do == "ready"
-	}) {
-		// Said once a run, by the role that moves a card (ADR-0057).
-		p.Findings = append(p.Findings, cfg.Ready.Findings()...)
 	}
 	data, _ := yaml.Marshal(p)
 	return p, os.WriteFile(file, data, 0o644)

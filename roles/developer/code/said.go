@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/kit/devmark"
@@ -47,11 +46,10 @@ func waits(passed []devmark.Passed) []intent.Intention {
 }
 
 // stale lets go each claim older than claim-hours that no open merge
-// request closes: its label off, why written in its comment, its card
-// back to the board's ready column when there is one (card, ADR-0057;
-// ADR-0059). A claim whose day the forge does not say is kept, and said
-// in the verdict.
-func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Settings, now time.Time, card *board.Move) ([]intent.Intention, []verdict.Finding, error) {
+// request closes: its label off, why written in its comment.
+// A claim whose day the forge does not say is kept, and said in the
+// verdict.
+func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Settings, now time.Time) ([]intent.Intention, []verdict.Finding, error) {
 	closed := map[int]bool{}
 	for _, m := range mrs {
 		for _, n := range forge.For(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
@@ -114,7 +112,7 @@ func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Se
 			}
 		}
 		out = append(out,
-			intent.Intention{Kind: "label", Value: released(is, s, card)},
+			intent.Intention{Kind: "label", Value: released(is, s)},
 			sayOn(is.ID, backlog.Said(who, "lets this issue go", why,
 				"it is free again: the developer may take it at a next run, or a person assigns themselves")))
 		found = append(found, verdict.Finding{Rule: "claim-released", Level: "warn", Where: where,
@@ -211,14 +209,14 @@ func unopened(a devmark.Act, s Settings, repo string) []map[string]any {
 			remove = append(remove, s.ClaimLabel)
 		}
 		return []map[string]any{
-			{"label": map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
+			{"label": map[string]any{"issue": a.Issue, "add": add, "remove": remove}},
 			{"comment": map[string]any{"issue": a.Issue, "sticky": "claim", "body": backlog.Said(who, "blocks this issue",
 				fmt.Sprintf("%s; it did not open the time before either (%d times)", why, rec.Unopened),
 				"a person reads why, fixes the cause, and moves the issue back by its label") + "\n" + rec.Line()}},
 		}
 	}
 	return []map[string]any{
-		{"label": map[string]any{"issue": a.Issue, "add": []string{backlog.LabelReady}, "remove": []string{s.ClaimLabel}, "card": "ready"}},
+		{"label": map[string]any{"issue": a.Issue, "add": []string{backlog.LabelReady}, "remove": []string{s.ClaimLabel}}},
 		{"comment": map[string]any{"issue": a.Issue, "sticky": "claim", "body": backlog.Said(who, "gives this issue back", why,
 			"it is free again: the developer takes it again at a next run, once; should its pull request not open again, the issue is blocked") + "\n" + rec.Line()}},
 	}
@@ -226,22 +224,7 @@ func unopened(a devmark.Act, s Settings, repo string) []map[string]any {
 
 // released is the label a claim let go moves, back from Doing to Ready:
 // the claim's off, the ready label on, which the claim took off
-// (ADR-0059, §2; #1081); on a board, its card out of Doing, back to the
-// ready column — GitLab's column labels swapped in the same call, a
-// GitHub project's Status set.
-func released(is forge.Issue, s Settings, card *board.Move) map[string]any {
-	v := map[string]any{"issue": is.ID, "add": []string{backlog.LabelReady}, "remove": []string{s.ClaimLabel}}
-	switch {
-	case card.Labels():
-		remove := []string{s.ClaimLabel}
-		for _, l := range card.Off {
-			if slices.Contains(is.Labels, l) {
-				remove = append(remove, l)
-			}
-		}
-		v["add"], v["remove"] = []string{backlog.LabelReady, card.Column}, remove
-	case card.Writes():
-		v["status"] = map[string]any{"project": card.Project, "option": card.Column}
-	}
-	return v
+// (#1081).
+func released(is forge.Issue, s Settings) map[string]any {
+	return map[string]any{"issue": is.ID, "add": []string{backlog.LabelReady}, "remove": []string{s.ClaimLabel}}
 }

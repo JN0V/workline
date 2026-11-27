@@ -1,6 +1,6 @@
 # ADR-0057: workline finds the forge's board and moves its cards where the forge does not
 
-- **Status:** accepted (2026-10-30)
+- **Status:** accepted (2026-10-30); retired 2026-11-25, see [the note](#retired-2026-11-25)
 - **Date:** 2026-10-30
 - **Decided by:** the maintainer, on 2026-10-30, with the
   [answers](#answers) below
@@ -11,7 +11,16 @@
 - **Research:** [forge-boards.md](../research/forge-boards.md)
 - **Amended by:** [ADR-0059](0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md),
   three slots more, refine, tests and blocked, each moved with its
-  state's label ([boards](../board-moves.md#what-each-state-moves))
+  state's label (the boards' doc, removed 2026-11-25)
+
+## Retired (2026-11-25)
+
+- **Removed**: no board was ever linked to a repository using workline;
+  the code had not run. The owner's decision of 2026-11-25: code that
+  has not run goes first.
+- **What stays**: workline's labels are the states; a forge's own board
+  may still show them by its own rules. No `board:` key, no card moved.
+- **Below**: the decision as it was taken, kept for its history.
 
 ## Context
 

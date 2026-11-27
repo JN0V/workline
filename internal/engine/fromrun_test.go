@@ -32,15 +32,15 @@ func TestOutOfLineRoundMoves(t *testing.T) {
 		in   intent.Intention
 		want string
 	}{
-		{"blocked on its own", label(3, []any{"workline:blocked"}, states, map[string]any{"card": "blocked"}), ""},
-		{"doing on its own", label(3, []any{"workline:developing"}, []any{"workline:ready", "workline:blocked"}, map[string]any{"card": "doing"}), ""},
+		{"blocked on its own", label(3, []any{"workline:blocked"}, states, nil), ""},
+		{"doing on its own", label(3, []any{"workline:developing"}, []any{"workline:ready", "workline:blocked"}, nil), ""},
 		{"comment on its own", intent.Intention{Kind: "comment", Value: map[string]any{"issue": 3, "sticky": "claim", "body": "x"}}, ""},
 		{"blocked on another", label(9, []any{"workline:blocked"}, states, nil), "another issue"},
 		{"comment on another", intent.Intention{Kind: "comment", Value: map[string]any{"issue": 9, "body": "x"}}, "another issue"},
 		{"another label on its own", label(3, []any{"bug"}, nil, nil), "no move of its state"},
 		{"two labels on its own", label(3, []any{"workline:blocked", "workline:accepted"}, nil, nil), "no move of its state"},
 		{"a label off that is no state's", label(3, []any{"workline:blocked"}, []any{"workline:accepted"}, nil), "no move of its state"},
-		{"a board's status", label(3, []any{"workline:blocked"}, nil, map[string]any{"status": map[string]any{"project": 1}}), "no move of its state"},
+		{"another key", label(3, []any{"workline:blocked"}, nil, map[string]any{"status": "x"}), "no move of its state"},
 	} {
 		got := outOfLine(r, c.in, 0, moves)
 		if c.want == "" && got != "" || c.want != "" && !strings.Contains(got, c.want) {

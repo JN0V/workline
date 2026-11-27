@@ -25,7 +25,6 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
@@ -449,17 +448,7 @@ func Pre(runDir, repo string) int {
 	}
 	// A claim no pull request followed is let go first, said on its issue;
 	// it is not taken again in the same run (ADR-0059, decision 1).
-	// Its card leaves Doing with it, to the board's ready column
-	// (ADR-0057), read only when a claim is there to let go.
-	var card *board.Move
-	if slices.ContainsFunc(issues, func(is forge.Issue) bool { return slices.Contains(is.Labels, s.ClaimLabel) }) {
-		if cfg, err := role.LoadProjectConfig(repo); err == nil {
-			if card, err = board.To(f, "ready", cfg.Board); err != nil {
-				fmt.Fprintf(os.Stderr, "workline: the forge's board could not be read, no card moved: %s\n", forge.Said(err))
-			}
-		}
-	}
-	said, findings, err := stale(b, issues, mrs, s, clock.Now(), card)
+	said, findings, err := stale(b, issues, mrs, s, clock.Now())
 	if err != nil {
 		return external(err)
 	}
@@ -511,15 +500,6 @@ func Pre(runDir, repo string) int {
 	}
 	if act.Unopened, err = unopenedBefore(b, id); err != nil {
 		return external(err)
-	}
-	// The claim moves its card to Doing (ADR-0057); a board out of reach
-	// is said, and changes nothing else.
-	if cfg, err := role.LoadProjectConfig(repo); err == nil {
-		mv, err := board.To(f, "doing", cfg.Board)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "workline: the forge's board could not be read, no card moved: %s\n", forge.Said(err))
-		}
-		act.Board = mv
 	}
 	// The claim first, what it says on the other issues after it (Post).
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), append(claimOf(act, s), said...)); err != nil {
@@ -623,19 +603,9 @@ func claimOf(a devmark.Act, s Settings) []intent.Intention {
 
 // claimLabel is the claim's label, a move from Ready to Doing: the ready
 // label off in the same call, one state at a time (ADR-0059, §2;
-// #1081); its card moved to Doing too when the forge's board has that
-// column (ADR-0057).
+// #1081).
 func claimLabel(a devmark.Act, s Settings) intent.Intention {
-	v := map[string]any{"issue": a.Issue, "add": []string{s.ClaimLabel}, "remove": []string{backlog.LabelReady}}
-	switch {
-	case a.Board.Labels():
-		v["add"] = []string{s.ClaimLabel, a.Board.Column}
-		v["remove"] = append([]string{backlog.LabelReady}, a.Board.Off...)
-	case a.Board.Writes():
-		// A GitHub project's Status, set after the label (ADR-0057).
-		v["status"] = map[string]any{"project": a.Board.Project, "option": a.Board.Column}
-	}
-	return intent.Intention{Kind: "label", Value: v}
+	return intent.Intention{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": []string{s.ClaimLabel}, "remove": []string{backlog.LabelReady}}}
 }
 
 // taskText is the question: the issue, what bounds the code and the run,
@@ -768,9 +738,6 @@ func claimBody(a devmark.Act, s Settings) string {
 	fmt.Fprintf(&b, "**The developer** takes this issue: the first ready one nobody took, in the backlog's order. "+
 		"`%s` says so; a person who takes it over assigns themselves; one who gives it back to the line swaps it for `%s`: "+
 		"the label taken off alone leaves the issue in no state, off the line.\n", s.ClaimLabel, backlog.LabelReady)
-	if a.Board != nil {
-		fmt.Fprintf(&b, "\n%s\n", a.Board.Told())
-	}
 	if len(a.Passed) > 0 {
 		b.WriteString("\nPassed over before it:\n\n")
 		for _, p := range a.Passed {
@@ -872,7 +839,6 @@ func Post(runDir, repo string) int {
 	for _, p := range a.Passed {
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "issue-passed", Level: "info", Where: fmt.Sprintf("#%d", p.Issue), Message: p.Why})
 	}
-	v.Findings = append(v.Findings, a.Board.Findings()...)
 	v.Findings = append(v.Findings, refusalFindings(where, refused, said)...)
 	if n := len(refused) + len(said); n > 0 {
 		v.Summary += fmt.Sprintf("; %d of its agent's proposals refused at apply", n)
@@ -1253,7 +1219,7 @@ func writeBlockedProtected(runDir, repo string, a devmark.Act, s Settings, told 
 		"its agent's only changes were refused at apply: "+strings.TrimSuffix(b.String(), "; "),
 		"a person makes the change, or decides it, then moves the issue back by its label")
 	out := slices.Concat(claimOf(a, s), told, []intent.Intention{
-		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
+		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove}},
 		{Kind: "comment", Value: map[string]any{"issue": a.Issue, "body": say}},
 	})
 	if code := writeIntents(runDir, "", out); code != 0 {

@@ -44,10 +44,6 @@ The comment and the labels, then what it writes in the issue's body.
 - **An assumption**: a question left unanswered past its delay is
   written under the issue's Assumptions, and said in the comment
   ([assumptions](writing.md#assumptions)).
-- **A board**: ready also moves the card to its ready column, a label
-  on GitLab, the Status on an organisation's GitHub project; a user's
-  project is not written, the act says so
-  ([boards](../../../docs/boards.md)).
 ### What it writes in the issue
 
 - **Sections** written in the body, Need, Validation and a real example
@@ -112,7 +108,7 @@ applied". The applying job does exactly that plan.
 ## Where to look
 
 - **What waits on you**: a saved filter on `workline:proposed` (GitLab: a
-  label subscription or a board works too).
+  label subscription works too).
 - **What it did**: the job's summary, and the comment on each issue.
 
 ## The weekly sample

@@ -85,12 +85,6 @@ claim is a label, on every forge:
 - **A person takes it over**: assign themselves. To give it back to
   the line, swap the label for `workline:ready`: the label taken off
   alone leaves the issue in no state, off the line.
-- **Its card to Doing**, on a board with a doing column
-  ([boards](../../../docs/boards.md)). The comment and its hidden line
-  say the move, or why it is left:
-  - GitLab: that column's label on, the other columns' off, in one call.
-  - GitHub: left to the project's *Pull request linked to issue* when
-    on; else the card's Status set, on an organisation's project only.
 - **No code, no pull request**: the comment says so, and when the issue
   is blocked for a person, its body unchanged
   ([letting a claim go](#letting-a-claim-go)). Meanwhile the claim holds no Scope: an issue overlapping it
@@ -142,14 +136,11 @@ on any event, with or without an agent:
   ([the record](../../../docs/spec/routing.md#once-a-state-the-record)),
   and on one whose run ended with no verdict, said on the issue
   ([#953](https://github.com/JN0V/workline/issues/953)).
-- **Not yet**: its card stays in Doing; the line's states
-  ([ADR-0059](../../../docs/adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#build-plan),
-  step 2) move it.
 
 ## With no agent
 
-The issue is named in the run's summary; no claim, no branch, no card
-moved (principle 5). What waits is still said on its issue, and a stale
+The issue is named in the run's summary; no claim, no branch
+(principle 5). What waits is still said on its issue, and a stale
 claim let go: neither needs judgement.
 
 ## What the auditor reads

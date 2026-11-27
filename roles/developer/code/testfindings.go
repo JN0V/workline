@@ -215,7 +215,7 @@ func disputedOff(r round, repo string) []intent.Intention {
 	why := fmt.Sprintf("the review of merge request %d still blocks on %d test finding%s the tester answered no test is needed for: the reviewer and the tester do not agree",
 		r.MR, n, devmark.Plural(n))
 	return []intent.Intention{
-		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove, "card": "blocked"}},
+		{Kind: "label", Value: map[string]any{"issue": a.Issue, "add": add, "remove": remove}},
 		sayOn(a.Issue, backlog.Said(who, "blocks this issue", why,
 			"a person on the loop reads the finding and the tester's answer on the pull request, settles it, and moves the issue back by its label")),
 		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(

@@ -17,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
 )
@@ -530,10 +529,10 @@ func specWaits(is forge.Issue, comments []string) bool {
 }
 
 // writeState writes w on the forge: the record in its comment; past the
-// cap, the issue moved to Blocked, every other state's label off, its
-// card to the board's Blocked column, and why said in that comment; a
-// step waiting for room, why, its record as it was.
-func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, role string) error {
+// cap, the issue moved to Blocked, every other state's label off, and
+// why said in that comment; a step waiting for room, why, its record as
+// it was.
+func writeState(f forge.Forge, cfg *routing.Config, w StateWrite, role string) error {
 	t := forge.Target{Kind: "issue", ID: w.Issue}
 	w.Record.V = recordV
 	var after *forge.Issue // the issue as the step's run left it
@@ -557,12 +556,9 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 		if err != nil {
 			return err
 		}
-		card := board.Along(f, repo, BlockedState)
-		add, remove = card.Fold(add, append(remove, w.Off...))
-		if err := f.Label(t, add, remove); err != nil {
+		if err := f.Label(t, add, append(remove, w.Off...)); err != nil {
 			return err
 		}
-		card.Write(f, w.Issue)
 		if w.Record.Why == "" {
 			w.Record.Why = w.Blocked
 		}
@@ -583,17 +579,17 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 			"\n\n<!-- workline:" + recordMark + string(data) + " -->"
 	case w.Repro != "":
 		var err error
-		if body, err = reproBody(f, cfg, repo, t, w); err != nil {
+		if body, err = reproBody(f, cfg, t, w); err != nil {
 			return err
 		}
 	case w.Retest != "" || w.RetestKept != "":
 		var err error
-		if body, err = retestBody(f, cfg, repo, t, w); err != nil {
+		if body, err = retestBody(f, cfg, t, w); err != nil {
 			return err
 		}
 	case w.Stale != "" || w.Kept != "":
 		var err error
-		if body, err = staleBody(f, cfg, repo, t, w); err != nil {
+		if body, err = staleBody(f, cfg, t, w); err != nil {
 			return err
 		}
 	case w.Record.State == BlockedState:
@@ -689,7 +685,7 @@ func WriteStates(f forge.Forge, repo string, res *Result) error {
 		return err
 	}
 	for _, w := range res.States {
-		if err := writeState(f, cfg, repo, w, res.Woke[w.Issue]); err != nil {
+		if err := writeState(f, cfg, w, res.Woke[w.Issue]); err != nil {
 			return fmt.Errorf("#%d: %w", w.Issue, err)
 		}
 	}

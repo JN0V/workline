@@ -20,7 +20,6 @@ import (
 	"github.com/JN0V/workline/internal/kit/testmark"
 
 	"github.com/JN0V/workline/internal/backlog"
-	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
@@ -322,9 +321,9 @@ func personReady(cfg *routing.Config, s routing.State, rec Record, had bool, ref
 }
 
 // retestBody writes a ready issue's move to the tester's state — its
-// labels, its card to the board's tests column — and is the line's
-// comment saying why; or, for one a person put back, the comment alone.
-func retestBody(f forge.Forge, cfg *routing.Config, repo string, t forge.Target, w StateWrite) (string, error) {
+// labels — and is the line's comment saying why; or, for one a person
+// put back, the comment alone.
+func retestBody(f forge.Forge, cfg *routing.Config, t forge.Target, w StateWrite) (string, error) {
 	left, _ := cfg.State(w.Record.Retest)
 	to, _ := testsState(cfg, left)
 	if w.RetestKept != "" {
@@ -336,12 +335,9 @@ func retestBody(f forge.Forge, cfg *routing.Config, repo string, t forge.Target,
 	if err != nil {
 		return "", err
 	}
-	card := board.Along(f, repo, to.Name)
-	add, remove = card.Fold(add, remove)
 	if err := f.Label(t, add, remove); err != nil {
 		return "", err
 	}
-	card.Write(f, t.ID)
 	return backlog.Said("workline's line", "moves this issue to "+to.Name+", for its tests", w.Retest,
 		fmt.Sprintf("the %s writes them, then the issue is %s again; to undo, put `%s` back", to.Role, left.Name, left.Label)) +
 		"\n\n" + recordMarker(w.Record), nil

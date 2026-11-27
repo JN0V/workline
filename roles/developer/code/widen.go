@@ -152,7 +152,7 @@ func moveTo(repo, state string, issue int, add, remove []string) intent.Intentio
 			add, remove = ad, rm
 		}
 	}
-	return intent.Intention{Kind: "label", Value: map[string]any{"issue": issue, "add": add, "remove": remove, "card": state}}
+	return intent.Intention{Kind: "label", Value: map[string]any{"issue": issue, "add": add, "remove": remove}}
 }
 
 // besideSaid is the issue's comment listing the new test files the

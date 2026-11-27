@@ -32,7 +32,7 @@ the right line, and what should change before it is built?
   architect, flow coach (scrum master), and a developer as devil's
   advocate.
 - **Each read**: [PRINCIPLES.md](../PRINCIPLES.md), the roles' READMEs,
-  [routing.md](../spec/routing.md), [boards.md](../boards.md),
+  [routing.md](../spec/routing.md), boards.md (removed 2026-11-25),
   [ADR-0054](../adr/0054-the-developer-takes-a-ready-issue-to-a-pull-request.md),
   [ADR-0055](../adr/0055-the-tester-writes-the-acceptance-tests-before-the-code.md),
   [ADR-0057](../adr/0057-workline-finds-the-forges-board-and-moves-its-cards.md),

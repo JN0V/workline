@@ -41,8 +41,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md). Where it stands:
   took: [the pick](docs/pick.md).
 - **Claims** it, with an agent set: a label that moves it from Ready to
   Doing and a comment on the issue,
-  the record the [auditor](../auditor/README.md) can read; its card to
-  the board's doing column ([boards](../../docs/boards.md)).
+  the record the [auditor](../auditor/README.md) can read.
 - **Writes the code**, with an agent, in a worktree, held to its bounds:
   [the agent](docs/agent.md), [the bounds](docs/bounds.md).
 - **Proves it** on the project's tests, then opens its pull request:

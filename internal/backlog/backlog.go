@@ -16,7 +16,6 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/JN0V/workline/internal/board"
 	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -529,9 +528,6 @@ type Proposal struct {
 	// Native, the engine's: the blockers an undepend takes off the forge's
 	// own relation, the rest being in the engine's line; never the agent's.
 	Native []int `yaml:"native,flow,omitempty"`
-	// Card, the engine's: the move a ready makes on the board, to its
-	// ready column (ADR-0057); never the agent's.
-	Card *board.Move `yaml:"card,omitempty"`
 	// Proof, on a ready: the kind the role picks where the tester found
 	// no test possible (ADR-0059, decision 4); the issue goes to ready,
 	// not back to its tests.
@@ -1108,15 +1104,6 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		narrowed := func(c Proposal) {
 			if narrowing && !c.ToReporter && work.Has(c.Added, work.Scope) {
 				p.narrowDropped[c.Issue] = false
-			}
-		}
-		c.Card = nil
-		if c.Do == "ready" {
-			// Its card to the board's ready column (ADR-0057); to its
-			// tests column when it goes to its tests (ADR-0059).
-			c.Card = p.config.Ready
-			if p.config.Tests != nil && c.Proof == nil && p.config.ToTests != nil && p.config.ToTests(p.issues[c.Issue]) {
-				c.Card = p.config.Tests
 			}
 		}
 		if once && why == "" {
@@ -3759,24 +3746,17 @@ func describe(c Proposal, verb string) string {
 		}
 		return fmt.Sprintf("%s #%d: %s. %s", map[bool]string{true: "Refined", false: "Refine"}[done], c.Issue, strings.Join(names, ", "), strings.TrimSpace(c.Why))
 	case "ready":
-		board := ""
-		switch {
-		case c.Card == nil:
-		case c.Card.Left == "user":
-			board = fmt.Sprintf(", its card not moved to `%s`: a user's project, which GitHub lets no App write", c.Card.Column)
-		default:
-			board = fmt.Sprintf(", its card to `%s` on the board", c.Card.Column)
-		}
+		tail := ""
 		if c.Proof != nil {
 			// No test possible, said the tester: the kind picked in place
 			// of its Draft, and why.
-			board += fmt.Sprintf(", proved by %s in place of new tests (%s)", c.Proof.Kind, strings.TrimSuffix(strings.TrimSpace(c.Proof.Reason), "."))
+			tail += fmt.Sprintf(", proved by %s in place of new tests (%s)", c.Proof.Kind, strings.TrimSuffix(strings.TrimSpace(c.Proof.Reason), "."))
 		}
 		if len(c.Assumed) > 0 {
 			// Drafts no person accepted past the delay (ADR-0060).
-			board += fmt.Sprintf(", its %s taken as written after no answer, said under %s", and(c.Assumed), AssumptionsName)
+			tail += fmt.Sprintf(", its %s taken as written after no answer, said under %s", and(c.Assumed), AssumptionsName)
 		}
-		return fmt.Sprintf("%s #%d to ready%s: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, board, strings.TrimSpace(c.Why))
+		return fmt.Sprintf("%s #%d to ready%s: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, tail, strings.TrimSpace(c.Why))
 	case "unready":
 		if done {
 			return fmt.Sprintf("Moved #%d back to refine (%s off, %s on; put %s back to undo): %s", c.Issue, LabelReady, LabelToRefine, LabelReady, strings.TrimSpace(c.Why))

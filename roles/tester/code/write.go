@@ -640,14 +640,14 @@ func testsDone(runDir, repo string, t task, intents []intent.Intention, untested
 			"the tests red on the base and passing the project's lint", len(t.Scenarios), untested)
 	}
 	intents = append(intents,
-		intent.Intention{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove, "card": s.Next}},
+		intent.Intention{Kind: "label", Value: map[string]any{"issue": t.Issue, "add": add, "remove": remove}},
 		intent.Intention{Kind: "comment", Value: map[string]any{"issue": t.Issue, "sticky": "issue",
 			"body": backlog.Said("The tester", "wrote the acceptance tests of this issue, as a Draft", why+"; "+plan,
 				"it is "+s.Next+": whoever builds it starts from the Draft, workline/tester/"+taskKey(t.Issue))}})
 	// Its Draft not opened, the move is undone, said: no issue says ready
 	// with no Draft to start from (#1280).
 	undo := []map[string]any{
-		{"label": map[string]any{"issue": t.Issue, "add": remove, "remove": add, "card": s.Name}},
+		{"label": map[string]any{"issue": t.Issue, "add": remove, "remove": add}},
 		{"comment": map[string]any{"issue": t.Issue, "sticky": "issue", "body": backlog.Said("The tester", "keeps this issue in "+s.Name,
 			"its Draft did not open: "+intent.WhyMark, "the tester writes its tests again at a next run")}},
 	}

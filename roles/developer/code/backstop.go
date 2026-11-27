@@ -24,7 +24,7 @@ func stopped(r round, repo string, issue int) []intent.Intention {
 		}
 	}
 	return []intent.Intention{
-		{Kind: "label", Value: map[string]any{"issue": issue, "add": add, "remove": remove, "card": "blocked"}},
+		{Kind: "label", Value: map[string]any{"issue": issue, "add": add, "remove": remove}},
 		sayOn(issue, backlog.Said(who, "blocks this issue", r.Backstop,
 			fmt.Sprintf("no review round runs on merge request %d, kept open; no product owner reads it again", r.MR))),
 		{Kind: "comment", Value: map[string]any{"sticky": "round", "body": fmt.Sprintf(

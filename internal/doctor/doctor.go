@@ -269,7 +269,6 @@ func repository(r *Report, o Options) {
 	bypassGuard(r, o, cfg.Forge)
 	blockedEvent(r, o)
 	guardedList(r, o, cfg, line)
-	boards(r, o, cfg, line)
 	issueHook(r, o, cfg, line)
 	levels(r, o, cfg, line)
 	// A shallow clone lacks the commits docs were checked against, and the
