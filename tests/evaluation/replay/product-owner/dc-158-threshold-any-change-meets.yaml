@@ -1,0 +1,31 @@
+case: product-owner/dc-158-threshold-any-change-meets
+about: >
+  JN0V/DomoticsCore #158, a roadmap row: "MQTTPublishEvent is 830 bytes —
+  consider reducing field sizes". On 2026-10-20 the role drafted "Then it is
+  below 830 bytes"; the owner accepted the drafts on 10-27; on 11-23 the
+  developer met it with 829 bytes, a bit field (pull request 274), and the
+  owner counted the Validation as weak (workline's role evaluation of
+  2026-11-25): no target, no reason. The body is the row as imported, before
+  the role wrote on it; main was 0944d89. Expected: no bound any change meets;
+  the role asks its reporter for the size and why, or names one with its
+  reason. The instruction's Validation rules were written on 2026-11-25 from
+  this issue among five: a pass here shows the edit landed, not that the role
+  generalises (the held- cases measure that).
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 0944d89e061889c3c740b8e31e8f2079a8bdb4aa}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 158
+        title: "LO-2: MQTTPublishEvent is 830 bytes, reduce field sizes"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "| LO-2 | MQTT | `MQTTPublishEvent` is 830 bytes (`sizeof`, both cores; this row said 832 until 2026-09-20) — consider reducing field sizes |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6322 to 6322 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:a383a9b7cbf9 -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 0944d89\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[threshold] Look only at the size, count or time bounds in the Validation of issue #158, as this run left it. Is each one a number with its unit and a stated reason (a budget it fits, a document that must fit)? Yes also when the Validation states no such bound: the role asked its reporter for the target, or the change needs none. No when a bound is met by nearly any change (\"below today's value\", \"smaller than before\", one byte or one unit less), or when a scenario names a limit without its figure."}
+  - {sh: ": not-readied; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 158][0]; assert \"workline:ready\" not in i[\"labels\"] and \"workline:needs-tests\" not in i[\"labels\"]'"}

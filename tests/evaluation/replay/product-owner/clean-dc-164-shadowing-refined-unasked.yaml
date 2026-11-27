@@ -1,0 +1,29 @@
+case: product-owner/clean-dc-164-shadowing-refined-unasked
+about: >
+  Clean. JN0V/DomoticsCore #164, a roadmap row: "Member shadowing
+  (ssid/password vs constructor params)". Its Validation ("compiled with
+  -Wshadow, no warning"; "connects as before") was built by pull request 272,
+  merged with no review round and nothing sent back. (The role's first act
+  then, on 2026-10-20, was a question the code answers; it is the refinement
+  of 11-16 that is clean.) The body is the row as imported; main was 0944d89.
+  Expected: a Validation drafted, seen by running, and no question to the
+  reporter: the code says which class and what it does.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 0944d89e061889c3c740b8e31e8f2079a8bdb4aa}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 164
+        title: "LO-9: WiFi member shadowing of ssid/password"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "| LO-9 | WiFi | Member shadowing (`ssid`/`password` vs constructor params) |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6329 to 6329 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:dba875a5a2b2 -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 0944d89\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {no-finding: {where: "#164", message: "Asked #164's reporter"}}
+  - {sh: ": validation-drafted; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 164][0]; assert \"## Validation\" in i[\"body\"]'"}
+  - {judge: "[observed] In issue #164 as this run left it, is every Then of the Validation something a person sees by running something (a test, a build, a compiler, a command's output, the program's behaviour), and none a claim read in the source text (a declaration's type, a keyword, a name or an include present in or absent from a file)? Yes also when the role wrote no Validation."}

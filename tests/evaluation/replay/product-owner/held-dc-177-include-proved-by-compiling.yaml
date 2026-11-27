@@ -1,0 +1,27 @@
+case: product-owner/held-dc-177-include-proved-by-compiling
+about: >
+  Held out. JN0V/DomoticsCore #177, a roadmap row: "HALight.h, HAButton.h,
+  HAAlarmControlPanel.h rely on transitive Logger.h include". Same kind of
+  point as #178 (a Then read in the source, here "the header holds the
+  include"), on an issue the instruction was not written on; a check that
+  fails today exists: compile each header alone. The body is the row as
+  imported; the commit is 81774f5. Expected: every Then seen by running; no
+  question: the code answers.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 81774f5ad6234f0d51589f7b971ec981a0a3fb68}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 177
+        title: "LO-23: HA headers rely on transitive Logger.h include"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "| LO-23 | HA | `HALight.h`, `HAButton.h`, `HAAlarmControlPanel.h` rely on transitive `Logger.h` include |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6343 to 6343 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:44e6b38353ec -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 81774f5\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[observed] In issue #177 as this run left it, is every Then of the Validation something a person sees by running something (a test, a build, a compiler, a command's output, the program's behaviour), and none a claim read in the source text (a declaration's type, a keyword, a name or an include present in or absent from a file)? Yes also when the role wrote no Validation."}
+  - {no-finding: {where: "#177", message: "Asked #177's reporter"}}

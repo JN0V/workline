@@ -146,16 +146,6 @@ func readRecordKept(f forge.Forge, id int) (record, *verdict.Finding, forge.Kept
 	return r, nil, kept, nil
 }
 
-// issueOf is the issue a tester's branch is for, 0 when the branch is not
-// one.
-func issueOf(branch string) int {
-	n, err := strconv.Atoi(strings.TrimPrefix(branch, testmark.TestsBranch))
-	if !strings.HasPrefix(branch, testmark.TestsBranch) || err != nil || n <= 0 {
-		return 0
-	}
-	return n
-}
-
 // closingDrafts are the tester's open Drafts of the issues mr closes,
 // none when it closes none or no issue has one: the developer's pull
 // request, stacked on that Draft, merges its tests, so they are guarded
@@ -164,7 +154,7 @@ func issueOf(branch string) int {
 // request that closes an issue carries its frozen tests. ok is false
 // when the forge lists no merge request: none could be looked for.
 func closingDrafts(f forge.Forge, mr forge.MergeRequest) (drafts []int, ok bool, err error) {
-	closes := forge.Closes(mr.Title, mr.Body)
+	closes := forge.For("", mr.Title, mr.Body)
 	if len(closes) == 0 {
 		return nil, true, nil
 	}
@@ -176,7 +166,7 @@ func closingDrafts(f forge.Forge, mr forge.MergeRequest) (drafts []int, ok bool,
 	}
 	for _, n := range closes {
 		for _, o := range open {
-			if o.ID != mr.ID && issueOf(o.Branch) == n && !slices.Contains(drafts, o.ID) {
+			if o.ID != mr.ID && testmark.BranchIssue(o.Branch) == n && !slices.Contains(drafts, o.ID) {
 				drafts = append(drafts, o.ID)
 			}
 		}
@@ -239,7 +229,7 @@ func guardPre(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	from := []int{id}
-	if issueOf(mr.Branch) == 0 {
+	if testmark.BranchIssue(mr.Branch) == 0 {
 		drafts, ok, err := closingDrafts(f, mr)
 		if errors.Is(err, forge.ErrUnreachable) {
 			fmt.Fprintln(os.Stderr, err)

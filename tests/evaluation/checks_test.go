@@ -95,6 +95,38 @@ func TestSplit(t *testing.T) {
 	}
 }
 
+// TestIssuesAfter: the judge of a product owner's case reads the forge as
+// the run left it, since the role writes no file; another role's judge
+// is given nothing more.
+func TestIssuesAfter(t *testing.T) {
+	work := t.TempDir()
+	r := &run{repo: filepath.Join(work, "repo")}
+	r.res.Findings = append(r.res.Findings, struct {
+		Rule    string `json:"rule"`
+		Where   string `json:"where"`
+		Message string `json:"message"`
+	}{"done", "#7", "Asked #7's reporter: which size?"})
+	forge := `{"issues":[{"id":7,"title":"Too big","labels":["task"],"body":"## Need\n\nSmaller.","comments":["the state, a comment written as its body alone",{"body":"@ann, which size?"}]}]}`
+	if err := os.WriteFile(filepath.Join(work, "forge.json"), []byte(forge), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c := &caseFile{}
+	c.Run.Role, c.Given.Forge = "product-owner", map[string]any{"issues": []any{}}
+	got := issuesAfter(c, r)
+	for _, want := range []string{"- done #7: Asked #7's reporter: which size?", "### #7 Too big (open; labels: task)", "## Need\n\nSmaller.", "#### A comment on #7\n\n@ann, which size?", "#### A comment on #7\n\nthe state, a comment written as its body alone"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the judge's material lacks %q:\n%s", want, got)
+		}
+	}
+	if !strings.HasPrefix(got, "The case above tells what happened on the real issue, at the time. Judge this run alone") {
+		t.Errorf("the judge is not told to judge this run alone:\n%s", got)
+	}
+	c.Run.Role = "documentalist"
+	if got := issuesAfter(c, r); got != "" {
+		t.Errorf("another role's judge reads the working tree alone: %q", got)
+	}
+}
+
 func TestJudge(t *testing.T) {
 	c := &caseFile{}
 	c.About, c.Run.Message = "a rewrite", "fix: stop crashing on an empty file"
@@ -108,8 +140,16 @@ func TestJudge(t *testing.T) {
 		t.Errorf("a no is a lost point, with its reason: %q %v %q", why, err, r.judgedBy)
 	}
 	t.Setenv("WORKLINE_JUDGE", answer("yes: same meaning"))
+	kept := t.TempDir()
+	t.Setenv("WORKLINE_EVAL_KEEP", kept)
 	if why, err := judge("Same meaning?", c, r); err != nil || why != "" {
 		t.Errorf("a yes is a point: %q %v", why, err)
+	}
+	t.Setenv("WORKLINE_EVAL_KEEP", "")
+	if files, _ := filepath.Glob(filepath.Join(kept, "*.md")); len(files) != 1 {
+		t.Errorf("a judged question is kept where WORKLINE_EVAL_KEEP says, yes or no: %v", files)
+	} else if data, _ := os.ReadFile(files[0]); !strings.Contains(string(data), "yes: same meaning") || !strings.Contains(string(data), "Same meaning?") {
+		t.Errorf("the kept file lacks the answer or the question:\n%s", data)
 	}
 	t.Setenv("WORKLINE_JUDGE", answer("maybe"))
 	if _, err := judge("Same meaning?", c, r); err == nil {
@@ -121,6 +161,16 @@ func TestJudge(t *testing.T) {
 		t.Error("a judge of the graded agent's provider is refused when another provider is asked")
 	}
 	t.Setenv("WORKLINE_JUDGE_AT_LEAST", "")
+	// A named question says its name with the point it loses, and is
+	// asked without it.
+	t.Setenv("WORKLINE_JUDGE", answer("no: a bound any change meets"))
+	c.Grade = []map[string]any{{"judge": "[threshold] Is every bound a number with its reason?"}}
+	if _, failed, _ := grade(c, r); len(failed) != 1 || failed[0] != "judge [threshold]: a bound any change meets" {
+		t.Errorf("a named question's failure names it: %v", failed)
+	}
+	if name, q := judgeName("[a b] no name"); name != "" || q != "[a b] no name" {
+		t.Errorf("brackets holding a space are the question's own: %q %q", name, q)
+	}
 	t.Setenv("WORKLINE_JUDGE", "")
 	c.Grade = []map[string]any{{"judge": "Same meaning?"}}
 	if passed, failed, skipped := grade(c, r); passed != 0 || len(failed) != 0 || len(skipped) != 1 {
@@ -553,6 +603,26 @@ func TestReviewerWithFakeAgent(t *testing.T) {
 	}
 	spec := "cmd:sh " + agent + " " + answers
 	t.Setenv("WORKLINE_JUDGE", spec)
+	kept := filepath.Join(t.TempDir(), "findings.jsonl")
+	t.Setenv("WORKLINE_EVAL_FINDINGS", kept)
+	t.Setenv("WORKLINE_EVAL_ARM", "lens, fake")
+	defer func() { // each run's findings are kept whole, for the scorer by meaning
+		data, _ := os.ReadFile(kept)
+		lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+		if len(lines) != 2 {
+			t.Fatalf("WORKLINE_EVAL_FINDINGS holds %d lines for 2 runs:\n%s", len(lines), data)
+		}
+		for i, line := range lines { // the second run names no arm: the agent asked is its arm
+			arm := []string{`{"arm":"lens, fake",`, `{"arm":"cmd:sh `}[i]
+			for _, want := range []string{arm, `"case":"correctness-checkout-drops-the-coupon-error","tokens_in":`,
+				`"severity":"important","refused":false,"title":"`, `"refused":true`,
+				`"body":"Checkout returns the full price and no error for \"SAVEx\", which its doc calls an error.\nFix: return the error ParseCoupon gives."`} {
+				if !strings.Contains(line, want) {
+					t.Errorf("run %d: the findings kept lack %s:\n%s", i+1, want, line)
+				}
+			}
+		}
+	}()
 	for _, run := range []struct {
 		settings string
 		want     []string
@@ -570,6 +640,10 @@ func TestReviewerWithFakeAgent(t *testing.T) {
 		}},
 	} {
 		t.Setenv("WORKLINE_EVAL_REVIEWER", run.settings)
+		if run.settings == "" {
+			t.Setenv("WORKLINE_EVAL_ARM", "")
+			t.Setenv("WORKLINE_EVAL", spec)
+		}
 		r, err := play(t, c, spec)
 		if err != nil {
 			t.Fatal(err)

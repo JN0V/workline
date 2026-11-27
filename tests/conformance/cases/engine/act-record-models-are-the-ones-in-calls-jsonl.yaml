@@ -1,0 +1,34 @@
+case: engine/act-record-models-are-the-ones-in-calls-jsonl
+about: "A run that called sonnet twice then opus once, judged with no write token and applied by a job apart: the models its calls.jsonl names, sonnet and opus each once, in the order they answered, are the ones in the act record's models."
+given:
+  repo: basic
+  forge:
+    issues:
+      - {id: 1, title: "Export users", body: "Export the users as CSV.", labels: [], comments: []}
+run:
+  role: records-comment
+  event: schedule
+  target: {issue: 1}
+  no-apply: true
+  then: resume
+  # The first two answers hold a note the role does not declare, refused:
+  # asked again on the same tier, then one tier up; the models differ by tier.
+  ai: |-
+    cmd:case "$WORKLINE_TIER" in frontier) m=opus ;; *) m=sonnet ;; esac
+    printf 'model: %s\n' "$m" > "$WORKLINE_CALL"
+    if [ "$WORKLINE_TIER" = frontier ]; then printf '%s\n' '- comment: "Triaged."'; else printf '%s\n' '- note: "not for me to say"'; fi
+expect:
+  status: pass
+  run-files:
+    out/calls.jsonl:
+      contains:
+        - '"model":"sonnet"'
+        - '"model":"opus"'
+  forge:
+    issues:
+      - id: 1
+        comment-contains:
+          - "workline:act"
+          - '"models":["sonnet","opus"]'
+        comment-lacks:
+          - '"models":[]'

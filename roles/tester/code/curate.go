@@ -125,7 +125,7 @@ func protected(f forge.Forge) (map[string]int, map[string]bool, error) {
 		if strings.HasPrefix(mr.Branch, "workline/tester/"+testmark.CurateKey) {
 			curating[mr.Branch] = true
 		}
-		if issueOf(mr.Branch) == 0 {
+		if testmark.BranchIssue(mr.Branch) == 0 {
 			continue
 		}
 		r, missing, err := readRecord(f, mr.ID)

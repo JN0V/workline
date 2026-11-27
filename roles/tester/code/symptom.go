@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/worktree"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -100,7 +101,7 @@ func proveSymptom(repo string, f forge.Forge, id int, parts []int, s Settings) (
 		sym.Why = "the forge lists no merge request (" + err.Error() + "): its Draft, and the reproduction test it holds, cannot be found"
 		return sym, nil
 	}
-	i := slices.IndexFunc(mrs, func(m forge.MergeRequest) bool { return issueOf(m.Branch) == id })
+	i := slices.IndexFunc(mrs, func(m forge.MergeRequest) bool { return testmark.BranchIssue(m.Branch) == id })
 	if i < 0 {
 		sym.Why = fmt.Sprintf("no reproduction test of its own: the tester has no open Draft of #%d, its tests written before its split", id)
 		return sym, nil

@@ -1505,7 +1505,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	if err != nil {
 		return err
 	}
-	ap.models = modelsUsed(res.Calls)
+	ap.models = modelsUsed(callsOf(runDir, res.Calls))
 	ap.plan = plan
 	done := map[int]bool{}
 	for _, i := range st.Applied {

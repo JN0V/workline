@@ -54,7 +54,7 @@ func waits(passed []devmark.Passed) []intent.Intention {
 func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Settings, now time.Time, card *board.Move) ([]intent.Intention, []verdict.Finding, error) {
 	closed := map[int]bool{}
 	for _, m := range mrs {
-		for _, n := range forge.ClosesOn(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
+		for _, n := range forge.For(os.Getenv("WORKLINE_FORGE"), m.Title, m.Body) {
 			closed[n] = true
 		}
 	}
@@ -107,9 +107,9 @@ func stale(b forge.Backlog, issues []forge.Issue, mrs []forge.MergeRequest, s Se
 					Message: "its claim's comment could not be read (" + forge.Said(err) + "): kept, read again at the next run"})
 				continue
 			}
-			if devmark.NoCodeOnSameBody(a, is.Body) {
+			if devmark.SpentOnSameBody(b, a, is.Body) {
 				found = append(found, verdict.Finding{Rule: "claim-left-to-line", Level: "info", Where: where,
-					Message: why + ", its agent wrote no code on the body it still has: kept, left to the line, which blocks it for a person"})
+					Message: why + ", its agent ran on the body it still has: kept, left to the line, which blocks it for a person"})
 				continue
 			}
 		}

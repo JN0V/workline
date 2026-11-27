@@ -28,7 +28,7 @@ expect:
   agent-calls: 0
   findings:
     - {rule: claim-released, where: "#1", message: "no pull request closes it"}
-    - {rule: claim-left-to-line, level: info, where: "#3", message: "its agent wrote no code on the body it still has: kept, left to the line, which blocks it for a person"}
+    - {rule: claim-left-to-line, level: info, where: "#3", message: "its agent ran on the body it still has: kept, left to the line, which blocks it for a person"}
   no-findings: [{rule: claim-released, where: "#3"}]
   forge:
     issues:

@@ -83,7 +83,9 @@ simulated forge (`given.forge`, as a conformance case's). Built on the
 machine; `WORKLINE_EVAL_REVIEWER='{lenses-together: false}'` asks each
 apart, as a push to a merge request asks its one lens, and
 `WORKLINE_EVAL_LENSES=diff-alone` the diff-alone facet alone
-([#360](https://github.com/JN0V/workline/issues/360)). The run's folder is read with no agent — what
+([#360](https://github.com/JN0V/workline/issues/360)). `WORKLINE_EVAL_FINDINGS`
+keeps each run's findings whole, for the replay set's
+[score by meaning](replay.md#scored-by-meaning). The run's folder is read with no agent — what
 each lens answered, what the engine kept of it, each important finding
 verified, shown not verified or dropped (`in/review.json`), the tokens of
 each call by what it answered (`for`) — and scored: a point for each defect a finding shown on the change has its

@@ -125,10 +125,14 @@ It answers with its edits; its diff is its code
     when an item is of a kind the role writes: a `Not done:` note
     written as a list is kept whole, below.
   - Nothing reads, or prose closed by `[]`: the words go as they came
-    on the pull request, under "Its agent's words, unread", said
-    (`agent-words-unread`), so a `Not done:` note or an objection
-    written there is not lost; with no pull request, in its claim on
-    the issue.
+    on the pull request, said (`agent-words-unread`), so nothing is
+    lost; with no pull request, in its claim on the issue.
+  - A `Not done:` note goes on top, under "Left for a person": the pull
+    request is then `Part of #n`, never closing it
+    ([its body](pull-request.md#its-body)); other words go under "Its
+    agent's words, unread".
+  - A closing word in them (`Closes #12`) is broken: a merge closes no
+    issue the agent's words name.
   - An objections or reasons file that is a link, or a folder: never
     followed nor read, removed, said.
 - **The same for a `cmd:` agent**: its output is read so.

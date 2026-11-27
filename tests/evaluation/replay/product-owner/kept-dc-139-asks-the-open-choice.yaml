@@ -1,0 +1,28 @@
+case: product-owner/kept-dc-139-asks-the-open-choice
+about: >
+  Kept. JN0V/DomoticsCore #139 at its first read, 2026-10-29: the role asked
+  its reporter whether a deliberate shutdown should withdraw the Home
+  Assistant entities, the choice the body says is undecided. That question was
+  right (the owner's decision of 2026-11-25 keeps it); what went wrong came
+  after, with the timeout. The body is the item as imported; main was 0944d89.
+  Expected: the same question, no Validation answering it, the issue not
+  readied.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 0944d89e061889c3c740b8e31e8f2079a8bdb4aa}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 139
+        title: "BUG-66 — HomeAssistant: what shutdown() publishes never leaves the device"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "### BUG-66 — HomeAssistant: what `shutdown()` publishes never leaves the device [LOW] — **NEW (2026-09-23, filed by BUG-63's lot)**\n\n- **Files**: `HomeAssistant.h` (`shutdown()` → `setAvailable(false)` and\n  `removeDiscovery()`), against `Core.cpp:loop()`, which returns on\n  `!initialized`, and `Core.cpp:shutdown()`, which clears that flag.\n- **Problem**: both publish through the EventBus, which dispatches in\n  `Core::loop()`. `Core::shutdown()` clears `initialized` before anything drains\n  the queue, so the `offline` availability and one empty retained payload per\n  entity — the messages that withdraw the device from Home Assistant — are\n  queued and discarded. Found by a test written for BUG-13's lot, which counted\n  zero removals where the code plainly publishes two.\n- **Consequence**: a device shut down cleanly stays in Home Assistant with every\n  entity present, and stays `online` there: a graceful MQTT disconnect does not\n  fire the Last Will that BUG-43 put in place for a dropped link.\n- **LOW, argued**: nothing calls `Core::shutdown()` on a normal device path —\n  a reboot and an OTA restart do not — so this is reachable only from an\n  application that shuts the stack down deliberately. The test added in BUG-63's\n  lot calls the component's own `shutdown()` so it pins what the component does,\n  not what the Core swallows.\n- **It is also a question, not only a defect**: whether a shutdown *should*\n  remove the entities is undecided. Withdrawing them on every deliberate stop\n  would make an application that restarts the stack lose its entities in Home\n  Assistant, where the retained configs are precisely what brings them back.\n  Answer that before making the messages leave.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 2773 to 2796 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:2dc63a977511 -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 0944d89\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {finding: {where: "#139", message: "Asked #139's reporter"}}
+  - {judge: "[choice-asked] Does the question the role asked in this run on issue #139 ask its reporter the choice the issue itself says is open (whether a deliberate shutdown should remove the Home Assistant entities), without answering it in a draft?"}
+  - {sh: ": not-readied; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 139][0]; assert \"workline:ready\" not in i[\"labels\"] and \"workline:needs-tests\" not in i[\"labels\"]'"}

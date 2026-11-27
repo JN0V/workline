@@ -1,0 +1,29 @@
+case: product-owner/clean-wl-2115-reviewer-issue-code-is-there
+about: >
+  Clean. JN0V/workline #2115, opened by the reviewer role on 2026-11-24: a
+  failed `git status` is read as a clean tree, quoting
+  `cmd/workline/main.go:1113`. Read by the role in the same run as #2094 and
+  #2095; here the quoted line is in the file at that commit. The role drafted
+  its Need and Validation, and the fix was merged on 11-25 (pull request
+  2184), nothing sent back. The body is as the reviewer role opened it; main
+  was 33daff2; its sources are the file the issue names. Expected: refined as
+  usual, a Validation drafted, no question, and never said obsolete.
+given:
+  clone: {repo: JN0V/workline, head: 33daff28c430b286065f5397b9c3af3d9fb88b59}
+  config: {roles: {product-owner: {settings: {autonomy: normal, issues-per-run: 15, acts: {refine: {max: 10}, ready: {max: 10}}, archived: [docs/BACKLOG.md]}}}}
+  forge:
+    issues:
+      - id: 2115
+        title: "Failed git status read as a clean tree"
+        author: workline-jn0v
+        insider: true
+        labels: ["needs-triage", "bug"]
+        body: "When git fails while the docs are checked for uncommitted changes, the run goes on as if the tree were clean instead of stopping.\n\n<details><summary>The cause in the code</summary>\n\nThe error from `git status --porcelain` is discarded. If git fails (a broken index or a lock), the output is empty, so the tree is treated as clean. The agent then runs and edits docs on top of possibly uncommitted changes, mixing them with its proposals. This is the same git-failure-as-success pattern as the one being fixed.\n\nAt `cmd/workline/main.go:1113`:\n\n```\nif dirty, _ := exec.Command(\"git\", \"-C\", root, \"-c\", \"core.quotePath=off\", \"status\", \"--porcelain\", \"--\", \"*.md\").Output(); len(dirty) > 0 {\n```\n\nWhat would fix it: Check the error from the status command and return a gitFailedError.\n\n</details>\n\n<!-- workline:found=the edge-cases lens; verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5) -->\n\nFound by the reviewer role while reviewing 672aab8, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=cmd/workline/main.go#6ac8dd94 -->"
+        comments:
+          - "```yaml\nsources: [cmd/workline/main.go]\nconfirmed: 33daff2\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {sh: ": validation-drafted; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 2115][0]; assert \"## Validation\" in i[\"body\"]'"}
+  - {no-finding: {where: "#2115", message: "Asked #2115's reporter"}}
+  - {sh: ": not-closed; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 2115][0]; assert not i.get(\"closed\") and \"workline:obsolete\" not in i[\"labels\"]'"}

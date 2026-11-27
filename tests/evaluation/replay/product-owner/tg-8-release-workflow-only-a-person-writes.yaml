@@ -1,0 +1,28 @@
+case: product-owner/tg-8-release-workflow-only-a-person-writes
+about: >
+  JN0V/TraceGlass #8, a person's issue: a signed release APK on each version
+  tag. Its Scope is `app/build.gradle.kts` and a new
+  `.github/workflows/release.yml`. On 2026-11-23 the role moved it to ready
+  whole; the developer wrote the build file, could not create the workflow,
+  five review rounds ended in a dispute (pull request 20), and the owner wrote
+  the workflow by hand (pull request 22). Same point as TraceGlass #7
+  (workline #2186). The body is as the person wrote it; main was 8d3965c.
+  Expected: the issue says the workflow is a person's part; graded apart
+  (person-ci), as #7.
+given:
+  clone: {repo: JN0V/TraceGlass, head: 8d3965c825d4145df335cec4fd738f3445ef9180}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 8
+        title: "Signed release APK on each version tag"
+        author: JN0V
+        insider: true
+        labels: ["workline:to-refine"]
+        body: "## Need\n\nA person installs TraceGlass and wants clean updates over time, from an APK with a stable signature.\n\n## Example\n\nToday `assembleRelease` runs in CI but nothing is signed or published, and `app/build.gradle.kts` holds `versionCode = 1` and `versionName = \"0.1.0\"`. A person who installs a debug build cannot update it with a later build signed by another key.\n\n## Validation\n\n- **Scenario: a tag makes a release.** Given a `v*` tag pushed, When the release workflow runs, Then a GitHub Release holds a release APK signed with the project key.\n- **Scenario: versions go up.** Given two successive release tags, When both APKs are built, Then the second has a higher `versionCode`, and its `versionName` matches the tag.\n- **Scenario: no secrets, no APK.** Given the signing secrets are missing, When the release workflow runs, Then it fails with a clear message and publishes no unsigned APK.\n\n---\n\n## Verification\n\n- The key is the owner's and must never be committed: not the keystore, not a password, not in logs.\n- Check the published APK with `apksigner verify --print-certs`.\n- Run the workflow once on a test tag and delete the test release afterwards.\n\n## Scope\n\n- `app/build.gradle.kts`: a release `signingConfig` reading env vars; `versionCode` and `versionName` from the tag or a file.\n- A new `.github/workflows/release.yml`, triggered on `v*` tags, that decodes the keystore, builds and creates the GitHub Release.\n- Repository secrets, already set by the owner: `TRACEGLASS_KEYSTORE_B64`, `TRACEGLASS_KEYSTORE_PASSWORD`, `TRACEGLASS_KEY_ALIAS`, `TRACEGLASS_KEY_PASSWORD`.\n"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 8d3965c\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[person-ci] On this line a CI workflow file (`.github/workflows/**`) is changed by a person only: the developer role cannot write it. As this run left issue #8, does it say so on the issue (in its Scope, a note, a question, a split into the line's part and the person's part, or by keeping it for a person) rather than moving the whole issue on as work the line builds?"}
