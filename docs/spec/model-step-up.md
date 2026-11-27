@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/engine.go#run, internal/engine/engine.go#askAgain]
-checked: 77d510c1c
+checked: 0d5d6913f
 verified: agent:claude-code
 ---
 # Stepping up after failures
