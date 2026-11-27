@@ -1,0 +1,64 @@
+case: merge/queue-by-priority-then-auto-merge-time
+about: >
+  Priority order: two accepted pull requests held behind, their checks
+  green. #1 closes an issue with no priority and had auto-merge turned on
+  first; #2 closes a priority-1 issue (`workline:priority/1`) and had it
+  turned on last. main moves: the priority-1 one is the head and is
+  updated; the other waits at position 2.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/developer/1 && echo one > one.txt && git add one.txt && git commit -qm 'feat: one' -m 'Workline-Role: developer' && git push -q origin workline/developer/1 && git checkout -q main"
+    - "git checkout -qb workline/developer/2 && echo two > two.txt && git add two.txt && git commit -qm 'fix: two' -m 'Workline-Role: developer' && git push -q origin workline/developer/2 && git checkout -q main"
+    - "echo 'More.' > MORE.md && git add MORE.md && git commit -qm 'docs: more' && git push -q origin main"
+  forge:
+    issues:
+      - {id: 10, title: "An ordinary change", labels: [], comments: []}
+      - {id: 11, title: "An urgent fix", labels: ["workline:priority/1"], comments: []}
+    statuses:
+      - {commit: "workline/developer/1", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/2", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 1
+        branch: workline/developer/1
+        base: main
+        author: dana
+        title: "feat: one"
+        body: "Closes #10"
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:01:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/1, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+      - id: 2
+        branch: workline/developer/2
+        base: main
+        author: dana
+        title: "fix: two"
+        body: "Closes #11"
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:09:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/2, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: merged-from-base, where: "#2"}]
+  no-findings: [{rule: merged-from-base, where: "#1"}]
+  pushed:
+    workline/developer/2: {MORE.md: "More.", two.txt: "two"}
+  not-pushed: [workline/developer/1]
+  summary-once:
+    - "#2: head of the queue, main merged in"
+    - "#1: queued, position 2"

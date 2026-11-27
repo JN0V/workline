@@ -1,0 +1,58 @@
+case: merge/queue-head-red-next-updated
+about: >
+  A held head is passed over: the first accepted pull request in the queue
+  (#1) has a red check. main moves: the next one (#2) is updated and is
+  the head; #1 is said "passed over" with its reason, and its red check
+  takes today's round (the checks-red finding, auto-merge left as it is).
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/developer/1 && echo one > one.txt && git add one.txt && git commit -qm 'feat: one' -m 'Workline-Role: developer' && git push -q origin workline/developer/1 && git checkout -q main"
+    - "git checkout -qb workline/developer/2 && echo two > two.txt && git add two.txt && git commit -qm 'feat: two' -m 'Workline-Role: developer' && git push -q origin workline/developer/2 && git checkout -q main"
+    - "echo 'More.' > MORE.md && git add MORE.md && git commit -qm 'docs: more' && git push -q origin main"
+  forge:
+    statuses:
+      - {commit: "workline/developer/1", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/2", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 1
+        branch: workline/developer/1
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:01:00Z"
+        auto-merge-by: workline-bot
+        checks: failure
+        behind: true
+        pushes: [{head: workline/developer/1, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+      - id: 2
+        branch: workline/developer/2
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:02:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/2, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: checks-red, where: "#1"}
+    - {rule: merged-from-base, where: "#2"}
+  no-findings: [{rule: merged-from-base, where: "#1"}]
+  pushed:
+    workline/developer/2: {MORE.md: "More.", two.txt: "two"}
+  not-pushed: [workline/developer/1]
+  summary-once:
+    - "#1: passed over, "
+    - "#2: head of the queue, main merged in"
