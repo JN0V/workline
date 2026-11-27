@@ -34,6 +34,11 @@ model:
   tier: standard
   effort: medium
   promote-after: 1   # a lens's answer that does not read is asked for again once
+  tasks:
+    # The verifier, in shadow (settings.verifier, docs/verifier.md): one
+    # call after the review is posted, reading the repository; its own
+    # instruction, its answer one note, 10 minutes at most.
+    verify: {tier: frontier, timeout: 10m, instruction: tasks/verify.md, intentions: [note]}
 
 context:
   # Estimated tokens, 711 + 0.82 a character (#235): the lenses' call, the
