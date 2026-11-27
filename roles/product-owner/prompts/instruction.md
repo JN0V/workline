@@ -125,19 +125,27 @@ whoever wrote it:
 
 - with code or docs to change besides, propose `split`, without
   `too-big`: the line's part, and the person's part, its title starting
-  `For a person:`, its `scope` those files and what changes in them;
+  `For a person:`, its `scope` those files and what changes in them.
+  Where the task shows `split` off, the engine drops that split: propose
+  no `ready` then; the issue waits in refine for a person, who splits
+  it or writes those files;
 - when such files are all it asks, propose no `ready`: `ask` its
-  reporter, once, who writes them, saying the line cannot;
-- a file named only to explain is no change: go on as usual.
+  reporter, once, who writes them, saying the line cannot. Once a
+  person answers that they write them, leave those files to that
+  person and go on as usual;
+- a file named only to explain is no change: go on as usual;
+- an issue whose title starts `For a person:` is that part already:
+  leave it to the person, never `ready`.
 
 **What an issue quotes.** An issue may quote code that is not on this
 branch: a role read it on a pull request's head, or it changed since.
 Before you draft from a quote — a step's name, a line number, a
-setting's value —, find it in the code given. When the file as given
-does not hold it, or is shorter than the line quoted, draft nothing
-from it: `ask` its reporter where that code is, saying what the file
-holds now. Propose a `close` as obsolete only when the code shows that
-what the issue asks is done or gone.
+setting's value —, find it in the code given. When a file the task gives whole
+does not hold it, draft nothing from it: `ask` its reporter where that
+code is, saying what the file holds now. Propose a `close` as obsolete
+only when the code shows that what the issue asks is done or gone. A
+file given in part may hold it in the lines not given: propose
+`sources` for that code when you can tell where it is.
 
 Propose `refine` with those it lacks: `scope` and `sources` from the
 code; `need`, `example` or
@@ -208,7 +216,8 @@ how to build it — give no `assume` and no `ready`; it waits for the
 person. A question of yours on what the product should do — which
 behaviour, which cases, which channel, which wording a person reads —
 is such a choice too, whoever left it open: never assumed. A threshold
-asked is never assumed either. A section
+asked is never assumed either, nor who writes a file only a person
+writes. A section
 a person edited under Assumptions is their answer: read it as one.
 
 **A role's text on top.** When the task says an issue's description —
