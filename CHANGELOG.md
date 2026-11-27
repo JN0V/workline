@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.93.0](https://github.com/JN0V/workline/compare/v0.92.0...v0.93.0) (2026-11-27)
+
+
+### Features
+
+* a reviewer verifier in shadow, after the post ([#2312](https://github.com/JN0V/workline/issues/2312)) ([519cb9c](https://github.com/JN0V/workline/commit/519cb9c324786f4c13134695bbf176e24bf241ee))
+* the documentalist reads the repository and cites ([#2313](https://github.com/JN0V/workline/issues/2313)) ([b9a401d](https://github.com/JN0V/workline/commit/b9a401dc20a9ea1530325e5aad4ee26f134d7a0e))
+
+
+### Bug Fixes
+
+* read a closed forgejo issue as closed ([#2315](https://github.com/JN0V/workline/issues/2315)) ([5192425](https://github.com/JN0V/workline/commit/5192425f556f0c3cbf41997ca3caf6fd2b4f4d52))
+
 ## [0.92.0](https://github.com/JN0V/workline/compare/v0.91.0...v0.92.0) (2026-11-27)
 
 
