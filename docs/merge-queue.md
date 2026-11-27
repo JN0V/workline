@@ -44,6 +44,38 @@ workline's run there guards that combination only
   `Measure`, in `seconds.go`, sets it from the `queue` budget of
   `routing.yaml`, once it has found the run is a queue's.
 
+## workline's own merge queue
+
+A repository that requires branches up to date, with no merge queue of
+the forge's (GitHub's needs an organisation) nor a merge train
+(GitLab's), holds each accepted pull request behind once `main` moves.
+`workline follow` then brings them up to date one after the other, not
+all in the same run
+([ADR-0075](adr/0075-urgent-work-first-and-a-merge-queue-of-our-own.md#7-a-merge-queue-of-our-own)):
+
+- **In the queue**: the accepted pull requests, auto-merge on, that the
+  forge holds behind. A draft has no auto-merge: never in it.
+- **Their order**: the priority of the issue each closes, or its own
+  priority label; then when auto-merge was turned on.
+- **The head**: the first held by nothing. `main` is merged into it
+  alone; the forge merges it once its checks pass, and the next run
+  takes the next one.
+- **Passed over, said with its reason**: a red check or a conflict
+  (each takes its usual round), an open conversation, a person's
+  comment unanswered, a person's branch (never updated by workline).
+- **Pending checks**: the head stays the head, nothing else updated,
+  until the `verdict` budget (180 s, `routing.yaml`) since its last
+  update; past it, it is passed over and said.
+- **Said in the run's summary only**, one line each, no comment, no
+  marker:
+  - `#N: head of the queue, main merged in`;
+  - `#N: queued, position k`;
+  - `#N: passed over, <reason>`.
+- **Nothing to do** where the forge holds no pull request behind: a
+  repository that does not require branches up to date, or one left to
+  the forge's merge queue or merge train. workline updates nothing and
+  builds no queue. No setting turns it on or off.
+
 ## GitHub: a merge queue
 
 Its checks and its yes: [a merge queue on GitHub](github/merge-queue.md).

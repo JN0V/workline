@@ -17,6 +17,8 @@ import (
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
+	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/steer"
 )
 
@@ -839,6 +841,10 @@ type inLine struct {
 	// takeBase merges the base in for a verdict blocked on a rule it may
 	// have fixed (#1513), or says a conflict: acted, not merged now.
 	takeBase func(due string) (bool, error)
+	// Held behind, auto-merge on (ownQueue); ready: merges but for the base.
+	mr    forge.MergeRequest
+	st    forge.MergeState
+	ready bool
 }
 
 // upToDate is e.up, none on a request weighed without it.
@@ -936,8 +942,8 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 	if err != nil {
 		return "", err
 	}
-	var line []*inLine
-	acts := map[string]int{}
+	var line, queue []*inLine
+	acts, start := map[string]int{}, len(res.Findings)
 	for _, mr := range open {
 		switch {
 		case mr.Base != o.Base:
@@ -954,7 +960,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 			continue
 		}
 		before := len(res.Findings)
-		e, err := weigh(f, m, o, local, mr, res, hand, n)
+		e, err := weigh(f, m, o, local, mr, res, hand, n, &queue)
 		if err != nil {
 			return "", err
 		}
@@ -965,6 +971,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 			line = append(line, e)
 		}
 	}
+	ownQueue(f, o, res, queue, res.Findings[start:])
 	var names []string
 	for _, e := range line {
 		names = append(names, e.where)
@@ -980,8 +987,8 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 	if n := acts["merged-at-once"]; n > 0 {
 		sum += fmt.Sprintf("; %d merged at once", n)
 	}
-	// No one waits for another to merge, none is brought up to date to
-	// merge (ADR-0051, cut 2).
+	// No one waits for another to merge, but where the forge holds them
+	// behind: the queue's head alone is brought up to date (ADR-0075 §7).
 	return sum, nil
 }
 
@@ -989,7 +996,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 // on, does what the policy says of it — auto-merge on or off, the yes held
 // on its head (Accept) or taken back — and says it; it returns it when it
 // is accepted.
-func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.MergeRequest, res *Result, hand map[string]kept, n *normal) (*inLine, error) {
+func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.MergeRequest, res *Result, hand map[string]kept, n *normal, queue *[]*inLine) (*inLine, error) {
 	where := forge.MergeRef(f, mr.ID)
 	say := func(rule, level, msg string) {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Level: level, Where: where, Message: msg})
@@ -1021,6 +1028,9 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	}
 	e.takeBase = func(due string) (bool, error) {
 		return upToDateAs(f, o, local, mr, baseTip, tip, say, true, true, due)
+	}
+	if st.Behind && st.AutoMerge {
+		e.mr, e.st, *queue = mr, st, append(*queue, e)
 	}
 	off := func() error {
 		if !st.AutoMerge {
@@ -1445,14 +1455,11 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 // the forge refuses leaves auto-merge on, for the next run.
 func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
 	if !st.Mergeable {
-		// Behind its base and held by the forge, its checks green: the
-		// base merged in, by the engine or a merge round (ADR-0067).
-		if acted, err := e.upToDate(st.Behind && st.Checks == "success", "its auto-merge on since "+st.AutoMergeAt); acted || err != nil {
+		// In conflict: a merge round (ADR-0067); merging clean: ownQueue.
+		if acted, err := e.upToDate(false, "its auto-merge on since "+st.AutoMergeAt); acted || err != nil {
 			return e, err
 		}
-		if st.Behind && st.Checks != "success" {
-			say("behind-not-updated", "", fmt.Sprintf("%s; behind %s and held by the forge, but not updated: its checks are not all green (%s)", who, mr.Base, st.Checks))
-		}
+		e.ready = e.st.Behind
 		return e, heldByConversations(m, mr, tip, st, say, who)
 	}
 	merged, err := m.AutoMerge(mr, tip, true)
@@ -1469,6 +1476,49 @@ func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, s
 		return nil, nil
 	}
 	return e, nil
+}
+
+// ownQueue is workline's merge queue (ADR-0075 §7): of the accepted requests
+// held behind, by priority then auto-merge's time, the head alone is updated.
+func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []verdict.Finding) {
+	key, budget, pos := map[*inLine]string{}, 180.0, 0
+	for _, e := range q {
+		r := scale.Priority.Rank(backlog.Priority(forge.Issue{Labels: e.mr.Labels}))
+		for _, id := range forge.Closes(e.mr.Title, e.mr.Body) {
+			if is, err := f.Issue(id); err == nil {
+				r = min(r, scale.Priority.Rank(backlog.Priority(*is)))
+			}
+		}
+		key[e] = fmt.Sprintf("%d %s", r, e.st.AutoMergeAt)
+	}
+	slices.SortStableFunc(q, func(a, b *inLine) int { return strings.Compare(key[a], key[b]) })
+	if c, err := routing.Load(o.Repo); err == nil && c.Budgets["verdict"] > 0 {
+		budget = c.Budgets["verdict"]
+	}
+	for _, e := range q {
+		at, msg, n := slices.Concat([]forge.Push{{At: e.st.AutoMergeAt}}, e.st.Pushes), fmt.Sprintf("queued, position %d", pos+1), len(res.Findings) // at: its updates
+		switch i := slices.IndexFunc(fs, func(x verdict.Finding) bool { return x.Where == e.where && x.Level == "warn" }); {
+		case i >= 0:
+			msg = "passed over, " + fs[i].Message
+		case !e.ready:
+			msg = "passed over, not weighed ready to merge"
+		case !e.mr.Here || !strings.HasPrefix(e.mr.Branch, devmark.Branch):
+			msg = "passed over, a person's branch"
+		case pos > 0:
+			pos++
+		case e.st.Checks != "success" && later(plus(at[len(at)-1].At, time.Duration(budget)*time.Second), time.Now().UTC().Format(time.RFC3339)):
+			pos, msg = 1, "head of the queue, its checks pending since its update"
+		case e.st.Checks != "success":
+			msg = fmt.Sprintf("passed over, checks pending past %g s", budget)
+		default:
+			_, _ = e.upToDate(true, "its auto-merge on since "+e.st.AutoMergeAt) // no conflict: said in stalled
+			pos, msg = 1, "head of the queue, "+o.Base+" merged in"
+			if !slices.ContainsFunc(res.Findings[n:], func(x verdict.Finding) bool { return x.Rule == "merged-from-base" }) {
+				pos, msg = 0, "passed over, "+o.Base+" not merged in, said above"
+			}
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "behind-not-updated", Where: e.where, Message: msg})
+	}
 }
 
 // heldByConversations says what holds a merge request the forge does not
