@@ -1,0 +1,17 @@
+case: developer/pr-outside-judged-at-the-project-floor
+about: >
+  The developer's code is judged at model (ADR-0054), but a finding outside
+  the change never blocks it: it becomes an issue, judged at the project's
+  own judge-at-least. A judge of the same model saying yes, in a context of
+  its own, keeps it for an issue; it is not dropped for the model it ran on.
+given:
+  repo: reviewed
+  setup: ["printf '\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count' -m 'Workline-Role: developer'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/same-model/review-outside.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-outside"}
+expect:
+  status: pass
+  findings:
+    - {rule: outside-the-change, message: "outside the change, for an issue (none opened: no forge to write to): Average panics on no values"}
+    - {rule: outside-the-change, message: "outside the change, for an issue (none opened: no forge to write to): Parse drops the conversion error"}
+  no-findings: [{rule: outside-unverified}]
