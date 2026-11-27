@@ -122,7 +122,7 @@ issue)
 		echo "the issue could not be read" >&2
 		exit 1
 	}
-	printf '%s' "$got" | jq -c '{id: .number, title, body: (.body // ""), labels: [.labels[].name]}'
+	printf '%s' "$got" | jq -c '{id: .number, title, body: (.body // ""), labels: [.labels[].name], closed: (.state == "closed")}'
 	;;
 all-issues)
 	# Open and closed, pull requests left out. Forgejo and Gitea keep no
