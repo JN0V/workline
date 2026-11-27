@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.92.0](https://github.com/JN0V/workline/compare/v0.91.0...v0.92.0) (2026-11-27)
+
+
+### Features
+
+* **developer:** Opus at medium, a checklist in its instruction ([#2304](https://github.com/JN0V/workline/issues/2304)) ([4c44ab9](https://github.com/JN0V/workline/commit/4c44ab9c95b8f774d091e6fcf637fd26338e3598))
+
+
+### Bug Fixes
+
+* **agent:** read a fenced [] as nothing to propose ([#2285](https://github.com/JN0V/workline/issues/2285)) ([c6853bf](https://github.com/JN0V/workline/commit/c6853bf8289431e8cfe6e712026937430ab3e2a3))
+* **developer:** Part of #n, never Closes, over a part left ([#2291](https://github.com/JN0V/workline/issues/2291)) ([302d446](https://github.com/JN0V/workline/commit/302d446c8d73e62aec869e3e098a7e41c6fa7e35))
+* **documentalist:** a doc too long for a task is read in place ([#2289](https://github.com/JN0V/workline/issues/2289)) ([ad1950a](https://github.com/JN0V/workline/commit/ad1950a2eba114d987d816ec0bb00b85cfdbf58b))
+* **evaluation:** the summary counts a replay case once ([#2280](https://github.com/JN0V/workline/issues/2280)) ([4c76ed5](https://github.com/JN0V/workline/commit/4c76ed56fdf9bacccb3be0e7629b2c3d582cdfbd))
+* fill the act record's models when applied apart ([#2302](https://github.com/JN0V/workline/issues/2302)) ([0d5d691](https://github.com/JN0V/workline/commit/0d5d6913ff532c7d6fa7998acdaf80e500af8c6f))
+* merge request diff from origin, three dots ([#2299](https://github.com/JN0V/workline/issues/2299)) ([4e84eec](https://github.com/JN0V/workline/commit/4e84eece9c60541f79ade44625e46531bd5db9c4))
+* **product-owner:** say what the line cannot write or find ([#2297](https://github.com/JN0V/workline/issues/2297)) ([e3f6ba5](https://github.com/JN0V/workline/commit/e3f6ba5253f392fd1d326f2623e2142162834883))
+* **reviewer:** a kept behaviour left as it was owes no test ([#2288](https://github.com/JN0V/workline/issues/2288)) ([8c87427](https://github.com/JN0V/workline/commit/8c87427fedd5a9ea7611579145665e44c1d2bb84))
+* **reviewer:** judge outside findings at judge-at-least ([#2287](https://github.com/JN0V/workline/issues/2287)) ([8bac600](https://github.com/JN0V/workline/commit/8bac600e9ba9c921ae37af1ae689636c15a6dc4b))
+* **tester:** ask a refusal it can mend again, three times a run ([#2306](https://github.com/JN0V/workline/issues/2306)) ([5ced559](https://github.com/JN0V/workline/commit/5ced559fefcf042d808929f9065a1eefdadf1c0c))
+
 ## [0.91.0](https://github.com/JN0V/workline/compare/v0.90.0...v0.91.0) (2026-11-26)
 
 
