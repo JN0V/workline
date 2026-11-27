@@ -17,7 +17,7 @@ permissions: {}
 env:
   # The line's pin, as the others: moved with them in the pin's pull
   # request; never moved by release-please (ADR-0071 §1).
-  WORKLINE_VERSION: v0.92.0
+  WORKLINE_VERSION: v0.93.0
 
 jobs:
   alive:
