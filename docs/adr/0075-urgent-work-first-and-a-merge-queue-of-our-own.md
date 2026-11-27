@@ -1,6 +1,6 @@
 # ADR-0075: Urgent work first, and a merge queue of our own
 
-- **Status:** proposed, until the maintainer merges it; nothing built.
+- **Status:** proposed, until the maintainer merges it; slice 2 built.
   Built by [its slices](#slices), one issue each. [The tick's
   contract](#open-the-ticks-contract) is not decided
 - **Date:** 2026-11-27
@@ -170,7 +170,7 @@ Not decided; the maintainer settles it after 2026-11-28.
 Each buildable alone, in this order:
 
 1. [#2325](https://github.com/JN0V/workline/issues/2325): the merge queue (7).
-2. [#2322](https://github.com/JN0V/workline/issues/2322): the tick (3).
+2. [#2322](https://github.com/JN0V/workline/issues/2322): the tick (3); built (`internal/line/tick.go`, `BacklogDue`).
 3. [#2323](https://github.com/JN0V/workline/issues/2323): a full Ready and the reconcile (4, 5).
 4. [#2321](https://github.com/JN0V/workline/issues/2321): the reading order (2).
 5. [#2324](https://github.com/JN0V/workline/issues/2324): the developer's order (6).

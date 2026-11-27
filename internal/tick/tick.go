@@ -217,7 +217,8 @@ func lastOf(runs []forge.Run, names []string, from time.Time) (forge.Run, bool) 
 }
 
 // backlog says why a backlog run is due, when it is (line.BacklogDue):
-// Ready below its target, and moved since the last backlog run.
+// Ready below its target, and moved since the last backlog run; or an
+// Urgent issue not read since.
 func backlog(o Options, r *Result, runsOf func(string) ([]forge.Run, error), j job, from time.Time, runsErr error) (string, bool) {
 	b, ok := o.Forge.(forge.Backlog)
 	if !ok || o.Forge == nil {
