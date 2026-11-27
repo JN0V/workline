@@ -1,0 +1,28 @@
+case: routing/spec-review-under-budget-still-runs
+about: >
+  An issue in refine whose drafts wait on their spec review, the
+  reviewer's prompt well under its budget: the line runs the reviewer
+  on it as before, one call, and the spec review is written on the
+  issue.
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner, reviewer]}}
+  forge:
+    issues:
+      - id: 9
+        title: "workline version --verbose=false"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:proposed]
+        body: "## Need\n\nWhen I run `workline version --verbose=false`, I want the plain line, so my scripts read it.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Plain line:** Given workline installed, When I run `workline version --verbose=false`, Then it prints one line.\n\n---\n\n## Verification\n\nA test runs the command and reads one line.\n\n## Scope\n\nsrc/export/csv.go"
+        comments:
+          - {body: "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 1cf7c41e922f\n```\n\n<!-- workline:sticky=product-owner/state -->", created: "2099-01-01T09:00:00Z"}
+          - "**workline's line** last woke the product owner on this issue, in its state refine (1 state step so far).\n\n<!-- workline:line-record {\"state\":\"refine\",\"body\":\"0a1b2c3d4e5f\",\"hops\":1,\"asked\":\"0a1b2c3d4e5f\"} -->\n<!-- workline:sticky=line/state -->"
+run: {route: issue, target: {issue: 9}, open-merge-request: true, ai: "fake:review-nothing"}
+expect:
+  agent-calls: 1
+  forge:
+    issues:
+      - id: 9
+        comment-contains: ["<!-- workline:spec-review body=", "<!-- workline:sticky=reviewer/spec -->"]
