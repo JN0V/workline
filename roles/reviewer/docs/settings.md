@@ -35,7 +35,7 @@ Part of [the reviewer](../README.md). Under `roles: {reviewer: {settings: …}}`
 |---|---|---|
 | `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}` (below) |
 | `judge-at-least` | `context` | `model` or `provider`: the judge's independence |
-| `judge-at-least-by-role` | `{developer: model}` | a higher floor for a change a role's commits made: the [developer](../../developer/README.md)'s code judged by another model |
+| `judge-at-least-by-role` | `{developer: model}` | a higher floor for a change a role's commits made: the [developer](../../developer/README.md)'s code judged by another model; a finding outside it keeps `judge-at-least` |
 | `forge-writes` | `true` | `false`: no comment, on a line or the summary, nor issue: the verdict only |
 | `finder-floor` | `true` | each lens looks for a number of candidates first; never a floor on what is shown |
 

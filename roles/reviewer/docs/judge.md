@@ -11,7 +11,9 @@ Part of [the reviewer](../README.md): step 7 of [a run](run.md). Step 8, and wha
 
 Apart, for each important finding, at the best independence
 (`judge-at-least`; `judge-at-least-by-role` raises it for a role's
-commits, the developer's to `model`); its level and both models said.
+commits, the developer's to `model`, on the change only: a finding
+outside it, for an issue, keeps `judge-at-least`); its level and both
+models said.
 A no drops it, said (`finding-judged-no`), when the lines it quotes are
 found again ([below](#when-the-judge-reads)). One judged before, the same
 finding on the same patch, keeps its verdict ([judged once](once.md)).
