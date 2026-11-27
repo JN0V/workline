@@ -1,0 +1,15 @@
+case: reviewer/verifier-shadow-without-an-agent-gives-no-answer
+about: "With `verifier: shadow` and no agent (`ai: none`), the verifier is never called: the review ends as it would without it, and one summary line says the verifier gave no answer."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// one\\n// two\\n// three\\n// four\\n// five\\n// six\\n// seven\\n// eight\\n// nine\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  config: {roles: {reviewer: {settings: {verifier: shadow}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: long-comment, where: "calc/calc.go:20", message: "a comment of 9 lines"}
+    - {rule: not-reviewed, message: "waits for a person's review"}
+  summary: "verifier gave no answer"

@@ -1,0 +1,12 @@
+# A lens of the reviewer, on the `reviewed` fixture once Average divides by
+# one less than the count, answering the same finding each call it is
+# given first; every call after it gets words that are not an answer, as an
+# agent that refuses.
+calls:
+  - - finding:
+        severity: important
+        title: Average divides by one less than the count
+        why: the mean of [2, 4] comes out 6, and one value divides by zero
+        cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+        fix: divide by len(values)
+  - "I will not answer this."

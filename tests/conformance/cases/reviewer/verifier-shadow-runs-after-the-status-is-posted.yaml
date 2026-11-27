@@ -1,0 +1,17 @@
+case: reviewer/verifier-shadow-runs-after-the-status-is-posted
+about: "With `verifier: shadow`, the review is judged and applied as without it: its comment is posted on the merge request, never waiting for the verifier nor holding its words; the verifier is asked once the review's result is posted, and its answer is recorded after."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {verifier: shadow, ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related", no-apply: true, then: resume}
+expect:
+  applied: [comment]
+  agent-calls: 3
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=1 -->", comment-lacks: "verifier"}

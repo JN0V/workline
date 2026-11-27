@@ -1,0 +1,23 @@
+case: reviewer/verifier-shadow-never-changes-a-review
+about: "With `verifier: shadow`, a review that blocks ends as it does with `verifier: off`: the same verdict, findings and summary comment on the merge request; the verifier is asked besides, and its answer changes none of it."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf '\\n// Double returns twice n,\\n// for a count.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {verifier: shadow, ai-findings: {correctness: block}, comment-block-max: 1}}}}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: block
+  applied: [comment]
+  agent-calls: 3
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}
+    - {rule: long-comment}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, labels: [], comment-contains: "|---|---|---|---|\n| **blocks** | correctness | `calc/calc.go:11` |", comment-lacks: "verifier"}
