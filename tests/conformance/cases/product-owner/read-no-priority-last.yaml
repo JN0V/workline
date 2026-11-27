@@ -9,19 +9,19 @@ given:
         body: "Add a CSV export."
         labels: ["workline:priority/1"]
         comments:
-          - body: '<!-- workline:product-owner-state {"judged":[30]} -->'
+          - body: "```yaml\nsources: []\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
       - id: 31
         title: "Export in XML"
         body: "Add an XML export."
         labels: ["workline:priority/4"]
         comments:
-          - body: '<!-- workline:product-owner-state {"judged":[31]} -->'
+          - body: "```yaml\nsources: []\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
       - id: 32
         title: "Export in YAML"
         body: "Add a YAML export."
         labels: []
         comments:
-          - body: '<!-- workline:product-owner-state {"judged":[32]} -->'
+          - body: "```yaml\nsources: []\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
   run-files:
