@@ -375,27 +375,7 @@ func quoteLines(p, content, quote string) []lineRange {
 	if q == "" {
 		return nil
 	}
-	mask := commentMask(p, content)
-	var norm []byte
-	var inComment []bool
-	var lineOf []int
-	ln, space := 1, true
-	for i := 0; i < len(content); i++ {
-		c := content[i]
-		if c == '\n' || c == ' ' || c == '\t' || c == '\r' {
-			if !space {
-				norm, inComment, lineOf = append(norm, ' '), append(inComment, true), append(lineOf, ln)
-				space = true
-			}
-			if c == '\n' {
-				ln++
-			}
-			continue
-		}
-		space = false
-		norm, inComment, lineOf = append(norm, c), append(inComment, mask[i]), append(lineOf, ln)
-	}
-	s := string(norm)
+	s, inComment, lineOf := squeezed(content, commentMask(p, content), 1)
 	var out []lineRange
 	for from := 0; ; {
 		i := strings.Index(s[from:], q)
@@ -626,28 +606,7 @@ func quoteInMasked(content string, mask []bool, quote string, first int) (found,
 	if q == "" {
 		return false, false, 0
 	}
-	// The content with each run of white space made one space, each byte
-	// remembering whether it is in a comment, and its line.
-	var norm []byte
-	var inComment []bool
-	var lineOf []int
-	ln, space := first, true
-	for i := 0; i < len(content); i++ {
-		c := content[i]
-		if c == '\n' || c == ' ' || c == '\t' || c == '\r' {
-			if !space {
-				norm, inComment, lineOf = append(norm, ' '), append(inComment, true), append(lineOf, ln)
-				space = true
-			}
-			if c == '\n' {
-				ln++
-			}
-			continue
-		}
-		space = false
-		norm, inComment, lineOf = append(norm, c), append(inComment, mask[i]), append(lineOf, ln)
-	}
-	s := string(norm)
+	s, inComment, lineOf := squeezed(content, mask, first)
 	for from := 0; ; {
 		i := strings.Index(s[from:], q)
 		if i < 0 {
@@ -876,4 +835,30 @@ func countedOn(counted map[int][]countOff, b citedBlock, w string) bool {
 		}
 	}
 	return false
+}
+
+// squeezed is content with each run of white space made one space, each
+// byte remembering whether it is in a comment, and its line, the first
+// numbered first.
+func squeezed(content string, mask []bool, first int) (string, []bool, []int) {
+	var norm []byte
+	var inComment []bool
+	var lineOf []int
+	ln, space := first, true
+	for i := 0; i < len(content); i++ {
+		c := content[i]
+		if c == '\n' || c == ' ' || c == '\t' || c == '\r' {
+			if !space {
+				norm, inComment, lineOf = append(norm, ' '), append(inComment, true), append(lineOf, ln)
+				space = true
+			}
+			if c == '\n' {
+				ln++
+			}
+			continue
+		}
+		space = false
+		norm, inComment, lineOf = append(norm, c), append(inComment, mask[i]), append(lineOf, ln)
+	}
+	return string(norm), inComment, lineOf
 }
