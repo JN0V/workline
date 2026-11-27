@@ -8,6 +8,8 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -195,4 +197,24 @@ func (a *applier) recordBacklogActs(p *backlog.Plan) {
 		}
 		p.Records[d.Act.Issue] = append(p.Records[d.Act.Issue], a.record(d.Act.Do, forge.Target{Kind: "issue", ID: d.Act.Issue}))
 	}
+}
+
+// callsOf are the calls the run made: those it holds, else, applied apart
+// from the run that judged, those its out/calls.jsonl names.
+func callsOf(runDir string, held []agent.Call) []agent.Call {
+	if len(held) > 0 {
+		return held
+	}
+	data, err := os.ReadFile(filepath.Join(runDir, "out", "calls.jsonl"))
+	if err != nil {
+		return nil
+	}
+	var calls []agent.Call
+	for _, line := range strings.Split(string(data), "\n") {
+		var c agent.Call
+		if strings.TrimSpace(line) != "" && json.Unmarshal([]byte(line), &c) == nil {
+			calls = append(calls, c)
+		}
+	}
+	return calls
 }
