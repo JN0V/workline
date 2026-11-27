@@ -841,10 +841,9 @@ type inLine struct {
 	// takeBase merges the base in for a verdict blocked on a rule it may
 	// have fixed (#1513), or says a conflict: acted, not merged now.
 	takeBase func(due string) (bool, error)
-	// Held behind, auto-merge on (ownQueue); ready: merges but for the base.
-	mr    forge.MergeRequest
-	st    forge.MergeState
-	ready bool
+	mr       forge.MergeRequest // held behind, auto-merge on (ownQueue); ready: merges but for the base
+	st       forge.MergeState
+	ready    bool
 }
 
 // upToDate is e.up, none on a request weighed without it.
@@ -1475,8 +1474,7 @@ func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, s
 	return e, nil
 }
 
-// ownQueue, a merge queue where the forge has none: of the accepted requests
-// held behind, by priority then auto-merge's time, the head alone is updated.
+// ownQueue, a merge queue where the forge has none: of the accepted held behind, the head alone is updated.
 func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []verdict.Finding) error {
 	key, budget, pos := map[*inLine]string{}, 180.0, 0
 	for _, e := range q {
@@ -1508,8 +1506,10 @@ func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []ver
 		case e.st.Checks != "success":
 			msg = fmt.Sprintf("passed over, checks pending past %g s", budget)
 		default:
-			if _, err := e.upToDate(true, "its auto-merge on since "+e.st.AutoMergeAt); err != nil { // no conflict (said in stalled); the forge unreachable ends the run
-				return err
+			if _, err := e.upToDate(true, "its auto-merge on since "+e.st.AutoMergeAt); errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+				return err // the forge unreachable ends the run; another error passes this one over, said
+			} else if err != nil {
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-unread", Level: "warn", Where: e.where, Message: "not brought up to date with " + o.Base + ": " + forge.Said(err)})
 			}
 			pos, msg = 1, "head of the queue, "+o.Base+" merged in"
 			if !slices.ContainsFunc(res.Findings[n:], func(x verdict.Finding) bool { return x.Rule == "merged-from-base" }) {
