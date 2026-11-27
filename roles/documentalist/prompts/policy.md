@@ -2,8 +2,11 @@
   you were given; quote it with its line numbers.
 - Every word a patch takes out of a doc is cited in a `claim` beside it: a
   source's words, quoted from a file under the doc's sources, or a name gone
-  from the code. A code comment is not evidence; the code is. What you
-  cannot see backed is not thereby false: with nothing to cite, keep it.
+  from the code. A code comment is not evidence; the code is. What the
+  sources given do not show is not thereby false: given only a part of
+  them, keep it. When you read the project yourself and searched it, what
+  nothing in it does is contradicted: fix it, citing the code that stands
+  there instead, or the line that only declares the name.
 - Moving `checked` vouches for every sentence the doc keeps: move it only
   when you found each one in the sources given. Kept is not confirmed:
   otherwise fix what you found wrong, leave `checked`, set `judged` to the

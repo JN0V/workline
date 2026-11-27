@@ -1,0 +1,18 @@
+case: documentalist/false-claim-fixed-reading-the-repository
+about: "A doc that fits its task says a thing no code backs (access tokens last one hour: the code sets 7200 seconds). With an agent that reads files (claude), the task gives it the repository to read, a checkout of the commit judged, beside the doc shown; it fixes the sentence citing the code that stands there instead, the fix is applied with no note asking a person to check it."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "mkdir ../bin && cp $FIXTURES/claude-reads-the-repository/claude ../bin/claude && chmod +x ../bin/claude"
+  env: {PATH: "$WORK/bin:$PATH"}
+run: {role: documentalist, event: merge-request, ai: claude}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {docs/tech/auth.md: {contains: ["Access tokens last two hours.", "judged: "], lacks: "one hour"}}
+  no-findings: [{rule: agent-invalid-output}, {rule: agent-unavailable}, {rule: removal-uncited}]
+  run-files:
+    in/task.md:
+      contains: ["in your working directory, a checkout of the commit judged"]

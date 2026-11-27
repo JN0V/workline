@@ -1,0 +1,24 @@
+case: documentalist/judged-in-parts-reading-the-repository
+about: "A doc judged in parts, with an agent that reads files (claude): each part, and the fix that follows, get the repository to read, a checkout of the commit judged, and the same citation rule as a doc judged whole (#2307); how the doc is split is unchanged. The stand-in fails unless run in that checkout and told so. The contradiction a part finds is fixed, citing the code; one tree is checked out for the run, and none is left."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "mkdir ../bin && cp $FIXTURES/claude-reads-in-parts/claude ../bin/claude && chmod +x ../bin/claude"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+  env: {PATH: "$WORK/bin:$PATH"}
+run: {role: documentalist, event: schedule, ai: claude}
+expect:
+  status: pass
+  agent-calls: 3
+  applied: [patch, patch]   # the agent's fix, then the header the role records
+  trees-left: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "judged in parts at 2d741e7: 2 parts, 1 claims kept"}]
+  no-findings: [{rule: agent-invalid-output}, {rule: agent-unavailable}, {rule: part-unanswered}, {rule: removal-uncited}]
+  files:
+    "docs/tech/auth.md": {contains: "checked: 845334e\njudged-in-parts: 2d741e7\n---\n# Authentication\n\n## Token refresh\n\nAccess tokens last two hours.\n"}
+  run-files:
+    in/task.md:
+      contains: ["Kind: fix", "You read the project yourself, in your working directory, a checkout of the commit judged"]

@@ -47,6 +47,14 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
 - A doc too long to be shown with all that: named, for an agent that
   reads files itself (`claude`) to read in a copy of the repository;
   `checked` cannot move. Another agent leaves it to a person.
+- For an agent that reads files itself (`claude`), the whole project to
+  read, in a copy of the repository at the commit judged, beside what is
+  shown: words nothing in the project does are fixed, citing the code
+  that stands there instead; only what reading cannot settle is left in a
+  note. Given only a part of a doc's sources, what that part does not show
+  is kept. A doc judged in parts reads the same copy, in each part and in
+  the fix that follows ([judged in parts](parts.md#the-parts)). A `cmd:`
+  agent, or `ai: none`, gets no copy, as before.
 
 ### How many
 
@@ -109,7 +117,11 @@ the parts — says that every word a patch takes out of a body is cited
 - a comment is not evidence: with nothing else to cite, the words stay,
   and a `note` says what could not be confirmed, naming its doc in `doc`:
   that doc's `checked` does not move (`checked-over-note`,
-  [the check](judge.md#moving-checked)).
+  [the check](judge.md#moving-checked));
+- an agent that reads the project and finds nothing in it doing what the
+  words say cites the code standing where it would happen, or the line
+  that only declares the name, and fixes them: only what reading cannot
+  settle goes to a note.
 
 ## Judged in parts
 
