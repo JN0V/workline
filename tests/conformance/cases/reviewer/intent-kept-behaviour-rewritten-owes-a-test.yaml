@@ -1,0 +1,24 @@
+case: reviewer/intent-kept-behaviour-rewritten-owes-a-test
+about: "A scenario of a behaviour kept as before owes a test once the change rewrites, moves or removes the code that did it: the intent lens is told to answer it as any other scenario, and its finding that no test proves it is judged and shown; the judge is told a kept behaviour owes none only while its code is left as it was."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\ttotal := 0|\\tif len(values) == 0 {\\n\\t\\treturn 0\\n\\t}\\n\\ttotal := 0|; s|for _, v := range values {|for i := range values {|; s|total += v|total += values[i]|' calc/calc.go && printf 'package calc\\n\\nimport \"testing\"\\n\\nfunc TestAverageEmpty(t *testing.T) {\\n\\tif Average(nil) != 0 {\\n\\t\\tt.Fatal(\"not 0\")\\n\\t}\\n}\\n' > calc/calc_test.go && git add calc && git commit -qm 'fix: an empty list averages 0' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean survives an empty list
+        body: "## Need\n\nAn empty list gives 0 instead of a crash.\n\n## Validation\n\n- **Empty list:** Given no values, When the mean is asked, Then it is 0.\n- **Mean kept:** Given [2, 4], When the mean is asked, Then it is 3, as today.\n\n## Verification\n\nA test of Empty list that fails on main.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: intent}, ai: "fake:review-intent-kept-rewritten"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-intent}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: intent, where: "#4", message: "Important: No test proves the mean kept after the loop's rewrite"}
+  run-files:
+    in/parts/1-intent/task.md: {contains: "finding; once the change rewrites, moves or removes that code, it is"}
+    in/judge/01/question.yaml: {contains: "owes none unless the change rewrites, moves or removes the code that did it; code added beside it"}

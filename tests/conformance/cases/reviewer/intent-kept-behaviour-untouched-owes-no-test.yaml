@@ -1,0 +1,24 @@
+case: reviewer/intent-kept-behaviour-untouched-owes-no-test
+about: "A scenario of a behaviour kept as before (\"as today\"), which the issue's Verification asks no test of, owes no test while the change leaves its code as it was: the intent lens is told to answer it by its code and the reason it is kept, which is said, no finding; its judge is told to answer no to a finding that only says it has no test."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\ttotal := 0|\\tif len(values) == 0 {\\n\\t\\treturn 0\\n\\t}\\n\\ttotal := 0|' calc/calc.go && printf 'package calc\\n\\nimport \"testing\"\\n\\nfunc TestAverageEmpty(t *testing.T) {\\n\\tif Average(nil) != 0 {\\n\\t\\tt.Fatal(\"not 0\")\\n\\t}\\n}\\n' > calc/calc_test.go && git add calc && git commit -qm 'fix: an empty list averages 0' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean survives an empty list
+        body: "## Need\n\nAn empty list gives 0 instead of a crash.\n\n## Validation\n\n- **Empty list:** Given no values, When the mean is asked, Then it is 0.\n- **Mean kept:** Given [2, 4], When the mean is asked, Then it is 3, as today.\n\n## Verification\n\nA test of Empty list that fails on main.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: intent}, ai: "fake:review-intent-kept-as-before"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-intent}]
+  findings:
+    - {rule: scenario-no-test, where: "#4", message: "the scenario \"Mean kept\" is shown done by its code, no test proving it: kept as before"}
+  no-findings: [{rule: intent}]
+  run-files:
+    in/parts/1-intent/task.md: {contains: "- a behaviour kept as before (\"as today\", \"still works\"), which the"}

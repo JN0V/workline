@@ -31,7 +31,13 @@ judge:
     merge request, its commits reviewed before included, and its last
     commits that are workline's own when shown apart: answer no if any
     of it does it, or if the issue does not ask what the finding says
-    lacks. Answer no too if the finding only guesses.
+    lacks. Answer no too if the finding only guesses, or if it only
+    says a scenario has no test where the scenario is a behaviour kept
+    as before, which the issue's Verification asks no test of: such a
+    behaviour owes none unless the change rewrites, moves or removes
+    the code that did it; code added beside it (a branch, a catch or a
+    check for another case) through which it passes as before leaves
+    it as it was.
   reads: issue
 ---
 **Intent.** The change says it closes the issue under "What the change
@@ -66,7 +72,15 @@ Given / When / Then), one by one, its name as the issue writes it:
   it; for a scenario no test can check (a document, the pipeline), the
   `reason` in place of the test;
 - not done, or no test proves it: a finding, its cause the scenario's
-  words quoted from the issue, one line as it reads there.
+  words quoted from the issue, one line as it reads there;
+- a behaviour kept as before ("as today", "still works"), which the
+  issue's Verification asks no test of, and whose code on the base the
+  change neither rewrites, moves nor removes: a `scenario`, its code
+  quoted, its `reason` that it is kept as before. Its missing test is no
+  finding; once the change rewrites, moves or removes that code, it is
+  answered as any other scenario. Code added beside it — a branch, a
+  catch or a check for another case — through which it passes as on
+  the base leaves it as it was.
 
 Each quote is one run of lines as they read, never pieces joined. A
 scenario you answer neither way, or with no test nor reason, is judged
