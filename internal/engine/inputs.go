@@ -46,7 +46,9 @@ func readInputs(r *role.Role, env []string) (string, []string, error) {
 	var cuts []string
 	repo := envValue(env, "WORKLINE_REPO")
 	rng := envValue(env, "WORKLINE_RANGE")
-	diffOf := "" // the range whose diff is already in the input
+	diffOf := ""  // the range whose diff is already in the input
+	logRng := rng // the range of the commit list: two dots when derived, the merge request's own commits
+	derived := false
 	if slices.Contains(r.Inputs, "target") {
 		text, base, branch, err := readTarget(env, &cuts)
 		if err != nil {
@@ -69,7 +71,10 @@ func readInputs(r *role.Role, env []string) (string, []string, error) {
 		if rng == "" {
 			return "", nil, errors.New("input commits not read: the run has no range")
 		}
-		msgs, err := git(repo, nil, "log", "--reverse", "--format=commit %h%n%B", rng)
+		if !derived {
+			logRng = rng
+		}
+		msgs, err := git(repo, nil, "log", "--reverse", "--format=commit %h%n%B", logRng)
 		if err != nil {
 			return "", nil, fmt.Errorf("input commits not read: %w", err)
 		}
