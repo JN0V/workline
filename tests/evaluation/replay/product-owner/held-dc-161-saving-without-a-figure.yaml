@@ -1,0 +1,26 @@
+case: product-owner/held-dc-161-saving-without-a-figure
+about: >
+  Held out. JN0V/DomoticsCore #161, a roadmap row: "TIMEZONE_LOOKUP static
+  constexpr duplicated per TU". What it costs is flash or RAM, with no figure
+  in the row: same kind of point as #158 (a bound any change meets), on an
+  issue the instruction was not written on. The body is the row as imported;
+  the commit is 81774f5. Expected: no "smaller than today" bound; every Then
+  seen by running.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 81774f5ad6234f0d51589f7b971ec981a0a3fb68}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 161
+        title: "LO-6: NTP TIMEZONE_LOOKUP duplicated per TU"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "| LO-6 | NTP | `TIMEZONE_LOOKUP` static constexpr duplicated per TU |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6326 to 6326 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:b30ab8fced39 -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 81774f5\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[threshold] Look only at the size, count or time bounds in the Validation of issue #161, as this run left it. Is each one a number with its unit and a stated reason (a budget it fits, a document that must fit)? Yes also when the Validation states no such bound: the role asked its reporter for the target, or the change needs none. No when a bound is met by nearly any change (\"below today's value\", \"smaller than before\", one byte or one unit less), or when a scenario names a limit without its figure."}
+  - {judge: "[observed] In issue #161 as this run left it, is every Then of the Validation something a person sees by running something (a test, a build, a compiler, a command's output, the program's behaviour), and none a claim read in the source text (a declaration's type, a keyword, a name or an include present in or absent from a file)? Yes also when the role wrote no Validation."}

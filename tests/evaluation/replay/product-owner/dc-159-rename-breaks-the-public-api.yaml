@@ -1,0 +1,34 @@
+case: product-owner/dc-159-rename-breaks-the-public-api
+about: >
+  JN0V/DomoticsCore #159, a roadmap row: "__dc_* field names use reserved
+  double-underscore prefix". On 2026-10-20 the role asked its reporter which
+  names and which files, what the code answers; the question timed out on
+  11-16; on 11-17 it drafted "search the Core headers for __dc_: none found"
+  and a guessed Scope, readied on 11-19 after 24 h. The names are IComponent's
+  members and setters, called by every component: the rename breaks the public
+  API. Nobody saw it before the owner did on 11-25 (pull request 273, sent
+  back; the Validation now asks the breaking-change note). The body is the row
+  as imported; main was 0944d89; its sources are the folder the role itself
+  named then. Expected: no question the code answers; the break dealt with, by
+  a scenario for the users or a question on it. The instruction's Validation
+  rules were written on 2026-11-25 from this issue among five: a pass here
+  shows the edit landed, not that the role generalises (the held- cases
+  measure that).
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 0944d89e061889c3c740b8e31e8f2079a8bdb4aa}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 159
+        title: "LO-3: __dc_* field names use reserved double-underscore prefix"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "| LO-3 | Core | `__dc_*` field names use reserved double-underscore prefix |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6323 to 6323 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:da91b5f4aff7 -->"
+        comments:
+          - "```yaml\nsources: [DomoticsCore-Core/include/DomoticsCore]\nconfirmed: 0944d89\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[code-answers] In this run, did the role refrain, on issue #159, from asking its reporter what the code answers (which names, which files, which class, whether it builds or warns today)? Yes when it asked nothing, or asked only what no code shows."}
+  - {judge: "[api] The change issue #159 asks for alters the names of IComponent's `__dc_*` members and setters, part of the library's public header, which code outside the library uses. As this run left the issue, does it deal with those users: a Validation scenario for them (what they do after, what the change carries to tell them: a deprecation, a migration note, a breaking-change mark), or a question to the reporter on whether the break is accepted? No when the issue treats the change as internal, with no word for the people who use it."}

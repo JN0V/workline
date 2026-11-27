@@ -1,0 +1,31 @@
+case: product-owner/dc-195-asked-only-to-reformat
+about: >
+  JN0V/DomoticsCore #195, a person's task: a doc-only pull request should run
+  no board build. Its Validation is one situation in prose; its whole Scope is
+  CI workflows and the ruleset. On 2026-11-23 the role asked its reporter to
+  rewrite the Validation as named bullets, then assumed three cases after 24
+  h; the issue went round Blocked three times and was closed by hand on 11-25.
+  One of three format questions of the window. The body is as it read on 11-23
+  when the line took it into refine; main was c42c667; its sources are the
+  workflows the role had named. Expected: no question on the form; and the
+  issue says its Scope is a person's (graded apart, person-ci, as TraceGlass
+  #7).
+given:
+  clone: {repo: JN0V/DomoticsCore, head: c42c667e603286ad0653c75ba5a60deacfecd78d}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 195
+        title: "CI: a doc-only pull request runs no board build"
+        author: JN0V
+        insider: true
+        labels: ["workline:priority/3", "task", "workline:to-refine"]
+        body: "A pull request that changes only documentation runs the whole chain: the native tests, the builds for each board (esp32dev, esp8266dev, esp32c3, the on-device suites), the install test. None of it can change for a doc, and doc-only pull requests are frequent (the documentalist's, by hand).\n\n## Need\n\nThe maintainer, and the documentalist's pull requests, need a doc-only change to be checked in seconds, not to wait for the board builds — and not to spend CI minutes on builds that cannot change.\n\n## Verification\n\n- A pull request touching only Markdown (`**/*.md`, `docs/**`) runs no board build and no native test, and its required checks still pass, so it can be merged.\n- A pull request touching code, `platformio.ini`, a `library.json` or a workflow still runs everything.\n- Mixed (docs + code): everything runs.\n\n## Validation\n\nThe maintainer opens a doc-only pull request and sees it mergeable without the builds; then a code pull request, and sees the builds run.\n\n## Scope\n\n`.github/workflows/ci.yml`, `test-github-install.yml`, `version-check.yml`, and the ruleset on `main`, whose required checks are `Unit tests (native)`, `Build esp32dev`, `Build esp8266dev`, `Build esp32c3`, `Build on-device suites`, `WebUI front end (jsdom)`, `test-install` and `check-versions`.\n\nTrap: a workflow-level `paths-ignore` would leave these required checks waiting forever, so a doc-only pull request could not be merged. Usual fix: a first job that tells what changed (`git diff --name-only` against the base, or `dorny/paths-filter`), and the heavy jobs gated with `if:` — a skipped job counts as passed for a required check. `workline.yml` (the docs judged on the pull request) keeps running.\n\nThis holds for most projects, not only this one: to be written up for workline's CI templates too.\n"
+        comments:
+          - "```yaml\nsources: [.github/workflows/ci.yml, .github/workflows/test-github-install.yml, .github/workflows/version-check.yml, .github/workflows/workline.yml]\nconfirmed: c42c667\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "**workline's line** moves this issue back to refine, stale.\n\n- **Why**: in ready since 2026-10-06, past its limit of 30 days (routing.stale), and its Scope names `dorny/paths-filter`, no longer in the code.\n- **Next**: the product owner reads it again; to undo, put `workline:ready` back.\n\n\n<!-- workline:line-record {\"state\":\"ready\",\"body\":\"9ad8b76931ba\",\"labeled\":\"2026-10-06T09:10:57Z\",\"hops\":0,\"stale\":\"ready\",\"v\":1} -->\n\n<!-- workline:sticky=line/state -->", author: "workline-jn0v[bot]", bot: true, created: "2026-11-23T08:39:33Z"}
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[no-reformat-ask] In this run, did the role refrain, on issue #195, from asking its reporter only to rewrite the Validation's scenarios in another form (named bullets, a Given / When / Then layout)? Yes when it asked nothing, or asked about what the issue means. No when its question asks for a reformat and nothing about the content."}
+  - {judge: "[person-ci] On this line a CI workflow file (`.github/workflows/**`) is changed by a person only: the developer role cannot write it. As this run left issue #195, does it say so on the issue (in its Scope, a note, a question, a split into the line's part and the person's part, or by keeping it for a person) rather than moving the whole issue on as work the line builds?"}

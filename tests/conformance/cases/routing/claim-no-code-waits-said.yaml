@@ -30,7 +30,7 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: state-waits, level: info, where: "#3", message: "its claim, workline:developing, has no pull request: its agent wrote no code; blocked for a person on 2099-01-02 09:00 UTC (claim-hours: 24), or let go at once on a change to its body"}
+    - {rule: state-waits, level: info, where: "#3", message: "its claim, workline:developing, has no pull request: its agent ran on this body; blocked for a person on 2099-01-02 09:00 UTC (claim-hours: 24), or let go at once on a change to its body"}
     - {rule: state-waits, level: info, where: "#4", message: "blocked for a person on 2099-01-02 09:00 UTC"}
   no-findings: [{rule: state-acted}, {rule: state-wakes}]
   forge:

@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -86,11 +85,11 @@ func countRun(f forge.Forge, mrID int, dir string) error {
 	if err != nil {
 		return err
 	}
-	issue := ClosedIssue(mr)
-	if issue == 0 {
+	ids := engine.ClosedIssues(mr)
+	if len(ids) == 0 {
 		return nil
 	}
-	t := forge.Target{Kind: "issue", ID: issue}
+	t := forge.Target{Kind: "issue", ID: ids[0]}
 	id := runID(dir)
 	// The record is read again just before the write: a line step may
 	// have written it since, and what it wrote stays. The forge has no
@@ -156,23 +155,6 @@ func runFresh(dir string) int {
 		}
 	}
 	return n
-}
-
-// ClosedIssue is the issue a merge request closes: the first its title
-// or description closes, else the one its branch of a role names
-// (workline/developer/<n>, workline/tester/issue-<n>); 0 for none.
-func ClosedIssue(mr forge.MergeRequest) int {
-	if ids := forge.Closes(mr.Title, mr.Body); len(ids) > 0 {
-		return ids[0]
-	}
-	for _, prefix := range []string{"workline/developer/", "workline/tester/issue-"} {
-		if rest, ok := strings.CutPrefix(mr.Branch, prefix); ok {
-			if n, err := strconv.Atoi(rest); err == nil && n > 0 {
-				return n
-			}
-		}
-	}
-	return 0
 }
 
 // runID is a run's short id: a hash of its folder's name.

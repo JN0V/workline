@@ -3,7 +3,8 @@ about: >
   Files only a person changes, refused at apply, are named on top of the
   pull request, under Left for a person, where the reviewer's intent
   lens and the person read first: its agent wrote the code and a gate's
-  files. The pull request still says `Closes #2`; nothing else changes.
+  files. The pull request says `Part of #2`, never `Closes #2`: merged,
+  the issue stays open for what is left.
 given:
   repo: tested
   setup:
@@ -25,6 +26,7 @@ expect:
     merge-requests:
       - id: 1
         branch: workline/developer/2
-        body-contains: ["Closes #2\n\n## Left for a person\n\nRefused at apply: only a person changes these files.", "- `.github/workflows/ci.yml`: a gate's definition or the CI's"]
+        body-contains: ["Part of #2\n\n## Left for a person\n\nLeft out of this change, so #2 stays open", "- `.github/workflows/ci.yml`: refused at apply: a gate's definition or the CI's"]
+        body-lacks: ["Closes #2", "proven on the project's tests"]
     issues:
       - {id: 2, labels: ["workline:developing"]}

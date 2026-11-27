@@ -1,0 +1,31 @@
+case: documentalist/wl-2224-fixes-a-spec-page-left-to-a-person
+about: >
+  On 19 of workline's pull requests of 2026-11-24 and 25 the
+  documentalist said the same three spec pages were "left to a person —
+  no agent can judge these docs": `docs/spec/role-contract.md`,
+  `role-adapting.md` and `role-outcome.md`, whose sources are whole
+  packages (`internal/engine`, `internal/agent`, `internal/role`,
+  `internal/intent`). No agent was asked on any of them. One of the 19,
+  #2224 (https://github.com/JN0V/workline/pull/2224), made the role
+  contract false: `internal/agent/claude.go` stopped cutting text before
+  an answer's list off; the answer is now refused and asked again, since
+  that text may be a proposal written with no `- `. The page said "Prose
+  before the list, no fence around it (a line announcing the answer), is
+  left out, said, and the list read from its first item." The author
+  fixed that sentence by hand, in the same pull request. The replay:
+  #2224's commit with the page put back as it read before
+  (`git checkout main`), as a merge request, narrowed to that page
+  (`docs`). Expected: the sentence fixed, and no edit stating something
+  false.
+given:
+  clone: {repo: JN0V/workline, base: 0ffb77d6bcce4dcc64fa6aafaa7c8ce44fbec38a, head: 7295d78afded7b451c965e6eeae9c08706fbeb5c}
+  setup:
+    - |
+      git checkout -q main -- docs/spec/role-contract.md
+      perl -0pi -e 's/      docs: \[.*?\]\n/      # The role contract alone, the page #2224 made false.\n      docs: [docs\/spec\/role-contract.md]\n/s' .workline/config.yaml
+      git commit -qam 'docs: the role contract as it read before the change, judged alone'
+run: {role: documentalist, event: merge-request}
+grade:
+  - {status: pass}
+  - {file-lacks: {docs/spec/role-contract.md: "is left out, said, and the list read from its first item"}}
+  - {judge: "Judged against the facts the case states, is every line the role added or changed in docs/spec/role-contract.md true, with no new false claim (for instance text before the list still said to be left out or cut off, or the list still said to be read from its first item)? A run that changed no line of the page's body answers yes."}

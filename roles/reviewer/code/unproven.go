@@ -11,11 +11,8 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/kit/devmark"
 )
-
-// developerBranch opens the branches of the developer's pull requests:
-// only there is the list the engine's own.
-const developerBranch = "workline/developer/"
 
 // unprovenAsked marks a record whose tests lens was given the list
 // once: never asked again, once the tester and the judge settled it.
@@ -34,7 +31,7 @@ func unprovenOf(repo string, limit int) string {
 		return ""
 	}
 	mr, err := f.MergeRequest(t.ID)
-	if err != nil || !mr.Here || !strings.HasPrefix(mr.Branch, developerBranch) { // a fork's branch may bear the name
+	if err != nil || !mr.Here || !strings.HasPrefix(mr.Branch, devmark.Branch) { // only there is the list the engine's own; a fork's branch may bear the name
 		return ""
 	}
 	list, _ := cutLines(unprovenListed(mr.Body), limit, "the unproven scenarios are cut here, past testimony-lines-max")

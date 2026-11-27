@@ -1,0 +1,35 @@
+case: product-owner/dc-139-open-choice-assumed-after-silence
+about: >
+  JN0V/DomoticsCore #139: what shutdown() publishes never leaves the device.
+  Its body says "It is also a question, not only a defect: whether a shutdown
+  should remove the entities is undecided. Answer that before making the
+  messages leave." The role asked that on 2026-10-29; with no answer, on 11-15
+  it wrote the assumption "a shutdown withdraws the entities", drafted "a
+  device with two entities", and the issue was readied on 11-16 after 24 h.
+  The owner sent pull request 260 back (more than eight events are not
+  drained) and decided on 11-25 that a product choice is never settled by a
+  timeout. The body and the question are as they were on 11-15 before that
+  run; main was 81774f5. Expected: no assumption on the open choice, and the
+  issue not readied: it waits for the person. The instruction's rule on a
+  choice left open was written on 2026-11-25 from this issue among five: a
+  pass here shows the edit landed, not that the role generalises (the held-
+  cases measure that).
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 81774f5ad6234f0d51589f7b971ec981a0a3fb68}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 139
+        title: "BUG-66 — HomeAssistant: what shutdown() publishes never leaves the device"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "### BUG-66 — HomeAssistant: what `shutdown()` publishes never leaves the device [LOW] — **NEW (2026-09-23, filed by BUG-63's lot)**\n\n- **Files**: `HomeAssistant.h` (`shutdown()` → `setAvailable(false)` and\n  `removeDiscovery()`), against `Core.cpp:loop()`, which returns on\n  `!initialized`, and `Core.cpp:shutdown()`, which clears that flag.\n- **Problem**: both publish through the EventBus, which dispatches in\n  `Core::loop()`. `Core::shutdown()` clears `initialized` before anything drains\n  the queue, so the `offline` availability and one empty retained payload per\n  entity — the messages that withdraw the device from Home Assistant — are\n  queued and discarded. Found by a test written for BUG-13's lot, which counted\n  zero removals where the code plainly publishes two.\n- **Consequence**: a device shut down cleanly stays in Home Assistant with every\n  entity present, and stays `online` there: a graceful MQTT disconnect does not\n  fire the Last Will that BUG-43 put in place for a dropped link.\n- **LOW, argued**: nothing calls `Core::shutdown()` on a normal device path —\n  a reboot and an OTA restart do not — so this is reachable only from an\n  application that shuts the stack down deliberately. The test added in BUG-63's\n  lot calls the component's own `shutdown()` so it pins what the component does,\n  not what the Core swallows.\n- **It is also a question, not only a defect**: whether a shutdown *should*\n  remove the entities is undecided. Withdrawing them on every deliberate stop\n  would make an application that restarts the stack lose its entities in Home\n  Assistant, where the retained configs are precisely what brings them back.\n  Answer that before making the messages leave.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 2773 to 2796 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:2dc63a977511 -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 81774f5\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "@JN0V, to refine this issue: Should a deliberate `Core::shutdown()` withdraw the Home Assistant entities and mark the device offline? Or should the entities stay, so a restarted stack gets them back from the retained configs?\n\n<!-- workline:product-owner/ask -->", author: "workline-jn0v[bot]", bot: true, created: "2026-10-29T08:34:30Z"}
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {sh: ": no-assumption; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 139][0]; assert \"## Assumptions\" not in i[\"body\"]'"}
+  - {sh: ": not-readied; python3 -c 'import json; i = [i for i in json.load(open(\"../forge.json\"))[\"issues\"] if i[\"id\"] == 139][0]; assert \"workline:ready\" not in i[\"labels\"] and \"workline:needs-tests\" not in i[\"labels\"]'"}

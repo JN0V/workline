@@ -131,13 +131,18 @@ hold:
 - **One note on its own issue**
   ([#694](https://github.com/JN0V/workline/issues/694)): what the agent
   left out, posted once on its issue, inert and cut to 4,000 bytes, the
-  same text in the pull request's `## Left out`; a second note, or one
+  same text in the pull request's `## Left for a person`; a second note, or one
   elsewhere, refused ([the bounds](bounds.md#what-else-it-refuses)).
   Case `developer/note-on-its-own-issue`.
 - **Left for a person, on top**: a file refused as only a person's to
   change is named first in its pull request
   ([its body](pull-request.md#its-body)). Case
   `developer/left-for-a-person-said-on-top`; tried in its pull request.
+- **Part of, never Closes, over a part left**: a refusal, a Scope path
+  only a person changes, its agent's note or `Not done:` words make it
+  `Part of #n`, never "proven". Cases
+  `developer/scope-person-only-path-part-of`,
+  `skips-issue-part-of-an-open-pr`, `claude-not-done-note-posted`.
 - **The triggers** (step 5): the `issue` line on an issue labelled
   ready, the `schedule` line on the first ready issue nobody took; the
   GitHub workflow and the GitLab jobs; a line with no pull request to

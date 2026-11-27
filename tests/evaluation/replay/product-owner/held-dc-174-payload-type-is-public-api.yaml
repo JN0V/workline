@@ -1,0 +1,27 @@
+case: product-owner/held-dc-174-payload-type-is-public-api
+about: >
+  Held out. JN0V/DomoticsCore #174, a roadmap row: "HASwitch/HABinarySensor
+  payloadOn/Off are String — should be const char*". Both are public fields
+  the technical reference documents as `String`: the change breaks code that
+  sets them from a String. Same kind of point as #159 (a change to what others
+  use), on an issue the instruction was not written on. The body is the row as
+  imported; the commit is 81774f5, where the fields are still String.
+  Expected: the break dealt with, by a scenario for the users or a question on
+  it.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 81774f5ad6234f0d51589f7b971ec981a0a3fb68}
+  config: {roles: {product-owner: {settings: {acts: {split: {mode: act}, effort: {mode: act}}}}}}
+  forge:
+    issues:
+      - id: 174
+        title: "LO-20: HASwitch/HABinarySensor payloadOn/Off should be const char*"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "| LO-20 | HA | `HASwitch`/`HABinarySensor` payloadOn/Off are `String` holding \"ON\"/\"OFF\" — should be `const char*` |\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6340 to 6340 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:6736cf182ac2 -->"
+        comments:
+          - "```yaml\nsources: []\nconfirmed: 81774f5\n```\n\n<!-- workline:sticky=product-owner/state -->"
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {judge: "[api] The change issue #174 asks for alters the type of the public fields `payloadOn` and `payloadOff` of HASwitch and HABinarySensor, documented as `String` in the library's technical reference, which code outside the library uses. As this run left the issue, does it deal with those users: a Validation scenario for them (what they do after, what the change carries to tell them: a deprecation, a migration note, a breaking-change mark), or a question to the reporter on whether the break is accepted? No when the issue treats the change as internal, with no word for the people who use it."}

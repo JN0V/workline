@@ -45,6 +45,7 @@ var triggers = map[string]map[string]string{
 	"workline-gardening.yml": {"schedule": onTemplate, "workflow_dispatch": onTime},
 	"workline-sample.yml":    {"schedule": onTemplate, "workflow_dispatch": onTime},
 	"schedule-probe.yml":     {"schedule": onTime, "workflow_dispatch": onTime},
+	"eval-replay.yml":        {"workflow_dispatch": onTime}, // this repository's own: the evaluation, by hand
 	"workline-develop.yml": {"issues": onTemplateEvent, "issue_comment": onTemplateEvent, "workflow_run": onTemplateEvent,
 		"schedule": onTemplate, "workflow_dispatch": onTime},
 	"workline-answer.yml": {"workflow_run": onTemplateEvent, "workflow_dispatch": onTime},

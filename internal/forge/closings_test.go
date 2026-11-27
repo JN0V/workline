@@ -129,3 +129,20 @@ func TestLocalAndFakeClosedWith(t *testing.T) {
 		}
 	}
 }
+
+// A change part of an issue is for it, as one closing it, but closes it
+// not: no merge settles it (after #2216).
+func TestForReadsPartOf(t *testing.T) {
+	if got := For("github", "Part of #4", "Closes #5, part of: #4"); len(got) != 2 || got[0] != 5 || got[1] != 4 {
+		t.Errorf("For = %v, want [5 4]", got)
+	}
+	if got := Closes("Part of #4"); len(got) != 0 {
+		t.Errorf("Part of read as closing: %v", got)
+	}
+	if got := For("", "Closes #5\n\n~~~\nPart of #4\n~~~", "the agent's words: part of #6"); len(got) != 1 || got[0] != 5 {
+		t.Errorf("Part of read below a text's start: %v", got)
+	}
+	if got := For("", "Refs #4"); len(got) != 0 {
+		t.Errorf("Refs read as for it: %v", got)
+	}
+}
