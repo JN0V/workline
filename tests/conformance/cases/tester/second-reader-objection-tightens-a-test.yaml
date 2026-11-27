@@ -1,0 +1,36 @@
+case: tester/second-reader-objection-tightens-a-test
+about: >
+  A weak test is tightened: the tester's first answer sends 900 bytes
+  to a limit of 600, a test a limit of 700 still passes. Its second
+  reader objects, naming that change; the tester answers again, and
+  that second answer, sending 601 bytes, is the Draft.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Refuse a long payload"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I send a payload, I want one over 600 bytes refused, so the line is not flooded.\n\n## Validation\n\n- **Over the limit:** Given a payload over 600 bytes, When I check it, Then it is refused.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `refused` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-second-reader-weak-then-tight"}
+expect:
+  status: pass
+  summary: "1 new test, red on the base"
+  agent-calls: 3
+  run-files:
+    out/feedback.md: {contains: ["limit of 700 bytes"]}
+  pushed:
+    workline/tester/issue-3:
+      tests/test_over_600_refused.sh: "refused 601"
+  pushed-lacks:
+    workline/tester/issue-3:
+      tests/test_over_600_refused.sh: "refused 900"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true

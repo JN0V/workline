@@ -1,0 +1,11 @@
+# A tester's answer sends 601 bytes, the first one over the limit; its
+# reader has nothing to object to.
+calls:
+  - - patch:
+        file: tests/test_over_600_refused.sh
+        content: |
+          # Over the limit: Given a payload over 600 bytes, When I check it, Then it is refused.
+          . ./lib.sh
+          refused 601
+    - covers: {scenario: "Over the limit", tests: ["test_over_600_refused"]}
+  - - note: "NO OBJECTION"

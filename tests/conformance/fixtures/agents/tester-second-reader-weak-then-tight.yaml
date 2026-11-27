@@ -1,0 +1,19 @@
+# A tester's first answer sends 900 bytes, a test a cheap wrong limit of
+# 700 still passes; its reader objects, naming that change; its second
+# answer sends 601, which that change fails.
+calls:
+  - - patch:
+        file: tests/test_over_600_refused.sh
+        content: |
+          # Over the limit: Given a payload over 600 bytes, When I check it, Then it is refused.
+          . ./lib.sh
+          refused 900
+    - covers: {scenario: "Over the limit", tests: ["test_over_600_refused"]}
+  - - note: "OBJECTION: a limit of 700 bytes in place of 600 still passes this test, which sends 900 bytes: send 601 bytes, the first one over."
+  - - patch:
+        file: tests/test_over_600_refused.sh
+        content: |
+          # Over the limit: Given a payload over 600 bytes, When I check it, Then it is refused.
+          . ./lib.sh
+          refused 601
+    - covers: {scenario: "Over the limit", tests: ["test_over_600_refused"]}

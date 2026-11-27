@@ -1,0 +1,31 @@
+case: tester/second-reader-reads-only
+about: >
+  Read-only: the second reader is given read tools alone (Read, Glob,
+  Grep: no shell, no write), as the fake agent records them; it
+  answers NO OBJECTION, and the Draft holds the tester's test and
+  nothing the reader's call changed in the project.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Refuse a long payload"
+        labels: ["workline:needs-tests"]
+        body: "## Need\n\nWhen I send a payload, I want one over 600 bytes refused, so the line is not flooded.\n\n## Validation\n\n- **Over the limit:** Given a payload over 600 bytes, When I check it, Then it is refused.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `refused` function beside `add`.\n"
+run: {test: [write, --issue, "3"], ai: "fake:tester-second-reader-no-objection"}
+expect:
+  status: pass
+  agent-calls: 2
+  calls:
+    - {}
+    - {tools: "map[Glob:0 Grep:0 Read:0]"}
+  pushed:
+    workline/tester/issue-3:
+      tests/test_over_600_refused.sh: "refused 601"
+  pushed-lacks:
+    workline/tester/issue-3:
+      lib.sh: "refused"
