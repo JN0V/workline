@@ -59,7 +59,7 @@ func TestWeighTakesMainInForATesterBlock(t *testing.T) {
 	n := &normal{local: true, app: forge.LocalApp, steers: func(string) string { return "" }}
 	o := FollowOptions{Repo: repo, Base: "main", Merge: MergeNormal}
 	res := &Result{}
-	if _, err := weigh(l, l, o, true, mr, res, hand, n); err != nil {
+	if _, err := weigh(l, l, o, true, mr, res, hand, n, new([]*inLine)); err != nil {
 		t.Fatal(err)
 	}
 

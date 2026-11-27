@@ -79,7 +79,7 @@ func codeWaitComment(t *testing.T, conflict, red bool, review, key string) strin
 	}
 	n := &normal{local: true, app: forge.LocalApp, steers: func(string) string { return "" }}
 	o := FollowOptions{Repo: repo, Base: "main", Merge: MergeNormal}
-	if _, err := weigh(l, l, o, true, mr, &Result{}, hand, n); err != nil {
+	if _, err := weigh(l, l, o, true, mr, &Result{}, hand, n, new([]*inLine)); err != nil {
 		t.Fatal(err)
 	}
 	comments, err := l.Comments(target)

@@ -64,7 +64,7 @@ func TestWeighSaysTheWaitOnABlockingFinding(t *testing.T) {
 			t.Fatal(err)
 		}
 		res := &Result{}
-		line, err := weigh(l, l, o, true, mr, res, hand, n)
+		line, err := weigh(l, l, o, true, mr, res, hand, n, new([]*inLine))
 		if err != nil {
 			t.Fatal(err)
 		}

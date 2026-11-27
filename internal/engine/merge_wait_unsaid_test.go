@@ -53,7 +53,7 @@ func TestWeighSaysTheWaitOfACommitNotWorklines(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	line, err := weigh(l, l, o, true, mr, &Result{}, map[string]kept{}, n)
+	line, err := weigh(l, l, o, true, mr, &Result{}, map[string]kept{}, n, new([]*inLine))
 	if err != nil {
 		t.Fatal(err)
 	}

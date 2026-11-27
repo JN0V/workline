@@ -62,7 +62,7 @@ func refusedWaitComment(t *testing.T, conflict, red bool) string {
 	}
 	n := &normal{local: true, app: forge.LocalApp, steers: func(string) string { return "" }, demoted: map[string]string{kindFeature: "#7"}}
 	o := FollowOptions{Repo: repo, Base: "main", Merge: MergeEnterprising}
-	if _, err := weigh(l, l, o, true, mr, &Result{}, hand, n); err != nil {
+	if _, err := weigh(l, l, o, true, mr, &Result{}, hand, n, new([]*inLine)); err != nil {
 		t.Fatal(err)
 	}
 	comments, err := l.Comments(target)
