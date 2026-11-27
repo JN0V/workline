@@ -1,197 +1,87 @@
-# Diagnosing a role — findings per role and strategies (2026-11-26)
+# Diagnosing a role — findings per role, and the pitfalls (2026-11-26/27)
 
-> **INTERIM — to be completed when the benches end.** Numbers marked
-> **INTERIM** come from 3 runs or fewer: inside the noise of
-> [the method](diagnosing-a-role.md#4-enough-runs). The method, the
-> pitfalls and the causes used below are on
-> [diagnosing-a-role.md](diagnosing-a-role.md).
+The benches of 2026-11-26/27 have ended. Each role's measures, cuts and
+verdict are on its own page; this page is the overview, the pitfalls
+met, and every strategy's status. The method is on
+[diagnosing-a-role.md](diagnosing-a-role.md).
 
 ## Findings per role
 
-### Reviewer
+| Role | 11-25 | First cause found | What shipped | Page |
+|---|---|---|---|---|
+| Reviewer | 5 | had the code, did not say it; out-of-diff points never read | 2 fixes; an Opus verifier in shadow | [diagnosing-the-reviewer.md](diagnosing-the-reviewer.md) |
+| Developer | 6 | craft (8 of 21 send-backs); the engine's `Closes` over a gap (6) | Opus and a checklist; `Part of #n` | [diagnosing-the-developer.md](diagnosing-the-developer.md) |
+| Tester | 6 | already two thirds fixed by v0.91.0; refusals never re-asked | refusals mended in the run | [diagnosing-the-tester.md](diagnosing-the-tester.md) |
+| Product owner | 5 | never told the line's bounds; the code picker cut the file | 25 lines of instruction | [diagnosing-the-product-owner.md](diagnosing-the-product-owner.md) |
+| Documentalist | 4 | parts cannot show an absence; the citation rule held fixes back | reading the repository and citing | [diagnosing-the-documentalist.md](diagnosing-the-documentalist.md) |
 
-**INTERIM**: every number in this section comes from 3 runs an arm.
-
-Two scorers are used below, both blind to the arm:
-
-- **Readers and judge**: one independent reader per case classified each
-  miss by cause; a blind Opus judge, one call a case run, said which
-  shown findings state each point (97 % agreement with the readers).
-  Used for the levers table and the clean counts.
-- **Meaning scorer** ([#2282](https://github.com/JN0V/workline/pull/2282)):
-  one yes-or-no question per point, Opus, each judgement twice. Used for
-  the profiles and kept catches.
-
-Levers on the 15 miss cases (34 points, 102 point-runs a 3-run set),
-readers and judge:
-
-| Lever | Size | Evidence |
-|---|---|---|
-| Model (Sonnet to Opus) | about +10 of 102, in every structure | saw but did not say falls from 22 to 8 (lenses), 33 to 24 (free agent) |
-| Severity and decision rules | 2 to 13 | a true defect filed as a decision becomes a question for a person; the free agent on Opus calls weak tests true but not blocking |
-| Repository reading | 8 to 11, only on the 4 out-of-diff points the lenses never had | did not look, lenses: 10 to 11 point-runs without reads, 0 to 3 with; the free agent reads too, yet 13 on Sonnet, 2 on Opus |
-| The reviewer's own judge | 0 to 7 | it is not shown the author's Left out nor the title; its word search misses a prefix |
-| Answer format | 0 to 4; 2 to 4 in read arms only | prose before the YAML; the re-ask is a new draw, not a repair |
-
-- **Only the model's lever comes close to the noise bound, and it
-  repeats in the three structures**: 3 runs see a gap of
-  11 to 14 of 102 at best, so the other ranks are inside it. The model's
-  +10 is itself at the edge, and comes with twice the clean false alarms
-  (4 to 8 of 12) and a commit effect (19, 19 against 22, 21, 22).
-- **Out-of-diff points**: 6 of the 34 points have their evidence outside
-  the diff; the lenses without reads lost 4 of them to not looking. The
-  bench audit's re-score (regular expressions) gives the lenses 0 % of
-  the 6; the meaning scorer gives 0 % on Sonnet and 11 to 17 % on Opus.
-- **False alarms on clean changes**: 23 of 36 come from one intent-lens
-  rule (a behaviour kept as before has no test), which the tests lens
-  exempts; most fall on `clean-tg-11`, where they are mostly true (the
-  case is not clean). The free agent shows none in 6 runs.
-- **Profiles differ** under level totals (meaning scorer): the free
-  agent finds out-of-diff points (67 to 83 %) and finds fewer weak tests
-  (36 to 45 %); the lenses without reads the opposite (0 to 17 %, 64 to
-  85 %).
-- **Kept catches fall with reads, for the lenses**: 5 to 7 of 15 with
-  reads against 8 to 12 without (meaning scorer). The free agent, which
-  reads, keeps 11 to 12.
-- **INTERIM**: the 6-run arms (production baseline with its Opus judge,
-  lenses on Opus, a verifier agent after the lenses on Opus or Sonnet,
-  the free agent with merge standards, a prompt variant, effort high)
-  and the judge question below are running.
-- **INTERIM, the judge question**: must the judge be another model than
-  the lenses? Four arms, 6 runs each, Sonnet or Opus lenses × Sonnet or
-  Opus judge, plus the same calls re-scored with no judge. Self-preference
-  would show as a same-model judge refusing fewer of its own lens's empty
-  findings.
+- **The model was a lever for two roles only**: the reviewer (Opus
+  states 2 to 3.7 more points a run in every structure) and the developer
+  (Opus with a checklist). Opus gained nothing on the product owner's
+  causes, lost points as the tester's writer, and missed the
+  documentalist's absent claims too.
+- **The engine was a cause in every role**: a sentence it writes
+  (developer's `Closes`, tester's "nothing guards it"), an input it cuts
+  (the product owner's and documentalist's parts), a filter (the
+  reviewer's same-model judge), a timeout.
+- **Every shipped prompt was measured on the cases it was written
+  from**: each gain is an upper bound until held-out or shadow evidence.
 
 ### Developer
 
-From the records of 78 pull requests, 2026-11-23 to 26, and 133 review
-rounds:
+Kept as an anchor for older links. Bench: 11 send-backs replayed, 19
+reachable reasons; Opus with the checklist 16 · 16 · 15, Sonnet with it
+7 · 12 · 7, production 4 (one run), at 2.5 times production's fresh
+tokens. Details: [diagnosing-the-developer.md](diagnosing-the-developer.md).
 
-- **19 of 43 rounds with no fix** were woken by a label-trace comment;
-  v0.91.0 stops this: a comment within 2 minutes of the same account's
-  accepted label asks no round
-  ([#2220](https://github.com/JN0V/workline/pull/2220)). Not yet seen in
-  production on every repository.
-- **A person's send-back is answered**: 15 of 18 fixed green in one
-  round. The 3 others needed a workflow file, a board measure, or hit a
-  merge skew.
-- **Of 21 send-backs**: 8 the agent's craft (did not do what the issue
-  says 4, regression or side effect 2, code it calls not opened 2), 6
-  partial work presented as done, 3 round mechanics, 4 the issue itself.
-- **`Closes #n … proven` is the engine's**: in 6 of 6 partial-work
-  send-backs, the agent's own text said what was missing.
-- **Reviewer Importants**: 0 of 14 declined findings were true and
-  fixable but argued away; 1 got an empty round.
-- **INTERIM, a checklist and Opus** (2026-11-27): 11 send-backs
-  replayed, 19 points reachable, scored by meaning by an Opus judge
-  (25 of 26 known answers; stricter than Fable on 3 of 57).
+## Pitfalls met
 
-  | Arm | Points of 19, per run | Fresh tokens a case |
-  |---|---|---|
-  | Sonnet medium, production's prompt | 4 (one run) | 28.4k |
-  | Sonnet medium, checklist | 7 · 12 · 7 | 34.6k |
-  | Opus medium, production's prompt | 11 (one run) | 54.9k |
-  | Opus medium, checklist | 16 · 16 · 15 | 70.5k |
+| Pitfall | Measure |
+|---|---|
+| An oriented 2-call replay taken for a root cause | The first diagnosis said read tools found every point on 3 pull requests: 2 calls with tools ran, both on one pull request, one with a leading prompt. On the full set, repository reading recovers only out-of-diff points: 6 of 34 |
+| Code removal pursued by principle | Agents reading the repository, the input pickers deleted: equal within noise at 1.6 to 2.8 times the tokens (reviewer [#2273](https://github.com/JN0V/workline/pull/2273), documentalist [#2276](https://github.com/JN0V/workline/pull/2276)), and kept catches lost by the reviewer's lenses. Removing dead code gave 122 lines ([#2272](https://github.com/JN0V/workline/pull/2272)), not the 4.7k first counted |
+| Place-based scoring rewards volume | 61 of 310 reviewer points were by place only, 79 true statements scored nothing; by meaning, free agent and lenses are level at the same model |
+| A bench forcing a non-production judge | Every reviewer bench forced a Sonnet judge; production judges Sonnet lenses with Opus. The production baseline was added as its own arm |
+| Arms on different commits | Opus lenses alone gave 19, 19 at one commit and 22, 21, 22 at another |
+| Criteria fixed after the first arms | The criteria were written after the arms of [#2273](https://github.com/JN0V/workline/pull/2273) and [#2279](https://github.com/JN0V/workline/pull/2279) had run |
+| Bench slots starved | Two slots, `/tmp` in RAM, no order: a batch waited 40 to 70 minutes; 6 runs × 6 arms of a role did not fit |
+| A judge fed the wrong input | The product owner's first rep, 53 runs, gave the judge a diff, not the issues; the developer's judge first read a pull request's text as it reads today, and an empty diff |
+| An official check that marks true edits false | The documentalist's `judge` check, given the case's facts and no repository |
 
-  - Opus with the checklist is above Sonnet with it in every run. One
-    triple a side: p = 0.10, the floor; not shown by the criteria.
-  - It costs **2.5 times** the fresh tokens of production (2.0 times
-    Sonnet with the checklist), 4.3 times its cache reads.
-  - The checklist was written from these same send-backs: the gain is
-    an upper bound. The two baselines rest on one run each.
-  - The checklist makes Opus run the whole suite (3 → 11 of 11) and
-    open the docs (1 → 6–9 of 11); on Sonnet it barely moves either.
-  - Reached by no arm: wiring a new test into what CI runs, and a
-    test of the case the issue names when a neighbour's exists.
-  - The owner chose reliability over tokens: shipped with a guard,
-    the first 10 pull requests watched for send-backs, agent runs
-    stopped at `ai-max-seconds` and fresh tokens; rolled back with one line
-    ([the developer's model](../../roles/developer/docs/agent.md#the-model)).
+Also met, smaller:
 
-### Tester
+- `clean-tg-11` has an untested scenario: most of its alarms are true.
+- A developer check (`dc-240`) failed runs that kept a real measure,
+  which the issue allowed: counted for no arm.
+- The summary counted a case twice when some runs had no judge
+  ([#2280](https://github.com/JN0V/workline/pull/2280)).
 
-From 24 replay cases (69 scenarios), one per issue whose test plan held
-a bad scenario, 2026-11-23 to 25:
-
-- **9 weak tests**: 5 find words in a source, 3 take another or easier
-  path, 1 greps where the scenario asks about text.
-- **24 scenarios kept as today with no test**: all 24 are true of the
-  code; but in 10 (and partly 3 more) an existing test already guarded
-  them, where the Draft said none did. The engine wrote that sentence
-  after a grep for a test name; the agent was not asked to look.
-- The one false kept claim of the 11-25 evaluation was a degenerate
-  Validation (its numbers already hold), a product owner point.
-- **INTERIM**: causes at v0.91.0 and strategies not yet measured.
-
-### Product owner
-
-- **INTERIM** (3 runs each, one case). The case scores 6 points a run:
-  4 issues whose kind is graded, and 2 checks on the run itself. Counted
-  as kinds right of the 12 graded over 3 runs, if the run checks passed:
-  - full read of five issues the maintainer re-kinded, on `main`: Opus
-    9, Sonnet 4; with repository reading
-    ([#2277](https://github.com/JN0V/workline/pull/2277)): Sonnet 7,
-    Opus 9, equal to Opus on `main`; Opus's lost point in each reading
-    run is a run check (a second agent call), not a kind: what reading
-    costs it is that call;
-  - kinds alone: 8 to 10 in every arm, level.
-- One issue cannot be kinded from its body nor its repository: the bug
-  needs a platform's status values not in the code. Unreachable.
-- **INTERIM**: 5 strategies, 6 runs each, queued: Opus, effort high,
-  repository reading, instructions on the line's bounds and own product
-  questions, and reading plus instructions. Three held-out cases say
-  whether the instruction generalises.
-
-### Documentalist
-
-**INTERIM**: 3 runs an arm or fewer, one case (7 wrong claims).
-
-- **It holds back removals it cannot cite.** In the reading arm
-  ([#2276](https://github.com/JN0V/workline/pull/2276)), every run found
-  that nothing publishes two documented events. 2 runs of 3 left both
-  for a person, once writing "I had no source line to cite for removing
-  the claim"; one run fixed the first. The citation rule (every word
-  removed is cited from a source) holds it.
-- **Reading arm against `main`**, Sonnet: #2276 fixed 2 of 21 claims
-  with 0 runs with a false edit, against 2 of 21 and 2 false-edit runs of
-  3 for its own baseline, at 2.2× the tokens. A same-day bench of `main`
-  on Sonnet fixed 6 of 21, with a false edit in 3 of 3 runs: the claims
-  count is inside the noise. Opus on `main`: 6 of 14 claims, a false
-  edit in 2 of 2 runs.
-- **INTERIM**: 6 arms queued on 6 cases (9 targets a run): `main`,
-  reading, a prompt on what to cite when nothing does what the doc says,
-  the citation rule off for removals, effort high, then the best with
-  Opus.
-
-## Strategies tried or queued
+## Strategies, and their status
 
 | Strategy | Role | Status |
 |---|---|---|
-| Agents read the repository, pickers deleted ([ADR-0074](../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md) step 2) | reviewer | closed ([#2273](https://github.com/JN0V/workline/pull/2273)): equal within noise, +55 % tokens |
-| Same | documentalist | held ([#2276](https://github.com/JN0V/workline/pull/2276)): **INTERIM**, 2 of 21 claims with 0 false-edit runs, against a same-day `main` on Sonnet at 6 of 21 with 3 of 3; ×2.2 tokens |
-| Same | product owner | held ([#2277](https://github.com/JN0V/workline/pull/2277)): equal |
+| Agents read the repository, pickers deleted ([ADR-0074](../adr/0074-agents-read-the-repository-the-engine-stops-preparing-their-input.md) step 2) | reviewer | closed ([#2273](https://github.com/JN0V/workline/pull/2273)): equal, +55 % tokens |
+| Same | documentalist, product owner | held ([#2276](https://github.com/JN0V/workline/pull/2276), [#2277](https://github.com/JN0V/workline/pull/2277)) |
 | ADR-0074's bar amended to not worse | all | open ([#2274](https://github.com/JN0V/workline/pull/2274)) |
-| One free agent with read tools, no lens, no judge | reviewer | **INTERIM**, 3 runs ([#2279](https://github.com/JN0V/workline/pull/2279)): level by meaning at the same model; no false alarm on clean; finds fewer weak tests |
-| Lenses on Opus | reviewer | most consistent signal, not proven; a 6-run set to confirm, then the maintainer's label |
-| Verifier agent after the lenses (Opus or Sonnet) | reviewer | **INTERIM**, running |
-| Prompt: decision rule, unannounced break, a test nothing runs, no test owed for kept behaviour | reviewer | **INTERIM**, running |
-| Judge model: same as lenses or the other | reviewer | **INTERIM**, running |
-| Effort high | reviewer, product owner, documentalist, developer | **INTERIM**, queued |
+| Lenses then an Opus verifier (`hso`) | reviewer | in shadow ([#2312](https://github.com/JN0V/workline/pull/2312)): 24.2 of 34 against 17.3 |
+| One free Opus agent with merge standards | reviewer | not shipped: level with `hso`, weak tests included; the bench does not settle the choice |
+| Lenses on Opus | reviewer | stopped: below the leaders, more clean alarms |
+| A kept behaviour left as it was owes no test | reviewer | merged ([#2288](https://github.com/JN0V/workline/pull/2288)) |
+| Outside findings judged at the project's floor | reviewer | merged ([#2287](https://github.com/JN0V/workline/pull/2287)) |
+| Sonnet verifier; lens prompt; effort high | reviewer | dropped untested |
+| Opus medium and a checklist | developer | merged with a guard ([#2304](https://github.com/JN0V/workline/pull/2304)) |
+| `Part of #n`, never `Closes`, over a part left | developer | merged ([#2291](https://github.com/JN0V/workline/pull/2291)) |
 | Only an explicit request wakes a round | developer | merged in v0.91.0 ([#2220](https://github.com/JN0V/workline/pull/2220)) |
-| Checklist on Opus medium | developer | shipped with a guard, 16 · 16 · 15 of 19 against 7 · 12 · 7 on Sonnet, ×2.5 tokens ([above](#developer)) |
-| Second pass by a fresh call | developer | not run |
-| Instructions on the line's bounds and product questions | product owner | **INTERIM**, queued |
-| Citation rule off for removals; prompt on what to cite | documentalist | **INTERIM**, queued |
-| Score by meaning | bench | open ([#2282](https://github.com/JN0V/workline/pull/2282)) |
-| Count a case once in the summary | bench | open ([#2280](https://github.com/JN0V/workline/pull/2280)) |
-| Narrow what the bench's commit covers | bench | not built (the bench audit's fix 8) |
+| Second pass; effort high | developer | never run |
+| Refusals asked again with their reason (`mend`) | tester | merged ([#2306](https://github.com/JN0V/workline/pull/2306)) |
+| An Opus second reader (`vm`) | tester | provisional winner, one triple; not built |
+| Shell; prompt; Opus as writer; three retries | tester | stopped after one run |
+| The line's bounds, quotes, own questions (S4) | product owner | merged ([#2297](https://github.com/JN0V/workline/pull/2297)), text v4 |
+| Opus; effort high; reading alone | product owner | stopped: no gain on the causes |
+| A doc too long for a task read in place | documentalist | merged ([#2289](https://github.com/JN0V/workline/pull/2289)) |
+| Reading and citing an absence (arm C) | documentalist | merged as [#2313](https://github.com/JN0V/workline/pull/2313); search of the project next ([#2317](https://github.com/JN0V/workline/issues/2317)) |
+| Citation rule off for removals; effort high | documentalist | never run / stopped, not shown worse |
+| Score by meaning | bench | merged ([#2282](https://github.com/JN0V/workline/pull/2282)) |
+| Replay sets on GitHub's runners | bench | merged ([#2293](https://github.com/JN0V/workline/pull/2293)) |
 | Baseline rows of the replay set | bench | open ([#2271](https://github.com/JN0V/workline/pull/2271)) |
-| Dead code removal | engine | merged ([#2272](https://github.com/JN0V/workline/pull/2272)): 122 lines |
-
-## To be completed when the benches end
-
-- The 6-run tables per role, with each arm's commit, judge and runs.
-- Which predictions held.
-- The shadow check of each winner on new real changes.
-- The tester's causes at v0.91.0 and its strategies.
+| Narrow what the bench's commit covers | bench | not built |
