@@ -1,0 +1,36 @@
+case: routing/wip-full-ready-passed-by-one-urgent
+about: >
+  Ready at its limit of 10 (routing.wip) holds no priority-1 issue.
+  The step of #20, a priority-1 issue (workline:priority/1) in Tests,
+  is due: it starts, Ready's limit passed for an Urgent issue, though
+  Ready is full of routine work. In CI, listed due; nothing written
+  here, no agent asked. Before, it waited for room.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 10}}
+  forge:
+    issues:
+      - {id: 1, title: "One", labels: ["workline:ready"], body: "## Need\n\nI want one.\n"}
+      - {id: 2, title: "Two", labels: ["workline:ready"], body: "## Need\n\nI want two.\n"}
+      - {id: 3, title: "Three", labels: ["workline:ready"], body: "## Need\n\nI want three.\n"}
+      - {id: 4, title: "Four", labels: ["workline:ready"], body: "## Need\n\nI want four.\n"}
+      - {id: 5, title: "Five", labels: ["workline:ready"], body: "## Need\n\nI want five.\n"}
+      - {id: 6, title: "Six", labels: ["workline:ready"], body: "## Need\n\nI want six.\n"}
+      - {id: 7, title: "Seven", labels: ["workline:ready"], body: "## Need\n\nI want seven.\n"}
+      - {id: 8, title: "Eight", labels: ["workline:ready"], body: "## Need\n\nI want eight.\n"}
+      - {id: 9, title: "Nine", labels: ["workline:ready"], body: "## Need\n\nI want nine.\n"}
+      - {id: 10, title: "Ten", labels: ["workline:ready"], body: "## Need\n\nI want ten.\n"}
+      - {id: 20, title: "Urgent", labels: ["workline:needs-tests", "workline:priority/1"], body: "## Need\n\nI want it now.\n"}
+run: {route: reconcile, open-merge-request: true, ai: "fake:tester-two-scenarios", input: {reconcile: list, skip: developer}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "reconcile: 1 issue due: #20"
+  findings:
+    - {rule: state-wakes, level: info, where: "#20", message: "its state, tests, wakes the tester"}
+  no-findings:
+    - {rule: state-waits, where: "#20"}
+  forge:
+    issues:
+      - {id: 20, labels: ["workline:needs-tests", "workline:priority/1"], comments: 0}

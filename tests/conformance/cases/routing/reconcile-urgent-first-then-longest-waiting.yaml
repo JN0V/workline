@@ -1,0 +1,51 @@
+case: routing/reconcile-urgent-first-then-longest-waiting
+about: >
+  Five steps due, reconcile-max 3, the priority-1 one, #5, due last
+  (it has waited the least): the reconcile starts it first, then the
+  two waiting longest, #2 and #3; #4 and #1 are left for the next run.
+  Before, the order was the time waited alone: #2, #3, #4, and the
+  Urgent issue waited behind routine ones. In CI, listed due; no agent
+  asked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}, reconcile-max: 3}
+  forge:
+    issues:
+      - id: 1
+        title: "Add"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to add.\n"
+        labeled: {"workline:ready": "2026-10-03T09:00:00Z"}
+      - id: 2
+        title: "Subtract"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to subtract.\n"
+        labeled: {"workline:ready": "2026-10-01T09:00:00Z"}
+      - id: 3
+        title: "Multiply"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to multiply.\n"
+        labeled: {"workline:ready": "2026-10-02T09:00:00Z"}
+      - id: 4
+        title: "Divide"
+        labels: ["workline:ready"]
+        body: "## Need\n\nI want to divide.\n"
+        labeled: {"workline:ready": "2026-10-04T09:00:00Z"}
+      - id: 5
+        title: "Urgent"
+        labels: ["workline:ready", "workline:priority/1"]
+        body: "## Need\n\nI want it now.\n"
+        labeled: {"workline:ready": "2026-11-03T09:00:00Z"}
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", input: {reconcile: list}}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "reconcile: 3 issues due: #5 #2 #3"
+  findings:
+    - {rule: reconcile-left, level: info, where: "#1", message: "past reconcile-max (3)"}
+    - {rule: reconcile-left, level: info, where: "#4", message: "past reconcile-max (3)"}
+  no-findings:
+    - {rule: reconcile-left, where: "#5"}
+    - {rule: reconcile-left, where: "#2"}
+    - {rule: reconcile-left, where: "#3"}
