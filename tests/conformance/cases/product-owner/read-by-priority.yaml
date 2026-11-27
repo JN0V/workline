@@ -1,0 +1,13 @@
+case: product-owner/read-by-priority
+about: 'Given issues of priority 2, 4 and none, a backlog run reads priority 2, then 4, then the one with none, whatever their numbers: the lowest number does not decide before the priority.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 11, title: "Export in JSON", body: "Add a JSON export.", labels: ["workline:priority/2"], comments: []}
+      - {id: 12, title: "Export in XML", body: "Add an XML export.", labels: ["workline:priority/4"], comments: []}
+      - {id: 13, title: "Export in YAML", body: "Add a YAML export.", labels: [], comments: []}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/issues-read: {contains: "11\n12\n13"}

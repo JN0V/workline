@@ -1,0 +1,12 @@
+case: product-owner/read-no-priority-last
+about: 'Given an issue with no priority and one of priority 4, a backlog run reads the priority-4 issue first, though the other is newer.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 31, title: "Export in XML", body: "Add an XML export.", labels: ["workline:priority/4"], comments: []}
+      - {id: 32, title: "Export in YAML", body: "Add a YAML export.", labels: [], comments: []}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/issues-read: {contains: "31\n32"}

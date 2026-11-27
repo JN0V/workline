@@ -1,0 +1,23 @@
+case: product-owner/read-urgent-first
+about: 'Given an open issue with `workline:priority/1` and ten issues of priority 3 a person answered, a backlog run reads the priority-1 issue first, ahead of every answered issue: the run reads one issue, and it is the urgent one.'
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {issues-per-run: 1}}}
+  forge:
+    issues:
+      - {id: 31, title: "Quote commas", body: "A comma splits a cell.", author: ann, insider: true, labels: ["workline:priority/3"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+      - {id: 32, title: "Export in JSON", body: "Add a JSON export.", author: ann, insider: true, labels: ["workline:priority/3"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+      - {id: 33, title: "Export in XML", body: "Add an XML export.", author: ann, insider: true, labels: ["workline:priority/3"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+      - {id: 34, title: "Export in YAML", body: "Add a YAML export.", author: ann, insider: true, labels: ["workline:priority/3"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+      - {id: 35, title: "Export in TSV", body: "Add a TSV export.", author: ann, insider: true, labels: ["workline:priority/3"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+      - {id: 36, title: "Export in HTML", body: "Add an HTML export.", author: ann, insider: true, labels: ["workline:priority/3"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+      - {id: 37, title: "Export in PDF", body: "Add a PDF export.", author: ann, insider: true, labels: ["workline:priority/3"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+      - {id: 38, title: "Export in ODS", body: "Add an ODS export.", author: ann, insider: true, labels: ["workline:priority/3"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+      - {id: 39, title: "Export in XLSX", body: "Add an XLSX export.", author: ann, insider: true, labels: ["workline:priority/3"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+      - {id: 40, title: "Export in Markdown", body: "Add a Markdown export.", author: ann, insider: true, labels: ["workline:priority/3"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+      - {id: 50, title: "Exports drop the last row", body: "Every export drops its last row.", labels: ["workline:priority/1"], comments: []}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/issues-read: {contains: "50", not-contains: ["3", "4"]}
