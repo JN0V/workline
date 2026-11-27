@@ -52,6 +52,13 @@ the two scales, Urgent to Low and an effort Low to High, and the names
 each is read under — a field's options whatever their order, a
 project's label family, GitLab's `weight`.
 
+**The reading order** of a backlog run follows the priority too
+([ADR-0075 §2](../../adr/0075-urgent-work-first-and-a-merge-queue-of-our-own.md#2-the-product-owner-reads-by-priority-quick-wins-beside)):
+Urgent first, then priorities 2, 3 and 4, then an issue with none; within
+one priority, the run's groups as before — a person's answer, what a
+change asks for, a new issue, a changed one, the catch-up —, a stable
+sort. The effort plays no part in it yet.
+
 ### Where the project keeps them
 
 Each axis has a setting of the role, `priority` and `effort`

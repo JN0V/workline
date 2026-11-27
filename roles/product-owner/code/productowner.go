@@ -821,6 +821,11 @@ func Pre(runDir, repo string) int {
 		}
 		toRead = answered
 	}
+	// Urgent first, then by priority, none last; the groups above break
+	// ties, a stable sort (ADR-0075 §2).
+	slices.SortStableFunc(toRead, func(a, b due) int {
+		return scale.Priority.Rank(backlog.Priority(a.is)) - scale.Priority.Rank(backlog.Priority(b.is))
+	})
 	if os.Getenv("WORKLINE_AI") == "none" {
 		toRead = nil
 		kindless = nil

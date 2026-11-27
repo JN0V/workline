@@ -118,6 +118,16 @@ Next to build
 Values hidden: the fields are visible to organization members only.
 ```
 
+## The reading order
+
+A backlog run reads its issues by priority
+([ADR-0075 §2](../../../docs/adr/0075-urgent-work-first-and-a-merge-queue-of-our-own.md#2-the-product-owner-reads-by-priority-quick-wins-beside)),
+built: Urgent first, then High, Medium and Low, then an issue with no
+priority. Within one priority, the order of before: a person's answer
+first, then what a change asks for, a new issue, a changed one, the
+catch-up. An Urgent issue is never cut by the run's cap behind routine
+reading. The effort, quick wins included, plays no part in it yet.
+
 ## A person's correction
 
 | A person | The role, the next night |
