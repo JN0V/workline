@@ -8,6 +8,7 @@ package documentalist
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -1458,24 +1459,18 @@ func (r *preRun) askStale() error {
 
 // writeParts writes what the docs judged in parts need once judged: the
 // header recording when, which fixes stay unvouched, which `checked` moves.
-func (r *preRun) writeParts() error {
+func (r *preRun) writeParts() (err error) {
 	if len(r.partsFallback) > 0 { // the header of each doc judged in parts records when
 		_ = os.Remove(filepath.Join(r.runDir, "in", "fallback.yaml"))
-		if err := intent.Write(filepath.Join(r.runDir, "in", "fallback.yaml"), append(r.fallback, r.partsFallback...)); err != nil {
-			return err
-		}
+		err = intent.Write(filepath.Join(r.runDir, "in", "fallback.yaml"), append(r.fallback, r.partsFallback...))
 	}
 	if len(r.inParts) > 0 { // their fixes are judged as fixes in parts: `checked` stays
-		if err := writeYAML(filepath.Join(r.runDir, "in", "in-parts.yaml"), r.inParts); err != nil {
-			return err
-		}
+		err = errors.Join(err, writeYAML(filepath.Join(r.runDir, "in", "in-parts.yaml"), r.inParts))
 	}
 	if len(r.vouchedInParts) > 0 { // the engine's own patch moves their `checked` (#482)
-		if err := writeYAML(filepath.Join(r.runDir, "in", vouchedFile), r.vouchedInParts); err != nil {
-			return err
-		}
+		err = errors.Join(err, writeYAML(filepath.Join(r.runDir, "in", vouchedFile), r.vouchedInParts))
 	}
-	return nil
+	return err
 }
 
 // rewriteWaits tells whether a rewrite's merge request waits for review: it
@@ -1698,12 +1693,7 @@ func (r *preRun) writeTask() error {
 	if r.task == "" {
 		return nil
 	}
-	if strings.Contains(r.task, readHere) { // the project read in a tree at HEAD
-		if err := worktree.RunTree(r.repo, "HEAD", runDir, agent.ReadTreeDir); err != nil {
-			return err
-		}
-	}
-	if err := writeYAML(filepath.Join(runDir, "in", "judged.yaml"), r.judged); err != nil {
+	if err := readTree(r.repo, runDir, r.task); err != nil { // the project read in a tree at HEAD
 		return err
 	}
 	// The docs whose sources went whole into the task: only theirs may
@@ -1727,17 +1717,34 @@ func (r *preRun) writeTask() error {
 		}
 	}
 	sort.Strings(whole)
-	if err := writeYAML(filepath.Join(runDir, "in", "read-whole.yaml"), whole); err != nil {
-		return err
-	}
-	if err := writeYAML(filepath.Join(runDir, "in", "read-not-whole.yaml"), notWhole); err != nil {
-		return err
-	}
-	return os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(r.task), 0o644)
+	return errors.Join(writeYAML(filepath.Join(runDir, "in", "judged.yaml"), r.judged), writeYAML(filepath.Join(runDir, "in", "read-whole.yaml"), whole),
+		writeYAML(filepath.Join(runDir, "in", "read-not-whole.yaml"), notWhole), os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(r.task), 0o644))
 }
 
 // readHere is where an agent that reads finds the project, a doc too long to be shown among it.
 const readHere = "in your working directory, a checkout of the commit judged"
+
+// reading tells an agent that reads files itself (claude) to read the project, whole or in parts (#2307).
+func reading() string {
+	if agent.ReadsFiles(os.Getenv("WORKLINE_AI")) {
+		return "You read the project yourself, " + readHere + ": search it before calling words unbacked; what nothing in it does is contradicted, cited by the code standing where it would happen.\n\n"
+	}
+	return ""
+}
+
+// readTree checks HEAD out once a run, when the task says to read it there: the task's tree, each part named reads it too.
+func readTree(repo, runDir, task string, parts ...string) (err error) {
+	if !strings.Contains(task, readHere) {
+		return nil
+	} else if agent.ReadTree(runDir) == "" {
+		err = worktree.RunTree(repo, "HEAD", runDir, agent.ReadTreeDir)
+	}
+	for _, p := range parts {
+		dir := filepath.Join(runDir, "parts", p)
+		err = errors.Join(err, os.MkdirAll(dir, 0o755), os.WriteFile(agent.TreeAt(dir, agent.ReadTreeDir), []byte(agent.ReadTree(runDir)+"\n"), 0o644))
+	}
+	return err
+}
 
 // personJudges ends the note of a doc no agent can judge: a person does.
 const personJudges = "a person judges it: reads it against its sources, then moves `checked`"
@@ -1760,10 +1767,7 @@ fixes what is now wrong, and nothing else.
 // docTask writes a task putting docs before the agent, each with why it is
 // there and what it is judged against, under the header saying the kind.
 func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *places, repo string) (string, map[string]map[string]string, error) {
-	header += citeTask
-	if agent.ReadsFiles(os.Getenv("WORKLINE_AI")) { // it reads the project: a checkout of HEAD, beside the docs shown (#2307)
-		header += "You read the project yourself, " + readHere + ": search it before calling words unbacked.\n\n"
-	}
+	header += citeTask + reading() // a reader reads the project, a checkout of HEAD, beside the docs shown (#2307)
 	maxDocs := s.AIMaxCalls
 	var b strings.Builder
 	b.WriteString(header)

@@ -79,6 +79,13 @@ More on other pages:
   — and the engine asks each in a context of its own
   ([role contract](../../../docs/spec/role-contract.md#one-run), "In
   parts").
+- An agent that reads files itself (`claude`) reads the project too, in
+  each part and in the fix: one copy of the repository at the commit
+  judged, for the run, with the citation rule of a doc judged whole
+  ([the agent's tasks](tasks.md#what-a-task-holds))
+  ([#2307](https://github.com/JN0V/workline/issues/2307)). A claim still
+  quotes its part's share; how the doc is split does not change. A `cmd:`
+  agent, or `ai: none`, reads its task only.
 
 ## Not judged in parts
 

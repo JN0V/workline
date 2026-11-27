@@ -122,9 +122,10 @@ those to be read together, each with the source lines the parts cited.
 Patch what is wrong, and nothing else: a unified diff with context lines,
 whose hunks cite the doc's lines by the numbers shown here. Leave the header
 as it is — ` + "`checked`" + ` does not move, since nobody read the doc whole. A passage
-the excerpts do not let you settle stays as it is; say so in a note. The
-source lines a part judged partial for a passage did not settle it: they
-prove nothing wrong there, and a claim quoting only them is refused.
+neither the excerpts nor, when you read it, the project settles stays as it
+is; say so in a note. The source lines a part judged partial for a passage
+did not settle it: they prove nothing wrong there, and a claim quoting only
+them is refused.
 
 `
 
@@ -227,9 +228,12 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		}
 		if !answered {
 			for k, p := range plans {
-				if err := writePart(runDir, repo, names[k], p, partsHeader(s)); err != nil {
+				if err := writePart(runDir, repo, names[k], p, partsHeader(s)+reading()); err != nil {
 					return "", nil, nil, nil, nil, err
 				}
+			}
+			if err := readTree(repo, runDir, reading(), names...); err != nil { // each part reads the project, as a doc judged whole (#2307)
+				return "", nil, nil, nil, nil, err
 			}
 			sd.note = fmt.Sprintf("(judged in parts: %d parts asked)", len(plans))
 			continue
@@ -308,7 +312,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 			sd.note = "(" + summary + ", nothing found wrong. `checked` stays: " + why + ". It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
 		case entry == "":
 			sd.note = "(" + summary + ", nothing found wrong. `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
-		case fixes.Len()+len(entry)+len(fixTaskHeader)+len(citeTask) > taskMaxChars:
+		case fixes.Len()+len(entry)+len(fixTaskHeader)+len(citeTask)+len(reading()) > taskMaxChars:
 			sd.deferred = true
 			sd.note = "(" + summary + "; what they found wrong does not fit this round's fix: judged in parts again in a later round)"
 			continue
@@ -329,7 +333,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		inParts[sd.doc.Path] = at
 	}
 	if fixes.Len() > 0 {
-		task = fixTaskHeader + citeTask + fixes.String()
+		task = fixTaskHeader + citeTask + reading() + fixes.String()
 		// What the parts judged partial, for the judge of the fix (#467).
 		for p, cites := range partial {
 			if _, asked := judged[p]; !asked || len(cites) == 0 {

@@ -52,7 +52,9 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   shown: words nothing in the project does are fixed, citing the code
   that stands there instead; only what reading cannot settle is left in a
   note. Given only a part of a doc's sources, what that part does not show
-  is kept. A `cmd:` agent, or `ai: none`, gets no copy, as before.
+  is kept. A doc judged in parts reads the same copy, in each part and in
+  the fix that follows ([judged in parts](parts.md#the-parts)). A `cmd:`
+  agent, or `ai: none`, gets no copy, as before.
 
 ### How many
 

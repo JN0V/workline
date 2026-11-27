@@ -40,7 +40,10 @@ Part of [judged in parts](parts.md).
     such removals both took out true words.
 - The header records the commit it was judged in parts at,
   `judged-in-parts`, found wrong or not, and a doc fixed stays suspect,
-  saying so: the fix saw only the parts' excerpts.
+  saying so: the fix saw only the parts' excerpts, and, with an agent that
+  reads files itself, the project it searched
+  ([the parts](parts.md#the-parts)); a passage neither settles stays, in
+  a note.
 - It is not put before an agent again until one of its sources changes
   after that commit; a person clears it by reading it whole and moving
   `checked`.
