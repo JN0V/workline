@@ -146,4 +146,7 @@ lenses that block, and a warn finding may post after it
   (`judge-at-least`), and `forge-writes`.
 - **Caps**: findings, issues, questions, lines read and tokens a run may
   spend ([caps](docs/settings.md#caps)).
+- **The verifier**, off by default: in shadow, one more agent reading
+  the repository says what it would keep, drop and add, changing
+  nothing ([the verifier](docs/verifier.md)).
 - **Every key**, its default and what it does: [settings](docs/settings.md).

@@ -38,6 +38,7 @@ Part of [the reviewer](../README.md). Under `roles: {reviewer: {settings: …}}`
 | `judge-at-least-by-role` | `{developer: model}` | a higher floor for a change a role's commits made: the [developer](../../developer/README.md)'s code judged by another model |
 | `forge-writes` | `true` | `false`: no comment, on a line or the summary, nor issue: the verdict only |
 | `finder-floor` | `true` | each lens looks for a number of candidates first; never a floor on what is shown |
+| `verifier` | `off` | `shadow`: after the judges, one agent reading the repository keeps, drops and adds findings, recorded beside the review, changing nothing ([the verifier](verifier.md)) |
 
 - **`ai-findings` by lens**: a lens not named warns; of findings on one
   line, a verified one from a blocking lens leads.

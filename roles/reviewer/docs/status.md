@@ -220,6 +220,10 @@ its measure in
   ([ADR-0068](../../../docs/adr/0068-the-line-steps-back-on-its-own-drift.md#next-each-decided-when-reached)):
   `simplicity-*`, two planted cases in the evaluation
   ([tried](https://github.com/JN0V/workline/pull/1496)).
+- **The verifier, in shadow** (`verifier: shadow`, off by default):
+  after the judges, one agent reading the repository keeps, drops and
+  adds, recorded beside the review, changing nothing
+  ([the verifier](verifier.md)): `verifier-shadow-*`.
 - **A full review within a token budget**:
   `lenses-asked-together-in-one-call`, `lens-given-each-file-once`,
   `judge-shown-the-change-near-the-cause`,
@@ -297,6 +301,9 @@ each said before or after 1.0:
   `workline:accepted` never reaches the Scope; two rarer edge cases
   (before 1.0, [#1346](https://github.com/JN0V/workline/issues/1346)).
 
+- **The verifier's shadow read**: 24 to 48 hours of real pull
+  requests, what it would have kept, dropped and added against what
+  the owner then held; `live`, its word deciding, waits for it.
 - **Simplicity's false alarms counted** on 20 to 50 past pull requests,
   before it may block; tried on 11
   ([#1496](https://github.com/JN0V/workline/pull/1496),
