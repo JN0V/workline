@@ -129,6 +129,6 @@ folders. In CI, the propose job takes the project's setup steps first
 - **The pick, the bounds and the proof**: no agent, no token; one listing of the
   open issues and one of the open merge requests.
 - **The code**: one agent call a run, `ai-max-tokens` at most; on Opus,
-  about 2.5 times the fresh tokens of Sonnet
-  ([the model](docs/agent.md#the-model)).
+  about 2.5 times the fresh tokens of Sonnet with the old prompt, 2
+  times Sonnet with its checklist ([the model](docs/agent.md#the-model)).
 - **The proof**: one run of the project's tests, `proof-seconds` at most.

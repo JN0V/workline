@@ -100,18 +100,26 @@ Checked against Claude Code 2.1.314; each flag in its `--help`:
   On 11 replayed send-backs, Opus with the checklist below scored
   16, 16, 15 of 19; Sonnet with it 7, 12, 7
   ([the bench](../../../docs/research/diagnosing-a-role-findings.md#developer)).
-- **Its instruction ends with a checklist**: each sentence of the
+- **Its instruction opens with a checklist**: each sentence of the
   issue done and tested, a new test red without the change, callers
   and callees opened, uses elsewhere brought in line, the whole suite
   run last, what worked before kept, what is left in `Not done:`
   ([the instruction](../prompts/instruction.md)).
-- **Another model**: `--ai claude:sonnet@medium` on the run, or `ai:`
-  in `.workline/config.yaml` for every role when no `--ai` is given
-  ([the agent](../../../docs/usage.md#the-agent)). In CI, the
-  workflow's `ai=claude` line.
+- **Another model, for the developer alone**: `--ai
+  claude:sonnet@medium` on `workline develop`
+  ([the agent](../../../docs/usage.md#the-agent)). In CI, its
+  workflow sets `ai=claude` twice, in the job that proposes and in
+  the review round's job: change both lines.
+- **Not for one role**: `ai:` in `.workline/config.yaml` changes every
+  role run with no `--ai` (the auditor and the documentalist too) and
+  forces the effort it names.
 - **Watched**: the first 10 pull requests on Opus, for send-backs,
-  proofs that hit `proof-seconds`, and fresh tokens a run. Worse, the
-  role's tier goes back to `standard`: one line in its `role.yaml`.
+  agent runs stopped at `ai-max-seconds` (the checklist runs the
+  suite more than once inside the agent's time; a slow suite can
+  spend it), and fresh tokens a run.
+- **Going back**: `tier: standard` in its `role.yaml`, one line. The
+  checklist stays: Sonnet with it took about 1.2 times the fresh
+  tokens of the old prompt, and runs the whole suite each time.
 
 ## The question
 

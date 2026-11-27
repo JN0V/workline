@@ -105,8 +105,8 @@ rounds:
   - Reached by no arm: wiring a new test into what CI runs, and a
     test of the case the issue names when a neighbour's exists.
   - The owner chose reliability over tokens: shipped with a guard,
-    the first 10 pull requests watched for send-backs, proofs at their
-    cap and fresh tokens; rolled back with one line
+    the first 10 pull requests watched for send-backs, agent runs
+    stopped at `ai-max-seconds` and fresh tokens; rolled back with one line
     ([the developer's model](../../roles/developer/docs/agent.md#the-model)).
 
 ### Tester
