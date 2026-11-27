@@ -987,8 +987,8 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 	if n := acts["merged-at-once"]; n > 0 {
 		sum += fmt.Sprintf("; %d merged at once", n)
 	}
-	// No one waits for another to merge, but where the forge holds them
-	// behind: the queue's head alone is brought up to date (ADR-0075 §7).
+	// No one waits for another to merge; where the forge holds them behind,
+	// ownQueue brings the first in priority alone up to date, the rest wait.
 	return sum, nil
 }
 
@@ -1455,7 +1455,7 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 // the forge refuses leaves auto-merge on, for the next run.
 func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
 	if !st.Mergeable {
-		// In conflict: a merge round (ADR-0067); merging clean: ownQueue.
+		// A conflict: a merge round, a developer resolves it; clean: ownQueue.
 		if acted, err := e.upToDate(false, "its auto-merge on since "+st.AutoMergeAt); acted || err != nil {
 			return e, err
 		}
@@ -1478,7 +1478,7 @@ func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, s
 	return e, nil
 }
 
-// ownQueue is workline's merge queue (ADR-0075 §7): of the accepted requests
+// ownQueue, a merge queue where the forge has none: of the accepted requests
 // held behind, by priority then auto-merge's time, the head alone is updated.
 func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []verdict.Finding) {
 	key, budget, pos := map[*inLine]string{}, 180.0, 0
