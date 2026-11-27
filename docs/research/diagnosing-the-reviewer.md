@@ -15,12 +15,15 @@ catches? The method is on [diagnosing-a-role.md](diagnosing-a-role.md).
 - **The gain is mostly repository reading**: about 5 more a run on the 6
   points whose evidence lies outside the diff. On the 6 ambiguous points
   the merge standards aim at, every arm says 2.0 to 2.5 a run.
-- **`free2` is cheaper and faster but drops a class**: it says 36 to 45 %
-  of the weak-test points, the lenses 64 to 85 % (round 1). Not shipped.
+- **`free2` is cheaper and faster, and level on weak tests**: 73 % of
+  those points against `hso`'s 71 % and production's 70 %. The 36 to
+  45 % of round 1 was the free agent without merge standards. The bench
+  does not settle the choice between the two leaders.
 - **Shipped**: two fixes in v0.92.0
   ([#2287](https://github.com/JN0V/workline/pull/2287),
   [#2288](https://github.com/JN0V/workline/pull/2288)); `hso`'s verifier
-  in shadow, posting nothing, in v0.93.0
+  in shadow, posting nothing, in v0.93.0, as the skeptic's review
+  advised from round 1's weak-test gap, which `free2` does not show
   ([#2312](https://github.com/JN0V/workline/pull/2312), turned on for
   workline by [#2319](https://github.com/JN0V/workline/pull/2319)).
 - **Unproven**: no held-out pull request; every merge standard was
@@ -47,7 +50,8 @@ catches? The method is on [diagnosing-a-role.md](diagnosing-a-role.md).
 
 ## Round 1: structure and model, 3 runs an arm
 
-Six arms already run on 2026-11-26, scored by meaning (of 28). Two
+Six arms already run on 2026-11-26, scored by meaning with
+[#2282](https://github.com/JN0V/workline/pull/2282) (of 28). Two
 values in a cell are two commits or two prompt variants of the arm.
 
 | Arm | Said a run | Out of diff | Weak test | Kept of 5 a run | Tokens a run |
@@ -115,13 +119,15 @@ Important, of 4.
 - **Tests** (Welch on per-run totals, exact permutation p): `hso` vs
   `prod` +6.8 (p 0.012); `free2` vs `prod` +7.7 (p 0.012); `free2` vs
   `hso` +0.8 (p 0.39); `fv` vs `free2` −3.0 (p 0.06).
-- **Predictions**: `base` 53 a triple, as said; `hso` 72 and 72, top of
-  its range; `free2` 76 and 74, above it; `opus` 59, under its ~63.
+- **Predictions**: `base` 53 a triple, as said; `hso` 73 and 72, at the
+  top of its range; `free2` 76 and 74, above it; `opus` 59, under its ~63.
 - **Paired stages**: `hso`'s lenses alone, same calls, said 18, 17, 15
   (semscore) against 26, 22, 24 after the verifier; by place the verifier
   adds 4 to 7 in 6 runs of 6. `fv`'s Sonnet verifier lowers its own first
   stage by place (21, 19, 21 against 22, 23, 23): a verifier can drop
   true findings.
+- **Weak or missing test points said**: `prod` 70 %, `hso` 71 %,
+  `free2` 73 %, `fv` 70 %.
 - **Clean**: `prod` shows 1, 2, 1 Importants a run, all on `clean-tg-11`,
   judged true defects or a nit. `hso` and `free2` show none.
 - **Tokens a case run**, fresh / cache included, from the kept calls
@@ -134,10 +140,10 @@ Important, of 4.
 
 Lens-written Importants on the change that state no point, share the
 judge refused: Sonnet lenses judged by Sonnet (6 runs) 14 %, Opus lenses
-by Sonnet (4 runs) 14 %, Sonnet lenses by Opus (1 run) 12 %.
+by Sonnet (4 runs) 14 %, Sonnet lenses by Opus 1 of 8 (one run).
 
-- No self-preference seen in those shares. `opusopus` and 5 of `prod`'s
-  runs were not analysed: the question stays open.
+- No self-preference seen in those shares. Only `prod`'s first run and
+  no `opusopus` run went through this analysis: the question stays open.
 - **A same-model side effect, found**: Sonnet judging Sonnet dropped 16 of
   16 Importants outside the change, 3 of them true (a build break in
   dc-273). Fixed by [#2287](https://github.com/JN0V/workline/pull/2287).
@@ -163,9 +169,14 @@ by Sonnet (4 runs) 14 %, Sonnet lenses by Opus (1 run) 12 %.
   | | `prod` | #2288 |
   |---|---|---|
   | Clean Importants a run | 1, 2, 1 | 0, 1, 0 |
-  | Said of 28, per run | 14, 15, 17 | 14, 15, 14 |
+  | of them false alarms, by meaning | 0, 0, 0 | 0, 1, 0 |
+  | Said of 28, per run (mean) | 14, 15, 17 (15.3) | 14, 15, 14 (14.3) |
+  | Weak or missing test points said | 70 % | 58 % |
   | Kept of 5, per run | 3, 3, 3 | 4, 4, 3 |
-  | Tokens a run | 1.14M | 1.10M to 1.17M |
+
+  The Importants it removes, the scorer calls true defects or a nit (the
+  owner calls them a norm the issue does not ask); by meaning it adds one
+  false alarm and says fewer weak-test points. Within the noise, 3 runs.
 
 - **[#2287](https://github.com/JN0V/workline/pull/2287)**: conformance
   only. Production's judge is the other model, so the bench cannot show
@@ -186,3 +197,5 @@ by Sonnet (4 runs) 14 %, Sonnet lenses by Opus (1 run) 12 %.
 - **Kept catches**: `kept-wl-2110` is said in 1 run of 18 in round 1,
   whatever the arm.
 - **The clean set is 4 cases**, one of them defective.
+- **The scorer's hand check**, 30 of 30, was one reader of the judge's
+  model family.

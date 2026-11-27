@@ -20,8 +20,9 @@ removes them? The method is on [diagnosing-a-role.md](diagnosing-a-role.md).
   v0.92.0).
 - **One clause moved a case from 6 of 6 to 0 of 6**: every wording needs
   its own measure.
-- **Unproven**: the held-out bounds evidence is thin (1 case at 0 of 6,
-  2 fresh ones at 9 to 10 of 12).
+- **Unproven**: the held-out bounds evidence is thin: workline
+  [#1599](https://github.com/JN0V/workline/issues/1599) 0 of 6 under v1 to v3, 4 of 6 under v4 at DomoticsCore
+  #154's cost; 2 fresh cases at 9 to 10 of 12.
 
 ## The set and the judge
 

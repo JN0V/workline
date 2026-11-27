@@ -119,6 +119,7 @@ Said in advance: 6 comparisons at most, 6 runs an arm, Sonnet medium.
   one run's spread.
 - B and C were never run 6 times; D and F never ran.
 - C's prompt was written after B's notes on the claims it then fixed.
+- Mixed readers: Fable read A and B, Opus read C and the held-out runs.
 - [#2276](https://github.com/JN0V/workline/pull/2276) stays on hold;
   [#2313](https://github.com/JN0V/workline/pull/2313) built the reading
   on `main` instead.

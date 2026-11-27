@@ -60,14 +60,14 @@ Causes of the 37 bad scenarios of the originals, one primary each:
 Predictions written at 15:46Z, before any arm result; amendments before
 the runs they touch. Points of 22 (target) and 23 (kept).
 
-| Arm | What it changed | Predicted | Found |
+| Arm | What it changed | Predicted | Found (judge) |
 |---|---|---|---|
-| `shell` | Bash in its copy, runs the tests | +3 to +5 | 8 target (Fable): −4 to −5, time × 2.4 |
-| `prompt` | 3 bullets: runner and build, answer format, fail on a half fix | +2 to +4 | 12: −1 to 0 |
-| Opus as writer | the model | +1 to +3 | 11, kept 8, 8 cases with nothing delivered; 139k fresh (2.1×) |
-| `retry3` | 3 asks instead of 1 shared | +2 to +3 | 10: −2 to −3 |
-| `mend` | `retry3` plus 3 refusals made mendable | nothing delivered 0–1 of 15 | 1, 0, 0 |
-| `vm` | `mend` plus an Opus second reader | 15–17, × 1.9 tokens | 17, 18, 16; × 1.87 |
+| `shell` | Bash in its copy, runs the tests | +3 to +5 | 8 target: −4 to −5, time × 2.4 (Fable) |
+| `prompt` | 3 bullets: runner and build, answer format, fail on a half fix | +2 to +4 | 12: −1 to 0 (Fable) |
+| Opus as writer | the model | +1 to +3 | 11, kept 8, 8 cases with nothing delivered; 139k fresh (2.1×) (Fable) |
+| `retry3` | 3 asks instead of 1 shared | +2 to +3 | 10: −2 to −3 (Fable) |
+| `mend` | `retry3` plus 3 refusals made mendable | nothing delivered 0–1 of 15 | 1, 0, 0 (Opus) |
+| `vm` | `mend` plus an Opus second reader | 15–17, × 1.9 tokens | 17, 18, 16; × 1.87 (Opus) |
 
 Opus judge, 3 runs an arm:
 

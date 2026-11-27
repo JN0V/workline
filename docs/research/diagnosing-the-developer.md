@@ -125,7 +125,7 @@ line; the whole suite run last; what worked before kept; what is left in
 - **No held-out case**: each checklist bullet maps to a named send-back.
   The gain is an upper bound. The skeptic's cheapest check, Opus with the
   checklist and production on 3 or 4 send-backs from after 2026-11-26,
-  was not run.
+  was not run: no send-back came after 2026-11-26 to run it on.
 - **The checklist's own effect** on either model rests on one run each
   (baseline, plain Opus).
 - **Not measured**: scope creep ("bring each use in line" invites wider

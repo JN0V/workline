@@ -170,8 +170,8 @@ proves the prompt, not the cause.
   range after one run, or unable to change a decision, stopped. An arm
   dropped untested is "not shown worse", never "worse".
 - **Measure before lightening.** Reading lenses lost kept catches; the
-  free reviewer, level on the total, says 36 to 45 % of weak-test points
-  against the lenses' 64 to 85 %.
+  free reviewer without merge standards said 36 to 45 % of weak-test
+  points, the lenses 64 to 85 %; with them, level.
 - **GitHub's runners spend the same subscription.** The replay workflow
   ([#2293](https://github.com/JN0V/workline/pull/2293)) logs in with the
   line's `CLAUDE_CODE_OAUTH_TOKEN`: it frees the machine, not the tokens.

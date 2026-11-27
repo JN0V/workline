@@ -64,7 +64,7 @@ Also met, smaller:
 | Same | documentalist, product owner | held ([#2276](https://github.com/JN0V/workline/pull/2276), [#2277](https://github.com/JN0V/workline/pull/2277)) |
 | ADR-0074's bar amended to not worse | all | open ([#2274](https://github.com/JN0V/workline/pull/2274)) |
 | Lenses then an Opus verifier (`hso`) | reviewer | in shadow ([#2312](https://github.com/JN0V/workline/pull/2312)): 24.2 of 34 against 17.3 |
-| One free Opus agent with merge standards | reviewer | not shipped: level with `hso`, drops weak tests |
+| One free Opus agent with merge standards | reviewer | not shipped: level with `hso`, weak tests included; the bench does not settle the choice |
 | Lenses on Opus | reviewer | stopped: below the leaders, more clean alarms |
 | A kept behaviour left as it was owes no test | reviewer | merged ([#2288](https://github.com/JN0V/workline/pull/2288)) |
 | Outside findings judged at the project's floor | reviewer | merged ([#2287](https://github.com/JN0V/workline/pull/2287)) |
