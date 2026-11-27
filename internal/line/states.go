@@ -495,7 +495,7 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	if w := splitAfterTests(res, cfg, s, is, now, comments); w != nil {
 		return nil, w, nil
 	}
-	if why, err := waits(cfg, b, s, open, t); err != nil {
+	if why, err := waits(res, cfg, b, s, is, open, t); err != nil {
 		return nil, nil, err
 	} else if why != "" {
 		return nil, waiting(res, s, why, rec, where, is.ID), nil

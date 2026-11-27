@@ -24,6 +24,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -190,11 +191,12 @@ func apart(cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is f
 	return "", nil
 }
 
-// waits says why the step of state s waits: its next state is at its
-// limit; "" when it has room or no limit. open is the open issues, listed
-// here at first need and kept for the next call; t, what else the count
-// reads, kept for the run.
-func waits(cfg *routing.Config, b forge.Backlog, s routing.State, open *[]forge.Issue, t *tally) (string, error) {
+// waits says why the step of issue is, in state s, waits: its next state
+// is at its limit; "" when it has room or no limit, or when is, priority
+// 1, passes a full Ready holding no other (ADR-0075 §4), said in res.
+// open is the open issues, listed here at first need and kept for the
+// next call; t, what else the count reads, kept for the run.
+func waits(res *Result, cfg *routing.Config, b forge.Backlog, s routing.State, is forge.Issue, open *[]forge.Issue, t *tally) (string, error) {
 	limit := cfg.Limit(s.Next)
 	if s.Next == "" || limit == 0 {
 		return "", nil
@@ -232,6 +234,14 @@ func waits(cfg *routing.Config, b forge.Backlog, s routing.State, open *[]forge.
 		return "", nil
 	}
 	holds := fmt.Sprintf("%s holds %d open %s, its limit %d (routing.wip)", s.Next, n, plural(n, "issue", "issues"), limit)
+	urgent := func(x forge.Issue) bool { return backlog.Priority(x) == 1 }
+	if next.Role == developerRole && urgent(is) && !slices.ContainsFunc(in, urgent) {
+		f := verdict.Finding{Rule: "state-urgent", Level: "info", Where: fmt.Sprintf("#%d", is.ID), Message: holds + ": its limit passed for an issue of priority " + scale.PriorityName(1) + ", one at a time"}
+		if !slices.Contains(res.Findings, f) {
+			res.Findings = append(res.Findings, f)
+		}
+		return "", nil
+	}
 	if left > 0 {
 		holds = fmt.Sprintf("%s holds %d open %s the %s can take, its limit %d (routing.wip), and %d waiting for %s tests, another issue or paths taken, not counted",
 			s.Next, n, plural(n, "issue", "issues"), next.Role, limit, left, plural(left, "its", "their"))
@@ -350,7 +360,7 @@ func retestBody(f forge.Forge, cfg *routing.Config, repo string, t forge.Target,
 // anticipate counts an issue whose step started in its next state, so
 // the steps after it in the same run see it there.
 func anticipate(cfg *routing.Config, is *forge.Issue, next string) {
-	if s, ok := cfg.State(next); ok && next != "" {
-		is.Labels = []string{s.Label}
+	if add, gone, err := cfg.Move(next); err == nil && next != "" { // its priority kept: one Urgent passes Ready at a time
+		is.Labels = append(slices.DeleteFunc(slices.Clone(is.Labels), func(l string) bool { return slices.Contains(gone, l) }), add...)
 	}
 }
