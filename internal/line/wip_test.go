@@ -54,26 +54,26 @@ func TestWaitsCountsWhatCanBePulled(t *testing.T) {
 		{ID: 6, Labels: []string{"workline:needs-tests"}, Body: scenario},
 	}
 	tl := newTally()
-	why, err := waits(cfg, b, tests, &open, tl)
+	why, err := waits(&Result{}, cfg, b, tests, forge.Issue{}, &open, tl)
 	if err != nil || why != "" {
 		t.Fatalf("Ready holds 1 the developer can take, of 2: waits %q (%v)", why, err)
 	}
 	if b.calls["drafts"] != 1 || b.calls["comments"] != 1 || b.calls["issues"] != 0 {
 		t.Errorf("reads at the limit: %v, want the Drafts once and #2's comments once", b.calls)
 	}
-	if _, err := waits(cfg, b, tests, &open, tl); err != nil || b.calls["drafts"] != 1 || b.calls["comments"] != 1 {
+	if _, err := waits(&Result{}, cfg, b, tests, forge.Issue{}, &open, tl); err != nil || b.calls["drafts"] != 1 || b.calls["comments"] != 1 {
 		t.Errorf("a second count in the run reads again: %v (%v)", b.calls, err)
 	}
 
 	open[1].Body = "## Need\n\nx\n" // no scenario: the developer takes it as it is
-	why, err = waits(cfg, b, tests, &open, newTally())
+	why, err = waits(&Result{}, cfg, b, tests, forge.Issue{}, &open, newTally())
 	if err != nil || !strings.Contains(why, "ready holds 2 open issues the developer can take, its limit 2 (routing.wip), and 1 waiting for its tests, another issue or paths taken, not counted") {
 		t.Errorf("at the limit: %q (%v)", why, err)
 	}
 
 	b.calls = map[string]int{}
 	few := open[2:]
-	if why, err := waits(cfg, b, tests, &few, newTally()); err != nil || why != "" || len(b.calls) != 0 {
+	if why, err := waits(&Result{}, cfg, b, tests, forge.Issue{}, &few, newTally()); err != nil || why != "" || len(b.calls) != 0 {
 		t.Errorf("below the limit: %q, reads %v (%v), want none", why, b.calls, err)
 	}
 }
@@ -85,10 +85,38 @@ func TestWaitsTesterNotRouted(t *testing.T) {
 	tests, _ := cfg.State("tests")
 	b := &drafting{counted: counted{calls: map[string]int{}}}
 	open := []forge.Issue{{ID: 1, Labels: []string{"workline:ready"}, Body: "## Need\n\nx\n\n## Validation\n\n- **One:** Given a, When b, Then c.\n"}}
-	if why, err := waits(cfg, b, tests, &open, newTally()); err != nil || !strings.HasPrefix(why, "ready holds 1 open issue, its limit 1") {
+	if why, err := waits(&Result{}, cfg, b, tests, forge.Issue{}, &open, newTally()); err != nil || !strings.HasPrefix(why, "ready holds 1 open issue, its limit 1") {
 		t.Errorf("no tester routed: %q (%v)", why, err)
 	}
 	if len(b.calls) != 0 {
 		t.Errorf("reads with no tester routed: %v", b.calls)
+	}
+}
+
+// TestWaitsUrgentPassesOnce: a priority-1 issue's step passes a full
+// Ready, said once however often counted; one started in the run keeps
+// its priority, so a second Urgent waits (ADR-0075 §4).
+func TestWaitsUrgentPassesOnce(t *testing.T) {
+	cfg := lineConfig(t, "routing: {events: {issue: [product-owner, developer]}, wip: {ready: 1}}\n")
+	tests, _ := cfg.State("tests")
+	b := &drafting{counted: counted{calls: map[string]int{}}}
+	urgent := forge.Issue{ID: 2, Labels: []string{"workline:needs-tests", "workline:priority/1"}}
+	open := []forge.Issue{{ID: 1, Labels: []string{"workline:ready"}}, urgent}
+	res := &Result{}
+	for range 2 {
+		if why, err := waits(res, cfg, b, tests, urgent, &open, newTally()); err != nil || why != "" {
+			t.Fatalf("an Urgent issue at a full Ready waits: %q (%v)", why, err)
+		}
+	}
+	if len(res.Findings) != 1 || res.Findings[0].Rule != "state-urgent" || !strings.Contains(res.Findings[0].Message, "its limit passed for an issue of priority Urgent, one at a time") {
+		t.Errorf("said: %+v, want state-urgent once", res.Findings)
+	}
+	anticipate(cfg, &open[1], "ready")
+	second := forge.Issue{ID: 3, Labels: []string{"workline:needs-tests", "workline:priority/1"}}
+	if why, err := waits(res, cfg, b, tests, second, &open, newTally()); err != nil || why == "" {
+		t.Errorf("a second Urgent passes: %q (%v)", why, err)
+	}
+	if why, _ := waits(&Result{}, cfg, b, tests, forge.Issue{ID: 4, Labels: []string{"workline:needs-tests", "workline:priority/2"}}, &open, newTally()); why == "" {
+		t.Error("a priority-2 issue passes a full Ready")
 	}
 }
