@@ -1,16 +1,18 @@
-# Diagnosing a role — replaying its misses, and the pitfalls met (2026-11-26)
+# Diagnosing a role — replaying its misses, measured (2026-11-26/27)
 
-> **INTERIM — to be completed when the benches end.** The 6-run benches
-> of 2026-11-26 are still running. Every number marked **INTERIM** below
-> comes from 3 runs or fewer and is not a result yet (see
-> [noise](#4-enough-runs)). The findings per role and the strategies
-> are on [diagnosing-a-role-findings.md](diagnosing-a-role-findings.md),
-> to be updated with the final tables.
+The benches of 2026-11-26/27 have ended. Each role's measures are on its
+own page: [reviewer](diagnosing-the-reviewer.md),
+[developer](diagnosing-the-developer.md),
+[tester](diagnosing-the-tester.md),
+[product owner](diagnosing-the-product-owner.md),
+[documentalist](diagnosing-the-documentalist.md); the overview, the
+pitfalls and every strategy's status on
+[diagnosing-a-role-findings.md](diagnosing-a-role-findings.md).
 
 **Question.** On 2026-11-25 an evaluation of recent versions scored the
 roles 3 to 7 of 10, below the 8 a role needs to leave beta. Why does a
 role miss, which change would raise it, and how do we know the change
-works before we keep it? This page keeps the method and its pitfalls for
+works before we keep it? This page keeps the method and its lessons for
 the future process engineer
 ([ADR-0019](../adr/0019-the-line-evaluates-itself.md); its issue
 [#89](https://github.com/JN0V/workline/issues/89) was closed as not
@@ -19,31 +21,26 @@ planned), whose job is exactly this step back
 [stepping-back.md](stepping-back.md),
 [roles-panorama.md](roles-panorama.md#auditor-and-process-engineer-two-roles)).
 
-**Verdict (so far).**
+**Verdict.**
 
 - **A root cause is not found by one replay.** The first diagnosis
   (2026-11-25) named the agents' lack of repository access as the first
-  cause of three roles. It rested on 2 real calls on one pull request,
-  one with a leading prompt. Measured on the whole replay set, repository
-  reading moves only the points whose evidence lies outside the diff.
-- **For the reviewer, the model is the most consistent signal, not
-  proven** (**INTERIM**, 3 runs an arm): Opus states about 2 to 4 more
-  planted points a run than Sonnet, whatever the structure. Two caveats:
-  Opus lenses alone gave 19, 19 at one commit and 22, 21, 22 at another;
-  and Opus doubles the clean case-runs with a false alarm (4 to 8 of 12).
-  Structure (lenses, lenses with reads, one free agent) is level on the
-  total at the same model, inside the noise.
-- **Many misses are not the agent's.** For the developer, 6 of 21
-  send-backs are the engine writing `Closes #n` over the agent's own
-  `Not done:` note. For the tester, the false claim that no test guards a
-  kept behaviour is a sentence the engine writes after a name grep.
+  cause of three roles, on 2 real calls. Measured on whole replay sets,
+  reading moves the points whose evidence lies outside the input given.
+- **Many misses are not the agent's**: a sentence the engine writes, an
+  input it cuts, a filter, a timeout.
+- **The model was a lever for two roles**, the reviewer and the
+  developer; for the product owner and the tester, Opus gained nothing
+  on the causes.
+- **Every shipped change was measured on the cases it was written from**:
+  its gain is an upper bound until held-out or shadow evidence.
 - **The bench itself lied** before it was audited: a score by place, a
   non-production judge, arms on different commits.
 
 ## The method
 
 A diagnosis is a measure, not a reading. Each step below exists because
-skipping it misled us once (see [Pitfalls](#pitfalls-met-on-2026-11-25-and-26)).
+skipping it misled us once (see [the pitfalls](diagnosing-a-role-findings.md#pitfalls-met)).
 
 ### 1. Replay every real miss
 
@@ -121,11 +118,9 @@ official score by place, by the bench audit:
   ([PR #2282](https://github.com/JN0V/workline/pull/2282)).
 - Check the judge on known answers first: the real sent-back head must
   fail each point, the accepted head pass it. The reviewer's scorer agreed
-  on 30 of 30 hand-checked items. The developer's agreed on 26 of 26
-  heads, but only after its inputs were corrected twice (a pull request's
-  text as it read at the time; a diff that was empty) and the expected
-  answers three times: its prompt was never changed, the bench around it
-  was.
+  on 30 of 30 hand-checked items. The developer's reached 26 of 26 heads
+  only after its inputs and expected answers were corrected: the bench
+  around a judge fails as often as the judge.
 - Count apart: findings that state no point (volume), points said as a
   nit, points refused by the role's own judge.
 
@@ -135,9 +130,6 @@ official score by place, by the bench audit:
   judge. In production the reviewer's judge is **the other model** than
   its lenses (`judgemark.Pick` in `internal/engine/engine.go`); a bench
   that forces both on Sonnet measures another reviewer.
-- Narrow what the bench's commit covers: a change to the summary tool
-  should not make two arms count as different commits. Not built yet
-  (the bench audit's fix 8).
 
 ### 7. A skeptic audits the bench
 
@@ -158,38 +150,51 @@ in the first diagnosis.
 ### 9. Never conclude from one oriented replay
 
 A replay whose prompt was written after reading the expected answer
-(telling the agent to read the functions a change calls and their
-defaults, for a case whose point is a callee's default) proves the
-prompt, not the cause.
+proves the prompt, not the cause.
 
-## Pitfalls met on 2026-11-25 and 26
+## Lessons of 2026-11-26/27
 
-Measures from 3 runs an arm or fewer: **INTERIM**.
+### The bench
 
-| Pitfall | Measure |
-|---|---|
-| An oriented 2-call replay taken for a root cause | The first diagnosis said read tools found every point on 3 pull requests: 2 calls with tools ran, both on one pull request, one with a leading prompt. On the full set, repository reading recovers only out-of-diff points: 6 of 34 |
-| Code removal pursued by principle | **INTERIM.** Agents reading the repository, the input pickers deleted: equal results within noise at 1.6 to 2.8× the tokens, cache reads included (reviewer [#2273](https://github.com/JN0V/workline/pull/2273) +55 %, about 1.3× fresh; documentalist [#2276](https://github.com/JN0V/workline/pull/2276) ×2.2; reviewer on Opus with reads 177k against 64k a case run). Removing dead code gave 122 lines ([#2272](https://github.com/JN0V/workline/pull/2272)), not the 4.7k first counted. The goal is a better role, not fewer lines |
-| Place-based scoring rewards volume | **INTERIM.** Any finding on a planted line earned the point: 61 of 310 points were by place only, 79 true statements scored nothing. Lens arms with 30 to 50 findings a run collected accidental credits; the free agent with 18 to 21 lost about 15 a set. By meaning, free and lenses are level at the same model |
-| A bench forcing a non-production judge | Every bench forced a Sonnet judge; production judges Sonnet lenses with Opus. The production baseline had to be added as its own arm |
-| Arms on different commits | **INTERIM.** The Sonnet baseline ran at another engine commit than every candidate; only one pair (Opus before and after [#2273](https://github.com/JN0V/workline/pull/2273)) shared a merge base. Opus lenses alone gave 19, 19 at one commit and 22, 21, 22 at another |
-| Criteria fixed after the first arms | The decision criteria were written after the arms of [#2273](https://github.com/JN0V/workline/pull/2273) and [#2279](https://github.com/JN0V/workline/pull/2279) had run: those two were not judged against rules set before them |
-| Bench slots starved | Two bench slots, `/tmp` in RAM; the slot script had no order, so a later run could pass an earlier one, and 6 runs × 6 arms of a role did not fit. A first-in first-out queue is needed, and leftover build folders cleaned |
+- **Score by meaning, never by place.** By place, 61 of 310 reviewer
+  points were earned by a finding stating something else, and 79 true
+  statements scored nothing. The documentalist's official checks passed a
+  partly false rewording and called true edits false.
+- **Preregister, then amend in writing.** Each role wrote its arms and
+  predictions before any result (reviewer and documentalist 14:27Z,
+  product owner 15:00Z, tester 15:46Z); every change came as a dated
+  amendment before the runs it touched. Predictions that failed are kept:
+  4 of the tester's 5 arms predicting a gain did not gain.
+- **Cut clearly beaten arms early, and say what a cut leaves.** On the
+  owner's token instruction (19:30Z to 19:55Z), arms below the baseline's
+  range after one run, or unable to change a decision, stopped. An arm
+  dropped untested is "not shown worse", never "worse".
+- **Measure before lightening.** Reading lenses lost kept catches; the
+  free reviewer, level on the total, says 36 to 45 % of weak-test points
+  against the lenses' 64 to 85 %.
+- **GitHub's runners spend the same subscription.** The replay workflow
+  ([#2293](https://github.com/JN0V/workline/pull/2293)) logs in with the
+  line's `CLAUDE_CODE_OAUTH_TOKEN`: it frees the machine, not the tokens.
+- **Check the judge against another model.** Opus judged Opus arms;
+  re-judged by Sonnet, the reviewer's leaders agreed on 98 % of 156
+  point-runs and the tester's arms on 98 % of 432 scenario-runs.
+- **A triple shows only a large gap.** 3 runs against 3 cannot go
+  below p = 0.10 by permutation; "every run above every run" is the most
+  it says. Only the reviewer's leaders and the product owner's arms reached
+  6 runs.
 
-Also met, smaller:
+### The changes measured
 
-- **The case at fault**: `clean-tg-11` has an untested third scenario,
-  so the case is not clean and most of its 21 alarms were true findings. A developer check
-  (`dc-240`) failed runs that kept a real measure, which the issue
-  allowed.
-- **The summary counted a case twice** when some runs had no judge
-  ([PR #2280](https://github.com/JN0V/workline/pull/2280)).
-- **Instructions edited on the very cases** then used to judge them:
-  the product owner's kind rule was written after the maintainer
-  corrected these issues. Only held-out cases say it generalises.
-
-## Findings and strategies
-
-Per role, and the strategies tried or queued with their status:
-[diagnosing-a-role-findings.md](diagnosing-a-role-findings.md)
-(**INTERIM**).
+- **In-sample prompts are upper bounds.** Each checklist bullet, merge
+  standard and product-owner paragraph maps to a named failing case. The
+  held-out evidence is thin: the product owner's one held-out bounds case
+  scored 0 of 6 until v4; the documentalist's 4 held-out pages ran once
+  a version.
+- **One clause can move a score.** The product owner's v2 moved
+  TraceGlass #8 from 6 of 6 to 0 of 6; v4 moved DomoticsCore #154 from 3
+  of 6 to 0 of 6. Each wording is measured, never read.
+- **A spec's scope error costs a round.** The issue for the
+  documentalist's reading ([#2307](https://github.com/JN0V/workline/issues/2307))
+  placed it in the task for a doc judged whole; the held-out pages are
+  judged in parts, so the first head fixed 13 of 21 and was sent back
+  (17 of 21 after). Name in the Scope the path the measured case takes.
