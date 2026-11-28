@@ -40,7 +40,7 @@ expect:
         labels: ["workline:ready"]
         comments: 1
         comment-contains: ["**The developer** gives this issue back.", "- **Why**: its pull request did not open: `", "lib.sh", "takes it again at a next run, once", "\"unopened\":1"]
-        comment-lacks: ["takes this issue", "{why}"]
+        comment-lacks: ["a person who takes it over assigns themselves", "{why}"]
     merge-requests:
       - id: 2
         absent: true

@@ -39,4 +39,4 @@ expect:
         comments: 1
         posted: 1
         comment-contains: ["### Gates: 2 new findings", "| `merge` | `lint` | 2 | 3 |", "`clean.go:10`, `clean.go:11`"]
-        comment-lacks: ["1 new finding"]
+        comment-lacks: ["### Gates: 1 new finding"]

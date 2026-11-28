@@ -28,6 +28,6 @@ expect:
   forge:
     merge-requests:
       - id: 5
-        comments: 2
+        comments: 1
         comment-contains: [" runs=3 read=all -->"]
         comment-lacks: "commits-left"

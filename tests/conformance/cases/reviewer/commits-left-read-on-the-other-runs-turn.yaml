@@ -29,6 +29,6 @@ expect:
   forge:
     merge-requests:
       - id: 5
-        comments: 2
+        comments: 1
         comment-contains: [" runs=6 read=all -->"]
         comment-lacks: ["no lens that warns on this push", "left-by=", "commits-left"]

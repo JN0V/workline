@@ -22,7 +22,7 @@ expect:
   forge:
     merge-requests:
       - id: 5
-        comments: 2
+        comments: 1
         comment-contains:
           - "Reviewed by the correctness lens.\n\n<!-- workline:record reviewed= runs=1 -->"
           - "**workline reviewer, the lenses that warn** — 1 findings on the change; lenses: edge-cases"

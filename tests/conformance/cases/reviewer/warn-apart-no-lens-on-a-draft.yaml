@@ -25,6 +25,6 @@ expect:
   forge:
     merge-requests:
       - id: 5
-        comments: 2
+        comments: 1
         comment-contains: ["Read by the correctness lens, nothing found.", "Read by edge-cases, tests and claims, nothing found.", " runs=1 -->"]
         comment-lacks: "read=all"

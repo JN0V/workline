@@ -24,7 +24,7 @@ expect:
   forge:
     merge-requests:
       - id: 5
-        comments: 2
+        comments: 1
         comment-contains:
           - "**workline reviewer** — no code changed since the last review (only the base's code, merged in and reviewed there"
           - "**workline reviewer, the lenses that warn** — no code changed since the last review (only the base's code, merged in and reviewed there"

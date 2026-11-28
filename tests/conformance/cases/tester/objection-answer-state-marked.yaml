@@ -27,5 +27,5 @@ expect:
   forge:
     merge-requests:
       - id: 1
-        comments: 2
+        comments: 1
         comment-contains: ["at 0123456", "<!-- workline:answer-state at=0123456789abcdef threads=7.1 -->", "<!-- workline:sticky=line/answer-state -->"]

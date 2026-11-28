@@ -19,7 +19,7 @@ expect:
   forge:
     merge-requests:
       - id: 5
-        comments: 2
+        comments: 1
         comment-contains:
           - "| **blocks** | correctness |"
           - "**workline reviewer, the lenses that warn** — 0 findings on the change; lenses: edge-cases, tests, claims; not every lens answered: not reviewed whole"

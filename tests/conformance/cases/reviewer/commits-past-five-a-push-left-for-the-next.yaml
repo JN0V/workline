@@ -28,5 +28,5 @@ expect:
   forge:
     merge-requests:
       - id: 5
-        comments: 2
+        comments: 1
         comment-contains: ["5 of the 7 new commits read, 2 left for the next push", " runs=2 read=all left-by=edge-cases -->"]

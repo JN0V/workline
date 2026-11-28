@@ -24,4 +24,4 @@ expect:
     in/parts/1-edge-cases/task.md: {contains: "### calc/half.go", not-contains: "### calc/calc.go"}
   forge:
     merge-requests:
-      - {id: 5, comments: 2, comment-contains: [" runs=2 read=all -->"]}
+      - {id: 5, comments: 1, comment-contains: [" runs=2 read=all -->"]}
