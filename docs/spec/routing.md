@@ -371,7 +371,7 @@ whose result moves the issue to the next. The table is the routing's
 | State | Label | Wakes | Its result moves it to |
 |---|---|---|---|
 | blocked | `workline:blocked` | nobody: its reason on the issue; the product owner reads it again on news ([below](#blocked-read-again)), at once for a developer's Scope ask or a run too big for its role | — |
-| doing | `workline:developing` | nobody: the developer's claim; one with no pull request wakes the developer to let it go, past `claim-hours` or on a change to its body, the day said until then ([#1084](https://github.com/JN0V/workline/issues/1084)); one whose agent wrote no code on the body it still has, or whose pull request merged as part of it or a person closed, is blocked for a person past `claim-hours`, never run again on that input (`no-code-spent`, [#1120](https://github.com/JN0V/workline/issues/1120)); one with its pull request open waits on it, said, naming who acts next: a Draft the developer's, its round woken by its checks' end or a red one, a person's only past a cap, its agent's failure or its last round; a change a person made to its body since the code (the engine's own `Blocked by` line aside) is the developer's review round on it ([#1271](https://github.com/JN0V/workline/issues/1271)) | — |
+| doing | `workline:developing` | nobody: the developer's claim; one with no pull request wakes the developer to let it go, past `claim-hours` or on a change to its body, the day said until then ([#1084](https://github.com/JN0V/workline/issues/1084)); one whose agent wrote no code on the body it still has, or whose pull request merged as part of it or a person closed, is blocked for a person past `claim-hours`, never run again on that input (`no-code-spent`, [#1120](https://github.com/JN0V/workline/issues/1120)), and so on a forge that cannot say how its pull request ended, a close workline is confirmed to have made alone waking the developer ([#2294](https://github.com/JN0V/workline/issues/2294)); one with its pull request open waits on it, said, naming who acts next: a Draft the developer's, its round woken by its checks' end or a red one, a person's only past a cap, its agent's failure or its last round; a change a person made to its body since the code (the engine's own `Blocked by` line aside) is the developer's review round on it ([#1271](https://github.com/JN0V/workline/issues/1271)) | — |
 | ready | `workline:ready` | the developer | doing |
 | tests | `workline:needs-tests` | the tester | ready |
 | refine | `workline:to-refine` | the product owner | tests |
@@ -587,7 +587,11 @@ whose result moves the issue to the next. The table is the routing's
   issue's body unchanged, is not let go to be taken again on that input: the line
   moves the issue to `workline:blocked`, the claim's label off, the
   reason written (`no-code-spent`,
-  [#1120](https://github.com/JN0V/workline/issues/1120)). A changed
+  [#1120](https://github.com/JN0V/workline/issues/1120)). A forge
+  that cannot say how the pull request ended, one plugged by a command,
+  counts the claim as spent too: only a close workline is confirmed to
+  have made wakes the developer again
+  ([#2294](https://github.com/JN0V/workline/issues/2294)). A changed
   body still lets the claim go at once.
 - **Left free by the developer, due again**
   ([ADR-0059, amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-02-a-ready-issue-left-free-wakes-the-developer-again)):
