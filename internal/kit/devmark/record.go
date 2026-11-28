@@ -238,15 +238,20 @@ func NoCodeOnOtherBody(a Act, body string) bool {
 // SpentOnSameBody says whether a claim's record a ran on the body it has
 // now (or one it did not keep): no code, or its pull request gone, merged
 // part of it or closed by a person, not by workline (callers ask with
-// none open). Past claim-hours, the line blocks it for a person.
+// none open). A forge that cannot say how its pull request ended, one
+// plugged by a command, counts it spent: only a close workline is
+// confirmed to have made wakes the developer again (#2294). Past
+// claim-hours, the line blocks it for a person.
 func SpentOnSameBody(b forge.Backlog, a Act, body string) bool {
 	switch c, ok := b.(forge.Closings); {
 	case a.Body != "" && BodyChanged(a.Body, body):
 		return false
 	case a.NoCode:
 		return true
-	case !ok || len(a.Code) == 0:
+	case len(a.Code) == 0:
 		return false
+	case !ok:
+		return true
 	default:
 		ours, err := c.ClosedWith(fmt.Sprint(Branch, a.Issue), forge.Marker("closed"))
 		return err == nil && !ours
