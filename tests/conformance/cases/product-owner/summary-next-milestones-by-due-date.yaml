@@ -8,7 +8,7 @@ given:
     issues:
       - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", milestone: v0.9, labels: [workline:ready, workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", milestone: v1.0, labels: [workline:ready, workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", milestone: v2.0, labels: [workline:ready, workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", milestone: v2.0, labels: [workline:ready, workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: none, summary: true}
 expect:
   agent-calls: 0

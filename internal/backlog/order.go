@@ -237,12 +237,17 @@ func CompareMilestones(a, b string) int {
 	return len(x) - len(y)
 }
 
-// Less is the backlog's order (docs/spec/backlog-acts.md, "Ordering"):
-// the nearest milestone first — by its due date, then its title
+// Less is the backlog's order (docs/spec/backlog-acts/next.md): an
+// Urgent issue, priority 1, first, whatever its milestone, so a release's
+// plan never delays a fix that cannot wait; among Urgent issues and
+// below them, the nearest milestone — by its due date, then its title
 // (CompareDue) —, an issue in none after every one in one; then the
 // priority, an issue with none after the last (scale.Priority.Rank); then
 // the effort, the lightest first, none as Medium; then the lowest number.
 func Less(a, b forge.Issue) bool {
+	if ua, ub := Priority(a) == 1, Priority(b) == 1; ua != ub {
+		return ua
+	}
 	switch {
 	case a.Milestone != b.Milestone && (a.Milestone == "" || b.Milestone == ""):
 		return b.Milestone == ""

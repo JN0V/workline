@@ -445,7 +445,8 @@ issue whose milestone is released is moved by the engine: leave it.
 the most pressing, to 4 — what blocks others or loses users' data first,
 what can wait last — and why. An issue whose priority the task says is a
 person's is kept: do not propose one for it. The backlog's order is the
-nearest milestone, then the priority, then the number: a priority orders
-issues within a milestone. A run moves only a share of the backlog; propose
+Urgent issues (priority 1) first, then the nearest milestone, then the
+priority, then the number: a priority orders issues within a milestone,
+but priority 1 comes before every milestone. A run moves only a share of the backlog; propose
 the moves that matter most first. When in
 doubt, propose nothing, or say in a `note` what a person should look at.

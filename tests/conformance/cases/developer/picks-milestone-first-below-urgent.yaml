@@ -1,0 +1,22 @@
+case: developer/picks-milestone-first-below-urgent
+about: >
+  The developer's pick, as today: below Urgent the milestone still
+  comes first. #2 and #3 are ready, priority 2; #3 is in milestone
+  v1.0, #2 in none: the developer takes #3.
+given:
+  repo: tested
+  forge:
+    milestones: [v1.0]
+    issues:
+      - {id: 2, title: "Multiply", labels: ["workline:ready", "workline:priority/2"], body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `lib.sh`: a `mul` function.\n"}
+      - {id: 3, title: "Divide", milestone: v1.0, labels: ["workline:ready", "workline:priority/2"], body: "## Need\n\nI want to divide.\n\n## Scope\n\n- `div.sh`.\n"}
+run: {develop: [], ai: "fake:developer-nothing"}
+expect:
+  status: pass
+  summary: "took #3"
+  agent-calls: 1
+  forge:
+    issues:
+      - id: 3
+        comment-contains: ["The developer", "workline:developer-act", '"act":"pick"', '"issue":3']
+      - {id: 2, comments: 0}
