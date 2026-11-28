@@ -1,6 +1,7 @@
 # ADR-0074: Agents read the repository; the engine stops preparing their input
 
-- **Status:** proposed, until the maintainer merges it; nothing built.
+- **Status:** step 2 stopped, the bar amended
+  ([amendment](#amendment-2026-11-28-step-2-stopped-the-bar-amended)).
   [Steps 7 and 8](#steps) go past the order he gave and wait for his
   own yes
 - **Date:** 2026-11-25
@@ -260,6 +261,52 @@ each role reads only what it needs, and now chooses it.
 - **A shell**: the replays needed none; it widens what a planted text
   can do. **An index**: a store and a dependency (principle 11).
 - **Filters dropped with the input**: their precision is not measured.
+
+## Amendment (2026-11-28): step 2 stopped, the bar amended
+
+Measured on 2026-11-26/27, scored by meaning
+([#2282](https://github.com/JN0V/workline/pull/2282)); the method on
+[diagnosing-a-role.md](../research/diagnosing-a-role.md), the overview on
+[diagnosing-a-role-findings.md](../research/diagnosing-a-role-findings.md).
+
+- **Step 2 is stopped.** The pickers stay; no role's deletion merged.
+- **Reviewer** ([its page](../research/diagnosing-the-reviewer.md#round-1-structure-and-model-3-runs-an-arm)):
+  at equal model the structures are level (lenses reading, Sonnet: 14
+  to 18 points a run of 28, against 15 to 17 without reads). Reading
+  costs about 55 % more tokens and loses kept catches (1 to 3 of 5 a
+  run, against 2 to 4).
+  [#2273](https://github.com/JN0V/workline/pull/2273) is closed.
+- **Documentalist** ([its page](../research/diagnosing-the-documentalist.md#held-out-one-run-each-21-claims)):
+  reading helped clearly once told what to cite for an absence. Held
+  out, 17 of 21 false claims fixed against production's 9, no false
+  edit, one run each. Shipped as
+  [#2313](https://github.com/JN0V/workline/pull/2313) in v0.93.0; its
+  parts stay, so step 3's deletions are not made.
+  [#2276](https://github.com/JN0V/workline/pull/2276) is closed.
+- **Product owner** ([its page](../research/diagnosing-the-product-owner.md#strategies-preregistered)):
+  reading with the new text (S5) is not shown better than the text alone
+  (S4), no class apart at p < 0.01, at about 4 times the tokens (80k
+  against 21.7k a case run). The text shipped as
+  [#2297](https://github.com/JN0V/workline/pull/2297);
+  [#2277](https://github.com/JN0V/workline/pull/2277) is closed.
+- **The bar is amended to "not worse"**, as
+  [the findings](../research/diagnosing-a-role-findings.md#strategies-and-their-status)
+  say. It replaces [the gate](#the-gate)'s "every step's bar":
+  - scored by meaning, never by where a finding sits: by place, 61 of
+    310 reviewer points were earned by place only;
+  - against production as it runs, its judge's model included, at the
+    same commit;
+  - misses said, kept catches and clean alarms each no worse than the
+    baseline beyond the noise of its runs; a step's own target is no
+    longer required;
+  - its tokens and seconds stated; more tokens with no gain shown is
+    not taken;
+  - a gain measured only on the cases it was written from is an upper
+    bound until held out.
+- **The raw rows of 2026-11-26** in `tests/evaluation/results.tsv`, at
+  `a6cc7bb5e` and `017072882` (commits not on `main`), are scored by
+  place, like [#2271](https://github.com/JN0V/workline/pull/2271)'s
+  baseline beside them: kept as history, no measure is read from them.
 
 [#2162]: https://github.com/JN0V/workline/pull/2162
 [#2188]: https://github.com/JN0V/workline/issues/2188
