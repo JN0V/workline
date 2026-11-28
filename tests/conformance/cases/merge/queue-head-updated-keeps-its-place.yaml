@@ -1,0 +1,58 @@
+case: merge/queue-head-updated-keeps-its-place
+about: >
+  Two accepted developer pull requests behind main, `!7` first in the
+  queue. The queue updated `!7` ten minutes ago: it is no longer behind,
+  its own checks are pending. `workline follow` keeps it the head of the
+  queue while they run: nothing else is updated, so the checks run once
+  per merge, and the summary still says it is the head of the queue.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  env: {WORKLINE_CLOCK: "2026-01-04T10:00:00Z"}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/developer/3 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' -m 'Workline-Role: developer' && git push -q origin workline/developer/3 && git checkout -q main"
+    - "git checkout -qb workline/developer/4 && echo 'Other.' > OTHER.md && git add OTHER.md && git commit -qm 'docs: other' -m 'Workline-Role: developer' && git push -q origin workline/developer/4 && git checkout -q main"
+    - "echo 'More.' > MORE.md && git add MORE.md && git commit -qm 'docs: more' && git push -q origin main"
+    - "git checkout -q workline/developer/3 && GIT_AUTHOR_DATE=2026-01-04T09:50:00Z GIT_COMMITTER_DATE=2026-01-04T09:50:00Z git merge -q --no-ff main -m \"Merge branch 'main' into workline/developer/3\" -m 'Workline-Role: developer' && git push -q origin workline/developer/3 && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/4", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: workline/developer/3
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T09:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T09:05:00Z"
+        auto-merge-by: workline-bot
+        checks: pending
+        behind: false
+        pushes: [{head: workline/developer/3, at: "2026-01-04T08:55:00Z"}, {head: workline/developer/3, at: "2026-01-04T09:50:00Z"}]
+        comments: []
+      - id: 8
+        branch: workline/developer/4
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T09:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T09:06:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/4, at: "2026-01-04T08:55:00Z"}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  summary: "head of the queue"
+  no-findings: [{rule: merged-from-base, where: "#8"}, {rule: merged-from-base, where: "#7"}]
+  not-pushed: [workline/developer/4]
+  forge:
+    merge-requests:
+      - {id: 7, merged: false, comments: 0}
+      - {id: 8, merged: false, comments: 0}
