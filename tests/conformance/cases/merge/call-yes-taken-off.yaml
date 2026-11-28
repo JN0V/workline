@@ -1,0 +1,36 @@
+case: merge/call-yes-taken-off
+about: >
+  A yes taken off. Given a person's label, `workline:accepted` put by
+  dana, was taken off because the head moved (a push after the yes),
+  When the line runs, Then one new comment names that person, `@dana`,
+  and says what to do: put the label again.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git tag before"
+    - "sed -i 's/^checked: .*/checked: 9f8e7d6/' docs/tech/auth.md && sed -i 's/last one hour/last two hours/' docs/tech/auth.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: before, name: workline/accepted, state: success, description: "accepted by dana, its head's verdict passed", by: workline-bot}
+      - {commit: feat/sessions, name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: before, at: "2026-01-04T09:00:00Z"}, {head: feat/sessions, at: "2026-01-04T10:30:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:01:00Z"
+        auto-merge-by: workline-bot
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: accepted-reset, where: "#7", level: warn, message: "was pushed after dana accepted it: the yes and auto-merge taken off"}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, labels: [], comment-contains: ["@dana", "workline:accepted"]}

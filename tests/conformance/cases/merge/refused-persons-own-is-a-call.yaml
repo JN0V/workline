@@ -1,0 +1,20 @@
+case: merge/refused-persons-own-is-a-call
+about: >
+  A person's own pull request refused. Given a person's own pull request
+  (`!2`, opened by the person who owns the local clone) whose merge is
+  refused because main changed the same lines, When the line says it,
+  Then one new comment names that person and says what they can do: the
+  pull request's file holds a mention beside "What a person can do".
+given:
+  repo: local-fix
+  config: {forge: local, merge: {autonomy: normal}}
+  setup:
+    - "printf 'add() { echo $(($1 + $2)); }\\nsub() { echo $(($1 - $2)); }\\n' > lib.sh && git commit -qam 'feat: sub'"
+run:
+  sh: >
+    workline follow --base main --verdict .git/verdict.json;
+    true
+expect:
+  files:
+    .git/workline/merge-requests/2.md:
+      contains: ["**Not merged: it conflicts with main**", "**What a person can do**", "@"]

@@ -1,0 +1,29 @@
+case: forge/gitlab-state-comment-no-mention
+about: >
+  GitLab. Given a GitLab merge request, When the state comment is edited
+  (workline's own docs merge request merges alone, said in the state
+  comment), Then it holds no mention: an edit on GitLab notifies a user
+  it newly mentions.
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && GIT_COMMITTER_NAME=workline git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "sh \"$FIXTURES/verdict.sh\" workline/documentalist/suspect pass ../verdict.json"
+  forge:
+    members: [{username: dana, access_level: 30}]
+    bots: [workline-bot]
+    statuses:
+      - {commit: main, name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+    merge-requests:
+      - {id: 9, branch: workline/documentalist/suspect, base: main, author: workline-bot, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/suspect, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run: {follow: [--base, main, --verdict, ../verdict.json], forge: gitlab}
+expect:
+  status: pass
+  findings:
+    - {rule: auto-merge-on, where: "!9", message: "with no person's yes, workline's own records"}
+  forge:
+    merge-requests:
+      - {id: 9, auto-merge: true, comment-contains: ["Merging with no person's yes"], comment-lacks: ["@"]}
