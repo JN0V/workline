@@ -14,8 +14,9 @@ func priorityLabel(l int) string {
 	return label.Name
 }
 
-// The backlog's order: the nearest milestone in version order, none last;
-// then the priority, none after 4; then the lowest number.
+// The backlog's order: an Urgent issue (priority 1) first, whatever its
+// milestone; then the nearest milestone in version order, none last; then
+// the priority, none after 4; then the lowest number.
 func TestOrder(t *testing.T) {
 	issues := []forge.Issue{
 		{ID: 1},
@@ -31,7 +32,7 @@ func TestOrder(t *testing.T) {
 	for _, is := range issues {
 		got = append(got, is.ID)
 	}
-	if want := "[5 7 4 6 3 2 1]"; fmt.Sprint(got) != want {
+	if want := "[2 5 7 4 6 3 1]"; fmt.Sprint(got) != want {
 		t.Fatalf("order = %v, want %s", got, want)
 	}
 }
