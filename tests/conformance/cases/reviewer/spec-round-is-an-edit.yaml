@@ -1,0 +1,24 @@
+case: reviewer/spec-round-is-an-edit
+about: "A spec reviewed again, in round 2, has its findings written by editing the reviewer's comment: no new comment is posted, so nobody is mailed for a round."
+given:
+  repo: reviewed
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list, and the README tells the users.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        author: maya
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=000000000000 round=1 open=2 in=Need,Scope -->\n\n<!-- workline:sticky=reviewer/spec -->"
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-out-of-scope"}
+expect:
+  status: pass
+  findings: [{rule: out-of-scope, where: "#4:3", message: "verified"}]
+  forge:
+    issues:
+      - {id: 4, comments: 2, posted: 0, comment-contains: ["round 2 of 5", "round=2 open=1 in=Need -->"], comment-lacks: "@maya"}
