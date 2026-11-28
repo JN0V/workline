@@ -1,0 +1,12 @@
+case: product-owner/read-same-rank-today-order
+about: 'Given two issues of priority 2, one a person answered and one only changed, a backlog run reads the answered one first, as before: the same rank leaves the reading groups to break the tie, though the answered issue has the higher number.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 21, title: "Export in JSON", body: "Add a JSON export, changed since it was read.", labels: ["workline:priority/2"], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 22, title: "Export in XML", body: "Add an XML export.", author: ann, insider: true, labels: ["workline:priority/2"], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Please look again.", author: ann, insider: true}]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/issues-read: {contains: "22\n21"}
