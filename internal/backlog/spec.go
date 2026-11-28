@@ -35,6 +35,10 @@ type SpecReview struct {
 	Open    int      // the important findings open, as it read the body
 	In      []string // the sections their causes lie in, by heading
 	Stopped bool     // the rounds spent: put to a person, not read again
+	// Over is the digest of the body whose review could not be asked, the
+	// reviewer's prompt for it over its context budget (#2296): not asked
+	// again on that body. "" when the last try was not over budget.
+	Over string
 }
 
 // The record names a section by its heading in the body, as the issue's
@@ -42,7 +46,7 @@ type SpecReview struct {
 // URL's query escapes a value: words, spaces, a comma or a "-->" read back
 // whole, and a heading of letters only is written as it always was, so a
 // record written before reads the same.
-var specRecord = regexp.MustCompile(`<!-- workline:spec-review body=([0-9a-f]*) round=(\d+) open=(\d+) in=([A-Za-z0-9%+._~,-]*)( stopped)? -->`)
+var specRecord = regexp.MustCompile(`<!-- workline:spec-review body=([0-9a-f]*) round=(\d+) open=(\d+) in=([A-Za-z0-9%+._~,-]*)( over=[0-9a-f]+)?( stopped)? -->`)
 
 // String is the record as the comment hides it.
 func (r SpecReview) String() string {
@@ -54,7 +58,11 @@ func (r SpecReview) String() string {
 	for i, h := range r.In {
 		in[i] = url.QueryEscape(h)
 	}
-	return fmt.Sprintf("<!-- workline:spec-review body=%s round=%d open=%d in=%s%s -->", r.Body, r.Round, r.Open, strings.Join(in, ","), stopped)
+	over := ""
+	if r.Over != "" {
+		over = " over=" + r.Over
+	}
+	return fmt.Sprintf("<!-- workline:spec-review body=%s round=%d open=%d in=%s%s%s -->", r.Body, r.Round, r.Open, strings.Join(in, ","), over, stopped)
 }
 
 // ReadSpecReview reads the reviewer's record from an issue's comments: nil
@@ -71,7 +79,7 @@ func ReadSpecReview(comments []string) (*SpecReview, error) {
 		if m == nil {
 			return nil, UnreadRecord(comments[i], specOpening)
 		}
-		r := &SpecReview{Body: m[1], Stopped: m[5] != ""}
+		r := &SpecReview{Body: m[1], Over: strings.TrimPrefix(m[5], " over="), Stopped: m[6] != ""}
 		r.Round, _ = strconv.Atoi(m[2])
 		r.Open, _ = strconv.Atoi(m[3])
 		for _, h := range strings.Split(m[4], ",") {
@@ -139,6 +147,8 @@ func SpecHold(is forge.Issue, comments []string) (rule, why string) {
 		return "", ""
 	case r.Stopped:
 		return "spec-rounds-spent", fmt.Sprintf("the reviewer's findings still open after %d rounds: a person's to decide, as the reviewer's comment on it asks (%s, or %s by hand)", r.Round, LabelAccepted, LabelReady)
+	case r.Over != "" && r.Over == BodyDigest(is.Body) && r.Body != r.Over:
+		return SpecOverBudget, SpecOverBudgetWhy
 	case r.Body != BodyDigest(is.Body):
 		return "spec-not-reviewed", "its spec changed since the reviewer read it: ready once it reads it again and no important finding is open"
 	case r.Open > 0 && r.Testers():
@@ -150,6 +160,18 @@ func SpecHold(is forge.Issue, comments []string) (rule, why string) {
 	}
 	return "", ""
 }
+
+// SpecOverBudget is the rule said of an issue whose spec review could not
+// be asked on its body, the reviewer's prompt for it over the reviewer's
+// context budget (#2296): not asked again on the same body, so the line
+// does not wake it again and again with no agent call.
+const SpecOverBudget = "spec-over-budget"
+
+// SpecOverBudgetWhy is what is said of such an issue: why it waits, and
+// what unblocks it.
+var SpecOverBudgetWhy = "its spec review could not be asked, over budget: the reviewer's prompt for it is over the reviewer's context budget, and it is not asked again on the same text; " +
+	"ready waits until a smaller issue (fewer or shorter files in its " + work.Name(work.Scope) + "), a split into several issues, or a larger budget for the reviewer, " +
+	"then an edit of the issue or the reviewer's comment on it deleted, or a person accepts it (" + LabelAccepted + ")"
 
 // SpecCleared says whether the reviewer read the issue's body as it is and
 // found no important finding open but in the tester's Verification

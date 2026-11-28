@@ -168,7 +168,9 @@ func waitingSpecs(repo string, f forge.Backlog) (ws []waiting, unread []verdict.
 			}
 			continue
 		}
-		if prior != nil && (prior.Stopped || prior.Body == backlog.BodyDigest(is.Body)) {
+		if prior != nil && (prior.Stopped || prior.Body == backlog.BodyDigest(is.Body) || prior.Over == backlog.BodyDigest(is.Body)) {
+			// Read on this body, or not askable on it, its prompt over the
+			// budget (#2296): not asked again until it changes.
 			continue
 		}
 		w := waiting{issue: is, prior: prior, mine: revisable(is, kst)}
@@ -448,6 +450,17 @@ func specRecord(st state, v Review) backlog.SpecReview {
 		}
 		r.Body = ""
 	}
+	r.Over = ""
+	return r
+}
+
+// overRecord is the record r of a review not whole for a lens not asked,
+// its prompt over the reviewer's context budget (#2296): that body marked,
+// so neither the line nor the reviewer asks again on it in vain.
+func overRecord(r backlog.SpecReview, st state, over bool) backlog.SpecReview {
+	if over && r.Body == "" && st.Spec != nil {
+		r.Over = st.Spec.Digest
+	}
 	return r
 }
 
@@ -459,6 +472,10 @@ func specComment(v Review, r backlog.SpecReview, rounds int, mine []string) stri
 	var b strings.Builder
 	fmt.Fprintf(&b, "**workline reviewer**, its spec — %s.\n\n", v.Summary)
 	switch {
+	case r.Body == "" && r.Over != "":
+		b.WriteString("**Spec review not asked, over budget**: the reviewer's prompt for this spec is over its context budget, so its spec review could not be asked; it is not asked again on the same text, and ready waits. " +
+			"What unblocks it: a smaller issue (fewer or shorter files in its " + work.Name(work.Scope) + "), a split into several issues, or a larger budget for the reviewer (its model's context); " +
+			"then edit the issue, or delete this comment, and the reviewer reads it again. A person may also accept it as it reads with `" + backlog.LabelAccepted + "`.\n\n")
 	case r.Body == "":
 		b.WriteString("Not read whole: the reviewer reads it again at the next run; ready waits.\n\n")
 	case r.Open > 0 && r.Testers():

@@ -869,7 +869,7 @@ func runStateStep(res *Result, cfg *routing.Config, f forge.Forge, spec string, 
 		// not in the job's log alone (#840).
 		where := fmt.Sprintf("#%d", st.write.Issue)
 		for _, f := range res.Findings[before:] {
-			if f.Rule == "spec-not-reviewed" && f.Where == where {
+			if (f.Rule == "spec-not-reviewed" || f.Rule == backlog.SpecOverBudget) && f.Where == where {
 				st.write.Holds = f.Message
 			}
 		}

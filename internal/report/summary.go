@@ -225,7 +225,7 @@ var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unrea
 var heldBack = []string{"no-quote", "nothing-to-refine", "section-kept", "not-ready", "ask-empty", "already-asked",
 	"already-proposed", "asked-before", "question-left-out", "sources-unquoted", "not-agreed", "not-accepted", "close-reason", "already-open", "once-a-run", "act-cap",
 	"moved-cap", "drafts-proposed", "undone-here", "outsider-evidence", "reporter-outside",
-	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "priority-elsewhere", "priority-no-label", "priority-once", "priority-changed",
+	"spec-not-reviewed", "spec-over-budget", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "priority-elsewhere", "priority-no-label", "priority-once", "priority-changed",
 	"effort-level", "effort-nowhere", "effort-unread", "effort-elsewhere", "effort-no-label", "effort-kept", "effort-once", "effort-changed", "effort-parent", "priority-blind", "effort-blind", "priority-hidden", "effort-hidden", "title-kept",
 	"title-same", "rename-title", "split-size", "split-title", "split-sections", "split-after", "already-split",
 	"parent-accepted-by-a-person", "parent-not-split", "parent-part-open", "depend-issue", "depend-same", "depend-cycle", "undepend-issue", "undepend-theirs",

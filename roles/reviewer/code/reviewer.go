@@ -178,6 +178,7 @@ type candidates struct {
 	Questions        []Finding         // decisions for a person: never judged, never an issue (#126)
 	Logged           []verdict.Finding // dropped, each said
 	Failed           []string          // lenses with no answer that reads
+	OverBudget       bool              `json:"over-budget,omitempty"` // one of them not asked: its prompt over the role's context budget (#2296)
 	Shown            []string          // the issues' scenarios the intent lens showed done, the code quoted found again: `#4` and its name
 	Asked            []string          // the questions put to the judge, by finding
 	// By JudgeKey: what each important finding is judged on, its patch and
@@ -1462,6 +1463,9 @@ func lensAnswers(runDir, repo string, s Settings, st state) (candidates, int, er
 				if strings.HasPrefix(string(why), "unavailable:") {
 					gone++
 				}
+				if strings.HasPrefix(string(why), "over-budget:") {
+					c.OverBudget = true
+				}
 				failed(fmt.Sprintf("%s got no answer that reads (%s): %s", which, strings.TrimSpace(string(why)), what))
 				continue
 			}
@@ -2330,7 +2334,7 @@ func settled(runDir, repo string, s Settings, st state, c candidates) (Review, [
 		// On the forge (#128): one comment on the issue, its record read
 		// back by the product owner's ready.
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"issue": sp.Issue, "sticky": backlog.SpecKey,
-			"body": specComment(v, specRecord(st, v), s.SpecRounds, sp.Mine)}})
+			"body": specComment(v, overRecord(specRecord(st, v), st, c.OverBudget), s.SpecRounds, sp.Mine)}})
 	}
 	return v, fallback, nil
 }

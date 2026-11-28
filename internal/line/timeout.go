@@ -113,7 +113,9 @@ func timedOut(b forge.Backlog, t *tally, is forge.Issue, notes []forge.Note, rec
 // unreviewed: the same drafts, no review on this body yet, the review's
 // rounds not spent (specWaits) — as when CI's propose job ran the reviewer
 // before its apply wrote them (#1150). The reviewer's step, alone: the
-// product owner could write nothing until it lands.
+// product owner could write nothing until it lands. A review that could
+// not be asked on this body, over the reviewer's budget, holds them as a
+// cleared one does: not pending, never asked again on it (#2296).
 func draftsHeld(is forge.Issue, labeled string, comments []string, notes []forge.Note, rec Record, had bool) (held, unreviewed bool) {
 	if !had || rec.State != refineState || rec.Labeled != labeled || backlog.Readied(is) {
 		return false, false
@@ -126,6 +128,13 @@ func draftsHeld(is forge.Issue, labeled string, comments []string, notes []forge
 		return false, false // a person's comment the product owner has not read
 	}
 	if _, cleared := backlog.SpecCleared(is, comments); cleared {
+		return true, false
+	}
+	if rule, _ := backlog.SpecHold(is, comments); rule == backlog.SpecOverBudget {
+		// Its review could not be asked on this body, over the reviewer's
+		// budget (#2296): no review comes on it, the product owner has
+		// nothing to read; held as drafts the review cleared, never woken
+		// again and again with no agent call.
 		return true, false
 	}
 	return false, specWaits(is, comments)

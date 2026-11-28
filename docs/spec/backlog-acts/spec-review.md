@@ -21,7 +21,9 @@ reads refined issues and keeps what it found in one comment on each, `<!-- workl
 
 - the body's digest it read (`BodyDigest`; empty when the review was not
   whole), the round, the important findings open, the sections they lie
-  in, and `stopped` once the rounds are spent.
+  in, `over=` and the body's digest when the review could not be asked on
+  it, the reviewer's prompt over its context budget (#2296), and `stopped`
+  once the rounds are spent.
 - **A section is named by its heading** in the body, as the state's
   `wrote` and `deleted` are, read by meaning (ADR-0039): any heading,
   each escaped as a URL's query escapes a value (`in=Steps+to+reproduce`,
@@ -35,7 +37,11 @@ reads refined issues and keeps what it found in one comment on each, `<!-- workl
   itself — and at every level, a check, not a mode
   ([ADR-0020](../../adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-07-128-a-spec-on-the-forge)): `spec-not-reviewed` (no record, or
   one for another body, its rounds not spent: a refine in the same run changes it),
-  `spec-findings-open`, `spec-rounds-spent`. Findings in the
+  `spec-over-budget` (its review could not be asked on this body, the
+  reviewer's prompt over its budget: neither the reviewer nor the line asks
+  again on the same body, the comment saying what unblocks it — a smaller
+  issue, a split, a larger budget — then an edit of the issue or the
+  comment deleted), `spec-findings-open`, `spec-rounds-spent`. Findings in the
   Verification alone hold nothing: the tester's
   ([ADR-0066](../../adr/0066-a-role-mirrors-a-human-role-ai-first-where-code-is-rigid.md)). A person's
   `workline:accepted` lifts it; `workline:ready` set by hand is theirs.
