@@ -159,9 +159,8 @@ key (`internal/engine/engine.go:3129`).
 
 ## Traceability
 
-- **The forge keeps every edit**: GitHub's edit history on each comment,
-  GitLab's note versions. The dated history says what moved, at a
-  glance.
+- **The forge keeps every edit**: GitHub's edit history, GitLab's note
+  versions; the dated history says what moved, at a glance.
 - **The auditor's records are unchanged**: they stay hidden in their
   sections, read back as before
   ([ADR-0046](0046-the-auditor-re-checks-every-roles-acts.md)).
