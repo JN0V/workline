@@ -12,8 +12,10 @@ package line
 // Tests by rule (retest).
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/kit/devmark"
@@ -191,21 +193,18 @@ func apart(cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is f
 	return "", nil
 }
 
-// waits says why the step of issue is, in state s, waits: its next state
-// is at its limit; "" when it has room or no limit, or when is, priority
-// 1, passes a full Ready holding no other (docs/spec/routing.md, Room
-// in the next state: One Urgent passes a full Ready), said in res.
-// open is the open issues, listed here at first need and kept for the
-// next call; t, what else the count reads, kept for the run.
-func waits(res *Result, cfg *routing.Config, b forge.Backlog, s routing.State, is forge.Issue, open *[]forge.Issue, t *tally) (string, error) {
+// waits says why the step of issue is, in state s since then, waits: its
+// next state at its limit; "" with room, no limit, or passed: is, priority
+// 1, past a full Ready (docs/spec/routing.md). open, t: read once, kept.
+func waits(cfg *routing.Config, b forge.Backlog, s routing.State, is forge.Issue, since time.Time, open *[]forge.Issue, t *tally) (why, passed string, err error) {
 	limit := cfg.Limit(s.Next)
 	if s.Next == "" || limit == 0 {
-		return "", nil
+		return "", "", nil
 	}
 	if *open == nil {
 		issues, err := b.Issues()
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		*open = issues
 	}
@@ -223,7 +222,7 @@ func waits(res *Result, cfg *routing.Config, b forge.Backlog, s routing.State, i
 		for _, is := range in {
 			why, err := apart(cfg, b, t, next, is, *open, isOpen)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 			if why != "" {
 				left++
@@ -232,22 +231,29 @@ func waits(res *Result, cfg *routing.Config, b forge.Backlog, s routing.State, i
 	}
 	n -= left
 	if n < limit {
-		return "", nil
+		return "", "", nil
 	}
 	holds := fmt.Sprintf("%s holds %d open %s, its limit %d (routing.wip)", s.Next, n, plural(n, "issue", "issues"), limit)
 	urgent := func(x forge.Issue) bool { return backlog.Priority(x) == 1 }
-	if next.Role == developerRole && urgent(is) && !slices.ContainsFunc(in, urgent) {
-		f := verdict.Finding{Rule: "state-urgent", Level: "info", Where: fmt.Sprintf("#%d", is.ID), Message: holds + ": its limit passed for an issue of priority " + scale.PriorityName(1) + ", one at a time"}
-		if !slices.Contains(res.Findings, f) {
-			res.Findings = append(res.Findings, f)
+	pass := next.Role == developerRole && urgent(is) && !slices.ContainsFunc(in, urgent)
+	for _, x := range *open { // one on its way there, its step not done (under way, from a run before too), waiting longer
+		if st, ok := cfg.StateOf(x.Labels); pass && ok && st.Next == s.Next && x.ID != is.ID && urgent(x) {
+			rec, had, _, _, err := readRecordSpec(b, x.ID)
+			its, err2 := b.Trail(x.ID, st.Label)
+			if err := cmp.Or(err, err2); err != nil {
+				return "", "", err
+			}
+			pass = had && rec.State == st.Name && rec.Waits == "" || cmp.Or(waitedSince(st, rec, had, its.Labeled).Compare(since), cmp.Compare(x.ID, is.ID)) > 0
 		}
-		return "", nil
+	}
+	if pass {
+		return "", ": " + holds + ", its limit passed for an issue of priority " + scale.PriorityName(1) + ", one at a time", nil
 	}
 	if left > 0 {
 		holds = fmt.Sprintf("%s holds %d open %s the %s can take, its limit %d (routing.wip), and %d waiting for %s tests, another issue or paths taken, not counted",
 			s.Next, n, plural(n, "issue", "issues"), next.Role, limit, left, plural(left, "its", "their"))
 	}
-	return holds + fmt.Sprintf(": the %s starts when it has room", s.Role), nil
+	return holds + fmt.Sprintf(": the %s starts when it has room", s.Role), "", nil
 }
 
 // waiting is what stateOf returns for a step that waits: the line's

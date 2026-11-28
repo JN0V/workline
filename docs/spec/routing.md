@@ -856,12 +856,15 @@ a step starts only when the state it moves the issue to has room.
   ([ADR-0075 §4](../adr/0075-urgent-work-first-and-a-merge-queue-of-our-own.md#4-one-urgent-may-pass-a-full-ready)):
   the step of a priority-1 issue (`workline:priority/1`, or the
   project's own name for it) into the developer's state starts though
-  it is at its limit, when that state holds no other priority-1 issue;
-  said (`state-urgent`): the limit passed for an issue of priority
-  Urgent, by its name in the project. A second
-  one waits, said as above; other states' limits hold for all. The
-  room's listing below wakes none past a full state: the next event or
-  reconcile starts it.
+  it is at its limit, when that state holds no other priority-1 issue
+  and no other is on its way there. On its way: in the state before,
+  its step there not done (under way, started by a run before, its
+  record not written yet, or still due) and waiting longer, the lower
+  number first for the same time. Said in its wake (`state-wakes`):
+  the limit passed for an issue of priority Urgent, by its name in the
+  project, one at a time. A second one waits, said as above; other
+  states' limits hold for all. The room's listing below wakes none past
+  a full state: the next event or reconcile starts it.
 - **Room again**: the next event on the issue, or the reconciler, finds
   the step due and starts it; its record, written then, drops the wait.
 - **Room freed wakes the waiting**: the CI job that moved an issue asks
