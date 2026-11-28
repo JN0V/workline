@@ -169,13 +169,14 @@ key (`internal/engine/engine.go:3129`).
 
 ## Slices
 
-1. The forge's one state comment, its sections and dated history (1, 2).
-2. The call: a new comment naming the person, for the line's waits (3).
-3. The product owner: its questions and proposals as calls, `Renew`
-   removed (3).
-4. The spec review's question after its rounds as a call (3).
-5. The developer's and tester's rounds: a stall or a block only a
-   person lifts as a call; their notes as sections (3).
+1. [#2349](https://github.com/JN0V/workline/issues/2349): the forge's one state comment, its sections and
+   dated history (1, 2).
+2. [#2350](https://github.com/JN0V/workline/issues/2350): the call, for the line's waits (3).
+3. [#2351](https://github.com/JN0V/workline/issues/2351): the product owner's questions and proposals as
+   calls, `Renew` removed (3).
+4. [#2352](https://github.com/JN0V/workline/issues/2352): the spec review's question after its rounds (3).
+5. [#2353](https://github.com/JN0V/workline/issues/2353): the developer's and tester's rounds: a stall or a
+   block only a person lifts as a call, their notes as sections (3).
 
 Each builds alone after slice 1; slices 3 to 5 after slice 2.
 
