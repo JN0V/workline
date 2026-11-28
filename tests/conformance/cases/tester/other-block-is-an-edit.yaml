@@ -1,0 +1,28 @@
+case: tester/other-block-is-an-edit
+about: >
+  A tester block that waits on no person (a proof over its time) is
+  said in the tester's comment on the issue, edited: the earlier text is
+  replaced, no new comment is posted.
+given:
+  repo: go-tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "echo 'CalcTest > hangs STARTED'; sleep 30; sh run-tests.sh {report}", suite-max-seconds: 1}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n\n---\n\n## Verification\n\nA Go test.\n\n## Scope\n\n- `calc/calc.go`: a `Mul` function beside `Add`.\n"
+        comments: ["**The tester** EARLIER BLOCK SAID this.\n\n<!-- workline:sticky=tester/issue -->"]
+run: {test: [write, --issue, "3"], ai: "fake:tester-go-missing-name"}
+expect:
+  status: block
+  forge:
+    issues:
+      - id: 3
+        posted: 0
+        comments: 1
+        comment-contains: ["hangs STARTED"]
+        comment-lacks: ["EARLIER BLOCK SAID"]

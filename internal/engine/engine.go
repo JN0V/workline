@@ -4256,6 +4256,8 @@ func sharedPost(env []string) (int, error) {
 	return 0, os.WriteFile(filepath.Join(runDir, "out", "verdict.yaml"), []byte("status: pass\n"), 0o644)
 }
 
+var failedRecord = regexp.MustCompile(`<!-- workline:round-failed \{.*\} -->\n?`)
+
 var tempPath = regexp.MustCompile(`(?:/tmp|/var/folders|/private/tmp)[^\s:'"]*|workline-[A-Za-z]+-\d+`)
 
 // stableMessage is a message without what varies from run to run (a
@@ -4296,6 +4298,19 @@ func recordFailedRound(f forge.Forge, st runState, runDir, rule, message string)
 	if err != nil {
 		return
 	}
-	body := fmt.Sprintf("**The %s**'s run did not end: %s. The record of it, for the next rounds.\n\n<!-- workline:round-failed %s -->", st.Role, rule, rec)
-	_ = f.Comment(*st.Target, body, forge.Marker("round-failed-run="+filepath.Base(runDir)))
+	// In the role's state comment, edited, not a new comment: an edit mails no one, beside its last record: the two a stall compares.
+	line, text := "<!-- workline:round-failed "+string(rec)+" -->", fmt.Sprintf("**The %s**'s run did not end: %s. Its records, for the next rounds.", st.Role, rule)
+	kept, _ := forge.ReadKept(f, *st.Target)
+	marker := forge.Marker("sticky=" + st.Role + "/code")
+	last, ok := kept.Last(marker)
+	if !ok {
+		marker = forge.Marker("round-failed-run")
+		last, _ = kept.Last(marker)
+	} else {
+		text = strings.TrimSuffix(strings.TrimSpace(failedRecord.ReplaceAllString(last, "")), marker)
+	}
+	if m := failedRecord.FindAllString(last, -1); len(m) > 0 {
+		line = strings.TrimSpace(m[len(m)-1]) + "\n" + line
+	}
+	_ = forge.KeepOwn(f, *st.Target, strings.TrimSpace(text)+"\n\n"+line, marker, true)
 }

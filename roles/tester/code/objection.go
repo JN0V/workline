@@ -186,7 +186,8 @@ type answer struct {
 	Line []routing.State `json:"line,omitempty"`
 	// Text: the issue's title and body; a rewrite's missing name counts
 	// as red only when it names it (#1111).
-	Text string `json:"text,omitempty"`
+	Text   string `json:"text,omitempty"`
+	Author string `json:"author,omitempty"` // the issue's, named in a call
 	// Scenarios, a test missing's: the issue's, the test may be any's;
 	// From, the pull request whose review found it, where the answer is
 	// said too (#1265).
@@ -373,7 +374,7 @@ func answerPre(runDir, repo string, s Settings) int {
 	} else if err != nil {
 		return fail(err)
 	}
-	a.Text = is.Title + "\n" + is.Body
+	a.Text, a.Author = is.Title+"\n"+is.Body, is.Author
 	scenarios := Scenarios(work.ByMeaning(is.Body)[work.Validation].Text)
 	for _, sc := range scenarios {
 		if o.Scenario != "" && norm(sc.Name) == norm(o.Scenario) {
@@ -629,11 +630,16 @@ func plainAnswer(a answer, s Settings) ([]intent.Intention, verdict.Verdict) {
 				Findings: []verdict.Finding{{Rule: "objection-to-the-product-owner", Level: "warn", Where: a.URL,
 					Message: fmt.Sprintf("%d answers did not settle it: #%d back to the product owner", a.Answers, a.Issue)}}}
 	case modeBlocked:
-		return append([]intent.Intention{
-				{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "objection-" + a.Thread, "body": backlog.Said("The tester",
-					fmt.Sprintf("blocks this issue: an objection to its test, scenario **%s**, merge request %d ([the thread](%s)), still stands", a.Scenario.Name, a.MR, a.URL),
-					"the builder objects again after the product owner settled it: the roles do not agree",
-					"a person on the loop reads the thread, decides in it, and moves the issue back by its label")}},
+		who, said := "A person", backlog.Said("The tester",
+			fmt.Sprintf("blocks this issue: an objection to its test, scenario **%s**, merge request %d ([the thread](%s)), still stands", a.Scenario.Name, a.MR, a.URL),
+			"the builder objects again after the product owner settled it: the roles do not agree",
+			"a person on the loop reads the thread, decides in it, and moves the issue back by its label")
+		if a.Author != "" && !backlog.Bot(a.Author) {
+			who = "@" + a.Author
+		}
+		return append([]intent.Intention{ // its section edited, a call posted: a person decides, and only a new comment mails them
+				{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "objection-" + a.Thread, "update-only": true, "body": said}},
+				{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "objection-call-" + a.Thread, "body": who + ", please decide whether the test is kept or changed.\n\n" + said}},
 				a.reply(fmt.Sprintf("**Blocked**: objected to again after the product owner settled it. #%d is blocked, its reason on it; a person of the project decides in this thread.\n\n%s", a.Issue, testmark.BlockedMark))},
 				a.move(BlockedState)...),
 			verdict.Verdict{Status: verdict.Pass, Summary: "an objection past the product owner: the issue blocked" + a.left(),

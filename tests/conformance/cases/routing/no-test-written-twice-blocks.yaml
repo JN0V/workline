@@ -29,5 +29,6 @@ expect:
     issues:
       - id: 3
         labels: ["workline:blocked"]
-        comments: 1
+        comments: 2 # its state comment, and the call to a person (a new comment, the one that mails: only a block a person must lift is one, #2353)
+        posted: 1
         comment-contains: ["**workline's line** blocks this issue.", "could not propose a test file", "a person"]
