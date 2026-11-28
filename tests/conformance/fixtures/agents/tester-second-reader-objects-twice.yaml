@@ -1,0 +1,26 @@
+# A tester's reader objects to the first answer and, shown the second,
+# would object again: the second answer is the Draft, no third round.
+calls:
+  - - patch:
+        file: tests/test_over_600_refused.sh
+        content: |
+          # Over the limit: Given a payload over 600 bytes, When I check it, Then it is refused.
+          . ./lib.sh
+          refused 900
+    - covers: {scenario: "Over the limit", tests: ["test_over_600_refused"]}
+  - - note: "OBJECTION: a limit of 700 bytes in place of 600 still passes this test, which sends 900 bytes."
+  - - patch:
+        file: tests/test_over_600_refused.sh
+        content: |
+          # Over the limit: Given a payload over 600 bytes, When I check it, Then it is refused.
+          . ./lib.sh
+          refused 650
+    - covers: {scenario: "Over the limit", tests: ["test_over_600_refused"]}
+  - - note: "OBJECTION: a limit of 649 bytes in place of 600 still passes this test, which sends 650 bytes."
+  - - patch:
+        file: tests/test_over_600_refused.sh
+        content: |
+          # Over the limit: Given a payload over 600 bytes, When I check it, Then it is refused.
+          . ./lib.sh
+          refused 601
+    - covers: {scenario: "Over the limit", tests: ["test_over_600_refused"]}
