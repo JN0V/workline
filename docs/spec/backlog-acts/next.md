@@ -11,8 +11,9 @@ Part of [Acts on the backlog](../backlog-acts.md): the backlog's order, the issu
 
 ## The order, and what waits
 
-**The backlog's order** is derived, never stored: the nearest milestone
-first (by its due date, GitHub's and GitLab's alike, a milestone with one
+**The backlog's order** is derived, never stored: an Urgent issue
+(priority 1) first, whatever its milestone ([ADR-0075 §6](../../adr/0075-urgent-work-first-and-a-merge-queue-of-our-own.md#6-urgent-before-the-milestone));
+then the nearest milestone first, among Urgent issues too (by its due date, GitHub's and GitLab's alike, a milestone with one
 before a milestone without; then by title, in version order, `v1.9.0`
 before `v1.10.0`; an issue in none after every one in one), then the
 priority (an issue with none after 4), then the effort, the lightest

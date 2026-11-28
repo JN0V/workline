@@ -46,6 +46,10 @@ taken off by one — is a person's: the act is dropped and the label kept
 (`priority-kept`); the task shows such a label as a person's. No quote;
 the state must read, as for any act.
 
+Priority 1, Urgent, puts an issue before every milestone in the
+backlog's order; among Urgent issues, the milestone still comes first
+([The order, and what waits](next.md#the-order-and-what-waits)).
+
 The levels are read by name through one table (`internal/scale`,
 [ADR-0040](../../adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md)):
 the two scales, Urgent to Low and an effort Low to High, and the names
