@@ -41,7 +41,7 @@ func TestBacklogDueUrgent(t *testing.T) {
 		{"the runs unread", on, urgent("workline:priority/1"), at10, "unread", false},
 		{"no product owner on schedule", off, urgent("workline:priority/1"), at10, before, false},
 	} {
-		due, said, err := BacklogDue(lineConfig(t, c.config), &labelBook{events: c.events}, c.open, c.last)
+		due, said, err := BacklogDue(lineConfig(t, c.config), t.TempDir(), &labelBook{events: c.events}, c.open, c.last)
 		if err != nil || due != c.want || c.want && !strings.Contains(said, "#41") {
 			t.Errorf("%s: BacklogDue = %v, %q, %v; want %v, naming #41", c.name, due, said, err, c.want)
 		}
@@ -54,8 +54,32 @@ func TestBacklogDueUrgent(t *testing.T) {
 func TestBacklogDueUrgentLabelsUnread(t *testing.T) {
 	cfg := lineConfig(t, "routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 1}}\n")
 	open := []forge.Issue{{ID: 1, Labels: []string{"workline:ready"}}, {ID: 41, Labels: []string{"workline:priority/1"}}}
-	due, said, err := BacklogDue(cfg, &labelBook{err: errors.New("the forge is down")}, open, "2026-11-16T09:00:00Z/2026-11-16T09:05:00Z")
+	due, said, err := BacklogDue(cfg, t.TempDir(), &labelBook{err: errors.New("the forge is down")}, open, "2026-11-16T09:00:00Z/2026-11-16T09:05:00Z")
 	if due || said != "" || err == nil || !strings.Contains(err.Error(), "#41") || !strings.Contains(err.Error(), "the forge is down") {
 		t.Errorf("BacklogDue = %v, %q, %v; want false, \"\", an error naming #41", due, said, err)
+	}
+}
+
+// partBook is a backlog whose label events read but for the issues in err.
+type partBook struct {
+	labelBook
+	err map[int]error
+}
+
+func (p *partBook) LabelEvents(id int) ([]forge.LabelEvent, error) {
+	return p.events[id], p.err[id]
+}
+
+// TestBacklogDueUrgentGoesOn: one Urgent issue whose labels are unread
+// stops not the check: another, labelled since the last run, still makes
+// one due, the unread one said (#2322).
+func TestBacklogDueUrgentGoesOn(t *testing.T) {
+	cfg := lineConfig(t, "routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 1}}\n")
+	open := []forge.Issue{{ID: 1, Labels: []string{"workline:ready"}}, {ID: 40, Labels: []string{"workline:priority/1"}}, {ID: 41, Labels: []string{"workline:priority/1"}}}
+	b := &partBook{labelBook{events: map[int][]forge.LabelEvent{41: {{Label: "workline:priority/1", Added: true, Note: forge.Note{Created: "2026-11-16T10:00:00Z"}}}}},
+		map[int]error{40: errors.New("the forge is down")}}
+	due, said, err := BacklogDue(cfg, t.TempDir(), b, open, "2026-11-16T09:00:00Z/2026-11-16T09:05:00Z")
+	if !due || !strings.Contains(said, "#41") || err == nil || !strings.Contains(err.Error(), "#40") {
+		t.Errorf("BacklogDue = %v, %q, %v; want due for #41, #40 said unread", due, said, err)
 	}
 }

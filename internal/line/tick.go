@@ -4,45 +4,44 @@ package line
 // here, read by the tick, never written twice.
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
 
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
 )
 
 // BacklogDue says whether a backlog run is due, and why: an Urgent issue
-// (#2322, priority 1) with no state or in `refine`, labelled since the last
-// backlog run started, its labels unread an error; then Ready below its target
-// (readyBelow) and moved since that run, or it readied one (backlogDue); else
-// false and "". last is that run: `<started>/<updated>`, `none`, `waiting`, `unread`.
-func BacklogDue(cfg *routing.Config, b forge.Backlog, open []forge.Issue, last string) (bool, string, error) {
+// (#2322, priority 1 by repo's own names, ADR-0040) with no state or in
+// `refine`, labelled since the last backlog run started, one whose labels are
+// unread in unread; then Ready below its target (readyBelow) and moved since
+// that run, or it readied one (backlogDue); else false and "". last is that
+// run: `<started>/<updated>`, `none`, `waiting`, `unread`.
+func BacklogDue(cfg *routing.Config, repo string, b forge.Backlog, open []forge.Issue, last string) (due bool, why string, unread error) {
+	effortScheme(repo, b, open) // the scheme read, or workline's own labels kept: the product owner's run says a bad setting
 	start, ok := labeledAt(strings.Split(last, "/")[0])
 	for _, is := range open {
 		if st, in := cfg.StateOf(is.Labels); (ok || last == "none" || last == "") && (!in || st.Name == "refine") &&
-			slices.Contains(scale.Own.Levels(is.Labels), 1) && slices.Contains(cfg.Events["schedule"], "product-owner") {
+			backlog.Priority(is) == 1 && slices.Contains(cfg.Events["schedule"], "product-owner") {
 			events, err := b.LabelEvents(is.ID)
 			if err != nil {
-				return false, "", fmt.Errorf("#%d, %s: its labels: %w", is.ID, scale.Priority.Name(1), err)
+				unread = errors.Join(unread, fmt.Errorf("#%d, %s: its labels: %w", is.ID, scale.Priority.Name(1), err))
 			}
 			for _, e := range events {
-				if at, ok := labeledAt(e.Created); ok && e.Added && scale.Own.Of(e.Label) == 1 && at.After(start) {
-					return true, fmt.Sprintf("#%d is %s, labelled since the last backlog run: one is due", is.ID, scale.Priority.Name(1)), nil
+				if at, ok := labeledAt(e.Created); ok && e.Added && scale.Used.Priority.Family.Of(e.Label) == 1 && at.After(start) {
+					return true, fmt.Sprintf("#%d is %s, labelled since the last backlog run: one is due", is.ID, scale.Priority.Name(1)), unread
 				}
 			}
 		}
 	}
 	if !readyBelow(cfg, open) {
-		return false, "", nil
+		return false, "", unread
 	}
-	n := 0
-	for _, is := range open {
-		if st, ok := cfg.StateOf(is.Labels); ok && st.Name == readyState {
-			n++
-		}
-	}
+	n := len(slices.DeleteFunc(slices.Clone(open), func(is forge.Issue) bool { st, ok := cfg.StateOf(is.Labels); return !ok || st.Name != readyState }))
 	due, said := backlogDue(cfg, b, open, last)
-	return due, fmt.Sprintf("Ready %d below %d: %s", n, cfg.Limit(readyState), said), nil
+	return due, fmt.Sprintf("Ready %d below %d: %s", n, cfg.Limit(readyState), said), unread
 }

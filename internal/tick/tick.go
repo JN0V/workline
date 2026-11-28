@@ -217,7 +217,7 @@ func lastOf(runs []forge.Run, names []string, from time.Time) (forge.Run, bool) 
 }
 
 // backlog says why a backlog run is due, when it is, as line.BacklogDue
-// reads it; a read that failed: in Unread.
+// reads it; an Urgent issue's labels unread: in Unread, the rest checked.
 func backlog(o Options, r *Result, runsOf func(string) ([]forge.Run, error), j job, from time.Time, runsErr error) (string, bool) {
 	b, ok := o.Forge.(forge.Backlog)
 	if !ok || o.Forge == nil {
@@ -240,10 +240,11 @@ func backlog(o Options, r *Result, runsOf func(string) ([]forge.Run, error), j j
 			last = run.Started + "/" + run.Started
 		}
 	}
-	due, why, err := line.BacklogDue(o.Config, b, open, last)
+	due, why, err := line.BacklogDue(o.Config, o.Repo, b, open, last)
 	if err != nil {
-		r.Unread = append(r.Unread, "backlog: "+forge.Said(err)+": no backlog run listed on a guess")
-	} else if !due && why != "" {
+		r.Unread = append(r.Unread, "backlog: "+forge.Said(err)+": not taken for read, the others checked")
+	}
+	if !due && why != "" {
 		r.Said = append(r.Said, "backlog: "+why)
 	}
 	return why, due
