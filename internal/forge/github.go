@@ -537,6 +537,33 @@ func (g *github) editors(t Target) (map[string]string, error) {
 	return by, nil
 }
 
+// commentEditsQuery lists an issue's or a pull request's comments with
+// each one's edit history, newest first: each edit's editor, and the
+// whole body as it left it (as versionsQuery's).
+const commentEditsQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { %s(number: $number) { comments(first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { databaseId author { login } userContentEdits(first: 100) { nodes { editor { login } diff } } } } } } }`
+
+// ownLast is n's body as its author, workline's own account, last wrote
+// it, from the comment's edit history; "" when the history no longer
+// holds it.
+func (g *github) ownLast(t Target, n Note) (string, error) {
+	kind := "issue"
+	if t.Kind == "merge-request" {
+		kind = "pullRequest"
+	}
+	out, err := g.api("graphql", "--paginate", "-f", "query="+fmt.Sprintf(commentEditsQuery, kind), "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", t.ID),
+		"--jq", fmt.Sprintf(`.data.repository.%s.comments.nodes[] | select((.databaseId | tostring) == %q) | (.author.login // "-") as $a | [.userContentEdits.nodes[] | select((.editor.login // "") == $a)][0] // empty | {diff: (.diff // "")}`, kind, n.ID))
+	if err != nil {
+		return "", err
+	}
+	found, err := lines[struct {
+		Diff string `json:"diff"`
+	}](out)
+	if err != nil || len(found) == 0 {
+		return "", err
+	}
+	return found[0].Diff, nil
+}
+
 // Close closes with GitHub's own reason; a duplicate's original is named by
 // the engine's comment, "Duplicate of #n", which GitHub links.
 func (g *github) Close(id, dup int) error {
@@ -584,7 +611,17 @@ func (g *github) stickyOwn(t Target, body, marker string, create bool) error {
 	}
 	if isSection(marker) {
 		return writeState(stateOps{
-			list: func() ([]Note, error) { return g.rawNotes(t) },
+			list: func() ([]Note, error) {
+				notes, err := g.rawNotes(t)
+				if err != nil {
+					return nil, err
+				}
+				by, err := g.editors(t)
+				if err != nil {
+					return nil, fmt.Errorf("who last edited its comments could not be read: %w", err)
+				}
+				return notes, vouched(notes, by, own, func(n Note) (string, error) { return g.ownLast(t, n) })
+			},
 			post: func(b string) error {
 				_, err := g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID), "-f", "body="+b)
 				return err

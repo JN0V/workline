@@ -99,6 +99,7 @@ const intact, altered = 1, 2 // Note.section
 // overflow's (body "" for none), and the comments folded in, to delete.
 type statePlan struct {
 	main, mainID, over, overID string
+	stage                      string // the overflow written first, holding the sections leaving it too
 	drop                       []string
 	written                    bool // the section there already, as asked
 }
@@ -108,8 +109,12 @@ type statePlan struct {
 // is left, and the section written beside it.
 func planState(notes []Note, own Own, body, marker string, create bool, now time.Time) (statePlan, bool) {
 	var p statePlan
-	var secs, folded []section
+	var secs, folded, oldOver []section
 	var hist []string
+	notes = slices.Clone(notes) // the overflow read last: of a section in both, the main comment's
+	slices.SortStableFunc(notes, func(a, b Note) int {
+		return cmp.Compare(strings.Count(a.Body, overMark), strings.Count(b.Body, overMark))
+	})
 	for _, n := range notes {
 		s, h := sections(n, own)
 		state, over := strings.Contains(n.Body, stateMark), strings.Contains(n.Body, overMark)
@@ -120,12 +125,17 @@ func planState(notes []Note, own Own, body, marker string, create bool, now time
 		case state && p.mainID == "":
 			p.mainID = n.ID
 		case over && p.overID == "":
-			p.overID = n.ID
+			p.overID, oldOver = n.ID, s
 		case state || over || len(s) > 0: // an older one, folded in
 			p.drop, folded = append(p.drop, n.ID), append(folded, s...)
 			s = nil
 		}
-		secs, hist = append(secs, s...), append(hist, h...)
+		for _, x := range s { // a section in both comments, of a write cut short, once
+			if !slices.ContainsFunc(secs, func(o section) bool { return o.marker == x.marker }) {
+				secs = append(secs, x)
+			}
+		}
+		hist = append(hist, h...)
 	}
 	k := len(secs) // the state comment's own sections first, then the last folded of a key
 	for _, x := range folded {
@@ -155,28 +165,70 @@ func planState(notes []Note, own Own, body, marker string, create bool, now time
 		hist = append(hist, fmt.Sprintf("- %s %s: %s", now.UTC().Format("2006-01-02 15:04 UTC"), role, sentence(body)))
 	}
 	hist = hist[max(0, len(hist)-historyKept):]
-	// The history cut first, then the largest sections to the overflow.
+	// The history cut first, then the largest section the overflow still
+	// holds moves there, at most one overflow; none fitting, the largest
+	// is cut: a shorter comment, not a failed write.
 	var over []section
 	for {
 		h := hist
 		for len(h) > 0 && utf8.RuneCountInString(render(stateMark, secs, h)) > stateLimit {
 			h = h[1:]
 		}
-		if p.main = render(stateMark, secs, h); utf8.RuneCountInString(p.main) <= stateLimit || len(secs) == 1 {
+		p.main = render(stateMark, secs, h)
+		excess := utf8.RuneCountInString(p.main) - stateLimit
+		if excess <= 0 {
 			break
 		}
-		i := 0
+		big, fit := 0, -1
 		for j := range secs {
-			if len(secs[j].content) > len(secs[i].content) {
-				i = j
+			if len(secs[j].content) > len(secs[big].content) {
+				big = j
+			}
+			if len(secs) > 1 && utf8.RuneCountInString(render(overMark, append(slices.Clone(over), secs[j]), nil)) <= stateLimit && (fit < 0 || len(secs[j].content) > len(secs[fit].content)) {
+				fit = j
 			}
 		}
-		over, secs = append(over, secs[i]), slices.Delete(secs, i, i+1)
+		if fit >= 0 {
+			over, secs = append(over, secs[fit]), slices.Delete(secs, fit, fit+1)
+		} else if c := clip(secs[big], excess); c.content != secs[big].content {
+			secs[big] = c
+		} else {
+			break // nothing left to cut
+		}
 	}
 	if len(over) > 0 {
 		p.over = render(overMark, over, nil)
 	}
+	// Sections leaving the overflow stay in it until the main comment
+	// holding them is written: each is in a comment at every step.
+	var leaving []section
+	for _, x := range oldOver {
+		if !slices.ContainsFunc(over, func(o section) bool { return o.marker == x.marker }) {
+			leaving = append(leaving, x)
+		}
+	}
+	if len(over) > 0 && len(leaving) > 0 {
+		if st := render(overMark, append(slices.Clone(over), leaving...), nil); utf8.RuneCountInString(st) <= stateLimit {
+			p.stage = st
+		}
+	}
 	return p, true
+}
+
+// clip cuts a section's text by n characters, and the line saying so,
+// its marker kept, so its record is still found.
+func clip(s section, n int) section {
+	body := []rune(strings.TrimSuffix(s.content, "\n\n"+s.marker))
+	keep := max(0, len(body)-n-64)
+	c := string(body[:keep]) + fmt.Sprintf("\n\n_(Cut: %d characters past the forge's limit.)_\n\n", len(body)-keep) + s.marker
+	if len(c) >= len(s.content) {
+		return s // nothing left to cut
+	}
+	if s.sum == digest(s.content) {
+		s.sum = digest(c)
+	}
+	s.content = c
+	return s
 }
 
 // render: the mark, each section headed by its role's name, the history.
@@ -208,6 +260,44 @@ func sentence(body string) string {
 	return "wrote its section."
 }
 
+// vouched marks, in the comments a write reads, what one who is not
+// workline's own account edited, so it is never written again as
+// workline's: an older comment's editor, and each section of a state
+// comment no longer as workline's own account last wrote it, as last
+// says (nil where the forge keeps no versions: every section then). A
+// section's digest alone does not tell: anyone may compute it.
+func vouched(notes []Note, by map[string]string, own Own, last func(Note) (string, error)) error {
+	for i, n := range notes {
+		if who := by[n.ID]; who != "" && !own.Wrote(Note{Author: who}) {
+			notes[i].Editor = who
+			if !strings.Contains(n.Body, stateMark) && !strings.Contains(n.Body, overMark) {
+				continue
+			}
+			l := ""
+			if last != nil {
+				var err error
+				if l, err = last(n); err != nil {
+					return err
+				}
+			}
+			notes[i].Body = sectionRe.ReplaceAllStringFunc(n.Body, func(sec string) string {
+				m := sectionRe.FindStringSubmatch(sec)
+				if ownWrote(l, m[2]) {
+					return sec
+				}
+				return strings.Replace(sec, "section "+m[1]+" -->", "section edited -->", 1)
+			})
+		}
+	}
+	return nil
+}
+
+// ownWrote says whether last, a state comment as workline's own account
+// last wrote it, holds the section content as it is.
+func ownWrote(last, content string) bool {
+	return slices.ContainsFunc(sectionRe.FindAllStringSubmatch(last, -1), func(m []string) bool { return m[2] == content })
+}
+
 // knowsOwn: who workline writes as is read, so its state comment, and
 // the comments to fold, are told from another's.
 func (g *github) knowsOwn() bool { _, err := g.own(); return err == nil }
@@ -220,19 +310,30 @@ type stateOps struct {
 	edit       func(id, body string) error
 }
 
-// apply writes the main comment, the overflow, then deletes those folded
-// in, or an overflow left empty: nothing lost between.
-func (p statePlan) apply(o stateOps) (err error) {
-	for _, c := range [][2]string{{p.mainID, p.main}, {p.overID, p.over}} {
-		switch {
-		case c[1] == "" && c[0] != "":
-			p.drop = append(p.drop, c[0])
-		case c[0] == "" && c[1] != "":
-			err = o.post(c[1])
-		case c[1] != "":
-			err = o.edit(c[0], c[1])
+// apply writes the overflow, the main comment, then deletes those folded
+// in, or an overflow left empty: a section moving to the overflow is
+// written there before the main comment drops it, and one leaving it
+// kept there (stage) until the main comment holds it: nothing lost
+// between, whichever write fails.
+func (p statePlan) apply(o stateOps) error {
+	var writes [][2]string
+	if p.over != "" {
+		writes = append(writes, [2]string{p.overID, cmp.Or(p.stage, p.over)})
+	} else if p.overID != "" {
+		p.drop = append(p.drop, p.overID)
+	}
+	if p.main != "" { // "": nothing to write
+		writes = append(writes, [2]string{p.mainID, p.main})
+	}
+	if p.stage != "" {
+		writes = append(writes, [2]string{p.overID, p.over})
+	}
+	for _, c := range writes {
+		write := func() error { return o.post(c[1]) }
+		if c[0] != "" {
+			write = func() error { return o.edit(c[0], c[1]) }
 		}
-		if err != nil {
+		if err := write(); err != nil {
 			return err
 		}
 	}

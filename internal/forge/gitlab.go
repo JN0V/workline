@@ -1121,7 +1121,14 @@ func (g *gitlab) stickyOwn(t Target, body, marker string, create bool) error {
 				for _, n := range found {
 					all = append(all, Note{Body: n.Body, Author: n.Author.Username, ID: strconv.Itoa(n.ID)})
 				}
-				return all, err
+				if err != nil {
+					return nil, err
+				}
+				by, err := g.editors(t)
+				if err != nil {
+					return nil, fmt.Errorf("who last edited its notes could not be read: %w", err)
+				}
+				return all, vouched(all, by, own, nil)
 			},
 			post: func(b string) error {
 				_, err := g.api("-X", "POST", path(t)+"/notes", "-f", "body="+b)

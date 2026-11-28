@@ -104,12 +104,31 @@ func ReadKept(f Forge, t Target) (Kept, error) {
 		if err != nil {
 			return Kept{}, fmt.Errorf("who last edited its comments could not be read: %w", err)
 		}
-		// A section of the state comment is edited by whoever edited the
-		// comment only when its text is no longer what workline wrote.
+		// A section of the state comment another edited is read only when
+		// its text is as workline's own account last wrote it, as the
+		// forge's versions of the comment say (GitHub's); a forge keeping
+		// none (GitLab), never: its digest alone anyone may compute.
+		lasts := map[string]string{}
 		for i, n := range notes {
-			if who := by[n.ID]; who != "" && n.section != intact && (n.section != altered || !own.Wrote(Note{Author: who})) {
-				notes[i].Editor = who
+			who := by[n.ID]
+			if who == "" || n.section != 0 && own.Wrote(Note{Author: who}) {
+				continue
 			}
+			if v, ok := f.(interface {
+				ownLast(t Target, n Note) (string, error)
+			}); ok && n.section == intact {
+				l, seen := lasts[n.ID]
+				if !seen {
+					if l, err = v.ownLast(t, n); err != nil {
+						return Kept{}, fmt.Errorf("what workline last wrote in its state comment could not be read: %w", err)
+					}
+					lasts[n.ID] = l
+				}
+				if ownWrote(l, n.Body) {
+					continue
+				}
+			}
+			notes[i].Editor = who
 		}
 	}
 	return Kept{notes: notes, own: own}, nil
