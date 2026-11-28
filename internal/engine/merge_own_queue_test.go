@@ -3,7 +3,10 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
@@ -125,5 +128,39 @@ func TestOwnQueueOrdersByPriorityThenTime(t *testing.T) {
 	}
 	if fmt.Sprint(order) != "[#4 #3 #2 #1]" {
 		t.Fatalf("order: %v, want [#4 #3 #2 #1]", order)
+	}
+}
+
+// A pending head waits the repository's own verdict budget, read from its
+// routing, not 180 s: past it, it is passed over and said with that budget,
+// and the next one is updated; within it, it is still the head.
+func TestOwnQueuePendingWaitsTheRoutingBudget(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".workline"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), []byte("routing: {budgets: {verdict: 60}}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		since time.Duration
+		want  map[string]string
+	}{
+		{90 * time.Second, map[string]string{"#1": "passed over, checks pending past 60 s", "#2": "head of the queue, main merged in"}},
+		{30 * time.Second, map[string]string{"#1": "head of the queue, its checks pending since its update", "#2": "queued, position 2"}},
+	} {
+		res := &Result{}
+		merged := func(bool, string) (bool, error) {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "merged-from-base", Where: "#2"})
+			return true, nil
+		}
+		pending := queued(1, time.Now().UTC().Add(-c.since).Format(time.RFC3339), merged)
+		pending.st.Checks = "pending"
+		if err := ownQueue(nil, FollowOptions{Repo: repo, Base: "main"}, res, []*inLine{pending, queued(2, time.Now().UTC().Format(time.RFC3339), merged)}, nil); err != nil {
+			t.Fatal(err)
+		}
+		if got := lines(res); fmt.Sprint(got) != fmt.Sprint(c.want) {
+			t.Fatalf("%s since its update: lines %v, want %v", c.since, got, c.want)
+		}
 	}
 }

@@ -67,8 +67,10 @@ all in the same run
   (`workline's tester branch, not a developer's`, `a person's branch`,
   a fork's included): never updated by workline.
 - **Pending checks**: the head stays the head, nothing else updated,
-  until 180 s since its last update; past it, it is passed over and
-  said. Not the `verdict` budget of `routing.yaml`: no setting.
+  until the `verdict` budget since its last update (180 s in
+  `defaults/routing.yaml`, a repository's own `routing.budgets.verdict`
+  where it sets one); past it, it is passed over and said
+  `checks pending past <budget> s`.
 - **Said in the run's summary only**, one line each, no comment, no
   marker:
   - `#N: head of the queue, main merged in`;
