@@ -41,7 +41,7 @@ flowchart LR
 | Job | Due when | Its run's name |
 |---|---|---|
 | `reconcile` | every tick; or its `at` or `gap`, when set | `workline develop reconcile` |
-| `backlog` | Ready below its target, and Ready moved since the last backlog run ([#1549](https://github.com/JN0V/workline/issues/1549)) | `workline gardening backlog` |
+| `backlog` | Ready below its target, and Ready moved since the last backlog run ([#1549](https://github.com/JN0V/workline/issues/1549)); or, Ready full or not, an Urgent issue (priority 1: `workline:priority/1`, or the project's own name for it, as the product owner's `priority` setting reads it) with no state or in `to-refine`, its label put on since the last backlog run started, the reason naming it; one whose labels are unread is said unread, the others checked ([#2322](https://github.com/JN0V/workline/issues/2322)) | `workline gardening backlog` |
 | `nightly` | its `at` passed, no run since; not timed unless set | `workline gardening nightly` |
 | `docs` | its `at` passed, no run since; `7 18 * * 0` shipped | `workline gardening docs` |
 | `merge` | its `gap` passed since its last run; `60` shipped | `workline merge` |
