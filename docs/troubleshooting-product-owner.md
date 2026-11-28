@@ -59,7 +59,11 @@ When the product owner pauses, or an issue gets nothing. Part of
 - An issue refined never goes ready, the reviewer after it in the line
   ([#128](https://github.com/JN0V/workline/issues/128)): `spec-not-reviewed` — the reviewer reads `specs-per-run` issues a
   run (5), the rest the next (`spec-waits`), none without an agent or
-  with `forge-writes: false`; `spec-findings-open` —
+  with `forge-writes: false`; `spec-over-budget` — the reviewer's prompt
+  for it is over its context budget, not asked again on the same body:
+  make the issue smaller (fewer or shorter files in its Scope), split it,
+  or give the reviewer a larger budget, then edit the issue or delete the
+  reviewer's comment; `spec-findings-open` —
   read the reviewer's comment on the issue; `spec-rounds-spent` — a
   person decides: `workline:accepted`, or `workline:ready` by hand.
 - An issue refined stays out of ready, `scenarios-unread`: its
