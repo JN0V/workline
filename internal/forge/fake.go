@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Fake is a forge kept in a JSON file, shared between processes, for the
@@ -473,6 +474,7 @@ func (f *Fake) Notes(t Target) ([]Note, error) {
 		}
 		notes = append(notes, n)
 	}
+	notes = splitState(notes)
 	// Counted, as a real forge counts the call, beside the state: never
 	// written over a change made meanwhile (an agent's, another run's).
 	r, err := os.OpenFile(f.Path+ReadsSuffix, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
@@ -602,7 +604,61 @@ func (f *Fake) stickyOwn(t Target, body, marker string, create bool) error {
 	return f.sticky(t, body, marker, create, true)
 }
 
+// state writes a section of the state comment in one write, as one
+// request: comments folded in are deleted, the others keeping their ids.
+func (f *Fake) state(t Target, body, marker string, create bool) error {
+	own, _ := f.own()
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(t)
+		if err != nil {
+			return err
+		}
+		notes := make([]Note, len(it.Comments))
+		for i, c := range it.Comments {
+			if notes[i] = Note(c); c.ID == "" {
+				notes[i].ID = strconv.Itoa(i + 1)
+			}
+		}
+		p, ok := planState(notes, own, body, marker, create, time.Now())
+		gone, next := map[string]bool{}, len(notes)+1
+		_ = p.apply(stateOps{
+			post: func(b string) error {
+				it.Comments, it.Posted = append(it.Comments, FakeComment{Body: b, Author: fakeBot, Bot: true}), it.Posted+1
+				return nil
+			},
+			edit: func(id, b string) error {
+				i := slices.IndexFunc(notes, func(n Note) bool { return n.ID == id })
+				it.Comments[i].Body, it.Comments[i].Editor = b, ""
+				return nil
+			},
+			drop: func(id string) error { gone[id] = true; return nil },
+		})
+		if !ok || len(gone) == 0 {
+			return nil
+		}
+		for _, n := range notes { // as Renew: the comments left keep their ids
+			if k, err := strconv.Atoi(n.ID); err == nil && k >= next {
+				next = k + 1
+			}
+		}
+		kept := []FakeComment{}
+		for i, c := range it.Comments {
+			if c.ID = strconv.Itoa(next + i - len(notes)); i < len(notes) {
+				c.ID = notes[i].ID
+			}
+			if !gone[c.ID] {
+				kept = append(kept, c)
+			}
+		}
+		it.Comments = kept
+		return nil
+	})
+}
+
 func (f *Fake) sticky(t Target, body, marker string, create, mine bool) error {
+	if isSection(marker) {
+		return f.state(t, body, marker, create)
+	}
 	return f.write(func(s *FakeState) error {
 		it, err := s.item(t)
 		if err != nil {

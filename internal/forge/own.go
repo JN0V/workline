@@ -57,6 +57,10 @@ func OwnAccount(f any) (Own, error) {
 // marker is left, and workline's own posted after it, even with create
 // false. A command is asked so (`own`); the local forge's comments are
 // all the person's.
+//
+// A role's `sticky=` key is a section of workline's one state comment on
+// GitHub, GitLab and the simulated forge (ADR-0076): there it is always
+// workline's own, another's carrying the marker left as it is.
 func KeepOwn(f Forge, t Target, body, marker string, create bool) error {
 	if o, ok := f.(interface {
 		stickyOwn(t Target, body, marker string, create bool) error
@@ -87,6 +91,10 @@ func ReadKept(f Forge, t Target) (Kept, error) {
 	if err != nil && !errors.Is(err, ErrAuthorsUnknown) {
 		return Kept{}, err
 	}
+	own, err := OwnAccount(f)
+	if err != nil {
+		return Kept{}, fmt.Errorf("who workline's own account is could not be read: %w", err)
+	}
 	if e, ok := f.(interface {
 		editors(t Target) (map[string]string, error)
 	}); ok {
@@ -94,15 +102,13 @@ func ReadKept(f Forge, t Target) (Kept, error) {
 		if err != nil {
 			return Kept{}, fmt.Errorf("who last edited its comments could not be read: %w", err)
 		}
-		for i := range notes {
-			if who := by[notes[i].ID]; who != "" {
+		// A section of the state comment is edited by whoever edited the
+		// comment only when its text is no longer what workline wrote.
+		for i, n := range notes {
+			if who := by[n.ID]; who != "" && n.section != intact && (n.section != altered || !own.Wrote(Note{Author: who})) {
 				notes[i].Editor = who
 			}
 		}
-	}
-	own, err := OwnAccount(f)
-	if err != nil {
-		return Kept{}, fmt.Errorf("who workline's own account is could not be read: %w", err)
 	}
 	return Kept{notes: notes, own: own}, nil
 }

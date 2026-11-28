@@ -763,11 +763,14 @@ func (g *gitlab) RemoveBlocker(id, blocker int) error {
 // so a token that may not list the project's members reads them (#552).
 func (g *gitlab) Comments(t Target) ([]string, error) {
 	found, err := g.notes(t)
-	var all []string
+	var all []Note
 	for _, n := range found {
-		all = append(all, n.Body)
+		all = append(all, Note{Body: n.Body})
 	}
-	return all, err
+	if bodies := Bodies(splitState(all)); len(bodies) > 0 {
+		return bodies, err
+	}
+	return nil, err
 }
 
 // Notes reads each note's author, of the project by their access level; a
@@ -794,7 +797,7 @@ func (g *gitlab) Notes(t Target) ([]Note, error) {
 		}
 		all = append(all, Note{Body: n.Body, Author: n.Author.Username, Insider: in, Bot: bot, Created: n.Created, ID: strconv.Itoa(n.ID)})
 	}
-	return all, unknown
+	return splitState(all), unknown
 }
 
 // gitlabNote is a note as GitLab lists it.
@@ -1092,16 +1095,49 @@ func (g *gitlab) Comment(t Target, body, marker string) error {
 	return err
 }
 
+// Sticky writes a role's section in workline's state comment; where
+// who workline writes as cannot be read, its own comment, as before.
 func (g *gitlab) Sticky(t Target, body, marker string, create bool) error {
+	if isSection(marker) && g.knowsOwn() {
+		return g.stickyOwn(t, body, marker, create)
+	}
 	return g.sticky(t, body, marker, create, nil)
 }
 
 // stickyOwn edits the last note carrying marker that workline's own
-// account wrote (KeepOwn); never another's.
+// account wrote (KeepOwn); never another's. A role's section is written
+// in workline's state note (writeState); one GitLab lets the token not
+// delete, a person's, is left.
 func (g *gitlab) stickyOwn(t Target, body, marker string, create bool) error {
 	own, err := g.own()
 	if err != nil {
 		return err
+	}
+	if isSection(marker) {
+		return writeState(stateOps{
+			list: func() ([]Note, error) {
+				found, err := g.notes(t)
+				var all []Note
+				for _, n := range found {
+					all = append(all, Note{Body: n.Body, Author: n.Author.Username, ID: strconv.Itoa(n.ID)})
+				}
+				return all, err
+			},
+			post: func(b string) error {
+				_, err := g.api("-X", "POST", path(t)+"/notes", "-f", "body="+b)
+				return err
+			},
+			edit: func(id, b string) error {
+				_, err := g.api("-X", "PUT", path(t)+"/notes/"+id, "-f", "body="+b)
+				return err
+			},
+			drop: func(id string) error {
+				if _, err := g.api("-X", "DELETE", path(t)+"/notes/"+id); !errors.Is(err, errNotFound) && !errors.Is(err, errForbidden) {
+					return err
+				}
+				return nil
+			},
+		}, own, body, marker, create)
 	}
 	return g.sticky(t, body, marker, create, &own)
 }

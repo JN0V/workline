@@ -175,6 +175,9 @@ type Note struct {
 	// from it could hold what they wrote (ADR-0051, cut 5); "" when none
 	// did, or the forge does not say.
 	Editor string `json:"editor,omitempty"`
+	// section: read from a section of workline's state comment, intact or
+	// altered since workline wrote it (splitState); 0 for a comment.
+	section int8
 }
 
 // LabelEvent is a label set on an issue, or taken off, with who did it

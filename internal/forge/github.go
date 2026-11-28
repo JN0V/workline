@@ -482,6 +482,12 @@ func (g *github) Comments(t Target) ([]string, error) {
 // issue's; an app's comment (a user of type Bot) is a bot's, and names
 // the App (performed_via_github_app).
 func (g *github) Notes(t Target) ([]Note, error) {
+	notes, err := g.rawNotes(t)
+	return splitState(notes), err
+}
+
+// rawNotes are t's comments as GitHub holds them, the state comment whole.
+func (g *github) rawNotes(t Target) ([]Note, error) {
 	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments?per_page=100", t.ID),
 		"--jq", ".[] | {body: (.body // \"\"), author: .user.login, association: .author_association, bot: (.user.type == \"Bot\"), created: .created_at, id: (.id | tostring), app: (.performed_via_github_app.id // \"\" | tostring)}")
 	if err != nil {
@@ -558,17 +564,42 @@ func (g *github) Comment(t Target, body, marker string) error {
 	return err
 }
 
+// Sticky writes a role's section in workline's state comment; where
+// who workline writes as cannot be read, its own comment, as before.
 func (g *github) Sticky(t Target, body, marker string, create bool) error {
+	if isSection(marker) && g.knowsOwn() {
+		return g.stickyOwn(t, body, marker, create)
+	}
 	return g.sticky(t, body, marker, create, nil)
 }
 
 // stickyOwn edits the last comment carrying marker that workline's own
 // account wrote (KeepOwn); never another's, which GitHub lets one who
-// may write edit too, and which stays theirs.
+// may write edit too, and which stays theirs. A role's section is
+// written in workline's state comment (writeState).
 func (g *github) stickyOwn(t Target, body, marker string, create bool) error {
 	own, err := g.own()
 	if err != nil {
 		return err
+	}
+	if isSection(marker) {
+		return writeState(stateOps{
+			list: func() ([]Note, error) { return g.rawNotes(t) },
+			post: func(b string) error {
+				_, err := g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID), "-f", "body="+b)
+				return err
+			},
+			edit: func(id, b string) error {
+				_, err := g.api("-X", "PATCH", "repos/{owner}/{repo}/issues/comments/"+id, "-f", "body="+b)
+				return err
+			},
+			drop: func(id string) error {
+				if _, err := g.api("-X", "DELETE", "repos/{owner}/{repo}/issues/comments/"+id); !errors.Is(err, errNotFound) {
+					return err
+				}
+				return nil
+			},
+		}, own, body, marker, create)
 	}
 	return g.sticky(t, body, marker, create, &own)
 }
