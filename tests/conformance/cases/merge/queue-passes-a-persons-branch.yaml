@@ -1,0 +1,58 @@
+case: merge/queue-passes-a-persons-branch
+about: >
+  A person's branch, accepted and behind main, first in priority (it
+  closes a priority-1 issue and turned auto-merge on first): workline
+  never writes to a person's branch. It is passed over, said in the
+  run's summary with its reason, and the next one, the developer's, is
+  the head and is updated.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "git checkout -qb workline/developer/4 main && echo A > A.md && git add A.md && git commit -qm 'docs: a' -m 'Workline-Role: developer' && git push -q origin workline/developer/4 && git checkout -q main"
+    - "echo 'More.' > MORE.md && git add MORE.md && git commit -qm 'docs: more' && git push -q origin main"
+  forge:
+    issues:
+      - {id: 20, title: "Sessions last longer", labels: [workline:priority/1], comments: []}
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/4", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        closes: [20]
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:05:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+      - id: 8
+        branch: workline/developer/4
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:06:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/4, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: merged-from-base, where: "#8"}]
+  no-findings: [{rule: merged-from-base, where: "#7"}]
+  pushed:
+    workline/developer/4: {MORE.md: "More."}
+  not-pushed: [feat/sessions]
+  summary-file: ["#7: passed over", "a person's branch", "#8: head of the queue, main merged in"]

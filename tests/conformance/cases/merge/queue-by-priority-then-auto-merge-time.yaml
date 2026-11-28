@@ -1,0 +1,59 @@
+case: merge/queue-by-priority-then-auto-merge-time
+about: >
+  Two accepted pull requests held behind main. `#7` turned auto-merge on
+  first and closes no priority issue; `#8` turned it on last but closes
+  issue 4, priority 1. `workline follow` updates `#8` first: the head of
+  the queue is the more urgent one, the other queued at position 2.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/developer/3 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' -m 'Workline-Role: developer' && git push -q origin workline/developer/3 && git checkout -q main"
+    - "git checkout -qb workline/developer/4 main && echo A > A.md && git add A.md && git commit -qm 'fix: a' -m 'Workline-Role: developer' && git push -q origin workline/developer/4 && git checkout -q main"
+    - "echo 'More.' > MORE.md && git add MORE.md && git commit -qm 'docs: more' && git push -q origin main"
+  forge:
+    issues:
+      - {id: 3, title: "Keep users signed in", labels: [], comments: []}
+      - {id: 4, title: "Fix the login", labels: [workline:priority/1], comments: []}
+    statuses:
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/4", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: workline/developer/3
+        base: main
+        author: dana
+        closes: [3]
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:05:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+      - id: 8
+        branch: workline/developer/4
+        base: main
+        author: dana
+        closes: [4]
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:09:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/4, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: merged-from-base, where: "#8"}]
+  no-findings: [{rule: merged-from-base, where: "#7"}]
+  pushed:
+    workline/developer/4: {MORE.md: "More."}
+  not-pushed: [workline/developer/3]
+  summary-file: ["#8: head of the queue, main merged in", "#7: queued, position 2"]
