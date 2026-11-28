@@ -1,0 +1,44 @@
+case: tester/dc-191-guards-device-builds
+about: >
+  DomoticsCore issue #191 ("LO-36 — WebUI.h includes <pgmspace.h> directly
+  instead of through a HAL header"), as the tester read it on 2026-11-23
+  (the body before the Verification the engine wrote from its tests), on
+  main at c42c667. Its Draft then:
+  https://github.com/JN0V/DomoticsCore/pull/248. Left with no guard then
+  ("kept as today … nothing guards it"): Device builds unchanged. Expected
+  now: each has a guard test, green on the base, that checks its Then by
+  running the code. Scenario "Header is indirect" — a sound test: The Then
+  is about text, so the grep is its literal check; the behaviour behind
+  it: a native suite that includes only
+  DomoticsCore/WebUI/WebResponse_HAL.h (no <pgmspace.h>, no WebUI.h) and
+  calls memcpy_P / strlen_P / pgm_read_byte on a byte array, asserting the
+  bytes read. Red on base: those names are undeclared without
+  <pgmspace.h>. Which HAL header carries them is an assumption (the issue
+  names WebResponse_HAL.h as the pattern). To refuse: Asserting only that
+  the string "<pgmspace.h>" is absent from WebUI.h: passes if the include
+  moves to any non-HAL header WebUI.h pulls in. Not counted for or against
+  (bench validity): the Then asks about a source's text. The Draft's proof
+  runs the component holding the tests alone (a `draft-command` and
+  `module-files` the case adds), not DomoticsCore's whole native suite;
+  `pio` must be on PATH.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: c42c667e603286ad0653c75ba5a60deacfecd78d}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|^\\( *\\)test-command: tools/workline-tests.sh {report}$|&\\n\\1draft-command: tools/workline-tests.sh {report} {packages}\\n\\1module-files: [platformio.ini]|' .workline/config.yaml && grep -q draft-command .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the Draft is proven on its component alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 191
+        title: "LO-36 — WebUI.h includes <pgmspace.h> directly instead of through a HAL header"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "task"]
+        body: "WebUI.h includes the platform header <pgmspace.h> directly. A component file should reach it through a HAL header instead. This is also why the host build needs a pgmspace.h mock. WebResponse_HAL.h already hides the one API that differs per platform. It hurts maintainers who build and test on the host.\n\n<details><summary>Where it is in the code</summary>DomoticsCore-WebUI/include/DomoticsCore/WebUI.h line 18; mock in tests/mocks/libraries/pgmspace.h; HAL pattern in DomoticsCore-WebUI/include/DomoticsCore/WebUI/WebResponse_HAL.h. Constitution IX covers #ifdef, so this is adjacent, not a breach.</details>\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6356 to 6356 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:0d59da149118 -->\n\n## Need\n\nA maintainer needs component files to reach platform headers through a HAL header, so the host build does not need its own pgmspace.h mock.\n\n## Validation\n\n- **Header is indirect:** Given the WebUI component sources, When I search `DomoticsCore-WebUI/include/DomoticsCore/WebUI.h` for `<pgmspace.h>`, Then it is not included there directly; it comes through a HAL header.\n- **Host build without the mock:** Given `tests/mocks/libraries/pgmspace.h` removed, When I run the native WebUI tests, Then they build and pass.\n- **Device builds unchanged:** Given the ESP32 and ESP8266 builds, When I build the WebUI component, Then it compiles and the flash-string helpers still work.\n\n---\n\n## Verification\n\nThe native WebUI tests build and pass with the pgmspace.h mock removed, and WebUI.h no longer includes <pgmspace.h> directly.\n\n## Scope\n\nWebUI.h and the WebUI HAL headers; the host mock in tests/mocks/libraries/pgmspace.h."
+run: {role: tester, event: issue, target: "issue:191", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-191']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Device builds unchanged: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-191']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"device builds unchanged\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

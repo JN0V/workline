@@ -1,0 +1,48 @@
+case: tester/dc-158-guards-same-messages
+about: >
+  DomoticsCore issue #158 ("LO-2: MQTTPublishEvent is 830 bytes, reduce
+  field sizes"), as the tester read it on 2026-11-23 (the body before the
+  Verification the engine wrote from its tests), on main at 77e4b91. Its
+  Draft then: https://github.com/JN0V/DomoticsCore/pull/265. Left with no
+  guard then ("kept as today … nothing guards it"): Same messages.
+  Expected now: each has a guard test, green on the base, that checks its
+  Then by running the code. Scenario "Smaller event" — a sound test:
+  Assert sizeof(MQTTPublishEvent) < 830 and that the queue really pays
+  less: QueueCost::block(sizeof(MQTTPublishEvent)) <
+  QueueCost::block(830), and QueueCost::kReference ==
+  QueueCost::of(sizeof(MQTTPublishEvent),
+  strlen(MQTTEvents::EVENT_PUBLISH)) (EventBus.h). To refuse: sizeof < 830
+  alone: green on the 829-byte fix, where block() rounds to the same 832
+  and kReference is untouched, so no memory is gained. Scenario "Same
+  messages" — a sound test: Connected MQTTComponent on the stub; emit
+  MQTTEvents::EVENT_PUBLISH with a topic of 127 chars and a payload of 699
+  chars (literals, not the MQTT_EVENT_*_SIZE constants), poll; assert
+  getClientForTest()->lastTopic / lastPayload equal them byte for byte.
+  Green on base; it is the guard a field shrink must face. To refuse:
+  Sizing the message from MQTT_EVENT_PAYLOAD_SIZE - 1: it follows the
+  shrink and proves nothing. Leaving it unwritten let the merged fix cut
+  the payload to 640 with no test seeing it. The Draft's proof runs the
+  component holding the tests alone (a `draft-command` and `module-files`
+  the case adds), not DomoticsCore's whole native suite; `pio` must be on
+  PATH.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 77e4b918e13661552ba6ced3212171c2e340b457}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|^\\( *\\)test-command: tools/workline-tests.sh {report}$|&\\n\\1draft-command: tools/workline-tests.sh {report} {packages}\\n\\1module-files: [platformio.ini]|' .workline/config.yaml && grep -q draft-command .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the Draft is proven on its component alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 158
+        title: "LO-2: MQTTPublishEvent is 830 bytes, reduce field sizes"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "task"]
+        body: "The MQTT publish event takes 830 bytes. The event bus sizes its queue from this figure, so the event costs memory on small boards. The wish is to reduce its field sizes. It hurts boards with little RAM, such as the ESP8266.\n\n<details><summary>For the builder</summary>The size is `sizeof(MQTTPublishEvent)`. The event bus uses 830 as `kReference` in `DomoticsCore-Core/include/DomoticsCore/EventBus.h`.</details>\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6322 to 6322 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:a383a9b7cbf9 -->\n\n## Need\n\nAs a builder for a board with little RAM, I want the MQTT publish event to be smaller, so that the event queue holds more events or uses less memory.\n\n## Validation\n\n- **Smaller event:** Given the new event type, When I print its `sizeof`, Then it is below 830 bytes.\n- **Same messages:** Given a topic and payload that fit before, When I publish them, Then they still arrive whole.\n\n---\n\n## Verification\n\n- A compile-time check on the size of the event.\n- The MQTT tests (`test_mqtt_component`) pass.\n- The event bus reference size is updated to match.\n\n## Scope\n\nThe MQTT publish event type in the MQTT headers, and the reference size in the event bus."
+run: {role: tester, event: issue, target: "issue:158", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-158']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Same messages: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-158']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"same messages\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

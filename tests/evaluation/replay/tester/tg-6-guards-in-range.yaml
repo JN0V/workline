@@ -1,0 +1,52 @@
+case: tester/tg-6-guards-in-range
+about: >
+  TraceGlass issue #6 ("A break interval saved outside 5 to 60 minutes is
+  used as is"), as the tester read it on 2026-11-23 (the body before the
+  Verification the engine wrote from its tests), on main at 8d3965c. Its
+  Draft then: https://github.com/JN0V/TraceGlass/pull/12. Left with no
+  guard then ("kept as today … nothing guards it"): in range kept.
+  Expected now: each has a guard test, green on the base, that checks its
+  Then by running the code. Scenario "too short" — a sound test: Real
+  DataStoreSettingsRepository over PreferenceDataStoreFactory in a temp
+  dir; put 0 under the raw key
+  `intPreferencesKey("settings_break_interval")` with `dataStore.edit`
+  (what an older build left on disk), then
+  `repo.settingsData.first().breakReminderIntervalMinutes` must be 5. To
+  refuse: Saving the 0 only through
+  `repo.setBreakReminderIntervalMinutes(0)`: a fix clamping on write
+  passes while a 0 already on disk is still read as 0. Or the easier path
+  `SettingsViewModel.onBreakIntervalChanged(0)` -> 5 over
+  FakeSettingsRepository, already green at base
+  (SettingsViewModelTest.kt:140). Scenario "too long" — a sound test: Same
+  set-up, raw key written to 500 in the DataStore;
+  `repo.settingsData.first().breakReminderIntervalMinutes` must be 60. To
+  refuse: Same as "too short": the setter as Given accepts a
+  clamp-on-write fix; `SettingsViewModel.onBreakIntervalChanged(100)` ->
+  60 is the already-green easier path (SettingsViewModelTest.kt:147).
+  Scenario "in range kept" — a sound test: Guard: same real repository, 25
+  saved under `settings_break_interval`;
+  `repo.settingsData.first().breakReminderIntervalMinutes` must be 25.
+  Green on base and on the fix. To refuse: Naming SettingsViewModelTest's
+  45/15 tests as the guard: they read FakeSettingsRepository, not the
+  DataStore repository the clamp is added to. Asserting the default 30
+  with nothing saved is another case.
+given:
+  clone: {repo: JN0V/TraceGlass, head: 8d3965c825d4145df335cec4fd738f3445ef9180}
+  needs: ["$ANDROID_HOME", java]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 6
+        title: "A break interval saved outside 5 to 60 minutes is used as is"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "**Need**: a person tracing for long needs the break reminder within the 5–60 minutes the settings offer, so it never pops up every minute nor waits two hours.\n\n**Example**: the settings screen offers 5 to 60 minutes. A value saved outside it, `0` by an older build, is read back as is: settings show `0 min`, and the reminder pops up after 1 minute, then every minute (`restartBreakTimer` clamps to 1–120). A saved `500` makes the reminder wait 120 minutes.\n\n## Validation\n\n- **Scenario: too short**\n  - Given a break interval of 0 minutes saved\n  - When the settings are read\n  - Then the interval is 5 minutes\n- **Scenario: too long**\n  - Given a break interval of 500 minutes saved\n  - When the settings are read\n  - Then the interval is 60 minutes\n- **Scenario: in range kept**\n  - Given a break interval of 25 minutes saved\n  - When the settings are read\n  - Then the interval is 25 minutes\n\n---\n\n## Verification\n\n- New tests in `core/session/src/test/kotlin/io/github/jn0v/traceglass/core/session/` (a `DataStoreSettingsRepositoryTest`): 0 → 5 and 500 → 60 fail on main and pass once built.\n- `./gradlew :core:session:testDebugUnitTest :feature:tracing:testDebugUnitTest`.\n\n## Scope\n\n- `core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/DataStoreSettingsRepository.kt`: clamp `settings_break_interval` to 5–60 on read; keep the default 30 when nothing is saved.\n- `feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/settings/SettingsViewModel.kt`: `MIN_INTERVAL` (5) and `MAX_INTERVAL` (60); move them to `core/session` so the repository does not depend on the feature module.\n- `feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt`, `restartBreakTimer`: use the same 5–60 range instead of 1–120.\n- Reference: trial issue JN0V/TraceGlass-trial#103.\n"
+run: {role: tester, event: issue, target: "issue:6", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-6']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # in range kept: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-6']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"in range kept\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

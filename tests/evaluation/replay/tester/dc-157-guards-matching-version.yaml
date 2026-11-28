@@ -1,0 +1,45 @@
+case: tester/dc-157-guards-matching-version
+about: >
+  DomoticsCore issue #157 ("LO-1: Hardcoded fallback versions in
+  getWebUIVersion() drift"), as the tester read it on 2026-11-23 (the body
+  before the Verification the engine wrote from its tests), on main at
+  04d2cb3. Its Draft then: https://github.com/JN0V/DomoticsCore/pull/270.
+  Left with no guard then ("kept as today … nothing guards it"): Matching
+  version. Expected now: each has a guard test, green on the base, that
+  checks its Then by running the code. Scenario "Matching version" — a
+  sound test: Per provider: build the component (e.g. LEDComponent led;
+  LEDWebUI ui(&led);) and assert ui.getWebUIVersion() equals
+  led.metadata.version and is not empty; same for HomeAssistantWebUI with
+  ha->getMetadata().version. To refuse: Comparing against a version
+  literal typed in the test: it drifts at the next release, the very
+  defect of the issue. Scenario "No stale literal" — a sound test: Per
+  provider in Scope: Provider ui(nullptr); assert getWebUIVersion() is
+  empty or equals a freshly built component's metadata.version
+  (LEDComponent().metadata.version, at base 1.6.0 against the literal
+  1.3.0); cover every provider the Scope lists, not two. To refuse:
+  Asserting only != the literal of today ("1.3.0", "1.4.0"): replacing it
+  by any other hard-coded number passes and drifts again. The Draft's
+  proof runs the component holding the tests alone (a `draft-command` and
+  `module-files` the case adds), not DomoticsCore's whole native suite;
+  `pio` must be on PATH.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 04d2cb3b12f789c8ee2d8c2c9bc1528c1ff64671}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|^\\( *\\)test-command: tools/workline-tests.sh {report}$|&\\n\\1draft-command: tools/workline-tests.sh {report} {packages}\\n\\1module-files: [platformio.ini]|' .workline/config.yaml && grep -q draft-command .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the Draft is proven on its component alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 157
+        title: "LO-1: Hardcoded fallback versions in getWebUIVersion() drift"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "Opened from `docs/CODE-ROADMAP.md`, lines 6321 to 6321 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:a703413aed30 -->\n\n## Need\n\nSomeone reading the component list in the WebUI should always see a component's real version, not an old number hard-coded in the provider.\n\n## Validation\n\n- **Matching version:** Given a provider whose component is present, When `getWebUIVersion()` is read, Then it returns the component's own metadata version.\n- **No stale literal:** Given a provider whose component is missing, When `getWebUIVersion()` is read, Then the result is not a version number hard-coded in the provider file and out of step with the component's real version.\n\n---\n\n## Scope\n\n`getWebUIVersion()` in each provider file:\n`DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistantWebUI.h`\n`DomoticsCore-LED/include/DomoticsCore/LEDWebUI.h`\n`DomoticsCore-MQTT/include/DomoticsCore/MQTTWebUI.h`\n`DomoticsCore-NTP/include/DomoticsCore/NTPWebUI.h`\n`DomoticsCore-OTA/include/DomoticsCore/OTAWebUI.h`\nThe same pattern is in the RemoteConsole, Storage, SystemInfo and Wifi providers.\n\n## Assumptions\n\n- Assumption taken on 2026-11-16, the question of 2026-10-21 unanswered after 24 h: The people hurt are users of the WebUI components list, who see a version that differs from the component's real one when its metadata is missing.\n- Assumption taken on 2026-11-17, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+run: {role: tester, event: issue, target: "issue:157", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-157']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Matching version: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-157']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"matching version\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

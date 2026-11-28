@@ -1,0 +1,37 @@
+case: tester/tg-4-guards-other-errors
+about: >
+  TraceGlass issue #4 ("An unreadable onboarding file crashes the app at
+  launch"), as the tester read it on 2026-11-23 (the body before the
+  Verification the engine wrote from its tests), on main at 8d3965c. Its
+  Draft then: https://github.com/JN0V/TraceGlass/pull/10. Left with no
+  guard then ("kept as today … nothing guards it"): other errors surface.
+  Expected now: each has a guard test, green on the base, that checks its
+  Then by running the code. Scenario "other errors surface" — a sound
+  test: Guard: DataStoreOnboardingRepository over a DataStore whose `data`
+  is `flow { throw IllegalStateException(...) }`; collecting
+  `repo.isOnboardingCompleted.first()` (and `selectedTier.first()`) must
+  throw IllegalStateException. Green on base and on the fix. To refuse:
+  Leaving it unwritten: a fix that catches every Throwable (`.catch {
+  emit(emptyPreferences()) }`) passes the two IOException tests and hides
+  this error; only this guard tells the two fixes apart. Still not on main
+  (2 tests in the file).
+given:
+  clone: {repo: JN0V/TraceGlass, head: 8d3965c825d4145df335cec4fd738f3445ef9180}
+  needs: ["$ANDROID_HOME", java]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 4
+        title: "An unreadable onboarding file crashes the app at launch"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "**Need**: a person whose onboarding preferences file cannot be read needs the app to start anyway, as it does when the settings file cannot be read.\n\n**Example**:\n\n1. Make the `onboarding_prefs` DataStore throw an `IOException` on read.\n2. Launch the app.\n\n- **Expected**: onboarding comes back with its defaults: not completed, no tier chosen. The app starts on the onboarding.\n- **Actual**: the read error is not caught; the app crashes at launch, every time.\n- **Version**: main, 8d3965c.\n\n## Validation\n\n- **Scenario: unreadable gives defaults**\n  - Given the onboarding store throws an `IOException` on read\n  - When \"onboarding completed\" is read\n  - Then it is false\n- **Scenario: tier falls back**\n  - Given the same store\n  - When the chosen tier is read\n  - Then there is none\n- **Scenario: other errors surface**\n  - Given the store throws an `IllegalStateException` on read\n  - When it is read\n  - Then the error is not hidden, as today\n\n---\n\n## Verification\n\n- New unit tests in `feature/onboarding/src/test/kotlin/io/github/jn0v/traceglass/feature/onboarding/`, a DataStore fake whose `data` throws: the first two scenarios fail on main and pass once built.\n- `./gradlew :feature:onboarding:testDebugUnitTest`.\n\n## Scope\n\n- `feature/onboarding/src/main/kotlin/io/github/jn0v/traceglass/feature/onboarding/DataStoreOnboardingRepository.kt`: catch `IOException` on `dataStore.data` and emit empty preferences; rethrow anything else.\n- Model to follow: `core/session/src/main/kotlin/io/github/jn0v/traceglass/core/session/DataStoreSettingsRepository.kt` (`.catch { if (exception is IOException) emit(emptyPreferences()) else throw exception }`).\n- Reference: trial issue JN0V/TraceGlass-trial#75.\n"
+run: {role: tester, event: issue, target: "issue:4", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-4']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # other errors surface: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-4']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"other errors surface\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

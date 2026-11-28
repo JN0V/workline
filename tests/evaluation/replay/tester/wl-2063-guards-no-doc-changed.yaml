@@ -1,0 +1,37 @@
+case: tester/wl-2063-guards-no-doc-changed
+about: >
+  workline issue #2063 ("git failure reported as a pass"), as the tester
+  read it on 2026-11-24 (the body before the Verification the engine wrote
+  from its tests), on main at b8a77c0. Its Draft then:
+  https://github.com/JN0V/workline/pull/2109. Left with no guard then
+  ("kept as today … nothing guards it"): No doc changed. Expected now:
+  each has a guard test, green on the base, that checks its Then by
+  running the code. Scenario "No doc changed" — a sound test: Built
+  binary, real git, sinceRepo(t) (a commit after tag v1, no *.md changed
+  in the working tree): run `workline docs --since v1 --ai none`. Assert
+  exit code == 0 and the output holds 'no doc changed'. Passes on the
+  base. To refuse: Exit 0 alone (already guarded). A repository with no
+  commit since the last judging says 'no commit since the docs were last
+  judged': another message, the listing not run. The test command is
+  narrowed to the case's packages, so that the run before the agent stays
+  light.
+given:
+  clone: {repo: JN0V/workline, head: b8a77c0ae9f313928adbd1b751d730c0652a19ba}
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|-- -timeout 20m \\./\\.\\.\\.$|-- -timeout 20m ./cmd/workline/|' .workline/config.yaml && ! grep -q 'timeout 20m ./\\.\\.\\.' .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the test command on the packages of the case alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 2063
+        title: "git failure reported as a pass"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "<!-- workline:found=the edge-cases lens; verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5) -->\n\nFound by the reviewer role while reviewing 3db8db8, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=cmd/workline/main.go#e80445e1 -->\n\n## Need\n\nAnyone running `workline docs` from a script, with `--json`, needs a failure of git to be reported as a failure, so a pass always means the docs were really checked.\n\n## Validation\n\n- **Listing fails, review-only:** Given a repository where the `git diff` that lists the changed docs fails, When `workline docs --review-only --json` runs, Then it exits 1 and reports a `git-failed` finding whose message holds git's error text, not \"no doc changed\".\n- **Listing fails, before review:** Given the documentalist run ended and the `git diff` that lists the changed docs fails, When `workline docs --json` runs, Then it exits 1 and reports a failure with git's error, not a pass.\n- **Listing fails, after review:** Given a person reviewed the changed docs and the `git diff` that lists the docs left fails, When `workline docs` runs, Then it exits 1 and does not say the docs are judged.\n- **Git says nothing:** Given a failing `git diff` with an empty stderr, When `workline docs --json` runs, Then the message holds the error's own text, not an empty string.\n- **No doc changed:** Given a working tree where git works and no doc changed, When `workline docs` runs, Then it says no doc changed and exits 0 as before.\n\n---\n\n## Scope\n\n`cmd/workline/main.go`: three lists of changed docs read with `git diff --name-only -- *.md` throw away git's error. When git fails, each must report the failure instead of treating the list as empty. Git's own error text (its stderr) goes in the message. The three places are:\n- the review-only branch, at line 913: return `fail(1, \"git-failed\", ...)`, and also print the error on stderr;\n- `judgeDocs`, the listing at line 1146 that finds the changed docs: return `false` with an error, so the command exits 1 and does not say \"no doc changed\";\n- `judgeDocs`, the listing at line 1160 that finds the docs left after review: do the same, since a failed listing cannot show that no doc is left, so it must not count as \"none left\".\n\nExit code 1 in every case. A test must check the code is exactly 1 and that, with `--json`, the finding's message holds git's stderr.\n\nOther git calls in the file that discard errors (lines 863 and 2970) only print information. They are out of scope.\n\nNew: `cmd/workline/docs_gitfail_test.go`: runs `workline docs` where `git diff` fails. It checks the exit code, the JSON finding, and that the \"no doc changed\" case still exits 0.\n\nIf `docs/usage.md` describes the exit codes of `workline docs`, add the git failure there too.\n\n<details><summary>The cause in the code</summary>\n\nThe error from the `git diff` listing the changed docs is discarded. If git fails, the list is empty and the run takes the \"no doc changed\" path. A script then reads a pass, although nothing was judged.\n\nAt `cmd/workline/main.go:913`:\n\n```\nchanged, _ := exec.Command(\"git\", \"-C\", root, \"-c\", \"core.quotePath=off\", \"diff\", \"--name-only\", \"--\", \"*.md\").Output()\n```\n\nWhat would fix it: check the error from `git diff` and return `fail(1, ...)` instead of treating the listing as empty.\n\n</details>\n\n## Assumptions\n\n- Assumption taken on 2026-11-24, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+run: {role: tester, event: issue, target: "issue:2063", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2063']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # No doc changed: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2063']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"no doc changed\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

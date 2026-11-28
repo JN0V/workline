@@ -1,0 +1,40 @@
+case: tester/dc-178-counter-type-not-grepped
+about: >
+  DomoticsCore issue #178 ("LO-24: WebUI volatile int pollingClients"), as
+  the tester read it on 2026-11-23 (the body before the Verification the
+  engine wrote from its tests), on main at 77e4b91. Its Draft then:
+  https://github.com/JN0V/DomoticsCore/pull/280. "Counter type": its test
+  then proved less than the scenario (it found words in a source).
+  Scenario "Counter type" — a sound test: Outside = a person's read of a
+  private declaration: pollingClients is private in WebSocketHandler and
+  only ever set to 0 or 1 (onPollRequest(), loop(),
+  closeAllConnections()), so no host test tells `volatile int` from
+  `std::atomic<int>`. The sound answer is no test, with that reason, or an
+  objection to the scenario. To refuse: Reading the header's text for
+  `volatile int`: it passes for any other spelling (plain int, long) and
+  proves no safety between tasks. Not counted for or against (bench
+  validity): the Then asks about a declaration's text; the owner closed
+  the fix as no defect. The Draft's proof runs the component holding the
+  tests alone (a `draft-command` and `module-files` the case adds), not
+  DomoticsCore's whole native suite; `pio` must be on PATH.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 77e4b918e13661552ba6ced3212171c2e340b457}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|^\\( *\\)test-command: tools/workline-tests.sh {report}$|&\\n\\1draft-command: tools/workline-tests.sh {report} {packages}\\n\\1module-files: [platformio.ini]|' .workline/config.yaml && grep -q draft-command .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the Draft is proven on its component alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 178
+        title: "LO-24: WebUI volatile int pollingClients"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "The WebUI declares `volatile int pollingClients`. `volatile` does not make a counter safe between tasks. The fix is `std::atomic<int>`, or removing `volatile`.\n<details><summary>For the builder</summary>Item LO-24 of `docs/CODE-ROADMAP.md`. Folder: `DomoticsCore-WebUI/include`.</details>\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6344 to 6344 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:189a488de097 -->\n\n## Need\n\nA maintainer wants the polling client counter to be safe to use from several tasks, so it cannot be miscounted.\n\n## Example\n\nToday the counter is a `volatile int`. Two tasks changing it can lose an update.\n\n## Validation\n\n- **Counter type:** Given the WebUI source, When I read the `pollingClients` declaration, Then it is not a plain `volatile int`.\n\n---\n\n## Verification\n\nThe WebUI native tests still pass. The build for each board passes with the new declaration.\n\n## Scope\n\n`DomoticsCore-WebUI/include`: the `pollingClients` field."
+run: {role: tester, event: issue, target: "issue:178", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-178']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Counter type: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-178']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"counter type\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}
