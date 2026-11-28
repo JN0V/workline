@@ -3,11 +3,10 @@ package engine
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 )
@@ -131,36 +130,43 @@ func TestOwnQueueOrdersByPriorityThenTime(t *testing.T) {
 	}
 }
 
-// A pending head waits the repository's own verdict budget, read from its
-// routing, not 180 s: past it, it is passed over and said with that budget,
-// and the next one is updated; within it, it is still the head.
-func TestOwnQueuePendingWaitsTheRoutingBudget(t *testing.T) {
-	repo := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(repo, ".workline"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), []byte("routing: {budgets: {verdict: 60}}\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+// A pending head, up to date since its update or still held behind, waits
+// 30 min after its last update on the engine's clock: within, it is the
+// head and none other is updated; past, it is passed over, said, and the
+// next one is updated.
+func TestOwnQueuePendingWaitsThirtyMinutes(t *testing.T) {
+	now := time.Date(2026, 1, 4, 10, 31, 0, 0, time.UTC)
+	defer func(was func() time.Time) { clock.Now = was }(clock.Now)
+	clock.Now = func() time.Time { return now }
 	for _, c := range []struct {
-		since time.Duration
-		want  map[string]string
+		behind bool
+		since  time.Duration
+		want   map[string]string
 	}{
-		{90 * time.Second, map[string]string{"#1": "passed over, checks pending past 60 s", "#2": "head of the queue, main merged in"}},
-		{30 * time.Second, map[string]string{"#1": "head of the queue, its checks pending since its update", "#2": "queued, position 2"}},
+		{false, 21 * time.Minute, map[string]string{"#1": "head of the queue, its checks pending since its update", "#2": "queued, position 2"}},
+		{false, 31 * time.Minute, map[string]string{"#1": "passed over, checks pending past 30 min", "#2": "head of the queue, main merged in"}},
+		{true, 29 * time.Minute, map[string]string{"#1": "head of the queue, its checks pending since its update", "#2": "queued, position 2"}},
+		{true, 31 * time.Minute, map[string]string{"#1": "passed over, checks pending past 30 min", "#2": "head of the queue, main merged in"}},
 	} {
-		res := &Result{}
-		merged := func(bool, string) (bool, error) {
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "merged-from-base", Where: "#2"})
-			return true, nil
+		res, updated := &Result{}, []string{}
+		up := func(id string) func(bool, string) (bool, error) {
+			return func(bool, string) (bool, error) {
+				updated = append(updated, id)
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "merged-from-base", Where: id})
+				return true, nil
+			}
 		}
-		pending := queued(1, time.Now().UTC().Add(-c.since).Format(time.RFC3339), merged)
-		pending.st.Checks = "pending"
-		if err := ownQueue(nil, FollowOptions{Repo: repo, Base: "main"}, res, []*inLine{pending, queued(2, time.Now().UTC().Format(time.RFC3339), merged)}, nil); err != nil {
+		pending := queued(1, "2026-01-04T09:00:00Z", up("#1"))
+		pending.st.Behind, pending.st.Checks = c.behind, "pending"
+		pending.st.Pushes = []forge.Push{{At: now.Add(-c.since).Format(time.RFC3339)}}
+		if err := ownQueue(nil, FollowOptions{Base: "main"}, res, []*inLine{pending, queued(2, "2026-01-04T09:01:00Z", up("#2"))}, nil); err != nil {
 			t.Fatal(err)
 		}
 		if got := lines(res); fmt.Sprint(got) != fmt.Sprint(c.want) {
-			t.Fatalf("%s since its update: lines %v, want %v", c.since, got, c.want)
+			t.Fatalf("behind %v, %s since its update: lines %v, want %v", c.behind, c.since, got, c.want)
+		}
+		if want := map[bool]string{true: "[]", false: "[#2]"}[c.since < 30*time.Minute]; fmt.Sprint(updated) != want {
+			t.Fatalf("behind %v, %s since its update: updated %v, want %s", c.behind, c.since, updated, want)
 		}
 	}
 }

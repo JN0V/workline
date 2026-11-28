@@ -13,12 +13,12 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
 	"github.com/JN0V/workline/internal/kit/testmark"
 	"github.com/JN0V/workline/internal/kit/verdict"
-	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/steer"
 )
@@ -1025,8 +1025,8 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	e.takeBase = func(due string) (bool, error) {
 		return upToDateAs(f, o, local, mr, baseTip, tip, say, true, true, due)
 	}
-	if st.Behind && st.AutoMerge {
-		e.mr, e.st, *queue = mr, forge.MergeState{AutoMergeAt: st.AutoMergeAt}, append(*queue, e) // its place in the queue, weighed ready to merge or not
+	if p := slices.Concat([]forge.Push{{At: st.AutoMergeAt}}, st.Pushes); st.AutoMerge && (st.Behind || st.Checks == "pending" && mr.Here && strings.HasPrefix(mr.Branch, devmark.Branch) && later(p[len(p)-1].At, st.AutoMergeAt)) {
+		e.mr, e.st, *queue = mr, forge.MergeState{AutoMergeAt: st.AutoMergeAt}, append(*queue, e) // its place in the queue, weighed ready to merge or not: held behind, or a developer's updated since its auto-merge on, its checks running
 	}
 	off := func() error {
 		if !st.AutoMerge {
@@ -1475,8 +1475,7 @@ func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, s
 
 // ownQueue, a merge queue where the forge has none: of the accepted held behind, the head alone is updated.
 func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []verdict.Finding) error {
-	line, _ := routing.Load(o.Repo) // the head's checks wait the verdict budget (defaults/routing.yaml), 180 s where it is unread
-	key, pos, budget, ours := map[*inLine]int64{}, 0, cmp.Or(cmp.Or(line, &routing.Config{}).Budgets["verdict"], 180), func(e *inLine) bool { return e.mr.Here && strings.HasPrefix(e.mr.Branch, devmark.Branch) }
+	key, pos, ours := map[*inLine]int64{}, 0, func(e *inLine) bool { return e.mr.Here && strings.HasPrefix(e.mr.Branch, devmark.Branch) }
 	if !slices.ContainsFunc(q, func(e *inLine) bool { return e.st.Behind && ours(e) }) {
 		return nil // none workline may update, each in conflict: no queue (the base requires no branch up to date), nothing said
 	}
@@ -1497,16 +1496,16 @@ func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []ver
 		switch i := slices.IndexFunc(fs, func(x verdict.Finding) bool { return x.Where == e.where && x.Level == "warn" }); {
 		case i >= 0:
 			msg = "passed over, " + fs[i].Message
-		case !e.st.Behind:
+		case !e.st.Behind && e.st.Checks != "pending": // its state set by stalled only when weighed ready
 			msg = "passed over, not weighed ready to merge"
 		case !ours(e): // a fork's or a person's, or another role's of workline
 			msg = "passed over, " + map[bool]string{false: "a person's branch", true: "workline's " + strings.Split(e.mr.Branch+"/", "/")[1] + " branch, not a developer's"}[e.mr.Here && strings.HasPrefix(e.mr.Branch, "workline/")]
 		case pos > 0:
 			pos++
-		case e.st.Checks != "success" && later(plus(at[len(at)-1].At, time.Duration(budget*float64(time.Second))), time.Now().UTC().Format(time.RFC3339)):
+		case e.st.Checks != "success" && later(plus(at[len(at)-1].At, 30*time.Minute), clock.Now().UTC().Format(time.RFC3339)): // the owner's 30 min since its last update
 			pos, msg = 1, "head of the queue, its checks pending since its update"
 		case e.st.Checks != "success":
-			msg = fmt.Sprintf("passed over, checks pending past %g s", budget)
+			msg = "passed over, checks pending past 30 min"
 		default:
 			if _, err := e.upToDate(true, "its auto-merge on since "+e.st.AutoMergeAt); errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
 				return err // the forge unreachable ends the run; another error passes this one over, said

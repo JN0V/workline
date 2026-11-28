@@ -54,7 +54,10 @@ all in the same run
 ([ADR-0075](adr/0075-urgent-work-first-and-a-merge-queue-of-our-own.md#7-a-merge-queue-of-our-own)):
 
 - **In the queue**: the accepted pull requests, auto-merge on, that the
-  forge holds behind. A draft has no auto-merge: never in it.
+  forge holds behind; and the head once updated, a developer's pull
+  request no longer behind, pushed to since its auto-merge was turned
+  on, its checks pending: it keeps its place while they run. A draft
+  has no auto-merge: never in it.
 - **Their order**: the priority of the issue each closes, as the forge
   links it (its description's closing words among them), or its own
   priority label; then when auto-merge was turned on, the earliest
@@ -68,10 +71,9 @@ all in the same run
   (`workline's tester branch, not a developer's`, `a person's branch`,
   a fork's included): never updated by workline.
 - **Pending checks**: the head stays the head, nothing else updated,
-  until the `verdict` budget since its last update (180 s in
-  `defaults/routing.yaml`, a repository's own `routing.budgets.verdict`
-  where it sets one); past it, it is passed over and said
-  `checks pending past <budget> s`.
+  up to 30 minutes after its last update, on the engine's clock
+  (`WORKLINE_CLOCK` where set); past them, it is passed over and said
+  `checks pending past 30 min`.
 - **Said in the run's summary only**, one line each, no comment, no
   marker:
   - `#N: head of the queue, main merged in`;
