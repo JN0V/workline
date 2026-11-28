@@ -3065,9 +3065,7 @@ func (a *applier) apply(in intent.Intention) error {
 		m, sticky := in.Value.(map[string]any)
 		if sticky {
 			body, _ = m["body"].(string)
-			// {body, issue} without a key: a new comment, one the forge
-			// mails, asking a person (#2352).
-			_, sticky = m["sticky"]
+			_, sticky = m["sticky"] // without a key, a new comment: one the forge mails (#2352)
 		}
 		if err := a.needForge("comment"); err != nil {
 			return err
