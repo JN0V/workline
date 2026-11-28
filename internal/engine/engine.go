@@ -772,7 +772,7 @@ func run(o Options, res *Result) error {
 		}
 		unasked = taskErr == nil && (!a.askedAgent || a.external || a.unread != "")
 		intents, v, said = a.intents, a.verdict, a.said
-		if a.external && v.Status != verdict.Pass && (v.Status != verdict.Block || !v.Final) { // a final block is the role's own, not the outage's
+		if a.external && v.Status != verdict.Pass && !v.Stands {
 			res.Status, res.Summary = verdict.BlockedExternal, v.Summary
 			res.Findings = append(res.Findings, v.Findings...)
 			return nil

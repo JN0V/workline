@@ -37,7 +37,8 @@ type Verdict struct {
 	Findings []Finding `yaml:"findings,omitempty" json:"findings,omitempty"`
 	// Final: a block that does not come from the agent's answer — a check
 	// that could not run — so asking the agent again would change nothing.
-	Final bool `yaml:"final,omitempty" json:"final,omitempty"`
+	Final  bool `yaml:"final,omitempty" json:"final,omitempty"`
+	Stands bool `yaml:"stands,omitempty" json:"stands,omitempty"` // a block of what the agent did before it was unavailable: not blocked-external
 	// Again: a block the agent's answer can mend — its tests' lint
 	// findings (#964), a build they break (#1048) — asked again once with
 	// its findings, as an answer

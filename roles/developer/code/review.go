@@ -903,9 +903,8 @@ func reviewPost(runDir, repo string, s Settings) int {
 			Findings: []verdict.Finding{{Rule: "round-not-run", Level: "warn", Where: where,
 				Message: fmt.Sprintf("its agent could not be reached (%s), spent nothing and changed nothing: no round counted, said on the pull request; the next run asks the findings again", u.failed)}}})
 	}
-	if r.FiveWhys && unreached { // it changed something before it failed: no round without its whys
-		// Final: a block of its own, not the agent's outage (blocked-external).
-		return refuseAnswer(runDir, verdict.Verdict{Status: verdict.Block, Final: true, Summary: "the round's answer is refused",
+	if r.FiveWhys && unreached { // it changed something before it failed: no round without its whys, a block of its own
+		return refuseAnswer(runDir, verdict.Verdict{Status: verdict.Block, Final: true, Stands: true, Summary: "the round's answer is refused",
 			Findings: []verdict.Finding{{Rule: "five-whys-missing", Where: where, Message: "a finding is still there at round three: the answer gives the five whys as one `note` opening with `Five whys`, as the skill says (0 given)"}}})
 	}
 	this := devmark.Round{N: n, Asked: texts(r.Asked), Heard: len(r.Heard), Nits: r.Nits, Whys: r.FiveWhys, Tester: testerLines(r.ToTester)}
@@ -1249,10 +1248,7 @@ func refuseAnswer(runDir string, v verdict.Verdict) int {
 	if code := writeIntents(runDir, "", nil); code != 0 {
 		return code
 	}
-	if code := writeVerdict(runDir, v); code != 0 {
-		return code
-	}
-	return 1 // blocked: the exit its verdict says (role contract)
+	return max(writeVerdict(runDir, v), 1) // blocked: the exit its verdict says (role contract)
 }
 
 func writeVerdict(runDir string, v verdict.Verdict) int {

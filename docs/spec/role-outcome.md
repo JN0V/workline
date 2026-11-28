@@ -20,6 +20,7 @@ findings:
     message: "'AC-3' means nothing outside the project; say what changed."
 final: false   # true: the block is not the agent's answer's, so it is not asked again
 again: false   # true: a block the answer can mend, asked again once even at promote-after 0
+stands: false  # true: a block of what the agent did before it was unavailable, not blocked-external
 ```
 
 Every run ends with a status; there is no run without one. `blocked-external`
@@ -173,7 +174,10 @@ When `--ai none`, or when the agent fails, the run still completes: `post`
 runs on the role's own proposals alone, and `without-ai` states what that
 means. *Not read yet: each role's `post` decides on its own today. And when
 the agent could not be reached and `post` does not pass, the run ends
-`blocked-external`, not `block`.*
+`blocked-external`, not `block`, unless `post` marks its block `stands`:
+the agent changed something before it failed, and that is what `post`
+refuses — the developer's round three edited with no five whys
+([#2189](https://github.com/JN0V/workline/issues/2189)).*
 
 - `block` — the check failed and only a human can fix it; the verdict says how.
 - `report` — the work is left as a note or a TODO for a human.
