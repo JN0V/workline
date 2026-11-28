@@ -1,0 +1,38 @@
+case: merge/queue-silent-on-a-conflict-alone
+about: >
+  No queue, nothing said: a repository that does not require branches up
+  to date holds an accepted pull request behind only for a conflict (#1,
+  main changed the same line since). `workline follow` takes today's
+  round on it (the merge-conflict finding, nothing pushed) and says no
+  queue line: no "passed over" each run where there is no queue.
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/developer/1 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' -m 'Workline-Role: developer' && git push -q origin workline/developer/1 && git checkout -q main"
+    - "sed -i 's/3600/9999/' src/auth/token.go && git commit -qam 'fix(auth): longer sessions' && git push -q origin main"
+  forge:
+    statuses:
+      - {commit: "workline/developer/1", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 1
+        branch: workline/developer/1
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:01:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/1, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: merge-conflict, where: "#1"}]
+  no-findings: [{rule: behind-not-updated}, {rule: merged-from-base}]
+  not-pushed: [workline/developer/1]
+  summary-lacks: ["passed over", "head of the queue", "queued, position"]

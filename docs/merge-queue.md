@@ -56,25 +56,30 @@ all in the same run
 - **In the queue**: the accepted pull requests, auto-merge on, that the
   forge holds behind. A draft has no auto-merge: never in it.
 - **Their order**: the priority of the issue each closes, or its own
-  priority label; then when auto-merge was turned on.
+  priority label; then when auto-merge was turned on, the earliest
+  first, one the forge gives no time for last.
 - **The head**: the first held by nothing. `main` is merged into it
   alone; the forge merges it once its checks pass, and the next run
   takes the next one.
 - **Passed over, said with its reason**: a red check or a conflict
   (each takes its usual round), an open conversation, a person's
-  comment unanswered, a person's branch (never updated by workline).
+  comment unanswered, a branch not a developer's, said by what it is
+  (`workline's tester branch, not a developer's`, `a person's branch`,
+  a fork's included): never updated by workline.
 - **Pending checks**: the head stays the head, nothing else updated,
-  until the `verdict` budget (180 s, `routing.yaml`) since its last
-  update; past it, it is passed over and said.
+  until 180 s since its last update; past it, it is passed over and
+  said. Not the `verdict` budget of `routing.yaml`: no setting.
 - **Said in the run's summary only**, one line each, no comment, no
   marker:
   - `#N: head of the queue, main merged in`;
   - `#N: queued, position k`;
   - `#N: passed over, <reason>`.
-- **Nothing to do** where the forge holds no pull request behind: a
-  repository that does not require branches up to date, or one left to
-  the forge's merge queue or merge train. workline updates nothing and
-  builds no queue. No setting turns it on or off.
+- **Nothing to do** where the forge holds no pull request behind but
+  for a conflict: a repository that does not require branches up to
+  date, or one left to the forge's merge queue or merge train. workline
+  updates nothing, builds no queue and says no queue line — a
+  conflicting one is said by its conflict only. No setting turns it on
+  or off.
 
 ## GitHub: a merge queue
 
