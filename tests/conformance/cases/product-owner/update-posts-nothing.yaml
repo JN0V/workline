@@ -1,0 +1,25 @@
+case: product-owner/update-posts-nothing
+about: "The product owner refines an issue, writing its Scope, and nothing waits on a person: no new comment appears. Its state comment is edited, an edit that mails nobody."
+given:
+  repo: backlog
+  config:
+    routing: {events: {issue: [product-owner, tester, developer]}}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\n- **A known day:** Given a day of three sales, When Ann opens it, Then she counts three.\n"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        labeled: {"workline:to-refine": "2026-11-08T06:40:00Z"}
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {route: issue, target: {issue: 9}, ai: fake:refine-scope-only}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: done, where: "#9", message: "Refined #9: Scope"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine], comments: 1, posted: 0, body-contains: "`WriteRows` in `src/export/csv.go`."}
