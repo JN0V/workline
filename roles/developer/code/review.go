@@ -1290,8 +1290,6 @@ type stall struct {
 
 var failedRound = regexp.MustCompile(`<!-- workline:round-failed (\{.*\}) -->`)
 
-const stallMarkKey = "sticky=developer/round-stop"
-
 // roundNotRunKey is the comment saying a round's agent could not be
 // reached, edited each time.
 const roundNotRunKey = "round-not-run"
@@ -1302,13 +1300,11 @@ const roundNotRunKey = "round-not-run"
 func stalled(f forge.Forge, kept forge.Kept, repo string, mr forge.MergeRequest, head string) (*stall, bool) {
 	var last []stall
 	for _, body := range kept.Each("<!-- workline:round-failed ") {
-		m := failedRound.FindStringSubmatch(body)
-		if m == nil {
-			continue
-		}
-		var x stall
-		if json.Unmarshal([]byte(m[1]), &x) == nil {
-			last = append(last, x)
+		for _, m := range failedRound.FindAllStringSubmatch(body, -1) { // its last two, in one comment edited
+			var x stall
+			if json.Unmarshal([]byte(m[1]), &x) == nil {
+				last = append(last, x)
+			}
 		}
 	}
 	if len(last) < 2 || head == "" {
@@ -1332,7 +1328,7 @@ func stalled(f forge.Forge, kept forge.Kept, repo string, mr forge.MergeRequest,
 	if x.Base != base {
 		return nil, false
 	}
-	if body, ok := kept.Last(forge.Marker(stallMarkKey)); ok && strings.Contains(body, stallRecord(x)) {
+	if len(kept.Each(stallRecord(x))) > 0 { // its call, or the comment it was before (round-stop)
 		x.Said = true
 	}
 	return &x, true
@@ -1358,11 +1354,14 @@ func stallPre(runDir string, f forge.Forge, kept forge.Kept, repo string, mr for
 	if err := writeIn(runDir, roundFile, r); err != nil {
 		return fail(err), true
 	}
-	body := fmt.Sprintf("**Stopped**: the last two rounds at this head ended the same way, `%s`: %s\n\n"+
-		"The two runs are the failed ones above, each with its record; no third round runs, no agent is called. "+
+	who := "A person"
+	if is, err := f.Issue(r.Record.Issue); err == nil && is.Author != "" && !backlog.Bot(is.Author) {
+		who = "@" + is.Author
+	}
+	// A call, a new comment each stall: a person must act (ADR-0076 §3).
+	body := fmt.Sprintf("%s, the developer **stopped**: the last two rounds at this head ended the same way, `%s`: %s\n\n"+
+		"Their records are in its comment above; no third round runs, no agent is called. "+
 		"The rounds start again when the branch's head or its base moves: a push to the branch, or a new commit on %s.\n\n%s",
-		x.Rule, x.Message, mr.Base, stallRecord(*x))
-	return writeIntents(runDir, "fallback.yaml", []intent.Intention{
-		{Kind: "comment", Value: map[string]any{"sticky": "round-stop", "body": body}},
-	}), true
+		who, x.Rule, x.Message, mr.Base, stallRecord(*x))
+	return writeIntents(runDir, "fallback.yaml", []intent.Intention{{Kind: "comment", Value: body}}), true
 }

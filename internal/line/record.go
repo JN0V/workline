@@ -253,6 +253,7 @@ type StateWrite struct {
 	// with no roles folder: what waits on a person after its run is said
 	// with the day it ends (#1195). "" for another role's step.
 	Wait string `json:"wait,omitempty"`
+	Call string `json:"call,omitempty"` // what a person must do, a new comment once a body (ADR-0076 §3)
 }
 
 // recordV is the version every record is written with (Record.V).
@@ -626,7 +627,10 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 		}
 	}
 	keepCounted(f, t, &w.Record, w.Own, &body)
-	return f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true)
+	if err := f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true); err != nil || w.Call == "" {
+		return err
+	}
+	return f.Comment(t, backlog.Inert(w.Call), forge.Marker("call="+w.Record.State+"-"+w.Record.Body))
 }
 
 // keepCounted keeps in the record about to be written the runs counted

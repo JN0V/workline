@@ -175,7 +175,14 @@ func typedDue(res *Result, name string, s routing.State, is forge.Issue, rec Rec
 		again, until, spent := errs.retry(at)
 		switch {
 		case spent != "" && name == "tester" && errs.Kind == "answer":
-			return blocked("no-test-written-spent", fmt.Sprintf("the tester could not propose a test file in its state %s: %s", s.Name, spent))
+			d, r, i, w, ok := blocked("no-test-written-spent", fmt.Sprintf("the tester could not propose a test file in its state %s: %s", s.Name, spent))
+			who := "A person"
+			if is.Author != "" && !backlog.Bot(is.Author) {
+				who = "@" + is.Author
+			}
+			w.Call = who + ", the tester could not propose a test file for this issue, its tries spent: " + errs.Said +
+				". Left to do: rewrite its body so each scenario can be tested and put its state's label back, or write its tests yourself."
+			return d, r, i, w, ok
 		case spent != "":
 			return blocked("machine-error-spent", fmt.Sprintf("the %s's runs on it failed in its state %s: %s", name, s.Name, spent))
 		case !again:
