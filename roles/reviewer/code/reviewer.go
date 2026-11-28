@@ -178,7 +178,7 @@ type candidates struct {
 	Questions        []Finding         // decisions for a person: never judged, never an issue (#126)
 	Logged           []verdict.Finding // dropped, each said
 	Failed           []string          // lenses with no answer that reads
-	OverBudget       bool              `json:"over-budget,omitempty"` // one of them not asked: its prompt over the role's context budget (#2296)
+	OverBudget       bool              `json:"over-budget,omitempty"` // every lens without an answer not asked for its prompt over the role's context budget (#2296)
 	Shown            []string          // the issues' scenarios the intent lens showed done, the code quoted found again: `#4` and its name
 	Asked            []string          // the questions put to the judge, by finding
 	// By JudgeKey: what each important finding is judged on, its patch and
@@ -1418,6 +1418,11 @@ func lensAnswers(runDir, repo string, s Settings, st state) (candidates, int, er
 	var c candidates
 	lensOf := lensReader(repo)
 	unavailable := 0
+	// over counts the parts not asked for their prompt over the budget,
+	// others the parts that got no answer for another reason (#2296): the
+	// body is marked over budget only when every part without an answer
+	// was over it, so a transient failure on another part is still retried.
+	over, others := 0, 0
 	var asked [][]string // the lenses of each part: one a part, or all in one
 	if st.Together {
 		asked = append(asked, st.Lenses)
@@ -1464,17 +1469,21 @@ func lensAnswers(runDir, repo string, s Settings, st state) (candidates, int, er
 					gone++
 				}
 				if strings.HasPrefix(string(why), "over-budget:") {
-					c.OverBudget = true
+					over++
+				} else {
+					others++
 				}
 				failed(fmt.Sprintf("%s got no answer that reads (%s): %s", which, strings.TrimSpace(string(why)), what))
 				continue
 			}
 			if !exists(filepath.Join(dir, "answer.yaml")) {
+				others++
 				failed(fmt.Sprintf("%s was not asked: %s", which, what))
 				continue
 			}
 			answers, err := intent.Read(filepath.Join(dir, "answer.yaml"))
 			if err != nil {
+				others++
 				failed(fmt.Sprintf("%s: its answer does not read (%v): %s", which, err, what))
 				continue
 			}
@@ -1486,6 +1495,7 @@ func lensAnswers(runDir, repo string, s Settings, st state) (candidates, int, er
 			unavailable += len(ls)
 		}
 	}
+	c.OverBudget = over > 0 && others == 0
 	c.unshown(repo, s, st)
 	important := func(l []Finding) {
 		sort.SliceStable(l, func(i, j int) bool { return l[i].Severity == "important" && l[j].Severity != "important" })
