@@ -1,59 +1,71 @@
 case: merge/queue-head-conflict-next-updated
 about: >
-  A held head is passed over: the first accepted pull request in the queue
-  (#1) conflicts with main, which changed the same line since. main moves:
-  #1 takes today's round (the merge-conflict finding, nothing pushed to
-  it) and is said "passed over" with its reason; the next one (#2) is
-  updated and is the head.
+  The first in the queue conflicts with main (main changed the line it
+  changed): it is passed over, said in the run's summary, and takes
+  today's round (the conflict said, nothing pushed to it). The next one
+  is the head and is updated alone; the third is queued at position 2.
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
-    - "git checkout -qb workline/developer/1 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' -m 'Workline-Role: developer' && git push -q origin workline/developer/1 && git checkout -q main"
-    - "git checkout -qb workline/developer/2 && echo two > two.txt && git add two.txt && git commit -qm 'feat: two' -m 'Workline-Role: developer' && git push -q origin workline/developer/2 && git checkout -q main"
-    - "sed -i 's/3600/9999/' src/auth/token.go && git commit -qam 'fix(auth): longer sessions' && git push -q origin main"
+    - "git checkout -qb workline/developer/3 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' -m 'Workline-Role: developer' && git push -q origin workline/developer/3 && git checkout -q main"
+    - "git checkout -qb workline/developer/4 main && echo A > A.md && git add A.md && git commit -qm 'docs: a' -m 'Workline-Role: developer' && git push -q origin workline/developer/4 && git checkout -q main"
+    - "git checkout -qb workline/developer/5 main && echo B > B.md && git add B.md && git commit -qm 'docs: b' -m 'Workline-Role: developer' && git push -q origin workline/developer/5 && git checkout -q main"
+    - "sed -i 's/3600/1800/' src/auth/token.go && git commit -qam 'fix(auth): shorter tokens' && git push -q origin main"
   forge:
     statuses:
-      - {commit: "workline/developer/1", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
-      - {commit: "workline/developer/2", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/4", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/5", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
-      - id: 1
-        branch: workline/developer/1
+      - id: 7
+        branch: workline/developer/3
         base: main
         author: dana
         labels: [workline:accepted]
         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
         auto-merge: true
-        auto-merge-at: "2026-01-04T10:01:00Z"
+        auto-merge-at: "2026-01-04T10:05:00Z"
         auto-merge-by: workline-bot
         checks: success
         behind: true
-        pushes: [{head: workline/developer/1, at: "2026-01-04T09:00:00Z"}]
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z"}]
         comments: []
-      - id: 2
-        branch: workline/developer/2
+      - id: 8
+        branch: workline/developer/4
         base: main
         author: dana
         labels: [workline:accepted]
         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
         auto-merge: true
-        auto-merge-at: "2026-01-04T10:02:00Z"
+        auto-merge-at: "2026-01-04T10:06:00Z"
         auto-merge-by: workline-bot
         checks: success
         behind: true
-        pushes: [{head: workline/developer/2, at: "2026-01-04T09:00:00Z"}]
+        pushes: [{head: workline/developer/4, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+      - id: 9
+        branch: workline/developer/5
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:07:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/5, at: "2026-01-04T09:00:00Z"}]
         comments: []
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
   findings:
-    - {rule: merge-conflict, where: "#1"}
-    - {rule: merged-from-base, where: "#2"}
-  no-findings: [{rule: merged-from-base, where: "#1"}]
+    - {rule: merge-conflict, where: "#7"}
+    - {rule: merged-from-base, where: "#8"}
+  no-findings: [{rule: merged-from-base, where: "#7"}, {rule: merged-from-base, where: "#9"}]
   pushed:
-    workline/developer/2: {two.txt: "two", src/auth/token.go: "9999"}
-  not-pushed: [workline/developer/1]
-  summary-once:
-    - "#1: passed over, "
-    - "#2: head of the queue, main merged in"
+    workline/developer/4: {src/auth/token.go: "1800"}
+  not-pushed: [workline/developer/3, workline/developer/5]
+  summary-file: ["#7: passed over", "#8: head of the queue, main merged in", "#9: queued, position 2"]

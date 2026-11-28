@@ -1,49 +1,53 @@
 case: merge/queue-head-pending-waits-then-passed
 about: >
-  A pending head waits, then is passed over: the head (#1) has its checks
-  pending. The first `follow` run is within 180 s of its update (its yes,
-  auto-merge and push dated far ahead of now): no other one is updated.
-  Then its dates are moved far into the past and `follow` runs again, past
-  the `verdict` budget of 180 s: #1 is said "passed over, checks pending
-  past 180 s", and the next one (#2) is updated.
+  The head of the queue was updated by workline (main merged into its
+  branch, pushed at 10:30) and its checks are pending. A first `follow`,
+  a minute after, within the verdict budget of 180 s: the head stays the
+  head, no other pull request is updated. Between the runs its update
+  grows old (pushed at 10:10, 21 minutes before): the second run says
+  the head "passed over", its checks pending past 180 s, and updates
+  the next one alone.
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}
+  env: {WORKLINE_CLOCK: "2026-01-04T10:31:00Z"}
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
-    - "git checkout -qb workline/developer/1 && echo one > one.txt && git add one.txt && git commit -qm 'feat: one' -m 'Workline-Role: developer' && git push -q origin workline/developer/1 && git checkout -q main"
-    - "git checkout -qb workline/developer/2 && echo two > two.txt && git add two.txt && git commit -qm 'feat: two' -m 'Workline-Role: developer' && git push -q origin workline/developer/2 && git checkout -q main"
+    - "git checkout -qb workline/developer/3 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' -m 'Workline-Role: developer' && git push -q origin workline/developer/3 && git checkout -q main"
+    - "git checkout -qb workline/developer/4 main && echo A > A.md && git add A.md && git commit -qm 'docs: a' -m 'Workline-Role: developer' && git push -q origin workline/developer/4 && git checkout -q main"
     - "echo 'More.' > MORE.md && git add MORE.md && git commit -qm 'docs: more' && git push -q origin main"
+    - "git checkout -q workline/developer/3 && git merge -q --no-ff main -m \"Merge branch 'main' into workline/developer/3\" -m 'Workline-Role: developer' && git push -q origin workline/developer/3 && git checkout -q main"
+    - "echo 'Other.' > OTHER.md && git add OTHER.md && git commit -qm 'docs: other' && git push -q origin main"
   forge:
     statuses:
-      - {commit: "workline/developer/1", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
-      - {commit: "workline/developer/2", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/4", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
-      - id: 1
-        branch: workline/developer/1
-        base: main
-        author: dana
-        labels: [workline:accepted]
-        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2099-01-04T10:00:00Z"}]
-        auto-merge: true
-        auto-merge-at: "2099-01-04T10:01:00Z"
-        auto-merge-by: workline-bot
-        checks: pending
-        behind: true
-        pushes: [{head: workline/developer/1, at: "2099-01-04T09:00:00Z"}]
-        comments: []
-      - id: 2
-        branch: workline/developer/2
+      - id: 7
+        branch: workline/developer/3
         base: main
         author: dana
         labels: [workline:accepted]
         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
         auto-merge: true
-        auto-merge-at: "2026-01-04T10:02:00Z"
+        auto-merge-at: "2026-01-04T10:05:00Z"
+        auto-merge-by: workline-bot
+        checks: pending
+        behind: true
+        pushes: [{head: "workline/developer/3~1", at: "2026-01-04T09:00:00Z"}, {head: workline/developer/3, at: "2026-01-04T10:30:00Z", by: workline-bot}]
+        comments: []
+      - id: 8
+        branch: workline/developer/4
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:06:00Z"
         auto-merge-by: workline-bot
         checks: success
         behind: true
-        pushes: [{head: workline/developer/2, at: "2026-01-04T09:00:00Z"}]
+        pushes: [{head: workline/developer/4, at: "2026-01-04T09:00:00Z"}]
         comments: []
 run:
   follow: [--base, main]
@@ -51,17 +55,13 @@ run:
   then: again
   between:
     merge-requests:
-      - id: 1
-        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
-        auto-merge-at: "2026-01-04T10:01:00Z"
-        pushes: [{head: workline/developer/1, at: "2026-01-04T09:00:00Z"}]
+      - id: 7
+        pushes: [{head: "workline/developer/3~1", at: "2026-01-04T09:00:00Z"}, {head: workline/developer/3, at: "2026-01-04T10:10:00Z", by: workline-bot}]
 expect:
   status: pass
-  findings: [{rule: merged-from-base, where: "#2"}]
-  no-findings: [{rule: merged-from-base, where: "#1"}]
+  findings: [{rule: merged-from-base, where: "#8"}]
+  no-findings: [{rule: merged-from-base, where: "#7"}]
   pushed:
-    workline/developer/2: {MORE.md: "More.", two.txt: "two"}
-  not-pushed: [workline/developer/1]
-  summary-once:
-    - "#1: passed over, checks pending past 180 s"
-    - "#2: head of the queue, main merged in"
+    workline/developer/4: {OTHER.md: "Other."}
+  not-pushed: [workline/developer/3]
+  summary-file: ["#7: passed over", "checks pending past 180 s", "#8: head of the queue, main merged in"]

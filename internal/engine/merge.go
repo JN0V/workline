@@ -1026,7 +1026,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		return upToDateAs(f, o, local, mr, baseTip, tip, say, true, true, due)
 	}
 	if st.Behind && st.AutoMerge {
-		e.mr, *queue = mr, append(*queue, e)
+		e.mr, e.st, *queue = mr, forge.MergeState{AutoMergeAt: st.AutoMergeAt}, append(*queue, e) // its place in the queue, weighed ready to merge or not
 	}
 	off := func() error {
 		if !st.AutoMerge {
@@ -1482,9 +1482,11 @@ func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []ver
 	}
 	for _, e := range q {
 		is := forge.Issue{Labels: slices.Clone(e.mr.Labels)} // its priority: its own label's, or the most urgent of the issues it closes
-		for _, id := range forge.Closes(e.mr.Title, e.mr.Body) {
-			c, _ := f.Issue(id) // unread: no priority of its
-			is.Labels = append(is.Labels, cmp.Or(c, &forge.Issue{}).Labels...)
+		if w, ok := f.(forge.Woken); ok {
+			cs, _ := w.Closes([]int{e.mr.ID}) // as the forge links them, its text's among them (each forge that holds one behind does); unread: no priority of theirs
+			for _, c := range cs[e.mr.ID] {
+				is.Labels = append(is.Labels, c.Labels...)
+			}
 		}
 		at, _ := time.Parse(time.RFC3339, cmp.Or(e.st.AutoMergeAt, "4999-01-01T00:00:00Z")) // no auto-merge time: last
 		key[e] = int64(scale.Priority.Rank(backlog.Priority(is)))<<40 + at.Unix()           // priority, then auto-merge time
@@ -1511,10 +1513,8 @@ func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, fs []ver
 			} else if err != nil {
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-unread", Level: "warn", Where: e.where, Message: "not brought up to date with " + o.Base + ": " + forge.Said(err)})
 			}
-			pos, msg = 1, "head of the queue, "+o.Base+" merged in"
-			if !slices.ContainsFunc(res.Findings[n:], func(x verdict.Finding) bool { return x.Rule == "merged-from-base" }) {
-				pos, msg = 0, "passed over, "+o.Base+" not merged in"+strings.Repeat(", said above", min(1, len(res.Findings)-n))
-			}
+			up := slices.ContainsFunc(res.Findings[n:], func(x verdict.Finding) bool { return x.Rule == "merged-from-base" }) // merged in, or passed over
+			pos, msg = map[bool]int{true: 1}[up], map[bool]string{true: "head of the queue, " + o.Base + " merged in", false: "passed over, " + o.Base + " not merged in" + strings.Repeat(", said above", min(1, len(res.Findings)-n))}[up]
 		}
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "behind-not-updated", Where: e.where, Message: msg})
 	}

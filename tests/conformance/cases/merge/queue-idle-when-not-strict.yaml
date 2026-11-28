@@ -1,49 +1,48 @@
 case: merge/queue-idle-when-not-strict
 about: >
-  Nothing changes elsewhere (kept as today): a repository that does not
-  require branches up to date holds no accepted pull request behind. main
-  moves; `workline follow` updates nothing and builds no queue: neither
-  `workline/developer/1` nor `/2` is pushed to, and each merges once its
-  own head is green.
+  A repository that does not require branches up to date: two accepted
+  pull requests whose auto-merge is on, the forge holding none behind
+  though main moved. `workline follow` updates nothing and says no
+  queue: its summary names no head and no position, as before.
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
-    - "git checkout -qb workline/developer/1 && echo one > one.txt && git add one.txt && git commit -qm 'feat: one' -m 'Workline-Role: developer' && git push -q origin workline/developer/1 && git checkout -q main"
-    - "git checkout -qb workline/developer/2 && echo two > two.txt && git add two.txt && git commit -qm 'feat: two' -m 'Workline-Role: developer' && git push -q origin workline/developer/2 && git checkout -q main"
+    - "git checkout -qb workline/developer/3 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' -m 'Workline-Role: developer' && git push -q origin workline/developer/3 && git checkout -q main"
+    - "git checkout -qb workline/developer/4 main && echo A > A.md && git add A.md && git commit -qm 'docs: a' -m 'Workline-Role: developer' && git push -q origin workline/developer/4 && git checkout -q main"
     - "echo 'More.' > MORE.md && git add MORE.md && git commit -qm 'docs: more' && git push -q origin main"
   forge:
     statuses:
-      - {commit: "workline/developer/1", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
-      - {commit: "workline/developer/2", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/4", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
-      - id: 1
-        branch: workline/developer/1
+      - id: 7
+        branch: workline/developer/3
         base: main
         author: dana
         labels: [workline:accepted]
         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
         auto-merge: true
-        auto-merge-at: "2026-01-04T10:01:00Z"
+        auto-merge-at: "2026-01-04T10:05:00Z"
         auto-merge-by: workline-bot
-        pushes: [{head: workline/developer/1, at: "2026-01-04T09:00:00Z"}]
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z"}]
         comments: []
-      - id: 2
-        branch: workline/developer/2
+      - id: 8
+        branch: workline/developer/4
         base: main
         author: dana
         labels: [workline:accepted]
         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
         auto-merge: true
-        auto-merge-at: "2026-01-04T10:02:00Z"
+        auto-merge-at: "2026-01-04T10:06:00Z"
         auto-merge-by: workline-bot
-        pushes: [{head: workline/developer/2, at: "2026-01-04T09:00:00Z"}]
+        pushes: [{head: workline/developer/4, at: "2026-01-04T09:00:00Z"}]
         comments: []
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
-  no-findings: [{rule: merged-from-base}, {rule: updated}, {rule: auto-merge-on}]
-  not-pushed: [workline/developer/1, workline/developer/2]
-  summary-file: ["accepted into main, #1, #2: each merges once its own head is green"]
+  no-findings: [{rule: merged-from-base}, {rule: updated}]
+  not-pushed: [workline/developer/3, workline/developer/4]
+  summary-file: ["accepted into main, #7, #8: each merges once its own head is green"]
   summary-lacks: ["head of the queue", "queued, position"]

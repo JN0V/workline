@@ -55,7 +55,8 @@ all in the same run
 
 - **In the queue**: the accepted pull requests, auto-merge on, that the
   forge holds behind. A draft has no auto-merge: never in it.
-- **Their order**: the priority of the issue each closes, or its own
+- **Their order**: the priority of the issue each closes, as the forge
+  links it (its description's closing words among them), or its own
   priority label; then when auto-merge was turned on, the earliest
   first, one the forge gives no time for last.
 - **The head**: the first held by nothing. `main` is merged into it
