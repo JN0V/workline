@@ -1,0 +1,28 @@
+case: tester/notes-are-an-edit
+about: >
+  The tester that writes the acceptance tests of an issue says so in its
+  comment on the issue, edited: the earlier text is replaced, no new
+  comment is posted on the issue.
+given:
+  repo: tested
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles: {tester: {settings: {test-command: "sh run-tests.sh {report}"}}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready"]
+        body: "## Need\n\nWhen I total an order, I want to multiply a price by a count, so I need not add it up by hand.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n- **By zero:** Given the library, When I multiply 5 by 0, Then I get 0.\n\n---\n\n## Verification\n\nA test a scenario, in tests/.\n\n## Scope\n\n- `lib.sh`: a `mul` function beside `add`.\n"
+        comments: ["**The tester** EARLIER NOTE SAID this.\n\n<!-- workline:sticky=tester/issue -->"]
+run: {test: [write, --issue, "3"], ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  forge:
+    issues:
+      - id: 3
+        posted: 0
+        comments: 1
+        comment-contains: ["wrote the acceptance tests of this issue"]
+        comment-lacks: ["EARLIER NOTE SAID"]
