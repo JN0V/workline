@@ -47,13 +47,15 @@ func (d dueStep) since() time.Time {
 	return d.step.since
 }
 
-// startDue starts the steps due, the one waiting longest first, up to
-// reconcile-max with those started already. A step whose next state
-// filled up with a step started before it in this run waits: said, its
-// wait written when it is run here; in CI (list) left to the next event
-// or run, no run started only to say it.
+// startDue starts the steps due, priority 1 first, then the one waiting
+// longest, up to reconcile-max with those started already. A step whose
+// next state filled up with a step started before it in this run waits:
+// said, its wait written when it is run here; in CI (list) left to the
+// next event or run, no run started only to say it.
 func startDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o engine.Options, b forge.Backlog, issues []forge.Issue, dues []dueStep, t *tally, started *int, list bool) {
 	slices.SortStableFunc(dues, func(x, y dueStep) int { return x.since().Compare(y.since()) })
+	first := slices.DeleteFunc(slices.Clone(dues), func(d dueStep) bool { return backlog.Priority(issues[d.at]) != 1 })
+	dues = append(first, slices.DeleteFunc(dues, func(d dueStep) bool { return backlog.Priority(issues[d.at]) == 1 })...)
 	for _, d := range dues {
 		id := issues[d.at].ID
 		where := fmt.Sprintf("#%d", id)
@@ -63,7 +65,7 @@ func startDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o en
 			continue
 		}
 		if d.step != nil && d.step.next != "" && cfg.Limit(d.step.next) > 0 {
-			why, err := waits(cfg, b, d.step.from, &issues, t)
+			why, _, err := waits(cfg, b, d.step.from, issues[d.at], d.step.since, &issues, t)
 			if err != nil {
 				res.Status = worst(res.Status, verdict.Block)
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "state-unread", Where: where, Message: err.Error()})
@@ -96,7 +98,7 @@ func startDue(res *Result, cfg *routing.Config, f forge.Forge, spec string, o en
 // roomDue adds to res.Due, besides those in it, the issues whose step
 // waits for room in a state with a limit, and has it now: the room the
 // event's move freed, or one an event before missed; it returns them.
-// Their steps alone, up to reconcile-max, the one waiting longest first;
+// Their steps alone, up to reconcile-max, priority 1 first, then longest;
 // a state still full is not read further. What it could not read is
 // said, the reconciler starting them within the hour.
 func roomDue(res *Result, cfg *routing.Config, o engine.Options) []int {
@@ -133,7 +135,7 @@ func roomDue(res *Result, cfg *routing.Config, o engine.Options) []int {
 		}
 		no, seen := full[s.Next]
 		if !seen {
-			why, err := waits(cfg, b, s, &issues, t)
+			why, _, err := waits(cfg, b, s, forge.Issue{}, time.Time{}, &issues, t)
 			if err != nil {
 				unread(err)
 				return nil

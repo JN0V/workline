@@ -856,13 +856,26 @@ a step starts only when the state it moves the issue to has room.
   start, nor asks an agent. The line says it once on the issue, in its
   comment (`state-waits`), the record kept as it was, with the state it
   waits on (`waits`). A second event while still full writes nothing.
+- **One Urgent passes a full Ready**
+  ([ADR-0075 §4](../adr/0075-urgent-work-first-and-a-merge-queue-of-our-own.md#4-one-urgent-may-pass-a-full-ready)):
+  the step of a priority-1 issue (`workline:priority/1`, or the
+  project's own name for it) into the developer's state starts though
+  it is at its limit, when that state holds no other priority-1 issue
+  and no other is on its way there. On its way: in the state before,
+  its step there not done (under way, started by a run before, its
+  record not written yet, or still due) and waiting longer, the lower
+  number first for the same time. Said in its wake (`state-wakes`):
+  the limit passed for an issue of priority Urgent, by its name in the
+  project, one at a time. A second one waits, said as above; other
+  states' limits hold for all. The room's listing below wakes none past
+  a full state: the next event or reconcile starts it.
 - **Room again**: the next event on the issue, or the reconciler, finds
   the step due and starts it; its record, written then, drops the wait.
 - **Room freed wakes the waiting**: the CI job that moved an issue asks
   the line with `--input room=true` (`route issue` or `route
   reconcile`, with `reconcile=list`). It lists the issues whose step
-  waits on a state with a limit and room now, the one waiting longest
-  first, and starts each one's run
+  waits on a state with a limit and room now, priority 1 first, then
+  the one waiting longest, and starts each one's run
   ([#960](https://github.com/JN0V/workline/issues/960)). A state still
   full costs no read of its waiting issues.
 - **Counted** from the open issues' labels, as `StateOf` reads them.
@@ -966,6 +979,10 @@ each reconcile starts the next one, past an environment's wait timer
   the steps it starts ask theirs.
 - **`reconcile-max`** (3) steps a run at most; the issues due past it
   are said (`reconcile-left`) and wait for the next run.
+- **Priority 1 first**
+  ([ADR-0075 §5](../adr/0075-urgent-work-first-and-a-merge-queue-of-our-own.md#5-the-reconcile-starts-priority-1-first)):
+  the steps of priority-1 issues before the others, each group in the
+  order below.
 - **The one waiting longest first**, not the backlog's first
   ([amended](../adr/0059-an-issue-moves-by-its-state-each-step-wakes-the-next.md#amendment-2026-11-03-the-one-waiting-longest-first-room-wakes-the-waiting)):
   - a first step in its state waits since its state's label was put on;

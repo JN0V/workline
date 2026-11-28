@@ -495,7 +495,9 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 	if w := splitAfterTests(res, cfg, s, is, now, comments); w != nil {
 		return nil, w, nil
 	}
-	if why, err := waits(cfg, b, s, open, t); err != nil {
+	since := waitedSince(s, rec, had, trail.Labeled)
+	why, passed, err := waits(cfg, b, s, is, since, open, t)
+	if err != nil {
 		return nil, nil, err
 	} else if why != "" {
 		return nil, waiting(res, s, why, rec, where, is.ID), nil
@@ -513,8 +515,7 @@ func stepOf(res *Result, cfg *routing.Config, b forge.Backlog, is forge.Issue, o
 			Message: "the reviewer read its spec and found nothing important open: the product owner moves it to ready, with no agent"})
 	}
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "state-wakes", Level: "info", Where: where,
-		Message: fmt.Sprintf("its state, %s, wakes the %s", s.Name, role)})
-	since := waitedSince(s, rec, had, trail.Labeled)
+		Message: fmt.Sprintf("its state, %s, wakes the %s%s", s.Name, role, passed)})
 	now.Ran = clock().UTC().Format(time.RFC3339)
 	now.Alone = ""
 	if role != name {

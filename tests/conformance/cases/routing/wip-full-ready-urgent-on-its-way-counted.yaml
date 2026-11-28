@@ -1,0 +1,43 @@
+case: routing/wip-full-ready-urgent-on-its-way-counted
+about: >
+  Ready at its limit of 10 (routing.wip) holds no priority-1 issue, but
+  #19, a priority-1 issue in Tests longer, has its step into Ready
+  under way: started by a run before, its record not written yet. The
+  step of #20, another priority-1 issue in Tests, is due: it waits, said
+  as before: one Urgent issue passes a full Ready at a time, across runs
+  too. No agent asked.
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [tester, developer]}, wip: {ready: 10}}
+  forge:
+    issues:
+      - {id: 1, title: "One", labels: ["workline:ready"], body: "## Need\n\nI want one.\n"}
+      - {id: 2, title: "Two", labels: ["workline:ready"], body: "## Need\n\nI want two.\n"}
+      - {id: 3, title: "Three", labels: ["workline:ready"], body: "## Need\n\nI want three.\n"}
+      - {id: 4, title: "Four", labels: ["workline:ready"], body: "## Need\n\nI want four.\n"}
+      - {id: 5, title: "Five", labels: ["workline:ready"], body: "## Need\n\nI want five.\n"}
+      - {id: 6, title: "Six", labels: ["workline:ready"], body: "## Need\n\nI want six.\n"}
+      - {id: 7, title: "Seven", labels: ["workline:ready"], body: "## Need\n\nI want seven.\n"}
+      - {id: 8, title: "Eight", labels: ["workline:ready"], body: "## Need\n\nI want eight.\n"}
+      - {id: 9, title: "Nine", labels: ["workline:ready"], body: "## Need\n\nI want nine.\n"}
+      - {id: 10, title: "Ten", labels: ["workline:ready"], body: "## Need\n\nI want ten.\n"}
+      - id: 19
+        title: "Urgent"
+        labels: ["workline:needs-tests", "workline:priority/1"]
+        body: "## Need\n\nI want it now.\n"
+        labeled: {"workline:needs-tests": "2026-11-28T06:00:00Z"}
+      - {id: 20, labeled: {"workline:needs-tests": "2026-11-28T07:00:00Z"}, title: "Urgent too", labels: ["workline:needs-tests", "workline:priority/1"], body: "## Need\n\nI want it now too.\n\n## Validation\n\n- **Two by three:** Given the library, When I multiply 2 by 3, Then I get 6.\n"}
+run: {route: issue, target: {issue: 20}, open-merge-request: true, ai: "fake:tester-two-scenarios"}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "issue: #20 waits: ready holds 10 open issues, its limit 10"
+  findings:
+    - {rule: state-waits, level: info, where: "#20", message: "its state, tests, waits to wake the tester: ready holds 10 open issues, its limit 10 (routing.wip)"}
+  forge:
+    issues:
+      - id: 20
+        labels: ["workline:needs-tests", "workline:priority/1"]
+        comments: 1
+        comment-contains: ["ready holds 10 open issues, its limit 10", "\"waits\":\"ready\""]
