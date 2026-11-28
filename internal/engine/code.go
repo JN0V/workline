@@ -203,8 +203,10 @@ func weighCode(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *nor
 		}
 		if why != "" {
 			// Kept on it, edited at each head, as the other waits are: a
-			// fix with no test that failed before proves nothing
-			// (ADR-0060), and a later head is told what it needs now (#2123).
+			// fix with no test that failed before proves nothing, so a
+			// person's yes accepts it (the person on the loop,
+			// docs/adr/0060-the-person-is-on-the-loop.md), and a later
+			// head is told what it needs now (#2123).
 			t := forge.Target{Kind: "merge-request", ID: w.mr.ID}
 			body := fmt.Sprintf("**Waiting for a person's yes**: this is %s, but %s. The project's merge policy is `%s`: a bug's fix merges once a test that failed on the base proves the bug and every gate passes.\n\n- To accept this one, put the label `%s`.\n- Not a bug? Change the label on #%d.",
 				d.Says(), why, o.Merge, backlog.AcceptedLabel(f), d.Issue)
