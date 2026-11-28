@@ -1,0 +1,71 @@
+case: merge/queue-updates-only-the-head
+about: >
+  A repository that requires branches up to date, three accepted pull
+  requests held behind, their checks green: `#7`, `#8` and `#9`, each
+  the developer's, auto-merge on, turned on in this order. main moves.
+  `workline follow` merges main into the first only, and nothing is
+  pushed to the two others. Its summary says the first "head of the
+  queue", the others "queued, position 2" and "queued, position 3".
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/developer/3 && echo 'One.' > ONE.md && git add ONE.md && git commit -qm 'docs: one' -m 'Workline-Role: developer' && git push -q origin workline/developer/3 && git checkout -q main"
+    - "git checkout -qb workline/developer/4 && echo 'Two.' > TWO.md && git add TWO.md && git commit -qm 'docs: two' -m 'Workline-Role: developer' && git push -q origin workline/developer/4 && git checkout -q main"
+    - "git checkout -qb workline/developer/5 && echo 'Three.' > THREE.md && git add THREE.md && git commit -qm 'docs: three' -m 'Workline-Role: developer' && git push -q origin workline/developer/5 && git checkout -q main"
+    - "echo 'More.' > MORE.md && git add MORE.md && git commit -qm 'docs: more' && git push -q origin main"
+  forge:
+    statuses:
+      - {commit: "workline/developer/3", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/4", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/developer/5", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: workline/developer/3
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:05:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/3, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+      - id: 8
+        branch: workline/developer/4
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:06:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/4, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+      - id: 9
+        branch: workline/developer/5
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:07:00Z"
+        auto-merge-by: workline-bot
+        checks: success
+        behind: true
+        pushes: [{head: workline/developer/5, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: merged-from-base, where: "#7"}]
+  no-findings: [{rule: merged-from-base, where: "#8"}, {rule: merged-from-base, where: "#9"}]
+  pushed:
+    workline/developer/3: {MORE.md: "More.", ONE.md: "One."}
+  not-pushed: [workline/developer/4, workline/developer/5]
+  summary-file: ["#7: head of the queue", "#8: queued, position 2", "#9: queued, position 3"]
