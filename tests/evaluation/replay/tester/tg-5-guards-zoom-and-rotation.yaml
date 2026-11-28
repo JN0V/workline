@@ -1,0 +1,54 @@
+case: tester/tg-5-guards-zoom-and-rotation
+about: >
+  TraceGlass issue #5 ("Pinch-zoom after a drag makes the overlay jump"),
+  as the tester read it on 2026-11-23 (the body before the Verification
+  the engine wrote from its tests), on main at 8d3965c. Its Draft then:
+  https://github.com/JN0V/TraceGlass/pull/13. Left with no guard then
+  ("kept as today … nothing guards it"): zoom with no drag; rotate under
+  the fingers. Expected now: each has a guard test, green on the base,
+  that checks its Then by running the code. Scenario "zoom with no drag" —
+  a sound test: Guard: `onOverlayGesture(Offset(340f,460f), Offset.Zero,
+  2f, 0f)` on a fresh TracingViewModel (default view 1080x1920);
+  `uiState.value.overlayOffset` must be (200, 500). Already there at the
+  base: name TracingViewModelTest `onOverlayGesture with off-center
+  centroid adjusts offset for scale pivot`. To refuse: Declaring it
+  unguarded without reading TracingViewModelTest.kt (the issue's Scope
+  names that file), or writing a duplicate: the developer did, `zoom with
+  no drag pivots on the view centre`, after the line's reviewer asked for
+  the "missing" guard. Scenario "rotate under the fingers" — a sound test:
+  1080x1920 view, onOverlayDrag(Offset(300f,0f)); m0 = renderMatrix.value;
+  onOverlayGesture(Offset(840f,960f), Offset.Zero, 1f, 90f); assert
+  renderMatrix.value maps m0^-1*(840,960) back to (840,960) (=
+  overlayOffset (300,0), overlayRotation 90). That is green on base and
+  fix: a guard. To prove the pivot, add a centroid off the image centre:
+  rotate 90 around (540, 960) -> overlayOffset must be (0, 300); base
+  keeps (300, 0). To refuse: The scenario's numbers alone: the fingers sit
+  on the render pivot, so offset (300,0) + rotation 90 pass with no pivot
+  code, i.e. on base and on the sent-back head 82f16a5. Also asserting
+  only overlayRotation == 90, or calling it "kept as today" without saying
+  it holds only at the image centre. Not counted for or against (bench
+  validity): the scenario's numbers put the fingers on the render pivot:
+  its literal test passes on the base, the sent-back head and the fix
+  alike.
+given:
+  clone: {repo: JN0V/TraceGlass, head: 8d3965c825d4145df335cec4fd738f3445ef9180}
+  needs: ["$ANDROID_HOME", java]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 5
+        title: "Pinch-zoom after a drag makes the overlay jump"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "**Need**: a person placing the overlay needs a pinch to zoom around their fingers, so they do not drag the picture back after each zoom.\n\n**Example**:\n\n1. On a 1080×1920 screen, drag the overlay 300 px to the right: the image centre is at x = 840.\n2. Pinch to zoom 2× with the fingers centred on that point, (840, 960).\n\n- **Expected**: the point under the fingers stays there: the offset stays (300, 0).\n- **Actual**: the offset becomes (0, 0); the image centre jumps to x = 540.\n- **Version**: main, 8d3965c.\n\n## Validation\n\n- **Scenario: zoom after a drag**\n  - Given an overlay offset of (300, 0)\n  - When I zoom 2× at (840, 960)\n  - Then the offset is still (300, 0)\n- **Scenario: zoom with no drag**\n  - Given an overlay offset of (0, 0)\n  - When I zoom 2× at (340, 460)\n  - Then the offset is (200, 500)\n- **Scenario: rotate under the fingers**\n  - Given an overlay offset of (300, 0)\n  - When I rotate 90° around (840, 960)\n  - Then the image point under the fingers does not move\n\n---\n\n## Verification\n\n- A unit test on `TracingViewModel.onOverlayGesture` with a 1080×1920 view: \"zoom after a drag\" fails on main and passes once built; \"zoom with no drag\" passes on both (a guard).\n- `./gradlew :feature:tracing:testDebugUnitTest`.\n\n## Scope\n\n- `feature/tracing/src/main/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModel.kt`, `onOverlayGesture` (line 171): the zoom pivot is `centroid - viewCenter`; it should be taken from the image's current centre (`viewCenter + manualOffset`). The paper-tracking branch composes differently: out of scope unless the same fault shows there.\n- `feature/tracing/src/test/kotlin/io/github/jn0v/traceglass/feature/tracing/TracingViewModelTest.kt`: a test expecting today's offsets after several calls may change.\n- Reference: trial issue JN0V/TraceGlass-trial#42.\n"
+run: {role: tester, event: issue, target: "issue:5", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-5']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # zoom with no drag: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-5']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"zoom with no drag\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}
+  # rotate under the fingers: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-5']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"rotate under the fingers\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

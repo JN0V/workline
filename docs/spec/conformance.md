@@ -359,7 +359,7 @@ turns; a case that lost a point logs its closing words
 
 Real shapes, both sides graded, the reviewer's measure and the judge's
 replay are told in full in [Evaluation — four measures](conformance/evaluation.md).
-The replay set, real misses on DomoticsCore and TraceGlass played again
+The replay set, real misses on DomoticsCore, TraceGlass and workline played again
 (`given.clone`, `TestReplay`), and how to run one role's set, is in
 [Replay set](conformance/replay.md).
 

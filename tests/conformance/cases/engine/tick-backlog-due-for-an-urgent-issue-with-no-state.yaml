@@ -1,0 +1,20 @@
+case: engine/tick-backlog-due-for-an-urgent-issue-with-no-state
+about: >
+  Issue 41 carries workline:priority/1 and no state label, put on at 10:00; Ready holds 2 against a target of 2 and no backlog run went before: the tick, at 10:20, lists a backlog run, its reason naming the issue (Urgent, no state).
+given:
+  repo: basic
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 2}}
+  forge:
+    issues:
+      - {id: 1, title: "Item 1", body: "x", labels: ["workline:ready"]}
+      - {id: 2, title: "Item 2", body: "x", labels: ["workline:ready"]}
+      - id: 41
+        title: "Item 41"
+        body: "x"
+        labels: ["workline:priority/1"]
+        label-events: [{label: "workline:priority/1", added: true, created: "2026-11-16T10:00:00Z"}]
+run: {cli: [tick, --forge, "fake:../forge.json", --now, "2026-11-16T10:20:00Z", --json]}
+expect:
+  exit: 0
+  stdout: ['{"job":"backlog","role":"product-owner","why":"', '41', '"key":"workline gardening backlog"}']

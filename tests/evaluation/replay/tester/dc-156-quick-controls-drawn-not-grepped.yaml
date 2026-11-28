@@ -1,0 +1,42 @@
+case: tester/dc-156-quick-controls-drawn-not-grepped
+about: >
+  DomoticsCore issue #156 ("DC-20 — WebUI: QuickControls is a location the
+  page never draws"), as the tester read it on 2026-11-23 (the body before
+  the Verification the engine wrote from its tests), on main at 5a2ea81.
+  Its Draft then: https://github.com/JN0V/DomoticsCore/pull/277. "Drawn":
+  its test then proved less than the scenario (it found words in a
+  source). Scenario "Drawn" — a sound test: In
+  DomoticsCore-WebUI/webui_test/app.test.js (jsdom, harness.js): boot the
+  app, set app.uiSchema to one context with location
+  app.WebUILocation.QuickControls and one Dashboard context, call
+  app.renderUI(); assert the quick-controls container holds exactly one
+  card with the context's title and not the Dashboard one. The developer
+  wrote this test in PR #278. To refuse: A C++ suite that opens app.js and
+  searches it for `QuickControls`: a comment or an unused filter passes,
+  no card is ever rendered. Not counted for or against (bench validity):
+  the project's test command runs no front-end (jsdom) suite at the base:
+  no run-time test of the page can be proven by the runner. The Draft's
+  proof runs the component holding the tests alone (a `draft-command` and
+  `module-files` the case adds), not DomoticsCore's whole native suite;
+  `pio` must be on PATH.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 5a2ea815117522243c014c8fb2570cf624d37e76}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|^\\( *\\)test-command: tools/workline-tests.sh {report}$|&\\n\\1draft-command: tools/workline-tests.sh {report} {packages}\\n\\1module-files: [platformio.ini]|' .workline/config.yaml && grep -q draft-command .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the Draft is proven on its component alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 156
+        title: "DC-20 — WebUI: QuickControls is a location the page never draws"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "### DC-20 — WebUI: `QuickControls` is a location the page never draws [LOW] — **NEW (2026-10-03, by DC-12's reading)**\n\n- **Files**: `IWebUIProvider.h` (`WebUILocation::QuickControls`,\n  `WebUIContext::quickControl()`), `webui_src/app.js` (`renderUI()`).\n- **Problem**: `app.js` names the location and renders no grid for it, so a\n  context created with `quickControl()` reaches the schema and is shown\n  nowhere. Nothing in the tree uses it, which is why it is LOW.\n- **The remedy is a choice**: draw a quick-controls area, or remove the\n  location and its factory. The front-end suite can pin either.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6386 to 6394 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:e21cdf2fc836 -->\n\n## Need\n\nA component author who places a control with `quickControl()` wants it to appear on the page, so the control is not silently lost.\n\n## Example\n\nA context built with `WebUIContext::quickControl(\"qc_id\", \"Quick\")` reaches the schema, but the page draws no quick-controls area, so nothing is shown. The 2.13.0 release notes list this as a known issue.\n\n## Validation\n\n- **Drawn:** Given a context made with `quickControl()`, When the page renders the schema, Then its card is visible in a quick-controls area.\n- **Removed (if the choice is removal):** Given the location and its factory are gone, When the library is built, Then no code refers to them and the front-end suite passes.\n\n---\n\n## Verification\n\nA front-end test in jsdom feeds the schema a `QuickControls` context. It asserts either that a card is drawn, or that the location no longer exists. The native test `test_webui_context_factory_quick_control` is updated to match.\n\n## Scope\n\n`DomoticsCore-WebUI/include/DomoticsCore/IWebUIProvider.h`, `DomoticsCore-WebUI/webui_src/app.js` (`renderUI()`), `DomoticsCore-WebUI/test/test_webui_component/test_webui_component.cpp`.\n\n## Assumptions\n\n- Assumption taken on 2026-11-16, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+run: {role: tester, event: issue, target: "issue:156", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-156']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Drawn: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-156']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"drawn\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

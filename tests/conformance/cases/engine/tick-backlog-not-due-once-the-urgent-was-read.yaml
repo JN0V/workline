@@ -1,0 +1,23 @@
+case: engine/tick-backlog-not-due-once-the-urgent-was-read
+about: >
+  Issue 41, priority 1 with no state label, was labelled at 10:00; a backlog run started at 10:05 and ended at 10:15, Ready is full: the tick, at 10:20, lists no backlog run, the run having read the issue (Already read).
+given:
+  repo: basic
+  config:
+    routing: {events: {schedule: [product-owner], issue: [tester, developer]}, wip: {ready: 2}}
+  forge:
+    issues:
+      - {id: 1, title: "Item 1", body: "x", labels: ["workline:ready"]}
+      - {id: 2, title: "Item 2", body: "x", labels: ["workline:ready"]}
+      - id: 41
+        title: "Item 41"
+        body: "x"
+        labels: ["workline:priority/1"]
+        label-events: [{label: "workline:priority/1", added: true, created: "2026-11-16T10:00:00Z"}]
+    runs:
+      - {name: "workline gardening backlog", workflow: workline-gardening.yml, status: completed, success: true, started: "2026-11-16T10:05:00Z", updated: "2026-11-16T10:15:00Z"}
+run: {cli: [tick, --forge, "fake:../forge.json", --now, "2026-11-16T10:20:00Z", --json]}
+expect:
+  exit: 0
+  stdout: ['{"job":"reconcile"']
+  stdout-lacks: ['"job":"backlog"']

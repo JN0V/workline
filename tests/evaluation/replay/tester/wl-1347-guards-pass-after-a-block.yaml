@@ -1,0 +1,52 @@
+case: tester/wl-1347-guards-pass-after-a-block
+about: >
+  workline issue #1347 ("A blocked merge request still asks for a person's
+  yes"), as the tester read it on 2026-11-24 (the body before the
+  Verification the engine wrote from its tests), on main at 33daff2. Its
+  Draft then: https://github.com/JN0V/workline/pull/2119. Left with no
+  guard then ("kept as today … nothing guards it"): Pass after a block.
+  Expected now: each has a guard test, green on the base, that checks its
+  Then by running the code. Scenario "Red head, no stale wait" — a sound
+  test: Forge local at normal: `workline follow` writes a wait for a yes;
+  push a head the line blocks, `workline route merge-request --target
+  merge-request:N --ai none`, `workline follow` again. Assert the
+  request's file holds the block comment and no comment keeps the ask
+  ('put the label'). To prove the Then, do it for the unreviewed wait AND
+  the merge-waits=findings wait (and a feature/task wait). To refuse:
+  `lacks: "To accept this one, put the label"` misses the findings wait's
+  wording 'To accept this one anyway, put the label'. The unreviewed wait
+  alone passes on the incomplete fix (findings key forgotten). Scenario
+  "Pass after a block" — a sound test: Conformance, forge local: `workline
+  route merge-request` on a head the committer refuses, amend to a good
+  subject, route again; assert the request's file contains '**The line
+  passed**' and '<!-- workline:line-verdict -->' and lacks '**The line
+  blocks this head**'. Or unit: engine.SayVerdict(local, id, blocking)
+  then (passing): the comment count is unchanged and the one marked
+  line-verdict says passed. To refuse: Asserting '**The line passed**' is
+  present and nothing else: a second comment added beside the block one
+  passes. A pass with no earlier block writes nothing (create=false): not
+  this scenario. Its tests are conformance cases, the whole suite a run:
+  played only where WORKLINE_EVAL_HEAVY is set. The test command is
+  narrowed to the case's packages, so that the run before the agent stays
+  light.
+given:
+  clone: {repo: JN0V/workline, head: 33daff28c430b286065f5397b9c3af3d9fb88b59}
+  needs: ["$WORKLINE_EVAL_HEAVY"]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|-- -timeout 20m \\./\\.\\.\\.$|-- -timeout 20m ./tests/conformance/|' .workline/config.yaml && ! grep -q 'timeout 20m ./\\.\\.\\.' .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the test command on the packages of the case alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 1347
+        title: "A blocked merge request still asks for a person's yes"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "## Need\n\nA maintainer reading a blocked merge request sees two comments that disagree: one asks for their yes, the other says a yes does not merge it.\n\n## Example\n\nRead from the code, not yet seen on a forge:\n\n- `!5`, the developer's fix, no reviewer's verdict yet: the request says **Waiting for a person's yes** … \"To accept this one, put the label `workline:accepted`\".\n- A new head turns red at the tester (`frozen-test-missing`). The request now also says **The line blocks this head** … \"a person's yes neither\".\n- The first comment is never edited. The maintainer puts the label, and nothing merges.\n- Then the line passes on a later head. Whether the block comment then says **The line passed** is covered by no case.\n\n## Validation\n\n- **Red head, no stale wait:** Given a merge request that says it waits for a person's yes, When the line blocks its new head, Then no comment on it still asks for a yes as the way to merge.\n- **Pass after a block:** Given a merge request whose comment says the line blocks its head, When the line passes on a new head, Then that same comment says the line passed, and no second comment is added.\n\n---\n\n## Verification\n\n- A conformance case per scenario, on the local forge, through `workline route merge-request`.\n\n## Scope\n\n- `internal/engine/code.go`, `weighCode`: the change goes here.\n  - **The comment with no yes to ask for.** The wait comments are the ones marked `merge-waits=unreviewed`, `merge-waits=<kind>` and `merge-waits=unreproduced`. On a head the line blocks (the `verdict-red` branch), none of them may keep the text \"To accept this one, put the label\" as the way to merge.\n  - **The unreviewed wait.** This is the case in the Need's example. It is written at a head before the `verdict-red` check, and the `verdict-red` branch returns before `f.Sticky` runs on the next head, so it is never edited. The fix edits it there, with `create=false`, or removes the ask for a yes from it.\n  - **Feature and task waits.** The wait for a feature or a task (`merge-waits=<kind>`, `Comment`, said once) already comes before the `verdict-red` check, so a red feature head says both. Check that it does not ask for a yes as the way to merge on a blocked head.\n- `internal/engine/merge.go`, `SayVerdict`: no change to the code. The pass edit already works: `Sticky` with `create=false` on a pass, so \"The line passed\" replaces the block text in the same comment. Only a test is missing for it.\n- New: `tests/conformance/cases/merge/local-route-drops-the-wait-for-a-yes-on-a-block.yaml`: a case for the \"Red head, no stale wait\" scenario. Model it on `tests/conformance/cases/merge/local-route-says-its-block-on-the-request.yaml`.\n- New: `tests/conformance/cases/merge/local-route-says-the-line-passed-after-a-block.yaml`: a case for the \"Pass after a block\" scenario. It checks that the same comment (marker `verdictMarker` in `internal/engine/merge.go`) says \"The line passed\" and that no second comment is added.\n- Left open by [#1343](https://github.com/JN0V/workline/pull/1343), the fix of [#1327](https://github.com/JN0V/workline/issues/1327) (closed).\n- Out of this issue: a request that merges with no yes once the reviewer's verdict arrives, with no block ever. It has no scenario here. It is not covered by this Need or its Validation.\n- Guessed: whether the fix edits the wait comments or lets the verdict comment stand alone is left to the builder."
+run: {role: tester, event: issue, target: "issue:1347", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-1347']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Pass after a block: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-1347']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"pass after a block\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

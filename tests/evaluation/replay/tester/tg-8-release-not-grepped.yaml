@@ -1,0 +1,65 @@
+case: tester/tg-8-release-not-grepped
+about: >
+  TraceGlass issue #8 ("Signed release APK on each version tag"), as the
+  tester read it on 2026-11-24 (the body before the Verification the
+  engine wrote from its tests), on main at 2433799. Its Draft then:
+  https://github.com/JN0V/TraceGlass/pull/18. "a tag makes a release": its
+  test then proved less than the scenario (it found words in a source).
+  "versions go up": its test then proved less than the scenario (it found
+  words in a source). "no secrets, no APK": its test then proved less than
+  the scenario (it found words in a source). Scenario "a tag makes a
+  release" — a sound test: None in the runner: it needs a run of the
+  release workflow on a pushed test tag with the owner's repository
+  secrets, then `apksigner verify --print-certs` on the APK of the GitHub
+  Release (the issue's own Verification). The right answer is no test,
+  with that reason. As of 2026-11-26 the repo lists no tag, no release and
+  no run of release.yml. To refuse: Any test that reads release.yml or
+  app/build.gradle.kts for words (`signingConfigs`, `gh release create`,
+  secret names): it passes on a workflow that never runs or signs with
+  another key. Scenario "versions go up" — a sound test: Run the version
+  computation for two tags and compare values: either a function the build
+  uses (e.g. tag 1.2.3 -> name "1.2.3", code 10203; 1.2.4 -> higher code),
+  or the project's Gradle (TestKit / the wrapper) run twice with the tag
+  given, reading versionCode/versionName back. Neither a testable function
+  nor TestKit exists at the base, and the issue does not fix how the tag
+  reaches the build (the fix chose env TRACEGLASS_VERSION_NAME); the built
+  APKs themselves (aapt dump badging) are outside. To refuse: Checking
+  that `versionCode`/`versionName` are "not literals" and that
+  `System.getenv` occurs in the script: true of a script whose code never
+  rises (e.g. a constant read from env). The owner's follow-up #23 asks:
+  tag 1.2.3 -> 10203, 1.2.100 -> the build fails. Not counted for or
+  against (bench validity): reachability ambiguous: a host test before the
+  code would have to build two release APKs or invent the script's
+  interface; the forensic note calls the case poor. Scenario "no secrets,
+  no APK" — a sound test: Build side, as the owner asked ("a Gradle task
+  that fails without the four variables"): run the project's release build
+  for a tag with none of the signing variables set (TestKit or the
+  wrapper); assert a non-zero exit, a message naming the missing
+  secret(s), and no APK under app/build/outputs/apk/release/. The
+  workflow's own failure and "nothing published" need a forge run without
+  secrets: outside, to be said as not tested. To refuse: Grepping the
+  script for `GradleException`, "missing", `doFirst`: passes if the check
+  is never wired to a release task (issue #23: "would pass if the check
+  never ran"). Also a `--dry-run` task-order check alone: it shows the
+  plan, not the failure. Not counted for or against (bench validity):
+  reachability ambiguous: the Then is a forge workflow's outcome; only the
+  build side could run on a host.
+given:
+  clone: {repo: JN0V/TraceGlass, head: 2433799a6e4fe599100960f31e43cf2430991008}
+  needs: ["$ANDROID_HOME", java]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 8
+        title: "Signed release APK on each version tag"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "enhancement"]
+        body: "## Need\n\nA person installs TraceGlass and wants clean updates over time, from an APK with a stable signature.\n\n## Example\n\nToday `assembleRelease` runs in CI but nothing is signed or published, and `app/build.gradle.kts` holds `versionCode = 1` and `versionName = \"0.1.0\"`. A person who installs a debug build cannot update it with a later build signed by another key.\n\n## Validation\n\n- **Scenario: a tag makes a release.** Given a `v*` tag pushed, When the release workflow runs, Then a GitHub Release holds a release APK signed with the project key.\n- **Scenario: versions go up.** Given two successive release tags, When both APKs are built, Then the second has a higher `versionCode`, and its `versionName` matches the tag.\n- **Scenario: no secrets, no APK.** Given the signing secrets are missing, When the release workflow runs, Then it fails with a clear message and publishes no unsigned APK.\n\n---\n\n## Verification\n\n- The key is the owner's and must never be committed: not the keystore, not a password, not in logs.\n- Check the published APK with `apksigner verify --print-certs`.\n- Run the workflow once on a test tag and delete the test release afterwards.\n\n## Scope\n\n- `app/build.gradle.kts`: a release `signingConfig` reading env vars; `versionCode` and `versionName` from the tag or a file.\n- A new `.github/workflows/release.yml`, triggered on `v*` tags, that decodes the keystore, builds and creates the GitHub Release.\n- Repository secrets, already set by the owner: `TRACEGLASS_KEYSTORE_B64`, `TRACEGLASS_KEYSTORE_PASSWORD`, `TRACEGLASS_KEY_ALIAS`, `TRACEGLASS_KEY_PASSWORD`.\n"
+run: {role: tester, event: issue, target: "issue:8", open-merge-request: true}
+grade:
+  - {status: pass}
+  # No test that reads the build script or the workflow as text: the scenarios are a forge's release run.
+  - {sh: "! git --git-dir=../origin.git diff main workline/tester/issue-8 2>/dev/null | grep -E '^\\+.*(build\\.gradle|release\\.yml|\\.github/workflows)'"}

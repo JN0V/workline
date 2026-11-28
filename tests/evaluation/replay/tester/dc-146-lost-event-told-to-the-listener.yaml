@@ -1,0 +1,40 @@
+case: tester/dc-146-lost-event-told-to-the-listener
+about: >
+  DomoticsCore issue #146 ("BUG-49 — MQTT: what a dropped link still gets
+  wrong after BUG-44"), as the tester read it on 2026-11-23 (the body
+  before the Verification the engine wrote from its tests), on main at
+  de3ac38. Its Draft then: https://github.com/JN0V/DomoticsCore/pull/261.
+  "Lost event": its test then proved less than the scenario (it passed on
+  another, easier path). Scenario "Lost event" — a sound test: Subscribe
+  to EVENT_DISCONNECTED before the drop, no replay;
+  getClientForTest()->disconnect(), mqtt->loop(), then publish 64 fillers
+  of 800 bytes so the announcement is evicted, poll(1000): assert that
+  subscriber's count is 0 (evicted). Then loop() + poll(1000) a few
+  rounds: assert the SAME subscriber's count >= 1. To refuse: Summing the
+  early subscriber with a late replayLast subscriber, or testing only a
+  late subscriber: green on ffa86dbd, which made the event sticky and
+  never re-sends it to a listener (Home Assistant's mqttConnected case).
+  The Draft's proof runs the component holding the tests alone (a
+  `draft-command` and `module-files` the case adds), not DomoticsCore's
+  whole native suite; `pio` must be on PATH.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: de3ac3864ff15b87a598b9401a97a1ca5175f3c8}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|^\\( *\\)test-command: tools/workline-tests.sh {report}$|&\\n\\1draft-command: tools/workline-tests.sh {report} {packages}\\n\\1module-files: [platformio.ini]|' .workline/config.yaml && grep -q draft-command .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the Draft is proven on its component alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 146
+        title: "BUG-49 — MQTT: what a dropped link still gets wrong after BUG-44"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "### BUG-49 — MQTT: what a dropped link still gets wrong after BUG-44 [LOW] — **NEW (2026-09-20, by the deferred-work purge)**\n\n- **Parked by**: BUG-44's code review, 2026-09-20.\n- **Files**: `MQTT_impl.h` (`resetReconnect()` `:223`, `updateStatistics()`\n  `:608`, `announceConnectionLost()` `:115`); `MQTT.h` (`MQTTStatistics`).\n- **Three leftovers, one file**:\n  1. `resetReconnect()` is the last silent exit from Connected — it sets\n     `Disconnected` without touching the client or emitting, so a caller\n     using it after changing the broker leaves every subscriber believing the\n     link is up, and the next `connect()` sends a second `mqtt/connected` with\n     no `mqtt/disconnected` between. Public API; nothing in the tree calls it.\n  2. `MQTTStatistics` counts connections and never losses, so neither the\n     WebUI nor the telemetry can see a link flap; and `uptime` is refreshed\n     only while connected, so it freezes at its last value and reads as live\n     for the whole outage.\n  3. the loss is announced once per drop, and a `mqtt/disconnected` the\n     EventBus drops on a full queue is never re-sent — HomeAssistant's\n     `mqttConnected` then stays true for the life of the process. Sticky\n     publication would fix it and changes replay for every subscriber.\n- **Fix**: (1) announce, or close the session first — a design question;\n  (2) a loss counter and an uptime that stops; (3) decide sticky or not.\n- **Refs**: BUG-44, BUG-46, ADR 0001.\n\nOpened from `docs/CODE-ROADMAP.md`, lines 4506 to 4527 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:87ac34765c9f -->\n\n## Need\n\nAnyone who relies on the MQTT link state, such as Home Assistant, the WebUI or telemetry, needs it to be correct and visible after a link drop.\n\n## Steps to reproduce\n\n1. Connect the MQTT component to a broker.\n2. Call `resetReconnect()` while connected, or drop the link while the EventBus queue is full.\n3. Read `getStatistics()` and watch the `mqtt/connected` and `mqtt/disconnected` events.\n- **Expected:** subscribers see a `mqtt/disconnected` for every loss, losses are counted, and `uptime` stops while the link is down.\n- **Actual:** `resetReconnect()` sets `Disconnected` silently, so the next `connect()` sends a second `mqtt/connected` with no disconnect between. No loss is counted, and `uptime` keeps its last value during the outage. A dropped `mqtt/disconnected` is never resent, so Home Assistant's `mqttConnected` stays true.\n- **Version:** 2.13.0.\n\n## Validation\n\n- **Silent reset:** Given a connected client, When `resetReconnect()` is called, Then subscribers receive `mqtt/disconnected` before any later `mqtt/connected`.\n- **Loss counter:** Given a link that drops twice, When statistics are read, Then they show two losses.\n- **Uptime:** Given a dropped link, When statistics are read during the outage, Then `uptime` is 0 or no longer grows.\n- **Lost event:** Given a full EventBus queue at the moment of a drop, When the queue frees up, Then subscribers still learn that the link is down.\n\n---\n\n## Scope\n\n`DomoticsCore-MQTT/include/DomoticsCore/MQTT_impl.h`: `resetReconnect()`, `updateStatistics()`, `announceConnectionLost()`.\n`DomoticsCore-MQTT/include/DomoticsCore/MQTT.h`: `MQTTStatistics` gains a loss counter.\n\n## Assumptions\n\n- Assumption taken on 2026-11-15, the question of 2026-10-21 unanswered after 24 h: The three leftovers stay together in this one issue for now, since each is a small change in the same MQTT component.\n- Assumption taken on 2026-11-16, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+run: {role: tester, event: issue, target: "issue:146", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-146']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Lost event: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-146']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"lost event\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

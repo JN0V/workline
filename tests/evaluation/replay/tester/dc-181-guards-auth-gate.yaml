@@ -1,0 +1,41 @@
+case: tester/dc-181-guards-auth-gate
+about: >
+  DomoticsCore issue #181 ("LO-27: WebUI has no tests for
+  WebSocketHandler, routes, auth, SSE"), as the tester read it on
+  2026-11-23 (the body before the Verification the engine wrote from its
+  tests), on main at 04d2cb3. Its Draft then:
+  https://github.com/JN0V/DomoticsCore/pull/287. Left with no guard then
+  ("kept as today … nothing guards it"): Auth gate. Expected now: each has
+  a guard test, green on the base, that checks its Then by running the
+  code. Scenario "Auth gate" — a sound test: WebUIComponent with
+  enableAuth, a password and a registered provider, begin();
+  AsyncWebServer::findRouteAnywhere("/api/ui/action") (and
+  "/api/components/enable"), run the handler with a valid CSRF token and
+  no credentials; assert sentCode 401 / authenticationRequested and that
+  the provider's handleWebUIRequest was not called. To refuse: Sending no
+  CSRF token: the 403 of checkCsrf() answers first and the auth gate is
+  never reached. Testing a GET route is the existing coverage, not this
+  Then. The Draft's proof runs the component holding the tests alone (a
+  `draft-command` and `module-files` the case adds), not DomoticsCore's
+  whole native suite; `pio` must be on PATH.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 04d2cb3b12f789c8ee2d8c2c9bc1528c1ff64671}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|^\\( *\\)test-command: tools/workline-tests.sh {report}$|&\\n\\1draft-command: tools/workline-tests.sh {report} {packages}\\n\\1module-files: [platformio.ini]|' .workline/config.yaml && grep -q draft-command .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the Draft is proven on its component alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 181
+        title: "LO-27: WebUI has no tests for WebSocketHandler, routes, auth, SSE"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "task"]
+        body: "Opened from `docs/CODE-ROADMAP.md`, lines 6347 to 6347 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:5021d97841e5 -->\n\n## Need\n\nMaintainers need automated tests of the WebUI's push channel, routes and login, so a change there cannot break the dashboard unnoticed.\n\n## Validation\n\n- **SSE broadcast:** Given a connected client, When an update is broadcast, Then the client receives the full event.\n- **Auth gate:** Given authentication is on, When a state-changing route is called without login, Then it is refused.\n- **Routes:** Given a registered provider, When its declared route is requested, Then the expected JSON is returned.\n\n---\n\n## Scope\n\n`DomoticsCore-WebUI/include/DomoticsCore/WebUI/WebSocketHandler.h`\n`DomoticsCore-WebUI/include/DomoticsCore/WebUI.h`\nNew: `DomoticsCore-WebUI/test/test_webui_handlers/test_webui_handlers.cpp`\n\n## Assumptions\n\n- Assumption taken on 2026-11-16, the question of 2026-10-19 unanswered after 24 h: All four parts (WebSocketHandler, route handlers, auth flow, SSE broadcast) should be tested, and one issue is fine.\n- Assumption taken on 2026-11-17, the Need and Validation drafts unanswered after 24 h: written as the role drafted it, for a person to correct."
+run: {role: tester, event: issue, target: "issue:181", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-181']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Auth gate: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-181']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"auth gate\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

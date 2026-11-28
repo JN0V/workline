@@ -1,0 +1,47 @@
+case: tester/dc-189-guards-normal-id-and-foreign-topic
+about: >
+  DomoticsCore issue #189 ("LO-34 — HA: three costs on the command path
+  left by MEM-2"), as the tester read it on 2026-11-23 (the body before
+  the Verification the engine wrote from its tests), on main at c42c667.
+  Its Draft then: https://github.com/JN0V/DomoticsCore/pull/249. Left with
+  no guard then ("kept as today … nothing guards it"): Normal id still
+  works; Foreign topic. Expected now: each has a guard test, green on the
+  base, that checks its Then by running the code. Scenario "Normal id
+  still works" — a sound test: addSwitch("relay1"), emit mqtt/message on
+  homeassistant/switch/node/relay1/set with ON then OFF; assert
+  EVENT_COMMAND carries entityId relay1 and the command, commandsReceived
+  counts it, and the state topic publishes ON then OFF. Or name the
+  existing guard. To refuse: Saying nothing guards it: an existing test
+  does. A guard that only sends ON also passes on the bool-overload bug
+  the existing test documents. Scenario "Foreign topic" — a sound test:
+  The existing guard, named: startLogCapture(), emit mqtt/message on
+  `alarm/command`, `sensors/kitchen/temperature`,
+  `homeassistant_other/switch/test_node/sw1/set`; assert no EVENT_COMMAND,
+  commandsReceived == 0, g_capturedError/Warn/Info all empty. To refuse:
+  Checking only that no command event fires: the Then is the absence of
+  any log line, at every level. The Draft's proof runs the component
+  holding the tests alone (a `draft-command` and `module-files` the case
+  adds), not DomoticsCore's whole native suite; `pio` must be on PATH.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: c42c667e603286ad0653c75ba5a60deacfecd78d}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|^\\( *\\)test-command: tools/workline-tests.sh {report}$|&\\n\\1draft-command: tools/workline-tests.sh {report} {packages}\\n\\1module-files: [platformio.ini]|' .workline/config.yaml && grep -q draft-command .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the Draft is proven on its component alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 189
+        title: "LO-34 — HA: three costs on the command path left by MEM-2"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "Three costs sit on the Home Assistant command path. First, handleCommand() logs the topic and payload for every message on the shared MQTT client, including other components' messages. Second, the switch auto-publish looks up the entity a second time though it already holds it. Third, a topic with two adjacent slashes gives an empty id that matches any entity with an empty id instead of being refused. No entity has an empty id today, and no test covers it.\n\n<details><summary>Where it is in the code</summary>DomoticsCore-HomeAssistant/include/DomoticsCore/HomeAssistant.h: handleCommand(), findEntity(), the switch auto-publish. Left by MEM-2.</details>\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6354 to 6354 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:390ee15096ce -->\n\n## Need\n\nA maintainer needs the Home Assistant command path to skip wasted work and refuse empty ids, so it stays cheap on small boards and safe on odd topics.\n\n## Validation\n\n- **Empty id refused:** Given an entity registered with an empty id, When a command arrives on a topic with two adjacent slashes (`homeassistant/switch/node//set`), Then no entity matches, nothing is emitted and a warning is logged.\n- **Normal id still works:** Given a switch with id `relay1`, When a command arrives on `homeassistant/switch/node/relay1/set`, Then the switch handles it as before.\n- **Foreign topic:** Given a message on a topic outside the discovery prefix, When it reaches the command handler, Then it is dropped with no log line.\n- **Single lookup:** Given a switch that echoes its command as state, When a command is handled, Then the entity is looked up once for the whole command, including the state publish.\n\n---\n\n## Verification\n\nA native test sends a command topic with two adjacent slashes and checks that no entity matches. A test checks the switch auto-publish does one entity lookup. The unconditional log is removed or gated.\n\n## Scope\n\nhandleCommand() and findEntity() in HomeAssistant.h."
+run: {role: tester, event: issue, target: "issue:189", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-189']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Normal id still works: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-189']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"normal id still works\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}
+  # Foreign topic: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-189']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"foreign topic\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}
