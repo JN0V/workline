@@ -1218,6 +1218,18 @@ func (g *gitlab) OpenIssue(title, body, marker string) (int, error) {
 
 // openMergeRequests lists the open merge requests as iid by source branch.
 func (g *gitlab) openMergeRequests() (map[string]int, error) {
+	list, err := g.openMergeRequestList()
+	if err != nil {
+		return nil, err
+	}
+	open := map[string]int{}
+	for _, m := range list {
+		open[m.branch] = m.id
+	}
+	return open, nil
+}
+
+func (g *gitlab) openMergeRequestList() ([]branchPull, error) {
 	out, err := g.api("--paginate", "projects/:id/merge_requests?state=opened&per_page=100")
 	if err != nil {
 		return nil, err
@@ -1226,14 +1238,14 @@ func (g *gitlab) openMergeRequests() (map[string]int, error) {
 		IID    int    `json:"iid"`
 		Source string `json:"source_branch"`
 	}
-	open := map[string]int{}
+	var open []branchPull
 	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); { // one array a page
 		var page []mr
 		if err := dec.Decode(&page); err != nil {
 			return nil, fmt.Errorf("%w: unexpected answer: %v", ErrUnreachable, err)
 		}
 		for _, m := range page {
-			open[m.Source] = m.IID
+			open = append(open, branchPull{m.IID, m.Source})
 		}
 	}
 	return open, nil
@@ -1281,20 +1293,36 @@ func (g *gitlab) OpenMergeRequests(prefix string) ([]string, error) {
 }
 
 func (g *gitlab) CloseMergeRequest(branch, body, marker string) error {
-	open, err := g.openMergeRequests()
+	open, err := g.openMergeRequestList()
 	if err != nil {
 		return err
 	}
-	id, ok := open[branch]
-	if !ok {
+	id, others := 0, false
+	for _, m := range open {
+		if m.branch != branch {
+			continue
+		}
+		if id == 0 {
+			id = m.id
+		} else {
+			others = true
+		}
+	}
+	if id == 0 {
 		return nil
 	}
 	t := Target{Kind: "merge-request", ID: id}
 	if err := g.Comment(t, body, marker); err != nil {
 		return err
 	}
-	_, err = g.api("-X", "PUT", path(t), "-f", "state_event=close")
-	return err
+	if _, err = g.api("-X", "PUT", path(t), "-f", "state_event=close"); err != nil {
+		return err
+	}
+	if !others && OwnBranch(branch) {
+		// Best effort: the merge request is closed already, a branch left is harmless.
+		_, _ = g.api("-X", "DELETE", "projects/:id/repository/branches/"+url.PathEscape(branch))
+	}
+	return nil
 }
 
 func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
