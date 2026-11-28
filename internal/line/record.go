@@ -630,7 +630,10 @@ func writeState(f forge.Forge, cfg *routing.Config, repo string, w StateWrite, r
 	if err := f.Sticky(t, backlog.Inert(body), forge.Marker("sticky="+recordKey), true); err != nil || w.Call == "" {
 		return err
 	}
-	return f.Comment(t, backlog.Inert(w.Call), forge.Marker("call="+w.Record.State+"-"+w.Record.Body))
+	// Its marker holds the block's time (Since): a forge skips a comment whose
+	// marker it holds, so a block again on the same body posts its own call,
+	// and the same write retried posts none.
+	return f.Comment(t, backlog.Inert(w.Call), forge.Marker("call="+w.Record.State+"-"+w.Record.Body+"-"+w.Record.Since))
 }
 
 // keepCounted keeps in the record about to be written the runs counted
