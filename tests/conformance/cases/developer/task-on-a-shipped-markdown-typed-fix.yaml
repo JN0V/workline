@@ -1,0 +1,32 @@
+case: developer/task-on-a-shipped-markdown-typed-fix
+about: >
+  A project that says its role prompts are shipped (a setting of
+  always-shipped globs): a task editing only one of them is typed
+  `fix`, so that release tools list it and bump its version, though
+  it is Markdown, which is otherwise a chore.
+given:
+  repo: tested-draft
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/tester/issue-3 && git checkout -q main"
+  config:
+    roles:
+      tester: {settings: {test-command: "sh run-tests.sh {report}"}}
+      developer: {settings: {shipped: ["prompts/**"]}}
+  forge:
+    issues:
+      - id: 3
+        title: "Multiply two numbers"
+        labels: ["workline:ready", "task"]
+        body: "## Need\n\nI want to multiply.\n\n## Scope\n\n- `prompts/mul.md`: the prompt that multiplies.\n"
+    merge-requests:
+      - id: 1
+        branch: workline/tester/issue-3
+        draft: true
+        comments: ["The tests of #3, frozen.\n\n<!-- workline:tester-record {\"issue\":3,\"base\":\"main\",\"files\":{\"tests/test_mul_by_zero.sh\":\"8f123a0bacbd681063880b867df38dd216784b97\",\"tests/test_mul_two_by_three.sh\":\"2dee0641bd7a79057ade7bff5af43b603125f543\"}} -->\n<!-- workline:sticky=tester/tests -->"]
+run: {develop: [], ai: "fake:developer-writes-a-prompt"}
+expect:
+  forge:
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        title: "fix(prompts): multiply two numbers"
