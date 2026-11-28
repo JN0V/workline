@@ -117,9 +117,15 @@ guard", becomes:
   - `CODEOWNERS`, `AGENTS.md`, `CLAUDE.md`, `docs/PRINCIPLES.md`;
   - `.github/workflows/**`, `.github/actions/**`: what runs the checks
     and holds the App's key;
-  - `.workline/config.yaml`, the only file under `.workline/`: merge
-    autonomy, routing, gates, the reviewer's ignore list, and each
-    role's level, pinned there in step 1;
+  - `.workline/config.yaml`, the only guarded file under `.workline/`:
+    merge autonomy, routing, gates, the reviewer's ignore list, and each
+    role's level, pinned there in step 1. Its tuning half,
+    `.workline/tuning.yaml` (amendment of 2026-11-20, #1508), is not
+    guarded: only `roles.<role>.settings` of a timeout, a cap, a size
+    target (`suite-max-seconds`), taking the line's normal path. The
+    engine reads both the same way, locally and on a forge; a setting in
+    both files is refused, naming both, and a level (`autonomy`) stays in
+    `config.yaml`;
   - the reviewer's and the auditor's prompts (`instruction.md`,
     `persona.md`, `policy.md`, lenses, kinds) and settings
     (`role.yaml`): the oversight that reads every other change;
