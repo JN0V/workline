@@ -16,8 +16,8 @@ import (
 )
 
 // BacklogDue says whether a backlog run is due, and why: an Urgent issue
-// (#2322, priority 1 by repo's own names, ADR-0040) with no state or in
-// `refine`, labelled since the last backlog run started, one whose labels are
+// (priority 1, read in the project's own priority labels or workline's) with
+// no state or in `refine`, labelled since the last backlog run started, one whose labels are
 // unread in unread; then Ready below its target (readyBelow) and moved since
 // that run, or it readied one (backlogDue); else false and "". last is that
 // run: `<started>/<updated>`, `none`, `waiting`, `unread`.
