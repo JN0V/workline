@@ -25,8 +25,8 @@ import (
 // The merge policy (ADR-0042): `workline follow` turns the forge's own
 // auto-merge on for the merge requests a person accepted, their head's
 // verdict passed. The forge merges each once its own head is green,
-// checking its own rules, none waiting for another (ADR-0051, cut 2); of
-// those it holds behind, ownQueue's head alone is updated; no agent called.
+// checking its own rules, none waiting for another; of those it holds
+// behind, ownQueue's head alone is updated; no agent called.
 
 // HeadVerdict is the line's verdict on a merge request's head, written by
 // the proposing job (`workline route --verdict`), kept by the job that
@@ -989,13 +989,13 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 		sum += fmt.Sprintf("; %d merged at once", n)
 	}
 	// No one waits for another to merge; only the head of workline's own
-	// queue is brought up to date (ADR-0075 §7).
+	// queue is brought up to date, not every one behind on each merge.
 	err = ownQueue(f, o, res, q, &sum)
 	return sum, err
 }
 
-// ownQueue is workline's own merge queue (ADR-0075 §7): those held behind by priority, then
-// auto-merge time; only the head, held by nothing, merged up to date, or kept 30 min while pending.
+// ownQueue is workline's merge queue where the forge has none: those held behind by priority,
+// then auto-merge time; only the head, held by nothing, merged up to date, or kept 30 min while pending.
 func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, sum *string) (err error) {
 	rank := map[*inLine]int{}
 	for _, e := range q {
@@ -1503,7 +1503,7 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
 	if !st.Mergeable {
 		// Behind its base and held by the forge: in conflict, a merge
-		// round (ADR-0067); else the base merged in at the head (ownQueue).
+		// round (an agent resolves it); else the base merged in at the head (ownQueue).
 		e.ready = st.Behind && (st.Checks == "success" || st.Checks == "pending")
 		if acted, err := e.upToDate(false, "its auto-merge on since "+st.AutoMergeAt); acted || err != nil {
 			return e, err
