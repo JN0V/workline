@@ -101,7 +101,9 @@ the call only, never edited into the state comment.
 | only a person merges; a kind label to set; merge or push again | `internal/engine/code.go:54`, `:70`, `:43` |
 | a yes taken off (new comments) | `internal/engine/merge.go:1167`, `:1194`; `internal/engine/candidate.go:579` |
 | a candidate to try; conversations to resolve (new) | `internal/engine/candidate.go:359`; `internal/engine/merge.go:1538` |
-| files the tester needs; its step a person decides | `internal/line/localreview.go:294`; `internal/line/testerblock.go:53` (new) |
+| files the tester needs | `internal/line/localreview.go:294` |
+| the tester's step blocked on two heads in a row (once a head today, new): the first head an edit | `internal/line/testerblock.go:53` |
+| a refused merge, a refusal, on a person's own pull request | `internal/engine/refused.go:110`; `cmd/workline/main.go:448` |
 | the product owner's question, proposal waiting (posted anew), announcement, reply (new) | `internal/engine/backlog.go:626`, `:639`, `:56`; `internal/backlog/ledger.go:878`, `:902` |
 | the spec's rounds ended; the developer's rounds stalled (edits) | `roles/reviewer/code/specforge.go:256`; `roles/developer/code/review.go:1366` |
 | a frozen test contested, tries spent | `roles/tester/code/objection.go` |
