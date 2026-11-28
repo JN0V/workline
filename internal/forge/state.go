@@ -12,12 +12,12 @@ import (
 	"unicode/utf8"
 )
 
-// One state comment an item, as the decision record ADR-0076
-// (docs/adr/0076-*.md) sets it, its §1 the one comment and §2 its dated
-// history: a role's `sticky=` key is a section of one comment of
-// workline's own, edited in place, so an update mails nobody; the last writes dated at its end. A second comment takes
-// the largest sections past the forge's size. Readers get each section as
-// the comment it was (splitState).
+// One state comment an item. The forge mails everyone following an item
+// for each new comment, but not for an edit: so a role's `sticky=` key is
+// a section of one comment of workline's own, edited in place, and a
+// role's update mails nobody. The last writes are listed, dated, at its
+// end. A second comment takes the largest sections past the forge's
+// size. Readers get each section as the comment it was (splitState).
 var (
 	stateMark, overMark = Marker("state-comment"), Marker("state-overflow")
 	historyMark         = Marker("history")
@@ -69,9 +69,10 @@ func sections(n Note, own Own) (out []section, hist []string) {
 
 // splitState hands each section to readers as the comment it was: its
 // author, its id; edited only when its text is no longer what workline
-// wrote, another's edit leaving the other sections read: a role's record
-// is read only from a comment of workline's own that no one else edited
-// (ADR-0013, "what was judged is not asked again", docs/adr/0013-*.md).
+// wrote, another's edit leaving the other sections read. A role's record
+// is read only from a comment of workline's own that no one else edited:
+// a record lets a role skip work it already judged, so text a person
+// wrote into it must never stand for workline's judgement.
 func splitState(notes []Note) []Note {
 	var out []Note
 	for _, n := range notes {
