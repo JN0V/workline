@@ -253,7 +253,9 @@ func specOnForge(runDir, repo string, s Settings) (queue, int, bool) {
 			q.said = append(q.said, verdict.Finding{Rule: "spec-rounds-spent", Where: where, Level: "warn",
 				Message: fmt.Sprintf("its spec answered %d times, %d important %s still open: a question for a person, on the issue; ready stays held until they decide", rec.Round, rec.Open, plural(rec.Open, "finding", "findings"))})
 			if s.ForgeWrites {
-				q.stops = append(q.stops, intent.Intention{Kind: "comment", Value: map[string]any{"issue": w.issue.ID, "sticky": backlog.SpecKey, "body": stopComment(w, rec, s.SpecRounds)}})
+				// The question first: the apply stops at a failure, so no stop is recorded unasked.
+				q.stops = append(q.stops, intent.Intention{Kind: "comment", Value: map[string]any{"issue": w.issue.ID, "body": askComment(f, b, w, rec)}},
+					intent.Intention{Kind: "comment", Value: map[string]any{"issue": w.issue.ID, "sticky": backlog.SpecKey, "body": stopComment(w, rec, s.SpecRounds)}})
 			}
 		case len(q.read) < s.SpecsPerRun:
 			q.read = append(q.read, Spec{Path: where, Title: strings.TrimSpace(w.issue.Title), Text: w.issue.Body, Issue: w.issue.ID,
@@ -541,6 +543,17 @@ func stopComment(w waiting, r backlog.SpecReview, rounds int) string {
 	}
 	b.WriteString(r.String())
 	return b.String()
+}
+
+// askComment is a stopped spec's question in a new comment, one a forge mails, unlike an edit (#2352).
+func askComment(f forge.Forge, b forge.Backlog, w waiting, r backlog.SpecReview) string {
+	notes, _ := b.Notes(forge.Target{Kind: "issue", ID: w.issue.ID})
+	link := "the reviewer's comment above"
+	if i := slices.IndexFunc(notes, func(n forge.Note) bool { return strings.Contains(n.Body, backlog.SpecMarker) }); i >= 0 && forge.CommentLink(f, w.issue.ID, notes[i].ID) != "" {
+		link = "[the reviewer's comment](" + forge.CommentLink(f, w.issue.ID, notes[i].ID) + ")"
+	}
+	return fmt.Sprintf("@%s, **Question for a person**: is the spec good enough to build? %d important %s still open after %d rounds, in %s. Accept it as it reads with `%s`; or settle the findings yourself, editing the spec, then set `%s`.",
+		w.issue.Author, r.Open, plural(r.Open, "finding", "findings"), r.Round, link, backlog.LabelAccepted, backlog.LabelReady)
 }
 
 // lastFindings is a review comment's findings and questions, its lead, its

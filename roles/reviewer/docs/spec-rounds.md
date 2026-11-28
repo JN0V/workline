@@ -7,6 +7,8 @@ sources:
   - roles/reviewer/code/specforge.go#round
   - roles/reviewer/code/specforge.go#specOnForge
   - roles/reviewer/code/specforge.go#stopComment
+  - roles/reviewer/code/specforge.go#askComment
+  - internal/engine/engine.go#applier.apply
   - roles/reviewer/code/spec.go#answeredInSpec
   - roles/reviewer/code/spec.go#answersScenario
   - internal/backlog/spec.go#SpecReview.String
@@ -62,7 +64,11 @@ How a spec's reviews on the forge end, or wait:
 - **Five rounds** (`spec-rounds`): reviews in a row that leave an important
   finding open. The sixth asks no agent, nor takes a place of `specs-per-run`:
   the comment puts a question to a person, and the reviewer stops
-  reading it. The person can:
+  reading it. Each review edits the comment, and a forge mails nobody
+  for an edit: so the question is also asked in a new comment, once,
+  naming the issue's author and linking the findings, posted before the
+  edit that records the stop, so a failed post is asked again next run
+  ([#2352](https://github.com/JN0V/workline/issues/2352)). The person can:
   - accept it as it reads (`workline:accepted`);
   - settle it and set `workline:ready`;
   - or delete the comment, for five rounds more.
