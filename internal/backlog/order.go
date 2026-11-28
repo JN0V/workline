@@ -238,8 +238,10 @@ func CompareMilestones(a, b string) int {
 }
 
 // Less is the backlog's order (docs/spec/backlog-acts/next.md): an
-// Urgent issue, priority 1, first (ADR-0075 §6); then the nearest
-// milestone — by its due date, then its title (CompareDue) —, an issue in none after every one in one; then the
+// Urgent issue, priority 1, first, whatever its milestone, so a release's
+// plan never delays a fix that cannot wait; among Urgent issues and
+// below them, the nearest milestone — by its due date, then its title
+// (CompareDue) —, an issue in none after every one in one; then the
 // priority, an issue with none after the last (scale.Priority.Rank); then
 // the effort, the lightest first, none as Medium; then the lowest number.
 func Less(a, b forge.Issue) bool {
