@@ -12,9 +12,10 @@ import (
 	"unicode/utf8"
 )
 
-// One state comment an item (ADR-0076 §1, §2): a role's `sticky=` key is a
-// section of one comment of workline's own, edited in place, so an update
-// mails nobody; the last writes dated at its end. A second comment takes
+// One state comment an item, as the decision record ADR-0076
+// (docs/adr/0076-*.md) sets it, its §1 the one comment and §2 its dated
+// history: a role's `sticky=` key is a section of one comment of
+// workline's own, edited in place, so an update mails nobody; the last writes dated at its end. A second comment takes
 // the largest sections past the forge's size. Readers get each section as
 // the comment it was (splitState).
 var (
@@ -68,7 +69,9 @@ func sections(n Note, own Own) (out []section, hist []string) {
 
 // splitState hands each section to readers as the comment it was: its
 // author, its id; edited only when its text is no longer what workline
-// wrote, another's edit leaving the other sections read (ADR-0013).
+// wrote, another's edit leaving the other sections read: a role's record
+// is read only from a comment of workline's own that no one else edited
+// (ADR-0013, "what was judged is not asked again", docs/adr/0013-*.md).
 func splitState(notes []Note) []Note {
 	var out []Note
 	for _, n := range notes {

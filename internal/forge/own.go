@@ -59,8 +59,9 @@ func OwnAccount(f any) (Own, error) {
 // all the person's.
 //
 // A role's `sticky=` key is a section of workline's one state comment on
-// GitHub, GitLab and the simulated forge (ADR-0076): there it is always
-// workline's own, another's carrying the marker left as it is.
+// GitHub, GitLab and the simulated forge, so a role's update mails nobody
+// (ADR-0076, "One state comment an item", docs/adr/0076-*.md): there it
+// is always workline's own, another's carrying the marker left as it is.
 func KeepOwn(f Forge, t Target, body, marker string, create bool) error {
 	if o, ok := f.(interface {
 		stickyOwn(t Target, body, marker string, create bool) error
