@@ -1,0 +1,27 @@
+case: reviewer/spec-stop-is-a-call
+about: "A spec whose important findings are still open after the last round is put to a person in a new comment, one that mails: it names the issue's author, holds the question and its two answers (accept it, or settle the findings and set ready), and links the reviewer's comment where the findings are kept; no agent is asked."
+given:
+  repo: reviewed
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list, and the README tells the users.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        author: maya
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nanswered: aaaaaaaaaaaa\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec — 1 findings on the spec.\n\n**Holds it from ready**: 1 important finding open, round 5 of 5.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | out-of-scope | `#4:3` | Important: The Need asks for the README, the Scope leaves it out |\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=000000000000 round=5 open=1 in=Need -->\n\n<!-- workline:sticky=reviewer/spec -->"
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-out-of-scope"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: spec-rounds-spent, where: "#4"}]
+  forge:
+    issues:
+      - id: 4
+        comments: 3
+        posted: 1
+        comment-contains: ["@maya", "**Question for a person**", "workline:accepted", "workline:ready", "/issues/4#comment-2", "round=5 open=1 in=Need stopped -->"]
