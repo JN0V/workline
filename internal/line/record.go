@@ -253,7 +253,7 @@ type StateWrite struct {
 	// with no roles folder: what waits on a person after its run is said
 	// with the day it ends (#1195). "" for another role's step.
 	Wait string `json:"wait,omitempty"`
-	Call string `json:"call,omitempty"` // what a person must do, a new comment once a body (ADR-0076 §3)
+	Call string `json:"call,omitempty"` // what a person must do, posted as a new comment, which mails them, when not empty; the rest of a run edits its state comment
 }
 
 // recordV is the version every record is written with (Record.V).

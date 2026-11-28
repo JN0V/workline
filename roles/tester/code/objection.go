@@ -637,7 +637,7 @@ func plainAnswer(a answer, s Settings) ([]intent.Intention, verdict.Verdict) {
 		if a.Author != "" && !backlog.Bot(a.Author) {
 			who = "@" + a.Author
 		}
-		return append([]intent.Intention{ // its section edited, a call posted: a person decides (ADR-0076 §3)
+		return append([]intent.Intention{ // its section edited, a call posted: a person decides, and only a new comment mails them
 				{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "objection-" + a.Thread, "update-only": true, "body": said}},
 				{Kind: "comment", Value: map[string]any{"issue": a.Issue, "sticky": "objection-call-" + a.Thread, "body": who + ", please decide whether the test is kept or changed.\n\n" + said}},
 				a.reply(fmt.Sprintf("**Blocked**: objected to again after the product owner settled it. #%d is blocked, its reason on it; a person of the project decides in this thread.\n\n%s", a.Issue, testmark.BlockedMark))},

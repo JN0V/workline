@@ -4298,7 +4298,7 @@ func recordFailedRound(f forge.Forge, st runState, runDir, rule, message string)
 	if err != nil {
 		return
 	}
-	// In the role's state comment, edited, no mail (ADR-0076), beside its last record: the two a stall compares.
+	// In the role's state comment, edited, not a new comment: an edit mails no one, beside its last record: the two a stall compares.
 	line, text := "<!-- workline:round-failed "+string(rec)+" -->", fmt.Sprintf("**The %s**'s run did not end: %s. Its records, for the next rounds.", st.Role, rule)
 	kept, _ := forge.ReadKept(f, *st.Target)
 	marker := forge.Marker("sticky=" + st.Role + "/code")

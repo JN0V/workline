@@ -1358,7 +1358,7 @@ func stallPre(runDir string, f forge.Forge, kept forge.Kept, repo string, mr for
 	if is, err := f.Issue(r.Record.Issue); err == nil && is.Author != "" && !backlog.Bot(is.Author) {
 		who = "@" + is.Author
 	}
-	// A call, a new comment each stall: a person must act (ADR-0076 §3).
+	// A call, a new comment each stall: a person must act, and only a new comment mails them; a round only edits the state comment.
 	body := fmt.Sprintf("%s, the developer **stopped**: the last two rounds at this head ended the same way, `%s`: %s\n\n"+
 		"Their records are in its comment above; no third round runs, no agent is called. "+
 		"The rounds start again when the branch's head or its base moves: a push to the branch, or a new commit on %s.\n\n%s",
