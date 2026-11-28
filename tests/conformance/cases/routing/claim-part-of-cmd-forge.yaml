@@ -1,0 +1,27 @@
+case: routing/claim-part-of-cmd-forge
+about: >
+  On a forge plugged by a command, which cannot say how a pull request
+  ended, the developer's pull request merged as part of the issue, `Part
+  of #3`, no pull request open for it. Past claim-hours, on the body its
+  agent ran on, the line counts the claim as spent and blocks the issue
+  for a person, its reason written, as on GitHub: never a developer's
+  run again on the same input, nor a second pull request. A forge that
+  confirms workline closed the pull request still wakes the developer
+  (claim-closed-by-workline-wakes).
+given:
+  repo: tested
+  config:
+    routing: {events: {issue: [developer]}}
+run: {route: reconcile, open-merge-request: true, ai: "fake:developer-nothing", forge: 'cmd:sh "$FIXTURES/forges/claiming.sh"'}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: no-code-spent, level: warn, where: "#3", message: "or its pull request merged part of it or closed, and its claim, workline:developing put on 2026-01-01, passed claim-hours (24) with its body unchanged"}
+  no-findings: [{rule: state-wakes}, {rule: claim-released}]
+  files:
+    .git/forge-requests.jsonl:
+      contains:
+        - '"operation":"label"'
+        - 'workline:blocked'
+        - 'with its body unchanged'

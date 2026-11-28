@@ -1,0 +1,39 @@
+case: tester/dc-161-guards-same-behaviour
+about: >
+  DomoticsCore issue #161 ("LO-6: NTP TIMEZONE_LOOKUP duplicated per TU"),
+  as the tester read it on 2026-11-23 (the body before the Verification
+  the engine wrote from its tests), on main at 04d2cb3. Its Draft then:
+  https://github.com/JN0V/DomoticsCore/pull/269. Left with no guard then
+  ("kept as today … nothing guards it"): Same behaviour. Expected now:
+  each has a guard test, green on the base, that checks its Then by
+  running the code. Scenario "Same behaviour" — a sound test: With
+  test_ntp_webui's Fixture:
+  AsyncWebServer::findRouteAnywhere("/api/ntp/timezones"), run its
+  handler, parse sentBody; assert 29 entries, in order, value/label equal
+  to a literal list copied from the base (first UTC0/UTC, last
+  <+03>-3/Riyadh). To refuse: Comparing the route's output with
+  TIMEZONE_LOOKUP itself (a tautology), or only checking "UTC0" appears as
+  the existing test does. The Draft's proof runs the component holding the
+  tests alone (a `draft-command` and `module-files` the case adds), not
+  DomoticsCore's whole native suite; `pio` must be on PATH.
+given:
+  clone: {repo: JN0V/DomoticsCore, head: 04d2cb3b12f789c8ee2d8c2c9bc1528c1ff64671}
+  needs: [pio]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|^\\( *\\)test-command: tools/workline-tests.sh {report}$|&\\n\\1draft-command: tools/workline-tests.sh {report} {packages}\\n\\1module-files: [platformio.ini]|' .workline/config.yaml && grep -q draft-command .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the Draft is proven on its component alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 161
+        title: "LO-6: NTP TIMEZONE_LOOKUP duplicated per TU"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "task"]
+        body: "The table of timezone names, `TIMEZONE_LOOKUP`, is declared `static constexpr` in a header. Every source file that includes the header gets its own copy. This wastes flash and was not meant. It hurts anyone building a firmware with the NTP web page on a small board.\n\n<details><summary>For the builder</summary>The table is in `DomoticsCore-NTP/include/DomoticsCore/NTPWebUI.h`. It holds 29 entries.</details>\n\nOpened from `docs/CODE-ROADMAP.md`, lines 6326 to 6326 by the product-owner role.\n\n<!-- workline:import=docs/CODE-ROADMAP.md:b30ab8fced39 -->\n\n## Need\n\nAs a firmware builder using the NTP web page on a small board, I want the timezone table to exist once in the program, so that flash is not spent on copies.\n\n## Validation\n\n- **One copy:** Given a firmware where two source files include the NTP web page header, When I inspect the linked image, Then the timezone table appears once.\n- **Same behaviour:** Given the NTP settings page, When I open the timezone list, Then the same entries appear as before.\n\n---\n\n## Verification\n\n- A build with two source files that include the header shows one copy of the table in the symbols.\n- The existing NTP web page tests (`test_ntp_webui`) still pass.\n\n## Scope\n\nThe timezone table and its lookup in `DomoticsCore-NTP/include/DomoticsCore/NTPWebUI.h`."
+run: {role: tester, event: issue, target: "issue:161", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-161']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Same behaviour: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-161']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"same behaviour\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

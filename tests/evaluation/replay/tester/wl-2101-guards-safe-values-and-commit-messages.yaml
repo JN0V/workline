@@ -1,0 +1,44 @@
+case: tester/wl-2101-guards-safe-values-and-commit-messages
+about: >
+  workline issue #2101 ("Squash-only detection takes a missing GitHub
+  squash message setting as safe"), as the tester read it on 2026-11-25
+  (the body before the Verification the engine wrote from its tests), on
+  main at 95dda79. Its Draft then:
+  https://github.com/JN0V/workline/pull/2166. Left with no guard then
+  ("kept as today … nothing guards it"): Known safe values; Commit
+  messages. Expected now: each has a guard test, green on the base, that
+  checks its Then by running the code. Scenario "Known safe values" — a
+  sound test: Name the existing guard:
+  internal/forge.TestGitHubSquashOnly, rows BLANK and PR_BODY, asserts
+  Squash(7).Only == true through the same fake gh; the committer's warn is
+  conformance committer/squash-only-commit-subjects-warn. No new test is
+  needed. To refuse: Declaring 'nothing guards it' without reading
+  squash_test.go; a duplicate test of the same rows. Scenario "Commit
+  messages" — a sound test: Name the existing guard:
+  internal/forge.TestGitHubSquashOnly, row COMMIT_MESSAGES, asserts
+  Squash(7).Only == false; the committer's block is conformance
+  committer/squash-allowed-commit-subjects-block. No new test is needed.
+  To refuse: Declaring 'nothing guards it'. The test command is narrowed
+  to the case's packages, so that the run before the agent stays light.
+given:
+  clone: {repo: JN0V/workline, head: 95dda79b220dda7e7f855777769b767f15b73a60}
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|-- -timeout 20m \\./\\.\\.\\.$|-- -timeout 20m ./internal/forge/|' .workline/config.yaml && ! grep -q 'timeout 20m ./\\.\\.\\.' .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the test command on the packages of the case alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 2101
+        title: "Squash-only detection takes a missing GitHub squash message setting as safe"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "**Need:** a maintainer whose forge settings can't be fully read keeps every commit checked, so nothing slips onto main unchecked.\n\n**Example:** on GitHub, squash-only is detected as `allow_squash_merge && !merge && !rebase && squashMergeCommitMessage != COMMIT_MESSAGES`. A missing or empty `squashMergeCommitMessage` counts as squash only.\n\n**Validation:**\n- **Missing setting:** Given GitHub returns no `squashMergeCommitMessage`, When the committer runs on a merge request, Then branch commit subjects still block.\n- **Known safe values:** Given it returns `PR_BODY` or `BLANK`, When the committer runs, Then branch commit subjects only warn.\n\n---\n\n**Scope:**\n- `internal/forge/github.go` (the Squash read): require `PR_BODY` or `BLANK` instead of \"not COMMIT_MESSAGES\".\n- A case in `internal/forge/squash_test.go`.\n- Found by an independent review of the squash-only committer change.\n\n## Validation\n\n- **Missing setting:** Given GitHub returns no `squashMergeCommitMessage`, When the committer runs on a merge request, Then branch commit subjects still block.\n- **Empty setting:** Given GitHub returns an empty `squashMergeCommitMessage`, When the committer runs, Then branch commit subjects still block.\n- **Known safe values:** Given it returns `PR_BODY` or `BLANK`, When the committer runs, Then branch commit subjects only warn.\n- **Commit messages:** Given it returns `COMMIT_MESSAGES`, When the committer runs, Then branch commit subjects still block.\n\n---\n\n## Scope\n\n- `internal/forge/github.go`: in `Squash`, `Only` should hold only when `squashMergeCommitMessage` is `PR_BODY` or `BLANK`. A missing or empty value is not safe.\n- `internal/forge/squash_test.go`: add cases for a missing and an empty `squashMergeCommitMessage`, both giving `only` false.\n\n## Assumptions\n\n- Assumption taken on 2026-11-25, the Validation draft unanswered after 24 h: written as the role drafted it, for a person to correct."
+run: {role: tester, event: issue, target: "issue:2101", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2101']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Known safe values: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2101']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"known safe values\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}
+  # Commit messages: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2101']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"commit messages\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

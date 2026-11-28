@@ -12,8 +12,10 @@ package line
 // Tests by rule (retest).
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/kit/devmark"
@@ -24,6 +26,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/verdict"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -190,19 +193,18 @@ func apart(cfg *routing.Config, b forge.Backlog, t *tally, s routing.State, is f
 	return "", nil
 }
 
-// waits says why the step of state s waits: its next state is at its
-// limit; "" when it has room or no limit. open is the open issues, listed
-// here at first need and kept for the next call; t, what else the count
-// reads, kept for the run.
-func waits(cfg *routing.Config, b forge.Backlog, s routing.State, open *[]forge.Issue, t *tally) (string, error) {
+// waits says why the step of issue is, in state s since then, waits: its
+// next state at its limit; "" with room, no limit, or passed: is, priority
+// 1, past a full Ready (docs/spec/routing.md). open, t: read once, kept.
+func waits(cfg *routing.Config, b forge.Backlog, s routing.State, is forge.Issue, since time.Time, open *[]forge.Issue, t *tally) (why, passed string, err error) {
 	limit := cfg.Limit(s.Next)
 	if s.Next == "" || limit == 0 {
-		return "", nil
+		return "", "", nil
 	}
 	if *open == nil {
 		issues, err := b.Issues()
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		*open = issues
 	}
@@ -220,7 +222,7 @@ func waits(cfg *routing.Config, b forge.Backlog, s routing.State, open *[]forge.
 		for _, is := range in {
 			why, err := apart(cfg, b, t, next, is, *open, isOpen)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 			if why != "" {
 				left++
@@ -229,14 +231,29 @@ func waits(cfg *routing.Config, b forge.Backlog, s routing.State, open *[]forge.
 	}
 	n -= left
 	if n < limit {
-		return "", nil
+		return "", "", nil
 	}
 	holds := fmt.Sprintf("%s holds %d open %s, its limit %d (routing.wip)", s.Next, n, plural(n, "issue", "issues"), limit)
+	urgent := func(x forge.Issue) bool { return backlog.Priority(x) == 1 }
+	pass := next.Role == developerRole && urgent(is) && !slices.ContainsFunc(in, urgent)
+	for _, x := range *open { // one on its way there, its step not done (under way, from a run before too), waiting longer
+		if st, ok := cfg.StateOf(x.Labels); pass && ok && st.Next == s.Next && x.ID != is.ID && urgent(x) {
+			rec, had, _, _, err := readRecordSpec(b, x.ID)
+			its, err2 := b.Trail(x.ID, st.Label)
+			if err := cmp.Or(err, err2); err != nil {
+				return "", "", err
+			}
+			pass = had && rec.State == st.Name && rec.Waits == "" || cmp.Or(waitedSince(st, rec, had, its.Labeled).Compare(since), cmp.Compare(x.ID, is.ID)) > 0
+		}
+	}
+	if pass {
+		return "", ": " + holds + ", its limit passed for an issue of priority " + scale.PriorityName(1) + ", one at a time", nil
+	}
 	if left > 0 {
 		holds = fmt.Sprintf("%s holds %d open %s the %s can take, its limit %d (routing.wip), and %d waiting for %s tests, another issue or paths taken, not counted",
 			s.Next, n, plural(n, "issue", "issues"), next.Role, limit, left, plural(left, "its", "their"))
 	}
-	return holds + fmt.Sprintf(": the %s starts when it has room", s.Role), nil
+	return holds + fmt.Sprintf(": the %s starts when it has room", s.Role), "", nil
 }
 
 // waiting is what stateOf returns for a step that waits: the line's
@@ -350,7 +367,7 @@ func retestBody(f forge.Forge, cfg *routing.Config, repo string, t forge.Target,
 // anticipate counts an issue whose step started in its next state, so
 // the steps after it in the same run see it there.
 func anticipate(cfg *routing.Config, is *forge.Issue, next string) {
-	if s, ok := cfg.State(next); ok && next != "" {
-		is.Labels = []string{s.Label}
+	if add, gone, err := cfg.Move(next); err == nil && next != "" { // its priority kept: one Urgent passes Ready at a time
+		is.Labels = append(slices.DeleteFunc(slices.Clone(is.Labels), func(l string) bool { return slices.Contains(gone, l) }), add...)
 	}
 }

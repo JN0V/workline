@@ -1,0 +1,52 @@
+case: tester/wl-2157-guards-nothing-to-say
+about: >
+  workline issue #2157 ("workline doctor names an old auditor question
+  under kinds/"), as the tester read it on 2026-11-25 (the body before the
+  Verification the engine wrote from its tests), on main at 2d69e72. Its
+  Draft then: https://github.com/JN0V/workline/pull/2172. Left with no
+  guard then ("kept as today … nothing guards it"): Nothing to say.
+  Expected now: each has a guard test, green on the base, that checks its
+  Then by running the code. Scenario "Old question named" — a sound test:
+  Temp git repository with .workline/config.yaml (forge: local) and
+  .workline/roles/auditor/kinds/ready.md; doctor.Run(Options{Repo,
+  RolesDir}). Assert one check, not OK, whose Where/Message/Fix name the
+  old file and .workline/roles/auditor/criteria/product-owner/ready.md. To
+  refuse: Searching the whole report's text, not the one check. A
+  product-owner path not derived from the kind: try another kind (tests →
+  tester). Scenario "Both copies named" — a sound test: Both files
+  written; doctor.Run. Assert the check on kinds/ready.md tells to remove
+  it (its Fix/Message holds 'remove' or `rm` with the old path) and does
+  not tell to move it onto the copy (no `mv`). To refuse: 'remove' / 'rm '
+  searched in the whole report: 'confirm ', 'form ' match, and a fix
+  saying 'move it … or remove it' in every case passes. Scenario "Nothing
+  to say" — a sound test: The same temp project with no kinds folder (the
+  tester's auditorKindsDoctor with no file); doctor.Run. Assert no check's
+  Where/Message/Fix mentions 'roles/auditor/kinds' nor an auditor
+  question. Passes on the base; guards a fix that reports when the folder
+  is absent. To refuse: A guard by rule name cannot be written before the
+  fix names the rule (auditor-kind-moved in the open PR): match the path's
+  text. Else none known. Its tests live in internal/doctor, whose test
+  binary reached 6.6 GB on 2026-11-25: played only where
+  WORKLINE_EVAL_HEAVY is set. The test command is narrowed to the case's
+  packages, so that the run before the agent stays light.
+given:
+  clone: {repo: JN0V/workline, head: 2d69e72313f359f652b12a9868a2f3bd1ce008c0}
+  needs: ["$WORKLINE_EVAL_HEAVY"]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|-- -timeout 20m \\./\\.\\.\\.$|-- -timeout 20m ./internal/doctor/|' .workline/config.yaml && ! grep -q 'timeout 20m ./\\.\\.\\.' .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the test command on the packages of the case alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 2157
+        title: "workline doctor names an old auditor question under kinds/"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "enhancement"]
+        body: "A project that customised an auditor question before the move to `criteria/` needs `workline doctor` to name the old file, so they move it before the weekly sample skips the act.\n\nExample: a project keeps `.workline/roles/auditor/kinds/ready.md`. Today `workline doctor` says nothing. The next weekly sample does not judge the product owner's `ready` acts, and only its report says `.workline/roles/auditor/kinds/ready.md is no longer read: move it to .workline/roles/auditor/criteria/product-owner/ready.md`. A prompt override left at its old path is named by `workline doctor` already (`prompt-override-moved`).\n\n## Validation\n\n- **Old question named:** Given a project with `.workline/roles/auditor/kinds/ready.md`, When a person runs `workline doctor`, Then it names that file and the path it goes to, `.workline/roles/auditor/criteria/product-owner/ready.md`.\n- **Both copies named:** Given a project with the old file and its new copy both there, When a person runs `workline doctor`, Then it says to remove the old file.\n- **Nothing to say:** Given a project with no `.workline/roles/auditor/kinds/` folder, When a person runs `workline doctor`, Then it says nothing about auditor questions.\n\n---\n\n## Verification\n\n- A test beside `internal/doctor/prompt_overrides.go`, which holds `prompt-override-moved`.\n- The role a kind belongs to is the one the weekly sample uses (`kindOf` in `internal/sample/verdict.go`); a kind no role has is named with no new path.\n\n## Scope\n\n- `internal/doctor/`: a check like `prompt-override-moved` for `.workline/roles/auditor/kinds/*.md`.\n- Follows the move of the auditor's questions to `criteria/<role>/` (#2154).\n"
+run: {role: tester, event: issue, target: "issue:2157", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2157']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Nothing to say: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2157']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"nothing to say\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

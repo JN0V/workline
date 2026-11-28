@@ -1,0 +1,47 @@
+case: tester/wl-2122-guards-a-red-check-still-blocks
+about: >
+  workline issue #2122 ("An accepted pull request behind its base is never
+  updated when its follow check was cancelled"), as the tester read it on
+  2026-11-25 (the body before the Verification the engine wrote from its
+  tests), on main at b4cbb50. Its Draft then:
+  https://github.com/JN0V/workline/pull/2171. Left with no guard then
+  ("kept as today … nothing guards it"): A red check still blocks.
+  Expected now: each has a guard test, green on the base, that checks its
+  Then by running the code. Scenario "A refusal says why" — a sound test:
+  forge.Fake request accepted, auto-merge on, behind: true, check-runs
+  [{test, pending}]; engine.mergePolicy(f, FollowOptions{Merge:
+  "cautious"}, …). Assert exactly one Result finding with Where ==
+  forge.MergeRef(f, 7), saying it is behind, not updated, and why (its
+  checks' state, pending); `git ls-remote origin` shows the branch tip
+  unchanged. To refuse: An OR of generic words ('check', 'test'): any
+  decision line passes ('accepted by …, its checks passed'). Asserting at
+  least one line, not one. Scenario "A red check still blocks" — a sound
+  test: Conformance case modelled on merge/behind-held-merged-in-clean
+  with check-runs [{name: test, state: failure}] (add a cancelled `follow`
+  beside it, to guard the fix): expect finding checks-red, no-findings
+  merged-from-base, not-pushed: [workline/developer/3]. Or
+  engine.mergePolicy on forge.Fake + `git ls-remote` tip unchanged. Passes
+  on the base. To refuse: checks-red asserted, the branch not checked. A
+  Given not behind its base (already covered by check-latest-red-holds).
+  The test command is narrowed to the case's packages, so that the run
+  before the agent stays light.
+given:
+  clone: {repo: JN0V/workline, head: b4cbb50f836d6fcde280f8415438cbfc61ad7ce3}
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|-- -timeout 20m \\./\\.\\.\\.$|-- -timeout 20m ./internal/engine/|' .workline/config.yaml && ! grep -q 'timeout 20m ./\\.\\.\\.' .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the test command on the packages of the case alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 2122
+        title: "An accepted pull request behind its base is never updated when its follow check was cancelled"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "## Need\n\nAs the owner of a repository whose ruleset requires up-to-date branches, I want an accepted pull request that is behind its base to be brought up to date, even when its only non-green check is the line's own cancelled `follow` run, so accepted work does not wait for a person.\n\n## Steps to reproduce\n\n1. On a repository in production, require up-to-date branches (strict) in the ruleset.\n2. Accept 11 pull requests, so 11 `workline:accepted` labeled events arrive in a burst.\n3. About 15 `workline merge` runs start. Concurrency `workline-follow-<base>` cancels the queued ones.\n4. Each pull request head keeps a CANCELLED `follow` check run.\n5. Wait overnight.\n\n## Expected\n\n- The engine merges the base into each BEHIND branch, waits for the checks, merges one, and repeats.\n- When it declines to act, it prints a decision line saying why.\n\n## Actual\n\n- All 11 accepted pull requests stayed BEHIND overnight.\n- The engine returned early and printed nothing.\n- The version is the one pinned in that repository's line workflow.\n\n## Validation\n\n- **Cancelled follow does not block the update:** Given an accepted pull request behind its base, with a ruleset that requires up-to-date branches, and a CANCELLED `follow` check run as its only non-green check, When `workline merge` runs, Then the base is merged into the branch.\n- **A refusal says why:** Given an accepted pull request behind its base that the engine does not update, When `workline merge` runs, Then it prints one decision line naming the reason.\n- **A red check still blocks:** Given an accepted pull request behind its base with a failed test check, When `workline merge` runs, Then the branch is not updated.\n\n---\n\n## Scope\n\n- `internal/engine/merge.go` (around line 1324): the base is merged into a BEHIND branch only when `st.Checks == \"success\"`. Otherwise it returns with no output. Print a decision line on that path.\n- `internal/forge/github_merge.go`: `sumChecks` counts a CANCELLED check run as cancelled, not success. Make it ignore the line's own `follow` and `workline merge` check runs, as it already ignores the `workline/*` statuses. The alternative is to treat a cancelled-only result as not red.\n- `tests/conformance/cases/`: add a case for the first scenario, and one for the refusal line.\n- Related closed issues: [#377](https://github.com/JN0V/workline/issues/377), [#1353](https://github.com/JN0V/workline/issues/1353), [#1676](https://github.com/JN0V/workline/issues/1676), [#1690](https://github.com/JN0V/workline/issues/1690).\n"
+run: {role: tester, event: issue, target: "issue:2122", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2122']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # A red check still blocks: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2122']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"a red check still blocks\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}

@@ -30,6 +30,7 @@ so a change to a role is measured on it before and after.
 | Documentalist | `documentalist/*` | wrong claims fixed, a true page vouched for; one judge check on false edits |
 | Product owner | `product-owner/*` | by meaning, a point a question: [below](#the-product-owners-set) |
 | Developer | `developer/*` | the missing work done; no "Closes" over work left out |
+| Tester | `tester/*` | a Draft opened; a test declared for each scenario left with none, or with a weak one, then |
 
 A reviewer replay is scored stricter than a fixture:
 
@@ -42,6 +43,20 @@ A reviewer replay is scored stricter than a fixture:
   finds only an intent point.
 - **False Importants fail a clean change only**: on a miss or a kept
   catch they are `extra` in the measure, unverified.
+
+A tester replay is the issue as the tester read it, on the commit its
+Draft started from:
+
+- **What its checks see**: the Draft, and a test declared for each
+  scenario the Draft then left with no guard ("kept as today … nothing
+  guards it") or with a test proving less than its Then.
+- **What they do not**: whether a test proves its scenario. `about`
+  says, a scenario each, what a sound test does and the weak one to
+  refuse: read the tests against it, or give both to a judge.
+- **Not counted**: a scenario no host test can prove, or whose Then a
+  text read satisfies, is named so in `about`.
+- **DomoticsCore**: the case adds a `draft-command` and `module-files`,
+  so the Draft's proof runs one component, not every native suite.
 
 Misses alone would reward a role that says more: a change is kept only
 when it raises recall without losing a kept catch or adding a false
@@ -146,9 +161,12 @@ go run ./tests/evaluation/summary     # per case and per set, a workline commit 
   the role made (`change.diff`). The repository goes with the test; why
   a point was lost is read there.
 - `given.needs` names what a case needs on the machine: PlatformIO
-  (`pio`) for DomoticsCore's developer cases, `$ANDROID_HOME` and
-  `java` for TraceGlass's. Missing, the case is skipped ("no
-  toolchain"), never scored.
+  (`pio`) for DomoticsCore's developer and tester cases, `$ANDROID_HOME`
+  and `java` (a JDK 21) for TraceGlass's. Missing, the case is skipped
+  ("no toolchain"), never scored.
+- `$WORKLINE_EVAL_HEAVY`, set to anything, plays the four workline
+  tester cases whose tests are conformance cases or `internal/doctor`'s:
+  the whole conformance suite, or a test binary of several gigabytes.
 - `TestReplay` runs only when `-run` names it: never in the weekly run
   nor in a plain `go test ./...`.
 - With no agent, `TestReplayCasesLoad` reads every case strictly, and

@@ -1,0 +1,55 @@
+case: tester/wl-2126-guards-plain-ready
+about: >
+  workline issue #2126 ("fix: the line undoes a person's ready after the
+  tester refused"), as the tester read it on 2026-11-25 (the body before
+  the Verification the engine wrote from its tests), on main at f45f6b2.
+  Its Draft then: https://github.com/JN0V/workline/pull/2169. Left with no
+  guard then ("kept as today … nothing guards it"): Plain ready unchanged.
+  Expected now: each has a guard test, green on the base, that checks its
+  Then by running the code. Scenario "Person's ready kept" — a sound test:
+  Fake forge issue with scenarios in its Validation, labels
+  [workline:ready] labelled after a line-record {state: blocked, from:
+  tests} and the tester's refusal comment; run the line (`route issue`,
+  routing events issue: [tester, developer]). Assert the label is still
+  workline:ready, a state-wakes finding for the developer, no
+  state-untested, no '"retest":"ready"' record written, no tester step
+  run. To refuse: `agent-calls: 0` under `ai: none` taken as 'the tester
+  is not run'. Not checking the developer takes it (reads the person's
+  ready as its proof) instead of refusing it for no tester's test.
+  Scenario "Said once" — a sound test: Same Given; run the line twice.
+  After run 1, one comment of the line says the issue is left in ready and
+  names the person's move (they put workline:ready back). After run 2 the
+  comments' count and that text's count are unchanged. To refuse: One run
+  cannot show 'once'. `comments: 3` plus fixed words pin how it is said
+  (the sticky edited, exact wording) rather than what: the issue gives no
+  wording. Scenario "Plain ready unchanged" — a sound test: Name the
+  existing guard: routing/wip-ready-untested-to-tests (a ready issue with
+  scenarios, no Draft, no refusal: `route reconcile` moves it to
+  workline:needs-tests, state-untested said, the line's comment with how
+  to undo). No new test is needed. To refuse: Declaring 'nothing guards
+  it'. A guard whose issue carries a refusal or a block record is the
+  first scenario, not this one. Its tests are conformance cases, the whole
+  suite a run: played only where WORKLINE_EVAL_HEAVY is set. The test
+  command is narrowed to the case's packages, so that the run before the
+  agent stays light.
+given:
+  clone: {repo: JN0V/workline, head: f45f6b2940eb719a27e8db77990797466b413e6e}
+  needs: ["$WORKLINE_EVAL_HEAVY"]
+  setup:
+    - "git checkout -q main && git branch -q -D change"
+    - "sed -i 's|-- -timeout 20m \\./\\.\\.\\.$|-- -timeout 20m ./tests/conformance/|' .workline/config.yaml && ! grep -q 'timeout 20m ./\\.\\.\\.' .workline/config.yaml && git -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -am 'chore: the test command on the packages of the case alone'"
+    - "git remote remove origin && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    issues:
+      - id: 2126
+        title: "fix: the line undoes a person's ready after the tester refused"
+        author: JN0V
+        insider: true
+        labels: ["workline:ready", "bug"]
+        body: "## Need\n\nA person who decides an issue is ready without a tester's test needs the line to keep it ready for the developer, so their decision is not undone by the tester refusing it again.\n\n## Who it hurts\n\n- The person: their move is undone within minutes, and the issue ends blocked again for the same reason.\n- The line: the tester runs again on an issue it already refused, for nothing.\n\n## Example\n\n[#1875](https://github.com/JN0V/workline/issues/1875), on 2026-11-22 and 23 (UTC):\n\n- 20:23, 11-22: the tester refused it (\"passes on the base: it proves nothing the base does not already do\"); the line moved it to `workline:blocked`.\n- 06:41, 11-23: the owner took `workline:blocked` off, put `workline:ready` back, and commented \"Owner decision 2026-11-23: ready without a tester's test\".\n- 06:46: the bot put `workline:needs-tests` back and took `workline:ready` off.\n- 07:13: the tester refused again; the bot moved it to `workline:blocked`. The line's record now says `\"retest\":\"ready\"`.\n\n## Steps to reproduce\n\n1. Let the tester refuse an issue in tests, so the line blocks it.\n2. As a person, take `workline:blocked` off, put `workline:ready` back, and comment that it is ready without a tester's test.\n3. Let the line run on the issue.\n\n- **Expected:** the issue stays in ready; the developer takes it.\n- **Actual:** the line moves it back to `workline:needs-tests`, the tester refuses again, and the line blocks it.\n- **Version:** `main` at `cf8d4d9fd` (the run of 2026-11-23 06:46).\n\n## Validation\n\n- **Person's ready kept:** Given an issue the tester refused and the line blocked, When a person puts `workline:ready` back with a comment that it is ready without a tester's test, Then the line leaves it in ready, the developer is due on it, and the tester is not run.\n- **Said once:** Given the same issue, When the line leaves it in ready, Then the line says so once on the issue, naming the person's move.\n- **Plain ready unchanged:** Given an issue that reaches ready with no tester's Draft and no refusal, When the line runs, Then it still moves it to its tests, as today.\n\n---\n\n## Verification\n\n- A conformance or simulator case for each scenario, red on `main` first.\n- A real run on a clone of the trial copy, told under `## Tried` in the pull request.\n\n## Scope\n\n- `internal/line/wip.go`, `retest`: it honours a person's ready only when the line itself moved the issue out of ready (`rec.Retest == s.Name`). A person's ready after a tester's refusal and a block has no such record, so the line moves it to its tests and writes `\"retest\":\"ready\"`.\n- `internal/line/states.go`, `stepOf`: where `retest` is called, with the record and the tester's refusal (`refused`, the `workline:tester-refusal` marker) at hand.\n- `internal/line/record.go`: `Retest` and `RetestKept`, if the kept move needs its own mark.\n"
+run: {role: tester, event: issue, target: "issue:2126", open-merge-request: true}
+grade:
+  - {status: pass}
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2126']; assert len(m)==1 and m[0]['draft'], 'no Draft'\""}
+  # Plain ready unchanged: a test declared for it, or the existing test or the run that proves it named.
+  - {sh: "python3 -c \"import json; m=[m for m in (json.load(open('../forge.json')).get('merge-requests') or []) if m['branch']=='workline/tester/issue-2126']; assert len(m)==1, 'no Draft'; b=m[0]['body'].split('## Tests')[1]; t,_,u=b.partition('**Not tested**'); s=\\\"plain ready unchanged\\\"; assert any(l.startswith('| ') and s in l.split('|')[1].lower() for l in t.splitlines()) or any(l.lower().startswith('- '+s) and ('guarded by' in l or 'outside the runner' in l) for l in u.splitlines()), 'no test declared for it, no existing test nor run named'\""}
