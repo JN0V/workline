@@ -1,0 +1,27 @@
+case: merge/merge-alone-is-an-edit
+about: >
+  A note stays an edit. Given workline's own pull request (a docs fix,
+  at `normal`) merges alone, When the line says it, Then the state
+  comment is edited and no new comment appears: the note is not a
+  comment of its own, and no one is mentioned.
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/condense && sed -i 's/Access tokens last one hour./Tokens last one hour./' docs/tech/auth.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: condense docs/tech/auth.md' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/condense && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/documentalist/condense", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 10, branch: workline/documentalist/condense, base: main, author: workline-bot, bot: true, title: "docs: condense docs/tech/auth.md", labels: [], comments: [],
+         pushes: [{head: workline/documentalist/condense, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: auto-merge-on, where: "#10", message: "with no person's yes, workline's own docs"}
+  forge:
+    merge-requests:
+      - {id: 10, auto-merge: true, comment-contains: ["Merging with no person's yes"], comment-lacks: ["workline:merge-alone=", "@"]}

@@ -1,0 +1,34 @@
+case: merge/tester-block-two-heads-is-a-call
+about: >
+  Blocked again on the next head. Given the same block, for the same
+  reason, was said on the head before, When a new head is blocked at the
+  tester's step for that reason, Then one new comment names the person,
+  `@alice`, the issue's author, and says what to decide.
+given:
+  repo: tested-draft
+  setup:
+    - "git checkout -q -b workline/developer/3 && printf 'add() { echo $(($1 + $2)); }\\nmul() { echo $(($1 * $2)); }\\n' > lib.sh && git commit -qam 'feat: mul for #3' -m 'Workline-Role: developer' && git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main workline/developer/3 && git checkout -q main"
+  config:
+    routing: {events: {issue: [developer]}}
+  forge:
+    statuses:
+      - {commit: "workline/developer/3", name: workline/verdict, state: failure, description: "red: the line's verdict on its head is block (tester block): check-error", by: workline-bot}
+    issues:
+      - {id: 3, title: "Multiply two numbers", author: alice, labels: ["workline:developing"], body: "## Need\n\nI want to multiply.\n"}
+    merge-requests:
+      - id: 2
+        branch: workline/developer/3
+        title: "Multiply two numbers"
+        body: "Closes #3"
+        comments:
+          - "**The developer**'s record.\n\n<!-- workline:developer-act {\"act\":\"code\",\"issue\":3,\"code\":[\"lib.sh\"],\"round\":1,\"review-runs\":1} -->\n<!-- workline:sticky=developer/code -->"
+          - "**workline reviewer** — 0 findings on the change.\n\n<!-- workline:record reviewed=1111111 runs=1 -->\n<!-- workline:sticky=reviewer/summary -->"
+          - "**workline's line** — the verdict on 0000000 is blocked at the tester step, the green proof of the change: (tester block): check-error\n\nNo role reads this step: a person decides whether the proof can run here, or the developer changes the code.\n\n<!-- workline:tester-block=0000000 -->"
+run: {route: reconcile, open-merge-request: true, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    merge-requests:
+      - id: 2
+        comment-contains: ["@alice", "check-error", "decides"]
