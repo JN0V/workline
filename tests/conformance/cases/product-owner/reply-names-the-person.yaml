@@ -1,0 +1,21 @@
+case: product-owner/reply-names-the-person
+about: "A person of the project commented on an issue waiting on them and the product owner answers: one new comment names that person and holds the answer, their comment has the 👀 reaction, and the state comment is edited, not posted anew."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nThe monthly report counts every sale.\n\n## Verification\n\nMine: a test writes three rows.\n\n## Validation\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:draft, workline:proposed]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nheard: 0\nwrote: {Verification: aaaaaaaaaaaa}\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "The Validation should name the CSV of a known day.", author: bob, insider: true}
+run: {role: product-owner, event: schedule, ai: fake:revise-nine}
+expect:
+  forge:
+    issues:
+      - {id: 9, comments: 3, posted: 1, reactions: {"2": [eyes]}}
+      - {id: 9, comment-contains: ["@bob, read (revision 1 of 2): rewrote Validation in place.", "<!-- workline:sticky=product-owner/state -->"]}

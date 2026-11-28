@@ -1,0 +1,14 @@
+case: product-owner/proposal-waits-is-a-call
+about: "A proposal starts waiting on a person, a draft the product owner left in an issue: one new comment names the person and holds the proposal, and the state comment, kept where it was, is edited, never posted anew in its place. The issue holds two comments, the state and the call, one of them posted."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Draft 9", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 9.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 9, labels: [workline:draft, workline:proposed], comments: 2, posted: 1}
+      - {id: 9, comment-contains: ["@ann", "<!-- workline:sticky=product-owner/state -->"]}

@@ -1,0 +1,37 @@
+case: product-owner/calls-within-proposals-max
+about: "Twelve issues hold the role's drafts and no label yet, proposals-max at 10: one run puts ten on a person, one new comment each, and the other two wait for room, with no comment posted: at most ten new comments in all."
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {proposals-max: 10}}}
+  forge:
+    issues:
+      - {id: 1, title: "Draft 1", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 1.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 2, title: "Draft 2", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 2.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 3, title: "Draft 3", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 3.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 4, title: "Draft 4", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 4.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 5, title: "Draft 5", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 5.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 6, title: "Draft 6", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 6.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 7, title: "Draft 7", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 7.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "Draft 8", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 8.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Draft 9", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 9.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Draft 10", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 10.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Draft 11", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 11.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Draft 12", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 12.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 1, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 2, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 3, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 4, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 5, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 6, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 7, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 8, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 9, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 10, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 11, labels: [workline:draft], posted: 0}
+      - {id: 12, labels: [workline:draft], posted: 0}

@@ -1,0 +1,20 @@
+case: product-owner/question-is-a-call
+about: "The product owner asks the reporter a question: one new comment names the reporter and holds the question, and the state comment is edited in place, not posted anew. The comment is the call that mails; the state mails nobody."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Rows lost again"
+        body: "Lost."
+        author: bob
+        insider: true
+        labels: []
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@bob, to refine this issue: before?\n\n<!-- workline:product-owner/ask -->"]
+run: {role: product-owner, event: schedule, ai: fake:ask-two}
+expect:
+  forge:
+    issues:
+      - {id: 9, comments: 2, posted: 1}
+      - {id: 9, comment-contains: ["@ann, to refine this issue: Which rows are lost: the last one, or any?", "<!-- workline:sticky=product-owner/state -->"]}
