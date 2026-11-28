@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/clock"
 	"github.com/JN0V/workline/internal/contract"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/kit/devmark"
@@ -23,8 +25,8 @@ import (
 // The merge policy (ADR-0042): `workline follow` turns the forge's own
 // auto-merge on for the merge requests a person accepted, their head's
 // verdict passed. The forge merges each once its own head is green,
-// checking its own rules, none waiting for another nor brought up to date
-// first (ADR-0051, cut 2); no agent is called.
+// checking its own rules, none waiting for another (ADR-0051, cut 2); of
+// those it holds behind, ownQueue's head alone is updated; no agent called.
 
 // HeadVerdict is the line's verdict on a merge request's head, written by
 // the proposing job (`workline route --verdict`), kept by the job that
@@ -838,7 +840,10 @@ type inLine struct {
 	up func(clean bool, due string) (bool, error)
 	// takeBase merges the base in for a verdict blocked on a rule it may
 	// have fixed (#1513), or says a conflict: acted, not merged now.
-	takeBase func(due string) (bool, error)
+	takeBase    func(due string) (bool, error)
+	mr          forge.MergeRequest
+	st          forge.MergeState
+	ready, held bool // behind its base: weighed to merge, or held otherwise (ownQueue)
 }
 
 // upToDate is e.up, none on a request weighed without it.
@@ -936,7 +941,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 	if err != nil {
 		return "", err
 	}
-	var line []*inLine
+	var line, q []*inLine
 	acts := map[string]int{}
 	for _, mr := range open {
 		switch {
@@ -961,7 +966,10 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 		for _, x := range res.Findings[before:] {
 			acts[x.Rule]++
 		}
-		if e != nil {
+		if e != nil && e.st.Behind && e.st.AutoMerge {
+			q = append(q, e)
+		}
+		if e != nil && !e.held {
 			line = append(line, e)
 		}
 	}
@@ -980,16 +988,60 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 	if n := acts["merged-at-once"]; n > 0 {
 		sum += fmt.Sprintf("; %d merged at once", n)
 	}
-	// No one waits for another to merge, none is brought up to date to
-	// merge (ADR-0051, cut 2).
-	return sum, nil
+	// No one waits for another to merge; only the head of workline's own
+	// queue is brought up to date (ADR-0075 §7).
+	err = ownQueue(f, o, res, q, &sum)
+	return sum, err
+}
+
+// ownQueue is workline's own merge queue (ADR-0075 §7): those held behind by priority, then
+// auto-merge time; only the head, held by nothing, merged up to date, or kept 30 min while pending.
+func ownQueue(f forge.Forge, o FollowOptions, res *Result, q []*inLine, sum *string) (err error) {
+	rank := map[*inLine]int{}
+	for _, e := range q {
+		for _, id := range ClosedIssues(e.mr) {
+			if is, err := f.Issue(id); err == nil && backlog.Priority(*is) > 0 {
+				rank[e] = min(cmp.Or(rank[e], 1<<30), backlog.Priority(*is))
+			}
+		}
+	}
+	slices.SortStableFunc(q, func(a, b *inLine) int {
+		return cmp.Or(cmp.Or(rank[a], 1<<30)-cmp.Or(rank[b], 1<<30), strings.Compare(plus(a.st.AutoMergeAt, 0), plus(b.st.AutoMergeAt, 0)))
+	})
+	said, head, pos := map[string]string{"merge-conflict": "a conflict with " + o.Base, "held-by-conversations": "an open conversation", "persons-comment-open": "a person's comment unanswered", "checks-red": "a red check"}, false, 1
+	for _, e := range q {
+		why := map[bool]string{false: "passed over, held"}[e.ready]
+		for _, x := range res.Findings {
+			why = cmp.Or(map[bool]string{true: "passed over, " + said[x.Rule]}[x.Where == e.where && said[x.Rule] != ""], why)
+		}
+		switch {
+		case why != "":
+		case !e.mr.Here || !strings.HasPrefix(e.mr.Branch, devmark.Branch):
+			why = "passed over, a person's branch"
+		case head:
+			pos++
+			why = fmt.Sprintf("queued, position %d", pos)
+		case e.st.Checks == "pending":
+			at, _ := git(o.Repo, nil, "log", "-1", "--format=%cI", e.st.Head) // its update: its tip made
+			head = later(plus(at, 30*time.Minute), clock.Now().Format(time.RFC3339))
+			why = map[bool]string{true: "head of the queue, its checks pending since " + at, false: "passed over, checks pending past 30 min"}[head]
+		default:
+			before := len(res.Findings)
+			_, up := e.upToDate(true, "its auto-merge on since "+e.st.AutoMergeAt)
+			err = errors.Join(err, up)
+			head = slices.ContainsFunc(res.Findings[before:], func(x verdict.Finding) bool { return x.Rule == "merged-from-base" })
+			why = map[bool]string{true: "head of the queue, " + o.Base + " merged in", false: "passed over, " + o.Base + " not merged in"}[head]
+		}
+		*sum += "; " + e.where + ": " + why
+	}
+	return err
 }
 
 // weigh reads one merge request into the base, accepted or its auto-merge
 // on, does what the policy says of it — auto-merge on or off, the yes held
 // on its head (Accept) or taken back — and says it; it returns it when it
 // is accepted.
-func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.MergeRequest, res *Result, hand map[string]kept, n *normal) (*inLine, error) {
+func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.MergeRequest, res *Result, hand map[string]kept, n *normal) (out *inLine, err error) {
 	where := forge.MergeRef(f, mr.ID)
 	say := func(rule, level, msg string) {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Level: level, Where: where, Message: msg})
@@ -1015,7 +1067,12 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	case tip == "":
 		return nil, nil // its branch is gone
 	}
-	e := &inLine{where: where}
+	e := &inLine{where: where, mr: mr, st: st}
+	defer func() { // held behind, auto-merge on: in ownQueue, passed over
+		if out == nil && err == nil && st.Behind && st.AutoMerge {
+			out, e.held = e, true
+		}
+	}()
 	e.up = func(clean bool, due string) (bool, error) {
 		return upToDate(f, o, local, mr, baseTip, tip, say, clean, due)
 	}
@@ -1445,9 +1502,10 @@ func armed(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st 
 // the forge refuses leaves auto-merge on, for the next run.
 func stalled(f forge.Forge, m forge.Merger, mr forge.MergeRequest, tip string, st forge.MergeState, e *inLine, say func(rule, level, msg string), who string) (*inLine, error) {
 	if !st.Mergeable {
-		// Behind its base and held by the forge, its checks green: the
-		// base merged in, by the engine or a merge round (ADR-0067).
-		if acted, err := e.upToDate(st.Behind && st.Checks == "success", "its auto-merge on since "+st.AutoMergeAt); acted || err != nil {
+		// Behind its base and held by the forge: in conflict, a merge
+		// round (ADR-0067); else the base merged in at the head (ownQueue).
+		e.ready = st.Behind && (st.Checks == "success" || st.Checks == "pending")
+		if acted, err := e.upToDate(false, "its auto-merge on since "+st.AutoMergeAt); acted || err != nil {
 			return e, err
 		}
 		if st.Behind && st.Checks != "success" {

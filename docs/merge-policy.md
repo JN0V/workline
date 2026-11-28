@@ -59,14 +59,15 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   `follow` merges it. GitHub's auto-merge waits for an event, a check
   ending or a push, and may miss one. An hourly run catches one no
   event follows.
-- **No one at a time, no update first**: a pull request behind its base
-  merges as it is, none waiting for another
+- **No one at a time, no update first**: a pull request the forge does
+  not hold behind its base merges as it is, none waiting for another
   ([ADR-0051](adr/0051-a-check-sits-where-its-catch-is-worth-its-cost.md#cut-2-strict-up-to-date-dropped)).
   Two green alone may break the base together: main's run says it
   ([below](#a-red-main)).
-- **The developer's request behind its base**: in conflict, or held by
-  the forge, `main` is merged in, by the engine or one developer round;
-  never a rebase
+- **The developer's request behind its base**: in conflict, a developer
+  round merges `main` in; held by the forge, the engine merges it into
+  the head of [its own queue](merge-queue.md#worklines-own-merge-queue)
+  alone; never a rebase
   ([behind main](../roles/developer/docs/conflict.md)). On the local
   forge, where no run checks `main`, one whose files `main` changed is
   merged only once the tests pass on `main` merged into it.

@@ -138,8 +138,9 @@ queue, in priority order.**
   4. the forge merges the head; the push to `main` runs `follow`; the
      next one becomes the head.
 - **A head that fails** moves on: red checks and a conflict take
-  today's rounds; checks pending past the `verdict` budget
-  (`defaults/routing.yaml:79`) are said and skipped.
+  today's rounds; checks pending past 30 minutes after the head's
+  update are said and skipped, not the `verdict` budget (180 s), which
+  a CI of 18 minutes passes over (#2368).
 - **A person's branch** is never updated, as today: passed over, said.
 - **A native queue or train**: left to it. No organisation for now.
 

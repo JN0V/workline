@@ -44,6 +44,26 @@ workline's run there guards that combination only
   `Measure`, in `seconds.go`, sets it from the `queue` budget of
   `routing.yaml`, once it has found the run is a queue's.
 
+## workline's own merge queue
+
+With no native queue nor merge train, on a base that requires branches
+up to date, `workline follow` keeps a queue of its own
+([ADR-0075](adr/0075-urgent-work-first-and-a-merge-queue-of-our-own.md#7-a-merge-queue-of-our-own)),
+with no setting:
+
+- **In it**: the accepted merge requests, auto-merge on, that the forge
+  holds behind the base.
+- **Its order**: the priority of the issue each closes, then when its
+  auto-merge was turned on.
+- **The head**: the first held by nothing. Only it has the base merged
+  in; the others wait, so one merge runs one CI, not one each.
+- **Passed over, said**: a red check, a conflict, an open conversation,
+  a person's comment unanswered, a person's branch.
+- **Checks pending**: the head keeps its place 30 minutes after its
+  update, then is passed over.
+- **The run's summary**, a line each: `#7: head of the queue, main
+  merged in`, `#8: queued, position 2`, `#9: passed over, a red check`.
+
 ## GitHub: a merge queue
 
 Its checks and its yes: [a merge queue on GitHub](github/merge-queue.md).
