@@ -3,6 +3,7 @@ package reviewer
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -100,5 +101,50 @@ func TestAnswerWrittenIntoTheScopeSettlesTheFinding(t *testing.T) {
 	}
 	if rule, why := backlog.SpecHold(*is, []string{second + "\n\n" + backlog.SpecMarker}); rule != "" {
 		t.Errorf("the spec still holds the issue: %s: %s", rule, why)
+	}
+}
+
+// Question lost if the second comment fails (review of #2352):
+// Given a spec whose rounds are spent,
+// When the reviewer stops,
+// Then the new comment asking a person comes before the edit that marks the
+// spec stopped: an apply that fails between the two leaves the record
+// unstopped, and the next run asks again, never a stopped spec unasked.
+func TestSpecStopAsksBeforeItRecordsTheStop(t *testing.T) {
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	t.Setenv("GITHUB_ACTIONS", "")
+	t.Setenv("CI", "")
+	t.Setenv("GITLAB_CI", "")
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "-C", repo, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+	t.Setenv("WORKLINE_FORGE", "local")
+	t.Setenv("WORKLINE_EVENT", "issue")
+	t.Setenv("WORKLINE_TARGET", "issue:1")
+	l := &forge.Local{Repo: repo}
+	body := "## Need\n\nA calculator multiplies.\n\n## Validation\n\n- **Two by three:** Given 2 and 3, When multiplied, Then 6.\n\n## Verification\n\nThe product is right.\n\n## Scope\n\ncalc/calc.go\n"
+	if id, err := l.Open("Mean", body, nil); err != nil || id != 1 {
+		t.Fatalf("open issue: %d, %v", id, err)
+	}
+	rec := backlog.SpecReview{Body: "aaaaaaaaaaaa", Round: 3, Open: 1, In: []string{"Validation"}}
+	if err := l.Sticky(forge.Target{Kind: "issue", ID: 1}, "**workline reviewer**, its spec\n\n"+rec.String(), backlog.SpecMarker, true); err != nil {
+		t.Fatal(err)
+	}
+	runDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(runDir, "in"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	q, _, _ := specOnForge(runDir, repo, Settings{SpecsPerRun: 5, SpecRounds: 3, ForgeWrites: true})
+	if len(q.stops) != 2 {
+		t.Fatalf("the stop proposes %d comments, want the question and the edit: %v", len(q.stops), q.stops)
+	}
+	first, _ := q.stops[0].Value.(map[string]any)
+	second, _ := q.stops[1].Value.(map[string]any)
+	if _, sticky := first["sticky"]; sticky {
+		t.Errorf("the edit marking the spec stopped comes first: a failed question after it is never asked again")
+	}
+	if second["sticky"] != backlog.SpecKey {
+		t.Errorf("the second proposal is not the edit of the spec comment: %v", second)
 	}
 }

@@ -253,8 +253,10 @@ func specOnForge(runDir, repo string, s Settings) (queue, int, bool) {
 			q.said = append(q.said, verdict.Finding{Rule: "spec-rounds-spent", Where: where, Level: "warn",
 				Message: fmt.Sprintf("its spec answered %d times, %d important %s still open: a question for a person, on the issue; ready stays held until they decide", rec.Round, rec.Open, plural(rec.Open, "finding", "findings"))})
 			if s.ForgeWrites {
-				q.stops = append(q.stops, intent.Intention{Kind: "comment", Value: map[string]any{"issue": w.issue.ID, "sticky": backlog.SpecKey, "body": stopComment(w, rec, s.SpecRounds)}},
-					intent.Intention{Kind: "comment", Value: map[string]any{"issue": w.issue.ID, "body": askComment(f, b, w, rec)}})
+				// The question first: the edit marking it stopped, applied
+				// after, is never there without it (the apply stops at a failure).
+				q.stops = append(q.stops, intent.Intention{Kind: "comment", Value: map[string]any{"issue": w.issue.ID, "body": askComment(f, b, w, rec)}},
+					intent.Intention{Kind: "comment", Value: map[string]any{"issue": w.issue.ID, "sticky": backlog.SpecKey, "body": stopComment(w, rec, s.SpecRounds)}})
 			}
 		case len(q.read) < s.SpecsPerRun:
 			q.read = append(q.read, Spec{Path: where, Title: strings.TrimSpace(w.issue.Title), Text: w.issue.Body, Issue: w.issue.ID,
@@ -545,7 +547,7 @@ func stopComment(w waiting, r backlog.SpecReview, rounds int) string {
 }
 
 // askComment is the question of a stopped spec put in a new comment, one
-// a forge mails, after the edit of the reviewer's own, which mails nobody
+// a forge mails, beside the edit of the reviewer's own, which mails nobody
 // (#2352): its author named, the two answers, a link to the findings.
 func askComment(f forge.Forge, b forge.Backlog, w waiting, r backlog.SpecReview) string {
 	notes, _ := b.Notes(forge.Target{Kind: "issue", ID: w.issue.ID})

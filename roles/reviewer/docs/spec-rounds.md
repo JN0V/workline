@@ -66,7 +66,8 @@ How a spec's reviews on the forge end, or wait:
   the comment puts a question to a person, and the reviewer stops
   reading it. Each review edits the comment, and a forge mails nobody
   for an edit: so the question is also asked in a new comment, once,
-  naming the issue's author and linking the findings
+  naming the issue's author and linking the findings, posted before the
+  edit that records the stop, so a failed post is asked again next run
   ([#2352](https://github.com/JN0V/workline/issues/2352)). The person can:
   - accept it as it reads (`workline:accepted`);
   - settle it and set `workline:ready`;
