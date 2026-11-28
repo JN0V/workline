@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.94.0](https://github.com/JN0V/workline/compare/v0.93.0...v0.94.0) (2026-11-28)
+
+
+### Features
+
+* build urgent issues before the milestone ([#2355](https://github.com/JN0V/workline/issues/2355)) ([0eed8e3](https://github.com/JN0V/workline/commit/0eed8e30d0a913b5c3e2433b6045eb48d4687fdd))
+* one urgent issue passes a full ready, goes first ([#2336](https://github.com/JN0V/workline/issues/2336)) ([3176213](https://github.com/JN0V/workline/commit/3176213939857645ea2443986194e3440a11caba))
+* wake the product owner for an urgent issue ([#2335](https://github.com/JN0V/workline/issues/2335)) ([869f73a](https://github.com/JN0V/workline/commit/869f73a1f49b59b57aeb2cf1ebbdc0727debeba1))
+
+
+### Bug Fixes
+
+* block a spent claim on a forge that cannot tell ([#2339](https://github.com/JN0V/workline/issues/2339)) ([35a6ef9](https://github.com/JN0V/workline/commit/35a6ef97ca858cd7cf801dcb9fe694e46ff8c1cf))
+
 ## [0.93.0](https://github.com/JN0V/workline/compare/v0.92.0...v0.93.0) (2026-11-27)
 
 
