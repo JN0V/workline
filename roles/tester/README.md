@@ -1,11 +1,26 @@
 ---
 sources:
-  - roles/tester/role.yaml
-  - roles/tester/code
-  - internal/kit/testmark
-  - defaults/ci/github/workline-objection.yml
-  - defaults/ci/github/workline-answer.yml
-  - defaults/ci/github/workline-gardening.yml
+  - roles/tester/role.yaml#events
+  - roles/tester/role.yaml#settings.test-command
+  - roles/tester/role.yaml#settings.test-report
+  - roles/tester/role.yaml#settings.draft-command
+  - roles/tester/role.yaml#settings.module-files
+  - roles/tester/role.yaml#settings.test-paths
+  - roles/tester/role.yaml#settings.test-homes
+  - roles/tester/role.yaml#settings.build-errors
+  - roles/tester/code/tester.go#Settings
+  - roles/tester/code/tester.go#unset
+  - roles/tester/code/tester.go#Check
+  - roles/tester/code/frozen.go#guard
+  - roles/tester/code/objection.go#kinds
+  - roles/tester/code/green.go#greenRuns
+  - roles/tester/code/green.go#judge
+  - roles/tester/code/write.go#draftBody
+  - internal/kit/testmark/testmark.go#ObjectionWord
+  - internal/kit/testmark/testmark.go#ObjectionWaits
+  - defaults/ci/github/workline-objection.yml#on
+  - defaults/ci/github/workline-answer.yml#on
+  - defaults/ci/github/workline-gardening.yml#on
 checked: e81df7b34
 verified: agent:claude-code
 ---

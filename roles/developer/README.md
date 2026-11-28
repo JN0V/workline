@@ -1,17 +1,30 @@
 ---
 sources:
-  - roles/developer/role.yaml
-  - defaults/ci/github/workline-develop.yml
-  - roles/developer/code/developer.go#Pre
-  - roles/developer/code/developer.go#Post
+  - roles/developer/role.yaml#events
+  - roles/developer/role.yaml#levels
+  - roles/developer/role.yaml#settings.claim-label
+  - roles/developer/role.yaml#settings.claim-hours
+  - roles/developer/role.yaml#settings.ai-max-tokens
+  - roles/developer/role.yaml#settings.ai-max-turns
+  - roles/developer/role.yaml#settings.ai-max-seconds
+  - roles/developer/role.yaml#settings.proof-seconds
+  - roles/developer/role.yaml#settings.proof-command
+  - roles/developer/role.yaml#settings.review-rounds
+  - roles/developer/role.yaml#settings.autonomy
+  - roles/tester/role.yaml#settings.test-command
+  - roles/tester/role.yaml#settings.test-report
+  - roles/tester/role.yaml#settings.test-paths
+  - roles/tester/role.yaml#settings.test-homes
   - roles/developer/code/developer.go#pick
   - roles/developer/code/developer.go#SettingsFrom
   - roles/developer/code/developer.go#Held
   - roles/developer/code/conflict.go#conflictPre
   - roles/developer/code/conflict.go#draftBehind
   - roles/developer/code/conflict.go#mergePost
-  - roles/developer/code/proof.go
-  - roles/developer/code/bounds.go
+  - roles/developer/code/proof.go#agentCaps
+  - roles/developer/code/bounds.go#ciFiles
+  - roles/developer/code/bounds.go#checker.rule
+  - roles/developer/code/bounds.go#besideTest
 checked: 0bbe8345
 verified: human:JN0V
 ---

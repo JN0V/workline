@@ -1,38 +1,13 @@
 ---
 sources:
+  - roles/committer/role.yaml#settings.rewrite
+  - roles/committer/role.yaml#settings.ai-max-seconds
   - cmd/workline/main.go#hooksCmd
-  - cmd/workline/main.go#prePushLine
-  - roles/committer/role.yaml
-  - internal/kit/commitmsg/commitmsg.go#Settings
   - cmd/workline/main.go#docsCmd
-  - cmd/workline/main.go#reviewCmd
-  - cmd/workline/main.go#routeCmd
-  - cmd/workline/main.go#runRole
   - cmd/workline/main.go#testCmd
   - cmd/workline/main.go#developCmd
-  - cmd/workline/main.go#importIssues
-  - cmd/workline/main.go#applyCmd
-  - cmd/workline/main.go#sampleCmd
-  - cmd/workline/main.go#followCmd
   - cmd/workline/main.go#sizeCmd
-  - cmd/workline/main.go#gateCmd
   - cmd/workline/tick.go#tickCmd
-  - internal/tick/tick.go#Due
-  - internal/forge/gitlab.go#gitlab.connect
-  - internal/engine/engine.go#Result
-  - internal/line/line.go#Result
-  - internal/report/report.go#FromLine
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#.workline:ready
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:propose
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:apply
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:warn
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:propose
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:garden:apply
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:reconcile
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:release:dry-run:post
-  - defaults/ci/gitlab/workline.gitlab-ci.yml#workline:follow
 checked: e81df7b34
 verified: agent:claude-code
 reader: 2de353fab113

@@ -1,5 +1,23 @@
 ---
-sources: [roles/product-owner/role.yaml, roles/product-owner/code, internal/backlog]
+sources:
+  - roles/product-owner/role.yaml#settings.next-max
+  - roles/product-owner/role.yaml#settings.stuck-days
+  - roles/product-owner/role.yaml#settings.undone-max
+  - roles/product-owner/role.yaml#settings.changed-needs
+  - roles/product-owner/role.yaml#settings.archived
+  - roles/product-owner/role.yaml#settings.acts.close-obsolete
+  - internal/backlog/board.go#Next
+  - internal/backlog/board.go#Offered
+  - internal/backlog/board.go#MakeBoard
+  - internal/backlog/board.go#Board.StuckLine
+  - internal/backlog/board.go#ReadyWait
+  - internal/backlog/depend.go#Order
+  - internal/backlog/depend.go#NextReady
+  - internal/backlog/depend.go#Waiting
+  - internal/backlog/undo.go#findUndone
+  - internal/backlog/undo.go#MovedBack
+  - internal/backlog/parent.go#ReadEvidence
+  - roles/product-owner/code/productowner.go#stuck
 checked: e81df7b34
 verified: agent:claude-code
 ---
